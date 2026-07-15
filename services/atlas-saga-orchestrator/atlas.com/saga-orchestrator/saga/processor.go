@@ -8,7 +8,6 @@ import (
 	"atlas-saga-orchestrator/invite"
 	asset2 "atlas-saga-orchestrator/kafka/message/asset"
 	"atlas-saga-orchestrator/kafka/message/saga"
-	"atlas-saga-orchestrator/kafka/producer"
 	"atlas-saga-orchestrator/mts"
 	"atlas-saga-orchestrator/skill"
 	"atlas-saga-orchestrator/storage"
@@ -16,6 +15,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"sync"
 	"time"
 

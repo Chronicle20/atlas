@@ -3,8 +3,8 @@ package merchant
 import (
 	"atlas-channel/character"
 	merchant2 "atlas-channel/kafka/message/merchant"
-	"atlas-channel/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	inventory2 "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"

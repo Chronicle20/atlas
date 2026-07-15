@@ -1,9 +1,9 @@
 package monster
 
 import (
-	"atlas-monsters/kafka/producer"
 	"atlas-monsters/monster/information"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"

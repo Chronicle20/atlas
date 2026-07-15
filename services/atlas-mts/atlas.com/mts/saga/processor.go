@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"atlas-mts/kafka/message/saga"
-	"atlas-mts/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"
 )

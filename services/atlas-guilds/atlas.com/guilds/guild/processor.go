@@ -9,10 +9,10 @@ import (
 	"atlas-guilds/invite"
 	"atlas-guilds/kafka/message"
 	guild2 "atlas-guilds/kafka/message/guild"
-	"atlas-guilds/kafka/producer"
 	"atlas-guilds/party"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"strings"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"

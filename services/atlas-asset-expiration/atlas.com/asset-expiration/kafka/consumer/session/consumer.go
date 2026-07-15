@@ -4,9 +4,9 @@ import (
 	"atlas-asset-expiration/character"
 	consumer2 "atlas-asset-expiration/kafka/consumer"
 	message "atlas-asset-expiration/kafka/message/session"
-	"atlas-asset-expiration/kafka/producer"
 	"atlas-asset-expiration/session"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"

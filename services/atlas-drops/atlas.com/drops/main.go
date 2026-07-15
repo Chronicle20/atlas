@@ -6,12 +6,10 @@ import (
 	"atlas-drops/configuration"
 	"atlas-drops/drop"
 	drop2 "atlas-drops/kafka/consumer/drop"
-	"atlas-drops/logger"
 	_map "atlas-drops/map"
 	"atlas-drops/tasks"
 	"context"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 	"time"
 
@@ -51,53 +49,47 @@ func GetServer() Server {
 }
 
 func main() {
-	l := logger.CreateLogger(serviceName)
-	l.Infoln("Starting main service.")
-
-	tdm := service.GetTeardownManager()
+	rt := service.Bootstrap(serviceName)
+	l := rt.Logger()
 
 	rc := atlas.Connect(l)
 	drop.InitRegistry(rc)
 
-	tc, err := tracing.InitTracer(serviceName)
-	if err != nil {
-		l.WithError(err).Fatal("Unable to initialize tracer.")
-	}
-
-	configuration.Init(l)(tdm.Context())(uuid.MustParse(os.Getenv("SERVICE_ID")))
+	configuration.Init(l)(rt.Context())(uuid.MustParse(os.Getenv("SERVICE_ID")))
 	config, err := configuration.GetServiceConfig()
 	if err != nil {
 		l.WithError(err).Fatal("Unable to successfully load configuration.")
 	}
 
-	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	drop2.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := drop2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 
-	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
+	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 	// CreateRoute and run server
 	server.New(l).
-		WithContext(tdm.Context()).
-		WithWaitGroup(tdm.WaitGroup()).
+		WithContext(rt.Context()).
+		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		AddRouteInitializer(drop.InitResource(GetServer())).
 		AddRouteInitializer(_map.InitResource(GetServer())).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
+		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
 	tt, err := config.FindTask(drop.ExpirationTaskName)
 	if err != nil {
 		l.WithError(err).Fatalf("Unable to find task [%s].", drop.ExpirationTaskName)
 	}
-	routine.Go(l, tdm.Context(), func(_ context.Context) {
-		tasks.Register(l, tdm.Context())(drop.NewExpirationTask(l, time.Millisecond*time.Duration(tt.Interval)))
+	routine.Go(l, rt.Context(), func(_ context.Context) {
+		tasks.Register(l, rt.Context())(drop.NewExpirationTask(l, time.Millisecond*time.Duration(tt.Interval)))
 	})
 
-	tdm.TeardownFunc(func() {
+	rt.TeardownFunc(func() {
 		sctx, span := otel.GetTracerProvider().Tracer("atlas-drops").Start(context.Background(), "teardown")
 		_ = model.ForEachSlice(drop.AllProvider, func(m drop.Model) error {
 			tctx := tenant.WithContext(sctx, m.Tenant())
@@ -106,8 +98,5 @@ func main() {
 		})
 		span.End()
 	})
-	tdm.TeardownFunc(tracing.Teardown(l)(tc))
-
-	tdm.Wait()
-	l.Infoln("Service shutdown.")
+	rt.Wait()
 }

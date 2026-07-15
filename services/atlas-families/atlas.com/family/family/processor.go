@@ -6,7 +6,7 @@ import (
 
 	"atlas-family/kafka/message"
 	familymsg "atlas-family/kafka/message/family"
-	"atlas-family/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"

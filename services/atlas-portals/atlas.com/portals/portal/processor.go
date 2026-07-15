@@ -3,9 +3,9 @@ package portal
 import (
 	"atlas-portals/blocked"
 	"atlas-portals/character"
-	"atlas-portals/kafka/producer"
 	"atlas-portals/portal_actions"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"math/rand"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"

@@ -2,14 +2,12 @@ package main
 
 import (
 	"atlas-tenants/configuration"
-	"atlas-tenants/logger"
 	"atlas-tenants/tenant"
 	"context"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -43,15 +41,8 @@ func GetServer() Server {
 }
 
 func main() {
-	l := logger.CreateLogger(serviceName)
-	l.Infoln("Starting main service.")
-
-	tdm := service.GetTeardownManager()
-
-	tc, err := tracing.InitTracer(serviceName)
-	if err != nil {
-		l.WithError(err).Fatal("Unable to initialize tracer.")
-	}
+	rt := service.Bootstrap(serviceName)
+	l := rt.Logger()
 
 	db := database.Connect(l, database.SetMigrations(tenant.MigrateEntities, configuration.MigrateEntities, outboxlib.Migration))
 
@@ -59,10 +50,10 @@ func main() {
 	// Leadership is gated by a postgres advisory lock — replicas are safe.
 	publisher := outboxlib.NewTopicWriterPool()
 	drainer := outboxlib.NewDrainer(l, db, publisher, outboxlib.WithDSN(database.DSN()))
-	routine.Go(l, tdm.Context(), func(_ context.Context) {
-		drainer.Run(tdm.Context())
+	routine.Go(l, rt.Context(), func(_ context.Context) {
+		drainer.Run(rt.Context())
 	})
-	tdm.TeardownFunc(func() {
+	rt.TeardownFunc(func() {
 		drainer.Stop()
 		publisher.Close()
 	})
@@ -75,23 +66,21 @@ func main() {
 		return false
 	})
 
-	_ = consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	_ = consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 
-	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
+	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 	// CreateRoute and run server
 	server.New(l).
-		WithContext(tdm.Context()).
-		WithWaitGroup(tdm.WaitGroup()).
+		WithContext(rt.Context()).
+		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		AddRouteInitializer(tenant.RegisterRoutes(db)(GetServer())).
 		AddRouteInitializer(configuration.RegisterRoutes(db)(GetServer())).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
+		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
-	tdm.TeardownFunc(tracing.Teardown(l)(tc))
-
-	tdm.Wait()
-	l.Infoln("Service shutdown.")
+	rt.Wait()
 }

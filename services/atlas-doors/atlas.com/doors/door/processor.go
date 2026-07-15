@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	doorproducer "atlas-doors/kafka/producer"
+	doorproducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"

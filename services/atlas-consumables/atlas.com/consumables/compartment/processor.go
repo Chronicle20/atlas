@@ -2,8 +2,8 @@ package compartment
 
 import (
 	"atlas-consumables/kafka/message/compartment"
-	"atlas-consumables/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"

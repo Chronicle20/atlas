@@ -12,12 +12,11 @@ import (
 	"time"
 
 	mtsmsg "atlas-mts/kafka/message/mts"
-	producer2 "atlas-mts/kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	kprod "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
@@ -30,8 +29,8 @@ import (
 )
 
 // providerFn matches the per-context producer factory shape the Kafka
-// consumers use (producer2.ProviderImpl(l)), so tests can inject a recorder.
-type providerFn = func(ctx context.Context) func(token string) kprod.MessageProducer
+// consumers use (producer.ProviderImpl(l)), so tests can inject a recorder.
+type providerFn = func(ctx context.Context) producer.Provider
 
 // seedMaxListings caps one seed call; bigger requests are a client mistake,
 // not a load test (design-e2e-testing.md §4.5).
@@ -74,7 +73,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r.HandleFunc("/listings/{listingId}/expire", registerGet("test_expire_listing", handleExpireListing)).Methods(http.MethodPost)
 			r.HandleFunc("/sweep", registerGet("test_run_sweep", handleRunSweep)).Methods(http.MethodPost)
 
-			registerSimulateRoutes(r, l, db, si, producer2.ProviderImpl(l))
+			registerSimulateRoutes(r, l, db, si, producer.ProviderImpl(l))
 		}
 	}
 }

@@ -3,8 +3,8 @@ package mts
 import (
 	"atlas-saga-orchestrator/kafka/message"
 	mtsCustody "atlas-saga-orchestrator/kafka/message/mts/custody"
-	"atlas-saga-orchestrator/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"time"
 
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"

@@ -6,7 +6,6 @@ import (
 	msg "atlas-mts/kafka/message"
 	"atlas-mts/kafka/message/custody"
 	mtsmsg "atlas-mts/kafka/message/mts"
-	producer2 "atlas-mts/kafka/producer"
 	custodyproducer "atlas-mts/kafka/producer/custody"
 	mtsproducer "atlas-mts/kafka/producer/mts"
 	"atlas-mts/listing"
@@ -18,7 +17,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
-	kprod "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
@@ -44,22 +43,22 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 		return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 			var t string
 			t, _ = topic.EnvProvider(l)(custody.EnvCommandTopic)()
-			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAcceptToMtsListing(producer2.ProviderImpl(l))(db)))); err != nil {
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAcceptToMtsListing(producer.ProviderImpl(l))(db)))); err != nil {
 				return err
 			}
-			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleReleaseFromMtsHolding(producer2.ProviderImpl(l))(db)))); err != nil {
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleReleaseFromMtsHolding(producer.ProviderImpl(l))(db)))); err != nil {
 				return err
 			}
-			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRestoreMtsHolding(producer2.ProviderImpl(l))(db)))); err != nil {
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRestoreMtsHolding(producer.ProviderImpl(l))(db)))); err != nil {
 				return err
 			}
-			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleMtsMoveListingToHolding(producer2.ProviderImpl(l))(db)))); err != nil {
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleMtsMoveListingToHolding(producer.ProviderImpl(l))(db)))); err != nil {
 				return err
 			}
-			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRemoveMtsListing(producer2.ProviderImpl(l))(db)))); err != nil {
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRemoveMtsListing(producer.ProviderImpl(l))(db)))); err != nil {
 				return err
 			}
-			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRestoreListingFromHolding(producer2.ProviderImpl(l))(db)))); err != nil {
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRestoreListingFromHolding(producer.ProviderImpl(l))(db)))); err != nil {
 				return err
 			}
 			return nil
@@ -68,8 +67,8 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 }
 
 // providerFn is the shape of the per-context producer factory returned by
-// producer2.ProviderImpl(l): func(ctx) func(token) MessageProducer.
-type providerFn = func(ctx context.Context) func(token string) kprod.MessageProducer
+// producer.ProviderImpl(l): func(ctx) func(token) MessageProducer.
+type providerFn = func(ctx context.Context) producer.Provider
 
 // handleAcceptToMtsListing CREATES the listing row in active state from the
 // carried snapshot, using the caller-supplied ListingId so the create is

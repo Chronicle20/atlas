@@ -3,8 +3,8 @@ package invite
 import (
 	"atlas-invites/kafka/message"
 	invite2 "atlas-invites/kafka/message/invite"
-	"atlas-invites/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"

@@ -3,8 +3,8 @@ package character
 import (
 	"atlas-fame/kafka/message"
 	messageCharacter "atlas-fame/kafka/message/character"
-	"atlas-fame/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"

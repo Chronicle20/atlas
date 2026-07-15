@@ -1,8 +1,8 @@
 package reactor
 
 import (
-	"atlas-reactors/kafka/producer"
 	"atlas-reactors/rest"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"net/http"
 	"sort"
 

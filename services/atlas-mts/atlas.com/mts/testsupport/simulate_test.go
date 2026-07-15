@@ -38,7 +38,7 @@ type recordingProducer struct {
 }
 
 func (r *recordingProducer) provider() providerFn {
-	return func(ctx context.Context) func(token string) kprod.MessageProducer {
+	return func(ctx context.Context) kprod.Provider {
 		return func(token string) kprod.MessageProducer {
 			return func(p model.Provider[[]kafka.Message]) error {
 				ms, err := p()

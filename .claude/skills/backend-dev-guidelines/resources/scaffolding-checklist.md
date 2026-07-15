@@ -127,7 +127,7 @@ Operators creating a tenant from a snapshot taken before this change still need 
 
 ## 6. Post-Scaffold Verification
 After scaffolding is complete:
-1. Run the verification commands in `docs/adding-a-new-service.md` §Verification (overlay renders, configmap key diff, hand-maintained list greps, bake build)
+1. Run `tools/service-registration-guard.sh` (machine-checks every registration list; also a CI job), then the remaining commands in `docs/adding-a-new-service.md` §Verification (overlay renders, ghcr tag existence, bake build)
 2. `/service-doc` — generates/verifies service documentation
 3. `/backend-audit` — audits against Atlas backend developer guidelines
 

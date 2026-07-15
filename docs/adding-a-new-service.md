@@ -102,29 +102,33 @@ These are the failure modes that make missing entries invisible until runtime:
 
 ## Verification
 
-Run all of these before opening the PR:
+**First, run the guard** — it machine-checks every enumeration in this doc
+(sections 1–4 and 6, plus configmap key parity and patch-vs-base container
+names) and runs in CI as the `Service Registration Guard` job in
+`pr-validation.yml`:
+
+```bash
+tools/service-registration-guard.sh
+```
+
+A service intentionally shipped without a k8s deployment must be added to the
+`ALLOW_NO_DEPLOYMENT` list inside the guard, with a justification comment.
+
+Then the checks the guard cannot do for you:
 
 ```bash
 # Overlays render and contain the service with correct values
 kubectl kustomize deploy/k8s/overlays/main | grep -B2 -A6 "name: atlas-<svc>$"
 #   expect: DB_NAME=atlas-<db>-main, ATLAS_ENV=main, image pinned to main-<sha>
+kubectl kustomize deploy/k8s/overlays/pr > /dev/null   # renders clean
 
-# No base configmap key is dropped by either overlay (empty output = pass)
-for ov in main pr; do
-  comm -23 \
-    <(grep -oE '^  [A-Z_0-9]+' deploy/k8s/base/env-configmap.yaml | tr -d ' ' | sort -u) \
-    <(grep -oE '^      - [A-Z_0-9]+=' deploy/k8s/overlays/$ov/kustomization.yaml | sed 's/^      - //; s/=$//' | sort -u)
-done
-
-# Service present in every hand-maintained list
-grep -l "atlas-<svc>" .github/config/services.json docker-bake.hcl go.work \
-  deploy/k8s/base/kustomization.yaml \
-  deploy/k8s/overlays/main/patches/db-name-suffix.yaml \
-  deploy/k8s/overlays/main/patches/atlas-env-env.yaml \
-  deploy/k8s/overlays/pr/patches/db-name-suffix.yaml \
-  deploy/k8s/overlays/pr/patches/consumer-group-env.yaml \
-  tools/db-bootstrap.sh
+# The pinned image tag actually exists on ghcr
+docker manifest inspect ghcr.io/chronicle20/atlas-<svc>/atlas-<svc>:main-<sha>
 
 # Image target builds
 docker buildx bake atlas-<svc>
 ```
+
+And the one manual step no tool can check: **create `atlas-<db>-main` on
+postgres.home** (section 6.1) before merging — the pods crash-loop on
+SQLSTATE 3D000 until it exists.

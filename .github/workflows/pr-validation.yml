@@ -173,6 +173,26 @@ jobs:
         run: ./tools/check-version-coverage.sh
 
   # ============================================
+  # Service Registration Guard
+  # Cross-checks every hand-maintained list a
+  # service must be registered in (docker-bake,
+  # go.work, k8s base + both overlays, DB lists,
+  # configmap key parity, patch container names).
+  # See docs/adding-a-new-service.md. Pure
+  # shell + python3, no Go setup.
+  # ============================================
+  service-registration-guard:
+    name: Service Registration Guard
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: service registration guard
+        run: ./tools/service-registration-guard.sh
+
+  # ============================================
   # Test Go Libraries
   # ============================================
   test-go-libraries:
@@ -537,7 +557,7 @@ jobs:
   # ============================================
   pr-validation-complete:
     name: PR Validation Complete
-    needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker, update-pr-overlay, redis-key-guard, outbox-guard, goroutine-guard, gen-lb-ports]
+    needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker, update-pr-overlay, redis-key-guard, outbox-guard, goroutine-guard, gen-lb-ports, service-registration-guard]
     if: always()
     runs-on: ubuntu-latest
 
@@ -557,6 +577,7 @@ jobs:
           OUTBOX_GUARD_RESULT="${{ needs.outbox-guard.result }}"
           GOROUTINE_GUARD_RESULT="${{ needs.goroutine-guard.result }}"
           LBPORTS_RESULT="${{ needs.gen-lb-ports.result }}"
+          SVC_REG_GUARD_RESULT="${{ needs.service-registration-guard.result }}"
 
           echo "| Job | Result |" >> $GITHUB_STEP_SUMMARY
           echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
@@ -569,11 +590,12 @@ jobs:
           echo "| Outbox Guard | $OUTBOX_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Goroutine Guard | $GOROUTINE_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| LB Port Drift Guard | $LBPORTS_RESULT |" >> $GITHUB_STEP_SUMMARY
+          echo "| Service Registration Guard | $SVC_REG_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
 
           # Fail if any required job failed. update-pr-overlay is allowed
           # to be skipped (e.g., when the deploy-env label is absent) but
           # not to fail outright.
-          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$OVERLAY_RESULT" == "failure" ] || [ "$GUARD_RESULT" == "failure" ] || [ "$OUTBOX_GUARD_RESULT" == "failure" ] || [ "$GOROUTINE_GUARD_RESULT" == "failure" ] || [ "$LBPORTS_RESULT" == "failure" ]; then
+          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$OVERLAY_RESULT" == "failure" ] || [ "$GUARD_RESULT" == "failure" ] || [ "$OUTBOX_GUARD_RESULT" == "failure" ] || [ "$GOROUTINE_GUARD_RESULT" == "failure" ] || [ "$LBPORTS_RESULT" == "failure" ] || [ "$SVC_REG_GUARD_RESULT" == "failure" ]; then
             echo ""
             echo "One or more jobs failed!"
             exit 1

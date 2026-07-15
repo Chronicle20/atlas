@@ -204,11 +204,12 @@ func handleSearchListings(db *gorm.DB) rest.GetHandler {
 			}
 			criteria.Descending = r.URL.Query().Get("order") == "desc"
 
-			// Default and max page size are the shop-scanner game cap
+			// Default page size is the shop-scanner game cap
 			// (MaxSearchResults, task-127): a page-param-less consumer (the
 			// atlas-channel owl handler) gets exactly the capped top-N in
-			// one response, and no page can exceed the cap.
-			page, err := paginate.ParseParams(r.URL.Query(), MaxSearchResults, MaxSearchResults)
+			// one response. Max stays the repo-wide MaxPageSize so drain
+			// consumers (atlas-ui fetchAll at 250) are not rejected.
+			page, err := paginate.ParseParams(r.URL.Query(), MaxSearchResults, paginate.MaxPageSize)
 			if err != nil {
 				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
 				return

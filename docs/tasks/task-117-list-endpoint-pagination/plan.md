@@ -1599,7 +1599,9 @@ convention (same recipe, same page-size decisions as their siblings):
 - [x] `GET /merchants/search/listings` — task-127 rewrote the search with
   criteria (`worldId` filter, `order` asc/desc, explicit tenant predicates)
   and a `MaxSearchResults=200` game cap. Merge resolution: keep the criteria,
-  make the game cap the route's default/max page size (200/200), pagination
+  make the game cap the route's default page size (200/250 — max stays the
+  repo-wide MaxPageSize so atlas-ui's fetchAll drain at 250 is not rejected),
+  pagination
   hand-rolled with a qualified `listings.id` tiebreaker (the JOIN makes
   `database.PagedQuery`'s unqualified `ORDER BY id` ambiguous). The
   page-param-less atlas-channel owl consumer gets the capped top-N in one

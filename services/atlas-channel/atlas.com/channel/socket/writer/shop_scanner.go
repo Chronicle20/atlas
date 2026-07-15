@@ -27,10 +27,14 @@ func ShopLinkResultBody(code merchantpkt.ShopLinkResultCode) packet.Encode {
 }
 
 // ShopScannerRecords converts merchant search listings plus resolved owner
-// names into wire records: channel encoded 0-based (channel.Id - 1, matching
-// server_list_entry.go), equip rows (itemType 1) get a slotless
-// GW_ItemSlotBase built from the listing's point-in-sale snapshot, and a
-// missing owner name degrades to empty string rather than failing the search.
+// names into wire records: the channel is encoded verbatim (same base as
+// CStage::OnSetField stores in m_nChannelID), because
+// CUIShopScanResult::LoadCurPageItemList enables a result row's enter button
+// only when record.nChannelID == m_nChannelID — a -1 offset made every
+// same-channel store render as "closed" (task-127). Equip rows (itemType 1)
+// get a slotless GW_ItemSlotBase built from the listing's point-in-sale
+// snapshot, and a missing owner name degrades to empty string rather than
+// failing the search.
 func ShopScannerRecords(listings []merchant.SearchListing, names map[uint32]string) []merchantcb.ShopScannerRecord {
 	records := make([]merchantcb.ShopScannerRecord, 0, len(listings))
 	for _, sl := range listings {
@@ -52,7 +56,7 @@ func ShopScannerRecords(listings []merchant.SearchListing, names map[uint32]stri
 			uint32(sl.BundleSize()),
 			sl.PricePerBundle(),
 			sl.OwnerId(),
-			byte(sl.ChannelId())-1,
+			byte(sl.ChannelId()),
 			sl.ItemType(),
 			assetPtr,
 		))

@@ -27,7 +27,13 @@ func TestShopScannerRecords_Conversion(t *testing.T) {
 	require.Equal(t, uint32(100), r.BundleSize()) // nSet = quantity per bundle
 	require.Equal(t, uint32(5000), r.Price())
 	require.Equal(t, uint32(30001), r.OwnerId()) // dwMiniRoomSN echo
-	require.Equal(t, byte(2), r.ChannelId())     // 0-based: channel 3 -> 2
+	// nChannelID must match the base SetField sends (CStage::OnSetField stores
+	// m_nChannelID = Decode4 verbatim). CUIShopScanResult::LoadCurPageItemList
+	// enables a result row's enter button only when record.nChannelID ==
+	// m_nChannelID, so a same-channel store on channel 3 must encode 3 — a -1
+	// offset (copied from the channel-select screen) rendered every store as
+	// "closed" (task-127).
+	require.Equal(t, byte(3), r.ChannelId())
 	require.Equal(t, byte(2), r.InventoryType())
 	require.Nil(t, r.Asset())
 }

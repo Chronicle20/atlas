@@ -8,16 +8,25 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
-// Task 19: IDA-verified read order for OnIncubatorResult.
+// Task 19 / task-128 merge: IDA-verified read order for OnIncubatorResult.
 //
-// v83 (@0xa28298), v84 (@0xa73a5b), v87 (@0xabff10), and jms_v185
-// (@0xb0f30b) all read ONLY the 2-field body (Decode4 itemId, Decode2
-// count) — no further packet reads (verified live, re-confirmed for v87 and
-// jms_v185 in this pass). Only v95 (@0xa00380) reads the extended 5-field
-// body (adds gachaponItemId, bonusItemId, bonusCount). The writer previously
-// over-generalized "v87+/JMS extended" from the design; that was wrong and
-// is fixed here to match live IDA ground truth.
+// The legacy pre-v83 line (gms_v61 @0x8490d7, gms_v72 @0x9203de,
+// gms_v79 @0x9722d8) plus v83 (@0xa28298), v84 (@0xa73a5b), v87 (@0xabff10)
+// and jms_v185 (@0xb0f30b) all read ONLY the 2-field body (Decode4 itemId,
+// Decode2 count): itemId>0 renders the reward dialog, itemId<=0 the
+// "inventory full" failure notice. Live-verified for v61/72/79 during the
+// main→task-128 merge (their newly-added client columns). Only v95
+// (@0xa00380) reads the extended 5-field body (adds gachaponItemId,
+// bonusItemId, bonusCount).
 //
+// gms_v48 (@0x71f72a) is DELIBERATELY EXCLUDED: its OnIncubatorResult is a
+// mode-prefix dispatcher (switch on Decode1()-6), structurally incompatible
+// with this flat writer — see the incubator section of task-128's
+// deploy-runbook. It needs a dedicated dispatcher-family writer, not this one.
+//
+// packet-audit:verify packet=incubator/clientbound/IncubatorResult version=gms_v61 ida=0x8490d7
+// packet-audit:verify packet=incubator/clientbound/IncubatorResult version=gms_v72 ida=0x9203de
+// packet-audit:verify packet=incubator/clientbound/IncubatorResult version=gms_v79 ida=0x9722d8
 // packet-audit:verify packet=incubator/clientbound/IncubatorResult version=gms_v83 ida=0xa28298
 // packet-audit:verify packet=incubator/clientbound/IncubatorResult version=gms_v84 ida=0xa73a5b
 // packet-audit:verify packet=incubator/clientbound/IncubatorResult version=gms_v95 ida=0xa00380
@@ -27,7 +36,7 @@ func TestIncubatorResult(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	m := NewIncubatorResult(2000000, 1)
 
-	// v83/v84/v87/jms: int itemId + short count (2000000 = 0x001E8480)
+	// v61/72/79/83/84/87/jms: int itemId + short count (2000000 = 0x001E8480)
 	short := []byte{0x80, 0x84, 0x1E, 0x00, 0x01, 0x00}
 	// v95 only: + int gachaponItemId, int bonusItemId, int bonusCount (all zero)
 	extended := append(append([]byte{}, short...), make([]byte, 12)...)
@@ -37,6 +46,9 @@ func TestIncubatorResult(t *testing.T) {
 		major  uint16
 		want   []byte
 	}{
+		{"GMS", 61, short},
+		{"GMS", 72, short},
+		{"GMS", 79, short},
 		{"GMS", 83, short},
 		{"GMS", 84, short},
 		{"GMS", 87, short},

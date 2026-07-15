@@ -1,0 +1,8 @@
+packet: incubator/clientbound/IncubatorResult
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnIncubatorResult
+    address: "0x8490d7"
+    decompile_sha256: e2264a8c28b4867d8d84cb36f1fff6a3ffdd6e711aa6b829752a97d8524800a7

@@ -60,7 +60,7 @@ fi
 # ---- Databases (edit this list for now) ----
 DBS=(
   atlas-accounts
-  atlas-ban
+  atlas-bans
   atlas-buddies
   atlas-cashshop
   atlas-characters
@@ -77,6 +77,8 @@ DBS=(
   atlas-maps
   atlas-marriages
   atlas-merchant
+  atlas-monster-book
+  atlas-mounts
   atlas-mts
   atlas-notes
   atlas-npc-conversations

@@ -184,6 +184,19 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: atlas-doors
+spec:
+  template:
+    spec:
+      containers:
+        - name: doors
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: atlas-drop-information
 spec:
   template:
@@ -405,6 +418,19 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: atlas-monster-book
+spec:
+  template:
+    spec:
+      containers:
+        - name: monster-book
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: atlas-monster-death
 spec:
   template:
@@ -424,6 +450,19 @@ spec:
     spec:
       containers:
         - name: monsters
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-mounts
+spec:
+  template:
+    spec:
+      containers:
+        - name: mounts
           env:
             - name: ATLAS_ENV
               value: "main"
@@ -553,7 +592,7 @@ spec:
   template:
     spec:
       containers:
-        - name: guilds
+        - name: query-aggregator
           env:
             - name: ATLAS_ENV
               value: "main"
@@ -613,6 +652,19 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: atlas-renders
+spec:
+  template:
+    spec:
+      containers:
+        - name: renders
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: atlas-saga-orchestrator
 spec:
   template:
@@ -645,6 +697,19 @@ spec:
     spec:
       containers:
         - name: storage
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-summons
+spec:
+  template:
+    spec:
+      containers:
+        - name: summons
           env:
             - name: ATLAS_ENV
               value: "main"

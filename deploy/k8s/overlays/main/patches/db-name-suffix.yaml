@@ -223,6 +223,19 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: atlas-mts
+spec:
+  template:
+    spec:
+      containers:
+        - name: mts
+          env:
+            - name: DB_NAME
+              value: "atlas-mts-main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: atlas-notes
 spec:
   template:

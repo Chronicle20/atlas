@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTenant } from "@/context/tenant-context";
 import { useTenantConfiguration } from "@/lib/hooks/api/useTenants";
 import { useMtsListings } from "@/lib/hooks/api/useMtsListings";
-import type { MtsListing } from "@/services/api/mts-listings.service";
+import type { MtsListing, MtsListingAttributes } from "@/services/api/mts-listings.service";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,10 +23,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Store, Search, Loader2 } from "lucide-react";
+import { Store, Search, Loader2, Tag, Lock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ItemNameCell } from "@/components/item-name-cell";
 import { Pager } from "@/components/common/Pager";
+import { FLAG_LOCK } from "@/lib/utils/asset-flags";
+import type { Tenant } from "@/types/models/tenant";
 
 const LISTINGS_PAGE_SIZE = 16;
 const SALE_TYPE_ANY = "any";
@@ -282,15 +284,48 @@ export function MarketplacePage() {
   );
 }
 
+/**
+ * Item cell for a Marketplace listing row: the item name/icon (linked to the
+ * item detail page) plus inline sealing-lock and item-tag-owner indicators,
+ * mirroring the inventory badges (InventoryCard/EquipmentCell) but sized for
+ * a table row. `flags`/`owner` come straight off the listing's `MtsListingAttributes`
+ * rather than the `Asset` shape the `isSealed`/`isTagged` helpers expect, so the
+ * checks are inlined here.
+ */
+export function ListingItemCell({
+  attributes,
+  tenant,
+}: {
+  attributes: MtsListingAttributes;
+  tenant: Tenant | null;
+}) {
+  const tagged = attributes.owner.trim() !== "";
+  const sealed = (attributes.flags & FLAG_LOCK) !== 0;
+  return (
+    <div className="flex items-center gap-1.5">
+      <Link to={`/items/${attributes.templateId}`}>
+        <ItemNameCell itemId={String(attributes.templateId)} tenant={tenant} />
+      </Link>
+      {tagged && (
+        <span className="inline-flex items-center gap-0.5 text-xs text-muted-foreground">
+          <Tag data-testid="tag-icon" className="h-3 w-3 text-amber-500" aria-label="Named item" />
+          {attributes.owner}
+        </span>
+      )}
+      {sealed && (
+        <Lock data-testid="seal-icon" className="h-3 w-3 text-amber-500" aria-label="Sealed item" />
+      )}
+    </div>
+  );
+}
+
 function ListingRow({ listing }: { listing: MtsListing }) {
   const { activeTenant } = useTenant();
   const a = listing.attributes;
   return (
     <TableRow>
       <TableCell>
-        <Link to={`/items/${a.templateId}`}>
-          <ItemNameCell itemId={String(a.templateId)} tenant={activeTenant} />
-        </Link>
+        <ListingItemCell attributes={a} tenant={activeTenant} />
       </TableCell>
       <TableCell>{a.sellerName}</TableCell>
       <TableCell>

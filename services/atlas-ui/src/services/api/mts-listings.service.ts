@@ -52,6 +52,7 @@ export interface MtsListingAttributes {
   ringId: number;
   viciousCount: number;
   flags: number;
+  owner: string;
   listValue: number;
   buyNowPrice?: number;
   commissionRate: number;

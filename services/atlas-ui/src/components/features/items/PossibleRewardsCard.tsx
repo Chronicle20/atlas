@@ -40,7 +40,10 @@ export function PossibleRewardsCard({ rewards }: PossibleRewardsCardProps) {
 
 function RewardRowWidget({ reward }: { reward: RewardRow }) {
   const { name, iconUrl, isLoading } = useItemData(reward.itemId);
-  const pct = (reward.chance * 100).toFixed(1);
+  // 3 decimals: the rarest canonical reward is ~0.005% (1 / 19,864); 2 decimals
+  // would round it to 0.01%, overstating it 2×. 3 decimals renders it faithfully
+  // and nothing rounds down to a false 0.000%.
+  const pct = (reward.chance * 100).toFixed(3);
   const displayName =
     isLoading && !name ? `Item #${reward.itemId}` : name || `Item #${reward.itemId}`;
 
@@ -68,15 +71,11 @@ function RewardRowWidget({ reward }: { reward: RewardRow }) {
             <span className="ml-1 text-muted-foreground">×{reward.count}</span>
           )}
         </p>
-        <p className="text-xs font-mono text-muted-foreground">{reward.itemId}</p>
       </div>
       <div className="flex items-center gap-2 shrink-0">
         {reward.period > 0 && <Badge variant="secondary">time-limited</Badge>}
         {reward.worldMsg !== "" && <Badge variant="secondary">announces</Badge>}
-        <div className="text-right">
-          <p className="text-sm font-medium tabular-nums">{pct}%</p>
-          <p className="text-xs font-mono text-muted-foreground">w{reward.prob}</p>
-        </div>
+        <p className="text-sm font-medium tabular-nums">{pct}%</p>
       </div>
     </Link>
   );

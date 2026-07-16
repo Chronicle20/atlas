@@ -14,6 +14,8 @@ import (
 type Processor interface {
 	// GetRewards returns the incubator reward pool for the tenant in context.
 	GetRewards() ([]Reward, error)
+	// GetRewardsForEgg returns the reward pool for one Pigmy Egg (region).
+	GetRewardsForEgg(eggId uint32) ([]Reward, error)
 }
 
 // ProcessorImpl implements the Processor interface.
@@ -34,4 +36,13 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 func (p *ProcessorImpl) GetRewards() ([]Reward, error) {
 	t := tenant.MustFromContext(p.ctx)
 	return requests.SliceProvider[RewardRestModel, Reward](p.l, p.ctx)(requestRewards(t.Id().String()), Extract, model.Filters[Reward]())()
+}
+
+// GetRewardsForEgg returns the reward pool for one Pigmy Egg (region).
+func (p *ProcessorImpl) GetRewardsForEgg(eggId uint32) ([]Reward, error) {
+	all, err := p.GetRewards()
+	if err != nil {
+		return nil, err
+	}
+	return FilterByEgg(all, eggId), nil
 }

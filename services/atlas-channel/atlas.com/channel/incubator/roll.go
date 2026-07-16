@@ -21,3 +21,14 @@ func PickWeighted(rewards []Reward, rollFn func(total uint32) uint32) (Reward, b
 	}
 	return rewards[len(rewards)-1], true
 }
+
+// FilterByEgg returns only the rewards configured for the given Pigmy Egg id.
+func FilterByEgg(rewards []Reward, eggId uint32) []Reward {
+	out := make([]Reward, 0, len(rewards))
+	for _, r := range rewards {
+		if r.EggId() == eggId {
+			out = append(out, r)
+		}
+	}
+	return out
+}

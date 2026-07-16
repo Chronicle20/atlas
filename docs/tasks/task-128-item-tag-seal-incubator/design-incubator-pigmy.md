@@ -56,11 +56,17 @@ Decoded body **differs by version**:
 Evidence: v95 `CWvsContext::OnIncubatorResult @0xa00380` decodes 5 fields and looks up
 the NPC from `gachaponItemID`; v84 `@0xa73a5b` decodes only `itemId+count`.
 
-**task-128 currently emits the flat 2-field body for every version** (the
-deploy-runbook even asserts "all supported versions read flat"). That is wrong for
-v95 (and must be re-checked for v87/jms): without `gachaponItemID` the v95 client
-cannot select the per-region Pigmy & Etran NPC, and the extra reads misparse. The
-v95 `INCUBATOR_RESULT` matrix cell needs re-verification against the extended body.
+**Correction (verified in code):** the `IncubatorResult` codec
+(`libs/atlas-packet/incubator/clientbound/result.go`) is *already* version-gated —
+flat `itemId+count` for v83/84/87/jms (IDA-re-verified in the file comment) and the
+extended tail for v95. The actual bug is narrower: it hard-codes the v95 tail to
+`WriteInt(0)/WriteInt(0)/WriteInt(0)`, so `gachaponItemID = 0`. The v95 client then
+calls `GetGachaponSucessNpc(0)` → no match → a default/blank NPC instead of the
+region's Pigmy & Etran. **Fix = send the sacrificed egg id as `gachaponItemID`** (the
+bonus pair stays 0 — Atlas rolls one reward). The client owns `incubatorInfo.img`, so
+it resolves the correct NPC locally from the egg id; **the server does not need to
+ingest `incubatorInfo.img` for the dialog to work** — it only needs to emit the egg
+id. Re-verify the v95 `INCUBATOR_RESULT` byte-fixture cell after populating it.
 
 ## 4. Gap vs. the current task-128 implementation
 

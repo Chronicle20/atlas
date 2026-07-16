@@ -79,11 +79,12 @@ When updating TODO.md or other tracking docs, always use `Glob` or `Grep` to fin
 
 - When producing design.md or plan.md documents, write the full document directly to the file. Do NOT walk through sections interactively or ask for per-section approval. The user will read the committed file.
 
-## Worktree Discipline
+## Worktrees & Subagents
 
 - Tasks live in git worktrees (often siblings of the main repo). Before planning/designing/executing a task, verify cwd is the correct worktree; if not, cd into it yourself rather than asking the user.
 - When searching for task PRDs/plans/designs, search across all worktrees (`git worktree list`) before concluding a file is missing.
 - Never edit files in the main repo when a task worktree exists for that work.
+- When dispatching subagents (reviewers, doc agents), ensure they operate inside the correct worktree — never write artifacts or edits into the main repo. Verify the tree is clean after subagent runs.
 
 ## Code Review Before PR
 
@@ -140,7 +141,21 @@ Every task type's leaf step — promoting one packet × version matrix cell to `
 
 - When asked to verify or fix something, confirm the exact server/tenant version the user is testing (e.g. v83 vs v87) before investigating. Do not assume — ask or check, because the wrong version sends the whole investigation down the wrong path.
 - Do a full sweep, not spot-checking, unless explicitly told otherwise. A spot-check presented as a full sweep is a false "verified" — and live PATCHes built on it get rejected at validation time.
+- Always verify hypotheses against actual live evidence (diffs, logs, live k8s state) before making claims or taking destructive action. State findings as hypotheses until confirmed — "I think it's X" is not a conclusion, it's a lead to check.
 
 ## Debugging / Kubernetes
 
 - For diagnosing wedged deploys or runtime failures, read the relevant pod logs early (e.g. `atlas-character-factory`, `atlas-world`) via `mcp__kubernetes__pods_log` rather than starting at packet-level fixes or bare pod listings. The logs usually name the real root cause directly.
+
+## Git Operations
+
+- After completing a rebase/merge/history-rewrite, always push (force-push when history was rewritten) so the PR reflects the resolved state. Do not stop at local-only completion — a rebase resolved only locally leaves the PR still showing conflicts.
+
+## Model & Cost Preferences
+
+- Do not use expensive models (e.g. Fable) for background/review workflows; default to the standard model unless explicitly told otherwise. See [[feedback_review_workflows_use_cheaper_model]] — pin code-review/verify subagents to Sonnet/Haiku.
+
+## Shell & Editing Conventions
+
+- Prefer portable POSIX shell in Bash commands; avoid zsh/direnv-specific constructs and batch patch loops that can produce garbled or unapplied output. When a multi-file edit is needed, prefer per-file Edit/Write over a shell patch loop.
+- Preserve line endings when editing (do not normalize CRLF→LF as a side effect) — it inflates diffs with spurious changes.

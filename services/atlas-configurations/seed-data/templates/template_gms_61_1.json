@@ -570,7 +570,21 @@
             "FIELD_REMOVE_FROM_BLACK_LIST": 30,
             "MERCHANT_PUT_ITEM": 31,
             "MERCHANT_BUY": 32,
-            "MERCHANT_REMOVE_ITEM": 36
+            "MERCHANT_REMOVE_ITEM": 36,
+            "MEMORY_GAME_ASK_TIE": 44,
+            "MEMORY_GAME_TIE_ANSWER": 45,
+            "MEMORY_GAME_FORFEIT": 46,
+            "MEMORY_GAME_ASK_RETREAT": 48,
+            "MEMORY_GAME_RETREAT_ANSWER": 49,
+            "MEMORY_GAME_EXIT_AFTER_GAME": 50,
+            "MEMORY_GAME_CANCEL_EXIT_AFTER_GAME": 51,
+            "MEMORY_GAME_READY": 52,
+            "MEMORY_GAME_UNREADY": 53,
+            "MEMORY_GAME_EXPEL": 54,
+            "MEMORY_GAME_START": 55,
+            "MEMORY_GAME_SKIP": 57,
+            "MEMORY_GAME_MOVE_STONE": 58,
+            "MEMORY_GAME_FIP_CARD": 62
           }
         }
       },

@@ -318,7 +318,21 @@
             "CHAT": 6,
             "TRADE_PUT_ITEM": 14,
             "TRADE_ADD_MESO": 15,
-            "TRADE_CONFIRM": 16
+            "TRADE_CONFIRM": 16,
+            "MEMORY_GAME_ASK_TIE": 43,
+            "MEMORY_GAME_TIE_ANSWER": 44,
+            "MEMORY_GAME_FORFEIT": 45,
+            "MEMORY_GAME_ASK_RETREAT": 47,
+            "MEMORY_GAME_RETREAT_ANSWER": 48,
+            "MEMORY_GAME_EXIT_AFTER_GAME": 49,
+            "MEMORY_GAME_CANCEL_EXIT_AFTER_GAME": 50,
+            "MEMORY_GAME_READY": 51,
+            "MEMORY_GAME_UNREADY": 52,
+            "MEMORY_GAME_EXPEL": 53,
+            "MEMORY_GAME_START": 54,
+            "MEMORY_GAME_SKIP": 56,
+            "MEMORY_GAME_MOVE_STONE": 57,
+            "MEMORY_GAME_FIP_CARD": 61
           }
         }
       },

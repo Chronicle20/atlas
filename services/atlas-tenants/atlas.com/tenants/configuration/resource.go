@@ -618,6 +618,12 @@ func GetAllRpsRewardsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *res
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
+				page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+					return
+				}
+
 				processor := NewProcessor(d.Logger(), d.Context(), db)
 
 				rpsRewards, err := processor.GetAllRpsRewards(tenantId)
@@ -628,7 +634,7 @@ func GetAllRpsRewardsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *res
 						rpsRewards = []map[string]interface{}{}
 					} else {
 						d.Logger().WithError(err).Error("Failed to get rps-rewards")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 				}
@@ -638,15 +644,23 @@ func GetAllRpsRewardsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *res
 					rm, err := TransformRpsReward(rpsReward)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform rps-reward")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 					restModels = append(restModels, rm)
 				}
 
+				// The rps-rewards list materializes from one JSONB blob's
+				// "data" array; sort by the unique id before paging so the
+				// response order does not depend on blob storage order.
+				sort.Slice(restModels, func(i, j int) bool {
+					return restModels[i].Id < restModels[j].Id
+				})
+				paged := paginate.Slice(restModels, page)
+
 				query := r.URL.Query()
 				queryParams := jsonapi.ParseQueryFields(&query)
-				server.MarshalResponse[[]RpsRewardRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restModels)
+				server.MarshalPaginatedResponse[[]RpsRewardRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 			}
 		})
 	}
@@ -670,7 +684,7 @@ func GetRpsRewardByIdHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *res
 					rm, err := TransformRpsReward(rpsReward)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform rps-reward")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -699,7 +713,7 @@ func CreateRpsRewardHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest
 				_, err = processor.CreateRpsRewardAndEmit(tenantId, rpsReward)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to create rps-reward")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -713,14 +727,14 @@ func CreateRpsRewardHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest
 				createdRpsReward, err := processor.GetRpsRewardById(tenantId, rpsRewardId)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to get created rps-reward")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				rm, err := TransformRpsReward(createdRpsReward)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to transform rps-reward")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -750,7 +764,7 @@ func UpdateRpsRewardHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest
 					_, err = processor.UpdateRpsRewardAndEmit(tenantId, rpsRewardId, rpsReward)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to update rps-reward")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -758,14 +772,14 @@ func UpdateRpsRewardHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest
 					updatedRpsReward, err := processor.GetRpsRewardById(tenantId, rpsRewardId)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to get updated rps-reward")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
 					rm, err := TransformRpsReward(updatedRpsReward)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform rps-reward")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -788,7 +802,7 @@ func DeleteRpsRewardHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest
 					err := processor.DeleteRpsRewardAndEmit(tenantId, rpsRewardId)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to delete rps-reward")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -1081,8 +1095,7 @@ func SeedRpsRewardsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.
 				result, err := processor.SeedRpsRewards(tenantId)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to seed rps-rewards")
-					w.WriteHeader(http.StatusInternalServerError)
-					json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 

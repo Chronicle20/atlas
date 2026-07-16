@@ -1,42 +1,53 @@
 # RPS legacy-version re-audit (live IDA) — task-132
 
 Live IDA verification of the RPS (`CRPSGameDlg`) packet family in the four GMS
-legacy client versions, performed 2026-07-16 against the connected ida-pro MCP
-(192.168.20.3:13337). Supersedes the earlier export-derived disposition, which
-was based only on the checked-in `docs/packets/ida-exports/gms_v{48,61,72,79}.json`
-and got two things wrong (v48 clientbound; all-four serverbound) and misread
-v72/v79 as "only mode 8".
+legacy client versions (v48.1 / v61.1 / v72.1 / v79.1), 2026-07-16.
 
-Instances matched by binary name: v48→`GMS_v48_1_DEVM.exe`, v61→`GMS_v61.1_U_DEVM.exe`,
-v72→`GMS_v72.1_U_DEVM.exe`, v79→`GMS_v79_1_DEVM.exe`, v83 reference→`MapleStory_dump.exe`.
+## ⚠️ Correction notice (read first)
+An earlier pass of this audit **mis-identified** the v48 and v61 `CRPSGameDlg::OnPacket`
+functions. The **v48 and v61 IDBs ship with the dialog `OnPacket` symbols MISLABELED**
+(the functions labeled `CRPSGameDlg::OnPacket` / `CTrunkDlg::OnPacket` are swapped with
+other dialogs). The first pass trusted those labels and analyzed the wrong dispatchers,
+producing a **false** "older-generation / no-throw / no-ante / shared-opcode / mini-room"
+conclusion — all of which is wrong. The real functions were identified by ground truth
+(StringPool refs, `ms_RTTI_CRPSGameDlg`, item-decode signature, and the `CField::OnPacket`
+dispatch case) and match the addresses the project owner supplied. This document reflects
+the corrected findings.
 
-## Reference (v83)
-- `CRPSGameDlg::OnPacket` @0x73fff1 — modern dispatcher: 8=OPEN / 11=RESULT (delegate `sub_74024B`) / 13=END.
-- Serverbound opcode **0x88 (136)**: `OnBtStart` @0x7403d0 (`COutPacket(0x88);Encode1(0)`), `SendSelection` @0x7405a0 (`COutPacket(0x88);Encode1(1);Encode1(throw)`).
+## Corrected verdict: v48/v61 RPS is the standard MODERN NPC-vs-server game
+Every audited version (v48/v61/v72/v79) is the same standalone-`CDialog` NPC-vs-server
+minigame as v83/v95, with **dedicated** opcodes (no multiplexing) and a serverbound throw.
+Structure in all: `Decode1` mode → mode 8 OPEN = `Decode4` ante + participation-fee
+StringPool string; mode 11 RESULT via the delegate; mode 13 END = `CWnd::Destroy`;
+serverbound = 6-helper send set (sub-ops 0–5) with the player throw at sub-op 1
+(`Encode1(1)+Encode1(throw)`). Byte-identical bodies across all versions; only the opcode
+shifts.
 
-## Per-version findings (all evidence live)
+| Ver | `CRPSGameDlg::OnPacket` (real) | Clientbound recv opcode | Serverbound opcode | Notes |
+|---|---|---|---|---|
+| v48 | **0x5ADB94** | **237 (0xED)** | **111 (0x6F)** | IDB mislabeled; real fn was unlabeled `sub_5ADB94`. OPEN StringPool(3313). |
+| v61 | **0x63BF0E** | **242 (0xF2)** | **124 (0x7C)** | IDB labeled this `CTrunkDlg::OnPacket`. OPEN StringPool(3593). |
+| v72 | 0x69c54b | 278 (0x116) | 134 (0x86) | correctly labeled. OPEN StringPool(3650). |
+| v79 | 0x6c1d5b | 290 (0x122) | 133 (0x85) | correctly labeled. OPEN StringPool(3654). |
+| v83 (ref) | 0x73fff1 | 312 (0x138) | 136 (0x88) | verified baseline. |
+| v95 (ref, PDB) | 0x6d9e00 | 371 | — | real symbols; OPEN StringPool(0xE83), `ms_RTTI_CRPSGameDlg`. |
 
-| Ver | Clientbound `CRPSGameDlg::OnPacket` | Wired into inbound dispatch? | Mode generation | Serverbound send path | Serverbound opcode |
-|---|---|---|---|---|---|
-| v48 | @0x5d5544 (2-arg, opcode-guarded) | **YES** — sole xref `CField::OnPacket` @0x4c66f2 (call site 0x4c6a30) | OLD gen: clientbound opcodes 234/235, sub-modes 27–31 / 32–35 (NOT 8/11/13) | **EXISTS** — `sub_5D53DD` (start), `sub_5D5442` (continue), `sub_5D443A` (button vtable @0x7a1188) | **0x33 (51)** |
-| v61 | @0x607cf7 | **YES** — `CField::OnPacket` @0x4e9ea3 (site 0x4ea23e) | OLD gen: modes 8/23/24/25/26/27 + default(18); DecodeStr invites, CUIFadeYesNo (NOT 8/11/13) | **EXISTS** — `sub_607C9C` (sub-op 7), called from `sub_6075A7`/`sub_607743` + OnPacket | **0x3D (61)** |
-| v72 | @0x69c54b (size 0x25a) | **YES** — `CField::OnPacket` @0x515879 (site 0x515ca9) | **MODERN** — byte-identical to v83: 8=OPEN / 9–12 delegate `sub_69C7A5` / 13=END. (export "only mode 8" was a MISREAD) | **EXISTS** — dialog input handler `sub_69B69A` (`COutPacket(134);Encode1(2)`) | **0x86 (134)** |
-| v79 | @0x6c1d5b (size 0x25a) | **YES** — `CField::OnPacket` @0x51c90f (site 0x51cd61) | **MODERN** — byte-identical to v83: 8=OPEN / 9–12 delegate `sub_6C1FB5` / 13=END. (export "only mode 8" was a MISREAD) | **EXISTS** — dialog input handler `sub_6C0EAA` (`COutPacket(133);Encode1(2)`) | **0x85 (133)** |
+### What the mislabeled functions actually are (do NOT treat as RPS)
+- **v48 0x5d5544** (opcodes 234/235): a channel / find-player dialog. NOT RPS.
+- **v61 0x607cf7** (opcode 252, labeled `CTrunkDlg::OnPacket`): the trunk dialog. NOT RPS.
 
-## Resolution of the two open questions
-1. **v48 clientbound `n-a` vs `incomplete`:** `CRPSGameDlg::OnPacket` @0x5d5544 is **wired** — its only xref is a code call from `CField::OnPacket` (the field inbound-packet dispatcher). Reachable, not dead code. → v48 clientbound is **`incomplete`, not `n-a`** (older 234/235 form).
-2. **Serverbound `n-a` for all four:** every legacy IDB builds and sends a real RPS `COutPacket` (v48 0x33, v61 0x3D, v72 0x86, v79 0x85) via `CClientSocket::SendPacket`. → serverbound `n-a` is a **false disposition in all four**; each should be **`incomplete`**.
+## Consequence for the matrix (Path A — full legacy support)
+Because v48/v61 RPS is modern and byte-compatible with v83/v72/v79, the existing
+`libs/atlas-packet/rps` codec already handles it (no new codec). RPS is now wired into the
+legacy tenant templates (48/61/72/79) with the real opcodes — the clientbound `RPSGame`
+writer (via `docs/packets/dispatchers/rps_game.yaml` + `operations generate`) and the
+serverbound `RPSActionHandle` handler (hand-added with `LoggedInValidator`) — which clears
+the template-wiring-gap conflict. Registry corrected to the real opcodes (v48 237/111,
+v61 242/124; v72/v79 were already correct). Each legacy cell is then verified via the
+shared-codec path (byte-identical to v83), same as v72/v79.
 
-## Matrix cells that should change (5)
-- `rps/serverbound/RpsOperation` (RPS_ACTION) — **gms_v48, gms_v61, gms_v72, gms_v79**: `n-a` → `incomplete` (send opcodes 0x33/0x3D/0x86/0x85).
-- `rps/clientbound/RpsEnd` (RPS_GAME) — **gms_v48**: `n-a` → `incomplete` (OnPacket present + wired; clientbound opcode 234/235).
-- v61/v72/v79 clientbound `incomplete` are **already correct**.
-
-## Promotion opportunity (separate from the correction)
-v72 and v79 clientbound `CRPSGameDlg::OnPacket` are **byte-identical to the already-verified v83** dispatcher (only the opcode shifts). Those two cells are strong candidates for full `verified` promotion via the shared-codec wrap+verify path (docs/packets/audits/VERIFYING_A_PACKET.md), rather than merely `incomplete`. This is a `packet-verifier` fan-out, not a disposition edit.
-
-## IDB symbols renamed (persisted to the four .i64 files)
-- **v48:** `CRPSGameDlg__SendStart_op33_17` (0x5d53dd), `CRPSGameDlg__PromptContinue_Send_op33_18` (0x5d5442), `CRPSGameDlg__Send_op33_19` (0x5d443a), `CRPSGameDlg__OpenDialog_mode32` (0x5d5a05)
-- **v61:** `CRPSGameDlg__Send_op3D_sub7` (0x607c9c), `CRPSGameDlg__OnOpen_mode8_delegate` (0x607831), `CRPSGameDlg__AllocDialog` (0x6064ec)
-- **v72:** `CRPSGameDlg__UpdateInput_Send_op86_sub2` (0x69b69a), `CRPSGameDlg__OnResult_delegate` (0x69c7a5)
-- **v79:** `CRPSGameDlg__UpdateInput_Send_op85_sub2` (0x6c0eaa), `CRPSGameDlg__OnResult_delegate` (0x6c1fb5)
+## IDB symbol state
+The v48/v61 IDBs were corrected in place: the real dispatchers marked
+`CRPSGameDlg_OnPacket_REAL_recv237` (v48 0x5ADB94) / `_recv242` (v61 0x63BF0E), the six real
+send helpers per version, and the false-labeled functions flagged `z_MISLABELED_notRPS_*`.
+The v72/v79/v83/v95 IDBs were already correct.

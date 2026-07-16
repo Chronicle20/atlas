@@ -23,17 +23,27 @@
 # v95 0x173, jms185 0x151 — ida-rps-clientbound.md §6), which is the seed
 # template's `opCode`, not this table.
 #
-# No `opcodes:` field: the RPSGame writer is not yet wired into any tenant
-# seed template. Template wiring (socket.writers entry + opcodes +
-# operations table) is Task 20 of the task-132 plan, a later milestone — see
-# docs/tasks/task-132-rps-npc-game/plan.md "Milestone D" vs "Task 20". Until
-# then `packet-audit operations --check` reports this writer as an
-# absent-writer NOTE (not a failure) per every version.
+# Per-version RPS_GAME clientbound opcode. IDA-verified. The legacy columns
+# (v48/v61/v72/v79) are the SAME modern dispatcher (OPEN=8/RESULT=11/END=13,
+# byte-identical bodies) — only the opcode shifts. v48/v61 addresses were
+# corrected 2026-07-16 after those IDBs were found to mislabel CRPSGameDlg (see
+# docs/tasks/task-132-rps-npc-game/ida-rps-legacy-reaudit.md): real recv opcodes
+# are v48=0xED(237), v61=0xF2(242) — NOT 234/252.
+opcodes:
+  gms_v48: "0xED"
+  gms_v61: "0xF2"
+  gms_v72: "0x116"
+  gms_v79: "0x122"
+  gms_v83: "0x138"
+  gms_v84: "0x13F"
+  gms_v87: "0x149"
+  gms_v95: "0x173"
+  jms_v185: "0x151"
 writer: RPSGame
 fname: CRPSGameDlg::OnPacket
 op: RPS_GAME
 direction: clientbound
 operations:
-  - { key: OPEN,   modes: { gms_v83: 8,  gms_v84: 8,  gms_v87: 8,  gms_v95: 8,  jms_v185: 8  } }
-  - { key: RESULT, modes: { gms_v83: 11, gms_v84: 11, gms_v87: 11, gms_v95: 11, jms_v185: 11 } }
-  - { key: END,    modes: { gms_v83: 13, gms_v84: 13, gms_v87: 13, gms_v95: 13, jms_v185: 13 } }
+  - { key: OPEN,   modes: { gms_v48: 8,  gms_v61: 8,  gms_v72: 8,  gms_v79: 8,  gms_v83: 8,  gms_v84: 8,  gms_v87: 8,  gms_v95: 8,  jms_v185: 8  } }
+  - { key: RESULT, modes: { gms_v48: 11, gms_v61: 11, gms_v72: 11, gms_v79: 11, gms_v83: 11, gms_v84: 11, gms_v87: 11, gms_v95: 11, jms_v185: 11 } }
+  - { key: END,    modes: { gms_v48: 13, gms_v61: 13, gms_v72: 13, gms_v79: 13, gms_v83: 13, gms_v84: 13, gms_v87: 13, gms_v95: 13, jms_v185: 13 } }

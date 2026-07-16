@@ -1,0 +1,39 @@
+{
+  "WriterName": "RpsResult",
+  "IDAName": "CRPSGameDlg::OnPacket#RESULT",
+  "Address": "0x69c7f2",
+  "Variant": "GMS/v72",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/rps/clientbound/operation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode byte (dispatcher sub_69C7A5 (0x69c7a5) case 11 = RESULT)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "npcThrow (CInPacket::Decode1 @0x69c7f2)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "straightVictoryCount, SIGNED int8 (CInPacket::Decode1 @0x69c7fd; client treats as signed __int8, branches on \u003c0)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

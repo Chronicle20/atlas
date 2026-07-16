@@ -6,6 +6,21 @@
   "socket": {
     "handlers": [
       {
+        "opCode": "0x07C",
+        "validator": "LoggedInValidator",
+        "handler": "RPSActionHandle",
+        "options": {
+          "operations": {
+            "START": 0,
+            "SELECT": 1,
+            "UPDATE": 2,
+            "CONTINUE": 3,
+            "EXIT": 4,
+            "RETRY": 5
+          }
+        }
+      },
+      {
         "opCode": "0x01",
         "validator": "NoOpValidator",
         "handler": "LoginHandle"
@@ -2237,6 +2252,17 @@
             "DENIED": 15,
             "MAINTENANCE": 16,
             "FM_ONLY": 21
+          }
+        }
+      },
+      {
+        "opCode": "0xF2",
+        "writer": "RPSGame",
+        "options": {
+          "operations": {
+            "OPEN": 8,
+            "RESULT": 11,
+            "END": 13
           }
         }
       }

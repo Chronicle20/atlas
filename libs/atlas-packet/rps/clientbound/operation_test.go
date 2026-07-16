@@ -7,11 +7,41 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
+// rpsVariants extends the shared pt.Variants set with the four legacy GMS
+// versions this fixture also verifies: gms_v48, gms_v61, gms_v72, gms_v79.
+// RPS_GAME's CRPSGameDlg::OnPacket dispatcher body is version-invariant — a
+// live IDA re-audit (docs/tasks/task-132-rps-npc-game/ida-rps-legacy-reaudit.md)
+// proved v48 (@0x5ADB94), v61 (@0x63BF0E), v72 (@0x69c54b) and v79
+// (@0x6c1d5b) are byte-identical to the already-verified v83 dispatcher
+// (@0x73fff1): same mode bytes (8=OPEN, 9-12 delegate to the RESULT
+// sub-dispatcher, 13=END) and identical per-arm reads; only the RPS_GAME
+// opcode shifts per version (v48=237/0xED, v61=242/0xF2, v72=278/0x116,
+// v79=290/0x122, v83=312/0x138). NOTE: the v48/v61 IDBs mislabel this
+// dispatcher (the export previously carried the WRONG function under the
+// CRPSGameDlg::OnPacket key — a channel/find-player dialog for v48, the
+// trunk dialog for v61); the export was surgically corrected with the
+// real dispatcher's OPEN/RESULT/END arms before this cell could be pinned.
+// The codec in operation.go carries no MajorVersion gate, so these four
+// versions are appended to a local copy of pt.Variants rather than the
+// shared global slice (unrelated packets whose codecs DO version-gate must
+// not be exercised against untested legacy versions as a side effect of
+// this change).
+var rpsVariants = append(append([]pt.TenantVariant{}, pt.Variants...),
+	pt.TenantVariant{Name: "GMS v48", Region: "GMS", MajorVersion: 48, MinorVersion: 1},
+	pt.TenantVariant{Name: "GMS v61", Region: "GMS", MajorVersion: 61, MinorVersion: 1},
+	pt.TenantVariant{Name: "GMS v72", Region: "GMS", MajorVersion: 72, MinorVersion: 1},
+	pt.TenantVariant{Name: "GMS v79", Region: "GMS", MajorVersion: 79, MinorVersion: 1},
+)
+
 // TestRPSGameOpen exercises the OPEN arm (mode 8) of the CRPSGameDlg::OnPacket
 // dispatcher. Body = Decode4 int (ante). Mode byte is IDENTICAL across all
-// five versions (docs/tasks/task-132-rps-npc-game/ida-rps-clientbound.md §0/§6
+// seven versions (docs/tasks/task-132-rps-npc-game/ida-rps-clientbound.md §0/§6
 // — no per-version shift, unlike storage's jms -1 shift).
 //
+// packet-audit:verify packet=rps/clientbound/RpsOpen version=gms_v48 ida=0x5adc8f
+// packet-audit:verify packet=rps/clientbound/RpsOpen version=gms_v61 ida=0x63c009
+// packet-audit:verify packet=rps/clientbound/RpsOpen version=gms_v72 ida=0x69c646
+// packet-audit:verify packet=rps/clientbound/RpsOpen version=gms_v79 ida=0x6c1e56
 // packet-audit:verify packet=rps/clientbound/RpsOpen version=gms_v83 ida=0x7400ec
 // packet-audit:verify packet=rps/clientbound/RpsOpen version=gms_v84 ida=0x761e10
 // packet-audit:verify packet=rps/clientbound/RpsOpen version=gms_v87 ida=0x78acb0
@@ -19,7 +49,7 @@ import (
 // packet-audit:verify packet=rps/clientbound/RpsOpen version=jms_v185 ida=0x7ae4d7
 func TestRPSGameOpen(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
-	for _, v := range pt.Variants {
+	for _, v := range rpsVariants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 			input := NewRPSGameOpen(8, 3000)
@@ -55,6 +85,10 @@ func TestRPSGameOpen(t *testing.T) {
 // the IDA note), so a naive unsigned round-trip would silently corrupt the
 // game-over signal.
 //
+// packet-audit:verify packet=rps/clientbound/RpsResult version=gms_v48 ida=0x5ade39
+// packet-audit:verify packet=rps/clientbound/RpsResult version=gms_v61 ida=0x63c1b3
+// packet-audit:verify packet=rps/clientbound/RpsResult version=gms_v72 ida=0x69c7f2
+// packet-audit:verify packet=rps/clientbound/RpsResult version=gms_v79 ida=0x6c2002
 // packet-audit:verify packet=rps/clientbound/RpsResult version=gms_v83 ida=0x740298
 // packet-audit:verify packet=rps/clientbound/RpsResult version=gms_v84 ida=0x761fbc
 // packet-audit:verify packet=rps/clientbound/RpsResult version=gms_v87 ida=0x78ae70
@@ -62,7 +96,7 @@ func TestRPSGameOpen(t *testing.T) {
 // packet-audit:verify packet=rps/clientbound/RpsResult version=jms_v185 ida=0x7ae683
 func TestRPSGameResult(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
-	for _, v := range pt.Variants {
+	for _, v := range rpsVariants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 			input := NewRPSGameResult(11, 2, -5)
@@ -102,6 +136,10 @@ func TestRPSGameResult(t *testing.T) {
 // TestRPSGameEnd exercises the CLOSE arm (mode 13): mode byte only, no body
 // (CWnd::Destroy, no further wire reads — §1-§5 of the IDA note).
 //
+// packet-audit:verify packet=rps/clientbound/RpsEnd version=gms_v48 ida=0x5adc41
+// packet-audit:verify packet=rps/clientbound/RpsEnd version=gms_v61 ida=0x63bfbb
+// packet-audit:verify packet=rps/clientbound/RpsEnd version=gms_v72 ida=0x69c5f8
+// packet-audit:verify packet=rps/clientbound/RpsEnd version=gms_v79 ida=0x6c1e08
 // packet-audit:verify packet=rps/clientbound/RpsEnd version=gms_v83 ida=0x74009e
 // packet-audit:verify packet=rps/clientbound/RpsEnd version=gms_v84 ida=0x761dc2
 // packet-audit:verify packet=rps/clientbound/RpsEnd version=gms_v87 ida=0x78ac5a
@@ -109,7 +147,7 @@ func TestRPSGameResult(t *testing.T) {
 // packet-audit:verify packet=rps/clientbound/RpsEnd version=jms_v185 ida=0x7ae489
 func TestRPSGameEnd(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
-	for _, v := range pt.Variants {
+	for _, v := range rpsVariants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 			input := NewRPSGameEnd(13)

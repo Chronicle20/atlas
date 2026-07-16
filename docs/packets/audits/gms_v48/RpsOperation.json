@@ -1,0 +1,21 @@
+{
+  "WriterName": "RpsOperation",
+  "IDAName": "CRPSGameDlg::OnBtStart",
+  "Address": "0x5adf94",
+  "Variant": "GMS/v48",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/rps/serverbound/operation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "sub-op byte (0=OnBtStart @0x5adf94/COutPacket(111); bodyless arm, no further fields -- docs/tasks/task-132-rps-npc-game/ida-rps-legacy-reaudit.md; live IDA port 13337 2026-07-16)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

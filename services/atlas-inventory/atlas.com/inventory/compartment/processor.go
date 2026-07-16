@@ -40,6 +40,7 @@ type Processor interface {
 	GetByCharacterId(characterId uint32) ([]Model, error)
 	ByCharacterAndTypeProvider(characterId uint32) func(inventoryType inventory.Type) model.Provider[Model]
 	GetByCharacterAndType(characterId uint32) func(inventoryType inventory.Type) (Model, error)
+	CanAccommodate(characterId uint32, reqs []AccommodationRequest) ([]AccommodationResult, error)
 	DecorateAsset(m Model) (Model, error)
 	Create(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, capacity uint32) (Model, error)
 	DeleteByModel(mb *message.Buffer) func(transactionId uuid.UUID, c Model) error

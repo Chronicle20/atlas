@@ -21,6 +21,7 @@ type ProcessorMock struct {
 	GetByIdFunc                       func(id uuid.UUID) (compartment.Model, error)
 	ByCharacterIdProviderFunc         func(characterId uint32) model.Provider[[]compartment.Model]
 	GetByCharacterIdFunc              func(characterId uint32) ([]compartment.Model, error)
+	CanAccommodateFunc                func(characterId uint32, reqs []compartment.AccommodationRequest) ([]compartment.AccommodationResult, error)
 	ByCharacterAndTypeProviderFunc    func(characterId uint32) func(inventoryType inventory.Type) model.Provider[compartment.Model]
 	GetByCharacterAndTypeFunc         func(characterId uint32) func(inventoryType inventory.Type) (compartment.Model, error)
 	DecorateAssetFunc                 func(m compartment.Model) (compartment.Model, error)
@@ -112,6 +113,13 @@ func (m *ProcessorMock) GetByCharacterId(characterId uint32) ([]compartment.Mode
 		return m.GetByCharacterIdFunc(characterId)
 	}
 	return []compartment.Model{}, nil
+}
+
+func (m *ProcessorMock) CanAccommodate(characterId uint32, reqs []compartment.AccommodationRequest) ([]compartment.AccommodationResult, error) {
+	if m.CanAccommodateFunc != nil {
+		return m.CanAccommodateFunc(characterId, reqs)
+	}
+	return []compartment.AccommodationResult{}, nil
 }
 
 func (m *ProcessorMock) ByCharacterAndTypeProvider(characterId uint32) func(inventoryType inventory.Type) model.Provider[compartment.Model] {

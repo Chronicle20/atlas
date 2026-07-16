@@ -944,17 +944,23 @@ func (p *ProcessorImpl) RequestItemReward(characterId uint32, itemId item2.Id, s
 	}
 
 	// Pre-roll accommodation check (strict): the box grants one random reward, so
-	// every inventory type the pool can roll into must have a free slot up front.
-	// If any is full, fail the use before reserving or rolling — the box is
-	// preserved and the player is told their inventory is full. The post-roll
-	// CREATION_FAILED path stays as a TOCTOU safety net.
-	inv, err := p.ip.GetByCharacterId(characterId)
+	// every possible reward must be grantable up front. atlas-inventory owns the
+	// verdict (merge-aware — a full tab does not block a stackable that fits an
+	// existing stack). If any reward could not be placed, fail the use before
+	// reserving or rolling — the box is preserved and the player is told their
+	// inventory is full. The post-roll CREATION_FAILED path stays as a TOCTOU
+	// safety net.
+	accItems := make([]inventory.AccommodationRequest, 0, len(ci.Rewards()))
+	for _, r := range ci.Rewards() {
+		accItems = append(accItems, inventory.AccommodationRequest{ItemId: r.ItemId(), Quantity: grantQuantity(r.Count())})
+	}
+	ok, err := p.ip.CanAccommodate(characterId, accItems)
 	if err != nil {
 		// Nothing reserved yet; just unstick the client.
 		return p.rewardError(characterId, err)
 	}
-	if !inventoryAccommodatesRewards(inv, ci.Rewards()) {
-		p.l.Debugf("Character [%d] reward-use of item [%d] blocked: inventory lacks room for a possible reward.", characterId, itemId)
+	if !ok {
+		p.l.Debugf("Character [%d] reward-use of item [%d] blocked: inventory cannot accommodate a possible reward.", characterId, itemId)
 		return p.rewardInventoryFull(characterId)
 	}
 
@@ -971,34 +977,6 @@ func (p *ProcessorImpl) RequestItemReward(characterId uint32, itemId item2.Id, s
 		return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, source, err)
 	}
 	return nil
-}
-
-// inventoryAccommodatesRewards reports whether the character's inventory can
-// hold whatever the box rolls. Strict rule: because the reward is random, every
-// distinct inventory type present in the pool must have at least one free slot
-// (a merge into an existing stack only ever helps). A type with no free slot
-// means the box could roll an item it can't grant, so the use must be rejected
-// up front. Pure so it is unit-testable without a live inventory.
-func inventoryAccommodatesRewards(inv inventory.Model, rewards []consumable3.RewardModel) bool {
-	needed := make(map[inventory2.Type]struct{})
-	for _, r := range rewards {
-		if it, ok := inventory2.TypeFromItemId(item2.Id(r.ItemId())); ok {
-			needed[it] = struct{}{}
-		}
-	}
-	for it := range needed {
-		c := inv.CompartmentByType(it)
-		var occupied uint32
-		for _, a := range c.Assets() {
-			if a.Slot() >= 1 { // positive slots occupy inventory; equipped items are negative
-				occupied++
-			}
-		}
-		if occupied >= c.Capacity() {
-			return false
-		}
-	}
-	return true
 }
 
 // rewardInventoryFull rejects a reward-use whose pre-roll accommodation check

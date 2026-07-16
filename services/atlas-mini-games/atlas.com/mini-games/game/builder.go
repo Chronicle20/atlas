@@ -16,9 +16,9 @@ type Builder struct {
 	room Room
 }
 
-// NewBuilder starts a Builder for a brand-new room. Defaults mirror Cosmic
-// MiniGame.java:52 — FirstMover=1 (owner moves first) — and FirstSlot=-1
-// (no pending MatchCards flip). CurrentTurn is left unset (0) until START.
+// NewBuilder starts a Builder for a brand-new room. Defaults: FirstMover=1
+// (owner moves first) and FirstSlot=-1 (no pending MatchCards flip).
+// CurrentTurn is left unset (0) until START.
 func NewBuilder(roomType byte, ownerId uint32, f field.Model) *Builder {
 	return &Builder{room: Room{
 		roomType:   roomType,

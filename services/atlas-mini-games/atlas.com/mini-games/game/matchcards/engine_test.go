@@ -132,7 +132,7 @@ func TestShuffle_DifferentSeedsCanDiffer(t *testing.T) {
 	}
 }
 
-// FlipResultType truth table per Cosmic PlayerInteractionHandler.java:460-484:
+// FlipResultType truth table:
 // owner match -> 2, visitor match -> 3, owner mismatch -> 0, visitor mismatch -> 1.
 func TestFlipResultType_TruthTable(t *testing.T) {
 	cases := []struct {

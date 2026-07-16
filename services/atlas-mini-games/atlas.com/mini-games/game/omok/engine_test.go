@@ -152,8 +152,8 @@ func TestWins_EdgeRight(t *testing.T) {
 func TestWins_RunOfSixOverlineAllowed(t *testing.T) {
 	var board [Cells]byte
 	board = place(t, board, 1, [][2]uint32{{2, 7}, {3, 7}, {4, 7}, {5, 7}, {6, 7}, {7, 7}})
-	// Cosmic's searchCombo/searchCombo2 has no forbidden-move / overline
-	// restriction: a run of 6+ still wins, and every stone in the run wins.
+	// No forbidden-move / overline restriction: a run of 6+ still wins, and
+	// every stone in the run wins.
 	if !Wins(board, 2, 7) {
 		t.Errorf("Wins(2,7) = false, want true (overline run of 6, checked at one end)")
 	}

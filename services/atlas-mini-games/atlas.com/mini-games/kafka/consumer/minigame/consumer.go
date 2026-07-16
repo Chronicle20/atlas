@@ -98,7 +98,9 @@ func handleCreate(db *gorm.DB) message.Handler[minigame.Command[minigame.CreateC
 			return
 		}
 		f := fieldFromCommand(c)
-		_ = game.NewProcessor(l, ctx, db).Create(c.TransactionId, f, c.CharacterId, c.Body.RoomType, c.Body.Title, c.Body.Private, c.Body.Password, c.Body.PieceType)
+		if err := game.NewProcessor(l, ctx, db).Create(c.TransactionId, f, c.CharacterId, c.Body.RoomType, c.Body.Title, c.Body.Private, c.Body.Password, c.Body.PieceType); err != nil {
+			l.WithError(err).Errorf("Unable to process mini-game create for character [%d].", c.CharacterId)
+		}
 	}
 }
 
@@ -108,7 +110,9 @@ func handleVisit(db *gorm.DB) message.Handler[minigame.Command[minigame.VisitCom
 			return
 		}
 		f := fieldFromCommand(c)
-		_ = game.NewProcessor(l, ctx, db).Visit(c.TransactionId, f, c.CharacterId, c.Body.RoomId, c.Body.Password)
+		if err := game.NewProcessor(l, ctx, db).Visit(c.TransactionId, f, c.CharacterId, c.Body.RoomId, c.Body.Password); err != nil {
+			l.WithError(err).Errorf("Unable to process mini-game visit for character [%d].", c.CharacterId)
+		}
 	}
 }
 
@@ -118,7 +122,9 @@ func handleLeave(db *gorm.DB) message.Handler[minigame.Command[minigame.EmptyCom
 			return
 		}
 		f := fieldFromCommand(c)
-		_ = game.NewProcessor(l, ctx, db).Leave(c.TransactionId, f, c.CharacterId)
+		if err := game.NewProcessor(l, ctx, db).Leave(c.TransactionId, f, c.CharacterId); err != nil {
+			l.WithError(err).Errorf("Unable to process mini-game leave for character [%d].", c.CharacterId)
+		}
 	}
 }
 
@@ -128,7 +134,9 @@ func handleChat(db *gorm.DB) message.Handler[minigame.Command[minigame.ChatComma
 			return
 		}
 		f := fieldFromCommand(c)
-		_ = game.NewProcessor(l, ctx, db).Chat(c.TransactionId, f, c.CharacterId, c.Body.Message)
+		if err := game.NewProcessor(l, ctx, db).Chat(c.TransactionId, f, c.CharacterId, c.Body.Message); err != nil {
+			l.WithError(err).Errorf("Unable to process mini-game chat for character [%d].", c.CharacterId)
+		}
 	}
 }
 
@@ -138,7 +146,9 @@ func handleExpel(db *gorm.DB) message.Handler[minigame.Command[minigame.EmptyCom
 			return
 		}
 		f := fieldFromCommand(c)
-		_ = game.NewProcessor(l, ctx, db).Expel(c.TransactionId, f, c.CharacterId)
+		if err := game.NewProcessor(l, ctx, db).Expel(c.TransactionId, f, c.CharacterId); err != nil {
+			l.WithError(err).Errorf("Unable to process mini-game expel for character [%d].", c.CharacterId)
+		}
 	}
 }
 
@@ -148,7 +158,9 @@ func handleReady(db *gorm.DB) message.Handler[minigame.Command[minigame.EmptyCom
 			return
 		}
 		f := fieldFromCommand(c)
-		_ = game.NewProcessor(l, ctx, db).Ready(c.TransactionId, f, c.CharacterId)
+		if err := game.NewProcessor(l, ctx, db).Ready(c.TransactionId, f, c.CharacterId); err != nil {
+			l.WithError(err).Errorf("Unable to process mini-game ready for character [%d].", c.CharacterId)
+		}
 	}
 }
 
@@ -158,7 +170,9 @@ func handleUnready(db *gorm.DB) message.Handler[minigame.Command[minigame.EmptyC
 			return
 		}
 		f := fieldFromCommand(c)
-		_ = game.NewProcessor(l, ctx, db).Unready(c.TransactionId, f, c.CharacterId)
+		if err := game.NewProcessor(l, ctx, db).Unready(c.TransactionId, f, c.CharacterId); err != nil {
+			l.WithError(err).Errorf("Unable to process mini-game unready for character [%d].", c.CharacterId)
+		}
 	}
 }
 
@@ -168,7 +182,9 @@ func handleStart(db *gorm.DB) message.Handler[minigame.Command[minigame.EmptyCom
 			return
 		}
 		f := fieldFromCommand(c)
-		_ = game.NewProcessor(l, ctx, db).Start(c.TransactionId, f, c.CharacterId)
+		if err := game.NewProcessor(l, ctx, db).Start(c.TransactionId, f, c.CharacterId); err != nil {
+			l.WithError(err).Errorf("Unable to process mini-game start for character [%d].", c.CharacterId)
+		}
 	}
 }
 
@@ -178,7 +194,9 @@ func handleMoveStone(db *gorm.DB) message.Handler[minigame.Command[minigame.Move
 			return
 		}
 		f := fieldFromCommand(c)
-		_ = game.NewProcessor(l, ctx, db).MoveStone(c.TransactionId, f, c.CharacterId, c.Body.X, c.Body.Y, c.Body.StoneType)
+		if err := game.NewProcessor(l, ctx, db).MoveStone(c.TransactionId, f, c.CharacterId, c.Body.X, c.Body.Y, c.Body.StoneType); err != nil {
+			l.WithError(err).Errorf("Unable to process mini-game move-stone for character [%d].", c.CharacterId)
+		}
 	}
 }
 
@@ -188,7 +206,9 @@ func handleFlipCard(db *gorm.DB) message.Handler[minigame.Command[minigame.FlipC
 			return
 		}
 		f := fieldFromCommand(c)
-		_ = game.NewProcessor(l, ctx, db).FlipCard(c.TransactionId, f, c.CharacterId, c.Body.First, c.Body.CardIndex)
+		if err := game.NewProcessor(l, ctx, db).FlipCard(c.TransactionId, f, c.CharacterId, c.Body.First, c.Body.CardIndex); err != nil {
+			l.WithError(err).Errorf("Unable to process mini-game flip-card for character [%d].", c.CharacterId)
+		}
 	}
 }
 
@@ -198,7 +218,9 @@ func handleRequestTie(db *gorm.DB) message.Handler[minigame.Command[minigame.Emp
 			return
 		}
 		f := fieldFromCommand(c)
-		_ = game.NewProcessor(l, ctx, db).RequestTie(c.TransactionId, f, c.CharacterId)
+		if err := game.NewProcessor(l, ctx, db).RequestTie(c.TransactionId, f, c.CharacterId); err != nil {
+			l.WithError(err).Errorf("Unable to process mini-game request-tie for character [%d].", c.CharacterId)
+		}
 	}
 }
 
@@ -208,7 +230,9 @@ func handleAnswerTie(db *gorm.DB) message.Handler[minigame.Command[minigame.Answ
 			return
 		}
 		f := fieldFromCommand(c)
-		_ = game.NewProcessor(l, ctx, db).AnswerTie(c.TransactionId, f, c.CharacterId, c.Body.Accept)
+		if err := game.NewProcessor(l, ctx, db).AnswerTie(c.TransactionId, f, c.CharacterId, c.Body.Accept); err != nil {
+			l.WithError(err).Errorf("Unable to process mini-game answer-tie for character [%d].", c.CharacterId)
+		}
 	}
 }
 
@@ -218,7 +242,9 @@ func handleGiveUp(db *gorm.DB) message.Handler[minigame.Command[minigame.EmptyCo
 			return
 		}
 		f := fieldFromCommand(c)
-		_ = game.NewProcessor(l, ctx, db).GiveUp(c.TransactionId, f, c.CharacterId)
+		if err := game.NewProcessor(l, ctx, db).GiveUp(c.TransactionId, f, c.CharacterId); err != nil {
+			l.WithError(err).Errorf("Unable to process mini-game give-up for character [%d].", c.CharacterId)
+		}
 	}
 }
 
@@ -228,7 +254,9 @@ func handleRequestRetreat(db *gorm.DB) message.Handler[minigame.Command[minigame
 			return
 		}
 		f := fieldFromCommand(c)
-		_ = game.NewProcessor(l, ctx, db).RequestRetreat(c.TransactionId, f, c.CharacterId)
+		if err := game.NewProcessor(l, ctx, db).RequestRetreat(c.TransactionId, f, c.CharacterId); err != nil {
+			l.WithError(err).Errorf("Unable to process mini-game request-retreat for character [%d].", c.CharacterId)
+		}
 	}
 }
 
@@ -238,7 +266,9 @@ func handleAnswerRetreat(db *gorm.DB) message.Handler[minigame.Command[minigame.
 			return
 		}
 		f := fieldFromCommand(c)
-		_ = game.NewProcessor(l, ctx, db).AnswerRetreat(c.TransactionId, f, c.CharacterId, c.Body.Accept)
+		if err := game.NewProcessor(l, ctx, db).AnswerRetreat(c.TransactionId, f, c.CharacterId, c.Body.Accept); err != nil {
+			l.WithError(err).Errorf("Unable to process mini-game answer-retreat for character [%d].", c.CharacterId)
+		}
 	}
 }
 
@@ -248,7 +278,9 @@ func handleSkip(db *gorm.DB) message.Handler[minigame.Command[minigame.EmptyComm
 			return
 		}
 		f := fieldFromCommand(c)
-		_ = game.NewProcessor(l, ctx, db).Skip(c.TransactionId, f, c.CharacterId)
+		if err := game.NewProcessor(l, ctx, db).Skip(c.TransactionId, f, c.CharacterId); err != nil {
+			l.WithError(err).Errorf("Unable to process mini-game skip for character [%d].", c.CharacterId)
+		}
 	}
 }
 
@@ -258,7 +290,9 @@ func handleExitAfterGame(db *gorm.DB) message.Handler[minigame.Command[minigame.
 			return
 		}
 		f := fieldFromCommand(c)
-		_ = game.NewProcessor(l, ctx, db).ExitAfterGame(c.TransactionId, f, c.CharacterId)
+		if err := game.NewProcessor(l, ctx, db).ExitAfterGame(c.TransactionId, f, c.CharacterId); err != nil {
+			l.WithError(err).Errorf("Unable to process mini-game exit-after-game for character [%d].", c.CharacterId)
+		}
 	}
 }
 
@@ -268,6 +302,8 @@ func handleCancelExitAfterGame(db *gorm.DB) message.Handler[minigame.Command[min
 			return
 		}
 		f := fieldFromCommand(c)
-		_ = game.NewProcessor(l, ctx, db).CancelExitAfterGame(c.TransactionId, f, c.CharacterId)
+		if err := game.NewProcessor(l, ctx, db).CancelExitAfterGame(c.TransactionId, f, c.CharacterId); err != nil {
+			l.WithError(err).Errorf("Unable to process mini-game cancel-exit-after-game for character [%d].", c.CharacterId)
+		}
 	}
 }

@@ -170,7 +170,7 @@ func retreatAnsweredProvider(transactionId uuid.UUID, r Room, characterId uint32
 }
 
 // skippedProvider announces a SKIPPED event. Who is the NEXT-mover slot (== new
-// CurrentTurn): owner-skip emits 1, visitor-skip emits 0, matching Cosmic
+// CurrentTurn): owner-skip emits 1, visitor-skip emits 0, matching
 // getMiniGameSkipOwner(0x01)/getMiniGameSkipVisitor(0x00) read as next-mover per
 // ida-notes §G5. characterId is the skipper.
 func skippedProvider(transactionId uuid.UUID, r Room, who byte, characterId uint32) model.Provider[[]kafka.Message] {

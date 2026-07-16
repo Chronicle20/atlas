@@ -93,7 +93,7 @@ func TestHandleChannelChanged_VisitorTornDown(t *testing.T) {
 	visitor := uint32(21002)
 	ctx, ten, _, db := channelChangedHarness(t, owner, visitor)
 
-	handleStatusEventChannelChanged(db)(testLogger(), ctx,channelChangedEvent(visitor))
+	handleStatusEventChannelChanged(db)(testLogger(), ctx, channelChangedEvent(visitor))
 
 	r, ok := game.GetRegistry().Get(ten, owner)
 	require.True(t, ok, "room stays open when the visitor is torn down")
@@ -105,7 +105,7 @@ func TestHandleChannelChanged_OwnerClosesRoom(t *testing.T) {
 	visitor := uint32(21102)
 	ctx, ten, _, db := channelChangedHarness(t, owner, visitor)
 
-	handleStatusEventChannelChanged(db)(testLogger(), ctx,channelChangedEvent(owner))
+	handleStatusEventChannelChanged(db)(testLogger(), ctx, channelChangedEvent(owner))
 
 	_, ok := game.GetRegistry().Get(ten, owner)
 	assert.False(t, ok, "owner's channel change closes the room")
@@ -118,7 +118,7 @@ func TestHandleChannelChanged_WrongTypeIsNoOp(t *testing.T) {
 
 	e := channelChangedEvent(visitor)
 	e.Type = characterKafka.EventCharacterStatusTypeLogin
-	handleStatusEventChannelChanged(db)(testLogger(), ctx,e)
+	handleStatusEventChannelChanged(db)(testLogger(), ctx, e)
 
 	r, ok := game.GetRegistry().Get(ten, owner)
 	require.True(t, ok)

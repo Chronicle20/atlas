@@ -3,7 +3,7 @@ package matchcards
 import "math/rand"
 
 // MatchesToWin returns the number of matched pairs required to win for a
-// given piece-set pieceType (Cosmic MiniGame difficulty tiers): 0->6, 1->10,
+// given piece-set pieceType (difficulty tiers): 0->6, 1->10,
 // 2->15. Any other pieceType is invalid and returns ok=false.
 func MatchesToWin(pieceType byte) (byte, bool) {
 	switch pieceType {
@@ -37,10 +37,9 @@ func Shuffle(deck []uint32, r *rand.Rand) {
 	})
 }
 
-// FlipResultType maps a card flip to its result code, mirroring Cosmic
-// PlayerInteractionHandler.java:460-484: a match yields 2 for the owner's
-// flip and 3 for the visitor's flip; a mismatch yields 0 for the owner's
-// flip and 1 for the visitor's flip.
+// FlipResultType maps a card flip to its result code: a match yields 2 for
+// the owner's flip and 3 for the visitor's flip; a mismatch yields 0 for the
+// owner's flip and 1 for the visitor's flip.
 func FlipResultType(ownerFlipped bool, match bool) byte {
 	if match {
 		if ownerFlipped {

@@ -27,7 +27,7 @@ import (
 )
 
 // tieCooldown is the window during which a tie result awards no session score
-// (design §3.3 / Cosmic MiniGame.java:240-298, 5-minute tie-score cooldown).
+// (design §3.3, 5-minute tie-score cooldown).
 const tieCooldown = 5 * time.Minute
 
 // forfeitFarmThreshold suppresses the winner's +50 once the forfeiting loser
@@ -310,13 +310,17 @@ func (p *ProcessorImpl) create(mb *message.Buffer, txId uuid.UUID, f field.Model
 		SetGameType(gameType).
 		Build()
 
-	if err := p.reg.Create(p.t, room); err != nil {
-		return mb.Put(minigame.EnvEventTopicStatus, createErrorProvider(txId, f, characterId, errUnable))
-	}
-
+	// Read the owner record BEFORE registering the room: the fallible DB read
+	// must run before the in-memory registry mutation, else a read failure
+	// strands a registered owner with no CREATED event and no way out short of
+	// an explicit Leave or restart (Create returns ErrOwnerHasRoom thereafter).
 	ownerRecord, err := record.GetOrZero(p.ctx, p.db.WithContext(p.ctx), characterId, gameType)
 	if err != nil {
 		return err
+	}
+
+	if err := p.reg.Create(p.t, room); err != nil {
+		return mb.Put(minigame.EnvEventTopicStatus, createErrorProvider(txId, f, characterId, errUnable))
 	}
 
 	if err := mb.Put(minigame.EnvEventTopicStatus, createdProvider(txId, room, ownerRecord)); err != nil {
@@ -371,6 +375,20 @@ func (p *ProcessorImpl) visit(mb *message.Buffer, txId uuid.UUID, f field.Model,
 		return mb.Put(minigame.EnvEventTopicStatus, enterErrorProvider(txId, f, roomId, characterId, errCannotOpenMiniRoomHere))
 	}
 
+	// Read both records BEFORE seating the visitor: OwnerId and GameType are
+	// unchanged by the seat, so read them from the pre-update room. A read
+	// failure must return before the in-memory registry mutation, else the
+	// visitor is seated with no ENTERED event and no way out short of Leave/
+	// Expel or restart (the already-in-room gate then blocks re-VISIT).
+	ownerRecord, err := record.GetOrZero(p.ctx, p.db.WithContext(p.ctx), room.OwnerId(), room.GameType())
+	if err != nil {
+		return err
+	}
+	visitorRecord, err := record.GetOrZero(p.ctx, p.db.WithContext(p.ctx), characterId, room.GameType())
+	if err != nil {
+		return err
+	}
+
 	updated, err := p.reg.Update(p.t, roomId, func(cur Room) (Room, error) {
 		b := Clone(cur).
 			SetVisitorId(characterId).
@@ -381,15 +399,6 @@ func (p *ProcessorImpl) visit(mb *message.Buffer, txId uuid.UUID, f field.Model,
 		}
 		return b.Build(), nil
 	})
-	if err != nil {
-		return err
-	}
-
-	ownerRecord, err := record.GetOrZero(p.ctx, p.db.WithContext(p.ctx), updated.OwnerId(), updated.GameType())
-	if err != nil {
-		return err
-	}
-	visitorRecord, err := record.GetOrZero(p.ctx, p.db.WithContext(p.ctx), characterId, updated.GameType())
 	if err != nil {
 		return err
 	}
@@ -409,7 +418,7 @@ func (p *ProcessorImpl) Leave(txId uuid.UUID, f field.Model, characterId uint32)
 // leave handles a member leaving. A non-member is a no-op. The owner leaving
 // closes the room (ROOM_CLOSED + balloon remove + registry Remove); the visitor
 // leaving frees the slot (LEFT status 4 + balloon occupancy 1). Leaving mid-game
-// forfeits the game to the opponent (design §3.3, MiniGame.java:137-156): the
+// forfeits the game to the opponent (design §3.3): the
 // forfeit game-end resolves first, THEN the membership teardown runs.
 func (p *ProcessorImpl) leave(mb *message.Buffer, txId uuid.UUID, characterId uint32) error {
 	room, ok := p.reg.GetByMember(p.t, characterId)
@@ -539,7 +548,7 @@ func (p *ProcessorImpl) Unready(txId uuid.UUID, f field.Model, characterId uint3
 
 // setReady toggles the visitor's ready flag. Only the visitor readies (the owner
 // starts, §G5 READY/UNREADY are the visitor's button); a non-visitor is silently
-// dropped (Cosmic parity). Readying mid-game is dropped. Emits READY/UNREADY.
+// dropped. Readying mid-game is dropped. Emits READY/UNREADY.
 func (p *ProcessorImpl) setReady(mb *message.Buffer, txId uuid.UUID, characterId uint32, ready bool) error {
 	room, ok := p.reg.GetByMember(p.t, characterId)
 	if !ok {
@@ -759,7 +768,7 @@ func (p *ProcessorImpl) RequestTie(txId uuid.UUID, f field.Model, characterId ui
 
 // requestTie forwards a tie proposal to the opponent, but only for a running
 // game and only if the requester has not already been denied this game (deny
-// bits, design §3.3 / MiniGame.java:220-238). The channel targets the event at
+// bits, design §3.3). The channel targets the event at
 // the opponent (CharacterId == requester).
 func (p *ProcessorImpl) requestTie(mb *message.Buffer, txId uuid.UUID, characterId uint32) error {
 	room, ok := p.reg.GetByMember(p.t, characterId)
@@ -812,7 +821,7 @@ func (p *ProcessorImpl) GiveUp(txId uuid.UUID, f field.Model, characterId uint32
 }
 
 // giveUp forfeits the running game: the sender loses, the opponent takes the
-// forfeit win (ResultType 2, design §3.3 / PlayerInteractionHandler.java:411-425).
+// forfeit win (ResultType 2, design §3.3).
 func (p *ProcessorImpl) giveUp(mb *message.Buffer, txId uuid.UUID, characterId uint32) error {
 	room, ok := p.reg.GetByMember(p.t, characterId)
 	if !ok || !room.InProgress() {
@@ -902,7 +911,7 @@ func (p *ProcessorImpl) Skip(txId uuid.UUID, f field.Model, characterId uint32) 
 
 // skip yields the current player's turn to the opponent (Atlas server-side turn
 // tracking, design §3.1). SKIPPED.Who carries the NEXT-mover slot (== 1 - skipper
-// == new CurrentTurn): owner-skip emits 1, visitor-skip emits 0, matching Cosmic
+// == new CurrentTurn): owner-skip emits 1, visitor-skip emits 0, matching
 // getMiniGameSkipOwner(0x01)/getMiniGameSkipVisitor(0x00) read as "next mover"
 // per ida-notes §G5.
 func (p *ProcessorImpl) skip(mb *message.Buffer, txId uuid.UUID, characterId uint32) error {
@@ -958,8 +967,8 @@ func (p *ProcessorImpl) setExitAfter(mb *message.Buffer, txId uuid.UUID, charact
 // endGame is the single game-end transition shared by every resolution path
 // (win via move/flip, tie via ANSWER_TIE, forfeit via GIVE_UP or mid-game
 // leave/expel/teardown). It is idempotent: a room that is not InProgress is a
-// no-op, mirroring Cosmic minigameMatchFinish's double-resolution guard
-// (design §3.3). resultType is 0 win / 1 tie / 2 forfeit; winnerSlot is the
+// no-op (double-resolution guard, design §3.3). resultType is 0 win / 1 tie /
+// 2 forfeit; winnerSlot is the
 // winning slot (ignored for a tie).
 //
 // Order: record.ApplyResult runs FIRST in code order, before the registry swap.
@@ -974,7 +983,7 @@ func (p *ProcessorImpl) setExitAfter(mb *message.Buffer, txId uuid.UUID, charact
 // never persisted. After ApplyResult: compute session scores + forfeit counters
 // and reset the room for a rematch (board/deck/pairs/firstSlot/deny bits/
 // inProgress/currentTurn cleared; session scores + FirstMover kept, FirstMover
-// advanced to the winner on a non-tie per Cosmic setPiece), swap it under the
+// advanced to the winner on a non-tie per design §3.3), swap it under the
 // registry lock, buffer GAME_ENDED (refreshed records + scores) and
 // BALLOON_UPDATED{InProgress:false}, and finally honor the exit-after flags by
 // processing that side's leave after the result. The registry is in-memory
@@ -999,17 +1008,25 @@ func (p *ProcessorImpl) endGame(mb *message.Buffer, txId uuid.UUID, roomId uint3
 		return err
 	}
 
-	updated, err := p.reg.Update(p.t, roomId, func(cur Room) (Room, error) {
-		return resolvedRoom(cur, resultType, winnerSlot, now), nil
-	})
-	if err != nil {
-		return err
-	}
+	// Read the refreshed records BEFORE the registry swap. Every fallible DB op
+	// (the write above + these two reads) must complete before the in-memory
+	// registry mutation, because the swap is NOT part of the outbox transaction:
+	// if a read failed after the swap, the tx rollback would undo the record
+	// write but leave the room resolved in memory (ended, no persisted record, no
+	// event emitted). Reading first keeps the write, the reads, and the swap
+	// all-or-nothing — a failure returns with the room still InProgress.
 	ownerRecord, err := record.GetOrZero(p.ctx, p.db.WithContext(p.ctx), ownerId, gameType)
 	if err != nil {
 		return err
 	}
 	visitorRecord, err := record.GetOrZero(p.ctx, p.db.WithContext(p.ctx), visitorId, gameType)
+	if err != nil {
+		return err
+	}
+
+	updated, err := p.reg.Update(p.t, roomId, func(cur Room) (Room, error) {
+		return resolvedRoom(cur, resultType, winnerSlot, now), nil
+	})
 	if err != nil {
 		return err
 	}
@@ -1034,8 +1051,8 @@ func (p *ProcessorImpl) endGame(mb *message.Buffer, txId uuid.UUID, roomId uint3
 }
 
 // resolvedRoom computes the post-game Room: session scores + forfeit counters
-// per design §3.3, FirstMover advanced to the winner on a non-tie (Cosmic
-// setPiece: 0 after an owner win, 1 after a visitor win), and every per-game
+// per design §3.3, FirstMover advanced to the winner on a non-tie (0 after an
+// owner win, 1 after a visitor win), and every per-game
 // field reset for the rematch. Session scores, FirstMover, VisitorId, and the
 // forfeit counters persist; VisitorReady resets so both sides must ready up
 // again before the next START.

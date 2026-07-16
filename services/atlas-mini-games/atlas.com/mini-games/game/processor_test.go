@@ -1355,7 +1355,7 @@ func TestResolvedRoom_Scoring(t *testing.T) {
 }
 
 // TestEndGame_Idempotent guards the single-resolution invariant: a room that is
-// not InProgress must not resolve a second time (Cosmic minigameMatchFinish).
+// not InProgress must not resolve a second time.
 func TestEndGame_Idempotent(t *testing.T) {
 	h := newHarness(t)
 	owner := uint32(10301)

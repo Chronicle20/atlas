@@ -3,8 +3,8 @@ package omok
 const BoardSize = 15
 const Cells = BoardSize * BoardSize
 
-// Semantics mirror Cosmic MiniGame.searchCombo/searchCombo2 (<cosmic>/src/main/java/server/maps/MiniGame.java:431-516):
-// only rule is empty-cell; five or more consecutive wins; no forbidden moves.
+// Semantics: only rule is empty-cell; five or more consecutive wins; no
+// forbidden moves.
 func Place(board [Cells]byte, x uint32, y uint32, stone byte) ([Cells]byte, bool) {
 	if x >= BoardSize || y >= BoardSize || stone == 0 {
 		return board, false

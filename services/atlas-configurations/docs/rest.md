@@ -4,20 +4,26 @@
 
 ### GET /api/configurations/templates
 
-Retrieves all configuration templates.
+Retrieves all configuration templates, paginated.
 
 **Parameters**
 
-None
+| Name | Type | Location | Required |
+|------|------|----------|----------|
+| page[number] | int | query | no (default 1) |
+| page[size] | int | query | no (default 50, max 250) |
+
+The legacy `limit` query parameter is rejected.
 
 **Response Model**
 
-Array of `templates` resources
+Paginated array of `templates` resources, with a `meta` block (`total`, `page.number`, `page.size`, `page.last`) and `self`/`first`/`last`/`prev`/`next` links
 
 **Error Conditions**
 
 | Status | Condition |
 |--------|-----------|
+| 400 | Invalid page[number] or page[size], or legacy `limit` param supplied |
 | 500 | Database error |
 
 ---
@@ -89,6 +95,7 @@ JSON:API `templates` resource with attributes:
 - `characters` (object)
 - `npcs` (array)
 - `worlds` (array)
+- `cashShop` (object)
 
 **Response Model**
 
@@ -126,6 +133,7 @@ None (empty body on success)
 | Status | Condition |
 |--------|-----------|
 | 400 | Invalid UUID format or JSON |
+| 400 | Character preset validation failed (JSON:API `errors` array; each entry has `status`, `title`, `detail`, and `meta.path`) |
 | 500 | Database error or record not found |
 
 ---
@@ -155,20 +163,26 @@ None (empty body on success)
 
 ### GET /api/configurations/tenants
 
-Retrieves all configuration tenants.
+Retrieves all configuration tenants, paginated.
 
 **Parameters**
 
-None
+| Name | Type | Location | Required |
+|------|------|----------|----------|
+| page[number] | int | query | no (default 1) |
+| page[size] | int | query | no (default 50, max 250) |
+
+The legacy `limit` query parameter is rejected.
 
 **Response Model**
 
-Array of `tenants` resources
+Paginated array of `tenants` resources, with a `meta` block (`total`, `page.number`, `page.size`, `page.last`) and `self`/`first`/`last`/`prev`/`next` links
 
 **Error Conditions**
 
 | Status | Condition |
 |--------|-----------|
+| 400 | Invalid page[number] or page[size], or legacy `limit` param supplied |
 | 500 | Database error |
 
 ---
@@ -216,6 +230,7 @@ JSON:API `tenants` resource with attributes:
 - `characters` (object)
 - `npcs` (array)
 - `worlds` (array)
+- `cashShop` (object)
 
 **Response Model**
 
@@ -253,6 +268,7 @@ None (empty body on success)
 | Status | Condition |
 |--------|-----------|
 | 400 | Invalid UUID format or JSON |
+| 400 | Character preset validation failed (JSON:API `errors` array; each entry has `status`, `title`, `detail`, and `meta.path`) |
 | 500 | Database error or record not found |
 
 ---
@@ -282,20 +298,26 @@ None (empty body on success)
 
 ### GET /api/configurations/services
 
-Retrieves all service configurations.
+Retrieves all service configurations, paginated.
 
 **Parameters**
 
-None
+| Name | Type | Location | Required |
+|------|------|----------|----------|
+| page[number] | int | query | no (default 1) |
+| page[size] | int | query | no (default 50, max 250) |
+
+The legacy `limit` query parameter is rejected.
 
 **Response Model**
 
-Array of `services` resources
+Paginated array of `services` resources, with a `meta` block (`total`, `page.number`, `page.size`, `page.last`) and `self`/`first`/`last`/`prev`/`next` links
 
 **Error Conditions**
 
 | Status | Condition |
 |--------|-----------|
+| 400 | Invalid page[number] or page[size], or legacy `limit` param supplied |
 | 500 | Database error |
 
 ---

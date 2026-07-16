@@ -8,13 +8,13 @@ Tool: `b3df42befdcf554ee3399879388e69905f4800b294adbd3f832e9314010814cf`
 
 - export gms_v48: `054d404fcb6f0feed776b8c1453f2ab48a35f479463e82ea00d6d28ebca512dc`
 - export gms_v61: `b1111abee79b6b10cf1a05305e3c4a7707819f6862a80314c0b2ebce424852f7`
-- export gms_v72: `a21ceb077a00723549680327194e70c712b962f92dfd26c011bc0af8134f06e5`
-- export gms_v79: `aad866f3c3feebf4ce08f3f37b6fc45738cbc5cd68b2e90efd39b86ad4b3a7f6`
-- export gms_v83: `571de0138571820e54f8cbbd1f4eb58c8e0a4b13f940d7b4b60c863ea59e7b59`
-- export gms_v84: `ec2f2fb44bc4debe1bb1e843ad8a0d6196bb80c938b423ca33737488e5326c2e`
-- export gms_v87: `36e4c05c4d2a505fea3c9675c968857b9c2477230b7313b85ae9d89a2c040c92`
-- export gms_v95: `c5402afdc533583f251288030a4b1b8e605f41b058827362d98e31e37cd431f7`
-- export jms_v185: `8f7a4c3410039d1037043dfc2707f6190c80febd385349239f4c577395b890aa`
+- export gms_v72: `ad7f0800d7560bca21baba98f5116103094c20f991781829ffa65b37db9d963b`
+- export gms_v79: `ccb6069530dad5014ec311b23540f79cfb1e9dd46fc3c681a34948edbe21e790`
+- export gms_v83: `bfc74c16a10324c892f0b0f2bda644bdc40baf8ac060ed694d3e71b9ebbe9160`
+- export gms_v84: `ac6e7ea98a5b2f402e1378e90be61c9065ebc53e74914db52695a371021db22e`
+- export gms_v87: `c8ef3fd75c9ac956237a428b3ff9841a36de5a0607b802ee558b3acbfe5216df`
+- export gms_v95: `d18299feadd701f46498185fd5c5a88c7620146cd615b5b1ab13692e81069e88`
+- export jms_v185: `be70808b143bcc39229b84ac69df63ea956f926c814e6c104f0045e0d6c2f1f7`
 
 ## Clientbound
 
@@ -646,8 +646,8 @@ Tool: `b3df42befdcf554ee3399879388e69905f4800b294adbd3f832e9314010814cf`
 | GRENADE_EFFECT | CUserLocal::ThrowGrenade |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x06D | ❌ | 0x06D | ❌ | 0x070 | ❌ | 0x079 | ❌ | 0x068 | ❌ |
 | SKILL_MACRO | CMacroSysMan::FlushToSvr; sub_6022DB |  |  | ⬜ |  | ⬜ | 0x06D | ❌ | 0x06C | ❌ | 0x06E | ❌ | 0x06E | ❌ | 0x071 | ❌ | 0x07A | ❌ | 0x069 | ❌ |
 | CHANGE_KEYMAP | CFuncKeyMappedMan::ChangePetConsumeItemID; CFuncKeyMappedMan::ChangePetConsumeMPItemID; CFuncKeyMappedMan::SaveFuncKeyMap | character/serverbound/KeyMapChange (T1) | 0x06E | ✅ | 0x07B | ✅ | 0x085 | ✅ | 0x084 | ✅ | 0x087 | ✅ | 0x08B | ✅ | 0x08F | ✅ | 0x09F | ✅ | 0x08A | ✅ |
+| LOTTERY_ITEM_USE_REQUEST | CWvsContext::SendLotteryItemUseRequest | inventory/serverbound/InventoryLotteryItemUse (T1) |  | ⬜ |  | ⬜ | 0x06F | ✅ | 0x06E | ✅ | 0x070 | ✅ | 0x070 | ✅ | 0x073 | ✅ | 0x07C | ✅ | 0x06B | ✅ |
 | NPC_ITEM_USE_REQUEST | CWvsContext::SendSelectNpcItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x06F | ❌ | 0x06F | ❌ | 0x072 | ❌ | 0x07B | ❌ | 0x06A | ❌ |
-| LOTTERY_ITEM_USE_REQUEST | CWvsContext::SendLotteryItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x070 | ❌ | 0x070 | ❌ | 0x073 | ❌ | 0x07C | ❌ | 0x06B | ❌ |
 | MAKER_SKILL | CUIItemMaker::RequestItemMake |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x071 | ❌ | 0x071 | ❌ | 0x074 | ❌ | 0x07D | ❌ | 0x06C | ❌ |
 | MOVE_PET | CVecCtrlPet::EndUpdateActive; sub_6E5BD6 | pet/serverbound/PetMovementRequest (T1) | 0x071 | ✅ | 0x08A | ✅ | 0x0A1 | ✅ | 0x0A3 | ✅ | 0x0A7 | ✅ | 0x0AC | ✅ | 0x0B3 | ✅ | 0x0C7 | ✅ | 0x0AA | ✅ |
 | PET_CHAT | CPet::DoAction | pet/serverbound/PetChatRequest (T1) | 0x072 | ✅ | 0x08B | ✅ | 0x0A2 | ✅ | 0x0A4 | ✅ | 0x0A8 | ✅ | 0x0AD | ✅ | 0x0B4 | ✅ | 0x0C8 | ✅ | 0x0AB | ✅ |
@@ -995,13 +995,13 @@ Tool: `b3df42befdcf554ee3399879388e69905f4800b294adbd3f832e9314010814cf`
 |---------|----|----|----|----|----|----|-----------|
 | v48 | 166 | 0 | 2 | 156 | 634 | 0 | 51.2% |
 | v61 | 239 | 0 | 60 | 195 | 464 | 0 | 48.4% |
-| v72 | 248 | 0 | 73 | 213 | 424 | 0 | 46.4% |
-| v79 | 262 | 0 | 72 | 209 | 415 | 0 | 48.3% |
-| v83 | 403 | 0 | 0 | 331 | 224 | 0 | 54.9% |
-| v84 | 375 | 0 | 0 | 339 | 244 | 0 | 52.5% |
-| v87 | 409 | 0 | 0 | 362 | 187 | 0 | 53.0% |
-| v95 | 434 | 0 | 0 | 421 | 103 | 0 | 50.8% |
-| JMS185 | 390 | 0 | 0 | 374 | 194 | 0 | 51.0% |
+| v72 | 249 | 0 | 73 | 213 | 423 | 0 | 46.5% |
+| v79 | 263 | 0 | 72 | 209 | 414 | 0 | 48.3% |
+| v83 | 404 | 0 | 0 | 330 | 224 | 0 | 55.0% |
+| v84 | 376 | 0 | 0 | 338 | 244 | 0 | 52.7% |
+| v87 | 410 | 0 | 0 | 361 | 187 | 0 | 53.2% |
+| v95 | 435 | 0 | 0 | 420 | 103 | 0 | 50.9% |
+| JMS185 | 391 | 0 | 0 | 373 | 194 | 0 | 51.2% |
 
 ## Conflicts
 

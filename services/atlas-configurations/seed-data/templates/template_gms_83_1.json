@@ -492,6 +492,11 @@
         "handler": "CharacterSkillMacroHandle"
       },
       {
+        "opCode": "0x70",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseLotteryHandle"
+      },
+      {
         "opCode": "0x72",
         "validator": "LoggedInValidator",
         "handler": "SueCharacter"

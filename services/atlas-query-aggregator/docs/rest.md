@@ -25,7 +25,6 @@ None.
           "value": <value>,
           "values": [<value>, ...],
           "referenceId": <referenceId>,
-          "itemId": <itemId>,
           "step": "<step>",
           "worldId": <worldId>,
           "channelId": <channelId>,
@@ -46,8 +45,7 @@ None.
 | conditions[].value | int | Yes | Expected value |
 | conditions[].values | []int | No | Values for "in" operator |
 | conditions[].referenceId | uint32 | Conditional | Required for item, quest, map, transport, skill, buff, inventorySpace, excessSp conditions |
-| conditions[].itemId | uint32 | No | Deprecated; use referenceId instead. Maps to referenceId internally. Cannot be combined with referenceId. |
-| conditions[].step | string | Conditional | Required for questProgress conditions |
+| conditions[].step | string | Conditional | Required for questProgress and pqCustomData conditions |
 | conditions[].worldId | world.Id | No | World ID for mapCapacity conditions |
 | conditions[].channelId | channel.Id | No | Channel ID for mapCapacity conditions |
 | conditions[].includeEquipped | bool | No | Include equipped items in item quantity checks |
@@ -130,6 +128,8 @@ The REST input validation layer accepts the following condition types.
 | partyLeader | Character is party leader (1=yes, 0=no) | No |
 | partySize | Party member count | No |
 | pqCustomData | Party-quest custom data value | step (custom data key) required |
+| monsterBookCount | Total unique monster cards collected | No |
+| petTameness | Highest closeness among spawned pets matching the given template IDs (value is minimum closeness; template IDs passed via values array) | No (values array required) |
 
 #### Operators
 
@@ -154,8 +154,8 @@ The REST input validation layer accepts the following condition types.
 | 400 | Unsupported operator |
 | 400 | 'in' operator requires values array |
 | 400 | Missing required referenceId for item, quest, or other reference-requiring conditions |
-| 400 | Missing required step for questProgress |
-| 400 | Both itemId and referenceId specified (use referenceId only) |
+| 400 | Missing required step for questProgress or pqCustomData |
+| 400 | Missing required values (pet template ids) for petTameness |
 | 400 | Invalid value ranges for specific condition types |
 | 400 | Failed to extract validation parameters |
 | 400 | Failed to validate conditions (e.g., character data retrieval failure) |

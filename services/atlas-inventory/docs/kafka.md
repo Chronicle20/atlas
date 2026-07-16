@@ -36,6 +36,7 @@ Compartment operation commands.
 | MODIFY_EQUIPMENT | Updates equipment stats on an asset |
 | SET_OWNER | Stamps the owner field onto an asset in a given slot |
 | APPLY_LOCK | Applies a permanent or timed lock (FlagLock + expiration) to an asset in a given slot; rejects a non-locked asset that already has a non-zero expiration |
+| CHANGE_TEMPLATE | Swaps a pet asset's templateId in place, resolved by petId within the Cash compartment |
 
 ### EVENT_TOPIC_DROP_STATUS
 
@@ -64,6 +65,8 @@ Asset state change events.
 | RELEASED | Asset released from compartment to external destination |
 | EXPIRED | Asset expired from compartment |
 
+Asset UPDATED is also emitted when a pet asset's templateId is changed via CHANGE_TEMPLATE.
+
 ### EVENT_TOPIC_COMPARTMENT_STATUS
 
 Compartment state change events.
@@ -80,6 +83,7 @@ Compartment state change events.
 | ACCEPTED | Asset accepted into compartment |
 | RELEASED | Asset released from compartment |
 | ERROR | Operation failed (ACCEPT_COMMAND_FAILED, RELEASE_COMMAND_FAILED) |
+| CREATION_FAILED | Asset creation failed (CREATE_ASSET_TEMPLATE_NOT_FOUND, CREATE_ASSET_INVENTORY_FULL, CREATE_ASSET_UNKNOWN_ERROR) |
 
 ### EVENT_TOPIC_INVENTORY_STATUS
 
@@ -88,7 +92,14 @@ Inventory lifecycle events.
 | Type | Description |
 |------|-------------|
 | CREATED | Inventory created for character |
+| CREATION_FAILED | Inventory creation failed |
 | DELETED | Inventory deleted for character |
+
+### COMMAND_TOPIC_ITEM_CONSUMED_ON_PICKUP
+
+| Type | Description |
+|------|-------------|
+| ITEM_CONSUMED_ON_PICKUP | Item flagged consumeOnPickup was consumed directly from a drop pickup without entering the inventory |
 
 ### COMMAND_TOPIC_DROP
 
@@ -153,7 +164,7 @@ Body types:
 - `DestroyCommandBody` - slot (int16), quantity (uint32), removeAll (bool)
 - `CancelReservationCommandBody` - transactionId (UUID), slot (int16)
 - `IncreaseCapacityCommandBody` - amount (uint32)
-- `CreateAssetCommandBody` - templateId (uint32), quantity (uint32), expiration (time), ownerId (uint32), flag (uint16), rechargeable (uint64)
+- `CreateAssetCommandBody` - templateId (uint32), quantity (uint32), expiration (time), ownerId (uint32), flag (uint16), rechargeable (uint64), useAverageStats (bool, optional)
 - `RechargeCommandBody` - slot (int16), quantity (uint32)
 - `MergeCommandBody` - empty
 - `SortCommandBody` - empty
@@ -161,6 +172,7 @@ Body types:
 - `ReleaseCommandBody` - transactionId (UUID), assetId (uint32), quantity (uint32)
 - `ExpireCommandBody` - assetId (uint32), templateId (uint32), slot (int16), replaceItemId (uint32), replaceMessage (string)
 - `ModifyEquipmentCommandBody` - assetId (uint32), all equipment stat fields, flag (uint16), expiration (time)
+- `ChangeTemplateCommandBody` - petId (uint32), newTemplateId (uint32)
 
 ### Compartment Status Event
 
@@ -185,11 +197,13 @@ Body types:
 - `AcceptedEventBody` - transactionId (UUID)
 - `ReleasedEventBody` - transactionId (UUID)
 - `ErrorEventBody` - errorCode (string), transactionId (UUID)
+- `CreationFailedStatusEventBody` - errorCode (string), message (string)
 
 ### Inventory Status Event
 
 ```
 StatusEvent[Body] {
+  transactionId: UUID
   characterId: uint32
   type: string
   body: Body
@@ -198,7 +212,38 @@ StatusEvent[Body] {
 
 Body types:
 - `CreatedStatusEventBody` - empty
+- `CreationFailedStatusEventBody` - reason (string)
 - `DeletedStatusEventBody` - empty
+
+### Character Status Event
+
+```
+StatusEvent[Body] {
+  transactionId: UUID
+  worldId: byte
+  characterId: uint32
+  type: string
+  body: Body
+}
+```
+
+Body types:
+- `CreatedStatusEventBody` - name (string)
+- `DeletedStatusEventBody` - empty
+
+### Pickup Command
+
+```
+Command {
+  tenantId: UUID
+  characterId: uint32
+  itemId: uint32
+  transactionId: UUID
+  type: string
+}
+```
+
+Type: `ITEM_CONSUMED_ON_PICKUP`. Unlike other command/event messages in this service, this struct is flat and does not wrap a separate body type.
 
 ### Drop Command
 
@@ -243,4 +288,5 @@ Body types:
 - Events include `transactionId` matching originating command
 - Reservations have 30-second timeout
 - All database mutations within a single command are wrapped in a transaction
-- Kafka messages are buffered during transaction execution and emitted only after successful commit
+- Kafka messages produced during a transaction are buffered and, via the transactional outbox provider, persisted as outbox rows in the same database transaction; a background drainer publishes them to Kafka after the transaction commits
+- Compensating messages emitted after a transaction has rolled back (for example drop cancel-reservation on a failed pickup) are emitted directly to the producer on a separate, throwaway buffer, outside the outbox

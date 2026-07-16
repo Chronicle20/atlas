@@ -76,6 +76,8 @@ Returns the complete marriage history for a character.
 | Name | Location | Type | Required | Description |
 |------|----------|------|----------|-------------|
 | characterId | path | uint32 | yes | Character identifier |
+| page[number] | query | int | no | Page number, default 1 |
+| page[size] | query | int | no | Page size, default 250, max 250 |
 
 **Request Headers**
 
@@ -99,6 +101,7 @@ JSON:API resource type: `marriage` (array)
 
 | Status | Title | Description |
 |--------|-------|-------------|
+| 400 | Bad Request | Invalid page[number]/page[size] |
 | 500 | Internal Server Error | Failed to retrieve or transform data |
 
 ---
@@ -112,6 +115,8 @@ Returns all pending proposals for a character (both sent and received).
 | Name | Location | Type | Required | Description |
 |------|----------|------|----------|-------------|
 | characterId | path | uint32 | yes | Character identifier |
+| page[number] | query | int | no | Page number, default 1 |
+| page[size] | query | int | no | Page size, default 250, max 250 |
 
 **Request Headers**
 
@@ -147,4 +152,5 @@ type RestProposal struct {
 
 | Status | Title | Description |
 |--------|-------|-------------|
+| 400 | Bad Request | Invalid page[number]/page[size] |
 | 500 | Internal Server Error | Failed to retrieve or transform data |

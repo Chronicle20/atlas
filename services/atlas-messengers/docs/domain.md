@@ -102,7 +102,6 @@ Maintains an in-memory registry of character state for messenger membership trac
 |-------|------|-------------|
 | id | uint32 | Character identifier |
 | worldId | world.Id | World identifier |
-| mapId | map.Id | Map identifier |
 | name | string | Character name |
 | level | byte | Character level |
 | jobId | uint16 | Job identifier |

@@ -28,6 +28,7 @@ A RESTful microservice that provides tenant management for the Atlas game platfo
 - `INSTANCE_ROUTES_SEED_PATH` - Filesystem path to instance route seed JSON files (default: `/configurations/instance-routes`)
 - `VESSELS_SEED_PATH` - Filesystem path to vessel seed JSON files (default: `/configurations/vessels`)
 - `INCUBATOR_REWARDS_SEED_PATH` - Filesystem path to incubator reward seed JSON files (default: `/configurations/incubator-rewards`)
+- `MTS_CONFIGS_SEED_PATH` - Filesystem path to MTS config seed JSON files (default: `/configurations/mts-configs`)
 
 ## Documentation
 

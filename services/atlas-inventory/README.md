@@ -34,6 +34,7 @@ Inventory management service for character inventories, compartments, and assets
 - `EVENT_TOPIC_INVENTORY_STATUS` - Inventory status events (produced)
 - `COMMAND_TOPIC_COMPARTMENT` - Compartment commands (consumed)
 - `COMMAND_TOPIC_DROP` - Drop commands (produced)
+- `COMMAND_TOPIC_ITEM_CONSUMED_ON_PICKUP` - Item consumed-on-pickup commands (produced)
 - `EVENT_TOPIC_CHARACTER_STATUS` - Character status events (consumed)
 - `EVENT_TOPIC_DROP_STATUS` - Drop status events (consumed)
 

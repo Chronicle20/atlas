@@ -75,7 +75,6 @@ Represents character data retrieved from the character service.
 | experience | uint32 | Experience points |
 | fame | int16 | Fame points |
 | gachaponExperience | uint32 | Gachapon experience points |
-| mapId | _map.Id | Current map identifier |
 | spawnPoint | uint32 | Spawn point identifier |
 | gm | int | GM status |
 | meso | uint32 | Currency amount |
@@ -83,9 +82,11 @@ Represents character data retrieved from the character service.
 | equipment | equipment.Model | Equipped items (derived from inventory) |
 | inventory | inventory.Model | Inventory contents |
 
+Note: `spawnPoint` is not populated by the character REST client's `Extract` function; `SpawnPoint()` unconditionally returns 0.
+
 Character has a `SetInventory` method that processes the raw inventory response. It separates the equipable compartment into positively-slotted items (kept in the equip compartment) and negatively-slotted items (placed into equipment slots by position). Cash equipment (slot < -100) and normal equipment are distinguished and placed into the appropriate `Equipable`/`CashEquipable` fields of each equipment slot. During this process, assets placed into equipment slots have their compartment ID set to `uuid.Nil` via `asset.Clone(a).SetCompartmentId(uuid.Nil).Build()`.
 
-Character supports SP table logic for Evan job advancement (jobs 2001, 2200-2218), where the skill book index is derived from the job ID.
+Character supports SP table logic for Evan job advancement (jobs 2001, 2200, 2210-2218), where the skill book index is derived from the job ID.
 
 Character uses a builder pattern (`NewBuilder`/`ToBuilder`/`Builder.Build`) for immutable construction and modification.
 
@@ -182,11 +183,6 @@ Represents a unified inventory item. All item types (equipment, stackable, cash,
 | speed | uint16 | Speed (equipment) |
 | jump | uint16 | Jump (equipment) |
 | slots | uint16 | Upgrade slots remaining (equipment) |
-| locked | bool | Lock status (equipment) |
-| spikes | bool | Spikes flag (equipment) |
-| karmaUsed | bool | Karma used flag (equipment) |
-| cold | bool | Cold protection (equipment) |
-| canBeTraded | bool | Tradeable flag (equipment) |
 | levelType | byte | Level type (equipment) |
 | level | byte | Equipment level (equipment) |
 | experience | uint32 | Equipment experience (equipment) |
@@ -198,6 +194,8 @@ Represents a unified inventory item. All item types (equipment, stackable, cash,
 | petId | uint32 | Pet identifier (pet reference) |
 
 Asset provides type-classification methods: `IsEquipment`, `IsCashEquipment`, `IsConsumable`, `IsSetup`, `IsEtc`, `IsCash`, `IsPet`, `IsStackable`, `HasQuantity`. The `InventoryType` is derived from the `templateId` at runtime via `inventory.TypeFromItemId`.
+
+Asset also provides `Locked`, `Spikes`, `KarmaUsed`, `Cold`, and `CanBeTraded` boolean methods, all derived from the `flag` field rather than stored as separate fields.
 
 The `Quantity` method returns the `quantity` field for stackable and non-pet cash items, and returns 1 for all other item types.
 
@@ -229,8 +227,34 @@ Represents pet data.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| id | uint64 | Pet identifier |
-| itemId | uint32 | Pet item identifier |
+| id | uint32 | Pet identifier |
+| cashId | uint64 | Cash shop item identifier |
+| templateId | uint32 | Pet template identifier |
+| name | string | Pet name |
+| level | byte | Pet level |
+| closeness | uint16 | Closeness value |
+| fullness | byte | Fullness value |
+| expiration | time.Time | Expiration timestamp |
+| ownerId | uint32 | Owner character identifier |
+| slot | int8 | Pet slot |
+| x | int16 | X position |
+| y | int16 | Y position |
+| stance | byte | Stance |
+| fh | int16 | Foothold identifier |
+| excludes | []exclude.Model | Excluded item list |
+| flag | uint16 | Pet flags |
+| purchaseBy | uint32 | Purchaser identifier |
+
+Pet provides a `Lead` method that returns true when `slot` is 0.
+
+### Pet Exclude
+
+Represents an excluded-item entry referenced by a pet's `excludes` field.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uint32 | Exclude entry identifier |
+| itemId | uint32 | Excluded item identifier |
 
 ### Guild
 

@@ -8,7 +8,10 @@ Returns all sagas for the current tenant.
 
 #### Parameters
 
-None.
+| Parameter | Type | Location | Required | Description |
+|-----------|------|----------|----------|-------------|
+| page[number] | int | query | no | Page number (default 1) |
+| page[size] | int | query | no | Page size (default and maximum enforced server-side) |
 
 #### Request Model
 
@@ -48,6 +51,7 @@ JSON:API collection of saga resources.
 
 | Status | Condition |
 |--------|-----------|
+| 400 | Invalid page[number]/page[size] |
 | 500 | Failed to retrieve sagas |
 
 ---
@@ -254,6 +258,7 @@ Actions not listed above pass the raw payload through without typed deserializat
 | StorageOperation | storage_operation |
 | CharacterRespawn | character_respawn |
 | GachaponTransaction | gachapon_transaction |
+| MtsOperation | mts_operation |
 
 ## Step Statuses
 

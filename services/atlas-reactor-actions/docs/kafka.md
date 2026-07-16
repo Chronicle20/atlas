@@ -48,29 +48,11 @@ Command message for reactor hit or trigger events.
 | x | int16 | X coordinate |
 | y | int16 | Y coordinate |
 | type | string | Command type: `HIT` or `TRIGGER` |
-| body | object | Type-specific body |
+| body | object | Command body; decoded generically, only `characterId` is read |
 
-### Command Type: HIT
+### Command Type: HIT and TRIGGER
 
-Body for hit commands:
-
-```json
-{
-  "characterId": 12345,
-  "skillId": 0,
-  "isSkill": false
-}
-```
-
-| Field | Type | Description |
-|-------|------|-------------|
-| characterId | uint32 | Character who hit the reactor |
-| skillId | uint32 | Skill used (if skill attack) |
-| isSkill | bool | Whether attack was a skill |
-
-### Command Type: TRIGGER
-
-Body for trigger commands:
+The `body` field is decoded generically; only `characterId` is read from it, for both command types.
 
 ```json
 {
@@ -80,11 +62,11 @@ Body for trigger commands:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| characterId | uint32 | Character who triggered the reactor |
+| characterId | uint32 | Character who hit or triggered the reactor |
 
 ### Produced: Saga Command
 
-Saga commands are produced using the `atlas-script-core/saga` package. The service produces saga commands for:
+Saga commands are produced using the `atlas-saga` package. The service produces saga commands for:
 
 - `SpawnReactorDrops`: Spawn item drops at reactor location
 - `SpawnMonster`: Spawn monsters at reactor location

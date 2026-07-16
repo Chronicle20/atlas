@@ -4,17 +4,18 @@
 
 ### GET /characters
 
-Retrieves characters based on query parameters.
+Retrieves characters based on query parameters. `accountId` and `worldId` must both be supplied to filter by account in world; `name` filters by name independently; if neither pairing is supplied, all characters (for the tenant) are returned. Results are paginated.
 
 #### Parameters
 
 | Name | Location | Type | Required | Description |
 |------|----------|------|----------|-------------|
-| accountId | query | uint32 | conditional | Account ID (requires worldId) |
-| worldId | query | uint32 | conditional | World ID |
-| mapId | query | uint32 | conditional | Map ID (requires worldId) |
-| name | query | string | conditional | Character name |
-| include | query | string | no | Related resources to include |
+| accountId | query | uint32 | conditional | Account ID (requires worldId; ignored unless worldId is also present) |
+| worldId | query | uint32 | conditional | World ID (requires accountId; ignored unless accountId is also present) |
+| name | query | string | conditional | Character name (case-insensitive exact match) |
+| page[number] | query | int | no | Page number, 1-based (default 1) |
+| page[size] | query | int | no | Page size (default 50, max 250) |
+| include | query | string | no | Accepted, currently has no effect on the response |
 
 #### Request Model
 None
@@ -51,25 +52,71 @@ None
         "face": 0,
         "ap": 0,
         "sp": "string",
-        "mapId": 0,
-        "instance": "00000000-0000-0000-0000-000000000000",
         "spawnPoint": 0,
         "gm": 0,
         "x": 0,
         "y": 0,
+        "fh": 0,
         "stance": 0
       }
     }
-  ]
+  ],
+  "meta": {
+    "total": 0,
+    "page": { "number": 0, "size": 0, "last": 0 }
+  },
+  "links": {
+    "self": "string",
+    "first": "string",
+    "prev": "string",
+    "next": "string",
+    "last": "string"
+  }
 }
 ```
+
+`mapId` and `instance` are not part of the response; atlas-maps owns character location state.
 
 #### Error Conditions
 
 | Status | Condition |
 |--------|-----------|
-| 400 | Invalid accountId or worldId format |
+| 400 | Invalid page[number] or page[size] |
 | 500 | Database error |
+
+---
+
+### GET /characters/name-validity
+
+Checks whether a character name is valid (length, character set) and unique within a world. Not JSON:API enveloped.
+
+#### Parameters
+
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| name | query | string | yes | Candidate character name |
+| worldId | query | uint8 | yes | World ID to check uniqueness against |
+
+#### Request Model
+None
+
+#### Response Model
+```json
+{
+  "valid": true,
+  "reason": "string",
+  "detail": "string"
+}
+```
+
+`reason` is one of `length`, `regex`, `duplicate`; omitted when `valid` is true.
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 400 | Missing or invalid name or worldId |
+| 500 | Lookup error |
 
 ---
 
@@ -82,7 +129,7 @@ Retrieves a character by ID.
 | Name | Location | Type | Required | Description |
 |------|----------|------|----------|-------------|
 | characterId | path | uint32 | yes | Character ID |
-| include | query | string | no | Related resources to include |
+| include | query | string | no | Accepted, currently has no effect on the response |
 
 #### Request Model
 None
@@ -118,11 +165,11 @@ None
       "face": 0,
       "ap": 0,
       "sp": "string",
-      "mapId": 0,
       "spawnPoint": 0,
       "gm": 0,
       "x": 0,
       "y": 0,
+      "fh": 0,
       "stance": 0
     }
   }
@@ -205,16 +252,18 @@ None
       "face": 0,
       "ap": 0,
       "sp": "string",
-      "mapId": 0,
       "spawnPoint": 0,
       "gm": 0,
       "x": 0,
       "y": 0,
+      "fh": 0,
       "stance": 0
     }
   }
 }
 ```
+
+`mapId` on the request is the spawn map forwarded to atlas-maps on character creation; it is create-time input only and is not part of the response.
 
 #### Error Conditions
 
@@ -247,12 +296,13 @@ Updates a character.
       "face": 0,
       "gender": 0,
       "skinColor": 0,
-      "mapId": 0,
       "gm": 0
     }
   }
 }
 ```
+
+Only the fields above are applied; other RestModel attributes present in the body are ignored. `name`/`hair`/`face`/`skinColor` values of `""`/`0` are treated as "no change requested" for that field (gender has no such sentinel: any value differing from the current gender is validated and applied). `gm` is nullable; omitting it (`null`) means no change, while an explicit `0` demotes.
 
 #### Response Model
 None (204 No Content)
@@ -299,7 +349,7 @@ None (204 No Content)
 
 ### GET /characters/{characterId}/sessions
 
-Retrieves session history for a character.
+Retrieves session history for a character. Results are paginated.
 
 #### Parameters
 
@@ -307,6 +357,8 @@ Retrieves session history for a character.
 |------|----------|------|----------|-------------|
 | characterId | path | uint32 | yes | Character ID |
 | since | query | string | no | Start time (unix timestamp or RFC3339). Defaults to 24 hours ago |
+| page[number] | query | int | no | Page number, 1-based (default 1) |
+| page[size] | query | int | no | Page size (default 50, max 250) |
 
 #### Request Model
 None
@@ -326,7 +378,18 @@ None
         "logoutTime": "2006-01-02T15:04:05Z"
       }
     }
-  ]
+  ],
+  "meta": {
+    "total": 0,
+    "page": { "number": 0, "size": 0, "last": 0 }
+  },
+  "links": {
+    "self": "string",
+    "first": "string",
+    "prev": "string",
+    "next": "string",
+    "last": "string"
+  }
 }
 ```
 
@@ -335,6 +398,7 @@ None
 | Status | Condition |
 |--------|-----------|
 | 400 | Invalid characterId or since format |
+| 400 | Invalid page[number] or page[size] |
 | 500 | Database error |
 
 ---

@@ -109,11 +109,13 @@ Same as GET response.
 
 ### GET /api/storage/accounts/{accountId}/assets
 
-Retrieves all assets for an account's storage. Creates the storage if it does not exist.
+Retrieves all assets for an account's storage. Creates the storage if it does not exist. Paginated.
 
 **Parameters**
 - `accountId` (path): Account identifier (uint32)
 - `worldId` (query): World identifier (byte, required)
+- `page[number]` (query): Page number (int, optional, default 1)
+- `page[size]` (query): Page size (int, optional, default 250, max 250)
 
 **Request Model**
 
@@ -162,12 +164,23 @@ None.
         "petId": 0
       }
     }
-  ]
+  ],
+  "meta": {
+    "total": 1,
+    "page": { "number": 1, "size": 250, "last": 1 }
+  },
+  "links": {
+    "self": "<url>",
+    "first": "<url>",
+    "prev": "<url>",
+    "next": "<url>",
+    "last": "<url>"
+  }
 }
 ```
 
 **Error Conditions**
-- `400 Bad Request`: Invalid accountId or missing/invalid worldId query parameter
+- `400 Bad Request`: Invalid accountId, missing/invalid worldId query parameter, or invalid page[number]/page[size]
 - `500 Internal Server Error`: Database or transform error
 
 ---

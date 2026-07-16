@@ -312,6 +312,11 @@
         "handler": "CharacterItemUseHandle"
       },
       {
+        "opCode": "0x6B",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseLotteryHandle"
+      },
+      {
         "opCode": "0x41",
         "validator": "LoggedInValidator",
         "handler": "CharacterItemCancelHandle"

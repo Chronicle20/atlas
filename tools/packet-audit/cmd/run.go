@@ -2002,6 +2002,11 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "ItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
 	case "CWvsContext::SendUpgradeItemUseRequest":
 		return []candidate{{name: "ScrollUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	// Reward-box ("lottery") use (task-131). Struct LotteryItemUse in
+	// inventory/serverbound; body slot(int16) + itemId(int32). Opcode + codec
+	// exist from v72 up; v48/v61 lack the opcode (generic item-use path).
+	case "CWvsContext::SendLotteryItemUseRequest":
+		return []candidate{{name: "LotteryItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
 	// Vega's Spell (category 561) USE_CASH_ITEM sub-body (task-130 §2.1) shares
 	// the cash-item-use sender fname with task-126's AP/SP point-reset arm. Both
 	// candidates are keyed to the same fname, so return them together.

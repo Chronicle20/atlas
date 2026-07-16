@@ -18,6 +18,8 @@ Manages cash shop currency balances for accounts.
 - Each account has one wallet
 - Currency balances cannot go negative
 - Currency type 1 = credit, 2 = points, 3 = prepaid
+- `AdjustCurrency`/`AdjustCurrencyWithTransaction` reject an adjustment whose deduction would exceed the current balance for the given currency type, or whose currency type is not 1/2/3, without changing state
+- A failed transactional adjustment (non-nil transaction ID) emits a wallet ERROR status event so the waiting saga step fails fast instead of timing out; a non-transactional adjustment (nil transaction ID) does not emit on failure
 
 ### State Transitions
 - `Purchase(currency, amount)`: Returns a new Model with the specified currency reduced by amount. Does not validate balance; caller is responsible for checking before calling.
@@ -27,12 +29,13 @@ Manages cash shop currency balances for accounts.
 #### Processor
 - `ByAccountIdProvider`: Provides wallet by account ID
 - `GetByAccountId`: Retrieves wallet for an account
-- `Create`: Creates a new wallet with initial balances
-- `Update`: Updates wallet balances
-- `UpdateWithTransaction`: Updates wallet with transaction ID for saga coordination
-- `AdjustCurrency`: Adjusts a specific currency type by amount, validates sufficient balance
-- `AdjustCurrencyWithTransaction`: Adjusts currency with transaction ID
-- `Delete`: Deletes a wallet
+- `Create`/`CreateAndEmit`: Creates a new wallet with initial balances
+- `Update`/`UpdateAndEmit`: Updates wallet balances
+- `UpdateWithTransaction`/`UpdateAndEmitWithTransaction`: Updates wallet with transaction ID for saga coordination
+- `AdjustCurrency`: Adjusts a specific currency type by amount, validates sufficient balance (delegates to `AdjustCurrencyWithTransaction` with a nil transaction ID)
+- `AdjustCurrencyWithTransaction`: Adjusts currency with transaction ID, validates sufficient balance
+- `Delete`/`DeleteAndEmit`: Deletes a wallet
+- `EmitAdjustFailure`: Emits a wallet ERROR status event for a failed transactional currency adjustment
 - `WithTransaction`: Returns a new processor scoped to a database transaction
 
 ---
@@ -55,11 +58,10 @@ Manages character wishlists for cash shop commodities.
 ### Processors
 
 #### Processor
-- `ByCharacterIdProvider`: Provides wishlist items by character ID
-- `GetByCharacterId`: Retrieves all wishlist items for a character
-- `Add`: Adds an item to the wishlist
-- `Delete`: Removes an item from the wishlist
-- `DeleteAll`: Clears all items from a character's wishlist
+- `ByCharacterIdPagedProvider`: Provides one page of a character's wishlist
+- `Add`/`AddAndEmit`: Adds an item to the wishlist
+- `Delete`/`DeleteAndEmit`: Removes an item from the wishlist
+- `DeleteAll`/`DeleteAllAndEmit`: Clears all items from a character's wishlist
 
 ---
 
@@ -83,8 +85,8 @@ Represents a cash shop inventory containing compartments organized by character 
 #### Processor
 - `ByAccountIdProvider`: Provides inventory by account ID, assembling compartments from the database
 - `GetByAccountId`: Retrieves inventory for an account
-- `Create`: Creates inventory with three default compartments (Explorer, Cygnus, Legend) at default capacity
-- `Delete`: Deletes all compartments for the account
+- `Create`/`CreateAndEmit`: Creates inventory with three default compartments (Explorer, Cygnus, Legend) at default capacity
+- `Delete`/`DeleteAndEmit`: Deletes all compartments for the account
 - `WithTransaction`: Returns a new processor scoped to a database transaction
 
 ---
@@ -107,6 +109,7 @@ Represents a section of cash inventory for a specific character type. Contains a
 - `type_` (CompartmentType): Compartment type
 - `capacity` (uint32): Maximum number of assets
 - `assets` ([]asset.Model): Assets in the compartment
+- `FindById`/`FindByTemplateId`: Lookup helpers over `assets`
 
 #### DefaultCapacity
 - Constant value: 55
@@ -115,9 +118,11 @@ Represents a section of cash inventory for a specific character type. Contains a
 - Default capacity is 55
 - Assets count cannot exceed capacity (enforced during purchase)
 - Assets are lazily decorated onto the model when fetched via `DecorateAssets`
+- `Accept` defaults `quantity` to 1 when 0 is supplied, and `purchasedBy` to the account ID when 0 is supplied
+- Compartment error events use one of the codes: `UNKNOWN_ERROR` (compartment lookup failure), `ASSET_CREATION_FAILED` (Accept could not create the asset), `ITEM_NOT_FOUND` (Release target asset not found in the compartment)
 
 ### State Transitions
-- `Accept`: Creates a new flattened asset in the compartment using `CreateWithCashId` (idempotent by cashId). Emits ACCEPTED on success, ERROR on failure.
+- `Accept`: Creates a new flattened asset in the compartment using `CreateWithCashId` (idempotent by cashId; petId is always 0). Emits ACCEPTED on success, ERROR on failure.
 - `Release`: Validates the asset exists in the compartment via `FindById`, then soft-deletes it. Emits RELEASED on success, ERROR on failure.
 
 ### Processors
@@ -129,12 +134,13 @@ Represents a section of cash inventory for a specific character type. Contains a
 - `ByAccountIdAndTypeProvider`: Provides compartment by account and type
 - `AllByAccountIdProvider`: Provides all compartments for an account
 - `GetByAccountId`: Retrieves all compartments for an account
-- `Create`: Creates a new compartment
-- `UpdateCapacity`: Updates compartment capacity
-- `Delete`: Deletes a compartment
-- `DeleteAllByAccountId`: Deletes all compartments for an account
-- `Accept`: Accepts an asset into a compartment (creates flattened asset with preserved cashId)
-- `Release`: Releases an asset from a compartment (validates existence, then deletes)
+- `AllByAccountIdPagedProvider`: Provides one page of an account's compartments
+- `Create`/`CreateAndEmit`: Creates a new compartment
+- `UpdateCapacity`/`UpdateCapacityAndEmit`: Updates compartment capacity
+- `Delete`/`DeleteAndEmit`: Deletes a compartment
+- `DeleteAllByAccountId`/`DeleteAllByAccountIdAndEmit`: Deletes all compartments for an account
+- `Accept`/`AcceptAndEmit`: Accepts an asset into a compartment (creates flattened asset with preserved cashId)
+- `Release`/`ReleaseAndEmit`: Releases an asset from a compartment (validates existence, then deletes)
 - `WithTransaction`: Returns a new processor scoped to a database transaction
 
 ---
@@ -154,18 +160,20 @@ Represents a cash shop item stored in a compartment. The asset model is flattene
 - `commodityId` (uint32): Commodity catalog entry ID (0 if not from commodity purchase)
 - `quantity` (uint32): Item quantity
 - `flag` (uint16): Item flags
+- `petId` (uint32): Associated pet ID (0 if the asset is not a pet)
 - `purchasedBy` (uint32): Character ID that purchased the item
 - `expiration` (time.Time): Item expiration time (zero time means permanent)
 - `createdAt` (time.Time): Timestamp of creation
 
 #### ModelBuilder
 - Builder pattern via `NewBuilder(compartmentId, templateId)` and `Clone(model)`
-- Setters: `SetId`, `SetCompartmentId`, `SetCashId`, `SetTemplateId`, `SetCommodityId`, `SetQuantity`, `SetFlag`, `SetPurchasedBy`, `SetExpiration`, `SetCreatedAt`
+- Setters: `SetId`, `SetCompartmentId`, `SetCashId`, `SetTemplateId`, `SetCommodityId`, `SetQuantity`, `SetFlag`, `SetPetId`, `SetPurchasedBy`, `SetExpiration`, `SetCreatedAt`
 
 ### Invariants
 - Cash ID is unique within a tenant; generated randomly on creation or accepted from external source
 - `CreateWithCashId` uses find-or-create semantics: if an asset with the given cashId already exists, it returns the existing one (idempotent)
 - Flag defaults to 0 on creation
+- Expiration period defaults to 30 days when `commodityId` is 0 or the commodity lookup fails; otherwise uses the commodity's period (see Expiration Calculation)
 
 ### State Transitions
 - `Create`: Generates a unique cashId, calculates expiration from commodity period and hourly configuration, creates the asset, emits CREATED status
@@ -173,7 +181,7 @@ Represents a cash shop item stored in a compartment. The asset model is flattene
 - `UpdateQuantity`: Updates quantity in-place
 - `Release`: Soft-deletes the asset
 - `Delete`: Soft-deletes the asset
-- `Expire`: Deletes the asset, emits EXPIRED status, optionally creates a replacement asset with the given replaceItemId
+- `Expire`: Deletes the asset, emits EXPIRED status, optionally creates a replacement asset (via `Create`, with quantity 1 and no commodity/pet) with the given replaceItemId
 
 ### Processors
 
@@ -182,15 +190,15 @@ Represents a cash shop item stored in a compartment. The asset model is flattene
 - `GetById`: Retrieves asset by ID
 - `ByCompartmentIdProvider`: Provides all assets for a compartment
 - `GetByCompartmentId`: Retrieves all assets for a compartment
-- `Create`: Creates a new asset (generates cashId, calculates expiration)
+- `Create`: Creates a new asset (generates cashId, calculates expiration), parameterized by compartmentId, templateId, commodityId, quantity, petId, purchasedBy
 - `CreateAndEmit`: Creates asset and emits Kafka event
-- `CreateWithCashId`: Creates or finds asset by cashId (idempotent)
+- `CreateWithCashId`: Creates or finds asset by cashId (idempotent), same parameters plus cashId
 - `CreateWithCashIdAndEmit`: Creates or finds asset by cashId and emits Kafka event
 - `UpdateQuantity`: Updates asset quantity
 - `Delete`: Soft-deletes an asset
-- `DeleteAndEmit`: Deletes asset and emits Kafka event
+- `DeleteAndEmit`: Deletes asset (puts no event)
 - `Release`: Soft-deletes an asset (alias for delete with logging)
-- `ReleaseAndEmit`: Releases asset and emits Kafka event
+- `ReleaseAndEmit`: Releases asset (puts no event)
 - `Expire`: Expires an asset, optionally creating a replacement
 - `ExpireAndEmit`: Expires asset and emits Kafka events
 
@@ -246,7 +254,7 @@ Fetches character data from the external atlas-characters service. Used during p
 - `jobId` (job.Id): Character job
 - `inventory` (inventory.Model): Character inventory (lazily decorated)
 - `equipment` (equipment.Model): Equipment slots (derived from inventory)
-- Additional fields: name, gender, skinColor, face, hair, level, stats, ap, sp, experience, fame, mapId, meso, x, y, stance
+- Additional fields: name, gender, skinColor, face, hair, level, strength, dexterity, intelligence, luck, hp, maxHp, mp, maxMp, hpMpUsed, ap, sp, experience, fame, gachaponExperience, spawnPoint, gm, meso, x, y, stance
 
 #### Equipment Model
 - `slots` (map[slot.Type]slot.Model): Equipment slots indexed by type
@@ -378,7 +386,7 @@ Generic polymorphic asset model used to represent character inventory items fetc
 - `SetupReferenceData`: Quantity, ownerId, flag
 - `EtcReferenceData`: Quantity, ownerId, flag
 - `CashReferenceData`: CashId, quantity, ownerId, flag, purchaseBy
-- `PetReferenceData`: CashId, ownerId, flag, purchaseBy, name, level, closeness, fullness, expiration, slot, attributes
+- `PetReferenceData`: CashId, ownerId, flag, purchaseBy, name, level, closeness, fullness, expiration, slot, attribute, skill, remainingLife, attribute2
 
 ### Invariants
 - Quantity defaults to 1 unless the reference data implements `HasQuantity`
@@ -389,18 +397,59 @@ Generic polymorphic asset model used to represent character inventory items fetc
 ## Cash Shop (Purchase Orchestration)
 
 ### Responsibility
-Coordinates purchase flows: validates funds, determines compartment type from character job, creates flattened assets, and deducts currency.
+Coordinates purchase flows: validates funds, determines compartment type from character job, creates a pet when the purchased item is pet-classified, creates flattened assets, and deducts currency.
 
 ### Invariants
 - Insufficient funds result in `ErrInsufficientFunds` and an ERROR event with code `NOT_ENOUGH_CASH`
-- Full compartment (assets count >= capacity) results in an ERROR event with code `INVENTORY_FULL`
+- Full compartment (assets count >= capacity) results in an ERROR event with code `INVENTORY_FULL`; no state is changed
+- Any other failure (commodity lookup, character lookup, wallet lookup, pet creation, asset creation) results in an ERROR event with code `UNKNOWN_ERROR`
 - Compartment type is derived from character job type: Explorer, Cygnus, or Legend
+- When the purchased item's classification is Pet, a pet is created via the Pet (REST Client) processor before the asset is created; the pet's name is resolved from the Pet Data (REST Client) processor, defaulting to `"Pet"` if that lookup fails; the created pet's ID is stored on the asset's `petId`
+- `PurchaseInventoryIncreaseByItem` resolves the target inventory type from the commodity's item ID and grants 4 slots; `PurchaseInventoryIncreaseByType` grants 8 slots for a fixed cost of 4000 currency
 - Character inventory capacity increase is capped at 96 slots; exceeding produces `ErrMaxSlots`
 
 ### Processors
 
 #### Processor
-- `Purchase`: Validates balance, determines compartment, creates flattened asset directly, deducts currency, emits PURCHASE event
-- `PurchaseInventoryIncreaseByType`: Purchases inventory capacity increase by type (8 slots for 4000 currency)
-- `PurchaseInventoryIncreaseByItem`: Purchases inventory capacity increase using a commodity item (4 slots)
+- `Purchase`/`PurchaseAndEmit`: Validates balance, determines compartment, creates a pet if applicable, creates flattened asset directly, deducts currency, emits PURCHASE event
+- `PurchaseInventoryIncreaseByType`/`PurchaseInventoryIncreaseByTypeAndEmit`: Purchases inventory capacity increase by type (8 slots for 4000 currency)
+- `PurchaseInventoryIncreaseByItem`/`PurchaseInventoryIncreaseByItemAndEmit`: Purchases inventory capacity increase using a commodity item (4 slots)
 - `PurchaseInventoryIncrease`: Core logic for inventory capacity increase with configurable cost and amount
+
+---
+
+## Pet Data (REST Client)
+
+### Responsibility
+Fetches pet template data from the external atlas-data service. Used during purchase flows to resolve a pet's display name.
+
+### Core Models
+
+#### Model
+- `id` (uint32): Template ID
+- `name` (string): Pet template name
+
+### Processors
+
+#### Processor
+- `GetById`: Fetches pet template data by template ID from atlas-data via REST
+
+---
+
+## Pet (REST Client)
+
+### Responsibility
+Creates pets via an external pet service. Used during purchase flows when the purchased item is pet-classified.
+
+### Core Models
+
+#### Model
+- `id` (uint32): Pet ID
+- `templateId` (uint32): Item template ID
+- `name` (string): Pet name
+- `ownerId` (uint32): Owning character ID
+
+### Processors
+
+#### Processor
+- `Create`: Creates a pet for a character via REST, given owner character ID, template ID, and name

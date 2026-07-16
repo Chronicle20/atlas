@@ -8,7 +8,10 @@ Retrieves all gachapons for the tenant.
 
 #### Parameters
 
-None.
+| Name | Location | Type | Required |
+|------|----------|------|----------|
+| page[number] | query | integer | no |
+| page[size] | query | integer | no |
 
 #### Request Model
 
@@ -16,7 +19,7 @@ None.
 
 #### Response Model
 
-Array of Gachapon resources.
+Paginated array of Gachapon resources.
 
 | Field | Type | JSON Key |
 |-------|------|----------|
@@ -34,6 +37,7 @@ Resource type: `gachapons`
 | Status | Condition |
 |--------|-----------|
 | 200 OK | Gachapons retrieved |
+| 400 Bad Request | Invalid page[number]/page[size] |
 | 500 Internal Server Error | Database or transformation error |
 
 ---
@@ -181,6 +185,8 @@ Retrieves items for a gachapon. Optionally filtered by tier.
 |------|----------|------|----------|
 | gachaponId | path | string | yes |
 | tier | query | string | no |
+| page[number] | query | integer | no |
+| page[size] | query | integer | no |
 
 #### Request Model
 
@@ -188,7 +194,7 @@ None.
 
 #### Response Model
 
-Array of GachaponItem resources.
+Paginated array of GachaponItem resources.
 
 | Field | Type | JSON Key |
 |-------|------|----------|
@@ -205,7 +211,7 @@ Resource type: `gachapon-items`
 | Status | Condition |
 |--------|-----------|
 | 200 OK | Items retrieved |
-| 400 Bad Request | Invalid gachaponId |
+| 400 Bad Request | Invalid gachaponId or page[number]/page[size] |
 | 500 Internal Server Error | Database or transformation error |
 
 ---
@@ -284,6 +290,8 @@ Retrieves all global gachapon items. Optionally filtered by tier.
 | Name | Location | Type | Required |
 |------|----------|------|----------|
 | tier | query | string | no |
+| page[number] | query | integer | no |
+| page[size] | query | integer | no |
 
 #### Request Model
 
@@ -291,7 +299,7 @@ None.
 
 #### Response Model
 
-Array of GlobalGachaponItem resources.
+Paginated array of GlobalGachaponItem resources.
 
 | Field | Type | JSON Key |
 |-------|------|----------|
@@ -307,6 +315,7 @@ Resource type: `global-gachapon-items`
 | Status | Condition |
 |--------|-----------|
 | 200 OK | Items retrieved |
+| 400 Bad Request | Invalid page[number]/page[size] |
 | 500 Internal Server Error | Database or transformation error |
 
 ---
@@ -421,6 +430,8 @@ Retrieves the merged prize pool for a gachapon. Optionally filtered by tier.
 |------|----------|------|----------|
 | gachaponId | path | string | yes |
 | tier | query | string | no |
+| page[number] | query | integer | no |
+| page[size] | query | integer | no |
 
 #### Request Model
 
@@ -428,7 +439,7 @@ None.
 
 #### Response Model
 
-Array of GachaponReward resources. Same fields as POST /gachapons/{gachaponId}/rewards/select.
+Paginated array of GachaponReward resources. Same fields as POST /gachapons/{gachaponId}/rewards/select. The merged pool is materialized in memory and sorted by (tier, itemId, gachaponId) before pagination.
 
 Resource type: `gachapon-rewards`
 
@@ -437,14 +448,14 @@ Resource type: `gachapon-rewards`
 | Status | Condition |
 |--------|-----------|
 | 200 OK | Prize pool retrieved |
-| 400 Bad Request | Invalid gachaponId |
+| 400 Bad Request | Invalid gachaponId or page[number]/page[size] |
 | 500 Internal Server Error | Database or transformation error |
 
 ---
 
 ### POST /gachapons/seed
 
-Triggers asynchronous seed data loading for the tenant. Deletes existing data and loads gachapons, items, and global items from JSON files.
+Triggers asynchronous seed data loading for the tenant from the configured seed catalog. Deletes existing data and reloads gachapons, gachapon items, and global items from catalog files under the tenant's catalog root.
 
 #### Parameters
 
@@ -463,3 +474,35 @@ None. Seeding runs asynchronously.
 | Status | Condition |
 |--------|-----------|
 | 202 Accepted | Seed operation started |
+
+---
+
+### GET /gachapons/seed/status
+
+Retrieves seed catalog status for the gachapons seed group. Response is a plain JSON document, not a JSON:API resource.
+
+#### Parameters
+
+None.
+
+#### Request Model
+
+None.
+
+#### Response Model
+
+| Field | Type | JSON Key | Description |
+|-------|------|----------|-------------|
+| GroupName | string | groupName | Always "gachapons" |
+| Subdomains | map[string]SubdomainStatus | subdomains | Keyed by subdomain name (`gachapons`, `items`, `globalItems`); each entry has `count` (int64) and `updatedAt` (timestamp, nullable) |
+| UpdatedAt | *time.Time | updatedAt | Latest subdomain update time, nullable |
+| CatalogRevision | string | catalogRevision | Revision of the on-disk seed catalog for the tenant |
+| TenantSeededRevision | *string | tenantSeededRevision | Catalog revision recorded at the last successful seed for the tenant, nullable |
+| TenantSeededAt | *time.Time | tenantSeededAt | Time of the last successful seed for the tenant, nullable |
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 200 OK | Status retrieved |
+| 500 Internal Server Error | Failure reading seed status |

@@ -62,9 +62,8 @@ Represents the static structure of a party quest. A definition describes a quest
 - `Delete(id)` — Soft-deletes a definition by ID
 - `ByIdProvider(id)` — Returns a provider for a single definition by UUID
 - `ByQuestIdProvider(questId)` — Returns a provider for a single definition by quest ID
-- `AllProvider()` — Returns a provider for all definitions in the tenant
+- `AllProvider(page)` — Returns a provider for a page of definitions in the tenant
 - `DeleteAllForTenant()` — Hard-deletes all definitions for the current tenant
-- `Seed()` — Clears all definitions for the tenant, then loads and creates definitions from JSON files on disk
 - `ValidateDefinitions()` — Validates all JSON definition files on disk without persisting
 
 ---

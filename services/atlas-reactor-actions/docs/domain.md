@@ -50,17 +50,6 @@ Context information for reactor operation execution.
 | X | int16 | X coordinate |
 | Y | int16 | Y coordinate |
 
-### SeedResult
-
-Result of a seed operation.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| DeletedCount | int | Scripts deleted |
-| CreatedCount | int | Scripts created |
-| FailedCount | int | Scripts that failed to load |
-| Errors | []string | Error messages |
-
 ## Invariants
 
 - Rules are evaluated in order; first matching rule wins
@@ -76,18 +65,15 @@ Result of a seed operation.
 Interface for reactor script processing.
 
 **CRUD Operations:**
-- `Create(model ReactorScript) (ReactorScript, error)`
-- `Update(id uuid.UUID, model ReactorScript) (ReactorScript, error)`
+- `Create(m ReactorScript) (ReactorScript, error)`
+- `Update(id uuid.UUID, m ReactorScript) (ReactorScript, error)`
 - `Delete(id uuid.UUID) error`
 
 **Query Operations:**
 - `ByIdProvider(id uuid.UUID) model.Provider[ReactorScript]`
 - `ByReactorIdProvider(reactorId string) model.Provider[ReactorScript]`
-- `AllProvider() model.Provider[[]ReactorScript]`
-
-**Seeding:**
-- `DeleteAllForTenant() (int64, error)`
-- `Seed() (SeedResult, error)`
+- `AllProvider(page model.Page) model.Provider[model.Paged[ReactorScript]]`
+- `Count() (int64, *time.Time, error)`: returns the number of reactor scripts for the current tenant and the max `updated_at` timestamp; returns `(0, nil, nil)` when the tenant has no rows
 
 **Execution:**
 - `ProcessHit(reactorId string, reactorState int8, characterId uint32) ProcessResult`
@@ -126,6 +112,20 @@ Executes reactor script operations via saga orchestration.
 - `hit_reactor`: Hits another reactor by name via saga; params: `reactorName`
 - `broadcast_pq_message`: Broadcasts a message to all PQ members via saga; params: `message`, `type` (defaults to PINK_TEXT); queries atlas-party-quests for the character's PQ instance
 - `stage_clear_attempt`: Triggers a stage clear attempt on the character's party quest instance via saga; queries atlas-party-quests for the character's PQ instance
+
+### ReactorSubdomain
+
+Implements the generic seeder subdomain contract used to load reactor scripts from a filesystem catalog.
+
+- `Name() string`: returns `"reactor-actions"`
+- `Path() string`: returns `"reactor-actions/reactors"`
+- `Type() string`: returns `"reactor-action"`
+- `EntityIDPattern() *regexp.Regexp`: matches `reactor-(.+)\.json`
+- `DeleteAllForTenant(db *gorm.DB) (int64, error)`: hard-deletes all reactor scripts for the tenant
+- `Decode(payload []byte) (jsonReactorScript, error)`: decodes a catalog entry's attributes
+- `Build(t tenant.Model, entityID string, attrs jsonReactorScript) ([]ReactorScript, error)`: builds a ReactorScript from decoded attributes; falls back to the filename-derived entity ID when the JSON payload's `reactorId` is empty
+- `BulkCreate(db *gorm.DB, models []ReactorScript) error`: inserts built scripts
+- `Count(db *gorm.DB) (int64, *time.Time, error)`: returns the row count for the tenant
 
 ## Builders
 

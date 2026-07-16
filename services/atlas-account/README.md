@@ -30,7 +30,10 @@ The service manages user accounts including authentication, session state tracki
 | COMMAND_TOPIC_BAN | Topic for ban commands |
 | EVENT_TOPIC_ACCOUNT_STATUS | Topic for account status events |
 | EVENT_TOPIC_ACCOUNT_SESSION_STATUS | Topic for session status events |
-| BANS | Base URL for atlas-ban REST API |
+| BANS_SERVICE_URL | Base URL for atlas-ban REST API (falls back to BASE_SERVICE_URL) |
+| BASE_SERVICE_URL | Fallback base URL for service-to-service REST calls |
+| REDIS_URL | Redis connection address |
+| REDIS_PASSWORD | Redis connection password |
 
 ## Documentation
 

@@ -518,7 +518,7 @@ func TestLeave_Visitor(t *testing.T) {
 	left := decodeEvents[minigame.LeftEventBody](t, buf, minigame.EventTypeLeft)
 	require.Len(t, left, 1)
 	assert.Equal(t, byte(1), left[0].Body.Slot)
-	assert.Equal(t, byte(4), left[0].Body.Status)
+	assert.Equal(t, "MINIGAME_LEFT", left[0].Body.Status)
 
 	balloon := decodeEvents[minigame.BalloonEventBody](t, buf, minigame.EventTypeBalloonUpdated)
 	require.Len(t, balloon, 1)
@@ -542,7 +542,7 @@ func TestExpel_PreGame(t *testing.T) {
 	left := decodeEvents[minigame.LeftEventBody](t, buf, minigame.EventTypeLeft)
 	require.Len(t, left, 1)
 	assert.Equal(t, byte(1), left[0].Body.Slot)
-	assert.Equal(t, byte(5), left[0].Body.Status)
+	assert.Equal(t, "MINIGAME_EXPELLED", left[0].Body.Status)
 	assert.Equal(t, visitor, left[0].VisitorId)
 }
 
@@ -570,7 +570,7 @@ func TestLeave_OwnerClosesRoom(t *testing.T) {
 
 	closed := decodeEvents[minigame.RoomClosedEventBody](t, buf, minigame.EventTypeRoomClosed)
 	require.Len(t, closed, 1)
-	assert.Equal(t, byte(3), closed[0].Body.VisitorStatus)
+	assert.Equal(t, "MINIGAME_CLOSED", closed[0].Body.VisitorStatus)
 	assert.Equal(t, visitor, closed[0].VisitorId)
 
 	balloon := decodeEvents[minigame.BalloonEventBody](t, buf, minigame.EventTypeBalloonUpdated)
@@ -853,7 +853,7 @@ func TestMoveStone_WinningMoveEndsGame(t *testing.T) {
 	require.Len(t, decodeEvents[minigame.StonePlacedEventBody](t, buf, minigame.EventTypeStonePlaced), 1)
 	ended := decodeEvents[minigame.GameEndedEventBody](t, buf, minigame.EventTypeGameEnded)
 	require.Len(t, ended, 1)
-	assert.Equal(t, resultWin, ended[0].Body.ResultType)
+	assert.Equal(t, "WIN", ended[0].Body.ResultType)
 	assert.Equal(t, byte(0), ended[0].Body.WinnerSlot)
 	assert.Equal(t, uint32(1), ended[0].Body.OwnerRecord.Wins)
 	assert.Equal(t, uint32(1), ended[0].Body.VisitorRecord.Losses)
@@ -956,7 +956,7 @@ func TestFlipCard_LastPairWinAndTie(t *testing.T) {
 		require.Len(t, decodeEvents[minigame.CardFlippedEventBody](t, buf, minigame.EventTypeCardFlipped), 1)
 		ended := decodeEvents[minigame.GameEndedEventBody](t, buf, minigame.EventTypeGameEnded)
 		require.Len(t, ended, 1)
-		assert.Equal(t, resultWin, ended[0].Body.ResultType)
+		assert.Equal(t, "WIN", ended[0].Body.ResultType)
 		assert.Equal(t, byte(0), ended[0].Body.WinnerSlot)
 	})
 
@@ -968,7 +968,7 @@ func TestFlipCard_LastPairWinAndTie(t *testing.T) {
 		require.NoError(t, h.p.flipCard(buf, uuid.New(), visitor, false, 1)) // match -> visitorPairs 3 -> 3:3
 		ended := decodeEvents[minigame.GameEndedEventBody](t, buf, minigame.EventTypeGameEnded)
 		require.Len(t, ended, 1)
-		assert.Equal(t, resultTie, ended[0].Body.ResultType)
+		assert.Equal(t, "TIE", ended[0].Body.ResultType)
 	})
 }
 
@@ -1037,7 +1037,7 @@ func TestTie_AnswerAcceptEndsGame(t *testing.T) {
 
 	ended := decodeEvents[minigame.GameEndedEventBody](t, buf, minigame.EventTypeGameEnded)
 	require.Len(t, ended, 1)
-	assert.Equal(t, resultTie, ended[0].Body.ResultType)
+	assert.Equal(t, "TIE", ended[0].Body.ResultType)
 	assert.Equal(t, int32(10), ended[0].Body.OwnerScore)
 	assert.Equal(t, int32(10), ended[0].Body.VisitorScore)
 	assert.Equal(t, uint32(1), ended[0].Body.OwnerRecord.Ties)
@@ -1078,7 +1078,7 @@ func TestGiveUp_Forfeit(t *testing.T) {
 
 	ended := decodeEvents[minigame.GameEndedEventBody](t, buf, minigame.EventTypeGameEnded)
 	require.Len(t, ended, 1)
-	assert.Equal(t, resultForfeit, ended[0].Body.ResultType)
+	assert.Equal(t, "FORFEIT", ended[0].Body.ResultType)
 	assert.Equal(t, byte(1), ended[0].Body.WinnerSlot, "visitor wins the forfeit")
 	assert.Equal(t, int32(50), ended[0].Body.VisitorScore)
 	assert.Equal(t, int32(-15), ended[0].Body.OwnerScore)
@@ -1150,12 +1150,12 @@ func TestMidGameLeave_VisitorForfeits(t *testing.T) {
 
 	ended := decodeEvents[minigame.GameEndedEventBody](t, buf, minigame.EventTypeGameEnded)
 	require.Len(t, ended, 1)
-	assert.Equal(t, resultForfeit, ended[0].Body.ResultType)
+	assert.Equal(t, "FORFEIT", ended[0].Body.ResultType)
 	assert.Equal(t, byte(0), ended[0].Body.WinnerSlot, "owner wins the forfeit")
 
 	left := decodeEvents[minigame.LeftEventBody](t, buf, minigame.EventTypeLeft)
 	require.Len(t, left, 1)
-	assert.Equal(t, byte(4), left[0].Body.Status)
+	assert.Equal(t, "MINIGAME_LEFT", left[0].Body.Status)
 
 	r, ok := h.p.reg.Get(h.t, owner)
 	require.True(t, ok, "room stays open after the visitor forfeits and leaves")
@@ -1195,7 +1195,7 @@ func TestMidGameExpel_VisitorForfeits(t *testing.T) {
 	assert.Equal(t, byte(0), ended[0].Body.WinnerSlot)
 	left := decodeEvents[minigame.LeftEventBody](t, buf, minigame.EventTypeLeft)
 	require.Len(t, left, 1)
-	assert.Equal(t, byte(5), left[0].Body.Status, "expelled")
+	assert.Equal(t, "MINIGAME_EXPELLED", left[0].Body.Status, "expelled")
 }
 
 // --- TeardownCharacter (session-destroy / map-leave / logout consumers) ------
@@ -1277,7 +1277,7 @@ func TestExitAfter_VisitorLeavesAfterResult(t *testing.T) {
 	require.Len(t, decodeEvents[minigame.GameEndedEventBody](t, buf, minigame.EventTypeGameEnded), 1)
 	left := decodeEvents[minigame.LeftEventBody](t, buf, minigame.EventTypeLeft)
 	require.Len(t, left, 1)
-	assert.Equal(t, byte(4), left[0].Body.Status)
+	assert.Equal(t, "MINIGAME_LEFT", left[0].Body.Status)
 	r, ok := h.p.reg.Get(h.t, owner)
 	require.True(t, ok, "room stays open (owner remains)")
 	assert.Equal(t, uint32(0), r.VisitorId())

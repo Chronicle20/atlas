@@ -150,14 +150,18 @@ type EnteredEventBody struct {
 	VisitorScore  int32      `json:"visitorScore"`
 }
 
-// LeftEventBody status: 3 closed / 4 left / 5 expelled.
+// LeftEventBody Status carries a leaveReason KEY string
+// (MINIGAME_LEFT/MINIGAME_EXPELLED), resolved to a numeric code by the channel
+// via the tenant leaveReason table (DOM-25).
 type LeftEventBody struct {
-	Slot   byte `json:"slot"`
-	Status byte `json:"status"`
+	Slot   byte   `json:"slot"`
+	Status string `json:"status"`
 }
 
+// RoomClosedEventBody VisitorStatus carries a leaveReason KEY string
+// (MINIGAME_CLOSED), resolved by the channel via the tenant leaveReason table.
 type RoomClosedEventBody struct {
-	VisitorStatus byte `json:"visitorStatus"`
+	VisitorStatus string `json:"visitorStatus"`
 }
 
 type ChatEventBody struct {
@@ -196,9 +200,11 @@ type SkippedEventBody struct {
 	Who byte `json:"who"`
 }
 
-// GameEndedEventBody ResultType 0 win/1 tie/2 forfeit; WinnerSlot 0 owner/1 visitor.
+// GameEndedEventBody ResultType carries a resultType KEY string
+// (WIN/TIE/FORFEIT), resolved to a numeric code by the channel via the tenant
+// resultType table (DOM-25); WinnerSlot 0 owner/1 visitor.
 type GameEndedEventBody struct {
-	ResultType    byte       `json:"resultType"`
+	ResultType    string     `json:"resultType"`
 	WinnerSlot    byte       `json:"winnerSlot"`
 	OwnerRecord   RecordBody `json:"ownerRecord"`
 	VisitorRecord RecordBody `json:"visitorRecord"`

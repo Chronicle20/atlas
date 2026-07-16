@@ -11,6 +11,41 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
+// resultTypeKey maps the internal result-type byte enum (resultWin/resultTie/
+// resultForfeit) to the semantic leaveReason/resultType KEY string emitted on
+// the wire. The channel resolves the key to a per-version numeric code via the
+// tenant resultType table (DOM-25); the internal byte enum is retained for
+// game-resolution logic.
+func resultTypeKey(resultType byte) string {
+	switch resultType {
+	case resultWin:
+		return "WIN"
+	case resultTie:
+		return "TIE"
+	case resultForfeit:
+		return "FORFEIT"
+	default:
+		return ""
+	}
+}
+
+// leaveStatusKey maps the internal leave-status byte enum (leaveStatusClosed/
+// leaveStatusLeft/leaveStatusExpelled) to the semantic leaveReason KEY string
+// emitted on the wire. The channel resolves it to a per-version numeric code
+// via the tenant leaveReason table (DOM-25).
+func leaveStatusKey(status byte) string {
+	switch status {
+	case leaveStatusClosed:
+		return "MINIGAME_CLOSED"
+	case leaveStatusLeft:
+		return "MINIGAME_LEFT"
+	case leaveStatusExpelled:
+		return "MINIGAME_EXPELLED"
+	default:
+		return ""
+	}
+}
+
 // recordBody projects a persisted win/tie/loss record onto the wire body.
 func recordBody(m record.Model) minigame.RecordBody {
 	return minigame.RecordBody{
@@ -76,20 +111,21 @@ func enteredProvider(transactionId uuid.UUID, r Room, ownerRecord record.Model, 
 }
 
 // leftProvider announces a LEFT event for slot (0 owner, 1 visitor) with the
-// given leave status (4 left / 5 expelled). characterId is the character that
-// occupied the slot.
+// given leave status (leaveStatusLeft / leaveStatusExpelled). The byte enum is
+// mapped to a leaveReason KEY string at this emission boundary (DOM-25).
+// characterId is the character that occupied the slot.
 func leftProvider(transactionId uuid.UUID, r Room, slot byte, status byte, characterId uint32) model.Provider[[]kafka.Message] {
 	return statusEventProvider(transactionId, r.Field(), r.Id(), r.OwnerId(), characterId, characterId, minigame.EventTypeLeft, minigame.LeftEventBody{
 		Slot:   slot,
-		Status: status,
+		Status: leaveStatusKey(status),
 	})
 }
 
 // roomClosedProvider announces a ROOM_CLOSED event to the room, carrying the
-// visitor's leave status (3 closed).
+// visitor's leave status (leaveStatusClosed) as a leaveReason KEY string.
 func roomClosedProvider(transactionId uuid.UUID, r Room, visitorStatus byte) model.Provider[[]kafka.Message] {
 	return statusEventProvider(transactionId, r.Field(), r.Id(), r.OwnerId(), r.VisitorId(), r.OwnerId(), minigame.EventTypeRoomClosed, minigame.RoomClosedEventBody{
-		VisitorStatus: visitorStatus,
+		VisitorStatus: leaveStatusKey(visitorStatus),
 	})
 }
 
@@ -181,7 +217,7 @@ func skippedProvider(transactionId uuid.UUID, r Room, who byte, characterId uint
 // both refreshed persistent records, and the post-game session scores.
 func gameEndedProvider(transactionId uuid.UUID, r Room, resultType byte, winnerSlot byte, ownerRecord record.Model, visitorRecord record.Model) model.Provider[[]kafka.Message] {
 	return statusEventProvider(transactionId, r.Field(), r.Id(), r.OwnerId(), r.VisitorId(), r.OwnerId(), minigame.EventTypeGameEnded, minigame.GameEndedEventBody{
-		ResultType:    resultType,
+		ResultType:    resultTypeKey(resultType),
 		WinnerSlot:    winnerSlot,
 		OwnerRecord:   recordBody(ownerRecord),
 		VisitorRecord: recordBody(visitorRecord),

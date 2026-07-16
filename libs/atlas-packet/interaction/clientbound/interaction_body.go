@@ -13,6 +13,14 @@ type CharacterInteractionMode = string
 
 type CharacterInteractionEnterErrorMode = string
 
+// CharacterInteractionMiniGameResultType is the semantic key for a mini-game
+// RESULT (mode 62) outcome, resolved to a numeric byte via the tenant
+// "resultType" writer table (DOM-25). The client reads the numeric value in
+// COmokDlg/CMemoryGameDlg::OnGameResult; values are version-stable per
+// ida-notes.md §G5 RESULT but still config-resolved so the resolution
+// mechanism is uniform.
+type CharacterInteractionMiniGameResultType = string
+
 const (
 	// CharacterInteraction CMiniRoomBaseDlg::OnPacketBase
 	CharacterInteractionModeInvite         CharacterInteractionMode = "INVITE"          // 2
@@ -70,6 +78,13 @@ const (
 	CharacterInteractionModeMemoryGameSkip          CharacterInteractionMode = "MEMORY_GAME_SKIP"           // 63
 	CharacterInteractionModeMemoryGameMoveStone     CharacterInteractionMode = "MEMORY_GAME_MOVE_STONE"     // 64
 	CharacterInteractionModeMemoryGameFlipCard      CharacterInteractionMode = "MEMORY_GAME_FIP_CARD"       // 68 (typo is load-bearing)
+
+	// Mini-game RESULT (mode 62) outcome keys, resolved via the tenant
+	// "resultType" writer table. Values {WIN:0, TIE:1, FORFEIT:2} are
+	// version-stable (ida-notes.md §G5 RESULT) but config-resolved for DOM-25.
+	CharacterInteractionMiniGameResultTypeWin     CharacterInteractionMiniGameResultType = "WIN"     // 0
+	CharacterInteractionMiniGameResultTypeTie     CharacterInteractionMiniGameResultType = "TIE"     // 1
+	CharacterInteractionMiniGameResultTypeForfeit CharacterInteractionMiniGameResultType = "FORFEIT" // 2
 )
 
 func CharacterInteractionInviteBody(roomType byte, name string, dwSN uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
@@ -136,6 +151,14 @@ const (
 	CharacterInteractionLeaveReasonShopClosed = "SHOP_CLOSED"  // 3  "The shop is closed."
 	CharacterInteractionLeaveReasonUserBanned = "USER_BANNED"  // 5  "The user has been banned."
 	CharacterInteractionLeaveReasonOutOfStock = "OUT_OF_STOCK" // 14 "The items are out of stock."
+
+	// Mini-game leave-status keys resolved via the same "leaveReason" tenant
+	// table. The CMiniRoomBaseDlg leave arm interprets 3 closed / 4 left /
+	// 5 expelled (version-stable, ida-notes.md §G5) — distinct keys so the
+	// mini-game path never depends on the shop keys' values (DOM-25).
+	CharacterInteractionLeaveReasonMiniGameClosed   = "MINIGAME_CLOSED"   // 3 owner tore the room down
+	CharacterInteractionLeaveReasonMiniGameLeft     = "MINIGAME_LEFT"     // 4 visitor left voluntarily
+	CharacterInteractionLeaveReasonMiniGameExpelled = "MINIGAME_EXPELLED" // 5 visitor expelled by owner
 )
 
 // CharacterInteractionLeaveReasonBody sends a LEAVE whose status byte is resolved
@@ -268,13 +291,19 @@ func CharacterInteractionMiniGameCardSelectSecondBody(slot byte, firstSlot byte,
 	})
 }
 
-// CharacterInteractionMiniGameResultBody: resultType 0 = normal win, 1 = tie,
-// 2 = forfeit win. visitorWon is only meaningful (and only serialized) for
-// resultType != 1 — see InteractionMiniGameResult / ida-notes.md §G5 RESULT.
-func CharacterInteractionMiniGameResultBody(resultType byte, visitorWon bool, ownerRecord interaction.GameRecord, visitorRecord interaction.GameRecord) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
-	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeMemoryGameResult, func(mode byte) packet.Encoder {
-		return NewInteractionMiniGameResult(mode, resultType, visitorWon, ownerRecord, visitorRecord)
-	})
+// CharacterInteractionMiniGameResultBody: resultType is a semantic key
+// (WIN/TIE/FORFEIT) resolved to a numeric byte via the tenant "resultType"
+// writer table (DOM-25). visitorWon is only meaningful (and only serialized)
+// for the non-tie shapes — see InteractionMiniGameResult / ida-notes.md §G5
+// RESULT.
+func CharacterInteractionMiniGameResultBody(resultType CharacterInteractionMiniGameResultType, visitorWon bool, ownerRecord interaction.GameRecord, visitorRecord interaction.GameRecord) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			mode := atlas_packet.ResolveCode(l, options, "operations", CharacterInteractionModeMemoryGameResult)
+			resolved := atlas_packet.ResolveCode(l, options, "resultType", resultType)
+			return NewInteractionMiniGameResult(mode, resolved, visitorWon, ownerRecord, visitorRecord).Encode(l, ctx)(options)
+		}
+	}
 }
 
 // CharacterInteractionUpdatePersonalShopBody is the mode-25 refresh for a

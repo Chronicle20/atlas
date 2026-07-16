@@ -2312,10 +2312,18 @@
             "INCORRECT_PASSWORD": 22,
             "ITEM_EXPIRED": 24
           },
+          "resultType": {
+            "WIN": 0,
+            "TIE": 1,
+            "FORFEIT": 2
+          },
           "leaveReason": {
             "CANNOT_ESTABLISH_HERE": 1,
             "SHOP_CLOSED": 3,
             "USER_BANNED": 5,
+            "MINIGAME_CLOSED": 3,
+            "MINIGAME_LEFT": 4,
+            "MINIGAME_EXPELLED": 5,
             "TIME_LIMIT_PASSED": 6,
             "OUT_OF_STOCK": 13,
             "BANNED_TIME_LIMIT": 14

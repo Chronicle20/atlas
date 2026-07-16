@@ -256,8 +256,8 @@ func handleLeftEvent(sc server.Model, wp writer.Producer) func(l logrus.FieldLog
 		if !guard(sc, ctx, e) {
 			return
 		}
-		l.Debugf("Character [%d] left mini-game room [%d]. slot [%d], status [%d].", e.VisitorId, e.RoomId, e.Body.Slot, e.Body.Status)
-		announceToRoom(l, ctx, sc, wp, e, interactioncb.CharacterInteractionLeaveBody(e.Body.Slot, e.Body.Status))
+		l.Debugf("Character [%d] left mini-game room [%d]. slot [%d], status [%s].", e.VisitorId, e.RoomId, e.Body.Slot, e.Body.Status)
+		announceToRoom(l, ctx, sc, wp, e, interactioncb.CharacterInteractionLeaveReasonBody(e.Body.Slot, e.Body.Status))
 	}
 }
 
@@ -272,8 +272,8 @@ func handleRoomClosedEvent(sc server.Model, wp writer.Producer) func(l logrus.Fi
 		if !guard(sc, ctx, e) {
 			return
 		}
-		l.Debugf("Mini-game room [%d] closed by owner [%d]. visitorStatus [%d].", e.RoomId, e.OwnerId, e.Body.VisitorStatus)
-		announceTo(l, ctx, sc, wp, e.VisitorId, interactioncb.CharacterInteractionLeaveBody(1, e.Body.VisitorStatus))
+		l.Debugf("Mini-game room [%d] closed by owner [%d]. visitorStatus [%s].", e.RoomId, e.OwnerId, e.Body.VisitorStatus)
+		announceTo(l, ctx, sc, wp, e.VisitorId, interactioncb.CharacterInteractionLeaveReasonBody(1, e.Body.VisitorStatus))
 	}
 }
 
@@ -424,7 +424,7 @@ func handleGameEndedEvent(sc server.Model, wp writer.Producer) func(l logrus.Fie
 		if !guard(sc, ctx, e) {
 			return
 		}
-		l.Debugf("Mini-game ended in room [%d]. resultType [%d], winnerSlot [%d].", e.RoomId, e.Body.ResultType, e.Body.WinnerSlot)
+		l.Debugf("Mini-game ended in room [%d]. resultType [%s], winnerSlot [%d].", e.RoomId, e.Body.ResultType, e.Body.WinnerSlot)
 		ownerRecord := gameRecord(e.Body.OwnerRecord, e.Body.OwnerScore)
 		visitorRecord := gameRecord(e.Body.VisitorRecord, e.Body.VisitorScore)
 		announceToRoom(l, ctx, sc, wp, e, interactioncb.CharacterInteractionMiniGameResultBody(e.Body.ResultType, e.Body.WinnerSlot == 1, ownerRecord, visitorRecord))

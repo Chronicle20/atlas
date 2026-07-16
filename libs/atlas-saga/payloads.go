@@ -944,4 +944,5 @@ type IncubatorResultPayload struct {
 	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
 	ItemId      uint32     `json:"itemId"`      // ItemId of the resulting item
 	Count       uint32     `json:"count"`       // Count of the resulting item
+	EggId       uint32     `json:"eggId"`       // EggId of the sacrificed Pigmy Egg (v95 client uses it to pick the region success NPC)
 }

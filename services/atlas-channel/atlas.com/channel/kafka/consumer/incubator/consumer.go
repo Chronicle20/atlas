@@ -55,7 +55,7 @@ func handleResult(sc server.Model, wp writer.Producer) message.Handler[incubator
 		}
 
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(event.CharacterId,
-			session.Announce(l)(ctx)(wp)(incubatorcb.IncubatorResultWriter)(incubatorcb.NewIncubatorResult(event.ItemId, uint16(event.Count), 0).Encode))
+			session.Announce(l)(ctx)(wp)(incubatorcb.IncubatorResultWriter)(incubatorcb.NewIncubatorResult(event.ItemId, uint16(event.Count), event.EggId).Encode))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce incubator result to character [%d].", event.CharacterId)
 		}

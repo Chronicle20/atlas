@@ -328,6 +328,7 @@ func IncubatorResultEventProvider(payload IncubatorResultPayload) model.Provider
 		ChannelId:   byte(payload.ChannelId),
 		ItemId:      payload.ItemId,
 		Count:       payload.Count,
+		EggId:       payload.EggId,
 	}
 	return producer.SingleMessageProvider(key, value)
 }

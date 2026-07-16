@@ -254,19 +254,25 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			sp.Decode(l, ctx)(r, readerOptions)
 			invType := inventory.Type(sp.InventoryType())
 			targetSlot := int16(sp.Slot())
-			announceFailure := func() {
-				_ = session.Announce(l)(ctx)(wp)(incubatorcb.IncubatorResultWriter)(incubatorcb.NewIncubatorResult(0, 0, 0).Encode)(s)
+			announceFailure := func(egg uint32) {
+				_ = session.Announce(l)(ctx)(wp)(incubatorcb.IncubatorResultWriter)(incubatorcb.NewIncubatorResult(0, 0, egg).Encode)(s)
 			}
 			target, err := character2.NewProcessor(l, ctx).GetItemInSlot(s.CharacterId(), invType, targetSlot)()
 			if err != nil {
 				l.Warnf("Character [%d] attempted to incubate empty slot [%d] of inventory [%d].", s.CharacterId(), targetSlot, invType)
-				announceFailure()
+				announceFailure(0)
 				return
 			}
-			rewards, err := incubator.NewProcessor(l, ctx).GetRewards()
+			eggId := target.TemplateId()
+			if !isPigmyEgg(eggId) {
+				l.Warnf("Character [%d] attempted to incubate non-egg item [%d].", s.CharacterId(), eggId)
+				announceFailure(0)
+				return
+			}
+			rewards, err := incubator.NewProcessor(l, ctx).GetRewardsForEgg(eggId)
 			if err != nil || len(rewards) == 0 {
-				l.Warnf("Character [%d] used incubator but tenant has no reward pool.", s.CharacterId())
-				announceFailure()
+				l.Warnf("Character [%d] used incubator on egg [%d] with no reward pool.", s.CharacterId(), eggId)
+				announceFailure(eggId)
 				return
 			}
 			reward, ok := incubator.PickWeighted(rewards, func(total uint32) uint32 {
@@ -274,19 +280,19 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			})
 			if !ok {
 				l.Warnf("Character [%d] used incubator but reward pool has zero weight.", s.CharacterId())
-				announceFailure()
+				announceFailure(eggId)
 				return
 			}
 			rewardInvType, ok := inventory.TypeFromItemId(item.Id(reward.ItemId()))
 			if !ok {
 				l.Warnf("Incubator reward [%d] has no inventory type.", reward.ItemId())
-				announceFailure()
+				announceFailure(eggId)
 				return
 			}
 			cm, err := compartment.NewProcessor(l, ctx).GetByType(s.CharacterId(), rewardInvType)
 			if err != nil || len(cm.Assets()) >= int(cm.Capacity()) {
 				l.Warnf("Character [%d] used incubator with full [%d] inventory.", s.CharacterId(), rewardInvType)
-				announceFailure()
+				announceFailure(eggId)
 				return
 			}
 			f := s.Field()
@@ -306,7 +312,7 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 							InventoryType: byte(invType),
 							Slot:          targetSlot,
 							Quantity:      1,
-							TemplateId:    target.TemplateId(),
+							TemplateId:    eggId,
 						},
 						CreatedAt: now,
 						UpdatedAt: now,
@@ -347,6 +353,7 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 							ChannelId:   f.ChannelId(),
 							ItemId:      reward.ItemId(),
 							Count:       reward.Quantity(),
+							EggId:       eggId,
 						},
 						CreatedAt: now,
 						UpdatedAt: now,
@@ -434,6 +441,18 @@ const (
 	CashSlotItemTypeViciousHammer    = CashSlotItemType(66) // GMS < 95
 	CashSlotItemTypeViciousHammerV95 = CashSlotItemType(67) // GMS >= 95
 )
+
+const (
+	pigmyEggMinId uint32 = 4170000
+	pigmyEggMaxId uint32 = 4170009
+)
+
+// isPigmyEgg reports whether templateId is an incubatable Pigmy Egg (the client
+// enforces this; the server re-checks so a crafted request can't sacrifice
+// arbitrary items).
+func isPigmyEgg(templateId uint32) bool {
+	return templateId >= pigmyEggMinId && templateId <= pigmyEggMaxId
+}
 
 // viciousHammerCashSlotItemType returns the version-scoped CashSlotItemType
 // for the Vicious Hammer item. Plain 66 also denotes CharacterCreation on

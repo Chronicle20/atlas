@@ -264,7 +264,7 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 				return
 			}
 			eggId := target.TemplateId()
-			if !isPigmyEgg(eggId) {
+			if !isPigmyEgg(item.Id(eggId)) {
 				l.Warnf("Character [%d] attempted to incubate non-egg item [%d].", s.CharacterId(), eggId)
 				announceFailure(0)
 				return
@@ -443,14 +443,14 @@ const (
 )
 
 const (
-	pigmyEggMinId uint32 = 4170000
-	pigmyEggMaxId uint32 = 4170009
+	pigmyEggMinId item.Id = 4170000
+	pigmyEggMaxId item.Id = 4170009
 )
 
 // isPigmyEgg reports whether templateId is an incubatable Pigmy Egg (the client
 // enforces this; the server re-checks so a crafted request can't sacrifice
 // arbitrary items).
-func isPigmyEgg(templateId uint32) bool {
+func isPigmyEgg(templateId item.Id) bool {
 	return templateId >= pigmyEggMinId && templateId <= pigmyEggMaxId
 }
 

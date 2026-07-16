@@ -84,7 +84,7 @@ func TestGetCashSlotItemType_CrossVersionTypeCollision(t *testing.T) {
 // that the incubator arm re-validates server-side so a crafted request
 // cannot sacrifice an arbitrary item.
 func TestIsPigmyEgg(t *testing.T) {
-	cases := map[uint32]bool{
+	cases := map[item.Id]bool{
 		4169999: false, 4170000: true, 4170005: true, 4170009: true, 4170010: false, 2000000: false,
 	}
 	for id, want := range cases {

@@ -230,6 +230,7 @@ type IncubatorRewardRestModel struct {
 	ItemId   uint32 `json:"itemId"`
 	Quantity uint32 `json:"quantity"`
 	Weight   uint32 `json:"weight"`
+	EggId    uint32 `json:"eggId"`
 }
 
 // GetID returns the resource ID
@@ -272,11 +273,17 @@ func TransformIncubatorReward(data map[string]interface{}) (IncubatorRewardRestM
 		weight = uint32(val)
 	}
 
+	eggId := uint32(0)
+	if val, ok := attributes["eggId"].(float64); ok {
+		eggId = uint32(val)
+	}
+
 	return IncubatorRewardRestModel{
 		Id:       id,
 		ItemId:   itemId,
 		Quantity: quantity,
 		Weight:   weight,
+		EggId:    eggId,
 	}, nil
 }
 
@@ -289,6 +296,7 @@ func ExtractIncubatorReward(v IncubatorRewardRestModel) (map[string]interface{},
 			"itemId":   v.ItemId,
 			"quantity": v.Quantity,
 			"weight":   v.Weight,
+			"eggId":    v.EggId,
 		},
 	}, nil
 }

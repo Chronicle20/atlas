@@ -682,6 +682,7 @@ func TestExtractIncubatorReward(t *testing.T) {
 		ItemId:   2000000,
 		Quantity: 50,
 		Weight:   40,
+		EggId:    4170000,
 	}
 
 	reward, err := configuration.ExtractIncubatorReward(restModel)
@@ -693,6 +694,13 @@ func TestExtractIncubatorReward(t *testing.T) {
 	}
 	if reward["type"] != "incubator-rewards" {
 		t.Errorf("reward[type] = %v, want 'incubator-rewards'", reward["type"])
+	}
+	attrs, ok := reward["attributes"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("reward[attributes] not a map")
+	}
+	if attrs["eggId"] != uint32(4170000) {
+		t.Errorf("attrs[eggId] = %v, want 4170000", attrs["eggId"])
 	}
 }
 

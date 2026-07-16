@@ -2,6 +2,7 @@
   "id": "white-potion",
   "type": "incubator-rewards",
   "attributes": {
+    "eggId": 4170000,
     "itemId": 2000003,
     "quantity": 50,
     "weight": 15

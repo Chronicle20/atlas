@@ -2,6 +2,7 @@
   "id": "sword-1302000",
   "type": "incubator-rewards",
   "attributes": {
+    "eggId": 4170000,
     "itemId": 1302000,
     "quantity": 1,
     "weight": 1

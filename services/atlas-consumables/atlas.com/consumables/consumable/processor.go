@@ -13,9 +13,11 @@ import (
 	_map3 "atlas-consumables/data/map"
 	"atlas-consumables/equipable"
 	"atlas-consumables/inventory"
+	assetMsg "atlas-consumables/kafka/message/asset"
 	compartment2 "atlas-consumables/kafka/message/compartment"
 	"atlas-consumables/kafka/message/consumable"
 	foodmsg "atlas-consumables/kafka/message/food"
+	assetOnce "atlas-consumables/kafka/once/asset"
 	once "atlas-consumables/kafka/once/compartment"
 	"atlas-consumables/location"
 	"atlas-consumables/map"
@@ -966,9 +968,27 @@ func (p *ProcessorImpl) rewardError(characterId uint32, err error) error {
 	return err
 }
 
+// rewardHandles carries the two once-handler registrations for a single reward
+// transaction. The create outcome is split across two topics — success (asset
+// CREATED) arrives on EVENT_TOPIC_ASSET_STATUS and failure (CREATION_FAILED) on
+// EVENT_TOPIC_COMPARTMENT_STATUS — so the flow registers one once-handler on
+// each. Exactly one fires per transaction (a create either succeeds or fails,
+// never both), and it deregisters its sibling so the losing handler does not
+// linger for the life of the process.
+type rewardHandles struct {
+	assetTopic string
+	assetId    string
+	compTopic  string
+	compId     string
+}
+
 // ConsumeReward fires on RESERVED. It rolls one reward, requests its creation,
-// and registers a once-handler that commits the box on CREATED or cancels the
-// reservation on CREATION_FAILED (box preserved).
+// and registers two once-handlers: the asset CREATED confirmation commits the
+// box (grantRewardOnCreated), and the compartment CREATION_FAILED event cancels
+// the reservation and preserves the box (grantRewardOnFailed). atlas-inventory
+// emits the success event on the asset status topic — NOT the compartment
+// status topic, which only reports CREATED for compartment creation — so the
+// success handler must listen there.
 func ConsumeReward(transactionId uuid.UUID, characterId uint32, slot int16, boxItemId item2.Id, rewards []consumable3.RewardModel) ItemConsumer {
 	return func(l logrus.FieldLogger) func(ctx context.Context) error {
 		return func(ctx context.Context) error {
@@ -980,16 +1000,29 @@ func ConsumeReward(transactionId uuid.UUID, characterId uint32, slot int16, boxI
 			}
 			l.Debugf("Character [%d] rolled reward item [%d] x[%d] (prob [%d]) from box [%d] (transaction [%s]).", characterId, won.ItemId(), won.Count(), won.Prob(), boxItemId, transactionId.String())
 
-			// Register the creation once-handler BEFORE emitting CREATE_ASSET.
-			t, _ := topic.EnvProvider(l)(compartment2.EnvEventTopicStatus)()
-			cv := once.CreationValidator(transactionId)
-			ch := grantReward(transactionId, characterId, slot, boxItemId, won)
-			if _, err = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(cv, ch))); err != nil {
+			// Register both once-handlers BEFORE emitting CREATE_ASSET so neither
+			// terminal event can race ahead of its handler.
+			assetTopic, _ := topic.EnvProvider(l)(assetMsg.EnvEventTopicStatus)()
+			compTopic, _ := topic.EnvProvider(l)(compartment2.EnvEventTopicStatus)()
+			handles := &rewardHandles{assetTopic: assetTopic, compTopic: compTopic}
+
+			assetId, err := consumer.GetManager().RegisterHandler(assetTopic, message.AdaptHandler(message.OneTimeConfig(assetOnce.CreationValidator(transactionId), grantRewardOnCreated(transactionId, characterId, slot, boxItemId, won, handles))))
+			if err != nil {
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
+			handles.assetId = assetId
+
+			compId, err := consumer.GetManager().RegisterHandler(compTopic, message.AdaptHandler(message.OneTimeConfig(once.CreationFailedValidator(transactionId), grantRewardOnFailed(transactionId, characterId, slot, handles))))
+			if err != nil {
+				_ = consumer.GetManager().RemoveHandler(assetTopic, assetId)
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+			}
+			handles.compId = compId
 
 			expiration := rewardExpiration(won.Period(), time.Now())
 			if err = p.cpp.RequestCreateItem(transactionId, characterId, won.ItemId(), grantQuantity(won.Count()), expiration); err != nil {
+				_ = consumer.GetManager().RemoveHandler(assetTopic, assetId)
+				_ = consumer.GetManager().RemoveHandler(compTopic, compId)
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
 			return nil
@@ -997,34 +1030,47 @@ func ConsumeReward(transactionId uuid.UUID, characterId uint32, slot int16, boxI
 	}
 }
 
-// grantReward is the CREATED/CREATION_FAILED once-handler. On success it commits
-// the box consume and emits presentation events; on failure it cancels the box
-// reservation (box preserved) and emits the appropriate ERROR.
-func grantReward(transactionId uuid.UUID, characterId uint32, slot int16, boxItemId item2.Id, won consumable3.RewardModel) message.Handler[compartment2.StatusEvent[compartment2.CreateResultEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e compartment2.StatusEvent[compartment2.CreateResultEventBody]) {
+// grantRewardOnCreated is the success once-handler, keyed to the asset CREATED
+// confirmation. It commits the box consume, emits presentation events, and
+// deregisters the sibling failure handler (which will never fire).
+func grantRewardOnCreated(transactionId uuid.UUID, characterId uint32, slot int16, boxItemId item2.Id, won consumable3.RewardModel, handles *rewardHandles) message.Handler[assetMsg.StatusEvent[assetMsg.CreatedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e assetMsg.StatusEvent[assetMsg.CreatedStatusEventBody]) {
 		p := NewProcessor(l, ctx).(*ProcessorImpl)
 
-		if e.Type == compartment2.StatusEventTypeCreationFailed {
-			if cErr := p.cpp.CancelItemReservation(characterId, inventory2.TypeValueUse, transactionId, slot); cErr != nil {
-				l.WithError(cErr).Errorf("Unable to cancel box reservation after reward creation failure for character [%d].", characterId)
-			}
-			errorType := ""
-			if e.Body.ErrorCode == compartment2.CreateAssetInventoryFull {
-				errorType = consumable.ErrorTypeInventoryFull
-			}
-			if cErr := producer.ProviderImpl(l)(ctx)(consumable.EnvEventTopic)(ErrorEventProvider(ts.Id(characterId), errorType)); cErr != nil {
-				l.WithError(cErr).Errorf("Unable to emit reward creation-failed error for character [%d].", characterId)
-			}
-			return
-		}
-
-		// CREATED: commit the box.
 		if cErr := p.cpp.ConsumeItem(characterId, inventory2.TypeValueUse, transactionId, slot); cErr != nil {
 			l.WithError(cErr).Errorf("Reward granted but box consume failed for character [%d] (transaction [%s]); box release needs ops intervention.", characterId, transactionId.String())
 		}
 		l.Debugf("Character [%d] reward granted: box [%d] consumed, item [%d] created (transaction [%s]).", characterId, boxItemId, won.ItemId(), transactionId.String())
 
 		p.emitRewardPresentation(characterId, boxItemId, won)
+
+		if handles != nil {
+			_ = consumer.GetManager().RemoveHandler(handles.compTopic, handles.compId)
+		}
+	}
+}
+
+// grantRewardOnFailed is the failure once-handler, keyed to the compartment
+// CREATION_FAILED event. It cancels the box reservation (box preserved), emits
+// the appropriate ERROR, and deregisters the sibling success handler.
+func grantRewardOnFailed(transactionId uuid.UUID, characterId uint32, slot int16, handles *rewardHandles) message.Handler[compartment2.StatusEvent[compartment2.CreateResultEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e compartment2.StatusEvent[compartment2.CreateResultEventBody]) {
+		p := NewProcessor(l, ctx).(*ProcessorImpl)
+
+		if cErr := p.cpp.CancelItemReservation(characterId, inventory2.TypeValueUse, transactionId, slot); cErr != nil {
+			l.WithError(cErr).Errorf("Unable to cancel box reservation after reward creation failure for character [%d].", characterId)
+		}
+		errorType := ""
+		if e.Body.ErrorCode == compartment2.CreateAssetInventoryFull {
+			errorType = consumable.ErrorTypeInventoryFull
+		}
+		if cErr := producer.ProviderImpl(l)(ctx)(consumable.EnvEventTopic)(ErrorEventProvider(ts.Id(characterId), errorType)); cErr != nil {
+			l.WithError(cErr).Errorf("Unable to emit reward creation-failed error for character [%d].", characterId)
+		}
+
+		if handles != nil {
+			_ = consumer.GetManager().RemoveHandler(handles.assetTopic, handles.assetId)
+		}
 	}
 }
 

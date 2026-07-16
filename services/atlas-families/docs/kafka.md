@@ -22,7 +22,7 @@
 ```go
 type Command[E any] struct {
     TransactionId uuid.UUID `json:"transactionId"`
-    WorldId       byte      `json:"worldId"`
+    WorldId       world.Id  `json:"worldId"`
     CharacterId   uint32    `json:"characterId"`
     Type          string    `json:"type"`
     Body          E         `json:"body"`
@@ -33,10 +33,10 @@ type Command[E any] struct {
 
 ```go
 type Event[E any] struct {
-    WorldId     byte   `json:"worldId"`
-    CharacterId uint32 `json:"characterId"`
-    Type        string `json:"type"`
-    Body        E      `json:"body"`
+    WorldId     world.Id `json:"worldId"`
+    CharacterId uint32   `json:"characterId"`
+    Type        string   `json:"type"`
+    Body        E        `json:"body"`
 }
 ```
 
@@ -94,11 +94,8 @@ type Event[E any] struct {
 |------|-------------|-------|
 | LINK_CREATED | LinkCreatedEventBody | EVENT_TOPIC_FAMILY_STATUS |
 | LINK_BROKEN | LinkBrokenEventBody | EVENT_TOPIC_FAMILY_STATUS |
-| TREE_DISSOLVED | TreeDissolvedEventBody | EVENT_TOPIC_FAMILY_STATUS |
 | REP_GAINED | RepGainedEventBody | EVENT_TOPIC_FAMILY_REPUTATION |
 | REP_REDEEMED | RepRedeemedEventBody | EVENT_TOPIC_FAMILY_REPUTATION |
-| REP_PENALIZED | RepPenalizedEventBody | EVENT_TOPIC_FAMILY_REPUTATION |
-| REP_CAPPED | RepCappedEventBody | EVENT_TOPIC_FAMILY_REPUTATION |
 | REP_RESET | RepResetEventBody | EVENT_TOPIC_FAMILY_REPUTATION |
 | REP_ERROR | RepErrorEventBody | EVENT_TOPIC_FAMILY_ERRORS |
 | LINK_ERROR | LinkErrorEventBody | EVENT_TOPIC_FAMILY_ERRORS |
@@ -122,15 +119,6 @@ type Event[E any] struct {
 | Reason | string | Break reason |
 | Timestamp | time.Time | Event timestamp |
 
-#### TreeDissolvedEventBody
-
-| Field | Type | Description |
-|-------|------|-------------|
-| SeniorId | uint32 | Senior character ID |
-| AffectedIds | []uint32 | Affected character IDs |
-| Reason | string | Dissolution reason |
-| Timestamp | time.Time | Event timestamp |
-
 #### RepGainedEventBody
 
 | Field | Type | Description |
@@ -146,23 +134,6 @@ type Event[E any] struct {
 |-------|------|-------------|
 | RepRedeemed | uint32 | Reputation amount redeemed |
 | Reason | string | Redemption reason |
-| Timestamp | time.Time | Event timestamp |
-
-#### RepPenalizedEventBody
-
-| Field | Type | Description |
-|-------|------|-------------|
-| RepLost | uint32 | Reputation amount lost |
-| Reason | string | Penalty reason |
-| Timestamp | time.Time | Event timestamp |
-
-#### RepCappedEventBody
-
-| Field | Type | Description |
-|-------|------|-------------|
-| AttemptedAmount | uint32 | Attempted reputation amount |
-| DailyRep | uint32 | Current daily reputation |
-| Source | string | Reputation source |
 | Timestamp | time.Time | Event timestamp |
 
 #### RepResetEventBody

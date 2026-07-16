@@ -4,13 +4,19 @@
 
 ### GET /api/reactors/actions
 
-Returns all reactor scripts for the current tenant.
+Returns a page of reactor scripts for the current tenant.
 
-**Parameters:** None
+**Parameters:**
 
-**Response Model:** Array of `reactor-scripts`
+| Name | Location | Type | Description |
+|------|----------|------|-------------|
+| page[number] | query | int | Page number (optional) |
+| page[size] | query | int | Page size (optional) |
+
+**Response Model:** Paginated array of `reactor-scripts`
 
 **Error Conditions:**
+- 400: Invalid page[number]/page[size]
 - 500: Internal server error
 
 ---
@@ -107,7 +113,20 @@ Deletes a reactor script (soft delete).
 
 ### POST /api/reactors/actions/seed
 
-Seeds reactor scripts from the filesystem for the current tenant. Deletes all existing scripts for the tenant before loading.
+Starts an asynchronous seed of reactor scripts from the seed catalog for the current tenant. Deletes all existing scripts for the tenant, then reloads them from the catalog in the background.
+
+**Parameters:** None
+
+**Response Model:** None (202 Accepted)
+
+**Error Conditions:**
+- 400: Missing tenant headers
+
+---
+
+### GET /api/reactors/actions/seed/status
+
+Returns the seed status for the current tenant's reactor-actions group.
 
 **Parameters:** None
 
@@ -115,14 +134,22 @@ Seeds reactor scripts from the filesystem for the current tenant. Deletes all ex
 
 ```json
 {
-  "deletedCount": 0,
-  "createdCount": 0,
-  "failedCount": 0,
-  "errors": []
+  "groupName": "reactor-actions",
+  "subdomains": {
+    "reactor-actions": {
+      "count": 0,
+      "updatedAt": null
+    }
+  },
+  "updatedAt": null,
+  "catalogRevision": "",
+  "tenantSeededRevision": null,
+  "tenantSeededAt": null
 }
 ```
 
 **Error Conditions:**
+- 400: Missing tenant headers
 - 500: Internal server error
 
 ---

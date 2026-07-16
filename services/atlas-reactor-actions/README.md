@@ -22,7 +22,8 @@ Service for handling JSON-based reactor scripting. Receives hit and trigger comm
 | `BOOTSTRAP_SERVERS` | Kafka broker addresses |
 | `COMMAND_TOPIC_REACTOR_ACTIONS` | Topic for reactor action commands |
 | `COMMAND_TOPIC_SAGA` | Topic for saga commands |
-| `REACTOR_ACTIONS_DIR` | Scripts directory for seeding |
+| `SEED_CATALOG_ROOT` | Seed catalog root directory; defaults to `./deploy/seed` if unset |
+| `PARTY_QUESTS_SERVICE_URL` | Base URL for the atlas-party-quests service; falls back to `BASE_SERVICE_URL` if unset |
 | `REST_PORT` | REST API port |
 | `LOG_LEVEL` | Logging level |
 

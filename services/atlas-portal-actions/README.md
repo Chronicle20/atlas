@@ -17,7 +17,7 @@ The `atlas-portal-actions` service manages portal scripts that determine whether
 | Environment Variable | Description |
 |---------------------|-------------|
 | REST_PORT | HTTP server port |
-| PORTAL_SCRIPTS_DIR | Directory containing portal script JSON files (default: /scripts/portals) |
+| SEED_CATALOG_ROOT | Root directory for the portal script seed catalog (default: ./deploy/seed) |
 | COMMAND_TOPIC_PORTAL_ACTIONS | Kafka topic for portal entry commands |
 | EVENT_TOPIC_CHARACTER_STATUS | Kafka topic for character status events |
 | COMMAND_TOPIC_SAGA | Kafka topic for saga commands |

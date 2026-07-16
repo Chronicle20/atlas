@@ -11,6 +11,10 @@ Retrieves all bans for the current tenant. Optionally filtered by ban type.
 | Name | Location | Type | Required |
 |------|----------|------|----------|
 | type | query | int | no |
+| page[number] | query | int | no (default 1) |
+| page[size] | query | int | no (default 50, max 250) |
+
+The legacy `limit` query parameter is rejected.
 
 #### Request Model
 
@@ -33,12 +37,23 @@ Array of Ban resources.
 
 Resource type: `bans`
 
+JSON:API `meta` block:
+
+| Field | Type | Description |
+|-------|------|--------------|
+| total | int | Total count of matching bans across all pages |
+| page.number | int | Current page number |
+| page.size | int | Current page size |
+| page.last | int | Last page number |
+
+JSON:API `links` block: `self`, `first`, `last`, and `prev`/`next` where applicable.
+
 #### Error Conditions
 
 | Status | Condition |
 |--------|-----------|
 | 200 OK | Bans retrieved |
-| 400 Bad Request | Invalid type parameter |
+| 400 Bad Request | Invalid type parameter, or invalid page[number]/page[size] (non-integer, out of range, or legacy limit param used) |
 | 500 Internal Server Error | Database or transformation error |
 
 ---
@@ -215,6 +230,10 @@ Retrieves login history for the current tenant. Optionally filtered by IP or HWI
 |------|----------|------|----------|
 | ip | query | string | no |
 | hwid | query | string | no |
+| page[number] | query | int | no (default 1) |
+| page[size] | query | int | no (default 50, max 250) |
+
+The legacy `limit` query parameter is rejected.
 
 #### Request Model
 
@@ -236,11 +255,23 @@ Array of LoginHistory resources.
 
 Resource type: `login-history`
 
+JSON:API `meta` block:
+
+| Field | Type | Description |
+|-------|------|--------------|
+| total | int | Total count of matching history entries across all pages |
+| page.number | int | Current page number |
+| page.size | int | Current page size |
+| page.last | int | Last page number |
+
+JSON:API `links` block: `self`, `first`, `last`, and `prev`/`next` where applicable.
+
 #### Error Conditions
 
 | Status | Condition |
 |--------|-----------|
 | 200 OK | History retrieved |
+| 400 Bad Request | Invalid page[number]/page[size] (non-integer, out of range, or legacy limit param used) |
 | 500 Internal Server Error | Database or transformation error |
 
 ---
@@ -254,6 +285,10 @@ Retrieves login history for a specific account.
 | Name | Location | Type | Required |
 |------|----------|------|----------|
 | accountId | path | uint32 | yes |
+| page[number] | query | int | no (default 1) |
+| page[size] | query | int | no (default 50, max 250) |
+
+The legacy `limit` query parameter is rejected.
 
 #### Request Model
 
@@ -268,5 +303,5 @@ Array of LoginHistory resources (see GET /history/).
 | Status | Condition |
 |--------|-----------|
 | 200 OK | History retrieved |
-| 400 Bad Request | Invalid account ID |
+| 400 Bad Request | Invalid account ID, or invalid page[number]/page[size] (non-integer, out of range, or legacy limit param used) |
 | 500 Internal Server Error | Database or transformation error |

@@ -71,17 +71,6 @@
 - Environment variable: `COMMAND_TOPIC_SAGA`
 - Produced by saga processor to send saga commands to atlas-saga-orchestrator.
 
-### COMMAND_TOPIC_GUILD
-
-- Direction: Command
-- Environment variable: `COMMAND_TOPIC_GUILD`
-- Message type: `guild.Command[E]`
-- Produced command types:
-  - `REQUEST_NAME` — Body: `RequestNameBody` (worldId, channelId).
-  - `REQUEST_EMBLEM` — Body: `RequestEmblemBody` (worldId, channelId).
-  - `REQUEST_DISBAND` — Body: `RequestDisbandBody` (worldId, channelId).
-  - `REQUEST_CAPACITY_INCREASE` — Body: `RequestCapacityIncreaseBody` (worldId, channelId).
-
 ## Message Types
 
 ### npc.Command
@@ -136,14 +125,6 @@ WorldId       world.Id
 CharacterId   uint32
 Type          string
 Body          E
-```
-
-### guild.Command
-
-```
-CharacterId uint32
-Type        string
-Body        E
 ```
 
 ## Transaction Semantics

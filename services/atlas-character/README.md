@@ -9,18 +9,20 @@ The service coordinates with external services for skill management, drop handli
 - PostgreSQL database
 - Redis (session registry, temporal data)
 - Kafka message broker
-- Jaeger tracing (optional)
+- OpenTelemetry collector (optional)
 - atlas-skill service (via REST and Kafka)
 - atlas-drop service (via Kafka)
 - atlas-data service (via REST for portal and skill data)
 - atlas-effective-stats service (via REST)
+- atlas-maps service (via REST for character location lookup)
 - Session status events (via Kafka)
 
 ## Runtime Configuration
 
 | Variable | Description |
 |----------|-------------|
-| JAEGER_HOST | Jaeger host:port |
+| TRACE_ENDPOINT | OpenTelemetry collector endpoint |
+| TRACE_SAMPLING_RATIO | Trace sampling ratio, 0.0-1.0 (optional, default 1.0) |
 | LOG_LEVEL | Logging level (Panic/Fatal/Error/Warn/Info/Debug/Trace) |
 | DB_USER | Postgres user name |
 | DB_PASSWORD | Postgres user password |
@@ -29,6 +31,8 @@ The service coordinates with external services for skill management, drop handli
 | DB_NAME | Postgres database name |
 | BASE_SERVICE_URL | Base service URL (scheme://host:port/api/) |
 | BOOTSTRAP_SERVERS | Kafka host:port |
+| REDIS_URL | Redis host:port |
+| REDIS_PASSWORD | Redis password |
 | REST_PORT | REST server port |
 | COMMAND_TOPIC_CHARACTER | Character commands topic |
 | COMMAND_TOPIC_CHARACTER_MOVEMENT | Character movement commands topic |

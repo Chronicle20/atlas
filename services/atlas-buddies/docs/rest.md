@@ -83,12 +83,16 @@ None. Returns 202 Accepted.
 
 ### GET /api/characters/{characterId}/buddy-list/buddies
 
-Retrieves all buddies in a character's buddy list.
+Retrieves all buddies in a character's buddy list. Results are paginated and sorted by `characterId` ascending.
 
 #### Parameters
 | Name | Location | Type | Required | Description |
 |------|----------|------|----------|-------------|
 | characterId | path | uint32 | yes | Character ID |
+| page[number] | query | integer | no | Page number, minimum 1. Default 1. |
+| page[size] | query | integer | no | Page size, 1 to 250. Default 250. |
+
+The legacy `limit` query parameter is rejected.
 
 #### Request Model
 None.
@@ -111,13 +115,29 @@ JSON:API resource type: `buddies`
         "pending": false
       }
     }
-  ]
+  ],
+  "meta": {
+    "total": 1,
+    "page": {
+      "number": 1,
+      "size": 250,
+      "last": 1
+    }
+  },
+  "links": {
+    "self": "...",
+    "first": "...",
+    "last": "..."
+  }
 }
 ```
+
+`links` also includes `prev` when not on the first page, and `next` when not on the last page.
 
 #### Error Conditions
 | Status | Condition |
 |--------|-----------|
+| 400 Bad Request | `page[number]` or `page[size]` is non-integer, out of range, or the `limit` parameter is present |
 | 404 Not Found | Buddy list does not exist for character |
 | 500 Internal Server Error | Database or transformation error |
 

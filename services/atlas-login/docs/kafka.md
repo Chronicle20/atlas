@@ -7,6 +7,8 @@
 | Account Status | EVENT_TOPIC_ACCOUNT_STATUS | Account login/logout status events |
 | Account Session Status | EVENT_TOPIC_ACCOUNT_SESSION_STATUS | Account session lifecycle events |
 | Seed Status | EVENT_TOPIC_SEED_STATUS | Character creation completion events |
+| Configuration Service Status | EVENT_TOPIC_CONFIGURATION_SERVICE_STATUS | Service configuration projection events (log-compacted) |
+| Configuration Tenant Status | EVENT_TOPIC_CONFIGURATION_TENANT_STATUS | Tenant configuration projection events (log-compacted) |
 
 ## Topics Produced
 
@@ -198,6 +200,7 @@ type StatusEvent[E any] struct {
 | Type | Body Type | Description |
 |------|-----------|-------------|
 | CREATED | CreatedStatusEventBody | Character created |
+| FAILED | FailedStatusEventBody | Character creation failed |
 
 **CreatedStatusEventBody**
 
@@ -207,9 +210,36 @@ type CreatedStatusEventBody struct {
 }
 ```
 
+**FailedStatusEventBody**
+
+```go
+type FailedStatusEventBody struct {
+    Reason string `json:"reason,omitempty"`
+}
+```
+
+#### Configuration Service Status / Configuration Tenant Status Events
+
+Topics: EVENT_TOPIC_CONFIGURATION_SERVICE_STATUS, EVENT_TOPIC_CONFIGURATION_TENANT_STATUS
+
+Both topics carry the same envelope shape (log-compacted; a nil message value is a tombstone removing the entry keyed `service:{serviceId}` or `tenant:{tenantId}`).
+
+```go
+type ServiceEnvelope struct {
+    SchemaVersion int             `json:"schema_version"`
+    Id            string          `json:"id"`
+    Config        json.RawMessage `json:"config"`
+    EmittedAt     string          `json:"emitted_at"`
+}
+```
+
+`Config` decodes to the service configuration RestModel (`Tasks`, `Tenants`) on the service topic, and to the tenant configuration RestModel (socket handlers/writers) on the tenant topic. Envelopes with `schema_version` greater than the supported version (1) are skipped.
+
 ## Transaction Semantics
 
 - All messages include tenant header via TenantHeaderDecorator.
 - All messages include span header via SpanHeaderDecorator for distributed tracing.
-- Message keys are based on account ID for partition ordering.
-- Consumer group ID follows pattern: `Login Service - {service-id}`.
+- Account Session Command messages (produced) are keyed by account ID.
+- Session Status events (produced) are keyed by character ID.
+- Consumer group ID follows pattern: `ChannelConnect Service - {service-id}` (overridable via the `KAFKA_CONSUMER_GROUP` environment variable).
+- The Configuration Service Status / Configuration Tenant Status consumers start from the earliest offset on each process start, under a per-process consumer group id, to replay the full compacted log.

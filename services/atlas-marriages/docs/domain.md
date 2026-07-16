@@ -86,7 +86,7 @@ Immutable domain object representing a wedding ceremony.
 - Maximum of 15 invitees per ceremony
 - Partners cannot be invitees
 - No duplicate invitees allowed
-- Ceremony is postponed if partner is offline for 5+ minutes during active ceremony
+- A ceremony remaining in active status for 5 minutes or longer is automatically postponed
 
 ## State Transitions
 
@@ -145,7 +145,6 @@ Handles marriage, proposal, and ceremony operations.
 - `DivorceAndEmit` - Divorces and emits events
 - `HandleCharacterDeletion` - Auto-divorces when character is deleted
 - `HandleCharacterDeletionAndEmit` - Handles deletion with events
-- `AcceptProposalWithTransactionAndEmit` - Accepts proposal with full database transactional consistency
 - `GetMarriageByCharacter` - Retrieves active marriage for character
 - `GetMarriageHistory` - Retrieves marriage history for character
 

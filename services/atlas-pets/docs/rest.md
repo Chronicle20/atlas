@@ -63,13 +63,15 @@ Retrieves a pet by identifier. Includes temporal position data (x, y, stance, fh
 
 ### GET /api/characters/{characterId}/pets
 
-Retrieves all pets for a character. Includes temporal position data for each pet.
+Retrieves a page of pets for a character. Includes temporal position data for each pet.
 
 #### Parameters
 
 | Name | In | Type | Required | Description |
 |------|-----|------|----------|-------------|
 | characterId | path | uint32 | yes | Character identifier |
+| page[number] | query | int | no | Page number (default 1, minimum 1) |
+| page[size] | query | int | no | Page size (default 250, maximum 250) |
 
 #### Request Headers
 
@@ -107,15 +109,30 @@ Retrieves all pets for a character. Includes temporal position data for each pet
         "purchaseBy": 1
       }
     }
-  ]
+  ],
+  "meta": {
+    "total": 3,
+    "page": {
+      "number": 1,
+      "size": 2,
+      "last": 2
+    }
+  },
+  "links": {
+    "next": "...",
+    "prev": "..."
+  }
 }
 ```
+
+`meta` and `links` follow the repository's JSON:API pagination envelope. `links.next`/`links.prev` are present only when a next/previous page exists.
 
 #### Error Conditions
 
 | Status | Condition |
 |--------|-----------|
 | 400 | Invalid characterId path parameter |
+| 400 | Invalid page[number]/page[size] (non-integer, out of range, or legacy `limit` param present) |
 | 500 | Internal error |
 
 ---

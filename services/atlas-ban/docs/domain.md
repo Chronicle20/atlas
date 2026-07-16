@@ -59,10 +59,10 @@ Primary domain processor providing ban operations.
 | ExpireBan | Expire a temporary ban early |
 | ExpireBanAndEmit | Expire ban and emit status event |
 | GetById | Retrieve ban by ID |
-| GetByTenant | Retrieve all bans for tenant |
-| GetByType | Retrieve bans filtered by type |
-| CheckBan | Check if IP, HWID, or account is banned |
 | ByIdProvider | Provider for ban by ID |
+| AllProvider | Provider for paged bans for tenant |
+| ByTypePagedProvider | Provider for paged bans filtered by type |
+| CheckBan | Check if IP, HWID, or account is banned |
 
 ### ExpiredBanCleanup
 
@@ -108,10 +108,10 @@ Primary domain processor providing login history operations.
 | Method | Description |
 |--------|-------------|
 | Record | Record a login attempt |
-| GetByAccountId | Retrieve history by account ID |
-| GetByIP | Retrieve history by IP address |
-| GetByHWID | Retrieve history by hardware ID |
-| GetByTenant | Retrieve all history for tenant |
+| ByAccountIdProvider | Provider for paged history by account ID |
+| ByIPPagedProvider | Provider for paged history by IP address |
+| ByHWIDPagedProvider | Provider for paged history by hardware ID |
+| AllProvider | Provider for paged history for tenant |
 | PurgeOlderThan | Remove records older than specified days |
 
 ### HistoryPurge

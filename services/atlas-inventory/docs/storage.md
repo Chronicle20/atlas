@@ -73,7 +73,7 @@
 ## Migration Rules
 
 - Migrations executed via GORM AutoMigrate on service startup
-- Migration order: compartment, asset
+- Migration order: compartment, asset, outbox (github.com/Chronicle20/atlas/libs/atlas-outbox)
 - Assets use soft delete via GORM `DeletedAt` field
 - UUID generation for compartment IDs handled in `BeforeCreate` hook
 - Boolean flag columns (`locked`, `spikes`, `cold`, `karma_used`) consolidated into `flag` uint16 bitmask via migration

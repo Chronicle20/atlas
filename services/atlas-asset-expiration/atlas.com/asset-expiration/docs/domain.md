@@ -155,6 +155,7 @@ Runs periodic expiration checks at configurable intervals for all online session
 | Field | Type |
 |-------|------|
 | l | logrus.FieldLogger |
+| ctx | context.Context |
 | interval | time.Duration |
 | stopCh | chan struct{} |
 | wg | *sync.WaitGroup |

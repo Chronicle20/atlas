@@ -203,7 +203,7 @@ Relationships are application-enforced. No foreign key constraints are defined a
 
 ## Migration Rules
 
-All in-service tables are managed via GORM `AutoMigrate`. Migrations are registered in `main.go:71`:
+All in-service tables are managed via GORM `AutoMigrate`. Migrations are registered in `main.go:62`:
 
 ```
 database.SetMigrations(shop.Migration, listing.Migration, message.Migration, frederick.Migration, searchcount.Migration, blacklist.Migration, visit.Migration, outboxlib.Migration)

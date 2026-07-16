@@ -272,7 +272,7 @@ Same as GET /characters/{characterId}/inventory/compartments/{compartmentId}
 
 ### GET /characters/{characterId}/inventory/compartments/{compartmentId}/assets
 
-Retrieves all assets in a compartment.
+Retrieves all assets in a compartment. Paginated.
 
 #### Parameters
 
@@ -280,6 +280,8 @@ Retrieves all assets in a compartment.
 |------|------|----------|----------|
 | characterId | uint32 | path | yes |
 | compartmentId | uuid | path | yes |
+| page[number] | int | query | no (default 1) |
+| page[size] | int | query | no (default 250, max 250) |
 
 #### Request Model
 
@@ -329,7 +331,18 @@ None
         "petId": <uint32>
       }
     }
-  ]
+  ],
+  "meta": {
+    "total": <int>,
+    "page": { "number": <int>, "size": <int>, "last": <int> }
+  },
+  "links": {
+    "self": "<url>",
+    "first": "<url>",
+    "prev": "<url>",
+    "next": "<url>",
+    "last": "<url>"
+  }
 }
 ```
 
@@ -337,6 +350,7 @@ None
 
 | Status | Condition |
 |--------|-----------|
+| 400 | Invalid page[number]/page[size] |
 | 500 | Internal error |
 
 ---

@@ -34,6 +34,8 @@ Type values: `CREATED`, `DESTROYED`
 
 Only `LOGIN` + `CREATED` events trigger an immediate expiration check and session tracking. `DESTROYED` events remove the session from tracking.
 
+`CREATED` events with `CharacterId` equal to 0 (pre-character-selection) are skipped.
+
 ### StorageExpireCommand (Produced)
 
 | Field | Type |

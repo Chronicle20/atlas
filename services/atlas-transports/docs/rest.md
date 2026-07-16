@@ -11,6 +11,8 @@ Returns all scheduled routes for the tenant.
 | Name | Location | Type | Required | Description |
 |------|----------|------|----------|-------------|
 | filter[startMapId] | query | uint32 | No | Filter routes by starting map ID |
+| page[number] | query | int | No | Page number (default 1) |
+| page[size] | query | int | No | Page size (default 50, max 250) |
 
 **Response Model:**
 
@@ -38,6 +40,7 @@ Resource type: `routes`
 
 | Status | Condition |
 |--------|-----------|
+| 400 | Invalid page[number]/page[size] parameter |
 | 400 | Invalid filter[startMapId] parameter |
 | 500 | Internal server error retrieving routes |
 
@@ -87,6 +90,13 @@ Resource type: `routes`
 
 Returns all instance routes for the tenant.
 
+**Parameters:**
+
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| page[number] | query | int | No | Page number (default 1) |
+| page[size] | query | int | No | Page size (default 50, max 250) |
+
 **Response Model:**
 
 Resource type: `instance-routes`
@@ -106,6 +116,7 @@ Resource type: `instance-routes`
 
 | Status | Condition |
 |--------|-----------|
+| 400 | Invalid page[number]/page[size] parameter |
 | 500 | Internal server error retrieving instance routes |
 
 ---
@@ -153,6 +164,8 @@ Returns active instance statuses for a route.
 | Name | Location | Type | Required | Description |
 |------|----------|------|----------|-------------|
 | routeId | path | uuid.UUID | Yes | Route identifier |
+| page[number] | query | int | No | Page number (default 1) |
+| page[size] | query | int | No | Page size (default 50, max 250) |
 
 **Response Model:**
 
@@ -171,6 +184,7 @@ Resource type: `instance-status`
 
 | Status | Condition |
 |--------|-----------|
+| 400 | Invalid page[number]/page[size] parameter |
 | 500 | Internal server error retrieving instance status |
 
 ---

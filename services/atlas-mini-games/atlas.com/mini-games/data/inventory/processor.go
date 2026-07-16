@@ -26,6 +26,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // HasItem fetches the compartment that would hold itemId (derived from the item
 // classification) with its assets included and reports whether any asset has a
 // matching templateId with a non-zero quantity. The item is NOT consumed.

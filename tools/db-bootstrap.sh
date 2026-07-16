@@ -77,6 +77,7 @@ DBS=(
   atlas-maps
   atlas-marriages
   atlas-merchant
+  atlas-mini-games
   atlas-monster-book
   atlas-mounts
   atlas-mts

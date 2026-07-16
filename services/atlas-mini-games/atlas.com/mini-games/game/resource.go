@@ -3,6 +3,7 @@ package game
 import (
 	"atlas-mini-games/rest"
 	"net/http"
+	"sort"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -10,6 +11,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -47,20 +49,35 @@ func handleGetGamesInField(db *gorm.DB) rest.GetHandler {
 				return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
 					return rest.ParseInstanceId(d.Logger(), func(instanceId uuid.UUID) http.HandlerFunc {
 						return func(w http.ResponseWriter, r *http.Request) {
+							// Group C game-capped list: a field holds few rooms, so
+							// default the page size to the cap (chairs resource.go shape).
+							page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+							if err != nil {
+								server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+								return
+							}
+
 							f := field.NewBuilder(worldId, channelId, mapId).SetInstance(instanceId).Build()
 
 							rooms := NewProcessor(d.Logger(), d.Context(), db).RoomsInField(f)
 
-							res, err := model.SliceMap(Transform)(model.FixedProvider(rooms))(model.ParallelMap())()
+							// Sort by room Id (unique — one room per owner, Id == OwnerId)
+							// so the page slice is deterministic across requests.
+							sorted := make([]Room, len(rooms))
+							copy(sorted, rooms)
+							sort.Slice(sorted, func(i, j int) bool { return sorted[i].Id() < sorted[j].Id() })
+							paged := paginate.Slice(sorted, page)
+
+							res, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 							if err != nil {
 								d.Logger().WithError(err).Errorf("Creating REST model.")
-								w.WriteHeader(http.StatusInternalServerError)
+								server.WriteErrorResponse(d.Logger())(w)(err)
 								return
 							}
 
 							query := r.URL.Query()
 							queryParams := jsonapi.ParseQueryFields(&query)
-							server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+							server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
 						}
 					})
 				})

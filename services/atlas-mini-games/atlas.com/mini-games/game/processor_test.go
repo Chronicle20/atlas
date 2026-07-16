@@ -15,6 +15,7 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/miniroom"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -86,6 +87,10 @@ func setupTestDB(t *testing.T) *gorm.DB {
 		)
 	`).Error
 	require.NoError(t, err)
+	// The emit path routes a command's events through the transactional outbox
+	// (task-114), so the outbox table must exist for any test that drives a
+	// public command method (e.g. TeardownCharacter).
+	require.NoError(t, outbox.Migration(db))
 	return db
 }
 

@@ -3,9 +3,11 @@ package record
 import (
 	"atlas-mini-games/rest"
 	"net/http"
+	"sort"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -33,23 +35,39 @@ func handleGetGameRecords(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				ms, err := NewProcessor(d.Logger(), d.Context(), db).GetByCharacter(characterId)
+				// Group C game-capped list: a character has one record per game
+				// type (a handful), so default the page size to the cap and page
+				// the materialized slice.
+				page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
 				if err != nil {
-					d.Logger().WithError(err).Errorf("Unable to retrieve game records for character [%d].", characterId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
 					return
 				}
 
-				res, err := model.SliceMap(Transform)(model.FixedProvider(ms))()()
+				ms, err := NewProcessor(d.Logger(), d.Context(), db).GetByCharacter(characterId)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Unable to retrieve game records for character [%d].", characterId)
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				// Sort by GameType, the collection's stable unique key (one row
+				// per game type per character), so paging is deterministic.
+				sorted := make([]Model, len(ms))
+				copy(sorted, ms)
+				sort.Slice(sorted, func(i, j int) bool { return sorted[i].GameType() < sorted[j].GameType() })
+				paged := paginate.Slice(sorted, page)
+
+				res, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))()()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				query := r.URL.Query()
 				queryParams := jsonapi.ParseQueryFields(&query)
-				server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+				server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
 			}
 		})
 	}

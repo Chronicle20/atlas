@@ -24,6 +24,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // HasOpen fetches the character's chalkboard; a 404 (or any fetch failure)
 // means there is no open chalkboard, so the check does not block the command.
 func (p *ProcessorImpl) HasOpen(characterId uint32) (bool, error) {

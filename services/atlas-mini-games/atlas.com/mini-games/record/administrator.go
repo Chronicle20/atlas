@@ -3,6 +3,7 @@ package record
 import (
 	"errors"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -42,14 +43,15 @@ func getOrCreate(db *gorm.DB, characterId uint32, gameType GameType) (Entity, er
 // won (visitor lost), winnerSlot 1 means the visitor won (owner lost); tie
 // overrides winnerSlot and increments both sides' Ties.
 //
-// database.ExecuteTransaction is a confirmed no-op (see
-// bug_execute_transaction_noop.md) so this uses db.Transaction directly, not
-// the shared helper, to guarantee atomicity of the two-row update. Tenancy is
-// context-driven (DOM-11): the caller passes a WithContext(ctx)-scoped db and
-// the tenant callbacks scope both getOrCreate reads and writes. The
-// transaction inherits the caller's context so the callbacks fire inside it.
+// Atomicity of the two-row update is via database.ExecuteTransaction (task-119
+// fixed its formerly no-op behavior): it opens a transaction when db is not
+// already in one, and JOINS the caller's transaction when it is — so the
+// endGame outbox path can pass its own tx and have the record writes enqueue in
+// the same transaction as the record-carrying events. Tenancy is context-driven
+// (DOM-11): the caller passes a WithContext(ctx)-scoped db and the tenant
+// callbacks scope both getOrCreate reads and writes inside the transaction.
 func ApplyResult(db *gorm.DB, gameType GameType, ownerId uint32, visitorId uint32, winnerSlot byte, tie bool) error {
-	return db.Transaction(func(tx *gorm.DB) error {
+	return database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 		or, err := getOrCreate(tx, ownerId, gameType)
 		if err != nil {
 			return err

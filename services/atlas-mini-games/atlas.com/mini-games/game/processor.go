@@ -9,7 +9,6 @@ import (
 	"atlas-mini-games/game/omok"
 	"atlas-mini-games/kafka/message"
 	"atlas-mini-games/kafka/message/minigame"
-	kproducer "atlas-mini-games/kafka/producer"
 	"atlas-mini-games/record"
 	"context"
 	"math/rand"
@@ -19,6 +18,8 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/miniroom"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -154,6 +155,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // clock returns the processor's injected clock, or time.Now when unset.
 func (p *ProcessorImpl) clock() time.Time {
 	if p.now != nil {
@@ -183,8 +186,34 @@ func stoneColor(slot byte, firstMover byte) byte {
 	return 1
 }
 
-func (p *ProcessorImpl) emit(f func(mb *message.Buffer) error) error {
-	return message.Emit(kproducer.ProviderImpl(p.l)(p.ctx))(f)
+// emit runs a command's whole event batch through the transactional outbox
+// (task-114): it opens one DB transaction, hands the closure a tx to run any
+// durable write on (endGame's record upsert), and enqueues every buffered event
+// into the outbox table inside that same transaction via outbox.EmitProvider.
+// So a command's record write and all its status events commit atomically and
+// publish in buffer order once the drainer picks them up — no window where the
+// record persists but the GAME_ENDED it describes is lost, and no cross-event
+// reordering. Registry mutations inside the closure are in-memory (the registry
+// is never persisted, so it is rebuilt on restart); endGame keeps its record
+// write first in code order so a write failure returns before the registry swap.
+func (p *ProcessorImpl) emit(f func(p *ProcessorImpl, mb *message.Buffer) error) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		txp := p.withTx(tx)
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return f(txp, mb)
+		})
+	})
+}
+
+// withTx returns a shallow copy of the processor whose db handle is the given
+// transaction. emit passes this tx-scoped copy to the command closure (shadowing
+// the receiver as p), so every DB op a command runs inside emit — endGame's
+// record upsert and its refreshed-record reads — shares the outbox transaction
+// and commits atomically with the enqueued events.
+func (p *ProcessorImpl) withTx(tx *gorm.DB) *ProcessorImpl {
+	cp := *p
+	cp.db = tx
+	return &cp
 }
 
 // RoomsInField returns every mini-game room registered in field f for the
@@ -226,7 +255,7 @@ func creationItemId(roomType byte, pieceType byte) uint32 {
 }
 
 func (p *ProcessorImpl) Create(txId uuid.UUID, f field.Model, characterId uint32, roomType byte, title string, private bool, password string, pieceType byte) error {
-	return p.emit(func(mb *message.Buffer) error {
+	return p.emit(func(p *ProcessorImpl, mb *message.Buffer) error {
 		return p.create(mb, txId, f, characterId, roomType, title, private, password, pieceType)
 	})
 }
@@ -297,7 +326,7 @@ func (p *ProcessorImpl) create(mb *message.Buffer, txId uuid.UUID, f field.Model
 }
 
 func (p *ProcessorImpl) Visit(txId uuid.UUID, f field.Model, characterId uint32, roomId uint32, password string) error {
-	return p.emit(func(mb *message.Buffer) error {
+	return p.emit(func(p *ProcessorImpl, mb *message.Buffer) error {
 		return p.visit(mb, txId, f, characterId, roomId, password)
 	})
 }
@@ -372,7 +401,7 @@ func (p *ProcessorImpl) visit(mb *message.Buffer, txId uuid.UUID, f field.Model,
 }
 
 func (p *ProcessorImpl) Leave(txId uuid.UUID, f field.Model, characterId uint32) error {
-	return p.emit(func(mb *message.Buffer) error {
+	return p.emit(func(p *ProcessorImpl, mb *message.Buffer) error {
 		return p.leave(mb, txId, characterId)
 	})
 }
@@ -422,7 +451,7 @@ func (p *ProcessorImpl) leave(mb *message.Buffer, txId uuid.UUID, characterId ui
 }
 
 func (p *ProcessorImpl) Expel(txId uuid.UUID, f field.Model, characterId uint32) error {
-	return p.emit(func(mb *message.Buffer) error {
+	return p.emit(func(p *ProcessorImpl, mb *message.Buffer) error {
 		return p.expel(mb, txId, characterId)
 	})
 }
@@ -468,7 +497,7 @@ func (p *ProcessorImpl) expel(mb *message.Buffer, txId uuid.UUID, characterId ui
 }
 
 func (p *ProcessorImpl) Chat(txId uuid.UUID, f field.Model, characterId uint32, msg string) error {
-	return p.emit(func(mb *message.Buffer) error {
+	return p.emit(func(p *ProcessorImpl, mb *message.Buffer) error {
 		return p.chat(mb, txId, characterId, msg)
 	})
 }
@@ -491,19 +520,19 @@ func (p *ProcessorImpl) TeardownCharacter(characterId uint32) error {
 	if _, ok := p.reg.GetByMember(p.t, characterId); !ok {
 		return nil
 	}
-	return p.emit(func(mb *message.Buffer) error {
+	return p.emit(func(p *ProcessorImpl, mb *message.Buffer) error {
 		return p.leave(mb, uuid.New(), characterId)
 	})
 }
 
 func (p *ProcessorImpl) Ready(txId uuid.UUID, f field.Model, characterId uint32) error {
-	return p.emit(func(mb *message.Buffer) error {
+	return p.emit(func(p *ProcessorImpl, mb *message.Buffer) error {
 		return p.setReady(mb, txId, characterId, true)
 	})
 }
 
 func (p *ProcessorImpl) Unready(txId uuid.UUID, f field.Model, characterId uint32) error {
-	return p.emit(func(mb *message.Buffer) error {
+	return p.emit(func(p *ProcessorImpl, mb *message.Buffer) error {
 		return p.setReady(mb, txId, characterId, false)
 	})
 }
@@ -532,7 +561,7 @@ func (p *ProcessorImpl) setReady(mb *message.Buffer, txId uuid.UUID, characterId
 }
 
 func (p *ProcessorImpl) Start(txId uuid.UUID, f field.Model, characterId uint32) error {
-	return p.emit(func(mb *message.Buffer) error {
+	return p.emit(func(p *ProcessorImpl, mb *message.Buffer) error {
 		return p.start(mb, txId, characterId)
 	})
 }
@@ -590,7 +619,7 @@ func (p *ProcessorImpl) start(mb *message.Buffer, txId uuid.UUID, characterId ui
 }
 
 func (p *ProcessorImpl) MoveStone(txId uuid.UUID, f field.Model, characterId uint32, x uint32, y uint32, stoneType byte) error {
-	return p.emit(func(mb *message.Buffer) error {
+	return p.emit(func(p *ProcessorImpl, mb *message.Buffer) error {
 		return p.moveStone(mb, txId, characterId, x, y)
 	})
 }
@@ -640,7 +669,7 @@ func (p *ProcessorImpl) moveStone(mb *message.Buffer, txId uuid.UUID, characterI
 }
 
 func (p *ProcessorImpl) FlipCard(txId uuid.UUID, f field.Model, characterId uint32, first bool, cardIndex byte) error {
-	return p.emit(func(mb *message.Buffer) error {
+	return p.emit(func(p *ProcessorImpl, mb *message.Buffer) error {
 		return p.flipCard(mb, txId, characterId, first, cardIndex)
 	})
 }
@@ -723,7 +752,7 @@ func (p *ProcessorImpl) flipCard(mb *message.Buffer, txId uuid.UUID, characterId
 }
 
 func (p *ProcessorImpl) RequestTie(txId uuid.UUID, f field.Model, characterId uint32) error {
-	return p.emit(func(mb *message.Buffer) error {
+	return p.emit(func(p *ProcessorImpl, mb *message.Buffer) error {
 		return p.requestTie(mb, txId, characterId)
 	})
 }
@@ -745,7 +774,7 @@ func (p *ProcessorImpl) requestTie(mb *message.Buffer, txId uuid.UUID, character
 }
 
 func (p *ProcessorImpl) AnswerTie(txId uuid.UUID, f field.Model, characterId uint32, accept bool) error {
-	return p.emit(func(mb *message.Buffer) error {
+	return p.emit(func(p *ProcessorImpl, mb *message.Buffer) error {
 		return p.answerTie(mb, txId, characterId, accept)
 	})
 }
@@ -777,7 +806,7 @@ func (p *ProcessorImpl) answerTie(mb *message.Buffer, txId uuid.UUID, characterI
 }
 
 func (p *ProcessorImpl) GiveUp(txId uuid.UUID, f field.Model, characterId uint32) error {
-	return p.emit(func(mb *message.Buffer) error {
+	return p.emit(func(p *ProcessorImpl, mb *message.Buffer) error {
 		return p.giveUp(mb, txId, characterId)
 	})
 }
@@ -797,7 +826,7 @@ func (p *ProcessorImpl) giveUp(mb *message.Buffer, txId uuid.UUID, characterId u
 }
 
 func (p *ProcessorImpl) RequestRetreat(txId uuid.UUID, f field.Model, characterId uint32) error {
-	return p.emit(func(mb *message.Buffer) error {
+	return p.emit(func(p *ProcessorImpl, mb *message.Buffer) error {
 		return p.requestRetreat(mb, txId, characterId)
 	})
 }
@@ -824,7 +853,7 @@ func (p *ProcessorImpl) requestRetreat(mb *message.Buffer, txId uuid.UUID, chara
 }
 
 func (p *ProcessorImpl) AnswerRetreat(txId uuid.UUID, f field.Model, characterId uint32, accept bool) error {
-	return p.emit(func(mb *message.Buffer) error {
+	return p.emit(func(p *ProcessorImpl, mb *message.Buffer) error {
 		return p.answerRetreat(mb, txId, characterId, accept)
 	})
 }
@@ -866,7 +895,7 @@ func (p *ProcessorImpl) answerRetreat(mb *message.Buffer, txId uuid.UUID, charac
 }
 
 func (p *ProcessorImpl) Skip(txId uuid.UUID, f field.Model, characterId uint32) error {
-	return p.emit(func(mb *message.Buffer) error {
+	return p.emit(func(p *ProcessorImpl, mb *message.Buffer) error {
 		return p.skip(mb, txId, characterId)
 	})
 }
@@ -896,13 +925,13 @@ func (p *ProcessorImpl) skip(mb *message.Buffer, txId uuid.UUID, characterId uin
 }
 
 func (p *ProcessorImpl) ExitAfterGame(txId uuid.UUID, f field.Model, characterId uint32) error {
-	return p.emit(func(mb *message.Buffer) error {
+	return p.emit(func(p *ProcessorImpl, mb *message.Buffer) error {
 		return p.setExitAfter(mb, txId, characterId, true)
 	})
 }
 
 func (p *ProcessorImpl) CancelExitAfterGame(txId uuid.UUID, f field.Model, characterId uint32) error {
-	return p.emit(func(mb *message.Buffer) error {
+	return p.emit(func(p *ProcessorImpl, mb *message.Buffer) error {
 		return p.setExitAfter(mb, txId, characterId, false)
 	})
 }
@@ -933,19 +962,24 @@ func (p *ProcessorImpl) setExitAfter(mb *message.Buffer, txId uuid.UUID, charact
 // (design §3.3). resultType is 0 win / 1 tie / 2 forfeit; winnerSlot is the
 // winning slot (ignored for a tie).
 //
-// Order: record.ApplyResult — the durable commit — runs FIRST, before the
-// registry swap and before any event is emitted (design §2). If it fails the
-// room is left untouched (still InProgress, so a retry/re-trigger can still
-// resolve the game), nothing is emitted, and the error is returned; swapping
-// first would strand a permanently-!InProgress room whose record was never
-// persisted, with the error swallowed by the fire-and-forget handler. After
-// the commit succeeds: compute session scores + forfeit counters and reset the
-// room for a rematch (board/deck/pairs/firstSlot/deny bits/inProgress/
-// currentTurn cleared; session scores + FirstMover kept, FirstMover advanced
-// to the winner on a non-tie per Cosmic setPiece), swap it under the registry
-// lock, emit GAME_ENDED (refreshed records + scores) and BALLOON_UPDATED{
-// InProgress:false}, and finally honor the exit-after flags by processing that
-// side's leave after the result.
+// Order: record.ApplyResult runs FIRST in code order, before the registry swap.
+// p.db here is the emit outbox transaction (emit binds a tx-scoped processor —
+// see emit/withTx), so the record upsert, the refreshed-record reads, and the
+// GAME_ENDED / BALLOON_UPDATED events all ride the same transaction (task-114
+// outbox): they commit atomically and publish together, so there is no window
+// where the record persists but the event describing it is lost. If ApplyResult
+// fails the room is left untouched (still InProgress, so a retry/re-trigger can
+// still resolve the game), nothing is emitted, and the error is returned;
+// swapping first would strand a permanently-!InProgress room whose record was
+// never persisted. After ApplyResult: compute session scores + forfeit counters
+// and reset the room for a rematch (board/deck/pairs/firstSlot/deny bits/
+// inProgress/currentTurn cleared; session scores + FirstMover kept, FirstMover
+// advanced to the winner on a non-tie per Cosmic setPiece), swap it under the
+// registry lock, buffer GAME_ENDED (refreshed records + scores) and
+// BALLOON_UPDATED{InProgress:false}, and finally honor the exit-after flags by
+// processing that side's leave after the result. The registry is in-memory
+// (never persisted); on the negligible chance the tx rolls back after the swap,
+// it is rebuilt on the next restart.
 func (p *ProcessorImpl) endGame(mb *message.Buffer, txId uuid.UUID, roomId uint32, resultType byte, winnerSlot byte) error {
 	room, ok := p.reg.Get(p.t, roomId)
 	if !ok || !room.InProgress() {
@@ -959,8 +993,8 @@ func (p *ProcessorImpl) endGame(mb *message.Buffer, txId uuid.UUID, roomId uint3
 	tie := resultType == resultTie
 	now := p.clock()
 
-	// ApplyResult commits before the registry swap and before any event is
-	// emitted (design §2). On failure the room stays InProgress, untouched.
+	// ApplyResult runs first in code order, on p.db (the emit outbox tx).
+	// On failure the room stays InProgress, untouched, and nothing is emitted.
 	if err := record.ApplyResult(p.db.WithContext(p.ctx), gameType, ownerId, visitorId, winnerSlot, tie); err != nil {
 		return err
 	}

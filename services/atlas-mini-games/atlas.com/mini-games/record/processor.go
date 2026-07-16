@@ -31,6 +31,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) GetByCharacter(characterId uint32) ([]Model, error) {
 	return GetByCharacter(p.ctx, p.db.WithContext(p.ctx), characterId)
 }

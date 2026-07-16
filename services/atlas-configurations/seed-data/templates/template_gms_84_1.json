@@ -567,7 +567,6 @@
             "MERCHANT_ORGANIZE": 40,
             "MERCHANT_EXIT": 41,
             "MERCHANT_WITHDRAW_MESO": 43,
-            "MERCHANT_NAME_CHANGE": 45,
             "MERCHANT_VIEW_VISIT_LIST": 46,
             "MERCHANT_VIEW_BLACK_LIST": 47,
             "MERCHANT_ADD_TO_BLACK_LIST": 48,
@@ -1170,6 +1169,72 @@
         "opCode": "0xB4",
         "validator": "LoggedInValidator",
         "handler": "SummonDamageHandle"
+      },
+      {
+        "opCode": "0xA0",
+        "validator": "LoggedInValidator",
+        "handler": "EnterMtsHandle"
+      },
+      {
+        "opCode": "0x102",
+        "validator": "NoOpValidator",
+        "handler": "ItcStatusChargeHandle"
+      },
+      {
+        "opCode": "0x103",
+        "validator": "LoggedInValidator",
+        "handler": "ItcQueryCashRequestHandle"
+      },
+      {
+        "opCode": "0x104",
+        "validator": "LoggedInValidator",
+        "handler": "ItcOperationHandle",
+        "options": {
+          "operations": {
+            "REGISTER_SALE": 2,
+            "SALE_CURRENT_ITEM": 3,
+            "REGISTER_WISH_ENTRY": 4,
+            "GET_ITC_LIST": 5,
+            "SEARCH_ITC_LIST": 6,
+            "CANCEL_SALE": 7,
+            "TAKE_HOME": 8,
+            "SET_ZZIM": 9,
+            "DELETE_ZZIM": 10,
+            "VIEW_WISH": 11,
+            "BUY_WISH": 12,
+            "CANCEL_WISH": 13,
+            "BUY": 16,
+            "BUY_ZZIM": 17,
+            "REGISTER_AUCTION": 18,
+            "PLACE_BID": 19,
+            "BUY_AUCTION_IMM": 20
+          }
+        }
+      },
+      {
+        "opCode": "0x10B",
+        "validator": "LoggedInValidator",
+        "handler": "ItemUpgradeUpdateHandle"
+      },
+      {
+        "opCode": "0x42",
+        "validator": "LoggedInValidator",
+        "handler": "OwlActionHandle",
+        "options": {
+          "operations": {
+            "OPEN": 5
+          }
+        }
+      },
+      {
+        "opCode": "0x43",
+        "validator": "LoggedInValidator",
+        "handler": "OwlWarpHandle"
+      },
+      {
+        "opCode": "0x53",
+        "validator": "LoggedInValidator",
+        "handler": "ShopScannerItemUseHandle"
       }
     ],
     "writers": [
@@ -1708,6 +1773,10 @@
       {
         "opCode": "0x80",
         "writer": "SetField"
+      },
+      {
+        "opCode": "0x81",
+        "writer": "SetItc"
       },
       {
         "opCode": "0x82",
@@ -2260,6 +2329,18 @@
         "writer": "SpawnMonster"
       },
       {
+        "opCode": "0x110",
+        "writer": "SpawnHiredMerchant"
+      },
+      {
+        "opCode": "0x111",
+        "writer": "DestroyHiredMerchant"
+      },
+      {
+        "opCode": "0x112",
+        "writer": "UpdateHiredMerchant"
+      },
+      {
         "opCode": "0xF3",
         "writer": "DestroyMonster"
       },
@@ -2698,6 +2779,8 @@
             "INVITE_RESULT": 3,
             "ENTER": 4,
             "ENTER_RESULT": 5,
+            "CHAT": 6,
+            "CHAT_THING": 8,
             "LEAVE": 10,
             "UPDATE_MERCHANT": 25,
             "MEMORY_GAME_ASK_TIE": 50,
@@ -2710,7 +2793,10 @@
             "MEMORY_GAME_RESULT": 62,
             "MEMORY_GAME_SKIP": 63,
             "MEMORY_GAME_MOVE_STONE": 64,
-            "MEMORY_GAME_FIP_CARD": 68
+            "MEMORY_GAME_FIP_CARD": 68,
+            "PERSONAL_STORE_ITEM_SOLD": 26,
+            "MERCHANT_VIEW_VISIT_LIST": 46,
+            "MERCHANT_VIEW_BLACK_LIST": 47
           },
           "enterError": {
             "ROOM_CLOSED": 1,
@@ -2735,8 +2821,20 @@
             "NOT_ENOUGH_MESOS": 21,
             "INCORRECT_PASSWORD": 22,
             "ITEM_EXPIRED": 24
+          },
+          "leaveReason": {
+            "CANNOT_ESTABLISH_HERE": 1,
+            "SHOP_CLOSED": 3,
+            "USER_BANNED": 5,
+            "TIME_LIMIT_PASSED": 6,
+            "OUT_OF_STOCK": 14,
+            "BANNED_TIME_LIMIT": 15
           }
         }
+      },
+      {
+        "opCode": "0x0A5",
+        "writer": "MiniRoom"
       },
       {
         "opCode": "0x142",
@@ -2771,8 +2869,21 @@
         "writer": "WitchTowerScoreUpdate"
       },
       {
-        "opCode": "0x169",
-        "writer": "ViciousHammer"
+        "opCode": "0x16C",
+        "writer": "ViciousHammer",
+        "options": {
+          "operations": {
+            "OPEN": 0,
+            "SUCCESS": 61,
+            "FAILURE": 62
+          },
+          "errorCodes": {
+            "UNKNOWN": 0,
+            "NOT_UPGRADABLE": 1,
+            "CAP_REACHED": 2,
+            "HORNTAIL": 3
+          }
+        }
       },
       {
         "opCode": "0x14B",
@@ -2824,13 +2935,38 @@
         "writer": "RemoveTownDoor"
       },
       {
-        "opCode": "0x15B",
+        "opCode": "0x164",
+        "writer": "MtsChargeParamResult"
+      },
+      {
+        "opCode": "0x165",
         "writer": "MtsOperation2"
       },
       {
-        "opCode": "0x15C",
+        "opCode": "0x166",
         "writer": "MtsOperation",
         "options": {
+          "processStatusCodes": {
+            "HISTORY_SOLD": 0,
+            "HISTORY_PURCHASED": 1,
+            "HISTORY_BID_LOST": 2,
+            "HISTORY_CANCELLED": 3,
+            "AUCTION_EXHIBIT": 1,
+            "AUCTION_BID": 2
+          },
+          "noticeFailReasons": {
+            "NOT_ENOUGH_NX": 66,
+            "REGISTER_FAILED": 0,
+            "NOT_ENOUGH_MESOS": 67,
+            "NX_ERROR": 68,
+            "INVENTORY_FULL": 71,
+            "LIST_LOAD_FAILED": 73,
+            "CANCEL_HAS_BID": 78,
+            "MAY_NOT_BE_SOLD": 79,
+            "ITEM_SOLD": 81,
+            "STARS_NOT_TRADABLE": 82,
+            "BELOW_MIN_LEVEL": 83
+          },
           "operations": {
             "GET_ITC_LIST_DONE": 21,
             "GET_ITC_LIST_FAILED": 22,
@@ -2949,6 +3085,46 @@
       {
         "opCode": "0xB7",
         "writer": "SummonSkill"
+      },
+      {
+        "opCode": "0x170",
+        "writer": "VegaScroll",
+        "options": {
+          "operations": {
+            "START_SUCCESS": 64,
+            "START_FAILURE": 69,
+            "RESULT_SUCCESS": 65,
+            "RESULT_FAILURE": 67,
+            "INVALID": 66
+          }
+        }
+      },
+      {
+        "opCode": "0x48",
+        "writer": "ShopScannerResult",
+        "options": {
+          "operations": {
+            "RESULT": 6,
+            "HOT_LIST": 7
+          }
+        }
+      },
+      {
+        "opCode": "0x49",
+        "writer": "ShopLinkResult",
+        "options": {
+          "operations": {
+            "SUCCESS": 0,
+            "CLOSED": 1,
+            "FULL": 2,
+            "BUSY": 3,
+            "DEAD": 4,
+            "NO_TRADE": 7,
+            "DENIED": 17,
+            "MAINTENANCE": 18,
+            "FM_ONLY": 23
+          }
+        }
       }
     ]
   },
@@ -3349,8 +3525,8 @@
       {
         "id": "1645f671-a3bd-4ef6-a2a5-a8714e661f74",
         "attributes": {
-          "name": "Hero — 4th job",
-          "description": "Full 4th-job Hero — branch skills maxed; iconic Stonetooth Sword + Reverse Taragon set.",
+          "name": "Hero \u2014 4th job",
+          "description": "Full 4th-job Hero \u2014 branch skills maxed; iconic Stonetooth Sword + Reverse Taragon set.",
           "tags": [
             "4th-job",
             "warrior",
@@ -3367,10 +3543,10 @@
           "meso": 100000000,
           "gm": 0,
           "stats": {
-            "str": 999,
-            "dex": 999,
-            "int": 999,
-            "luk": 999,
+            "str": 902,
+            "dex": 120,
+            "int": 4,
+            "luk": 4,
             "hp": 30000,
             "mp": 6000
           },
@@ -3566,8 +3742,8 @@
       {
         "id": "97784164-9ff9-4f0c-aef9-5a975c47d2ad",
         "attributes": {
-          "name": "Paladin — 4th job",
-          "description": "Full 4th-job Paladin — branch skills maxed; iconic Crushed Skull + Maple Warrior Shield + Reverse Taragon set.",
+          "name": "Paladin \u2014 4th job",
+          "description": "Full 4th-job Paladin \u2014 branch skills maxed; iconic Crushed Skull + Maple Warrior Shield + Reverse Taragon set.",
           "tags": [
             "4th-job",
             "warrior",
@@ -3584,10 +3760,10 @@
           "meso": 100000000,
           "gm": 0,
           "stats": {
-            "str": 999,
-            "dex": 999,
-            "int": 999,
-            "luk": 999,
+            "str": 1018,
+            "dex": 4,
+            "int": 4,
+            "luk": 4,
             "hp": 30000,
             "mp": 6000
           },
@@ -3799,8 +3975,8 @@
       {
         "id": "5d3b41d2-4301-46f6-8b17-0d660dcf4961",
         "attributes": {
-          "name": "Dark Knight — 4th job",
-          "description": "Full 4th-job Dark Knight — branch skills maxed; iconic Sky Ski + Reverse Taragon set.",
+          "name": "Dark Knight \u2014 4th job",
+          "description": "Full 4th-job Dark Knight \u2014 branch skills maxed; iconic Sky Ski + Reverse Taragon set.",
           "tags": [
             "4th-job",
             "warrior",
@@ -3817,10 +3993,10 @@
           "meso": 100000000,
           "gm": 0,
           "stats": {
-            "str": 999,
-            "dex": 999,
-            "int": 999,
-            "luk": 999,
+            "str": 1018,
+            "dex": 4,
+            "int": 4,
+            "luk": 4,
             "hp": 30000,
             "mp": 6000
           },
@@ -4016,8 +4192,8 @@
       {
         "id": "6f177876-36c1-4206-8935-455aa2f95d94",
         "attributes": {
-          "name": "F/P ArchMage — 4th job",
-          "description": "Full 4th-job Fire/Poison ArchMage — branch skills maxed; Elemental Staff 5 (Fire) + Maple Magician Shield + Reverse Myst Blue set.",
+          "name": "F/P ArchMage \u2014 4th job",
+          "description": "Full 4th-job Fire/Poison ArchMage \u2014 branch skills maxed; Elemental Staff 5 (Fire) + Maple Magician Shield + Reverse Myst Blue set.",
           "tags": [
             "4th-job",
             "magician",
@@ -4034,10 +4210,10 @@
           "meso": 100000000,
           "gm": 0,
           "stats": {
-            "str": 999,
-            "dex": 999,
-            "int": 999,
-            "luk": 999,
+            "str": 4,
+            "dex": 4,
+            "int": 857,
+            "luk": 165,
             "hp": 30000,
             "mp": 6000
           },
@@ -4217,8 +4393,8 @@
       {
         "id": "6b11335d-536d-4184-bf69-8edee94a1f96",
         "attributes": {
-          "name": "I/L ArchMage — 4th job",
-          "description": "Full 4th-job Ice/Lightning ArchMage — branch skills maxed; Elemental Staff 8 (Lightning) + Maple Magician Shield + Reverse Myst Blue set.",
+          "name": "I/L ArchMage \u2014 4th job",
+          "description": "Full 4th-job Ice/Lightning ArchMage \u2014 branch skills maxed; Elemental Staff 8 (Lightning) + Maple Magician Shield + Reverse Myst Blue set.",
           "tags": [
             "4th-job",
             "magician",
@@ -4235,10 +4411,10 @@
           "meso": 100000000,
           "gm": 0,
           "stats": {
-            "str": 999,
-            "dex": 999,
-            "int": 999,
-            "luk": 999,
+            "str": 4,
+            "dex": 4,
+            "int": 857,
+            "luk": 165,
             "hp": 30000,
             "mp": 6000
           },
@@ -4418,8 +4594,8 @@
       {
         "id": "928639cb-ba87-4e6b-b33b-e54520fbd910",
         "attributes": {
-          "name": "Bishop — 4th job",
-          "description": "Full 4th-job Bishop — branch skills maxed; Elemental Wand 5 + Maple Magician Shield + Reverse Myst Blue set.",
+          "name": "Bishop \u2014 4th job",
+          "description": "Full 4th-job Bishop \u2014 branch skills maxed; Elemental Wand 5 + Maple Magician Shield + Reverse Myst Blue set.",
           "tags": [
             "4th-job",
             "magician",
@@ -4436,10 +4612,10 @@
           "meso": 100000000,
           "gm": 0,
           "stats": {
-            "str": 999,
-            "dex": 999,
-            "int": 999,
-            "luk": 999,
+            "str": 4,
+            "dex": 4,
+            "int": 902,
+            "luk": 120,
             "hp": 30000,
             "mp": 6000
           },
@@ -4623,8 +4799,8 @@
       {
         "id": "3ab10755-5187-4493-9217-ebddc705067b",
         "attributes": {
-          "name": "Bowmaster — 4th job",
-          "description": "Full 4th-job Bowmaster — branch skills maxed; Reverse Engaw + Reverse Evernew set + Diamond Arrows.",
+          "name": "Bowmaster \u2014 4th job",
+          "description": "Full 4th-job Bowmaster \u2014 branch skills maxed; Reverse Engaw + Reverse Evernew set + Diamond Arrows.",
           "tags": [
             "4th-job",
             "bowman",
@@ -4641,10 +4817,10 @@
           "meso": 100000000,
           "gm": 0,
           "stats": {
-            "str": 999,
-            "dex": 999,
-            "int": 999,
-            "luk": 999,
+            "str": 125,
+            "dex": 897,
+            "int": 4,
+            "luk": 4,
             "hp": 30000,
             "mp": 6000
           },
@@ -4824,8 +5000,8 @@
       {
         "id": "aa6cbb45-1ef9-4bb0-9368-21297edad68c",
         "attributes": {
-          "name": "Marksman — 4th job",
-          "description": "Full 4th-job Marksman — branch skills maxed; Reverse Black Beauty + Reverse Evernew set + Diamond Bolts.",
+          "name": "Marksman \u2014 4th job",
+          "description": "Full 4th-job Marksman \u2014 branch skills maxed; Reverse Black Beauty + Reverse Evernew set + Diamond Bolts.",
           "tags": [
             "4th-job",
             "bowman",
@@ -4842,10 +5018,10 @@
           "meso": 100000000,
           "gm": 0,
           "stats": {
-            "str": 999,
-            "dex": 999,
-            "int": 999,
-            "luk": 999,
+            "str": 120,
+            "dex": 902,
+            "int": 4,
+            "luk": 4,
             "hp": 30000,
             "mp": 6000
           },
@@ -5025,8 +5201,8 @@
       {
         "id": "ba0b2a82-1854-4ee0-8740-6cbfa86a65c0",
         "attributes": {
-          "name": "Night Lord — 4th job",
-          "description": "Full 4th-job Night Lord — branch skills maxed; iconic Maple Kandayo + Reverse Prinsid set + Crystal Ilbi Throwing-Stars.",
+          "name": "Night Lord \u2014 4th job",
+          "description": "Full 4th-job Night Lord \u2014 branch skills maxed; iconic Maple Kandayo + Reverse Prinsid set + Crystal Ilbi Throwing-Stars.",
           "tags": [
             "4th-job",
             "thief",
@@ -5043,10 +5219,10 @@
           "meso": 100000000,
           "gm": 0,
           "stats": {
-            "str": 999,
-            "dex": 999,
-            "int": 999,
-            "luk": 999,
+            "str": 4,
+            "dex": 160,
+            "int": 4,
+            "luk": 862,
             "hp": 30000,
             "mp": 6000
           },
@@ -5226,8 +5402,8 @@
       {
         "id": "8e0d8b65-dff0-4696-a06d-b16317f6ced7",
         "attributes": {
-          "name": "Shadower — 4th job",
-          "description": "Full 4th-job Shadower — branch skills maxed; iconic Maple Asura Dagger + Maple Thief Shield + Reverse Prinsid set.",
+          "name": "Shadower \u2014 4th job",
+          "description": "Full 4th-job Shadower \u2014 branch skills maxed; iconic Maple Asura Dagger + Maple Thief Shield + Reverse Prinsid set.",
           "tags": [
             "4th-job",
             "thief",
@@ -5244,10 +5420,10 @@
           "meso": 100000000,
           "gm": 0,
           "stats": {
-            "str": 999,
-            "dex": 999,
-            "int": 999,
-            "luk": 999,
+            "str": 4,
+            "dex": 160,
+            "int": 4,
+            "luk": 862,
             "hp": 30000,
             "mp": 6000
           },
@@ -5427,8 +5603,8 @@
       {
         "id": "525dc913-5988-4599-b12a-a14eb68253e0",
         "attributes": {
-          "name": "Buccaneer — 4th job",
-          "description": "Full 4th-job Buccaneer — branch skills maxed; iconic Maple Golden Claw (knuckle) + Reverse Burgunt set.",
+          "name": "Buccaneer \u2014 4th job",
+          "description": "Full 4th-job Buccaneer \u2014 branch skills maxed; iconic Maple Golden Claw (knuckle) + Reverse Burgunt set.",
           "tags": [
             "4th-job",
             "pirate",
@@ -5445,10 +5621,10 @@
           "meso": 100000000,
           "gm": 0,
           "stats": {
-            "str": 999,
-            "dex": 999,
-            "int": 999,
-            "luk": 999,
+            "str": 902,
+            "dex": 120,
+            "int": 4,
+            "luk": 4,
             "hp": 30000,
             "mp": 6000
           },
@@ -5628,8 +5804,8 @@
       {
         "id": "1c51eefc-47be-4352-bd75-5cde0200b141",
         "attributes": {
-          "name": "Corsair — 4th job",
-          "description": "Full 4th-job Corsair — branch skills maxed; iconic Maple Storm Pistol + Reverse Burgunt set + Eternal Bullets.",
+          "name": "Corsair \u2014 4th job",
+          "description": "Full 4th-job Corsair \u2014 branch skills maxed; iconic Maple Storm Pistol + Reverse Burgunt set + Eternal Bullets.",
           "tags": [
             "4th-job",
             "pirate",
@@ -5646,10 +5822,10 @@
           "meso": 100000000,
           "gm": 0,
           "stats": {
-            "str": 999,
-            "dex": 999,
-            "int": 999,
-            "luk": 999,
+            "str": 120,
+            "dex": 902,
+            "int": 4,
+            "luk": 4,
             "hp": 30000,
             "mp": 6000
           },

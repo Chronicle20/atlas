@@ -1,0 +1,30 @@
+{
+  "WriterName": "OwlWarp",
+  "IDAName": "CUIShopScanResult::OnButtonClicked",
+  "Address": "0x8a4423",
+  "Variant": "GMS/v83",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/merchant/serverbound/owl_warp.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "ownerId (dwMiniRoomSN; ITEMDATA+16) when row's *(+44)==0. COutPacket(0x43); buttons 3000-3007 = result rows",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "mapId (dwFieldID; ITEMDATA+20)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

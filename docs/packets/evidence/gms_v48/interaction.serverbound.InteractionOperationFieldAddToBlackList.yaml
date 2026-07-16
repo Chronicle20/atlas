@@ -1,0 +1,10 @@
+packet: interaction/serverbound/InteractionOperationFieldAddToBlackList
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_4CBD0E
+    address: "0x4cbd0e"
+    decompile_sha256: 11309875ff9eb35632d8efa2b9fcc851c49a33d361e3c776e48bbf49836c9038
+verifies:
+    - libs/atlas-packet/interaction/serverbound/v48_test.go#TestOperationFieldAddToBlackListV48Bytes

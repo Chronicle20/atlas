@@ -1,0 +1,10 @@
+packet: pet/serverbound/PetMovementRequest
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CVecCtrlPet::EndUpdateActive
+    address: "0x7fbb76"
+    decompile_sha256: 31c4f42011addef6cad7c206eb88e855aa13b3f8817abc8c9bd50bfbd6499134
+verifies:
+  - libs/atlas-packet/pet/serverbound/movement_test.go#TestPetMovementBytesV61

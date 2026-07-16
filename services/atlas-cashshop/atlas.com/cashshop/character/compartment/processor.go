@@ -30,6 +30,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return p
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) IncreaseCapacity(mb *message.Buffer) func(characterId uint32, inventoryType inventory3.Type, amount uint32) error {
 	return func(characterId uint32, inventoryType inventory3.Type, amount uint32) error {
 		return mb.Put(compartment.EnvCommandTopic, compartment2.IncreaseCapacityCommandProvider(characterId, byte(inventoryType), amount))

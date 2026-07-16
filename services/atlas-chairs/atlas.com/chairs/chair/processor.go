@@ -3,10 +3,10 @@ package chair
 import (
 	_map2 "atlas-chairs/data/map"
 	chair2 "atlas-chairs/kafka/message/chair"
-	"atlas-chairs/kafka/producer"
 	"atlas-chairs/validation"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"math"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -30,6 +30,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		ctx: ctx,
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetById(characterId uint32) (Model, error) {
 	m, ok := GetRegistry().Get(p.ctx, characterId)

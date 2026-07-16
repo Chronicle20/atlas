@@ -16,6 +16,10 @@ func getBaseRequest() string {
 	return requests.RootUrl("DATA")
 }
 
-func requestSpawnPoints(mapId _map.Id) requests.Request[[]RestModel] {
-	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+monstersResource, mapId))
+// spawnPointsUrl is a bare URL (not a requests.Request) because the list is
+// now paginated server-side (task-117) and consumed via
+// requests.DrainProvider, which appends its own page[number]/page[size]
+// query params per request.
+func spawnPointsUrl(mapId _map.Id) string {
+	return fmt.Sprintf(getBaseRequest()+monstersResource, mapId)
 }

@@ -1,5 +1,6 @@
 import { api } from "@/lib/api/client";
 import { buildQueryString, type ServiceOptions, type QueryOptions } from "@/lib/api/query-params";
+import { fetchAll, fetchPaged, type PagedResult } from "@/services/api/pagination";
 import { tenantHeaders } from "@/lib/headers";
 import type { Account, AccountAttributes } from "@/types/models/account";
 import type { Tenant } from "@/types/models/tenant";
@@ -50,13 +51,36 @@ function buildAccountQuery(options?: AccountQueryOptions): QueryOptions {
 }
 
 export const accountsService = {
+  /**
+   * Get every account for a tenant (matching `options`), draining all pages
+   * (task-117). Used by consumers that genuinely need the whole collection
+   * (search, logged-in roster, stats, the Characters-page account join).
+   */
   async getAllAccounts(options?: AccountQueryOptions): Promise<Account[]> {
     const queryOptions = buildAccountQuery(options);
-    const accounts = await api.getList<Account>(
+    const accounts = await fetchAll<Account>(
       `${BASE_PATH}${buildQueryString(queryOptions)}`,
+      undefined,
       queryOptions,
     );
     return sortAccounts(accounts.map(transformAccount));
+  },
+
+  /**
+   * Get a single page of accounts (matching `options`). Used by the
+   * Accounts list view (task-117), which pages server-side.
+   */
+  async getAccountsPage(
+    page: { number: number; size: number },
+    options?: AccountQueryOptions,
+  ): Promise<PagedResult<Account>> {
+    const queryOptions = buildAccountQuery(options);
+    const result = await fetchPaged<Account>(
+      `${BASE_PATH}${buildQueryString(queryOptions)}`,
+      page,
+      queryOptions,
+    );
+    return { data: sortAccounts(result.data.map(transformAccount)), meta: result.meta };
   },
 
   async getAccountById(id: string, options?: ServiceOptions): Promise<Account> {

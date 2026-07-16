@@ -1,6 +1,7 @@
 package clientbound
 
 import (
+	"bytes"
 	"testing"
 	"time"
 
@@ -10,8 +11,39 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
+// TestChangeBatchBytesV72 pins that InventoryChangeBatch is byte-identical between
+// GMS v72 and v79 (no version gate; handler CWvsContext::OnInventoryOperation@0x917ad0).
+// packet-audit:verify packet=inventory/clientbound/InventoryChangeBatch version=gms_v72 ida=0x917ad0
+func TestChangeBatchBytesV72(t *testing.T) {
+	input := NewChangeBatch(true, inventory.NewMoveEntry(2, 3, 7))
+	got72 := test.Encode(t, test.CreateContext("GMS", 72, 1), input.Encode, nil)
+	got79 := test.Encode(t, test.CreateContext("GMS", 79, 1), input.Encode, nil)
+	if !bytes.Equal(got72, got79) {
+		t.Fatalf("v72 = % X, want (v79) % X", got72, got79)
+	}
+}
+
+// TestChangeBatchBytesV61 pins that InventoryChangeBatch is byte-identical between
+// GMS v61 and v79 (no version gate; handler CWvsContext::OnInventoryOperation@0x8422fc v61).
+// packet-audit:verify packet=inventory/clientbound/InventoryChangeBatch version=gms_v61 ida=0x8422fc
+func TestChangeBatchBytesV61(t *testing.T) {
+	input := NewChangeBatch(true, inventory.NewMoveEntry(2, 3, 7))
+	got61 := test.Encode(t, test.CreateContext("GMS", 61, 1), input.Encode, nil)
+	got79 := test.Encode(t, test.CreateContext("GMS", 79, 1), input.Encode, nil)
+	if !bytes.Equal(got61, got79) {
+		t.Fatalf("v61 = % X, want (v79) % X", got61, got79)
+	}
+}
+
 // packet-audit:verify packet=inventory/clientbound/InventoryChangeBatch version=gms_v83 ida=0xa1ead9
 // packet-audit:verify packet=inventory/clientbound/InventoryChangeBatch version=gms_v95 ida=0xa08a70
+//
+// v79: CWvsContext::OnInventoryOperation @0x96953e reads Decode1(exclReq) +
+// Decode1(count) + count x per-entry {Decode1(mode),Decode1(invType),Decode2(slot),
+// body} + a single post-loop addMov byte if any entry set nCurItemPos. Mode
+// enum + header identical to v83; the round-trip variants cover the wire
+// (GMS v28 == v79).
+// packet-audit:verify packet=inventory/clientbound/InventoryChangeBatch version=gms_v79 ida=0x96953e
 func TestChangeBatchQuantityUpdateRoundTrip(t *testing.T) {
 	for _, v := range test.Variants {
 		t.Run(v.Name, func(t *testing.T) {

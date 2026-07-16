@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	tenantlib "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -33,16 +34,22 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 func handleGetConfigurationTenants(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			cts, err := NewProcessor(d.Logger(), d.Context(), db).GetAll()
+			page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+				return
+			}
+
+			paged, err := NewProcessor(d.Logger(), d.Context(), db).AllProvider(page)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to get configuration tenants.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(cts)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 		}
 	}
 }
@@ -54,7 +61,7 @@ func handleGetConfigurationTenant(db *gorm.DB) rest.GetHandler {
 				cts, err := NewProcessor(d.Logger(), d.Context(), db).GetById(tenantId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to get configuration tenants.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -84,7 +91,7 @@ func handleUpdateConfigurationTenant(db *gorm.DB) rest.InputHandler[RestModel] {
 					d.Logger().WithError(terr).Warn("Unable to construct tenant model from PATCH input; preset validation will skip atlas-data lookups.")
 				}
 				p := NewProcessor(d.Logger(), ctx, db).
-					WithValidator(preset.NewValidator(data.NewClient(d.Logger())))
+					WithValidator(preset.NewValidator(data.NewProcessor(d.Logger())))
 				err := p.UpdateById(tenantId, input)
 				if err != nil {
 					var ve *validationFailureError
@@ -95,7 +102,7 @@ func handleUpdateConfigurationTenant(db *gorm.DB) rest.InputHandler[RestModel] {
 						return
 					}
 					d.Logger().WithError(err).Errorf("Unable to update configuration tenant.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 			}
@@ -109,7 +116,7 @@ func handleCreateConfigurationTenant(db *gorm.DB) rest.InputHandler[RestModel] {
 			tenantId, err := NewProcessor(d.Logger(), d.Context(), db).Create(input)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to create configuration tenant.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -135,7 +142,7 @@ func handleDeleteConfigurationTenant(db *gorm.DB) rest.GetHandler {
 				err := NewProcessor(d.Logger(), d.Context(), db).DeleteById(tenantId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to delete configuration tenant.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 				}
 			}
 		})

@@ -55,7 +55,7 @@ services:
         SERVICE: atlas-ban
     image: atlas-ban:${ATLAS_IMAGE_TAG:-local}
     environment:
-      DB_NAME: atlas-ban
+      DB_NAME: atlas-bans
 
   atlas-buddies:
     <<: *atlas-defaults

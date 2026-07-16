@@ -40,7 +40,7 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 // handleLogout / handleChannelChanged / handleMapChanged all despawn every summon
 // owned by the character. Summons are bound to the field at spawn and must not
 // follow across logout, channel change, or map change; re-cast in the new field
-// is the player's responsibility (Cosmic Character.java:3769-3791).
+// is the player's responsibility.
 func handleLogout(l logrus.FieldLogger, ctx context.Context, e StatusEvent[LogoutBody]) {
 	if e.Type != StatusEventTypeLogout {
 		return

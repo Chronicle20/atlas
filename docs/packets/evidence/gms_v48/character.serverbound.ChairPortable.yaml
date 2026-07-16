@@ -1,0 +1,10 @@
+packet: character/serverbound/ChairPortable
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_712894
+    address: "0x712894"
+    decompile_sha256: 0c9c680dcc4621815858ea3c73b7eb5b3bfeff212ac76fa3d9510fb640fa9ae1
+verifies:
+    - libs/atlas-packet/character/serverbound/chair_portable_test.go#TestChairPortableV48ByteOutput

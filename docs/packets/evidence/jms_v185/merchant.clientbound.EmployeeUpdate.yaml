@@ -1,0 +1,10 @@
+packet: merchant/clientbound/EmployeeUpdate
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CEmployeePool::OnEmployeeMiniRoomBalloon
+    address: "0x542b6c"
+    decompile_sha256: 86850e0986fc76eaca29bce1371b1ca3368b01c1e94b64d987655d2ce9345518
+verifies:
+  - libs/atlas-packet/merchant/clientbound/employee_test.go#TestEmployeeUpdateBytes

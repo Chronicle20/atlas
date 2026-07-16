@@ -1,0 +1,10 @@
+packet: party/clientbound/PartyAlreadyJoined2
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnPartyResult
+    address: "0x934f3c"
+    decompile_sha256: 719a25b76224dd49303729605406bef6168bd93a8cc66a0a6a1a25e236a2899e
+verifies:
+    - libs/atlas-packet/party/clientbound/v72_test.go#TestPartyModeOnlyArmsV72

@@ -49,9 +49,14 @@ func handleLogout(db *gorm.DB) func(logrus.FieldLogger, context.Context, charact
 		}
 
 		for _, s := range shops {
-			if s.ShopType() == shop.CharacterShop && s.State() != shop.Closed {
+			switch shop.LogoutAction(s.ShopType(), s.State()) {
+			case shop.LogoutClose:
 				if err := p.CloseShopAndEmit(s.Id(), e.CharacterId, shop.CloseReasonDisconnect); err != nil {
-					l.WithError(err).Errorf("Error closing character shop [%s] on disconnect.", s.Id())
+					l.WithError(err).Errorf("Error closing shop [%s] on disconnect.", s.Id())
+				}
+			case shop.LogoutExitMaintenance:
+				if err := p.ExitMaintenanceAndEmit(s.Id(), e.CharacterId); err != nil {
+					l.WithError(err).Errorf("Error exiting maintenance for shop [%s] on disconnect.", s.Id())
 				}
 			}
 		}

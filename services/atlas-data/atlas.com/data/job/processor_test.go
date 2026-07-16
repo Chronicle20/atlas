@@ -1,13 +1,15 @@
 package job
 
 import (
+	"context"
 	"testing"
 
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 )
 
 func TestGetSkillsForJob_KnownJob(t *testing.T) {
-	got, ok := GetSkillsForJob(112) // Hero
+	got, ok := NewProcessor(logrus.New(), context.Background()).GetSkillsForJob(112) // Hero
 	require.True(t, ok)
 	require.Equal(t, uint32(112), got.Id)
 	require.NotEmpty(t, got.Skills)
@@ -17,7 +19,7 @@ func TestGetSkillsForJob_KnownJob(t *testing.T) {
 }
 
 func TestGetSkillsForJob_UnknownJob(t *testing.T) {
-	got, ok := GetSkillsForJob(99999)
+	got, ok := NewProcessor(logrus.New(), context.Background()).GetSkillsForJob(99999)
 	require.False(t, ok)
 	require.Equal(t, uint32(99999), got.Id)
 	require.Empty(t, got.Skills)

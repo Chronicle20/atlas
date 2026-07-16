@@ -4,9 +4,9 @@ import (
 	"atlas-parties/character"
 	"atlas-parties/invite"
 	"atlas-parties/kafka/message"
-	"atlas-parties/kafka/producer"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -64,6 +64,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		ip:  invite.NewProcessor(l, ctx),
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) AllProvider() ([]Model, error) {
 	return GetRegistry().GetAll(p.ctx), nil

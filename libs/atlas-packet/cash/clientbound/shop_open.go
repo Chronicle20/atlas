@@ -86,15 +86,22 @@ func (m CashShopOpen) Encode(l logrus.FieldLogger, ctx context.Context) func(opt
 			w.WriteShort(0)
 		}
 
-		// CCashShop::DecodeZeroGoods
-		if t.Region() == "GMS" && t.MajorVersion() > 12 {
+		// CCashShop::DecodeZeroGoods — GMS only, and NOT in the legacy body.
+		// v48 (CCashShop::LoadData sub_44E1E5 0x44e993/0x44e99d/0x44e9a7) and v61
+		// (CCashShop::LoadData 0x45b539: DecodeBuffer(1080) -> sub_45C497 Stock ->
+		// sub_45C4DE LimitGoods) read exactly TWO post-buffer decoders — no
+		// DecodeZeroGoods. Modern GMS (>=72) reads a third. Gate on MajorAtLeast(72).
+		if t.Region() == "GMS" && t.MajorAtLeast(72) {
 			w.WriteShort(0)
 		}
 
 		if (t.Region() == "GMS" && t.MajorVersion() > 12) || t.Region() == "JMS" {
-			w.WriteBool(false) // bEventOn
+			w.WriteBool(false) // bEventOn (v48 ctor 0x447249 / v61 ctor 0x4536d4 read this Decode1)
 
-			if t.Region() == "GMS" {
+			// nHighestCharacterLevelInThisAccount — GMS only, modern (>=72) only.
+			// The v48/v61 ctors (sub_447122 0x447249, CCashShop::CCashShop 0x4536d4)
+			// read a SINGLE trailing Decode1 (bEventOn) — no Decode4 nHighest.
+			if t.Region() == "GMS" && t.MajorAtLeast(72) {
 				w.WriteInt(200) // nHighestCharacterLevelInThisAccount
 			}
 		}
@@ -166,8 +173,8 @@ func (m *CashShopOpen) Decode(l logrus.FieldLogger, ctx context.Context) func(r 
 			}
 		}
 
-		// CCashShop::DecodeZeroGoods
-		if t.Region() == "GMS" && t.MajorVersion() > 12 {
+		// CCashShop::DecodeZeroGoods — legacy GMS (<72) omits it (see Encode).
+		if t.Region() == "GMS" && t.MajorAtLeast(72) {
 			zeroCount := r.ReadUint16()
 			for i := uint16(0); i < zeroCount; i++ {
 				_ = r.ReadUint32() // zero goods entry
@@ -177,7 +184,8 @@ func (m *CashShopOpen) Decode(l logrus.FieldLogger, ctx context.Context) func(r 
 		if (t.Region() == "GMS" && t.MajorVersion() > 12) || t.Region() == "JMS" {
 			_ = r.ReadBool() // bEventOn
 
-			if t.Region() == "GMS" {
+			// nHighest — legacy GMS (<72) omits it (see Encode).
+			if t.Region() == "GMS" && t.MajorAtLeast(72) {
 				_ = r.ReadUint32() // nHighestCharacterLevelInThisAccount
 			}
 		}

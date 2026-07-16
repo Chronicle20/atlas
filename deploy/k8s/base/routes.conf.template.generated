@@ -334,6 +334,31 @@ location ~ ^/api/factory(/.*)?$ {
   proxy_pass http://$u$request_uri;
 }
 
+location ~ ^/api/characters/[^/]+/mts(/.*)?$ {
+  set $u "atlas-mts.${POD_NAMESPACE}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
+# atlas-merchant owns three character-namespaced routes (owner-occupancy lookup,
+# the character's shops, and Frederick status). These MUST precede the
+# atlas-character catch-all below, or player/hired shops break: the channel's
+# GetVisitingShop 404s and every owner-side op (add-item, open, close,
+# maintenance) silently no-ops (task-127).
+location ~ ^/api/characters/[^/]+/visiting(/.*)?$ {
+  set $u "atlas-merchant.${POD_NAMESPACE}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
+location ~ ^/api/characters/[^/]+/merchants(/.*)?$ {
+  set $u "atlas-merchant.${POD_NAMESPACE}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
+location ~ ^/api/characters/[^/]+/frederick(/.*)?$ {
+  set $u "atlas-merchant.${POD_NAMESPACE}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
 location ~ ^/api/characters(/.*)?$ {
   set $u "atlas-character.${POD_NAMESPACE}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
@@ -521,6 +546,32 @@ location ~ ^/api/worlds/[^/]+/channels/[^/]+/characters/[^/]+/rates(/.*)?$ {
 
 location ~ ^/api/worlds/[^/]+/channels/[^/]+/characters/[^/]+/stats(/.*)?$ {
   set $u "atlas-effective-stats.${POD_NAMESPACE}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
+location ~ ^/api/worlds/[^/]+/listings(/.*)?$ {
+  set $u "atlas-mts.${POD_NAMESPACE}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
+location ~ ^/api/worlds/[^/]+/mts(/.*)?$ {
+  set $u "atlas-mts.${POD_NAMESPACE}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
+# atlas-merchant owns two world-namespaced routes: the per-field merchant list
+# (get_field_merchants — the channel's SpawnForSelf/ForEachInField call on map
+# entry) and the top shop-searches. These MUST precede the atlas-world
+# catch-all below, or they 404 against atlas-world: an entering player never
+# receives the store balloon for an already-open shop and cannot enter it, and
+# owl top-searches fail (task-127).
+location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/merchants(/.*)?$ {
+  set $u "atlas-merchant.${POD_NAMESPACE}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
+location ~ ^/api/worlds/[^/]+/shop-searches(/.*)?$ {
+  set $u "atlas-merchant.${POD_NAMESPACE}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 

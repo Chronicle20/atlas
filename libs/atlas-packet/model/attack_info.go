@@ -23,6 +23,43 @@ func NewAttackInfo(attackType AttackType) *AttackInfo {
 	return &AttackInfo{attackType: attackType}
 }
 
+// legacyGmsByteAction reports whether the serverbound attack action/direction field
+// is a single byte (bit7=bLeft, bits0-6=nAction) instead of a 2-byte short. Legacy
+// pre-79 GMS only. IDA-verified: v72 TryDoingMeleeAttack @0x85f9c2 (Encode1) vs v79
+// @0x8c2adc (Encode2). Mirrors the clientbound CUserRemote::OnAttack transition.
+func legacyGmsByteAction(t tenant.Model) bool {
+	return t.Region() == "GMS" && t.MajorVersion() < 79
+}
+
+// legacyGmsSingleCrc reports whether the serverbound attack head carries only a
+// single skill-data CRC (v72 @0x85f96c) rather than the two CRCs GMS v79+ writes
+// (v79 @0x8c2ab2 + @0x8c2abb). Legacy pre-79 GMS only.
+func legacyGmsSingleCrc(t tenant.Model) bool {
+	return t.Region() == "GMS" && t.MajorVersion() < 79
+}
+
+// legacyGmsNoSkillDataCrc reports whether the serverbound attack head carries NO
+// skill-data CRC at all (the field appears at GMS v72; the very-legacy pre-72
+// client omits it entirely). IDA-verified: v61 CLOSE_RANGE sender sub_7A45F1
+// @0x7a5bc3 Encode4(skillId) is followed directly by the mask1/option Encode1
+// @0x7a5d3d — there is no CRC Encode4 in between (only a conditional keydown
+// Encode4 for charge skills). v72 TryDoingMeleeAttack @0x85f96c writes one CRC.
+// So the head skill-data CRC is present GMS v72+ and absent below.
+func legacyGmsNoSkillDataCrc(t tenant.Model) bool {
+	return t.Region() == "GMS" && t.MajorVersion() < 72
+}
+
+// legacyGmsNoRangedBulletCoords reports whether the ranged-attack trailer OMITS the
+// bulletX/bulletY world-coordinate shorts. The very-legacy pre-61 GMS shoot sender
+// (v48 sub_6A228C @0x6a3965/0x6a3979: after the per-mob loop it Encode2s only
+// characterX/characterY then SendPacket @0x6a3988 — no bullet coords) does not carry
+// them; the head properBulletPosition/cashBulletPosition/nShootRange block is still
+// present. Gate to GMS < 61 so v48 omits the 4-byte trailer while v61+/JMS are
+// unchanged (their fixtures pin the existing trailer).
+func legacyGmsNoRangedBulletCoords(t tenant.Model) bool {
+	return t.Region() == "GMS" && t.MajorVersion() < 61
+}
+
 type AttackInfo struct {
 	attackType           AttackType
 	fieldKey             byte
@@ -108,8 +145,16 @@ func (m *AttackInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 				w.WriteInt(0) //2crc
 			}
 		}
-		w.WriteInt(m.skillDataCrc)
-		w.WriteInt(m.skillDataCrc2)
+		// The head skill-data CRC block. The very-legacy pre-72 GMS client (v61)
+		// writes NO CRC at all (sub_7A45F1 @0x7a5bc3→@0x7a5d3d: skillId then
+		// straight to mask1). v72 writes a SINGLE CRC (TryDoingMeleeAttack
+		// @0x85f96c); GMS v79+ adds a second (v79 @0x8c2ab2 + @0x8c2abb).
+		if !legacyGmsNoSkillDataCrc(t) {
+			w.WriteInt(m.skillDataCrc)
+		}
+		if !legacyGmsSingleCrc(t) {
+			w.WriteInt(m.skillDataCrc2)
+		}
 		if skill.IsKeyDownSkill(skill.Id(m.skillId)) {
 			w.WriteInt(m.keyDown)
 		} else if skill.NeedsCharging(skill.Id(m.skillId)) {
@@ -121,7 +166,15 @@ func (m *AttackInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 				w.WriteBool(m.javlin)
 			}
 		}
-		w.WriteShort(m.mask2)
+		// Attack-action / direction field. Legacy pre-79 GMS packs bLeft (bit7) +
+		// nAction (bits0-6) into a SINGLE byte (v72 @0x85f9c2: Encode1
+		// `(nAction&0x7F)|(bLeft<<7)`); GMS v79+ / JMS use a 2-byte short
+		// (v79 @0x8c2adc: Encode2 `(bLeft<<15)|nAction`).
+		if legacyGmsByteAction(t) {
+			w.WriteByte(byte(m.mask2 & 0xFF))
+		} else {
+			w.WriteShort(m.mask2)
+		}
 		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 			w.WriteInt(m.anotherCrc)
 		}
@@ -156,7 +209,7 @@ func (m *AttackInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 
 		w.WriteShort(m.characterX)
 		w.WriteShort(m.characterY)
-		if m.attackType == AttackTypeRanged {
+		if m.attackType == AttackTypeRanged && !legacyGmsNoRangedBulletCoords(t) {
 			w.WriteShort(m.bulletX)
 			w.WriteShort(m.bulletY)
 		}
@@ -167,7 +220,12 @@ func (m *AttackInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 		} else if skill.Id(m.skillId) == skill.ThunderBreakerStage3SparkId {
 			w.WriteInt(m.reserveSpark)
 		}
-		if m.attackType == AttackTypeMagic {
+		// Trailing Evan-dragon block for magic attacks. ABSENT on the legacy pre-79
+		// GMS client: v72 TryDoingMagicAttack @0x8625da writes characterX/Y then
+		// SendPacket immediately (no dragon Encode1 after @0x863bff). Evan launched at
+		// GMS v84, so the dragon field is naturally absent pre-79. Gate keeps v79+/JMS
+		// unchanged.
+		if m.attackType == AttackTypeMagic && !legacyGmsByteAction(t) {
 			w.WriteBool(m.dragon)
 			if m.dragon {
 				w.WriteShort(m.dragonX)
@@ -226,8 +284,12 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, ctx context.Context) func(r *r
 			}
 		}
 
-		m.skillDataCrc = r.ReadUint32()
-		m.skillDataCrc2 = r.ReadUint32()
+		if !legacyGmsNoSkillDataCrc(t) {
+			m.skillDataCrc = r.ReadUint32()
+		}
+		if !legacyGmsSingleCrc(t) {
+			m.skillDataCrc2 = r.ReadUint32()
+		}
 
 		if skill.IsKeyDownSkill(skill.Id(m.skillId)) {
 			m.keyDown = r.ReadUint32()
@@ -247,9 +309,16 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, ctx context.Context) func(r *r
 			}
 		}
 
-		m.mask2 = r.ReadUint16()
-		m.attackAction = int(m.mask2 & 0x7FFF) // Extract lower 15 bits
-		m.left = int((m.mask2>>15)&0x01) == 1  // Extract bit 15
+		if legacyGmsByteAction(t) {
+			b := r.ReadByte()
+			m.mask2 = uint16(b)
+			m.attackAction = int(b & 0x7F) // legacy: lower 7 bits
+			m.left = int((b>>7)&0x01) == 1 // legacy: bit 7
+		} else {
+			m.mask2 = r.ReadUint16()
+			m.attackAction = int(m.mask2 & 0x7FFF) // Extract lower 15 bits
+			m.left = int((m.mask2>>15)&0x01) == 1  // Extract bit 15
+		}
 		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 			m.anotherCrc = r.ReadUint32()
 		}
@@ -293,7 +362,7 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, ctx context.Context) func(r *r
 
 		m.characterX = r.ReadUint16()
 		m.characterY = r.ReadUint16()
-		if m.attackType == AttackTypeRanged {
+		if m.attackType == AttackTypeRanged && !legacyGmsNoRangedBulletCoords(t) {
 			m.bulletX = r.ReadUint16()
 			m.bulletY = r.ReadUint16()
 		}
@@ -304,7 +373,8 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, ctx context.Context) func(r *r
 		} else if skill.Id(m.skillId) == skill.ThunderBreakerStage3SparkId {
 			m.reserveSpark = r.ReadUint32()
 		}
-		if m.attackType == AttackTypeMagic {
+		// Evan-dragon block absent on legacy pre-79 GMS (see Encode note).
+		if m.attackType == AttackTypeMagic && !legacyGmsByteAction(t) {
 			m.dragon = r.ReadBool()
 			if m.dragon {
 				m.dragonX = r.ReadUint16()

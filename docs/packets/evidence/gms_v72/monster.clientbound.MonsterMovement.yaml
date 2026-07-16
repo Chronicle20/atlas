@@ -1,0 +1,10 @@
+packet: monster/clientbound/MonsterMovement
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CMob::OnMove
+    address: "0x61b10d"
+    decompile_sha256: 1c1dfd6df029128d0291ca98e8a152b0b8442b747e4d3e591d3383eea9b1b709
+verifies:
+  - libs/atlas-packet/monster/clientbound/movement_test.go#TestMonsterMovementBytesV72

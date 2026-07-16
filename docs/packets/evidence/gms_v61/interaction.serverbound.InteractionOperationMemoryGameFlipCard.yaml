@@ -1,0 +1,10 @@
+packet: interaction/serverbound/InteractionOperationMemoryGameFlipCard
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: sub_5B10FA
+    address: "0x5b10fa"
+    decompile_sha256: c30d3eac25c4c744c918b49ecab37244c41f9122505e84c360c106b012f7c97c
+verifies:
+    - libs/atlas-packet/interaction/serverbound/v61_test.go#TestOperationMemoryGameFlipCardV61Bytes

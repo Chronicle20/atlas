@@ -1,5 +1,6 @@
 import * as React from "react"
 import {ChevronsUpDown, Plus} from "lucide-react"
+import {useLocation} from "react-router-dom"
 
 import {
     DropdownMenu,
@@ -12,11 +13,38 @@ import {
 import {SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar,} from "@/components/ui/sidebar"
 import {useTenant} from "@/context/tenant-context";
 import {CreateTenantDialog} from "@/components/features/tenants/CreateTenantDialog";
+import {isDeploymentRoute} from "@/lib/deployment-routes";
 
 export function TenantSwitcher() {
     const {isMobile} = useSidebar()
     const {tenants, activeTenant, setActiveTenant, refreshTenants} = useTenant()
     const [createDialogOpen, setCreateDialogOpen] = React.useState(false)
+    const {pathname} = useLocation()
+
+    // On Deployment routes the switcher is inert: purely presentational, no
+    // dropdown, no writes. TenantContext state and localStorage are never
+    // touched, so the prior selection survives the round-trip (FR-2.3).
+    if (isDeploymentRoute(pathname)) {
+        return (
+            <SidebarMenu>
+                <SidebarMenuItem>
+                    <SidebarMenuButton
+                        size="lg"
+                        asChild
+                        aria-disabled="true"
+                        className="pointer-events-none opacity-70"
+                    >
+                        <div data-testid="tenant-switcher-inert">
+                            <div className="grid flex-1 text-left text-sm leading-tight">
+                                <span className="truncate font-semibold">Deployment-wide</span>
+                                <span className="truncate text-xs text-muted-foreground">tenant selection inactive</span>
+                            </div>
+                        </div>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+            </SidebarMenu>
+        )
+    }
 
     return (
         <SidebarMenu>

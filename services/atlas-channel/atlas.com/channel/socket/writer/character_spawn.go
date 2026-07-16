@@ -59,7 +59,7 @@ func CharacterSpawnBody(c character.Model, bs []buff.Model, g guild.Model, enter
 
 			return charpkt.NewCharacterSpawn(
 				c.Id(), c.Level(), c.Name(), ge, cts, uint16(c.JobId()), ava,
-				pets, enteringField, c.X(), c.Y(), c.Stance(),
+				pets, enteringField, c.X(), c.Y(), c.Stance(), c.Fh(),
 			).Encode(l, ctx)(options)
 		}
 	}

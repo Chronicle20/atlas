@@ -33,6 +33,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) AddMember(guildId uint32, characterId uint32, name string, jobId uint16, level byte, title byte) (Model, error) {
 	var m Model
 	var txErr error

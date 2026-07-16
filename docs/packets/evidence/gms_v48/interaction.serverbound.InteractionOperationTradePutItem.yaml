@@ -1,0 +1,10 @@
+packet: interaction/serverbound/InteractionOperationTradePutItem
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_5E7F74
+    address: "0x5e7f74"
+    decompile_sha256: c8ff1748d31db6cda053ab4eb31e66f63c45c94eaef21057051ef4fe11f764e2
+verifies:
+    - libs/atlas-packet/interaction/serverbound/v48_test.go#TestOperationTradePutItemV48Bytes

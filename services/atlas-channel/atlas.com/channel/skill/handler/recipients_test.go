@@ -252,3 +252,131 @@ func TestSelectInRangePartyMembers_NoRectangleReturnsNil(t *testing.T) {
 		t.Fatalf("got %v, want nil (caster-only fallback)", got)
 	}
 }
+
+// installMapSeams replaces the in-map id set and the per-player loader.
+// It does NOT touch loadCasterPartyFunc — use installPartySeams for party tests.
+func installMapSeams(t *testing.T, inMap map[uint32]struct{}, players map[uint32]character.Model) {
+	t.Helper()
+	prevInMap := inMapCharacterIdsFunc
+	prevLoad := loadMapPlayerFunc
+	inMapCharacterIdsFunc = func(_ logrus.FieldLogger, _ context.Context, _ field.Model) map[uint32]struct{} {
+		return inMap
+	}
+	loadMapPlayerFunc = func(_ logrus.FieldLogger, _ context.Context, id uint32) (character.Model, error) {
+		mc, ok := players[id]
+		if !ok {
+			return character.Model{}, errors.New("player not found")
+		}
+		return mc, nil
+	}
+	t.Cleanup(func() {
+		inMapCharacterIdsFunc = prevInMap
+		loadMapPlayerFunc = prevLoad
+	})
+}
+
+func mkPlayerCharAt(id uint32, hp uint16, x, y int16) character.Model {
+	return character.NewModelBuilder().SetId(id).SetHp(hp).SetMaxHp(1000).SetX(x).SetY(y).MustBuild()
+}
+
+func rectEffect(t *testing.T) effect.Model {
+	t.Helper()
+	e, err := effect.Extract(effect.RestModel{
+		LT: &effect.PointRestModel{X: -400, Y: -350},
+		RB: &effect.PointRestModel{X: 400, Y: 250},
+	})
+	if err != nil {
+		t.Fatalf("effect.Extract: %v", err)
+	}
+	return e
+}
+
+// TestSelectDeadInRangePartyMembers_KeepsOnlyDead verifies that only dead
+// party members (Hp==0) are returned by the Bishop resurrection selector.
+// Alive member B (hp=500) must be excluded; dead member A (hp=0) must be included.
+// Party: caster=idx0, A=idx1 (dead), B=idx2 (alive).
+// Bitmap selects both A and B: bit4 | bit3 = 0b00011000.
+func TestSelectDeadInRangePartyMembers_KeepsOnlyDead(t *testing.T) {
+	a := mkPartyMember(testMemberA, true, channel.Id(0), _map.Id(40000))
+	b := mkPartyMember(testMemberB, true, channel.Id(0), _map.Id(40000))
+	installPartySeams(t, threePersonParty(a, b), nil,
+		map[uint32]struct{}{testMemberA: {}, testMemberB: {}},
+		map[uint32]character.Model{
+			testMemberA: mkMemberChar(testMemberA, 0),   // dead
+			testMemberB: mkMemberChar(testMemberB, 500), // alive
+		},
+	)
+	bitmap := byte(1<<4 | 1<<3)
+	got := SelectDeadInRangePartyMembers(testLogger(), context.Background(), mkField(), testCasterId, 0, 0, rectEffect(t), bitmap)
+	if !eqIds(recipientIds(got), []uint32{testMemberA}) {
+		t.Fatalf("got %v, want [%d] (dead only)", recipientIds(got), testMemberA)
+	}
+}
+
+// TestSelectDeadInRangePartyMembers_MissingRectangleReturnsNil verifies that a
+// zero-valued effect (no LT/RB rectangle) returns nil — no one to revive.
+func TestSelectDeadInRangePartyMembers_MissingRectangleReturnsNil(t *testing.T) {
+	got := SelectDeadInRangePartyMembers(testLogger(), context.Background(), mkField(), testCasterId, 0, 0, effect.Model{}, 0x7E)
+	if got != nil {
+		t.Fatalf("got %v, want nil for missing rectangle", got)
+	}
+}
+
+// TestSelectDeadInRangeMapPlayers_MissingRectangleReturnsNil verifies that a
+// zero-valued effect (no LT/RB rectangle) returns nil — no one to revive.
+func TestSelectDeadInRangeMapPlayers_MissingRectangleReturnsNil(t *testing.T) {
+	got := SelectDeadInRangeMapPlayers(testLogger(), context.Background(), mkField(), testCasterId, 0, 0, effect.Model{})
+	if got != nil {
+		t.Fatalf("got %v, want nil for missing rectangle", got)
+	}
+}
+
+// TestSelectDeadInRangeMapPlayers_AllDeadRegardlessOfParty verifies the GM
+// resurrection selector: dead players in range are included regardless of party,
+// alive players and the caster are excluded, and out-of-range dead players are excluded.
+func TestSelectDeadInRangeMapPlayers_AllDeadRegardlessOfParty(t *testing.T) {
+	caster := uint32(1)
+	inMap := map[uint32]struct{}{1: {}, 2: {}, 3: {}, 4: {}}
+	players := map[uint32]character.Model{
+		1: mkPlayerCharAt(1, 800, 0, 0),    // caster (alive) — excluded
+		2: mkPlayerCharAt(2, 0, 100, 50),   // dead, in range
+		3: mkPlayerCharAt(3, 600, 0, 0),    // alive — excluded
+		4: mkPlayerCharAt(4, 0, 5000, 0),   // dead but out of range — excluded
+	}
+	installMapSeams(t, inMap, players)
+	got := SelectDeadInRangeMapPlayers(testLogger(), context.Background(), mkField(), caster, 0, 0, rectEffect(t))
+	if !eqIds(recipientIds(got), []uint32{2}) {
+		t.Fatalf("got %v, want [2]", recipientIds(got))
+	}
+}
+
+// TestSelectDeadInRangeMapPlayers_CapturesDeathCoords verifies that the
+// returned recipient carries the character's actual (x, y) coordinates.
+func TestSelectDeadInRangeMapPlayers_CapturesDeathCoords(t *testing.T) {
+	inMap := map[uint32]struct{}{2: {}}
+	players := map[uint32]character.Model{2: mkPlayerCharAt(2, 0, 123, -45)}
+	installMapSeams(t, inMap, players)
+	got := SelectDeadInRangeMapPlayers(testLogger(), context.Background(), mkField(), 1, 0, 0, rectEffect(t))
+	if len(got) != 1 || got[0].X() != 123 || got[0].Y() != -45 {
+		t.Fatalf("got %+v, want one recipient at (123,-45)", got)
+	}
+}
+
+// TestSelectInRangePartyMembers_StillExcludesDead is a regression guard: after
+// the wantDead refactor, the living-only selector must still exclude dead members.
+func TestSelectInRangePartyMembers_StillExcludesDead(t *testing.T) {
+	a := mkPartyMember(testMemberA, true, channel.Id(0), _map.Id(40000))
+	b := mkPartyMember(testMemberB, true, channel.Id(0), _map.Id(40000))
+	installPartySeams(t, threePersonParty(a, b), nil,
+		map[uint32]struct{}{testMemberA: {}, testMemberB: {}},
+		map[uint32]character.Model{
+			testMemberA: mkMemberChar(testMemberA, 0),   // dead -> excluded
+			testMemberB: mkMemberChar(testMemberB, 500), // alive -> included
+		},
+	)
+	bitmap := byte(1<<4 | 1<<3)
+	got := SelectInRangePartyMembers(testLogger(), context.Background(), mkField(), testCasterId, 0, 0, rectEffect(t), bitmap)
+	if !eqIds(recipientIds(got), []uint32{testMemberB}) {
+		t.Fatalf("got %v, want [%d] (alive only)", recipientIds(got), testMemberB)
+	}
+}

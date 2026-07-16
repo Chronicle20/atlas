@@ -1,0 +1,30 @@
+{
+  "WriterName": "InventoryCompartmentSortRequest",
+  "IDAName": "CWvsContext::SendSortItemRequest",
+  "Address": "0x954cfd",
+  "Variant": "GMS/v79",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/inventory/serverbound/compartment_sort.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "updateTime — sub_954CFD (SendSortItemRequest twin) COutPacket(68) Encode4 get_update_time @0x954d40",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "compartmentType (nInvType, 1..5) — Encode1(a2) @0x954d4b",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

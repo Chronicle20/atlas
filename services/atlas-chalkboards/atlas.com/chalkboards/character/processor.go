@@ -32,6 +32,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) InMapProvider(f field.Model) model.Provider[[]uint32] {
 	cids := getRegistry().GetInMap(p.ctx, MapKey{Tenant: p.t, Field: f})
 	return model.FixedProvider(cids)

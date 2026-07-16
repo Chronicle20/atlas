@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldItcOperationTabSearch
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CITCWnd_Tab::OnButtonClicked
+    address: "0x5919d4"
+    decompile_sha256: 85fbd8481bd55ea6195ac036b8143953cc0ebd7d292e4168d5403281f9f9aa29

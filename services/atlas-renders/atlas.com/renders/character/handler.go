@@ -1,6 +1,8 @@
 package character
 
 import (
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	"bytes"
 	"context"
 	"errors"
@@ -134,14 +136,14 @@ func Handler(l logrus.FieldLogger, s *storage.Storage) http.HandlerFunc {
 		//    fresh background context because the client request context may
 		//    be canceled the moment we finish writing the response.
 		payload := buf.Bytes()
-		go func() {
+		routine.Go(l, r.Context(), func(_ context.Context) {
 			putCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 			if err := s.MC.Put(putCtx, s.Cfg.BucketRenders, renderKey,
 				bytes.NewReader(payload), int64(len(payload)), "image/png"); err != nil {
 				l.WithError(err).Warn("best-effort render PUT failed")
 			}
-		}()
+		})
 
 		w.Header().Set("Content-Type", "image/png")
 		w.Header().Set("Cache-Control", "public, max-age=86400, immutable")

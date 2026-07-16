@@ -3,7 +3,6 @@ package main
 import (
 	"atlas-drops-information/continent"
 	drop2 "atlas-drops-information/continent/drop"
-	"atlas-drops-information/logger"
 	"atlas-drops-information/monster/drop"
 	"atlas-drops-information/reactor"
 	drop3 "atlas-drops-information/reactor/drop"
@@ -14,7 +13,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	seeder "github.com/Chronicle20/atlas/libs/atlas-seeder"
 	service "github.com/Chronicle20/atlas/libs/atlas-service"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"gorm.io/gorm"
 )
 
@@ -41,15 +39,8 @@ func GetServer() Server {
 }
 
 func main() {
-	l := logger.CreateLogger(serviceName)
-	l.Infoln("Starting main service.")
-
-	tdm := service.GetTeardownManager()
-
-	tc, err := tracing.InitTracer(serviceName)
-	if err != nil {
-		l.WithError(err).Fatal("Unable to initialize tracer.")
-	}
+	rt := service.Bootstrap(serviceName)
+	l := rt.Logger()
 
 	db := database.Connect(l, database.SetMigrations(
 		drop.Migration,
@@ -58,19 +49,25 @@ func main() {
 		func(db *gorm.DB) error { return db.AutoMigrate(&seeder.SeedState{}) },
 	))
 
+	server.RegisterTransientErrorClassifier(func(err error) bool {
+		if database.IsTransientConnectionError(err) {
+			database.CountTransient(err)
+			return true
+		}
+		return false
+	})
+
 	server.New(l).
-		WithContext(tdm.Context()).
-		WithWaitGroup(tdm.WaitGroup()).
+		WithContext(rt.Context()).
+		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(drop.InitResource(GetServer())(db)).
 		AddRouteInitializer(continent.InitResource(GetServer())(db)).
 		AddRouteInitializer(reactor.InitResource(GetServer())(db)).
 		AddRouteInitializer(seed.InitResource(GetServer())(db)).
+		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
-	tdm.TeardownFunc(tracing.Teardown(l)(tc))
-
-	tdm.Wait()
-	l.Infoln("Service shutdown.")
+	rt.Wait()
 }

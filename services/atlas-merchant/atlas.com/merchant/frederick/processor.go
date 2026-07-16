@@ -19,6 +19,7 @@ type Processor interface {
 	ClearMesos(characterId uint32) error
 	CreateNotification(characterId uint32) error
 	ClearNotifications(characterId uint32) error
+	HasPending(characterId uint32) (bool, error)
 }
 
 type ProcessorImpl struct {
@@ -37,11 +38,19 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 type StoredItem struct {
 	ItemId       uint32
 	ItemType     byte
 	Quantity     uint16
 	ItemSnapshot asset.AssetData
+}
+
+// HasPending reports whether the character has unclaimed items or mesos
+// waiting at Frederick (blocks opening a new hired merchant).
+func (p *ProcessorImpl) HasPending(characterId uint32) (bool, error) {
+	return HasItemsOrMesos(characterId)(p.db.WithContext(p.ctx))()
 }
 
 // StoreItems moves unsold listing items into Frederick storage for a character.

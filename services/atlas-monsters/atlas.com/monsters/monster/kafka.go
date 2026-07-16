@@ -33,7 +33,10 @@ const (
 	DamageSourceDamageOverTime  = "DAMAGE_OVER_TIME"
 	DamageSourceHeal            = "HEAL"
 
-	MpChangeReasonMpEater = "MP_EATER"
+	MpChangeReasonMpEater     = "MP_EATER"
+	MpChangeReasonSkillCast   = "SKILL_CAST"
+	MpChangeReasonBasicAttack = "BASIC_ATTACK"
+	MpChangeReasonRecovery    = "RECOVERY"
 )
 
 type statusEvent[E any] struct {

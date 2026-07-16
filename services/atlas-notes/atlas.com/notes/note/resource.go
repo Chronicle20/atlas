@@ -6,6 +6,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -60,17 +61,29 @@ func InitializeRoutes(si jsonapi.ServerInformation) func(db *gorm.DB) server.Rou
 // GetAllNotesHandler handles GET /api/notes
 func GetAllNotesHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		mp := NewProcessor(d.Logger(), d.Context(), d.DB()).InTenantProvider()
-		rm, err := model.SliceMap(Transform)(mp)(model.ParallelMap())()
+		page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+		if err != nil {
+			server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+			return
+		}
+
+		paged, err := NewProcessor(d.Logger(), d.Context(), d.DB()).AllProvider(page)()
+		if err != nil {
+			d.Logger().WithError(err).Errorf("Unable to locate notes.")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		rm, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
 		query := r.URL.Query()
 		queryParams := jsonapi.ParseQueryFields(&query)
-		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+		server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm, paginate.EnvelopeFor(paged), r)
 	}
 }
 
@@ -78,17 +91,29 @@ func GetAllNotesHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 func GetCharacterNotesHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			mp := NewProcessor(d.Logger(), d.Context(), d.DB()).ByCharacterProvider(characterId)
-			rm, err := model.SliceMap(Transform)(mp)(model.ParallelMap())()
+			page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+				return
+			}
+
+			paged, err := NewProcessor(d.Logger(), d.Context(), d.DB()).ByCharacterProvider(characterId, page)()
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Unable to locate notes for character [%d].", characterId)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			rm, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm, paginate.EnvelopeFor(paged), r)
 		}
 	})
 }
@@ -101,7 +126,7 @@ func GetNoteHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.Hand
 			rm, err := model.Map(Transform)(mp)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -125,13 +150,13 @@ func CreateNoteHandler(d *rest.HandlerDependency, c *rest.HandlerContext, i Rest
 		m, err := NewProcessor(d.Logger(), d.Context(), d.DB()).CreateAndEmit(im.CharacterId(), im.SenderId(), im.Message(), im.Flag())
 		if err != nil {
 			d.Logger().WithError(err).Errorln("Error creating note")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 		rm, err := model.Map(Transform)(model.FixedProvider(m))()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
@@ -161,13 +186,13 @@ func UpdateNoteHandler(d *rest.HandlerDependency, c *rest.HandlerContext, i Rest
 			m, err := NewProcessor(d.Logger(), d.Context(), d.DB()).UpdateAndEmit(im.Id(), im.CharacterId(), im.SenderId(), im.Message(), im.Flag())
 			if err != nil {
 				d.Logger().WithError(err).Errorln("Error updating note")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			rm, err := model.Map(Transform)(model.FixedProvider(m))()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -185,7 +210,7 @@ func DeleteNoteHandler(d *rest.HandlerDependency, _ *rest.HandlerContext) http.H
 			err := NewProcessor(d.Logger(), d.Context(), d.DB()).DeleteAndEmit(noteId)
 			if err != nil {
 				d.Logger().WithError(err).Errorln("Error deleting note")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -201,7 +226,7 @@ func DeleteCharacterNotesHandler(d *rest.HandlerDependency, _ *rest.HandlerConte
 			err := NewProcessor(d.Logger(), d.Context(), d.DB()).DeleteAllAndEmit(characterId)
 			if err != nil {
 				d.Logger().WithError(err).Errorln("Error deleting character notes")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 

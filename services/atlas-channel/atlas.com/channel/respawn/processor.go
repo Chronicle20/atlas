@@ -45,6 +45,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // Respawn handles character death and respawn logic
 func (p *ProcessorImpl) Respawn(ch channel.Model, characterId uint32, currentMapId _map.Id) error {
 	p.l.Debugf("Processing respawn for character [%d] on map [%d].", characterId, currentMapId)

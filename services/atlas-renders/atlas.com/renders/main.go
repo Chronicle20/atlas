@@ -2,23 +2,31 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"atlas-renders/character"
 	"atlas-renders/mapr"
 	"atlas-renders/storage"
 
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 )
 
+const serviceName = "atlas-renders"
+
 func main() {
-	l := newLogger()
+	rt := service.Bootstrap(serviceName, service.WithoutTracer())
+	l := rt.Logger()
+
 	s, err := storage.New(l, storage.ConfigFromEnv())
 	if err != nil {
 		l.WithError(err).Warn("storage init failed; render handlers will 503")
@@ -32,25 +40,45 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 		_, _ = fmt.Fprintln(w, "ok")
 	})
+	r.HandleFunc("/readyz", func(w http.ResponseWriter, _ *http.Request) {
+		if rt.Ready() {
+			w.WriteHeader(http.StatusOK)
+			_, _ = fmt.Fprintln(w, "ready")
+			return
+		}
+		w.WriteHeader(http.StatusServiceUnavailable)
+		_, _ = fmt.Fprintln(w, "not ready")
+	})
 	port := os.Getenv("REST_PORT")
 	if port == "" {
 		port = "8080"
 	}
-	l.Infof("atlas-renders listening on :%s", port)
-	if err := http.ListenAndServe(":"+port, r); err != nil {
-		l.WithError(err).Fatal("server exited")
-	}
+	srv := &http.Server{Addr: ":" + port, Handler: r}
+	rt.TeardownFunc(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = srv.Shutdown(ctx)
+	})
+	// Task 0 drift #4: bare `go func()` is banned by tools/goroutine-guard.sh
+	// (task-115/RR-6). Spawn the listener via routine.Go instead.
+	routine.Go(l, rt.Context(), func(_ context.Context) {
+		l.Infof("atlas-renders listening on :%s", port)
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			l.WithError(err).Fatal("server exited")
+		}
+	})
+	rt.Wait()
 }
 
 // tenantMiddleware parses the four tenant headers (TENANT_ID, REGION,
 // MAJOR_VERSION, MINOR_VERSION) and injects a tenant.Model into the request
 // context so downstream handlers can call tenant.MustFromContext(ctx). The
-// /healthz endpoint bypasses the check so liveness probes don't need
-// tenant headers.
+// /healthz and /readyz endpoints bypass the check so liveness/readiness
+// probes don't need tenant headers.
 func tenantMiddleware(l logrus.FieldLogger) mux.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/healthz" {
+			if r.URL.Path == "/healthz" || r.URL.Path == "/readyz" {
 				next.ServeHTTP(w, r)
 				return
 			}

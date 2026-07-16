@@ -1,0 +1,66 @@
+{
+  "WriterName": "FieldStalkResult",
+  "IDAName": "CField::OnStalkResult",
+  "Address": "0x51bce9",
+  "Variant": "GMS/v72",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/stalk_result.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "count @0x51bcfa",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "charId @0x51bd11",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "flag @0x51bd13",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "name @0x51bd25",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "x @0x51bd37",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "y @0x51bd39",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

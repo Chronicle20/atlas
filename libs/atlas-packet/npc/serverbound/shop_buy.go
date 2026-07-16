@@ -36,9 +36,14 @@ func (m ShopBuy) Encode(l logrus.FieldLogger, ctx context.Context) func(options 
 		w.WriteShort(m.slot)
 		w.WriteInt(m.itemId)
 		w.WriteShort(m.quantity)
-		// The trailing discountPrice int is GMS-only; JMS185 SendBuyRequest
-		// ends after the quantity short (CShopDlg::SendBuyRequest@0x7ca2c9).
-		if t.Region() == "GMS" {
+		// The trailing discountPrice int is GMS-only AND post-legacy; JMS185
+		// SendBuyRequest ends after the quantity short
+		// (CShopDlg::SendBuyRequest@0x7ca2c9). The legacy GMS shop dialog
+		// (v61 CShopDlg buy button handler sub_646C41@0x646c41: COutPacket(57)
+		// Encode1(0)+Encode2 slot+Encode4 itemId+Encode2 qty, NO trailing int)
+		// also omits it — the discountPrice int was introduced after the legacy
+		// range (present from v72's SendBuyRequest onward). delta §3.2
+		if t.Region() == "GMS" && t.MajorAtLeast(72) {
 			w.WriteInt(m.discountPrice)
 		}
 		return w.Bytes()
@@ -51,7 +56,7 @@ func (m *ShopBuy) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *requ
 		m.slot = r.ReadUint16()
 		m.itemId = r.ReadUint32()
 		m.quantity = r.ReadUint16()
-		if t.Region() == "GMS" {
+		if t.Region() == "GMS" && t.MajorAtLeast(72) {
 			m.discountPrice = r.ReadUint32()
 		}
 	}

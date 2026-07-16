@@ -5,7 +5,7 @@ import (
 
 	"atlas-saga-orchestrator/kafka/message"
 	portalMsg "atlas-saga-orchestrator/kafka/message/portal"
-	"atlas-saga-orchestrator/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/sirupsen/logrus"
@@ -38,6 +38,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		p:   producer.ProviderImpl(l)(ctx),
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // BlockAndEmit sends a Kafka command to atlas-portals to block a portal for a character
 func (p *ProcessorImpl) BlockAndEmit(characterId uint32, mapId _map.Id, portalId uint32) error {

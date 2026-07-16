@@ -8,6 +8,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/degrade"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
 )
@@ -27,7 +28,7 @@ type Processor interface {
 type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
-	ip  *inventory.ProcessorImpl
+	ip  inventory.Processor
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
@@ -38,6 +39,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 	return p
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) IsValidName(name string) (bool, error) {
 	m, err := regexp.MatchString("^[A-Za-z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]{3,12}$", name)
@@ -62,9 +65,14 @@ func (p *ProcessorImpl) IsValidName(name string) (bool, error) {
 	return true, nil
 }
 
+// ByAccountAndWorldProvider fetches every character an account has in a
+// world. atlas-character's GET /characters?accountId=&worldId= is now
+// paginated (task-117); the character-select screen needs the complete set
+// (a truncated page would silently hide characters from the player), so
+// this drains every page rather than fetching just the first.
 func (p *ProcessorImpl) ByAccountAndWorldProvider(decorators ...model.Decorator[Model]) func(accountId uint32, worldId world.Id) model.Provider[[]Model] {
 	return func(accountId uint32, worldId world.Id) model.Provider[[]Model] {
-		mp := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByAccountAndWorld(accountId, worldId), Extract, model.Filters[Model]())
+		mp := requests.DrainProvider[RestModel, Model](p.l, p.ctx)(byAccountAndWorldUrl(accountId, worldId), 250, Extract, model.Filters[Model]())
 		return model.SliceMap(model.Decorate(decorators))(mp)(model.ParallelMap())
 	}
 }
@@ -106,13 +114,18 @@ func (p *ProcessorImpl) GetById(decorators ...model.Decorator[Model]) func(id ui
 }
 
 func (p *ProcessorImpl) InventoryDecorator() model.Decorator[Model] {
-	return func(m Model) Model {
-		i, err := p.ip.GetByCharacterId(m.Id())
-		if err != nil {
-			return m
-		}
-		return m.SetInventory(i)
-	}
+	return model.ErrDecorator(
+		func(m Model) (Model, error) {
+			i, err := p.ip.GetByCharacterId(m.Id())
+			if err != nil {
+				return m, err
+			}
+			return m.SetInventory(i), nil
+		},
+		func(m Model, err error) {
+			degrade.Observe(p.l, "login.character.inventory", m.Id(), err)
+		},
+	)
 }
 
 func (p *ProcessorImpl) DeleteById(characterId uint32) error {

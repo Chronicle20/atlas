@@ -2,8 +2,8 @@ package session
 
 import (
 	session2 "atlas-channel/kafka/message/account/session"
-	"atlas-channel/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -30,6 +30,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 	return p
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) Destroy(sessionId uuid.UUID, accountId uint32) {
 	p.l.Debugf("Destroying session for account [%d].", accountId)

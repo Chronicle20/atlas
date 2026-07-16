@@ -133,6 +133,20 @@ func (m Model) ChangeJob(jobId job.Id) Model {
 	}
 }
 
+func (m Model) ChangeGm(gm int) Model {
+	return Model{
+		tenantId: m.tenantId,
+		id:       m.id,
+		name:     m.name,
+		level:    m.level,
+		jobId:    m.jobId,
+		field:    m.field,
+		partyId:  m.partyId,
+		online:   m.online,
+		gm:       gm,
+	}
+}
+
 func (m Model) Id() uint32 {
 	return m.id
 }

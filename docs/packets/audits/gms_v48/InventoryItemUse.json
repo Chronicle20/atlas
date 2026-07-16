@@ -1,0 +1,39 @@
+{
+  "WriterName": "InventoryItemUse",
+  "IDAName": "sub_719DD9",
+  "Address": "0x719dd9",
+  "Variant": "GMS/v48",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/inventory/serverbound/item_use.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    }
+  ],
+  "Verdict": 2,
+  "FlatInvalid": false
+}

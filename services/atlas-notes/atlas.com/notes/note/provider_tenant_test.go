@@ -5,6 +5,7 @@ import (
 	"time"
 
 	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,18 +33,21 @@ func newNotesDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID) {
 
 func TestNoteProvider_GetByCharacterId_FiltersByTenant(t *testing.T) {
 	db, tidA, tidB := newNotesDB(t)
+	page := model.Page{Number: 1, Size: 50}
 
-	gotA, err := getByCharacterIdProvider(1001)(db.WithContext(databasetest.TenantContext(tidA)))()
+	gotA, err := getByCharacterIdPagedProvider(1001, page)(db.WithContext(databasetest.TenantContext(tidA)))()
 	require.NoError(t, err)
-	require.Len(t, gotA, 1)
-	assert.Equal(t, tidA, gotA[0].TenantId)
-	assert.Equal(t, uint32(1), gotA[0].ID)
+	require.Len(t, gotA.Items, 1)
+	assert.Equal(t, 1, gotA.Total)
+	assert.Equal(t, tidA, gotA.Items[0].TenantId)
+	assert.Equal(t, uint32(1), gotA.Items[0].ID)
 
-	gotB, err := getByCharacterIdProvider(1001)(db.WithContext(databasetest.TenantContext(tidB)))()
+	gotB, err := getByCharacterIdPagedProvider(1001, page)(db.WithContext(databasetest.TenantContext(tidB)))()
 	require.NoError(t, err)
-	require.Len(t, gotB, 1)
-	assert.Equal(t, tidB, gotB[0].TenantId)
-	assert.Equal(t, uint32(2), gotB[0].ID)
+	require.Len(t, gotB.Items, 1)
+	assert.Equal(t, 1, gotB.Total)
+	assert.Equal(t, tidB, gotB.Items[0].TenantId)
+	assert.Equal(t, uint32(2), gotB.Items[0].ID)
 }
 
 func TestNoteAdministrator_UpdateNote_ScopedToTenant(t *testing.T) {

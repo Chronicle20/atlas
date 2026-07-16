@@ -1,0 +1,8 @@
+packet: character/serverbound/CharacterAttackRangedRequest
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_6A228C
+    address: "0x6a228c"
+    decompile_sha256: 0d55886b0653f7e96a8b4f788e93be953808e0c8c35a348b2f9d7d47affd174f

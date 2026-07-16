@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"sort"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -19,6 +21,12 @@ func GetAllRoutesHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
+				page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+					return
+				}
+
 				processor := NewProcessor(d.Logger(), d.Context(), db)
 
 				routes, err := processor.GetAllRoutes(tenantId)
@@ -29,7 +37,7 @@ func GetAllRoutesHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 						routes = []map[string]interface{}{}
 					} else {
 						d.Logger().WithError(err).Error("Failed to get routes")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 				}
@@ -39,15 +47,23 @@ func GetAllRoutesHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 					rm, err := TransformRoute(route)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform route")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 					restModels = append(restModels, rm)
 				}
 
+				// The route list materializes from one JSONB blob's "data"
+				// array; sort by the unique id before paging so the response
+				// order does not depend on how the blob happens to store them.
+				sort.Slice(restModels, func(i, j int) bool {
+					return restModels[i].Id < restModels[j].Id
+				})
+				paged := paginate.Slice(restModels, page)
+
 				query := r.URL.Query()
 				queryParams := jsonapi.ParseQueryFields(&query)
-				server.MarshalResponse[[]RouteRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restModels)
+				server.MarshalPaginatedResponse[[]RouteRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 			}
 		})
 	}
@@ -71,7 +87,7 @@ func GetRouteByIdHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 					rm, err := TransformRoute(route)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform route")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -100,7 +116,7 @@ func CreateRouteHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Han
 				_, err = processor.CreateRouteAndEmit(tenantId, route)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to create route")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -114,14 +130,14 @@ func CreateRouteHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Han
 				createdRoute, err := processor.GetRouteById(tenantId, routeId)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to get created route")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				rm, err := TransformRoute(createdRoute)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to transform route")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -151,7 +167,7 @@ func UpdateRouteHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Han
 					_, err = processor.UpdateRouteAndEmit(tenantId, routeId, route)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to update route")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -159,14 +175,14 @@ func UpdateRouteHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Han
 					updatedRoute, err := processor.GetRouteById(tenantId, routeId)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to get updated route")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
 					rm, err := TransformRoute(updatedRoute)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform route")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -189,7 +205,7 @@ func DeleteRouteHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Han
 					err := processor.DeleteRouteAndEmit(tenantId, routeId)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to delete route")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -205,6 +221,12 @@ func GetAllVesselsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
+				page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+					return
+				}
+
 				processor := NewProcessor(d.Logger(), d.Context(), db)
 
 				vessels, err := processor.GetAllVessels(tenantId)
@@ -215,7 +237,7 @@ func GetAllVesselsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 						vessels = []map[string]interface{}{}
 					} else {
 						d.Logger().WithError(err).Error("Failed to get vessels")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 				}
@@ -225,15 +247,23 @@ func GetAllVesselsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 					rm, err := TransformVessel(vessel)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform vessel")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 					restModels = append(restModels, rm)
 				}
 
+				// The vessel list materializes from one JSONB blob's "data"
+				// array; sort by the unique id before paging so the response
+				// order does not depend on how the blob happens to store them.
+				sort.Slice(restModels, func(i, j int) bool {
+					return restModels[i].Id < restModels[j].Id
+				})
+				paged := paginate.Slice(restModels, page)
+
 				query := r.URL.Query()
 				queryParams := jsonapi.ParseQueryFields(&query)
-				server.MarshalResponse[[]VesselRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restModels)
+				server.MarshalPaginatedResponse[[]VesselRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 			}
 		})
 	}
@@ -257,7 +287,7 @@ func GetVesselByIdHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 					rm, err := TransformVessel(vessel)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform vessel")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -286,7 +316,7 @@ func CreateVesselHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 				_, err = processor.CreateVesselAndEmit(tenantId, vessel)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to create vessel")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -300,14 +330,14 @@ func CreateVesselHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 				createdVessel, err := processor.GetVesselById(tenantId, vesselId)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to get created vessel")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				rm, err := TransformVessel(createdVessel)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to transform vessel")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -337,7 +367,7 @@ func UpdateVesselHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 					_, err = processor.UpdateVesselAndEmit(tenantId, vesselId, vessel)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to update vessel")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -345,14 +375,14 @@ func UpdateVesselHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 					updatedVessel, err := processor.GetVesselById(tenantId, vesselId)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to get updated vessel")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
 					rm, err := TransformVessel(updatedVessel)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform vessel")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -375,7 +405,7 @@ func DeleteVesselHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 					err := processor.DeleteVesselAndEmit(tenantId, vesselId)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to delete vessel")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -391,6 +421,12 @@ func GetAllInstanceRoutesHandler(db *gorm.DB) func(d *rest.HandlerDependency, c 
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
+				page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+					return
+				}
+
 				processor := NewProcessor(d.Logger(), d.Context(), db)
 
 				routes, err := processor.GetAllInstanceRoutes(tenantId)
@@ -400,7 +436,7 @@ func GetAllInstanceRoutesHandler(db *gorm.DB) func(d *rest.HandlerDependency, c 
 						routes = []map[string]interface{}{}
 					} else {
 						d.Logger().WithError(err).Error("Failed to get instance routes")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 				}
@@ -410,15 +446,24 @@ func GetAllInstanceRoutesHandler(db *gorm.DB) func(d *rest.HandlerDependency, c 
 					rm, err := TransformInstanceRoute(route)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform instance route")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 					restModels = append(restModels, rm)
 				}
 
+				// The instance-route list materializes from one JSONB blob's
+				// "data" array; sort by the unique id before paging so the
+				// response order does not depend on how the blob happens to
+				// store them.
+				sort.Slice(restModels, func(i, j int) bool {
+					return restModels[i].Id < restModels[j].Id
+				})
+				paged := paginate.Slice(restModels, page)
+
 				query := r.URL.Query()
 				queryParams := jsonapi.ParseQueryFields(&query)
-				server.MarshalResponse[[]InstanceRouteRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restModels)
+				server.MarshalPaginatedResponse[[]InstanceRouteRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 			}
 		})
 	}
@@ -442,7 +487,7 @@ func GetInstanceRouteByIdHandler(db *gorm.DB) func(d *rest.HandlerDependency, c 
 					rm, err := TransformInstanceRoute(route)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform instance route")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -471,7 +516,7 @@ func CreateInstanceRouteHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *
 				_, err = processor.CreateInstanceRouteAndEmit(tenantId, route)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to create instance route")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -483,14 +528,14 @@ func CreateInstanceRouteHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *
 				createdRoute, err := processor.GetInstanceRouteById(tenantId, routeId)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to get created instance route")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				rm, err := TransformInstanceRoute(createdRoute)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to transform instance route")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -520,21 +565,21 @@ func UpdateInstanceRouteHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *
 					_, err = processor.UpdateInstanceRouteAndEmit(tenantId, instanceRouteId, route)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to update instance route")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
 					updatedRoute, err := processor.GetInstanceRouteById(tenantId, instanceRouteId)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to get updated instance route")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
 					rm, err := TransformInstanceRoute(updatedRoute)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to transform instance route")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -557,7 +602,7 @@ func DeleteInstanceRouteHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *
 					err := processor.DeleteInstanceRouteAndEmit(tenantId, instanceRouteId)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to delete instance route")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -577,8 +622,7 @@ func SeedRoutesHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Hand
 				result, err := processor.SeedRoutes(tenantId)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to seed routes")
-					w.WriteHeader(http.StatusInternalServerError)
-					json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -599,8 +643,7 @@ func SeedInstanceRoutesHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *r
 				result, err := processor.SeedInstanceRoutes(tenantId)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to seed instance routes")
-					w.WriteHeader(http.StatusInternalServerError)
-					json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -621,8 +664,217 @@ func SeedVesselsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Han
 				result, err := processor.SeedVessels(tenantId)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to seed vessels")
-					w.WriteHeader(http.StatusInternalServerError)
-					json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				json.NewEncoder(w).Encode(result)
+			}
+		})
+	}
+}
+
+// GetMtsConfigHandler handles GET /tenants/{tenantId}/configurations/mts-configs
+// and returns the single per-tenant MTS configuration. atlas-mts decodes this
+// as a single JSON:API object (requests.GetRequest[RestModel]).
+func GetMtsConfigHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				processor := NewProcessor(d.Logger(), d.Context(), db)
+
+				configs, err := processor.GetAllMtsConfigs(tenantId)
+				if err != nil {
+					if errors.Is(err, gorm.ErrRecordNotFound) {
+						d.Logger().Info("No mts config found for tenant")
+						w.WriteHeader(http.StatusNotFound)
+						return
+					}
+					d.Logger().WithError(err).Error("Failed to get mts config")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				if len(configs) == 0 {
+					d.Logger().Info("No mts config found for tenant")
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+
+				rm, err := TransformMtsConfig(configs[0])
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to transform mts config")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[MtsConfigRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+			}
+		})
+	}
+}
+
+// GetMtsConfigByIdHandler handles GET /tenants/{tenantId}/configurations/mts-configs/{mtsConfigId}
+func GetMtsConfigByIdHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return rest.ParseMtsConfigId(d.Logger(), func(mtsConfigId string) http.HandlerFunc {
+				return func(w http.ResponseWriter, r *http.Request) {
+					processor := NewProcessor(d.Logger(), d.Context(), db)
+
+					config, err := processor.GetMtsConfigById(tenantId, mtsConfigId)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to get mts config")
+						w.WriteHeader(http.StatusNotFound)
+						return
+					}
+
+					rm, err := TransformMtsConfig(config)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to transform mts config")
+						server.WriteErrorResponse(d.Logger())(w)(err)
+						return
+					}
+
+					query := r.URL.Query()
+					queryParams := jsonapi.ParseQueryFields(&query)
+					server.MarshalResponse[MtsConfigRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+				}
+			})
+		})
+	}
+}
+
+// CreateMtsConfigHandler handles POST /tenants/{tenantId}/configurations/mts-configs
+func CreateMtsConfigHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext, model MtsConfigRestModel) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, model MtsConfigRestModel) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				config, err := ExtractMtsConfig(model)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to extract mts config data")
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+
+				processor := NewProcessor(d.Logger(), d.Context(), db)
+				_, err = processor.CreateMtsConfigAndEmit(tenantId, config)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to create mts config")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				// Get the config ID from the created config
+				configId := ""
+				if id, ok := config["id"].(string); ok {
+					configId = id
+				}
+
+				// Get the specific config that was just created
+				createdConfig, err := processor.GetMtsConfigById(tenantId, configId)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to get created mts config")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				rm, err := TransformMtsConfig(createdConfig)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to transform mts config")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				w.WriteHeader(http.StatusCreated)
+				server.MarshalResponse[MtsConfigRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+			}
+		})
+	}
+}
+
+// UpdateMtsConfigHandler handles PATCH /tenants/{tenantId}/configurations/mts-configs/{mtsConfigId}
+func UpdateMtsConfigHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext, model MtsConfigRestModel) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, model MtsConfigRestModel) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return rest.ParseMtsConfigId(d.Logger(), func(mtsConfigId string) http.HandlerFunc {
+				return func(w http.ResponseWriter, r *http.Request) {
+					config, err := ExtractMtsConfig(model)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to extract mts config data")
+						w.WriteHeader(http.StatusBadRequest)
+						return
+					}
+
+					processor := NewProcessor(d.Logger(), d.Context(), db)
+					_, err = processor.UpdateMtsConfigAndEmit(tenantId, mtsConfigId, config)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to update mts config")
+						server.WriteErrorResponse(d.Logger())(w)(err)
+						return
+					}
+
+					// Get the specific config that was just updated
+					updatedConfig, err := processor.GetMtsConfigById(tenantId, mtsConfigId)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to get updated mts config")
+						server.WriteErrorResponse(d.Logger())(w)(err)
+						return
+					}
+
+					rm, err := TransformMtsConfig(updatedConfig)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to transform mts config")
+						server.WriteErrorResponse(d.Logger())(w)(err)
+						return
+					}
+
+					query := r.URL.Query()
+					queryParams := jsonapi.ParseQueryFields(&query)
+					server.MarshalResponse[MtsConfigRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+				}
+			})
+		})
+	}
+}
+
+// DeleteMtsConfigHandler handles DELETE /tenants/{tenantId}/configurations/mts-configs/{mtsConfigId}
+func DeleteMtsConfigHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return rest.ParseMtsConfigId(d.Logger(), func(mtsConfigId string) http.HandlerFunc {
+				return func(w http.ResponseWriter, r *http.Request) {
+					processor := NewProcessor(d.Logger(), d.Context(), db)
+					err := processor.DeleteMtsConfigAndEmit(tenantId, mtsConfigId)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to delete mts config")
+						server.WriteErrorResponse(d.Logger())(w)(err)
+						return
+					}
+
+					w.WriteHeader(http.StatusNoContent)
+				}
+			})
+		})
+	}
+}
+
+// SeedMtsConfigsHandler handles POST /tenants/{tenantId}/configurations/mts-configs/seed
+func SeedMtsConfigsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				processor := NewProcessor(d.Logger(), d.Context(), db)
+				result, err := processor.SeedMtsConfigs(tenantId)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to seed mts configs")
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -642,6 +894,7 @@ func RegisterRoutes(db *gorm.DB) func(si jsonapi.ServerInformation) server.Route
 			registerRouteInputHandler := rest.RegisterInputHandler[RouteRestModel](l)(si)
 			registerVesselInputHandler := rest.RegisterInputHandler[VesselRestModel](l)(si)
 			registerInstanceRouteInputHandler := rest.RegisterInputHandler[InstanceRouteRestModel](l)(si)
+			registerMtsConfigInputHandler := rest.RegisterInputHandler[MtsConfigRestModel](l)(si)
 
 			// Route endpoints
 			r.HandleFunc("/tenants/{tenantId}/configurations/routes/seed", registerHandler("seed_routes", SeedRoutesHandler(db))).Methods(http.MethodPost)
@@ -666,6 +919,14 @@ func RegisterRoutes(db *gorm.DB) func(si jsonapi.ServerInformation) server.Route
 			r.HandleFunc("/tenants/{tenantId}/configurations/instance-routes", registerInstanceRouteInputHandler("create_instance_route", CreateInstanceRouteHandler(db))).Methods(http.MethodPost)
 			r.HandleFunc("/tenants/{tenantId}/configurations/instance-routes/{instanceRouteId}", registerInstanceRouteInputHandler("update_instance_route", UpdateInstanceRouteHandler(db))).Methods(http.MethodPatch)
 			r.HandleFunc("/tenants/{tenantId}/configurations/instance-routes/{instanceRouteId}", registerHandler("delete_instance_route", DeleteInstanceRouteHandler(db))).Methods(http.MethodDelete)
+
+			// MTS config endpoints
+			r.HandleFunc("/tenants/{tenantId}/configurations/mts-configs/seed", registerHandler("seed_mts_configs", SeedMtsConfigsHandler(db))).Methods(http.MethodPost)
+			r.HandleFunc("/tenants/{tenantId}/configurations/mts-configs", registerHandler("get_mts_config", GetMtsConfigHandler(db))).Methods(http.MethodGet)
+			r.HandleFunc("/tenants/{tenantId}/configurations/mts-configs/{mtsConfigId}", registerHandler("get_mts_config_by_id", GetMtsConfigByIdHandler(db))).Methods(http.MethodGet)
+			r.HandleFunc("/tenants/{tenantId}/configurations/mts-configs", registerMtsConfigInputHandler("create_mts_config", CreateMtsConfigHandler(db))).Methods(http.MethodPost)
+			r.HandleFunc("/tenants/{tenantId}/configurations/mts-configs/{mtsConfigId}", registerMtsConfigInputHandler("update_mts_config", UpdateMtsConfigHandler(db))).Methods(http.MethodPatch)
+			r.HandleFunc("/tenants/{tenantId}/configurations/mts-configs/{mtsConfigId}", registerHandler("delete_mts_config", DeleteMtsConfigHandler(db))).Methods(http.MethodDelete)
 		}
 	}
 }

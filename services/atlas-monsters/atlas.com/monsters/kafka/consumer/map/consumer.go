@@ -46,7 +46,7 @@ func handleStatusEventCharacterEnter(l logrus.FieldLogger, ctx context.Context, 
 
 	p := monster.NewProcessor(l, ctx)
 	provider := p.NotControlledInFieldProvider(f)
-	_ = model.ForEachSlice(provider, p.FindNextController(_map.CharacterIdsInFieldProvider(l)(ctx)(f)), model.ParallelExecute())
+	_ = model.ForEachSlice(provider, p.FindNextController(_map.NewProcessor(l, ctx).CharacterIdsInFieldProvider(f)), model.ParallelExecute())
 }
 
 func handleStatusEventCharacterExit(l logrus.FieldLogger, ctx context.Context, e statusEvent[characterExit]) {
@@ -56,7 +56,7 @@ func handleStatusEventCharacterExit(l logrus.FieldLogger, ctx context.Context, e
 
 	f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
 
-	ocids, err := _map.CharacterIdsInFieldProvider(l)(ctx)(f)()
+	ocids, err := _map.NewProcessor(l, ctx).CharacterIdsInFieldProvider(f)()
 	if err != nil {
 		return
 	}

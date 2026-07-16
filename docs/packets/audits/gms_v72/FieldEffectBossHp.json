@@ -1,0 +1,66 @@
+{
+  "WriterName": "FieldEffectBossHp",
+  "IDAName": "CField::OnFieldEffect#BossHp",
+  "Address": "0x5174bb",
+  "Variant": "GMS/v72",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/effect.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "monsterId (case 5) @0x51769d",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "currentHp @0x5176a7",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "maxHp @0x5176b1",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "tagColor @0x5176bd",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "tagBackgroundColor @0x5176bf",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 1,
+      "Note": "atlas: trailing padding byte — client stops reading (harmless over-write)"
+    }
+  ],
+  "Verdict": 2,
+  "FlatInvalid": false
+}

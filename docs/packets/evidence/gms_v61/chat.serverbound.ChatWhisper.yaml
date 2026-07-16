@@ -1,0 +1,10 @@
+packet: chat/serverbound/ChatWhisper
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: sub_4E8635
+    address: "0x4e8635"
+    decompile_sha256: c6785a17f9bf24365afa75226fed9d9b5209c159cd540c751568cf5953f061a3
+verifies:
+    - libs/atlas-packet/chat/serverbound/v61_test.go#TestWhisperV61Body

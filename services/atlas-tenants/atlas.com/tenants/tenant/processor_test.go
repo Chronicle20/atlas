@@ -4,8 +4,10 @@ import (
 	"atlas-tenants/kafka/message"
 	"atlas-tenants/tenant"
 	"atlas-tenants/test"
+	"context"
 	"testing"
 
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
@@ -64,21 +66,16 @@ func (p *testProcessor) getById(id uuid.UUID) (tenant.Model, error) {
 	return tenant.Make(e)
 }
 
+// getAll drains a single page (well beyond every test's tenant count) via
+// the real, now-paginated Processor.AllProvider - GetAllProvider (unpaged)
+// was deleted as part of task-117.
 func (p *testProcessor) getAll() ([]tenant.Model, error) {
-	provider := tenant.GetAllProvider()(p.db)
-	entities, err := provider()
+	processor := tenant.NewProcessor(p.l, context.Background(), p.db)
+	paged, err := processor.AllProvider(model.Page{Number: 1, Size: 250})()
 	if err != nil {
 		return nil, err
 	}
-	models := make([]tenant.Model, 0, len(entities))
-	for _, e := range entities {
-		m, err := tenant.Make(e)
-		if err != nil {
-			return nil, err
-		}
-		models = append(models, m)
-	}
-	return models, nil
+	return paged.Items, nil
 }
 
 func (p *testProcessor) update(id uuid.UUID, name, region string, majorVersion, minorVersion uint16) (tenant.Model, error) {

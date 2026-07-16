@@ -6,6 +6,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -25,16 +26,28 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 func GetByItemHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseItemId(d.Logger(), func(itemId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			mp := NewProcessor(d.Logger(), d.Context(), d.DB()).ByItemIdProvider(itemId)
-			rms, err := model.SliceMap(transformProvider)(mp)(model.ParallelMap())()
+			page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+				return
+			}
+
+			paged, err := NewProcessor(d.Logger(), d.Context(), d.DB()).ByItemIdProvider(itemId, page)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Listing recipes by itemId=%d", itemId)
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
+
+			rms, err := model.SliceMap(transformProvider)(model.FixedProvider(paged.Items))(model.ParallelMap())()
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Listing recipes by itemId=%d", itemId)
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rms)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rms, paginate.EnvelopeFor(paged), r)
 		}
 	})
 }
@@ -42,16 +55,28 @@ func GetByItemHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.Ha
 func GetByNpcHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseNpcId(d.Logger(), func(npcId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			mp := NewProcessor(d.Logger(), d.Context(), d.DB()).ByNpcIdProvider(npcId)
-			rms, err := model.SliceMap(transformProvider)(mp)(model.ParallelMap())()
+			page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+				return
+			}
+
+			paged, err := NewProcessor(d.Logger(), d.Context(), d.DB()).ByNpcIdProvider(npcId, page)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Listing recipes by npcId=%d", npcId)
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
+
+			rms, err := model.SliceMap(transformProvider)(model.FixedProvider(paged.Items))(model.ParallelMap())()
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Listing recipes by npcId=%d", npcId)
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rms)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rms, paginate.EnvelopeFor(paged), r)
 		}
 	})
 }

@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -46,7 +47,7 @@ func postSeed(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, src Catalo
 	return func(w http.ResponseWriter, _ *http.Request) {
 		t := tenant.MustFromContext(ctx)
 		backgroundSeeds.Add(1)
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			defer backgroundSeeds.Done()
 			bgCtx := tenant.WithContext(context.Background(), t)
 			res, err := Seed(bgCtx, db, src, g)
@@ -63,7 +64,7 @@ func postSeed(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, src Catalo
 				"catalog_revision": res.CatalogRevision,
 				"subdomains":       summarize(res.Subdomains),
 			}).Info("Seed complete")
-		}()
+		})
 		w.WriteHeader(http.StatusAccepted)
 	}
 }

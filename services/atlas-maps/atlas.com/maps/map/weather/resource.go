@@ -43,7 +43,7 @@ func handleGetWeatherInMap(d *rest.HandlerDependency, c *rest.HandlerContext) ht
 						res, err := Transform(entry)
 						if err != nil {
 							d.Logger().WithError(err).Errorf("Creating REST model.")
-							w.WriteHeader(http.StatusInternalServerError)
+							server.WriteErrorResponse(d.Logger())(w)(err)
 							return
 						}
 

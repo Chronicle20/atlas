@@ -1,0 +1,10 @@
+packet: interaction/serverbound/InteractionOperationMemoryGameMoveStone
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_578388
+    address: "0x578388"
+    decompile_sha256: eb8a5cf2d227fc8a33d2d6e5492660dd7cf42cc32d64c26f19c0533f7ecdaaec
+verifies:
+    - libs/atlas-packet/interaction/serverbound/v48_test.go#TestOperationMemoryGameMoveStoneV48Bytes

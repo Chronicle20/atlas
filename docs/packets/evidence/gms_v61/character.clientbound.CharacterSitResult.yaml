@@ -1,0 +1,10 @@
+packet: character/clientbound/CharacterSitResult
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CUserLocal::OnSitResult
+    address: "0x7ab9d9"
+    decompile_sha256: fbf6aade5b5a917562a4e55eb4e64d3f873b1df7964725b8ff59f4c6d88cd203
+verifies:
+    - libs/atlas-packet/character/clientbound/v61_test.go#TestCharacterSitResultByteOutputV61

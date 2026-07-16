@@ -1,0 +1,66 @@
+{
+  "WriterName": "InventoryQuantityUpdate",
+  "IDAName": "CWvsContext::OnInventoryOperation#QuantityUpdate",
+  "Address": "0x96953e",
+  "Variant": "GMS/v79",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/inventory/clientbound/change.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "exclRequest flag @0x969556 (if !=0 reset excl + get_update_time); Atlas WriteBool(!silent)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "count (operation entries) @0x96959a; Atlas WriteByte(1)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "action/mode @0x9695b8",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "invType @0x9695c3",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "slot @0x9695cb",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "quantity @0x969893 (mode 1=QuantityUpdate); Atlas WriteShort(quantity)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

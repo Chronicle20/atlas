@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldAdminResult
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnAdminResult
+    address: "0x52075c"
+    decompile_sha256: dd01ac85781099343b8683129850cbcd28d68d7206c4e2c03e2ddb3894990682
+verifies:
+    - libs/atlas-packet/field/clientbound/admin_result_test.go#TestAdminResultByteOutputV79

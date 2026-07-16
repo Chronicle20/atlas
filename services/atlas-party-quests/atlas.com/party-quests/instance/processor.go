@@ -10,7 +10,6 @@ import (
 	pq "atlas-party-quests/kafka/message/party_quest"
 	reactorMessage "atlas-party-quests/kafka/message/reactor"
 	systemMessage "atlas-party-quests/kafka/message/system_message"
-	"atlas-party-quests/kafka/producer"
 	"atlas-party-quests/monster"
 	"atlas-party-quests/party"
 	"atlas-party-quests/reward"
@@ -18,6 +17,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"math/rand"
 	"strings"
 	"time"
@@ -118,6 +118,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		db:  db,
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetById(instanceId uuid.UUID) (Model, error) {
 	return GetRegistry().Get(p.t, instanceId)

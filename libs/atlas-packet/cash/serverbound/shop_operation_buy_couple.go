@@ -17,6 +17,8 @@ const CashShopOperationBuyCoupleHandle = "CashShopOperationBuyCoupleHandle"
 // string (EncodeStr) in v95.
 // packet-audit:fname CCashShop::OnBuyCouple
 type ShopOperationBuyCouple struct {
+	isPoints     bool   // v79 legacy leading bool (usePoints/currency==MaplePoint)
+	currency     uint32 // v79 legacy currency bitmask int
 	birthday     uint32 // v83 leading ask_SPW int
 	spw          string // v95 leading ask_SPW string
 	option       uint32
@@ -25,6 +27,8 @@ type ShopOperationBuyCouple struct {
 	message      string
 }
 
+func (m ShopOperationBuyCouple) IsPoints() bool       { return m.isPoints }
+func (m ShopOperationBuyCouple) Currency() uint32     { return m.currency }
 func (m ShopOperationBuyCouple) Birthday() uint32     { return m.birthday }
 func (m ShopOperationBuyCouple) SPW() string          { return m.spw }
 func (m ShopOperationBuyCouple) Option() uint32       { return m.option }
@@ -54,6 +58,21 @@ func (m ShopOperationBuyCouple) Encode(l logrus.FieldLogger, ctx context.Context
 }
 
 func (m ShopOperationBuyCouple) encodeGMS(t tenant.Model, w *response.Writer) {
+	// v79 CCashShop::OnBuyCouple@0x46859c: COutPacket(221) Encode1(0x1E)=mode
+	// (routed op), Encode1(v46==2)=isPoints, Encode4(v46)=currency, Encode4(a2)=
+	// serialNumber. No SPW/birthday/option, no recipient name/message on the wire.
+	if legacyGMS(t) {
+		// v48 CCashShop::OnBuyCouple@0x44b4c1 (send @0x44b79b): COutPacket(160)
+		// Encode1(0x1A)=mode, Encode1(v37==2)=isPoints, Encode4(a2)=serialNumber.
+		// The currency int (present in the v61/v79 legacy body) is absent below
+		// v61 — see buyOmitsCurrency.
+		w.WriteBool(m.isPoints)
+		if !buyOmitsCurrency(t) {
+			w.WriteInt(m.currency)
+		}
+		w.WriteInt(m.serialNumber)
+		return
+	}
 	if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 		w.WriteAsciiString(m.spw)
 	} else {
@@ -87,6 +106,14 @@ func (m *ShopOperationBuyCouple) Decode(_ logrus.FieldLogger, ctx context.Contex
 }
 
 func (m *ShopOperationBuyCouple) decodeGMS(t tenant.Model, r *request.Reader) {
+	if legacyGMS(t) {
+		m.isPoints = r.ReadBool()
+		if !buyOmitsCurrency(t) {
+			m.currency = r.ReadUint32()
+		}
+		m.serialNumber = r.ReadUint32()
+		return
+	}
 	if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 		m.spw = r.ReadAsciiString()
 	} else {

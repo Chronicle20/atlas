@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldClock
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnClock
+    address: "0x4e9ea3"
+    decompile_sha256: 8228d03218b0ad959d5cfc9bb3f8e1fb6f4b89d97d3ffb8268957569dd4b5076
+verifies:
+    - libs/atlas-packet/field/clientbound/clock_test.go#TestClockByteOutputV61

@@ -135,3 +135,17 @@ sum by (pod) (rate(http_request_duration_seconds_count{atlas_env="a3f7"}[5m]))
 ### Grafana
 
 The `atlas-pr-environments` dashboard (when present in the cluster's Grafana) summarises open envs, time-to-ready, cleanup status, and bootstrap step durations. If absent, install via the standard Grafana dashboards-as-code mechanism on the cluster.
+
+## Log field naming
+
+Structured-log field keys are **snake_case** (`character_id`, `world_id`,
+`transaction_id`). This is enforced at emit time: `CreateLogger` in
+`libs/atlas-service` registers a normalization hook that rewrites legacy
+camelCase keys (`characterId` → `character_id`) on every record, so Loki
+queries need only the snake_case spelling. Dotted ECS keys (`service.name`)
+pass through unchanged. If a record carries both spellings, the explicit
+snake_case key wins and the camelCase duplicate is dropped.
+
+New code should write snake_case keys directly; the hook exists so the
+~1,500 legacy call sites don't need a rename sweep and drift cannot
+reappear.

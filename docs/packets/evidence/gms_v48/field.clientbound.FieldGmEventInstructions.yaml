@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldGmEventInstructions
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnDesc
+    address: "0x4ca491"
+    decompile_sha256: a04960d5b0a391f19f0a2533b416cdc9feab3c8836aa56789351088e898c617f
+verifies:
+    - libs/atlas-packet/field/clientbound/gm_event_instructions_test.go#TestGmEventInstructionsByteOutputV48

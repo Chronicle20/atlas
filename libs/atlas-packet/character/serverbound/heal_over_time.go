@@ -17,6 +17,11 @@ const CharacterHealOverTimeHandle = "CharacterHealOverTimeHandle"
 //
 // Wire body across versions:
 //
+//	GMS legacy <83 (CWvsContext::SendStatChangeRequest, v79 @0x96944a):
+//	    val(4) + hp(2) + mp(2) + option(1)
+//	    The pre-83 sender does NOT call get_update_time — there is NO leading
+//	    updateTime dword (v79 IDA-verified: only Encode4(0x1400)+Encode2(hp)+
+//	    Encode2(mp)+Encode1(option), no get_update_time ref in the function).
 //	GMS v83/v87/v95 (CWvsContext::SendStatChangeRequest@0xa1e997/.../0x9f2a00):
 //	    updateTime(4) + val(4) + hp(2) + mp(2) + option(1)
 //	JMS v185 (CWvsContext::SendStatChangeRequestByItemOption@0xb054d6 — the
@@ -26,8 +31,10 @@ const CharacterHealOverTimeHandle = "CharacterHealOverTimeHandle"
 //	    where extra is a client validation dword (dword_CDA4F8). jms is the ONLY
 //	    version that appends the trailing dword.
 //
-// The trailing option byte is present on GMS v83..v95 and on jms; later GMS
-// builds (>95) drop it. jms additionally appends the validation dword.
+// The leading updateTime dword (the exclusive-request tick) was introduced at
+// GMS v83; legacy GMS (<83) omits it. The trailing option byte is present on
+// GMS v83..v95 and on jms; later GMS builds (>95) drop it. jms additionally
+// appends the validation dword.
 type HealOverTime struct {
 	updateTime uint32
 	val        uint32
@@ -74,7 +81,10 @@ func (m HealOverTime) Encode(l logrus.FieldLogger, ctx context.Context) func(opt
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
-		w.WriteInt(m.updateTime)
+		// Legacy GMS (<83) has no leading updateTime tick (v79 IDA @0x96944a).
+		if !(t.Region() == "GMS" && t.MajorVersion() < 83) {
+			w.WriteInt(m.updateTime)
+		}
 		w.WriteInt(m.val)
 		w.WriteInt16(m.hp)
 		w.WriteInt16(m.mp)
@@ -91,7 +101,10 @@ func (m HealOverTime) Encode(l logrus.FieldLogger, ctx context.Context) func(opt
 func (m *HealOverTime) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		m.updateTime = r.ReadUint32()
+		// Legacy GMS (<83) has no leading updateTime tick (v79 IDA @0x96944a).
+		if !(t.Region() == "GMS" && t.MajorVersion() < 83) {
+			m.updateTime = r.ReadUint32()
+		}
 		m.val = r.ReadUint32()
 		m.hp = r.ReadInt16()
 		m.mp = r.ReadInt16()

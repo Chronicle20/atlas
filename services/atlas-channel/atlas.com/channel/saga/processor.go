@@ -2,8 +2,8 @@ package saga
 
 import (
 	"atlas-channel/kafka/message/saga"
-	"atlas-channel/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"
 )
@@ -26,6 +26,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		ctx: ctx,
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // Create initiates a new saga by emitting it to Kafka
 func (p *ProcessorImpl) Create(s Saga) error {

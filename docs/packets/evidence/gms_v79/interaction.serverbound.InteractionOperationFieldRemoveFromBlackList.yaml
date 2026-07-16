@@ -1,0 +1,10 @@
+packet: interaction/serverbound/InteractionOperationFieldRemoveFromBlackList
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CField::DeleteBlackList
+    address: "0x522cff"
+    decompile_sha256: 07ea69dd7f83d73086aecc65f63252768c92aaf6a3f70be5b530fc8879b1eecc
+verifies:
+  - libs/atlas-packet/interaction/serverbound/operation_field_remove_from_black_list_test.go#TestOperationFieldRemoveFromBlackListRoundTrip

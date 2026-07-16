@@ -6,9 +6,11 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"sort"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -50,7 +52,7 @@ func handleGetShop(d *rest.HandlerDependency, c *rest.HandlerContext) http.Handl
 				}
 
 				d.Logger().WithError(err).Errorf("Retrieving shop model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -58,7 +60,7 @@ func handleGetShop(d *rest.HandlerDependency, c *rest.HandlerContext) http.Handl
 			res, err := Transform(shopModel)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -93,14 +95,14 @@ func handleAddCommodity(d *rest.HandlerDependency, c *rest.HandlerContext, i com
 			commodity, err := p.AddCommodity(npcId, i.TemplateId, i.MesoPrice, discountRate, tokenTemplateId, tokenPrice, period, levelLimited)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Adding commodity.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			res, err := commodities.Transform(commodity)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -126,14 +128,14 @@ func handleUpdateCommodity(d *rest.HandlerDependency, c *rest.HandlerContext, i 
 				commodity, err := p.UpdateCommodity(commodityId, i.TemplateId, i.MesoPrice, discountRate, tokenTemplateId, tokenPrice, period, levelLimited)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Updating commodity.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				res, err := commodities.Transform(commodity)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -154,7 +156,7 @@ func handleRemoveCommodity(d *rest.HandlerDependency, _ *rest.HandlerContext) ht
 				err := p.RemoveCommodity(commodityId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Removing commodity.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -171,7 +173,7 @@ func handleDeleteAllCommodities(d *rest.HandlerDependency, _ *rest.HandlerContex
 			err := p.DeleteAllCommoditiesByNpcId(npcId)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Deleting all commodities for NPC %d.", npcId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -186,7 +188,7 @@ func handleDeleteAllShops(d *rest.HandlerDependency, _ *rest.HandlerContext) htt
 		err := p.DeleteAllShops()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Deleting all shops.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
@@ -194,50 +196,79 @@ func handleDeleteAllShops(d *rest.HandlerDependency, _ *rest.HandlerContext) htt
 	}
 }
 
+// handleGetShopCharacters is registry-backed (GetRegistry().GetCharactersInShop
+// — an in-memory map of characters currently browsing a shop), not a DB
+// query, so database.PagedQuery does not apply. GetCharactersInShop has no
+// other internal caller besides this handler, so it is left unchanged and
+// materialized in full here, stable-sorted (characterIds are already
+// unique uint32s) for determinism, then paginate.Slice applied.
 func handleGetShopCharacters(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseNpcId(d.Logger(), func(npcId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
+			page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+				return
+			}
+
 			p := NewProcessor(d.Logger(), d.Context(), d.DB())
 			characterIds := p.GetCharactersInShop(npcId)
 
-			res, err := model.SliceMap(TransformCharacterList)(model.FixedProvider(characterIds))(model.ParallelMap())()
+			sorted := make([]uint32, len(characterIds))
+			copy(sorted, characterIds)
+			sort.Slice(sorted, func(i, j int) bool { return sorted[i] < sorted[j] })
+
+			paged := paginate.Slice(sorted, page)
+
+			res, err := model.SliceMap(TransformCharacterList)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]CharacterListRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			server.MarshalPaginatedResponse[[]CharacterListRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
 		}
 	})
 }
 
+// handleGetAllShops is content full-table (no per-request WHERE filter), so
+// database.PagedQuery is used (via AllShopsProvider/getAllShopsPaged). This
+// is the one route in this task with a below-default cap: 50/250 per the
+// task-117 brief (content full-table lists default to the smaller page
+// size rather than the game-capped 250/250 used elsewhere).
 func handleGetAllShops(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+		if err != nil {
+			server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+			return
+		}
+
 		p := NewProcessor(d.Logger(), d.Context(), d.DB())
 
-		// Get all shops using the processor
-		shops, err := p.GetAllShops(decoratorsFromInclude(d.Logger(), d.Context(), d.DB(), r)...)
+		// Get one page of shops using the processor
+		paged, err := p.GetAllShops(page, decoratorsFromInclude(d.Logger(), d.Context(), d.DB(), r)...)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Getting all shops.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
 		// Transform shop models to REST models
-		restShops, err := model.SliceMap(Transform)(model.FixedProvider(shops))(model.ParallelMap())()
+		restShops, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST models.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
 		// Return the response
 		query := r.URL.Query()
 		queryParams := jsonapi.ParseQueryFields(&query)
-		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restShops)
+		server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restShops, paginate.EnvelopeFor(paged), r)
 	}
 }
 
@@ -262,7 +293,7 @@ func handleCreateShop(d *rest.HandlerDependency, c *rest.HandlerContext, i RestM
 			shop, err := p.CreateShop(npcId, i.Recharger, commodityModels)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating shop.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -270,7 +301,7 @@ func handleCreateShop(d *rest.HandlerDependency, c *rest.HandlerContext, i RestM
 			restShop, err := Transform(shop)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -304,7 +335,7 @@ func handleUpdateShop(d *rest.HandlerDependency, c *rest.HandlerContext, i RestM
 			shop, err := p.UpdateShop(npcId, i.Recharger, commodityModels)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Updating shop.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -312,7 +343,7 @@ func handleUpdateShop(d *rest.HandlerDependency, c *rest.HandlerContext, i RestM
 			restShop, err := Transform(shop)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 

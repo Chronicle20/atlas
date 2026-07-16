@@ -1,6 +1,10 @@
 package main
 
 import (
+	"context"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	"atlas-saga-orchestrator/kafka/consumer/asset"
 	"atlas-saga-orchestrator/kafka/consumer/buddylist"
 	"atlas-saga-orchestrator/kafka/consumer/cashshop"
@@ -10,17 +14,16 @@ import (
 	"atlas-saga-orchestrator/kafka/consumer/consumable"
 	"atlas-saga-orchestrator/kafka/consumer/guild"
 	inventoryConsumer "atlas-saga-orchestrator/kafka/consumer/inventory"
+	mtsCustody "atlas-saga-orchestrator/kafka/consumer/mts/custody"
 	"atlas-saga-orchestrator/kafka/consumer/pet"
 	"atlas-saga-orchestrator/kafka/consumer/quest"
 	saga2 "atlas-saga-orchestrator/kafka/consumer/saga"
 	"atlas-saga-orchestrator/kafka/consumer/skill"
 	"atlas-saga-orchestrator/kafka/consumer/storage"
 	storageCompartment "atlas-saga-orchestrator/kafka/consumer/storage/compartment"
-	"atlas-saga-orchestrator/logger"
 	"atlas-saga-orchestrator/saga"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 	"strconv"
 	"time"
@@ -58,19 +61,20 @@ func GetServer() Server {
 }
 
 func main() {
-	l := logger.CreateLogger(serviceName)
-	l.Infoln("Starting main service.")
-
-	tdm := service.GetTeardownManager()
-
-	tc, err := tracing.InitTracer(serviceName)
-	if err != nil {
-		l.WithError(err).Fatal("Unable to initialize tracer.")
-	}
+	rt := service.Bootstrap(serviceName)
+	l := rt.Logger()
 
 	// Initialize database connection
 	db := database.Connect(l, database.SetMigrations(saga.Migration))
 	l.Infoln("Database connected and migrated.")
+
+	server.RegisterTransientErrorClassifier(func(err error) bool {
+		if database.IsTransientConnectionError(err) {
+			database.CountTransient(err)
+			return true
+		}
+		return false
+	})
 
 	// Initialize PostgreSQL-backed saga store
 	store := saga.NewPostgresStore(db, l)
@@ -86,11 +90,12 @@ func main() {
 	}
 	saga.SetDefaultTimeout(defaultTimeout)
 
-	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	asset.InitConsumers(l)(cmf)(consumerGroupId)
 	buddylist.InitConsumers(l)(cmf)(consumerGroupId)
 	cashshop.InitConsumers(l)(cmf)(consumerGroupId)
 	cashshopCompartment.InitConsumers(l)(cmf)(consumerGroupId)
+	mtsCustody.InitConsumers(l)(cmf)(consumerGroupId)
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	compartment.InitConsumers(l)(cmf)(consumerGroupId)
 	consumable.InitConsumers(l)(cmf)(consumerGroupId)
@@ -110,6 +115,9 @@ func main() {
 	}
 	if err := cashshop.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := mtsCustody.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Failed to register MTS custody status handlers.")
 	}
 	if err := cashshopCompartment.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
@@ -148,28 +156,26 @@ func main() {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 
-	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
+	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 	// Recover active sagas from database
-	recoverSagas(l, store, tdm)
+	recoverSagas(l, store, rt.TeardownManager())
 
 	// Start the stale saga reaper
-	startReaper(l, store, tdm)
+	startReaper(l, store, rt.TeardownManager())
 
 	// Create the service with the router
 	server.New(l).
-		WithContext(tdm.Context()).
-		WithWaitGroup(tdm.WaitGroup()).
+		WithContext(rt.Context()).
+		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(saga.InitResource(GetServer())).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
+		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
-	tdm.TeardownFunc(tracing.Teardown(l)(tc))
-
-	tdm.Wait()
-	l.Infoln("Service shutdown.")
+	rt.Wait()
 }
 
 // recoverSagas loads all active sagas from the database and re-drives them
@@ -219,7 +225,7 @@ func startReaper(l logrus.FieldLogger, store *saga.PostgresStore, tdm *service.M
 	}
 
 	tdm.WaitGroup().Add(1)
-	go func() {
+	routine.Go(l, tdm.Context(), func(_ context.Context) {
 		defer tdm.WaitGroup().Done()
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
@@ -235,7 +241,7 @@ func startReaper(l logrus.FieldLogger, store *saga.PostgresStore, tdm *service.M
 				reapTimedOutSagas(l, store, tdm)
 			}
 		}
-	}()
+	})
 }
 
 func reapTimedOutSagas(l logrus.FieldLogger, store *saga.PostgresStore, tdm *service.Manager) {

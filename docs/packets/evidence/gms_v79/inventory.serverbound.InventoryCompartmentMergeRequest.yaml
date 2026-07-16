@@ -1,0 +1,10 @@
+packet: inventory/serverbound/InventoryCompartmentMergeRequest
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendGatherItemRequest
+    address: "0x954c6b"
+    decompile_sha256: 20e9afed9af94eccfbacfcfdf3f3e7e78f79483847097f165a4d00d4b4f3635a
+verifies:
+  - libs/atlas-packet/inventory/serverbound/compartment_merge_test.go#TestCompartmentMergeRequestRoundTrip

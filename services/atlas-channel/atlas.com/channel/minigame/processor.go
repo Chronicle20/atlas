@@ -2,10 +2,10 @@ package minigame
 
 import (
 	minigame2 "atlas-channel/kafka/message/minigame"
-	"atlas-channel/kafka/producer"
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/google/uuid"

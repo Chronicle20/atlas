@@ -5,8 +5,8 @@ import (
 
 	consumer2 "atlas-maps/kafka/consumer"
 	sessionKafka "atlas-maps/kafka/message/session"
-	"atlas-maps/kafka/producer"
 	timer "atlas-maps/map/timer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"

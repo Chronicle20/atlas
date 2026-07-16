@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldCoconut
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CField_Coconut::BasicActionAttack
+    address: "0x52699c"
+    decompile_sha256: de6f232e43e4c9a051ee0028e662109fc4af5cdd0852843f071ed70b18f0f09e
+verifies:
+    - libs/atlas-packet/field/serverbound/coconut_test.go#TestCoconutByteOutputV72

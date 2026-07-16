@@ -2,10 +2,12 @@
 import { DataTableWrapper } from "@/components/common/DataTableWrapper";
 import { getColumns } from "@/pages/templates-columns";
 import { useState } from "react";
-import { useTemplates, useCreateTemplate, useDeleteTemplate } from "@/lib/hooks/api/useTemplates";
+import { useTemplatesPage, useCreateTemplate, useDeleteTemplate } from "@/lib/hooks/api/useTemplates";
 import { useGridRefresh } from "@/lib/hooks/useGridRefresh";
 import { templatesService, onboardingService, ConfigurationCreationError } from "@/services/api";
 import type { Template } from "@/types/models/template";
+import { Pager } from "@/components/common/Pager";
+import { useSearchParams } from "react-router-dom";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -45,15 +47,28 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+const PAGE_SIZE = 50;
+
 export function TemplatesPage() {
-    const templatesQuery = useTemplates();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const pageNumber = Math.max(1, Number.parseInt(searchParams.get("page") ?? "1", 10) || 1);
+
+    const templatesQuery = useTemplatesPage({ number: pageNumber, size: PAGE_SIZE });
     const createTemplate = useCreateTemplate();
     const deleteTemplate = useDeleteTemplate();
     const { isRefreshing, onRefresh } = useGridRefresh([templatesQuery]);
 
-    const templates = templatesQuery.data ?? [];
+    const templates = templatesQuery.data?.data ?? [];
+    const meta = templatesQuery.data?.meta ?? null;
     const loading = templatesQuery.isLoading;
     const error = templatesQuery.error?.message ?? null;
+
+    const handlePageChange = (nextPage: number) => {
+        const next = new URLSearchParams(searchParams);
+        if (nextPage > 1) next.set("page", String(nextPage));
+        else next.delete("page");
+        setSearchParams(next, { replace: false });
+    };
 
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [templateToDelete, setTemplateToDelete] = useState<string | null>(null);
@@ -209,9 +224,9 @@ export function TemplatesPage() {
                 </div>
             </div>
             <div className="mt-4">
-                <DataTableWrapper 
-                    columns={columns} 
-                    data={templates} 
+                <DataTableWrapper
+                    columns={columns}
+                    data={templates}
                     error={error}
                     onRefresh={onRefresh}
                     isRefreshing={isRefreshing}
@@ -220,6 +235,15 @@ export function TemplatesPage() {
                         description: "There are no templates to display at this time."
                     }}
                 />
+                {meta && templates.length > 0 && (
+                    <Pager
+                        page={meta.page.number}
+                        lastPage={meta.page.last}
+                        total={meta.total}
+                        pageSize={meta.page.size}
+                        onPageChange={handlePageChange}
+                    />
+                )}
             </div>
 
             {/* Delete Confirmation Dialog */}

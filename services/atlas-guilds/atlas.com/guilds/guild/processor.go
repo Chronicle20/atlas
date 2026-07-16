@@ -9,16 +9,17 @@ import (
 	"atlas-guilds/invite"
 	"atlas-guilds/kafka/message"
 	guild2 "atlas-guilds/kafka/message/guild"
-	"atlas-guilds/kafka/producer"
 	"atlas-guilds/party"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"strings"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -35,10 +36,11 @@ const (
 
 type Processor interface {
 	WithTransaction(tx *gorm.DB) Processor
-	AllProvider() model.Provider[[]Model]
+	AllProvider(page model.Page) model.Provider[model.Paged[Model]]
+	ByNameLikeProvider(name string, page model.Page) model.Provider[model.Paged[Model]]
+	ByMemberIdProvider(memberId uint32, page model.Page) model.Provider[model.Paged[Model]]
 	ByIdProvider(guildId uint32) model.Provider[Model]
 	ByNameProvider(worldId world.Id, name string) model.Provider[Model]
-	GetSlice(filters ...model.Filter[Model]) ([]Model, error)
 	GetById(guildId uint32) (Model, error)
 	GetByName(worldId world.Id, name string) (Model, error)
 	GetByMemberId(memberId uint32) (Model, error)
@@ -87,6 +89,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 	return &ProcessorImpl{
 		l:   p.l,
@@ -96,23 +100,47 @@ func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 	}
 }
 
-func (p *ProcessorImpl) AllProvider() model.Provider[[]Model] {
-	return model.SliceMap(Make)(getAll()(p.db.WithContext(p.ctx)))()
+func (p *ProcessorImpl) AllProvider(page model.Page) model.Provider[model.Paged[Model]] {
+	ep := getAll(page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(Make)(ep)(model.ParallelMap())
 }
 
-func MemberFilter(memberId uint32) model.Filter[Model] {
-	return func(m Model) bool {
-		for _, mm := range m.members {
-			if mm.CharacterId() == memberId {
-				return true
-			}
-		}
-		return false
+func (p *ProcessorImpl) ByNameLikeProvider(name string, page model.Page) model.Provider[model.Paged[Model]] {
+	ep := getByNameLike(name, page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(Make)(ep)(model.ParallelMap())
+}
+
+// singleModelPage wraps a single already-resolved Model as a one-item paged
+// collection, matching PagedQuery's page-slicing semantics (any page number
+// other than 1 sees an empty Items but the same Total). Used by
+// ByMemberIdProvider, which is bounded to 0-or-1 results by construction (a
+// character belongs to at most one guild) so a DB-level LIMIT/OFFSET query
+// is unnecessary.
+func singleModelPage(m Model, page model.Page) model.Paged[Model] {
+	if page.Number != 1 {
+		return model.Paged[Model]{Items: []Model{}, Total: 1, Page: page}
 	}
+	return model.Paged[Model]{Items: []Model{m}, Total: 1, Page: page}
 }
 
-func (p *ProcessorImpl) GetSlice(filters ...model.Filter[Model]) ([]Model, error) {
-	return model.FilteredProvider(p.AllProvider(), model.Filters[Model](filters...))()
+// ByMemberIdProvider resolves the guild (if any) a member belongs to and
+// wraps it as a page. Reuses GetByMemberId (character->guild lookup, kept in
+// lockstep with guild membership by member.AddMember/RemoveMember running in
+// the same transaction as the character-cache update), so this shares the
+// exact same tenant-scoped, always-consistent data source that
+// GetByMemberId's other callers rely on rather than re-deriving guild
+// membership from a second, independently-scanned source.
+func (p *ProcessorImpl) ByMemberIdProvider(memberId uint32, page model.Page) model.Provider[model.Paged[Model]] {
+	return func() (model.Paged[Model], error) {
+		g, err := p.GetByMemberId(memberId)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return model.Paged[Model]{Items: []Model{}, Total: 0, Page: page}, nil
+			}
+			return model.Paged[Model]{}, err
+		}
+		return singleModelPage(g, page), nil
+	}
 }
 
 func (p *ProcessorImpl) ByIdProvider(guildId uint32) model.Provider[Model] {
@@ -296,10 +324,12 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(worldId world.Id) func(l
 
 func (p *ProcessorImpl) CreateAndEmit(worldId world.Id, leaderId uint32, name string) (Model, error) {
 	var m Model
-	err := message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		var err error
-		m, err = p.Create(mb)(worldId)(leaderId)(name)
-		return err
+	err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			var err error
+			m, err = p.WithTransaction(tx).Create(mb)(worldId)(leaderId)(name)
+			return err
+		})
 	})
 	return m, err
 }
@@ -356,8 +386,10 @@ func (p *ProcessorImpl) CreationAgreementResponse(mb *message.Buffer) func(chara
 }
 
 func (p *ProcessorImpl) CreationAgreementResponseAndEmit(characterId uint32, agreed bool, transactionId uuid.UUID) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		return p.CreationAgreementResponse(mb)(characterId)(agreed)(transactionId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.WithTransaction(tx).CreationAgreementResponse(mb)(characterId)(agreed)(transactionId)
+		})
 	})
 }
 
@@ -386,8 +418,10 @@ func (p *ProcessorImpl) ChangeEmblem(mb *message.Buffer) func(guildId uint32) fu
 }
 
 func (p *ProcessorImpl) ChangeEmblemAndEmit(guildId uint32, characterId uint32, logo uint16, logoColor byte, logoBackground uint16, logoBackgroundColor byte, transactionId uuid.UUID) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		return p.ChangeEmblem(mb)(guildId)(characterId)(logo)(logoColor)(logoBackground)(logoBackgroundColor)(transactionId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.WithTransaction(tx).ChangeEmblem(mb)(guildId)(characterId)(logo)(logoColor)(logoBackground)(logoBackgroundColor)(transactionId)
+		})
 	})
 }
 
@@ -414,8 +448,10 @@ func (p *ProcessorImpl) UpdateMemberOnline(mb *message.Buffer) func(characterId 
 }
 
 func (p *ProcessorImpl) UpdateMemberOnlineAndEmit(characterId uint32, online bool, transactionId uuid.UUID) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		return p.UpdateMemberOnline(mb)(characterId)(online)(transactionId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.WithTransaction(tx).UpdateMemberOnline(mb)(characterId)(online)(transactionId)
+		})
 	})
 }
 
@@ -438,8 +474,10 @@ func (p *ProcessorImpl) ChangeNotice(mb *message.Buffer) func(guildId uint32) fu
 }
 
 func (p *ProcessorImpl) ChangeNoticeAndEmit(guildId uint32, characterId uint32, notice string, transactionId uuid.UUID) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		return p.ChangeNotice(mb)(guildId)(characterId)(notice)(transactionId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.WithTransaction(tx).ChangeNotice(mb)(guildId)(characterId)(notice)(transactionId)
+		})
 	})
 }
 
@@ -468,8 +506,10 @@ func (p *ProcessorImpl) Leave(mb *message.Buffer) func(guildId uint32) func(char
 }
 
 func (p *ProcessorImpl) LeaveAndEmit(guildId uint32, characterId uint32, force bool, transactionId uuid.UUID) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		return p.Leave(mb)(guildId)(characterId)(force)(transactionId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.WithTransaction(tx).Leave(mb)(guildId)(characterId)(force)(transactionId)
+		})
 	})
 }
 
@@ -527,8 +567,10 @@ func (p *ProcessorImpl) Join(mb *message.Buffer) func(guildId uint32) func(chara
 }
 
 func (p *ProcessorImpl) JoinAndEmit(guildId uint32, characterId uint32, transactionId uuid.UUID) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		return p.Join(mb)(guildId)(characterId)(transactionId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.WithTransaction(tx).Join(mb)(guildId)(characterId)(transactionId)
+		})
 	})
 }
 
@@ -557,8 +599,10 @@ func (p *ProcessorImpl) ChangeTitles(mb *message.Buffer) func(guildId uint32) fu
 }
 
 func (p *ProcessorImpl) ChangeTitlesAndEmit(guildId uint32, characterId uint32, titles []string, transactionId uuid.UUID) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		return p.ChangeTitles(mb)(guildId)(characterId)(titles)(transactionId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.WithTransaction(tx).ChangeTitles(mb)(guildId)(characterId)(titles)(transactionId)
+		})
 	})
 }
 
@@ -590,8 +634,10 @@ func (p *ProcessorImpl) ChangeMemberTitle(mb *message.Buffer) func(guildId uint3
 }
 
 func (p *ProcessorImpl) ChangeMemberTitleAndEmit(guildId uint32, characterId uint32, targetId uint32, title byte, transactionId uuid.UUID) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		return p.ChangeMemberTitle(mb)(guildId)(characterId)(targetId)(title)(transactionId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.WithTransaction(tx).ChangeMemberTitle(mb)(guildId)(characterId)(targetId)(title)(transactionId)
+		})
 	})
 }
 
@@ -624,8 +670,10 @@ func (p *ProcessorImpl) RequestDisband(mb *message.Buffer) func(characterId uint
 }
 
 func (p *ProcessorImpl) RequestDisbandAndEmit(characterId uint32, transactionId uuid.UUID) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		return p.RequestDisband(mb)(characterId)(transactionId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.WithTransaction(tx).RequestDisband(mb)(characterId)(transactionId)
+		})
 	})
 }
 
@@ -652,7 +700,9 @@ func (p *ProcessorImpl) RequestCapacityIncrease(mb *message.Buffer) func(charact
 }
 
 func (p *ProcessorImpl) RequestCapacityIncreaseAndEmit(characterId uint32, transactionId uuid.UUID) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		return p.RequestCapacityIncrease(mb)(characterId)(transactionId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.WithTransaction(tx).RequestCapacityIncrease(mb)(characterId)(transactionId)
+		})
 	})
 }

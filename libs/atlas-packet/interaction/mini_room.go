@@ -3,8 +3,6 @@ package interaction
 import (
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
-	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	"github.com/sirupsen/logrus"
@@ -23,31 +21,30 @@ const (
 	CashTradeMiniRoomType    MiniRoomType = 6 // CCashTradingRoomDlg
 )
 
-type MiniRoom interface {
-	Type() MiniRoomType
-	Is(mrt MiniRoomType) bool
-	Capacity() byte
-	Visitors() []MiniRoomVisitor
-	Spawn(characterId uint32) packet.Encode
-	Despawn(characterId uint32) packet.Encode
-	Enter(characterId uint32) packet.Encode
-}
-
 type MiniRoomVisitor interface {
 	Enter() packet.Encode
 }
 
+// MiniRoomBase is the field-level mini-room balloon that attaches to a player's
+// avatar (UPDATE_CHAR_BOX / CUser::OnMiniRoomBalloon). The full room interior is
+// encoded separately by the Room type (room.go); only Spawn/Despawn are on the
+// wire for the avatar box.
 type MiniRoomBase struct {
 	MiniRoomTypeVal MiniRoomType
 	Id              uint32
 	Title           string
 	Private         bool
-	GameKind        byte
-	GameOn          bool
-	CapacityVal     byte
-	OwnerId         uint32
-	VisitorCount    byte
-	VisitorList     []MiniRoomVisitor
+	// Spec is the balloon's nSpec byte (CUser::OnMiniRoomBalloon reads it as the
+	// 5th Decode1 and passes it to CChatBalloon::MakeMiniRoomBalloon as nSpec).
+	// Its meaning is per room type: for a personal shop (type 4) it is the
+	// store-sign skin index (WZ .../PSSkin/<Spec>); for a game room it is the
+	// game kind. Left 0 for the plain personal-store sign.
+	Spec         byte
+	GameOn       bool
+	CapacityVal  byte
+	OwnerId      uint32
+	VisitorCount byte
+	VisitorList  []MiniRoomVisitor
 }
 
 func (m *MiniRoomBase) Type() MiniRoomType {
@@ -75,7 +72,7 @@ func (m *MiniRoomBase) Spawn(characterId uint32) packet.Encode {
 			w.WriteInt(m.Id)
 			w.WriteAsciiString(m.Title)
 			w.WriteBool(m.Private)
-			w.WriteByte(m.GameKind)
+			w.WriteByte(m.Spec)
 			w.WriteByte(m.VisitorCount)
 			w.WriteByte(m.CapacityVal)
 			w.WriteBool(m.GameOn)
@@ -94,185 +91,3 @@ func (m *MiniRoomBase) Despawn(characterId uint32) packet.Encode {
 		}
 	}
 }
-
-func (m *MiniRoomBase) Enter(_ uint32) packet.Encode {
-	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		return func(options map[string]interface{}) []byte {
-			l.Fatalf("concrete implementation needed")
-			return []byte{}
-		}
-	}
-}
-
-// NOTE: game mini rooms (Omok / Match Cards) are intentionally NOT modelled
-// here. The removed GameMiniRoom.Enter encode (interleaved avatar+record
-// list, no yourSlot byte) did not match the client read order; the verified
-// game room-enter blob lives in clientbound.InteractionMiniGameRoom
-// (ida-notes.md §G5 "Room-enter blob — FULL RESOLUTION").
-
-func NewTradeMiniRoom(owner MiniRoomVisitorBase) MiniRoom {
-	visitors := make([]MiniRoomVisitor, 0)
-	visitors = append(visitors, &owner)
-	return &MiniRoomBase{
-		MiniRoomTypeVal: TradeMiniRoomType,
-		CapacityVal:     2,
-		VisitorList:     visitors,
-	}
-}
-
-type PersonalShopMiniRoom struct {
-	*MiniRoomBase
-	MaxItemCount byte
-	Items        []ShopItem
-}
-
-func (m *PersonalShopMiniRoom) Enter(_ uint32) packet.Encode {
-	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		return func(options map[string]interface{}) []byte {
-			w.WriteByte(byte(m.Type()))
-			w.WriteByte(m.Capacity())
-			for _, v := range m.Visitors() {
-				w.WriteByteArray(v.Enter()(l, ctx)(options))
-			}
-			w.WriteByte(0xFF)
-			w.WriteAsciiString(m.Title)
-			w.WriteByte(m.MaxItemCount)
-			w.WriteByte(byte(len(m.Items)))
-			for _, i := range m.Items {
-				w.WriteShort(i.PerBundle)
-				w.WriteShort(i.Quantity)
-				w.WriteInt(i.Price)
-				w.WriteByteArray(i.Asset.Encode(l, ctx)(options))
-			}
-			return w.Bytes()
-		}
-	}
-}
-
-func NewPersonalShopMiniRoom(owner MiniRoomVisitorBase) MiniRoom {
-	visitors := make([]MiniRoomVisitor, 0)
-	visitors = append(visitors, &owner)
-	return &PersonalShopMiniRoom{
-		MiniRoomBase: &MiniRoomBase{
-			MiniRoomTypeVal: PersonalShopMiniRoomType,
-			CapacityVal:     4,
-			VisitorList:     visitors,
-		},
-		MaxItemCount: 16,
-	}
-}
-
-type ShopItem struct {
-	PerBundle uint16
-	Quantity  uint16
-	Price     uint32
-	Asset     model.Asset
-}
-
-type MiniRoomMessage struct {
-	Message string
-	Slot    byte
-}
-
-type MerchantShopMiniRoom struct {
-	*MiniRoomBase
-	OwnerName    string
-	Meso         uint32
-	MaxItemCount byte
-	Messages     []MiniRoomMessage
-	Items        []ShopItem
-}
-
-func (m *MerchantShopMiniRoom) Enter(characterId uint32) packet.Encode {
-	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		return func(options map[string]interface{}) []byte {
-			w.WriteByte(byte(m.Type()))
-			w.WriteByte(m.Capacity())
-			for _, v := range m.Visitors() {
-				w.WriteByteArray(v.Enter()(l, ctx)(options))
-			}
-			w.WriteByte(0xFF)
-			if characterId == m.OwnerId {
-				w.WriteShort(uint16(len(m.Messages)))
-				for _, i := range m.Messages {
-					w.WriteAsciiString(i.Message)
-					w.WriteByte(i.Slot)
-				}
-			} else {
-				w.WriteShort(0)
-			}
-			w.WriteAsciiString(m.OwnerName)
-			w.WriteByte(m.MaxItemCount)
-			w.WriteInt(m.Meso)
-			w.WriteByte(byte(len(m.Items)))
-			for _, i := range m.Items {
-				w.WriteShort(i.PerBundle)
-				w.WriteShort(i.Quantity)
-				w.WriteInt(i.Price)
-				w.WriteByteArray(i.Asset.Encode(l, ctx)(options))
-			}
-			return w.Bytes()
-		}
-	}
-}
-
-func NewMerchantShopMiniRoom(owner MerchantOwnerVisitor) MiniRoom {
-	visitors := make([]MiniRoomVisitor, 0)
-	visitors = append(visitors, &owner)
-	return &MerchantShopMiniRoom{
-		MiniRoomBase: &MiniRoomBase{
-			MiniRoomTypeVal: MerchantShopMiniRoomType,
-			CapacityVal:     4,
-			VisitorList:     visitors,
-		},
-		MaxItemCount: 16,
-	}
-}
-
-func NewCashTradeMiniRoom(owner MiniRoomVisitorBase) MiniRoom {
-	visitors := make([]MiniRoomVisitor, 0)
-	visitors = append(visitors, &owner)
-	return &MiniRoomBase{
-		MiniRoomTypeVal: CashTradeMiniRoomType,
-		CapacityVal:     2,
-		VisitorList:     visitors,
-	}
-}
-
-type MiniRoomVisitorBase struct {
-	Name   string
-	Slot   byte
-	Avatar model.Avatar
-}
-
-func (m *MiniRoomVisitorBase) Enter() packet.Encode {
-	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		return func(options map[string]interface{}) []byte {
-			w.WriteByte(m.Slot)
-			w.WriteByteArray(m.Avatar.Encode(l, ctx)(options))
-			w.WriteAsciiString(m.Name)
-			return w.Bytes()
-		}
-	}
-}
-
-type MerchantOwnerVisitor struct {
-	ItemId       item.Id
-	MerchantName string
-}
-
-func (m *MerchantOwnerVisitor) Enter() packet.Encode {
-	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		return func(options map[string]interface{}) []byte {
-			w.WriteByte(0)
-			w.WriteInt(uint32(m.ItemId))
-			w.WriteAsciiString(m.MerchantName)
-			return w.Bytes()
-		}
-	}
-}
-

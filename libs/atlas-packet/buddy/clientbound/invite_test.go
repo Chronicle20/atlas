@@ -33,7 +33,7 @@ func TestBuddyInviteByteOutput(t *testing.T) {
 		wantBytes   int
 		hasJobLevel bool
 	}{
-		{pt.Variants[0], 57, false}, // GMS v28  — no jobId/level
+		{pt.Variants[0], 40, false}, // GMS v28  — no jobId/level; FriendGroup absent (GMS < 72, buddy groups postdate v61 @0x4b54d8): GW_Friend = 22 → 1+4+12+22+1 = 40
 		{pt.Variants[1], 57, false}, // GMS v83  — no jobId/level
 		{pt.Variants[2], 65, true},  // GMS v87  — with jobId+level
 		{pt.Variants[3], 65, true},  // GMS v95  — with jobId+level

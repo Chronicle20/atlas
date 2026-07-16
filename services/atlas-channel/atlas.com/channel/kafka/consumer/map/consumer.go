@@ -46,12 +46,14 @@ import (
 	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
 	interactionpkt "github.com/Chronicle20/atlas/libs/atlas-packet/interaction"
 	interactioncb "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/clientbound"
+	merchantcb "github.com/Chronicle20/atlas/libs/atlas-packet/merchant/clientbound"
 	monsterpkt "github.com/Chronicle20/atlas/libs/atlas-packet/monster/clientbound"
 	npcpkt "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
 	petpkt "github.com/Chronicle20/atlas/libs/atlas-packet/pet/clientbound"
 	reactorpkt "github.com/Chronicle20/atlas/libs/atlas-packet/reactor/clientbound"
 	summonpkt "github.com/Chronicle20/atlas/libs/atlas-packet/summon/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
@@ -179,7 +181,7 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 			}
 		}
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			for k, v := range cms {
 				if k != s.CharacterId() {
 					for _, p := range v.Pets() {
@@ -191,7 +193,7 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 					}
 				}
 			}
-		}()
+		})
 
 		// spawn the entering character's OWN spawned pets back to themselves.
 		// enterMap spawns self's pets to other players, and the loop above spawns
@@ -199,7 +201,7 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 		// change, cash-shop return) nothing re-sends the owner's own pet to the
 		// owner. Without this the pet stays invisible to its owner even though it
 		// is still spawned (slot >= 0).
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			cp := character.NewProcessor(l, ctx)
 			self, err := cp.GetById(cp.InventoryDecorator, cp.PetAssetEnrichmentDecorator)(s.CharacterId())
 			if err != nil {
@@ -213,80 +215,80 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 					}
 				}
 			}
-		}()
+		})
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			if err := npc2.NewProcessor(l, ctx).ForEachInMap(f.MapId(), spawnNPCForSession(l)(ctx)(wp)(s)); err != nil {
 				l.WithError(err).Errorf("SpawnForSelf: unable to spawn npcs for character [%d].", s.CharacterId())
 			}
-		}()
+		})
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			if err := monster.NewProcessor(l, ctx).ForEachInMap(f, spawnMonsterForSession(l)(ctx)(wp)(s)); err != nil {
 				l.WithError(err).Debugf("SpawnForSelf: unable to spawn monsters for character [%d].", s.CharacterId())
 			}
-		}()
+		})
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			if err := summoncmd.NewProcessor(l, ctx).ForEachInMap(f, spawnSummonForSession(l)(ctx)(wp)(s)); err != nil {
 				l.WithError(err).Debugf("SpawnForSelf: unable to spawn summons for character [%d].", s.CharacterId())
 			}
-		}()
+		})
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			if err := drop.NewProcessor(l, ctx).ForEachInMap(f, spawnDropsForSession(l)(ctx)(wp)(s)); err != nil {
 				l.WithError(err).Debugf("SpawnForSelf: unable to spawn drops for character [%d].", s.CharacterId())
 			}
-		}()
+		})
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			if err := reactor.NewProcessor(l, ctx).ForEachInMap(f, spawnReactorsForSession(l)(ctx)(wp)(s)); err != nil {
 				l.WithError(err).Debugf("SpawnForSelf: unable to spawn reactors for character [%d].", s.CharacterId())
 			}
-		}()
+		})
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			if err := door.NewProcessor(l, ctx).ForEachInMap(f, spawnDoorsForSession(l)(ctx)(wp)(s)); err != nil {
 				l.WithError(err).Debugf("SpawnForSelf: unable to spawn doors for character [%d].", s.CharacterId())
 			}
-		}()
-		go func() {
+		})
+		routine.Go(l, ctx, func(_ context.Context) {
 			// Town side: render the walkable town door to a player entering the
 			// return town (FR-3.2/FR-3.4) — the area-side spawn above misses it.
 			spawnTownDoorsForSession(l, ctx, wp, s)
-		}()
+		})
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			if err := chalkboard.NewProcessor(l, ctx).ForEachInMap(f, spawnChalkboardsForSession(l)(ctx)(wp)(s)); err != nil {
 				l.WithError(err).Debugf("SpawnForSelf: unable to spawn chalkboards for character [%d].", s.CharacterId())
 			}
-		}()
+		})
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			if err := chair.NewProcessor(l, ctx).ForEachInMap(f, spawnChairsForSession(l)(ctx)(wp)(s)); err != nil {
 				l.WithError(err).Debugf("SpawnForSelf: unable to spawn chairs for character [%d].", s.CharacterId())
 			}
-		}()
+		})
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			if err := merchant.NewProcessor(l, ctx).ForEachInField(f, spawnMerchantsForSession(l)(ctx)(wp)(s)); err != nil {
 				l.WithError(err).Debugf("SpawnForSelf: unable to spawn merchants for character [%d].", s.CharacterId())
 			}
-		}()
+		})
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			if err := minigame.NewProcessor(l, ctx).ForEachInField(f, spawnMiniGamesForSession(l)(ctx)(wp)(s)); err != nil {
 				l.WithError(err).Debugf("SpawnForSelf: unable to spawn mini-games for character [%d].", s.CharacterId())
 			}
-		}()
+		})
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			if err := hpsync.Sync(l, ctx, wp, s.Field(), s.CharacterId()); err != nil {
 				l.WithError(err).Debugf("SpawnForSelf: unable to sync party member HP for character [%d].", s.CharacterId())
 			}
-		}()
+		})
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			md, err := mapData.NewProcessor(l, ctx).GetById(f.MapId())
 			if err != nil {
 				l.WithError(err).Errorf("SpawnForSelf: unable to retrieve map data for map [%d].", f.MapId())
@@ -296,9 +298,9 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 				now := time.Now()
 				_ = session.Announce(l)(ctx)(wp)(fieldcb.ClockWriter)(fieldcb.NewTownClock(byte(now.Hour()), byte(now.Minute()), byte(now.Second())).Encode)(s)
 			}
-		}()
+		})
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			hasShip, err := route.NewProcessor(l, ctx).IsBoatInMap(f.MapId())
 			if err != nil {
 				l.WithError(err).Errorf("SpawnForSelf: unable to retrieve boat data for map [%d].", f.MapId())
@@ -309,9 +311,9 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 			} else {
 				_ = session.Announce(l)(ctx)(wp)(fieldcb.FieldTransportStateWriter)(fieldcb.NewFieldTransport(fieldcb.TransportStateMove1, false).Encode)(s)
 			}
-		}()
+		})
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			timer, terr := party_quest.NewProcessor(l, ctx).GetTimerByCharacterId(s.CharacterId())
 			if terr != nil {
 				return
@@ -320,9 +322,9 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 				return
 			}
 			_ = session.Announce(l)(ctx)(wp)(fieldcb.ClockWriter)(fieldcb.NewTimerClock(uint32(timer.Duration().Seconds())).Encode)(s)
-		}()
+		})
 
-		go func() {
+		routine.Go(l, ctx, func(_ context.Context) {
 			we, werr := weather.NewProcessor(l, ctx).GetActive(f)
 			if werr != nil {
 				return
@@ -339,7 +341,7 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 			if ci.StateChangeItem > 0 {
 				applyConsumableEffectSaga(l, saga.NewProcessor(l, ctx), s.CharacterId(), f, ci.StateChangeItem)
 			}
-		}()
+		})
 
 		return nil
 	}
@@ -385,7 +387,7 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 			}
 
 			// spawn self's pets for every other player in the map
-			go func() {
+			routine.Go(l, ctx, func(_ context.Context) {
 				for _, k := range ids {
 					if k == s.CharacterId() {
 						continue
@@ -405,7 +407,7 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 						}
 					}
 				}
-			}()
+			})
 
 			// "spawn world for self" (SpawnForSelf) is handled by the SetField-writing
 			// path (session bootstrap and warpCharacter) to guarantee packet ordering.
@@ -676,13 +678,28 @@ func spawnMerchantsForSession(l logrus.FieldLogger) func(ctx context.Context) fu
 		return func(wp writer.Producer) func(s session.Model) model.Operator[merchant.Model] {
 			return func(s session.Model) model.Operator[merchant.Model] {
 				return func(m merchant.Model) error {
-					miniRoomType := interactionpkt.MerchantShopMiniRoomType
-					if m.ShopType() == 1 {
-						miniRoomType = interactionpkt.PersonalShopMiniRoomType
+					if m.ShopType() == merchant.HiredMerchantShopType {
+						// Hired merchant renders as a standalone employee NPC (D1); spawn
+						// it to the entering player.
+						ownerName := ""
+						if c, err := character.NewProcessor(l, ctx).GetById()(m.CharacterId()); err != nil {
+							l.WithError(err).Warnf("Unable to resolve hired-merchant owner [%d] name for field spawn.", m.CharacterId())
+						} else {
+							ownerName = c.Name()
+						}
+						spawn := merchant.ToEmployeeSpawn(m, ownerName)
+						return session.Announce(l)(ctx)(wp)(merchantcb.MerchantEmployeeSpawnWriter)(spawn.Encode)(s)
 					}
+					// Personal store: box on the owner's avatar.
 					mr := &interactionpkt.MiniRoomBase{
-						MiniRoomTypeVal: miniRoomType,
+						MiniRoomTypeVal: interactionpkt.PersonalShopMiniRoomType,
+						// Id = dwMiniRoomSN: the client echoes it as the visit
+						// serialNumber and the server resolves via
+						// GetByCharacterId(serialNumber), so it must be the owner's
+						// character id (task-127; see merchant consumer note).
+						Id:              m.CharacterId(),
 						Title:           m.Title(),
+						Spec:            merchant.StoreSkinSpec(m.PermitItemId()),
 						CapacityVal:     4,
 						OwnerId:         m.CharacterId(),
 						VisitorCount:    byte(len(m.Visitors())),
@@ -729,7 +746,9 @@ func handleStatusEventWeatherStart(sc server.Model, wp writer.Producer) func(l l
 			l.WithError(err).Errorf("Unable to broadcast weather start to map [%d] instance [%s].", e.MapId, e.Instance)
 		}
 
-		go applyWeatherEffects(l, ctx, wp, f, e.Body.ItemId)
+		routine.Go(l, ctx, func(_ context.Context) {
+			applyWeatherEffects(l, ctx, wp, f, e.Body.ItemId)
+		})
 	}
 }
 

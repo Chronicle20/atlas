@@ -23,6 +23,15 @@ const (
 	CharacterInteractionModeChatThing      CharacterInteractionMode = "CHAT_THING"      // 8
 	CharacterInteractionModeLeave          CharacterInteractionMode = "LEAVE"           // 10
 	CharacterInteractionModeUpdateMerchant CharacterInteractionMode = "UPDATE_MERCHANT" // 25
+	// CharacterInteractionModePersonalStoreItemSold is the per-sale sold-item
+	// notification to the owner (CPersonalShopDlg::OnSoldItemResult). Its byte is
+	// UPDATE_MERCHANT+1 in every version (v48 23, v61/72 24, v79 25, v83+ 26).
+	CharacterInteractionModePersonalStoreItemSold CharacterInteractionMode = "PERSONAL_STORE_ITEM_SOLD"
+	// The hired-merchant view responses echo the request mode byte: the client
+	// decodes them under the same operation constants it sends
+	// (CEntrustedShopDlg::OnPacket sub_51870D cases 0x2E/0x2F).
+	CharacterInteractionModeMerchantViewVisitList CharacterInteractionMode = "MERCHANT_VIEW_VISIT_LIST" // 46
+	CharacterInteractionModeMerchantViewBlackList CharacterInteractionMode = "MERCHANT_VIEW_BLACK_LIST" // 47
 
 	CharacterInteractionEnterErrorModeRoomClosed                CharacterInteractionEnterErrorMode = "ROOM_CLOSED"                   // 1
 	CharacterInteractionEnterErrorModeFull                      CharacterInteractionEnterErrorMode = "FULL"                          // 2
@@ -110,11 +119,37 @@ func CharacterInteractionEnterBody(visitor interaction.Visitor) func(logrus.Fiel
 // CharacterInteractionLeaveBody notifies a client that a visitor has left the room.
 // CMiniRoomBaseDlg::OnLeaveBase (v95 0x637510) reads only Decode1(slot); the trailing
 // status byte is consumed by the subclass virtual OnLeave (e.g. CTradingRoomDlg::OnLeave),
-// so the full mode-10 wire shape is mode + slot + status.
+// so the full mode-10 wire shape is mode + slot + status. status 0 = silent close
+// (correct for a voluntary self-exit); use CharacterInteractionLeaveReasonBody to send
+// a reason that shows a message.
 func CharacterInteractionLeaveBody(slot byte, status byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeLeave, func(mode byte) packet.Encoder {
 		return NewInteractionLeave(mode, slot, status)
 	})
+}
+
+// Leave-reason keys resolved via the "leaveReason" tenant writer table. The
+// status byte is client-interpreted (CPersonalShopDlg::OnLeave switch, v95
+// @0x699c40): values not in the switch — including 0 — render an empty Notice
+// dialog, so an ejected visitor must receive a mapped reason (DOM-25).
+const (
+	CharacterInteractionLeaveReasonShopClosed = "SHOP_CLOSED"  // 3  "The shop is closed."
+	CharacterInteractionLeaveReasonUserBanned = "USER_BANNED"  // 5  "The user has been banned."
+	CharacterInteractionLeaveReasonOutOfStock = "OUT_OF_STOCK" // 14 "The items are out of stock."
+)
+
+// CharacterInteractionLeaveReasonBody sends a LEAVE whose status byte is resolved
+// from the tenant "leaveReason" table, so the ejected visitor sees the correct
+// message instead of an empty dialog. reason is one of the
+// CharacterInteractionLeaveReason* keys.
+func CharacterInteractionLeaveReasonBody(slot byte, reason string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			mode := atlas_packet.ResolveCode(l, options, "operations", CharacterInteractionModeLeave)
+			status := atlas_packet.ResolveCode(l, options, "leaveReason", reason)
+			return NewInteractionLeave(mode, slot, status).Encode(l, ctx)(options)
+		}
+	}
 }
 
 func CharacterInteractionUpdateMerchantBody(meso uint32, items []interaction.RoomShopItem) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
@@ -239,5 +274,47 @@ func CharacterInteractionMiniGameCardSelectSecondBody(slot byte, firstSlot byte,
 func CharacterInteractionMiniGameResultBody(resultType byte, visitorWon bool, ownerRecord interaction.GameRecord, visitorRecord interaction.GameRecord) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeMemoryGameResult, func(mode byte) packet.Encoder {
 		return NewInteractionMiniGameResult(mode, resultType, visitorWon, ownerRecord, visitorRecord)
+	})
+}
+
+// CharacterInteractionUpdatePersonalShopBody is the mode-25 refresh for a
+// personal shop (item 514): same shape as the merchant refresh but WITHOUT the
+// leading meso field, which only the hired-merchant client reads.
+func CharacterInteractionUpdatePersonalShopBody(items []interaction.RoomShopItem) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeUpdateMerchant, func(mode byte) packet.Encoder {
+		return NewInteractionUpdatePersonalShop(mode, items)
+	})
+}
+
+// CharacterInteractionPersonalStoreItemSoldBody sends the owner the sold-item
+// notification for one sale (item index in the shop's listing display, bundles
+// purchased, and the buyer's name). The client appends it to the sold ledger
+// and advances the running totals.
+func CharacterInteractionPersonalStoreItemSoldBody(itemIndex byte, bundleCount uint16, buyerName string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModePersonalStoreItemSold, func(mode byte) packet.Encoder {
+		return NewInteractionPersonalShopItemSold(mode, itemIndex, bundleCount, buyerName)
+	})
+}
+
+func CharacterInteractionVisitListBody(entries []InteractionVisitListEntry) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeMerchantViewVisitList, func(mode byte) packet.Encoder {
+		conv := make([]VisitListEntry, 0, len(entries))
+		for _, e := range entries {
+			conv = append(conv, VisitListEntry{Name: e.Name, Count: e.Count})
+		}
+		return NewInteractionVisitList(mode, conv)
+	})
+}
+
+// InteractionVisitListEntry is the caller-facing entry shape (avoids exporting
+// the codec's internal type through the body signature).
+type InteractionVisitListEntry struct {
+	Name  string
+	Count uint32
+}
+
+func CharacterInteractionBlackListBody(names []string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeMerchantViewBlackList, func(mode byte) packet.Encoder {
+		return NewInteractionBlackList(mode, names)
 	})
 }

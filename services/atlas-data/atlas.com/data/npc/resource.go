@@ -12,6 +12,7 @@ import (
 	"atlas-data/quest"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -60,27 +61,33 @@ func handleGetNpcsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 			storebankFilter := query.Get("filter[storebank]") == "true"
 
 			if hasSearch || storebankFilter {
-				handleSearchNpcs(db)(d, c)(searchQuery, hasSearch, storebankFilter, query.Get("limit"))(w, r)
+				handleSearchNpcs(db)(d, c)(searchQuery, hasSearch, storebankFilter)(w, r)
+				return
+			}
+
+			page, err := paginate.ParseParams(query, paginate.DefaultPageSize, paginate.MaxPageSize)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, err.Error())
 				return
 			}
 
 			s := NewStorage(d.Logger(), db)
-			results, err := s.GetAll(d.Context())
+			paged, err := s.AllPagedProvider(d.Context())(page)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to retrieve NPCs.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(results)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 		}
 	}
 }
 
-func handleSearchNpcs(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) func(q string, hasSearch, storebank bool, limitRaw string) http.HandlerFunc {
-	return func(d *rest.HandlerDependency, c *rest.HandlerContext) func(q string, hasSearch, storebank bool, limitRaw string) http.HandlerFunc {
-		return func(q string, hasSearch, storebank bool, limitRaw string) http.HandlerFunc {
+func handleSearchNpcs(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) func(q string, hasSearch, storebank bool) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) func(q string, hasSearch, storebank bool) http.HandlerFunc {
+		return func(q string, hasSearch, storebank bool) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				if hasSearch && q == "" {
 					w.WriteHeader(http.StatusBadRequest)
@@ -90,17 +97,11 @@ func handleSearchNpcs(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Handl
 					w.WriteHeader(http.StatusBadRequest)
 					return
 				}
-				limit := searchindex.MaxLimit
-				if limitRaw != "" {
-					parsed, err := strconv.Atoi(limitRaw)
-					if err != nil || parsed <= 0 {
-						w.WriteHeader(http.StatusBadRequest)
-						return
-					}
-					if parsed > searchindex.MaxLimit {
-						parsed = searchindex.MaxLimit
-					}
-					limit = parsed
+				query := r.URL.Query()
+				page, err := paginate.ParseParams(query, searchindex.MaxLimit, searchindex.MaxLimit)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, err.Error())
+					return
 				}
 
 				spec := searchindex.QuerySpec[SearchIndexEntity]{
@@ -116,21 +117,29 @@ func handleSearchNpcs(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Handl
 				tenantId, err := searchindex.ResolveTenantId(db, d.Context(), spec)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("NPC tenant resolve failed.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
+				offset := (page.Number - 1) * page.Size
 				start := time.Now()
 				var rows []SearchIndexEntity
+				var total int
 				if hasSearch {
-					rows, err = searchindex.Search(db, d.Context(), tenantId, q, 0, limit, spec)
+					rows, err = searchindex.Search(db, d.Context(), tenantId, q, offset, page.Size, spec)
+					if err == nil {
+						total, err = searchindex.Count(db, d.Context(), tenantId, q, spec)
+					}
 				} else {
-					rows, err = searchindex.SearchWithFilter(db, d.Context(), tenantId, 0, limit, spec)
+					rows, err = searchindex.SearchWithFilter(db, d.Context(), tenantId, offset, page.Size, spec)
+					if err == nil {
+						total, err = searchindex.CountWithFilter(db, d.Context(), tenantId, spec)
+					}
 				}
 				elapsedMs := time.Since(start).Milliseconds()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("NPC search failed.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -149,9 +158,9 @@ func handleSearchNpcs(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Handl
 					rms = append(rms, SearchResultRestModel{Id: row.NpcId, Name: row.Name, Storebank: row.Storebank})
 				}
 
-				query := r.URL.Query()
+				env := paginate.Envelope{Total: total, PageNumber: page.Number, PageSize: page.Size}
 				queryParams := jsonapi.ParseQueryFields(&query)
-				server.MarshalResponse[[]SearchResultRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rms)
+				server.MarshalPaginatedResponse[[]SearchResultRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rms, env, r)
 			}
 		}
 	}
@@ -161,6 +170,13 @@ func handleGetNpcMapsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *res
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseNPC(d.Logger(), func(npcId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
+				query := r.URL.Query()
+				page, err := paginate.ParseParams(query, paginate.DefaultPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, err.Error())
+					return
+				}
+
 				t, err := tenant.FromContext(d.Context())()
 				if err != nil {
 					w.WriteHeader(http.StatusBadRequest)
@@ -175,7 +191,7 @@ func handleGetNpcMapsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *res
 					Find(&rows).Error
 				if qerr != nil {
 					d.Logger().WithError(qerr).Errorf("Unable to retrieve NPC spawn maps for npcId=%d.", npcId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(qerr)
 					return
 				}
 
@@ -203,9 +219,9 @@ func handleGetNpcMapsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *res
 					"elapsed_ms": elapsedMs,
 				}).Debugf("NPC spawn maps served.")
 
-				query := r.URL.Query()
+				paged := paginate.Slice(rms, page)
 				queryParams := jsonapi.ParseQueryFields(&query)
-				server.MarshalResponse[[]NpcMapRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rms)
+				server.MarshalPaginatedResponse[[]NpcMapRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 			}
 		})
 	}
@@ -215,6 +231,13 @@ func handleGetNpcQuestsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *r
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseNPC(d.Logger(), func(npcId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
+				query := r.URL.Query()
+				page, err := paginate.ParseParams(query, paginate.DefaultPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, err.Error())
+					return
+				}
+
 				t, err := tenant.FromContext(d.Context())()
 				if err != nil {
 					w.WriteHeader(http.StatusBadRequest)
@@ -223,10 +246,10 @@ func handleGetNpcQuestsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *r
 
 				start := time.Now()
 				s := quest.NewStorage(d.Logger(), db)
-				all, qerr := s.GetAll(d.Context())
+				all, qerr := s.DrainAllProvider(d.Context())()
 				if qerr != nil {
 					d.Logger().WithError(qerr).Errorf("Unable to retrieve quests for npcId=%d.", npcId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(qerr)
 					return
 				}
 
@@ -251,9 +274,9 @@ func handleGetNpcQuestsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *r
 					"elapsed_ms": elapsedMs,
 				}).Debugf("NPC quests served.")
 
-				query := r.URL.Query()
+				paged := paginate.Slice(filtered, page)
 				queryParams := jsonapi.ParseQueryFields(&query)
-				server.MarshalResponse[[]quest.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(filtered)
+				server.MarshalPaginatedResponse[[]quest.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 			}
 		})
 	}

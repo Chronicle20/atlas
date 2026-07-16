@@ -34,8 +34,14 @@ func TestPartyDataTownPortalRoundTrip(t *testing.T) {
 			r := request.NewRequestReader(&req, 0)
 			got, leaderId := ReadPartyData(ctx, &r)
 
-			if leaderId != 100 {
-				t.Fatalf("leaderId: got %d, want 100", leaderId)
+			// GMS legacy (< v61) PARTYDATA carries no leaderId field, so it
+			// round-trips as 0 (task-113 v48 close-I). v28 folds into that shape.
+			wantLeader := uint32(100)
+			if v.Region == "GMS" && v.MajorVersion < 61 {
+				wantLeader = 0
+			}
+			if leaderId != wantLeader {
+				t.Fatalf("leaderId: got %d, want %d", leaderId, wantLeader)
 			}
 			if len(got) != 2 {
 				t.Fatalf("members: got %d, want 2", len(got))

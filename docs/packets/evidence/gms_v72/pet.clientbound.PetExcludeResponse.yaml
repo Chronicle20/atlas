@@ -1,0 +1,10 @@
+packet: pet/clientbound/PetExcludeResponse
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CPet::OnLoadExceptionList
+    address: "0x66da46"
+    decompile_sha256: 776a0078b23f58efbbc181bd85a72dde98087876c8ecd9081197c594cab92c97
+verifies:
+  - libs/atlas-packet/pet/clientbound/exclude_test.go#TestPetExcludeResponseBytesV72

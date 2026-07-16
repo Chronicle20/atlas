@@ -34,10 +34,11 @@ func (m BuffCancel) Encode(l logrus.FieldLogger, ctx context.Context) func(optio
 	}
 }
 
-func (m *BuffCancel) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *BuffCancel) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.cts = *model.NewCharacterTemporaryStat()
-		_ = m.cts.DecodeMask(r)
+		_ = m.cts.DecodeMask(r, t)
 		_ = r.ReadByte() // tSwallowBuffTime
 	}
 }
@@ -70,11 +71,12 @@ func (m BuffCancelForeign) Encode(l logrus.FieldLogger, ctx context.Context) fun
 	}
 }
 
-func (m *BuffCancelForeign) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *BuffCancelForeign) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.characterId = r.ReadUint32()
 		m.cts = *model.NewCharacterTemporaryStat()
-		_ = m.cts.DecodeMask(r)
+		_ = m.cts.DecodeMask(r, t)
 		_ = r.ReadByte() // tSwallowBuffTime
 	}
 }

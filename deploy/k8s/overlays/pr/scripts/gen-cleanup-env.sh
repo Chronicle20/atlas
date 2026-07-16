@@ -29,12 +29,37 @@ mkdir -p "$(dirname "$OUT")"
 # (see cleanup.sh do_drop_images).
 ATLAS_SERVICES=$(jq -r '.services[].name' "$SERVICES_JSON" | sort | paste -sd, -)
 
-# ATLAS_DB_NAMES is a static literal duplicated from
-# deploy/k8s/overlays/pr/kustomization.yaml's atlas-db-names
-# configMapGenerator. It is NOT derivable from services.json today —
-# DB-name ownership lives on the kustomize side. Keep in sync by
-# review.
-ATLAS_DB_NAMES="atlas-accounts atlas-bans atlas-buddies atlas-cashshop atlas-characters atlas-configurations atlas-data atlas-drops atlas-fame atlas-gachapons atlas-guilds atlas-inventory atlas-keys atlas-map-actions atlas-maps atlas-merchant atlas-mini-games atlas-monster-book atlas-notes atlas-npc-conversations atlas-npc-shops atlas-party-quests atlas-pets atlas-portal-actions atlas-quest atlas-reactor-actions atlas-saga-orchestrator atlas-skills atlas-storage atlas-tenants"
+# ATLAS_DB_NAMES is DERIVED from the single source of truth — the
+# atlas-db-names configMapGenerator literal in
+# deploy/k8s/overlays/pr/kustomization.yaml (the same list the
+# wave0-create-dbs Job uses to CREATE the per-env databases). We extract
+# it here rather than duplicate a hand-maintained literal, because that
+# duplication silently drifted: atlas-mounts was never added to the
+# cleanup list and atlas-mts was added here but never mirrored to the
+# live cluster-infra ConfigMap, so both services' DBs leaked on every PR
+# teardown (the DROP loop never named them). Deriving from the create
+# list makes the teardown DROP set identical to the create set by
+# construction; the existing CI staleness check on the generated example
+# file catches any un-regenerated change.
+KUSTOMIZATION="$ROOT/deploy/k8s/overlays/pr/kustomization.yaml"
+# Parse defensively. The literal is conventionally unquoted
+# (`- ATLAS_DB_NAMES=atlas-accounts ... atlas-tenants`), but strip a
+# surrounding quote pair and any trailing inline comment so a future
+# quoted/commented edit can't smuggle a corrupt token (e.g. a stray
+# `atlas-tenants"`) into a DROP DATABASE statement and re-leak that DB.
+raw="$(grep -m1 -E '^[[:space:]]*- ATLAS_DB_NAMES=' "$KUSTOMIZATION" \
+    | sed -E 's/^[[:space:]]*- ATLAS_DB_NAMES=//; s/[[:space:]]*#.*$//; s/^["'\'']//; s/["'\'']$//')"
+ATLAS_DB_NAMES="$(printf '%s' "$raw" | tr -s '[:space:]' ' ' | sed -E 's/^ //; s/ $//')"
+: "${ATLAS_DB_NAMES:?failed to extract ATLAS_DB_NAMES from $KUSTOMIZATION}"
+# Validate every token is a well-formed atlas-<svc> name. The `:?` guard
+# above only rejects an EMPTY parse; a malformed-but-nonempty parse (wrong
+# line, stray quote/comment) would otherwise emit a DROP list whose bad
+# token no-ops at teardown and re-leaks its DB — the exact failure class
+# this generator exists to prevent. Fail the generator (and thus CI) loudly.
+for tok in $ATLAS_DB_NAMES; do
+    printf '%s\n' "$tok" | grep -qE '^atlas-[a-z0-9-]+$' \
+        || { echo "gen-cleanup-env.sh: refusing to emit malformed DB name '$tok' parsed from $KUSTOMIZATION" >&2; exit 1; }
+done
 
 cat > "$OUT" <<EOF
 # Not deployed from this repo. Mirror into cluster-infra (argocd

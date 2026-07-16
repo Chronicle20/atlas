@@ -1,0 +1,10 @@
+packet: party/clientbound/PartyMemberHP
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CUserRemote::OnReceiveHP
+    address: "0x8d9b90"
+    decompile_sha256: db5a10759502316873789a4eb1515f2665f20b3d6bcc70cab82878feff3555c3
+verifies:
+  - libs/atlas-packet/party/clientbound/member_hp_test.go#TestPartyMemberHPV79

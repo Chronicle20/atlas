@@ -1,0 +1,10 @@
+packet: drop/clientbound/DropDestroy
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CDropPool::OnDropLeaveField
+    address: "0x4c9dc2"
+    decompile_sha256: b6d261060e32f85f92ea5aa38254451595319d9a189d8284282c3f31316da614
+verifies:
+    - libs/atlas-packet/drop/clientbound/destroy_test.go#TestDropDestroyByteOutputV61

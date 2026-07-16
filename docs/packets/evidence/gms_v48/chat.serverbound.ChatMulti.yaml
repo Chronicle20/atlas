@@ -1,0 +1,10 @@
+packet: chat/serverbound/ChatMulti
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_65EB4F
+    address: "0x65eb4f"
+    decompile_sha256: 9faa36c7488e034b0dac7c7fb8aa587b3091b6bde97f1cf35db29055aa345e66
+verifies:
+    - libs/atlas-packet/chat/serverbound/v48_test.go#TestMultiV48Body

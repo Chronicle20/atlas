@@ -6,6 +6,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -31,20 +32,29 @@ func (m ShopOperationIncreaseCharacterSlot) String() string {
 	return fmt.Sprintf("isPoints [%t], currency [%d], serialNumber [%d]", m.isPoints, m.currency, m.serialNumber)
 }
 
-func (m ShopOperationIncreaseCharacterSlot) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m ShopOperationIncreaseCharacterSlot) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
+	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
 		w.WriteBool(m.isPoints)
-		w.WriteInt(m.currency)
+		// v79 CCashShop::OnIncCharacterSlotCount@0x4673be: COutPacket(221)
+		// Encode1(9)=mode (routed op), Encode1(v30==2)=isPoints, Encode4(a2)=
+		// serialNumber. No currency int (that was added at/after v83).
+		if !legacyGMS(t) {
+			w.WriteInt(m.currency)
+		}
 		w.WriteInt(m.serialNumber)
 		return w.Bytes()
 	}
 }
 
-func (m *ShopOperationIncreaseCharacterSlot) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *ShopOperationIncreaseCharacterSlot) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.isPoints = r.ReadBool()
-		m.currency = r.ReadUint32()
+		if !legacyGMS(t) {
+			m.currency = r.ReadUint32()
+		}
 		m.serialNumber = r.ReadUint32()
 	}
 }

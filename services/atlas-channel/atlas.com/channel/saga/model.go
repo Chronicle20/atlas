@@ -27,11 +27,15 @@ type (
 	FieldEffectWeatherPayload    = sharedsaga.FieldEffectWeatherPayload
 
 	// Storage payload types
-	DepositToStoragePayload      = sharedsaga.DepositToStoragePayload
-	UpdateStorageMesosPayload    = sharedsaga.UpdateStorageMesosPayload
-	TransferToStoragePayload     = sharedsaga.TransferToStoragePayload
-	WithdrawFromStoragePayload   = sharedsaga.WithdrawFromStoragePayload
-	WithdrawFromCashShopPayload  = sharedsaga.WithdrawFromCashShopPayload
+	DepositToStoragePayload     = sharedsaga.DepositToStoragePayload
+	UpdateStorageMesosPayload   = sharedsaga.UpdateStorageMesosPayload
+	TransferToStoragePayload    = sharedsaga.TransferToStoragePayload
+	WithdrawFromStoragePayload  = sharedsaga.WithdrawFromStoragePayload
+	WithdrawFromCashShopPayload = sharedsaga.WithdrawFromCashShopPayload
+
+	// Point-reset payload types
+	TransferAPPayload = sharedsaga.TransferAPPayload
+	TransferSPPayload = sharedsaga.TransferSPPayload
 )
 
 // Re-export constants from atlas-saga shared library
@@ -42,6 +46,7 @@ const (
 	CashShopOperation    = sharedsaga.CashShopOperation
 	CharacterRespawn     = sharedsaga.CharacterRespawn
 	FieldEffectUse       = sharedsaga.FieldEffectUse
+	PointReset           = sharedsaga.PointReset
 
 	// Status constants
 	Pending   = sharedsaga.Pending
@@ -49,25 +54,27 @@ const (
 	Failed    = sharedsaga.Failed
 
 	// Action constants
-	AwardMesos           = sharedsaga.AwardMesos
-	UpdateStorageMesos   = sharedsaga.UpdateStorageMesos
-	AwardAsset           = sharedsaga.AwardAsset
-	DestroyAsset         = sharedsaga.DestroyAsset
-	DepositToStorage     = sharedsaga.DepositToStorage
-	TransferToStorage    = sharedsaga.TransferToStorage
-	WithdrawFromStorage  = sharedsaga.WithdrawFromStorage
-	TransferToCashShop   = sharedsaga.TransferToCashShop
-	WithdrawFromCashShop = sharedsaga.WithdrawFromCashShop
-	AcceptToStorage      = sharedsaga.AcceptToStorage
-	ReleaseFromCharacter = sharedsaga.ReleaseFromCharacter
-	AcceptToCharacter    = sharedsaga.AcceptToCharacter
-	ReleaseFromStorage   = sharedsaga.ReleaseFromStorage
-	SetHP                = sharedsaga.SetHP
-	DeductExperience     = sharedsaga.DeductExperience
-	CancelAllBuffs       = sharedsaga.CancelAllBuffs
-	WarpToPortal         = sharedsaga.WarpToPortal
-	FieldEffectWeather   = sharedsaga.FieldEffectWeather
+	AwardMesos            = sharedsaga.AwardMesos
+	UpdateStorageMesos    = sharedsaga.UpdateStorageMesos
+	AwardAsset            = sharedsaga.AwardAsset
+	DestroyAsset          = sharedsaga.DestroyAsset
+	DepositToStorage      = sharedsaga.DepositToStorage
+	TransferToStorage     = sharedsaga.TransferToStorage
+	WithdrawFromStorage   = sharedsaga.WithdrawFromStorage
+	TransferToCashShop    = sharedsaga.TransferToCashShop
+	WithdrawFromCashShop  = sharedsaga.WithdrawFromCashShop
+	AcceptToStorage       = sharedsaga.AcceptToStorage
+	ReleaseFromCharacter  = sharedsaga.ReleaseFromCharacter
+	AcceptToCharacter     = sharedsaga.AcceptToCharacter
+	ReleaseFromStorage    = sharedsaga.ReleaseFromStorage
+	SetHP                 = sharedsaga.SetHP
+	DeductExperience      = sharedsaga.DeductExperience
+	CancelAllBuffs        = sharedsaga.CancelAllBuffs
+	WarpToPortal          = sharedsaga.WarpToPortal
+	FieldEffectWeather    = sharedsaga.FieldEffectWeather
 	ApplyConsumableEffect = sharedsaga.ApplyConsumableEffect
+	TransferAP            = sharedsaga.TransferAP
+	TransferSP            = sharedsaga.TransferSP
 )
 
 // TransferToCashShopPayload is kept local because CashId is uint64 here

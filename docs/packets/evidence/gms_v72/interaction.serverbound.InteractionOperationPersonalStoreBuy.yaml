@@ -1,0 +1,10 @@
+packet: interaction/serverbound/InteractionOperationPersonalStoreBuy
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CPersonalShopDlg::BuyItem
+    address: "0x665b58"
+    decompile_sha256: ae9eee789841e0158f27d3d69b6d6aa486b15eb3b8008b8513b50bc650a192ab
+verifies:
+  - libs/atlas-packet/interaction/serverbound/operation_personal_store_buy_test.go#TestOperationPersonalStoreBuyV72Bytes

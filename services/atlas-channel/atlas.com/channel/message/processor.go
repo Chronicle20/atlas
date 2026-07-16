@@ -2,8 +2,8 @@ package message
 
 import (
 	message2 "atlas-channel/kafka/message/message"
-	"atlas-channel/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/sirupsen/logrus"
@@ -36,6 +36,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 	return p
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func MultiChatTypeStrToInd(chatType string) byte {
 	if chatType == message2.ChatTypeBuddy {

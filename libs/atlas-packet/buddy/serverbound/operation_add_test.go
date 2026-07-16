@@ -13,7 +13,15 @@ func TestOperationAddRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-			input := OperationAdd{name: "TestBuddy", group: "Default Group"}
+			// The trailing buddy-group name is only on the wire for GMS v72+
+			// (and JMS); v28/v48/v61 omit it (IDA-verified, see operation_add.go).
+			// Only set/assert group where the version actually carries it, so the
+			// legacy variants round-trip cleanly.
+			hasGroup := v.MajorVersion > 61
+			input := OperationAdd{name: "TestBuddy"}
+			if hasGroup {
+				input.group = "Default Group"
+			}
 			output := OperationAdd{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 			if output.Name() != input.Name() {

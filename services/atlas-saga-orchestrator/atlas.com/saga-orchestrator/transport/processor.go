@@ -50,6 +50,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // StartTransport starts an instance transport for a character
 func (p *ProcessorImpl) StartTransport(routeName string, characterId uint32, worldId world.Id, channelId channel.Id) error {
 	// Resolve route name to UUID

@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldItcOperationBuyAuctionImm
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnBuyAuctionImm
+    address: "0x5299d9"
+    decompile_sha256: b4175b1e51f4c86c89f73194dec3eda778938629165ead09d5feeca6ad6aea23

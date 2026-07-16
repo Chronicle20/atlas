@@ -4,6 +4,7 @@ import (
 	"atlas-chalkboards/character"
 	"atlas-chalkboards/rest"
 	"net/http"
+	"sort"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -11,6 +12,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -58,13 +60,35 @@ func handleGetChalkboardsInMap(d *rest.HandlerDependency, c *rest.HandlerContext
 			return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
 				return rest.ParseInstanceId(d.Logger(), func(instanceId uuid.UUID) http.HandlerFunc {
 					return func(w http.ResponseWriter, r *http.Request) {
+						page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+						if err != nil {
+							server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+							return
+						}
+
 						f := field.NewBuilder(worldId, channelId, mapId).SetInstance(instanceId).Build()
 						cip := character.NewProcessor(d.Logger(), d.Context()).InMapProvider(f)
 						fcip := model.FilteredProvider(cip, model.Filters[uint32](func(cid uint32) bool {
 							_, err := NewProcessor(d.Logger(), d.Context()).GetById(cid)
 							return err == nil
 						}))
-						cimp := model.SliceMap[uint32, Model](NewProcessor(d.Logger(), d.Context()).GetById)(fcip)(model.ParallelMap())
+						cids, err := fcip()
+						if err != nil {
+							d.Logger().WithError(err).Errorf("Retrieving characters in map.")
+							w.WriteHeader(http.StatusInternalServerError)
+							return
+						}
+
+						// Sort by characterId (== RestModel.Id here, a genuinely
+						// unique key per chalkboard), then page BEFORE the
+						// per-item GetById fan-out -- also cuts the N+1 lookup
+						// cost to just the current page.
+						sorted := make([]uint32, len(cids))
+						copy(sorted, cids)
+						sort.Slice(sorted, func(i, j int) bool { return sorted[i] < sorted[j] })
+						paged := paginate.Slice(sorted, page)
+
+						cimp := model.SliceMap[uint32, Model](NewProcessor(d.Logger(), d.Context()).GetById)(model.FixedProvider(paged.Items))(model.ParallelMap())
 
 						res, err := model.SliceMap(Transform)(cimp)(model.ParallelMap())()
 						if err != nil {
@@ -75,7 +99,7 @@ func handleGetChalkboardsInMap(d *rest.HandlerDependency, c *rest.HandlerContext
 
 						query := r.URL.Query()
 						queryParams := jsonapi.ParseQueryFields(&query)
-						server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+						server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
 					}
 				})
 			})

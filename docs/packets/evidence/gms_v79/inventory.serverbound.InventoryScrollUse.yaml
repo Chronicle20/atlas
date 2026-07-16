@@ -1,0 +1,10 @@
+packet: inventory/serverbound/InventoryScrollUse
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendUpgradeItemUseRequest
+    address: "0x954f9b"
+    decompile_sha256: 4604cb29eea050ace251ab2a4707fee24d1f0bd4e18a0526e07fcd4449ad5110
+verifies:
+  - libs/atlas-packet/inventory/serverbound/scroll_use_test.go#TestScrollUseRoundTrip

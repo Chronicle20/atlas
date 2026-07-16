@@ -1,0 +1,30 @@
+{
+  "WriterName": "InteractionOperationPersonalStoreAddToBlackList",
+  "IDAName": "CPersonalShopDlg::OnClickBanButton",
+  "Address": "0x66658a",
+  "Variant": "GMS/v72",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/interaction/serverbound/operation_personal_store_add_to_black_list.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "slot",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "name",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

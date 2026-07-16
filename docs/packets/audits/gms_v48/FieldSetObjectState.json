@@ -1,0 +1,30 @@
+{
+  "WriterName": "FieldSetObjectState",
+  "IDAName": "CField::OnSetObjectState",
+  "Address": "0x4cbe02",
+  "Variant": "GMS/v48",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/set_object_state.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

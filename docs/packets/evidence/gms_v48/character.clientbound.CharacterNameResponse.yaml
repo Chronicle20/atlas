@@ -1,0 +1,10 @@
+packet: character/clientbound/CharacterNameResponse
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_5016DB
+    address: "0x5016db"
+    decompile_sha256: 342a9efa12b03c2cd5f0884aa703f9396222696750fddc1b58cde2dcba43999a
+verifies:
+    - libs/atlas-packet/character/clientbound/name_response_test.go#TestCharacterNameResponseByteOutputV48

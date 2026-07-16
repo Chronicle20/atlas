@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldLeftKnockback
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CField_SnowBall::Update
+    address: "0x4dc55c"
+    decompile_sha256: 12859d55e1b2bc98e59cff24571d25cd8cb2e54c51fbf94ef257eeef9308dbaf

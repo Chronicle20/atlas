@@ -3,8 +3,57 @@ package shop
 import (
 	"testing"
 
+	"atlas-merchant/data/portal"
+
 	"github.com/stretchr/testify/assert"
 )
+
+func mkPortal(name string, ptype uint8, x, y int16, target uint32) portal.Model {
+	p, _ := portal.Extract(portal.RestModel{Id: "0", Name: name, Type: ptype, X: x, Y: y, TargetMapId: target})
+	return p
+}
+
+func TestNearBlockingPortal_SpawnPointExcluded(t *testing.T) {
+	// The exact Free Market failure: character stands on the spawn point ("sp",
+	// type 0, no target). Spawn points do not block placement.
+	portals := []portal.Model{mkPortal("sp", 0, 828, -210, 999999999)}
+	assert.False(t, nearBlockingPortal(828, -146, portals))
+}
+
+func TestNearBlockingPortal_TeleportPortalWithinRange(t *testing.T) {
+	// A real teleport portal (type 1, real target) within 120 blocks placement.
+	portals := []portal.Model{mkPortal("up00", 1, 828, -200, 910000001)}
+	assert.True(t, nearBlockingPortal(828, -146, portals)) // dist 54 < 120
+}
+
+func TestNearBlockingPortal_TeleportPortalOutOfRange(t *testing.T) {
+	portals := []portal.Model{mkPortal("up00", 1, 676, -421, 910000001)}
+	assert.False(t, nearBlockingPortal(828, -146, portals)) // dist ~314 > 120
+}
+
+func TestNearBlockingPortal_MapExitPortalIgnored(t *testing.T) {
+	// type 2 (map-exit) portals are not teleport portals — they never block.
+	portals := []portal.Model{mkPortal("out00", 2, 828, -180, 910000000)}
+	assert.False(t, nearBlockingPortal(828, -146, portals))
+}
+
+func TestNearBlockingPortal_TeleportNoTargetIgnored(t *testing.T) {
+	portals := []portal.Model{mkPortal("up00", 1, 828, -180, 999999999)}
+	assert.False(t, nearBlockingPortal(828, -146, portals))
+}
+
+func TestNearBlockingPortal_FreeMarketRoomAllowsPlacement(t *testing.T) {
+	// Full FM room 910000001 portal set from the live pr-env: standing at
+	// (828,-146) must be allowed — only the nearby "sp" spawn point is in range,
+	// and it is excluded.
+	portals := []portal.Model{
+		mkPortal("sp", 0, 828, -210, 999999999),
+		mkPortal("up00", 1, -274, 30, 910000001),
+		mkPortal("dn00", 1, 676, -421, 910000001),
+		mkPortal("out00", 2, 790, 35, 910000000),
+	}
+	assert.False(t, nearBlockingPortal(828, -146, portals))
+}
 
 func TestIsFreemarketRoom_ValidRooms(t *testing.T) {
 	// Henesys Free Market <1>

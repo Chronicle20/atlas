@@ -1,11 +1,14 @@
 package serverbound
 
 import (
+	"encoding/hex"
 	"testing"
 
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
+	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationTradePutItem version=gms_v79 ida=0x736c99
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationTradePutItem version=gms_v83 ida=0x7c359f
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationTradePutItem version=gms_v95 ida=0x7641d0
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationTradePutItem version=gms_v84 ida=0x7e96e5
@@ -31,5 +34,17 @@ func TestOperationTradePutItemRoundTrip(t *testing.T) {
 				t.Errorf("targetSlot: got %v, want %v", output.TargetSlot(), input.TargetSlot())
 			}
 		})
+	}
+}
+
+// TestOperationTradePutItemV72Bytes pins the GMS v72 legacy body (mode byte is
+// dispatcher-framed, not part of this sub-struct). IDA v72 CTradingRoomDlg::PutItem (sub_6FF1BE): Encode1(0xE)=mode @0x6ff358 then Encode1(invType)@0x6ff363, Encode2(slot)@0x6ff36e, Encode2(qty)@0x6ff379, Encode1(targetSlot)@0x6ff384. Body == v79.
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationTradePutItem version=gms_v72 ida=0x6ff1be
+func TestOperationTradePutItemV72Bytes(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	input := OperationTradePutItem{inventoryType: 2, slot: 5, quantity: 100, targetSlot: 3}
+	got := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 72, 1))(nil))
+	if got != "020500640003" {
+		t.Errorf("v72 bytes: got %s, want 020500640003", got)
 	}
 }

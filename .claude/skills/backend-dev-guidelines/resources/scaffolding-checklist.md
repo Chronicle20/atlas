@@ -2,93 +2,29 @@
 
 When scaffolding a new Atlas service, complete ALL of these steps. Do not skip any.
 
-## 1. GitHub Actions — services.json
-**File:** `.github/config/services.json`
+> **MANDATORY companion:** `docs/adding-a-new-service.md` (repo root) is the
+> canonical checklist of every file a new service must be enumerated in —
+> CI lists, `docker-bake.hcl`, `go.work`, the k8s base, BOTH kustomize
+> overlays (main + pr), database creation, and ingress. Several of those
+> fail *silently* when missed (unpinned `:latest` image, dropped topic env
+> vars, unsuffixed Kafka topics). Work through that doc in full; this file
+> only covers the code-level scaffolding.
 
-Add entry to the `services` array:
-```json
-{
-  "name": "atlas-<service>",
-  "type": "go-service",
-  "path": "services/atlas-<service>",
-  "module_path": "services/atlas-<service>/atlas.com/<service>",
-  "docker_image": "ghcr.io/chronicle20/atlas-<service>/atlas-<service>",
-  "docker_context": "."
-}
-```
-Both workflows (`main-publish.yml`, `pr-validation.yml`) dynamically read this file — no YAML changes needed.
+## 1. Build & CI registration
+Covered by `docs/adding-a-new-service.md` §1: `.github/config/services.json`,
+`docker-bake.hcl` (hand-synced!), `go.work`. There is NO per-service
+Dockerfile — the repo-root `Dockerfile` is shared and parameterized by
+`ARG SERVICE`; verify with `docker buildx bake atlas-<service>`.
 
-## 2. Kubernetes Manifest
-**File:** `deploy/k8s/atlas-<service>.yaml`
+## 2. Kubernetes wiring
+Covered by `docs/adding-a-new-service.md` §2–§6: base manifest at
+`deploy/k8s/base/atlas-<service>.yaml` (no `namespace:` — overlays set it;
+`DB_NAME` gets the unsuffixed base value), base `kustomization.yaml`
+resources entry, base `env-configmap.yaml` topic vars, the main overlay's
+four enumerations (db-name-suffix patch, ATLAS_ENV patch, `images:` pin,
+topic literals), the pr overlay's five, and database creation.
 
-Two resources: Deployment + Service. Pattern:
-```yaml
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: atlas-<service>
-  namespace: atlas
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: atlas-<service>
-  template:
-    metadata:
-      labels:
-        app: atlas-<service>
-    spec:
-      containers:
-      - name: <service>
-        image: ghcr.io/chronicle20/atlas-<service>/atlas-<service>:latest
-        ports:
-        - containerPort: 8080
-        envFrom:
-        - configMapRef:
-            name: atlas-env
-        env:
-        - name: LOG_LEVEL
-          value: "debug"
-        - name: DB_NAME
-          value: "atlas-<service>"
-        - name: DB_USER
-          valueFrom:
-            secretKeyRef:
-              name: db-credentials
-              key: DB_USER
-        - name: DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: db-credentials
-              key: DB_PASSWORD
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: atlas-<service>
-  namespace: atlas
-spec:
-  selector:
-    app: atlas-<service>
-  ports:
-  - protocol: TCP
-    port: 8080
-```
-
-## 3. Dockerfile
-**File:** `services/atlas-<service>/Dockerfile`
-
-Multi-stage Go build. Key points:
-- Builder: `golang:1.25.5-alpine3.21`
-- Runtime: `alpine:3.23`
-- Copy lib module defs first (dependency caching), then create `go.work`, then `go mod download`, then copy source, then build
-- Libs to include: `atlas-constants`, `atlas-kafka`, `atlas-model`, `atlas-rest`, `atlas-tenant`
-- Output binary: `/server`, expose 8080
-- Copy `config.yaml` if present
-- Install `libc6-compat` in runtime image
-
-## 4. Bruno Collection (REST services only)
+## 3. Bruno Collection (REST services only)
 **Directory:** `services/atlas-<service>/.bruno/`
 
 Minimum files:
@@ -151,7 +87,7 @@ vars {
 
 Optionally add sample request `.bru` files for the service's endpoints.
 
-## 5. Ingress Route (REST services only)
+## 4. Ingress Route (REST services only)
 **File:** `deploy/shared/routes.conf`
 
 Add a location block **alphabetically** in the shared routes file (single-sourced for K8s and compose):
@@ -163,7 +99,7 @@ location ~ ^/api/<service-path>(/.*)?$ {
 
 After editing, run `./deploy/scripts/sync-k8s-ingress-routes.sh` to regenerate the inlined K8s ConfigMap in `deploy/k8s/ingress.yaml`.
 
-## 6. Tenant Opcode Template (atlas-channel packet writers/handlers only)
+## 5. Tenant Opcode Template (atlas-channel packet writers/handlers only)
 **File:** `services/atlas-configurations/seed-data/templates/template_<region>_<major>_<minor>.json`
 
 Atlas tenants are seeded from these JSON templates the first time they are created. If your service introduces new packet writers or recv handlers in `atlas-channel` (i.e., the change touches `libs/atlas-packet/character/{clientbound,serverbound}/<feature>/` or registers new `Writer`/`Handler` constants in `services/atlas-channel/atlas.com/channel/main.go`), seed the corresponding opcode rows in **every targeted template** so fresh tenants get the mappings without manual operator action.
@@ -189,10 +125,11 @@ If the feature targets a single client version (e.g. v83-only), only that templa
 
 Operators creating a tenant from a snapshot taken before this change still need the rows applied via `atlas-tenants` admin; the seed templates only affect tenants instantiated post-merge.
 
-## 7. Post-Scaffold Verification
-After scaffolding is complete, run these skills to verify the work:
-1. `/service-doc` — generates/verifies service documentation
-2. `/backend-audit` — audits against Atlas backend developer guidelines
+## 6. Post-Scaffold Verification
+After scaffolding is complete:
+1. Run `tools/service-registration-guard.sh` (machine-checks every registration list; also a CI job), then the remaining commands in `docs/adding-a-new-service.md` §Verification (overlay renders, ghcr tag existence, bake build)
+2. `/service-doc` — generates/verifies service documentation
+3. `/backend-audit` — audits against Atlas backend developer guidelines
 
 ## Database & Tenant Filtering Notes
 - `database.Connect()` automatically registers GORM tenant-filtering callbacks — do NOT add `RegisterTenantCallbacks` to `main.go`
@@ -202,5 +139,5 @@ After scaffolding is complete, run these skills to verify the work:
 - Entity structs should use `TenantId` (not `TenantID`) for field naming consistency
 
 ## Conditional Steps
-- Steps 4 and 5 only apply to services that expose REST endpoints. Kafka-only services skip Bruno and ingress.
-- Step 6 only applies when the change introduces new atlas-channel packet writers or recv handlers. Pure-REST services and Kafka-only services skip the opcode template seed.
+- Steps 3 and 4 only apply to services that expose REST endpoints. Kafka-only services skip Bruno and ingress.
+- Step 5 only applies when the change introduces new atlas-channel packet writers or recv handlers. Pure-REST services and Kafka-only services skip the opcode template seed.

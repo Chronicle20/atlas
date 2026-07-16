@@ -1,0 +1,10 @@
+packet: character/clientbound/StatusMessageDropPickUpInventoryFull
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMessage#DropPickUpInventoryFull
+    address: "0x96aeec"
+    decompile_sha256: e80277c3f73361b35fadc70af54c50bfe7aed9645b936e38ca04cc02a6df39aa
+verifies:
+  - libs/atlas-packet/character/clientbound/status_message_test.go#TestStatusMessageDropPickUpInventoryFull

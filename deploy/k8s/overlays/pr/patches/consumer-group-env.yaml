@@ -500,6 +500,21 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: atlas-mts
+spec:
+  template:
+    spec:
+      containers:
+        - name: mts
+          env:
+            - name: KAFKA_CONSUMER_GROUP
+              value: "MTS Service [PLACEHOLDER_ATLAS_ENV]"
+            - name: ATLAS_ENV
+              value: "PLACEHOLDER_ATLAS_ENV"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: atlas-notes
 spec:
   template:

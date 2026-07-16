@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"atlas-saga-orchestrator/kafka/message/consumable"
-	"atlas-saga-orchestrator/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
@@ -34,6 +34,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		ctx: ctx,
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // ApplyConsumableEffect sends a Kafka command to atlas-consumables to apply item effects
 func (p *ProcessorImpl) ApplyConsumableEffect(transactionId uuid.UUID, ch channel.Model, characterId character.Id, itemId item.Id) error {

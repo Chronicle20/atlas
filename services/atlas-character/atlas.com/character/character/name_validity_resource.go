@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 type NameValidityResponse struct {
@@ -32,7 +33,7 @@ func handleGetNameValidity(d *rest.HandlerDependency, _ *rest.HandlerContext) ht
 		res, err := NewProcessor(d.Logger(), d.Context(), d.DB()).CheckNameValidity(name, world.Id(wid))
 		if err != nil {
 			d.Logger().WithError(err).Error("name-validity check failed")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")

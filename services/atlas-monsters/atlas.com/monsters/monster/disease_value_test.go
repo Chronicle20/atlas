@@ -7,7 +7,7 @@ import (
 )
 
 // Stat-flag mob debuffs (SEAL/DARKNESS/WEAKEN/STUN/CURSE/SEDUCE/CONFUSE/UNDEAD/FEAR)
-// have no `x` in the WZ — Cosmic's giveDebuff writes a literal 1 into the wire
+// have no `x` in the WZ — the server writes a literal 1 into the wire
 // nValue field. The v83 client treats nValue==0 as "stat not applied" and
 // suppresses the debuff icon plus flag-gated effects (e.g. SEAL skill block,
 // WEAKEN jump block).

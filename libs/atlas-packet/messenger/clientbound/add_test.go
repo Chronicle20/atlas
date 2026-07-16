@@ -37,7 +37,15 @@ func TestMessengerAddRoundTrip(t *testing.T) {
 			if output.Name() != input.Name() {
 				t.Errorf("name: got %v, want %v", output.Name(), input.Name())
 			}
-			if output.ChannelId() != input.ChannelId() {
+			// channelId + pad are on the wire from GMS v48 onward (IDA-verified
+			// sub_61B860/sub_6D144E/0x777b25/0x8511fc); only the ancient GMS<=28
+			// wire omits them — see legacyAdd() / v61_test.go / v48_test.go.
+			legacy := v.Region == "GMS" && v.MajorVersion <= 28
+			if legacy {
+				if output.ChannelId() != 0 {
+					t.Errorf("legacy channelId must be absent (0); got %v", output.ChannelId())
+				}
+			} else if output.ChannelId() != input.ChannelId() {
 				t.Errorf("channelId: got %v, want %v", output.ChannelId(), input.ChannelId())
 			}
 			// Avatar face/hair not written for GMS v28 — check equipment which is always present

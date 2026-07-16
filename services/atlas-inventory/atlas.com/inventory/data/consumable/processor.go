@@ -3,6 +3,7 @@ package consumable
 import (
 	"context"
 
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
 )
@@ -17,7 +18,7 @@ type ProcessorImpl struct {
 	ctx context.Context
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *ProcessorImpl {
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
@@ -25,24 +26,15 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *ProcessorImpl {
 	return p
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) GetById(itemId uint32) (Model, error) {
 	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(itemId), Extract)()
 }
 
 func (p *ProcessorImpl) GetRechargeable() ([]Model, error) {
-	restModels, err := requestRechargeable()(p.l, p.ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	models := make([]Model, 0, len(restModels))
-	for _, rm := range restModels {
-		m, err := Extract(rm)
-		if err != nil {
-			return nil, err
-		}
-		models = append(models, m)
-	}
-
-	return models, nil
+	// atlas-data's GET /data/consumables?filter[rechargeable]=true is now
+	// paginated (task-117); this drains every page rather than fetching one,
+	// since callers need the complete rechargeable set.
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(rechargeableUrl(), 250, Extract, model.Filters[Model]())()
 }

@@ -33,6 +33,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	return &ProcessorImpl{l: l, ctx: ctx, db: db}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) SelectReward(gachaponId string) (Model, error) {
 	g, err := gachapon.NewProcessor(p.l, p.ctx, p.db).GetById(gachaponId)
 	if err != nil {

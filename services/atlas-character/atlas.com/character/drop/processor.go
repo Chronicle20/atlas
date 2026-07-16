@@ -2,8 +2,8 @@ package drop
 
 import (
 	drop2 "atlas-character/kafka/message/drop"
-	"atlas-character/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/sirupsen/logrus"
@@ -26,6 +26,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		ctx: ctx,
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) CreateForMesos(field field.Model, mesos uint32, dropType byte, x int16, y int16, ownerId uint32) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(drop2.EnvCommandTopic)(dropMesoProvider(field, mesos, dropType, x, y, ownerId))

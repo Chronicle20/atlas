@@ -31,6 +31,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // SendMessage persists a chat message for a shop.
 func (p *ProcessorImpl) SendMessage(shopId uuid.UUID, characterId uint32, content string) error {
 	_, err := create(p.t.Id(), shopId, characterId, content)(p.db.WithContext(p.ctx))()

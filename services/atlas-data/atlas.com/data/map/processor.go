@@ -1,7 +1,6 @@
 package _map
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-data/map/monster"
 	"atlas-data/map/npc"
 	"atlas-data/map/portal"
@@ -12,6 +11,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"math"
 	"path/filepath"
 	"strconv"
@@ -23,20 +23,45 @@ import (
 	"gorm.io/gorm"
 )
 
-func Register(s *Storage) func(ctx context.Context) func(r model.Provider[RestModel]) error {
-	return func(ctx context.Context) func(r model.Provider[RestModel]) error {
-		return func(r model.Provider[RestModel]) error {
-			m, err := r()
-			if err != nil {
-				return err
-			}
-			_, err = s.Add(ctx)(m)()
-			if err != nil {
-				return err
-			}
-			return nil
-		}
+type Processor interface {
+	Register(s *Storage, r model.Provider[RestModel]) error
+	RegisterMap(path string) error
+	GetPortals(s *Storage, mapId _map.Id) ([]portal.RestModel, error)
+	GetPortalsByName(s *Storage, mapId _map.Id, name string) ([]portal.RestModel, error)
+	GetPortalById(s *Storage, mapId _map.Id, portalId uint32) (portal.RestModel, error)
+	GetReactors(s *Storage, mapId _map.Id) ([]reactor.RestModel, error)
+	GetNpcs(s *Storage, mapId _map.Id) ([]npc.RestModel, error)
+	GetNpcsByObjectId(s *Storage, mapId _map.Id, objectId uint32) ([]npc.RestModel, error)
+	GetNpc(s *Storage, mapId _map.Id, npcId uint32) (npc.RestModel, error)
+	GetMonsters(s *Storage, ms *monstertpl.Storage, mapId _map.Id) ([]monster.RestModel, error)
+}
+
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+	db  *gorm.DB
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
+	return &ProcessorImpl{
+		l:   l,
+		ctx: ctx,
+		db:  db,
 	}
+}
+
+var _ Processor = (*ProcessorImpl)(nil)
+
+func (p *ProcessorImpl) Register(s *Storage, r model.Provider[RestModel]) error {
+	m, err := r()
+	if err != nil {
+		return err
+	}
+	_, err = s.Add(p.ctx)(m)()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func extractPathAndID(path string) (string, uint32, error) {
@@ -61,20 +86,14 @@ func extractPathAndID(path string) (string, uint32, error) {
 	return dir, uint32(id), nil
 }
 
-func RegisterMap(db *gorm.DB) func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
-	return func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
-		return func(ctx context.Context) func(path string) error {
-			return func(path string) error {
-				parentPath, mapId, err := extractPathAndID(path)
-				if err != nil {
-					return err
-				}
-				return database.ExecuteTransaction(db, func(tx *gorm.DB) error {
-					return Register(NewStorage(l, tx))(ctx)(Read(l)(ctx)(parentPath, mapId, xml.FromParentPathProvider(9)))
-				})
-			}
-		}
+func (p *ProcessorImpl) RegisterMap(path string) error {
+	parentPath, mapId, err := extractPathAndID(path)
+	if err != nil {
+		return err
 	}
+	return database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		return p.Register(NewStorage(p.l, tx), Read(p.l)(p.ctx)(parentPath, mapId, xml.FromParentPathProvider(9)))
+	})
 }
 
 func bSearchDropPos(tree FootholdTreeRestModel, initial point.RestModel, fallback point.RestModel) point.RestModel {
@@ -236,40 +255,24 @@ func (f *FootholdTreeRestModel) InsertSingle(foothold FootholdRestModel) *Footho
 	return f
 }
 
-func portalProvider(s *Storage) func(ctx context.Context) func(mapId _map.Id) model.Provider[[]portal.RestModel] {
-	return func(ctx context.Context) func(mapId _map.Id) model.Provider[[]portal.RestModel] {
-		return func(mapId _map.Id) model.Provider[[]portal.RestModel] {
-			m, err := s.ByIdProvider(ctx)(strconv.Itoa(int(mapId)))()
-			if err != nil {
-				return model.ErrorProvider[[]portal.RestModel](err)
-			}
-			return model.FixedProvider(m.Portals)
-		}
+func (p *ProcessorImpl) portalProvider(s *Storage, mapId _map.Id) model.Provider[[]portal.RestModel] {
+	m, err := s.ByIdProvider(p.ctx)(strconv.Itoa(int(mapId)))()
+	if err != nil {
+		return model.ErrorProvider[[]portal.RestModel](err)
 	}
+	return model.FixedProvider(m.Portals)
 }
 
-func GetPortals(s *Storage) func(ctx context.Context) func(mapId _map.Id) ([]portal.RestModel, error) {
-	return func(ctx context.Context) func(mapId _map.Id) ([]portal.RestModel, error) {
-		return func(mapId _map.Id) ([]portal.RestModel, error) {
-			return portalProvider(s)(ctx)(mapId)()
-		}
-	}
+func (p *ProcessorImpl) GetPortals(s *Storage, mapId _map.Id) ([]portal.RestModel, error) {
+	return p.portalProvider(s, mapId)()
 }
 
-func GetPortalsByName(s *Storage) func(ctx context.Context) func(mapId _map.Id, name string) ([]portal.RestModel, error) {
-	return func(ctx context.Context) func(mapId _map.Id, name string) ([]portal.RestModel, error) {
-		return func(mapId _map.Id, name string) ([]portal.RestModel, error) {
-			return model.FilteredProvider(portalProvider(s)(ctx)(mapId), model.Filters(PortalNameFilter(name)))()
-		}
-	}
+func (p *ProcessorImpl) GetPortalsByName(s *Storage, mapId _map.Id, name string) ([]portal.RestModel, error) {
+	return model.FilteredProvider(p.portalProvider(s, mapId), model.Filters(PortalNameFilter(name)))()
 }
 
-func GetPortalById(s *Storage) func(ctx context.Context) func(mapId _map.Id, portalId uint32) (portal.RestModel, error) {
-	return func(ctx context.Context) func(mapId _map.Id, portalId uint32) (portal.RestModel, error) {
-		return func(mapId _map.Id, portalId uint32) (portal.RestModel, error) {
-			return model.First(portalProvider(s)(ctx)(mapId), model.Filters(PortalIdFilter(portalId)))
-		}
-	}
+func (p *ProcessorImpl) GetPortalById(s *Storage, mapId _map.Id, portalId uint32) (portal.RestModel, error) {
+	return model.First(p.portalProvider(s, mapId), model.Filters(PortalIdFilter(portalId)))
 }
 
 func PortalNameFilter(portalName string) model.Filter[portal.RestModel] {
@@ -284,60 +287,36 @@ func PortalIdFilter(portalId uint32) model.Filter[portal.RestModel] {
 	}
 }
 
-func reactorProvider(s *Storage) func(ctx context.Context) func(mapId _map.Id) model.Provider[[]reactor.RestModel] {
-	return func(ctx context.Context) func(mapId _map.Id) model.Provider[[]reactor.RestModel] {
-		return func(mapId _map.Id) model.Provider[[]reactor.RestModel] {
-			m, err := s.ByIdProvider(ctx)(strconv.Itoa(int(mapId)))()
-			if err != nil {
-				return model.ErrorProvider[[]reactor.RestModel](err)
-			}
-			return model.FixedProvider(m.Reactors)
-		}
+func (p *ProcessorImpl) reactorProvider(s *Storage, mapId _map.Id) model.Provider[[]reactor.RestModel] {
+	m, err := s.ByIdProvider(p.ctx)(strconv.Itoa(int(mapId)))()
+	if err != nil {
+		return model.ErrorProvider[[]reactor.RestModel](err)
 	}
+	return model.FixedProvider(m.Reactors)
 }
 
-func GetReactors(s *Storage) func(ctx context.Context) func(mapId _map.Id) ([]reactor.RestModel, error) {
-	return func(ctx context.Context) func(mapId _map.Id) ([]reactor.RestModel, error) {
-		return func(mapId _map.Id) ([]reactor.RestModel, error) {
-			return reactorProvider(s)(ctx)(mapId)()
-		}
-	}
+func (p *ProcessorImpl) GetReactors(s *Storage, mapId _map.Id) ([]reactor.RestModel, error) {
+	return p.reactorProvider(s, mapId)()
 }
 
-func npcProvider(s *Storage) func(ctx context.Context) func(mapId _map.Id) model.Provider[[]npc.RestModel] {
-	return func(ctx context.Context) func(mapId _map.Id) model.Provider[[]npc.RestModel] {
-		return func(mapId _map.Id) model.Provider[[]npc.RestModel] {
-			m, err := s.ByIdProvider(ctx)(strconv.Itoa(int(mapId)))()
-			if err != nil {
-				return model.ErrorProvider[[]npc.RestModel](err)
-			}
-			return model.FixedProvider(m.NPCs)
-		}
+func (p *ProcessorImpl) npcProvider(s *Storage, mapId _map.Id) model.Provider[[]npc.RestModel] {
+	m, err := s.ByIdProvider(p.ctx)(strconv.Itoa(int(mapId)))()
+	if err != nil {
+		return model.ErrorProvider[[]npc.RestModel](err)
 	}
+	return model.FixedProvider(m.NPCs)
 }
 
-func GetNpcs(s *Storage) func(ctx context.Context) func(mapId _map.Id) ([]npc.RestModel, error) {
-	return func(ctx context.Context) func(mapId _map.Id) ([]npc.RestModel, error) {
-		return func(mapId _map.Id) ([]npc.RestModel, error) {
-			return npcProvider(s)(ctx)(mapId)()
-		}
-	}
+func (p *ProcessorImpl) GetNpcs(s *Storage, mapId _map.Id) ([]npc.RestModel, error) {
+	return p.npcProvider(s, mapId)()
 }
 
-func GetNpcsByObjectId(s *Storage) func(ctx context.Context) func(mapId _map.Id, objectId uint32) ([]npc.RestModel, error) {
-	return func(ctx context.Context) func(mapId _map.Id, objectId uint32) ([]npc.RestModel, error) {
-		return func(mapId _map.Id, objectId uint32) ([]npc.RestModel, error) {
-			return model.FilteredProvider(npcProvider(s)(ctx)(mapId), model.Filters(NPCObjectIdFilter(objectId)))()
-		}
-	}
+func (p *ProcessorImpl) GetNpcsByObjectId(s *Storage, mapId _map.Id, objectId uint32) ([]npc.RestModel, error) {
+	return model.FilteredProvider(p.npcProvider(s, mapId), model.Filters(NPCObjectIdFilter(objectId)))()
 }
 
-func GetNpc(s *Storage) func(ctx context.Context) func(mapId _map.Id, npcId uint32) (npc.RestModel, error) {
-	return func(ctx context.Context) func(mapId _map.Id, npcId uint32) (npc.RestModel, error) {
-		return func(mapId _map.Id, npcId uint32) (npc.RestModel, error) {
-			return model.First(npcProvider(s)(ctx)(mapId), model.Filters(NPCIdFilter(npcId)))
-		}
-	}
+func (p *ProcessorImpl) GetNpc(s *Storage, mapId _map.Id, npcId uint32) (npc.RestModel, error) {
+	return model.First(p.npcProvider(s, mapId), model.Filters(NPCIdFilter(npcId)))
 }
 
 func NPCIdFilter(id uint32) model.Filter[npc.RestModel] {
@@ -352,33 +331,32 @@ func NPCObjectIdFilter(id uint32) model.Filter[npc.RestModel] {
 	}
 }
 
-func monsterProvider(s *Storage, ms *monstertpl.Storage) func(ctx context.Context) func(mapId _map.Id) model.Provider[[]monster.RestModel] {
-	return func(ctx context.Context) func(mapId _map.Id) model.Provider[[]monster.RestModel] {
-		return func(mapId _map.Id) model.Provider[[]monster.RestModel] {
-			m, err := s.ByIdProvider(ctx)(strconv.Itoa(int(mapId)))()
-			if err != nil {
-				return model.ErrorProvider[[]monster.RestModel](err)
-			}
-			lookup := func(template uint32) (monstertpl.RestModel, error) {
-				return ms.GetById(ctx)(strconv.Itoa(int(template)))
-			}
-			snapped := make([]monster.RestModel, 0, len(m.Monsters))
-			for _, sp := range m.Monsters {
-				snapped = append(snapped, snapToGround(m.FootholdTree, sp, lookup))
-			}
-			return model.FixedProvider(snapped)
-		}
+func (p *ProcessorImpl) monsterProvider(s *Storage, ms *monstertpl.Storage, mapId _map.Id) model.Provider[[]monster.RestModel] {
+	m, err := s.ByIdProvider(p.ctx)(strconv.Itoa(int(mapId)))()
+	if err != nil {
+		return model.ErrorProvider[[]monster.RestModel](err)
 	}
+	lookup := func(template uint32) (monstertpl.RestModel, error) {
+		return ms.GetById(p.ctx)(strconv.Itoa(int(template)))
+	}
+	snapped := make([]monster.RestModel, 0, len(m.Monsters))
+	for _, sp := range m.Monsters {
+		snapped = append(snapped, snapToGround(m.FootholdTree, sp, lookup))
+	}
+	return model.FixedProvider(snapped)
 }
 
-func GetMonsters(s *Storage, ms *monstertpl.Storage) func(ctx context.Context) func(mapId _map.Id) ([]monster.RestModel, error) {
-	return func(ctx context.Context) func(mapId _map.Id) ([]monster.RestModel, error) {
-		return func(mapId _map.Id) ([]monster.RestModel, error) {
-			return monsterProvider(s, ms)(ctx)(mapId)()
-		}
-	}
+func (p *ProcessorImpl) GetMonsters(s *Storage, ms *monstertpl.Storage, mapId _map.Id) ([]monster.RestModel, error) {
+	return p.monsterProvider(s, ms, mapId)()
 }
 
+// calcDropPos is a private helper called only from resource.go (a different
+// file in this package). Per R3 Step 3, private curried helpers never enter
+// the Processor interface; since this one is used cross-file rather than
+// only within processor.go's own methods, it stays a package function in
+// its original curried shape rather than becoming an unexported method that
+// callers outside processor.go could not reach through the Processor
+// interface.
 func calcDropPos(s *Storage) func(ctx context.Context) func(mapId _map.Id, initial point.RestModel, fallback point.RestModel) (point.RestModel, error) {
 	return func(ctx context.Context) func(mapId _map.Id, initial point.RestModel, fallback point.RestModel) (point.RestModel, error) {
 		return func(mapId _map.Id, initial point.RestModel, fallback point.RestModel) (point.RestModel, error) {

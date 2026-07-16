@@ -9,6 +9,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -38,23 +39,29 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 
 func handleGetCharacters(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		cs, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetAll(decoratorsFromInclude(r, d, c)...)
+		page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
 		if err != nil {
-			d.Logger().WithError(err).Errorf("Unable to get characters.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteBadRequest(d.Logger(), w, err.Error())
 			return
 		}
 
-		res, err := model.SliceMap(Transform(d.Logger(), d.Context()))(model.FixedProvider(cs))(model.ParallelMap())()
+		paged, err := NewProcessor(d.Logger(), d.Context(), d.DB()).AllProvider(page, decoratorsFromInclude(r, d, c)...)()
+		if err != nil {
+			d.Logger().WithError(err).Errorf("Unable to get characters.")
+			server.WriteErrorResponse(d.Logger())(w)(err)
+			return
+		}
+
+		res, err := model.SliceMap(Transform(d.Logger(), d.Context()))(model.FixedProvider(paged.Items))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
 		query := r.URL.Query()
 		queryParams := jsonapi.ParseQueryFields(&query)
-		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+		server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
 	}
 }
 
@@ -73,23 +80,29 @@ func handleGetCharactersForAccountInWorld(d *rest.HandlerDependency, c *rest.Han
 			return
 		}
 
-		cs, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetForAccountInWorld(decoratorsFromInclude(r, d, c)...)(uint32(accountId), world.Id(worldId))
+		page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
 		if err != nil {
-			d.Logger().WithError(err).Errorf("Unable to get characters for account %d in world %d.", accountId, worldId)
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteBadRequest(d.Logger(), w, err.Error())
 			return
 		}
 
-		res, err := model.SliceMap(Transform(d.Logger(), d.Context()))(model.FixedProvider(cs))(model.ParallelMap())()
+		paged, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetForAccountInWorldProvider(page, decoratorsFromInclude(r, d, c)...)(uint32(accountId), world.Id(worldId))()
+		if err != nil {
+			d.Logger().WithError(err).Errorf("Unable to get characters for account %d in world %d.", accountId, worldId)
+			server.WriteErrorResponse(d.Logger())(w)(err)
+			return
+		}
+
+		res, err := model.SliceMap(Transform(d.Logger(), d.Context()))(model.FixedProvider(paged.Items))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
 		query := r.URL.Query()
 		queryParams := jsonapi.ParseQueryFields(&query)
-		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+		server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
 	}
 }
 
@@ -107,23 +120,29 @@ func handleGetCharactersByName(d *rest.HandlerDependency, c *rest.HandlerContext
 			return
 		}
 
-		cs, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetForName(decoratorsFromInclude(r, d, c)...)(name)
+		page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
 		if err != nil {
-			d.Logger().WithError(err).Errorf("Getting character %s.", name)
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteBadRequest(d.Logger(), w, err.Error())
 			return
 		}
 
-		res, err := model.SliceMap(Transform(d.Logger(), d.Context()))(model.FixedProvider(cs))(model.ParallelMap())()
+		paged, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetForNameProvider(page, decoratorsFromInclude(r, d, c)...)(name)()
+		if err != nil {
+			d.Logger().WithError(err).Errorf("Getting character %s.", name)
+			server.WriteErrorResponse(d.Logger())(w)(err)
+			return
+		}
+
+		res, err := model.SliceMap(Transform(d.Logger(), d.Context()))(model.FixedProvider(paged.Items))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
 		query := r.URL.Query()
 		queryParams := jsonapi.ParseQueryFields(&query)
-		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+		server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
 	}
 }
 
@@ -139,7 +158,7 @@ func handleGetCharacter(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 			res, err := model.Map(Transform(d.Logger(), d.Context()))(model.FixedProvider(cs))()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -155,7 +174,7 @@ func handleCreateCharacter(d *rest.HandlerDependency, c *rest.HandlerContext, in
 		m, err := Extract(input)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating model.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 		cs, err := NewProcessor(d.Logger(), d.Context(), d.DB()).CreateAndEmit(uuid.New(), m, input.MapId)
@@ -166,14 +185,14 @@ func handleCreateCharacter(d *rest.HandlerDependency, c *rest.HandlerContext, in
 			}
 
 			d.Logger().WithError(err).Errorf("Creating character.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
 		res, err := model.Map(Transform(d.Logger(), d.Context()))(model.FixedProvider(cs))()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
@@ -188,7 +207,7 @@ func handleDeleteCharacter(d *rest.HandlerDependency, _ *rest.HandlerContext) ht
 		return func(w http.ResponseWriter, r *http.Request) {
 			err := NewProcessor(d.Logger(), d.Context(), d.DB()).DeleteAndEmit(uuid.New(), characterId)
 			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			w.WriteHeader(http.StatusNoContent)
@@ -219,7 +238,7 @@ func handleUpdateCharacter(d *rest.HandlerDependency, _ *rest.HandlerContext, in
 					return
 				}
 				d.Logger().WithError(err).Errorf("Error updating character [%d].", characterId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 

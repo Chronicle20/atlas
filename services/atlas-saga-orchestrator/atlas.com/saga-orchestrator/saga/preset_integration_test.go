@@ -90,6 +90,10 @@ func (s *presetTestSkillMock) RequestDeleteSkill(transactionId uuid.UUID, worldI
 	return nil
 }
 
+func (s *presetTestSkillMock) TransferSPAndEmit(_ uuid.UUID, _ world.Id, _ uint32, _ job.Id, _ uint32, _ uint32, _ byte, _ byte) error {
+	return nil
+}
+
 // Ensure presetTestSkillMock satisfies skill.Processor at compile time.
 var _ skill.Processor = (*presetTestSkillMock)(nil)
 

@@ -38,14 +38,6 @@ func (s *StringStorage) GetById(ctx context.Context) func(id string) (StringRest
 	return s.doc.GetById(ctx)
 }
 
-func (s *StringStorage) AllProvider(ctx context.Context) model.Provider[[]StringRestModel] {
-	return s.doc.AllProvider(ctx)
-}
-
-func (s *StringStorage) GetAll(ctx context.Context) ([]StringRestModel, error) {
-	return s.doc.GetAll(ctx)
-}
-
 func (s *StringStorage) Add(ctx context.Context) func(m StringRestModel) model.Provider[StringRestModel] {
 	return func(m StringRestModel) model.Provider[StringRestModel] {
 		t := tenant.MustFromContext(ctx)

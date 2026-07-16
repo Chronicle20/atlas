@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcShopList
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_5B430A
+    address: "0x5b430a"
+    decompile_sha256: f3c78a137931fc9669bf231415524d02b65eb675d48f84cf5b1e41d9e14c0274
+verifies:
+  - libs/atlas-packet/npc/clientbound/shop_list_v48_test.go#TestNPCShopListV48

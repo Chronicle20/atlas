@@ -24,6 +24,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return p
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) SeedCharacter(accountId uint32, worldId world.Id, name string, jobIndex uint32, subJobIndex uint16,
 	face uint32, hair uint32, color uint32, skinColor uint32, gender byte,
 	top uint32, bottom uint32, shoes uint32, weapon uint32,

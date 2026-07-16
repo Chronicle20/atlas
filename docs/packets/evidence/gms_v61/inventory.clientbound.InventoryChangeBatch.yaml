@@ -1,0 +1,10 @@
+packet: inventory/clientbound/InventoryChangeBatch
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnInventoryOperation#ChangeBatch
+    address: "0x8422fc"
+    decompile_sha256: ea187e79d229961869c52b8238d0d0a5e09b93b5686f34c9d82c79bf7812c011
+verifies:
+  - libs/atlas-packet/inventory/clientbound/change_batch_test.go#TestChangeBatchBytesV61

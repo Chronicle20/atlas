@@ -1,0 +1,21 @@
+{
+ "WriterName": "ChalkboardClose",
+ "IDAName": "sub_7A3981",
+ "Address": "0x7a3981",
+ "Variant": "GMS/v61",
+ "BranchDepth": 0,
+ "AtlasFile": "libs/atlas-packet/character/serverbound/chalkboard_close.go",
+ "Rows": [
+  {
+   "Index": 0,
+   "AtlasOp": 0,
+   "AtlasKind": 0,
+   "IDAOp": 6,
+   "IDAComment": "function not found in IDB",
+   "Verdict": 2,
+   "Note": "atlas: short \u2014 missing trailing field"
+  }
+ ],
+ "Verdict": 2,
+ "FlatInvalid": false
+}

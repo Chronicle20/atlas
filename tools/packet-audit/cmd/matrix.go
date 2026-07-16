@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"flag"
 	"fmt"
@@ -147,8 +148,11 @@ func matrixRun(o matrixOpts, stdout, stderr io.Writer) int {
 	}
 	in.Evidence = evStatus
 	// Design §13: an evidence record for a (packet, version) with no audit
-	// report is dangling — a --check failure. Iterate sorted so stderr output
-	// is deterministic across runs.
+	// report is dangling — a --check failure. EXCEPTION (commit 6c202cb7): when
+	// the version's registry declares the packet via an op's `packet:` field, the
+	// evidence record backs the no-report byte-fixture promotion path (grading
+	// promotes such a cell on a fresh marker + evidence, no report needed), so it
+	// is not dangling. Iterate sorted so stderr output is deterministic.
 	evKeys := make([]matrix.EvKey, 0, len(evStatus))
 	for k := range evStatus {
 		evKeys = append(evKeys, k)
@@ -160,10 +164,14 @@ func matrixRun(o matrixOpts, stdout, stderr io.Writer) int {
 		return evKeys[i].Version < evKeys[j].Version
 	})
 	for _, k := range evKeys {
-		if _, ok := reportForPacket(in.Reports[k.Version], k.Packet); !ok {
-			evProblems = append(evProblems,
-				fmt.Sprintf("dangling evidence: %s × %s has no audit report", k.Packet, k.Version))
+		if _, ok := reportForPacket(in.Reports[k.Version], k.Packet); ok {
+			continue
 		}
+		if registryDeclaresPacket(in.Registry, k.Version, k.Packet) {
+			continue
+		}
+		evProblems = append(evProblems,
+			fmt.Sprintf("dangling evidence: %s × %s has no audit report", k.Packet, k.Version))
 	}
 
 	tiers, err := matrix.LoadTiers(o.TiersFile)
@@ -232,6 +240,21 @@ func matrixRun(o matrixOpts, stdout, stderr io.Writer) int {
 				in.Markers[k] = matrix.MarkerStatus{Found: true, Address: mk.Address}
 			}
 		}
+	}
+
+	// Resolve per-version sub-struct dispositions from each version's
+	// _unimplemented.json (FR-4.1, task-169). A ref names a sub-struct by an
+	// explicit `packet` path or a suffix-qualified fname; bare-base-fname
+	// dispatcher-arm dispositions are not sub-struct rows and are skipped.
+	idaIndex := matrix.BuildIDANameIndex(in.Reports)
+	in.Unimplemented = map[string]map[string]bool{}
+	for _, vk := range o.Versions {
+		refs, uerr := matrix.LoadUnimplemented(filepath.Join(o.AuditsDir, vk, "_unimplemented.json"))
+		if uerr != nil {
+			fmt.Fprintf(stderr, "packet-audit matrix: error loading _unimplemented.json for %s: %v\n", vk, uerr)
+			return exitRuntime
+		}
+		in.Unimplemented[vk] = matrix.ResolveUnimplemented(refs, idaIndex)
 	}
 
 	m := matrix.Build(in, o.Versions)
@@ -334,6 +357,23 @@ func reportForPacket(reps map[string]matrix.LoadedReport, pkt string) (matrix.Lo
 	return matrix.LoadedReport{}, false
 }
 
+// registryDeclaresPacket reports whether the given version's registry has any op
+// whose `packet:` field equals pkt. Such an op is the no-report byte-fixture
+// promotion path (commit 6c202cb7): its evidence record is intentionally
+// report-less and must not be flagged as dangling by --check.
+func registryDeclaresPacket(reg opregistry.Registry, version, pkt string) bool {
+	vf, ok := reg.Versions[version]
+	if !ok || vf == nil {
+		return false
+	}
+	for _, e := range vf.Entries {
+		if e.Packet == pkt {
+			return true
+		}
+	}
+	return false
+}
+
 // transitiveRecurseTypes returns the set of qualified type names reachable via
 // KindRecurse calls from the packet's root struct. Used by IsTier1 to expand
 // opaque_types tier membership to their consumer packets (Task 3.2).
@@ -416,12 +456,60 @@ func exportPathIn(dir, vk string) string {
 	return filepath.Join(dir, filepath.Base(matrix.ExportPath(vk)))
 }
 
-// toolTreeSHA returns `git rev-parse HEAD:tools/packet-audit` (the tree SHA of
-// the tool itself), or "unknown" outside a git checkout.
+// toolTreeSHA returns a deterministic SHA over the tool's committed Go sources
+// only (excluding README/docs/testdata), or "unknown" outside a git checkout.
+// Hashing only .go blobs means editing the tool's docs never invalidates the
+// matrix (task-169 T2.0 — closes the README churn trap).
 func toolTreeSHA() string {
-	out, err := exec.Command("git", "rev-parse", "HEAD:tools/packet-audit").Output()
+	out, err := exec.Command("git", "ls-tree", "-r", "HEAD", "tools/packet-audit").Output()
 	if err != nil {
 		return "unknown"
 	}
-	return strings.TrimSpace(string(out))
+	return hashGoTreeEntries(string(out))
+}
+
+// isToolTestdataPath reports whether a repo-relative path lies under a
+// `testdata` directory (whose .go fixtures are excluded from the ToolSHA).
+func isToolTestdataPath(p string) bool {
+	for _, seg := range strings.Split(p, "/") {
+		if seg == "testdata" {
+			return true
+		}
+	}
+	return false
+}
+
+// hashGoTreeEntries parses `git ls-tree -r` output and returns a sha256 over
+// only the tool's Go source blobs — non-.go files (README, docs) and testdata
+// fixtures are excluded. Entries are sorted by path so the result is
+// order-stable and deterministic regardless of git's line order.
+func hashGoTreeEntries(lsTree string) string {
+	type ent struct{ path, blob string }
+	var ents []ent
+	for _, line := range strings.Split(lsTree, "\n") {
+		line = strings.TrimRight(line, "\r")
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		// Format: "<mode> <type> <objectsha>\t<path>"
+		tab := strings.IndexByte(line, '\t')
+		if tab < 0 {
+			continue
+		}
+		meta, path := line[:tab], line[tab+1:]
+		fields := strings.Fields(meta)
+		if len(fields) != 3 {
+			continue
+		}
+		if !strings.HasSuffix(path, ".go") || isToolTestdataPath(path) {
+			continue
+		}
+		ents = append(ents, ent{path: path, blob: fields[2]})
+	}
+	sort.Slice(ents, func(i, j int) bool { return ents[i].path < ents[j].path })
+	h := sha256.New()
+	for _, e := range ents {
+		fmt.Fprintf(h, "%s %s\n", e.path, e.blob)
+	}
+	return hex.EncodeToString(h.Sum(nil))
 }

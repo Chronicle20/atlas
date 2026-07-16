@@ -1,19 +1,167 @@
 package serverbound
 
 import (
+	"bytes"
 	"testing"
 
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// TestChangeByteOutputV79 pins the gms_v79 CHANGE_MAP (op 0x24) serverbound wire.
+//
+// IDA: CField::SendTransferFieldRequest @0x51b950 (GMS_v79_1_DEVM.exe) —
+//
+//	COutPacket(36)                  @0x51b98d → opcode 0x24 (matches registry).
+//	Encode1(get_field()+276)        @0x51b9b2 → fieldKey byte.
+//	Encode4(a2)                     @0x51b9bd → targetId (int32 LE).
+//	EncodeStr(Src)                  @0x51b9e2 → portalName.
+//	if (Src) Encode2(x)/Encode2(y)  @0x51ba00/@0x51ba1a → target x/y (only with a portal name).
+//	Encode1(0)                      @0x51ba23 → unused byte.
+//	Encode1(a4)                     @0x51ba2e → premium byte.
+//	Encode1(dword_B0D450)           @0x51ba3e → chase flag (present from v79; the legacy
+//	                                            codec gate was >=83 and wrongly dropped it).
+//	if (chase) Encode4(targetX)/Encode4(targetY) — omitted here (chase=false).
+//
+// WriteAsciiString = uint16-LE len + bytes; WriteInt = uint32-LE; WriteInt16 = uint16-LE.
+func TestChangeByteOutputV79(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 79, 1)
+	input := Change{fieldKey: 1, targetId: 100000000, portalName: "west00", x: 100, y: 200, unused: 0, premium: 0}
+	expected := []byte{
+		0x01,                   // fieldKey @0x51b9b2
+		0x00, 0xE1, 0xF5, 0x05, // targetId 100000000 @0x51b9bd
+		0x06, 0x00, 0x77, 0x65, 0x73, 0x74, 0x30, 0x30, // EncodeStr("west00") @0x51b9e2
+		0x64, 0x00, // x=100 @0x51ba00
+		0xC8, 0x00, // y=200 @0x51ba1a
+		0x00, // unused @0x51ba23
+		0x00, // premium @0x51ba2e
+		0x00, // chase=false @0x51ba3e
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v79 change golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// TestChangeByteOutputV72 pins the gms_v72 CHANGE_MAP (op 0x25) serverbound wire
+// and proves the chase-byte divergence fix (codec gate lowered >=79 → >=72).
+//
+// IDA: CField::SendTransferFieldRequest @0x5148b1 (GMS_v72.1_U_DEVM.exe) —
+//
+//	COutPacket(37)                 @0x5148ee → opcode 0x25 (matches registry).
+//	Encode1(get_field()+276)       @0x514913 → fieldKey byte.
+//	Encode4(a2)                    @0x51491e → targetId (int32 LE).
+//	EncodeStr(Src)                 @0x514943 → portalName.
+//	if (Src) Encode2(x)/Encode2(y) @0x514961/@0x51497b → target x/y (only with a portal name).
+//	Encode1(0)                     @0x514984 → unused byte.
+//	Encode1(a4)                    @0x51498f → premium byte.
+//	Encode1(dword_AA4E60)          @0x51499f → chase flag (emitted UNCONDITIONALLY;
+//	                                           the >=79 gate wrongly dropped it for v72).
+//	if (chase) Encode4(targetX)/Encode4(targetY) — omitted here (chase=false).
+//
+// WriteAsciiString = uint16-LE len + bytes; WriteInt = uint32-LE; WriteInt16 = uint16-LE.
+func TestChangeByteOutputV72(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+	input := Change{fieldKey: 1, targetId: 100000000, portalName: "west00", x: 100, y: 200, unused: 0, premium: 0}
+	expected := []byte{
+		0x01,                   // fieldKey @0x514913
+		0x00, 0xE1, 0xF5, 0x05, // targetId 100000000 @0x51491e
+		0x06, 0x00, 0x77, 0x65, 0x73, 0x74, 0x30, 0x30, // EncodeStr("west00") @0x514943
+		0x64, 0x00, // x=100 @0x514961
+		0xC8, 0x00, // y=200 @0x51497b
+		0x00, // unused @0x514984
+		0x00, // premium @0x51498f
+		0x00, // chase=false @0x51499f
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v72 change golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// TestChangeByteOutputV61 pins the gms_v61 CHANGE_MAP (op 0x23 / 35) serverbound
+// wire. IDA: CField::SendTransferFieldRequest @0x4e8f58 (GMS_v61.1_U_DEVM.exe) —
+//
+//	COutPacket(35)                 @op ctor → opcode 0x23 (matches registry op 35).
+//	Encode1(get_field()+248)               → fieldKey byte.
+//	Encode4(a2)                            → targetId (int32 LE).
+//	EncodeStr(Src)                         → portalName.
+//	if (Src) Encode2(x)/Encode2(y)         → target x/y (only with a portal name).
+//	Encode1(0)                             → unused byte.
+//	Encode1(a4)                            → premium byte.
+//	Encode1(dword_975DD4)                  → chase flag (emitted UNCONDITIONALLY —
+//	                                         same as v72; the >=72 gate wrongly
+//	                                         dropped it for v61, lowered to >=61).
+//	if (chase) Encode4(targetX)/Encode4(targetY) — omitted here (chase=false).
+//
+// Wire byte-identical to gms_v72 (only the opcode shifts). WriteAsciiString =
+// uint16-LE len + bytes; WriteInt = uint32-LE; WriteInt16 = uint16-LE.
+func TestChangeByteOutputV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	input := Change{fieldKey: 1, targetId: 100000000, portalName: "west00", x: 100, y: 200, unused: 0, premium: 0}
+	expected := []byte{
+		0x01,                   // fieldKey
+		0x00, 0xE1, 0xF5, 0x05, // targetId 100000000
+		0x06, 0x00, 0x77, 0x65, 0x73, 0x74, 0x30, 0x30, // EncodeStr("west00")
+		0x64, 0x00, // x=100
+		0xC8, 0x00, // y=200
+		0x00, // unused
+		0x00, // premium
+		0x00, // chase=false @Encode1(dword_975DD4)
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v61 change golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// TestChangeByteOutputV48 pins the gms_v48 CHANGE_MAP (op 0x1E / 30) serverbound
+// wire. IDA: CField::SendTransferFieldRequest @0x4c5733 (GMS_v48_1_DEVM.exe) —
+//
+//	COutPacket(30)                 @0x4c5771 → opcode 0x1E (matches registry op 30).
+//	Encode1(get_field()+216)       @0x4c5796 → fieldKey byte.
+//	Encode4(a2)                    @0x4c57a1 → targetId (int32 LE).
+//	EncodeStr(Src)                 @0x4c57c6 → portalName.
+//	if (a3) Encode2(x)/Encode2(y)  @0x4c57e4/@0x4c57fe → target x/y (only with a portal name).
+//	Encode1(0)                     @0x4c5807 → unused byte.
+//	Encode1(a4)                    @0x4c5812 → premium byte.
+//	Encode1(dword_80D3EC)          @0x4c5822 → chase flag (emitted UNCONDITIONALLY;
+//	                                           the >=61 gate wrongly dropped it for v48,
+//	                                           lowered to >=48).
+//	if (chase) Encode4(a5)/Encode4(a6) — omitted here (chase=false).
+//
+// Wire byte-identical to gms_v61 (only the opcode shifts). WriteAsciiString =
+// uint16-LE len + bytes; WriteInt = uint32-LE; WriteInt16 = uint16-LE.
+// packet-audit:verify packet=field/serverbound/FieldChange version=gms_v48 ida=0x4c5733
+func TestChangeByteOutputV48(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 48, 1)
+	input := Change{fieldKey: 1, targetId: 100000000, portalName: "west00", x: 100, y: 200, unused: 0, premium: 0}
+	expected := []byte{
+		0x01,                   // fieldKey @0x4c5796
+		0x00, 0xE1, 0xF5, 0x05, // targetId 100000000 @0x4c57a1
+		0x06, 0x00, 0x77, 0x65, 0x73, 0x74, 0x30, 0x30, // EncodeStr("west00") @0x4c57c6
+		0x64, 0x00, // x=100 @0x4c57e4
+		0xC8, 0x00, // y=200 @0x4c57fe
+		0x00, // unused @0x4c5807
+		0x00, // premium @0x4c5812
+		0x00, // chase=false @0x4c5822
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v48 change golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
 // TestChangeWithPortalRoundTrip covers a portal-named transfer. Per the v95
 // client (CField::SendTransferFieldRequest @0x5345c0) a non-empty portal name
 // carries the target x/y pair, so x/y participate in the round-trip here.
+// packet-audit:verify packet=field/serverbound/FieldChange version=gms_v79 ida=0x51b950
 // packet-audit:verify packet=field/serverbound/FieldChange version=gms_v95 ida=0x5345c0
 // packet-audit:verify packet=field/serverbound/FieldChange version=gms_v83 ida=0x53035d
 // packet-audit:verify packet=field/serverbound/FieldChange version=gms_v87 ida=0x557b5a
 // packet-audit:verify packet=field/serverbound/FieldChange version=jms_v185 ida=0x56d75a
 // packet-audit:verify packet=field/serverbound/FieldChange version=gms_v84 ida=0x53c5b9
+// packet-audit:verify packet=field/serverbound/FieldChange version=gms_v72 ida=0x5148b1
+// packet-audit:verify packet=field/serverbound/FieldChange version=gms_v61 ida=0x4e8f58
 func TestChangeWithPortalRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

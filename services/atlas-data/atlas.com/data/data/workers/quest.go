@@ -29,5 +29,5 @@ func (Quest) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *min
 	}
 	// quest.RegisterQuest reads QuestInfo.img.xml + Check.img.xml + Act.img.xml
 	// out of the given directory.
-	return quest.RegisterQuest(db)(l)(ctx)(filepath.Join(root, "Quest.wz"))
+	return quest.NewProcessor(l, ctx, db).RegisterQuest(filepath.Join(root, "Quest.wz"))
 }

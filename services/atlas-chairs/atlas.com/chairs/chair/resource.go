@@ -4,6 +4,7 @@ import (
 	"atlas-chairs/character"
 	"atlas-chairs/rest"
 	"net/http"
+	"sort"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -11,6 +12,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -58,19 +60,42 @@ func handleGetChairsInMap(d *rest.HandlerDependency, c *rest.HandlerContext) htt
 			return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
 				return rest.ParseInstanceId(d.Logger(), func(instanceId uuid.UUID) http.HandlerFunc {
 					return func(w http.ResponseWriter, r *http.Request) {
+						page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+						if err != nil {
+							server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+							return
+						}
+
 						f := field.NewBuilder(worldId, channelId, mapId).SetInstance(instanceId).Build()
 						cip := character.NewProcessor(d.Logger(), d.Context()).InMapProvider(f)
 						fcip := model.FilteredProvider(cip, model.Filters[uint32](func(cid uint32) bool {
 							_, err := NewProcessor(d.Logger(), d.Context()).GetById(cid)
 							return err == nil
 						}))
+						cids, err := fcip()
+						if err != nil {
+							d.Logger().WithError(err).Errorf("Retrieving characters in map.")
+							w.WriteHeader(http.StatusInternalServerError)
+							return
+						}
+
+						// Sort by characterId, the collection's true unique key --
+						// RestModel.Id is the sat-in chair's item/object id, which
+						// is NOT unique across characters sharing the same chair
+						// type (a pre-existing, unrelated JSON:API id-collision
+						// risk, not introduced or fixed here).
+						sorted := make([]uint32, len(cids))
+						copy(sorted, cids)
+						sort.Slice(sorted, func(i, j int) bool { return sorted[i] < sorted[j] })
+						paged := paginate.Slice(sorted, page)
+
 						res, err := model.SliceMap(func(cid uint32) (RestModel, error) {
 							cm, err := NewProcessor(d.Logger(), d.Context()).GetById(cid)
 							if err != nil {
 								return RestModel{}, err
 							}
 							return Transform(cid)(cm)
-						})(fcip)(model.ParallelMap())()
+						})(model.FixedProvider(paged.Items))(model.ParallelMap())()
 						if err != nil {
 							d.Logger().WithError(err).Errorf("Creating REST model.")
 							w.WriteHeader(http.StatusInternalServerError)
@@ -79,7 +104,7 @@ func handleGetChairsInMap(d *rest.HandlerDependency, c *rest.HandlerContext) htt
 
 						query := r.URL.Query()
 						queryParams := jsonapi.ParseQueryFields(&query)
-						server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+						server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
 					}
 				})
 			})

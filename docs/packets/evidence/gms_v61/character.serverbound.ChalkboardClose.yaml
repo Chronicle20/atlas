@@ -1,0 +1,10 @@
+packet: character/serverbound/ChalkboardClose
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: sub_7A3981
+    address: "0x7a3981"
+    decompile_sha256: e4dd1eb28daea7de8c54593bc051f9af867746a01a32195abd5202597890186b
+verifies:
+    - libs/atlas-packet/character/serverbound/v61_test.go#TestChalkboardCloseByteOutputV61

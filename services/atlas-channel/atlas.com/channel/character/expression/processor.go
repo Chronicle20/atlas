@@ -2,8 +2,8 @@ package expression
 
 import (
 	expression2 "atlas-channel/kafka/message/expression"
-	"atlas-channel/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/sirupsen/logrus"
@@ -27,6 +27,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 	return p
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) Change(characterId uint32, f field.Model, expression uint32) error {
 	p.l.Debugf("Changing character [%d] expression to [%d].", characterId, f.MapId())

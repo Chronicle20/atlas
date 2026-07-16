@@ -38,7 +38,7 @@ func TestSearch_ExactIdFirst(t *testing.T) {
 	seedIndex(t, db, ctx, tn.Id(), 201, "Alpha 201", "Street A")
 	seedIndex(t, db, ctx, tn.Id(), 202, "Alpha 202", "Street A")
 
-	res, err := SearchByQuery(l, db)(ctx)("201", 50)
+	res, err := SearchByQuery(l, db)(ctx)("201", 0, 50)
 	require.NoError(t, err)
 	require.NotEmpty(t, res)
 	assert.Equal(t, uint32(201), res[0].Id, "exact-ID match should be first")
@@ -54,7 +54,7 @@ func TestSearch_SubstringOnName(t *testing.T) {
 	seedIndex(t, db, ctx, tn.Id(), 100000000, "Henesys", "Victoria Road")
 	seedIndex(t, db, ctx, tn.Id(), 101000000, "Ellinia", "Victoria Road")
 
-	res, err := SearchByQuery(l, db)(ctx)("nesys", 50)
+	res, err := SearchByQuery(l, db)(ctx)("nesys", 0, 50)
 	require.NoError(t, err)
 	require.Len(t, res, 1)
 	assert.Equal(t, "Henesys", res[0].Name)
@@ -70,7 +70,7 @@ func TestSearch_SubstringOnStreet_CaseInsensitive(t *testing.T) {
 	seedIndex(t, db, ctx, tn.Id(), 1, "One", "Perion Street")
 	seedIndex(t, db, ctx, tn.Id(), 2, "Two", "Kerning City")
 
-	res, err := SearchByQuery(l, db)(ctx)("PERION", 50)
+	res, err := SearchByQuery(l, db)(ctx)("PERION", 0, 50)
 	require.NoError(t, err)
 	require.Len(t, res, 1)
 	assert.Equal(t, uint32(1), res[0].Id)
@@ -87,7 +87,7 @@ func TestSearch_LimitEnforced(t *testing.T) {
 		seedIndex(t, db, ctx, tn.Id(), uint32(3000+i), "Testmap "+strconv.Itoa(i), "Somewhere")
 	}
 
-	res, err := SearchByQuery(l, db)(ctx)("testmap", 50)
+	res, err := SearchByQuery(l, db)(ctx)("testmap", 0, 50)
 	require.NoError(t, err)
 	assert.Len(t, res, 50)
 }
@@ -104,7 +104,7 @@ func TestSearch_SinglePartition_TenantOwnsDataset(t *testing.T) {
 	seedIndex(t, db, ctx, uuid.Nil, 100, "GlobalMap", "GlobalStreet")
 	seedIndex(t, db, ctx, uuid.Nil, 101, "ExtraMap", "Road")
 
-	res, err := SearchByQuery(l, db)(ctx)("map", 50)
+	res, err := SearchByQuery(l, db)(ctx)("map", 0, 50)
 	require.NoError(t, err)
 	require.Len(t, res, 1)
 	assert.Equal(t, "TenantMap", res[0].Name)
@@ -120,7 +120,7 @@ func TestSearch_SinglePartition_ZeroRowTenantFallsBack(t *testing.T) {
 	seedIndex(t, db, ctx, canonical.TenantId(tn.Region(), tn.MajorVersion(), tn.MinorVersion()), 100, "GlobalMap", "GlobalStreet")
 	seedIndex(t, db, ctx, canonical.TenantId(tn.Region(), tn.MajorVersion(), tn.MinorVersion()), 101, "ExtraMap", "Road")
 
-	res, err := SearchByQuery(l, db)(ctx)("map", 50)
+	res, err := SearchByQuery(l, db)(ctx)("map", 0, 50)
 	require.NoError(t, err)
 	require.Len(t, res, 2)
 }

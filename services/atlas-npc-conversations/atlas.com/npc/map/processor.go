@@ -1,12 +1,16 @@
 package _map
 
 import (
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	"context"
 	"sync"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
 )
 
@@ -29,10 +33,12 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // GetPlayerCountInField retrieves the player count for a single field
 // Returns 0 on error to allow graceful degradation
 func (p *ProcessorImpl) GetPlayerCountInField(f field.Model) (int, error) {
-	resp, err := requestCharactersInMap(f)(p.l, p.ctx)
+	resp, err := requests.DrainProvider[RestModel, RestModel](p.l, p.ctx)(charactersInMapUrl(f), 250, Extract, model.Filters[RestModel]())()
 	if err != nil {
 		p.l.WithError(err).Warnf("Failed to get characters in map [%d], using count 0", f.MapId())
 		return 0, nil
@@ -53,14 +59,15 @@ func (p *ProcessorImpl) GetPlayerCountsInMaps(ch channel.Model, mapIds []_map.Id
 
 	for _, mapId := range mapIds {
 		wg.Add(1)
-		go func(id _map.Id) {
+		id := mapId
+		routine.Go(p.l, p.ctx, func(_ context.Context) {
 			defer wg.Done()
 			f := field.NewBuilder(ch.WorldId(), ch.Id(), id).Build()
 			count, _ := p.GetPlayerCountInField(f)
 			mu.Lock()
 			counts[id] = count
 			mu.Unlock()
-		}(mapId)
+		})
 	}
 	wg.Wait()
 

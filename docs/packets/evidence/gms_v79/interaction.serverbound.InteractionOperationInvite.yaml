@@ -1,0 +1,10 @@
+packet: interaction/serverbound/InteractionOperationInvite
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendInviteTradingRoomMsg
+    address: "0x51b10b"
+    decompile_sha256: e29605a08714c18ff93d39b3bd5643ec44a0147dc041b8012dd3ac942a7dd403
+verifies:
+  - libs/atlas-packet/interaction/serverbound/operation_invite_test.go#TestOperationInviteRoundTrip

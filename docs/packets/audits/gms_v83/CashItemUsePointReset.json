@@ -1,0 +1,39 @@
+{
+  "WriterName": "CashItemUsePointReset",
+  "IDAName": "CWvsContext::SendConsumeCashItemUseRequest",
+  "Address": "0xa0a63f",
+  "Variant": "GMS/v83",
+  "BranchDepth": 1,
+  "AtlasFile": "libs/atlas-packet/cash/serverbound/item_use_point_reset.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "to: AP stat flag (5050000) / SP skill id (5050001-4). Encode4 @case23/24 in CWvsContext::SendConsumeCashItemUseRequest 0xa0a63f",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "from: AP stat flag / SP skill id. second Encode4",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "trailing update_time = get_update_time(); Encode4 in common send tail (LABEL_41)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

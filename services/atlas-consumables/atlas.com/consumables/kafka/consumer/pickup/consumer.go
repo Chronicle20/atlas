@@ -6,7 +6,7 @@ import (
 	consumer2 "atlas-consumables/kafka/consumer"
 	mbmsg "atlas-consumables/kafka/message/monsterbook"
 	pickupmsg "atlas-consumables/kafka/message/pickup"
-	"atlas-consumables/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"

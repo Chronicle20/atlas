@@ -10,8 +10,9 @@
  * - Template cloning and export functionality
  */
 
-import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, keepPreviousData, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
 import { templatesService } from '@/services/api/templates.service';
+import type { PagedResult } from '@/services/api/pagination';
 import type { Template, TemplateAttributes } from '@/types/models/template';
 import type { ServiceOptions, QueryOptions, BatchResult } from '@/lib/api/query-params';
 
@@ -20,6 +21,7 @@ export const templateKeys = {
   all: ['templates'] as const,
   lists: () => [...templateKeys.all, 'list'] as const,
   list: (options?: QueryOptions) => [...templateKeys.lists(), options] as const,
+  pagedList: (page: number, size: number) => [...templateKeys.lists(), 'page', page, size] as const,
   details: () => [...templateKeys.all, 'detail'] as const,
   detail: (id: string) => [...templateKeys.details(), id] as const,
   
@@ -47,6 +49,22 @@ export function useTemplates(options?: QueryOptions): UseQueryResult<Template[],
     queryKey: templateKeys.list(options),
     queryFn: () => templatesService.getAll({ ...options, useCache: false }),
     gcTime: 10 * 60 * 1000, // 10 minutes
+  });
+}
+
+/**
+ * Hook to fetch a single page of templates (task-117). Backs the Templates
+ * list view, which pages server-side; keeps the previous page's data on
+ * screen while the next page loads.
+ */
+export function useTemplatesPage(
+  page: { number: number; size: number },
+): UseQueryResult<PagedResult<Template>, Error> {
+  return useQuery({
+    queryKey: templateKeys.pagedList(page.number, page.size),
+    queryFn: () => templatesService.getPage(page, { useCache: false }),
+    placeholderData: keepPreviousData,
+    gcTime: 10 * 60 * 1000,
   });
 }
 

@@ -1,5 +1,6 @@
 import { api } from "@/lib/api/client";
 import { type ServiceOptions, type QueryOptions } from "@/lib/api/query-params";
+import { fetchAll } from "@/services/api/pagination";
 import type { QuestDefinition, QuestAttributes } from "@/types/models/quest";
 
 const BASE_PATH = "/api/data/quests";
@@ -49,8 +50,13 @@ function applyFilters(quests: QuestDefinition[], options?: QuestQueryOptions): Q
 }
 
 export const questsService = {
+  /**
+   * Get every quest, draining all pages (task-117). QuestsPage's category
+   * facet and count filter client-side over the whole collection, so this
+   * stays a drain rather than a server-paged browse.
+   */
   async getAllQuests(options?: QuestQueryOptions): Promise<QuestDefinition[]> {
-    const quests = await api.getList<QuestDefinition>(BASE_PATH, options);
+    const quests = await fetchAll<QuestDefinition>(BASE_PATH, undefined, options);
     return applyFilters(quests, options).sort((a, b) => parseInt(a.id) - parseInt(b.id));
   },
 

@@ -2,8 +2,8 @@ package shops
 
 import (
 	shops2 "atlas-channel/kafka/message/npc/shop"
-	"atlas-channel/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
@@ -32,6 +32,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 	return p
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) ByTemplateIdProvider(templateId uint32) model.Provider[Model] {
 	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestNPCShop(templateId), Extract)

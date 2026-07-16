@@ -1,0 +1,10 @@
+packet: character/serverbound/AutoDistributeAp
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendAbilityUpRequest#AutoDistributeAp
+    address: "0x96dd07"
+    decompile_sha256: 03c970e2b6a4a249439c9289d885a07f34742515053769899b44b244f4e458aa
+verifies:
+    - libs/atlas-packet/character/serverbound/auto_distribute_ap_test.go#TestAutoDistributeApV79ByteOutput

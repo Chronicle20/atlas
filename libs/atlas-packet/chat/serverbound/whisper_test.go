@@ -246,6 +246,100 @@ func TestWhisperByteOutputJMS(t *testing.T) {
 	})
 }
 
+// TestWhisperByteOutputV79 pins the gms_v79 WHISPER (op 0x075) serverbound wire.
+//
+// IDA-verified send-site (GMS_v79_1_DEVM.exe, port 13340) —
+// CField::SendChatMsgWhisper @0x51a7bc, main send path @0x51aedf:
+//
+//	COutPacket::COutPacket(117)=0x75      @0x51aedf;
+//	COutPacket::Encode1((!v24 + 1) | 4)   @0x51af06 — v24 is "message empty"; for a
+//	  non-empty message !v24=1 so (1+1)|4 = 6 (Chat), and =5 (1|4) when empty (Find);
+//	COutPacket::EncodeStr(a3=target)      @0x51af1e;
+//	then, gated by `*v10 && **v10` (non-empty message) @0x51af29,
+//	COutPacket::EncodeStr(v10=msg)        @0x51af3e.
+//
+// v79 is GMS<87 so whisperHasUpdateTime is false — there is NO get_update_time
+// prefix (byte-identical to v83/v84; only the opcode shifts to 0x75). The audit
+// report (ChatWhisper @0x51a7bc) is FlatInvalid/🔍; the mode-dependent wire shape
+// is proven here. WhisperMode: Find=5, Chat=6 (chat carries the msg).
+// WriteAsciiString = uint16-LE length + ASCII bytes (admin_chat golden "hi" = 02 00 68 69).
+//
+// packet-audit:verify packet=chat/serverbound/ChatWhisper version=gms_v79 ida=0x51a7bc
+func TestWhisperByteOutputV79(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 79, 1)
+
+	// Find mode (5): Encode1(mode) + EncodeStr("Bob") — NO updateTime.
+	// 0x05 | 0x03 0x00 'B' 'o' 'b'
+	t.Run("find", func(t *testing.T) {
+		input := Whisper{mode: WhisperModeFind, targetName: "Bob"}
+		expected := []byte{0x05, 0x03, 0x00, 0x42, 0x6F, 0x62}
+		actual := pt.Encode(t, ctx, input.Encode, nil)
+		if !bytes.Equal(actual, expected) {
+			t.Errorf("find golden mismatch: got %v want %v", actual, expected)
+		}
+	})
+
+	// Chat mode (6): Encode1(mode) + EncodeStr("Bob") + EncodeStr("hi") — NO updateTime.
+	// 0x06 | 0x03 0x00 'B' 'o' 'b' | 0x02 0x00 'h' 'i'
+	t.Run("chat", func(t *testing.T) {
+		input := Whisper{mode: WhisperModeChat, targetName: "Bob", msg: "hi"}
+		expected := []byte{0x06, 0x03, 0x00, 0x42, 0x6F, 0x62, 0x02, 0x00, 0x68, 0x69}
+		actual := pt.Encode(t, ctx, input.Encode, nil)
+		if !bytes.Equal(actual, expected) {
+			t.Errorf("chat golden mismatch: got %v want %v", actual, expected)
+		}
+	})
+}
+
+// TestWhisperByteOutputV72 pins the gms_v72 WHISPER (op 0x076) serverbound wire.
+//
+// IDA-verified send-sites (GMS_v72.1_U_DEVM.exe, port 13339):
+//
+//	CField::SendChatMsgWhisper @0x513743 (chat send, main path @0x513e66):
+//	  COutPacket::COutPacket(118)=0x76      @0x513e66;
+//	  COutPacket::Encode1((!v24 + 1) | 4)   @0x513e8d — v24 is "message empty"; for a
+//	    non-empty message !v24=1 so (1+1)|4 = 6 (Chat), and =5 (1|4) when empty;
+//	  COutPacket::EncodeStr(a3=target)      @0x513ea5 (sub_4160CB(a3) @0x513e9d stages it);
+//	  then, gated by `*v10 && **v10` (non-empty message) @0x513eb0,
+//	  COutPacket::EncodeStr(v10=msg)        @0x513ec5.
+//	CField::SendLocationWhisper @0x513f84 (find-friend send, not-yet-sent branch):
+//	  COutPacket::COutPacket(118)=0x76      @0x51400e;
+//	  COutPacket::Encode1((a3==0 ? 1 : 64) | 4) @0x514024 — =5 (1|4) for a non-tab find;
+//	  COutPacket::EncodeStr(a2=target)      @0x514041. No message field on this path.
+//
+// v72 is GMS<87 so whisperHasUpdateTime is false — there is NO get_update_time
+// prefix (byte-identical to v79/v83/v84; only the opcode shifts to 0x76). The audit
+// report (ChatWhisper @0x513743) is FlatInvalid/🔍; the mode-dependent wire shape is
+// proven here. WhisperMode: Find=5, Chat=6 (chat carries the msg).
+// WriteAsciiString = uint16-LE length + ASCII bytes (admin_chat golden "hi" = 02 00 68 69).
+//
+// packet-audit:verify packet=chat/serverbound/ChatWhisper version=gms_v72 ida=0x513743
+func TestWhisperByteOutputV72(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+
+	// Find mode (5): Encode1(mode) + EncodeStr("Bob") — NO updateTime.
+	// 0x05 | 0x03 0x00 'B' 'o' 'b'
+	t.Run("find", func(t *testing.T) {
+		input := Whisper{mode: WhisperModeFind, targetName: "Bob"}
+		expected := []byte{0x05, 0x03, 0x00, 0x42, 0x6F, 0x62}
+		actual := pt.Encode(t, ctx, input.Encode, nil)
+		if !bytes.Equal(actual, expected) {
+			t.Errorf("find golden mismatch: got %v want %v", actual, expected)
+		}
+	})
+
+	// Chat mode (6): Encode1(mode) + EncodeStr("Bob") + EncodeStr("hi") — NO updateTime.
+	// 0x06 | 0x03 0x00 'B' 'o' 'b' | 0x02 0x00 'h' 'i'
+	t.Run("chat", func(t *testing.T) {
+		input := Whisper{mode: WhisperModeChat, targetName: "Bob", msg: "hi"}
+		expected := []byte{0x06, 0x03, 0x00, 0x42, 0x6F, 0x62, 0x02, 0x00, 0x68, 0x69}
+		actual := pt.Encode(t, ctx, input.Encode, nil)
+		if !bytes.Equal(actual, expected) {
+			t.Errorf("chat golden mismatch: got %v want %v", actual, expected)
+		}
+	})
+}
+
 func TestWhisperFindRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

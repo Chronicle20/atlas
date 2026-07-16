@@ -1,0 +1,21 @@
+{
+  "WriterName": "AddCharacterError",
+  "IDAName": "CLogin::OnCreateNewCharacterResult#AddCharacterError",
+  "Address": "0x5b3c65",
+  "Variant": "GMS/v72",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/character/clientbound/add_entry_error.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "errorCode @0x5b3c80",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

@@ -1,8 +1,8 @@
 package invite
 
 import (
-	"atlas-parties/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/sirupsen/logrus"
@@ -25,6 +25,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		p:   producer.ProviderImpl(l)(ctx),
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) Create(actorId uint32, worldId world.Id, partyId uint32, targetId uint32) error {
 	p.l.Debugf("Creating party [%d] invitation for [%d] from [%d].", partyId, targetId, actorId)

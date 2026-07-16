@@ -42,6 +42,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // parseQuestDate parses a WZ quest date string in the format "YYYYMMDDhh" into a time.Time.
 func parseQuestDate(s string) (time.Time, error) {
 	if len(s) != 10 {

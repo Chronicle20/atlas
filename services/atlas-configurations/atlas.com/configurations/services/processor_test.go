@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -144,7 +145,8 @@ func TestProcessor_GetAll_Empty(t *testing.T) {
 	ctx := context.Background()
 	p := NewProcessor(l, ctx, db)
 
-	results, err := p.GetAll()
+	paged, err := p.AllProvider(model.Page{Number: 1, Size: 250})()
+	results := paged.Items
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -164,7 +166,8 @@ func TestProcessor_GetAll_WithData(t *testing.T) {
 	createChannelEntity(db, t)
 	createDropsEntity(db, t)
 
-	results, err := p.GetAll()
+	paged, err := p.AllProvider(model.Page{Number: 1, Size: 250})()
+	results := paged.Items
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

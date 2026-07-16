@@ -4,8 +4,16 @@ import (
 	"context"
 
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
 )
+
+// identity is the no-op Transformer requests.DrainProvider needs when the
+// wire type (RestModel) is also the domain type this package works with.
+func identity(rm RestModel) (RestModel, error) {
+	return rm, nil
+}
 
 // Processor provides quest definition lookup functionality from atlas-data.
 type Processor interface {
@@ -28,6 +36,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) GetQuestDefinition(questId uint32) (RestModel, error) {
 	result, err := requestQuestById(questId)(p.l, p.ctx)
 	if err != nil {
@@ -38,7 +48,10 @@ func (p *ProcessorImpl) GetQuestDefinition(questId uint32) (RestModel, error) {
 }
 
 func (p *ProcessorImpl) GetAutoStartQuests(mapId _map.Id) ([]RestModel, error) {
-	allAutoStart, err := requestAutoStartQuests()(p.l, p.ctx)
+	// atlas-data's GET /data/quests/auto-start is now paginated (task-117);
+	// this drains every page rather than fetching one, since callers need
+	// the complete auto-start set to filter by mapId below.
+	allAutoStart, err := requests.DrainProvider[RestModel, RestModel](p.l, p.ctx)(autoStartQuestsUrl(), 250, identity, model.Filters[RestModel]())()
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to get auto-start quests")
 		return nil, err

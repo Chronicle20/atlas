@@ -12,6 +12,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/sirupsen/logrus"
 )
 
@@ -44,9 +45,9 @@ func handleKilledStatusEvent(l logrus.FieldLogger, ctx context.Context, e status
 	var wg sync.WaitGroup
 	wg.Add(2)
 
-	go func() {
+	routine.Go(l, ctx, func(_ context.Context) {
 		defer wg.Done()
-		err := monster.CreateDrops(l)(ctx)(f, e.UniqueId, e.MonsterId, e.Body.X, e.Body.Y, e.Body.ActorId)
+		err := monster.NewProcessor(l, ctx).CreateDrops(f, e.UniqueId, e.MonsterId, e.Body.X, e.Body.Y, e.Body.ActorId)
 		if err != nil {
 			l.WithError(err).WithFields(logrus.Fields{
 				"worldId":   e.WorldId,
@@ -56,9 +57,9 @@ func handleKilledStatusEvent(l logrus.FieldLogger, ctx context.Context, e status
 				"monsterId": e.MonsterId,
 			}).Error("Failed to create drops for monster death.")
 		}
-	}()
+	})
 
-	go func() {
+	routine.Go(l, ctx, func(_ context.Context) {
 		defer wg.Done()
 		dms, err := model.SliceMap(func(m damageEntry) (monster.DamageEntryModel, error) {
 			return monster.NewDamageEntryModel(m.CharacterId, m.Damage), nil
@@ -74,7 +75,7 @@ func handleKilledStatusEvent(l logrus.FieldLogger, ctx context.Context, e status
 			return
 		}
 
-		err = monster.DistributeExperience(l)(ctx)(f, e.MonsterId, dms)
+		err = monster.NewProcessor(l, ctx).DistributeExperience(f, e.MonsterId, dms)
 		if err != nil {
 			l.WithError(err).WithFields(logrus.Fields{
 				"worldId":   e.WorldId,
@@ -84,7 +85,7 @@ func handleKilledStatusEvent(l logrus.FieldLogger, ctx context.Context, e status
 				"monsterId": e.MonsterId,
 			}).Error("Failed to distribute experience for monster death.")
 		}
-	}()
+	})
 
 	wg.Wait()
 }

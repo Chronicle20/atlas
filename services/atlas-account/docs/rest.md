@@ -12,11 +12,12 @@ None.
 
 #### Request Model
 
+Binds to the `RestModel` struct (see GET /accounts/ Response Model for the full field list). Only the following fields are read by the handler:
+
 | Field | Type | JSON Key |
 |-------|------|----------|
 | Name | string | name |
-| Password | string | password |
-| Gender | byte | gender |
+| Password | string | - (field tag is `json:"-"`; never populated from the request body) |
 
 Resource type: `accounts`
 

@@ -14,6 +14,8 @@
 | Consumable Status | EVENT_TOPIC_CONSUMABLE_STATUS | Event | Consumable status events |
 | Guild Status | EVENT_TOPIC_GUILD_STATUS | Event | Guild service status events |
 | Invite Status | EVENT_TOPIC_INVITE_STATUS | Event | Invite status events (CREATED, ACCEPTED, REJECTED) |
+| Inventory Status | EVENT_TOPIC_INVENTORY_STATUS | Event | Inventory service status events (CREATED, CREATION_FAILED) |
+| MTS Custody Status | EVENT_TOPIC_MTS_CUSTODY_STATUS | Event | MTS custody status events (ACCEPTED, RELEASED, MOVED, ERROR) |
 | Pet Status | EVENT_TOPIC_PET_STATUS | Event | Pet service status events |
 | Quest Status | EVENT_TOPIC_QUEST_STATUS | Event | Quest service status events (STARTED, COMPLETED) |
 | Skill Status | EVENT_TOPIC_SKILL_STATUS | Event | Skill service status events (CREATED, UPDATED) |
@@ -45,7 +47,9 @@
 | Reactor Commands | COMMAND_TOPIC_REACTOR | Command | Reactor operations (HIT) |
 | Drop Commands | COMMAND_TOPIC_DROP | Command | Drop spawn operations (SPAWN) |
 | Map Commands | COMMAND_TOPIC_MAP | Command | Map operations (WEATHER_START) |
+| MTS Custody Commands | COMMAND_TOPIC_MTS_CUSTODY | Command | MTS listing/holding custody operations (ACCEPT_TO_MTS_LISTING, RELEASE_FROM_MTS_HOLDING, RESTORE_MTS_HOLDING, MTS_MOVE_LISTING_TO_HOLDING, REMOVE_MTS_LISTING, RESTORE_LISTING_FROM_HOLDING) |
 | Gachapon Reward Won | EVENT_TOPIC_GACHAPON_REWARD_WON | Event | Gachapon reward win announcements |
+| Conversation Reward Notice | EVENT_TOPIC_CONVERSATION_REWARD_NOTICE | Event | Item gain/loss notice for conversation-sourced saga steps |
 
 ## Message Types
 
@@ -98,6 +102,18 @@ StatusEvent[E]
 Status types: CREATED, DELETED, MOVED, QUANTITY_CHANGED
 
 The asset consumer handles `CREATED` events with special logic for `CreateAndEquipAsset` steps -- it dynamically adds an `EquipAsset` step to the saga after the current step, using the slot and template from the event to determine source slot and inventory type. For CREATED and QUANTITY_CHANGED events, the step is completed with a result containing `assetId`.
+
+### Inventory Status Event (Consumed)
+
+```
+StatusEvent[E]
+  transactionId: uuid.UUID
+  characterId: uint32
+  type: string
+  body: E
+```
+
+Status types: CREATED, CREATION_FAILED
 
 ### Compartment Command
 
@@ -158,7 +174,7 @@ Command[E]
   body: E
 ```
 
-Command types: CREATE_CHARACTER, CHANGE_MAP, CHANGE_JOB, CHANGE_HAIR, CHANGE_FACE, CHANGE_SKIN, AWARD_EXPERIENCE, DEDUCT_EXPERIENCE, AWARD_LEVEL, REQUEST_CHANGE_MESO, REQUEST_CHANGE_FAME, SET_HP, RESET_STATS
+Command types: CREATE_CHARACTER, CHANGE_MAP, CHANGE_JOB, CHANGE_HAIR, CHANGE_FACE, CHANGE_SKIN, AWARD_EXPERIENCE, DEDUCT_EXPERIENCE, AWARD_LEVEL, REQUEST_CHANGE_MESO, REQUEST_CHANGE_FAME, SET_HP, RESET_STATS, REBALANCE_AP, TRANSFER_AP, DELETE_CHARACTER
 
 ### Character Status Event (Consumed)
 
@@ -171,7 +187,7 @@ StatusEvent[E]
   body: E
 ```
 
-Status types: CREATED, MAP_CHANGED, JOB_CHANGED, EXPERIENCE_CHANGED, LEVEL_CHANGED, MESO_CHANGED, FAME_CHANGED, STAT_CHANGED, CREATION_FAILED, ERROR
+Status types: CREATED, MAP_CHANGED, JOB_CHANGED, EXPERIENCE_CHANGED, LEVEL_CHANGED, MESO_CHANGED, STAT_CHANGED, DELETED, CREATION_FAILED, ERROR
 
 ### Storage Command
 
@@ -523,6 +539,99 @@ RewardWonEvent
   gachaponId: string
   gachaponName: string
   assetId: uint32
+```
+
+### MTS Custody Command
+
+Produced to perform MTS listing/holding custody operations.
+
+```
+Command[E]
+  transactionId: uuid.UUID
+  type: string
+  body: E
+```
+
+Command types: ACCEPT_TO_MTS_LISTING, RELEASE_FROM_MTS_HOLDING, RESTORE_MTS_HOLDING, MTS_MOVE_LISTING_TO_HOLDING, REMOVE_MTS_LISTING, RESTORE_LISTING_FROM_HOLDING
+
+#### ACCEPT_TO_MTS_LISTING Body
+
+```
+AcceptToMtsListingCommandBody
+  listingId: uuid.UUID
+  worldId: byte
+  sellerId: uint32
+  sellerAccountId: uint32
+  sellerName: string
+  saleType: string
+  templateId: uint32
+  quantity: uint32
+  <equip stat block fields>
+  listValue: uint32
+  buyNowPrice: *uint32
+  commissionRate: float64
+  category: string
+  subCategory: string
+  endsAt: *time.Time
+  minIncrement: uint32
+  offerWishSerial: uint32
+  offerWishOwnerId: uint32
+```
+
+#### RELEASE_FROM_MTS_HOLDING / RESTORE_MTS_HOLDING Body
+
+```
+ReleaseFromMtsHoldingCommandBody / RestoreMtsHoldingCommandBody
+  holdingId: uuid.UUID
+```
+
+#### MTS_MOVE_LISTING_TO_HOLDING Body
+
+```
+MtsMoveListingToHoldingCommandBody
+  listingId: uuid.UUID
+  buyerId: uint32
+  worldId: byte
+  resultKind: string
+  price: uint32
+```
+
+#### REMOVE_MTS_LISTING Body
+
+```
+RemoveMtsListingCommandBody
+  listingId: uuid.UUID
+```
+
+#### RESTORE_LISTING_FROM_HOLDING Body
+
+```
+RestoreListingFromHoldingCommandBody
+  listingId: uuid.UUID
+  buyerId: uint32
+```
+
+### MTS Custody Status Event (Consumed)
+
+```
+StatusEvent[E]
+  transactionId: uuid.UUID
+  type: string
+  body: E
+```
+
+Status types consumed: ACCEPTED, RELEASED, MOVED, ERROR
+
+### Conversation Reward Notice Event
+
+Produced on successful completion of a conversation-sourced item gain/loss step where `ShowEffect` was set on the originating saga payload.
+
+```
+EventBody
+  characterId: uint32
+  kind: string (item_gain, item_loss)
+  itemId: uint32
+  quantity: uint32
 ```
 
 ## Transaction Semantics

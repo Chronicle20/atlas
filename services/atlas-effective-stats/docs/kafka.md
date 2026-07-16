@@ -168,7 +168,7 @@ Empty.
 | updates | []stat.Type | List of stat types that changed |
 | values | map[string]interface{} | Map of stat names to new values |
 
-The consumer filters for events containing relevant stats: `MAX_HP`, `MAX_MP`, `STRENGTH`, `DEXTERITY`, `INTELLIGENCE`, `LUCK`. Other stat changes are ignored.
+The consumer filters `updates` for two groups: numeric stats `MAX_HP`, `MAX_MP`, `STRENGTH`, `DEXTERITY`, `INTELLIGENCE`, `LUCK` (merged into base stats via `SetBaseStats`, preserving any field absent from `values`) and profile stats `LEVEL`, `JOB` (triggers a refetch of the wearer record from atlas-character and a `SetWearerProfile` call, since `values` is not populated for these). Other stat changes are ignored.
 
 ##### Event Types
 

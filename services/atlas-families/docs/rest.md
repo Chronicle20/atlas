@@ -16,10 +16,10 @@ Adds a junior to a senior's family.
 
 ```go
 type AddJuniorRequest struct {
-    WorldId     byte   `json:"worldId"`
-    SeniorLevel uint16 `json:"seniorLevel"`
-    JuniorId    uint32 `json:"juniorId"`
-    JuniorLevel uint16 `json:"juniorLevel"`
+    WorldId     world.Id `json:"worldId"`
+    SeniorLevel uint16   `json:"seniorLevel"`
+    JuniorId    uint32   `json:"juniorId"`
+    JuniorLevel uint16   `json:"juniorLevel"`
 }
 ```
 
@@ -38,7 +38,7 @@ type RestFamilyMember struct {
     Rep         uint32   `json:"rep"`
     DailyRep    uint32   `json:"dailyRep"`
     Level       uint16   `json:"level"`
-    World       byte     `json:"world"`
+    World       world.Id `json:"world"`
     CreatedAt   string   `json:"createdAt"`
     UpdatedAt   string   `json:"updatedAt"`
 }
@@ -71,6 +71,10 @@ Breaks a family link for a character.
 |------|----------|------|----------|-------------|
 | characterId | path | uint32 | Yes | Character ID |
 | reason | query | string | No | Reason for breaking link (default: "Member requested link break") |
+| page[number] | query | int | No | Page number (default 1) |
+| page[size] | query | int | No | Page size (default 250, max 250) |
+
+The legacy `limit` query parameter is rejected.
 
 #### Request Model
 
@@ -78,12 +82,13 @@ None
 
 #### Response Model
 
-Returns array of RestFamilyMember (JSON:API type: familyMembers)
+Returns a paginated collection of RestFamilyMember (JSON:API type: familyMembers) containing every member updated by the break (the character, its former senior, and/or its former juniors), stable-sorted by characterId, with a JSON:API `meta`/`links` pagination envelope.
 
 #### Error Conditions
 
 | Status | Condition |
 |--------|-----------|
+| 400 Bad Request | Invalid page[number]/page[size] (non-integer, out of range, or legacy limit param used) |
 | 404 Not Found | Member not found |
 | 409 Conflict | No link to break |
 | 500 Internal Server Error | Internal error |
@@ -99,6 +104,10 @@ Retrieves the complete family tree for a character.
 | Name | Location | Type | Required | Description |
 |------|----------|------|----------|-------------|
 | characterId | path | uint32 | Yes | Character ID |
+| page[number] | query | int | No | Page number (default 1) |
+| page[size] | query | int | No | Page size (default 250, max 250) |
+
+The legacy `limit` query parameter is rejected.
 
 #### Request Model
 
@@ -106,20 +115,13 @@ None
 
 #### Response Model
 
-Returns RestFamilyTree (JSON:API type: familyTrees)
-
-```go
-type RestFamilyTree struct {
-    ID      string             `json:"id"`
-    Type    string             `json:"type"`
-    Members []RestFamilyMember `json:"members"`
-}
-```
+Returns a paginated collection of RestFamilyMember (JSON:API type: familyMembers) containing the character, its senior (if any), its juniors (if any), and its siblings (other juniors of the same senior), stable-sorted by characterId, with a JSON:API `meta`/`links` pagination envelope.
 
 #### Error Conditions
 
 | Status | Condition |
 |--------|-----------|
+| 400 Bad Request | Invalid page[number]/page[size] (non-integer, out of range, or legacy limit param used) |
 | 404 Not Found | Member not found |
 | 500 Internal Server Error | Internal error |
 
@@ -142,19 +144,9 @@ JSON:API resource type for family members.
 | rep | uint32 | Total reputation |
 | dailyRep | uint32 | Daily reputation |
 | level | uint16 | Character level |
-| world | byte | World identifier |
+| world | world.Id | World identifier |
 | createdAt | string | RFC3339 timestamp |
 | updatedAt | string | RFC3339 timestamp |
-
-### familyTrees
-
-JSON:API resource type for family trees.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| id | string | Resource identifier |
-| type | string | "familyTrees" |
-| members | []RestFamilyMember | Family members in tree |
 
 ## Error Response Format
 

@@ -4,13 +4,15 @@
 
 ### GET /api/characters/{characterId}/quests
 
-Retrieves all quest statuses for a character.
+Retrieves a page of quest statuses for a character.
 
 #### Parameters
 
 | Name | Location | Type | Required | Description |
 |------|----------|------|----------|-------------|
 | characterId | path | uint32 | Yes | Character identifier |
+| page[number] | query | int | No | Page number (default: 1) |
+| page[size] | query | int | No | Page size (default: 250, max: 250) |
 
 #### Request Headers
 
@@ -23,56 +25,63 @@ Retrieves all quest statuses for a character.
 
 #### Response Model
 
-Array of `quest-status` resources.
+Paginated array of `quest-status` resources.
 
 #### Error Conditions
 
 | Status | Condition |
 |--------|-----------|
+| 400 | Invalid page[number]/page[size] |
 | 500 | Database error |
 
 ---
 
 ### GET /api/characters/{characterId}/quests/started
 
-Retrieves all started quests for a character.
+Retrieves a page of started quests for a character.
 
 #### Parameters
 
 | Name | Location | Type | Required | Description |
 |------|----------|------|----------|-------------|
 | characterId | path | uint32 | Yes | Character identifier |
+| page[number] | query | int | No | Page number (default: 1) |
+| page[size] | query | int | No | Page size (default: 250, max: 250) |
 
 #### Response Model
 
-Array of `quest-status` resources with state = 1.
+Paginated array of `quest-status` resources with state = 1.
 
 #### Error Conditions
 
 | Status | Condition |
 |--------|-----------|
+| 400 | Invalid page[number]/page[size] |
 | 500 | Database error |
 
 ---
 
 ### GET /api/characters/{characterId}/quests/completed
 
-Retrieves all completed quests for a character.
+Retrieves a page of completed quests for a character.
 
 #### Parameters
 
 | Name | Location | Type | Required | Description |
 |------|----------|------|----------|-------------|
 | characterId | path | uint32 | Yes | Character identifier |
+| page[number] | query | int | No | Page number (default: 1) |
+| page[size] | query | int | No | Page size (default: 250, max: 250) |
 
 #### Response Model
 
-Array of `quest-status` resources with state = 2.
+Paginated array of `quest-status` resources with state = 2.
 
 #### Error Conditions
 
 | Status | Condition |
 |--------|-----------|
+| 400 | Invalid page[number]/page[size] |
 | 500 | Database error |
 
 ---
@@ -204,13 +213,12 @@ Returns 204 No Content.
 |--------|-----------|
 | 400 | Quest not in started state |
 | 404 | Quest not found |
-| 500 | Database error |
 
 ---
 
 ### GET /api/characters/{characterId}/quests/{questId}/progress
 
-Retrieves progress entries for a quest.
+Retrieves a page of progress entries for a quest.
 
 #### Parameters
 
@@ -218,15 +226,18 @@ Retrieves progress entries for a quest.
 |------|----------|------|----------|-------------|
 | characterId | path | uint32 | Yes | Character identifier |
 | questId | path | uint32 | Yes | Quest identifier |
+| page[number] | query | int | No | Page number (default: 1) |
+| page[size] | query | int | No | Page size (default: 250, max: 250) |
 
 #### Response Model
 
-Array of `progress` resources.
+Paginated array of `progress` resources, ordered by internal ID.
 
 #### Error Conditions
 
 | Status | Condition |
 |--------|-----------|
+| 400 | Invalid page[number]/page[size] |
 | 404 | Quest not found |
 | 500 | Database error |
 
@@ -262,7 +273,6 @@ Returns 204 No Content.
 |--------|-----------|
 | 400 | Quest not in started state |
 | 404 | Quest not found |
-| 500 | Database error |
 
 ---
 

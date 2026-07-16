@@ -22,6 +22,7 @@ This service makes REST calls to:
 - **Data Service** (`DATA`): Calculate drop positions, foothold lookups, portal data, NPC data
 - **Cash Shop Service** (`CASHSHOP`): Retrieve cash shop compartments for step expansion
 - **Gachapon Service** (`GACHAPONS_URL`): Select random gachapon rewards and retrieve gachapon metadata
+- **MTS Service** (`MTS`): Retrieve a character's MTS holdings for withdraw-from-MTS step expansion
 - **Transport Service** (`TRANSPORTS_URL`): Start instance-based transports
 - **Character Service** (`CHARACTER_URL`): Save and retrieve character locations
 - **Monster Service** (`MONSTERS`): Spawn monsters via REST
@@ -49,6 +50,7 @@ This service makes REST calls to:
 | STORAGE | Base URL for storage service |
 | CASHSHOP | Base URL for cash shop service |
 | GACHAPONS_URL | Base URL for gachapon service |
+| MTS | Base URL for MTS service |
 | TRANSPORTS_URL | Base URL for transport service |
 | CHARACTER_URL | Base URL for character service (saved locations) |
 | MONSTERS | Base URL for monster service |
@@ -82,9 +84,12 @@ This service makes REST calls to:
 | COMMAND_TOPIC_REACTOR | Reactor commands |
 | COMMAND_TOPIC_DROP | Drop spawn commands |
 | COMMAND_TOPIC_MAP | Map commands |
+| COMMAND_TOPIC_MTS_CUSTODY | MTS listing/holding custody commands |
 | EVENT_TOPIC_SAGA_STATUS | Saga status output |
 | EVENT_TOPIC_ASSET_STATUS | Asset status input |
 | EVENT_TOPIC_BUDDY_LIST_STATUS | Buddy list status input |
+| EVENT_TOPIC_INVENTORY_STATUS | Inventory status input |
+| EVENT_TOPIC_MTS_CUSTODY_STATUS | MTS custody status input |
 | EVENT_TOPIC_WALLET_STATUS | Wallet status input |
 | EVENT_TOPIC_CASH_COMPARTMENT_STATUS | Cash shop compartment status input |
 | EVENT_TOPIC_CHARACTER_STATUS | Character status input |
@@ -98,6 +103,7 @@ This service makes REST calls to:
 | EVENT_TOPIC_STORAGE_STATUS | Storage service status input |
 | EVENT_TOPIC_STORAGE_COMPARTMENT_STATUS | Storage compartment status input |
 | EVENT_TOPIC_GACHAPON_REWARD_WON | Gachapon reward win events output |
+| EVENT_TOPIC_CONVERSATION_REWARD_NOTICE | Conversation-sourced item gain/loss notice output |
 
 ## Documentation
 

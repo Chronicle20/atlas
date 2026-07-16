@@ -47,17 +47,6 @@ Represents the result of processing a portal script.
 | Operations | []operation.Model | Operations that were executed |
 | Error | error | Any error that occurred |
 
-### SeedResult
-
-Represents the result of a seed operation.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| DeletedCount | int | Number of scripts deleted |
-| CreatedCount | int | Number of scripts created |
-| FailedCount | int | Number of scripts that failed to load or create |
-| Errors | []string | Error messages for failed scripts |
-
 ## Invariants
 
 - Rules are evaluated in order; first matching rule wins
@@ -79,9 +68,8 @@ Handles CRUD operations, seeding, and script execution.
 | Delete | Deletes a portal script |
 | ByIdProvider | Retrieves a portal script by UUID |
 | ByPortalIdProvider | Retrieves a portal script by portal ID |
-| AllProvider | Retrieves all portal scripts for tenant |
-| DeleteAllForTenant | Deletes all scripts for current tenant |
-| Seed | Clears existing scripts and loads from filesystem |
+| AllProvider | Retrieves one page of portal scripts for tenant |
+| Count | Returns the number of portal scripts for the tenant and the max updated_at timestamp |
 | Process | Processes a portal entry request |
 
 ### ConditionEvaluator
@@ -111,6 +99,22 @@ Loads portal scripts from JSON files on the filesystem. Maintains an in-memory c
 | ClearCache | Clears the in-memory script cache |
 | Preload | Loads all scripts from directory into cache |
 
+### PortalSubdomain
+
+Implements the `atlas-seeder` `Subdomain` interface for catalog-based portal script seeding.
+
+| Method | Description |
+|--------|-------------|
+| Name | Returns "portal-actions" |
+| Path | Returns "portal-actions/portals" |
+| Type | Returns "portal-action" |
+| EntityIDPattern | Matches catalog filenames of the form `portal-<id>.json` |
+| DeleteAllForTenant | Hard-deletes all portal scripts for the current tenant |
+| Decode | Decodes a catalog file's JSON:API attributes into script JSON structure |
+| Build | Converts decoded catalog attributes into a PortalScript model |
+| BulkCreate | Bulk-inserts PortalScript models as entities |
+| Count | Returns the number of portal scripts for the tenant |
+
 ## Condition Types
 
 Condition types are defined by the `atlas-script-core/condition` library. The evaluator forwards conditions to the validation service for evaluation.
@@ -119,8 +123,9 @@ Condition types are defined by the `atlas-script-core/condition` library. The ev
 |------|-------------|
 | level | Character level |
 | job | Character job ID |
-| quest_state | Quest completion state |
 | item | Item possession check |
+| meso | Character meso amount |
+| quest_status | Quest completion state |
 | buff | Active buff check |
 
 ## Operation Types
@@ -139,6 +144,7 @@ Condition types are defined by the `atlas-script-core/condition` library. The ev
 | cancel_consumable_effect | Cancel consumable effect (buff) | itemId |
 | save_location | Save character location | locationType, mapId, portalId |
 | warp_to_saved_location | Warp to previously saved location | locationType |
+| start_quest | Start a quest for the character | questId, npcId |
 
 ---
 

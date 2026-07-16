@@ -124,7 +124,7 @@ Topic: `EVENT_TOPIC_CHARACTER_STATUS`
 
 Topic: `COMMAND_TOPIC_SAGA`
 
-Saga messages are produced for operations including warp, play_portal_sound, drop_message, show_hint, block_portal, create_skill, update_skill, start_instance_transport, apply_consumable_effect, cancel_consumable_effect, save_location, and warp_to_saved_location.
+Saga messages are produced for operations including warp, play_portal_sound, drop_message, show_hint, block_portal, create_skill, update_skill, start_instance_transport, apply_consumable_effect, cancel_consumable_effect, save_location, warp_to_saved_location, and start_quest.
 
 ## Transaction Semantics
 

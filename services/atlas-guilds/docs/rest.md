@@ -4,13 +4,18 @@
 
 ### GET /api/guilds
 
-Retrieves all guilds.
+Retrieves all guilds. Supports at most one of the `filter[members.id]` or `filter[name]` query parameters; if neither is supplied, all guilds are returned.
 
 **Parameters**
 
 | Name | Location | Required | Description |
 |------|----------|----------|-------------|
 | `filter[members.id]` | query | No | Filter by member character ID |
+| `filter[name]` | query | No | Filter by guild name (substring match) |
+| `page[number]` | query | No | Page number (default 1) |
+| `page[size]` | query | No | Page size (default 50, max 250) |
+
+The legacy `limit` query parameter is rejected.
 
 **Request Model**
 
@@ -56,7 +61,9 @@ JSON:API response with resource type `guilds`.
         ]
       }
     }
-  ]
+  ],
+  "meta": {},
+  "links": {}
 }
 ```
 
@@ -64,7 +71,9 @@ JSON:API response with resource type `guilds`.
 
 | Status | Condition |
 |--------|-----------|
-| 400 | Invalid member ID filter value |
+| 400 | `filter[members.id]` value is not an integer |
+| 400 | `filter[name]` value is empty |
+| 400 | Invalid `page[number]`/`page[size]` (non-integer, out of range, or legacy `limit` param used) |
 | 500 | Database error |
 
 ---
@@ -114,6 +123,7 @@ JSON:API response with resource type `guilds`.
 
 | Status | Condition |
 |--------|-----------|
+| 400 | `guildId` is not an integer |
 | 500 | Guild not found or database error |
 
 ---
@@ -127,6 +137,10 @@ Retrieves all threads for a guild.
 | Name | Location | Required | Description |
 |------|----------|----------|-------------|
 | `guildId` | path | Yes | Guild identifier |
+| `page[number]` | query | No | Page number (default 1) |
+| `page[size]` | query | No | Page size (default 50, max 250) |
+
+The legacy `limit` query parameter is rejected.
 
 **Request Model**
 
@@ -159,7 +173,9 @@ JSON:API response with resource type `threads`.
         "createdAt": "2024-01-01T00:00:00Z"
       }
     }
-  ]
+  ],
+  "meta": {},
+  "links": {}
 }
 ```
 
@@ -167,6 +183,8 @@ JSON:API response with resource type `threads`.
 
 | Status | Condition |
 |--------|-----------|
+| 400 | `guildId` is not an integer |
+| 400 | Invalid `page[number]`/`page[size]` (non-integer, out of range, or legacy `limit` param used) |
 | 500 | Database error |
 
 ---
@@ -212,4 +230,5 @@ JSON:API response with resource type `threads`.
 
 | Status | Condition |
 |--------|-----------|
+| 400 | `guildId` or `threadId` is not an integer |
 | 500 | Thread not found or database error |

@@ -30,14 +30,14 @@ Represents a personal (character) shop or hired merchant placed in a Free Market
 | closeReason | CloseReason | Reason for closure |
 | mesoBalance | uint32 | Accumulated meso balance (hired merchants) |
 
-**ShopType** (`shop/state.go:8-13`)
+**ShopType** (`shop/state.go:8-13`) — alias of `merchantconst.ShopType` (`libs/atlas-constants/merchant/shop.go`)
 
 | Value | Name |
 |---|---|
 | 1 | CharacterShop |
 | 2 | HiredMerchant |
 
-**State** (`shop/state.go:15-22`)
+**State** (`shop/state.go:15-22`) — alias of `merchantconst.ShopState` (`libs/atlas-constants/merchant/shop.go`)
 
 | Value | Name |
 |---|---|
@@ -99,7 +99,7 @@ Listings may be added, removed, updated, or organized only in Draft or Maintenan
 
 **shop.Processor** (`shop/processor.go`)
 
-Read/query: GetById, ByIdProvider, GetByCharacterId, GetByField, GetAllOpen, GetListingCounts, SearchListingsByItemId, GetListings, GetExpired, GetBlacklist, GetVisits, GetVisitors, GetShopForCharacter.
+Read/query: GetById, ByIdProvider, GetByCharacterId, GetByCharacterIdPaged, GetByField, GetByFieldPaged, GetAllOpenPaged, GetListingCounts, SearchListingsByItemIdPaged, GetListings, GetListingsPaged, GetExpired, GetBlacklistPaged, GetVisitsPaged, GetVisitors, GetShopForCharacter.
 
 Mutating (each has an `...AndEmit` wrapper that runs the mutation in a transaction and emits via the outbox, except the Redis-only EnterShop/ExitShop paths which emit directly):
 
@@ -176,7 +176,7 @@ Represents an item listed for sale within a shop, as a set of bundles with a fro
 
 ### Processors
 
-**listing.Processor** (`listing/processor.go`) — pure database operations, no messaging: GetByShopId, GetByShopIdAndDisplayOrder, CountByShopId, CountByShopIds, Create, Delete, DeleteByShopId, UpdateBundles (optimistic), DecrementDisplayOrderAfter, SetDisplayOrder, UpdateFields. Listing mutations are orchestrated by the shop processor.
+**listing.Processor** (`listing/processor.go`) — pure database operations, no messaging: GetByShopId, GetByShopIdPaged, GetByShopIdAndDisplayOrder, CountByShopId, CountByShopIds, Create, Delete, DeleteByShopId, UpdateBundles (optimistic), DecrementDisplayOrderAfter, SetDisplayOrder, UpdateFields. Listing mutations are orchestrated by the shop processor.
 
 ---
 
@@ -200,7 +200,7 @@ The domain surface is a set of names plus the persisted record (id, tenant, shop
 
 - Add — add a name to a shop's blacklist (idempotent).
 - Remove — remove a name from a shop's blacklist.
-- Names — list a shop's blacklisted names (ordered by name).
+- NamesPaged — list a shop's blacklisted names, paged (ordered by name).
 - IsBlacklisted — whether a name is blacklisted for a shop.
 
 Enforcement is in `shop.EnterShop`: a blacklisted visitor name is denied entry (a lookup error fails open, admitting the visitor). Adding a name via the shop processor also ejects that character if they are currently present.
@@ -232,7 +232,7 @@ Persistent per-shop visit tally keyed by visitor name, backing the hired-merchan
 **visit.Processor** (`visit/processor.go`)
 
 - Record — record a visit for a name (atomic increment). Called best-effort on successful shop entry; a failure is logged, not fatal.
-- List — list a shop's visits ordered by count descending.
+- ListPaged — list a shop's visits, paged (ordered by count descending).
 
 ---
 

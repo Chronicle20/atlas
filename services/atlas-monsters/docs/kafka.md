@@ -46,6 +46,29 @@ Triggers control stop for monsters controlled by the exiting character and reass
 }
 ```
 
+### EVENT_TOPIC_DATA
+
+atlas-data cache-invalidation events. Consumed from `kafka.LastOffset` (new events only, not replayed from the start of the topic). Disabled entirely when `DATA_EVENTS_CONSUMER_ENABLED=false` (default enabled).
+
+**Consumer Group:** Monster Data Cache Invalidator (shared across replicas, not per-pod)
+
+**Message Types:**
+
+#### DATA_UPDATED
+
+Signals that atlas-data has refreshed data for a worker/tenant. Only events with `worker == "MONSTER"` are processed; others are ignored.
+
+```json
+{
+  "type": "DATA_UPDATED",
+  "body": {
+    "tenantId": "uuid",
+    "worker": "MONSTER",
+    "completedAt": "2024-01-01T00:00:00Z"
+  }
+}
+```
+
 ### COMMAND_TOPIC_MONSTER
 
 Monster commands for damage, status effects, and skill use.
@@ -111,10 +134,15 @@ Cancels status effects from a specific monster. If `statusTypes` is empty, all s
   "monsterId": 0,
   "type": "CANCEL_STATUS",
   "body": {
-    "statusTypes": ["STATUS_TYPE"]
+    "statusTypes": ["STATUS_TYPE"],
+    "sourceCharacterId": 0,
+    "sourceSkillId": 0,
+    "sourceSkillClass": "PHYSICAL"
   }
 }
 ```
+
+`sourceSkillClass` is "PHYSICAL", "MAGICAL", or empty. When non-empty, the cancel is refused if the monster has an active same-kind reflect status, unless every requested status type is itself a reflect status.
 
 #### USE_SKILL
 
@@ -130,6 +158,40 @@ Commands a monster to use a skill.
     "characterId": 0,
     "skillId": 0,
     "skillLevel": 0
+  }
+}
+```
+
+#### USE_BASIC_ATTACK
+
+Applies the post-conditions (MP deduction, attack-position cooldown) of a basic monster attack.
+
+```json
+{
+  "worldId": 0,
+  "channelId": 0,
+  "monsterId": 0,
+  "type": "USE_BASIC_ATTACK",
+  "body": {
+    "attackPos": 0
+  }
+}
+```
+
+#### DRAIN_MP
+
+Requests an MP deduction from a monster in response to a player MP-Eater proc.
+
+```json
+{
+  "worldId": 0,
+  "channelId": 0,
+  "monsterId": 0,
+  "type": "DRAIN_MP",
+  "body": {
+    "characterId": 0,
+    "skillId": 0,
+    "amount": 0
   }
 }
 ```
@@ -178,7 +240,7 @@ Applies a status effect to all monsters in a field.
 
 #### CANCEL_STATUS_FIELD
 
-Cancels status effects from all monsters in a field. If `statusTypes` is empty, all status effects are cancelled.
+Cancels status effects from all monsters in a field. If `statusTypes` is empty, all status effects are cancelled. Body shape and the `sourceSkillClass` reflect guard are identical to CANCEL_STATUS.
 
 ```json
 {
@@ -188,7 +250,31 @@ Cancels status effects from all monsters in a field. If `statusTypes` is empty, 
   "instance": "uuid",
   "type": "CANCEL_STATUS_FIELD",
   "body": {
-    "statusTypes": ["STATUS_TYPE"]
+    "statusTypes": ["STATUS_TYPE"],
+    "sourceCharacterId": 0,
+    "sourceSkillId": 0,
+    "sourceSkillClass": "PHYSICAL"
+  }
+}
+```
+
+#### SPAWN_FIELD
+
+Spawns a monster in a field.
+
+```json
+{
+  "worldId": 0,
+  "channelId": 0,
+  "mapId": 0,
+  "instance": "uuid",
+  "type": "SPAWN_FIELD",
+  "body": {
+    "monsterId": 0,
+    "x": 0,
+    "y": 0,
+    "fh": 0,
+    "team": 0
   }
 }
 ```
@@ -223,6 +309,38 @@ Destroys all monsters in a field.
   "instance": "uuid",
   "type": "DESTROY_FIELD",
   "body": {}
+}
+```
+
+#### ADD_PUPPET
+
+Registers a player's puppet in a field so the controller picker can bias toward the puppet's owner. Emitted by atlas-summons on puppet spawn. Unlike the other message types on this topic, the fields are flat on the envelope (no nested `body`).
+
+```json
+{
+  "worldId": 0,
+  "channelId": 0,
+  "mapId": 0,
+  "instance": "uuid",
+  "type": "ADD_PUPPET",
+  "ownerCharacterId": 0,
+  "x": 0,
+  "y": 0
+}
+```
+
+#### REMOVE_PUPPET
+
+Clears a previously registered puppet. Emitted by atlas-summons on puppet despawn. Fields are flat on the envelope.
+
+```json
+{
+  "worldId": 0,
+  "channelId": 0,
+  "mapId": 0,
+  "instance": "uuid",
+  "type": "REMOVE_PUPPET",
+  "ownerCharacterId": 0
 }
 ```
 
@@ -447,12 +565,19 @@ Emitted when a status effect is applied to a monster.
     "statuses": {
       "STATUS_TYPE": 0
     },
-    "duration": 0
+    "duration": 0,
+    "reflectKind": "",
+    "reflectPercent": 0,
+    "reflectLtX": 0,
+    "reflectLtY": 0,
+    "reflectRbX": 0,
+    "reflectRbY": 0,
+    "reflectMaxDamage": 0
   }
 }
 ```
 
-`duration` is in milliseconds.
+`duration` is in milliseconds. The `reflect*` fields are populated (non-zero/non-empty `reflectKind`) only for reflect-type effects (WEAPON_COUNTER/MAGIC_COUNTER); otherwise they carry their zero values.
 
 #### STATUS_EXPIRED
 
@@ -514,12 +639,12 @@ Emitted when a monster reflects damage back to a character.
   "body": {
     "characterId": 0,
     "reflectDamage": 0,
-    "reflectType": "WEAPON_REFLECT"
+    "reflectType": "WEAPON_COUNTER"
   }
 }
 ```
 
-`reflectType`: "WEAPON_REFLECT" or "MAGIC_REFLECT".
+`reflectType`: "WEAPON_COUNTER" (non-magic attacks) or "MAGIC_COUNTER" (magic attacks).
 
 #### FRIENDLY_DROP
 
@@ -539,6 +664,93 @@ Emitted when a friendly monster's drop timer produces items.
   }
 }
 ```
+
+#### NEXT_SKILL_DECIDED
+
+Emitted whenever the skill picker runs (see docs/domain.md Skill Picker), including sentinel ("no skill") and unchanged decisions. Unlike the other monster status events, this message is keyed by `uniqueId` rather than `mapId` so a single monster's decisions stay ordered.
+
+```json
+{
+  "worldId": 0,
+  "channelId": 0,
+  "mapId": 0,
+  "instance": "uuid",
+  "uniqueId": 0,
+  "monsterId": 0,
+  "type": "NEXT_SKILL_DECIDED",
+  "body": {
+    "skillId": 0,
+    "skillLevel": 0,
+    "decidedAtMs": 0,
+    "nextEligibleRepickAtMs": 0
+  }
+}
+```
+
+`skillId`/`skillLevel` are 0 for the sentinel ("no skill") decision.
+
+#### MP_CHANGED
+
+Emitted whenever a monster's MP is mutated (skill cast, basic attack, MP-Eater drain, or MP recovery).
+
+```json
+{
+  "worldId": 0,
+  "channelId": 0,
+  "mapId": 0,
+  "instance": "uuid",
+  "uniqueId": 0,
+  "monsterId": 0,
+  "type": "MP_CHANGED",
+  "body": {
+    "characterId": 0,
+    "skillId": 0,
+    "reason": "MP_EATER",
+    "amount": 0,
+    "monsterMpAfter": 0
+  }
+}
+```
+
+`reason`: "MP_EATER", "SKILL_CAST", "BASIC_ATTACK", or "RECOVERY". `amount` is the requested/applied amount (for MP_EATER, the full requested amount regardless of clamping); `monsterMpAfter` is the monster's MP after the change.
+
+### COMMAND_TOPIC_MIST
+
+Mist (area-effect) creation commands produced when a monster casts an AREA_POISON skill. Keyed by `ownerId` (the casting monster's uniqueId).
+
+**Message Type:**
+
+#### CREATE
+
+```json
+{
+  "tenant": "uuid",
+  "type": "CREATE",
+  "body": {
+    "worldId": 0,
+    "channelId": 0,
+    "mapId": 0,
+    "instance": "uuid",
+    "ownerType": "MONSTER",
+    "ownerId": 0,
+    "originX": 0,
+    "originY": 0,
+    "ltX": 0,
+    "ltY": 0,
+    "rbX": 0,
+    "rbY": 0,
+    "disease": "POISON",
+    "diseaseValue": 0,
+    "diseaseDuration": 0,
+    "duration": 0,
+    "tickIntervalMs": 1000,
+    "sourceSkillId": 0,
+    "sourceSkillLevel": 0
+  }
+}
+```
+
+`duration` and `diseaseDuration` are in milliseconds, capped at 60,000 server-side regardless of the skill's configured duration.
 
 ### COMMAND_TOPIC_CHARACTER_BUFF
 
@@ -652,21 +864,31 @@ Spawns an item or meso drop in a field.
 
 #### MonsterAggroDecayTask
 
-Runs every 1500ms. For each non-boss monster across all tenants:
+Runs every 1500ms (`AggroSweepInterval`). For each non-boss monster across all tenants:
 - Skips bosses (`information.Boss() == true`) and monsters with empty damage tables.
 - Pre-filters in Go: if no damage entry has been idle longer than `AggroIdleThresholdMs` (10s), the monster is skipped without a Redis write.
-- Otherwise calls `decayDamageEntriesScript` (Lua) which decays idle entries by `AggroDecayMultiplier` (0.85) per tick and prunes any below `AggroDecayFloor` (1).
-- When all entries are pruned on a monster whose `controllerHasAggro` was `true`, the script flips `controllerHasAggro` to `false` (active → passive) and the task emits `AGGRO_CHANGED` with the existing `controllerCharacterId` and `controllerHasAggro: false`. The controller itself is **not** cleared — losing aggro is not the same as losing control; the existing controller continues driving the monster's idle/wander AI on the client.
+- Otherwise applies an atomic decay update (via the shared atlas-redis Registry's optimistic-lock `Update`, not a Lua script) that decays idle entries by `AggroDecayMultiplier` (0.85) per tick and prunes any below `AggroDecayFloor` (1).
+- When all entries are pruned on a monster whose `controllerHasAggro` was `true`, the update flips `controllerHasAggro` to `false` (active → passive) and the task emits `AGGRO_CHANGED` with the existing `controllerCharacterId` and `controllerHasAggro: false`. The controller itself is **not** cleared — losing aggro is not the same as losing control; the existing controller continues driving the monster's idle/wander AI on the client.
 
 Boss monsters retain their damage table and aggro state until death.
+
+#### MonsterSkillPickerSweepTask
+
+Runs every 1500ms (`MonsterSkillPickerSweepInterval`). For each live monster across all tenants whose `nextEligibleRepickAtMs` is non-zero and has elapsed, that currently has aggro, and whose template has at least one skill: re-runs the skill picker and emits `NEXT_SKILL_DECIDED`. See docs/domain.md Skill Picker for the picker algorithm.
+
+#### MonsterRecoveryTask
+
+Runs every 10s (`MonsterRecoveryInterval`). For each live monster across all tenants whose HP or MP is below maximum: applies HP recovery (gated by a 10s idle-since-last-damage window) and MP recovery (unconditional) using atlas-data's per-monster hpRecovery/mpRecovery values. Emits `DAMAGED` (damageSource `HEAL`, 0 damage) when HP was applied and `MP_CHANGED` (reason `RECOVERY`) when MP was applied. Dead monsters (hp == 0) are skipped.
 
 ## Transaction Semantics
 
 - All messages include span and tenant headers for tracing and multi-tenancy
-- Monster status events are keyed by mapId for partition ordering within a map
+- Monster status events are keyed by mapId for partition ordering within a map, except NEXT_SKILL_DECIDED, which is keyed by uniqueId
+- Mist create commands are keyed by ownerId (the casting monster's uniqueId)
 - Character buff commands are keyed by characterId
 - Portal commands are keyed by characterId
 - Drop spawn commands are keyed by mapId
+- The EVENT_TOPIC_DATA consumer reads from the topic's latest offset (not replayed from the start) and uses a single shared consumer group across replicas, since the cache it invalidates lives in shared Redis
 
 ## Headers
 

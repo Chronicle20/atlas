@@ -31,6 +31,7 @@ Represents an active channel server instance within a world.
 - ipAddress must not be empty
 - port must be between 1 and 65535
 - maxCapacity must be greater than 0
+- a registry entry is unregistered if not re-registered within 15 seconds of its createdAt timestamp
 
 ### Processors
 

@@ -178,8 +178,8 @@ All invite commands use `inviteType: "BUDDY"`.
 ```
 
 Error codes:
-- `BUDDY_LIST_FULL`: Requester's buddy list is at capacity
-- `OTHER_BUDDY_LIST_FULL`: Target's buddy list is at capacity
+- `BUDDY_LIST_FULL`: Requester's or target's buddy list is at capacity
+- `OTHER_BUDDY_LIST_FULL`: Defined but not emitted by any current code path (both list-full checks emit `BUDDY_LIST_FULL`)
 - `ALREADY_BUDDY`: Characters are already buddies
 - `CANNOT_BUDDY_GM`: Attempted to buddy a game master
 - `CHARACTER_NOT_FOUND`: Character not found
@@ -190,7 +190,7 @@ Error codes:
 
 ## Transaction Semantics
 
-- Buddy list commands include optional `transactionId` for saga coordination
-- Status events include `transactionId` when command included one
-- All database operations within a single command are wrapped in a transaction
-- Events are buffered and emitted after successful transaction commit
+- Every `Command[E]` envelope includes an optional `transactionId` field. Only the `INCREASE_CAPACITY` handler reads it, propagating it into the `CAPACITY_CHANGE` status event body's `transactionId` field (a nil UUID when the caller supplied none). Other command handlers accept but do not use it.
+- All database operations within a single command handler are wrapped in a transaction (`database.ExecuteTransaction`).
+- On success, status events are written to a transactional outbox (`outbox.EmitProvider`) inside the same database transaction as the state change, then published to Kafka asynchronously by a background drainer. The drainer runs leader-elected via a Postgres advisory lock (`main.go`).
+- `RequestAddBuddy`, `RequestDeleteBuddy`, and `AcceptInvite` accumulate their events in a scratch buffer during the transaction attempt. If the transaction fails and rolls back, any resulting `ERROR` status event is published directly through the Kafka producer instead of the outbox, since the rolled-back transaction cannot carry an outbox write.

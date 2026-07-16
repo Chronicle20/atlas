@@ -21,9 +21,7 @@ The service manages gachapon machines, their item pools, and reward selection. E
 | DB_USER | PostgreSQL user |
 | DB_PASSWORD | PostgreSQL password |
 | DB_NAME | PostgreSQL database name |
-| GACHAPONS_DATA_PATH | Override path for gachapons seed JSON file |
-| GACHAPON_ITEMS_DATA_PATH | Override path for gachapon items seed JSON file |
-| GLOBAL_ITEMS_DATA_PATH | Override path for global items seed JSON file |
+| SEED_CATALOG_ROOT | Override root directory for the gachapons seed catalog (default `./deploy/seed`) |
 
 ## Documentation
 

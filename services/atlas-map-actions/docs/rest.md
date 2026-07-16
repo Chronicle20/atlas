@@ -8,13 +8,19 @@ Resource type: `map-scripts`
 
 ### GET /maps/actions
 
-Returns all map scripts for the current tenant.
+Returns one page of map scripts for the current tenant.
 
-**Parameters:** None.
+**Parameters:**
 
-**Response model:** `[]RestModel` (JSON:API)
+| Name | In | Type | Description |
+|------|----|------|-------------|
+| `page[number]` | query | int | Page number (default `1`) |
+| `page[size]` | query | int | Page size (default `50`, max `250`) |
+
+**Response model:** `[]RestModel` (JSON:API, paginated — includes `meta.total`, `meta.page.number`, `meta.page.size`, `meta.page.last`, and `self`/`first`/`last`/`prev`/`next` links)
 
 **Error conditions:**
+- `400` — Invalid `page[number]`/`page[size]`.
 - `500` — Internal error retrieving scripts.
 
 ---
@@ -125,40 +131,63 @@ Returns `204 No Content` on success.
 
 ### GET /maps/{scriptName}/actions
 
-Returns all map scripts matching the given script name (across all types).
+Returns one page of map scripts matching the given script name (across all types).
 
 **Parameters:**
 
 | Name | In | Type | Description |
 |------|----|------|-------------|
 | `scriptName` | path | `string` | Script name identifier |
+| `page[number]` | query | int | Page number (default `1`) |
+| `page[size]` | query | int | Page size (default `50`, max `250`) |
 
-**Response model:** `[]RestModel` (JSON:API)
+**Response model:** `[]RestModel` (JSON:API, paginated — includes `meta.total`, `meta.page.number`, `meta.page.size`, `meta.page.last`, and `self`/`first`/`last`/`prev`/`next` links)
 
 **Error conditions:**
-- `400` — Empty script name.
+- `400` — Empty script name, or invalid `page[number]`/`page[size]`.
 - `500` — Internal error retrieving scripts.
 
 ---
 
 ### POST /maps/actions/seed
 
-Deletes all existing scripts for the current tenant and re-creates them from JSON files on disk.
+Starts an asynchronous seed of map scripts for the current tenant from the `map-actions` catalog group (`onFirstUserEnter` and `onUserEnter` subdomains). Existing scripts of each subdomain's script type are hard-deleted and replaced with entries built from catalog files matching `map-<name>.json`. Seeding runs in a background goroutine; the request returns before it completes.
 
 **Parameters:** None.
 
 **Request model:** None.
 
-**Response model:** `SeedResult` (JSON, not JSON:API)
+**Response model:** None.
+
+**Error conditions:**
+- `400` — Missing tenant headers (`TENANT_ID`, `REGION`, `MAJOR_VERSION`, `MINOR_VERSION`).
+
+Returns `202 Accepted` on success (request accepted; seed runs asynchronously).
+
+---
+
+### GET /maps/actions/seed/status
+
+Returns the current seed status for the `map-actions` catalog group for the current tenant.
+
+**Parameters:** None.
+
+**Response model:** JSON (not JSON:API)
 
 ```json
 {
-  "deletedCount": 10,
-  "createdCount": 8,
-  "failedCount": 2,
-  "errors": ["error message 1", "error message 2"]
+  "groupName": "map-actions",
+  "subdomains": {
+    "onFirstUserEnter": { "count": 8, "updatedAt": "2026-07-16T00:00:00Z" },
+    "onUserEnter": { "count": 5, "updatedAt": "2026-07-16T00:00:00Z" }
+  },
+  "updatedAt": "2026-07-16T00:00:00Z",
+  "catalogRevision": "abc123",
+  "tenantSeededRevision": "abc123",
+  "tenantSeededAt": "2026-07-16T00:00:00Z"
 }
 ```
 
 **Error conditions:**
-- `500` — Internal error during seed operation.
+- `400` — Missing tenant headers (`TENANT_ID`, `REGION`, `MAJOR_VERSION`, `MINOR_VERSION`).
+- `500` — Internal error reading seed status.

@@ -14,6 +14,7 @@
 | Environment Variable | Direction | Description |
 |---------------------|-----------|-------------|
 | EVENT_TOPIC_PET_STATUS | Event | Pet status events |
+| COMMAND_TOPIC_COMPARTMENT | Command | Compartment commands (item template change) |
 
 ## Message Types
 
@@ -66,7 +67,7 @@ When matched, the service calls `DeleteOnRemove` using `characterId`, `templateI
   "transactionId": "uuid",
   "actorId": 12345,
   "petId": 1,
-  "type": "SPAWN|DESPAWN|ATTEMPT_COMMAND|AWARD_CLOSENESS|AWARD_FULLNESS|AWARD_LEVEL|EXCLUDE",
+  "type": "SPAWN|DESPAWN|ATTEMPT_COMMAND|AWARD_CLOSENESS|AWARD_FULLNESS|AWARD_LEVEL|EXCLUDE|EVOLVE",
   "body": {}
 }
 ```
@@ -82,6 +83,7 @@ When matched, the service calls `DeleteOnRemove` using `characterId`, `templateI
 | AWARD_FULLNESS | amount (byte) | Award fullness to a pet |
 | AWARD_LEVEL | amount (byte) | Award levels to a pet |
 | EXCLUDE | items ([]uint32) | Set excluded items for auto-loot |
+| EVOLVE | none | Evolve a pet to a new template; transactionId from command envelope is forwarded |
 
 ### Pet Movement Command (Consumed)
 
@@ -105,7 +107,7 @@ When matched, the service calls `DeleteOnRemove` using `characterId`, `templateI
 {
   "petId": 1,
   "ownerId": 12345,
-  "type": "CREATED|DELETED|SPAWNED|DESPAWNED|COMMAND_RESPONSE|CLOSENESS_CHANGED|FULLNESS_CHANGED|LEVEL_CHANGED|SLOT_CHANGED|EXCLUDE_CHANGED",
+  "type": "CREATED|DELETED|SPAWNED|DESPAWNED|COMMAND_RESPONSE|CLOSENESS_CHANGED|FULLNESS_CHANGED|LEVEL_CHANGED|SLOT_CHANGED|EXCLUDE_CHANGED|EVOLVED",
   "body": {}
 }
 ```
@@ -124,6 +126,24 @@ When matched, the service calls `DeleteOnRemove` using `characterId`, `templateI
 | LEVEL_CHANGED | slot, level, amount | Level was modified |
 | SLOT_CHANGED | oldSlot, newSlot | Slot was modified (due to spawn/despawn shifting) |
 | EXCLUDE_CHANGED | items | Excluded items were replaced |
+| EVOLVED | slot, oldTemplateId, newTemplateId, transactionId | Pet template was changed via evolution |
+
+### Change Template Command (Produced)
+
+```json
+{
+  "transactionId": "uuid",
+  "characterId": 12345,
+  "inventoryType": 6,
+  "type": "CHANGE_TEMPLATE",
+  "body": {
+    "petId": 1,
+    "newTemplateId": 5000018
+  }
+}
+```
+
+Produced to the compartment command topic when a pet's template changes (evolution or egg hatching), so the corresponding cash inventory asset's template is updated to match.
 
 #### Despawn Reasons
 
@@ -137,6 +157,7 @@ When matched, the service calls `DeleteOnRemove` using `characterId`, `templateI
 
 - Pet commands include a `transactionId` field for correlation
 - `AWARD_CLOSENESS` commands forward the `transactionId` to the `CLOSENESS_CHANGED` event
+- `EVOLVE` commands forward the `transactionId` to the `EVOLVED` event and to the produced `CHANGE_TEMPLATE` command
 - All state-mutating operations are wrapped in database transactions; Kafka messages are buffered and emitted only after the transaction commits successfully
 
 ## Required Headers

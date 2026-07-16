@@ -25,9 +25,9 @@ Cash shop commands.
 | REQUEST_PURCHASE | RequestPurchaseCommandBody | Request to purchase a commodity |
 | REQUEST_INVENTORY_INCREASE_BY_TYPE | RequestInventoryIncreaseByTypeCommandBody | Request to increase inventory capacity by type |
 | REQUEST_INVENTORY_INCREASE_BY_ITEM | RequestInventoryIncreaseByItemCommandBody | Request to increase inventory capacity using a commodity |
-| REQUEST_STORAGE_INCREASE | RequestStorageIncreaseBody | Request to increase storage capacity |
-| REQUEST_STORAGE_INCREASE_BY_ITEM | RequestStorageIncreaseByItemCommandBody | Request to increase storage capacity using a commodity |
-| REQUEST_CHARACTER_SLOT_INCREASE_BY_ITEM | RequestCharacterSlotIncreaseByItemCommandBody | Request to increase character slots using a commodity |
+| REQUEST_STORAGE_INCREASE | RequestStorageIncreaseBody | Unconditionally produces an EVENT_TOPIC_CASH_SHOP_STATUS ERROR event with code `UNKNOWN_ERROR` |
+| REQUEST_STORAGE_INCREASE_BY_ITEM | RequestCharacterSlotIncreaseByItemCommandBody | Unconditionally produces an EVENT_TOPIC_CASH_SHOP_STATUS ERROR event with code `UNKNOWN_ERROR` |
+| REQUEST_CHARACTER_SLOT_INCREASE_BY_ITEM | RequestCharacterSlotIncreaseByItemCommandBody | Unconditionally produces an EVENT_TOPIC_CASH_SHOP_STATUS ERROR event with code `UNKNOWN_ERROR` |
 | EXPIRE | ExpireCommandBody | Expire a cash shop asset, optionally creating a replacement |
 
 ### COMMAND_TOPIC_CASH_COMPARTMENT
@@ -64,6 +64,7 @@ Wallet status events.
 | CREATED | StatusEventCreatedBody | Wallet created |
 | UPDATED | StatusEventUpdatedBody | Wallet balances updated |
 | DELETED | StatusEventDeletedBody | Wallet deleted |
+| ERROR | StatusEventErrorBody | A transactional ADJUST_CURRENCY command failed; only emitted when the command carried a non-nil transaction ID |
 
 ### EVENT_TOPIC_WISHLIST_STATUS
 Wishlist status events.
@@ -81,7 +82,7 @@ Cash shop status events.
 |------------|-----------|-------------|
 | INVENTORY_CAPACITY_INCREASED | InventoryCapacityIncreasedBody | Inventory capacity increased |
 | PURCHASE | PurchaseEventBody | Commodity purchased, asset created |
-| ERROR | ErrorEventBody | Operation failed |
+| ERROR | ErrorEventBody | Operation failed; `error` is one of `NOT_ENOUGH_CASH`, `INVENTORY_FULL`, `UNKNOWN_ERROR` |
 
 ### EVENT_TOPIC_CASH_INVENTORY_STATUS
 Cash inventory status events.
@@ -101,7 +102,7 @@ Cash compartment status events.
 | DELETED | StatusEventDeletedBody | Compartment deleted |
 | ACCEPTED | StatusEventAcceptedBody | Asset accepted into compartment |
 | RELEASED | StatusEventReleasedBody | Asset released from compartment |
-| ERROR | StatusEventErrorBody | Operation failed |
+| ERROR | StatusEventErrorBody | Operation failed; `errorCode` is one of `UNKNOWN_ERROR`, `ASSET_CREATION_FAILED`, `ITEM_NOT_FOUND` |
 
 ### STATUS_TOPIC_CASH_ITEM
 Cash item status events (produced by asset processor).
@@ -307,6 +308,14 @@ Character inventory compartment commands (produced during inventory capacity inc
 }
 ```
 
+#### StatusEventErrorBody (Wallet)
+```json
+{
+  "transactionId": "uuid",
+  "reason": "insufficient credit balance"
+}
+```
+
 #### Wishlist StatusEvent
 ```json
 {
@@ -457,6 +466,7 @@ Character inventory compartment commands (produced during inventory capacity inc
 - Commands include optional `transactionId` for saga coordination
 - Status events include `transactionId` when the originating command included one
 - Wallet adjustments are atomic and validated for sufficient balance
-- Purchase operations execute within a database transaction; Kafka events are buffered and emitted after successful commit
+- Purchase and other write operations execute within a database transaction; state-asserting events are buffered into a `message.Buffer` and routed through a transactional outbox (`atlas-outbox`) that is committed atomically with the database write, then drained to Kafka asynchronously
+- Failure-path events that reflect no committed state change (for example, wallet ADJUST_CURRENCY failure, cash shop INVENTORY_FULL/UNKNOWN_ERROR rejections) are emitted on the direct Kafka producer path instead of the outbox, so they publish regardless of any rollback
 - Compartment Accept uses find-or-create by cashId for idempotent asset creation
 - Compartment Release validates asset existence before deletion

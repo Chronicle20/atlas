@@ -5,6 +5,7 @@
 | Topic | Environment Variable | Description |
 |-------|---------------------|-------------|
 | Channel Status Event | EVENT_TOPIC_CHANNEL_STATUS | Channel server status events |
+| Tenant Configuration Status | EVENT_TOPIC_CONFIGURATION_TENANT_STATUS | Tenant configuration status events (config projection) |
 
 ## Topics Produced
 
@@ -59,8 +60,22 @@ Direction: Event (Produced)
 Event Types:
 - `RATE_CHANGED`: A world rate multiplier has changed
 
+### TenantEnvelope
+
+Direction: Event (Consumed)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| schema_version | int | Envelope schema version |
+| id | string | Tenant identifier UUID |
+| config | json.RawMessage | Tenant configuration payload |
+| emitted_at | string | Event emission timestamp |
+
+A nil message value is a tombstone keyed `tenant:{id}`.
+
 ## Transaction Semantics
 
 - Messages are keyed by tenant ID
-- Consumer group: "World Orchestrator"
+- Consumer group (channel status commands/events): "World Orchestrator"
+- Consumer group (tenant configuration status projection): "World Orchestrator - projection - {uuid}" (per-process, replays from FirstOffset on every container start)
 - Headers: SpanHeaderParser, TenantHeaderParser

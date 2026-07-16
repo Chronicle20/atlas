@@ -32,8 +32,8 @@ func TestGetRewards_RoundTrip(t *testing.T) {
 		w.Header().Set("Content-Type", "application/vnd.api+json")
 		_, _ = w.Write([]byte(`{
 			"data": [
-				{"type":"incubator-rewards","id":"1","attributes":{"itemId":2000000,"quantity":5,"weight":10}},
-				{"type":"incubator-rewards","id":"2","attributes":{"itemId":2000001,"quantity":0,"weight":20}}
+				{"type":"incubator-rewards","id":"1","attributes":{"itemId":2000000,"quantity":5,"weight":10,"eggId":4170000}},
+				{"type":"incubator-rewards","id":"2","attributes":{"itemId":2000001,"quantity":0,"weight":20,"eggId":4170001}}
 			]
 		}`))
 	}))
@@ -48,10 +48,12 @@ func TestGetRewards_RoundTrip(t *testing.T) {
 	require.Equal(t, uint32(2000000), rewards[0].ItemId())
 	require.Equal(t, uint32(5), rewards[0].Quantity())
 	require.Equal(t, uint32(10), rewards[0].Weight())
+	require.Equal(t, uint32(4170000), rewards[0].EggId(), "eggId must round-trip through requestRewards + Extract")
 
 	require.Equal(t, uint32(2000001), rewards[1].ItemId())
 	require.Equal(t, uint32(1), rewards[1].Quantity(), "quantity 0 must default to 1")
 	require.Equal(t, uint32(20), rewards[1].Weight())
+	require.Equal(t, uint32(4170001), rewards[1].EggId(), "eggId must round-trip through requestRewards + Extract")
 }
 
 // TestGetRewards_InfrastructureError verifies a 5xx from atlas-tenants

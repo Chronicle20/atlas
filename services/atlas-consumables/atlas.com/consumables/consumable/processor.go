@@ -943,6 +943,21 @@ func (p *ProcessorImpl) RequestItemReward(characterId uint32, itemId item2.Id, s
 		return p.rewardError(characterId, err)
 	}
 
+	// Pre-roll accommodation check (strict): the box grants one random reward, so
+	// every inventory type the pool can roll into must have a free slot up front.
+	// If any is full, fail the use before reserving or rolling — the box is
+	// preserved and the player is told their inventory is full. The post-roll
+	// CREATION_FAILED path stays as a TOCTOU safety net.
+	inv, err := p.ip.GetByCharacterId(characterId)
+	if err != nil {
+		// Nothing reserved yet; just unstick the client.
+		return p.rewardError(characterId, err)
+	}
+	if !inventoryAccommodatesRewards(inv, ci.Rewards()) {
+		p.l.Debugf("Character [%d] reward-use of item [%d] blocked: inventory lacks room for a possible reward.", characterId, itemId)
+		return p.rewardInventoryFull(characterId)
+	}
+
 	p.l.Debugf("Creating OneTime consumer for reward transaction [%s].", transactionId.String())
 	t, _ := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
 	validator := once.ReservationValidator(transactionId, uint32(itemId))
@@ -956,6 +971,46 @@ func (p *ProcessorImpl) RequestItemReward(characterId uint32, itemId item2.Id, s
 		return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, source, err)
 	}
 	return nil
+}
+
+// inventoryAccommodatesRewards reports whether the character's inventory can
+// hold whatever the box rolls. Strict rule: because the reward is random, every
+// distinct inventory type present in the pool must have at least one free slot
+// (a merge into an existing stack only ever helps). A type with no free slot
+// means the box could roll an item it can't grant, so the use must be rejected
+// up front. Pure so it is unit-testable without a live inventory.
+func inventoryAccommodatesRewards(inv inventory.Model, rewards []consumable3.RewardModel) bool {
+	needed := make(map[inventory2.Type]struct{})
+	for _, r := range rewards {
+		if it, ok := inventory2.TypeFromItemId(item2.Id(r.ItemId())); ok {
+			needed[it] = struct{}{}
+		}
+	}
+	for it := range needed {
+		c := inv.CompartmentByType(it)
+		var occupied uint32
+		for _, a := range c.Assets() {
+			if a.Slot() >= 1 { // positive slots occupy inventory; equipped items are negative
+				occupied++
+			}
+		}
+		if occupied >= c.Capacity() {
+			return false
+		}
+	}
+	return true
+}
+
+// rewardInventoryFull rejects a reward-use whose pre-roll accommodation check
+// failed: nothing was reserved, so this only tells the player their inventory is
+// full (INVENTORY_FULL status message + enable-actions) via the consumable
+// error event. Unlike the post-roll path there is no CREATION_FAILED for the
+// channel's generic handler to render, so the reward flow owns the feedback here.
+func (p *ProcessorImpl) rewardInventoryFull(characterId uint32) error {
+	if cErr := producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(ErrorEventProvider(ts.Id(characterId), consumable.ErrorTypeInventoryFull)); cErr != nil {
+		p.l.WithError(cErr).Errorf("Unable to emit reward inventory-full error for character [%d]; client may be stuck.", characterId)
+	}
+	return errors.New("inventory full")
 }
 
 // rewardError unsticks the client without a reservation to cancel (pre-reserve
@@ -1052,21 +1107,19 @@ func grantRewardOnConfirmed(transactionId uuid.UUID, characterId uint32, slot in
 }
 
 // grantRewardOnFailed is the failure once-handler, keyed to the compartment
-// CREATION_FAILED event. It cancels the box reservation (box preserved), emits
-// the appropriate ERROR, and deregisters the sibling success handler.
+// CREATION_FAILED event. It cancels the box reservation (box preserved) and
+// deregisters the sibling success handler. It deliberately does NOT emit a
+// consumable ERROR for client feedback: atlas-channel's generic
+// handleCompartmentCreationFailedEvent already renders this same CREATION_FAILED
+// as the inventory-full status message and re-enables actions, so emitting here
+// too would show the message twice. The strict pre-roll check
+// (RequestItemReward) makes this post-roll failure a TOCTOU rarity anyway.
 func grantRewardOnFailed(transactionId uuid.UUID, characterId uint32, slot int16, handles *rewardHandles) message.Handler[compartment2.StatusEvent[compartment2.CreateResultEventBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e compartment2.StatusEvent[compartment2.CreateResultEventBody]) {
 		p := NewProcessor(l, ctx).(*ProcessorImpl)
 
 		if cErr := p.cpp.CancelItemReservation(characterId, inventory2.TypeValueUse, transactionId, slot); cErr != nil {
 			l.WithError(cErr).Errorf("Unable to cancel box reservation after reward creation failure for character [%d].", characterId)
-		}
-		errorType := ""
-		if e.Body.ErrorCode == compartment2.CreateAssetInventoryFull {
-			errorType = consumable.ErrorTypeInventoryFull
-		}
-		if cErr := producer.ProviderImpl(l)(ctx)(consumable.EnvEventTopic)(ErrorEventProvider(ts.Id(characterId), errorType)); cErr != nil {
-			l.WithError(cErr).Errorf("Unable to emit reward creation-failed error for character [%d].", characterId)
 		}
 
 		if handles != nil {

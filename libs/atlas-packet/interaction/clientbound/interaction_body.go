@@ -21,6 +21,14 @@ type CharacterInteractionEnterErrorMode = string
 // mechanism is uniform.
 type CharacterInteractionMiniGameResultType = string
 
+// CharacterInteractionMiniGamePutStoneErrorType is the semantic key for an Omok
+// invalid-move rejection (mode 65, COmokDlg::OnPutStoneCheckerErr), resolved to a
+// numeric byte via the tenant "putStoneError" writer table (DOM-25). The client
+// compares the resolved byte to the version-specific "double 3s" code to choose
+// the rejection message, so the code is VERSION-SPECIFIC and must be
+// config-resolved (v48 60 / v61 61 / v72 61 / v79 66 / v83..v95 67 / jms 64).
+type CharacterInteractionMiniGamePutStoneErrorType = string
+
 const (
 	// CharacterInteraction CMiniRoomBaseDlg::OnPacketBase
 	CharacterInteractionModeInvite         CharacterInteractionMode = "INVITE"          // 2
@@ -86,6 +94,13 @@ const (
 	CharacterInteractionMiniGameResultTypeWin     CharacterInteractionMiniGameResultType = "WIN"     // 0
 	CharacterInteractionMiniGameResultTypeTie     CharacterInteractionMiniGameResultType = "TIE"     // 1
 	CharacterInteractionMiniGameResultTypeForfeit CharacterInteractionMiniGameResultType = "FORFEIT" // 2
+
+	// Omok invalid-move rejection keys, resolved via the tenant "putStoneError"
+	// writer table. DOUBLE_THREE resolves to the version-specific "double 3s"
+	// code (client shows "You have double 3s"); CANNOT_PLACE resolves to any
+	// other value (client shows the generic "You can't put it there").
+	CharacterInteractionMiniGamePutStoneErrorDoubleThree CharacterInteractionMiniGamePutStoneErrorType = "DOUBLE_THREE"
+	CharacterInteractionMiniGamePutStoneErrorCannotPlace CharacterInteractionMiniGamePutStoneErrorType = "CANNOT_PLACE"
 )
 
 func CharacterInteractionInviteBody(roomType byte, name string, dwSN uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
@@ -277,15 +292,18 @@ func CharacterInteractionMiniGameMoveStoneBody(x uint32, y uint32, stoneType byt
 }
 
 // CharacterInteractionMiniGamePutStoneErrorBody emits the Omok invalid-move
-// rejection. errorCode is the arm's body byte (NOT the operation selector): the
-// client compares it to the version-specific "double 3s" code to pick the
-// message. A producer sending a specific error type must config-resolve the code
-// per version (see the InteractionMiniGamePutStoneError doc for the per-version
-// values).
-func CharacterInteractionMiniGamePutStoneErrorBody(errorCode byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
-	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeMemoryGamePutStoneError, func(mode byte) packet.Encoder {
-		return NewInteractionMiniGamePutStoneError(mode, errorCode)
-	})
+// rejection. errorType is a semantic key (DOUBLE_THREE / CANNOT_PLACE) resolved
+// to the arm's body byte via the tenant "putStoneError" writer table (DOM-25):
+// the client compares that byte to the version-specific "double 3s" code to pick
+// the message. The mode selector and the body byte are resolved independently.
+func CharacterInteractionMiniGamePutStoneErrorBody(errorType CharacterInteractionMiniGamePutStoneErrorType) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			mode := atlas_packet.ResolveCode(l, options, "operations", CharacterInteractionModeMemoryGamePutStoneError)
+			errorCode := atlas_packet.ResolveCode(l, options, "putStoneError", errorType)
+			return NewInteractionMiniGamePutStoneError(mode, errorCode).Encode(l, ctx)(options)
+		}
+	}
 }
 
 // CharacterInteractionMiniGameCardSelectFirstBody and

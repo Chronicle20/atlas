@@ -70,6 +70,15 @@ const (
 	errIncorrectPassword      = "INCORRECT_PASSWORD"
 )
 
+// putStoneError key strings (channel resolves them to numeric codes via the
+// tenant putStoneError table). DOUBLE_THREE maps to the version-specific "double
+// 3s" (renju) code so the client shows "You have double 3s"; CANNOT_PLACE maps
+// to any other value so the client shows the generic "You can't put it there".
+const (
+	putStoneErrorDoubleThree = "DOUBLE_THREE"
+	putStoneErrorCannotPlace = "CANNOT_PLACE"
+)
+
 // Leave statuses (LeftEventBody.Status / RoomClosedEventBody.VisitorStatus).
 const (
 	leaveStatusClosed   byte = 3
@@ -633,12 +642,15 @@ func (p *ProcessorImpl) MoveStone(txId uuid.UUID, f field.Model, characterId uin
 	})
 }
 
-// moveStone places an Omok stone. The move is dropped unless it is a running
-// Omok game, the sender is the current-turn player (FR-5.1 server-side turn
-// validation), and the target cell is empty & in-bounds (omok.Place). The stone
-// color is derived server-side from the slot (§G1), not trusted from the client.
-// A valid non-winning move flips the turn; a winning move (omok.Wins) broadcasts
-// STONE_PLACED first, then resolves the win via endGame (which wipes the board).
+// moveStone places an Omok stone. The move is dropped (silent, no event) unless
+// it is a running Omok game and the sender is the current-turn player (FR-5.1
+// server-side turn validation). The stone color is derived server-side from the
+// slot (§G1), not trusted from the client. A rejected PLACEMENT (occupied/out of
+// bounds, or a renju double-three by the first mover) emits PUT_STONE_ERROR to
+// the acting character only — CANNOT_PLACE for occupied/out-of-bounds,
+// DOUBLE_THREE for the double-three rule. A valid non-winning move flips the
+// turn; a winning move (omok.Wins) broadcasts STONE_PLACED first, then resolves
+// the win via endGame (which wipes the board).
 func (p *ProcessorImpl) moveStone(mb *message.Buffer, txId uuid.UUID, characterId uint32, x uint32, y uint32) error {
 	room, ok := p.reg.GetByMember(p.t, characterId)
 	if !ok {
@@ -652,9 +664,15 @@ func (p *ProcessorImpl) moveStone(mb *message.Buffer, txId uuid.UUID, characterI
 		return nil
 	}
 	color := stoneColor(slot, room.FirstMover())
-	board, placed := omok.Place(room.Board(), x, y, color)
-	if !placed {
-		return nil
+	// stoneColor returns color 1 for the first mover (black); the renju
+	// double-three rule applies to black only.
+	isFirstMover := color == 1
+	board, result := omok.Place(room.Board(), x, y, color, isFirstMover)
+	switch result {
+	case omok.RejectedOccupied:
+		return mb.Put(minigame.EnvEventTopicStatus, putStoneErrorProvider(txId, room, characterId, putStoneErrorCannotPlace))
+	case omok.RejectedDoubleThree:
+		return mb.Put(minigame.EnvEventTopicStatus, putStoneErrorProvider(txId, room, characterId, putStoneErrorDoubleThree))
 	}
 	win := omok.Wins(board, x, y)
 

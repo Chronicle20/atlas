@@ -2570,6 +2570,10 @@
             "TIE": 1,
             "FORFEIT": 2
           },
+          "putStoneError": {
+            "DOUBLE_THREE": 64,
+            "CANNOT_PLACE": 0
+          },
           "leaveReason": {
             "CANNOT_ESTABLISH_HERE": 1,
             "SHOP_CLOSED": 3,

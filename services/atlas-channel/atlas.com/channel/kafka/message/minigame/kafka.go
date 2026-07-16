@@ -95,6 +95,7 @@ const (
 	EventTypeUnready          = "UNREADY"
 	EventTypeStarted          = "STARTED"
 	EventTypeStonePlaced      = "STONE_PLACED"
+	EventTypePutStoneError    = "PUT_STONE_ERROR"
 	EventTypeCardFlipped      = "CARD_FLIPPED"
 	EventTypeTieRequested     = "TIE_REQUESTED"
 	EventTypeTieAnswered      = "TIE_ANSWERED"
@@ -183,6 +184,13 @@ type StonePlacedEventBody struct {
 	X         uint32 `json:"x"`
 	Y         uint32 `json:"y"`
 	StoneType byte   `json:"stoneType"`
+}
+
+// PutStoneErrorEventBody Code carries a putStoneError KEY string
+// (DOUBLE_THREE/CANNOT_PLACE), resolved to a per-version numeric byte via the
+// tenant putStoneError table inside the body func (DOM-25).
+type PutStoneErrorEventBody struct {
+	Code string `json:"code"`
 }
 
 type CardFlippedEventBody struct {

@@ -2,15 +2,27 @@ package omok
 
 import "testing"
 
+// set writes stone directly into a copy of board at each (x,y), bypassing the
+// placement rules. It is used to construct board fixtures (e.g. the surrounding
+// stones of a double-three shape) without tripping the double-three rejection on
+// the setup moves themselves.
+func set(board [Cells]byte, stone byte, coords ...[2]uint32) [Cells]byte {
+	for _, c := range coords {
+		board[int(c[1])*BoardSize+int(c[0])] = stone
+	}
+	return board
+}
+
 // place is a small test helper: place a sequence of (x,y) stones of a given
-// color onto a board, failing the test if any placement is rejected.
+// color onto a board as the SECOND mover (double-three rule off), failing the
+// test if any placement is rejected.
 func place(t *testing.T, board [Cells]byte, stone byte, coords [][2]uint32) [Cells]byte {
 	t.Helper()
 	for _, c := range coords {
-		var ok bool
-		board, ok = Place(board, c[0], c[1], stone)
-		if !ok {
-			t.Fatalf("Place(%d,%d,%d) rejected unexpectedly", c[0], c[1], stone)
+		var res PlaceResult
+		board, res = Place(board, c[0], c[1], stone, false)
+		if res != Placed {
+			t.Fatalf("Place(%d,%d,%d) = %d, want Placed", c[0], c[1], stone, res)
 		}
 	}
 	return board
@@ -26,39 +38,107 @@ func TestPlace_OutOfBounds(t *testing.T) {
 		{0, 100},
 	}
 	for _, c := range cases {
-		if _, ok := Place(board, c[0], c[1], 1); ok {
-			t.Errorf("Place(%d,%d,1) = ok, want rejected (out of bounds)", c[0], c[1])
+		if _, res := Place(board, c[0], c[1], 1, false); res != RejectedOccupied {
+			t.Errorf("Place(%d,%d,1) = %d, want RejectedOccupied (out of bounds)", c[0], c[1], res)
 		}
 	}
 }
 
 func TestPlace_ZeroStoneRejected(t *testing.T) {
 	var board [Cells]byte
-	if _, ok := Place(board, 7, 7, 0); ok {
-		t.Errorf("Place(7,7,0) = ok, want rejected (stone==0)")
+	if _, res := Place(board, 7, 7, 0, false); res != RejectedOccupied {
+		t.Errorf("Place(7,7,0) = %d, want RejectedOccupied (stone==0)", res)
 	}
 }
 
 func TestPlace_OccupiedCellRejected(t *testing.T) {
 	var board [Cells]byte
-	board, ok := Place(board, 3, 3, 1)
-	if !ok {
-		t.Fatalf("first placement unexpectedly rejected")
+	board, res := Place(board, 3, 3, 1, false)
+	if res != Placed {
+		t.Fatalf("first placement = %d, want Placed", res)
 	}
-	if _, ok := Place(board, 3, 3, 2); ok {
-		t.Errorf("Place(3,3,2) on occupied cell = ok, want rejected")
+	if _, res := Place(board, 3, 3, 2, false); res != RejectedOccupied {
+		t.Errorf("Place(3,3,2) on occupied cell = %d, want RejectedOccupied", res)
 	}
 }
 
 func TestPlace_ValidPlacementSetsStone(t *testing.T) {
 	var board [Cells]byte
-	board, ok := Place(board, 5, 6, 1)
-	if !ok {
-		t.Fatalf("Place(5,6,1) rejected, want accepted")
+	board, res := Place(board, 5, 6, 1, false)
+	if res != Placed {
+		t.Fatalf("Place(5,6,1) = %d, want Placed", res)
 	}
 	idx := 6*BoardSize + 5
 	if board[idx] != 1 {
 		t.Errorf("board[%d] = %d, want 1", idx, board[idx])
+	}
+}
+
+func TestPlace_NormalMoveOnEmptyBoard(t *testing.T) {
+	var board [Cells]byte
+	if _, res := Place(board, 7, 7, 1, true); res != Placed {
+		t.Errorf("Place(7,7,1,firstMover) on empty board = %d, want Placed", res)
+	}
+}
+
+// doubleThreeBoard sets up two crossing open threes meeting at the empty center
+// (7,7): a horizontal gap-three O_O at (6,7)/(8,7) and a vertical O_O at
+// (7,6)/(7,8). Placing color-1 at (7,7) completes both into open threes.
+func doubleThreeBoard(stone byte) [Cells]byte {
+	var board [Cells]byte
+	return set(board, stone,
+		[2]uint32{6, 7}, [2]uint32{8, 7}, // horizontal, gap at (7,7)
+		[2]uint32{7, 6}, [2]uint32{7, 8}, // vertical, gap at (7,7)
+	)
+}
+
+func TestPlace_DoubleThreeRejectedForFirstMover(t *testing.T) {
+	board := doubleThreeBoard(1)
+	if _, res := Place(board, 7, 7, 1, true); res != RejectedDoubleThree {
+		t.Errorf("Place(7,7,1,firstMover) on double-three shape = %d, want RejectedDoubleThree", res)
+	}
+	// The rejected stone must not be kept.
+	newBoard, _ := Place(board, 7, 7, 1, true)
+	if newBoard[7*BoardSize+7] != 0 {
+		t.Errorf("rejected double-three left a stone at (7,7): %d, want 0", newBoard[7*BoardSize+7])
+	}
+}
+
+func TestPlace_DoubleThreeAllowedForSecondMover(t *testing.T) {
+	// Identical shape, but the second mover (color 2, isFirstMover=false) is not
+	// bound by the black-only double-three rule.
+	board := doubleThreeBoard(2)
+	if _, res := Place(board, 7, 7, 2, false); res != Placed {
+		t.Errorf("Place(7,7,2,secondMover) on double-three shape = %d, want Placed", res)
+	}
+}
+
+func TestPlace_WinningFiveExemptFromDoubleThree(t *testing.T) {
+	// Placing color-1 at (7,7) completes a horizontal FIVE (3..7,7) — a win — and
+	// simultaneously forms a vertical open three (7,5)/(7,6) and a diagonal open
+	// three (5,5)/(6,6). A winning move is never forbidden, even for black.
+	var board [Cells]byte
+	board = set(board, 1,
+		[2]uint32{3, 7}, [2]uint32{4, 7}, [2]uint32{5, 7}, [2]uint32{6, 7}, // horizontal four
+		[2]uint32{7, 5}, [2]uint32{7, 6}, // vertical two
+		[2]uint32{5, 5}, [2]uint32{6, 6}, // down-diagonal two
+	)
+	nb, res := Place(board, 7, 7, 1, true)
+	if res != Placed {
+		t.Fatalf("Place(7,7,1,firstMover) completing a five = %d, want Placed (win exempt)", res)
+	}
+	if !Wins(nb, 7, 7) {
+		t.Errorf("Wins(7,7) = false, want true (the completed five)")
+	}
+}
+
+func TestPlace_SingleOpenThreeAllowedForFirstMover(t *testing.T) {
+	// Only a single horizontal open three: placing (7,7) between (6,7)/(8,7) with
+	// both far cells empty is ONE open three, below the double-three threshold.
+	var board [Cells]byte
+	board = set(board, 1, [2]uint32{6, 7}, [2]uint32{8, 7})
+	if _, res := Place(board, 7, 7, 1, true); res != Placed {
+		t.Errorf("Place(7,7,1,firstMover) on single open three = %d, want Placed", res)
 	}
 }
 

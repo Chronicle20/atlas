@@ -167,6 +167,14 @@ func stonePlacedProvider(transactionId uuid.UUID, r Room, x uint32, y uint32, st
 	})
 }
 
+// putStoneErrorProvider announces a PUT_STONE_ERROR event (Omok invalid move).
+// It is targeted at the acting character only (the mover whose placement was
+// rejected); code is a putStoneError KEY (DOUBLE_THREE/CANNOT_PLACE) the channel
+// resolves to a per-version numeric byte (DOM-25).
+func putStoneErrorProvider(transactionId uuid.UUID, r Room, characterId uint32, code string) model.Provider[[]kafka.Message] {
+	return statusEventProvider(transactionId, r.Field(), r.Id(), r.OwnerId(), r.VisitorId(), characterId, minigame.EventTypePutStoneError, minigame.PutStoneErrorEventBody{Code: code})
+}
+
 // cardFlippedProvider announces a CARD_FLIPPED event (MatchCards). For a first
 // flip (secondFlip=false) the channel forwards it to the opponent only; a second
 // flip is broadcast to both (design §3.2). Slot and FirstSlot are card indices;

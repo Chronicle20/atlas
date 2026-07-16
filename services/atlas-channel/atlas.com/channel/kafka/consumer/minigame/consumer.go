@@ -62,6 +62,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 					message.AdaptHandler(message.PersistentConfig(handleBodylessGameEvent(sc, wp))),
 					message.AdaptHandler(message.PersistentConfig(handleStartedEvent(sc, wp))),
 					message.AdaptHandler(message.PersistentConfig(handleStonePlacedEvent(sc, wp))),
+					message.AdaptHandler(message.PersistentConfig(handlePutStoneErrorEvent(sc, wp))),
 					message.AdaptHandler(message.PersistentConfig(handleCardFlippedEvent(sc, wp))),
 					message.AdaptHandler(message.PersistentConfig(handleAnswerEvent(sc, wp))),
 					message.AdaptHandler(message.PersistentConfig(handleSkippedEvent(sc, wp))),
@@ -347,6 +348,23 @@ func handleStonePlacedEvent(sc server.Model, wp writer.Producer) func(l logrus.F
 		}
 		l.Debugf("Stone placed in room [%d] at [%d,%d] type [%d].", e.RoomId, e.Body.X, e.Body.Y, e.Body.StoneType)
 		announceToRoom(l, ctx, sc, wp, e, interactioncb.CharacterInteractionMiniGameMoveStoneBody(e.Body.X, e.Body.Y, e.Body.StoneType))
+	}
+}
+
+// handlePutStoneErrorEvent routes an Omok invalid-move rejection to the acting
+// character only (the mover whose placement was rejected). The body carries the
+// putStoneError KEY string, resolved to the per-version numeric code by the
+// tenant putStoneError table inside the body func (DOM-25).
+func handlePutStoneErrorEvent(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, e minigame2.StatusEvent[minigame2.PutStoneErrorEventBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e minigame2.StatusEvent[minigame2.PutStoneErrorEventBody]) {
+		if e.Type != minigame2.EventTypePutStoneError {
+			return
+		}
+		if !guard(sc, ctx, e) {
+			return
+		}
+		l.Debugf("Mini-game put-stone error in room [%d] for character [%d]. code [%s].", e.RoomId, e.CharacterId, e.Body.Code)
+		announceTo(l, ctx, sc, wp, e.CharacterId, interactioncb.CharacterInteractionMiniGamePutStoneErrorBody(e.Body.Code))
 	}
 }
 

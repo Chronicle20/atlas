@@ -832,8 +832,38 @@ func TestMoveStone_OutOfTurnAndOccupied(t *testing.T) {
 		seedRoom(t, h2, runningOmokBuilder(h2, owner, visitor, 1).SetBoard(board))
 		buf := message.NewBuffer()
 		require.NoError(t, h2.p.moveStone(buf, uuid.New(), owner, 3, 3))
-		assert.Empty(t, buf.GetAll())
+		// Occupied placement now surfaces PUT_STONE_ERROR/CANNOT_PLACE to the mover
+		// instead of a silent drop; no stone is placed.
+		requireOneError(t, buf, minigame.EventTypePutStoneError, "CANNOT_PLACE")
+		assert.Empty(t, decodeEvents[minigame.StonePlacedEventBody](t, buf, minigame.EventTypeStonePlaced))
 	})
+}
+
+func TestMoveStone_DoubleThreeRejected(t *testing.T) {
+	h := newHarness(t)
+	owner := uint32(8611)
+	visitor := uint32(8612)
+	// firstMover=1 -> owner (slot 0) moves first with color 1 (black); the renju
+	// double-three rule applies to black. Two crossing open threes meet at the
+	// empty center (7,7): horizontal O_O at (6,7)/(8,7), vertical O_O at
+	// (7,6)/(7,8).
+	var board [omok.Cells]byte
+	for _, c := range [][2]int{{6, 7}, {8, 7}, {7, 6}, {7, 8}} {
+		board[c[1]*omok.BoardSize+c[0]] = 1
+	}
+	seedRoom(t, h, runningOmokBuilder(h, owner, visitor, 1).SetBoard(board))
+
+	buf := message.NewBuffer()
+	require.NoError(t, h.p.moveStone(buf, uuid.New(), owner, 7, 7))
+
+	requireOneError(t, buf, minigame.EventTypePutStoneError, "DOUBLE_THREE")
+	assert.Empty(t, decodeEvents[minigame.StonePlacedEventBody](t, buf, minigame.EventTypeStonePlaced))
+
+	// The rejected stone must not be kept on the board.
+	r, _ := h.p.reg.Get(h.t, owner)
+	assert.Equal(t, byte(0), r.Board()[7*omok.BoardSize+7], "double-three move must not place a stone")
+	assert.Empty(t, r.Moves())
+	assert.Equal(t, byte(0), r.CurrentTurn(), "turn stays with the rejected mover")
 }
 
 func TestMoveStone_WinningMoveEndsGame(t *testing.T) {

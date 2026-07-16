@@ -73,6 +73,37 @@ patches:
             labelSelector:
               matchLabels:
                 atlas.env: "PLACEHOLDER_ATLAS_ENV"
+  # Force a fresh pull for every app container in the PR env.
+  #
+  # Why this is needed: only the services a PR actually rebuilt are
+  # tagged `pr-<N>-<sha>`; unchanged services keep `newTag: latest`
+  # (see the images: block below and pr-validation.yml update-pr-overlay).
+  # `imagePullPolicy` is never set in-repo, so it is k8s-defaulted — and
+  # the default is set ONCE at first admission and then persists. On a
+  # PR's first build every service is tagged `pr-<N>-<sha>` (a specific
+  # tag → default IfNotPresent), and later pushes flip the unchanged ones
+  # back to `:latest` without the persisted IfNotPresent ever re-defaulting
+  # to Always. The net effect is `image: :latest` + `IfNotPresent`, so the
+  # node freezes on whatever `:latest` digest it first cached and never
+  # re-pulls when the moving `:latest` tag advances on main. When a
+  # fleet-wide shared-lib fix lands on main mid-env-life (e.g. #993's
+  # paginated-GET tenant-header fix), those frozen services silently run
+  # the pre-fix image — surfaced 2026-07-15 as atlas-maps serving a stale
+  # atlas-rest and dropping the tenant header on the paged spawn-point
+  # fetch, so no monsters spawned.
+  #
+  # Pinning Always guarantees each pod resolves the current `:latest`
+  # manifest on creation. `:latest` is never pruned by the ghcr retention
+  # sweep (#985), so this is also robust against that. Ephemeral PR envs
+  # are short-lived and low-traffic, so the extra pull-on-create cost is
+  # negligible. Base atlas Deployments are single-container, so
+  # containers/0 is always the app container.
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
   # Override GITSYNC_REF so the git-sync sidecar tracks the PR's full
   # commit SHA (not main). CI sed-substitutes PLACEHOLDER_FULL_SHA at
   # apply time. Full SHA — not short — is required because

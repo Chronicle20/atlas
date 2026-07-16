@@ -4,17 +4,17 @@
 > ✅ verified · 🧩 family (mode-prefix dispatcher; sub-arms unverified) · 🟡 partial · ❌ incomplete · ⬜ n-a · 🟥 conflict
 > Partial (🟡) sub-glyphs: 🟡ᶠ tier-1 needs byte-fixture · 🟡ᵈ tool-pass diff-only (no byte-test) · 🟡ᵖ evidence-pinned deferral
 
-Tool: `c38f24fb99fac4f9a1bb6091b1d82a40a3f05e3fd165473a7ac6220dc31693d2`
+Tool: `0e579f0e7c5e41a9da087014d006ef917f45af08d629b54bb5c6fb576032fb63`
 
 - export gms_v48: `054d404fcb6f0feed776b8c1453f2ab48a35f479463e82ea00d6d28ebca512dc`
 - export gms_v61: `b1111abee79b6b10cf1a05305e3c4a7707819f6862a80314c0b2ebce424852f7`
-- export gms_v72: `a21ceb077a00723549680327194e70c712b962f92dfd26c011bc0af8134f06e5`
-- export gms_v79: `aad866f3c3feebf4ce08f3f37b6fc45738cbc5cd68b2e90efd39b86ad4b3a7f6`
-- export gms_v83: `4125d6fe8ae0e9b6dd666a8e84ed55ec4a229b353a30f11592993bf2cbe5c344`
-- export gms_v84: `85703918ea0625309b1a2adfe3770809bdb33caa1334c9cc08074aae8345345d`
-- export gms_v87: `46f326937e63ad90ce0ec685eb1772749d33f3bb4dffa08828498211801c6b7d`
-- export gms_v95: `5486381fc4c567a16ecf3184f7afd2fe081bb38ca110304ba02a8bae6d11baa9`
-- export jms_v185: `1a9603937db514d74c577ec61e56e9a6820b6a8dcde57c97cc62b69718a57067`
+- export gms_v72: `ad7f0800d7560bca21baba98f5116103094c20f991781829ffa65b37db9d963b`
+- export gms_v79: `ccb6069530dad5014ec311b23540f79cfb1e9dd46fc3c681a34948edbe21e790`
+- export gms_v83: `3397a66fafdd738100c4dc54715180bae3eb4ce1a68490d812e3b57bf29eb772`
+- export gms_v84: `16aa06642a2e9175bffbf157617fec25d6e7f0e213b8e296be83227c31f95cba`
+- export gms_v87: `3889fe313c39c73d945937bb0b823bdc3100788dfdbdafcdadc615a3665b2de8`
+- export gms_v95: `d33bdcf3b527f1a8d726dd0113a241737cef5a221e21bfdafda410cad567bd5b`
+- export jms_v185: `886e6bc139a73a8b92e9b8c141818991e560434aac7e3eda3b409e271124ea69`
 
 ## Clientbound
 
@@ -646,8 +646,8 @@ Tool: `c38f24fb99fac4f9a1bb6091b1d82a40a3f05e3fd165473a7ac6220dc31693d2`
 | GRENADE_EFFECT | CUserLocal::ThrowGrenade |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x06D | ❌ | 0x06D | ❌ | 0x070 | ❌ | 0x079 | ❌ | 0x068 | ❌ |
 | SKILL_MACRO | CMacroSysMan::FlushToSvr; sub_6022DB |  |  | ⬜ |  | ⬜ | 0x06D | ❌ | 0x06C | ❌ | 0x06E | ❌ | 0x06E | ❌ | 0x071 | ❌ | 0x07A | ❌ | 0x069 | ❌ |
 | CHANGE_KEYMAP | CFuncKeyMappedMan::ChangePetConsumeItemID; CFuncKeyMappedMan::ChangePetConsumeMPItemID; CFuncKeyMappedMan::SaveFuncKeyMap | character/serverbound/KeyMapChange (T1) | 0x06E | ✅ | 0x07B | ✅ | 0x085 | ✅ | 0x084 | ✅ | 0x087 | ✅ | 0x08B | ✅ | 0x08F | ✅ | 0x09F | ✅ | 0x08A | ✅ |
+| LOTTERY_ITEM_USE_REQUEST | CWvsContext::SendLotteryItemUseRequest | inventory/serverbound/InventoryLotteryItemUse (T1) |  | ⬜ |  | ⬜ | 0x06F | ✅ | 0x06E | ✅ | 0x070 | ✅ | 0x070 | ✅ | 0x073 | ✅ | 0x07C | ✅ | 0x06B | ✅ |
 | NPC_ITEM_USE_REQUEST | CWvsContext::SendSelectNpcItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x06F | ❌ | 0x06F | ❌ | 0x072 | ❌ | 0x07B | ❌ | 0x06A | ❌ |
-| LOTTERY_ITEM_USE_REQUEST | CWvsContext::SendLotteryItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x070 | ❌ | 0x070 | ❌ | 0x073 | ❌ | 0x07C | ❌ | 0x06B | ❌ |
 | MAKER_SKILL | CUIItemMaker::RequestItemMake |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x071 | ❌ | 0x071 | ❌ | 0x074 | ❌ | 0x07D | ❌ | 0x06C | ❌ |
 | MOVE_PET | CVecCtrlPet::EndUpdateActive; sub_6E5BD6 | pet/serverbound/PetMovementRequest (T1) | 0x071 | ✅ | 0x08A | ✅ | 0x0A1 | ✅ | 0x0A3 | ✅ | 0x0A7 | ✅ | 0x0AC | ✅ | 0x0B3 | ✅ | 0x0C7 | ✅ | 0x0AA | ✅ |
 | PET_CHAT | CPet::DoAction | pet/serverbound/PetChatRequest (T1) | 0x072 | ✅ | 0x08B | ✅ | 0x0A2 | ✅ | 0x0A4 | ✅ | 0x0A8 | ✅ | 0x0AD | ✅ | 0x0B4 | ✅ | 0x0C8 | ✅ | 0x0AB | ✅ |
@@ -995,13 +995,13 @@ Tool: `c38f24fb99fac4f9a1bb6091b1d82a40a3f05e3fd165473a7ac6220dc31693d2`
 |---------|----|----|----|----|----|----|-----------|
 | v48 | 166 | 0 | 2 | 156 | 634 | 0 | 51.2% |
 | v61 | 238 | 0 | 60 | 196 | 464 | 0 | 48.2% |
-| v72 | 247 | 0 | 73 | 214 | 424 | 0 | 46.3% |
-| v79 | 261 | 0 | 72 | 210 | 415 | 0 | 48.1% |
-| v83 | 402 | 0 | 0 | 332 | 224 | 0 | 54.8% |
-| v84 | 374 | 0 | 0 | 340 | 244 | 0 | 52.4% |
-| v87 | 408 | 0 | 0 | 363 | 187 | 0 | 52.9% |
-| v95 | 433 | 0 | 0 | 422 | 103 | 0 | 50.6% |
-| JMS185 | 389 | 0 | 0 | 375 | 194 | 0 | 50.9% |
+| v72 | 248 | 0 | 73 | 214 | 423 | 0 | 46.4% |
+| v79 | 262 | 0 | 72 | 210 | 414 | 0 | 48.2% |
+| v83 | 403 | 0 | 0 | 331 | 224 | 0 | 54.9% |
+| v84 | 375 | 0 | 0 | 339 | 244 | 0 | 52.5% |
+| v87 | 409 | 0 | 0 | 362 | 187 | 0 | 53.0% |
+| v95 | 434 | 0 | 0 | 421 | 103 | 0 | 50.8% |
+| JMS185 | 390 | 0 | 0 | 374 | 194 | 0 | 51.0% |
 
 ## Conflicts
 

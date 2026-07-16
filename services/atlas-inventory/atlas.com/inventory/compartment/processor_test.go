@@ -872,6 +872,65 @@ func TestAttemptItemPickUpSplitOverflowThenFail(t *testing.T) {
 	}
 }
 
+// TestCreateAssetAndEmitInventoryFull guards the CREATE_ASSET command failure
+// path: when the create rolls back (no free slot), the CREATION_FAILED
+// rejection CreateAsset buffers must still be published — via the direct
+// producer path — so a waiting caller (the reward-box flow's inventory-full
+// feedback) actually hears it. The transactional emit path discards the buffer
+// on error and the tx rolls back, so without the re-emit the rejection is lost
+// and the client gets no feedback (the reported bug).
+func TestCreateAssetAndEmitInventoryFull(t *testing.T) {
+	characterId := uint32(411)
+
+	l := testLogger()
+	te := testTenant()
+	ctx := tenant.WithContext(context.Background(), te)
+	db := testDatabase(t, l)
+
+	mb := message.NewBuffer()
+
+	dcpi := &dcp.ProcessorImpl{}
+	dcpi.GetByIdFn = func(itemId uint32) (consumable.Model, error) {
+		return consumable.Extract(consumable.RestModel{SlotMax: 100})
+	}
+
+	ap := asset.NewProcessor(l, ctx, db).WithConsumableProcessor(dcpi)
+	cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap)
+
+	// Capacity-1 USE compartment already full with a different templateId, so
+	// the new create can neither merge nor find a free slot.
+	if _, err := cp.Create(mb)(uuid.New(), characterId, inventory.TypeValueUse, 1); err != nil {
+		t.Fatalf("Failed to create compartment: %v", err)
+	}
+	if err := cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2000000, 1, time.Time{}, 0, 0, 0, false); err != nil {
+		t.Fatalf("Failed to seed compartment with existing item: %v", err)
+	}
+
+	captured, restore := installCapturingProducer()
+	defer restore()
+
+	// CreateAssetAndEmit for a different item (2070000) fails at NextFreeSlot.
+	if err := cp.CreateAssetAndEmit(uuid.New(), characterId, inventory.TypeValueUse, 2070000, 1, time.Time{}, 0, 0, 0, false); err == nil {
+		t.Fatalf("CreateAssetAndEmit must return the no-free-slot error")
+	}
+
+	// The CREATION_FAILED rejection must be published on the direct producer
+	// path, carrying the INVENTORY_FULL error code atlas-channel renders.
+	var sawInventoryFull bool
+	for _, msg := range (*captured)[compartmentMsg.EnvEventTopicStatus] {
+		var ev compartmentMsg.StatusEvent[compartmentMsg.CreationFailedStatusEventBody]
+		if err := json.Unmarshal(msg.Value, &ev); err != nil {
+			continue
+		}
+		if ev.Type == compartmentMsg.StatusEventTypeCreationFailed && ev.Body.ErrorCode == compartmentMsg.CreateAssetInventoryFull {
+			sawInventoryFull = true
+		}
+	}
+	if !sawInventoryFull {
+		t.Fatalf("expected CREATION_FAILED(INVENTORY_FULL) on the direct producer path, got %v", (*captured)[compartmentMsg.EnvEventTopicStatus])
+	}
+}
+
 // TestAttemptItemPickUpSuccess guards the merge-on-success side of the D7
 // scratch-buffer fix: when the inner tx commits, the inner CreateAsset's
 // ASSET CREATED event (buffered on a scratch innerMb, per the fix) must

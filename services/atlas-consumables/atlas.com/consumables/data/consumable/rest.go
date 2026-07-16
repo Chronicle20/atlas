@@ -167,15 +167,21 @@ func Extract(rm RestModel) (Model, error) {
 }
 
 type RewardRestModel struct {
-	ItemId uint32 `json:"itemId"`
-	Count  uint32 `json:"count"`
-	Prob   uint32 `json:"prob"`
+	ItemId   uint32 `json:"itemId"`
+	Count    uint32 `json:"count"`
+	Prob     uint32 `json:"prob"`
+	Effect   string `json:"effect"`
+	WorldMsg string `json:"worldMsg"`
+	Period   int32  `json:"period"`
 }
 
 func ExtractReward(rm RewardRestModel) (RewardModel, error) {
 	return RewardModel{
-		itemId: rm.ItemId,
-		count:  rm.Count,
-		prob:   rm.Prob,
+		itemId:   rm.ItemId,
+		count:    rm.Count,
+		prob:     rm.Prob,
+		effect:   rm.Effect,
+		worldMsg: rm.WorldMsg,
+		period:   rm.Period,
 	}, nil
 }

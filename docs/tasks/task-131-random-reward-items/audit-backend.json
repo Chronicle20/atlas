@@ -1,0 +1,161 @@
+{
+  "service": "task-131-random-reward-items",
+  "path": "services/atlas-consumables, services/atlas-inventory, services/atlas-data, services/atlas-channel, libs/atlas-packet, services/atlas-configurations",
+  "date": "2026-07-16",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "seed-data templates / scaffolding (SCAFFOLD-07)",
+      "type": "support",
+      "checks": [
+        {
+          "id": "C1",
+          "name": "CharacterItemUseLotteryHandle registered for v92 against explicit task scope",
+          "status": "fail",
+          "evidence": "services/atlas-configurations/seed-data/templates/template_gms_92_1.json:158 adds opCode 0x7B handler CharacterItemUseLotteryHandle; contradicts docs/tasks/task-131-random-reward-items/context.md:17,25-27, plan.md:1634-1640 (Task 13 Files: list omits v92), and rollout.md:203-217 (\"Do not add ... for v92\"); design.md:48 marks the opcode 'CSV ... Not in the coverage matrix version set'"
+        },
+        {
+          "id": "C2",
+          "name": "rollout.md factually contradicts the jms template diff",
+          "status": "fail",
+          "evidence": "rollout.md:218-222 claims 'no handler entry was added to template_jms_185_1.json'; template_jms_185_1.json:315 adds opCode 0x6B CharacterItemUseLotteryHandle, and STATUS.md:649 shows it promoted to verified, backed by lottery_item_use_test.go:24 (ida=0xaf6900) and docs/packets/audits/jms_v185/InventoryLotteryItemUse.md:3,7"
+        }
+      ]
+    },
+    {
+      "name": "atlas-consumables/inventory",
+      "type": "support",
+      "checks": [
+        {
+          "id": "FILE-02",
+          "name": "RestModel + JSON:API methods in rest.go",
+          "status": "fail",
+          "evidence": "services/atlas-consumables/atlas.com/consumables/inventory/accommodation.go:17-53 defines accommodationInputRestModel/accommodationOutputRestModel with full JSON:API interface outside rest.go, despite a correctly-split rest.go already existing in the same package (rest.go:11-114)"
+        },
+        {
+          "id": "FILE-03",
+          "name": "Cross-service request funcs in requests.go",
+          "status": "fail",
+          "evidence": "accommodation.go:55-61 defines requestCheckAccommodation calling requests.PostRequest outside requests.go, despite a correctly-split requests.go already existing in the same package (requests.go:14-20)"
+        },
+        {
+          "id": "EXT-02",
+          "name": "httptest-backed integration test for CanAccommodate",
+          "status": "fail",
+          "evidence": "services/atlas-consumables/atlas.com/consumables/inventory/ has zero *_test.go files; no test covers requestCheckAccommodation's JSON:API round trip"
+        }
+      ]
+    },
+    {
+      "name": "atlas-consumables/data/itemstring",
+      "type": "support",
+      "checks": [
+        {
+          "id": "EXT-01",
+          "name": "RestModel implements relationship interfaces",
+          "status": "fail",
+          "evidence": "services/atlas-consumables/atlas.com/consumables/data/itemstring/rest.go:8-15 implements only GetName/GetID/SetID; SetToOneReferenceID/SetToManyReferenceIDs absent"
+        },
+        {
+          "id": "EXT-02",
+          "name": "httptest-backed integration test exists",
+          "status": "fail",
+          "evidence": "package has no test files at all (go test output: 'atlas-consumables/data/itemstring [no test files]')"
+        }
+      ]
+    },
+    {
+      "name": "atlas-inventory/compartment",
+      "type": "domain",
+      "checks": [
+        {
+          "id": "FILE-01",
+          "name": "ProcessorImpl methods live in processor.go or processor_<group>.go",
+          "status": "fail",
+          "evidence": "services/atlas-inventory/atlas.com/inventory/compartment/accommodation.go:49 (CanAccommodate) and :73 (accommodatesOne) are ProcessorImpl methods living in a bare-topic-named file instead of processor.go / processor_accommodation.go"
+        },
+        {
+          "id": "DOM-17/DOM-27",
+          "name": "Accommodation endpoint error mapping uses WriteErrorResponse",
+          "status": "pass",
+          "evidence": "compartment/accommodation_rest.go:76 — server.WriteErrorResponse(d.Logger())(w)(err)"
+        },
+        {
+          "id": "DOM-08",
+          "name": "POST endpoint uses RegisterInputHandler[T]",
+          "status": "pass",
+          "evidence": "compartment/resource.go:26"
+        },
+        {
+          "id": "DOM-24",
+          "name": "Kafka producer stubbed via shared producertest, no unsafe cleanup",
+          "status": "pass",
+          "evidence": "compartment/processor_test.go:77-82 TestMain -> producertest.InstallNoop(); installCapturingProducer restore func (line 72-74) calls producertest.InstallNoop(), not bare ResetInstance via t.Cleanup"
+        },
+        {
+          "id": "CreateAssetAndEmit fix",
+          "name": "CREATION_FAILED rejection re-emitted outside rolled-back tx",
+          "status": "pass",
+          "evidence": "compartment/processor.go:994-1027; tested by TestCreateAssetAndEmitInventoryFull (processor_test.go:875-931)"
+        }
+      ]
+    },
+    {
+      "name": "atlas-consumables/consumable",
+      "type": "domain",
+      "checks": [
+        {
+          "id": "DOM-28",
+          "name": "No silent degradation without degrade.Observe metric",
+          "status": "fail",
+          "evidence": "consumable/processor.go:1120-1125 (character name enrichment) and :1126-1130 (item name enrichment) in emitRewardPresentation warn-log on failure but never call degrade.Observe(...)"
+        },
+        {
+          "id": "reward once-handler design",
+          "name": "Both once-handlers registered before emit; cleanup on setup failure and on terminal success/failure",
+          "status": "pass",
+          "evidence": "consumable/processor.go:1036-1064 (ConsumeReward), :1070-1085 (grantRewardOnConfirmed), :1095-1107 (grantRewardOnFailed)"
+        },
+        {
+          "id": "DOM-25",
+          "name": "Client-interpreted wire values config-resolved, not literals",
+          "status": "pass",
+          "evidence": "libs/atlas-packet/character/effect_body.go:233-242 uses atlas_packet.WithResolvedCode(\"operations\", ...); v61's stale LOTTERY_USE:14 operations entry removed with documented justification (design.md:142-149)"
+        },
+        {
+          "id": "DOM-21",
+          "name": "No atlas-constants duplication",
+          "status": "pass",
+          "evidence": "new RewardModel/reward-roll logic is service-specific; existing atlas-constants types (item2.Id, inventory2.Type, world.Id) reused throughout"
+        }
+      ]
+    },
+    {
+      "name": "atlas-data/consumable",
+      "type": "domain",
+      "checks": [
+        {
+          "id": "reader per-entry fields",
+          "name": "Effect/worldMsg/period parsed with correct WZ casing and defaults",
+          "status": "pass",
+          "evidence": "services/atlas-data/atlas.com/data/consumable/reader.go:167-180; TestReaderRewardFields (reader_test.go:1013-1073)"
+        }
+      ]
+    }
+  ],
+  "blocking": [
+    "C1: template_gms_92_1.json:158 registers CharacterItemUseLotteryHandle at an unverified opcode (0x7B) against explicit task-scope exclusion of v92 (context.md, plan.md Task 13, rollout.md Step 3)",
+    "C2: rollout.md:218-222 falsely claims no handler entry was added to template_jms_185_1.json, contradicting the actual (verified) diff at template_jms_185_1.json:315",
+    "FILE-02/FILE-03: services/atlas-consumables/atlas.com/consumables/inventory/accommodation.go collapses RestModel + request function outside rest.go/requests.go (task-102 wallet.go recurrence)",
+    "FILE-01: services/atlas-inventory/atlas.com/inventory/compartment/accommodation.go:49,73 places ProcessorImpl methods in a bare-topic-named file",
+    "EXT-01: services/atlas-consumables/atlas.com/consumables/data/itemstring/rest.go:8-15 RestModel missing SetToOneReferenceID/SetToManyReferenceIDs",
+    "EXT-02: no httptest-backed test for data/itemstring.GetName or inventory.CanAccommodate"
+  ],
+  "nonBlocking": [
+    "DOM-28: emitRewardPresentation's two enrichment fetches (consumable/processor.go:1120-1130) warn-log on failure but never call degrade.Observe(...)",
+    "No dedicated test for RequestItemReward/ConsumeReward once-handler orchestration (consistent with untested sibling reservation flows)"
+  ]
+}

@@ -24,6 +24,7 @@ type ProcessorMock struct {
 	ApplyConsumableEffectFunc  func(transactionId uuid.UUID, c channel.Model, characterId uint32, itemId item2.Id) error
 	CancelConsumableEffectFunc func(transactionId uuid.UUID, characterId uint32, itemId item2.Id, f field.Model) error
 	FailScrollFunc             func(characterId uint32, cursed bool, legendarySpirit bool, whiteScroll bool) error
+	RequestItemRewardFunc      func(characterId uint32, itemId item2.Id, source int16) error
 	RequestViciousHammerFunc   func(characterId uint32, hammerSlot int16, equipSlot int16) error
 }
 
@@ -109,6 +110,13 @@ func (m *ProcessorMock) FailScroll(characterId uint32, cursed bool, legendarySpi
 func (m *ProcessorMock) RequestViciousHammer(characterId uint32, hammerSlot int16, equipSlot int16) error {
 	if m.RequestViciousHammerFunc != nil {
 		return m.RequestViciousHammerFunc(characterId, hammerSlot, equipSlot)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) RequestItemReward(characterId uint32, itemId item2.Id, source int16) error {
+	if m.RequestItemRewardFunc != nil {
+		return m.RequestItemRewardFunc(characterId, itemId, source)
 	}
 	return nil
 }

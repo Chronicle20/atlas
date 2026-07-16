@@ -1,0 +1,8 @@
+packet: inventory/serverbound/InventoryLotteryItemUse
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendLotteryItemUseRequest
+    address: "0xaa7ec6"
+    decompile_sha256: dae2e7c387fcc587bbda4be846168b5620b717c0c5ec64d93273ce91d9a4c0fa

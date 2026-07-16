@@ -39,21 +39,34 @@ func TestBuilder_BuildsFixedListing(t *testing.T) {
 
 // TestBuilder_SetOwnerRoundTrip asserts the item-tag owner name set via
 // SetOwner survives Build() and is exposed by Model.Owner(), mirroring the
-// existing Flags()/SetFlags() round trip.
+// existing Flags()/SetFlags() round trip. The empty case covers an untagged
+// item (the column's default-'' state).
 func TestBuilder_SetOwnerRoundTrip(t *testing.T) {
-	tid := uuid.New()
-	m, err := listing.NewBuilder(tid, 0, 1001).
-		SetSellerName("alice").
-		SetSaleType(listing.SaleTypeFixed).
-		SetState(listing.StateActive).
-		SetTemplateId(1302000).
-		SetQuantity(1).
-		SetOwner("Chronicle").
-		Build()
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	tests := []struct {
+		name  string
+		owner string
+	}{
+		{name: "tagged", owner: "Chronicle"},
+		{name: "untagged (default empty)", owner: ""},
+		{name: "multi-word name", owner: "Dark Lord"},
 	}
-	if m.Owner() != "Chronicle" {
-		t.Fatalf("m.Owner() = %q, want %q", m.Owner(), "Chronicle")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tid := uuid.New()
+			m, err := listing.NewBuilder(tid, 0, 1001).
+				SetSellerName("alice").
+				SetSaleType(listing.SaleTypeFixed).
+				SetState(listing.StateActive).
+				SetTemplateId(1302000).
+				SetQuantity(1).
+				SetOwner(tt.owner).
+				Build()
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if m.Owner() != tt.owner {
+				t.Fatalf("m.Owner() = %q, want %q", m.Owner(), tt.owner)
+			}
+		})
 	}
 }

@@ -299,7 +299,7 @@ export function ListingItemCell({
   attributes: MtsListingAttributes;
   tenant: Tenant | null;
 }) {
-  const tagged = attributes.owner.trim() !== "";
+  const tagged = (attributes.owner ?? "").trim() !== "";
   const sealed = (attributes.flags & FLAG_LOCK) !== 0;
   return (
     <div className="flex items-center gap-1.5">

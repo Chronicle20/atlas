@@ -18,6 +18,7 @@ describe("useIncubatorRewards", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("fetches the reward list for a tenant", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (incubatorRewardsService.list as any).mockResolvedValue([{ id: "r1", attributes: { itemId: 1, quantity: 1, weight: 5 } }]);
     const { result } = renderHook(() => useIncubatorRewards("t1"), { wrapper: wrapper() });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -26,6 +27,7 @@ describe("useIncubatorRewards", () => {
   });
 
   it("create mutation calls the service", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (incubatorRewardsService.create as any).mockResolvedValue({ id: "r2", attributes: { itemId: 2, quantity: 1, weight: 3 } });
     const { result } = renderHook(() => useCreateIncubatorReward(), { wrapper: wrapper() });
     await result.current.mutateAsync({ tenantId: "t1", attributes: { itemId: 2, quantity: 1, weight: 3 } });

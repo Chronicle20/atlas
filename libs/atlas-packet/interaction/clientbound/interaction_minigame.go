@@ -192,6 +192,44 @@ func (m *InteractionMiniGameSkip) Decode(_ logrus.FieldLogger, _ context.Context
 	}
 }
 
+// InteractionMiniGamePutStoneError - Omok invalid-move rejection (Omok-only;
+// MemoryGame has no stone placement). COmokDlg::OnPutStoneCheckerErr reads a
+// single errorCode byte and shows a red chat line: the version-specific
+// "double 3s" (renju double-three forbidden) code -> "You have double 3s",
+// otherwise -> "You can't put it there". The double-3 code is version-specific
+// (v48 60 / v61 61 / v72 61 / v79 66 / v83..v95 67 / jms 64), so a producer that
+// emits a specific error type must config-resolve the code per version. IDA:
+// v48 sub_573A10 @0x573a10, v61 sub_5F7B5F @0x5f7b5f, v72 sub_64E84D @0x64e84d,
+// v79 sub_672622 @0x672622, v83 COmokDlg::OnPutStoneCheckerErr @0x6e4065,
+// v87 @0x721b74, v95 @0x680360, jms @0x72b593.
+// packet-audit:fname CMiniRoomBaseDlg::OnPacketBase#MemoryGamePutStoneError
+type InteractionMiniGamePutStoneError struct {
+	mode      byte
+	errorCode byte
+}
+
+func NewInteractionMiniGamePutStoneError(mode byte, errorCode byte) InteractionMiniGamePutStoneError {
+	return InteractionMiniGamePutStoneError{mode: mode, errorCode: errorCode}
+}
+func (m InteractionMiniGamePutStoneError) Operation() string { return CharacterInteractionWriter }
+func (m InteractionMiniGamePutStoneError) String() string {
+	return fmt.Sprintf("minigame put-stone error code [%d]", m.errorCode)
+}
+func (m InteractionMiniGamePutStoneError) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)
+		w.WriteByte(m.errorCode)
+		return w.Bytes()
+	}
+}
+func (m *InteractionMiniGamePutStoneError) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.errorCode = r.ReadByte()
+	}
+}
+
 // InteractionMiniGameStartOmok - Omok game started. `firstMover` is the raw
 // wire byte per ida-notes.md §G1 (COmokDlg::OnUserStart): the client grants
 // the first move to the slot that is NOT equal to this byte.

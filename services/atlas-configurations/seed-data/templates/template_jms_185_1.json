@@ -2560,6 +2560,7 @@
             "MEMORY_GAME_SKIP": 60,
             "MEMORY_GAME_MOVE_STONE": 61,
             "MEMORY_GAME_FIP_CARD": 65,
+            "MEMORY_GAME_PUT_STONE_ERROR": 62,
             "PERSONAL_STORE_ITEM_SOLD": 23,
             "MERCHANT_VIEW_VISIT_LIST": 43,
             "MERCHANT_VIEW_BLACK_LIST": 44

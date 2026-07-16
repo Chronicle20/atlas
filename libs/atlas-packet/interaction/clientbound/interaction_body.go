@@ -67,17 +67,18 @@ const (
 	// CharacterInteraction mini-game modes (CMiniRoomBaseDlg::OnPacketBase — Omok /
 	// Match Cards, one enum shared by serverbound and clientbound). Verified
 	// byte-identical on gms_v83 and gms_v95: docs/tasks/task-133-miniroom-minigames/ida-notes.md §G5.
-	CharacterInteractionModeMemoryGameAskTie        CharacterInteractionMode = "MEMORY_GAME_ASK_TIE"        // 50
-	CharacterInteractionModeMemoryGameTieAnswer     CharacterInteractionMode = "MEMORY_GAME_TIE_ANSWER"     // 51
-	CharacterInteractionModeMemoryGameAskRetreat    CharacterInteractionMode = "MEMORY_GAME_ASK_RETREAT"    // 54
-	CharacterInteractionModeMemoryGameRetreatAnswer CharacterInteractionMode = "MEMORY_GAME_RETREAT_ANSWER" // 55
-	CharacterInteractionModeMemoryGameReady         CharacterInteractionMode = "MEMORY_GAME_READY"          // 58
-	CharacterInteractionModeMemoryGameUnready       CharacterInteractionMode = "MEMORY_GAME_UNREADY"        // 59
-	CharacterInteractionModeMemoryGameStart         CharacterInteractionMode = "MEMORY_GAME_START"          // 61
-	CharacterInteractionModeMemoryGameResult        CharacterInteractionMode = "MEMORY_GAME_RESULT"         // 62
-	CharacterInteractionModeMemoryGameSkip          CharacterInteractionMode = "MEMORY_GAME_SKIP"           // 63
-	CharacterInteractionModeMemoryGameMoveStone     CharacterInteractionMode = "MEMORY_GAME_MOVE_STONE"     // 64
-	CharacterInteractionModeMemoryGameFlipCard      CharacterInteractionMode = "MEMORY_GAME_FIP_CARD"       // 68 (typo is load-bearing)
+	CharacterInteractionModeMemoryGameAskTie        CharacterInteractionMode = "MEMORY_GAME_ASK_TIE"         // 50
+	CharacterInteractionModeMemoryGameTieAnswer     CharacterInteractionMode = "MEMORY_GAME_TIE_ANSWER"      // 51
+	CharacterInteractionModeMemoryGameAskRetreat    CharacterInteractionMode = "MEMORY_GAME_ASK_RETREAT"     // 54
+	CharacterInteractionModeMemoryGameRetreatAnswer CharacterInteractionMode = "MEMORY_GAME_RETREAT_ANSWER"  // 55
+	CharacterInteractionModeMemoryGameReady         CharacterInteractionMode = "MEMORY_GAME_READY"           // 58
+	CharacterInteractionModeMemoryGameUnready       CharacterInteractionMode = "MEMORY_GAME_UNREADY"         // 59
+	CharacterInteractionModeMemoryGameStart         CharacterInteractionMode = "MEMORY_GAME_START"           // 61
+	CharacterInteractionModeMemoryGameResult        CharacterInteractionMode = "MEMORY_GAME_RESULT"          // 62
+	CharacterInteractionModeMemoryGameSkip          CharacterInteractionMode = "MEMORY_GAME_SKIP"            // 63
+	CharacterInteractionModeMemoryGameMoveStone     CharacterInteractionMode = "MEMORY_GAME_MOVE_STONE"      // 64
+	CharacterInteractionModeMemoryGameFlipCard      CharacterInteractionMode = "MEMORY_GAME_FIP_CARD"        // 68 (typo is load-bearing)
+	CharacterInteractionModeMemoryGamePutStoneError CharacterInteractionMode = "MEMORY_GAME_PUT_STONE_ERROR" // 65 (Omok invalid-move rejection)
 
 	// Mini-game RESULT (mode 62) outcome keys, resolved via the tenant
 	// "resultType" writer table. Values {WIN:0, TIE:1, FORFEIT:2} are
@@ -272,6 +273,18 @@ func CharacterInteractionMiniGameStartMatchCardsBody(firstMover byte, deck []uin
 func CharacterInteractionMiniGameMoveStoneBody(x uint32, y uint32, stoneType byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeMemoryGameMoveStone, func(mode byte) packet.Encoder {
 		return NewInteractionMiniGameMoveStone(mode, x, y, stoneType)
+	})
+}
+
+// CharacterInteractionMiniGamePutStoneErrorBody emits the Omok invalid-move
+// rejection. errorCode is the arm's body byte (NOT the operation selector): the
+// client compares it to the version-specific "double 3s" code to pick the
+// message. A producer sending a specific error type must config-resolve the code
+// per version (see the InteractionMiniGamePutStoneError doc for the per-version
+// values).
+func CharacterInteractionMiniGamePutStoneErrorBody(errorCode byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeMemoryGamePutStoneError, func(mode byte) packet.Encoder {
+		return NewInteractionMiniGamePutStoneError(mode, errorCode)
 	})
 }
 

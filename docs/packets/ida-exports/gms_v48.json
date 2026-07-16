@@ -3,6 +3,30 @@
   "md5": "",
   "generated_at": "2026-07-03T15:48:41Z",
   "functions": {
+    "CMiniRoomBaseDlg::OnPacketBase#MemoryGameResult": {
+      "address": "0x573e1d",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "resultType/outcome (sub_573E1D @0x573e1d Omok / sub_537DD9 @0x537dd9 MemoryGame; ==1 draw path shows tie strings 438/1441, else win 437/1442 or lose 439/1443 AND updates the win-loss record +669 — this is the RESULT arm, mode 55)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "winnerSlot (who won; read only when resultType!=1). v48 stops here — the modern v83+ struct then writes 2x GW_MiniGameRecord (40 bytes) that the v48 client does not read (harmless trailing over-write)."
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#MemoryGameSkip": {
+      "address": "0x5740df",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "who (sub_5740DF @0x5740df Omok / sub_5380C8 @0x5380c8 MemoryGame): turn passes to this slot and sets the 30000ms move timer (this[678]=30000) — the SKIP/turn-advance arm, mode 56, distinct from RESULT(55) which updates the win-loss record. No result strings."
+        }
+      ]
+    },
     "sub_546A05": {
       "address": "0x546a05",
       "direction": "serverbound",

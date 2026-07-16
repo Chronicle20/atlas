@@ -2109,6 +2109,8 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "InteractionMiniGameStartMatchCards", dir: csvpkg.DirClientbound, pkg: "interaction"}}
 	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameMoveStone":
 		return []candidate{{name: "InteractionMiniGameMoveStone", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGamePutStoneError":
+		return []candidate{{name: "InteractionMiniGamePutStoneError", dir: csvpkg.DirClientbound, pkg: "interaction"}}
 	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameCardSelectFirst":
 		return []candidate{{name: "InteractionMiniGameCardSelectFirst", dir: csvpkg.DirClientbound, pkg: "interaction"}}
 	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameCardSelectSecond":

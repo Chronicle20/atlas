@@ -82,6 +82,13 @@ operations:
   - { key: MEMORY_GAME_SKIP,           modes: { gms_v48: 56, gms_v61: 57, gms_v72: 57, gms_v79: 62, gms_v83: 63, gms_v84: 63, gms_v87: 63, gms_v95: 63, jms_v185: 60 } }
   - { key: MEMORY_GAME_MOVE_STONE,     modes: { gms_v48: 57, gms_v61: 58, gms_v72: 58, gms_v79: 63, gms_v83: 64, gms_v84: 64, gms_v87: 64, gms_v95: 64, jms_v185: 61 } }
   - { key: MEMORY_GAME_FIP_CARD,       modes: { gms_v48: 61, gms_v61: 62, gms_v72: 62, gms_v79: 67, gms_v83: 68, gms_v84: 68, gms_v87: 68, gms_v95: 68, jms_v185: 65 } }
+  # MEMORY_GAME_PUT_STONE_ERROR — Omok invalid-move rejection (COmokDlg::OnPutStoneCheckerErr;
+  # Omok-only, MemoryGame has no stone placement). Reads mode + errorCode byte; shows the
+  # "double 3s" (renju) or "can't put there" message. IDA-derived per version (task-133 item 1):
+  #   v48 sub_573A10 @0x573a10 (58) · v61 sub_5F7B5F @0x5f7b5f (59) · v72 sub_64E84D @0x64e84d (59)
+  #   v79 sub_672622 @0x672622 (64) · v83 @0x6e4065 (65) · v84 =v83 (base sub_673DB5 @0x673db5)
+  #   v87 @0x721b74 (65) · v95 @0x680360 (65) · jms @0x72b593 (62, uniform -3)
+  - { key: MEMORY_GAME_PUT_STONE_ERROR, modes: { gms_v48: 58, gms_v61: 59, gms_v72: 59, gms_v79: 64, gms_v83: 65, gms_v84: 65, gms_v87: 65, gms_v95: 65, jms_v185: 62 } }
   # PERSONAL_STORE_ITEM_SOLD is the per-sale sold-item notification to the owner
   # (CPersonalShopDlg::OnSoldItemResult) — UPDATE_MERCHANT+1 in every version
   # (gms 25->26; jms 22->23), matching the same subclass sub-mode shift as

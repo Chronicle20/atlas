@@ -108,6 +108,11 @@ func TestInteractionMiniGameRetreatAnswerDeclineRoundTrip(t *testing.T) {
 // the skipper — see ida-notes.md §G5 SKIP section.
 // packet-audit:verify packet=interaction/clientbound/InteractionInteractionMiniGameSkip version=gms_v83 ida=0x6e472e
 // packet-audit:verify packet=interaction/clientbound/InteractionInteractionMiniGameSkip version=gms_v95 ida=0x67fac0
+// v48 (task-133 item 4 — RESULT/SKIP disambiguation): SKIP is mode 56, sub_5740DF @0x5740df
+// (Omok) / sub_5380C8 @0x5380c8 (MemoryGame): Decode1(who) then sets the 30000ms move timer
+// (this[678]=30000), no result strings — the turn-advance arm, wire mode+who == the modern
+// struct. Distinct from RESULT (mode 55, @0x573e1d, which updates the win-loss record).
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionMiniGameSkip version=gms_v48 ida=0x5740df
 func TestInteractionMiniGameSkipRoundTrip(t *testing.T) {
 	for _, who := range []byte{0x01, 0x00} {
 		input := NewInteractionMiniGameSkip(63, who)
@@ -199,6 +204,13 @@ func TestInteractionMiniGameCardSelectSecondRoundTrip(t *testing.T) {
 // GW_MiniGameRecord::Decode ×2 @ 0x4f2ad0 = 20 bytes each).
 // packet-audit:verify packet=interaction/clientbound/InteractionInteractionMiniGameResult version=gms_v83 ida=0x6e4463
 // packet-audit:verify packet=interaction/clientbound/InteractionInteractionMiniGameResult version=gms_v95 ida=0x680570
+// v48 (task-133 item 4 — RESULT/SKIP disambiguation): RESULT is mode 55, sub_573E1D @0x573e1d
+// (Omok) / sub_537DD9 @0x537dd9 (MemoryGame): Decode1(resultType; ==1 draw shows tie strings
+// 438/1441, else win 437/1442 or lose 439/1443) + conditional Decode1(winnerSlot), AND updates
+// the win-loss record (+669) — the RESULT arm (distinct from SKIP mode 56 @0x5740df which sets
+// the turn timer). v48 reads only this prefix; the modern struct's trailing 2x GW_MiniGameRecord
+// (40 bytes) is not read by the v48 client (harmless over-write).
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionMiniGameResult version=gms_v48 ida=0x573e1d
 func TestInteractionMiniGameResultOwnerWinRoundTrip(t *testing.T) {
 	ownerRecord := interaction.GameRecord{Unknown: 1, Wins: 2, Ties: 3, Losses: 4, Points: 5}
 	visitorRecord := interaction.GameRecord{Unknown: 6, Wins: 7, Ties: 8, Losses: 9, Points: 10}
@@ -239,6 +251,32 @@ func TestInteractionMiniGameResultTieRoundTrip(t *testing.T) {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 			test.RoundTrip(t, ctx, input.Encode, (&InteractionMiniGameResult{}).Decode, nil)
+		})
+	}
+}
+
+// TestInteractionMiniGamePutStoneErrorBytes pins the exact wire bytes of the
+// Omok invalid-move rejection (mode + errorCode). v83 COmokDlg::OnPutStoneCheckerErr
+// @0x6e4065 reads Decode1(mode) [dispatcher] + Decode1(errorCode); errorCode 67 is the
+// "double 3s" (renju) code on gms_v83+ (v95 0x680360 identical). See §G / task-133 item 1.
+func TestInteractionMiniGamePutStoneErrorBytes(t *testing.T) {
+	ctx := test.CreateContext("GMS", 83, 1)
+	input := NewInteractionMiniGamePutStoneError(65, 67)
+	got := test.Encode(t, ctx, input.Encode, nil)
+	want := []byte{0x41, 0x43} // mode 65, errorCode 67 (double-3s)
+	if len(got) != len(want) || got[0] != want[0] || got[1] != want[1] {
+		t.Fatalf("byte mismatch: got %x want %x", got, want)
+	}
+}
+
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionMiniGamePutStoneError version=gms_v83 ida=0x6e4065
+// packet-audit:verify packet=interaction/clientbound/InteractionInteractionMiniGamePutStoneError version=gms_v95 ida=0x680360
+func TestInteractionMiniGamePutStoneErrorRoundTrip(t *testing.T) {
+	input := NewInteractionMiniGamePutStoneError(65, 67)
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			test.RoundTrip(t, ctx, input.Encode, (&InteractionMiniGamePutStoneError{}).Decode, nil)
 		})
 	}
 }

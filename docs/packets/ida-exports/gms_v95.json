@@ -3,6 +3,20 @@
   "md5": "3c71fd8872d5efbe16183ae8c51f887d",
   "generated_at": "2026-05-13T00:00:00Z",
   "functions": {
+    "CMiniRoomBaseDlg::OnPacketBase#MemoryGamePutStoneError": {
+      "address": "0x680360",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (dispatcher byte; PUT_STONE_ERROR)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (==double-3 code -> \"you have double 3s\", else \"cant put it there\")"
+        }
+      ]
+    },
     "CMiniRoomBaseDlg::OnPacketBase#EnterMiniGame": {
       "address": "0x638f80",
       "direction": "clientbound",

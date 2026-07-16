@@ -3,6 +3,20 @@
   "md5": "",
   "generated_at": "2026-06-13T12:51:12Z",
   "functions": {
+    "CUser::OnMiniRoomBalloon#Remove": {
+      "address": "0x96ffb6",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId (consumed by CUserPool::OnUserCommonPacket GetUser)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "roomType (0 -> CChatBalloon::DestroyMiniRoomBalloon; no trailing fields)"
+        }
+      ]
+    },
     "CUser::OnMiniRoomBalloon": {
       "address": "0x96ffb6",
       "direction": "clientbound",

@@ -76,6 +76,16 @@ func TestMiniRoomBalloonRoundTrip(t *testing.T) {
 // (CUser::OnMiniRoomBalloon) as MiniRoomBalloon above.
 // packet-audit:verify packet=interaction/clientbound/InteractionMiniRoomBalloonRemove version=gms_v83 ida=0x938ba5
 // packet-audit:verify packet=interaction/clientbound/InteractionMiniRoomBalloonRemove version=gms_v95 ida=0x8e8d30
+// Remove sibling (task-133 item 6): the roomType==0 branch of CUser::OnMiniRoomBalloon on
+// each version — Decode4(characterId, consumed upstream) then Decode1(roomType==0) →
+// CChatBalloon::DestroyMiniRoomBalloon, no trailing fields. Same function address as the
+// base balloon; byte-identical across versions (no gate). v48 stays n-a (feature absent).
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniRoomBalloonRemove version=gms_v61 ida=0x7920b9
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniRoomBalloonRemove version=gms_v72 ida=0x847df1
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniRoomBalloonRemove version=gms_v79 ida=0x8922ce
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniRoomBalloonRemove version=gms_v84 ida=0x96ffb6
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniRoomBalloonRemove version=gms_v87 ida=0x9b337d
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniRoomBalloonRemove version=jms_v185 ida=0x9f7d25
 func TestMiniRoomBalloonRemoveRoundTrip(t *testing.T) {
 	input := NewMiniRoomBalloonRemove(1234)
 	for _, v := range test.Variants {

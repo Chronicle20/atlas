@@ -2286,6 +2286,7 @@
             "MEMORY_GAME_SKIP": 62,
             "MEMORY_GAME_MOVE_STONE": 63,
             "MEMORY_GAME_FIP_CARD": 67,
+            "MEMORY_GAME_PUT_STONE_ERROR": 64,
             "PERSONAL_STORE_ITEM_SOLD": 25
           },
           "enterError": {

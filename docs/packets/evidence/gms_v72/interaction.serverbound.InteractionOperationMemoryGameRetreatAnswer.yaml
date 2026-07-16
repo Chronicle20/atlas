@@ -4,7 +4,7 @@ version: gms_v72
 category: TIER1-FIXTURE
 ida:
     function: COmokDlg::OnRetreatRequest
-    address: "0x5febf2"
-    decompile_sha256: fe526a82c784c8361034051a0901656cf4aed71b498ab3e66f159bfa1b0863b1
+    address: "0x64e953"
+    decompile_sha256: 5324933e1c651015c8c8b108a3d2eff593846f8611abc79545a6208e761852cd
 verifies:
   - libs/atlas-packet/interaction/serverbound/operation_memory_game_retreat_answer_test.go#TestOperationMemoryGameRetreatAnswerV72Bytes

@@ -3,6 +3,20 @@
  "md5": "",
  "generated_at": "2026-07-01T15:41:36Z",
  "functions": {
+    "CUser::OnMiniRoomBalloon#Remove": {
+      "address": "0x847df1",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId (consumed by CUserPool::OnUserCommonPacket GetUser)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "roomType (0 -> CChatBalloon::DestroyMiniRoomBalloon; no trailing fields)"
+        }
+      ]
+    },
   "CITC::OnChargeParamResult": {
    "address": "0x566768",
    "direction": "clientbound",
@@ -6483,7 +6497,7 @@
    ]
   },
   "COmokDlg::OnRetreatRequest": {
-   "address": "0x5febf2",
+   "address": "0x64e953",
    "direction": "serverbound",
    "calls": [
     {

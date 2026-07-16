@@ -1,0 +1,10 @@
+packet: interaction/clientbound/InteractionInteractionMiniGamePutStoneError
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CMiniRoomBaseDlg::OnPacketBase#MemoryGamePutStoneError
+    address: "0x6e4065"
+    decompile_sha256: a321d5b67b8d40e3a3833b38bb7c630b926032a518934c033c1e18f537ff813e
+verifies:
+    - libs/atlas-packet/interaction/clientbound/interaction_minigame_test.go#TestInteractionMiniGamePutStoneErrorRoundTrip

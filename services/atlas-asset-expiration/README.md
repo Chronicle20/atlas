@@ -19,6 +19,7 @@ The service tracks online sessions by consuming session status events. Expiratio
 |---------------------|-------------|
 | `BOOTSTRAP_SERVERS` | Kafka broker addresses |
 | `BASE_SERVICE_URL` | Base URL for REST service discovery |
+| `REST_PORT` | Port for the REST server (debug/readiness routes) |
 | `EVENT_TOPIC_SESSION_STATUS` | Topic for session status events |
 | `COMMAND_TOPIC_STORAGE` | Topic for storage expire commands |
 | `COMMAND_TOPIC_CASH_SHOP` | Topic for cash shop expire commands |

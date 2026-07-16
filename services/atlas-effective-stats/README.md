@@ -9,11 +9,11 @@ This service provides computed effective stats for logged-in characters. It main
 ## External Dependencies
 
 - **Redis**: Tenant-scoped cache for character effective stats models
-- **atlas-character**: Source of base character stats (STR, DEX, INT, LUK, MaxHP, MaxMP)
+- **atlas-character**: Source of base character stats (STR, DEX, INT, LUK, MaxHP, MaxMP) and wearer profile (level, jobId)
 - **atlas-inventory**: Source of equipped item stats (flat asset fields in the equip compartment)
 - **atlas-buffs**: Source of active buff stat changes
 - **atlas-skills**: Source of character skill levels
-- **atlas-data**: Source of skill effect data (passive skill bonuses)
+- **atlas-data**: Source of skill effect data (passive skill bonuses) and equipment requirement data (reqLevel, reqJob, reqStr, reqDex, reqInt, reqLuk)
 - **Kafka cluster**: Event streaming for real-time updates and command publishing
 
 ## Runtime Configuration

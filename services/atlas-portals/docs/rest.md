@@ -11,6 +11,8 @@ Returns blocked portals for a character.
 | Name | In | Type | Required | Description |
 |------|-----|------|----------|-------------|
 | characterId | query | uint32 | Yes | Character identifier |
+| page[number] | query | int | No | Page number (default 1) |
+| page[size] | query | int | No | Page size (default 50, max 250) |
 | Tenant-Id | header | uuid | Yes | Tenant identifier |
 
 **Request Model**
@@ -33,4 +35,5 @@ JSON:API response with `blocked-portals` resource type.
 | Status | Condition |
 |--------|-----------|
 | 400 | Missing or invalid characterId |
+| 400 | Invalid page[number]/page[size] (including legacy `limit` param) |
 | 500 | Internal error transforming blocked portals |

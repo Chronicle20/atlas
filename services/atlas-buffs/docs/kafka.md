@@ -49,6 +49,7 @@ Consumed from COMMAND_TOPIC_CHARACTER_BUFF. Generic envelope with typed body.
 | Level | byte |
 | Duration | int32 |
 | Changes | []StatChange |
+| Accumulate | bool |
 
 ##### CancelCommandBody
 

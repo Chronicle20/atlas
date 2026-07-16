@@ -11,9 +11,9 @@ This service uses Redis for all state storage. There is no SQL or relational dat
 | `atlas:monster:{tenantId}:{uniqueId}` | String (JSON) | Monster instance data |
 | `atlas:monster-map:{tenantId}:{worldId}:{channelId}:{mapId}:{instance}` | Set | Set of monster uniqueId values in a field |
 
-The monster JSON structure contains all model fields, damage entries as an array, and status effects with timing fields serialized as milliseconds.
+The monster JSON structure contains all model fields (including `controllerHasAggro`, `nextEligibleRepickAtMs`, and `lastDamageTakenMs`), damage entries as an array (each carrying a per-character `lastHitMs`), and status effects with timing fields serialized as milliseconds (including the reflect fields `reflectKind`, `reflectPercent`, `reflectLtX/Y`, `reflectRbX/Y`, `reflectMaxDamage`, omitted when zero/empty).
 
-Updates to monster instances use optimistic locking via `WATCH`/`TxPipelined` with up to 10 retries. Damage application uses a Lua script for atomic HP deduction and damage entry append.
+Updates to monster instances use the shared atlas-redis `Registry.Update` optimistic-lock helper (`WATCH`/`GET`/`TxPipelined SET`), retried up to 1000 times on contention. Damage application, HP/MP recovery, and aggro decay are applied as pure Go closures under this same optimistic-lock update (no Lua scripts).
 
 ### ID Allocation
 
@@ -38,13 +38,28 @@ Below `RecycleThreshold` the script always INCRs the counter and `Release` is a 
 
 Cooldown checks use `EXISTS`. Clearing all cooldowns for a monster uses `SCAN` + `DEL` on the pattern `atlas:monster-cooldown:{tenantId}:{monsterId}:*`.
 
+### Basic-Attack Cooldowns
+
+| Key Pattern | Redis Type | Description |
+|-------------|------------|-------------|
+| `atlas:monster-attack-cooldown:{tenantId}:{monsterId}:{attackPos}` | String (TTL) | Basic-attack-position cooldown marker; expires after the attack's cooldown duration |
+
+Cooldown checks use `EXISTS`. Clearing all attack cooldowns for a monster uses `SCAN` + `DEL` on the pattern `atlas:monster-attack-cooldown:{tenantId}:{monsterId}:*`.
+
+### Puppets
+
+| Key Pattern | Redis Type | Description |
+|-------------|------------|-------------|
+| `atlas:monster-puppet:{tenantId}:{worldId}:{channelId}:{mapId}:{instance}:{ownerCharacterId}` | String (JSON) | Puppet payload: ownerCharacterId, x, y |
+| `atlas:monster-puppet-field:{tenantId}:{worldId}:{channelId}:{mapId}:{instance}` | Set | Set of owner character IDs with a registered puppet in the field |
+
 ### Drop Timers
 
 | Key Pattern | Redis Type | Description |
 |-------------|------------|-------------|
 | `atlas:drop-timer:{tenantId}:{uniqueId}` | String (JSON) | Friendly monster drop timer state |
 
-The drop timer JSON contains monsterId, field, dropPeriod, weaponAttack, maxHp, lastDropAt, and lastHitAt (timing as milliseconds). Updates use optimistic locking via `WATCH`/`TxPipelined`.
+The drop timer JSON contains monsterId, field, dropPeriod, weaponAttack, maxHp, lastDropAt, and lastHitAt (timing as milliseconds). Updates use the shared atlas-redis `Registry.Update` optimistic-lock helper.
 
 ## Relationships
 
@@ -52,11 +67,14 @@ Monster instances are indexed by field via the `atlas:monster-map` Set keys. The
 
 Drop timer entries reference monster uniqueId values that correspond to `atlas:monster` keys.
 
+Puppet entries are indexed by field via the `atlas:monster-puppet-field` Set keys, containing owner character IDs that correspond to `atlas:monster-puppet` keys for the same field.
+
 ## Indexes
 
 | Index Key Pattern | Points To |
 |-------------------|-----------|
 | `atlas:monster-map:{tenantId}:{worldId}:{channelId}:{mapId}:{instance}` | `atlas:monster:{tenantId}:{uniqueId}` |
+| `atlas:monster-puppet-field:{tenantId}:{worldId}:{channelId}:{mapId}:{instance}` | `atlas:monster-puppet:{tenantId}:{worldId}:{channelId}:{mapId}:{instance}:{ownerCharacterId}` |
 
 ## Migration Rules
 

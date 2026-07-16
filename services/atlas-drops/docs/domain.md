@@ -56,8 +56,7 @@ A fluent builder for constructing drop Models. Requires a valid tenant and field
 
 ### Invariants
 
-- Drop IDs are unique and auto-generated starting from 1000000001
-- Drop IDs wrap around to 1000000001 after reaching 2000000000
+- Drop IDs are unique per tenant, allocated by an external allocator shared with other entity types (see storage.md)
 - A drop must have a valid tenant and transactionId
 - A drop is either an item drop (itemId > 0) or a meso drop (meso > 0)
 - Only the character that reserved a drop can have the reservation cancelled for them; cancellation by a different character is a no-op

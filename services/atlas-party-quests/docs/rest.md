@@ -4,12 +4,13 @@
 
 ### GET /api/party-quests/definitions
 
-Returns all party quest definitions for the tenant.
+Returns a page of party quest definitions for the tenant.
 
-- **Parameters**: None
+- **Parameters**: `page[number]` (query, optional, default `1`), `page[size]` (query, optional, default `50`, max `250`)
 - **Request model**: None
-- **Response model**: `[]definition.RestModel` (JSON:API resource type: `definitions`)
+- **Response model**: `[]definition.RestModel` (JSON:API resource type: `definitions`, paginated)
 - **Error conditions**:
+  - `400` — Invalid `page[number]`/`page[size]` (non-integer, `page[number]<1`, `page[size]<1`, `page[size]>250`, or use of the legacy `limit` param)
   - `500` — Internal error during retrieval or transformation
 
 ### GET /api/party-quests/definitions/{definitionId}
@@ -72,17 +73,29 @@ Soft-deletes a definition.
 
 ### POST /api/party-quests/definitions/seed
 
-Clears all definitions for the tenant and re-creates them from JSON definition files on disk.
+Asynchronously clears all definitions for the tenant and re-creates them from the seed catalog (`SEED_CATALOG_ROOT`, files matching `party-quests/definitions/party-quest-*.json`). Seeding runs in the background after the response is sent; progress is polled via the seed status endpoint.
 
 - **Parameters**: None
 - **Request model**: None
-- **Response model**: `definition.SeedResult` (JSON, not JSON:API)
-  - `deletedCount` — `int`
-  - `createdCount` — `int`
-  - `failedCount` — `int`
-  - `errors` — `[]string` (optional)
+- **Response model**: None
+- **Error conditions**: None (seed failures are recorded asynchronously and surfaced via the status endpoint)
+- **Success**: `202 Accepted`
+
+### GET /api/party-quests/definitions/seed/status
+
+Returns the current seed catalog status for the tenant, including per-subdomain row counts and the last completed seed revision.
+
+- **Parameters**: None
+- **Request model**: None
+- **Response model**: `seeder.Status` (JSON, not JSON:API)
+  - `groupName` — `string`
+  - `subdomains` — `map[string]{count int64, updatedAt *time.Time}`
+  - `updatedAt` — `*time.Time`
+  - `catalogRevision` — `string`
+  - `tenantSeededRevision` — `*string`
+  - `tenantSeededAt` — `*time.Time`
 - **Error conditions**:
-  - `500` — Internal error during seeding
+  - `500` — Internal error retrieving status
 
 ### POST /api/party-quests/definitions/validate
 
@@ -100,12 +113,13 @@ Validates all JSON definition files on disk without persisting.
 
 ### GET /api/party-quests/instances
 
-Returns all active party quest instances for the tenant.
+Returns a page of active party quest instances for the tenant, sorted by instance ID.
 
-- **Parameters**: None
+- **Parameters**: `page[number]` (query, optional, default `1`), `page[size]` (query, optional, default `50`, max `250`)
 - **Request model**: None
-- **Response model**: `[]instance.RestModel` (JSON:API resource type: `instances`)
+- **Response model**: `[]instance.RestModel` (JSON:API resource type: `instances`, paginated)
 - **Error conditions**:
+  - `400` — Invalid `page[number]`/`page[size]` (non-integer, `page[number]<1`, `page[size]<1`, `page[size]>250`, or use of the legacy `limit` param)
   - `500` — Internal error during transformation
 
 ### GET /api/party-quests/instances/{instanceId}

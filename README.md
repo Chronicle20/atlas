@@ -1,6 +1,6 @@
 # Atlas
 
-A MapleStory game server emulator built as a Go microservices architecture. Atlas breaks down the game server into 56 independently deployable services communicating over Kafka, backed by PostgreSQL and Redis, with a Next.js admin frontend.
+A MapleStory game server emulator built as a Go microservices architecture. Atlas breaks down the game server into 59 independently deployable services communicating over Kafka, backed by PostgreSQL and Redis, with a Next.js admin frontend.
 
 [![PR Validation](https://github.com/Chronicle20/atlas/actions/workflows/pr-validation.yml/badge.svg)](https://github.com/Chronicle20/atlas/actions/workflows/pr-validation.yml)
 [![Main - Build and Publish](https://github.com/Chronicle20/atlas/actions/workflows/main-publish.yml/badge.svg)](https://github.com/Chronicle20/atlas/actions/workflows/main-publish.yml)
@@ -131,8 +131,8 @@ All invocations share the `atlas` compose project and the `atlas` Docker network
 
 ```
 atlas/
-├── services/          # 56 microservices
-├── libs/              # 13 shared Go libraries
+├── services/          # 59 microservices
+├── libs/              # 21 shared Go libraries
 ├── tools/             # Build and maintenance scripts
 ├── dev/               # Development plans and audits
 ├── .github/           # CI/CD workflows and config
@@ -212,6 +212,7 @@ graph LR
 | atlas-keys | Key binding configuration |
 | atlas-expressions | Character facial expression state and revert timing |
 | atlas-fame | Fame/reputation system |
+| atlas-monster-book | Per-character monster card collection, book level, and cover card |
 
 ### Inventory & Items
 
@@ -240,6 +241,8 @@ graph LR
 | atlas-transports | Ship/transport scheduling |
 | atlas-chairs | Chair placement tracking |
 | atlas-chalkboards | Chalkboard message display |
+| atlas-doors | Mystic Door registry and lifecycle (area/town door pairs, party slots) |
+| atlas-summons | Summon instances (puppets, attacker summons, Beholder buff-aura) |
 
 ### Scripting
 
@@ -271,13 +274,14 @@ Services that execute JSON-based game scripts in response to player actions.
 | Service | Description |
 |---------|-------------|
 | atlas-npc-shops | NPC shop inventories and transactions |
+| atlas-merchant | Personal/hired-merchant shops in the Free Market (Frederick storage) |
+| atlas-mts | Maple Trade Station marketplace — listings, auctions, bids, and want-ads |
 
 ### Orchestration & Infrastructure
 
 | Service | Description |
 |---------|-------------|
 | atlas-saga-orchestrator | Distributed saga coordinator for multi-step operations |
-| atlas-runtime-orchestrator | Runtime lifecycle management |
 | atlas-query-aggregator | Read-only REST aggregator — composes queries across multiple domain services |
 | atlas-messages | Command dispatcher — processes GM and chat commands (warp, award, kill, etc.) |
 | atlas-rates | Per-character experience and drop rate multipliers |
@@ -285,7 +289,7 @@ Services that execute JSON-based game scripts in response to player actions.
 | atlas-tenants | Tenant identity management (game versions, server instances) |
 | atlas-configurations | Game settings — character creation templates, service registry |
 | atlas-data | Game data REST API (items, maps, monsters, NPCs, skills) |
-| atlas-assets | Static asset server (Nginx) for game client resources |
+| atlas-renders | PNG render service — composited character sprites and map images |
 | atlas-wz-extractor | Extracts MapleStory WZ game data files for import |
 
 ### Frontend
@@ -311,6 +315,14 @@ Services that execute JSON-based game scripts in response to player actions.
 | atlas-service | Common service bootstrap (logger, tracing, lifecycle) |
 | atlas-retry | Retry/backoff utilities |
 | atlas-script-core | Scripting engine interfaces for NPCs, portals, reactors |
+| atlas-lock | Redis-backed leader election / distributed locking (wraps `bsm/redislock`) |
+| atlas-object-id | Tenant-scoped allocator for client-visible object ids |
+| atlas-opcodes | Client↔server opcode mapping registries (handler and writer configs) |
+| atlas-outbox | Transactional outbox — atomic domain state + Kafka events, at-least-once relay |
+| atlas-routine | Panic-recovering goroutine helper (`routine.Go`) |
+| atlas-seeder | Tenant-scoped catalog seeding (seed/status endpoint pairs) |
+| atlas-tracing | Shared OpenTelemetry tracer setup (`InitTracer`/`Teardown`) |
+| atlas-wz | WZ binary parser, sprite atlas packer, and map-layer/icon extractors |
 
 ## CI/CD
 

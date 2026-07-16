@@ -168,10 +168,9 @@ InTransit -> (released) (when arrival time is reached)
 
 State transitions trigger character warping:
 - Arrival: Characters in instance are warped to destination map with `uuid.Nil` instance
-- Map exit during transport: Character is removed and transport is cancelled for that character
-- Logout during transport: Character is removed and transport is cancelled for that character
-- Login at transit map (crash recovery): Character is warped to route start map
-- Stuck timeout (exceeds MaxLifetime): Characters are force-warped to route start map and instance is released
+- Character enters a non-transit map while in transport: Character is removed and transport is cancelled for that character (reason MAP_EXIT)
+- Logout during transport: Character is removed and transport is cancelled for that character (reason LOGOUT)
+- Stuck timeout (exceeds MaxLifetime): Characters are force-warped to route start map and instance is released (reason STUCK)
 - Graceful shutdown: All characters are warped to route start map
 
 ## Processors
@@ -203,13 +202,13 @@ State transitions trigger character warping:
 | GetRouteByTransitMap | Returns an instance route by transit map ID |
 | StartTransport | Starts an instance transport for a character |
 | StartTransportAndEmit | Starts transport and emits Kafka events |
-| HandleMapEnter | Handles character entering transit map (emits TRANSIT_ENTERED) |
+| HandleMapEnter | Handles character entering a map: cancels transport (emits CANCELLED, reason MAP_EXIT) if entering a non-transit map while in transport, or emits TRANSIT_ENTERED if entering a transit map belonging to the character's route |
 | HandleMapEnterAndEmit | Handles map enter and emits Kafka events |
-| HandleMapExit | Handles character exiting transit map (cancels transport) |
+| HandleMapExit | No-op; cancellation on exiting to a non-transit map is handled by HandleMapEnter when the character's subsequent map-enter event arrives |
 | HandleMapExitAndEmit | Handles map exit and emits Kafka events |
 | HandleLogout | Handles character logout during transport |
 | HandleLogoutAndEmit | Handles logout and emits Kafka events |
-| HandleLogin | Handles character login at transit map (crash recovery) |
+| HandleLogin | No-op; forced-return on disconnect (atlas-maps location.Resolve) ensures a character is never persisted on a transit map |
 | HandleLoginAndEmit | Handles login and emits Kafka events |
 | TickBoardingExpiration | Transitions expired boarding instances to InTransit |
 | TickBoardingExpirationAndEmit | Ticks boarding expiration and emits Kafka events |

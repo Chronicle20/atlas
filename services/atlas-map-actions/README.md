@@ -2,7 +2,7 @@
 
 Executes map entry scripts (`onFirstUserEnter`, `onUserEnter`) using a JSON-based rules engine. When a character enters a map, the service loads the matching script from the database, evaluates rules in order using first-match-wins semantics, and executes the matched rule's operations via saga orchestration.
 
-The service also provides REST endpoints for managing map scripts (CRUD, query by name, and seed from JSON files).
+The service also provides REST endpoints for managing map scripts (CRUD, query by name, and seed from catalog files).
 
 ## External Dependencies
 
@@ -21,10 +21,10 @@ The service also provides REST endpoints for managing map scripts (CRUD, query b
 | `DB_NAME` | Database name |
 | `BOOTSTRAP_SERVERS` | Kafka bootstrap servers |
 | `REST_PORT` | REST server port |
-| `QUERY_AGGREGATOR_URL` | Base URL for atlas-query-aggregator |
+| `QUERY_AGGREGATOR_SERVICE_URL` | Base URL for atlas-query-aggregator (falls back to `BASE_SERVICE_URL` if unset) |
 | `TRACE_ENDPOINT` | OpenTelemetry collector gRPC endpoint |
 | `LOG_LEVEL` | Log level (e.g., `debug`, `info`) |
-| `MAP_SCRIPTS_DIR` | Override path for map script JSON files (default: `/scripts/map`) |
+| `SEED_CATALOG_ROOT` | Override path for map script seed catalog files (default: `./deploy/seed`) |
 
 ## Documentation
 

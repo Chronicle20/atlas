@@ -3,7 +3,6 @@ package main
 import (
 	"atlas-rps/game"
 	rpsConsumer "atlas-rps/kafka/consumer/rps"
-	"atlas-rps/logger"
 	"atlas-rps/rest"
 	"atlas-rps/tasks"
 	"context"
@@ -15,8 +14,8 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"github.com/sirupsen/logrus"
 )
 
@@ -39,40 +38,33 @@ const serviceName = "atlas-rps"
 var consumerGroupId = consumergroup.Resolve("RPS Service")
 
 func main() {
-	l := logger.CreateLogger(serviceName)
-	l.Infoln("Starting main service.")
+	rt := service.Bootstrap(serviceName)
+	l := rt.Logger()
 
 	rc := atlas.Connect(l)
 	game.InitRegistry(rc)
 
-	tdm := service.GetTeardownManager()
-
-	tc, err := tracing.InitTracer(serviceName)
-	if err != nil {
-		l.WithError(err).Fatal("Unable to initialize tracer.")
-	}
-
-	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	rpsConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := rpsConsumer.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 
-	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
+	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
-	go tasks.Register(l, tdm.Context())(game.NewSweepTask(l, time.Millisecond*50))
-
-	tdm.TeardownFunc(tracing.Teardown(l)(tc))
+	routine.Go(l, rt.Context(), func(_ context.Context) {
+		tasks.Register(l, rt.Context())(game.NewSweepTask(l, time.Millisecond*50))
+	})
 
 	server.New(l).
-		WithContext(tdm.Context()).
-		WithWaitGroup(tdm.WaitGroup()).
+		WithContext(rt.Context()).
+		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath("/api/").
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(game.InitResource(rest.GetServer(), newRpsProcessor)).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
+		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
-	tdm.Wait()
-	l.Infoln("Service shutdown.")
+	rt.Wait()
 }

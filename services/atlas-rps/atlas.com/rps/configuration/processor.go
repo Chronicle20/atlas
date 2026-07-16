@@ -36,6 +36,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // GetLadder returns the reward ladder configured for a tenant. atlas-tenants
 // serves the rps-rewards resource as a JSON:API collection, so the response is
 // decoded as a slice; the first (and only expected) record is returned. A tenant

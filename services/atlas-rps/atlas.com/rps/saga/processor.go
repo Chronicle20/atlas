@@ -10,8 +10,8 @@ package saga
 
 import (
 	"atlas-rps/kafka/message/saga"
-	"atlas-rps/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	"github.com/sirupsen/logrus"
@@ -35,6 +35,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		ctx: ctx,
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // Create submits s to atlas-saga-orchestrator's command topic.
 func (p *ProcessorImpl) Create(s sharedsaga.Saga) error {

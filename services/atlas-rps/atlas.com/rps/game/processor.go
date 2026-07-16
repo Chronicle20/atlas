@@ -3,10 +3,10 @@ package game
 import (
 	"atlas-rps/kafka/message"
 	"atlas-rps/kafka/message/rps"
-	"atlas-rps/kafka/producer"
 	"context"
 	"errors"
 	"fmt"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
@@ -169,6 +169,8 @@ func NewProcessorWithLadder(l logrus.FieldLogger, ctx context.Context, throwSour
 		sagaSubmitter:  sagaSubmitter,
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // Get returns the active session for the given character, together with the
 // prize currently resolved at its rung.

@@ -990,11 +990,37 @@ func (p *ProcessorImpl) ExpireAsset(mb *message.Buffer) func(transactionId uuid.
 }
 
 func (p *ProcessorImpl) CreateAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error {
-	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+	// CreateAsset buffers a CREATION_FAILED rejection (compartment status topic)
+	// when the create fails, but the transactional emit path discards the buffer
+	// on error and the surrounding tx rolls back — so a caller waiting on that
+	// rejection (e.g. the reward-box flow's inventory-full feedback) would never
+	// hear it. Capture the rejection and re-emit it outside the rolled-back tx on
+	// a direct producer, mirroring the drop-pickup reject path below (~L1296).
+	rejection := message.NewBuffer()
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
-			return p.WithTransaction(tx).CreateAssetAndLock(buf)(transactionId, characterId, inventoryType, templateId, quantity, expiration, ownerId, flag, rechargeable, useAverageStats)
+			err := p.WithTransaction(tx).CreateAssetAndLock(buf)(transactionId, characterId, inventoryType, templateId, quantity, expiration, ownerId, flag, rechargeable, useAverageStats)
+			if err != nil {
+				if msgs, ok := buf.GetAll()[compartment.EnvEventTopicStatus]; ok {
+					_ = rejection.Put(compartment.EnvEventTopicStatus, model.FixedProvider(msgs))
+				}
+			}
+			return err
 		})
 	})
+	if txErr != nil {
+		if emitErr := message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+			for t, msgs := range rejection.GetAll() {
+				if putErr := buf.Put(t, model.FixedProvider(msgs)); putErr != nil {
+					return putErr
+				}
+			}
+			return nil
+		}); emitErr != nil {
+			p.l.WithError(emitErr).Errorf("Unable to emit CREATION_FAILED rejection after failed asset create for character [%d].", characterId)
+		}
+	}
+	return txErr
 }
 
 func (p *ProcessorImpl) CreateAssetAndLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error {

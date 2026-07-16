@@ -3,6 +3,48 @@
   "md5": "2e692f3ab5078e04138d264f8ea1e668",
   "generated_at": "2026-05-14T00:00:00Z",
   "functions": {
+    "CUser::OnMiniRoomBalloon": {
+      "address": "0x9b337d",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId (consumed by CUserPool::OnUserCommonPacket GetUser, not OnMiniRoomBalloon)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "roomType (0 = remove balloon)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "roomId (m_dwMiniRoomSN; roomType != 0)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "title (m_sMiniRoomTitle)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "hasPassword (m_bPrivate)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "pieceType (m_nGameKind)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "occupancy (m_nCurUsers)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "capacity (m_nMaxUsers)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "inProgress (m_bGameOn)"
+        }
+      ]
+    },
     "CEmployeePool::OnEmployeeEnterField": {
       "address": "0x533528",
       "direction": "",

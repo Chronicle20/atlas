@@ -52,6 +52,14 @@ func TestMiniRoomBalloonBytes(t *testing.T) {
 // packet-audit:verify packet=interaction/clientbound/InteractionMiniRoomBalloon version=gms_v61 ida=0x7920b9
 // packet-audit:verify packet=interaction/clientbound/InteractionMiniRoomBalloon version=gms_v72 ida=0x847df1
 // packet-audit:verify packet=interaction/clientbound/InteractionMiniRoomBalloon version=gms_v79 ida=0x8922ce
+// Parent cells (task-133 Part 2): same identical read order on gms_v84
+// (@0x96ffb6), gms_v87 (@0x9b337d) and jms_v185 (@0x9f7d25) — v87/jms name the
+// roomType==0 branch CChatBalloon::DestroyMiniRoomBalloon and the full-field
+// branch CChatBalloon::Make/MakeMiniRoomBalloon. Byte-identical to v83/v95/v61/72/79
+// — no version gate.
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniRoomBalloon version=gms_v84 ida=0x96ffb6
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniRoomBalloon version=gms_v87 ida=0x9b337d
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniRoomBalloon version=jms_v185 ida=0x9f7d25
 func TestMiniRoomBalloonRoundTrip(t *testing.T) {
 	input := NewMiniRoomBalloon(1234, 1, 1234, "Omok Room", true, 1, 1, 2, false)
 	for _, v := range test.Variants {

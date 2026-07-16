@@ -11,6 +11,7 @@ import (
 
 type ProcessorMock struct {
 	RequestItemConsumeFunc      func(f field.Model, characterId character.Id, itemId item.Id, source slot.Position, updateTime uint32) error
+	RequestItemRewardFunc       func(f field.Model, characterId character.Id, itemId item.Id, source slot.Position) error
 	RequestScrollUseFunc        func(f field.Model, characterId character.Id, scrollSlot slot.Position, equipSlot slot.Position, whiteScroll bool, legendarySpirit bool, updateTime uint32) error
 	RequestVegaScrollUseFunc    func(f field.Model, characterId character.Id, vegaItemId item.Id, vegaSlot slot.Position, scrollSlot slot.Position, equipSlot slot.Position) error
 	RequestViciousHammerUseFunc func(f field.Model, characterId character.Id, hammerSlot slot.Position, equipSlot slot.Position) error
@@ -21,6 +22,13 @@ var _ consumable.Processor = (*ProcessorMock)(nil)
 func (m *ProcessorMock) RequestItemConsume(f field.Model, characterId character.Id, itemId item.Id, source slot.Position, updateTime uint32) error {
 	if m.RequestItemConsumeFunc != nil {
 		return m.RequestItemConsumeFunc(f, characterId, itemId, source, updateTime)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) RequestItemReward(f field.Model, characterId character.Id, itemId item.Id, source slot.Position) error {
+	if m.RequestItemRewardFunc != nil {
+		return m.RequestItemRewardFunc(f, characterId, itemId, source)
 	}
 	return nil
 }

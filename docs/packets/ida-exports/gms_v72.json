@@ -3,6 +3,22 @@
  "md5": "",
  "generated_at": "2026-07-01T15:41:36Z",
  "functions": {
+  "CWvsContext::SendLotteryItemUseRequest": {
+   "address": "0x90c93a",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Decode2",
+     "comment": "nPos (slot)",
+     "guard": "CWvsContext::CanSendExclRequest(this, 200, 0)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "nItemID",
+     "guard": "CWvsContext::CanSendExclRequest(this, 200, 0)"
+    }
+   ]
+  },
   "CITC::OnChargeParamResult": {
    "address": "0x566768",
    "direction": "clientbound",

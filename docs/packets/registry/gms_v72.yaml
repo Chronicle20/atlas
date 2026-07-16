@@ -2439,6 +2439,14 @@
   ida:
     address: 6175200
   note: 'v72 COutPacket(109) verified via global COutPacket-ctor harvest @0x5e39e0; Δ+1 vs v79 op 108 (mid/field/social Δ+1).'
+- op: LOTTERY_ITEM_USE_REQUEST
+  direction: serverbound
+  opcode: 111
+  fname: CWvsContext::SendLotteryItemUseRequest
+  provenance: ida-discovered
+  ida:
+    address: 9488698
+  note: 'v72 COutPacket(111) = 0x6F; CWvsContext::SendLotteryItemUseRequest @0x90c93a (size 0x83), Encode2(nPos)+Encode4(nItemID), distinct from SendBridleItemUseRequest @0x90457d. IDA-verified task-131.'
 - op: SUE_CHARACTER
   direction: serverbound
   opcode: 113

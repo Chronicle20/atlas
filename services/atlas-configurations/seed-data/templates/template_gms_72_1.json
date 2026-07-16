@@ -152,6 +152,11 @@
         "handler": "CharacterItemUseHandle"
       },
       {
+        "opCode": "0x6F",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseLotteryHandle"
+      },
+      {
         "opCode": "0x76",
         "validator": "LoggedInValidator",
         "handler": "CharacterChatWhisperHandle"

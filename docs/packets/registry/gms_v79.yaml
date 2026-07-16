@@ -2654,6 +2654,14 @@
   ida:
     address: 6300379
   note: 'v79 sub_6022DB COutPacket(108); COutPacket(108)+encode(macros via sub_4DB93F)+Send (CMacroSysMan::FlushToSvr). v83 SKILL_MACRO=0x6e=110 (d-2). delta doc serverbound (ida-read).'
+- op: LOTTERY_ITEM_USE_REQUEST
+  direction: serverbound
+  opcode: 110
+  fname: CWvsContext::SendLotteryItemUseRequest
+  provenance: ida-discovered
+  ida:
+    address: 9821442
+  note: 'v79 COutPacket(110) = 0x6E; CWvsContext::SendLotteryItemUseRequest @0x95dd02 (size 0x83), Encode2(nPos)+Encode4(nItemID), distinct from SendBridleItemUseRequest @0x9558e5. IDA-verified task-131.'
 - op: SUE_CHARACTER
   direction: serverbound
   opcode: 112

@@ -1,6 +1,7 @@
 package main
 
 import (
+	assetconsumer "atlas-consumables/kafka/consumer/asset"
 	"atlas-consumables/kafka/consumer/character"
 	"atlas-consumables/kafka/consumer/compartment"
 	"atlas-consumables/kafka/consumer/consumable"
@@ -30,6 +31,7 @@ func main() {
 
 	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	compartment.InitConsumers(l)(cmf)(consumerGroupId)
+	assetconsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	consumable.InitConsumers(l)(cmf)(consumerGroupId)
 	food.InitConsumers(l)(cmf)(consumerGroupId)

@@ -1,4 +1,4 @@
-import { Lock, Tag } from "lucide-react";
+import { Tag } from "lucide-react";
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from "@/components/ui/tooltip";
@@ -7,6 +7,7 @@ import type { Tenant } from "@/services/api/tenants.service";
 import { cn } from "@/lib/utils";
 import { getAssetIconUrl } from "@/lib/utils/asset-url";
 import { isSealed, isTagged } from "@/lib/utils/asset-flags";
+import { SealIcon } from "@/components/seal-icon";
 import { AssetTooltipContent } from "./AssetTooltipContent";
 
 interface Props {
@@ -39,7 +40,7 @@ export function EquipmentCell({ slotName, asset, tenant, itemName }: Props) {
                     <Tag data-testid="tag-icon" className="absolute top-0 right-0 h-3 w-3 text-amber-500" aria-label="Named item" />
                   )}
                   {isSealed(asset) && (
-                    <Lock data-testid="seal-icon" className="absolute bottom-0 right-0 h-3 w-3 text-amber-500" aria-label="Sealed item" />
+                    <SealIcon tenant={tenant} className="absolute bottom-0 right-0 h-3 w-3 text-amber-500" />
                   )}
                 </div>
               </div>

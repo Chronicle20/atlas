@@ -23,7 +23,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Store, Search, Loader2, Tag, Lock } from "lucide-react";
+import { Store, Search, Loader2, Tag } from "lucide-react";
+import { SealIcon } from "@/components/seal-icon";
 import { Link } from "react-router-dom";
 import { ItemNameCell } from "@/components/item-name-cell";
 import { Pager } from "@/components/common/Pager";
@@ -313,7 +314,7 @@ export function ListingItemCell({
         </span>
       )}
       {sealed && (
-        <Lock data-testid="seal-icon" className="h-3 w-3 text-amber-500" aria-label="Sealed item" />
+        <SealIcon tenant={tenant} className="h-3 w-3 text-amber-500" />
       )}
     </div>
   );

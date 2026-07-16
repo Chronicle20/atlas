@@ -66,7 +66,7 @@ func newTestTenant(t *testing.T) tenant.Model {
 func newTestServer(t *testing.T, tm tenant.Model) server.Model {
 	t.Helper()
 	ch := channelconst.NewModel(0, 1)
-	return server.Register(tm, ch, "127.0.0.1", 8484)
+	return server.NewProcessor(logrus.New(), context.Background()).Register(tm, ch, "127.0.0.1", 8484)
 }
 
 func decodeOpen(t *testing.T, b []byte) rpscb.Open {

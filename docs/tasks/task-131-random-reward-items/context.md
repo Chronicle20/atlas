@@ -14,7 +14,9 @@ reward entry defines. Inventory-full preserves the box.
 
 ## Scope decision made during planning (READ THIS)
 
-**v92 is DROPPED from this task** (implemented versions: **v83, v84, v87, v95**).
+**v92 is DROPPED from this task** (implemented versions: **v83, v84, v87, v95**;
+**jms** was added during the post-merge scope expansion — see design §2.6, its
+opcode `0x06B` IDA-verified and handler registered in `template_jms_185_1.json`).
 
 Reason: `services/atlas-configurations/seed-data/templates/template_gms_92_1.json`
 is a skeleton template — it has **0 `operations` blocks**, no `CharacterEffect`

@@ -200,33 +200,36 @@ Restart channel pods for every world/channel that serves the patched tenants.
 
 ---
 
-## Step 3: v92 / jms — explicitly out of scope, do not patch
+## Step 3: v92 — explicitly out of scope, do not patch
 
 **Do not** add the `CharacterItemUseLotteryHandle` handler entry, and do not
 run the Step 1 data re-publish path expecting it to matter, for:
 
 - **v92** — dropped from this task's implementation (context.md: "v92 is
-  DROPPED from this task (implemented versions: v83, v84, v87, v95)"). v92 has
-  no loaded IDA instance, so the opcode (`0x07B`, registry/CSV lineage only)
-  and the full `LOTTERY_USE` operations-table shape are unverified, and v92 has
-  no operations tables in its seed template at all. Adding an unverified
-  opcode to a live v92 tenant risks colliding with an existing handler/writer
-  or routing to the wrong body. If v92 support is wanted, it is a separate,
-  larger follow-up task (build out the v92 template's operations tables and
-  writers once a v92 IDB exists to verify against) — not a live-tenant PATCH
-  under this runbook.
-- **jms** — out of scope per design §2.6. No jms IDA instance was available to
-  verify the client-side routing/body assumption for jms, so no handler entry
-  was added to `template_jms_185_1.json` and none should be PATCHed onto live
-  jms tenants either. The registry opcode (`0x06B`) and the jms template's
-  existing `LOTTERY_USE: 15` operations entry are suggestive but unverified.
+  DROPPED from this task"). v92 has no loaded IDA instance, so the opcode
+  (`0x07B`, registry/CSV lineage only) and the full `LOTTERY_USE`
+  operations-table shape are unverified, and v92 has no operations tables in
+  its seed template at all. Adding an unverified opcode to a live v92 tenant
+  risks colliding with an existing handler/writer or routing to the wrong body.
+  The handler entry was therefore **not** registered in
+  `template_gms_92_1.json` (an earlier scope-expansion commit added it; it was
+  removed before this task's PR — see the code-review remediation). If v92
+  support is wanted, it is a separate, larger follow-up task (build out the v92
+  template's operations tables and writers once a v92 IDB exists to verify
+  against) — not a live-tenant PATCH under this runbook.
 
-If either version's tenants receive reward-node Consume items in their item
-data (from Step 1's canonical re-ingest, which is not version-gated), those
-items will simply have no server-side handler for the lottery-use opcode on
-v92/jms until a future task closes that gap — the client-side routing behavior
-described in design §2.1 is unaffected by data changes, only by the missing
-handler registration.
+> **jms is IN scope** (design §2.6, verified post-merge). Its handler
+> (`CharacterItemUseLotteryHandle`, opcode `0x06B`) IS registered in
+> `template_jms_185_1.json`, IDA-verified against the jms IDB
+> (`CWvsContext::SendLotteryItemUseRequest`), and the matrix cell is promoted to
+> ✅ (STATUS.md). jms tenants get the feature exactly like v83/v84/v87/v95, so
+> the Step 1 data re-publish applies to jms too.
+
+If a v92 tenant receives reward-node Consume items in its item data (from
+Step 1's canonical re-ingest, which is not version-gated), those items will
+simply have no server-side handler for the lottery-use opcode until a future
+task closes that gap — the client-side routing behavior described in design
+§2.1 is unaffected by data changes, only by the missing handler registration.
 
 ## Rollback
 

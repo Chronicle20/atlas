@@ -28,6 +28,7 @@ import (
 	"context"
 	"errors"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/degrade"
 	"math"
 	"math/rand"
 	"time"
@@ -1121,10 +1122,12 @@ func (p *ProcessorImpl) emitRewardPresentation(characterId uint32, boxItemId ite
 			name = c.Name()
 		} else {
 			p.l.WithError(err).Warnf("Unable to resolve name for reward announce (character [%d]); skipping /name.", characterId)
+			degrade.Observe(p.l, "consumable.reward.name", characterId, err)
 		}
 		itemName, err := itemstring.NewProcessor(p.l, p.ctx).GetName(won.ItemId())
 		if err != nil {
 			p.l.WithError(err).Warnf("Unable to resolve item name [%d] for reward announce; skipping announce.", won.ItemId())
+			degrade.Observe(p.l, "consumable.reward.item-string", won.ItemId(), err)
 			return
 		}
 		msg := substituteWorldMsg(won.WorldMsg(), name, itemName)

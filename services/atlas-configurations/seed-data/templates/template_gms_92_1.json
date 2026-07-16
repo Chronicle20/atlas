@@ -155,11 +155,6 @@
         "handler": "CharacterInventoryMoveHandle"
       },
       {
-        "opCode": "0x7B",
-        "validator": "LoggedInValidator",
-        "handler": "CharacterItemUseLotteryHandle"
-      },
-      {
         "opCode": "0x6C",
         "validator": "LoggedInValidator",
         "handler": "CharacterInfoRequestHandle"

@@ -24,10 +24,10 @@ type AccommodationItemRest struct {
 	Quantity uint32 `json:"quantity"`
 }
 
-func (AccommodationInputRestModel) GetName() string                             { return "inventoryAccommodations" }
-func (m AccommodationInputRestModel) GetID() string                             { return m.Id }
-func (m *AccommodationInputRestModel) SetID(id string) error                    { m.Id = id; return nil }
-func (m *AccommodationInputRestModel) SetToOneReferenceID(_, _ string) error    { return nil }
+func (AccommodationInputRestModel) GetName() string                          { return "inventoryAccommodations" }
+func (m AccommodationInputRestModel) GetID() string                          { return m.Id }
+func (m *AccommodationInputRestModel) SetID(id string) error                 { m.Id = id; return nil }
+func (m *AccommodationInputRestModel) SetToOneReferenceID(_, _ string) error { return nil }
 func (m *AccommodationInputRestModel) SetToManyReferenceIDs(_ string, _ []string) error {
 	return nil
 }

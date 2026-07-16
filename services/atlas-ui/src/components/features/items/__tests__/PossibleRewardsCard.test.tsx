@@ -64,4 +64,9 @@ describe("PossibleRewardsCard", () => {
     expect(screen.queryByText("announces")).toBeNull();
     expect(screen.queryByText(/^×/)).toBeNull();
   });
+
+  it("links each reward row to its item detail page", () => {
+    render(wrap(<PossibleRewardsCard rewards={[mk({ itemId: 2041303, prob: 100 })]} />));
+    expect(screen.getByRole("link")).toHaveAttribute("href", "/items/2041303");
+  });
 });

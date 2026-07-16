@@ -66,7 +66,11 @@ Mirrors the existing `RecipesByItemCard` / `DroppedByWidget` patterns.
 - Props: `{ rewards: RewardModel[] }`.
 - Renders `null` when `rewards.length === 0` (parent also gates, belt-and-braces).
 - `total = Σ rewards[].prob`. Chance for a row = `total > 0 ? prob / total : 0`,
-  formatted to 1 decimal place (e.g. `12.4%`).
+  formatted to **3 decimal places** (e.g. `12.400%`). *(Refined during
+  implementation from the originally-specified 1 decimal: the rarest canonical
+  reward is ~0.005% (1 / 19,864), which 1–2 decimals would round to a false
+  `0.0%`/`0.01%`. 3 decimals renders it faithfully with nothing rounding to a
+  false `0.000%`.)*
 - Rows sorted by chance **descending** (stable; ties keep input order).
 - Card header: `Possible Rewards (N)` where `N = rewards.length`.
 - **Per-row content (Rich detail level, per approval):**
@@ -74,7 +78,9 @@ Mirrors the existing `RecipesByItemCard` / `DroppedByWidget` patterns.
     returns `{ name?, iconUrl?, isLoading }`), the row linking to `/items/{itemId}`
     (link pattern from `MonsterDropWidget` / `RecipesByNpcCard`). Per-row loading
     fallback (icon placeholder + id) like `DroppedByWidget`.
-  - **Chance + raw weight**, e.g. `12.4%` with a muted `· w9900` beside it.
+  - **Chance** only, e.g. `12.400%`. *(The raw weight `· w9900` and the item id
+    were dropped during implementation as noise — the computed chance is the
+    player-facing signal; the underlying weight/id add clutter without value.)*
   - **`×count`** shown only when `count > 1`.
   - **`time-limited`** badge when `period > 0`.
   - **"announces"** indicator (small badge/icon) when `worldMsg` is non-empty —

@@ -8,6 +8,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// AccommodationRequest is one item to ask atlas-inventory whether it could grant.
+type AccommodationRequest struct {
+	ItemId   uint32
+	Quantity uint32
+}
+
 type Processor interface {
 	ByCharacterIdProvider(characterId uint32) model.Provider[Model]
 	GetByCharacterId(characterId uint32) (Model, error)

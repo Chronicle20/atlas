@@ -1006,7 +1006,7 @@ func ConsumeReward(transactionId uuid.UUID, characterId uint32, slot int16, boxI
 			compTopic, _ := topic.EnvProvider(l)(compartment2.EnvEventTopicStatus)()
 			handles := &rewardHandles{assetTopic: assetTopic, compTopic: compTopic}
 
-			assetId, err := consumer.GetManager().RegisterHandler(assetTopic, message.AdaptHandler(message.OneTimeConfig(assetOnce.CreationValidator(transactionId), grantRewardOnCreated(transactionId, characterId, slot, boxItemId, won, handles))))
+			assetId, err := consumer.GetManager().RegisterHandler(assetTopic, message.AdaptHandler(message.OneTimeConfig(assetOnce.GrantConfirmedValidator(transactionId, won.ItemId()), grantRewardOnConfirmed(transactionId, characterId, slot, boxItemId, won, handles))))
 			if err != nil {
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
@@ -1030,10 +1030,11 @@ func ConsumeReward(transactionId uuid.UUID, characterId uint32, slot int16, boxI
 	}
 }
 
-// grantRewardOnCreated is the success once-handler, keyed to the asset CREATED
-// confirmation. It commits the box consume, emits presentation events, and
+// grantRewardOnConfirmed is the success once-handler, keyed to the asset
+// confirmation (CREATED for a fresh stack or QUANTITY_CHANGED for a merge into
+// an existing one). It commits the box consume, emits presentation events, and
 // deregisters the sibling failure handler (which will never fire).
-func grantRewardOnCreated(transactionId uuid.UUID, characterId uint32, slot int16, boxItemId item2.Id, won consumable3.RewardModel, handles *rewardHandles) message.Handler[assetMsg.StatusEvent[assetMsg.CreatedStatusEventBody]] {
+func grantRewardOnConfirmed(transactionId uuid.UUID, characterId uint32, slot int16, boxItemId item2.Id, won consumable3.RewardModel, handles *rewardHandles) message.Handler[assetMsg.StatusEvent[assetMsg.CreatedStatusEventBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e assetMsg.StatusEvent[assetMsg.CreatedStatusEventBody]) {
 		p := NewProcessor(l, ctx).(*ProcessorImpl)
 

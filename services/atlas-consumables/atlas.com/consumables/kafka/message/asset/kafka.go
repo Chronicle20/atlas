@@ -3,8 +3,9 @@ package asset
 import "github.com/google/uuid"
 
 const (
-	EnvEventTopicStatus    = "EVENT_TOPIC_ASSET_STATUS"
-	StatusEventTypeCreated = "CREATED"
+	EnvEventTopicStatus            = "EVENT_TOPIC_ASSET_STATUS"
+	StatusEventTypeCreated         = "CREATED"
+	StatusEventTypeQuantityChanged = "QUANTITY_CHANGED"
 )
 
 // StatusEvent mirrors the asset status envelope emitted by atlas-inventory

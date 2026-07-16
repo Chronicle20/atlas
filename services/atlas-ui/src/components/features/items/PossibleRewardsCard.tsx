@@ -28,7 +28,7 @@ export function PossibleRewardsCard({ rewards }: PossibleRewardsCardProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-2">
+        <div className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(min(400px,100%),1fr))]">
           {rows.map((row, idx) => (
             <RewardRowWidget key={`${row.itemId}-${idx}`} reward={row} />
           ))}

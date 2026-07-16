@@ -1,10 +1,10 @@
 {
-  "toolSha": "f7b7d6f57f604fdd5127841e97a6f58c0610da48c960e726c5e48288b1d76189",
+  "toolSha": "286a5ca8a6551c11ec86650f87a76bfe52bd9bf3f195d4b9ce955d92a008e0ef",
   "exportHashes": {
     "gms_v48": "054d404fcb6f0feed776b8c1453f2ab48a35f479463e82ea00d6d28ebca512dc",
-    "gms_v61": "b1111abee79b6b10cf1a05305e3c4a7707819f6862a80314c0b2ebce424852f7",
-    "gms_v72": "a21ceb077a00723549680327194e70c712b962f92dfd26c011bc0af8134f06e5",
-    "gms_v79": "aad866f3c3feebf4ce08f3f37b6fc45738cbc5cd68b2e90efd39b86ad4b3a7f6",
+    "gms_v61": "a2a213e2bbd543ceea90ce3863cee08f4a6ee7d378c96f60205091014bd727b7",
+    "gms_v72": "be3e9458b763f82a2644a3b56ea2ae301d61792c5f3be4661bc4294c55e80751",
+    "gms_v79": "a9cdc51e6c27427984a7d3dfcb000cbf57d06071bab88fbd5c940fcb4fad37ba",
     "gms_v83": "6b57933e8cb573422e7b937839385793c3a90c4e8ca812a18bc5b5377438abf4",
     "gms_v84": "85703918ea0625309b1a2adfe3770809bdb33caa1334c9cc08074aae8345345d",
     "gms_v87": "46f326937e63ad90ce0ec685eb1772749d33f3bb4dffa08828498211801c6b7d",
@@ -18183,18 +18183,15 @@
           "opcode": -1
         },
         "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 124
         },
         "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 150
         },
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 154
         },
         "gms_v83": {
@@ -32918,6 +32915,55 @@
     },
     {
       "kind": "op",
+      "op": "PLAYER_INTERACTION",
+      "packet": "interaction/clientbound/InteractionInteractionEnter",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CMiniRoomBaseDlg::OnPacketBase"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "incomplete",
+          "note": "tier-1 without fixture; verdict ❌",
+          "opcode": 239
+        },
+        "gms_v61": {
+          "state": "verified",
+          "opcode": 244
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": 280
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 292
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 314
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 321
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 331
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 373
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 339
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "RAISE_PIECE_PUT_ITEM",
       "direction": "serverbound",
       "tier1": false,
@@ -33708,54 +33754,6 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 244
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "PLAYER_INTERACTION",
-      "packet": "interaction/clientbound/InteractionInteractionChat",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CMiniRoomBaseDlg::OnPacketBase"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "verified",
-          "opcode": 244
-        },
-        "gms_v72": {
-          "state": "verified",
-          "opcode": 280
-        },
-        "gms_v79": {
-          "state": "verified",
-          "opcode": 292
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 314
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 321
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 331
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 373
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 339
         }
       }
     },

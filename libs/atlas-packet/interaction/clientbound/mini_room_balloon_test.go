@@ -42,6 +42,16 @@ func TestMiniRoomBalloonBytes(t *testing.T) {
 // routing to the handler, not by OnMiniRoomBalloon itself.
 // packet-audit:verify packet=interaction/clientbound/InteractionMiniRoomBalloon version=gms_v83 ida=0x938ba5
 // packet-audit:verify packet=interaction/clientbound/InteractionMiniRoomBalloon version=gms_v95 ida=0x8e8d30
+// Legacy (task-133 do-mode): CUser::OnMiniRoomBalloon reads the identical order
+// on gms_v61 (@0x7920b9), gms_v72 (@0x847df1) and gms_v79 (@0x8922ce) —
+// Decode1(roomType; ==0 => destroy, no trailing) / Decode4(roomId) /
+// DecodeStr(title) / 5x Decode1 (hasPassword, pieceType, occupancy, capacity,
+// inProgress). The leading characterId is consumed upstream by the user-packet
+// dispatcher, not by OnMiniRoomBalloon. Byte-identical to v83/v95 — no version
+// gate needed.
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniRoomBalloon version=gms_v61 ida=0x7920b9
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniRoomBalloon version=gms_v72 ida=0x847df1
+// packet-audit:verify packet=interaction/clientbound/InteractionMiniRoomBalloon version=gms_v79 ida=0x8922ce
 func TestMiniRoomBalloonRoundTrip(t *testing.T) {
 	input := NewMiniRoomBalloon(1234, 1, 1234, "Omok Room", true, 1, 1, 2, false)
 	for _, v := range test.Variants {

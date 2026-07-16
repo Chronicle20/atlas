@@ -4,12 +4,12 @@
 > ✅ verified · 🧩 family (mode-prefix dispatcher; sub-arms unverified) · 🟡 partial · ❌ incomplete · ⬜ n-a · 🟥 conflict
 > Partial (🟡) sub-glyphs: 🟡ᶠ tier-1 needs byte-fixture · 🟡ᵈ tool-pass diff-only (no byte-test) · 🟡ᵖ evidence-pinned deferral
 
-Tool: `f7b7d6f57f604fdd5127841e97a6f58c0610da48c960e726c5e48288b1d76189`
+Tool: `286a5ca8a6551c11ec86650f87a76bfe52bd9bf3f195d4b9ce955d92a008e0ef`
 
 - export gms_v48: `054d404fcb6f0feed776b8c1453f2ab48a35f479463e82ea00d6d28ebca512dc`
-- export gms_v61: `b1111abee79b6b10cf1a05305e3c4a7707819f6862a80314c0b2ebce424852f7`
-- export gms_v72: `a21ceb077a00723549680327194e70c712b962f92dfd26c011bc0af8134f06e5`
-- export gms_v79: `aad866f3c3feebf4ce08f3f37b6fc45738cbc5cd68b2e90efd39b86ad4b3a7f6`
+- export gms_v61: `a2a213e2bbd543ceea90ce3863cee08f4a6ee7d378c96f60205091014bd727b7`
+- export gms_v72: `be3e9458b763f82a2644a3b56ea2ae301d61792c5f3be4661bc4294c55e80751`
+- export gms_v79: `a9cdc51e6c27427984a7d3dfcb000cbf57d06071bab88fbd5c940fcb4fad37ba`
 - export gms_v83: `6b57933e8cb573422e7b937839385793c3a90c4e8ca812a18bc5b5377438abf4`
 - export gms_v84: `85703918ea0625309b1a2adfe3770809bdb33caa1334c9cc08074aae8345345d`
 - export gms_v87: `46f326937e63ad90ce0ec685eb1772749d33f3bb4dffa08828498211801c6b7d`
@@ -212,7 +212,7 @@ Tool: `f7b7d6f57f604fdd5127841e97a6f58c0610da48c960e726c5e48288b1d76189`
 | CHATTEXT | CUser::OnChat | chat/clientbound/ChatGeneralChat |  | ⬜ | 0x07A | ❌ | 0x093 | ❌ | 0x097 | ❌ | 0x0A2 | ❌ | 0x0A5 | ❌ | 0x0AD | ❌ | 0x0B5 | ✅ | 0x0A0 | ✅ |
 | CHALKBOARD | CUser::OnADBoard | character/clientbound/ChalkboardUse (T1) |  | ⬜ | 0x07B | ✅ | 0x095 | ✅ | 0x099 | ✅ | 0x0A4 | ✅ | 0x0A7 | ✅ | 0x0AF | ✅ | 0x0B7 | ✅ | 0x0A2 | ✅ |
 | DATA_CRC_CHECK_FAILED | CWvsContext::OnDataCRCCheckFailed |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x07B | ❌ | 0x07E | ❌ | 0x07E | ❌ | 0x080 | ❌ | 0x077 | ❌ |
-| UPDATE_CHAR_BOX | CUser::OnMiniRoomBalloon | interaction/clientbound/InteractionMiniRoomBalloon (T1) |  | ⬜ | 0x07C | ❌ | 0x096 | ❌ | 0x09A | ❌ | 0x0A5 | ✅ | 0x0A8 | ❌ | 0x0B0 | ❌ | 0x0B8 | ✅ | 0x0A3 | ❌ |
+| UPDATE_CHAR_BOX | CUser::OnMiniRoomBalloon | interaction/clientbound/InteractionMiniRoomBalloon (T1) |  | ⬜ | 0x07C | ✅ | 0x096 | ✅ | 0x09A | ✅ | 0x0A5 | ✅ | 0x0A8 | ❌ | 0x0B0 | ❌ | 0x0B8 | ✅ | 0x0A3 | ❌ |
 | SHOW_CONSUME_EFFECT | CUser::SetConsumeItemEffect |  |  | ⬜ | 0x07D | ❌ | 0x097 | ❌ | 0x09B | ❌ | 0x0A6 | ❌ | 0x0A9 | ❌ | 0x0B1 | ❌ | 0x0B9 | ❌ | 0x0A4 | ❌ |
 | IDA_0X07E | CWvsContext::OnSetPassenserRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x07E | ❌ |  | ⬜ |
 | SHOW_SCROLL_EFFECT | CUser::ShowItemUpgradeEffect | character/clientbound/ItemUpgrade (T1) |  | ⬜ | 0x07E | ✅ | 0x098 | ✅ | 0x09C | ✅ | 0x0A7 | ✅ | 0x0AA | ✅ | 0x0B2 | ✅ | 0x0BA | ✅ | 0x0A5 | ✅ |
@@ -381,6 +381,7 @@ Tool: `f7b7d6f57f604fdd5127841e97a6f58c0610da48c960e726c5e48288b1d76189`
 | IDA_0X0EE | sub_9F797D |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0EE | ❌ |
 | ADMIN_SHOP | CAdminShopDlg::OnPacket; sub_6910E4 |  |  | ⬜ | 0x0EF | ❌ | 0x112 | ❌ | 0x11E | ❌ | 0x134 | ❌ | 0x13B | ❌ | 0x145 | ❌ | 0x16F | ❌ | 0x14D | ❌ |
 | IDA_0X0EF | CUserLocal::OnRandomMesobag_Failed; sub_9F7C10 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0EF | ❌ | 0x0EF | ❌ |
+| PLAYER_INTERACTION | CMiniRoomBaseDlg::OnPacketBase | interaction/clientbound/InteractionInteractionEnter (T1) | 0x0EF | ❌ | 0x0F4 | ✅ | 0x118 | ✅ | 0x124 | ✅ | 0x13A | ✅ | 0x141 | ✅ | 0x14B | ✅ | 0x175 | ✅ | 0x153 | ✅ |
 | FREDRICK_MESSAGE | CStoreBankDlg::OnPacket |  |  | ⬜ | 0x0F0 | ❌ | 0x114 | ❌ | 0x120 | ❌ | 0x136 | ❌ | 0x13D | ❌ | 0x147 | ❌ | 0x171 | ❌ | 0x14F | ❌ |
 | IDA_0X0F0 | CUserLocal::OnFieldFadeInOut; sub_A2F6DE |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F0 | ❌ | 0x0F0 | ❌ |
 | FREDRICK | CStoreBankDlg::OnPacket |  |  | ⬜ | 0x0F1 | ❌ | 0x115 | ❌ | 0x121 | ❌ | 0x137 | ❌ | 0x13E | ❌ | 0x148 | ❌ | 0x172 | ❌ | 0x150 | ❌ |
@@ -390,7 +391,6 @@ Tool: `f7b7d6f57f604fdd5127841e97a6f58c0610da48c960e726c5e48288b1d76189`
 | IDA_0X0F3 | CUserLocal::OnNotifyHPDecByField; CUserLocal::OnRadioSchedule |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F3 | ❌ | 0x0F3 | ❌ |
 | MESSENGER | CUIMessenger::OnPacket; sub_6D34F1 | messenger/clientbound/MessengerAdd (T1) |  | ⬜ | 0x0F3 | ❌ | 0x117 | ✅ | 0x123 | ✅ | 0x139 | ✅ | 0x140 | ✅ | 0x14A | ✅ | 0x174 | ✅ | 0x152 | ✅ |
 | IDA_0X0F4 | CUserLocal::OnOpenSkillGuide |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F4 | ❌ |
-| PLAYER_INTERACTION | CMiniRoomBaseDlg::OnPacketBase | interaction/clientbound/InteractionInteractionChat (T1) |  | ⬜ | 0x0F4 | ✅ | 0x118 | ✅ | 0x124 | ✅ | 0x13A | ✅ | 0x141 | ✅ | 0x14B | ✅ | 0x175 | ✅ | 0x153 | ✅ |
 | IDA_0X0F5 | CUserLocal::OnNoticeMsg |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F5 | ❌ |
 | IDA_0X0F6 | CUserLocal::OnChatMsg |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F6 | ❌ |
 | IDA_0X0F7 | CUserLocal::OnBuffzoneEffect |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F7 | ❌ |
@@ -993,10 +993,10 @@ Tool: `f7b7d6f57f604fdd5127841e97a6f58c0610da48c960e726c5e48288b1d76189`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 166 | 0 | 2 | 156 | 634 | 0 | 51.2% |
-| v61 | 238 | 0 | 60 | 196 | 464 | 0 | 48.2% |
-| v72 | 247 | 0 | 73 | 214 | 424 | 0 | 46.3% |
-| v79 | 261 | 0 | 72 | 210 | 415 | 0 | 48.1% |
+| v48 | 166 | 0 | 2 | 157 | 633 | 0 | 51.1% |
+| v61 | 239 | 0 | 60 | 195 | 464 | 0 | 48.4% |
+| v72 | 248 | 0 | 73 | 213 | 424 | 0 | 46.4% |
+| v79 | 262 | 0 | 72 | 209 | 415 | 0 | 48.3% |
 | v83 | 403 | 0 | 0 | 331 | 224 | 0 | 54.9% |
 | v84 | 374 | 0 | 0 | 340 | 244 | 0 | 52.4% |
 | v87 | 408 | 0 | 0 | 363 | 187 | 0 | 52.9% |

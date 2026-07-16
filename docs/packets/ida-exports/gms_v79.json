@@ -9843,6 +9843,10 @@
    "direction": "",
    "calls": [
     {
+     "op": "Decode4",
+     "comment": "characterId (consumed by CUserPool::OnUserCommonPacket GetUser, not OnMiniRoomBalloon)"
+    },
+    {
      "op": "Decode1",
      "comment": ""
     },

@@ -65,7 +65,8 @@ func (m ListUpdate) Encode(l logrus.FieldLogger, ctx context.Context) func(optio
 	}
 }
 
-func (m *ListUpdate) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *ListUpdate) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	hasGroup := model.BuddyHasFriendGroup(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
 		count := r.ReadByte()
@@ -75,7 +76,9 @@ func (m *ListUpdate) Decode(_ logrus.FieldLogger, _ context.Context) func(r *req
 			m.buddies[i].Name = model.ReadPaddedString(r, 13)
 			_ = r.ReadByte() // flag
 			m.buddies[i].ChannelId = channel.Id(r.ReadInt32())
-			m.buddies[i].Group = model.ReadPaddedString(r, 17)
+			if hasGroup {
+				m.buddies[i].Group = model.ReadPaddedString(r, 17) // absent in GMS < 72, e.g. v61
+			}
 		}
 		for i := range m.buddies {
 			m.buddies[i].InShop = r.ReadUint32() != 0

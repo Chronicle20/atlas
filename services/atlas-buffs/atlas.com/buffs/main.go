@@ -3,10 +3,9 @@ package main
 import (
 	"atlas-buffs/character"
 	character2 "atlas-buffs/kafka/consumer/character"
-	"atlas-buffs/logger"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-buffs/tasks"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
+	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -14,6 +13,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 )
 
 const serviceName = "atlas-buffs"
@@ -41,41 +41,36 @@ func GetServer() Server {
 }
 
 func main() {
-	l := logger.CreateLogger(serviceName)
-	l.Infoln("Starting main service.")
-
-	tdm := service.GetTeardownManager()
+	rt := service.Bootstrap(serviceName)
+	l := rt.Logger()
 
 	rc := atlas.Connect(l)
 	character.InitRegistry(rc)
 
-	tc, err := tracing.InitTracer(serviceName)
-	if err != nil {
-		l.WithError(err).Fatal("Unable to initialize tracer.")
-	}
-
-	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	character2.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := character2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 
-	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
+	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
-	go tasks.Register(tasks.NewExpiration(l, 10000))
-	go tasks.Register(tasks.NewPoisonTick(l, 1000))
+	routine.Go(l, rt.Context(), func(_ context.Context) {
+		tasks.Register(l, rt.Context())(tasks.NewExpiration(l, 10000))
+	})
+	routine.Go(l, rt.Context(), func(_ context.Context) {
+		tasks.Register(l, rt.Context())(tasks.NewPoisonTick(l, 1000))
+	})
 
 	server.New(l).
-		WithContext(tdm.Context()).
-		WithWaitGroup(tdm.WaitGroup()).
+		WithContext(rt.Context()).
+		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(character.InitResource(GetServer())).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
+		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
-	tdm.TeardownFunc(tracing.Teardown(l)(tc))
-
-	tdm.Wait()
-	l.Infoln("Service shutdown.")
+	rt.Wait()
 }

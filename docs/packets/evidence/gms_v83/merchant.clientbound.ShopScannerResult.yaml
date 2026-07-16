@@ -1,0 +1,12 @@
+packet: merchant/clientbound/ShopScannerResult
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnShopScannerResult#Result
+    address: "0xa28c29"
+    decompile_sha256: 52ed5aeba54d3d7a75ada2807b04e87309f9a71051f1369ba89e005ce44090ea
+verifies:
+  - libs/atlas-packet/merchant/clientbound/shop_scanner_result_test.go#TestShopScannerResultRoundTrip
+  - libs/atlas-packet/merchant/clientbound/shop_scanner_result_test.go#TestShopScannerResultEquipRow
+  - libs/atlas-packet/merchant/clientbound/shop_scanner_result_test.go#TestShopScannerResultEmpty

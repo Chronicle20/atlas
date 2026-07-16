@@ -2,11 +2,12 @@ package main
 
 import (
 	"atlas-tenants/configuration"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	"atlas-tenants/logger"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-tenants/tenant"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
+	"context"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -40,35 +41,46 @@ func GetServer() Server {
 }
 
 func main() {
-	l := logger.CreateLogger(serviceName)
-	l.Infoln("Starting main service.")
+	rt := service.Bootstrap(serviceName)
+	l := rt.Logger()
 
-	tdm := service.GetTeardownManager()
+	db := database.Connect(l, database.SetMigrations(tenant.MigrateEntities, configuration.MigrateEntities, outboxlib.Migration))
 
-	tc, err := tracing.InitTracer(serviceName)
-	if err != nil {
-		l.WithError(err).Fatal("Unable to initialize tracer.")
-	}
+	// Boot the outbox drainer: publishes the transactional outbox to Kafka.
+	// Leadership is gated by a postgres advisory lock — replicas are safe.
+	publisher := outboxlib.NewTopicWriterPool()
+	drainer := outboxlib.NewDrainer(l, db, publisher, outboxlib.WithDSN(database.DSN()))
+	routine.Go(l, rt.Context(), func(_ context.Context) {
+		drainer.Run(rt.Context())
+	})
+	rt.TeardownFunc(func() {
+		drainer.Stop()
+		publisher.Close()
+	})
 
-	db := database.Connect(l, database.SetMigrations(tenant.MigrateEntities, configuration.MigrateEntities))
+	server.RegisterTransientErrorClassifier(func(err error) bool {
+		if database.IsTransientConnectionError(err) {
+			database.CountTransient(err)
+			return true
+		}
+		return false
+	})
 
-	_ = consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	_ = consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 
-	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
+	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 	// CreateRoute and run server
 	server.New(l).
-		WithContext(tdm.Context()).
-		WithWaitGroup(tdm.WaitGroup()).
+		WithContext(rt.Context()).
+		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		AddRouteInitializer(tenant.RegisterRoutes(db)(GetServer())).
 		AddRouteInitializer(configuration.RegisterRoutes(db)(GetServer())).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
+		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
-	tdm.TeardownFunc(tracing.Teardown(l)(tc))
-
-	tdm.Wait()
-	l.Infoln("Service shutdown.")
+	rt.Wait()
 }

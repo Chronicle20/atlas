@@ -1,0 +1,10 @@
+packet: character/serverbound/CreateCharacter
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::SendNewCharPacket
+    address: "0x5b219a"
+    decompile_sha256: eae780d8c40a8bda1d867043544ed183a7c1d391b041c0e55d74eaa19eb9a027
+verifies:
+  - libs/atlas-packet/character/serverbound/v72_test.go#TestCreateCharacterByteOutputV72

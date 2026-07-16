@@ -30,6 +30,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) Put(m Model) (Model, error) {
 	result, err := upsert(p.db.WithContext(p.ctx), p.t.Id(), m)
 	if err != nil {

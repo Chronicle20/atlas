@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldGeneral
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendChatMsg
+    address: "0x4e7469"
+    decompile_sha256: 367852970dca8f65f0f98c54c75662943a0fcb6a84810c7c7a2cc3a22e4d1c41
+verifies:
+    - libs/atlas-packet/field/serverbound/general_test.go#TestGeneralByteOutputV61

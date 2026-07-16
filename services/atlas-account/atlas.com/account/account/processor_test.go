@@ -4,12 +4,26 @@ import (
 	"atlas-account/kafka/message"
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus/hooks/test"
 	"golang.org/x/crypto/bcrypt"
 )
+
+// allAccounts drains AllProvider's first page (a single page big enough for
+// these tests' fixture sizes) and fails the test on error, standing in for
+// the deleted unfiltered GetByTenant/ByTenantProvider methods.
+func allAccounts(t *testing.T, p Processor) []Model {
+	t.Helper()
+	paged, err := p.AllProvider(model.Page{Number: 1, Size: 50})()
+	if err != nil {
+		t.Fatalf("Failed to get accounts: %v", err)
+	}
+	return paged.Items
+}
 
 func TestCreate(t *testing.T) {
 	setupTestRegistry(t)
@@ -278,7 +292,7 @@ func TestUpdateNotFound(t *testing.T) {
 	}
 }
 
-func TestGetByTenant(t *testing.T) {
+func TestAllProvider(t *testing.T) {
 	setupTestRegistry(t)
 	l, _ := test.NewNullLogger()
 	db := setupTestDatabase(t)
@@ -291,17 +305,14 @@ func TestGetByTenant(t *testing.T) {
 	_, _ = p.Create(mb)("user2")("password")
 	_, _ = p.Create(mb)("user3")("password")
 
-	accounts, err := p.GetByTenant()
-	if err != nil {
-		t.Fatalf("Failed to get accounts by tenant: %v", err)
-	}
+	accounts := allAccounts(t, p)
 
 	if len(accounts) != 3 {
 		t.Errorf("Expected 3 accounts, got %v", len(accounts))
 	}
 }
 
-func TestGetByTenantEmpty(t *testing.T) {
+func TestAllProviderEmpty(t *testing.T) {
 	setupTestRegistry(t)
 	l, _ := test.NewNullLogger()
 	db := setupTestDatabase(t)
@@ -309,13 +320,55 @@ func TestGetByTenantEmpty(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), st)
 
 	p := NewProcessor(l, tctx, db)
-	accounts, err := p.GetByTenant()
-	if err != nil {
-		t.Fatalf("Failed to get accounts by tenant: %v", err)
-	}
+	accounts := allAccounts(t, p)
 
 	if len(accounts) != 0 {
 		t.Errorf("Expected 0 accounts, got %v", len(accounts))
+	}
+}
+
+// TestLoggedInTenantProviderDrainsBeyondOnePage proves LoggedInTenantProvider
+// (used by teardown to log out every account in the tenant) does not
+// silently truncate at the first AllProvider page: it seeds more accounts
+// than tenantDrainPageSize and logs in only the very last one created, then
+// asserts drainAll still surfaces it.
+func TestLoggedInTenantProviderDrainsBeyondOnePage(t *testing.T) {
+	setupTestRegistry(t)
+	l, _ := test.NewNullLogger()
+	db := setupTestDatabase(t)
+	st := sampleTenant()
+	tctx := tenant.WithContext(context.Background(), st)
+
+	p := NewProcessor(l, tctx, db)
+
+	// Seed via the entity-layer create() helper (no bcrypt hashing) rather
+	// than p.Create, which would be needlessly slow at this volume.
+	const total = tenantDrainPageSize + 5
+	var lastCreated Model
+	for i := 0; i < total; i++ {
+		m, err := create(db.WithContext(tctx), st.Id(), fmt.Sprintf("user%d", i), "password", 0)
+		if err != nil {
+			t.Fatalf("Failed to create account %d: %v", i, err)
+		}
+		lastCreated = m
+	}
+
+	ak := AccountKey{Tenant: st, AccountId: lastCreated.Id()}
+	if err := GetRegistry().Login(tctx, ak, ServiceKey{Service: ServiceLogin}); err != nil {
+		t.Fatalf("failed to simulate login: %v", err)
+	}
+	defer GetRegistry().Terminate(tctx, ak)
+
+	loggedIn, err := p.LoggedInTenantProvider()
+	if err != nil {
+		t.Fatalf("LoggedInTenantProvider failed: %v", err)
+	}
+
+	if len(loggedIn) != 1 {
+		t.Fatalf("Expected 1 logged-in account beyond page 1, got %d", len(loggedIn))
+	}
+	if loggedIn[0].Id() != lastCreated.Id() {
+		t.Fatalf("Expected logged-in account [%d], got [%d]", lastCreated.Id(), loggedIn[0].Id())
 	}
 }
 
@@ -425,7 +478,7 @@ func TestDeleteMultipleAccounts(t *testing.T) {
 	created3, _ := p.Create(mb)("user3")("password")
 
 	// Verify all exist
-	accounts, _ := p.GetByTenant()
+	accounts := allAccounts(t, p)
 	if len(accounts) != 3 {
 		t.Fatalf("Expected 3 accounts, got %v", len(accounts))
 	}
@@ -438,7 +491,7 @@ func TestDeleteMultipleAccounts(t *testing.T) {
 	}
 
 	// Verify only 2 remain
-	accounts, _ = p.GetByTenant()
+	accounts = allAccounts(t, p)
 	if len(accounts) != 2 {
 		t.Fatalf("Expected 2 accounts after deletion, got %v", len(accounts))
 	}

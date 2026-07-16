@@ -3,8 +3,8 @@ package pet
 import (
 	"atlas-saga-orchestrator/kafka/message"
 	pet2 "atlas-saga-orchestrator/kafka/message/pet"
-	"atlas-saga-orchestrator/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
@@ -33,6 +33,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		p:   producer.ProviderImpl(l)(ctx),
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GainClosenessAndEmit(transactionId uuid.UUID, petId uint32, amount uint16) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {

@@ -37,11 +37,24 @@ type ProcessorMock struct {
 	InstanceRouteByIdProviderFunc  func(tenantID uuid.UUID, routeID string) model.Provider[map[string]interface{}]
 	AllInstanceRoutesProviderFunc  func(tenantID uuid.UUID) model.Provider[[]map[string]interface{}]
 
+	// MTS config operations
+	CreateMtsConfigFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(config map[string]interface{}) (configuration.Model, error)
+	CreateMtsConfigAndEmitFunc func(tenantID uuid.UUID, config map[string]interface{}) (configuration.Model, error)
+	UpdateMtsConfigFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(configID string) func(config map[string]interface{}) (configuration.Model, error)
+	UpdateMtsConfigAndEmitFunc func(tenantID uuid.UUID, configID string, config map[string]interface{}) (configuration.Model, error)
+	DeleteMtsConfigFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(configID string) error
+	DeleteMtsConfigAndEmitFunc func(tenantID uuid.UUID, configID string) error
+	GetMtsConfigByIdFunc       func(tenantID uuid.UUID, configID string) (map[string]interface{}, error)
+	GetAllMtsConfigsFunc       func(tenantID uuid.UUID) ([]map[string]interface{}, error)
+	MtsConfigByIdProviderFunc  func(tenantID uuid.UUID, configID string) model.Provider[map[string]interface{}]
+	AllMtsConfigsProviderFunc  func(tenantID uuid.UUID) model.Provider[[]map[string]interface{}]
+
 	// Seed operations
 	SeedRoutesFunc         func(tenantID uuid.UUID) (configuration.SeedResult, error)
 	SeedInstanceRoutesFunc func(tenantID uuid.UUID) (configuration.SeedResult, error)
 	SeedVesselsFunc        func(tenantID uuid.UUID) (configuration.SeedResult, error)
 	SeedRpsRewardsFunc     func(tenantID uuid.UUID) (configuration.SeedResult, error)
+	SeedMtsConfigsFunc     func(tenantID uuid.UUID) (configuration.SeedResult, error)
 
 	// Vessel operations
 	CreateVesselFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(vessel map[string]interface{}) (configuration.Model, error)
@@ -362,6 +375,104 @@ func (m *ProcessorMock) AllInstanceRoutesProvider(tenantID uuid.UUID) model.Prov
 	}
 }
 
+// CreateMtsConfig is a mock implementation
+func (m *ProcessorMock) CreateMtsConfig(mb *message.Buffer) func(tenantID uuid.UUID) func(config map[string]interface{}) (configuration.Model, error) {
+	if m.CreateMtsConfigFunc != nil {
+		return m.CreateMtsConfigFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(config map[string]interface{}) (configuration.Model, error) {
+		return func(config map[string]interface{}) (configuration.Model, error) {
+			return configuration.Model{}, nil
+		}
+	}
+}
+
+// CreateMtsConfigAndEmit is a mock implementation
+func (m *ProcessorMock) CreateMtsConfigAndEmit(tenantID uuid.UUID, config map[string]interface{}) (configuration.Model, error) {
+	if m.CreateMtsConfigAndEmitFunc != nil {
+		return m.CreateMtsConfigAndEmitFunc(tenantID, config)
+	}
+	return configuration.Model{}, nil
+}
+
+// UpdateMtsConfig is a mock implementation
+func (m *ProcessorMock) UpdateMtsConfig(mb *message.Buffer) func(tenantID uuid.UUID) func(configID string) func(config map[string]interface{}) (configuration.Model, error) {
+	if m.UpdateMtsConfigFunc != nil {
+		return m.UpdateMtsConfigFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(configID string) func(config map[string]interface{}) (configuration.Model, error) {
+		return func(configID string) func(config map[string]interface{}) (configuration.Model, error) {
+			return func(config map[string]interface{}) (configuration.Model, error) {
+				return configuration.Model{}, nil
+			}
+		}
+	}
+}
+
+// UpdateMtsConfigAndEmit is a mock implementation
+func (m *ProcessorMock) UpdateMtsConfigAndEmit(tenantID uuid.UUID, configID string, config map[string]interface{}) (configuration.Model, error) {
+	if m.UpdateMtsConfigAndEmitFunc != nil {
+		return m.UpdateMtsConfigAndEmitFunc(tenantID, configID, config)
+	}
+	return configuration.Model{}, nil
+}
+
+// DeleteMtsConfig is a mock implementation
+func (m *ProcessorMock) DeleteMtsConfig(mb *message.Buffer) func(tenantID uuid.UUID) func(configID string) error {
+	if m.DeleteMtsConfigFunc != nil {
+		return m.DeleteMtsConfigFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(configID string) error {
+		return func(configID string) error {
+			return nil
+		}
+	}
+}
+
+// DeleteMtsConfigAndEmit is a mock implementation
+func (m *ProcessorMock) DeleteMtsConfigAndEmit(tenantID uuid.UUID, configID string) error {
+	if m.DeleteMtsConfigAndEmitFunc != nil {
+		return m.DeleteMtsConfigAndEmitFunc(tenantID, configID)
+	}
+	return nil
+}
+
+// GetMtsConfigById is a mock implementation
+func (m *ProcessorMock) GetMtsConfigById(tenantID uuid.UUID, configID string) (map[string]interface{}, error) {
+	if m.GetMtsConfigByIdFunc != nil {
+		return m.GetMtsConfigByIdFunc(tenantID, configID)
+	}
+	return map[string]interface{}{}, nil
+}
+
+// GetAllMtsConfigs is a mock implementation
+func (m *ProcessorMock) GetAllMtsConfigs(tenantID uuid.UUID) ([]map[string]interface{}, error) {
+	if m.GetAllMtsConfigsFunc != nil {
+		return m.GetAllMtsConfigsFunc(tenantID)
+	}
+	return []map[string]interface{}{}, nil
+}
+
+// MtsConfigByIdProvider is a mock implementation
+func (m *ProcessorMock) MtsConfigByIdProvider(tenantID uuid.UUID, configID string) model.Provider[map[string]interface{}] {
+	if m.MtsConfigByIdProviderFunc != nil {
+		return m.MtsConfigByIdProviderFunc(tenantID, configID)
+	}
+	return func() (map[string]interface{}, error) {
+		return map[string]interface{}{}, nil
+	}
+}
+
+// AllMtsConfigsProvider is a mock implementation
+func (m *ProcessorMock) AllMtsConfigsProvider(tenantID uuid.UUID) model.Provider[[]map[string]interface{}] {
+	if m.AllMtsConfigsProviderFunc != nil {
+		return m.AllMtsConfigsProviderFunc(tenantID)
+	}
+	return func() ([]map[string]interface{}, error) {
+		return []map[string]interface{}{}, nil
+	}
+}
+
 // SeedRoutes is a mock implementation
 func (m *ProcessorMock) SeedRoutes(tenantID uuid.UUID) (configuration.SeedResult, error) {
 	if m.SeedRoutesFunc != nil {
@@ -490,4 +601,12 @@ func (m *ProcessorMock) AllRpsRewardsProvider(tenantID uuid.UUID) model.Provider
 	return func() ([]map[string]interface{}, error) {
 		return []map[string]interface{}{}, nil
 	}
+}
+
+// SeedMtsConfigs is a mock implementation
+func (m *ProcessorMock) SeedMtsConfigs(tenantID uuid.UUID) (configuration.SeedResult, error) {
+	if m.SeedMtsConfigsFunc != nil {
+		return m.SeedMtsConfigsFunc(tenantID)
+	}
+	return configuration.SeedResult{}, nil
 }

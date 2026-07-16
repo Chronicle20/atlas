@@ -1,0 +1,11 @@
+packet: merchant/clientbound/ShopLinkResult
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnShopLinkResult
+    address: "0x847d60"
+    decompile_sha256: f3170502dc9123a3980b057df21b45a3a501936f55c69880e0760eec60b64bd6
+verifies:
+  - libs/atlas-packet/merchant/clientbound/shop_link_result_test.go#TestShopLinkResultWireShape
+  - libs/atlas-packet/merchant/clientbound/shop_link_result_test.go#TestShopLinkResultRoundTrip

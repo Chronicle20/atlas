@@ -360,6 +360,66 @@ Base URL: `BASE_SERVICE_URL` + MAPS root
 
 ---
 
+### MERCHANT
+Base URL: `BASE_SERVICE_URL` + MERCHANT root
+Resource Type: `merchants` (with `listings` relationship)
+
+#### GET /worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/merchants
+- Parameters: worldId, channelId, mapId, instanceId (uuid)
+- Request Model: None
+- Response Model: `[]RestModel` - Shops in the field instance (id, characterId, shopType, state, title, worldId, channelId, mapId, instanceId, x, y, permitItemId, mesoBalance, createdAt, listingCount, visitors, messages, and included listings)
+- Error Conditions: None
+
+#### GET /merchants/{shopId}?include=listings
+- Parameters: shopId (string/uuid)
+- Request Model: None
+- Response Model: `RestModel` - Shop details with included listings (each: shopId, itemId, itemType, quantity, bundleSize, bundlesRemaining, pricePerBundle, itemSnapshot, displayOrder). The `include=listings` query is required for listing data to be returned.
+- Error Conditions: 404 if shop not found
+
+#### GET /characters/{characterId}/merchants
+- Parameters: characterId (uint32)
+- Request Model: None
+- Response Model: `[]RestModel` - Shops owned by the character
+- Error Conditions: None
+
+#### GET /characters/{characterId}/visiting
+- Parameters: characterId (uint32)
+- Request Model: None
+- Response Model: `RestModel` - The shop the character is currently visiting
+- Error Conditions: 404 if the character is not visiting a shop
+
+#### GET /merchants/search/listings?itemId={itemId}&worldId={worldId}&order={order}
+- Parameters: itemId (uint32), worldId (byte), order (string - `asc` or `desc`)
+- Request Model: None
+- Response Model: `[]ListingSearchRestModel` - Owl shop-search results (shopId, shopTitle, worldId, channelId, mapId, ownerId, shopType, state, itemId, itemType, quantity, bundleSize, bundlesRemaining, pricePerBundle, itemSnapshot). Resource type: "listing-search-results".
+- Error Conditions: None
+
+#### GET /worlds/{worldId}/shop-searches/top
+- Parameters: worldId (byte)
+- Request Model: None
+- Response Model: `[]TopSearchRestModel` - Owl hot-list top item searches (itemId, count). Resource type: "shop-search-counts".
+- Error Conditions: None
+
+#### GET /characters/{characterId}/frederick
+- Parameters: characterId (uint32)
+- Request Model: None
+- Response Model: `FrederickStatusRestModel` - Whether the character has unclaimed hired-merchant items/mesos at Frederick (hasPending). Resource type: "frederick-status".
+- Error Conditions: None
+
+#### GET /merchants/{shopId}/blacklist
+- Parameters: shopId (string/uuid)
+- Request Model: None
+- Response Model: `[]BlacklistRestModel` - Blacklisted character names (name). Resource type: "merchant-blacklist".
+- Error Conditions: None
+
+#### GET /merchants/{shopId}/visits
+- Parameters: shopId (string/uuid)
+- Request Model: None
+- Response Model: `[]VisitRestModel` - Shop visit list (name, count). Resource type: "merchant-visits".
+- Error Conditions: None
+
+---
+
 ### MESSENGERS
 Base URL: `BASE_SERVICE_URL` + MESSENGERS root
 

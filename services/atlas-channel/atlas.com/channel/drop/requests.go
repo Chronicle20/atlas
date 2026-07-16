@@ -15,6 +15,11 @@ func getBaseRequest() string {
 	return requests.RootUrl("DROPS")
 }
 
-func requestInMap(f field.Model) requests.Request[[]RestModel] {
-	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+Resource, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String()))
+// inMapUrl returns the list URL for the drops currently in one map
+// instance. It is a bare URL (not a requests.Request) because the list is
+// now paginated server-side (task-117) and consumed via
+// requests.DrainProvider, which appends its own page[number]/page[size]
+// query params per request.
+func inMapUrl(f field.Model) string {
+	return fmt.Sprintf(getBaseRequest()+Resource, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String())
 }

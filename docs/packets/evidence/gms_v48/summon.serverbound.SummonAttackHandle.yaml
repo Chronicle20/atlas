@@ -1,0 +1,10 @@
+packet: summon/serverbound/SummonAttackHandle
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_5D9424
+    address: "0x5d9424"
+    decompile_sha256: 94e8511f446cc4070d8d8627c38abd962166b885c78c88c4a8b6e79ca68765f4
+verifies:
+  - libs/atlas-packet/summon/serverbound/attack_test.go#TestSummonAttackByteV48

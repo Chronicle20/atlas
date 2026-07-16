@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
@@ -25,8 +27,10 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) CountInMap(_ uuid.UUID, field field.Model) (int, error) {
-	data, err := requestInMap(field)(p.l, p.ctx)
+	data, err := requests.DrainProvider[RestModel, RestModel](p.l, p.ctx)(inMapUrl(field), 250, Extract, model.Filters[RestModel]())()
 	if err != nil {
 		return 0, err
 	}

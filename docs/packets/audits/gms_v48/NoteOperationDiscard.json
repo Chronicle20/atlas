@@ -1,0 +1,48 @@
+{
+  "WriterName": "NoteOperationDiscard",
+  "IDAName": "CMemoListDlg::SetRet",
+  "Address": "0x534dc4",
+  "Variant": "GMS/v48",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/note/serverbound/operation_discard.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "count — number of checked (nFlag==2) memos to discard (deleteCount @0x534e9a)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "emptySlotCount — free inventory slots (tab 4, CharacterData::GetEmptySlotCount @0x534ea5)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "dwSN (memo serial number) — per-entry loop body @0x534ed7 (count iterations; analyzer flattens)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "nFlag (memo type flag) @0x534eec",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

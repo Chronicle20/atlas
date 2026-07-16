@@ -1,0 +1,10 @@
+packet: guild/serverbound/GuildInviteRequest
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendInviteGuildMsg
+    address: "0x51bcc8"
+    decompile_sha256: 2684f4fe20a09f2c822f66e2b6c99b19a501bf416f25b461258085bd4dea1e35
+verifies:
+  - libs/atlas-packet/guild/serverbound/operation_invite_test.go#TestInviteRequestRoundTrip

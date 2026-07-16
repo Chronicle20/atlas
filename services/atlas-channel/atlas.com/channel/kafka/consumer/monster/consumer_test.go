@@ -6,6 +6,7 @@ import (
 	"atlas-channel/server"
 	"atlas-channel/socket/writer"
 	"context"
+	"errors"
 	"testing"
 
 	channelconst "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
@@ -51,7 +52,7 @@ func newTestTenant(t *testing.T) tenant.Model {
 func newTestServer(t *testing.T, tm tenant.Model) server.Model {
 	t.Helper()
 	ch := channelconst.NewModel(0, 1)
-	return server.Register(tm, ch, "127.0.0.1", 8484)
+	return server.NewProcessor(logrus.New(), context.Background()).Register(tm, ch, "127.0.0.1", 8484)
 }
 
 func TestHandleNextSkillDecided_PutsIntoInbox(t *testing.T) {
@@ -279,5 +280,154 @@ func TestHandleStatusEffectExpired_VenomLastSlot_BroadcastsMonsterStatReset(t *t
 	}
 	if c := monster.GetStatusMirror().VenomCount(tm, uniqueId); c != 0 {
 		t.Fatalf("VenomCount after all expiries: want 0, got %d", c)
+	}
+}
+
+func TestHandleStatusEventCreated_SeedsLiveMirror(t *testing.T) {
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	sc := newTestServer(t, tm)
+
+	f := field.NewBuilder(0, 1, 100000000).Build()
+	prev := monsterGetByIdFn
+	monsterGetByIdFn = func(_ logrus.FieldLogger, _ context.Context, uniqueId uint32) (monster.Model, error) {
+		return monster.NewModelBuilder(uniqueId, f, 100100).
+			SetMp(60).
+			SetMaxMp(90).
+			SetControllerHasAggro(true).
+			Build()
+	}
+	defer func() { monsterGetByIdFn = prev }()
+
+	e := monster2.StatusEvent[monster2.StatusEventCreatedBody]{
+		WorldId:   0,
+		ChannelId: 1,
+		MapId:     100000000,
+		UniqueId:  7001,
+		MonsterId: 100100,
+		Type:      monster2.EventStatusCreated,
+		Body:      monster2.StatusEventCreatedBody{ActorId: 1},
+	}
+	handleStatusEventCreated(sc, nil)(logrus.New(), ctx, e)
+
+	got, ok := monster.GetLiveMirror().Lookup(tm, 7001)
+	if !ok {
+		t.Fatalf("CREATED must seed the mirror")
+	}
+	if got.MonsterId != 100100 || got.Mp != 60 || got.MaxMp != 90 || !got.ControllerHasAggro {
+		t.Fatalf("seed mismatch: %+v", got)
+	}
+}
+
+func TestHandleStatusEventCreated_FetchError_NoSeed(t *testing.T) {
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	sc := newTestServer(t, tm)
+
+	prev := monsterGetByIdFn
+	monsterGetByIdFn = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (monster.Model, error) {
+		return monster.Model{}, errors.New("boom")
+	}
+	defer func() { monsterGetByIdFn = prev }()
+
+	e := monster2.StatusEvent[monster2.StatusEventCreatedBody]{
+		WorldId: 0, ChannelId: 1, MapId: 100000000, UniqueId: 7002,
+		MonsterId: 100100, Type: monster2.EventStatusCreated,
+	}
+	handleStatusEventCreated(sc, nil)(logrus.New(), ctx, e)
+
+	if _, ok := monster.GetLiveMirror().Lookup(tm, 7002); ok {
+		t.Fatalf("fetch failure must not seed the mirror")
+	}
+}
+
+func TestHandleStatusEventMpChanged_UpdatesMirrorForUnknownReasonWithoutSession(t *testing.T) {
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	sc := newTestServer(t, tm)
+
+	f := field.NewBuilder(0, 1, 100000000).Build()
+	monster.GetLiveMirror().Put(tm, 7003, monster.LiveEntry{Field: f, MonsterId: 100100, Mp: 60, MaxMp: 90, ControllerHasAggro: true})
+
+	e := monster2.StatusEvent[monster2.StatusEventMpChangedBody]{
+		WorldId: 0, ChannelId: 1, MapId: 100000000, UniqueId: 7003,
+		MonsterId: 100100, Type: monster2.EventStatusMpChanged,
+		Body: monster2.StatusEventMpChangedBody{Reason: "SKILL_CAST", Amount: 23, MonsterMpAfter: 37},
+	}
+	// No session exists for CharacterId 0 — the mirror update must land anyway.
+	handleStatusEventMpChanged(sc, nil)(logrus.New(), ctx, e)
+
+	got, ok := monster.GetLiveMirror().Lookup(tm, 7003)
+	if !ok || got.Mp != 37 {
+		t.Fatalf("MP_CHANGED must update mirror before session gating / reason dispatch, got %+v ok=%v", got, ok)
+	}
+	if !got.ControllerHasAggro {
+		t.Fatalf("MP update must not clobber aggro")
+	}
+}
+
+func TestHandleStatusEventStartStopAggro_UpdateMirrorAggro(t *testing.T) {
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	sc := newTestServer(t, tm)
+
+	f := field.NewBuilder(0, 1, 100000000).Build()
+	monster.GetLiveMirror().Put(tm, 7004, monster.LiveEntry{Field: f, MonsterId: 100100})
+
+	sce := monster2.StatusEvent[monster2.StatusEventStartControlBody]{
+		WorldId: 0, ChannelId: 1, MapId: 100000000, UniqueId: 7004,
+		MonsterId: 100100, Type: monster2.EventStatusStartControl,
+		Body: monster2.StatusEventStartControlBody{ActorId: 1, ControllerHasAggro: true},
+	}
+	handleStatusEventStartControl(sc, nil)(logrus.New(), ctx, sce)
+	if got, _ := monster.GetLiveMirror().Lookup(tm, 7004); !got.ControllerHasAggro {
+		t.Fatalf("START_CONTROL must set aggro from body")
+	}
+
+	ste := monster2.StatusEvent[monster2.StatusEventStopControlBody]{
+		WorldId: 0, ChannelId: 1, MapId: 100000000, UniqueId: 7004,
+		MonsterId: 100100, Type: monster2.EventStatusStopControl,
+		Body: monster2.StatusEventStopControlBody{ActorId: 1},
+	}
+	handleStatusEventStopControl(sc, nil)(logrus.New(), ctx, ste)
+	if got, _ := monster.GetLiveMirror().Lookup(tm, 7004); got.ControllerHasAggro {
+		t.Fatalf("STOP_CONTROL must clear aggro (no controller => no aggro)")
+	}
+
+	ace := monster2.StatusEvent[monster2.StatusEventAggroChangedBody]{
+		WorldId: 0, ChannelId: 1, MapId: 100000000, UniqueId: 7004,
+		MonsterId: 100100, Type: monster2.EventStatusAggroChanged,
+		Body: monster2.StatusEventAggroChangedBody{ControllerCharacterId: 1, ControllerHasAggro: true},
+	}
+	handleStatusEventAggroChanged(sc, nil)(logrus.New(), ctx, ace)
+	if got, _ := monster.GetLiveMirror().Lookup(tm, 7004); !got.ControllerHasAggro {
+		t.Fatalf("AGGRO_CHANGED must set aggro from body")
+	}
+}
+
+func TestHandleStatusEventDestroyedAndKilled_RemoveMirrorEntry(t *testing.T) {
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	sc := newTestServer(t, tm)
+	f := field.NewBuilder(0, 1, 100000000).Build()
+
+	monster.GetLiveMirror().Put(tm, 7005, monster.LiveEntry{Field: f, MonsterId: 100100})
+	de := monster2.StatusEvent[monster2.StatusEventDestroyedBody]{
+		WorldId: 0, ChannelId: 1, MapId: 100000000, UniqueId: 7005,
+		MonsterId: 100100, Type: monster2.EventStatusDestroyed,
+	}
+	handleStatusEventDestroyed(sc, nil)(logrus.New(), ctx, de)
+	if _, ok := monster.GetLiveMirror().Lookup(tm, 7005); ok {
+		t.Fatalf("DESTROYED must evict the mirror entry")
+	}
+
+	monster.GetLiveMirror().Put(tm, 7006, monster.LiveEntry{Field: f, MonsterId: 100100})
+	ke := monster2.StatusEvent[monster2.StatusEventKilledBody]{
+		WorldId: 0, ChannelId: 1, MapId: 100000000, UniqueId: 7006,
+		MonsterId: 100100, Type: monster2.EventStatusKilled,
+	}
+	handleStatusEventKilled(sc, nil)(logrus.New(), ctx, ke)
+	if _, ok := monster.GetLiveMirror().Lookup(tm, 7006); ok {
+		t.Fatalf("KILLED must evict the mirror entry")
 	}
 }

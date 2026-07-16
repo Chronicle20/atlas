@@ -32,6 +32,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // GetQuestState returns the state of a quest for a character
 func (p *ProcessorImpl) GetQuestState(characterId uint32, questId uint32) model.Provider[State] {
 	return func() (State, error) {
@@ -74,10 +76,14 @@ func (p *ProcessorImpl) GetQuest(characterId uint32, questId uint32) model.Provi
 	}
 }
 
-// GetQuestsByCharacter returns all quests for a character
+// GetQuestsByCharacter returns all quests for a character. The upstream
+// atlas-quest list is now paginated (task-117); GetValidationContextProvider
+// (validation/processor.go) builds a complete questId->Model map for
+// validation checks, so this drains every page rather than fetching just
+// the first.
 func (p *ProcessorImpl) GetQuestsByCharacter(characterId uint32) model.Provider[[]Model] {
 	return func() ([]Model, error) {
-		questsProvider := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByCharacter(characterId), Extract, model.Filters[Model]())
+		questsProvider := requests.DrainProvider[RestModel, Model](p.l, p.ctx)(byCharacterUrl(characterId), 250, Extract, model.Filters[Model]())
 		quests, err := questsProvider()
 		if err != nil {
 			p.l.WithError(err).Errorf("Failed to get quests for character %d", characterId)
@@ -87,10 +93,13 @@ func (p *ProcessorImpl) GetQuestsByCharacter(characterId uint32) model.Provider[
 	}
 }
 
-// GetStartedQuestsByCharacter returns all started quests for a character
+// GetStartedQuestsByCharacter returns all started quests for a character.
+// The upstream atlas-quest GET /characters/{id}/quests/started is now
+// paginated (task-117), so this drains every page rather than fetching
+// just the first.
 func (p *ProcessorImpl) GetStartedQuestsByCharacter(characterId uint32) model.Provider[[]Model] {
 	return func() ([]Model, error) {
-		questsProvider := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestStartedByCharacter(characterId), Extract, model.Filters[Model]())
+		questsProvider := requests.DrainProvider[RestModel, Model](p.l, p.ctx)(startedByCharacterUrl(characterId), 250, Extract, model.Filters[Model]())
 		quests, err := questsProvider()
 		if err != nil {
 			p.l.WithError(err).Errorf("Failed to get started quests for character %d", characterId)
@@ -100,10 +109,13 @@ func (p *ProcessorImpl) GetStartedQuestsByCharacter(characterId uint32) model.Pr
 	}
 }
 
-// GetCompletedQuestsByCharacter returns all completed quests for a character
+// GetCompletedQuestsByCharacter returns all completed quests for a
+// character. The upstream atlas-quest GET
+// /characters/{id}/quests/completed is now paginated (task-117), so this
+// drains every page rather than fetching just the first.
 func (p *ProcessorImpl) GetCompletedQuestsByCharacter(characterId uint32) model.Provider[[]Model] {
 	return func() ([]Model, error) {
-		questsProvider := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestCompletedByCharacter(characterId), Extract, model.Filters[Model]())
+		questsProvider := requests.DrainProvider[RestModel, Model](p.l, p.ctx)(completedByCharacterUrl(characterId), 250, Extract, model.Filters[Model]())
 		quests, err := questsProvider()
 		if err != nil {
 			p.l.WithError(err).Errorf("Failed to get completed quests for character %d", characterId)

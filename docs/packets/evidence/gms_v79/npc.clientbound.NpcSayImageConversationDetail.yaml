@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcSayImageConversationDetail
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CScriptMan::OnSayImage#SayImage
+    address: "0x6c8052"
+    decompile_sha256: dd6076d805bfe6ab3d6ed20951b4bedf092943b2efe4fa4fbd27db165c131fd2
+verifies:
+  - libs/atlas-packet/npc/clientbound/conversation_v79_details_test.go#TestNpcConversationSayImageV79

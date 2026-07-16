@@ -8,16 +8,22 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Processor struct {
+type Processor interface {
+	GetActive(f field.Model) (RestModel, error)
+}
+
+type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
-	return &Processor{l: l, ctx: ctx}
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	return &ProcessorImpl{l: l, ctx: ctx}
 }
 
-func (p *Processor) GetActive(f field.Model) (RestModel, error) {
+var _ Processor = (*ProcessorImpl)(nil)
+
+func (p *ProcessorImpl) GetActive(f field.Model) (RestModel, error) {
 	return requests.Provider[RestModel, RestModel](p.l, p.ctx)(requestWeatherInMap(f), Extract)()
 }
 

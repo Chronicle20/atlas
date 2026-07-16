@@ -2,9 +2,9 @@ package character
 
 import (
 	"atlas-messengers/kafka/message/character"
-	"atlas-messengers/kafka/producer"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -159,6 +159,16 @@ func getForeignCharacterInfo(l logrus.FieldLogger) func(ctx context.Context) fun
 // ProcessorImpl - struct-based processor pattern for consistency with other services
 // ============================================================================
 
+// Processor declares the struct-based processor operations for character operations.
+type Processor interface {
+	Login(transactionID uuid.UUID, field field.Model, characterId uint32) error
+	Logout(transactionID uuid.UUID, characterId uint32) error
+	ChannelChange(characterId uint32, channelId channel.Id) error
+	JoinMessenger(transactionID uuid.UUID, characterId uint32, messengerId uint32) error
+	LeaveMessenger(transactionID uuid.UUID, characterId uint32) error
+	GetById(characterId uint32) (Model, error)
+}
+
 // ProcessorImpl provides struct-based processor methods for character operations.
 type ProcessorImpl struct {
 	l   logrus.FieldLogger
@@ -166,9 +176,11 @@ type ProcessorImpl struct {
 }
 
 // NewProcessor creates a new ProcessorImpl with the given logger and context.
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *ProcessorImpl {
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{l: l, ctx: ctx}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // Login processes a character login event.
 func (p *ProcessorImpl) Login(transactionID uuid.UUID, field field.Model, characterId uint32) error {

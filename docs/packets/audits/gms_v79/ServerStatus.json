@@ -1,0 +1,21 @@
+{
+  "WriterName": "ServerStatus",
+  "IDAName": "CLogin::OnCheckUserLimitResult",
+  "Address": "0x5ce217",
+  "Variant": "GMS/v79",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/login/clientbound/server_status.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "world status (2 bytes; v79 sub_5CE217@0x5ce217 reads as 2 × Decode1, atlas writes WriteShort — wire-equivalent)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

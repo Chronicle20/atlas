@@ -26,7 +26,7 @@ RUN apk add --no-cache git
 
 WORKDIR /app
 
-# Layer: all 20 atlas libs' go.mod (and go.sum where present — atlas-retry and
+# Layer: all 21 atlas libs' go.mod (and go.sum where present — atlas-retry and
 # atlas-service have no external deps so no go.sum exists). Lib-mod-only layer;
 # shared across every target.
 COPY libs/atlas-constants/go.mod   libs/atlas-constants/go.sum   libs/atlas-constants/
@@ -41,6 +41,7 @@ COPY libs/atlas-packet/go.mod      libs/atlas-packet/go.sum      libs/atlas-pack
 COPY libs/atlas-redis/go.mod       libs/atlas-redis/go.sum       libs/atlas-redis/
 COPY libs/atlas-rest/go.mod        libs/atlas-rest/go.sum        libs/atlas-rest/
 COPY libs/atlas-retry/go.mod       libs/atlas-retry/
+COPY libs/atlas-routine/go.mod     libs/atlas-routine/go.sum     libs/atlas-routine/
 COPY libs/atlas-saga/go.mod        libs/atlas-saga/go.sum        libs/atlas-saga/
 COPY libs/atlas-script-core/go.mod libs/atlas-script-core/go.sum libs/atlas-script-core/
 COPY libs/atlas-seeder/go.mod      libs/atlas-seeder/go.sum      libs/atlas-seeder/
@@ -70,6 +71,7 @@ COPY libs/atlas-packet      libs/atlas-packet
 COPY libs/atlas-redis       libs/atlas-redis
 COPY libs/atlas-rest        libs/atlas-rest
 COPY libs/atlas-retry       libs/atlas-retry
+COPY libs/atlas-routine     libs/atlas-routine
 COPY libs/atlas-saga        libs/atlas-saga
 COPY libs/atlas-script-core libs/atlas-script-core
 COPY libs/atlas-seeder      libs/atlas-seeder
@@ -79,7 +81,7 @@ COPY libs/atlas-tenant      libs/atlas-tenant
 COPY libs/atlas-tracing     libs/atlas-tracing
 COPY libs/atlas-wz          libs/atlas-wz
 
-# Synthesize a minimal go.work containing only the 18 libs + the target service.
+# Synthesize a minimal go.work containing only the 21 libs + the target service.
 # The repo-root go.work also lists ~50 sibling services + 2 tools/* modules
 # whose go.mod files are not in the build context; copying it directly fails
 # workspace-load. Equivalent to what the legacy per-service Dockerfiles did.
@@ -90,8 +92,8 @@ RUN MOD_DIR=$(ls -d services/${SERVICE}/atlas.com/*/ | head -1 | sed 's:/$::') \
          printf 'go 1.26.0\n\nuse (\n'; \
          for L in atlas-constants atlas-database atlas-kafka atlas-lock atlas-model \
                   atlas-object-id atlas-opcodes atlas-outbox atlas-packet atlas-redis \
-                  atlas-rest atlas-retry atlas-saga atlas-script-core atlas-seeder \
-                  atlas-service atlas-socket atlas-tenant atlas-tracing atlas-wz; do \
+                  atlas-rest atlas-retry atlas-routine atlas-saga atlas-script-core \
+                  atlas-seeder atlas-service atlas-socket atlas-tenant atlas-tracing atlas-wz; do \
            printf '    ./libs/%s\n' "$L"; \
          done; \
          printf '    ./%s\n)\n' "$MOD_DIR"; \

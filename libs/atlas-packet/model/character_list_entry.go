@@ -48,7 +48,13 @@ func (m CharacterListEntry) Encode(l logrus.FieldLogger, ctx context.Context) fu
 	return func(options map[string]interface{}) []byte {
 		w.WriteByteArray(m.statistics.Encode(l, ctx)(options))
 		w.WriteByteArray(m.avatar.Encode(l, ctx)(options))
-		if !m.viewAll {
+		// The per-entry family/viewAll placeholder byte was introduced at GMS v73
+		// (same patch that added the create-character jobIndex int, create.go). The
+		// pre-v73 client char-list decoder reads only the rank-enabled flag after the
+		// avatar block, with NO family byte (v72 CLogin char-list @0x5b384d single
+		// Decode1; v72 OnViewAllCharResult @0x5b4243). v79 (verified anchor) DOES read
+		// it (@0x5ce743), so the boundary is v73.
+		if !m.viewAll && !(t.Region() == "GMS" && t.MajorVersion() < 73) {
 			w.WriteByte(0)
 		}
 		w.WriteBool(!m.gm) // rankEnabled byte: 0x00 for GM, 0x01 for ranked
@@ -73,7 +79,8 @@ func (m *CharacterListEntry) Decode(l logrus.FieldLogger, ctx context.Context) f
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.statistics.Decode(l, ctx)(r, options)
 		m.avatar.Decode(l, ctx)(r, options)
-		if !m.viewAll {
+		// Family/viewAll placeholder byte is GMS v73+ (see Encode). Pre-v73 omits it.
+		if !m.viewAll && !(t.Region() == "GMS" && t.MajorVersion() < 73) {
 			_ = r.ReadByte()
 		}
 

@@ -7,6 +7,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -34,7 +35,7 @@ func handleGetPet(d *rest.HandlerDependency, c *rest.HandlerContext) http.Handle
 			res, err := model.Map(Transform(d.Context()))(p.ByIdProvider(petId))()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -48,17 +49,30 @@ func handleGetPet(d *rest.HandlerDependency, c *rest.HandlerContext) http.Handle
 func handleGetPetsForCharacter(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
+			page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+				return
+			}
+
 			p := NewProcessor(d.Logger(), d.Context(), d.DB())
-			res, err := model.SliceMap(Transform(d.Context()))(p.ByOwnerProvider(characterId))(model.ParallelMap())()
+			paged, err := p.ByOwnerIdPagedProvider(characterId, page)()
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Unable to locate pets for character [%d].", characterId)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			res, err := model.SliceMap(Transform(d.Context()))(model.FixedProvider(paged.Items))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
 		}
 	})
 }
@@ -117,13 +131,13 @@ func handleCreate(d *rest.HandlerDependency, c *rest.HandlerContext, i RestModel
 		pm, err := p.CreateAndEmit(ip)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Unable to create model.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 		res, err := model.Map(Transform(d.Context()))(model.FixedProvider(pm))()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 

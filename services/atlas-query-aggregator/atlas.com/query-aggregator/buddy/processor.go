@@ -28,6 +28,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // GetBuddyList returns the buddy list data for a character
 func (p *ProcessorImpl) GetBuddyList(characterId uint32) model.Provider[Model] {
 	return func() (Model, error) {

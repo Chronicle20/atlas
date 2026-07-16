@@ -39,11 +39,11 @@ func (Item) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *mini
 		subdir string
 		rf     RegisterFunc
 	}{
-		{"Consume", consumable.RegisterConsumable(db)},
-		{"Cash", cash.RegisterCash(db)},
-		{"Etc", etc.RegisterEtc(db)},
-		{"Install", setup.RegisterSetup(db)},
-		{"Pet", pet.RegisterPet(db)},
+		{"Consume", consumable.NewProcessor(l, ctx, db).RegisterConsumable},
+		{"Cash", cash.NewProcessor(l, ctx, db).RegisterCash},
+		{"Etc", etc.NewProcessor(l, ctx, db).RegisterEtc},
+		{"Install", setup.NewProcessor(l, ctx, db).RegisterSetup},
+		{"Pet", pet.NewProcessor(l, ctx, db).RegisterPet},
 	}
 	for _, c := range categories {
 		dir := filepath.Join(base, c.subdir)

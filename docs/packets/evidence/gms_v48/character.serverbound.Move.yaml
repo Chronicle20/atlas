@@ -1,0 +1,8 @@
+packet: character/serverbound/Move
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_6E9923
+    address: "0x6e9923"
+    decompile_sha256: 7eb5576866393efc80a6f8b8b76275917b51a7bba409f8bc78d8dd6bbeb96c22

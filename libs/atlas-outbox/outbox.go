@@ -1,10 +1,8 @@
 package outbox
 
 import (
-	"encoding/json"
 	"errors"
 
-	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -26,13 +24,9 @@ func Enqueue(tx *gorm.DB, msg Message) error {
 		return errors.New("outbox: empty message key")
 	}
 
-	headers := datatypes.JSON([]byte("{}"))
-	if len(msg.Headers) > 0 {
-		b, err := json.Marshal(msg.Headers)
-		if err != nil {
-			return err
-		}
-		headers = datatypes.JSON(b)
+	headers, err := encodeHeaders(msg.Headers)
+	if err != nil {
+		return err
 	}
 
 	ent := Entity{

@@ -91,6 +91,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // GetSlotMax retrieves the maximum stack size for an item
 // Returns cached value if available, otherwise fetches from service
 // Returns default value on error to allow graceful degradation

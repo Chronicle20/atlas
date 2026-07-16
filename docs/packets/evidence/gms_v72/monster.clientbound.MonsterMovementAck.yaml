@@ -1,0 +1,10 @@
+packet: monster/clientbound/MonsterMovementAck
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CMob::OnCtrlAck
+    address: "0x61b4d8"
+    decompile_sha256: 92849be3e9762dcd654cc4232740989ba971e5dacb86c001e8131138c88c5777
+verifies:
+  - libs/atlas-packet/monster/clientbound/movement_ack_test.go#TestMonsterMovementAckBytesV72

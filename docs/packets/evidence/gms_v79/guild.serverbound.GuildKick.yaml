@@ -1,0 +1,10 @@
+packet: guild/serverbound/GuildKick
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendKickGuildMsg
+    address: "0x51c000"
+    decompile_sha256: 9c6a2d0281a7998f7bf1384e1b65d9cae1259769b59de9d529beb5c3c6bbb036
+verifies:
+  - libs/atlas-packet/guild/serverbound/operation_kick_test.go#TestKickRoundTrip

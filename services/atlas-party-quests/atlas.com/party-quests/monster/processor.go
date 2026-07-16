@@ -25,6 +25,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{l: l, ctx: ctx}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) DestroyInField(worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID) error {
 	return requestDestroyInField(worldId, channelId, mapId, instance)(p.l, p.ctx)
 }

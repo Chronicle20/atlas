@@ -7,6 +7,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=field/clientbound/FieldGmEventInstructions version=gms_v48 ida=0x4ca491
 // packet-audit:verify packet=field/clientbound/FieldGmEventInstructions version=gms_v83 ida=0x5360c0
 // packet-audit:verify packet=field/clientbound/FieldGmEventInstructions version=gms_v84 ida=0x5423c4
 // packet-audit:verify packet=field/clientbound/FieldGmEventInstructions version=gms_v87 ida=0x55d962
@@ -19,6 +20,19 @@ func TestGmEventInstructionsGolden(t *testing.T) {
 	actual := test.Encode(t, ctx, input.Encode, nil)
 	if !bytes.Equal(actual, expected) {
 		t.Errorf("golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// TestGmEventInstructionsByteOutputV48 pins the gms_v48 GMEVENT_INSTRUCTIONS
+// (op 0x59=89) clientbound wire. IDA: CField::OnDesc @0x4ca491 (GMS_v48_1_DEVM.exe)
+// reads a single Decode1(index) — byte-identical to the version-invariant golden.
+func TestGmEventInstructionsByteOutputV48(t *testing.T) {
+	input := NewGmEventInstructions(0x02)
+	ctx := test.CreateContext("GMS", 48, 1)
+	expected := []byte{0x02}
+	actual := test.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v48 golden mismatch: got %v want %v", actual, expected)
 	}
 }
 

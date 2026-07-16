@@ -1,0 +1,10 @@
+packet: storage/clientbound/StorageErrorInventoryFull
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CTrunkDlg::OnPacket
+    address: "0x73bc53"
+    decompile_sha256: 325e2cdff2b04f76644930e176291769dab2d5f8e46888d6ba58735e700892bf
+verifies:
+  - libs/atlas-packet/storage/clientbound/v79_test.go#TestStorageNoticeArmsV79

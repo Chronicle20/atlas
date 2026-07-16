@@ -3,11 +3,13 @@ package transport
 import (
 	"atlas-transports/rest"
 	"net/http"
+	"sort"
 	"strconv"
 
 	map2 "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -49,6 +51,12 @@ func GetAllRoutesHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http
 		query := r.URL.Query()
 		startMapIdFilter := query.Get("filter[startMapId]")
 
+		page, perr := paginate.ParseParams(query, paginate.DefaultPageSize, paginate.MaxPageSize)
+		if perr != nil {
+			server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+			return
+		}
+
 		var rm []RestModel
 		var err error
 
@@ -79,7 +87,10 @@ func GetAllRoutesHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http
 				rm = []RestModel{restModel}
 			}
 		} else {
-			// No filter - return all routes (existing behavior)
+			// No filter - return all routes. AllRoutesProvider stays
+			// unpaged (UpdateRoutes and AddTenant rely on it for the
+			// complete tenant route set); materialize -> stable-sort by
+			// the unique route id -> paginate.Slice here instead.
 			rm, err = model.SliceMap(Transform)(NewProcessor(d.Logger(), d.Context()).AllRoutesProvider())(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorln("Error retrieving routes")
@@ -88,8 +99,13 @@ func GetAllRoutesHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http
 			}
 		}
 
+		sort.Slice(rm, func(i, j int) bool {
+			return rm[i].ID.String() < rm[j].ID.String()
+		})
+		paged := paginate.Slice(rm, page)
+
 		// Marshal response
 		queryParams := jsonapi.ParseQueryFields(&query)
-		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+		server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 	}
 }

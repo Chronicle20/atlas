@@ -1,0 +1,10 @@
+packet: character/serverbound/HealOverTime
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendStatChangeRequest
+    address: "0x96940a"
+    decompile_sha256: 49a7ee42c63a087aac4ec1886cee7bffe78f7f8c86b649c0c5fbc0cc6c101434
+verifies:
+    - libs/atlas-packet/character/serverbound/heal_over_time_test.go#TestHealOverTimeV79ByteOutput

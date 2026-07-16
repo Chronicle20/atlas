@@ -1,0 +1,10 @@
+packet: character/serverbound/ChalkboardClose
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CUserLocal::HandleLButtonClk
+    address: "0x8a80a3"
+    decompile_sha256: b52d76cd9a650e71a41c6cbe962da82405086d3a0aeee42bf9b35f395d304ddd
+verifies:
+  - libs/atlas-packet/character/serverbound/chalkboard_close_test.go#TestChalkboardCloseByteFixtureV79

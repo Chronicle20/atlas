@@ -1,0 +1,10 @@
+packet: character/clientbound/StatusMessageCashItemExpire
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: sub_843FBF
+    address: "0x843fbf"
+    decompile_sha256: 3e2feb7e34947ee6141a7241891a1b3c3ec63d48cdf17318ef51426dfb3a7fcb
+verifies:
+    - libs/atlas-packet/character/clientbound/v61_test.go#TestStatusMessageCashItemExpireByteOutputV61

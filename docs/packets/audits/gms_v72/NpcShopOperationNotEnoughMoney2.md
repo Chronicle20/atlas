@@ -1,0 +1,14 @@
+# NpcShopOperationNotEnoughMoney2 (← `CShopDlg::OnPacket#NotEnoughMoney2`)
+
+- **IDA:** 0x6a912b
+- **Atlas file:** `libs/atlas-packet/npc/clientbound/shop_operation.go`
+- **Variant:** GMS/v72
+- **Branch depth:** 0
+- **Verdict:** ✅
+
+## Wire-level diff
+
+| # | Atlas writes | v? reads | Verdict | Note |
+|---|---|---|---|---|
+| 0 | byte | byte `mode (NOT_ENOUGH_MONEY_2 mode-only notice arm: v72 mode 10)` | ✅ |  |
+

@@ -1,10 +1,10 @@
 import { api } from "@/lib/api/client";
 import { type ServiceOptions } from "@/lib/api/query-params";
+import { fetchAll } from "@/services/api/pagination";
 import type {
   QuestConversation,
   QuestConversationAttributes,
   QuestConversationResponse,
-  QuestConversationsResponse,
 } from "@/types/models/conversation";
 
 const BASE_PATH = "/api/quests/conversations";
@@ -27,9 +27,11 @@ function wrap(
 }
 
 export const questConversationsService = {
+  /**
+   * Get every quest conversation, draining all pages (task-117).
+   */
   async getAll(options?: ServiceOptions): Promise<QuestConversation[]> {
-    const response = await api.get<QuestConversationsResponse>(BASE_PATH, options);
-    return response.data ?? [];
+    return fetchAll<QuestConversation>(BASE_PATH, undefined, options);
   },
 
   async getById(id: string, options?: ServiceOptions): Promise<QuestConversation> {

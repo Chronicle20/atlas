@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldStopClock
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_4C6AEF
+    address: "0x4c6aef"
+    decompile_sha256: 63bd6f288a8d11f34d8472d54e538eff0ed340b4d35a62508e5e0d4e559bd27d
+verifies:
+    - libs/atlas-packet/field/clientbound/stop_clock_test.go#TestStopClockByteOutputV48

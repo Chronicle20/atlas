@@ -10,8 +10,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
-	minio "atlas-data/storage/minio"
 	"atlas-data/monster"
+	minio "atlas-data/storage/minio"
 )
 
 type Mob struct{}
@@ -49,7 +49,7 @@ func (Mob) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *minio
 	}
 
 	// Register every mob image.
-	if err := registerAllInDirectory(l, ctx, filepath.Join(root, "Mob.wz"), monster.RegisterMonster(db)); err != nil {
+	if err := registerAllInDirectory(l, ctx, filepath.Join(root, "Mob.wz"), monster.NewProcessor(l, ctx, db).RegisterMonster); err != nil {
 		return err
 	}
 

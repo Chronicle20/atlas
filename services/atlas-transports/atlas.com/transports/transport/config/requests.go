@@ -16,14 +16,14 @@ func getBaseRequest() string {
 	return requests.RootUrl("TENANTS")
 }
 
-// requestRoutes creates a request for routes for a tenant
-func requestRoutes(tenantId string) requests.Request[[]RouteRestModel] {
-	url := fmt.Sprintf("%stenants/%s/%s/%s", getBaseRequest(), tenantId, configurationsResource, routesResource)
-	return requests.GetRequest[[]RouteRestModel](url)
+// routesUrl and vesselsUrl are bare URLs (not requests.Request) because
+// both lists are now paginated server-side (task-117) and consumed via
+// requests.DrainProvider, which appends its own page[number]/page[size]
+// query params per request.
+func routesUrl(tenantId string) string {
+	return fmt.Sprintf("%stenants/%s/%s/%s", getBaseRequest(), tenantId, configurationsResource, routesResource)
 }
 
-// requestVessels creates a request for vessels for a tenant
-func requestVessels(tenantId string) requests.Request[[]VesselRestModel] {
-	url := fmt.Sprintf("%stenants/%s/%s/%s", getBaseRequest(), tenantId, configurationsResource, vesselsResource)
-	return requests.GetRequest[[]VesselRestModel](url)
+func vesselsUrl(tenantId string) string {
+	return fmt.Sprintf("%stenants/%s/%s/%s", getBaseRequest(), tenantId, configurationsResource, vesselsResource)
 }

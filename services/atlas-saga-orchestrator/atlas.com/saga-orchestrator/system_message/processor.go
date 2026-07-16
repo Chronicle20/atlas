@@ -2,8 +2,8 @@ package system_message
 
 import (
 	"atlas-saga-orchestrator/kafka/message/system_message"
-	"atlas-saga-orchestrator/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/google/uuid"
@@ -49,6 +49,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		ctx: ctx,
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // SendMessage sends a Kafka command to atlas-channel to display a system message
 func (p *ProcessorImpl) SendMessage(transactionId uuid.UUID, ch channel.Model, characterId uint32, messageType string, message string) error {

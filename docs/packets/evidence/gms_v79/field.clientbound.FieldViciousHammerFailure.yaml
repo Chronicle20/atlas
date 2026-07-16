@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldViciousHammerFailure
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnItemUpgrade#Failure
+    address: "0x799d61"
+    decompile_sha256: 2a1619a4d4d3830badfd04cc3d14594365fc372901289d3ab1885b84df6ea8b9
+verifies:
+  - libs/atlas-packet/field/clientbound/vicious_hammer_test.go#TestViciousHammerFailureByteOutput

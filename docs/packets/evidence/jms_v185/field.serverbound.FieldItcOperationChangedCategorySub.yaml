@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldItcOperationChangedCategorySub
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnChangedCategorySub
+    address: "0x60489d"
+    decompile_sha256: aed1af805f90f04c30af1044f70ad4f82c70b33b3f92f0b616684db3e56e41b3
+verifies:
+    - libs/atlas-packet/field/serverbound/itc_operation_test.go#TestItcOperationChangedCategorySubByteOutput_jms

@@ -22,3 +22,26 @@ func TestIdIsSentinel(t *testing.T) {
 		})
 	}
 }
+
+func TestIsFreeMarketRoom(t *testing.T) {
+	cases := []struct {
+		name string
+		id   Id
+		want bool
+	}{
+		{"below range", Id(909999999), false},
+		{"FM entrance", Id(910000000), true},
+		{"FM room 1", Id(910000001), true},
+		{"FM room 22 (last)", Id(910000022), true},
+		{"above range", Id(910000023), false},
+		{"henesys (unrelated)", Id(100000000), false},
+		{"zero", Id(0), false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := IsFreeMarketRoom(c.id); got != c.want {
+				t.Errorf("IsFreeMarketRoom(%d) = %v, want %v", c.id, got, c.want)
+			}
+		})
+	}
+}

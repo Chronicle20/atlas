@@ -42,7 +42,7 @@ func handleGetInventory(db *gorm.DB) rest.GetHandler {
 					return
 				}
 				if err != nil {
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					d.Logger().WithError(err).Errorf("Unable to retrieve characters inventory.")
 					return
 				}
@@ -50,7 +50,7 @@ func handleGetInventory(db *gorm.DB) rest.GetHandler {
 				rm, err := model.Map(Transform)(model.FixedProvider(m))()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -69,14 +69,14 @@ func handleCreateInventory(db *gorm.DB) rest.GetHandler {
 				m, err := NewProcessor(d.Logger(), d.Context(), db).CreateAndEmit(uuid.New(), characterId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to create inventory for character [%d].", characterId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				rm, err := model.Map(Transform)(model.FixedProvider(m))()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -95,7 +95,7 @@ func handleDeleteInventory(db *gorm.DB) rest.GetHandler {
 				err := NewProcessor(d.Logger(), d.Context(), db).DeleteAndEmit(uuid.New(), characterId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to create inventory for character [%d].", characterId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 			}

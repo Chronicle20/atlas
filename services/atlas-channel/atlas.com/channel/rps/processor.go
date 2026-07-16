@@ -2,7 +2,7 @@ package rps
 
 import (
 	rpsMsg "atlas-channel/kafka/message/rps"
-	producer2 "atlas-channel/kafka/producer"
+	producer2 "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"

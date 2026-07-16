@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldUseDoor
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_5E3082
+    address: "0x5e3082"
+    decompile_sha256: eb6d7449d330ae6b374efd025e6616f84da2b600be5e47f48a9ff42e0bb53d6d

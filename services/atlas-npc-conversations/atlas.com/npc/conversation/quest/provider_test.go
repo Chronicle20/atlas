@@ -4,6 +4,7 @@ import (
 	"atlas-npc-conversations/test"
 	"testing"
 
+	atlasmodel "github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,8 +33,11 @@ func TestProviderFunctionCurrying(t *testing.T) {
 		assert.NotNil(t, provider)
 	})
 
-	t.Run("getAllProvider currying", func(t *testing.T) {
-		provider := getAllProvider(db)
+	t.Run("getAllPagedProvider currying", func(t *testing.T) {
+		providerFactory := getAllPagedProvider(atlasmodel.Page{Number: 1, Size: 50})
+		assert.NotNil(t, providerFactory)
+
+		provider := providerFactory(db)
 		assert.NotNil(t, provider)
 	})
 }
@@ -62,12 +66,12 @@ func TestProviderFunctionSignatures(t *testing.T) {
 		assert.Equal(t, Entity{}, entity)
 	})
 
-	t.Run("getAllProvider returns slice provider", func(t *testing.T) {
-		provider := getAllProvider(db)
+	t.Run("getAllPagedProvider returns paged provider", func(t *testing.T) {
+		provider := getAllPagedProvider(atlasmodel.Page{Number: 1, Size: 50})(db)
 
-		entities, err := provider()
+		paged, err := provider()
 		assert.NoError(t, err) // Empty result is not an error
-		assert.Empty(t, entities)
+		assert.Empty(t, paged.Items)
 	})
 }
 

@@ -57,11 +57,23 @@ func (m CharacterList) Encode(l logrus.FieldLogger, ctx context.Context) func(op
 			return w.Bytes()
 		}
 
-		w.WriteBool(m.hasPic)
+		// hasPic / m_bLoginOpt byte is absent in legacy GMS (<v83). The v79 client
+		// char-list decoder (sub_5CE522 @0x5CE522) reads the slot count (Decode4)
+		// directly after the entry loop with no login-option byte /*0x5ce7ac*/.
+		// JMS and GMS>=83 read it (list_test.go v83 fixture, hasPic @0x5f9b34).
+		if !(t.Region() == "GMS" && t.MajorVersion() < 83) {
+			w.WriteBool(m.hasPic)
+		}
+		// The trailing slot-count int (m_nSlotCount) entered the char-list at GMS v61:
+		// v61 char-list decoder (sub_56688D @0x566b02) reads Decode4 after the entry
+		// loop; v48 (sub_5013ED @0x501626) ends the loop and returns with NO trailing
+		// Decode4. Legacy GMS < 61 omits the slot count entirely.
 		if t.Region() == "GMS" {
-			w.WriteInt(m.characterSlots)
-			if t.MajorVersion() > 87 {
-				w.WriteInt(0) // nBuyCharCount
+			if t.MajorVersion() >= 61 {
+				w.WriteInt(m.characterSlots)
+				if t.MajorVersion() > 87 {
+					w.WriteInt(0) // nBuyCharCount
+				}
 			}
 		} else if t.Region() == "JMS" {
 			w.WriteByte(0)
@@ -92,11 +104,16 @@ func (m *CharacterList) Decode(l logrus.FieldLogger, ctx context.Context) func(r
 			return
 		}
 
-		m.hasPic = r.ReadBool()
+		if !(t.Region() == "GMS" && t.MajorVersion() < 83) {
+			m.hasPic = r.ReadBool()
+		}
+		// Mirror of Encode: legacy GMS < 61 omits the trailing slot-count int.
 		if t.Region() == "GMS" {
-			m.characterSlots = r.ReadUint32()
-			if t.MajorVersion() > 87 {
-				_ = r.ReadUint32() // nBuyCharCount
+			if t.MajorVersion() >= 61 {
+				m.characterSlots = r.ReadUint32()
+				if t.MajorVersion() > 87 {
+					_ = r.ReadUint32() // nBuyCharCount
+				}
 			}
 		} else if t.Region() == "JMS" {
 			_ = r.ReadByte()

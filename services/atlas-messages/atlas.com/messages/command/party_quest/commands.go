@@ -4,11 +4,11 @@ import (
 	"atlas-messages/character"
 	"atlas-messages/command"
 	pq "atlas-messages/kafka/message/party_quest"
-	"atlas-messages/kafka/producer"
 	"atlas-messages/message"
 	party_quest "atlas-messages/party_quest"
 	"context"
 	"fmt"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"regexp"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"

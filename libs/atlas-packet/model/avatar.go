@@ -75,7 +75,10 @@ func (m Avatar) Encode(l logrus.FieldLogger, ctx context.Context) func(options m
 
 		w.WriteInt(0)
 
-		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+		// Pet template ids in AvatarLook: 3 ints (DecodeBuffer(12)) is the v61+ shape
+		// (v61 AvatarLook::Decode @0x4b77b1). Legacy GMS v29..v60 (v48, sub_49E1E0
+		// @0x49e2b9) reads a SINGLE 4-byte pet int; v28 and below read one 8-byte long.
+		if (t.Region() == "GMS" && t.MajorVersion() >= 61) || t.Region() == "JMS" {
 			for i := int8(0); i < 3; i++ {
 				if m.pets == nil {
 					w.WriteInt(0)
@@ -86,6 +89,13 @@ func (m Avatar) Encode(l logrus.FieldLogger, ctx context.Context) func(options m
 				} else {
 					w.WriteInt(0)
 				}
+			}
+		} else if t.Region() == "GMS" && t.MajorVersion() > 28 {
+			// v48 legacy single pet: one 4-byte int (IDA sub_49E1E0 @0x49e2b9).
+			if len(m.pets) > 0 {
+				w.WriteInt(m.pets[0])
+			} else {
+				w.WriteInt(0)
 			}
 		} else {
 			if len(m.pets) > 0 {
@@ -138,12 +148,18 @@ func (m *Avatar) Decode(l logrus.FieldLogger, ctx context.Context) func(r *reque
 		_ = r.ReadUint32() // cash weapon
 
 		m.pets = make(map[int8]uint32)
-		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+		if (t.Region() == "GMS" && t.MajorVersion() >= 61) || t.Region() == "JMS" {
 			for i := int8(0); i < 3; i++ {
 				petId := r.ReadUint32()
 				if petId != 0 {
 					m.pets[i] = petId
 				}
+			}
+		} else if t.Region() == "GMS" && t.MajorVersion() > 28 {
+			// v48 legacy single pet: one 4-byte int.
+			petId := r.ReadUint32()
+			if petId != 0 {
+				m.pets[0] = petId
 			}
 		} else {
 			petId := r.ReadUint64()

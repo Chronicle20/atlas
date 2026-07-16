@@ -4,7 +4,7 @@ import (
 	"context"
 
 	invite2 "atlas-saga-orchestrator/kafka/message/invite"
-	"atlas-saga-orchestrator/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
@@ -28,6 +28,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		ctx: ctx,
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) Create(transactionId uuid.UUID, inviteType string, actorId uint32, worldId world.Id, referenceId uint32, targetId uint32) error {
 	p.l.WithFields(logrus.Fields{

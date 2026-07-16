@@ -1,6 +1,8 @@
 package quest
 
 import (
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -27,11 +29,10 @@ func getByQuestIdProvider(questId uint32) func(db *gorm.DB) func() (Entity, erro
 	}
 }
 
-// getAllProvider returns a provider for retrieving all quest conversations
-func getAllProvider(db *gorm.DB) func() ([]Entity, error) {
-	return func() ([]Entity, error) {
-		var entities []Entity
-		result := db.Find(&entities)
-		return entities, result.Error
+// getAllPagedProvider returns a provider for retrieving one page of quest
+// conversations for a tenant
+func getAllPagedProvider(page model.Page) database.EntityProvider[model.Paged[Entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[Entity]] {
+		return database.PagedQuery[Entity](db, page)
 	}
 }

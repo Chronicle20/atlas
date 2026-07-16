@@ -12,8 +12,8 @@ import (
 	goredis "github.com/redis/go-redis/v9"
 )
 
-// PuppetVicinityDistanceSq is the squared-distance threshold (Cosmic
-// Monster.java isPuppetInVicinity, distanceSq < 177777) within which a player's
+// PuppetVicinityDistanceSq is the squared-distance threshold
+// (distanceSq < 177777) within which a player's
 // puppet is considered to be covering a monster, biasing controller selection
 // toward that puppet's owner.
 const PuppetVicinityDistanceSq = 177777

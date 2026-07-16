@@ -23,8 +23,19 @@ var (
 )
 
 const (
-	portalProximityThreshold = 130
+	// portalProximityThreshold is the euclidean radius within which a teleport
+	// portal blocks store placement (within 120px of the closest teleport
+	// portal the client-era rule rejects placement).
+	portalProximityThreshold = 120
 	shopProximityThreshold   = 100
+
+	// teleportPortalType and portalTargetNone identify store-blocking portals
+	// in map data: only TELEPORT portals (WZ type 1)
+	// with a real target map block store placement. Spawn points ("sp",
+	// type 0 — where players land entering the Free Market) and dead-end portals
+	// are ignored, so a store can be opened where the player stands.
+	teleportPortalType = 1
+	portalTargetNone   = 999999999
 )
 
 var freeMarketRooms = map[uint32]bool{
@@ -64,13 +75,30 @@ func IsNearPortal(l logrus.FieldLogger, ctx context.Context, mapId uint32, x int
 		l.WithError(err).Warnf("Unable to fetch portal data for map [%d], skipping proximity check.", mapId)
 		return false
 	}
+	return nearBlockingPortal(x, y, portals)
+}
+
+// nearBlockingPortal reports whether (x,y) is within portalProximityThreshold of
+// a store-blocking portal. Only teleport portals with a real target block
+// placement — spawn points, where players stand on entering the
+// Free Market, are ignored, so a store can be opened there.
+func nearBlockingPortal(x int16, y int16, portals []portal.Model) bool {
+	limitSq := portalProximityThreshold * portalProximityThreshold
 	for _, p := range portals {
-		dist := manhattanDistance(x, y, p.X(), p.Y())
-		if dist < portalProximityThreshold {
+		if p.Type() != teleportPortalType || p.TargetMapId() == portalTargetNone {
+			continue
+		}
+		if squaredDistance(x, y, p.X(), p.Y()) < limitSq {
 			return true
 		}
 	}
 	return false
+}
+
+func squaredDistance(x1, y1, x2, y2 int16) int {
+	dx := int(x1) - int(x2)
+	dy := int(y1) - int(y2)
+	return dx*dx + dy*dy
 }
 
 func IsNearExistingShop(mapId uint32, x int16, y int16, shopProvider model.Provider[[]Model]) bool {

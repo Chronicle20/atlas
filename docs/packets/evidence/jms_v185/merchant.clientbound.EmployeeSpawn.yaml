@@ -1,0 +1,10 @@
+packet: merchant/clientbound/EmployeeSpawn
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CEmployeePool::OnEmployeeEnterField
+    address: "0x542a71"
+    decompile_sha256: ea3b4e87dac25e8b520a828593ede43b113128ad18b66e07e9b98080e94a580c
+verifies:
+  - libs/atlas-packet/merchant/clientbound/employee_test.go#TestEmployeeSpawnBytes

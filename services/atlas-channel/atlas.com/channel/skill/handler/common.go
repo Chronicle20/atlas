@@ -35,7 +35,7 @@ var loadCasterFunc = func(cp character.Processor, characterId uint32) (character
 // rectQueryFunc is the mob-selection seam tests can replace. Production
 // calls atlas-monsters via monster.Processor.GetInMapRect; tests inject a
 // stub returning a fixed slice.
-var rectQueryFunc = func(p *monster.Processor, f field.Model, x1, y1, x2, y2 int16, limit uint32) ([]monster.Model, error) {
+var rectQueryFunc = func(p monster.Processor, f field.Model, x1, y1, x2, y2 int16, limit uint32) ([]monster.Model, error) {
 	return p.GetInMapRect(f, x1, y1, x2, y2, limit)
 }
 
@@ -58,12 +58,12 @@ var reflectLookupFunc = func(t tenant.Model, monsterId uint32, kind string) (mon
 }
 
 // applyStatusFunc is the status-apply emit seam tests can replace.
-var applyStatusFunc = func(p *monster.Processor, f field.Model, monsterId, characterId, skillId, skillLevel uint32, statuses map[string]int32, duration uint32) error {
+var applyStatusFunc = func(p monster.Processor, f field.Model, monsterId, characterId, skillId, skillLevel uint32, statuses map[string]int32, duration uint32) error {
 	return p.ApplyStatus(f, monsterId, characterId, skillId, skillLevel, statuses, duration)
 }
 
 // cancelStatusFunc is the status-cancel emit seam tests can replace.
-var cancelStatusFunc = func(p *monster.Processor, f field.Model, monsterId uint32, statusTypes []string, sourceCharacterId, sourceSkillId uint32, sourceSkillClass string) error {
+var cancelStatusFunc = func(p monster.Processor, f field.Model, monsterId uint32, statusTypes []string, sourceCharacterId, sourceSkillId uint32, sourceSkillClass string) error {
 	return p.CancelStatus(f, monsterId, statusTypes, sourceCharacterId, sourceSkillId, sourceSkillClass)
 }
 

@@ -12,10 +12,10 @@ import (
 
 type Processor interface {
 	Record(accountId uint32, accountName string, ipAddress string, hwid string, success bool, failureReason string) (Model, error)
-	GetByAccountId(accountId uint32) ([]Model, error)
-	GetByIP(ip string) ([]Model, error)
-	GetByHWID(hwid string) ([]Model, error)
-	GetByTenant() ([]Model, error)
+	ByAccountIdProvider(accountId uint32, page model.Page) model.Provider[model.Paged[Model]]
+	ByIPPagedProvider(ip string, page model.Page) model.Provider[model.Paged[Model]]
+	ByHWIDPagedProvider(hwid string, page model.Page) model.Provider[model.Paged[Model]]
+	AllProvider(page model.Page) model.Provider[model.Paged[Model]]
 	PurgeOlderThan(days int) error
 }
 
@@ -35,6 +35,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) Record(accountId uint32, accountName string, ipAddress string, hwid string, success bool, failureReason string) (Model, error) {
 	p.l.Debugf("Recording login attempt for account [%d] ip [%s] hwid [%s] success [%t].", accountId, ipAddress, hwid, success)
 	m, err := create(p.db.WithContext(p.ctx))(p.t.Id(), accountId, accountName, ipAddress, hwid, success, failureReason)
@@ -45,20 +47,24 @@ func (p *ProcessorImpl) Record(accountId uint32, accountName string, ipAddress s
 	return m, nil
 }
 
-func (p *ProcessorImpl) GetByAccountId(accountId uint32) ([]Model, error) {
-	return model.SliceMap(Make)(entitiesByAccountId(accountId)(p.db.WithContext(p.ctx)))(model.ParallelMap())()
+func (p *ProcessorImpl) ByAccountIdProvider(accountId uint32, page model.Page) model.Provider[model.Paged[Model]] {
+	ep := entitiesByAccountId(accountId, page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(Make)(ep)(model.ParallelMap())
 }
 
-func (p *ProcessorImpl) GetByIP(ip string) ([]Model, error) {
-	return model.SliceMap(Make)(entitiesByIP(ip)(p.db.WithContext(p.ctx)))(model.ParallelMap())()
+func (p *ProcessorImpl) ByIPPagedProvider(ip string, page model.Page) model.Provider[model.Paged[Model]] {
+	ep := entitiesByIP(ip, page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(Make)(ep)(model.ParallelMap())
 }
 
-func (p *ProcessorImpl) GetByHWID(hwid string) ([]Model, error) {
-	return model.SliceMap(Make)(entitiesByHWID(hwid)(p.db.WithContext(p.ctx)))(model.ParallelMap())()
+func (p *ProcessorImpl) ByHWIDPagedProvider(hwid string, page model.Page) model.Provider[model.Paged[Model]] {
+	ep := entitiesByHWID(hwid, page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(Make)(ep)(model.ParallelMap())
 }
 
-func (p *ProcessorImpl) GetByTenant() ([]Model, error) {
-	return model.SliceMap(Make)(entitiesByTenant()(p.db.WithContext(p.ctx)))(model.ParallelMap())()
+func (p *ProcessorImpl) AllProvider(page model.Page) model.Provider[model.Paged[Model]] {
+	ep := entitiesByTenant(page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(Make)(ep)(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) PurgeOlderThan(days int) error {

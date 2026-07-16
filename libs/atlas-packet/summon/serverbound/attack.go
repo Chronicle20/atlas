@@ -136,6 +136,57 @@ func hasRepeatSkillPoint(t tenant.Model) bool {
 	return t.IsRegion("GMS") && t.MajorAtLeast(95)
 }
 
+// isLegacyLeanAttack reports whether the version uses the pre-v83 (v79-era)
+// summon ATTACK layout. IDA v79 CSummoned::TryDoingAttackManual@0x71b522 (send
+// block COutPacket(172)@0x71bfe1) writes a leaner frame than v83:
+//   - header: summonId + updateTime + action|left + count, then STRAIGHT into
+//     the per-target loop — NO userX/userY/summonX/summonY position block before
+//     the targets (v83 emits four Encode2 positions @0x7a5839..; v79 does not);
+//   - per-target: only the mob OID leads (Encode4 sub_4DC1C0(mob+380)@0x71c051,
+//     the same secure mob-id getter the v79 melee attack uses @0x8c2b21) — NO
+//     templateId int (v83 sends both mobOid AND templateId);
+//   - footer: Encode2 summonX@0x71c130 + Encode2 summonY@0x71c144 AFTER the
+//     targets, then Encode4 skillCRC@0x71c15d.
+//
+// Only GMS < 83 takes this path; v83+ and JMS keep their existing layouts.
+func isLegacyLeanAttack(t tenant.Model) bool {
+	return t.IsRegion("GMS") && !t.MajorAtLeast(83)
+}
+
+// hasTargetTemplateId reports whether the per-target block carries the templateId
+// int after the mob OID. Present everywhere EXCEPT the v79 legacy-lean layout,
+// which sends the mob OID only (IDA @0x71c051, no second Encode4).
+func hasTargetTemplateId(t tenant.Model) bool {
+	return !isLegacyLeanAttack(t)
+}
+
+// hasSkillCrcTrailer reports whether the summon ATTACK send closes with the
+// trailing skillCRC int. Present on GMS v79+ and JMS v185 (IDA-verified: v79
+// CSummoned::TryDoingAttackManual Encode4 skillCRC@0x71c15d) but ABSENT on the
+// oldest GMS legacy build v72, whose op-170 sender (sub_6E787F, send block
+// @0x6e787f) closes at Encode2 summonY@0x6e841a then SendPacket@0x6e8429 with no
+// further Encode4 (IDA GMS_v72.1_U_DEVM.exe @port 13339). The anti-hack skillCRC
+// was added between v72 and v79; MajorAtLeast(79) places the gate at the first
+// version known to carry it (matches the spawnHasSkillLevel convention). Every
+// currently-handled version except GMS v72 is >= 79, so this leaves v79/v83/v84/
+// v87/v95/jms185 byte-identical.
+func hasSkillCrcTrailer(t tenant.Model) bool {
+	return t.MajorAtLeast(79)
+}
+
+// hasSummonAttackUpdateTime reports whether the summon ATTACK header carries the
+// updateTime int between the summon identity and the action|left byte. Present
+// on GMS v61+ and JMS (IDA: v61 Encode4 updateTime@0x67b3aa, v72 @0x6e82d2, v79
+// @0x71c004). ABSENT on the oldest GMS build v48: CSummoned::TryDoingAttackManual
+// send block @0x5d9bae (GMS_v48_1_DEVM.exe, port 13337) emits COutPacket(121) +
+// Encode4 summonSkillId@0x5d9bc0 + Encode1 action|left@0x5d9bd2 + Encode1
+// count@0x5d9bde with NO updateTime int in between. The v48 leading int is the
+// summon's skill id (this[33], the pre-multipet summon identity — the same value
+// SetDamaged sends as summonId), carried in SummonId().
+func hasSummonAttackUpdateTime(t tenant.Model) bool {
+	return !(t.IsRegion("GMS") && !t.MajorAtLeast(61))
+}
+
 func (m Attack) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
@@ -166,29 +217,44 @@ func (m Attack) Encode(l logrus.FieldLogger, ctx context.Context) func(options m
 				w.WriteInt(0) // repeatSkillPoint (v95 only) @0x752450
 			}
 		} else {
-			w.WriteInt(0) // updateTime
+			if hasSummonAttackUpdateTime(t) {
+				w.WriteInt(0) // updateTime (absent on GMS v48, present v61+)
+			}
 			w.WriteByte(m.direction)
 			w.WriteByte(byte(len(m.targets)))
-			w.WriteInt16(0) // userX
-			w.WriteInt16(0) // userY
-			w.WriteInt16(0) // summonX
-			w.WriteInt16(0) // summonY
+			// v83 emits the four position shorts BEFORE the targets; the v79
+			// legacy-lean layout emits none here (summonX/Y come after the loop).
+			if !isLegacyLeanAttack(t) {
+				w.WriteInt16(0) // userX
+				w.WriteInt16(0) // userY
+				w.WriteInt16(0) // summonX
+				w.WriteInt16(0) // summonY
+			}
 		}
 		for _, tg := range m.targets {
-			w.WriteInt(tg.monsterOid) // mob[i].mobId       @0x7524ac
-			w.WriteInt(tg.templateId) // mob[i].templateId  @0x7524cc
-			w.WriteByte(0)            // hitAction          @0x7524e2
-			w.WriteByte(0)            // foreAction|left    @0x75250c
-			w.WriteByte(0)            // frameIdx           @0x752522
-			w.WriteByte(0)            // calcDamageStatIdx  @0x75253b
-			w.WriteInt16(0)           // curX (hitX)        @0x75256c
-			w.WriteInt16(0)           // curY (hitY)        @0x7525a0
-			w.WriteInt16(0)           // hitX (posX)        @0x7525d3
-			w.WriteInt16(0)           // hitY (posY)        @0x752607
-			w.WriteInt16(tg.delay)    // tDelay             @0x75261d
-			w.WriteInt(tg.damage)     // damage             @0x752632
+			w.WriteInt(tg.monsterOid) // mob[i].mobId       @0x7524ac (v79 @0x71c051)
+			if hasTargetTemplateId(t) {
+				w.WriteInt(tg.templateId) // mob[i].templateId  @0x7524cc (absent v79)
+			}
+			w.WriteByte(0)         // hitAction          @0x7524e2
+			w.WriteByte(0)         // foreAction|left    @0x75250c
+			w.WriteByte(0)         // frameIdx           @0x752522
+			w.WriteByte(0)         // calcDamageStatIdx  @0x75253b
+			w.WriteInt16(0)        // curX (hitX)        @0x75256c
+			w.WriteInt16(0)        // curY (hitY)        @0x7525a0
+			w.WriteInt16(0)        // hitX (posX)        @0x7525d3
+			w.WriteInt16(0)        // hitY (posY)        @0x752607
+			w.WriteInt16(tg.delay) // tDelay             @0x75261d
+			w.WriteInt(tg.damage)  // damage             @0x752632
 		}
-		w.WriteInt(0) // skillCRC @0x75266f
+		if isLegacyLeanAttack(t) {
+			// v79 footer: summonX/summonY come AFTER the per-target loop.
+			w.WriteInt16(0) // summonX @0x71c130
+			w.WriteInt16(0) // summonY @0x71c144
+		}
+		if hasSkillCrcTrailer(t) {
+			w.WriteInt(0) // skillCRC @0x75266f (v79 @0x71c15d) — absent on GMS v72
+		}
 		return w.Bytes()
 	}
 }
@@ -213,21 +279,33 @@ func (m *Attack) Decode(l logrus.FieldLogger, ctx context.Context) func(r *reque
 				r.Skip(4) // repeatSkillPoint (v95 only)
 			}
 		} else {
-			r.Skip(4) // updateTime
+			if hasSummonAttackUpdateTime(t) {
+				r.Skip(4) // updateTime (absent on GMS v48, present v61+)
+			}
 			m.direction = r.ReadByte()
 			count = int(r.ReadByte())
-			r.Skip(8) // user x,y + summon x,y
+			if !isLegacyLeanAttack(t) {
+				r.Skip(8) // user x,y + summon x,y (v79 has no leading positions)
+			}
 		}
 		m.targets = make([]AttackTarget, 0, count)
 		for i := 0; i < count; i++ {
 			monsterOid := r.ReadUint32()
-			templateId := r.ReadUint32()
+			var templateId uint32
+			if hasTargetTemplateId(t) {
+				templateId = r.ReadUint32()
+			}
 			r.Skip(4) // hitAction(1), foreAction|left(1), frameIdx(1), calcDamageStatIndex(1)
 			r.Skip(8) // curX(2), curY(2), hitX(2), hitY(2)
 			delay := r.ReadInt16()
 			damage := r.ReadUint32()
 			m.targets = append(m.targets, AttackTarget{monsterOid: monsterOid, templateId: templateId, damage: damage, delay: delay})
 		}
-		r.Skip(4) // skillCRC trailer
+		if isLegacyLeanAttack(t) {
+			r.Skip(4) // v79 footer: summonX(2) + summonY(2) after the targets
+		}
+		if hasSkillCrcTrailer(t) {
+			r.Skip(4) // skillCRC trailer — absent on GMS v72
+		}
 	}
 }

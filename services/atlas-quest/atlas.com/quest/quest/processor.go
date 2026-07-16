@@ -36,11 +36,20 @@ var (
 type Processor interface {
 	WithTransaction(*gorm.DB) Processor
 	ByIdProvider(id uint32) model.Provider[Model]
-	ByCharacterIdProvider(characterId uint32) model.Provider[[]Model]
+	// ByCharacterIdPagedProvider returns one page of a character's quests.
+	// ByCharacterIdProvider/GetByCharacterId had no internal caller besides
+	// the REST list handler (task-117), so they were converted in place
+	// rather than kept alongside a new paged sibling.
+	ByCharacterIdPagedProvider(characterId uint32, page model.Page) model.Provider[model.Paged[Model]]
 	ByCharacterIdAndQuestIdProvider(characterId uint32, questId uint32) model.Provider[Model]
 	ByCharacterIdAndStateProvider(characterId uint32, state State) model.Provider[[]Model]
+	// ByCharacterIdAndStatePagedProvider returns one page of a character's
+	// quests in a given state. Used only by the REST list handlers (GET
+	// .../quests/started|completed, task-117); the hot-path Kafka consumers
+	// that need the complete started-quest set keep using
+	// ByCharacterIdAndStateProvider/GetByCharacterIdAndState above.
+	ByCharacterIdAndStatePagedProvider(characterId uint32, state State, page model.Page) model.Provider[model.Paged[Model]]
 	GetById(id uint32) (Model, error)
-	GetByCharacterId(characterId uint32) ([]Model, error)
 	GetByCharacterIdAndQuestId(characterId uint32, questId uint32) (Model, error)
 	GetByCharacterIdAndState(characterId uint32, state State) ([]Model, error)
 	// Start starts a quest with validation and processes start actions
@@ -85,7 +94,7 @@ type ProcessorImpl struct {
 	t                   tenant.Model
 	dataProcessor       dataquest.Processor
 	validationProcessor validation.Processor
-	eventEmitter        EventEmitter
+	txEmitter           func(tx *gorm.DB) EventEmitter
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
@@ -96,9 +105,13 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		t:                   tenant.MustFromContext(ctx),
 		dataProcessor:       dataquest.NewProcessor(l, ctx),
 		validationProcessor: validation.NewProcessor(l, ctx),
-		eventEmitter:        NewKafkaEventEmitter(l, ctx),
+		txEmitter: func(tx *gorm.DB) EventEmitter {
+			return NewOutboxEventEmitter(l, ctx, tx)
+		},
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // NewProcessorWithDependencies creates a processor with custom dependencies (for testing)
 func NewProcessorWithDependencies(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, dataProc dataquest.Processor, validationProc validation.Processor, eventEmitter EventEmitter) Processor {
@@ -109,7 +122,9 @@ func NewProcessorWithDependencies(l logrus.FieldLogger, ctx context.Context, db 
 		t:                   tenant.MustFromContext(ctx),
 		dataProcessor:       dataProc,
 		validationProcessor: validationProc,
-		eventEmitter:        eventEmitter,
+		txEmitter: func(*gorm.DB) EventEmitter {
+			return eventEmitter
+		},
 	}
 }
 
@@ -121,7 +136,7 @@ func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 		t:                   p.t,
 		dataProcessor:       p.dataProcessor,
 		validationProcessor: p.validationProcessor,
-		eventEmitter:        p.eventEmitter,
+		txEmitter:           p.txEmitter,
 	}
 }
 
@@ -129,8 +144,8 @@ func (p *ProcessorImpl) ByIdProvider(id uint32) model.Provider[Model] {
 	return model.Map(Make)(byIdEntityProvider(id)(p.db.WithContext(p.ctx)))
 }
 
-func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
-	return model.SliceMap(Make)(byCharacterIdEntityProvider(characterId)(p.db.WithContext(p.ctx)))()
+func (p *ProcessorImpl) ByCharacterIdPagedProvider(characterId uint32, page model.Page) model.Provider[model.Paged[Model]] {
+	return model.MapPaged(Make)(byCharacterIdPagedEntityProvider(characterId, page)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) ByCharacterIdAndQuestIdProvider(characterId uint32, questId uint32) model.Provider[Model] {
@@ -141,12 +156,12 @@ func (p *ProcessorImpl) ByCharacterIdAndStateProvider(characterId uint32, state 
 	return model.SliceMap(Make)(byCharacterIdAndStateEntityProvider(characterId, state)(p.db.WithContext(p.ctx)))()
 }
 
-func (p *ProcessorImpl) GetById(id uint32) (Model, error) {
-	return p.ByIdProvider(id)()
+func (p *ProcessorImpl) ByCharacterIdAndStatePagedProvider(characterId uint32, state State, page model.Page) model.Provider[model.Paged[Model]] {
+	return model.MapPaged(Make)(byCharacterIdAndStatePagedEntityProvider(characterId, state, page)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }
 
-func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
-	return p.ByCharacterIdProvider(characterId)()
+func (p *ProcessorImpl) GetById(id uint32) (Model, error) {
+	return p.ByIdProvider(id)()
 }
 
 func (p *ProcessorImpl) GetByCharacterIdAndQuestId(characterId uint32, questId uint32) (Model, error) {
@@ -184,44 +199,56 @@ func (p *ProcessorImpl) startWithDefinition(transactionId uuid.UUID, characterId
 		}
 	}
 
-	// Start the quest (core logic)
-	m, err := p.startCore(characterId, questId, questDef)
-	if err != nil {
-		return Model{}, nil, err
-	}
+	// Start the quest (core logic), process start actions, and emit the
+	// STARTED event atomically: they all run inside one outbox-backed
+	// transaction so the event is enqueued iff the writes commit.
+	var updated Model
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		m, err := p.startCore(tx, characterId, questId, questDef)
+		if err != nil {
+			return err
+		}
 
-	// Process start actions (items consumed, exp given on start, etc.)
-	awardedItems, err := p.processStartActions(characterId, questId, questDef, f)
-	if err != nil {
-		p.l.WithError(err).Warnf("Unable to process start actions for quest [%d] character [%d].", questId, characterId)
-		// Don't fail the quest start, just log the error
-	}
+		// Process start actions (items consumed, exp given on start, etc.)
+		awardedItems, err := p.processStartActions(tx, characterId, questId, questDef, f)
+		if err != nil {
+			p.l.WithError(err).Warnf("Unable to process start actions for quest [%d] character [%d].", questId, characterId)
+			// Don't fail the quest start, just log the error
+		}
 
-	// Reload the quest to get the full progress after initialization
-	updated, err := p.GetByCharacterIdAndQuestId(characterId, questId)
-	if err != nil {
-		p.l.WithError(err).Warnf("Unable to reload quest [%d] after start for character [%d].", questId, characterId)
-		updated = m
-	}
+		// Reload the quest to get the full progress after initialization
+		reloaded, err := p.WithTransaction(tx).GetByCharacterIdAndQuestId(characterId, questId)
+		if err != nil {
+			p.l.WithError(err).Warnf("Unable to reload quest [%d] after start for character [%d].", questId, characterId)
+			reloaded = m
+		}
+		updated = reloaded
 
-	// Script-driven quests grant items through their own saga and forward
-	// the reward list via externalRewards. When supplied, report those on
-	// the STARTED event; otherwise fall back to the WZ-derived items.
-	reportedItems := awardedItems
-	if len(externalRewards) > 0 {
-		reportedItems = externalRewards
-	}
+		// Script-driven quests grant items through their own saga and forward
+		// the reward list via externalRewards. When supplied, report those on
+		// the STARTED event; otherwise fall back to the WZ-derived items.
+		reportedItems := awardedItems
+		if len(externalRewards) > 0 {
+			reportedItems = externalRewards
+		}
 
-	// Emit quest started event
-	if err := p.eventEmitter.EmitQuestStarted(transactionId, characterId, f.WorldId(), questId, updated.ProgressString(), reportedItems); err != nil {
-		p.l.WithError(err).Warnf("Unable to emit quest started event for quest [%d] character [%d].", questId, characterId)
+		// Emit quest started event
+		if err := p.txEmitter(tx).EmitQuestStarted(transactionId, characterId, f.WorldId(), questId, updated.ProgressString(), reportedItems); err != nil {
+			p.l.WithError(err).Warnf("Unable to emit quest started event for quest [%d] character [%d].", questId, characterId)
+			return err
+		}
+
+		return nil
+	})
+	if txErr != nil {
+		return Model{}, nil, txErr
 	}
 
 	return updated, nil, nil
 }
 
 // startCore handles the core quest start logic without validation or action processing
-func (p *ProcessorImpl) startCore(characterId uint32, questId uint32, questDef dataquest.RestModel) (Model, error) {
+func (p *ProcessorImpl) startCore(tx *gorm.DB, characterId uint32, questId uint32, questDef dataquest.RestModel) (Model, error) {
 	// Check if quest already exists
 	existing, err := p.GetByCharacterIdAndQuestId(characterId, questId)
 	if err == nil {
@@ -276,31 +303,23 @@ func (p *ProcessorImpl) startCore(characterId uint32, questId uint32, questDef d
 	mapIds = append(mapIds, questDef.EndRequirements.FieldEnter...)
 
 	var m Model
-	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
-		var err error
-		// If quest record exists (completed or forfeited), restart it; otherwise create new
-		if existing.Id() > 0 {
-			m, err = restart(tx, existing.Id(), expirationTime)
-		} else {
-			m, err = create(tx, p.t.Id(), characterId, questId, expirationTime)
-		}
-		if err != nil {
-			p.l.WithError(err).Errorf("Unable to create/restart quest [%d] for character [%d].", questId, characterId)
-			return err
-		}
+	// If quest record exists (completed or forfeited), restart it; otherwise create new
+	if existing.Id() > 0 {
+		m, err = restart(tx, existing.Id(), expirationTime)
+	} else {
+		m, err = create(tx, p.t.Id(), characterId, questId, expirationTime)
+	}
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to create/restart quest [%d] for character [%d].", questId, characterId)
+		return Model{}, err
+	}
 
-		// Initialize progress for mob kills and map visits
-		if len(mobIds) > 0 || len(mapIds) > 0 {
-			if err = initializeProgress(tx, p.t.Id(), m.Id(), mobIds, mapIds); err != nil {
-				p.l.WithError(err).Errorf("Unable to initialize progress for quest [%d] for character [%d].", questId, characterId)
-				return err
-			}
+	// Initialize progress for mob kills and map visits
+	if len(mobIds) > 0 || len(mapIds) > 0 {
+		if err = initializeProgress(tx, p.t.Id(), m.Id(), mobIds, mapIds); err != nil {
+			p.l.WithError(err).Errorf("Unable to initialize progress for quest [%d] for character [%d].", questId, characterId)
+			return Model{}, err
 		}
-
-		return nil
-	})
-	if txErr != nil {
-		return Model{}, txErr
 	}
 
 	p.l.Debugf("Started quest [%d] for character [%d].", questId, characterId)
@@ -330,36 +349,47 @@ func (p *ProcessorImpl) StartChained(transactionId uuid.UUID, characterId uint32
 		// For chained quests, we proceed even if requirements aren't met
 	}
 
-	// Start the quest using startChainedCore (skips interval check)
-	m, err := p.startChainedCore(characterId, questId, questDef)
-	if err != nil {
-		return Model{}, err
-	}
+	// Start the quest using startChainedCore (skips interval check), process
+	// start actions, and emit the STARTED event atomically.
+	var updated Model
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		m, err := p.startChainedCore(tx, characterId, questId, questDef)
+		if err != nil {
+			return err
+		}
 
-	// Process start actions
-	awardedItems, err := p.processStartActions(characterId, questId, questDef, f)
-	if err != nil {
-		p.l.WithError(err).Warnf("Unable to process start actions for chained quest [%d].", questId)
-	}
+		// Process start actions
+		awardedItems, err := p.processStartActions(tx, characterId, questId, questDef, f)
+		if err != nil {
+			p.l.WithError(err).Warnf("Unable to process start actions for chained quest [%d].", questId)
+		}
 
-	// Reload the quest to get the full progress after initialization
-	updated, err := p.GetByCharacterIdAndQuestId(characterId, questId)
-	if err != nil {
-		p.l.WithError(err).Warnf("Unable to reload chained quest [%d] after start for character [%d].", questId, characterId)
-		updated = m
-	}
+		// Reload the quest to get the full progress after initialization
+		reloaded, err := p.WithTransaction(tx).GetByCharacterIdAndQuestId(characterId, questId)
+		if err != nil {
+			p.l.WithError(err).Warnf("Unable to reload chained quest [%d] after start for character [%d].", questId, characterId)
+			reloaded = m
+		}
+		updated = reloaded
 
-	// Script-driven quests grant items through their own saga and forward
-	// the reward list via externalRewards. When supplied, report those on
-	// the STARTED event; otherwise fall back to the WZ-derived items.
-	reportedItems := awardedItems
-	if len(externalRewards) > 0 {
-		reportedItems = externalRewards
-	}
+		// Script-driven quests grant items through their own saga and forward
+		// the reward list via externalRewards. When supplied, report those on
+		// the STARTED event; otherwise fall back to the WZ-derived items.
+		reportedItems := awardedItems
+		if len(externalRewards) > 0 {
+			reportedItems = externalRewards
+		}
 
-	// Emit quest started event
-	if err := p.eventEmitter.EmitQuestStarted(transactionId, characterId, f.WorldId(), questId, updated.ProgressString(), reportedItems); err != nil {
-		p.l.WithError(err).Warnf("Unable to emit quest started event for chained quest [%d] character [%d].", questId, characterId)
+		// Emit quest started event
+		if err := p.txEmitter(tx).EmitQuestStarted(transactionId, characterId, f.WorldId(), questId, updated.ProgressString(), reportedItems); err != nil {
+			p.l.WithError(err).Warnf("Unable to emit quest started event for chained quest [%d] character [%d].", questId, characterId)
+			return err
+		}
+
+		return nil
+	})
+	if txErr != nil {
+		return Model{}, txErr
 	}
 
 	p.l.Debugf("Started chained quest [%d] for character [%d].", questId, characterId)
@@ -367,7 +397,7 @@ func (p *ProcessorImpl) StartChained(transactionId uuid.UUID, characterId uint32
 }
 
 // startChainedCore handles chained quest start (skips interval check)
-func (p *ProcessorImpl) startChainedCore(characterId uint32, questId uint32, questDef dataquest.RestModel) (Model, error) {
+func (p *ProcessorImpl) startChainedCore(tx *gorm.DB, characterId uint32, questId uint32, questDef dataquest.RestModel) (Model, error) {
 	existing, _ := p.GetByCharacterIdAndQuestId(characterId, questId)
 
 	// Calculate expiration time for time-limited quests
@@ -390,28 +420,21 @@ func (p *ProcessorImpl) startChainedCore(characterId uint32, questId uint32, que
 	mapIds = append(mapIds, questDef.EndRequirements.FieldEnter...)
 
 	var m Model
-	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
-		var err error
-		if existing.Id() > 0 {
-			m, err = restart(tx, existing.Id(), expirationTime)
-		} else {
-			m, err = create(tx, p.t.Id(), characterId, questId, expirationTime)
-		}
-		if err != nil {
-			return err
-		}
+	var err error
+	if existing.Id() > 0 {
+		m, err = restart(tx, existing.Id(), expirationTime)
+	} else {
+		m, err = create(tx, p.t.Id(), characterId, questId, expirationTime)
+	}
+	if err != nil {
+		return Model{}, err
+	}
 
-		// Initialize progress for mob kills and map visits
-		if len(mobIds) > 0 || len(mapIds) > 0 {
-			if err = initializeProgress(tx, p.t.Id(), m.Id(), mobIds, mapIds); err != nil {
-				return err
-			}
+	// Initialize progress for mob kills and map visits
+	if len(mobIds) > 0 || len(mapIds) > 0 {
+		if err = initializeProgress(tx, p.t.Id(), m.Id(), mobIds, mapIds); err != nil {
+			return Model{}, err
 		}
-
-		return nil
-	})
-	if txErr != nil {
-		return Model{}, txErr
 	}
 
 	return m, nil
@@ -436,37 +459,49 @@ func (p *ProcessorImpl) Complete(transactionId uuid.UUID, characterId uint32, qu
 		}
 	}
 
-	// Complete the quest (core logic)
-	nextQuestId, completedAt, err := p.completeCore(characterId, questId, questDef)
-	if err != nil {
-		return 0, err
-	}
+	// Complete the quest (core logic), process end actions, and emit the
+	// COMPLETED event atomically.
+	var nextQuestId uint32
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		var completedAt time.Time
+		var err error
+		nextQuestId, completedAt, err = p.completeCore(tx, characterId, questId, questDef)
+		if err != nil {
+			return err
+		}
 
-	// Process end actions/rewards and collect awarded items
-	awardedItems, err := p.processEndActions(characterId, questId, questDef, f)
-	if err != nil {
-		p.l.WithError(err).Warnf("Unable to process end actions for quest [%d] character [%d].", questId, characterId)
-		// Don't fail the completion, just log the error
-	}
+		// Process end actions/rewards and collect awarded items
+		awardedItems, err := p.processEndActions(tx, characterId, questId, questDef, f)
+		if err != nil {
+			p.l.WithError(err).Warnf("Unable to process end actions for quest [%d] character [%d].", questId, characterId)
+			// Don't fail the completion, just log the error
+		}
 
-	// Script-driven quests grant items through their own saga and forward
-	// the reward list via externalRewards. When supplied, report those on
-	// the COMPLETED event; otherwise fall back to the WZ-derived items.
-	reportedItems := awardedItems
-	if len(externalRewards) > 0 {
-		reportedItems = externalRewards
-	}
+		// Script-driven quests grant items through their own saga and forward
+		// the reward list via externalRewards. When supplied, report those on
+		// the COMPLETED event; otherwise fall back to the WZ-derived items.
+		reportedItems := awardedItems
+		if len(externalRewards) > 0 {
+			reportedItems = externalRewards
+		}
 
-	// Emit quest completed event with awarded items
-	if err := p.eventEmitter.EmitQuestCompleted(transactionId, characterId, f.WorldId(), questId, completedAt, reportedItems); err != nil {
-		p.l.WithError(err).Warnf("Unable to emit quest completed event for quest [%d] character [%d].", questId, characterId)
+		// Emit quest completed event with awarded items
+		if err := p.txEmitter(tx).EmitQuestCompleted(transactionId, characterId, f.WorldId(), questId, completedAt, reportedItems); err != nil {
+			p.l.WithError(err).Warnf("Unable to emit quest completed event for quest [%d] character [%d].", questId, characterId)
+			return err
+		}
+
+		return nil
+	})
+	if txErr != nil {
+		return 0, txErr
 	}
 
 	return nextQuestId, nil
 }
 
 // completeCore handles the core quest completion logic without validation or reward processing
-func (p *ProcessorImpl) completeCore(characterId uint32, questId uint32, questDef dataquest.RestModel) (uint32, time.Time, error) {
+func (p *ProcessorImpl) completeCore(tx *gorm.DB, characterId uint32, questId uint32, questDef dataquest.RestModel) (uint32, time.Time, error) {
 	existing, err := p.GetByCharacterIdAndQuestId(characterId, questId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to find quest [%d] for character [%d] to complete.", questId, characterId)
@@ -489,15 +524,10 @@ func (p *ProcessorImpl) completeCore(characterId uint32, questId uint32, questDe
 		return 0, time.Time{}, ErrQuestExpired
 	}
 
-	var completedAt time.Time
-	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
-		var err error
-		completedAt, err = completeQuest(tx, existing.Id())
-		return err
-	})
-	if txErr != nil {
-		p.l.WithError(txErr).Errorf("Unable to complete quest [%d] for character [%d].", questId, characterId)
-		return 0, time.Time{}, txErr
+	completedAt, err := completeQuest(tx, existing.Id())
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to complete quest [%d] for character [%d].", questId, characterId)
+		return 0, time.Time{}, err
 	}
 
 	p.l.Debugf("Completed quest [%d] for character [%d].", questId, characterId)
@@ -524,16 +554,21 @@ func (p *ProcessorImpl) Forfeit(transactionId uuid.UUID, characterId uint32, que
 	}
 
 	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
-		return forfeitQuest(tx, existing.Id())
+		if err := forfeitQuest(tx, existing.Id()); err != nil {
+			return err
+		}
+
+		// Emit quest forfeited event (worldId is 0 as it's not available in forfeit context)
+		if err := p.txEmitter(tx).EmitQuestForfeited(transactionId, characterId, 0, questId); err != nil {
+			p.l.WithError(err).Warnf("Unable to emit quest forfeited event for quest [%d] character [%d].", questId, characterId)
+			return err
+		}
+
+		return nil
 	})
 	if txErr != nil {
 		p.l.WithError(txErr).Errorf("Unable to forfeit quest [%d] for character [%d].", questId, characterId)
 		return txErr
-	}
-
-	// Emit quest forfeited event (worldId is 0 as it's not available in forfeit context)
-	if err := p.eventEmitter.EmitQuestForfeited(transactionId, characterId, 0, questId); err != nil {
-		p.l.WithError(err).Warnf("Unable to emit quest forfeited event for quest [%d] character [%d].", questId, characterId)
 	}
 
 	p.l.Debugf("Forfeited quest [%d] for character [%d].", questId, characterId)
@@ -565,27 +600,34 @@ func (p *ProcessorImpl) SetProgress(transactionId uuid.UUID, characterId uint32,
 	}
 
 	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
-		return setProgress(tx, p.t.Id(), existing.Id(), infoNumber, progressValue)
+		if err := setProgress(tx, p.t.Id(), existing.Id(), infoNumber, progressValue); err != nil {
+			return err
+		}
+
+		// Reload the quest to get the updated progress for emission
+		updated, err := p.WithTransaction(tx).GetByCharacterIdAndQuestId(characterId, questId)
+		if err != nil {
+			p.l.WithError(err).Warnf("Unable to reload quest [%d] for character [%d] after progress update.", questId, characterId)
+			// Still emit with just the single value as fallback
+			if err := p.txEmitter(tx).EmitProgressUpdated(transactionId, characterId, 0, questId, infoNumber, progressValue); err != nil {
+				p.l.WithError(err).Warnf("Unable to emit quest progress updated event for quest [%d] character [%d].", questId, characterId)
+				return err
+			}
+			return nil
+		}
+
+		// Emit quest progress updated event with the full progress string
+		fullProgress := updated.ProgressString()
+		if err := p.txEmitter(tx).EmitProgressUpdated(transactionId, characterId, 0, questId, infoNumber, fullProgress); err != nil {
+			p.l.WithError(err).Warnf("Unable to emit quest progress updated event for quest [%d] character [%d].", questId, characterId)
+			return err
+		}
+
+		return nil
 	})
 	if txErr != nil {
 		p.l.WithError(txErr).Errorf("Unable to set progress for quest [%d] for character [%d].", questId, characterId)
 		return txErr
-	}
-
-	// Reload the quest to get the updated progress for emission
-	updated, err := p.GetByCharacterIdAndQuestId(characterId, questId)
-	if err != nil {
-		p.l.WithError(err).Warnf("Unable to reload quest [%d] for character [%d] after progress update.", questId, characterId)
-		// Still emit with just the single value as fallback
-		if err := p.eventEmitter.EmitProgressUpdated(transactionId, characterId, 0, questId, infoNumber, progressValue); err != nil {
-			p.l.WithError(err).Warnf("Unable to emit quest progress updated event for quest [%d] character [%d].", questId, characterId)
-		}
-	} else {
-		// Emit quest progress updated event with the full progress string
-		fullProgress := updated.ProgressString()
-		if err := p.eventEmitter.EmitProgressUpdated(transactionId, characterId, 0, questId, infoNumber, fullProgress); err != nil {
-			p.l.WithError(err).Warnf("Unable to emit quest progress updated event for quest [%d] character [%d].", questId, characterId)
-		}
 	}
 
 	p.l.Debugf("Set progress for quest [%d], infoNumber [%d] for character [%d].", questId, infoNumber, characterId)
@@ -799,7 +841,7 @@ func (p *ProcessorImpl) CheckAutoStart(characterId uint32, f field.Model) ([]uin
 	return startedQuests, nil
 }
 
-func (p *ProcessorImpl) processStartActions(characterId uint32, questId uint32, questDef dataquest.RestModel, f field.Model) ([]questmessage.ItemReward, error) {
+func (p *ProcessorImpl) processStartActions(tx *gorm.DB, characterId uint32, questId uint32, questDef dataquest.RestModel, f field.Model) ([]questmessage.ItemReward, error) {
 	actions := questDef.StartActions
 	var awardedItems []questmessage.ItemReward
 
@@ -863,13 +905,13 @@ func (p *ProcessorImpl) processStartActions(characterId uint32, questId uint32, 
 	// Emit saga if there are steps
 	if builder.HasSteps() {
 		s := builder.Build()
-		return awardedItems, p.eventEmitter.EmitSaga(s)
+		return awardedItems, p.txEmitter(tx).EmitSaga(s)
 	}
 
 	return awardedItems, nil
 }
 
-func (p *ProcessorImpl) processEndActions(characterId uint32, questId uint32, questDef dataquest.RestModel, f field.Model) ([]questmessage.ItemReward, error) {
+func (p *ProcessorImpl) processEndActions(tx *gorm.DB, characterId uint32, questId uint32, questDef dataquest.RestModel, f field.Model) ([]questmessage.ItemReward, error) {
 	actions := questDef.EndActions
 	var awardedItems []questmessage.ItemReward
 
@@ -933,7 +975,7 @@ func (p *ProcessorImpl) processEndActions(characterId uint32, questId uint32, qu
 	// Emit saga if there are steps
 	if builder.HasSteps() {
 		s := builder.Build()
-		return awardedItems, p.eventEmitter.EmitSaga(s)
+		return awardedItems, p.txEmitter(tx).EmitSaga(s)
 	}
 
 	return awardedItems, nil

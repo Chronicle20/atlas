@@ -7,15 +7,21 @@ import (
 	"gorm.io/gorm"
 )
 
-func getByGachaponId(gachaponId string) database.EntityProvider[[]entity] {
-	return func(db *gorm.DB) model.Provider[[]entity] {
-		return database.SliceQuery[entity](db, &entity{GachaponId: gachaponId})
+func getByGachaponIdPagedProvider(gachaponId string, page model.Page) database.EntityProvider[model.Paged[entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[entity]] {
+		return database.PagedQuery[entity](db.Where(&entity{GachaponId: gachaponId}), page)
 	}
 }
 
 func getByGachaponIdAndTier(gachaponId string, tier string) database.EntityProvider[[]entity] {
 	return func(db *gorm.DB) model.Provider[[]entity] {
 		return database.SliceQuery[entity](db, &entity{GachaponId: gachaponId, Tier: tier})
+	}
+}
+
+func getByGachaponIdAndTierPagedProvider(gachaponId string, tier string, page model.Page) database.EntityProvider[model.Paged[entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[entity]] {
+		return database.PagedQuery[entity](db.Where(&entity{GachaponId: gachaponId, Tier: tier}), page)
 	}
 }
 

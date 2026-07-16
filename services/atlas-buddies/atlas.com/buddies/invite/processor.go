@@ -2,8 +2,8 @@ package invite
 
 import (
 	invite2 "atlas-buddies/kafka/message/invite"
-	"atlas-buddies/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
@@ -26,6 +26,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		ctx: ctx,
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) Create(actorId uint32, worldId world.Id, targetId uint32) error {
 	p.l.Debugf("Creating buddy [%d] invitation for [%d].", targetId, actorId)

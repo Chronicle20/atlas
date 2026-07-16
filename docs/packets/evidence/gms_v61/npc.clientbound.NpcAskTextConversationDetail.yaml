@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcAskTextConversationDetail
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CScriptMan::OnAskText
+    address: "0x63ff86"
+    decompile_sha256: a2926f10a05ff07ec5e8781e948b2a54a3451b51d6205e91e606c9da566fa4e0
+verifies:
+  - libs/atlas-packet/npc/clientbound/conversation_v61_details_test.go#TestNpcConversationAskTextV61

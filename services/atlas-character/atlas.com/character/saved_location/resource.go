@@ -47,14 +47,14 @@ func handleGetSavedLocation(d *rest.HandlerDependency, c *rest.HandlerContext) h
 						w.WriteHeader(http.StatusNotFound)
 						return
 					}
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				res, err := model.Map(Transform)(model.FixedProvider(m))()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -79,14 +79,14 @@ func handlePutSavedLocation(d *rest.HandlerDependency, c *rest.HandlerContext, i
 
 				result, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Put(m)
 				if err != nil {
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				res, err := model.Map(Transform)(model.FixedProvider(result))()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -110,20 +110,20 @@ func handleDeleteSavedLocation(d *rest.HandlerDependency, c *rest.HandlerContext
 						w.WriteHeader(http.StatusNotFound)
 						return
 					}
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				err = p.Delete(characterId, locationType)
 				if err != nil {
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				res, err := model.Map(Transform)(model.FixedProvider(m))()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 

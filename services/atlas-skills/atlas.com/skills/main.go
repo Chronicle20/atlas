@@ -1,16 +1,19 @@
 package main
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"context"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	"atlas-skills/kafka/consumer/character"
 	macro2 "atlas-skills/kafka/consumer/macro"
 	skill2 "atlas-skills/kafka/consumer/skill"
-	"atlas-skills/logger"
 	"atlas-skills/macro"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-skills/skill"
 	"atlas-skills/tasks"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -45,22 +48,35 @@ func GetServer() Server {
 }
 
 func main() {
-	l := logger.CreateLogger(serviceName)
-	l.Infoln("Starting main service.")
+	rt := service.Bootstrap(serviceName)
+	l := rt.Logger()
 
 	rc := atlas.Connect(l)
 	skill.InitRegistry(rc)
 
-	tdm := service.GetTeardownManager()
+	db := database.Connect(l, database.SetMigrations(skill.Migration, macro.Migration, outboxlib.Migration))
 
-	tc, err := tracing.InitTracer(serviceName)
-	if err != nil {
-		l.WithError(err).Fatal("Unable to initialize tracer.")
-	}
+	// Boot the outbox drainer: publishes the transactional outbox to Kafka.
+	// Leadership is gated by a postgres advisory lock — replicas are safe.
+	publisher := outboxlib.NewTopicWriterPool()
+	drainer := outboxlib.NewDrainer(l, db, publisher, outboxlib.WithDSN(database.DSN()))
+	routine.Go(l, rt.Context(), func(_ context.Context) {
+		drainer.Run(rt.Context())
+	})
+	rt.TeardownFunc(func() {
+		drainer.Stop()
+		publisher.Close()
+	})
 
-	db := database.Connect(l, database.SetMigrations(skill.Migration, macro.Migration))
+	server.RegisterTransientErrorClassifier(func(err error) bool {
+		if database.IsTransientConnectionError(err) {
+			database.CountTransient(err)
+			return true
+		}
+		return false
+	})
 
-	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	skill2.InitConsumers(l)(cmf)(consumerGroupId)
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	macro2.InitConsumers(l)(cmf)(consumerGroupId)
@@ -74,22 +90,22 @@ func main() {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 
-	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
+	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
-	go tasks.Register(tasks.NewExpirationTask(l, db, 1000))
+	routine.Go(l, rt.Context(), func(_ context.Context) {
+		tasks.Register(l, rt.Context())(tasks.NewExpirationTask(l, db, 1000))
+	})
 
 	server.New(l).
-		WithContext(tdm.Context()).
-		WithWaitGroup(tdm.WaitGroup()).
+		WithContext(rt.Context()).
+		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(skill.InitResource(GetServer())(db)).
 		AddRouteInitializer(macro.InitResource(GetServer())(db)).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
+		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
-	tdm.TeardownFunc(tracing.Teardown(l)(tc))
-
-	tdm.Wait()
-	l.Infoln("Service shutdown.")
+	rt.Wait()
 }

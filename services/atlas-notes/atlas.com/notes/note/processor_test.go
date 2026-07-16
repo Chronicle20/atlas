@@ -2,12 +2,15 @@ package note_test
 
 import (
 	"atlas-notes/kafka/message"
+	notemsg "atlas-notes/kafka/message/note"
 	"atlas-notes/note"
 	"context"
 	"testing"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -44,6 +47,29 @@ func testTenant() tenant.Model {
 func testLogger() logrus.FieldLogger {
 	l, _ := test.NewNullLogger()
 	return l
+}
+
+// byCharacter drains a single 50-row page from ByCharacterProvider, standing
+// in for the deleted unfiltered getter in tests that only ever seed a
+// handful of notes.
+func byCharacter(t *testing.T, np note.Processor, characterId uint32) []note.Model {
+	t.Helper()
+	paged, err := np.ByCharacterProvider(characterId, model.Page{Number: 1, Size: 50})()
+	if err != nil {
+		t.Fatalf("Failed to get notes: %v", err)
+	}
+	return paged.Items
+}
+
+// allNotes drains a single 50-row page from AllProvider, standing in for
+// the deleted unfiltered InTenantProvider getter.
+func allNotes(t *testing.T, np note.Processor) []note.Model {
+	t.Helper()
+	paged, err := np.AllProvider(model.Page{Number: 1, Size: 50})()
+	if err != nil {
+		t.Fatalf("Failed to get all notes: %v", err)
+	}
+	return paged.Items
 }
 
 func TestProcessorImpl_CRUD(t *testing.T) {
@@ -182,19 +208,13 @@ func TestProcessorImpl_DeleteAll(t *testing.T) {
 	}
 
 	// Verify notes for character 1 are deleted
-	notes, err := np.ByCharacterProvider(characterId)()
-	if err != nil {
-		t.Fatalf("Failed to get notes: %v", err)
-	}
+	notes := byCharacter(t, np, characterId)
 	if len(notes) != 0 {
 		t.Fatalf("Expected 0 notes for character 1, got %d", len(notes))
 	}
 
 	// Verify other character's note is still there
-	otherNotes, err := np.ByCharacterProvider(otherCharacterId)()
-	if err != nil {
-		t.Fatalf("Failed to get other notes: %v", err)
-	}
+	otherNotes := byCharacter(t, np, otherCharacterId)
 	if len(otherNotes) != 1 {
 		t.Fatalf("Expected 1 note for other character, got %d", len(otherNotes))
 	}
@@ -231,16 +251,16 @@ func TestProcessorImpl_Discard(t *testing.T) {
 	// Discard notes 1 and 2
 	mb2 := message.NewBuffer()
 	ch := channel.NewModel(0, 0)
-	err = np.Discard(mb2)(ch)(characterId)([]uint32{n1.Id(), n2.Id()})
+	pending, err := np.Discard(mb2)(ch)(characterId)([]uint32{n1.Id(), n2.Id()})
 	if err != nil {
 		t.Fatalf("Failed to discard notes: %v", err)
 	}
+	if len(pending) != 2 {
+		t.Fatalf("Expected 2 pending fame-award sagas (both notes have a distinct sender), got %d", len(pending))
+	}
 
 	// Verify notes 1 and 2 are deleted
-	notes, err := np.ByCharacterProvider(characterId)()
-	if err != nil {
-		t.Fatalf("Failed to get notes: %v", err)
-	}
+	notes := byCharacter(t, np, characterId)
 	if len(notes) != 1 {
 		t.Fatalf("Expected 1 note remaining, got %d", len(notes))
 	}
@@ -276,25 +296,22 @@ func TestProcessorImpl_Discard_SkipsOtherCharacterNotes(t *testing.T) {
 	// Try to discard both notes as character 1 (should skip other's note)
 	mb2 := message.NewBuffer()
 	ch := channel.NewModel(0, 0)
-	err = np.Discard(mb2)(ch)(characterId)([]uint32{n1.Id(), n2.Id()})
+	pending, err := np.Discard(mb2)(ch)(characterId)([]uint32{n1.Id(), n2.Id()})
 	if err != nil {
 		t.Fatalf("Failed to discard notes: %v", err)
 	}
+	if len(pending) != 1 {
+		t.Fatalf("Expected 1 pending fame-award saga (only n1 belongs to characterId), got %d", len(pending))
+	}
 
 	// Verify character 1's note is deleted
-	notes, err := np.ByCharacterProvider(characterId)()
-	if err != nil {
-		t.Fatalf("Failed to get notes: %v", err)
-	}
+	notes := byCharacter(t, np, characterId)
 	if len(notes) != 0 {
 		t.Fatalf("Expected 0 notes for character 1, got %d", len(notes))
 	}
 
 	// Verify other character's note is still there
-	otherNotes, err := np.ByCharacterProvider(otherCharacterId)()
-	if err != nil {
-		t.Fatalf("Failed to get other notes: %v", err)
-	}
+	otherNotes := byCharacter(t, np, otherCharacterId)
 	if len(otherNotes) != 1 {
 		t.Fatalf("Expected 1 note for other character, got %d", len(otherNotes))
 	}
@@ -364,17 +381,14 @@ func TestProcessorImpl_ByCharacterProvider(t *testing.T) {
 	}
 
 	// Get notes for character 1
-	notes, err := np.ByCharacterProvider(characterId)()
-	if err != nil {
-		t.Fatalf("Failed to get notes: %v", err)
-	}
+	notes := byCharacter(t, np, characterId)
 
 	if len(notes) != 2 {
 		t.Fatalf("Expected 2 notes, got %d", len(notes))
 	}
 }
 
-func TestProcessorImpl_InTenantProvider(t *testing.T) {
+func TestProcessorImpl_AllProvider(t *testing.T) {
 	l := testLogger()
 	te := testTenant()
 	ctx := tenant.WithContext(context.Background(), te)
@@ -401,12 +415,58 @@ func TestProcessorImpl_InTenantProvider(t *testing.T) {
 	}
 
 	// Get all notes in tenant
-	notes, err := np.InTenantProvider()()
-	if err != nil {
-		t.Fatalf("Failed to get all notes: %v", err)
-	}
+	notes := allNotes(t, np)
 
 	if len(notes) != 3 {
 		t.Fatalf("Expected 3 notes, got %d", len(notes))
+	}
+}
+
+// TestProcessorImpl_DeleteAllDrainsBeyondOnePage proves DeleteAll's internal
+// drainByCharacter doesn't silently stop after the first page of
+// ByCharacterProvider. It seeds notesDrainPageSize+5 (255) notes for one
+// character -- guaranteeing some rows sit on the second drain page -- and
+// asserts DeleteAll emits exactly one delete-status event per note. A
+// lazier "just call page 1" implementation would emit only 250.
+func TestProcessorImpl_DeleteAllDrainsBeyondOnePage(t *testing.T) {
+	l := testLogger()
+	te := testTenant()
+	ctx := tenant.WithContext(context.Background(), te)
+	db := testDatabase(t)
+
+	characterId := uint32(1)
+	senderId := uint32(2)
+	now := time.Now()
+
+	const seeded = 255 // notesDrainPageSize (250) + 5
+	entities := make([]note.Entity, 0, seeded)
+	for i := 0; i < seeded; i++ {
+		entities = append(entities, note.Entity{
+			CharacterID: characterId,
+			SenderID:    senderId,
+			Message:     "seed",
+			Timestamp:   now,
+			Flag:        0,
+		})
+	}
+	if err := db.WithContext(ctx).CreateInBatches(&entities, 100).Error; err != nil {
+		t.Fatalf("Failed to seed notes: %v", err)
+	}
+
+	np := note.NewProcessor(l, ctx, db)
+
+	mb := message.NewBuffer()
+	if err := np.DeleteAll(mb)(characterId); err != nil {
+		t.Fatalf("Failed to delete all notes: %v", err)
+	}
+
+	events := mb.GetAll()[notemsg.EnvEventTopicNoteStatus]
+	if len(events) != seeded {
+		t.Fatalf("Expected %d delete-status events (full drain), got %d", seeded, len(events))
+	}
+
+	remaining := byCharacter(t, np, characterId)
+	if len(remaining) != 0 {
+		t.Fatalf("Expected 0 notes remaining after DeleteAll, got %d", len(remaining))
 	}
 }

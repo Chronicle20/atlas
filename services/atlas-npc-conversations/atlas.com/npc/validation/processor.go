@@ -20,12 +20,14 @@ type ProcessorImpl struct {
 }
 
 // NewProcessor creates a new validation processor
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *ProcessorImpl {
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // ValidateCharacterState validates a character's state against a set of conditions
 // For mapCapacity conditions, worldId and channelId should be in the condition itself

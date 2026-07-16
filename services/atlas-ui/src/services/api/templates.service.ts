@@ -8,6 +8,7 @@ import {
   type BatchResult,
   type ValidationError,
 } from "@/lib/api/query-params";
+import { fetchAll, fetchPaged, type PagedResult } from "@/services/api/pagination";
 import type { Template, TemplateAttributes } from "@/types/models/template";
 
 const BASE_PATH = "/api/configurations/templates";
@@ -135,9 +136,23 @@ function wrapTemplate(attributes: TemplateAttributes, id?: string): TemplateCrea
 }
 
 export const templatesService = {
+  /**
+   * Get every template, draining all pages (task-117). Used by consumers
+   * that genuinely need the whole collection (region/version filtering,
+   * export, consistency checks).
+   */
   async getAll(options?: QueryOptions): Promise<Template[]> {
-    const templates = await api.getList<Template>(`${BASE_PATH}${buildQueryString(options)}`, options);
+    const templates = await fetchAll<Template>(`${BASE_PATH}${buildQueryString(options)}`, undefined, options);
     return sortAndTransform(templates);
+  },
+
+  /**
+   * Get a single page of templates. Used by the Templates list view
+   * (task-117), which pages server-side.
+   */
+  async getPage(page: { number: number; size: number }, options?: QueryOptions): Promise<PagedResult<Template>> {
+    const result = await fetchPaged<Template>(`${BASE_PATH}${buildQueryString(options)}`, page, options);
+    return { data: sortAndTransform(result.data), meta: result.meta };
   },
 
   async getById(id: string, options?: ServiceOptions): Promise<Template> {
@@ -145,9 +160,13 @@ export const templatesService = {
     return sortTemplate(template);
   },
 
+  /**
+   * Get every template's region/version option, draining all pages
+   * (task-117) — the dropdown this feeds needs the full set.
+   */
   async getTemplateOptions(): Promise<TemplateOption[]> {
     const url = `${BASE_PATH}?fields[templates]=region,majorVersion,minorVersion`;
-    const response = await api.getList<TemplateOption>(url);
+    const response = await fetchAll<TemplateOption>(url);
     return response.sort((a, b) => {
       if (a.attributes.region !== b.attributes.region) return a.attributes.region.localeCompare(b.attributes.region);
       if (a.attributes.majorVersion !== b.attributes.majorVersion) return a.attributes.majorVersion - b.attributes.majorVersion;

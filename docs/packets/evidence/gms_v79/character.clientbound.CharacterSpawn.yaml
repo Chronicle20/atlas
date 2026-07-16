@@ -1,0 +1,10 @@
+packet: character/clientbound/CharacterSpawn
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CUserPool::OnUserEnterField
+    address: "0x8c8978"
+    decompile_sha256: 097ac7e39d6a58768093235380ede25ebc76663630b5ed5cab92dcff08b639ee
+verifies:
+  - libs/atlas-packet/character/clientbound/v79_test.go#TestCharacterSpawnByteOutputV79

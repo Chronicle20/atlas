@@ -67,14 +67,14 @@ func handleGetAsset(db *gorm.DB) rest.GetHandler {
 					return
 				}
 				if err != nil {
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				res, err := model.Map(Transform)(model.FixedProvider(ms))()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -99,14 +99,14 @@ func handleCreateAsset(db *gorm.DB) rest.InputHandler[RestModel] {
 			m, err := NewProcessor(d.Logger(), d.Context(), db).CreateAndEmit(im.CompartmentId(), im.TemplateId(), im.CommodityId(), im.Quantity(), im.PetId(), im.PurchasedBy())
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating asset.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			restModel, err := Transform(m)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -124,7 +124,7 @@ func handleUpdateAsset(db *gorm.DB) rest.InputHandler[RestModel] {
 				err := NewProcessor(d.Logger(), d.Context(), db).UpdateQuantity(assetId, input.Quantity)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to update asset [%d].", assetId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 				w.WriteHeader(http.StatusNoContent)
@@ -140,7 +140,7 @@ func handleDeleteAsset(db *gorm.DB) rest.GetHandler {
 				err := NewProcessor(d.Logger(), d.Context(), db).DeleteAndEmit(assetId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to delete asset [%d].", assetId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 				w.WriteHeader(http.StatusNoContent)

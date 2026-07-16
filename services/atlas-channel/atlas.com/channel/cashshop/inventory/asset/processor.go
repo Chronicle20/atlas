@@ -31,6 +31,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return p
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // ByIdProvider returns a provider function that fetches an asset by ID
 func (p *ProcessorImpl) ByIdProvider(accountId uint32, compartmentId uuid.UUID, assetId uint32) model.Provider[Model] {
 	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(accountId, compartmentId, assetId), Extract)

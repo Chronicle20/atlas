@@ -231,12 +231,8 @@ func (p *ProcessorImpl) RepickAndEmit(uniqueId uint32, reason RepickReason) erro
 		return nil
 	}
 
-	infoFn := func(monsterId uint32) (information.Model, error) {
-		return information.GetById(p.l)(p.ctx)(monsterId)
-	}
-	skillsFn := func(skillId, skillLevel uint16) (mobskill.Model, error) {
-		return mobskill.GetByIdAndLevel(p.l)(p.ctx)(skillId, skillLevel)
-	}
+	infoFn := information.NewProcessor(p.l, p.ctx).GetById
+	skillsFn := mobskill.NewProcessor(p.l, p.ctx).GetByIdAndLevel
 	rng := pickerRNG{}
 
 	prev := m.NextSkillDecision()

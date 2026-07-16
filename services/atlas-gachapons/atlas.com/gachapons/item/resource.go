@@ -6,6 +6,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -32,30 +33,35 @@ func handleGetItems(d *rest.HandlerDependency, c *rest.HandlerContext) http.Hand
 		return func(w http.ResponseWriter, r *http.Request) {
 			tier := r.URL.Query().Get("tier")
 
-			var ms []Model
-			var err error
-			p := NewProcessor(d.Logger(), d.Context(), d.DB())
-			if tier != "" {
-				ms, err = p.GetByGachaponIdAndTier(gachaponId, tier)()
-			} else {
-				ms, err = p.GetByGachaponId(gachaponId)()
-			}
+			page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
 			if err != nil {
-				d.Logger().WithError(err).Errorf("Retrieving items for gachapon [%s].", gachaponId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
 				return
 			}
 
-			res, err := model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())()
+			var paged model.Paged[Model]
+			p := NewProcessor(d.Logger(), d.Context(), d.DB())
+			if tier != "" {
+				paged, err = p.GetByGachaponIdAndTierPaged(gachaponId, tier, page)()
+			} else {
+				paged, err = p.GetByGachaponId(gachaponId, page)()
+			}
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Retrieving items for gachapon [%s].", gachaponId)
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+
+			res, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
 		}
 	})
 }
@@ -79,7 +85,7 @@ func handleCreateItem(d *rest.HandlerDependency, c *rest.HandlerContext, rm Rest
 			err = NewProcessor(d.Logger(), d.Context(), d.DB()).Create(m)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating gachapon item.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -95,7 +101,7 @@ func handleDeleteItem(d *rest.HandlerDependency, c *rest.HandlerContext) http.Ha
 				err := NewProcessor(d.Logger(), d.Context(), d.DB()).Delete(itemId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Deleting gachapon item [%d].", itemId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 				w.WriteHeader(http.StatusNoContent)

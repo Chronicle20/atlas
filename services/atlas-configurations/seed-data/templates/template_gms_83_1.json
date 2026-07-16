@@ -563,7 +563,6 @@
             "MERCHANT_ORGANIZE": 40,
             "MERCHANT_EXIT": 41,
             "MERCHANT_WITHDRAW_MESO": 43,
-            "MERCHANT_NAME_CHANGE": 45,
             "MERCHANT_VIEW_VISIT_LIST": 46,
             "MERCHANT_VIEW_BLACK_LIST": 47,
             "MERCHANT_ADD_TO_BLACK_LIST": 48,
@@ -696,6 +695,47 @@
             "DISPLAY_THREAD": 3,
             "REPLY_THREAD": 4,
             "DELETE_REPLY": 5
+          }
+        }
+      },
+      {
+        "opCode": "0x9C",
+        "validator": "LoggedInValidator",
+        "handler": "EnterMtsHandle"
+      },
+      {
+        "opCode": "0xFB",
+        "validator": "NoOpValidator",
+        "handler": "ItcStatusChargeHandle"
+      },
+      {
+        "opCode": "0xFC",
+        "validator": "LoggedInValidator",
+        "handler": "ItcQueryCashRequestHandle"
+      },
+      {
+        "opCode": "0xFD",
+        "validator": "LoggedInValidator",
+        "handler": "ItcOperationHandle",
+        "options": {
+          "operations": {
+            "REGISTER_SALE": 2,
+            "SALE_CURRENT_ITEM": 3,
+            "REGISTER_WISH_ENTRY": 4,
+            "GET_ITC_LIST": 5,
+            "SEARCH_ITC_LIST": 6,
+            "CANCEL_SALE": 7,
+            "TAKE_HOME": 8,
+            "SET_ZZIM": 9,
+            "DELETE_ZZIM": 10,
+            "VIEW_WISH": 11,
+            "BUY_WISH": 12,
+            "CANCEL_WISH": 13,
+            "BUY": 16,
+            "BUY_ZZIM": 17,
+            "REGISTER_AUCTION": 18,
+            "PLACE_BID": 19,
+            "BUY_AUCTION_IMM": 20
           }
         }
       },
@@ -1164,6 +1204,31 @@
             "RETRY": 5
           }
         }
+      },
+      {
+        "opCode": "0x104",
+        "validator": "LoggedInValidator",
+        "handler": "ItemUpgradeUpdateHandle"
+      },
+      {
+        "opCode": "0x42",
+        "validator": "LoggedInValidator",
+        "handler": "OwlActionHandle",
+        "options": {
+          "operations": {
+            "OPEN": 5
+          }
+        }
+      },
+      {
+        "opCode": "0x43",
+        "validator": "LoggedInValidator",
+        "handler": "OwlWarpHandle"
+      },
+      {
+        "opCode": "0x53",
+        "validator": "LoggedInValidator",
+        "handler": "ShopScannerItemUseHandle"
       }
     ],
     "writers": [
@@ -1701,6 +1766,10 @@
       {
         "opCode": "0x7D",
         "writer": "SetField"
+      },
+      {
+        "opCode": "0x7E",
+        "writer": "SetItc"
       },
       {
         "opCode": "0x7F",
@@ -2273,6 +2342,18 @@
         "writer": "SpawnMonster"
       },
       {
+        "opCode": "0x109",
+        "writer": "SpawnHiredMerchant"
+      },
+      {
+        "opCode": "0x10A",
+        "writer": "DestroyHiredMerchant"
+      },
+      {
+        "opCode": "0x10B",
+        "writer": "UpdateHiredMerchant"
+      },
+      {
         "opCode": "0xED",
         "writer": "DestroyMonster"
       },
@@ -2694,8 +2775,13 @@
             "INVITE_RESULT": 3,
             "ENTER": 4,
             "ENTER_RESULT": 5,
+            "CHAT": 6,
+            "CHAT_THING": 8,
             "LEAVE": 10,
-            "UPDATE_MERCHANT": 25
+            "UPDATE_MERCHANT": 25,
+            "PERSONAL_STORE_ITEM_SOLD": 26,
+            "MERCHANT_VIEW_VISIT_LIST": 46,
+            "MERCHANT_VIEW_BLACK_LIST": 47
           },
           "enterError": {
             "ROOM_CLOSED": 1,
@@ -2720,8 +2806,20 @@
             "NOT_ENOUGH_MESOS": 21,
             "INCORRECT_PASSWORD": 22,
             "ITEM_EXPIRED": 24
+          },
+          "leaveReason": {
+            "CANNOT_ESTABLISH_HERE": 1,
+            "SHOP_CLOSED": 3,
+            "USER_BANNED": 5,
+            "TIME_LIMIT_PASSED": 6,
+            "OUT_OF_STOCK": 14,
+            "BANNED_TIME_LIMIT": 15
           }
         }
+      },
+      {
+        "opCode": "0x0A5",
+        "writer": "MiniRoom"
       },
       {
         "opCode": "0x13B",
@@ -2757,7 +2855,20 @@
       },
       {
         "opCode": "0x162",
-        "writer": "ViciousHammer"
+        "writer": "ViciousHammer",
+        "options": {
+          "operations": {
+            "OPEN": 0,
+            "SUCCESS": 61,
+            "FAILURE": 62
+          },
+          "errorCodes": {
+            "UNKNOWN": 0,
+            "NOT_UPGRADABLE": 1,
+            "CAP_REACHED": 2,
+            "HORNTAIL": 3
+          }
+        }
       },
       {
         "opCode": "0x144",
@@ -2809,6 +2920,10 @@
         "writer": "RemoveTownDoor"
       },
       {
+        "opCode": "0x15A",
+        "writer": "MtsChargeParamResult"
+      },
+      {
         "opCode": "0x15B",
         "writer": "MtsOperation2"
       },
@@ -2816,6 +2931,27 @@
         "opCode": "0x15C",
         "writer": "MtsOperation",
         "options": {
+          "processStatusCodes": {
+            "HISTORY_SOLD": 0,
+            "HISTORY_PURCHASED": 1,
+            "HISTORY_BID_LOST": 2,
+            "HISTORY_CANCELLED": 3,
+            "AUCTION_EXHIBIT": 1,
+            "AUCTION_BID": 2
+          },
+          "noticeFailReasons": {
+            "NOT_ENOUGH_NX": 66,
+            "REGISTER_FAILED": 0,
+            "NOT_ENOUGH_MESOS": 67,
+            "NX_ERROR": 68,
+            "INVENTORY_FULL": 71,
+            "LIST_LOAD_FAILED": 73,
+            "CANCEL_HAS_BID": 78,
+            "MAY_NOT_BE_SOLD": 79,
+            "ITEM_SOLD": 81,
+            "STARS_NOT_TRADABLE": 82,
+            "BELOW_MIN_LEVEL": 83
+          },
           "operations": {
             "GET_ITC_LIST_DONE": 21,
             "GET_ITC_LIST_FAILED": 22,
@@ -2919,6 +3055,46 @@
             "OPEN": 8,
             "RESULT": 11,
             "END": 13
+          }
+        }
+      },
+      {
+        "opCode": "0x166",
+        "writer": "VegaScroll",
+        "options": {
+          "operations": {
+            "START_SUCCESS": 64,
+            "START_FAILURE": 69,
+            "RESULT_SUCCESS": 65,
+            "RESULT_FAILURE": 67,
+            "INVALID": 66
+          }
+        }
+      },
+      {
+        "opCode": "0x46",
+        "writer": "ShopScannerResult",
+        "options": {
+          "operations": {
+            "RESULT": 6,
+            "HOT_LIST": 7
+          }
+        }
+      },
+      {
+        "opCode": "0x47",
+        "writer": "ShopLinkResult",
+        "options": {
+          "operations": {
+            "SUCCESS": 0,
+            "CLOSED": 1,
+            "FULL": 2,
+            "BUSY": 3,
+            "DEAD": 4,
+            "NO_TRADE": 7,
+            "DENIED": 17,
+            "MAINTENANCE": 18,
+            "FM_ONLY": 23
           }
         }
       }
@@ -3247,10 +3423,10 @@
           "meso": 100000000,
           "gm": 0,
           "stats": {
-            "str": 999,
-            "dex": 999,
-            "int": 999,
-            "luk": 999,
+            "str": 902,
+            "dex": 120,
+            "int": 4,
+            "luk": 4,
             "hp": 30000,
             "mp": 6000
           },
@@ -3464,10 +3640,10 @@
           "meso": 100000000,
           "gm": 0,
           "stats": {
-            "str": 999,
-            "dex": 999,
-            "int": 999,
-            "luk": 999,
+            "str": 1018,
+            "dex": 4,
+            "int": 4,
+            "luk": 4,
             "hp": 30000,
             "mp": 6000
           },
@@ -3697,10 +3873,10 @@
           "meso": 100000000,
           "gm": 0,
           "stats": {
-            "str": 999,
-            "dex": 999,
-            "int": 999,
-            "luk": 999,
+            "str": 1018,
+            "dex": 4,
+            "int": 4,
+            "luk": 4,
             "hp": 30000,
             "mp": 6000
           },
@@ -3914,10 +4090,10 @@
           "meso": 100000000,
           "gm": 0,
           "stats": {
-            "str": 999,
-            "dex": 999,
-            "int": 999,
-            "luk": 999,
+            "str": 4,
+            "dex": 4,
+            "int": 857,
+            "luk": 165,
             "hp": 30000,
             "mp": 6000
           },
@@ -4115,10 +4291,10 @@
           "meso": 100000000,
           "gm": 0,
           "stats": {
-            "str": 999,
-            "dex": 999,
-            "int": 999,
-            "luk": 999,
+            "str": 4,
+            "dex": 4,
+            "int": 857,
+            "luk": 165,
             "hp": 30000,
             "mp": 6000
           },
@@ -4316,10 +4492,10 @@
           "meso": 100000000,
           "gm": 0,
           "stats": {
-            "str": 999,
-            "dex": 999,
-            "int": 999,
-            "luk": 999,
+            "str": 4,
+            "dex": 4,
+            "int": 902,
+            "luk": 120,
             "hp": 30000,
             "mp": 6000
           },
@@ -4521,10 +4697,10 @@
           "meso": 100000000,
           "gm": 0,
           "stats": {
-            "str": 999,
-            "dex": 999,
-            "int": 999,
-            "luk": 999,
+            "str": 125,
+            "dex": 897,
+            "int": 4,
+            "luk": 4,
             "hp": 30000,
             "mp": 6000
           },
@@ -4722,10 +4898,10 @@
           "meso": 100000000,
           "gm": 0,
           "stats": {
-            "str": 999,
-            "dex": 999,
-            "int": 999,
-            "luk": 999,
+            "str": 120,
+            "dex": 902,
+            "int": 4,
+            "luk": 4,
             "hp": 30000,
             "mp": 6000
           },
@@ -4923,10 +5099,10 @@
           "meso": 100000000,
           "gm": 0,
           "stats": {
-            "str": 999,
-            "dex": 999,
-            "int": 999,
-            "luk": 999,
+            "str": 4,
+            "dex": 160,
+            "int": 4,
+            "luk": 862,
             "hp": 30000,
             "mp": 6000
           },
@@ -5124,10 +5300,10 @@
           "meso": 100000000,
           "gm": 0,
           "stats": {
-            "str": 999,
-            "dex": 999,
-            "int": 999,
-            "luk": 999,
+            "str": 4,
+            "dex": 160,
+            "int": 4,
+            "luk": 862,
             "hp": 30000,
             "mp": 6000
           },
@@ -5325,10 +5501,10 @@
           "meso": 100000000,
           "gm": 0,
           "stats": {
-            "str": 999,
-            "dex": 999,
-            "int": 999,
-            "luk": 999,
+            "str": 902,
+            "dex": 120,
+            "int": 4,
+            "luk": 4,
             "hp": 30000,
             "mp": 6000
           },
@@ -5526,10 +5702,10 @@
           "meso": 100000000,
           "gm": 0,
           "stats": {
-            "str": 999,
-            "dex": 999,
-            "int": 999,
-            "luk": 999,
+            "str": 120,
+            "dex": 902,
+            "int": 4,
+            "luk": 4,
             "hp": 30000,
             "mp": 6000
           },

@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldWeddingProgress
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CField_Wedding::OnWeddingProgress
+    address: "0x513473"
+    decompile_sha256: f913550e383f0b1a80fa77e8466bfbc55d1b35e104035418ec5d4d8c094eca7f
+verifies:
+    - libs/atlas-packet/field/clientbound/wedding_progress_test.go#TestWeddingProgressByteOutputV61

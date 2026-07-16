@@ -4,11 +4,11 @@ import (
 	"context"
 	"time"
 
-	asset2 "atlas-saga-orchestrator/kafka/message/asset"
 	"atlas-saga-orchestrator/kafka/message"
+	asset2 "atlas-saga-orchestrator/kafka/message/asset"
 	storage2 "atlas-saga-orchestrator/kafka/message/storage"
 	storageCompartment "atlas-saga-orchestrator/kafka/message/storage/compartment"
-	"atlas-saga-orchestrator/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
@@ -47,6 +47,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		p:   producer.ProviderImpl(l)(ctx),
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) DepositAndEmit(transactionId uuid.UUID, worldId world.Id, accountId uint32, slot int16, templateId uint32, expiration time.Time, referenceId uint32, referenceType string, referenceData storage2.ReferenceData) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {

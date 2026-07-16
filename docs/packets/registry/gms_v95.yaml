@@ -698,11 +698,13 @@
   direction: clientbound
   opcode: 142
   fname: CStage::OnSetITC
+  packet: field/clientbound/SetItc
   provenance: csv-import
 - op: SET_CASH_SHOP
   direction: clientbound
   opcode: 143
   fname: CStage::OnSetCashShop
+  packet: cash/clientbound/CashShopOpen
   provenance: csv-import
 - op: SET_BACK_EFFECT
   direction: clientbound
@@ -1566,16 +1568,19 @@
   direction: clientbound
   opcode: 319
   fname: CEmployeePool::OnEmployeeEnterField
+  packet: merchant/clientbound/EmployeeSpawn
   provenance: csv-import
 - op: DESTROY_HIRED_MERCHANT
   direction: clientbound
   opcode: 320
   fname: CEmployeePool::OnEmployeeLeaveField
+  packet: merchant/clientbound/EmployeeDestroy
   provenance: csv-import
 - op: UPDATE_HIRED_MERCHANT
   direction: clientbound
   opcode: 321
   fname: CEmployeePool::OnEmployeeMiniRoomBalloon
+  packet: merchant/clientbound/EmployeeUpdate
   provenance: csv-import
 - op: DROP_ITEM_FROM_MAPOBJECT
   direction: clientbound
@@ -1979,13 +1984,15 @@
   opcode: 407
   fname: CMapleTVMan::OnSendMessageResult
   provenance: csv-import
-- op: IDA_0X19A
+- op: MTS_CHARGE_PARAM_RESULT
   direction: clientbound
   opcode: 410
   fname: CITC::OnChargeParamResult
+  packet: field/clientbound/MtsChargeParamResult
   provenance: ida-discovered
   ida:
     address: 5731440
+  note: 'v95 CITC::OnPacket case 0x19A -> CITC::OnChargeParamResult, handler entry 0x575bc0 (bodiless: m_bITCRequestSent=0; billing StringPool; open_web_site — reads nothing from CInPacket). task-113 MTS charge-param verification (renamed from placeholder IDA_0X19A).'
 - op: MTS_OPERATION2
   direction: clientbound
   opcode: 411
@@ -2021,7 +2028,10 @@
   direction: clientbound
   opcode: 429
   fname: CUIVega::OnVegaResult
-  provenance: csv-import
+  provenance: ida-discovered
+  ida:
+    address: 0x7bf7b0
+  note: 'task-130 Task 4: IDA v95 CUIVega::OnPacket (0x7c0680) nType==0x1AD -> OnVegaResult (0x7bf7b0). Opcode 0x1AD/429 confirmed. Single Decode1 mode byte; START in {0x44,0x49}, RESULT in {0x45,0x47}, else -> notice. START carries outcome (Draw 0x7c1dd0 -> popup OnCreate 0x7c2bd0 -> Effect_Vega 0x457600: 0x44->EffectSuccess, 0x49->EffectFail). START pairing PINNED 0x44 success / 0x49 failure.'
 - op: CONFIRM_LOGOUT_GIFT
   direction: clientbound
   opcode: 432

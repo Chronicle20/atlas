@@ -1,0 +1,21 @@
+{
+  "WriterName": "CharacterCover",
+  "IDAName": "CUserLocal::SetMonsterBookCover",
+  "Address": "0x86c0aa",
+  "Variant": "GMS/v72",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/character/serverbound/monsterbook/cover.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    }
+  ],
+  "Verdict": 2,
+  "FlatInvalid": false
+}

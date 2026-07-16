@@ -19,6 +19,7 @@ type modelBuilder struct {
 	maxMp              uint32
 	monsterId          uint32
 	controlCharacterId uint32
+	controllerHasAggro bool
 	x                  int16
 	y                  int16
 	fh                 int16
@@ -47,6 +48,7 @@ func CloneModel(m Model) *modelBuilder {
 		maxMp:              m.maxMp,
 		monsterId:          m.monsterId,
 		controlCharacterId: m.controlCharacterId,
+		controllerHasAggro: m.controllerHasAggro,
 		x:                  m.x,
 		y:                  m.y,
 		fh:                 m.fh,
@@ -78,6 +80,13 @@ func (b *modelBuilder) SetMaxMp(maxMp uint32) *modelBuilder {
 
 func (b *modelBuilder) SetControlCharacterId(controlCharacterId uint32) *modelBuilder {
 	b.controlCharacterId = controlCharacterId
+	return b
+}
+
+// SetControllerHasAggro sets whether the controlling character currently has
+// aggro on this monster.
+func (b *modelBuilder) SetControllerHasAggro(aggro bool) *modelBuilder {
+	b.controllerHasAggro = aggro
 	return b
 }
 
@@ -120,6 +129,7 @@ func (b *modelBuilder) Build() (Model, error) {
 		maxMp:              b.maxMp,
 		monsterId:          b.monsterId,
 		controlCharacterId: b.controlCharacterId,
+		controllerHasAggro: b.controllerHasAggro,
 		x:                  b.x,
 		y:                  b.y,
 		fh:                 b.fh,

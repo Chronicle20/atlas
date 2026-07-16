@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	channel2 "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	socketwriter "github.com/Chronicle20/atlas/libs/atlas-socket/writer"
@@ -204,7 +205,7 @@ func TestSetCharacterId(t *testing.T) {
 	}
 }
 
-func TestSetMapId(t *testing.T) {
+func TestSetField_PreservesInstance(t *testing.T) {
 	logger, cleanup := testSetup()
 	defer cleanup()
 
@@ -216,20 +217,21 @@ func TestSetMapId(t *testing.T) {
 	session.AddSessionToRegistry(tenant.Id(), s)
 
 	p := session.NewProcessor(logger, ctx)
-	mapId := _map.Id(100000000)
-	updatedSession := p.SetMapId(sessionId, mapId)
+	inst := uuid.New()
+	f := field.NewBuilder(0, 0, _map.Id(100000000)).SetInstance(inst).Build()
+	updated := p.SetField(sessionId, f)
 
-	if updatedSession.MapId() != mapId {
-		t.Errorf("SetMapId() returned session with MapId %d, want %d", updatedSession.MapId(), mapId)
+	if !updated.Field().Equals(f) {
+		t.Errorf("SetField() field = %v/%v/%v/%v, want it to equal f (map 100000000, instance %s)",
+			updated.WorldId(), updated.ChannelId(), updated.MapId(), updated.Instance(), inst)
 	}
 
-	// Verify the registry was updated
 	retrieved, err := p.ByIdModelProvider(sessionId)()
 	if err != nil {
 		t.Fatalf("ByIdModelProvider() unexpected error: %v", err)
 	}
-	if retrieved.MapId() != mapId {
-		t.Errorf("Registry session MapId = %d, want %d", retrieved.MapId(), mapId)
+	if !retrieved.Field().Equals(f) {
+		t.Errorf("registry session field does not equal f; instance = %s, want %s", retrieved.Instance(), inst)
 	}
 }
 
@@ -604,18 +606,19 @@ func TestSetCharacterId_NonExistent(t *testing.T) {
 	}
 }
 
-func TestSetMapId_NonExistent(t *testing.T) {
+func TestSetField_NonExistent(t *testing.T) {
 	logger, cleanup := testSetup()
 	defer cleanup()
 
 	ctx := test.CreateTestContext()
+	p := session.NewProcessor(logger, ctx)
 	nonExistentId := uuid.New()
 
-	p := session.NewProcessor(logger, ctx)
-	result := p.SetMapId(nonExistentId, 100000000)
+	f := field.NewBuilder(0, 0, _map.Id(100000000)).Build()
+	result := p.SetField(nonExistentId, f)
 
 	if result.SessionId() != uuid.Nil {
-		t.Errorf("SetMapId() for non-existent session returned non-nil SessionId")
+		t.Errorf("SetField() for non-existent session returned non-zero SessionId")
 	}
 }
 
@@ -716,5 +719,174 @@ func TestAnnounce_StartsSpan(t *testing.T) {
 	}
 	if gotTenant == "" {
 		t.Error("tenant.id attr was not set")
+	}
+}
+
+// addFieldSession registers a session in the default tenant's registry with the
+// given character id (0 = no character assigned) and field, using only public API.
+func addFieldSession(t *testing.T, p session.Processor, characterId uint32, f field.Model) uuid.UUID {
+	t.Helper()
+	sessionId := uuid.New()
+	ten := test.CreateDefaultMockTenant()
+	s := session.NewSession(sessionId, ten, 0, nil)
+	session.AddSessionToRegistry(ten.Id(), s)
+	if characterId != 0 {
+		p.SetCharacterId(sessionId, characterId)
+	}
+	p.SetField(sessionId, f)
+	return sessionId
+}
+
+func characterIdSet(ms []session.Model) map[uint32]bool {
+	r := make(map[uint32]bool)
+	for _, m := range ms {
+		r[m.CharacterId()] = true
+	}
+	return r
+}
+
+func TestInFieldModelProvider_ExactMatchIncludingInstance(t *testing.T) {
+	logger, cleanup := testSetup()
+	defer cleanup()
+	ctx := test.CreateTestContext()
+	p := session.NewProcessor(logger, ctx)
+
+	instA := uuid.New()
+	instB := uuid.New()
+	fA := field.NewBuilder(0, 0, _map.Id(100000000)).SetInstance(instA).Build()
+	fB := field.NewBuilder(0, 0, _map.Id(100000000)).SetInstance(instB).Build()
+	addFieldSession(t, p, 100, fA)
+	addFieldSession(t, p, 200, fB)
+
+	gotA, err := p.InFieldModelProvider(fA)()
+	if err != nil {
+		t.Fatalf("InFieldModelProvider(fA) unexpected error: %v", err)
+	}
+	if len(gotA) != 1 || !characterIdSet(gotA)[100] {
+		t.Errorf("InFieldModelProvider(fA) = chars %v, want exactly {100}", characterIdSet(gotA))
+	}
+
+	gotB, err := p.InFieldModelProvider(fB)()
+	if err != nil {
+		t.Fatalf("InFieldModelProvider(fB) unexpected error: %v", err)
+	}
+	if len(gotB) != 1 || !characterIdSet(gotB)[200] {
+		t.Errorf("InFieldModelProvider(fB) = chars %v, want exactly {200}", characterIdSet(gotB))
+	}
+}
+
+func TestInFieldModelProvider_WorldChannelDiscrimination(t *testing.T) {
+	logger, cleanup := testSetup()
+	defer cleanup()
+	ctx := test.CreateTestContext()
+	p := session.NewProcessor(logger, ctx)
+
+	// Sessions created via NewSession sit at world 0 / channel 0.
+	f := field.NewBuilder(0, 0, _map.Id(100000000)).Build()
+	addFieldSession(t, p, 100, f)
+
+	otherWorld := field.NewBuilder(1, 0, _map.Id(100000000)).Build()
+	got, err := p.InFieldModelProvider(otherWorld)()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(got) != 0 {
+		t.Errorf("InFieldModelProvider(world 1) = chars %v, want empty", characterIdSet(got))
+	}
+
+	otherChannel := field.NewBuilder(0, 1, _map.Id(100000000)).Build()
+	got, err = p.InFieldModelProvider(otherChannel)()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(got) != 0 {
+		t.Errorf("InFieldModelProvider(channel 1) = chars %v, want empty", characterIdSet(got))
+	}
+}
+
+func TestInFieldModelProvider_ExcludesCharacterlessSessions(t *testing.T) {
+	logger, cleanup := testSetup()
+	defer cleanup()
+	ctx := test.CreateTestContext()
+	p := session.NewProcessor(logger, ctx)
+
+	f := field.NewBuilder(0, 0, _map.Id(100000000)).Build()
+	addFieldSession(t, p, 100, f)
+	addFieldSession(t, p, 0, f) // pre-login session, no character
+
+	got, err := p.InFieldModelProvider(f)()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(got) != 1 || !characterIdSet(got)[100] {
+		t.Errorf("InFieldModelProvider = chars %v, want exactly {100}", characterIdSet(got))
+	}
+}
+
+func TestInFieldModelProvider_ExcludesOtherTenant(t *testing.T) {
+	logger, cleanup := testSetup()
+	defer cleanup()
+	otherTenantId := uuid.MustParse("00000000-0000-0000-0000-000000000002")
+	defer session.ClearRegistryForTenant(otherTenantId)
+
+	ctx := test.CreateTestContext()
+	p := session.NewProcessor(logger, ctx)
+	f := field.NewBuilder(0, 0, _map.Id(100000000)).Build()
+	addFieldSession(t, p, 100, f)
+
+	otherCtx := test.CreateTestContextWithTenant(otherTenantId)
+	po := session.NewProcessor(logger, otherCtx)
+	otherSessionId := uuid.New()
+	os := session.NewSession(otherSessionId, test.CreateDefaultMockTenant(), 0, nil)
+	session.AddSessionToRegistry(otherTenantId, os)
+	po.SetCharacterId(otherSessionId, 999)
+	po.SetField(otherSessionId, f)
+
+	got, err := p.InFieldModelProvider(f)()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(got) != 1 || !characterIdSet(got)[100] {
+		t.Errorf("InFieldModelProvider = chars %v, want exactly {100} (no cross-tenant leakage)", characterIdSet(got))
+	}
+}
+
+func TestInFieldModelProvider_EmptyFieldNoError(t *testing.T) {
+	logger, cleanup := testSetup()
+	defer cleanup()
+	ctx := test.CreateTestContext()
+	p := session.NewProcessor(logger, ctx)
+
+	f := field.NewBuilder(0, 0, _map.Id(999999999)).Build()
+	got, err := p.InFieldModelProvider(f)()
+	if err != nil {
+		t.Fatalf("unexpected error for unpopulated field: %v", err)
+	}
+	if len(got) != 0 {
+		t.Errorf("InFieldModelProvider(unpopulated) = %d sessions, want 0", len(got))
+	}
+}
+
+func TestInMapAllInstancesModelProvider_UnionsInstances(t *testing.T) {
+	logger, cleanup := testSetup()
+	defer cleanup()
+	ctx := test.CreateTestContext()
+	p := session.NewProcessor(logger, ctx)
+
+	fNil := field.NewBuilder(0, 0, _map.Id(100000000)).Build()
+	fInst := field.NewBuilder(0, 0, _map.Id(100000000)).SetInstance(uuid.New()).Build()
+	fOtherMap := field.NewBuilder(0, 0, _map.Id(200000000)).Build()
+	addFieldSession(t, p, 100, fNil)
+	addFieldSession(t, p, 200, fInst)
+	addFieldSession(t, p, 300, fOtherMap)
+	addFieldSession(t, p, 0, fNil) // characterless, excluded
+
+	got, err := p.InMapAllInstancesModelProvider(0, 0, _map.Id(100000000))()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	set := characterIdSet(got)
+	if len(got) != 2 || !set[100] || !set[200] {
+		t.Errorf("InMapAllInstancesModelProvider = chars %v, want exactly {100, 200}", set)
 	}
 }

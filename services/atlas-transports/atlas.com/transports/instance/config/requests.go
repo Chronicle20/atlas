@@ -15,7 +15,10 @@ func getBaseRequest() string {
 	return requests.RootUrl("TENANTS")
 }
 
-func requestInstanceRoutes(tenantId string) requests.Request[[]InstanceRouteRestModel] {
-	url := fmt.Sprintf("%stenants/%s/%s/%s", getBaseRequest(), tenantId, configurationsResource, instanceRoutesResource)
-	return requests.GetRequest[[]InstanceRouteRestModel](url)
+// instanceRoutesUrl is a bare URL (not a requests.Request) because the list
+// is now paginated server-side (task-117) and consumed via
+// requests.DrainProvider, which appends its own page[number]/page[size]
+// query params per request.
+func instanceRoutesUrl(tenantId string) string {
+	return fmt.Sprintf("%stenants/%s/%s/%s", getBaseRequest(), tenantId, configurationsResource, instanceRoutesResource)
 }

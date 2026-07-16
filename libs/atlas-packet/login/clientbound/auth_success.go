@@ -55,7 +55,12 @@ func (m AuthSuccess) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 		}
 
 		if t.Region() == "GMS" {
-			if t.MajorVersion() > 12 {
+			// country code byte is a v72+ addition. IDA v61
+			// CLogin::OnCheckPasswordResult@0x5657ce success path reads only
+			// 3 bytes between accountId and the name (gender@0x565eb8, GM@0x565ec7,
+			// admin@0x565ecf, then DecodeStr@0x565ed8) — one fewer than v72's 4
+			// (gender/GM/admin/country); the country byte is absent below v72.
+			if t.MajorVersion() >= 72 {
 				w.WriteByte(0) // country code
 			}
 			w.WriteAsciiString(m.name)
@@ -65,13 +70,26 @@ func (m AuthSuccess) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 				w.WriteByte(0)  // quiet ban
 				w.WriteLong(0)  // quiet ban timestamp
 				w.WriteLong(0)  // creation timestamp
-				w.WriteInt(1)   // nNumOfCharacter
-				w.WriteBool(!m.usesPin)
-				var needsPic = byte(0)
-				if m.pic != "" {
-					needsPic = byte(1)
+				// nNumOfCharacter is present from v61 up. IDA v48
+				// CLogin::OnCheckPasswordResult (sub_500931) @0x500931 success path
+				// reads only through the second DecodeBuffer(8) @0x500f67 — there is NO
+				// trailing Decode4(nNumOfCharacter) that v61 @0x565f3e (and up) carry.
+				// Gate it out of the pre-v61 legacy wire.
+				if t.MajorVersion() >= 61 {
+					w.WriteInt(1) // nNumOfCharacter
 				}
-				w.WriteByte(needsPic)
+				// pin/pic flags: absent on the legacy (< v83) login-result wire.
+				// IDA v79 CLogin::OnCheckPasswordResult@0x5cd38f reads the success
+				// path only through nNumOfCharacter (Decode4) — no pinFlag/picFlag
+				// follow (v79 usesPin=false). Introduced at v83.
+				if t.MajorVersion() >= 83 {
+					w.WriteBool(!m.usesPin)
+					var needsPic = byte(0)
+					if m.pic != "" {
+						needsPic = byte(1)
+					}
+					w.WriteByte(needsPic)
+				}
 			} else {
 				w.WriteLong(0)
 				w.WriteLong(0)
@@ -117,7 +135,9 @@ func (m *AuthSuccess) Decode(l logrus.FieldLogger, ctx context.Context) func(r *
 		}
 
 		if t.Region() == "GMS" {
-			if t.MajorVersion() > 12 {
+			// country code byte is v72+ (IDA v61 @0x5657ce reads 3 bytes before the
+			// name, not 4). Mirror of Encode.
+			if t.MajorVersion() >= 72 {
 				_ = r.ReadByte() // country code
 			}
 			m.name = r.ReadAsciiString()
@@ -127,12 +147,20 @@ func (m *AuthSuccess) Decode(l logrus.FieldLogger, ctx context.Context) func(r *
 				_ = r.ReadByte()  // quiet ban
 				_ = r.ReadUint64() // quiet ban timestamp
 				_ = r.ReadUint64() // creation timestamp
-				_ = r.ReadUint32() // nNumOfCharacter
-				pinDisabled := r.ReadBool()
-				m.usesPin = !pinDisabled
-				needsPic := r.ReadByte()
-				if needsPic == 1 {
-					m.pic = "set"
+				// nNumOfCharacter present from v61 up (mirror of Encode gate); v48
+				// sub_500931 @0x500931 reads no trailing Decode4.
+				if t.MajorVersion() >= 61 {
+					_ = r.ReadUint32() // nNumOfCharacter
+				}
+				// pin/pic flags absent below v83 (IDA v79 OnCheckPasswordResult
+				// @0x5cd38f reads no pinFlag/picFlag). Mirror of Encode gate.
+				if t.MajorVersion() >= 83 {
+					pinDisabled := r.ReadBool()
+					m.usesPin = !pinDisabled
+					needsPic := r.ReadByte()
+					if needsPic == 1 {
+						m.pic = "set"
+					}
 				}
 			} else {
 				_ = r.ReadUint64()

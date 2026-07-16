@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/Chronicle20/atlas/tools/packet-audit/internal/matrix"
 	"gopkg.in/yaml.v3"
 )
 
@@ -45,6 +46,9 @@ type dispatcherLintConfig struct {
 	AuditsDir    string   // docs/packets/audits root (for INV-4 report check)
 	BaselinePath string   // docs/packets/dispatcher-lint-baseline.yaml
 	UsageRoots   []string // roots scanned for constructor/struct-literal usage (INV-5)
+	// FR-5.1 family-cap guard inputs.
+	DispatchersDir string // docs/packets/dispatchers (family mode-table yamls)
+	FamiliesPath   string // docs/packets/evidence/families.yaml (graduated membership)
 }
 
 func defaultDispatcherLintConfig() dispatcherLintConfig {
@@ -58,6 +62,9 @@ func defaultDispatcherLintConfig() dispatcherLintConfig {
 		// conversation detail) are constructed directly by a channel consumer
 		// or handler, not by a libs body function.
 		UsageRoots: []string{filepath.Join("libs", "atlas-packet"), "services"},
+
+		DispatchersDir: filepath.Join("docs", "packets", "dispatchers"),
+		FamiliesPath:   filepath.Join("docs", "packets", "evidence", "families.yaml"),
 	}
 }
 
@@ -341,6 +348,102 @@ func collectDispatcherViolations(cfg dispatcherLintConfig, arms []dispatcherArm)
 	}
 	out = append(out, inv4b...)
 
+	// FR-5.1: every dispatchers/*.yaml family must be discrete-implemented or
+	// baseline/families-listed (so a new family can't escape mode-prefix capping).
+	famcap, err := checkFamilyCap(cfg)
+	if err != nil {
+		return nil, err
+	}
+	out = append(out, famcap...)
+
+	return out, nil
+}
+
+// dispatcherYamlFamily is the minimal shape of a docs/packets/dispatchers/*.yaml
+// mode-table file — just enough to read which dispatcher family it defines.
+type dispatcherYamlFamily struct {
+	FName string `yaml:"fname"`
+}
+
+// caseLabelFamilies scans run.go for every base FName that has at least one
+// `case "<fname>#<mode>":` label in candidatesFromFName — the discrete-per-mode
+// wiring signal, independent of the candidate literal's field order (which the
+// stricter arm parser is sensitive to). A missing run.go yields an empty set.
+func caseLabelFamilies(runGo string) (map[string]bool, error) {
+	raw, err := os.ReadFile(runGo)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return map[string]bool{}, nil
+		}
+		return nil, err
+	}
+	set := map[string]bool{}
+	for _, line := range strings.Split(string(raw), "\n") {
+		if m := caseHashRe.FindStringSubmatch(line); m != nil {
+			set[m[1]] = true
+		}
+	}
+	return set, nil
+}
+
+// checkFamilyCap (FR-5.1) enforces that every docs/packets/dispatchers/*.yaml
+// family is EITHER discrete-implemented (it has #-suffixed case arms in run.go —
+// and is therefore already subject to INV-1..5 and capped at 🧩 until every arm
+// is verified) OR explicitly listed in families.yaml / the dispatcher-lint
+// baseline. A brand-new dispatcher family file with no discrete implementation
+// and no baseline/families entry would otherwise silently escape mode-prefix
+// capping — this closes that hole. Violations are tagged [family=<fname>] so a
+// baselined family is suppressed by the same partition as the INV checks.
+func checkFamilyCap(cfg dispatcherLintConfig) ([]violation, error) {
+	entries, err := os.ReadDir(cfg.DispatchersDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	armSet, err := caseLabelFamilies(cfg.RunGo)
+	if err != nil {
+		return nil, err
+	}
+	fams, err := matrix.LoadFamilies(cfg.FamiliesPath)
+	if err != nil {
+		return nil, fmt.Errorf("loading families.yaml %s: %w", cfg.FamiliesPath, err)
+	}
+	famSet := fams.Set()
+
+	// Sort file names so violation output is deterministic.
+	names := make([]string, 0, len(entries))
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".yaml") {
+			continue
+		}
+		names = append(names, e.Name())
+	}
+	sort.Strings(names)
+
+	var out []violation
+	for _, name := range names {
+		p := filepath.Join(cfg.DispatchersDir, name)
+		raw, err := os.ReadFile(p)
+		if err != nil {
+			return nil, err
+		}
+		var d dispatcherYamlFamily
+		if err := yaml.Unmarshal(raw, &d); err != nil {
+			return nil, fmt.Errorf("parsing dispatcher family %s: %w", p, err)
+		}
+		if d.FName == "" {
+			out = append(out, violation{file: p, inv: "FAM-CAP",
+				msg: "dispatcher family file declares no `fname:` — cannot confirm it is mode-prefix capped"})
+			continue
+		}
+		if armSet[d.FName] || famSet[d.FName] {
+			continue
+		}
+		out = append(out, violation{file: p, inv: "FAM-CAP",
+			msg: fmt.Sprintf("family %s is neither discrete-implemented in run.go (no #-suffixed arms) nor listed in families.yaml/baseline — author it discrete-per-mode or add a baseline/families cap [family=%s]", d.FName, d.FName)})
+	}
 	return out, nil
 }
 

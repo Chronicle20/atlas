@@ -1,9 +1,9 @@
 package monster
 
 import (
-	"atlas-monsters/kafka/producer"
 	"atlas-monsters/monster/drop"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"math/rand"
 	"time"
 
@@ -58,7 +58,7 @@ func (t *DropTimerTask) processEntry(now time.Time, ten tenant.Model, uniqueId u
 }
 
 func (t *DropTimerTask) produceDrop(ctx context.Context, m Model, e DropTimerEntry) {
-	ds, err := drop.GetByMonsterId(t.l)(ctx)(e.MonsterId())
+	ds, err := drop.NewProcessor(t.l, ctx).GetByMonsterId(e.MonsterId())
 	if err != nil {
 		t.l.WithError(err).Errorf("Unable to fetch drop table for friendly monster [%d] (template [%d]).", m.UniqueId(), e.MonsterId())
 		return

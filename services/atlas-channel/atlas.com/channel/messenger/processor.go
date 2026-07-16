@@ -2,55 +2,67 @@ package messenger
 
 import (
 	messenger2 "atlas-channel/kafka/message/messenger"
-	"atlas-channel/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
 )
 
-type Processor struct {
+type Processor interface {
+	Create(characterId uint32) error
+	Leave(messengerId uint32, characterId uint32) error
+	RequestInvite(characterId uint32, targetCharacterId uint32) error
+	GetById(messengerId uint32) (Model, error)
+	ByIdProvider(messengerId uint32) model.Provider[Model]
+	GetByMemberId(memberId uint32) (Model, error)
+	ByMemberIdProvider(memberId uint32) model.Provider[Model]
+}
+
+type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
-	p := &Processor{
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 	}
 	return p
 }
 
-func (p *Processor) Create(characterId uint32) error {
+var _ Processor = (*ProcessorImpl)(nil)
+
+func (p *ProcessorImpl) Create(characterId uint32) error {
 	p.l.Debugf("Character [%d] attempting to create a messenger.", characterId)
 	return producer.ProviderImpl(p.l)(p.ctx)(messenger2.EnvCommandTopic)(CreateCommandProvider(characterId))
 }
 
-func (p *Processor) Leave(messengerId uint32, characterId uint32) error {
+func (p *ProcessorImpl) Leave(messengerId uint32, characterId uint32) error {
 	p.l.Debugf("Character [%d] attempting to leave messenger [%d].", characterId, messengerId)
 	return producer.ProviderImpl(p.l)(p.ctx)(messenger2.EnvCommandTopic)(LeaveCommandProvider(characterId, messengerId))
 }
 
-func (p *Processor) RequestInvite(characterId uint32, targetCharacterId uint32) error {
+func (p *ProcessorImpl) RequestInvite(characterId uint32, targetCharacterId uint32) error {
 	p.l.Debugf("Character [%d] attempting to invite [%d] to a messenger.", characterId, targetCharacterId)
 	return producer.ProviderImpl(p.l)(p.ctx)(messenger2.EnvCommandTopic)(RequestInviteCommandProvider(characterId, targetCharacterId))
 }
 
-func (p *Processor) GetById(messengerId uint32) (Model, error) {
+func (p *ProcessorImpl) GetById(messengerId uint32) (Model, error) {
 	return p.ByIdProvider(messengerId)()
 }
 
-func (p *Processor) ByIdProvider(messengerId uint32) model.Provider[Model] {
+func (p *ProcessorImpl) ByIdProvider(messengerId uint32) model.Provider[Model] {
 	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(messengerId), Extract)
 }
 
-func (p *Processor) GetByMemberId(memberId uint32) (Model, error) {
+func (p *ProcessorImpl) GetByMemberId(memberId uint32) (Model, error) {
 	return p.ByMemberIdProvider(memberId)()
 }
 
-func (p *Processor) ByMemberIdProvider(memberId uint32) model.Provider[Model] {
+func (p *ProcessorImpl) ByMemberIdProvider(memberId uint32) model.Provider[Model] {
 	rp := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByMemberId(memberId), Extract, model.Filters[Model]())
 	return model.FirstProvider(rp, model.Filters[Model]())
 }

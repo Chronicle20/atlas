@@ -30,6 +30,7 @@ The channel service acts as the primary interface between game clients and the b
   - INVENTORY - Character inventory (compartments and unified assets)
   - KEYS - Key bindings
   - MAPS - Map character tracking
+  - MERCHANT - Personal shop / hired merchant state, listings, blacklist, visit list, Frederick status, and owl-of-Minerva shop search
   - MESSENGERS - Messenger rooms
   - MONSTERS - Monster state
   - NOTES - Mail notes
@@ -77,6 +78,8 @@ The channel service acts as the primary interface between game clients and the b
 | EVENT_TOPIC_INSTANCE_TRANSPORT | Instance transport events |
 | EVENT_TOPIC_INVITE_STATUS | Invite status events |
 | EVENT_TOPIC_MAP_STATUS | Map status events |
+| EVENT_TOPIC_MERCHANT_STATUS | Personal shop / hired merchant status events |
+| EVENT_TOPIC_MERCHANT_LISTING | Merchant listing events |
 | EVENT_TOPIC_MESSENGER_STATUS | Messenger status events |
 | EVENT_TOPIC_MONSTER_STATUS | Monster status events |
 | EVENT_TOPIC_NOTE_STATUS | Note status events |
@@ -103,6 +106,7 @@ The channel service acts as the primary interface between game clients and the b
 | COMMAND_TOPIC_CHARACTER_BUFF | Buff commands |
 | COMMAND_TOPIC_CHARACTER_CHAT | Chat commands |
 | COMMAND_TOPIC_CHARACTER_MOVEMENT | Character movement commands |
+| COMMAND_TOPIC_MERCHANT | Personal shop / hired merchant commands |
 | COMMAND_TOPIC_COMPARTMENT | Compartment commands |
 | COMMAND_TOPIC_CONSUMABLE | Consumable commands |
 | COMMAND_TOPIC_DROP | Drop commands |

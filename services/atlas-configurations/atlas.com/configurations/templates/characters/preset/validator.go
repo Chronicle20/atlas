@@ -20,11 +20,11 @@ type ValidationError struct {
 
 // Validator validates a slice of RestModel presets against the 12 domain rules.
 type Validator struct {
-	client data.Client
+	client data.Processor
 }
 
 // NewValidator constructs a Validator backed by the given atlas-data client.
-func NewValidator(client data.Client) *Validator {
+func NewValidator(client data.Processor) *Validator {
 	return &Validator{client: client}
 }
 

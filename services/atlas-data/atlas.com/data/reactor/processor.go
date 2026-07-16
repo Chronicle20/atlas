@@ -14,20 +14,37 @@ import (
 	"gorm.io/gorm"
 )
 
-func Register(s *Storage) func(ctx context.Context) func(r model.Provider[RestModel]) error {
-	return func(ctx context.Context) func(r model.Provider[RestModel]) error {
-		return func(r model.Provider[RestModel]) error {
-			m, err := r()
-			if err != nil {
-				return err
-			}
-			_, err = s.Add(ctx)(m)()
-			if err != nil {
-				return err
-			}
-			return nil
-		}
+type Processor interface {
+	Register(s *Storage, r model.Provider[RestModel]) error
+	RegisterReactor(path string) error
+}
+
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+	db  *gorm.DB
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
+	return &ProcessorImpl{
+		l:   l,
+		ctx: ctx,
+		db:  db,
 	}
+}
+
+var _ Processor = (*ProcessorImpl)(nil)
+
+func (p *ProcessorImpl) Register(s *Storage, r model.Provider[RestModel]) error {
+	m, err := r()
+	if err != nil {
+		return err
+	}
+	_, err = s.Add(p.ctx)(m)()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func extractPathAndID(path string) (string, uint32, error) {
@@ -52,18 +69,12 @@ func extractPathAndID(path string) (string, uint32, error) {
 	return dir, uint32(id), nil
 }
 
-func RegisterReactor(db *gorm.DB) func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
-	return func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
-		return func(ctx context.Context) func(path string) error {
-			return func(path string) error {
-				parentPath, reactorId, err := extractPathAndID(path)
-				if err != nil {
-					return err
-				}
-				return database.ExecuteTransaction(db, func(tx *gorm.DB) error {
-					return Register(NewStorage(l, tx))(ctx)(Read(l)(parentPath, reactorId, xml.FromParentPathProvider(7)))
-				})
-			}
-		}
+func (p *ProcessorImpl) RegisterReactor(path string) error {
+	parentPath, reactorId, err := extractPathAndID(path)
+	if err != nil {
+		return err
 	}
+	return database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		return p.Register(NewStorage(p.l, tx), Read(p.l)(parentPath, reactorId, xml.FromParentPathProvider(7)))
+	})
 }

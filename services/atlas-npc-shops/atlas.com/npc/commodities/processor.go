@@ -58,6 +58,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	return p
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 	newProcessor := &ProcessorImpl{
 		l:   p.l,

@@ -7,7 +7,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import {
-  useGuilds,
+  useGuildsPage,
   useGuild,
   useGuildsByWorld,
   useGuildSearch,
@@ -21,7 +21,7 @@ import type { Tenant } from '@/types/models/tenant';
 // Mock the guilds service
 vi.mock('@/services/api/guilds.service', () => ({
   guildsService: {
-    getAll: vi.fn(),
+    getPage: vi.fn(),
     getById: vi.fn(),
     getByWorld: vi.fn(),
     search: vi.fn(),
@@ -74,6 +74,8 @@ const mockGuild: Guild = {
 };
 
 const mockGuilds: Guild[] = [mockGuild];
+const mockPage = { number: 1, size: 50 };
+const mockPagedResult = { data: mockGuilds, meta: { total: 1, page: { number: 1, size: 50, last: 1 } } };
 
 // Test wrapper with QueryClient
 function createWrapper() {
@@ -97,19 +99,29 @@ describe('useGuilds', () => {
   });
 
   describe('Query Hooks', () => {
-    it('should fetch all guilds successfully', async () => {
-      (guildsService.getAll as ReturnType<typeof vi.fn>).mockResolvedValue(mockGuilds);
+    it('should fetch a page of guilds successfully', async () => {
+      (guildsService.getPage as ReturnType<typeof vi.fn>).mockResolvedValue(mockPagedResult);
 
-      const { result } = renderHook(() => useGuilds(mockTenant), {
+      const { result } = renderHook(() => useGuildsPage(mockTenant, mockPage), {
         wrapper: createWrapper(),
       });
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
-        expect(result.current.data).toEqual(mockGuilds);
+        expect(result.current.data).toEqual(mockPagedResult);
       });
 
-      expect(guildsService.getAll).toHaveBeenCalledWith({ useCache: false });
+      expect(guildsService.getPage).toHaveBeenCalledWith(mockPage, { useCache: false });
+    });
+
+    it('should not fetch a page when enabled=false', () => {
+      const { result } = renderHook(() => useGuildsPage(mockTenant, mockPage, undefined, false), {
+        wrapper: createWrapper(),
+      });
+
+      expect(result.current.isLoading).toBe(false);
+      expect(result.current.data).toBeUndefined();
+      expect(guildsService.getPage).not.toHaveBeenCalled();
     });
 
     it('should fetch guild by ID successfully', async () => {
@@ -142,19 +154,37 @@ describe('useGuilds', () => {
       expect(guildsService.getByWorld).toHaveBeenCalledWith(1, { useCache: false });
     });
 
-    it('should search guilds successfully', async () => {
-      (guildsService.search as ReturnType<typeof vi.fn>).mockResolvedValue(mockGuilds);
+    it('should search guilds via the server-side filter[name] page endpoint', async () => {
+      (guildsService.search as ReturnType<typeof vi.fn>).mockResolvedValue(mockPagedResult);
 
-      const { result } = renderHook(() => useGuildSearch(mockTenant, 'Test'), {
+      const { result } = renderHook(() => useGuildSearch(mockTenant, 'Test', mockPage), {
         wrapper: createWrapper(),
       });
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
-        expect(result.current.data).toEqual(mockGuilds);
+        expect(result.current.data).toEqual(mockPagedResult);
       });
 
-      expect(guildsService.search).toHaveBeenCalledWith('Test', undefined, { useCache: false });
+      expect(guildsService.search).toHaveBeenCalledWith('Test', mockPage, { useCache: false });
+    });
+
+    it('should not search when the search term is empty', () => {
+      const { result } = renderHook(() => useGuildSearch(mockTenant, '', mockPage), {
+        wrapper: createWrapper(),
+      });
+
+      expect(result.current.isLoading).toBe(false);
+      expect(guildsService.search).not.toHaveBeenCalled();
+    });
+
+    it('should not search when enabled=false', () => {
+      const { result } = renderHook(() => useGuildSearch(mockTenant, 'Test', mockPage, undefined, false), {
+        wrapper: createWrapper(),
+      });
+
+      expect(result.current.isLoading).toBe(false);
+      expect(guildsService.search).not.toHaveBeenCalled();
     });
 
     it('should fetch guilds with space successfully', async () => {
@@ -187,14 +217,14 @@ describe('useGuilds', () => {
       expect(guildsService.getRankings).toHaveBeenCalledWith(undefined, 50, { useCache: false });
     });
 
-    it('should not fetch when tenant is not provided', () => {
-      const { result } = renderHook(() => useGuilds(null as Tenant | null), {
+    it('should not fetch a page when tenant is not provided', () => {
+      const { result } = renderHook(() => useGuildsPage(null, mockPage), {
         wrapper: createWrapper(),
       });
 
       expect(result.current.isLoading).toBe(false);
       expect(result.current.data).toBeUndefined();
-      expect(guildsService.getAll).not.toHaveBeenCalled();
+      expect(guildsService.getPage).not.toHaveBeenCalled();
     });
 
     it('should not fetch guild when guildId is not provided', () => {
@@ -213,9 +243,10 @@ describe('useGuilds', () => {
       expect(guildKeys.all).toEqual(['guilds']);
       expect(guildKeys.lists()).toEqual(['guilds', 'list']);
       expect(guildKeys.list(mockTenant)).toEqual(['guilds', 'list', 'tenant-1', undefined]);
+      expect(guildKeys.pagedList(mockTenant, 1, 50)).toEqual(['guilds', 'list', 'tenant-1', 1, 50]);
       expect(guildKeys.detail(mockTenant, 'guild-1')).toEqual(['guilds', 'detail', 'tenant-1', 'guild-1']);
       expect(guildKeys.byWorld(mockTenant, 1)).toEqual(['guilds', 'list', 'tenant-1', 'world', 1]);
-      expect(guildKeys.search(mockTenant, 'test')).toEqual(['guilds', 'search', 'tenant-1', 'test', undefined]);
+      expect(guildKeys.search(mockTenant, 'test', 1, 50)).toEqual(['guilds', 'search', 'tenant-1', 'test', 1, 50]);
       expect(guildKeys.rankings(mockTenant, 1, 25)).toEqual(['guilds', 'list', 'tenant-1', 'rankings', 1, 25]);
     });
   });

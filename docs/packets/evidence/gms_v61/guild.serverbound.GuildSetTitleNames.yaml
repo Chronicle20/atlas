@@ -1,0 +1,10 @@
+packet: guild/serverbound/GuildSetTitleNames
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendSetGradeNameMsg
+    address: "0x4e99fb"
+    decompile_sha256: 04065864c3b5fb6637f75f1a542e0345088ed3786f61cc895499674fdb709ac5
+verifies:
+    - libs/atlas-packet/guild/serverbound/operation_set_title_names_test.go#TestSetTitleNamesRoundTrip

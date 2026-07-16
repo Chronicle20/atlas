@@ -1,0 +1,11 @@
+{
+  "WriterName": "FieldEnterMts",
+  "IDAName": "CWvsContext::SendMigrateToITCRequest",
+  "Address": "0x95dd85",
+  "Variant": "GMS/v79",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/serverbound/enter_mts.go",
+  "Rows": null,
+  "Verdict": 0,
+  "FlatInvalid": false
+}

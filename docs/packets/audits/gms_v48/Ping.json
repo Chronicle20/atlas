@@ -1,0 +1,21 @@
+{
+  "WriterName": "Ping",
+  "IDAName": "CClientSocket::OnAliveReq#PingReceive",
+  "Address": "",
+  "Variant": "GMS/v48",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/socket/clientbound/ping.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 6,
+      "IDAComment": "function not found in IDB",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    }
+  ],
+  "Verdict": 2,
+  "FlatInvalid": false
+}

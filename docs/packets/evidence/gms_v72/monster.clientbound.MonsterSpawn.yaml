@@ -1,0 +1,10 @@
+packet: monster/clientbound/MonsterSpawn
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CMobPool::OnMobEnterField
+    address: "0x6256de"
+    decompile_sha256: 434a8b08236d83f33c2e9d7872e52966151d15a0e07313315c76854cdebb6bf4
+verifies:
+  - libs/atlas-packet/monster/clientbound/spawn_test.go#TestMonsterSpawnBytesV72

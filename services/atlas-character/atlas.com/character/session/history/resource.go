@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -47,19 +48,25 @@ func handleGetSessions(d *rest.HandlerDependency, c *rest.HandlerContext) http.H
 				since = time.Now().Add(-24 * time.Hour)
 			}
 
-			p := NewProcessor(d.Logger(), d.Context(), d.DB())
-			sessions, err := p.GetSessionsSince(characterId, since)
+			page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
 			if err != nil {
-				d.Logger().WithError(err).Errorf("Failed to get sessions for character [%d].", characterId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteBadRequest(d.Logger(), w, err.Error())
 				return
 			}
 
-			result := TransformSliceToRest(sessions)
+			p := NewProcessor(d.Logger(), d.Context(), d.DB())
+			paged, err := p.GetSessionsSinceProvider(characterId, since, page)()
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Failed to get sessions for character [%d].", characterId)
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+
+			result := TransformSliceToRest(paged.Items)
 
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(result)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(result, paginate.EnvelopeFor(paged), r)
 		}
 	})
 }
@@ -91,7 +98,7 @@ func handleGetPlaytime(d *rest.HandlerDependency, c *rest.HandlerContext) http.H
 			playtime, err := p.ComputePlaytimeSince(characterId, since)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Failed to compute playtime for character [%d].", characterId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 

@@ -2266,3 +2266,11 @@ const (
 	SharenianGuildUnionCampId                          = Id(990001101)
 	EmptyMapId                                         = Id(999999999)
 )
+
+// Free Market interior maps (entrance + rooms 1-22). Range verified against
+// RunShopScanner in GMS v83 (0xa0a2dc) and v95 (0x9deb50) — the client
+// hard-blocks the shop scanner outside this range (task-127).
+const (
+	FreeMarketEntranceId = Id(910000000)
+	FreeMarketRoomLastId = Id(910000022)
+)

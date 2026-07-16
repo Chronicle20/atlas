@@ -13,6 +13,7 @@ import (
 
 const CharacterChatMultiHandle = "CharacterMultiChatHandle"
 
+// packet-audit:fname CUIStatusBar::SendGroupMessage
 type Multi struct {
 	updateTime uint32
 	chatType   byte

@@ -4,9 +4,9 @@ import (
 	"atlas-transports/data/portal"
 	"atlas-transports/kafka/message"
 	character2 "atlas-transports/kafka/message/character"
-	"atlas-transports/kafka/producer"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -37,6 +37,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		pp:  portal.NewProcessor(l, ctx),
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) WarpRandom(mb *message.Buffer) func(characterId uint32) func(fieldId field.Id) error {
 	return func(characterId uint32) func(fieldId field.Id) error {

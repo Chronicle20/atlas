@@ -38,6 +38,7 @@ type RestModel struct {
 	Gm                 int      `json:"gm"`
 	X                  int16    `json:"x"`
 	Y                  int16    `json:"y"`
+	Fh                 int16    `json:"fh"`
 	Stance             byte     `json:"stance"`
 }
 
@@ -114,6 +115,7 @@ func Extract(m RestModel) (Model, error) {
 		gm:                 m.Gm,
 		x:                  m.X,
 		y:                  m.Y,
+		fh:                 m.Fh,
 		stance:             m.Stance,
 	}, nil
 }

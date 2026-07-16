@@ -1,0 +1,147 @@
+# Task-118 Shared Service Bootstrap — Context
+
+Companion to `plan.md`. Key files, locked decisions, dependencies, and the gotchas an implementer must not rediscover the hard way.
+
+## Key files
+
+| File | Role |
+|---|---|
+| `libs/atlas-service/teardown.go` | Existing `Manager`/`GetTeardownManager` singleton — Bootstrap wraps it, does NOT change it |
+| `libs/atlas-service/bootstrap.go` (new) | `Bootstrap`, `Option`, `Runtime`, readiness controller |
+| `libs/atlas-service/logger.go` (new) | `CreateLogger` — canonical body from the 53-way-identical service copies |
+| `libs/atlas-service/fieldnorm.go` (new) | snake_case emit-time normalizer hook (CP-9) |
+| `libs/atlas-service/projection.go` (new) | `Projection` iface, `ProjectionFuncs`, `WithConfigProjection`, `AwaitProjectionCatchUp`, `parseProjectionCatchupTimeout` |
+| `libs/atlas-kafka/producer/provider.go` (new) | `Provider` + `ProviderImpl` — verbatim move of the 51-way-identical wrapper |
+| `libs/atlas-kafka/producer/producer_test.go` | Has `MockWriter` fake — reuse it in `provider_test.go` |
+| `libs/atlas-rest/server/server.go:34` | `MountReadiness(path, fn)` — existing contract, unchanged |
+| `libs/atlas-tracing/tracing.go` | `InitTracer(name) (*sdktrace.TracerProvider, error)`, `Teardown(l)(tp) func()` |
+| `services/atlas-fame/atlas.com/fame/main.go` | Pilot service; the canonical "Cohort A" shape |
+| `services/atlas-{login,channel,world,character-factory}/.../main.go` | The 4 projection services (Cohorts D1/D2) |
+| `services/atlas-renders/atlas.com/renders/main.go` | The one non-standard service (raw mux, no tracer, `/healthz`) |
+| `services/atlas-merchant/atlas.com/merchant/service/teardown.go` | Private teardown-manager copy — delete, rewire imports to the lib |
+| `deploy/k8s/base/atlas-{world,character-factory,renders}.yaml` | Live probe paths — must remain valid; NO manifest edits in this task |
+
+## Locked decisions (from design.md)
+
+- **D1** Producer move is verbatim; return type becomes the named `Provider` (identical underlying type, assignable everywhere). No behavior change.
+- **D3** snake_case via emit-time hook, registered LAST in `CreateLogger`. Collision rule: explicit snake_case key wins, camelCase duplicate dropped, deterministic via sorted rename order. Safe to mutate `entry.Data` in place — logrus v1.9.4 `entry.Dup()` fires hooks on a per-emission copy.
+- **D4** Functional options + `Runtime` handle. Bootstrap owns logger/tdm/tracer/readiness/projection; `main.go` keeps DB/Redis/consumers/REST builder/tasks/producer-close teardown.
+- **D5** Readiness mounts via one explicit `MountReadiness("/readyz", rt.Ready)` line per main.go under `SetBasePath("/api/")` → effective `/api/readyz`. NO root-mount relocation (that's OPS-3, decided with OPS-1's manifests).
+- **D6** Lib owns projection *choreography* only, via the 2-method `Projection` interface + `ProjectionFuncs` adapter; the 4 service-local `configuration/projection` packages are NOT extracted. Catch-up gate position stays with main.go (`rt.AwaitProjectionCatchUp()`); readiness gates are service-supplied (`caughtUp.CaughtUpNow` ×3, `configuration.SnapshotReady` for world).
+- **D7** atlas-renders: `WithoutTracer()`, keeps raw mux + `/healthz`, gains root `/readyz` + graceful shutdown. Log format change to ecslogrus is the accepted observable change.
+- Accepted micro-changes (must be called out in Cohort D commit messages): projection subscriber starts earlier (inside Bootstrap, before consumer registration); warn condition unifies to "tenant topic unset".
+
+## Dependencies & sequencing
+
+- **HARD GATE (Task 0):** task-114 (outbox adoption) and task-116 (processor gen3 unification) must be merged to main, and this branch rebased, before any code task. Both rewrite producer wiring / main.go surface. All measured shapes expire at rebase; re-measure and re-derive verbatim bodies.
+- `libs/atlas-service` gains deps: logrus v1.9.4, ecslogrus v1.0.0, google/uuid v1.6.0, `libs/atlas-tracing` (require + `replace ../atlas-tracing`). No import cycle (atlas-tracing → otel+logrus only).
+- No Dockerfile or go.work edits: both libs already have COPY lines and go.work entries.
+- Lib tasks (1–5) strictly before any migration; pilot (6) before cohort sweeps (7–12); docs (13) and verification (14) last.
+
+## Gotchas (measured 2026-07-02; several are design-doc corrections)
+
+1. **57 local logger packages, not 56**: atlas-monster-book's is `logger/logger.go`, byte-identical (md5 `473b31e275b2900d442a9915fb6a095a`). Acceptance grep must match both filenames.
+2. **`services/atlas-cashshop/.../cashshop/inventory/rest_test.go`** imports the local logger — the only non-main importer fleet-wide. Rewrite to `service.CreateLogger` in cashshop's commit.
+3. **atlas-storage's `projection` package is storage-domain**, not config projection. Cohort A, no projection option.
+4. **Replace-directive semantics**: `replace` lines are only honored from the main module. Services must KEEP their `atlas-tracing` require+replace even after main.go stops importing tracing (atlas-service depends on it). Do NOT `go mod tidy` services — except atlas-renders, which genuinely gains deps.
+5. **atlas-renders' `tenantMiddleware`** rejects requests without tenant headers; `/readyz` must be added to the `/healthz` bypass or probes get 400s.
+6. **Dual-import files** (~20+, worst in atlas-saga-orchestrator, e.g. `saga/producer.go` with `kproducer` alias): after the R1 sed they become duplicate imports — keep one `producer` import, rename alias uses.
+7. **atlas-quest's wrapper is `Provider`-type-only** (no `ProviderImpl`); migration must not force `ProviderImpl` adoption (FR-1.4).
+8. **`zz_lifecycle_test.go` ordering**: the SIGTERM lifecycle test closes the process-wide teardown-manager singleton; the `zz_` filename makes it run last in the package. Don't add later-sorting test files to `libs/atlas-service`.
+9. **Normalizer hook ordering caveat**: keys added by hooks registered after the normalizer escape normalization. `CreateLogger` registers it last; zero `AddHook` calls exist outside the (deleted) `logger/` packages.
+10. **Probe-path trap** (`bug_readiness_probe_path_under_api_basepath`): effective path is `/api/readyz`, and atlas-world/atlas-character-factory manifests already probe exactly that. This task must not change any effective URL.
+11. **logrus `Fatal` testing**: set `rt.Logger().ExitFunc` to capture exit instead of letting the test binary die (used in the projection timeout test).
+12. **Group-id pattern is load-bearing**: `"<base> - projection - <uuid>"` per process forces FirstOffset replay of the compacted config log; a shared group id would leave the projection state empty on restart.
+
+## Cohort map (58 services)
+
+- **Pilot:** fame.
+- **Cohort A (44):** account, asset-expiration, ban, buddies, buffs, cashshop, chairs, chalkboards, character, consumables, data, doors, drops, effective-stats, expressions, families, guilds, inventory, invites, keys, map-actions, maps, marriages, messages, messengers, monster-book, monster-death, monsters, mounts, notes, npc-conversations, npc-shops, parties, party-quests, pets, portal-actions, portals, reactor-actions, reactors, skills, storage, summons, tenants, transports.
+- **Cohort B (5, no producer wrapper):** configurations, drop-information, gachapons, query-aggregator, rates.
+- **Cohort C (3):** quest, merchant, saga-orchestrator.
+- **Cohort D (4):** world, character-factory (D1); login, channel (D2).
+- **Cohort E (1):** renders.
+
+## Post-rebase measurements
+
+Rebased onto `origin/main` (2026-07-13) — both gate commits present:
+`d2e13ba3d feat(outbox): fleet-wide transactional outbox adoption (task-114) (#903)`
+and `e15b343b1 refactor(task-116): converge all processors onto the Gen3 idiom (#967)`.
+Clean rebase (doc-only branch). Census after rebase:
+
+| Metric | 2026-07-02 snapshot | Post-rebase (2026-07-13) |
+|---|---|---|
+| `main.go` | 58 | **59** |
+| logger files (`init.go`/`logger.go`) | 57 | **58** |
+| producer wrappers | 52 | **53** |
+| producer wrapper hash census | 51× common + quest | **52× common (`c983cb70`) + quest (`353904e2`)** |
+| projection helpers (`parseProjectionCatchupTimeout`) | 4 | 4 (unchanged) |
+
+### Drift #1 — new service `atlas-mts` (the MTS feature landed)
+Standard Cohort A shape: producer wrapper md5 = common `c983cb70`, logger md5 = common `473b31e2…`. It also carries the task-114 outbox block. **Added to Task 7 (Cohort A now 45 services; fleet total 59).**
+
+### Drift #2 — task-114 outbox drainer block now in 17 DB-service `main.go`s
+`buddies, cashshop, character, configurations, fame, guilds, inventory, merchant, monster-book, mounts, mts, notes, npc-shops, pets, quest, skills, tenants` each gained, right after `database.Connect(... , outboxlib.Migration)`:
+```go
+publisher := outboxlib.NewTopicWriterPool()
+drainer := outboxlib.NewDrainer(l, db, publisher, outboxlib.WithDSN(database.DSN()))
+routine.Go(l, tdm.Context(), func(_ context.Context) { drainer.Run(tdm.Context()) })
+tdm.TeardownFunc(func() { drainer.Stop(); publisher.Close() })
+```
+plus imports `context`, `routine "…/atlas-routine"`, `outboxlib "…/atlas-outbox"`.
+Recipe R2's substitution rules (tdm.→rt.; delete only logger+tracing lines) **preserve this block correctly** — it is retained service-specific code. The plan's Task 6 *full-verbatim* fame `main.go` omitted it and has been **re-derived** to include it. R2 step 7 clarified to keep the outbox imports. (Note `atlas-configurations` is Cohort B — no producer wrapper — yet has the outbox block; R2 still applies.)
+
+### Drift #3 — plan error: character-factory catch-up gate is BEFORE `Run()`
+The plan's Task 10 Step 4 claimed atlas-character-factory gates catch-up "after `Run()`, like world." The actual current file gates it **before `Run()`** (the `ctxCaught` block sits above `server.New()`). world gates **after** `Run()`; character-factory gates **before**. Task 10 corrected so each service's `rt.AwaitProjectionCatchUp()` keeps its true position.
+
+### Drift #4 — new build gate `tools/goroutine-guard.sh` (task-115, RR-6)
+Bans bare `go` statements outside `libs/atlas-routine` + justified `//goroutine-guard:allow` sites. The outbox block already uses `routine.Go` (compliant). **The plan's Task 12 (atlas-renders) used a bare `go func(){…}()` for its listener — re-derived to `routine.Go(l, rt.Context(), …)`.** goroutine-guard added to Global Constraints + Task 14 verification.
+
+### Unchanged (verified against plan verbatim)
+- Producer wrapper body (Task 1 lib target) — identical.
+- Canonical logger body (Task 3 target) — fame `logger/init.go` md5 `473b31e2…` matches the pinned snapshot; body structure matches Task 3.
+- login/channel projection blocks — catch-up gate still before listener registry; `Subscriber` literal fields (`State, CaughtUp, ServiceTopic, TenantTopic, ServiceId`) unchanged (channel literal at main.go:242-248).
+- No outbox block in world/character-factory/login/channel (non-DB or Redis-only).
+
+## Acceptance evidence
+
+Executed 2026-07-13. All 59 services migrated onto `service.Bootstrap`; five library tasks landed first. Every migration reviewed clean per-batch (spec + quality).
+
+### Step 1 — Acceptance greps (PRD §10), all matching expected values
+```
+find services -path '*/kafka/producer/producer.go' | wc -l                     → 0
+find services -path '*/atlas.com/*/logger/init.go' -o -path '*/atlas.com/*/logger/logger.go' | wc -l → 0
+grep -rl parseProjectionCatchupTimeout services | wc -l                         → 0
+grep -l "tracing.InitTracer" services/*/atlas.com/*/main.go | wc -l             → 0
+grep -rn "logger.CreateLogger" services --include='*.go' | wc -l                → 0
+grep -L "MountReadiness" services/*/atlas.com/*/main.go                         → services/atlas-renders/... (exactly 1, root-mounts /readyz by hand)
+grep -l "service.Bootstrap\|lifecycle.Bootstrap" services/*/atlas.com/*/main.go | wc -l → 59
+grep -rn "shuttingDown" services/*/atlas.com/*/main.go | wc -l                  → 0
+```
+
+### Step 2 — Per-module build/vet/test sweep
+- `go build ./...` + `go vet ./...`: **61/61 modules clean** (libs/atlas-kafka, libs/atlas-service, 59 services).
+- `go test -race ./...`: **61/61 modules clean, 0 failures.**
+
+### Step 3 — Guards + full bake
+- `tools/redis-key-guard.sh` → PASS
+- `tools/goroutine-guard.sh` → PASS (renders listener + all outbox drainers use `routine.Go`)
+- `docker buildx bake all-go-services` → **exit 0** (all service images built against the shared Dockerfile; the two go.mod-changed services — merchant, renders — bake clean).
+
+### Step 4 — Runtime verification (atlas-query-aggregator local smoke)
+`REST_PORT=18099 go run .`, then:
+- `curl /api/readyz` → **HTTP 200** (effective `/api/readyz` under `/api/` base path).
+- SIGTERM → stdout shows, in order: `"Starting main service."`, `"Flipped /readyz to not-ready for graceful shutdown."`, `"Service shutdown."` — all ECS-JSON with a `service.name` field (ecslogrus + Bootstrap readiness controller + graceful shutdown all confirmed live). snake_case normalization is unit-verified in libs/atlas-service (Task 2/3).
+
+### Notable execution deviations from the plan (all correct, documented above under Post-rebase measurements + here)
+- **atlas-mts** added to the sweep (new service, drift #1).
+- **17 DB services** retained the task-114 outbox drainer block (drift #2); R2 substitution preserved it.
+- **atlas-character-factory** gate kept BEFORE `Run()` (drift #3; plan had said "after").
+- **atlas-renders** listener uses `routine.Go` not bare `go` (drift #4 / goroutine-guard).
+- **atlas-data** MODE=ingest now initializes a tracer it previously skipped — benign (InitTracer uses a lazy gRPC dial, cannot Fatal on unreachable/unset TRACE_ENDPOINT; no rt.Wait in ingest so its spans are dropped). Natural consequence of design D4 (Bootstrap owns tracer init).
+- **atlas-marriages / atlas-reactors** producer_test.go removed (internal `package producer` tests of the deleted local `ProviderImpl`; uncompilable after deletion, redundant with libs/atlas-kafka/producer/provider_test.go).
+- **atlas-character / atlas-storage** alias the lib import as `lifecycle` (local `service` package name collision).
+- **atlas-merchant** deleted its private teardown-manager copy and gained the lib atlas-service require (allowed go.mod change, like renders); bake clean.
+- **atlas-maps** kept its local `kafka/producer` package (domain producer `character.go`) alongside the lib, via a `mapsproducer` alias.
+- **Task 13**: DUP-1/2/3, CP-9, OPS-2/3 do NOT exist in docs/architectural-improvements.md (only CD-2 does) — those IDs live only in task-118's own prd/design/plan. The snake_case convention was documented in docs/observability.md; nothing to mark resolved in architectural-improvements.md.
+- **style commit**: the R1 producer-import sed left import blocks unsorted in 158 Cohort A/D files; a consolidated `gofmt` commit normalized them (no behavior change).

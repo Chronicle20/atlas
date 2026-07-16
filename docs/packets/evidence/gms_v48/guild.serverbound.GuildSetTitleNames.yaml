@@ -1,0 +1,8 @@
+packet: guild/serverbound/GuildSetTitleNames
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendSetGradeNameMsg
+    address: "0x4c624a"
+    decompile_sha256: 5fc53742e0dd75d4fb509813c0763ae722674f7fdf81ab0d06e3a747902b84fa

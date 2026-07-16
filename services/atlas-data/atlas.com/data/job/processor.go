@@ -1,10 +1,31 @@
 package job
 
 import (
+	"context"
+
 	constJob "github.com/Chronicle20/atlas/libs/atlas-constants/job"
+	"github.com/sirupsen/logrus"
 )
 
-func GetSkillsForJob(jobId uint32) (RestModel, bool) {
+type Processor interface {
+	GetSkillsForJob(jobId uint32) (RestModel, bool)
+}
+
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	return &ProcessorImpl{
+		l:   l,
+		ctx: ctx,
+	}
+}
+
+var _ Processor = (*ProcessorImpl)(nil)
+
+func (p *ProcessorImpl) GetSkillsForJob(jobId uint32) (RestModel, bool) {
 	j, ok := constJob.Jobs[constJob.Id(uint16(jobId))]
 	if !ok {
 		return RestModel{Id: jobId, Skills: []uint32{}}, false

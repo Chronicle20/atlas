@@ -69,8 +69,8 @@ var tamingMobInfoBroadcaster = func(l logrus.FieldLogger, ctx context.Context, w
 	}
 }
 
-// tooTiredDismounter auto-dismounts a rider whose mount grew too tired (FR-6.3;
-// mirrors Cosmic runTirednessSchedule's dispelSkill). It resolves the rider's
+// tooTiredDismounter auto-dismounts a rider whose mount grew too tired (FR-6.3)
+// by dispelling the riding buff. It resolves the rider's
 // session for the field, finds the active MONSTER_RIDING buff, and cancels it —
 // which both visually dismounts the player and (via the buff-EXPIRED event)
 // drops the active-mount registry entry so ticking stops.
@@ -123,7 +123,7 @@ func handleStatusEvent(sc server.Model, wp writer.Producer) message.Handler[moun
 			uint32(e.Body.Level), uint32(e.Body.Exp), uint32(e.Body.Tiredness), e.Body.LevelUp)
 
 		if e.Body.TooTired {
-			// Cosmic dispels the mount skill when tiredness maxes; do the same so the
+			// Dispel the mount skill when tiredness maxes so the
 			// rider is actually dismounted, then send the notice.
 			tooTiredDismounter(l, ctx, sc, e.CharacterId)
 			tooTiredNoticer(l, ctx, wp, sc, e.CharacterId, tooTiredMessage)

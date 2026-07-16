@@ -1,0 +1,8 @@
+packet: guild/serverbound/GuildKick
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendKickGuildMsg
+    address: "0x4c5e06"
+    decompile_sha256: f57c9ced08d6efb15cd70bf3d626b0be649236dfc90497759183a8422b2343dc

@@ -27,6 +27,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) GetAll() model.Provider[[]Model] {
 	return func() ([]Model, error) {
 		ms := make(map[int32]Model)

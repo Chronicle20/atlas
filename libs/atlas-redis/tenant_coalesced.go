@@ -1,6 +1,9 @@
 package redis
 
 import (
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+	"github.com/sirupsen/logrus"
+
 	"context"
 	"encoding/json"
 	"errors"
@@ -61,7 +64,9 @@ func NewTenantCoalescedRegistry[K comparable, V any](
 		stopCh:          make(chan struct{}),
 		done:            make(chan struct{}),
 	}
-	go r.run()
+	routine.Go(logrus.StandardLogger(), context.Background(), func(_ context.Context) {
+		r.run()
+	})
 	return r
 }
 

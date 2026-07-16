@@ -1,0 +1,10 @@
+packet: interaction/serverbound/InteractionOperationPersonalStorePutItem
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CPersonalShopDlg::PutItem
+    address: "0x68a3e3"
+    decompile_sha256: 604d0ccf8ab85da79cdccf9f3e8797f6d3e9e0008a62ffe9dff3bea9be5f38e0
+verifies:
+  - libs/atlas-packet/interaction/serverbound/operation_personal_store_put_item_test.go#TestOperationPersonalStorePutItemRoundTrip

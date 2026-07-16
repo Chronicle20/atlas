@@ -77,9 +77,21 @@ func TestShopOperationGiftRoundTrip(t *testing.T) {
 // packet-audit:verify packet=cash/serverbound/CashShopOperationGift version=gms_v83 ida=0x46f940
 // packet-audit:verify packet=cash/serverbound/CashShopOperationGift version=gms_v87 ida=0x47a168
 // packet-audit:verify packet=cash/serverbound/CashShopOperationGift version=gms_v95 ida=0x487b60
+//
+// v79 CCashShop::SendGiftsPacket@0x4691e3: COutPacket(221) Encode1(4)=mode (routed
+// op), then Encode4(this[326]) leading int, Encode4(this[327])=serialNumber,
+// EncodeStr(recipient name), EncodeStr(message). No oneADay byte (that is v87+),
+// no SPW string (that is v95+). Body after the mode byte == the v83 shape.
+// packet-audit:verify packet=cash/serverbound/CashShopOperationGift version=gms_v79 ida=0x4691e3
 func TestShopOperationGiftBytes(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	input := ShopOperationGift{birthday: 0x01020304, spw: "x", serialNumber: 0x05060708, oneADay: 1, name: "", message: ""}
+
+	// v79: 04030201 | 08070605 | 0000 | 0000  (int + int + empty name + empty message, == v83)
+	got79 := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 79, 1))(nil))
+	if got79 != "04030201"+"08070605"+"0000"+"0000" {
+		t.Errorf("v79 bytes: got %s", got79)
+	}
 
 	// v83: 04030201 | 08070605 | 0000 | 0000  (int + int + empty name + empty message)
 	got83 := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 83, 1))(nil))
@@ -97,6 +109,22 @@ func TestShopOperationGiftBytes(t *testing.T) {
 	got95 := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 95, 1))(nil))
 	if got95 != "010078"+"08070605"+"01"+"0000"+"0000" {
 		t.Errorf("v95 bytes: got %s", got95)
+	}
+}
+
+// TestShopOperationGiftV72Bytes pins the v72 legacy body. IDA v72
+// CCashShop::SendGiftsPacket@0x467f9a (GMS_v72.1_U_DEVM.exe, port 13339):
+// COutPacket(219) Encode1(4)=mode @0x4681ed (routed op) then Encode4(this[326])=
+// birthday/leading @0x4681fb, Encode4(this[327])=serialNumber @0x468209,
+// EncodeStr(name) @0x468222, EncodeStr(message) @0x46823e. No oneADay (v87+), no
+// SPW (v95+). Body after the mode byte == v79.
+// packet-audit:verify packet=cash/serverbound/CashShopOperationGift version=gms_v72 ida=0x467f9a
+func TestShopOperationGiftV72Bytes(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	input := ShopOperationGift{birthday: 0x01020304, spw: "x", serialNumber: 0x05060708, oneADay: 1, name: "", message: ""}
+	got := hex.EncodeToString(input.Encode(l, pt.CreateContext("GMS", 72, 1))(nil))
+	if got != "04030201"+"08070605"+"0000"+"0000" {
+		t.Errorf("v72 bytes: got %s", got)
 	}
 }
 

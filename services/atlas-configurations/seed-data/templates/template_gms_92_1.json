@@ -188,6 +188,21 @@
         "opCode": "0xCA",
         "validator": "LoggedInValidator",
         "handler": "SummonDamageHandle"
+      },
+      {
+        "opCode": "0x49",
+        "validator": "LoggedInValidator",
+        "handler": "OwlActionHandle",
+        "options": {
+          "operations": {
+            "OPEN": 5
+          }
+        }
+      },
+      {
+        "opCode": "0x4A",
+        "validator": "LoggedInValidator",
+        "handler": "OwlWarpHandle"
       }
     ],
     "writers": [{
@@ -482,6 +497,33 @@
       {
         "opCode": "0xC7",
         "writer": "SummonSkill"
+      },
+      {
+        "opCode": "0x4A",
+        "writer": "ShopScannerResult",
+        "options": {
+          "operations": {
+            "RESULT": 6,
+            "HOT_LIST": 7
+          }
+        }
+      },
+      {
+        "opCode": "0x4B",
+        "writer": "ShopLinkResult",
+        "options": {
+          "operations": {
+            "SUCCESS": 0,
+            "CLOSED": 1,
+            "FULL": 2,
+            "BUSY": 3,
+            "DEAD": 4,
+            "NO_TRADE": 7,
+            "DENIED": 17,
+            "MAINTENANCE": 18,
+            "FM_ONLY": 23
+          }
+        }
       }
     ]
   },

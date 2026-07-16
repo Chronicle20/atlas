@@ -12,6 +12,53 @@ import (
 // packet-audit:verify packet=login/clientbound/AuthSuccess version=gms_v95 ida=0x5dc600
 // packet-audit:verify packet=login/clientbound/AuthSuccess version=gms_v84 ida=0x60d368
 // packet-audit:verify packet=login/clientbound/AuthSuccess version=jms_v185 ida=0x66e79f
+// packet-audit:verify packet=login/clientbound/AuthSuccess version=gms_v79 ida=0x5cd38f
+//
+// gms_v72 LOGIN_STATUS success path — CLogin::OnCheckPasswordResult @0x5b2577,
+// success branch @0x5b2c40 (GMS_v72.1_U_DEVM.exe, port 13339): Decode4(accountId)
+// @0x5b2c4c, Decode1(gender)@0x5b2c54, Decode1(gm)@0x5b2c63, Decode1(admin)
+// @0x5b2c6d, Decode1(country)@0x5b2c75, DecodeStr(name)@0x5b2c7e, Decode1
+// @0x5b2c93, Decode1@0x5b2c9b, DecodeBuffer(8)@0x5b2ca6, DecodeBuffer(8)
+// @0x5b2cc4, Decode4(nNumOfCharacter)@0x5b2ce1 — NO pin/pic flags (<83), NO
+// client key (<84). Byte-for-byte the atlas AuthSuccess.Encode GMS legacy path.
+//
+// gms_v61 LOGIN_STATUS success path — CLogin::OnCheckPasswordResult @0x5657ce,
+// success branch @0x565ea4 (GMS_v61.1_U_DEVM.exe, port 13338): Decode4(accountId)
+// @0x565eb0, Decode1(gender)@0x565eb8, Decode1(GM)@0x565ec7, Decode1(admin)
+// @0x565ecf, DecodeStr(name)@0x565ed8, Decode1@0x565eed, Decode1@0x565ef5,
+// DecodeBuffer(8)@0x565f00, DecodeBuffer(8)@0x565f1e, Decode4(nNumOfCharacter)
+// @0x565f3e. Only 3 bytes between accountId and name (gender/GM/admin) — the v72
+// country byte is ABSENT (v61 < 72). No pin/pic (<83), no client key (<84).
+// Width = 46 (v72) − 1 (country) = 45 bytes.
+//
+// packet-audit:verify packet=login/clientbound/AuthSuccess version=gms_v61 ida=0x5657ce
+func TestAuthSuccessV61WireWidth(t *testing.T) {
+	// result(1)+byte(1)+GMSint(4)+accountId(4)+gender(1)+gmBool(1)+admin(1)+
+	// (2+len name)+banReason(1)+ban(1)+long(8)+long(8)+nNumOfChar(4)
+	// = 1+1+4+4+1+1+1+(2+8)+1+1+8+8+4 = 45 bytes (no country, no pin/pic, no key).
+	const wantLen = 45
+	ctx := pt.CreateContext("GMS", 61, 1)
+	input := AuthSuccess{accountId: 1001, name: "TestUser", gender: 1, usesPin: true, pic: "123456"}
+	l, _ := testlog.NewNullLogger()
+	if got := len(input.Encode(l, ctx)(nil)); got != wantLen {
+		t.Fatalf("v61 wire len: got %d, want %d", got, wantLen)
+	}
+}
+
+// packet-audit:verify packet=login/clientbound/AuthSuccess version=gms_v72 ida=0x5b2577
+func TestAuthSuccessV72WireWidth(t *testing.T) {
+	// result(1)+byte(1)+GMSint(4)+accountId(4)+gender(1)+gmBool(1)+admin(1)+
+	// country(1)+(2+len name)+banReason(1)+ban(1)+long(8)+long(8)+nNumOfChar(4)
+	// = 1+1+4+4+1+1+1+1+(2+8)+1+1+8+8+4 = 46 bytes (no pin/pic, no client key).
+	const wantLen = 46
+	ctx := pt.CreateContext("GMS", 72, 1)
+	input := AuthSuccess{accountId: 1001, name: "TestUser", gender: 1, usesPin: true, pic: "123456"}
+	l, _ := testlog.NewNullLogger()
+	if got := len(input.Encode(l, ctx)(nil)); got != wantLen {
+		t.Fatalf("v72 wire len: got %d, want %d", got, wantLen)
+	}
+}
+
 func TestAuthSuccessV95WireWidthMatchesIDA(t *testing.T) {
 	// Spike: docs/packets/spike-login-v95.md Packet 1.
 	// Field 7 (subGradeCode+testerAccount) is int16 in v95, byte before.
@@ -57,7 +104,9 @@ func TestAuthSuccessRoundTrip(t *testing.T) {
 			if output.Gender() != input.Gender() {
 				t.Errorf("gender: got %v, want %v", output.Gender(), input.Gender())
 			}
-			if v.Region == "GMS" && v.MajorVersion > 12 {
+			// pin/pic flags exist only at GMS v83+ (IDA v79 OnCheckPasswordResult
+			// @0x5cd38f reads none; introduced at v83).
+			if v.Region == "GMS" && v.MajorVersion >= 83 {
 				if output.UsesPin() != input.UsesPin() {
 					t.Errorf("usesPin: got %v, want %v", output.UsesPin(), input.UsesPin())
 				}

@@ -1,0 +1,10 @@
+packet: guild/serverbound/GuildWithdraw
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendWithdrawGuildMsg
+    address: "0x51bed3"
+    decompile_sha256: b007b9759c3919ee413262e71ac3c02d89986f361571684e7054992542c194af
+verifies:
+  - libs/atlas-packet/guild/serverbound/operation_withdraw_test.go#TestWithdrawRoundTrip

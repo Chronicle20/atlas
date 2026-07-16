@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcAskNumberConversationDetail
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CScriptMan::OnAskNumber#AskNumber
+    address: "0x6c8525"
+    decompile_sha256: a43381dbe83f23454042abf8414b6a7f63d0eb3ed03d0444f77cac0aa4140892
+verifies:
+  - libs/atlas-packet/npc/clientbound/conversation_v79_details_test.go#TestNpcConversationAskNumberV79

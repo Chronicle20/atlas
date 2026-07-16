@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
@@ -51,12 +52,12 @@ func TestByCharacterIdProvider_Empty(t *testing.T) {
 	processor, cleanup := setupProcessor(t)
 	defer cleanup()
 
-	skills, err := processor.ByCharacterIdProvider(12345)()
+	skills, err := processor.ByCharacterIdProvider(12345, model.Page{Number: 1, Size: 250})()
 	if err != nil {
 		t.Fatalf("ByCharacterIdProvider() unexpected error: %v", err)
 	}
-	if len(skills) != 0 {
-		t.Errorf("len(skills) = %d, want 0", len(skills))
+	if len(skills.Items) != 0 {
+		t.Errorf("len(skills.Items) = %d, want 0", len(skills.Items))
 	}
 }
 
@@ -80,12 +81,12 @@ func TestByCharacterIdProvider_WithSkills(t *testing.T) {
 		t.Fatalf("Create() unexpected error: %v", err)
 	}
 
-	skills, err := processor.ByCharacterIdProvider(characterId)()
+	skills, err := processor.ByCharacterIdProvider(characterId, model.Page{Number: 1, Size: 250})()
 	if err != nil {
 		t.Fatalf("ByCharacterIdProvider() unexpected error: %v", err)
 	}
-	if len(skills) != 2 {
-		t.Errorf("len(skills) = %d, want 2", len(skills))
+	if len(skills.Items) != 2 {
+		t.Errorf("len(skills.Items) = %d, want 2", len(skills.Items))
 	}
 }
 
@@ -251,9 +252,9 @@ func TestDelete(t *testing.T) {
 	_, _ = processor.Create(mb)(transactionId, worldId, characterId, 1001002, 5, 15, expiration)
 
 	// Verify skills exist
-	skills, _ := processor.ByCharacterIdProvider(characterId)()
-	if len(skills) != 2 {
-		t.Fatalf("Expected 2 skills before delete, got %d", len(skills))
+	skills, _ := processor.ByCharacterIdProvider(characterId, model.Page{Number: 1, Size: 250})()
+	if len(skills.Items) != 2 {
+		t.Fatalf("Expected 2 skills before delete, got %d", len(skills.Items))
 	}
 
 	// Delete all skills for character
@@ -263,9 +264,9 @@ func TestDelete(t *testing.T) {
 	}
 
 	// Verify skills are deleted
-	skills, _ = processor.ByCharacterIdProvider(characterId)()
-	if len(skills) != 0 {
-		t.Errorf("len(skills) = %d, want 0 after delete", len(skills))
+	skills, _ = processor.ByCharacterIdProvider(characterId, model.Page{Number: 1, Size: 250})()
+	if len(skills.Items) != 0 {
+		t.Errorf("len(skills.Items) = %d, want 0 after delete", len(skills.Items))
 	}
 }
 
@@ -371,12 +372,12 @@ func TestMultipleSkillsForCharacter(t *testing.T) {
 	}
 
 	// Fetch all skills
-	skills, err := processor.ByCharacterIdProvider(characterId)()
+	skills, err := processor.ByCharacterIdProvider(characterId, model.Page{Number: 1, Size: 250})()
 	if err != nil {
 		t.Fatalf("ByCharacterIdProvider() unexpected error: %v", err)
 	}
-	if len(skills) != len(skillIds) {
-		t.Errorf("len(skills) = %d, want %d", len(skills), len(skillIds))
+	if len(skills.Items) != len(skillIds) {
+		t.Errorf("len(skills.Items) = %d, want %d", len(skills.Items), len(skillIds))
 	}
 }
 
@@ -409,15 +410,15 @@ func TestDifferentCharacters(t *testing.T) {
 	}
 
 	// Verify character 1 has 2 skills
-	skills1, _ := processor.ByCharacterIdProvider(char1)()
-	if len(skills1) != 2 {
-		t.Errorf("Character 1 skills = %d, want 2", len(skills1))
+	skills1, _ := processor.ByCharacterIdProvider(char1, model.Page{Number: 1, Size: 250})()
+	if len(skills1.Items) != 2 {
+		t.Errorf("Character 1 skills = %d, want 2", len(skills1.Items))
 	}
 
 	// Verify character 2 has 1 skill
-	skills2, _ := processor.ByCharacterIdProvider(char2)()
-	if len(skills2) != 1 {
-		t.Errorf("Character 2 skills = %d, want 1", len(skills2))
+	skills2, _ := processor.ByCharacterIdProvider(char2, model.Page{Number: 1, Size: 250})()
+	if len(skills2.Items) != 1 {
+		t.Errorf("Character 2 skills = %d, want 1", len(skills2.Items))
 	}
 }
 

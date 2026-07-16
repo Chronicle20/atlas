@@ -29,13 +29,13 @@ func handleGetMountForCharacter(d *rest.HandlerDependency, c *rest.HandlerContex
 			m, err := p.GetByCharacterId(characterId)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to retrieve mount for character [%d].", characterId)
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			res, err := model.Map(Transform)(model.FixedProvider(m))()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 

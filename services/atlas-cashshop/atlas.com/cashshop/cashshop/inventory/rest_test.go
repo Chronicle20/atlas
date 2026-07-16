@@ -3,7 +3,6 @@ package inventory
 import (
 	"atlas-cashshop/cashshop/inventory/asset"
 	"atlas-cashshop/cashshop/inventory/compartment"
-	"atlas-cashshop/logger"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -18,7 +18,7 @@ import (
 
 // testLogger creates a logger for testing
 func testLogger() *logrus.Logger {
-	return logger.CreateLogger("test")
+	return service.CreateLogger("test")
 }
 
 // GetServer returns a server information instance for testing

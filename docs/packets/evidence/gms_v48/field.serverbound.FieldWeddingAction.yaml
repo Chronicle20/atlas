@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldWeddingAction
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CField_Wedding::OnWeddingProgress
+    address: "0x4e22ff"
+    decompile_sha256: 37560a119f24f0ad4fc132d85d5f09b09056f994226dc353184af075d75d2769

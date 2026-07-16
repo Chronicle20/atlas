@@ -1,9 +1,9 @@
 package monster
 
 import (
-	"atlas-monsters/kafka/producer"
 	"atlas-monsters/monster/information"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -25,6 +25,10 @@ type recoveryApplyFn func(t tenant.Model, uniqueId uint32, hpRecovery, mpRecover
 // Production wraps producer.ProviderImpl(...); tests intercept.
 type recoveryEmitFn func(t tenant.Model, m Model) error
 
+// recoveryMpEmitFn publishes the MP_CHANGED event for applied MP regen.
+// Production wraps producer.ProviderImpl(...); tests intercept.
+type recoveryMpEmitFn func(t tenant.Model, m Model, amount uint32) error
+
 // recoveryInfoFn fetches the monster's template information.Model. Production
 // wraps information.GetById; tests inject fakes.
 type recoveryInfoFn func(t tenant.Model, monsterId uint32) (information.Model, error)
@@ -41,6 +45,7 @@ type MonsterRecoveryTask struct {
 	infoFn   recoveryInfoFn
 	applyFn  recoveryApplyFn
 	emitFn   recoveryEmitFn
+	mpEmitFn recoveryMpEmitFn
 }
 
 // NewMonsterRecoveryTask wires production implementations.
@@ -54,13 +59,19 @@ func NewMonsterRecoveryTask(l logrus.FieldLogger, ctx context.Context, interval 
 	}
 	tk.infoFn = func(t tenant.Model, monsterId uint32) (information.Model, error) {
 		tctx := tenant.WithContext(tk.ctx, t)
-		return information.GetById(tk.l)(tctx)(monsterId)
+		return information.NewProcessor(tk.l, tctx).GetById(monsterId)
 	}
 	tk.applyFn = GetMonsterRegistry().ApplyRecovery
 	tk.emitFn = func(t tenant.Model, m Model) error {
 		tctx := tenant.WithContext(tk.ctx, t)
 		return producer.ProviderImpl(tk.l)(tctx)(EnvEventTopicMonsterStatus)(
 			damagedStatusEventProvider(m, m.UniqueId(), m.UniqueId(), false, DamageSourceHeal, m.DamageSummary()),
+		)
+	}
+	tk.mpEmitFn = func(t tenant.Model, m Model, amount uint32) error {
+		tctx := tenant.WithContext(tk.ctx, t)
+		return producer.ProviderImpl(tk.l)(tctx)(EnvEventTopicMonsterStatus)(
+			mpChangedStatusEventProvider(m, 0, 0, MpChangeReasonRecovery, amount),
 		)
 	}
 	// Compile-time guard so unused imports fail loudly if any wiring drifts.
@@ -110,7 +121,7 @@ func (tk *MonsterRecoveryTask) Run() {
 				continue
 			}
 
-			updated, hpApplied, _, err := tk.applyFn(ten, m.UniqueId(), hpR, mpR, nowMs)
+			updated, hpApplied, mpApplied, err := tk.applyFn(ten, m.UniqueId(), hpR, mpR, nowMs)
 			if err != nil {
 				tk.l.WithError(err).Debugf(
 					"Recovery: apply failed for monster [%d]; skipping.", m.UniqueId())
@@ -120,6 +131,19 @@ func (tk *MonsterRecoveryTask) Run() {
 				if err := tk.emitFn(ten, updated); err != nil {
 					tk.l.WithError(err).Debugf(
 						"Recovery: HP-bar emit failed for monster [%d].", updated.UniqueId())
+				}
+			}
+			if mpApplied {
+				// Best-effort applied amount from the pre/post snapshots;
+				// the mirror consumer only reads MonsterMpAfter, which the
+				// post model carries authoritatively.
+				var amount uint32
+				if updated.Mp() > m.Mp() {
+					amount = updated.Mp() - m.Mp()
+				}
+				if err := tk.mpEmitFn(ten, updated, amount); err != nil {
+					tk.l.WithError(err).Debugf(
+						"Recovery: MP_CHANGED emit failed for monster [%d].", updated.UniqueId())
 				}
 			}
 		}

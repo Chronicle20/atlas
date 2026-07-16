@@ -20,6 +20,10 @@ func requestById(id uint32) requests.Request[RestModel] {
 	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ById, id))
 }
 
-func requestRechargeable() requests.Request[[]RestModel] {
-	return requests.GetRequest[[]RestModel](getBaseRequest() + Rechargeable)
+// rechargeableUrl is a bare URL (not a requests.Request) because the
+// filter[rechargeable]=true list is now paginated server-side (task-117)
+// and consumed via requests.DrainProvider, which appends its own
+// page[number]/page[size] query params per request.
+func rechargeableUrl() string {
+	return getBaseRequest() + Rechargeable
 }

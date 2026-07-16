@@ -13,6 +13,7 @@ use (
 	./libs/atlas-redis
 	./libs/atlas-rest
 	./libs/atlas-retry
+	./libs/atlas-routine
 	./libs/atlas-saga
 	./libs/atlas-script-core
 	./libs/atlas-seeder
@@ -58,6 +59,7 @@ use (
 	./services/atlas-monster-death/atlas.com/monster
 	./services/atlas-monsters/atlas.com/monsters
 	./services/atlas-mounts/atlas.com/mounts
+	./services/atlas-mts/atlas.com/mts
 	./services/atlas-notes/atlas.com/notes
 	./services/atlas-npc-conversations/atlas.com/npc
 	./services/atlas-npc-shops/atlas.com/npc

@@ -1,0 +1,10 @@
+packet: interaction/clientbound/InteractionInteractionUpdateMerchant
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_5459C4
+    address: "0x5459c4"
+    decompile_sha256: ec99a96527a4f97c0defe962c94cfc987b8f136578b838dd84c8f89d584a630e
+verifies:
+    - libs/atlas-packet/interaction/clientbound/v48_test.go#TestInteractionArmsV48

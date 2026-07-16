@@ -1,0 +1,10 @@
+packet: character/serverbound/ChairFixed
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendGetUpFromChairRequest
+    address: "0x8374fe"
+    decompile_sha256: 3f9892786507db21169fba4503bc763f5965981b3ab38d8d25fe3c7c7f5e650d
+verifies:
+    - libs/atlas-packet/character/serverbound/v61_test.go#TestChairFixedByteOutputV61

@@ -1,0 +1,29 @@
+package mock
+
+import (
+	"atlas-data/cash"
+	"atlas-data/document"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+)
+
+type ProcessorMock struct {
+	RegisterFunc     func(s *document.Storage[string, cash.RestModel], r model.Provider[[]cash.RestModel]) error
+	RegisterCashFunc func(path string) error
+}
+
+var _ cash.Processor = (*ProcessorMock)(nil)
+
+func (m *ProcessorMock) Register(s *document.Storage[string, cash.RestModel], r model.Provider[[]cash.RestModel]) error {
+	if m.RegisterFunc != nil {
+		return m.RegisterFunc(s, r)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) RegisterCash(path string) error {
+	if m.RegisterCashFunc != nil {
+		return m.RegisterCashFunc(path)
+	}
+	return nil
+}

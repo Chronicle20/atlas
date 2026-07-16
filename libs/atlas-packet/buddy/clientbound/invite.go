@@ -87,7 +87,9 @@ func (m *Invite) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *reque
 		_ = model.ReadPaddedString(r, 13) // friendName
 		_ = r.ReadByte()                  // flag
 		_ = r.ReadInt32()                 // channelId
-		_ = model.ReadPaddedString(r, 17) // friendGroup
-		_ = r.ReadByte()                  // inShop
+		if model.BuddyHasFriendGroup(ctx) {
+			_ = model.ReadPaddedString(r, 17) // friendGroup (absent in GMS < 72, e.g. v61)
+		}
+		_ = r.ReadByte() // inShop
 	}
 }

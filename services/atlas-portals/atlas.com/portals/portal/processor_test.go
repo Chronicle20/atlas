@@ -101,7 +101,7 @@ func TestEnter_PortalNotFound(t *testing.T) {
 
 	// Call Enter - should log error and return without panic
 	f := createTestField(100000000)
-	portal.Enter(logger)(ctx)(f, 99, 12345)
+	portal.NewProcessor(logger, ctx).Enter(f, 99, 12345)
 
 	// Verify error was logged
 	found := false
@@ -135,7 +135,7 @@ func TestEnter_PortalWithScript(t *testing.T) {
 	// Note: EnableActions makes a Kafka call which won't work in test,
 	// but the function should not panic
 	f := createTestField(100000000)
-	portal.Enter(logger)(ctx)(f, 5, 12345)
+	portal.NewProcessor(logger, ctx).Enter(f, 5, 12345)
 
 	// Test passes if no panic
 }
@@ -159,7 +159,7 @@ func TestEnter_PortalWithTargetMap(t *testing.T) {
 	// Note: WarpById makes a Kafka call which won't work in test,
 	// but the function should not panic
 	f := createTestField(100000000)
-	portal.Enter(logger)(ctx)(f, 1, 12345)
+	portal.NewProcessor(logger, ctx).Enter(f, 1, 12345)
 
 	// Test passes if no panic
 }
@@ -182,7 +182,7 @@ func TestEnter_PortalWithInvalidTarget_FallbackToPortal0(t *testing.T) {
 
 	// Call Enter - should fallback to portal 0
 	f := createTestField(100000000)
-	portal.Enter(logger)(ctx)(f, 1, 12345)
+	portal.NewProcessor(logger, ctx).Enter(f, 1, 12345)
 
 	// Check for warning log about fallback
 	for _, entry := range hook.Entries {
@@ -209,7 +209,7 @@ func TestEnter_PortalNoScriptNoTarget(t *testing.T) {
 
 	// Call Enter - should enable actions and return
 	f := createTestField(100000000)
-	portal.Enter(logger)(ctx)(f, 3, 12345)
+	portal.NewProcessor(logger, ctx).Enter(f, 3, 12345)
 
 	// Test passes if no panic
 }
@@ -225,7 +225,7 @@ func TestGetInMapById_Success(t *testing.T) {
 	logger, _ := logtest.NewNullLogger()
 	ctx := test.CreateTestContext()
 
-	model, err := portal.GetInMapById(logger)(ctx)(100000000, 42)
+	model, err := portal.NewProcessor(logger, ctx).GetInMapById(100000000, 42)
 
 	if err != nil {
 		t.Fatalf("GetInMapById() returned unexpected error: %v", err)
@@ -247,7 +247,7 @@ func TestGetInMapById_NotFound(t *testing.T) {
 	logger, _ := logtest.NewNullLogger()
 	ctx := test.CreateTestContext()
 
-	_, err := portal.GetInMapById(logger)(ctx)(100000000, 999)
+	_, err := portal.NewProcessor(logger, ctx).GetInMapById(100000000, 999)
 
 	if err == nil {
 		t.Error("GetInMapById() expected error for non-existent portal, got nil")
@@ -265,7 +265,7 @@ func TestGetInMapByName_Success(t *testing.T) {
 	logger, _ := logtest.NewNullLogger()
 	ctx := test.CreateTestContext()
 
-	model, err := portal.GetInMapByName(logger)(ctx)(100000000, "spawn_portal")
+	model, err := portal.NewProcessor(logger, ctx).GetInMapByName(100000000, "spawn_portal")
 
 	if err != nil {
 		t.Fatalf("GetInMapByName() returned unexpected error: %v", err)
@@ -285,7 +285,7 @@ func TestGetInMapByName_NotFound(t *testing.T) {
 	logger, _ := logtest.NewNullLogger()
 	ctx := test.CreateTestContext()
 
-	_, err := portal.GetInMapByName(logger)(ctx)(100000000, "nonexistent")
+	_, err := portal.NewProcessor(logger, ctx).GetInMapByName(100000000, "nonexistent")
 
 	if err == nil {
 		t.Error("GetInMapByName() expected error for non-existent portal, got nil")

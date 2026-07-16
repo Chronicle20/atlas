@@ -1,0 +1,125 @@
+{
+  "service": "atlas-mts",
+  "path": "services/atlas-mts/atlas.com/mts",
+  "date": "2026-07-10",
+  "scope": "full-service",
+  "build": "pass",
+  "vet": "pass",
+  "testsPassed": 12,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "listing",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "status": "pass", "evidence": "listing/builder.go:299 Build() validates tenantId"},
+        {"id": "DOM-02", "status": "warn", "evidence": "no ToEntity(); modelFromEntity used (provider.go:245)"},
+        {"id": "DOM-03", "status": "warn", "evidence": "no Make(); CreateListing(administrator.go:77)+modelFromEntity"},
+        {"id": "DOM-04", "status": "pass", "evidence": "listing/rest.go:123 Transform"},
+        {"id": "DOM-05", "status": "warn", "evidence": "no TransformSlice; model.SliceMap(Transform) inline resource.go:257"},
+        {"id": "DOM-06", "status": "pass", "evidence": "processor.go:287 logrus.FieldLogger"},
+        {"id": "DOM-07", "status": "pass", "evidence": "resource.go handlers use d.Logger()"},
+        {"id": "DOM-08", "status": "pass", "evidence": "resource.go:34/38 RegisterInputHandler[CreateListingRestModel] for POST"},
+        {"id": "DOM-09", "status": "pass", "evidence": "resource.go:257-262,310-315 Transform errors handled"},
+        {"id": "DOM-10", "status": "pass", "evidence": "test/database.go:28 RegisterTenantCallbacks"},
+        {"id": "DOM-11", "status": "pass", "evidence": "provider.go database.Query/SliceQuery lazy"},
+        {"id": "DOM-12", "status": "pass", "evidence": "no os.Getenv in resource.go"},
+        {"id": "DOM-13", "status": "pass", "evidence": "handlers call listing processor only"},
+        {"id": "DOM-14", "status": "pass", "evidence": "handlers call NewProcessor methods"},
+        {"id": "DOM-15", "status": "pass", "evidence": "no db.Create/Save/Delete in resource.go"},
+        {"id": "DOM-16", "status": "pass", "evidence": "listing/administrator.go write functions"},
+        {"id": "DOM-17", "status": "pass", "evidence": "resource.go 400/403/404/409/500 mapping"},
+        {"id": "DOM-18", "status": "pass", "evidence": "rest.go:72-83 GetName/GetID/SetID"},
+        {"id": "DOM-19", "status": "pass", "evidence": "CreateListingRestModel flat rest.go:94"},
+        {"id": "DOM-20", "status": "pass", "evidence": "listing/*_test.go table-driven"}
+      ]
+    },
+    {
+      "name": "bid",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "status": "pass", "evidence": "bid/builder.go:68 Build() validates tenantId"},
+        {"id": "DOM-02", "status": "warn", "evidence": "no ToEntity(); modelFromEntity (provider.go:41)"},
+        {"id": "DOM-03", "status": "warn", "evidence": "no Make(); CreateBid(administrator.go:49)"},
+        {"id": "DOM-04", "status": "na", "evidence": "no rest.go — internal domain, no REST surface"},
+        {"id": "DOM-06", "status": "pass", "evidence": "processor.go:29 logrus.FieldLogger"},
+        {"id": "DOM-11", "status": "pass", "evidence": "provider.go database.Query/SliceQuery"},
+        {"id": "DOM-16", "status": "pass", "evidence": "bid/administrator.go"},
+        {"id": "STRUCT-WHERE", "status": "fail", "evidence": "bid/administrator.go:83 Where(&entity{Id,State}) struct condition — anti-patterns.md:24; unguarded uuid.Nil elision risk on escrow state machine"}
+      ]
+    },
+    {
+      "name": "holding",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "status": "pass", "evidence": "holding/builder.go:200 Build() validates tenantId"},
+        {"id": "DOM-02", "status": "warn", "evidence": "no ToEntity(); modelFromEntity"},
+        {"id": "DOM-03", "status": "warn", "evidence": "no Make(); CreateHolding(administrator.go:62)"},
+        {"id": "DOM-04", "status": "pass", "evidence": "holding/rest.go:83 Transform"},
+        {"id": "DOM-06", "status": "pass", "evidence": "processor.go:81 logrus.FieldLogger"},
+        {"id": "DOM-08", "status": "pass", "evidence": "resource.go:31/35 RegisterInputHandler[TakeHomeRestModel] POST"},
+        {"id": "DOM-10", "status": "pass", "evidence": "test/database.go:28"},
+        {"id": "DOM-15", "status": "pass", "evidence": "no db writes in resource.go"},
+        {"id": "DOM-16", "status": "pass", "evidence": "holding/administrator.go map-keyed WHERE + nil guards"},
+        {"id": "DOM-18", "status": "pass", "evidence": "rest.go GetName/GetID/SetID"},
+        {"id": "SAGA-TIMEOUT", "status": "fail", "evidence": "holding/processor.go:33 takeHomeSagaPerStepTimeout=1s contradicts listing/processor.go:143 documented 15s incident"}
+      ]
+    },
+    {
+      "name": "transaction",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "status": "pass", "evidence": "transaction/builder.go:75 Build()"},
+        {"id": "DOM-02", "status": "warn", "evidence": "no ToEntity(); modelFromEntity"},
+        {"id": "DOM-03", "status": "warn", "evidence": "no Make(); CreateTransaction(administrator.go:15)"},
+        {"id": "DOM-04", "status": "pass", "evidence": "transaction/rest.go:33 Transform"},
+        {"id": "DOM-06", "status": "pass", "evidence": "processor.go:26 logrus.FieldLogger"},
+        {"id": "DOM-11", "status": "pass", "evidence": "provider.go:23 getByCharacter map-keyed WHERE + Order DESC"},
+        {"id": "DOM-16", "status": "pass", "evidence": "transaction/administrator.go"},
+        {"id": "DOM-18", "status": "pass", "evidence": "rest.go:20-28 GetName/SetID"}
+      ]
+    },
+    {
+      "name": "wish",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "status": "pass", "evidence": "wish/builder.go:91 Build()"},
+        {"id": "DOM-02", "status": "warn", "evidence": "no ToEntity(); modelFromEntity"},
+        {"id": "DOM-03", "status": "warn", "evidence": "no Make(); CreateWish administrator"},
+        {"id": "DOM-04", "status": "pass", "evidence": "wish/rest.go:37 Transform"},
+        {"id": "DOM-08", "status": "pass", "evidence": "resource.go:30/34 RegisterInputHandler[RestModel] POST"},
+        {"id": "DOM-15", "status": "pass", "evidence": "no db writes in resource.go; delete guards uuid.Parse resource.go:146"},
+        {"id": "DOM-16", "status": "pass", "evidence": "wish/administrator.go map-keyed WHERE"},
+        {"id": "DOM-18", "status": "pass", "evidence": "rest.go:24-32"}
+      ]
+    }
+  ],
+  "serviceWide": [
+    {"id": "DOM-21", "status": "pass", "evidence": "atlas-constants world.Id/inventory.TypeFromItemId/item.Id used; no reinvented ids (grep clean)"},
+    {"id": "DOM-22", "status": "pass", "evidence": "shared root Dockerfile; atlas-mts in docker-bake.hcl:73 + services.json:305; atlas-saga in Dockerfile:44/73/93, go.work:16"},
+    {"id": "DOM-23", "status": "pass", "evidence": "topics in env-configmap.yaml:52,53,68,131,132 KEY:\"KEY\"; atlas-mts.yaml envFrom atlas-env, no literal override"},
+    {"id": "DOM-24", "status": "pass", "evidence": "no test stalls (<0.18s); per-test injection via WithSagaEmitter + recordingProducer pf; note: not shared producertest package"},
+    {"id": "EXT-01", "status": "pass", "evidence": "wallet.go:27 flat RestModel, no relationships block"},
+    {"id": "EXT-02", "status": "pass", "evidence": "wallet/wallet_test.go:16,40 httptest.NewServer"},
+    {"id": "EXT-03", "status": "pass", "evidence": "wallet.go:116 errors.Is(err, requests.ErrNotFound)"},
+    {"id": "EXT-04", "status": "pass", "evidence": "wallet.go:52 requests.RootUrl(CASHSHOP); configuration/requests.go:16 RootUrl(TENANTS)"},
+    {"id": "SEC-04", "status": "pass", "evidence": "db creds via db-credentials secretKeyRef; no hardcoded secrets"}
+  ],
+  "blocking": [],
+  "important": [
+    "bid/administrator.go:83 UpdateState uses struct-based Where(&entity{Id,State}) — anti-patterns.md:24; a uuid.Nil id would elide the Id predicate and rewrite every bid in state=from tenant-wide (latent; current callers guard nil). Fix: nil-guard + map-keyed WHERE like listing.UpdateState.",
+    "holding/processor.go:33 takeHomeSagaPerStepTimeout=1s contradicts the documented list/buy incident (listing/processor.go:143, 15s/step) — a legitimate take-home can time out and be compensated under broker stress. Fix: raise to 15s/step."
+  ],
+  "nonBlocking": [
+    "DOM-02/DOM-03: no ToEntity()/Make() in any domain; documented modelFromEntity+CreateXxx alternative used consistently.",
+    "DOM-05: no TransformSlice function; model.SliceMap(Transform) inline in handlers.",
+    "saga/model.go:10-39 type-alias re-exports of atlas-saga (anti-patterns.md discourages; mirrors character-factory convention).",
+    "configuration/registry.go per-tenant cache has no TTL/invalidation; live config change needs pod restart.",
+    "listing/processor.go:387 & listing/custody.go:419 uuid.MustParse panic primitives (unreachable in practice).",
+    "Builders validate only tenantId!=nil; business invariants enforced in processor flows."
+  ],
+  "outOfScopeNoted": [
+    "database.ExecuteTransaction no-op (bug_execute_transaction_noop, task-119): the money path's atomicity guarantees (Cancel/SettleMove/PlaceBid/Accept/holding Release/serial.Next co-commit) rely on it; documented protections not in force until task-119 lands. Pre-existing, excluded per audit brief."
+  ]
+}

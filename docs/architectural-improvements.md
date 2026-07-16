@@ -209,6 +209,40 @@ Silent data loss on consumer crashes. State mutations that should have occurred 
 
 ---
 
+## High: Non-Atomic DB Write + Kafka Publish (CD-2)
+
+### Status: RESOLVED (task-114)
+
+All transactional services now publish tx-coupled events through `libs/atlas-outbox` instead of the direct `message.Buffer` + `message.Emit(producer)` pattern. An event is enqueued as an outbox row inside the *same* database transaction as the domain mutation it reports on, then drained asynchronously to Kafka by a leader-elected drainer process. "DB commit happened but the event was lost" and "event was published but the transaction rolled back" are both now structurally prevented for every migrated flow — once the caveat below is also resolved.
+
+**⚠️ Latent until task-119 lands.** `database.ExecuteTransaction` (`libs/atlas-database/transaction.go`) is currently a verified no-op: its `isTransaction(db)` check is true for essentially every `*gorm.DB` handle (confirmed empirically — even a freshly-`gorm.Open`'d handle satisfies it, because `gorm.Open` itself populates `Statement.ConnPool`), so `ExecuteTransaction` calls the wrapped function directly instead of `db.Transaction(fn)`. **No real `BEGIN`/`COMMIT`/`ROLLBACK` wraps the enqueue+write today**, in production (Postgres) or in any migrated service's own tests (sqlite). Every migration in this task uses the *correct seam* — the outbox enqueue and the domain write are issued inside the same `ExecuteTransaction` closure — so they become genuinely atomic the moment task-119's `TxCommitter` fix lands in `libs/atlas-database`, with **zero further code changes** in any of the services below. Until then, a crash between the enqueue and the write (or vice versa) is not actually prevented. See `docs/tasks/task-119-*` and project memory `bug_execute_transaction_noop.md`.
+
+> **Update (task-119, 2026-07-12 — complete on branch `task-119-db-transaction-coverage` / PR #961, pending merge):** the `TxCommitter` fix above has landed (`libs/atlas-database/transaction.go`, `isTransaction` now checks `gorm.TxCommitter`), plus a full write-path audit of all 14 previously-zero-`ExecuteTransaction` services and remediation of every genuine multi-statement/multi-table flow (atlas-keys, atlas-families, atlas-npc-conversations, atlas-monster-book, atlas-marriages, atlas-storage ×4, atlas-maps) with a rollback test each. This closes the backlog item DL-4 (systematic DB-transaction-coverage audit) and resolves the "latent no-op" caveat above: the moment this branch merges, every outbox enqueue+write coupled through `ExecuteTransaction` (CD-2, task-114) becomes genuinely atomic with zero further code changes. Evidence: `docs/tasks/task-119-db-transaction-coverage/audit.md`.
+
+**Migrated (task-114), 15 services:** atlas-character, atlas-inventory, atlas-cashshop, atlas-fame, atlas-buddies, atlas-guilds, atlas-notes, atlas-pets, atlas-skills, atlas-merchant, atlas-npc-shops, atlas-tenants, atlas-mounts, atlas-quest, and **atlas-monster-book** — the last was outside the plan's original §7 service list but was surfaced and pulled in mid-task by `tools/outboxguard`, a new static analyzer (`tools/outboxguard`, wired into `tools/outbox-guard.sh`) that bans `producer.ProviderImpl`/direct-producer calls lexically inside an open DB transaction, fleet-wide. `tools/outbox-guard.sh` runs clean (exit 0) across every `services/*/go.mod` module as of this closeout.
+
+**Already on the outbox before this task:** atlas-configurations — the origin of `libs/atlas-outbox` itself (enqueue-in-tx, drainer with Postgres advisory-lock leadership, NOTIFY wakeup, retention sweeper, backfill). Task-114 promoted its last service-local piece (`TopicWriterPool`) into the shared library so every other service could reuse it; atlas-configurations' own call sites (`outboxlib.Enqueue(tx, ...)`) were already correct and needed no migration.
+
+**Verified zero tx-coupled sites (no code change needed):** atlas-gachapons, atlas-drop-information (no Kafka producer usage at all) and atlas-data (its 2 `producer.ProviderImpl` sites — a command dispatch and a post-worker-run aggregate event — are both genuinely non-transactional; documented in `docs/tasks/task-114-outbox-adoption/inventory.md`).
+
+**Left-direct sites, deliberately not migrated:** command/relay emits to another service, rejection/error events reflecting no committed state change, and Redis-only/no-DB-write flows all remain on the direct producer path per the task's classification rule — migrating them would be incorrect, not incomplete. Every remaining `producer.ProviderImpl` call site fleet-wide was swept and classified in `docs/tasks/task-114-outbox-adoption/inventory.md`.
+
+**Delivery guarantee for migrated services' documented Kafka behavior:** for the 14 migrated services that carry their own `docs/kafka.md` (`atlas-character`, `atlas-inventory`, `atlas-cashshop`, `atlas-fame`, `atlas-buddies`, `atlas-guilds`, `atlas-notes`, `atlas-pets`, `atlas-skills`, `atlas-merchant`, `atlas-npc-shops`, `atlas-tenants`, `atlas-mounts`, `atlas-quest`), the tx-coupled events described in each doc's "Transaction Semantics" section are now delivered **at-least-once** via the outbox drainer rather than best-effort-once via the direct producer — consumers of those topics must tolerate redelivery (see CD-1 below). `atlas-monster-book` has no `docs/` directory and is skipped per the same rule applied to every other service without one.
+
+**Remaining (tracked as CD-1, non-goal of task-114):** consumer-side idempotency / inbox-dedup on `TransactionId`. Outbox delivery is at-least-once by design (drainer redelivers on ambiguous publish outcomes); a consumer that isn't idempotent on `TransactionId` can double-apply a redelivered event. This is tracked as its own follow-up task, not addressed here.
+
+**Verification evidence (2026-07-03 closeout sweep):** `tools/outbox-guard.sh` exit 0; `go test -race ./...`, `go vet ./...`, `go build ./...` clean in all 18 changed modules (`libs/atlas-outbox`, `tools/outboxguard`, and the 16 service modules above including atlas-configurations); `docker buildx bake all-go-services` exit 0 (every service image builds, confirming `libs/atlas-outbox`'s `COPY` lines in the shared root `Dockerfile` are correct); `tools/redis-key-guard.sh` exit 0 repo-wide.
+
+### Original Problem
+
+`libs/atlas-outbox` was a complete transactional outbox implementation adopted by exactly one service (atlas-configurations). Every other service used a service-local `message.Buffer` + `message.Emit(producer)` pattern — batching, not atomicity. Verified hot paths were worse than the general gap: `services/atlas-character/atlas.com/character/character/processor.go` emitted `MESO_CHANGED`/`STAT_CHANGED` **inside** `database.ExecuteTransaction` before commit, so a rollback after emit produced phantom downstream events; the same blocks left `dynamicUpdate`'s error unchecked, so a failed write still announced success.
+
+### Original Impact
+
+A crash (or any error) between a domain write's commit and its `Emit` call silently lost the event with no replay mechanism — downstream projections (channel, UI, saga orchestrator) could silently drift out of sync with the source-of-truth database, with no operational signal that it had happened. Conversely, an in-transaction emit followed by a rollback could publish an event for a state change that never actually persisted.
+
+---
+
 ## High: No Authentication
 
 ### Problem
@@ -218,6 +252,29 @@ No JWT, OAuth, API keys, or bearer tokens on any endpoint. The system relies sol
 ### Recommendation
 
 Add authentication at the ingress layer. Internal service-to-service calls can use mTLS or a shared service mesh.
+
+---
+
+## High: Unbounded List Endpoints (PS-5)
+
+### Status: RESOLVED (task-117)
+
+86 slice-marshaling handler sites existed across the microservice fleet; effectively one (atlas-data item string search) paginated. Everything else — including `GET /characters` and `GET /accounts`, which scanned an entire tenant table, transformed every row, and ran every `include` decorator per row on every request — was unbounded. See [rest-pagination.md](rest-pagination.md) for the adopted convention and [task-117 endpoint-inventory.md](tasks/task-117-list-endpoint-pagination/endpoint-inventory.md) for the full per-route disposition.
+
+**Implemented:**
+- Shared paged pipeline: `model.Paged[T]`/`model.MapPaged` (`libs/atlas-model`), `database.PagedQuery` (`libs/atlas-database`, SQL-level `COUNT` + `OFFSET`/`LIMIT` with a schema-derived PK tie-break for total ordering), `paginate.ParseParams`/`paginate.Slice`/`paginate.EnvelopeFor` (`libs/atlas-rest/server/paginate`), and `requests.PagedProvider`/`requests.DrainProvider` (`libs/atlas-rest/requests`) for internal semantic-"all" consumers.
+- Every bare/filtered collection GET across all services converted to the `page[number]`/`page[size]` envelope (`meta.total`, `meta.page.{number,size,last}`, JSON:API `links`), with 400 on invalid params (including rejection of the legacy `?limit=` param).
+- Every internal Go call site that consumed a full (now-paginated) collection converted to `requests.DrainProvider`, verified by multi-page drain regression tests (login/channel account and world registries, atlas-account teardown sweep, atlas-query-aggregator skill/quest aggregation, and others).
+- atlas-ui `services/api/pagination.ts` (`fetchPaged`/`fetchAll`) with the same no-envelope compatibility rule as the Go client, so server- and consumer-side conversions could land independently.
+- Repo-wide acceptance sweep (task-117 task 29): `MarshalResponse[[]...]` on a collection route — zero hits; unfiltered `GetAll`-style processor methods — zero genuine gaps (remaining `GetAll` symbols are either semantic-all drain wrappers or registry/aggregation dumps feeding a `paginate.Slice`-paginated route); `requests.SliceProvider` consumers of a converted bare collection — zero gaps after fixing 3 found during the sweep (atlas-login character-select, atlas-query-aggregator skill/quest-by-character).
+
+### Original Problem
+
+44+ REST list handlers ran `db.Find` (or an in-memory `TenantRegistry.GetAll`) with no `Limit`, transformed and JSON:API-decorated every row, and returned the entire result set in one response.
+
+### Original Impact
+
+A tenant with a large `characters`/`accounts`/`guilds` table (or a large game-content doc-store) paid full table-scan + full-decoration cost on every list request, with response size scaling unbounded with tenant/content growth. No mechanism existed to request a bounded slice of a collection.
 
 ---
 

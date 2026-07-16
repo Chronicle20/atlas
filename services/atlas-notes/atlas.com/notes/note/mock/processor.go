@@ -19,8 +19,8 @@ type ProcessorMock struct {
 	DiscardFunc             func(mb *message.Buffer) func(characterId uint32) func(noteIds []uint32) error
 	DiscardAndEmitFunc      func(characterId uint32, noteIds []uint32) error
 	ByIdProviderFunc        func(id uint32) model.Provider[note.Model]
-	ByCharacterProviderFunc func(characterId uint32) model.Provider[[]note.Model]
-	InTenantProviderFunc    func() model.Provider[[]note.Model]
+	ByCharacterProviderFunc func(characterId uint32, page model.Page) model.Provider[model.Paged[note.Model]]
+	AllProviderFunc         func(page model.Page) model.Provider[model.Paged[note.Model]]
 }
 
 func (m *ProcessorMock) Create(mb *message.Buffer) func(characterId uint32) func(senderId uint32) func(msg string) func(flag byte) (note.Model, error) {
@@ -126,16 +126,16 @@ func (m *ProcessorMock) ByIdProvider(id uint32) model.Provider[note.Model] {
 	return model.FixedProvider(note.Model{})
 }
 
-func (m *ProcessorMock) ByCharacterProvider(characterId uint32) model.Provider[[]note.Model] {
+func (m *ProcessorMock) ByCharacterProvider(characterId uint32, page model.Page) model.Provider[model.Paged[note.Model]] {
 	if m.ByCharacterProviderFunc != nil {
-		return m.ByCharacterProviderFunc(characterId)
+		return m.ByCharacterProviderFunc(characterId, page)
 	}
-	return model.FixedProvider([]note.Model{})
+	return model.FixedProvider(model.Paged[note.Model]{Page: page})
 }
 
-func (m *ProcessorMock) InTenantProvider() model.Provider[[]note.Model] {
-	if m.InTenantProviderFunc != nil {
-		return m.InTenantProviderFunc()
+func (m *ProcessorMock) AllProvider(page model.Page) model.Provider[model.Paged[note.Model]] {
+	if m.AllProviderFunc != nil {
+		return m.AllProviderFunc(page)
 	}
-	return model.FixedProvider([]note.Model{})
+	return model.FixedProvider(model.Paged[note.Model]{Page: page})
 }

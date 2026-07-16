@@ -19,6 +19,12 @@ func (m *ProcessorMock) ByCharacterIdProvider(characterId uint32) model.Provider
 	return args.Get(0).(model.Provider[[]macro.Model])
 }
 
+// ByCharacterIdPagedProvider mocks the ByCharacterIdPagedProvider method
+func (m *ProcessorMock) ByCharacterIdPagedProvider(characterId uint32, page model.Page) model.Provider[model.Paged[macro.Model]] {
+	args := m.Called(characterId, page)
+	return args.Get(0).(model.Provider[model.Paged[macro.Model]])
+}
+
 // Update mocks the Update method
 func (m *ProcessorMock) Update(mb *message.Buffer) func(characterId uint32) func(macros []macro.Model) ([]macro.Model, error) {
 	args := m.Called(mb)

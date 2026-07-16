@@ -34,6 +34,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // GetByMemberId retrieves a guild by member ID
 func (p *ProcessorImpl) GetByMemberId(decorators ...model.Decorator[Model]) func(memberId uint32) (Model, error) {
 	return func(memberId uint32) (Model, error) {

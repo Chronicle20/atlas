@@ -2,12 +2,13 @@ package task
 
 import (
 	"atlas-asset-expiration/character"
-	"atlas-asset-expiration/kafka/producer"
 	"atlas-asset-expiration/session"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"sync"
 	"time"
 
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
@@ -19,18 +20,20 @@ const (
 // PeriodicTask runs expiration checks at regular intervals for all online sessions
 type PeriodicTask struct {
 	l        logrus.FieldLogger
+	ctx      context.Context
 	interval time.Duration
 	stopCh   chan struct{}
 	wg       *sync.WaitGroup
 }
 
 // NewPeriodicTask creates a new periodic expiration check task
-func NewPeriodicTask(l logrus.FieldLogger, interval time.Duration) *PeriodicTask {
+func NewPeriodicTask(l logrus.FieldLogger, ctx context.Context, interval time.Duration) *PeriodicTask {
 	if interval <= 0 {
 		interval = defaultInterval
 	}
 	return &PeriodicTask{
 		l:        l,
+		ctx:      ctx,
 		interval: interval,
 		stopCh:   make(chan struct{}),
 		wg:       &sync.WaitGroup{},
@@ -40,7 +43,9 @@ func NewPeriodicTask(l logrus.FieldLogger, interval time.Duration) *PeriodicTask
 // Start starts the periodic task
 func (t *PeriodicTask) Start() {
 	t.wg.Add(1)
-	go t.run()
+	routine.Go(t.l, t.ctx, func(_ context.Context) {
+		t.run()
+	})
 	t.l.Infof("Periodic expiration task started with interval [%v].", t.interval)
 }
 
@@ -86,7 +91,7 @@ func (t *PeriodicTask) checkAllSessions() {
 		ctx := tenant.WithContext(context.Background(), tm)
 
 		pp := producer.ProviderImpl(t.l)(ctx)
-		character.CheckAndExpire(t.l)(pp)(ctx)(s.CharacterId, s.AccountId, s.Channel.WorldId())
+		character.NewProcessor(t.l, ctx).CheckAndExpire(pp)(s.CharacterId, s.AccountId, s.Channel.WorldId())
 	}
 
 	t.l.Infof("Completed periodic expiration check for [%d] sessions.", len(sessions))

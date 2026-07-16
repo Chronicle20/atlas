@@ -3,13 +3,13 @@ package thread
 import (
 	"atlas-guilds/kafka/message"
 	thread2 "atlas-guilds/kafka/message/thread"
-	"atlas-guilds/kafka/producer"
 	"atlas-guilds/thread/reply"
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -17,8 +17,7 @@ import (
 
 type Processor interface {
 	WithTransaction(tx *gorm.DB) Processor
-	AllProvider(guildId uint32) model.Provider[[]Model]
-	GetAll(guildId uint32) ([]Model, error)
+	AllProvider(guildId uint32, page model.Page) model.Provider[model.Paged[Model]]
 	ByIdProvider(guildId uint32, threadId uint32) model.Provider[Model]
 	GetById(guildId uint32, threadId uint32) (Model, error)
 
@@ -50,6 +49,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 	return &ProcessorImpl{
 		l:   p.l,
@@ -59,12 +60,9 @@ func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 	}
 }
 
-func (p *ProcessorImpl) AllProvider(guildId uint32) model.Provider[[]Model] {
-	return model.SliceMap(Make)(getAll(guildId)(p.db.WithContext(p.ctx)))()
-}
-
-func (p *ProcessorImpl) GetAll(guildId uint32) ([]Model, error) {
-	return p.AllProvider(guildId)()
+func (p *ProcessorImpl) AllProvider(guildId uint32, page model.Page) model.Provider[model.Paged[Model]] {
+	ep := getAll(guildId, page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(Make)(ep)(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) ByIdProvider(guildId uint32, threadId uint32) model.Provider[Model] {
@@ -106,10 +104,12 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(worldId world.Id) func(g
 
 func (p *ProcessorImpl) CreateAndEmit(worldId world.Id, guildId uint32, posterId uint32, title string, msg string, emoticonId uint32, notice bool) (Model, error) {
 	var m Model
-	err := message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		var err error
-		m, err = p.Create(mb)(worldId)(guildId)(posterId)(title)(msg)(emoticonId)(notice)
-		return err
+	err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			var err error
+			m, err = p.WithTransaction(tx).Create(mb)(worldId)(guildId)(posterId)(title)(msg)(emoticonId)(notice)
+			return err
+		})
 	})
 	return m, err
 }
@@ -160,10 +160,12 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(worldId world.Id) func(g
 
 func (p *ProcessorImpl) UpdateAndEmit(worldId world.Id, guildId uint32, threadId uint32, posterId uint32, title string, msg string, emoticonId uint32, notice bool) (Model, error) {
 	var m Model
-	err := message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		var err error
-		m, err = p.Update(mb)(worldId)(guildId)(threadId)(posterId)(title)(msg)(emoticonId)(notice)
-		return err
+	err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			var err error
+			m, err = p.WithTransaction(tx).Update(mb)(worldId)(guildId)(threadId)(posterId)(title)(msg)(emoticonId)(notice)
+			return err
+		})
 	})
 	return m, err
 }
@@ -213,8 +215,10 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(worldId world.Id) func(g
 }
 
 func (p *ProcessorImpl) DeleteAndEmit(worldId world.Id, guildId uint32, threadId uint32, actorId uint32) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		return p.Delete(mb)(worldId)(guildId)(threadId)(actorId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.WithTransaction(tx).Delete(mb)(worldId)(guildId)(threadId)(actorId)
+		})
 	})
 }
 
@@ -263,10 +267,12 @@ func (p *ProcessorImpl) Reply(mb *message.Buffer) func(worldId world.Id) func(gu
 
 func (p *ProcessorImpl) ReplyAndEmit(worldId world.Id, guildId uint32, threadId uint32, posterId uint32, msg string) (Model, error) {
 	var m Model
-	err := message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		var err error
-		m, err = p.Reply(mb)(worldId)(guildId)(threadId)(posterId)(msg)
-		return err
+	err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			var err error
+			m, err = p.WithTransaction(tx).Reply(mb)(worldId)(guildId)(threadId)(posterId)(msg)
+			return err
+		})
 	})
 	return m, err
 }
@@ -315,10 +321,12 @@ func (p *ProcessorImpl) DeleteReply(mb *message.Buffer) func(worldId world.Id) f
 
 func (p *ProcessorImpl) DeleteReplyAndEmit(worldId world.Id, guildId uint32, threadId uint32, actorId uint32, replyId uint32) (Model, error) {
 	var m Model
-	err := message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		var err error
-		m, err = p.DeleteReply(mb)(worldId)(guildId)(threadId)(actorId)(replyId)
-		return err
+	err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			var err error
+			m, err = p.WithTransaction(tx).DeleteReply(mb)(worldId)(guildId)(threadId)(actorId)(replyId)
+			return err
+		})
 	})
 	return m, err
 }

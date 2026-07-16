@@ -11,11 +11,17 @@ import { z } from 'zod';
  * Schema for an incubator reward entry.
  *
  * Validates:
+ * - eggId: the region egg the reward pool belongs to (4170000-4170009)
  * - itemId: the reward item (positive integer)
  * - quantity: amount of the item to reward (positive integer)
  * - weight: relative probability weight (positive integer, rejects zero)
  */
 export const incubatorRewardSchema = z.object({
+  eggId: z
+    .number()
+    .int('Egg ID must be an integer')
+    .min(4170000, 'Egg ID must be a valid region egg')
+    .max(4170009, 'Egg ID must be a valid region egg'),
   itemId: z
     .number()
     .int('Item ID must be an integer')

@@ -12,6 +12,7 @@ import type { ServiceOptions } from "@/lib/api/query-params";
 export const INCUBATOR_REWARDS_RESOURCE_TYPE = "incubator-rewards";
 
 export interface IncubatorRewardAttributes {
+  eggId: number;
   itemId: number;
   quantity: number;
   weight: number;

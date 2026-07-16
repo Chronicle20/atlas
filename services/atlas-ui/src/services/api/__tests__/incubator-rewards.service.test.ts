@@ -19,11 +19,11 @@ describe("incubatorRewardsService", () => {
 
   it("create POSTs a JSON:API envelope", async () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (api.post as any).mockResolvedValue({ id: "r1", attributes: { itemId: 2000000, quantity: 1, weight: 50 } });
-    await incubatorRewardsService.create(t, { itemId: 2000000, quantity: 1, weight: 50 });
+    (api.post as any).mockResolvedValue({ id: "r1", attributes: { eggId: 4170005, itemId: 2000000, quantity: 1, weight: 50 } });
+    await incubatorRewardsService.create(t, { eggId: 4170005, itemId: 2000000, quantity: 1, weight: 50 });
     expect(api.post).toHaveBeenCalledWith(
       `/api/tenants/${t}/configurations/incubator-rewards`,
-      { data: { type: "incubator-rewards", attributes: { itemId: 2000000, quantity: 1, weight: 50 } } },
+      { data: { type: "incubator-rewards", attributes: { eggId: 4170005, itemId: 2000000, quantity: 1, weight: 50 } } },
       undefined,
     );
   });
@@ -31,10 +31,10 @@ describe("incubatorRewardsService", () => {
   it("update PATCHes by id with the envelope", async () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (api.patch as any).mockResolvedValue(undefined);
-    await incubatorRewardsService.update(t, "r1", { itemId: 3, quantity: 2, weight: 10 });
+    await incubatorRewardsService.update(t, "r1", { eggId: 4170005, itemId: 3, quantity: 2, weight: 10 });
     expect(api.patch).toHaveBeenCalledWith(
       `/api/tenants/${t}/configurations/incubator-rewards/r1`,
-      { data: { id: "r1", type: "incubator-rewards", attributes: { itemId: 3, quantity: 2, weight: 10 } } },
+      { data: { id: "r1", type: "incubator-rewards", attributes: { eggId: 4170005, itemId: 3, quantity: 2, weight: 10 } } },
       undefined,
     );
   });

@@ -41,8 +41,8 @@ describe("IncubatorRewardsForm", () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (hooks.useIncubatorRewards as any).mockReturnValue({
       data: [
-        { id: "r1", attributes: { itemId: 2000000, quantity: 1, weight: 30 } },
-        { id: "r2", attributes: { itemId: 2000001, quantity: 2, weight: 10 } },
+        { id: "r1", attributes: { eggId: 4170005, itemId: 2000000, quantity: 1, weight: 30 } },
+        { id: "r2", attributes: { eggId: 4170005, itemId: 2000001, quantity: 2, weight: 10 } },
       ],
       isLoading: false,
     });
@@ -62,6 +62,22 @@ describe("IncubatorRewardsForm", () => {
     expect(screen.getByText("item:2000001")).toBeInTheDocument();
     expect(screen.getByText("75.0%")).toBeInTheDocument(); // 30/40
     expect(screen.getByText("25.0%")).toBeInTheDocument(); // 10/40
+  });
+
+  it("groups rows by egg (region) with a header row per group", () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (hooks.useIncubatorRewards as any).mockReturnValue({
+      data: [
+        { id: "r1", attributes: { eggId: 4170005, itemId: 2000000, quantity: 1, weight: 30 } },
+        { id: "r2", attributes: { eggId: 4170000, itemId: 2000001, quantity: 2, weight: 10 } },
+      ],
+      isLoading: false,
+    });
+    renderForm();
+    expect(screen.getByText("Ludibrium")).toBeInTheDocument();
+    expect(screen.getByText("Henesys")).toBeInTheDocument();
+    // Each region is its own pool: a single row in its group is 100% of that group.
+    expect(screen.getAllByText("100.0%")).toHaveLength(2);
   });
 
   it("opens the add dialog", async () => {
@@ -95,7 +111,7 @@ describe("IncubatorRewardsForm", () => {
 
     await waitFor(() =>
       expect(noopMut.mutate).toHaveBeenCalledWith(
-        { tenantId: "t1", attributes: { itemId: 2000002, quantity: 1, weight: 5 } },
+        { tenantId: "t1", attributes: { eggId: 4170000, itemId: 2000002, quantity: 1, weight: 5 } },
         expect.anything(),
       ),
     );

@@ -19,7 +19,7 @@ describe("useIncubatorRewards", () => {
 
   it("fetches the reward list for a tenant", async () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (incubatorRewardsService.list as any).mockResolvedValue([{ id: "r1", attributes: { itemId: 1, quantity: 1, weight: 5 } }]);
+    (incubatorRewardsService.list as any).mockResolvedValue([{ id: "r1", attributes: { eggId: 4170005, itemId: 1, quantity: 1, weight: 5 } }]);
     const { result } = renderHook(() => useIncubatorRewards("t1"), { wrapper: wrapper() });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(incubatorRewardsService.list).toHaveBeenCalledWith("t1");
@@ -28,9 +28,9 @@ describe("useIncubatorRewards", () => {
 
   it("create mutation calls the service", async () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (incubatorRewardsService.create as any).mockResolvedValue({ id: "r2", attributes: { itemId: 2, quantity: 1, weight: 3 } });
+    (incubatorRewardsService.create as any).mockResolvedValue({ id: "r2", attributes: { eggId: 4170005, itemId: 2, quantity: 1, weight: 3 } });
     const { result } = renderHook(() => useCreateIncubatorReward(), { wrapper: wrapper() });
-    await result.current.mutateAsync({ tenantId: "t1", attributes: { itemId: 2, quantity: 1, weight: 3 } });
-    expect(incubatorRewardsService.create).toHaveBeenCalledWith("t1", { itemId: 2, quantity: 1, weight: 3 });
+    await result.current.mutateAsync({ tenantId: "t1", attributes: { eggId: 4170005, itemId: 2, quantity: 1, weight: 3 } });
+    expect(incubatorRewardsService.create).toHaveBeenCalledWith("t1", { eggId: 4170005, itemId: 2, quantity: 1, weight: 3 });
   });
 });

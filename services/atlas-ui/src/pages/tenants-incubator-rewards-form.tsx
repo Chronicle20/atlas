@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -44,8 +44,34 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+/**
+ * Region label per egg item id (interim — 4170008 is omitted, region unknown).
+ */
+const REGION_LABELS: Record<number, string> = {
+  4170000: "Henesys",
+  4170001: "Ellinia",
+  4170002: "Perion",
+  4170003: "Kerning City",
+  4170004: "El Nath",
+  4170005: "Ludibrium",
+  4170006: "Orbis",
+  4170007: "Aqua Road",
+  4170009: "Nautilus",
+};
+
+const EGG_OPTIONS = Object.entries(REGION_LABELS).map(([eggId, label]) => ({
+  value: eggId,
+  label: `${label} (${eggId})`,
+}));
+
+function regionLabel(eggId: number): string {
+  return REGION_LABELS[eggId] ?? `Egg ${eggId}`;
+}
 
 const EMPTY_DEFAULTS: IncubatorRewardFormData = {
+  eggId: 4170000,
   itemId: 0,
   quantity: 1,
   weight: 1,
@@ -70,7 +96,18 @@ export function IncubatorRewardsForm() {
   const deleteMut = useDeleteIncubatorReward();
   const seedMut = useSeedIncubatorRewards();
 
-  const totalWeight = rewards.reduce((s, r) => s + r.attributes.weight, 0);
+  // Reward pools are per-egg (region): group rows by eggId and compute each
+  // group's chance % against its own group weight total, not the grand total.
+  const groupedByEgg = new Map<number, IncubatorReward[]>();
+  for (const r of rewards) {
+    const group = groupedByEgg.get(r.attributes.eggId);
+    if (group) {
+      group.push(r);
+    } else {
+      groupedByEgg.set(r.attributes.eggId, [r]);
+    }
+  }
+  const sortedEggIds = Array.from(groupedByEgg.keys()).sort((a, b) => a - b);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<IncubatorReward | null>(null);
@@ -191,26 +228,39 @@ export function IncubatorRewardsForm() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rewards.map((r) => {
-              const chance =
-                totalWeight > 0 ? ((r.attributes.weight / totalWeight) * 100).toFixed(1) + "%" : "—";
+            {sortedEggIds.map((eggId) => {
+              const groupRewards = groupedByEgg.get(eggId) ?? [];
+              const groupWeight = groupRewards.reduce((s, r) => s + r.attributes.weight, 0);
               return (
-                <TableRow key={r.id}>
-                  <TableCell>
-                    <ItemNameCell itemId={String(r.attributes.itemId)} tenant={activeTenant} />
-                  </TableCell>
-                  <TableCell>{r.attributes.quantity}</TableCell>
-                  <TableCell>{r.attributes.weight}</TableCell>
-                  <TableCell>{chance}</TableCell>
-                  <TableCell className="text-right space-x-2">
-                    <Button type="button" variant="outline" size="sm" onClick={() => openEdit(r)}>
-                      Edit
-                    </Button>
-                    <Button type="button" variant="destructive" size="sm" onClick={() => setDeleteTarget(r)}>
-                      Delete
-                    </Button>
-                  </TableCell>
-                </TableRow>
+                <Fragment key={eggId}>
+                  <TableRow className="bg-muted/50 hover:bg-muted/50">
+                    <TableCell colSpan={5} className="font-medium">
+                      {regionLabel(eggId)}
+                    </TableCell>
+                  </TableRow>
+                  {groupRewards.map((r) => {
+                    const chance =
+                      groupWeight > 0 ? ((r.attributes.weight / groupWeight) * 100).toFixed(1) + "%" : "—";
+                    return (
+                      <TableRow key={r.id}>
+                        <TableCell>
+                          <ItemNameCell itemId={String(r.attributes.itemId)} tenant={activeTenant} />
+                        </TableCell>
+                        <TableCell>{r.attributes.quantity}</TableCell>
+                        <TableCell>{r.attributes.weight}</TableCell>
+                        <TableCell>{chance}</TableCell>
+                        <TableCell className="text-right space-x-2">
+                          <Button type="button" variant="outline" size="sm" onClick={() => openEdit(r)}>
+                            Edit
+                          </Button>
+                          <Button type="button" variant="destructive" size="sm" onClick={() => setDeleteTarget(r)}>
+                            Delete
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </Fragment>
               );
             })}
           </TableBody>
@@ -228,6 +278,33 @@ export function IncubatorRewardsForm() {
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="eggId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Region (Egg)</FormLabel>
+                    <Select
+                      onValueChange={(value) => field.onChange(Number(value))}
+                      defaultValue={field.value.toString()}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a region" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {EGG_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               {FIELDS.map((f) => (
                 <FormField
                   key={f.name}

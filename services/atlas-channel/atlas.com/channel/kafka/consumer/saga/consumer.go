@@ -273,7 +273,7 @@ func handleFailedEvent(sc server.Model, wp writer.Producer) message.Handler[saga
 
 		// Handle incubator use failures by announcing a zero/failed result to the client
 		if e.Body.SagaType == saga.SagaTypeIncubatorUse {
-			err = session.Announce(l)(ctx)(wp)(incubatorcb.IncubatorResultWriter)(incubatorcb.NewIncubatorResult(0, 0).Encode)(s)
+			err = session.Announce(l)(ctx)(wp)(incubatorcb.IncubatorResultWriter)(incubatorcb.NewIncubatorResult(0, 0, 0).Encode)(s)
 			if err != nil {
 				l.WithError(err).WithField("character_id", e.Body.CharacterId).Error("Failed to send incubator result packet to client.")
 				return

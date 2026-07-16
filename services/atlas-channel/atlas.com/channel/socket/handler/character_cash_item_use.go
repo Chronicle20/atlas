@@ -255,7 +255,7 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			invType := inventory.Type(sp.InventoryType())
 			targetSlot := int16(sp.Slot())
 			announceFailure := func() {
-				_ = session.Announce(l)(ctx)(wp)(incubatorcb.IncubatorResultWriter)(incubatorcb.NewIncubatorResult(0, 0).Encode)(s)
+				_ = session.Announce(l)(ctx)(wp)(incubatorcb.IncubatorResultWriter)(incubatorcb.NewIncubatorResult(0, 0, 0).Encode)(s)
 			}
 			target, err := character2.NewProcessor(l, ctx).GetItemInSlot(s.CharacterId(), invType, targetSlot)()
 			if err != nil {

@@ -34,7 +34,7 @@ import (
 // packet-audit:verify packet=incubator/clientbound/IncubatorResult version=jms_v185 ida=0xb0f30b
 func TestIncubatorResult(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
-	m := NewIncubatorResult(2000000, 1)
+	m := NewIncubatorResult(2000000, 1, 0)
 
 	// v61/72/79/83/84/87/jms: int itemId + short count (2000000 = 0x001E8480)
 	short := []byte{0x80, 0x84, 0x1E, 0x00, 0x01, 0x00}
@@ -65,9 +65,39 @@ func TestIncubatorResult(t *testing.T) {
 
 func TestIncubatorResultFailureBody(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
-	got := NewIncubatorResult(0, 0).Encode(l, pt.CreateContext("GMS", 83, 1))(nil)
+	got := NewIncubatorResult(0, 0, 0).Encode(l, pt.CreateContext("GMS", 83, 1))(nil)
 	want := []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
 	if !bytes.Equal(got, want) {
 		t.Fatalf("got % X, want % X", got, want)
+	}
+}
+
+// task-128: v95 carries the sacrificed Pigmy Egg id (gachaponItemID) so the
+// client can pick the correct region success NPC (GetGachaponSucessNpc).
+// Atlas still rolls a single reward, so the bonus pair stays zero.
+func TestIncubatorResult_V95CarriesEggId(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	got := NewIncubatorResult(2000000, 1, 4170005).Encode(l, pt.CreateContext("GMS", 95, 1))(nil)
+	// int itemId(4) + short count(2) + int gachaponItemID(4) + int bonusItemID(4) + int bonusCount(4) = 18
+	if len(got) != 18 {
+		t.Fatalf("v95 body len = %d, want 18", len(got))
+	}
+	// gachaponItemID at offset 6, little-endian
+	gotEgg := uint32(got[6]) | uint32(got[7])<<8 | uint32(got[8])<<16 | uint32(got[9])<<24
+	if gotEgg != 4170005 {
+		t.Fatalf("gachaponItemID = %d, want 4170005", gotEgg)
+	}
+	for i := 10; i < 18; i++ {
+		if got[i] != 0 {
+			t.Fatalf("bonus tail byte %d = %#x, want 0", i, got[i])
+		}
+	}
+}
+
+func TestIncubatorResult_V83FlatUnchanged(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	got := NewIncubatorResult(2000000, 1, 4170005).Encode(l, pt.CreateContext("GMS", 83, 1))(nil)
+	if len(got) != 6 {
+		t.Fatalf("v83 body len = %d, want 6 (flat itemId+count)", len(got))
 	}
 }

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   JOB_GRAPH, BRANCH_FLOORS, JOB_ROOTS,
-  childrenOf, rootOf, floorOf, visibleRoots, jobTreePath,
+  childrenOf, rootOf, floorOf, visibleRoots, visibleChildrenOf, jobTreePath,
 } from "@/lib/jobs/job-advancement-tree";
 
 describe("job-advancement-tree", () => {
@@ -24,8 +24,8 @@ describe("job-advancement-tree", () => {
   });
 
   it("uses the corrected per-branch floors, inherited from the root", () => {
-    expect(BRANCH_FLOORS).toEqual({ 0: 83, 800: 83, 900: 83, 910: 83, 1000: 83, 2000: 80, 2001: 84 });
-    expect(floorOf(112)).toBe(83);  // Adventurer
+    expect(BRANCH_FLOORS).toEqual({ 0: 1, 800: 83, 900: 1, 910: 1, 1000: 83, 2000: 80, 2001: 84 });
+    expect(floorOf(112)).toBe(1);   // Adventurer — present since launch
     expect(floorOf(1112)).toBe(83); // Cygnus corrected 92 -> 83
     expect(floorOf(2112)).toBe(80); // Aran corrected 88 -> 80
     expect(floorOf(2218)).toBe(84); // Evan
@@ -38,6 +38,27 @@ describe("job-advancement-tree", () => {
     expect(r83).toContain(2000);     // Aran visible on v83
     expect(r83).not.toContain(2001); // Evan hidden on v83
     expect(visibleRoots(84)).toContain(2001); // Evan visible on v84
+  });
+
+  it("shows base Adventurers + admin jobs on legacy sub-83 versions (GMS v12/v48)", () => {
+    const r12 = visibleRoots(12);
+    expect(r12).toContain(0);        // Adventurers — the jobs page was empty before this
+    expect(r12).toContain(900);      // GM — always present
+    expect(r12).toContain(910);      // Super GM — always present
+    expect(r12).not.toContain(1000); // Cygnus (v83) hidden
+    expect(r12).not.toContain(2000); // Aran (v80) hidden
+    expect(r12).not.toContain(800);  // Maple Leaf Brigadier (special) hidden
+  });
+
+  it("gates the Pirate subtree at v62 while its launch-era siblings stay visible", () => {
+    // Pirate (500) was added in GMS v62; the other four explorer classes existed at launch.
+    expect(floorOf(500)).toBe(62);
+    expect(floorOf(100)).toBe(1); // Warrior — launch-era
+    // On a sub-62 tenant Pirate is hidden from the Beginner tree; the others show.
+    expect(visibleChildrenOf(0, 12)).toEqual(expect.arrayContaining([100, 200, 300, 400]));
+    expect(visibleChildrenOf(0, 12)).not.toContain(500);
+    // On v83 Pirate is visible again.
+    expect(visibleChildrenOf(0, 83)).toContain(500);
   });
 
   it("jobTreePath returns root->node inclusive", () => {

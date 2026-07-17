@@ -4,12 +4,12 @@ import { Briefcase, ChevronRight } from "lucide-react";
 import { useTenant } from "@/context/tenant-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { JOB_GRAPH, childrenOf, visibleRoots } from "@/lib/jobs/job-advancement-tree";
+import { JOB_GRAPH, visibleChildrenOf, visibleRoots } from "@/lib/jobs/job-advancement-tree";
 
-function JobTreeNode({ id, depth }: { id: number; depth: number }) {
+function JobTreeNode({ id, depth, major }: { id: number; depth: number; major: number }) {
   const entry = JOB_GRAPH[id];
   const name = entry?.name ?? `Job ${id}`;
-  const children = childrenOf(id);
+  const children = visibleChildrenOf(id, major);
   const indent = { paddingLeft: depth * 16 } as const;
 
   if (children.length === 0) {
@@ -43,7 +43,7 @@ function JobTreeNode({ id, depth }: { id: number; depth: number }) {
       </div>
       <CollapsibleContent>
         {children.map((childId) => (
-          <JobTreeNode key={childId} id={childId} depth={depth + 1} />
+          <JobTreeNode key={childId} id={childId} depth={depth + 1} major={major} />
         ))}
       </CollapsibleContent>
     </Collapsible>
@@ -53,9 +53,10 @@ function JobTreeNode({ id, depth }: { id: number; depth: number }) {
 export function JobsPage() {
   const { activeTenant } = useTenant();
 
+  const major = activeTenant?.attributes.majorVersion ?? 0;
   const roots = useMemo(
-    () => (activeTenant ? visibleRoots(activeTenant.attributes.majorVersion) : []),
-    [activeTenant],
+    () => (activeTenant ? visibleRoots(major) : []),
+    [activeTenant, major],
   );
 
   return (
@@ -78,7 +79,7 @@ export function JobsPage() {
           </CardHeader>
           <CardContent className="space-y-1">
             {roots.map((rootId) => (
-              <JobTreeNode key={rootId} id={rootId} depth={0} />
+              <JobTreeNode key={rootId} id={rootId} depth={0} major={major} />
             ))}
           </CardContent>
         </Card>

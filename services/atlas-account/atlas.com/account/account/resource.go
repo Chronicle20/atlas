@@ -22,11 +22,12 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 		return func(router *mux.Router, l logrus.FieldLogger) {
 			register := rest.RegisterHandler(l)(db)(si)
 			registerInput := rest.RegisterInputHandler[RestModel](l)(db)(si)
+			registerCreateInput := rest.RegisterInputHandler[CreateRestModel](l)(db)(si)
 			registerPinAttemptInput := rest.RegisterInputHandler[PinAttemptInputRestModel](l)(db)(si)
 			registerPicAttemptInput := rest.RegisterInputHandler[PicAttemptInputRestModel](l)(db)(si)
 
 			r := router.PathPrefix("/accounts").Subrouter()
-			r.HandleFunc("/", registerInput("create_account", handleCreateAccount)).Methods(http.MethodPost)
+			r.HandleFunc("/", registerCreateInput("create_account", handleCreateAccount)).Methods(http.MethodPost)
 			r.HandleFunc("/", register("get_account_by_name", handleGetAccountByName)).Queries("name", "{name}").Methods(http.MethodGet)
 			r.HandleFunc("/", register("get_accounts", handleGetAccounts)).Methods(http.MethodGet)
 			r.HandleFunc("/{accountId}", register("get_account", handleGetAccountById)).Methods(http.MethodGet)
@@ -69,7 +70,7 @@ func handleUpdateAccount(d *rest.HandlerDependency, c *rest.HandlerContext, inpu
 	})
 }
 
-func handleCreateAccount(d *rest.HandlerDependency, _ *rest.HandlerContext, input RestModel) http.HandlerFunc {
+func handleCreateAccount(d *rest.HandlerDependency, _ *rest.HandlerContext, input CreateRestModel) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		_ = producer.ProviderImpl(d.Logger())(d.Context())(account2.EnvCommandTopic)(createCommandProvider(input.Name, input.Password))
 		w.WriteHeader(http.StatusAccepted)

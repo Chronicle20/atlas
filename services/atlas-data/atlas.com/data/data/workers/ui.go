@@ -72,7 +72,7 @@ func (UI) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *minio.
 				l.WithError(err).Warnf("read world icon canvas %s", worldId)
 				continue
 			}
-			img, err := canvas.Decompress(data, cp.Width(), cp.Height(), cp.Format(), file.CanvasEncryptionKey())
+			img, err := canvas.Decompress(data, cp.Width(), cp.Height(), cp.Format(), file.CanvasEncryptionKeyFor(cp.DataOffset()))
 			if err != nil {
 				l.WithError(err).Warnf("decompress world icon %s", worldId)
 				continue
@@ -93,7 +93,7 @@ func (UI) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *minio.
 		l.Debugf("UI.wz UIWindow.img/ItemProtector/Icon absent")
 	} else if data, err := file.ReadCanvasData(cp.DataOffset(), cp.DataSize()); err != nil {
 		l.WithError(err).Warnf("read item-protector icon canvas")
-	} else if img, err := canvas.Decompress(data, cp.Width(), cp.Height(), cp.Format(), file.CanvasEncryptionKey()); err != nil {
+	} else if img, err := canvas.Decompress(data, cp.Width(), cp.Height(), cp.Format(), file.CanvasEncryptionKeyFor(cp.DataOffset())); err != nil {
 		l.WithError(err).Warnf("decompress item-protector icon")
 	} else {
 		key := fmt.Sprintf("%s/ui/item-protector/icon.png", prefix)

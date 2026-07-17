@@ -5,11 +5,17 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
 	"github.com/sirupsen/logrus"
 )
+
+// monolithArchive is the single archive that legacy monolithic scopes (GMS
+// v12 Data.wz) store instead of per-category archives. When a per-archive
+// object is absent, WZCache serves a sub-archive view over it (task-172 C-3).
+const monolithArchive = "Data.wz"
 
 // WZCache owns parsed *wz.File handles keyed by (scope, region, version,
 // archive). The first request for a given key downloads the archive from
@@ -93,6 +99,28 @@ func (c *WZCache) Get(ctx context.Context, scope, region, version, archive strin
 	}
 
 	bucketKey := fmt.Sprintf("%s/regions/%s/versions/%s/%s", scope, region, version, archive)
+
+	// Legacy monolithic scopes (GMS v12) store one Data.wz with no per-archive
+	// objects. When the requested per-archive object is absent, serve a
+	// sub-archive view over the scope's Data.wz — the same monolithic fallback
+	// atlas-data's workers.OpenArchive applies at ingest (task-172 C-3), so
+	// both WZ consumers behave identically. Only a definitive "not found"
+	// triggers the fallback; a Stat error falls through to the normal download
+	// path (which surfaces the real error).
+	if archive != monolithArchive {
+		if exists, statErr := c.mc.Stat(ctx, c.bucket, bucketKey); statErr == nil && !exists {
+			sub, err := c.monolithView(ctx, scope, region, version, archive)
+			if err != nil {
+				e.err = err
+				return nil, e.err
+			}
+			e.file = sub
+			e.err = nil
+			c.l.Infof("wzcache: served %s as sub-view of monolithic Data.wz for %s", archive, key)
+			return e.file, nil
+		}
+	}
+
 	localPath := filepath.Join(c.scratchDir, sanitizeScope(scope), region, version, archive)
 	if err := os.MkdirAll(filepath.Dir(localPath), 0o755); err != nil {
 		e.err = fmt.Errorf("mkdir %s: %w", filepath.Dir(localPath), err)
@@ -113,6 +141,36 @@ func (c *WZCache) Get(ctx context.Context, scope, region, version, archive strin
 	e.err = nil
 	c.l.Infof("wzcache: opened %s for %s", archive, key)
 	return e.file, nil
+}
+
+// monolithView resolves archive as a sub-view over the scope's monolithic
+// Data.wz. The Data.wz handle is fetched through Get itself, so it is
+// downloaded once and shared across every sub-view (Map.wz, Npc.wz, ...);
+// caller holds the requested archive's entry lock, which is distinct from the
+// Data.wz entry lock, so the recursive Get does not deadlock (task-172 C-3).
+func (c *WZCache) monolithView(ctx context.Context, scope, region, version, archive string) (*wz.File, error) {
+	mono, err := c.Get(ctx, scope, region, version, monolithArchive)
+	if err != nil {
+		return nil, fmt.Errorf("monolithic Data.wz for %s: %w", archive, err)
+	}
+	return monolithSubView(mono, archive)
+}
+
+// monolithSubView maps an archive name onto a directory of the parsed Data.wz:
+// Base.wz is the root itself (root-level smap/zmap play the Base.wz role),
+// any other archive is the root subdirectory with the same stem (Map.wz ->
+// Data.wz/Map). Returns an error when the category is absent from Data.wz.
+func monolithSubView(mono *wz.File, archive string) (*wz.File, error) {
+	stem := strings.TrimSuffix(archive, ".wz")
+	if archive == "Base.wz" {
+		return wz.NewSubFile(mono, mono.Root(), stem), nil
+	}
+	for _, d := range mono.Root().Directories() {
+		if d.Name() == stem {
+			return wz.NewSubFile(mono, d, stem), nil
+		}
+	}
+	return nil, fmt.Errorf("%s: category absent from monolithic Data.wz", archive)
 }
 
 // Close releases all cached *wz.File handles. Intended for graceful shutdown.

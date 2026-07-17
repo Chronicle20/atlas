@@ -529,3 +529,104 @@ func TestProcessor_AddBuffBonuses_PreservesBasePercent(t *testing.T) {
 		t.Errorf("BasePercent() = %v, want 10 (re-sourcing dropped the dimension)", bonuses[0].BasePercent())
 	}
 }
+
+func TestProcessor_MapleWarriorLifecycle(t *testing.T) {
+	p, _, ctx, _ := setupProcessorTest(t)
+
+	ch := channel.NewModel(1, 2)
+	// NewBase(strength, dexterity, luck, intelligence, maxHp, maxMp)
+	base := stat.NewBase(100, 80, 60, 40, 5000, 3000)
+	if err := p.SetBaseStats(ch, 12345, base); err != nil {
+		t.Fatalf("SetBaseStats() error = %v", err)
+	}
+
+	// Apply: one MAPLE_WARRIOR change -> four base-percent bonuses.
+	bs := stat.BonusesForBuffChange("", "MAPLE_WARRIOR", 10)
+	if err := p.AddBuffBonuses(ch, 12345, 2311003, bs); err != nil {
+		t.Fatalf("AddBuffBonuses() error = %v", err)
+	}
+
+	m, err := GetRegistry().Get(ctx, 12345)
+	if err != nil {
+		t.Fatalf("Registry.Get() error = %v", err)
+	}
+	if m.Computed().Strength() != 110 {
+		t.Errorf("Strength = %v, want 110", m.Computed().Strength())
+	}
+	if m.Computed().Dexterity() != 88 {
+		t.Errorf("Dexterity = %v, want 88", m.Computed().Dexterity())
+	}
+	if m.Computed().Luck() != 66 {
+		t.Errorf("Luck = %v, want 66", m.Computed().Luck())
+	}
+	if m.Computed().Intelligence() != 44 {
+		t.Errorf("Intelligence = %v, want 44", m.Computed().Intelligence())
+	}
+	if m.Computed().MaxHp() != 5000 {
+		t.Errorf("MaxHp = %v, want 5000 (MW must not touch HP)", m.Computed().MaxHp())
+	}
+
+	// Expire: removal by source drops all four together.
+	if err := p.RemoveBuffBonuses(12345, 2311003); err != nil {
+		t.Fatalf("RemoveBuffBonuses() error = %v", err)
+	}
+	m, err = GetRegistry().Get(ctx, 12345)
+	if err != nil {
+		t.Fatalf("Registry.Get() error = %v", err)
+	}
+	if m.Computed().Strength() != 100 || m.Computed().Dexterity() != 80 ||
+		m.Computed().Luck() != 60 || m.Computed().Intelligence() != 40 {
+		t.Errorf("post-expiry stats = STR %v/DEX %v/LUK %v/INT %v, want 100/80/60/40",
+			m.Computed().Strength(), m.Computed().Dexterity(), m.Computed().Luck(), m.Computed().Intelligence())
+	}
+	if len(m.Bonuses()) != 0 {
+		t.Errorf("Bonuses count = %v, want 0 after expiry", len(m.Bonuses()))
+	}
+}
+
+func TestProcessor_MapleWarrior_PathParity(t *testing.T) {
+	p, _, ctx, ten := setupProcessorTest(t)
+	ch := channel.NewModel(1, 2)
+
+	// Live-apply path: consumer builds with empty source, AddBuffBonuses
+	// re-stamps "buff:2311003" via WithSource.
+	consumerBonuses := stat.BonusesForBuffChange("", "MAPLE_WARRIOR", 10)
+	if err := p.AddBuffBonuses(ch, 12345, 2311003, consumerBonuses); err != nil {
+		t.Fatalf("AddBuffBonuses() error = %v", err)
+	}
+	live, err := GetRegistry().Get(ctx, 12345)
+	if err != nil {
+		t.Fatalf("Registry.Get() error = %v", err)
+	}
+
+	// Initializer path: source pre-stamped, applied via WithBonuses.
+	initBonuses := stat.BonusesForBuffChange("buff:2311003", "MAPLE_WARRIOR", 10)
+	initModel := NewModel(ten, ch, 67890).WithBonuses(initBonuses)
+
+	key := func(b stat.Bonus) string { return b.Source() + "|" + string(b.StatType()) }
+	liveSet := make(map[string]stat.Bonus)
+	for _, b := range live.Bonuses() {
+		liveSet[key(b)] = b
+	}
+	initSet := make(map[string]stat.Bonus)
+	for _, b := range initModel.Bonuses() {
+		initSet[key(b)] = b
+	}
+
+	if len(liveSet) != 4 {
+		t.Fatalf("live path bonuses = %v, want 4", len(liveSet))
+	}
+	if len(initSet) != 4 {
+		t.Fatalf("initializer path bonuses = %v, want 4", len(initSet))
+	}
+	for k, lb := range liveSet {
+		ib, ok := initSet[k]
+		if !ok {
+			t.Errorf("initializer path missing bonus %s", k)
+			continue
+		}
+		if lb != ib {
+			t.Errorf("bonus %s differs: live=%+v init=%+v", k, lb, ib)
+		}
+	}
+}

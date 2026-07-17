@@ -3,14 +3,13 @@ import { getItemType } from "@/types/models/item";
 import { useItemData } from "@/lib/hooks/useItemData";
 import { useEquipmentData } from "@/lib/hooks/api/useEquipmentData";
 import { cn } from "@/lib/utils";
+import { isSealed, isTagged, ZERO_DATE } from "@/lib/utils/asset-flags";
 
 interface Props {
   asset: Asset;
   itemName?: string | undefined;
   slotName?: string | undefined;
 }
-
-const ZERO_DATE = "0001-01-01T00:00:00Z";
 
 // Order matches the in-game class label row.
 const JOB_BITS: Array<{ name: string; bit: number }> = [
@@ -170,11 +169,29 @@ export function AssetTooltipContent({ asset, itemName, slotName }: Props) {
         </div>
       )}
 
-      {a.expiration && a.expiration !== "" && a.expiration !== ZERO_DATE && (
+      {isTagged(asset) && (
         <div className="text-xs">
-          <span className="text-muted-foreground">EXPIRES: </span>
-          <span>{new Date(a.expiration).toLocaleDateString()}</span>
+          <span className="text-muted-foreground">OWNER: </span>
+          <span>{a.owner}</span>
         </div>
+      )}
+
+      {isSealed(asset) ? (
+        <div className="text-xs">
+          <span className="text-muted-foreground">
+            {a.expiration && a.expiration !== "" && a.expiration !== ZERO_DATE ? "SEALED UNTIL: " : "SEALED"}
+          </span>
+          {a.expiration && a.expiration !== "" && a.expiration !== ZERO_DATE && (
+            <span>{new Date(a.expiration).toLocaleDateString()}</span>
+          )}
+        </div>
+      ) : (
+        a.expiration && a.expiration !== "" && a.expiration !== ZERO_DATE && (
+          <div className="text-xs">
+            <span className="text-muted-foreground">EXPIRES: </span>
+            <span>{new Date(a.expiration).toLocaleDateString()}</span>
+          </div>
+        )
       )}
     </div>
   );

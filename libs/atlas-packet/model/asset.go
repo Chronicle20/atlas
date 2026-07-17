@@ -45,6 +45,7 @@ type Asset struct {
 	// stackable fields
 	quantity     uint32
 	rechargeable uint64
+	owner        string
 	// pet fields
 	petId     uint32
 	petName   string
@@ -62,39 +63,39 @@ func NewAsset(zeroPosition bool, slot int16, templateId uint32, expiration time.
 	}
 }
 
-func (m Asset) ZeroPosition() bool   { return m.zeroPosition }
-func (m Asset) Slot() int16          { return m.slot }
-func (m Asset) TemplateId() uint32   { return m.templateId }
-func (m Asset) Expiration() time.Time { return m.expiration }
-func (m Asset) Strength() uint16     { return m.strength }
-func (m Asset) Dexterity() uint16    { return m.dexterity }
-func (m Asset) Intelligence() uint16 { return m.intelligence }
-func (m Asset) Luck() uint16         { return m.luck }
-func (m Asset) Hp() uint16           { return m.hp }
-func (m Asset) Mp() uint16           { return m.mp }
-func (m Asset) WeaponAttack() uint16 { return m.weaponAttack }
-func (m Asset) MagicAttack() uint16  { return m.magicAttack }
-func (m Asset) WeaponDefense() uint16 { return m.weaponDefense }
-func (m Asset) MagicDefense() uint16 { return m.magicDefense }
-func (m Asset) Accuracy() uint16     { return m.accuracy }
-func (m Asset) Avoidability() uint16 { return m.avoidability }
-func (m Asset) Hands() uint16        { return m.hands }
-func (m Asset) Speed() uint16        { return m.speed }
-func (m Asset) Jump() uint16         { return m.jump }
-func (m Asset) Slots() uint16        { return m.slots }
-func (m Asset) LevelType() byte      { return m.levelType }
-func (m Asset) Level() byte          { return m.level }
-func (m Asset) Experience() uint32   { return m.experience }
+func (m Asset) ZeroPosition() bool     { return m.zeroPosition }
+func (m Asset) Slot() int16            { return m.slot }
+func (m Asset) TemplateId() uint32     { return m.templateId }
+func (m Asset) Expiration() time.Time  { return m.expiration }
+func (m Asset) Strength() uint16       { return m.strength }
+func (m Asset) Dexterity() uint16      { return m.dexterity }
+func (m Asset) Intelligence() uint16   { return m.intelligence }
+func (m Asset) Luck() uint16           { return m.luck }
+func (m Asset) Hp() uint16             { return m.hp }
+func (m Asset) Mp() uint16             { return m.mp }
+func (m Asset) WeaponAttack() uint16   { return m.weaponAttack }
+func (m Asset) MagicAttack() uint16    { return m.magicAttack }
+func (m Asset) WeaponDefense() uint16  { return m.weaponDefense }
+func (m Asset) MagicDefense() uint16   { return m.magicDefense }
+func (m Asset) Accuracy() uint16       { return m.accuracy }
+func (m Asset) Avoidability() uint16   { return m.avoidability }
+func (m Asset) Hands() uint16          { return m.hands }
+func (m Asset) Speed() uint16          { return m.speed }
+func (m Asset) Jump() uint16           { return m.jump }
+func (m Asset) Slots() uint16          { return m.slots }
+func (m Asset) LevelType() byte        { return m.levelType }
+func (m Asset) Level() byte            { return m.level }
+func (m Asset) Experience() uint32     { return m.experience }
 func (m Asset) HammersApplied() uint32 { return m.hammersApplied }
-func (m Asset) Flag() uint16         { return m.flag }
-func (m Asset) CashId() int64        { return m.cashId }
-func (m Asset) Quantity() uint32     { return m.quantity }
-func (m Asset) Rechargeable() uint64 { return m.rechargeable }
-func (m Asset) PetId() uint32        { return m.petId }
-func (m Asset) PetName() string      { return m.petName }
-func (m Asset) PetLevel() byte       { return m.petLevel }
-func (m Asset) Closeness() uint16    { return m.closeness }
-func (m Asset) Fullness() byte       { return m.fullness }
+func (m Asset) Flag() uint16           { return m.flag }
+func (m Asset) CashId() int64          { return m.cashId }
+func (m Asset) Quantity() uint32       { return m.quantity }
+func (m Asset) Rechargeable() uint64   { return m.rechargeable }
+func (m Asset) PetId() uint32          { return m.petId }
+func (m Asset) PetName() string        { return m.petName }
+func (m Asset) PetLevel() byte         { return m.petLevel }
+func (m Asset) Closeness() uint16      { return m.closeness }
+func (m Asset) Fullness() byte         { return m.fullness }
 
 func (m Asset) inventoryType() inventory.Type {
 	t, _ := inventory.TypeFromItemId(item.Id(m.templateId))
@@ -166,6 +167,15 @@ func (m Asset) SetPetInfo(petId uint32, petName string, petLevel, fullness byte,
 	return m
 }
 
+func (m Asset) SetOwner(owner string) Asset {
+	m.owner = owner
+	return m
+}
+
+func (m Asset) Owner() string {
+	return m.owner
+}
+
 func (m *Asset) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	if m.IsEquipment() && !m.IsCashEquipment() {
 		return m.encodeEquipableInfo(l, ctx)
@@ -206,7 +216,7 @@ func (m *Asset) encodeEquipableInfo(l logrus.FieldLogger, ctx context.Context) f
 		m.encodeEquipmentStats(w)
 
 		if (t.Region() == "GMS" && t.MajorVersion() > 12) || t.Region() == "JMS" {
-			w.WriteAsciiString("")
+			w.WriteAsciiString(m.owner)
 			w.WriteShort(m.flag)
 		}
 
@@ -258,7 +268,7 @@ func (m *Asset) encodeCashEquipableInfo(l logrus.FieldLogger, ctx context.Contex
 		m.encodeEquipmentStats(w)
 
 		if (t.Region() == "GMS" && t.MajorVersion() > 12) || t.Region() == "JMS" {
-			w.WriteAsciiString("")
+			w.WriteAsciiString(m.owner)
 			w.WriteShort(m.flag)
 
 			if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
@@ -284,7 +294,7 @@ func (m *Asset) encodeStackableInfo(l logrus.FieldLogger, _ context.Context) fun
 		w.WriteBool(false)
 		w.WriteInt64(MsTime(m.expiration))
 		w.WriteShort(uint16(m.quantity))
-		w.WriteAsciiString("")
+		w.WriteAsciiString(m.owner)
 		w.WriteShort(m.flag)
 		if item.IsBullet(item.Id(m.templateId)) || item.IsThrowingStar(item.Id(m.templateId)) {
 			w.WriteLong(m.rechargeable)
@@ -329,7 +339,7 @@ func (m *Asset) encodeCashItemInfo(l logrus.FieldLogger, _ context.Context) func
 		w.WriteInt64(m.cashId)
 		w.WriteInt64(MsTime(m.expiration))
 		w.WriteShort(uint16(m.quantity))
-		w.WriteAsciiString("")
+		w.WriteAsciiString(m.owner)
 		w.WriteShort(m.flag)
 		return w.Bytes()
 	}

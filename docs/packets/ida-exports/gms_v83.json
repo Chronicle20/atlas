@@ -361,6 +361,22 @@
         }
       ]
     },
+    "CWvsContext::SendLotteryItemUseRequest": {
+      "address": "0xa1249f",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": "nPos (slot)",
+          "guard": "CWvsContext::CanSendExclRequest(this, 200, 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nItemID",
+          "guard": "CWvsContext::CanSendExclRequest(this, 200, 0)"
+        }
+      ]
+    },
     "CEmployeePool::OnEmployeeEnterField": {
       "address": "0x510e83",
       "direction": "",
@@ -8385,6 +8401,21 @@
         }
       ]
     },
+    "CWvsContext::OnIncubatorResult": {
+      "address": "0xa28298",
+      "direction": "clientbound",
+      "note": "task-19: itemId<=0 renders the failure dialog (no further reads); read order confirmed unchanged from v84.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "itemId (v2)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "count (a2a)"
+        }
+      ]
+    },
     "CWvsContext::OnInventoryOperation#Add": {
       "address": "0xa1ead9",
       "direction": "clientbound",
@@ -14089,15 +14120,15 @@
         },
         {
           "op": "Encode4",
-          "comment": "searchItemId (nItemID arg) \u2014 appended by CUIShopScanner::SendScanPacket"
+          "comment": "searchItemId (nItemID arg) — appended by CUIShopScanner::SendScanPacket"
         },
         {
           "op": "Encode1",
-          "comment": "descending (bDescendingOrder) \u2014 SendScanPacket"
+          "comment": "descending (bDescendingOrder) — SendScanPacket"
         },
         {
           "op": "Encode4",
-          "comment": "updateTime (get_update_time; trailing, NO leading updateTime any version) \u2014 SendScanPacket"
+          "comment": "updateTime (get_update_time; trailing, NO leading updateTime any version) — SendScanPacket"
         }
       ]
     },
@@ -14211,6 +14242,78 @@
         {
           "op": "Decode1",
           "comment": "code (switch: 0 success/1 closed/2 full/3 busy/4 dead/7 no-trade/17 denied/18 maintenance/23 fm-only/default unable). IDB fn CUIShopScanResult::OnShopLinkResult"
+        }
+      ]
+    },
+    "CRPSGameDlg::OnBtStart": {
+      "address": "0x7403d0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "sub-op byte (0=OnBtStart/2=Update-timeout/3=OnBtContinue/4=OnBtExit/5=OnBtRetry; bodyless arm, no further fields — docs/tasks/task-132-rps-npc-game/ida-rps-serverbound.md §0/§1-§5)"
+        }
+      ]
+    },
+    "CRPSGameDlg::SendSelection": {
+      "address": "0x7405a0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "throw (0=Rock/1=Paper/2=Scissors, RAW passthrough; sub-op mode byte 1 written earlier by the same sender, excluded here per the storage OperationMeso/StoreAsset/RetrieveAsset convention)"
+        }
+      ]
+    },
+    "CRPSGameDlg::OnPacket#OPEN": {
+      "address": "0x7400ec",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (OnPacket entry Decode1 @0x740003; case 8 = OPEN)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "ante — participation fee (CInPacket::Decode4 @0x7400ec; the StringPool notice string that follows is a static resource, not a packet field)"
+        }
+      ]
+    },
+    "CRPSGameDlg::OnPacket#RESULT": {
+      "address": "0x740298",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (dispatcher sub_74024B (0x74024b) case 11 = RESULT)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "npcThrow (CInPacket::Decode1 @0x740298)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "straightVictoryCount, SIGNED int8 (CInPacket::Decode1 @0x7402a3; client treats as signed __int8, branches on <0)"
+        }
+      ]
+    },
+    "CRPSGameDlg::OnPacket#START_SELECT": {
+      "address": "0x7402e9",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte only (case 9 = START_SELECT; enable R/P/S buttons + arm selection timer, no further wire reads)"
+        }
+      ]
+    },
+    "CRPSGameDlg::OnPacket#END": {
+      "address": "0x74009e",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte only (case 13 = CLOSE; CWnd::Destroy @0x74009e, no further wire reads)"
         }
       ]
     }

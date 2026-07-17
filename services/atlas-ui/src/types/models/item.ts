@@ -85,6 +85,15 @@ export interface EquipmentData {
   attributes: EquipmentAttributes;
 }
 
+export interface RewardModel {
+  itemId: number;
+  count: number;
+  prob: number;
+  effect: string;
+  worldMsg: string;
+  period: number;
+}
+
 // Consumable detail attributes
 export interface ConsumableAttributes {
   price: number;
@@ -99,6 +108,7 @@ export interface ConsumableAttributes {
   cursed: number;
   rechargeable: boolean;
   spec: Record<string, number>;
+  rewards?: RewardModel[];
 }
 
 export interface ConsumableData {

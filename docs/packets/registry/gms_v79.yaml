@@ -2654,6 +2654,14 @@
   ida:
     address: 6300379
   note: 'v79 sub_6022DB COutPacket(108); COutPacket(108)+encode(macros via sub_4DB93F)+Send (CMacroSysMan::FlushToSvr). v83 SKILL_MACRO=0x6e=110 (d-2). delta doc serverbound (ida-read).'
+- op: LOTTERY_ITEM_USE_REQUEST
+  direction: serverbound
+  opcode: 110
+  fname: CWvsContext::SendLotteryItemUseRequest
+  provenance: ida-discovered
+  ida:
+    address: 9821442
+  note: 'v79 COutPacket(110) = 0x6E; CWvsContext::SendLotteryItemUseRequest @0x95dd02 (size 0x83), Encode2(nPos)+Encode4(nItemID), distinct from SendBridleItemUseRequest @0x9558e5. IDA-verified task-131.'
 - op: SUE_CHARACTER
   direction: serverbound
   opcode: 112
@@ -2939,3 +2947,11 @@
   ida:
     address: 9896867
   note: task-127 - legacy frame [str serial][short pos][int itemId] (pre-v83, no searchItemId/descending/updateTime)
+- op: RPS_ACTION
+  direction: serverbound
+  opcode: 133
+  fname: CRPSGameDlg::OnBtStart
+  provenance: ida-discovered
+  ida:
+    address: 7081642
+  note: 'Dedicated RPS serverbound opcode 0x85 (133); 6 RPS send helpers sub-ops 0-5, structurally identical to v72/v83. Clientbound OnPacket byte-identical to verified v83. Live IDA 2026-07-16; see ida-rps-legacy-reaudit.md.'

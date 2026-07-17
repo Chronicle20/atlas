@@ -1508,3 +1508,19 @@
   ida:
     address: 4602176
   note: 'BODY-VERIFIED send-site 0x463d42 (CClientSocket::OnConnect @0x463940, exception/crash branch, this[9] set): reads the crash exception file (CWvsApp::GetExceptionFileName) then COutPacket(24)+Encode2(len)+EncodeBuffer(exceptionData). EXACT twin of v61 CLIENT_START_ERROR (OnConnect @0x472d42 exception branch: COutPacket(25)+Encode2(len)+EncodeBuffer). Client start/exception (crash) log report. v61 CLIENT_START_ERROR=25 (Delta-1). Atlas handler: StartErrorHandle (NoOpValidator: pre-LoggedIn). This IS the ExceptionLog send.'
+- op: RPS_GAME
+  direction: clientbound
+  opcode: 237
+  fname: CRPSGameDlg::OnPacket
+  provenance: ida-discovered
+  ida:
+    address: 5954452
+  note: 'CRPSGameDlg::OnPacket @0x5ADB94 (recv opcode 237/0xED, CField::OnPacket dispatch). MODERN NPC game, structurally identical to v72/v79/v83/v95: Decode1 mode, mode 8 OPEN = Decode4 ante + StringPool(3313), mode 13 END = CWnd::Destroy, RESULT via the 6/7/9-12/14 delegate. Corrected 2026-07-16 after the v48 IDB was found to MISLABEL CRPSGameDlg/CTrunkDlg OnPacket (the old 0x5d5544/opcode 234-235 function is a channel/find-player dialog, NOT RPS). See ida-rps-legacy-reaudit.md.'
+- op: RPS_ACTION
+  direction: serverbound
+  opcode: 111
+  fname: CRPSGameDlg::OnBtStart
+  provenance: ida-discovered
+  ida:
+    address: 5955898
+  note: 'Dedicated RPS serverbound opcode 111 (0x6F). MODERN 6-helper send set (sub-ops 0-5); the player throw is Encode1(1)+Encode1(throw) at sub-op 1 (SendSelection @0x5AE13A). Corrected 2026-07-16 (prior 0x33/51 was the mislabeled channel dialog). See ida-rps-legacy-reaudit.md.'

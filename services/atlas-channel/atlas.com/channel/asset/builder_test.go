@@ -225,6 +225,16 @@ func TestPetModel(t *testing.T) {
 	}
 }
 
+func TestChannelAssetOwner(t *testing.T) {
+	m := asset.NewModelBuilder(1, uuid.New(), 1302000).SetOwner("Tumi").MustBuild()
+	if m.Owner() != "Tumi" {
+		t.Fatalf("Owner() = %q", m.Owner())
+	}
+	if c := asset.Clone(m).MustBuild(); c.Owner() != "Tumi" {
+		t.Fatalf("Clone dropped owner: %q", c.Owner())
+	}
+}
+
 func TestQuantityBehavior(t *testing.T) {
 	// Stackable items have explicit quantity
 	consumable := asset.NewModelBuilder(1, uuid.New(), 2000000).

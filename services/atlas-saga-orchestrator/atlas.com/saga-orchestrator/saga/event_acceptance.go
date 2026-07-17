@@ -30,6 +30,7 @@ const (
 	EventKindAssetDeleted         EventKind = "asset.deleted"
 	EventKindAssetQuantityChanged EventKind = "asset.quantity_changed"
 	EventKindAssetMoved           EventKind = "asset.moved"
+	EventKindAssetUpdated         EventKind = "asset.updated"
 
 	// Quest subsystem.
 	EventKindQuestStarted   EventKind = "quest.started"
@@ -111,6 +112,9 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.EquipAsset:           {EventKindAssetMoved},
 	sharedsaga.UnequipAsset:         {EventKindAssetMoved},
 	sharedsaga.CreateAndEquipAsset:  {EventKindAssetCreated},
+	sharedsaga.SetAssetOwner:        {EventKindAssetUpdated},
+	sharedsaga.ApplyAssetLock:       {EventKindAssetUpdated},
+	sharedsaga.IncubatorResult:      {},
 
 	// Character/stat actions.
 	sharedsaga.AwardExperience:        {EventKindCharacterExperienceChanged},
@@ -219,6 +223,7 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.SelectGachaponReward:       {},
 	sharedsaga.EmitGachaponWin:            {},
 	sharedsaga.StartInstanceTransport:     {},
+	sharedsaga.StartRPSGame:               {},
 }
 
 // StepAcceptsEvent reports whether a saga step's Action can be legitimately
@@ -265,6 +270,7 @@ var outcomeTable = map[EventKind]EventOutcome{
 
 	// Asset subsystem.
 	EventKindAssetCreated:         OutcomeSuccess,
+	EventKindAssetUpdated:         OutcomeSuccess,
 	EventKindAssetDeleted:         OutcomeSuccess,
 	EventKindAssetQuantityChanged: OutcomeSuccess,
 	EventKindAssetMoved:           OutcomeSuccess,

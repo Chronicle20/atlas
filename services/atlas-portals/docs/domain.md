@@ -70,6 +70,10 @@ Warps a character to a target map:
 
 Warps a character to a specific portal in a map.
 
+**WarpToPosition**
+
+Warps a character to an exact (x, y) coordinate in a target map rather than a named portal.
+
 **WarpToPortal**
 
 Emits a character change map command.

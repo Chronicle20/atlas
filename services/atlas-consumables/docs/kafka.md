@@ -10,8 +10,26 @@ Consumable command topic.
 |---------|-------------|
 | REQUEST_ITEM_CONSUME | Consume item from inventory |
 | REQUEST_SCROLL | Use scroll on equipment |
+| REQUEST_VEGA_SCROLL | Apply a scroll at a Vega's Spell boosted rate |
+| REQUEST_VICIOUS_HAMMER | Use a vicious hammer on equipment |
 | APPLY_CONSUMABLE_EFFECT | Apply item effects without consuming |
 | CANCEL_CONSUMABLE_EFFECT | Cancel consumable buff effects |
+
+### COMMAND_TOPIC_TAMING_MOB_FOOD
+
+Taming-mob (mount) food command topic.
+
+| Command | Description |
+|---------|-------------|
+| REQUEST_FEED | Feed a taming-mob with a revitalizer item |
+
+### COMMAND_TOPIC_ITEM_CONSUMED_ON_PICKUP
+
+Item-consumed-on-pickup command topic.
+
+| Command | Description |
+|---------|-------------|
+| ITEM_CONSUMED_ON_PICKUP | Item was consumed at pickup time (e.g. monster card) |
 
 ### EVENT_TOPIC_CHARACTER_STATUS
 
@@ -43,7 +61,25 @@ Consumable status events.
 |-------|-------------|
 | ERROR | Consumption error occurred |
 | SCROLL | Scroll usage result |
+| VEGA_SCROLL | Vega's Spell scroll usage result |
 | EFFECT_APPLIED | Consumable effect applied |
+| VICIOUS_HAMMER | Vicious hammer usage result |
+
+### EVENT_TOPIC_TAMING_MOB_FOOD
+
+Taming-mob (mount) food event topic.
+
+| Event | Description |
+|-------|-------------|
+| (flat, untyped) | Revitalizer consumed; carries the tiredness heal amount |
+
+### COMMAND_TOPIC_MONSTER_BOOK
+
+Monster book command topic.
+
+| Command | Description |
+|---------|-------------|
+| CARD_PICKED_UP | Monster card was picked up |
 
 ### COMMAND_TOPIC_CHARACTER
 
@@ -125,6 +161,44 @@ Pet commands.
 }
 ```
 
+### REQUEST_VEGA_SCROLL Command
+
+```json
+{
+  "transactionId": "uuid",
+  "worldId": 0,
+  "channelId": 0,
+  "mapId": 0,
+  "instance": "uuid",
+  "characterId": 0,
+  "type": "REQUEST_VEGA_SCROLL",
+  "body": {
+    "vegaSlot": 0,
+    "vegaItemId": 0,
+    "scrollSlot": 0,
+    "equipSlot": 0
+  }
+}
+```
+
+### REQUEST_VICIOUS_HAMMER Command
+
+```json
+{
+  "transactionId": "uuid",
+  "worldId": 0,
+  "channelId": 0,
+  "mapId": 0,
+  "instance": "uuid",
+  "characterId": 0,
+  "type": "REQUEST_VICIOUS_HAMMER",
+  "body": {
+    "hammerSlot": 0,
+    "equipSlot": 0
+  }
+}
+```
+
 ### APPLY_CONSUMABLE_EFFECT Command
 
 ```json
@@ -171,6 +245,8 @@ Pet commands.
 }
 ```
 
+`error` is one of `PET_CANNOT_CONSUME` or `VEGA_INVALID`, or empty for unclassified errors.
+
 ### SCROLL Event
 
 ```json
@@ -185,6 +261,34 @@ Pet commands.
   }
 }
 ```
+
+### VEGA_SCROLL Event
+
+```json
+{
+  "characterId": 0,
+  "type": "VEGA_SCROLL",
+  "body": {
+    "success": true,
+    "cursed": false
+  }
+}
+```
+
+### VICIOUS_HAMMER Event
+
+```json
+{
+  "characterId": 0,
+  "type": "VICIOUS_HAMMER",
+  "body": {
+    "success": true,
+    "reason": ""
+  }
+}
+```
+
+`reason` is one of `""` (success), `UNKNOWN`, `NOT_UPGRADABLE`, `CAP_REACHED`, or `HORNTAIL`.
 
 ### EFFECT_APPLIED Event
 
@@ -321,6 +425,66 @@ Note: sourceId uses negative item ID for consumable buffs.
     "experience": 0,
     "hammersApplied": 0,
     "expiration": "2006-01-02T15:04:05Z"
+  }
+}
+```
+
+### REQUEST_FEED Command (consumed)
+
+```json
+{
+  "transactionId": "uuid",
+  "worldId": 0,
+  "channelId": 0,
+  "mapId": 0,
+  "instance": "uuid",
+  "characterId": 0,
+  "type": "REQUEST_FEED",
+  "body": {
+    "slot": 0,
+    "itemId": 0
+  }
+}
+```
+
+### Taming-Mob Food Event (produced)
+
+Flat, untyped struct (no envelope `type` field) on `EVENT_TOPIC_TAMING_MOB_FOOD`.
+
+```json
+{
+  "worldId": 0,
+  "characterId": 0,
+  "itemId": 0,
+  "tirednessHeal": 0
+}
+```
+
+### ITEM_CONSUMED_ON_PICKUP Command (consumed)
+
+Flat struct (no envelope wrapper) on `COMMAND_TOPIC_ITEM_CONSUMED_ON_PICKUP`.
+
+```json
+{
+  "tenantId": "uuid",
+  "characterId": 0,
+  "itemId": 0,
+  "transactionId": "uuid",
+  "type": "ITEM_CONSUMED_ON_PICKUP"
+}
+```
+
+### CARD_PICKED_UP Command (produced)
+
+```json
+{
+  "tenantId": "uuid",
+  "characterId": 0,
+  "eventId": "uuid",
+  "type": "CARD_PICKED_UP",
+  "body": {
+    "cardId": 0,
+    "source": "drop_pickup"
   }
 }
 ```
@@ -497,3 +661,5 @@ Item consumption uses saga-style transactions:
 4. On error: CANCEL_RESERVATION and emit ERROR event
 
 The one-time handler is registered dynamically on the compartment status event topic. It validates that the incoming RESERVED event matches the expected transactionId and itemId before invoking the item consumer callback.
+
+REQUEST_VEGA_SCROLL uses a chained two-reservation variant of the same transactionId: a one-time handler is registered for both the vega (CASH) item and the scroll (USE) item before the first REQUEST_RESERVE (for the vega item) is sent. The vega item's RESERVED confirmation triggers the second REQUEST_RESERVE (for the scroll); the scroll's RESERVED confirmation runs the terminal consumer. REQUEST_FEED and REQUEST_VICIOUS_HAMMER follow the single-reservation pattern above.

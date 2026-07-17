@@ -299,6 +299,31 @@ func (g *GachaponActionModel) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// --- RPSActionModel ---
+
+func (r RPSActionModel) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		NpcId         uint32 `json:"npcId"`
+		EntryCostMeso uint32 `json:"entryCostMeso"`
+		FailureState  string `json:"failureState"`
+	}{r.npcId, r.entryCostMeso, r.failureState})
+}
+
+func (r *RPSActionModel) UnmarshalJSON(data []byte) error {
+	var aux struct {
+		NpcId         uint32 `json:"npcId"`
+		EntryCostMeso uint32 `json:"entryCostMeso"`
+		FailureState  string `json:"failureState"`
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	r.npcId = aux.NpcId
+	r.entryCostMeso = aux.EntryCostMeso
+	r.failureState = aux.FailureState
+	return nil
+}
+
 // --- ListSelectionModel ---
 
 func (l ListSelectionModel) MarshalJSON() ([]byte, error) {
@@ -425,11 +450,12 @@ func (s StateModel) MarshalJSON() ([]byte, error) {
 		CraftAction     *CraftActionModel     `json:"craftAction,omitempty"`
 		TransportAction *TransportActionModel `json:"transportAction,omitempty"`
 		GachaponAction  *GachaponActionModel  `json:"gachaponAction,omitempty"`
+		RPSAction       *RPSActionModel       `json:"rpsAction,omitempty"`
 		ListSelection   *ListSelectionModel   `json:"listSelection,omitempty"`
 		AskNumber       *AskNumberModel       `json:"askNumber,omitempty"`
 		AskStyle        *AskStyleModel        `json:"askStyle,omitempty"`
 		AskSlideMenu    *AskSlideMenuModel    `json:"askSlideMenu,omitempty"`
-	}{s.id, s.stateType, s.dialogue, s.genericAction, s.craftAction, s.transportAction, s.gachaponAction, s.listSelection, s.askNumber, s.askStyle, s.askSlideMenu})
+	}{s.id, s.stateType, s.dialogue, s.genericAction, s.craftAction, s.transportAction, s.gachaponAction, s.rpsAction, s.listSelection, s.askNumber, s.askStyle, s.askSlideMenu})
 }
 
 func (s *StateModel) UnmarshalJSON(data []byte) error {
@@ -441,6 +467,7 @@ func (s *StateModel) UnmarshalJSON(data []byte) error {
 		CraftAction     *CraftActionModel     `json:"craftAction,omitempty"`
 		TransportAction *TransportActionModel `json:"transportAction,omitempty"`
 		GachaponAction  *GachaponActionModel  `json:"gachaponAction,omitempty"`
+		RPSAction       *RPSActionModel       `json:"rpsAction,omitempty"`
 		ListSelection   *ListSelectionModel   `json:"listSelection,omitempty"`
 		AskNumber       *AskNumberModel       `json:"askNumber,omitempty"`
 		AskStyle        *AskStyleModel        `json:"askStyle,omitempty"`
@@ -456,6 +483,7 @@ func (s *StateModel) UnmarshalJSON(data []byte) error {
 	s.craftAction = aux.CraftAction
 	s.transportAction = aux.TransportAction
 	s.gachaponAction = aux.GachaponAction
+	s.rpsAction = aux.RPSAction
 	s.listSelection = aux.ListSelection
 	s.askNumber = aux.AskNumber
 	s.askStyle = aux.AskStyle

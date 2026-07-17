@@ -262,7 +262,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: atlas-gachapons
+  name: atlas-reward-pools
 spec:
   template:
     spec:
@@ -671,6 +671,19 @@ spec:
     spec:
       containers:
         - name: renders
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-rps
+spec:
+  template:
+    spec:
+      containers:
+        - name: rps
           env:
             - name: ATLAS_ENV
               value: "main"

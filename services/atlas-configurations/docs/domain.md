@@ -26,6 +26,7 @@ Manages version-specific configuration templates that define schemas for game re
 
 **Characters**
 - `Templates` - List of character creation templates defining job index, map, gender, appearance options, and starting items/skills
+- `Presets` - List of character presets (id, and attributes: name, description, tags, jobId, gender, face, hair, hairColor, skinColor, mapId, level, meso, gm, stats, defaultName, equipment, inventory, skills)
 
 **NPCs**
 - `NPCId` - NPC identifier
@@ -48,6 +49,22 @@ Manages version-specific configuration templates that define schemas for game re
 **Commodities**
 - `HourlyExpirations` - List of hourly expiration entries with template ID and hours
 
+### Invariants
+
+- On update, presets with an empty `Id` are assigned a generated UUID before validation
+- Presets are validated against the following rules; violations are collected and prevent the update:
+  - `name` length must be 1..64 characters
+  - `description` length must be ≤512 characters
+  - `jobId` must be a known job id
+  - `gender` must be 0 or 1
+  - `level` must be in [1,250]
+  - each equipment entry's `templateId` must exist and be equippable (skipped when no tenant context is available)
+  - equipment entries must not collide on slot (slot bucket = `templateId / 10000`)
+  - each inventory entry's `templateId` must exist (skipped when no tenant context is available)
+  - each inventory entry's `quantity` must be ≥1
+  - each skill entry's `skillId` must exist (skipped when no tenant context is available)
+  - each skill entry's `level` must be in [1,maxLevel] for that skill (skipped when no tenant context is available)
+
 ### Processors
 
 **templates.Processor**
@@ -57,6 +74,9 @@ Manages version-specific configuration templates that define schemas for game re
 - `Create` - Creates a new template
 - `UpdateById` - Updates an existing template
 - `DeleteById` - Deletes a template
+
+**preset.Validator**
+- `Validate` - Validates a list of character presets against the invariant rules above, returning the (possibly mutated) list and any validation errors
 
 ---
 
@@ -83,6 +103,7 @@ Manages tenant-specific configurations derived from templates. Maintains history
 ### Invariants
 
 - Updates and deletions create history records before modifying data
+- On update, `Characters.Presets` is validated against the same preset rules described under the Templates domain's Invariants; violations prevent the update
 
 ### Processors
 

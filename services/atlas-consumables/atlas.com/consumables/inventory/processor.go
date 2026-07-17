@@ -8,9 +8,20 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// AccommodationRequest is one item to ask atlas-inventory whether it could grant.
+type AccommodationRequest struct {
+	ItemId   uint32
+	Quantity uint32
+}
+
 type Processor interface {
 	ByCharacterIdProvider(characterId uint32) model.Provider[Model]
 	GetByCharacterId(characterId uint32) (Model, error)
+	// CanAccommodate asks atlas-inventory whether every listed item could
+	// currently be granted to the character (each evaluated independently). It
+	// is merge-aware: a full tab does not block a stackable that fits an existing
+	// stack. Returns true only when all items are accommodatable.
+	CanAccommodate(characterId uint32, items []AccommodationRequest) (bool, error)
 }
 
 type ProcessorImpl struct {
@@ -34,4 +45,14 @@ func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider
 
 func (p *ProcessorImpl) GetByCharacterId(characterId uint32) (Model, error) {
 	return p.ByCharacterIdProvider(characterId)()
+}
+
+func (p *ProcessorImpl) CanAccommodate(characterId uint32, items []AccommodationRequest) (bool, error) {
+	if len(items) == 0 {
+		return true, nil
+	}
+	return requests.Provider[accommodationOutputRestModel, bool](p.l, p.ctx)(
+		requestCheckAccommodation(characterId, items),
+		func(rm accommodationOutputRestModel) (bool, error) { return rm.Accommodated, nil },
+	)()
 }

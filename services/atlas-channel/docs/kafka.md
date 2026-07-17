@@ -84,6 +84,13 @@
 - Error Type: PET_CANNOT_CONSUME
 - Purpose: Receives consumable item use events
 
+### EVENT_TOPIC_CONVERSATION_REWARD_NOTICE
+- Direction: Event
+- Message Type: `EventBody`
+- Type Discriminators: `item_gain`, `item_loss`
+- Envelope Fields: characterId, kind, itemId, quantity
+- Purpose: Receives item-gain/item-loss notices produced by atlas-saga-orchestrator when a conversation-sourced AwardAsset/DestroyAsset/DestroyAssetFromSlot step completes with ShowEffect=true. Renders the gain effect (quest-reward-style character effect) or the loss chat line on the target session; no-ops when the character session is not present on this channel.
+
 ### EVENT_TOPIC_DOOR_STATUS
 - Direction: Event
 - Message Type: `StatusEvent[E]` with envelope fields worldId, channelId, mapId (area field), instance, pairId, ownerCharacterId, partyId, forCharacterId, type, body
@@ -186,11 +193,42 @@
 - Type Discriminators: `CREATED`, `JOINED`, `LEFT`, `ERROR`
 - Purpose: Receives messenger room operation results
 
+### EVENT_TOPIC_MIST
+- Direction: Event
+- Message Type: `Event[CreatedBody]`, `Event[DestroyedBody]`
+- Envelope: `Event[E]` with fields: Tenant (uuid.UUID), WorldId (world.Id), ChannelId (channel.Id), MapId (_map.Id), Instance (uuid.UUID), MistId (uuid.UUID), Type (string), Body (E)
+- Type Discriminators: `MIST_CREATED`, `MIST_DESTROYED`
+- Body Fields: CreatedBody (ownerType, ownerId, sourceSkillId, sourceSkillLevel, type, originX, originY, ltX, ltY, rbX, rbY, duration); DestroyedBody (reason)
+- Header Parsers: span, tenant
+- Start Offset: last
+- Purpose: Receives mist/affected-area (skill-zone) create and destroy events from atlas-maps; broadcasts the corresponding AffectedAreaCreated/AffectedAreaRemoved packet to sessions in the field's map.
+
+### EVENT_TOPIC_MONSTER_BOOK_STATUS
+- Direction: Event
+- Message Type: `StatusEvent[CardAddedBody]`, `StatusEvent[CoverChangedBody]`, `StatusEvent[StatsChangedBody]`
+- Envelope: `StatusEvent[E]` with fields: TenantId (uuid.UUID), CharacterId (uint32), EventId (uuid.UUID), Type (string), Body (E)
+- Type Discriminators: `CARD_ADDED`, `COVER_CHANGED`, `STATS_CHANGED`
+- Purpose: Receives monster-book card-added, cover-changed, and collection-stats-changed events from atlas-monster-book.
+
 ### EVENT_TOPIC_MONSTER_STATUS
 - Direction: Event
 - Message Type: `StatusEvent[StatusEventCreatedBody]`, `StatusEvent[StatusEventDestroyedBody]`, `StatusEvent[StatusEventDamagedBody]`, `StatusEvent[StatusEventKilledBody]`, `StatusEvent[StatusEventStartControlBody]`, `StatusEvent[StatusEventStopControlBody]`, `StatusEvent[StatusEventAggroChangedBody]`, `StatusEvent[StatusEffectAppliedBody]`, `StatusEvent[StatusEffectExpiredBody]`, `StatusEvent[StatusEffectCancelledBody]`, `StatusEvent[StatusEventDamageReflectedBody]`
 - Envelope: `StatusEvent[E]` with fields: WorldId (world.Id), ChannelId (channel.Id), MapId (_map.Id), Instance (uuid.UUID), UniqueId (uint32), MonsterId (uint32), Type (string), Body (E)
 - Purpose: Receives monster lifecycle and status events. CREATED spawns monster visually. DESTROYED/KILLED despawn monster. START_CONTROL/STOP_CONTROL manage monster controller assignment; START_CONTROL's `controllerHasAggro` is read from the event body and passed to `StartControlMonsterBody`, which selects `ControlMonsterTypeActiveRequest` (true) or `ControlMonsterTypeActiveInit` (false) on the wire. AGGRO_CHANGED is consumed by `handleStatusEventAggroChanged`, which loads the monster via `monster.NewProcessor(l, ctx).GetById` and re-sends `MonsterControlWriter` to the controller's session with the new aggro state — no STOP_CONTROL is emitted to the client because the active/passive control type carries the state change. DAMAGED shows HP bar (boss=map-wide, else party-only) and, for `damageSource` values `MONSTER_ATTACK` or `DAMAGE_OVER_TIME`, also broadcasts a MonsterDamage packet. Player-inflicted (`CHARACTER_ATTACK`) damage is intentionally not echoed because the attack broadcast from the socket handler already renders the damage to observers; `HEAL` is a 0-damage HP-bar refresh and also skipped. STATUS_APPLIED sends MonsterStatSet packet. STATUS_EXPIRED/STATUS_CANCELLED send MonsterStatReset packet. DAMAGE_REFLECTED applies reflected damage to character HP.
+
+### EVENT_TOPIC_MOUNT_STATUS
+- Direction: Event
+- Message Type: `StatusEvent[StatusEventBody]`
+- Envelope: `StatusEvent[E]` with fields: WorldId (world.Id), CharacterId (uint32), Type (string), Body (E)
+- Type Discriminators: `SET`, `TICK`, `FEED`
+- Body Fields: level, exp, tiredness, levelUp, tooTired
+- Purpose: Receives mount level/exp/tiredness change events from atlas-mounts. Broadcasts a SetTamingMobInfo packet to the rider's map (self + observers). When `tooTired` is set, auto-dismounts the rider (cancels the active mount-riding buff) and sends a world-message notice.
+
+### EVENT_TOPIC_MTS_STATUS
+- Direction: Event
+- Message Type: `StatusEvent[E]` with envelope fields WorldId, SellerId/BuyerId/CharacterId (per body), Type, Body
+- Type Discriminators: `LISTING_CREATED`, `LISTING_CANCELLED`, `ITEM_TAKEN_HOME`, `LISTING_CREATE_FAILED`, `LISTING_CANCEL_FAILED`, `TAKE_HOME_FAILED`, `LISTING_SOLD`, `BUY_FAILED`, `BID_FAILED`, `BID_PLACED`, `OUTBID`, `WISH_ADDED`, `WISH_REMOVED`
+- Purpose: Receives MTS marketplace lifecycle events from atlas-mts. Writes the matching clientbound MtsOperation result to the originating character's session (resolved by the event's seller/buyer/character id).
 
 ### EVENT_TOPIC_NOTE_STATUS
 - Direction: Event
@@ -272,11 +310,26 @@
 - Message Type: `StorageCompartmentEvent[CompartmentAcceptedEventBody]`, `StorageCompartmentEvent[CompartmentReleasedEventBody]`
 - Purpose: Receives storage compartment deposit/withdraw events. ACCEPTED (item deposited into storage) sends updated storage assets for the affected inventory type. RELEASED (item withdrawn from storage) sends updated storage assets for the affected inventory type. Both use projection data when available, falling back to direct storage data.
 
+### EVENT_TOPIC_SUMMON_STATUS
+- Direction: Event
+- Message Type: `StatusEvent[StatusEventCreatedBody]`, `StatusEvent[StatusEventMovedBody]`, `StatusEvent[StatusEventAttackedBody]`, `StatusEvent[StatusEventDamagedBody]`, `StatusEvent[StatusEventDestroyedBody]`, `StatusEvent[E]` (SKILL)
+- Envelope: `StatusEvent[E]` with fields: WorldId (world.Id), ChannelId (channel.Id), MapId (_map.Id), Instance (uuid.UUID), SummonId (uint32), OwnerCharacterId (uint32), SkillId (uint32), Type (string), Body (E)
+- Type Discriminators: `CREATED`, `MOVED`, `ATTACKED`, `DAMAGED`, `DESTROYED`, `SKILL`
+- Purpose: Receives summon (puppet/Beholder/etc.) lifecycle and movement events from atlas-summons; broadcasts the corresponding summon spawn/move/attack/damage/remove packet to map sessions.
+
 ### EVENT_TOPIC_TRANSPORT_STATUS
 - Direction: Event
 - Message Type: `StatusEvent[ArrivedStatusEventBody]`, `StatusEvent[DepartedStatusEventBody]`
 - Envelope: `StatusEvent[E]` with fields: RouteId (uuid.UUID), Type (string), Body (E)
 - Purpose: Receives transport route state changes. ARRIVED/DEPARTED indicate route arrival at or departure from a map.
+
+### EVENT_TOPIC_WALLET_STATUS
+- Direction: Event
+- Message Type: `StatusEvent[StatusEventUpdatedBody]`
+- Envelope: `StatusEvent[E]` with fields: AccountId (uint32), Type (string), Body (E)
+- Type Discriminators: `UPDATED`
+- Body Fields: credit, points, prepaid, transactionId
+- Purpose: Receives NX wallet balance-updated events. Refreshes the on-screen NX/points counter for whichever cash scene (MTS or the regular cash shop) the character currently occupies, using the balances carried on the event itself; a character in neither scene has nothing refreshed.
 
 ### COMMAND_TOPIC_CHANNEL_STATUS
 - Direction: Command (inbound)
@@ -424,11 +477,24 @@
 - Envelope: `Command[E]` with fields: WorldId (world.Id), ChannelId (channel.Id), MapId (_map.Id), Instance (uuid.UUID), MonsterId (uint32), Type (string), Body (E)
 - Purpose: Issues monster commands. DAMAGE applies damage (CharacterId, Damage, AttackType). USE_SKILL triggers monster skill usage (CharacterId, SkillId, SkillLevel). APPLY_STATUS applies debuffs (SourceType, SourceCharacterId, SourceSkillId, SourceSkillLevel, Statuses map, Duration, TickInterval). CANCEL_STATUS removes status effects (StatusTypes list).
 
+### COMMAND_TOPIC_MONSTER_BOOK
+- Direction: Command
+- Message Type: `Command[SetCoverBody]`
+- Envelope: `Command[E]` with fields: TenantId (uuid.UUID), CharacterId (uint32), EventId (uuid.UUID), Type (string), Body (E)
+- Type Discriminators: `SET_COVER`
+- Purpose: Issues a monster-book cover-change command (CoverCardId) to atlas-monster-book. (The `CARD_PICKED_UP` command type is defined on the shared envelope but the channel service defines no producer for it.)
+
 ### COMMAND_TOPIC_MONSTER_MOVEMENT
 - Direction: Command
 - Message Type: `Command`
 - Envelope Fields: worldId, channelId, mapId, instance, objectId, observerId, x, y, stance
 - Purpose: Issues monster movement commands
+
+### COMMAND_TOPIC_MTS
+- Direction: Command
+- Message Type: `Command[CreateListingCommandBody]`, `Command[BuyCommandBody]`, `Command[PlaceBidCommandBody]`, `Command[CancelListingCommandBody]`, `Command[TakeHomeCommandBody]`, `Command[RegisterWishCommandBody]`, `Command[RemoveWishCommandBody]`
+- Type Discriminators: `CREATE_LISTING`, `BUY`, `PLACE_BID`, `CANCEL_LISTING`, `TAKE_HOME`, `REGISTER_WISH`, `REMOVE_WISH`
+- Purpose: Issues MTS marketplace commands to atlas-mts, keyed on the acting character. CREATE_LISTING/BUY/PLACE_BID/CANCEL_LISTING/TAKE_HOME carry a TransactionId (saga-driven); REGISTER_WISH/REMOVE_WISH do not.
 
 ### COMMAND_TOPIC_NOTE
 - Direction: Command
@@ -509,6 +575,20 @@
 - Message Type: `Command[ArrangeCommandBody]`, `Command[UpdateMesosCommandBody]`, `CloseStorageCommand`
 - Mesos Operations: SET, ADD, SUBTRACT
 - Purpose: Issues storage commands. ARRANGE triggers item merge and sort within storage. UPDATE_MESOS deposits or withdraws mesos (ADD/SUBTRACT operations). CLOSE_STORAGE clears NPC context for a character.
+
+### COMMAND_TOPIC_SUMMON
+- Direction: Command
+- Message Type: `Command[SpawnCommandBody]`, `Command[MoveCommandBody]`, `Command[AttackCommandBody]`, `Command[DamageCommandBody]`
+- Envelope: `Command[E]` with fields: WorldId (world.Id), ChannelId (channel.Id), MapId (_map.Id), Instance (uuid.UUID), SummonId (uint32), Type (string), Body (E)
+- Type Discriminators: `SPAWN`, `MOVE`, `ATTACK`, `DAMAGE`
+- Purpose: Issues summon commands to atlas-summons. SPAWN creates an owner-bound summon (carries AURA_OF_THE_BEHOLDER/HEX_OF_THE_BEHOLDER levels for a Beholder summon). MOVE repositions a summon and rebroadcasts the raw movement blob. ATTACK credits the owner for a list of {monster, reported damage} targets. DAMAGE decrements a puppet summon's HP.
+
+### COMMAND_TOPIC_TAMING_MOB_FOOD
+- Direction: Command
+- Message Type: `Command[RequestFeedBody]`
+- Envelope: `Command[E]` with fields: TransactionId (uuid.UUID), WorldId (world.Id), ChannelId (channel.Id), MapId (_map.Id), Instance (uuid.UUID), CharacterId (character.Id), Type (string), Body (E)
+- Type Discriminators: `REQUEST_FEED`
+- Purpose: Issues a taming-mob (mount) food-consumption request (Slot, ItemId) to the consumables service. Performs no item mutation itself; consumables decrements the item.
 
 ---
 

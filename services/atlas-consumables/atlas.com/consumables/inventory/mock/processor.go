@@ -9,6 +9,7 @@ import (
 type ProcessorMock struct {
 	ByCharacterIdProviderFunc func(characterId uint32) model.Provider[inventory.Model]
 	GetByCharacterIdFunc      func(characterId uint32) (inventory.Model, error)
+	CanAccommodateFunc        func(characterId uint32, items []inventory.AccommodationRequest) (bool, error)
 }
 
 var _ inventory.Processor = (*ProcessorMock)(nil)
@@ -25,4 +26,11 @@ func (m *ProcessorMock) GetByCharacterId(characterId uint32) (inventory.Model, e
 		return m.GetByCharacterIdFunc(characterId)
 	}
 	return inventory.Model{}, nil
+}
+
+func (m *ProcessorMock) CanAccommodate(characterId uint32, items []inventory.AccommodationRequest) (bool, error) {
+	if m.CanAccommodateFunc != nil {
+		return m.CanAccommodateFunc(characterId, items)
+	}
+	return true, nil
 }

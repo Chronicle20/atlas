@@ -92,8 +92,10 @@ Primary domain processor providing account operations.
 | Method | Description |
 |--------|-------------|
 | GetById | Retrieve account by ID |
+| ByIdProvider | Provider for account by ID, decorated with session state |
 | GetByName | Retrieve account by name |
-| GetByTenant | Retrieve all accounts for tenant |
+| ByNameProvider | Provider for account by name, decorated with session state |
+| AllProvider | Provider for one page of the tenant's accounts, decorated with session state |
 | LoggedInTenantProvider | Retrieve logged-in accounts for tenant |
 | GetOrCreate | Retrieve or create account if automatic registration enabled |
 | Create | Create new account with hashed password |

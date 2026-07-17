@@ -97,7 +97,6 @@ Subset of character data retrieved from external character service.
 |-------|------|-------------|
 | id | uint32 | Character identifier |
 | worldId | world.Id | World identifier |
-| mapId | _map.Id | Map identifier |
 | name | string | Character name |
 | level | byte | Character level |
 | jobId | job.Id | Job identifier |
@@ -117,6 +116,7 @@ Subset of character data retrieved from external character service.
 - ChangeChannel: Updates channelId
 - ChangeLevel: Updates level
 - ChangeJob: Updates jobId
+- ChangeGm: Updates gm level
 
 ### Processors
 
@@ -133,6 +133,7 @@ Subset of character data retrieved from external character service.
 | LevelChange | Updates character level |
 | JobChangeAndEmit | Updates job and emits event if in party |
 | JobChange | Updates character job |
+| GmChange | Refreshes character GM level from foreign character service |
 | MapChange | Updates character map |
 | JoinParty | Associates character with party |
 | LeaveParty | Disassociates character from party |

@@ -1,15 +1,15 @@
 {
   "toolSha": "72e9d80cfbd7164d55812cabfc2fd020d90881c2feec7a320d5045f843b31879",
   "exportHashes": {
-    "gms_v48": "2256be73de0cdf0e30df7b04bdbd5e887f3e944a8681b86faef964a18688b0cb",
-    "gms_v61": "e96bab16cf3de51a08cac5043295b375440b3770dba49957be61a770e40a0e38",
-    "gms_v72": "de552f6818f28d0de40cb55b6c6ea52877a9fc6eab57055707707715ebce78e6",
-    "gms_v79": "341d2db3a368ee36aab4bec4c1c2a99a18ccc6dbd910ce690961adbfda2585c3",
-    "gms_v83": "7610414a5b23982e57454b250dc93c9098306af7a73f86aabd43d43e6c673ce6",
-    "gms_v84": "1bbd9c931014aaf29ede4bef61378429a9f8a43b0bb410abccf755746c9984c0",
-    "gms_v87": "9b5217b03a0d0e8fa104fdeae96e0b4bf984fea783f23143b8d436c295ef3a25",
-    "gms_v95": "e04f690150091d24f990a45ecfd445a3c0b532c64cc3a6c5bccbbaa5c5ffb2e4",
-    "jms_v185": "a7aa6ca3a20a37a9e9f89a760d7850aea060d90a880f3f0b9052fb34d88461e6"
+    "gms_v48": "a7f7dd20743f55f26646c1a912e4ba0e33dcb0b86f56183cd889c3bd2fd04021",
+    "gms_v61": "860627887e4c61add45e05bde16b247787ff5831eabbb1525aec000d83eea9db",
+    "gms_v72": "c5a50df5bf65eef32963aeb560428adfbefa431e58615252814bc57aebb6c9a7",
+    "gms_v79": "9b64f8fc1da43f8d7cfa4ae375ef91c23deb11c6e8ad216d0ea38e00ab267a6d",
+    "gms_v83": "4e917fcb4860f63c4462ac4876bc90fc06f22efb39b0989f485637969074a2b1",
+    "gms_v84": "3ad4771e83bbba138ebd0e534076a6553f92ef2cbc7f546e8b8eca22459d6f9f",
+    "gms_v87": "ff192ac103c071da22f1db22f138cad6f66637d2183c507a996188eaecc046fa",
+    "gms_v95": "8f76aa42e0d1035d365407d5798c6eeb237b5c58043580665b10d0d1dbc42982",
+    "jms_v185": "f01306a29d65ec0870767bc814ce42fa350d91ad9e754128f91291e4c8e9f6cd"
   },
   "rows": [
     {
@@ -5749,6 +5749,7 @@
     {
       "kind": "op",
       "op": "INCUBATOR_RESULT",
+      "packet": "incubator/clientbound/IncubatorResult",
       "direction": "clientbound",
       "tier1": false,
       "fnames": [
@@ -5761,43 +5762,35 @@
           "opcode": 42
         },
         "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 66
         },
         "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 66
         },
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 66
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 69
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 71
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 71
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 72
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 63
         }
       }
@@ -16502,6 +16495,54 @@
     },
     {
       "kind": "op",
+      "op": "LOTTERY_ITEM_USE_REQUEST",
+      "packet": "inventory/serverbound/InventoryLotteryItemUse",
+      "direction": "serverbound",
+      "tier1": true,
+      "fnames": [
+        "CWvsContext::SendLotteryItemUseRequest"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": 111
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 110
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 112
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 112
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 115
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 124
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 107
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "NPC_ITEM_USE_REQUEST",
       "direction": "serverbound",
       "tier1": false,
@@ -16607,6 +16648,59 @@
     },
     {
       "kind": "op",
+      "op": "RPS_ACTION",
+      "packet": "rps/serverbound/RpsOperation",
+      "direction": "serverbound",
+      "tier1": false,
+      "fnames": [
+        "CRPSGameDlg::OnBtContinue",
+        "CRPSGameDlg::OnBtExit",
+        "CRPSGameDlg::OnBtRetry",
+        "CRPSGameDlg::OnBtStart",
+        "CRPSGameDlg::SendSelection",
+        "CRPSGameDlg::Update"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "verified",
+          "opcode": 111
+        },
+        "gms_v61": {
+          "state": "verified",
+          "opcode": 124
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": 134
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 133
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 136
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 140
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 144
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 160
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 139
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "CANCEL_NAME_CHANGE_BY_OTHER",
       "direction": "clientbound",
       "tier1": false,
@@ -16655,58 +16749,6 @@
         "jms_v185": {
           "state": "n-a",
           "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "LOTTERY_ITEM_USE_REQUEST",
-      "direction": "serverbound",
-      "tier1": false,
-      "fnames": [
-        "CWvsContext::SendLotteryItemUseRequest"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 112
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 112
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 115
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 124
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 107
         }
       }
     },
@@ -20209,63 +20251,6 @@
         "jms_v185": {
           "state": "n-a",
           "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "RPS_ACTION",
-      "direction": "serverbound",
-      "tier1": false,
-      "fnames": [
-        "CRPSGameDlg::OnBtContinue",
-        "CRPSGameDlg::OnBtExit",
-        "CRPSGameDlg::OnBtRetry",
-        "CRPSGameDlg::OnBtStart",
-        "CRPSGameDlg::SendSelection",
-        "CRPSGameDlg::Update"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 136
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 140
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 144
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 160
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 139
         }
       }
     },
@@ -32520,6 +32505,54 @@
     },
     {
       "kind": "op",
+      "op": "RPS_GAME",
+      "packet": "rps/clientbound/RpsEnd",
+      "direction": "clientbound",
+      "tier1": false,
+      "fnames": [
+        "CRPSGameDlg::OnPacket"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "verified",
+          "opcode": 237
+        },
+        "gms_v61": {
+          "state": "verified",
+          "opcode": 242
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": 278
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 290
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 312
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 319
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 329
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 371
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 337
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "BEANS_OPERATION",
       "direction": "serverbound",
       "tier1": false,
@@ -34390,61 +34423,6 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 276
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "RPS_GAME",
-      "direction": "clientbound",
-      "tier1": false,
-      "fnames": [
-        "CRPSGameDlg::OnPacket"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 252
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 278
-        },
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 290
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 312
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 319
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 329
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 371
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 337
         }
       }
     },
@@ -47449,6 +47427,49 @@
         "jms_v185": {
           "state": "incomplete",
           "note": "no audit report",
+          "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "sub-struct",
+      "packet": "rps/serverbound/RpsOperationSelect",
+      "tier1": false,
+      "cells": {
+        "gms_v48": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "jms_v185": {
+          "state": "verified",
           "opcode": -1
         }
       }

@@ -39,6 +39,7 @@ type RestModel struct {
 	RingId        uint32 `json:"ringId"`
 	ViciousCount  uint32 `json:"viciousCount"`
 	Flags         uint16 `json:"flags"`
+	Owner         string `json:"owner"`
 
 	CreatedAt time.Time `json:"createdAt"`
 }
@@ -111,6 +112,7 @@ func Transform(m Model) (RestModel, error) {
 		RingId:        m.RingId(),
 		ViciousCount:  m.ViciousCount(),
 		Flags:         m.Flags(),
+		Owner:         m.Owner(),
 		CreatedAt:     m.CreatedAt(),
 	}, nil
 }

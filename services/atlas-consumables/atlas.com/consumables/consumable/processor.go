@@ -9,12 +9,15 @@ import (
 	"atlas-consumables/compartment"
 	consumable3 "atlas-consumables/data/consumable"
 	equipable2 "atlas-consumables/data/equipable"
+	itemstring "atlas-consumables/data/itemstring"
 	_map3 "atlas-consumables/data/map"
 	"atlas-consumables/equipable"
 	"atlas-consumables/inventory"
+	assetMsg "atlas-consumables/kafka/message/asset"
 	compartment2 "atlas-consumables/kafka/message/compartment"
 	"atlas-consumables/kafka/message/consumable"
 	foodmsg "atlas-consumables/kafka/message/food"
+	assetOnce "atlas-consumables/kafka/once/asset"
 	once "atlas-consumables/kafka/once/compartment"
 	"atlas-consumables/location"
 	"atlas-consumables/map"
@@ -25,8 +28,10 @@ import (
 	"context"
 	"errors"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/degrade"
 	"math"
 	"math/rand"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	ts "github.com/Chronicle20/atlas/libs/atlas-constants/character"
@@ -60,6 +65,7 @@ type Processor interface {
 	ApplyConsumableEffect(transactionId uuid.UUID, _ channel.Model, characterId uint32, itemId item2.Id) error
 	CancelConsumableEffect(_ uuid.UUID, characterId uint32, itemId item2.Id, f field.Model) error
 	FailScroll(characterId uint32, cursed bool, legendarySpirit bool, whiteScroll bool) error
+	RequestItemReward(characterId uint32, itemId item2.Id, source int16) error
 	RequestViciousHammer(characterId uint32, hammerSlot int16, equipSlot int16) error
 }
 
@@ -220,6 +226,17 @@ func (p *ProcessorImpl) RequestItemConsume(c channel.Model, characterId uint32, 
 		itemConsumer = ConsumeCashPetFood(transactionId, characterId, slot, itemId)
 	} else if item2.GetClassification(itemId) == item2.ClassificationConsumableSummoningSack {
 		itemConsumer = ConsumeSummoningSack(transactionId, c, characterId, slot, itemId)
+	} else if ci, derr := p.cdp.GetById(uint32(itemId)); derr == nil && validateRewardTable(ci.Rewards()) == nil {
+		// Reward-box (random reward) item arriving through the generic
+		// item-use request. This is the path taken on client versions that
+		// lack the dedicated lottery opcode (v48/v61) — there the client uses
+		// reward boxes via the ordinary consume request, and the server must
+		// recognize the reward table and roll a reward instead of bare-
+		// consuming the box. On dedicated-opcode versions (v72+) the client
+		// routes reward boxes to REQUEST_ITEM_REWARD, so this branch never
+		// sees them there. RequestItemReward opens its own reservation
+		// transaction, so the one created above is simply abandoned unused.
+		return p.RequestItemReward(characterId, itemId, slot)
 	} else {
 		// Fallback: items requested via REQUEST_ITEM_CONSUME that do not
 		// fit any classification-specific branch (e.g., Magic Rock for
@@ -905,6 +922,219 @@ func (p *ProcessorImpl) CancelConsumableEffect(_ uuid.UUID, characterId uint32, 
 
 func (p *ProcessorImpl) FailScroll(characterId uint32, cursed bool, legendarySpirit bool, whiteScroll bool) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(ScrollEventProvider(ts.Id(characterId))(false, cursed, legendarySpirit, whiteScroll))
+}
+
+// RequestItemReward begins the reward-box flow: validate the reward table, reserve
+// the box, and on RESERVED run ConsumeReward. Mirrors RequestScroll's structure
+// (processor.go:515). One transactionId spans reserve → create → commit. Reached
+// two ways: the dedicated lottery opcode (v72+), and the generic item-use path
+// for reward boxes on versions without that opcode (v48/v61) — see
+// RequestItemConsume. No field is threaded because the reward flow is
+// character-scoped; the channel localizes presentation from the live session.
+func (p *ProcessorImpl) RequestItemReward(characterId uint32, itemId item2.Id, source int16) error {
+	transactionId := uuid.New()
+
+	ci, err := p.cdp.GetById(uint32(itemId))
+	if err != nil {
+		// Nothing reserved yet; just unstick the client.
+		return p.rewardError(characterId, err)
+	}
+	if err = validateRewardTable(ci.Rewards()); err != nil {
+		p.l.Warnf("Character [%d] requested reward-use of item [%d] with no usable reward table: %v", characterId, itemId, err)
+		return p.rewardError(characterId, err)
+	}
+
+	// Pre-roll accommodation check (strict): the box grants one random reward, so
+	// every possible reward must be grantable up front. atlas-inventory owns the
+	// verdict (merge-aware — a full tab does not block a stackable that fits an
+	// existing stack). If any reward could not be placed, fail the use before
+	// reserving or rolling — the box is preserved and the player is told their
+	// inventory is full. The post-roll CREATION_FAILED path stays as a TOCTOU
+	// safety net.
+	accItems := make([]inventory.AccommodationRequest, 0, len(ci.Rewards()))
+	for _, r := range ci.Rewards() {
+		accItems = append(accItems, inventory.AccommodationRequest{ItemId: r.ItemId(), Quantity: grantQuantity(r.Count())})
+	}
+	ok, err := p.ip.CanAccommodate(characterId, accItems)
+	if err != nil {
+		// Nothing reserved yet; just unstick the client.
+		return p.rewardError(characterId, err)
+	}
+	if !ok {
+		p.l.Debugf("Character [%d] reward-use of item [%d] blocked: inventory cannot accommodate a possible reward.", characterId, itemId)
+		return p.rewardInventoryFull(characterId)
+	}
+
+	p.l.Debugf("Creating OneTime consumer for reward transaction [%s].", transactionId.String())
+	t, _ := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
+	validator := once.ReservationValidator(transactionId, uint32(itemId))
+	handler := compartment.Consume(ConsumeReward(transactionId, characterId, source, itemId, ci.Rewards()))
+	if _, err = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(validator, handler))); err != nil {
+		return p.rewardError(characterId, err)
+	}
+
+	err = p.cpp.RequestReserve(transactionId, characterId, inventory2.TypeValueUse, []compartment.Reserves{{Slot: source, ItemId: uint32(itemId), Quantity: 1}})
+	if err != nil {
+		return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, source, err)
+	}
+	return nil
+}
+
+// rewardInventoryFull rejects a reward-use whose pre-roll accommodation check
+// failed: nothing was reserved, so this only tells the player their inventory is
+// full (INVENTORY_FULL status message + enable-actions) via the consumable
+// error event. Unlike the post-roll path there is no CREATION_FAILED for the
+// channel's generic handler to render, so the reward flow owns the feedback here.
+func (p *ProcessorImpl) rewardInventoryFull(characterId uint32) error {
+	if cErr := producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(ErrorEventProvider(ts.Id(characterId), consumable.ErrorTypeInventoryFull)); cErr != nil {
+		p.l.WithError(cErr).Errorf("Unable to emit reward inventory-full error for character [%d]; client may be stuck.", characterId)
+	}
+	return errors.New("inventory full")
+}
+
+// rewardError unsticks the client without a reservation to cancel (pre-reserve
+// failure path). Emits the generic consumable ERROR event.
+func (p *ProcessorImpl) rewardError(characterId uint32, err error) error {
+	p.l.Debugf("Character [%d] reward request failed pre-reserve: [%v]", characterId, err)
+	if cErr := producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(ErrorEventProvider(ts.Id(characterId), "")); cErr != nil {
+		p.l.WithError(cErr).Errorf("Unable to emit reward pre-reserve error for character [%d]; client may be stuck.", characterId)
+	}
+	return err
+}
+
+// rewardHandles carries the two once-handler registrations for a single reward
+// transaction. The create outcome is split across two topics — success (asset
+// CREATED) arrives on EVENT_TOPIC_ASSET_STATUS and failure (CREATION_FAILED) on
+// EVENT_TOPIC_COMPARTMENT_STATUS — so the flow registers one once-handler on
+// each. Exactly one fires per transaction (a create either succeeds or fails,
+// never both), and it deregisters its sibling so the losing handler does not
+// linger for the life of the process.
+type rewardHandles struct {
+	assetTopic string
+	assetId    string
+	compTopic  string
+	compId     string
+}
+
+// ConsumeReward fires on RESERVED. It rolls one reward, requests its creation,
+// and registers two once-handlers: the asset CREATED confirmation commits the
+// box (grantRewardOnCreated), and the compartment CREATION_FAILED event cancels
+// the reservation and preserves the box (grantRewardOnFailed). atlas-inventory
+// emits the success event on the asset status topic — NOT the compartment
+// status topic, which only reports CREATED for compartment creation — so the
+// success handler must listen there.
+func ConsumeReward(transactionId uuid.UUID, characterId uint32, slot int16, boxItemId item2.Id, rewards []consumable3.RewardModel) ItemConsumer {
+	return func(l logrus.FieldLogger) func(ctx context.Context) error {
+		return func(ctx context.Context) error {
+			p := NewProcessor(l, ctx).(*ProcessorImpl)
+
+			won, err := rollReward(rewards)
+			if err != nil {
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+			}
+			l.Debugf("Character [%d] rolled reward item [%d] x[%d] (prob [%d]) from box [%d] (transaction [%s]).", characterId, won.ItemId(), won.Count(), won.Prob(), boxItemId, transactionId.String())
+
+			// Register both once-handlers BEFORE emitting CREATE_ASSET so neither
+			// terminal event can race ahead of its handler.
+			assetTopic, _ := topic.EnvProvider(l)(assetMsg.EnvEventTopicStatus)()
+			compTopic, _ := topic.EnvProvider(l)(compartment2.EnvEventTopicStatus)()
+			handles := &rewardHandles{assetTopic: assetTopic, compTopic: compTopic}
+
+			assetId, err := consumer.GetManager().RegisterHandler(assetTopic, message.AdaptHandler(message.OneTimeConfig(assetOnce.GrantConfirmedValidator(transactionId, won.ItemId()), grantRewardOnConfirmed(transactionId, characterId, slot, boxItemId, won, handles))))
+			if err != nil {
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+			}
+			handles.assetId = assetId
+
+			compId, err := consumer.GetManager().RegisterHandler(compTopic, message.AdaptHandler(message.OneTimeConfig(once.CreationFailedValidator(transactionId), grantRewardOnFailed(transactionId, characterId, slot, handles))))
+			if err != nil {
+				_ = consumer.GetManager().RemoveHandler(assetTopic, assetId)
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+			}
+			handles.compId = compId
+
+			expiration := rewardExpiration(won.Period(), time.Now())
+			if err = p.cpp.RequestCreateItem(transactionId, characterId, won.ItemId(), grantQuantity(won.Count()), expiration); err != nil {
+				_ = consumer.GetManager().RemoveHandler(assetTopic, assetId)
+				_ = consumer.GetManager().RemoveHandler(compTopic, compId)
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+			}
+			return nil
+		}
+	}
+}
+
+// grantRewardOnConfirmed is the success once-handler, keyed to the asset
+// confirmation (CREATED for a fresh stack or QUANTITY_CHANGED for a merge into
+// an existing one). It commits the box consume, emits presentation events, and
+// deregisters the sibling failure handler (which will never fire).
+func grantRewardOnConfirmed(transactionId uuid.UUID, characterId uint32, slot int16, boxItemId item2.Id, won consumable3.RewardModel, handles *rewardHandles) message.Handler[assetMsg.StatusEvent[assetMsg.CreatedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e assetMsg.StatusEvent[assetMsg.CreatedStatusEventBody]) {
+		p := NewProcessor(l, ctx).(*ProcessorImpl)
+
+		if cErr := p.cpp.ConsumeItem(characterId, inventory2.TypeValueUse, transactionId, slot); cErr != nil {
+			l.WithError(cErr).Errorf("Reward granted but box consume failed for character [%d] (transaction [%s]); box release needs ops intervention.", characterId, transactionId.String())
+		}
+		l.Debugf("Character [%d] reward granted: box [%d] consumed, item [%d] created (transaction [%s]).", characterId, boxItemId, won.ItemId(), transactionId.String())
+
+		p.emitRewardPresentation(characterId, boxItemId, won)
+
+		if handles != nil {
+			_ = consumer.GetManager().RemoveHandler(handles.compTopic, handles.compId)
+		}
+	}
+}
+
+// grantRewardOnFailed is the failure once-handler, keyed to the compartment
+// CREATION_FAILED event. It cancels the box reservation (box preserved) and
+// deregisters the sibling success handler. It deliberately does NOT emit a
+// consumable ERROR for client feedback: atlas-channel's generic
+// handleCompartmentCreationFailedEvent already renders this same CREATION_FAILED
+// as the inventory-full status message and re-enables actions, so emitting here
+// too would show the message twice. The strict pre-roll check
+// (RequestItemReward) makes this post-roll failure a TOCTOU rarity anyway.
+func grantRewardOnFailed(transactionId uuid.UUID, characterId uint32, slot int16, handles *rewardHandles) message.Handler[compartment2.StatusEvent[compartment2.CreateResultEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e compartment2.StatusEvent[compartment2.CreateResultEventBody]) {
+		p := NewProcessor(l, ctx).(*ProcessorImpl)
+
+		if cErr := p.cpp.CancelItemReservation(characterId, inventory2.TypeValueUse, transactionId, slot); cErr != nil {
+			l.WithError(cErr).Errorf("Unable to cancel box reservation after reward creation failure for character [%d].", characterId)
+		}
+
+		if handles != nil {
+			_ = consumer.GetManager().RemoveHandler(handles.assetTopic, handles.assetId)
+		}
+	}
+}
+
+// emitRewardPresentation emits REWARD_EFFECT (if the entry has an Effect path) and
+// REWARD_WON (if the entry has a worldMsg, after /name and /item substitution).
+// Presentation-only: every failure warn-logs and is swallowed (never blocks grant).
+func (p *ProcessorImpl) emitRewardPresentation(characterId uint32, boxItemId item2.Id, won consumable3.RewardModel) {
+	if won.Effect() != "" {
+		if err := producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(RewardEffectEventProvider(ts.Id(characterId), uint32(boxItemId), won.Effect())); err != nil {
+			p.l.WithError(err).Warnf("Unable to emit reward effect for character [%d].", characterId)
+		}
+	}
+	if won.WorldMsg() != "" {
+		name := ""
+		if c, err := p.cp.GetById()(characterId); err == nil {
+			name = c.Name()
+		} else {
+			p.l.WithError(err).Warnf("Unable to resolve name for reward announce (character [%d]); skipping /name.", characterId)
+			degrade.Observe(p.l, "consumable.reward.name", characterId, err)
+		}
+		itemName, err := itemstring.NewProcessor(p.l, p.ctx).GetName(won.ItemId())
+		if err != nil {
+			p.l.WithError(err).Warnf("Unable to resolve item name [%d] for reward announce; skipping announce.", won.ItemId())
+			degrade.Observe(p.l, "consumable.reward.item-string", won.ItemId(), err)
+			return
+		}
+		msg := substituteWorldMsg(won.WorldMsg(), name, itemName)
+		if err := producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(RewardWonEventProvider(ts.Id(characterId), uint32(boxItemId), won.ItemId(), msg)); err != nil {
+			p.l.WithError(err).Warnf("Unable to emit reward-won announce for character [%d].", characterId)
+		}
+	}
 }
 
 // Vicious Hammer (item classification 557, task-129). ViciousHammerReason is

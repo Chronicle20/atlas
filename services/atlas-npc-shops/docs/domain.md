@@ -113,6 +113,57 @@ The compartment model provides slot management helpers:
 
 Provides typed accessors: `Equipable()`, `Consumable()`, `Setup()`, `ETC()`, `Cash()`, and `CompartmentByType(type)`.
 
+#### Character Model (read-only, fetched from atlas-character)
+
+| Field              | Type            | Description                                     |
+|--------------------|-----------------|--------------------------------------------------|
+| id                 | uint32          | Character identifier                              |
+| accountId          | uint32          | Owning account identifier                          |
+| worldId            | world.Id        | World identifier                                   |
+| name               | string          | Character name                                     |
+| gender             | byte            | Character gender                                   |
+| skinColor          | byte            | Character skin color                               |
+| face               | uint32          | Face identifier                                    |
+| hair               | uint32          | Hair identifier                                    |
+| level              | byte            | Character level                                    |
+| jobId              | job.Id          | Job identifier                                     |
+| strength           | uint16          | STR stat                                           |
+| dexterity          | uint16          | DEX stat                                           |
+| intelligence       | uint16          | INT stat                                           |
+| luck               | uint16          | LUK stat                                           |
+| hp                 | uint16          | Current HP                                         |
+| maxHp              | uint16          | Maximum HP                                         |
+| mp                 | uint16          | Current MP                                         |
+| maxMp              | uint16          | Maximum MP                                         |
+| hpMpUsed           | int             | HP/MP AP allocation used                           |
+| ap                 | uint16          | Unassigned ability points                          |
+| sp                 | string          | Comma-separated skill point pools                  |
+| experience         | uint32          | Character experience                               |
+| fame               | int16           | Fame value                                         |
+| gachaponExperience | uint32          | Gachapon experience                                |
+| spawnPoint         | uint32          | Spawn point identifier                             |
+| gm                 | int             | GM flag (1 = GM)                                   |
+| x                  | int16           | X position                                         |
+| y                  | int16           | Y position                                         |
+| stance             | byte            | Stance                                             |
+| meso               | uint32          | Meso balance                                       |
+| inventory          | inventory.Model | Character's inventory (populated by InventoryDecorator) |
+| skills             | []skill.Model   | Character's skills (populated by callers of the skill processor) |
+
+The character model provides derived helpers: `Gm()` (gm == 1), `HasSPTable()` (true for Evan job stages), `Sp()` (parses the sp string into a slice), `RemainingSp()` (indexes Sp() by job-derived skill book). `Rank()`, `RankMove()`, `JobRank()`, `JobRankMove()`, and `SpawnPoint()` (the byte-returning variant) are unimplemented and always return 0.
+
+#### Skill Model (read-only, fetched from atlas-skill)
+
+| Field             | Type      | Description                          |
+|-------------------|-----------|---------------------------------------|
+| id                | skill.Id  | Skill identifier                      |
+| level              | byte      | Skill level                           |
+| masterLevel        | byte      | Skill master level                    |
+| expiration         | time.Time | Skill expiration timestamp            |
+| cooldownExpiresAt  | time.Time | Timestamp when the skill's cooldown expires |
+
+The skill model provides `IsFourthJob()` (true when the skill's owning job is a fourth job) and `OnCooldown()` (true when the current time is before cooldownExpiresAt). The package-level `GetLevel(skills, id)` helper scans a skill slice for a matching id and returns its level, or 0 if absent.
+
 ### Invariants
 
 - Shop npcId must be non-zero
@@ -140,11 +191,12 @@ Provides typed accessors: `Equipable()`, `Consumable()`, `Setup()`, `ETC()`, `Ca
 - Creates shops with commodities in a single operation
 - Updates shops with commodities within a database transaction (delete-then-recreate pattern)
 - Manages shop entry and exit for characters via an in-memory registry
-- Processes buy operations: validates shop membership, commodity existence, meso balance, and inventory capacity; emits meso change and create-asset commands
+- Processes buy operations: validates shop membership, commodity existence, meso balance, and inventory capacity; emits meso change and create-asset commands. Rechargeable items purchase a full stack (slotMax quantity) priced by the commodity's mesoPrice if set, otherwise by unitPrice × slotMax. Token-priced commodities (mesoPrice == 0 on a non-rechargeable item) are not implemented and emit a GENERIC_ERROR_WITH_REASON status event.
 - Processes sell operations: validates shop membership, item ownership, and quantity; looks up item price from the data service by item type (equipable, consumable, setup, etc); emits meso change and destroy commands
-- Processes recharge operations: validates recharger flag, item existence in the consumable compartment, skill-based slot max bonuses (Claw Mastery, Gun Mastery), and meso balance; emits meso change and recharge commands
-- Decorates shops with rechargeable consumables when the shop is a recharger (RechargeableConsumablesDecorator)
+- Processes recharge operations: validates recharger flag, item existence in the consumable compartment, skill-based slot max bonuses (Claw Mastery from NightWalker/Assassin skill lines for throwing stars, Gun Mastery for bullets), and meso balance; emits meso change and recharge commands
+- Decorates shops via RechargeableConsumablesDecorator: refreshes the slotMax/unitPrice of any existing commodity that matches a cached rechargeable consumable (all shops); additionally, for shops with recharger=true, auto-adds any rechargeable consumable not already present as a commodity. Rechargeable commodities are always sorted to the end of the commodity list (by templateId) so a rechargeable never occupies the first slot.
 - Tracks characters currently in shops via a Redis-backed Registry singleton
+- Returns the tenant's shop count and most recent updated_at timestamp (Count)
 
 #### Commodity Processor
 
@@ -155,12 +207,14 @@ Provides typed accessors: `Equipable()`, `Consumable()`, `Setup()`, `ETC()`, `Ca
 - Retrieves distinct NPC IDs and commodity-ID-to-NPC-ID maps
 - Decorates commodities with item data (unitPrice, slotMax) based on inventory type via the DataDecorator
 - Supports transactional operations via WithTransaction
+- Returns the tenant's commodity count and most recent updated_at timestamp (Count)
 
-#### Seed Processor
+#### Shop Subdomain (Seeding)
 
-- Seeds shop and commodity data from JSON files on disk into the database
-- Performs a full replace: deletes all existing shops and commodities for the tenant, then bulk-creates from file data
-- Returns a SeedResult reporting counts of deleted, created, and failed records
+- Implements the shared seeder library's `Subdomain` interface (`ShopSubdomain`) so shop/commodity data can be loaded from JSON seed files under `npc-shops/shops` on the configured catalog root
+- `DeleteAllForTenant` performs a full replace: hard-deletes all existing commodities then all existing shops for the tenant
+- `Build` parses one seed file (matching `shop-{npcId}.json`) into a shop model plus its commodity models; `BulkCreate` persists a batch of parsed records in a single transaction
+- `Count` reports the tenant's shop row count; `AuxiliaryCounts` additionally reports the commodities row count under a "commodities" key so the seed status response surfaces both
 
 #### Consumable Cache
 

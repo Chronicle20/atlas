@@ -13,6 +13,8 @@ Returns character IDs present across all instances of the specified map.
 | worldId | path | byte | yes | World identifier |
 | channelId | path | byte | yes | Channel identifier |
 | mapId | path | uint32 | yes | Map identifier |
+| page[number] | query | int | no | Page number (default 1) |
+| page[size] | query | int | no | Page size (default 250, max 250) |
 
 #### Request Headers
 
@@ -25,7 +27,7 @@ Returns character IDs present across all instances of the specified map.
 
 #### Response Model
 
-JSON:API array of character resources.
+Paginated JSON:API array of character resources.
 
 ```
 {
@@ -42,7 +44,7 @@ JSON:API array of character resources.
 
 | Status | Condition |
 |--------|-----------|
-| 400 | Invalid worldId, channelId, or mapId |
+| 400 | Invalid worldId, channelId, mapId, or page[number]/page[size] |
 | 500 | Failed to retrieve characters from registry |
 
 ### GET /worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/characters
@@ -57,6 +59,8 @@ Returns character IDs present in the specified map instance.
 | channelId | path | byte | yes | Channel identifier |
 | mapId | path | uint32 | yes | Map identifier |
 | instanceId | path | uuid | yes | Instance identifier (use 00000000-0000-0000-0000-000000000000 for non-instanced maps) |
+| page[number] | query | int | no | Page number (default 1) |
+| page[size] | query | int | no | Page size (default 250, max 250) |
 
 #### Request Headers
 
@@ -69,7 +73,7 @@ Returns character IDs present in the specified map instance.
 
 #### Response Model
 
-JSON:API array of character resources.
+Paginated JSON:API array of character resources.
 
 ```
 {
@@ -86,7 +90,7 @@ JSON:API array of character resources.
 
 | Status | Condition |
 |--------|-----------|
-| 400 | Invalid worldId, channelId, mapId, or instanceId |
+| 400 | Invalid worldId, channelId, mapId, instanceId, or page[number]/page[size] |
 | 500 | Failed to retrieve characters from registry |
 
 ### GET /worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/weather
@@ -145,6 +149,8 @@ Returns all map visit records for a character.
 | Name | Location | Type | Required | Description |
 |------|----------|------|----------|-------------|
 | characterId | path | uint32 | yes | Character identifier |
+| page[number] | query | int | no | Page number (default 1) |
+| page[size] | query | int | no | Page size (default 50, max 250) |
 
 #### Request Headers
 
@@ -157,7 +163,7 @@ Returns all map visit records for a character.
 
 #### Response Model
 
-JSON:API array of visit resources.
+Paginated JSON:API array of visit resources.
 
 ```
 {
@@ -179,7 +185,7 @@ JSON:API array of visit resources.
 
 | Status | Condition |
 |--------|-----------|
-| 400 | Invalid characterId |
+| 400 | Invalid characterId or page[number]/page[size] |
 | 500 | Failed to retrieve visits |
 
 ### GET /characters/{characterId}/visits/{mapId}
@@ -227,3 +233,95 @@ JSON:API single visit resource.
 | 400 | Invalid characterId or mapId |
 | 404 | Visit record not found |
 | 500 | Failed to retrieve visit |
+
+### GET /characters/{characterId}/location
+
+Returns the character's persisted last-known field (world, channel, map, instance).
+
+#### Parameters
+
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| characterId | path | uint32 | yes | Character identifier |
+
+#### Request Headers
+
+| Name | Required | Description |
+|------|----------|-------------|
+| TENANT_ID | yes | Tenant UUID |
+| REGION | yes | Region code |
+| MAJOR_VERSION | yes | Major version |
+| MINOR_VERSION | yes | Minor version |
+
+#### Response Model
+
+JSON:API single character-locations resource.
+
+```
+{
+    "data": {
+        "type": "character-locations",
+        "id": "<characterId>",
+        "attributes": {
+            "worldId": 0,
+            "channelId": 0,
+            "mapId": 100000000,
+            "instance": "00000000-0000-0000-0000-000000000000"
+        }
+    }
+}
+```
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 400 | Invalid characterId |
+| 404 | No location record for character |
+| 500 | Failed to retrieve location or create REST model |
+
+### PATCH /characters/{characterId}/location
+
+Warps a character to a different map. The destination channel is the character's currently stored channel and the spawn portal is 0; channelId and instance in the request body are ignored.
+
+#### Parameters
+
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| characterId | path | uint32 | yes | Character identifier |
+
+#### Request Headers
+
+| Name | Required | Description |
+|------|----------|-------------|
+| TENANT_ID | yes | Tenant UUID |
+| REGION | yes | Region code |
+| MAJOR_VERSION | yes | Major version |
+| MINOR_VERSION | yes | Minor version |
+
+#### Request Model
+
+JSON:API character-locations resource. Only the mapId attribute is used.
+
+```
+{
+    "data": {
+        "type": "character-locations",
+        "attributes": {
+            "mapId": 100000000
+        }
+    }
+}
+```
+
+#### Response Model
+
+No content on success (204).
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 400 | Invalid characterId, or target mapId does not exist |
+| 404 | No location record for character |
+| 500 | Failed to load current location, verify the target map, or perform the warp |

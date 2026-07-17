@@ -35,6 +35,7 @@ Retrieves a monster by its unique ID.
       "instance": "00000000-0000-0000-0000-000000000000",
       "monsterId": 100100,
       "controlCharacterId": 12345,
+      "controllerHasAggro": true,
       "x": 100,
       "y": -50,
       "fh": 1,
@@ -59,13 +60,14 @@ Retrieves a monster by its unique ID.
           },
           "expiresAt": 0
         }
-      ]
+      ],
+      "nextEligibleRepickAtMs": 0
     }
   }
 }
 ```
 
-`expiresAt` is in Unix milliseconds.
+`expiresAt` is in Unix milliseconds. `nextEligibleRepickAtMs` is omitted when zero.
 
 **Error Conditions:**
 
@@ -78,7 +80,7 @@ Retrieves a monster by its unique ID.
 
 ### GET /api/worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/monsters
 
-Retrieves all monsters in a map instance.
+Retrieves all monsters in a map instance, sorted by ascending uniqueId, paginated.
 
 **Parameters:**
 
@@ -88,6 +90,8 @@ Retrieves all monsters in a map instance.
 | channelId | path | byte | yes | Channel identifier |
 | mapId | path | uint32 | yes | Map identifier |
 | instanceId | path | uuid | yes | Instance identifier |
+| page[number] | query | int | no | Page number (default 1) |
+| page[size] | query | int | no | Page size (default and max 250) |
 
 **Headers:**
 
@@ -113,6 +117,7 @@ Retrieves all monsters in a map instance.
         "instance": "00000000-0000-0000-0000-000000000000",
         "monsterId": 100100,
         "controlCharacterId": 12345,
+        "controllerHasAggro": true,
         "x": 100,
         "y": -50,
         "fh": 1,
@@ -123,18 +128,73 @@ Retrieves all monsters in a map instance.
         "maxMp": 100,
         "mp": 100,
         "damageEntries": [],
-        "statusEffects": []
+        "statusEffects": [],
+        "nextEligibleRepickAtMs": 0
       }
     }
-  ]
+  ],
+  "meta": {
+    "total": 1,
+    "page": {
+      "number": 1,
+      "size": 250,
+      "last": 1
+    }
+  }
 }
 ```
+
+The response also includes JSON:API `links` (self/first/last, plus prev/next where applicable) for pagination.
 
 **Error Conditions:**
 
 | Status | Condition |
 |--------|-----------|
-| 400 | Invalid path parameter format |
+| 400 | Invalid path parameter format, or invalid page[number]/page[size] |
+| 500 | Internal error retrieving monsters |
+
+---
+
+### GET /api/worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/monsters/in-rect
+
+Retrieves monsters in a map instance whose position falls within an inclusive rectangle, sorted by ascending squared distance from the rectangle center, paginated.
+
+**Parameters:**
+
+| Name | In | Type | Required | Description |
+|------|-----|------|----------|-------------|
+| worldId | path | byte | yes | World identifier |
+| channelId | path | byte | yes | Channel identifier |
+| mapId | path | uint32 | yes | Map identifier |
+| instanceId | path | uuid | yes | Instance identifier |
+| x1 | query | int16 | yes | Rectangle corner X |
+| y1 | query | int16 | yes | Rectangle corner Y |
+| x2 | query | int16 | yes | Opposite rectangle corner X |
+| y2 | query | int16 | yes | Opposite rectangle corner Y |
+| limit | query | uint32 | no | Maximum results to return (default 0 = no cap) |
+| page[number] | query | int | no | Page number (default 1) |
+| page[size] | query | int | no | Page size (default and max 250) |
+
+Corners may be supplied in any order.
+
+**Headers:**
+
+| Name | Required | Description |
+|------|----------|-------------|
+| TENANT_ID | yes | Tenant identifier |
+| REGION | yes | Region code |
+| MAJOR_VERSION | yes | Major version |
+| MINOR_VERSION | yes | Minor version |
+
+**Response Model:**
+
+Same shape as GET .../monsters, including the `meta` pagination block and JSON:API `links`.
+
+**Error Conditions:**
+
+| Status | Condition |
+|--------|-----------|
+| 400 | Invalid path parameter format; missing/invalid x1, y1, x2, y2; invalid page[number]/page[size] |
 | 500 | Internal error retrieving monsters |
 
 ---

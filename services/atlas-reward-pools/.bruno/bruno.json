@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "atlas-reward-pools",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

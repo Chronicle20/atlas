@@ -1,0 +1,82 @@
+# Frontend Audit — task-128-item-tag-seal-incubator (UI-surfacing diff)
+
+- **Audit Scope:** `services/atlas-ui/**` changes between `a4aa4a73b` (BASE) and `60880a28f` (HEAD) — 26 files, +1022/-64. Covers Phase A (incubator-rewards admin page), Phase B (inventory tag/seal indicators), and Phase C's UI half (Marketplace tag/seal rendering, Task 14 only — the atlas-mts/libs/atlas-saga Go changes for Tasks 10-13 are out of scope for this agent).
+- **Guidelines Source:** `.claude/skills/frontend-dev-guidelines/` skill + `services/atlas-ui/CLAUDE.md` (the authoritative, current architecture doc — the skill's resource docs describe a Next.js App Router shape that predates this repo's actual Vite + React Router v7 stack; where the two conflict, `services/atlas-ui/CLAUDE.md` and existing sibling code are treated as ground truth, per the audit's own "enforce only what exists in the guidelines" instruction plus "verify against source, don't invent").
+- **Date:** 2026-07-16
+- **Build:** PASS (`tsc -b && vite build`, clean; `npx tsc -b --force` also clean, confirming new `*.test.tsx` files type-check)
+- **Tests:** 975 passed, 0 failed (123 test files, `vitest run`)
+- **Lint:** 5 NEW errors introduced by this diff (all `@typescript-eslint/no-explicit-any`, all in new test files) — see FE-01/Lint finding below. `npm run lint` was already non-clean on `main` (57 pre-existing errors across unrelated files); this diff adds 5 more that are not suppressed, on top of that baseline.
+- **Overall:** NEEDS-WORK (build and tests are clean, but FAIL-grade checklist items exist — see below)
+
+## Build & Test Results
+
+```
+$ npm run build
+✓ tsc -b clean
+✓ vite build succeeded (1.11s), only a pre-existing chunk-size warning on ConversationEditorPanel (unrelated to this diff)
+
+$ npm test -- --run
+ Test Files  123 passed (123)
+      Tests  975 passed (975)
+   Duration  13.80s
+```
+
+## File Inventory
+
+- **Service:** `src/services/api/incubator-rewards.service.ts` (new) — CRUD + seed over `/api/tenants/{tenantId}/configurations/incubator-rewards`
+- **Service (modified):** `src/services/api/inventory.service.ts` (add `owner: string` to `Asset.attributes`), `src/services/api/mts-listings.service.ts` (add `owner: string` to `MtsListingAttributes`)
+- **Hook:** `src/lib/hooks/api/useIncubatorRewards.ts` (new) — key factory + query + 4 mutations
+- **Schema:** `src/lib/schemas/incubator-rewards.schema.ts` (new) — `incubatorRewardSchema` / `IncubatorRewardFormData`
+- **Page:** `src/pages/tenants-incubator-rewards-form.tsx` (new, `IncubatorRewardsForm`), `src/pages/TenantsIncubatorRewardsPage.tsx` (new, route wrapper)
+- **Page (modified):** `src/pages/MarketplacePage.tsx` (new exported `ListingItemCell`, wired into `ListingRow`)
+- **Component (modified):** `src/components/features/characters/AssetTooltipContent.tsx`, `EquipmentCell.tsx`, `InventoryCard.tsx` (tag/seal badges, gold ring, tooltip lines)
+- **Util:** `src/lib/utils/asset-flags.ts` (new) — `FLAG_LOCK`, `ZERO_DATE`, `isSealed`, `isTagged`
+- **Routing:** `src/App.tsx` (lazy import + route), `src/components/features/tenants/TenantDetailLayout.tsx` (nav link)
+- **Tests:** 9 new/modified test files (service, hook, schema, util, page, 3 character components, MarketplacePage) — all Vitest (`vi.*`), all type-checked by `tsc -b`.
+
+## Anti-Pattern Checklist
+
+| ID | Check | Status | Evidence |
+|----|-------|--------|----------|
+| FE-01 | No `any` type | **FAIL** | `src/services/api/__tests__/incubator-rewards.service.test.ts:14,20,30` — `(api.getList as any)`, `(api.post as any)`, `(api.patch as any)`, **unsuppressed** (no `eslint-disable` comment), confirmed as live ESLint errors by `npm run lint`. `src/lib/hooks/api/__tests__/useIncubatorRewards.test.tsx:21,29` — same pattern, also **unsuppressed**, also live lint errors. `src/pages/__tests__/tenants-incubator-rewards-form.test.tsx:36,42,50,52,54,56,125` uses the same `as any` pattern but each is preceded by `// eslint-disable-next-line @typescript-eslint/no-explicit-any`, so it does not surface as a lint error (still a literal `any` per the strict FE-01 wording, but acknowledged/suppressed, unlike the two files above). Net effect: this diff introduces **5 new, unsuppressed ESLint errors** — a direct violation of the plan's own stated gate ("gate on `npm run build` + `npm run test` + **no new lint errors**", `plan-ui-surfacing.md:13`). |
+| FE-02 | No manual class concatenation | PASS | No `className={"..." + ...}` or template-literal concatenation found in any new/changed file (`EquipmentCell.tsx`, `InventoryCard.tsx`, `AssetTooltipContent.tsx`, `MarketplacePage.tsx`, `tenants-incubator-rewards-form.tsx`); all conditional classes go through `cn(...)`, e.g. `EquipmentCell.tsx:22`. |
+| FE-03 | No direct API client calls in components | PASS | `grep -rn 'from "@/lib/api/client"' components/ pages/` returns zero matches. The new service (`incubator-rewards.service.ts:1`) and hook are the only import sites of `@/lib/api/client`; components go through the service/hook layers only. |
+| FE-04 | No inline Zod schemas in components | PASS | `incubatorRewardSchema` lives in `src/lib/schemas/incubator-rewards.schema.ts:15-25`, imported (not redefined) in `tenants-incubator-rewards-form.tsx:15`. |
+| FE-05 | No spinners for content loading | PASS (by precedent) | `tenants-incubator-rewards-form.tsx:164` uses a plain text loading row (`<div className="flex justify-center items-center p-8">Loading incubator rewards...</div>`), no `animate-spin` — this exactly mirrors the sibling `tenants-mts-config-form.tsx:70` loading state, so it is consistent with existing (if imperfect — neither uses `Skeleton`) codebase convention, not a new deviation. `Button`-scoped `Loader2 animate-spin` is correctly absent from this new page (no submit spinner exists on the Save/Add buttons, another pre-existing sibling-pattern gap — not unique to this diff, so not flagged as a new FAIL). |
+| FE-06 | No hardcoded colors | **FAIL** | `EquipmentCell.tsx:22` `ring-1 ring-amber-400/60`; `EquipmentCell.tsx:39,42` `text-amber-500`; `InventoryCard.tsx:193` `ring-1 ring-amber-400/60`; `InventoryCard.tsx:271,274` `text-amber-500`; `MarketplacePage.tsx:311,316` `text-amber-500`. These are raw Tailwind palette classes, not semantic tokens (`bg-primary`, `text-destructive`, etc.). This was an explicit, deliberate design decision (`design-ui-surfacing.md:19,83`: "faint gold `ring`/border ... `ring-1 ring-amber-400/60`, theme-aware") and is consistent with widespread pre-existing `amber-/red-/gray-*` usage elsewhere in `components/features/characters/` (e.g. `InventoryCard.tsx:199` `hover:bg-red-100`, `CharacterRenderer.tsx:299` `bg-gray-100`) — so it is not a novel regression in overall codebase hygiene, but it is still a literal FE-06 violation, and the design doc's "theme-aware" claim is not actually backed by a CSS variable (the amber value is fixed regardless of `.dark`). |
+| FE-07 | No state mutation | PASS | No `.push(`/`.splice(`/`.sort(` in any new/changed file feeding `setState`. |
+| FE-08 | Default export for components | PASS | `grep -n "export default"` across all new/changed component/page/hook/service/schema files returns zero matches; all use named exports (`IncubatorRewardsForm`, `TenantsIncubatorRewardsPage`, `ListingItemCell`, etc.). |
+| FE-09 | Tenant guard in hooks | PASS | `useIncubatorRewards.ts:15` — `enabled: !!tenantId` on the query hook, matching the sibling `useMtsConfig.ts:39` `enabled: !!tenantId` pattern that this codebase uses for route-scoped tenant-admin resources (an explicit-`tenantId: string`-parameter variant of the guideline's Pattern A, confirmed as established precedent — see multi-tenancy note below). |
+| FE-10 | Tenant ID in query keys | PASS | `incubatorRewardsKeys.list(tenantId)` — `useIncubatorRewards.ts:5-7` — includes `tenantId` in every list/detail key, matching `mtsConfigKeys.detail(tenantId)` (`useMtsConfig.ts:23-26`). |
+| FE-11 | Error handling with `createErrorFromUnknown` | PASS | All four mutation call sites in `tenants-incubator-rewards-form.tsx` (`onSubmit:115-116`, `onSubmit:127-128`, `handleDelete:143-144`, `handleSeed:157-158`) route `onError` through `createErrorFromUnknown(error, "...").message` into `toast.error(...)`, matching the guideline's Error Display Pattern. |
+
+## Architecture Checklist
+
+| ID | Check | Status | Evidence |
+|----|-------|--------|----------|
+| FE-12 | JSON:API model shape | PASS | `IncubatorReward { id: string; attributes: IncubatorRewardAttributes }` (`incubator-rewards.service.ts:20-23`); `Asset.attributes.owner: string` addition (`inventory.service.ts:69`) and `MtsListingAttributes.owner: string` addition (`mts-listings.service.ts:55`) are both flat attribute additions, consistent with existing shape. **Caveat (Minor, see Multi-Tenancy note):** `owner` is typed as a required (non-optional) `string` on `MtsListingAttributes`, but the backend fields it mirrors (`services/atlas-mts/.../listing/rest.go`, Tasks 11-13) land in this same diff/PR; if atlas-mts and atlas-ui roll out on different schedules (a documented project failure mode — see `bug_pr_env_stale_latest_masks_landed_fix` in project memory), an old atlas-mts pod would omit `owner` from the JSON entirely, making `attributes.owner` `undefined` at runtime despite the TS type guaranteeing `string` — `MarketplacePage.tsx:302` (`attributes.owner.trim()`) would throw. Not a bug in this diff per se (backend and frontend ship together here), but a defensive `attributes.owner ?? ""` would remove the deploy-skew risk window entirely for zero cost. |
+| FE-13 | Service extends `BaseService` (when applicable) | PASS (by precedent) | `incubatorRewardsService` uses the direct-client object-literal pattern (no `BaseService` extension), which is the pattern already used by `mtsConfigService` and `mtsListingsService` for the same class of resource (simple CRUD, no validation/transform needs) — consistent, not a new deviation. |
+| FE-14 | Query key factory uses `as const` | PASS | `useIncubatorRewards.ts:5-7` — `all`, `lists()`, `list()` all end in `as const`. |
+| FE-15 | Forms use `react-hook-form` + `zodResolver` | PASS | `tenants-incubator-rewards-form.tsx:81-84` — `useForm<IncubatorRewardFormData>({ resolver: zodResolver(incubatorRewardSchema), defaultValues: EMPTY_DEFAULTS })`. |
+| FE-16 | Schema in `lib/schemas/` with inferred type | PASS | `incubator-rewards.schema.ts:15-25` (`incubatorRewardSchema`) paired with `incubator-rewards.schema.ts:31` (`export type IncubatorRewardFormData = z.infer<typeof incubatorRewardSchema>`). |
+| **Multi-tenancy (routing correctness)** | Route-scoped tenant used for tenant-dependent lookups | **FAIL** | `tenants-incubator-rewards-form.tsx:6,62` imports `useTenant` from `@/context/tenant-context` (the **global active/switcher** tenant, not a per-route lookup) and passes `activeTenant` into `ItemNameCell` at `tenants-incubator-rewards-form.tsx:200` (`<ItemNameCell itemId={...} tenant={activeTenant} />`), even though the page is scoped to a *specific* tenant via the route param (`const { id: tenantId = "" } = useParams();`, line 61). `TenantDetailLayout.tsx` (the page's layout wrapper) does **not** sync `activeTenant` to the route's `:id` — it only reads `id` to build sidebar `href`s (`TenantDetailLayout.tsx:11-20`). Because request headers (`TENANT_ID`/`REGION`/`MAJOR_VERSION`/`MINOR_VERSION`) are pushed centrally by `TenantProvider`'s effect off `activeTenant` (`context/tenant-context.tsx:52-53`, `api.setTenant(tenant); queryClient.clear();`, triggered by `context/tenant-context.tsx:58-60`) rather than per-request, `itemsService.getItemName()` (called inside `ItemNameCell`, `components/item-name-cell.tsx:17`) will resolve item names against whichever tenant is globally active in the sidebar switcher — **not necessarily the tenant `:id` whose incubator-rewards the admin is editing**. An operator who navigates directly to `/tenants/{B}/incubator-rewards` without first switching their active tenant to B will see item names/icons resolved against tenant A's region/version item catalog. Note: a route-scoped `useTenant(id)` hook already exists for exactly this purpose (`lib/hooks/api/useTenants.ts:49`, distinct from the same-named `@/context/tenant-context` hook) but is unused here. This is the first tenant-scoped admin page in the codebase to combine a route `:id` with `ItemNameCell`/`getAssetIconUrl`-style tenant-dependent rendering, so there is no prior sibling precedent either confirming or ruling out this pattern — flagged as a genuine, first-of-its-kind correctness gap rather than a "matches existing sloppy convention" case. |
+
+## Testing Checklist
+
+| ID | Check | Status | Evidence |
+|----|-------|--------|----------|
+| FE-17 | Tests exist for changed components | PASS | Every changed/new source file has a corresponding new or extended test: `incubator-rewards.service.test.ts` (5 cases), `useIncubatorRewards.test.tsx` (2 cases), `incubator-rewards.schema.test.ts` (3 cases), `asset-flags.test.ts` (5 cases), `tenants-incubator-rewards-form.test.tsx` (8 cases covering render/add/edit-prefill/submit/seed/delete/empty-state), `AssetTooltipContent.test.tsx` (+4 tag/seal cases), `EquipmentCell.test.tsx` (+3 indicator cases), `InventoryCard.test.tsx` (new file, 3 indicator cases), `MarketplacePage.test.tsx` (+3 `ListingItemCell` cases). `EquipmentPanel.test.tsx`, `InventoryGrid.test.tsx`, `useInventory.test.tsx` were updated only to add the new required `owner`/`flag` fixture fields — correct, not skipped. |
+| FE-18 | Mocks updated when services changed | PASS (N/A pattern) | This codebase mocks services inline via `vi.mock(...)` per test file rather than a shared `__mocks__/` directory; every test that exercises a changed service/hook (`incubator-rewards.service.test.ts`, `useIncubatorRewards.test.tsx`, `tenants-incubator-rewards-form.test.tsx`, `MarketplacePage.test.tsx`) declares an up-to-date inline mock matching the new interface (e.g. `MarketplacePage.test.tsx`'s `baseListingAttributes` includes the new `owner: ""` field). |
+
+## Summary
+
+### Blocking (must fix)
+
+- **FE-01 / project lint gate** — 5 new, unsuppressed `@typescript-eslint/no-explicit-any` ESLint errors in `src/services/api/__tests__/incubator-rewards.service.test.ts:14,20,30` and `src/lib/hooks/api/__tests__/useIncubatorRewards.test.tsx:21,29`. The plan itself (`plan-ui-surfacing.md:13`) states the gate is "build + test + no new lint errors" — this diff fails that self-declared gate. Fix: either add `// eslint-disable-next-line @typescript-eslint/no-explicit-any` (matching the pattern already used in `tenants-incubator-rewards-form.test.tsx`) or type the mocks with `vi.mocked(...)`/`Mock` instead of `as any`.
+- **Multi-tenancy correctness** — `tenants-incubator-rewards-form.tsx:62,200` passes the globally-active tenant (`useTenant()` from `@/context/tenant-context`) into `ItemNameCell` instead of resolving the tenant matching the route's `:id`. Fix: resolve the specific tenant via `useTenant(tenantId)` from `@/lib/hooks/api/useTenants` (or an equivalent route-scoped lookup) and pass that into `ItemNameCell`, so item names/icons are correct regardless of which tenant is active in the sidebar switcher.
+
+### Non-Blocking (should fix)
+
+- **FE-06** — `ring-amber-400/60` / `text-amber-500` hardcoded Tailwind colors introduced in `EquipmentCell.tsx:22,39,42`, `InventoryCard.tsx:193,271,274`, `MarketplacePage.tsx:311,316`. Deliberate per `design-ui-surfacing.md`, and consistent with pre-existing non-semantic color usage elsewhere in `components/features/characters/`, but still a literal guideline violation; consider a semantic `--seal` / `--tag` CSS variable if this indicator pattern is going to spread further.
+- **FE-12 (defensive typing)** — `MarketplacePage.tsx:302` (`attributes.owner.trim()`) and by extension any future caller of `IncubatorReward`/`MtsListingAttributes.owner` assume the field is always present; a `(attributes.owner ?? "").trim()` guard would remove the (narrow, same-PR-mitigated) deploy-skew crash risk at zero cost.
+- Informational: `IncubatorRewardsForm`'s loading state (`tenants-incubator-rewards-form.tsx:164`) and its Save/Add buttons lack the `Skeleton`/`Loader2` treatment the guideline's Component Patterns doc recommends — but this exactly matches the sibling `tenants-mts-config-form.tsx`, so it's a pre-existing codebase-wide gap, not something this diff introduced or should be uniquely required to fix.

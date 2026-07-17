@@ -38,6 +38,8 @@ type Processor interface {
 	RequestCreateAndEquipAsset(transactionId uuid.UUID, payload CreateAndEquipAssetPayload) error
 	RequestAcceptAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, templateId uint32, assetData asset2.AssetData) error
 	RequestReleaseAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, assetId uint32, quantity uint32) error
+	RequestSetOwner(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, owner string) error
+	RequestApplyLock(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, expiration time.Time) error
 }
 
 type ProcessorImpl struct {
@@ -117,4 +119,12 @@ func (p *ProcessorImpl) RequestAcceptAsset(transactionId uuid.UUID, characterId 
 
 func (p *ProcessorImpl) RequestReleaseAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, assetId uint32, quantity uint32) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestReleaseAssetCommandProvider(transactionId, characterId, inventoryType, assetId, quantity))
+}
+
+func (p *ProcessorImpl) RequestSetOwner(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, owner string) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestSetOwnerCommandProvider(transactionId, characterId, inventoryType, slot, owner))
+}
+
+func (p *ProcessorImpl) RequestApplyLock(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, expiration time.Time) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestApplyLockCommandProvider(transactionId, characterId, inventoryType, slot, expiration))
 }

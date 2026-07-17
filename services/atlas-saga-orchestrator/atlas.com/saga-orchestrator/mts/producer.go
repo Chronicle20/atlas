@@ -48,6 +48,7 @@ func AcceptToMtsListingProvider(transactionId uuid.UUID, params AcceptToMtsListi
 			RingId:          params.RingId,
 			ViciousCount:    params.ViciousCount,
 			Flags:           params.Flags,
+			Owner:           params.Owner,
 			ListValue:       params.ListValue,
 			BuyNowPrice:     params.BuyNowPrice,
 			CommissionRate:  params.CommissionRate,

@@ -1,11 +1,14 @@
-import { useState, useEffect, type MouseEvent } from 'react';
+import { useState, useEffect, useContext, type MouseEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { X, Package } from 'lucide-react';
+import { X, Package, Tag } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useItemData } from '@/lib/hooks/useItemData';
 import { useLazyLoad } from '@/lib/hooks/useIntersectionObserver';
+import { isSealed, isTagged } from '@/lib/utils/asset-flags';
+import { SealIcon } from '@/components/seal-icon';
+import { TenantContext } from '@/context/tenant-context';
 import type { Asset } from '@/services/api/inventory.service';
 
 /**
@@ -116,6 +119,10 @@ export function InventoryCard({
 }: InventoryCardProps) {
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  // Read the active tenant defensively (undefined outside a TenantProvider, e.g.
+  // in unit tests) so the seal badge can resolve the game lock asset; SealIcon
+  // falls back to a lucide Lock when the tenant is absent.
+  const sealTenant = useContext(TenantContext)?.activeTenant ?? null;
 
   // Use intersection observer for lazy loading
   const { shouldLoad, ref: lazyRef } = useLazyLoad<HTMLDivElement>({
@@ -189,7 +196,7 @@ export function InventoryCard({
   const itemLabel = hasName && itemData?.name ? itemData.name : `item ${asset.attributes.templateId}`;
 
   return (
-    <Card ref={lazyRef} className={cn("overflow-hidden relative py-0 w-[100px] h-[120px]", className)}>
+    <Card ref={lazyRef} className={cn("overflow-hidden relative py-0 w-[100px] h-[120px]", isSealed(asset) && "ring-1 ring-amber-400/60", className)}>
       {/* Delete Button */}
       {onDelete && (
         <Button
@@ -265,6 +272,12 @@ export function InventoryCard({
                 <div className="flex items-center justify-center h-full w-full">
                   <Package className="h-6 w-6 text-muted-foreground flex-shrink-0" data-testid="inventory-card-package-icon" />
                 </div>
+              )}
+              {isTagged(asset) && (
+                <Tag data-testid="tag-icon" className="absolute top-0 right-0 h-3 w-3 text-amber-500" aria-label="Named item" />
+              )}
+              {isSealed(asset) && (
+                <SealIcon tenant={sealTenant} className="absolute bottom-0 right-0 h-3 w-3 text-amber-500" />
               )}
             </div>
 

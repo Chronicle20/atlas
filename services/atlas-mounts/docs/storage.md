@@ -14,6 +14,10 @@
 | tiredness | int | NOT NULL, DEFAULT 0 | Mount tiredness |
 | last_tiredness_tick_at | timestamp | NULLABLE | Timestamp of the last tiredness tick |
 
+### outbox_entries
+
+Provided by the shared `atlas-outbox` library (`outboxlib.Migration`, `main.go`). The transactional outbox table backing the outbox drainer. Its schema is owned by the library, not this service.
+
 ## Relationships
 
 None. The service persists a single entity.
@@ -31,5 +35,5 @@ The `idx_character_mount_lookup` unique index enforces one mount record per char
 
 - The table is created via GORM AutoMigrate at service startup.
 - The mount migration (`mount.Migration`) creates the `character_mounts` table.
-- The migration is registered in `main.go` via `database.SetMigrations(mount.Migration)`.
+- `mount.Migration` and `outboxlib.Migration` are registered in `main.go` via `database.SetMigrations(mount.Migration, outboxlib.Migration)`.
 - The tenant predicate is applied via the database tenant callback; the `tenant_id` column is also set explicitly on insert.

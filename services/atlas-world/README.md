@@ -7,8 +7,8 @@ A RESTful service that maintains an in-memory registry of active game worlds, th
 ## External Dependencies
 
 - Redis: Channel server registry and rate multiplier storage (via `atlas-redis` TenantRegistry)
-- Kafka: Consumes channel status events; produces channel status commands and world rate change events
-- Configuration Service: Retrieves tenant and world configuration via REST
+- Kafka: Consumes channel status events and tenant configuration status events; produces channel status commands and world rate change events
+- Configuration Service: Tenant and world configuration is projected from Kafka tenant configuration status events (config projection)
 
 ## Runtime Configuration
 
@@ -17,14 +17,14 @@ A RESTful service that maintains an in-memory registry of active game worlds, th
 | LOG_LEVEL | Logging level (Panic/Fatal/Error/Warn/Info/Debug/Trace) |
 | BOOTSTRAP_SERVERS | Kafka broker host:port |
 | REST_PORT | HTTP server port |
-| SERVICE_ID | Service identifier UUID |
-| BASE_SERVICE_URL | Base URL for configuration service |
 | REDIS_URL | Redis host:port |
 | REDIS_PASSWORD | Redis password |
 | TRACE_ENDPOINT | OpenTelemetry OTLP gRPC endpoint for tracing |
 | COMMAND_TOPIC_CHANNEL_STATUS | Kafka topic for channel status commands |
 | EVENT_TOPIC_CHANNEL_STATUS | Kafka topic for channel status events |
 | EVENT_TOPIC_WORLD_RATE | Kafka topic for world rate change events |
+| EVENT_TOPIC_CONFIGURATION_TENANT_STATUS | Kafka topic for tenant configuration status events (config projection) |
+| PROJECTION_CATCHUP_TIMEOUT_S | Seconds to wait for the configuration projection to catch up at startup (default 300) |
 
 ## Documentation
 

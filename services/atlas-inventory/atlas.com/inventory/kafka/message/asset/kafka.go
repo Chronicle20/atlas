@@ -34,6 +34,7 @@ type AssetData struct {
 	CreatedAt      time.Time  `json:"createdAt"`
 	Quantity       uint32     `json:"quantity"`
 	OwnerId        uint32     `json:"ownerId"`
+	Owner          string     `json:"owner"`
 	Flag           uint16     `json:"flag"`
 	Rechargeable   uint64     `json:"rechargeable"`
 	Strength       uint16     `json:"strength"`
@@ -51,8 +52,8 @@ type AssetData struct {
 	Hands          uint16     `json:"hands"`
 	Speed          uint16     `json:"speed"`
 	Jump           uint16     `json:"jump"`
-	Slots     uint16 `json:"slots"`
-	LevelType byte   `json:"levelType"`
+	Slots          uint16     `json:"slots"`
+	LevelType      byte       `json:"levelType"`
 	Level          byte       `json:"level"`
 	Experience     uint32     `json:"experience"`
 	HammersApplied uint32     `json:"hammersApplied"`

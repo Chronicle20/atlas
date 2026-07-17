@@ -79,8 +79,10 @@ A command consists of a Producer function that matches message patterns and retu
 | DiseaseCommandProducer | `@disease <target> <diseaseType> [value] [duration]` | Applies a disease effect to character(s) |
 | PQRegisterCommandProducer | `@pq register <questId>` | Registers character for a party quest |
 | MobKillAllCommandProducer | `@mob kill all` | Kills all monsters in the current map |
+| MobSpawnCommandProducer | `@mob spawn <templateId> [count]` | Spawns a monster at the issuer's position (count 1-20, default 1) |
 | PQStageCommandProducer | `@pq stage` | Force-advances the current party quest stage |
 | WeatherCommandProducer | `@weather <itemId> <message>` | Triggers a weather effect in the current field (30s) |
+| AwardTamenessCommandProducer | `@award <petName> tameness <amount>` | Awards tameness (closeness) to a named pet of the issuing character |
 
 Target values:
 - `me` - The command issuer
@@ -91,6 +93,7 @@ Exceptions:
 - AwardCurrencyCommandProducer does not support `map`
 - ChangeJobCommandProducer uses `my` instead of `me` for self-targeting and does not support `map`
 - WhereAmICommandProducer does not require GM status
+- AwardTamenessCommandProducer targets a pet by name (one of the issuing character's own pets), not a character target
 
 ---
 
@@ -204,6 +207,7 @@ Builds and submits saga transactions for command execution. Commands produce sag
 | WarpToPortal | WarpToPortalPayload | Warps to specific portal |
 | DestroyAsset | DestroyAssetPayload | Destroys inventory asset |
 | ChangeJob | ChangeJobPayload | Changes character job |
+| CancelAllBuffs | CancelAllBuffsPayload | Cancels all active buffs for a character |
 | CreateSkill | CreateSkillPayload | Creates a skill for character |
 | UpdateSkill | UpdateSkillPayload | Updates a character skill |
 | ApplyConsumableEffect | ApplyConsumableEffectPayload | Applies consumable item effects to character |
@@ -320,6 +324,37 @@ Provides map existence validation and character lookup within maps.
 
 ---
 
+## Pet
+
+### Responsibility
+
+Provides pet lookup for a character, used to resolve a pet by name for command execution.
+
+### Core Models
+
+#### Model
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uint32 | Pet ID |
+| slot | int8 | Pet's spawned slot |
+| name | string | Pet name |
+
+### Invariants
+
+- A pet is spawned if slot is greater than or equal to 0
+
+### Processors
+
+#### Processor
+
+| Method | Responsibility |
+|--------|---------------|
+| GetPets | Retrieves all pets owned by a character |
+| GetPetIdsByName | Retrieves the IDs of a character's pets matching a name |
+
+---
+
 ## Data
 
 ### Responsibility
@@ -372,6 +407,7 @@ Provides read-only access to game data for validation.
 | magicDefense | uint16 | Magic defense bonus |
 | accuracy | uint16 | Accuracy bonus |
 | avoidability | uint16 | Avoidability bonus |
+| hands | uint16 | Hands bonus |
 | speed | uint16 | Speed bonus |
 | jump | uint16 | Jump bonus |
 | slots | uint16 | Upgrade slots |
@@ -380,6 +416,19 @@ Provides read-only access to game data for validation.
 #### Map (data)
 
 Empty model. Used for existence validation only.
+
+#### Foothold (data)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uint32 | Foothold ID |
+
+#### Monster (data)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uint32 | Monster template ID |
+| name | string | Monster name |
 
 ### Processors
 
@@ -409,3 +458,15 @@ Empty model. Used for existence validation only.
 | Method | Responsibility |
 |--------|---------------|
 | GetById | Retrieves map data by ID |
+
+#### FootholdProcessor
+
+| Method | Responsibility |
+|--------|---------------|
+| GetBelow | Retrieves the foothold below a given position in a map |
+
+#### MonsterProcessor (data)
+
+| Method | Responsibility |
+|--------|---------------|
+| GetById | Retrieves monster template data by ID |

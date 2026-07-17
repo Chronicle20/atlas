@@ -8,7 +8,7 @@
 | `EVENT_TOPIC_CHARACTER_STATUS` | character_status | Event |
 | `EVENT_TOPIC_COMPARTMENT_STATUS` | compartment_status | Event |
 
-All three consumers run under a single Kafka consumer group id (`"Merchant Service"`, `main.go:34`, `main.go:93-104`).
+All three consumers run under a single Kafka consumer group id (`"Merchant Service"`, `main.go:32`, `main.go:85-87`).
 
 ## Topics Produced
 
@@ -38,7 +38,7 @@ Command[E] {
 | `CommandCloseShop` | `CLOSE_SHOP` | CommandCloseShopBody | Close a shop manually |
 | `CommandEnterMaintenance` | `ENTER_MAINTENANCE` | CommandEnterMaintenanceBody | Enter maintenance mode |
 | `CommandExitMaintenance` | `EXIT_MAINTENANCE` | CommandExitMaintenanceBody | Exit maintenance mode |
-| `CommandAddListing` | `ADD_LISTING` | CommandAddListingBody (embeds asset.AssetData) | Add an item listing |
+| `CommandAddListing` | `ADD_LISTING` | CommandAddListingBody (ItemSnapshot asset.AssetData field) | Add an item listing |
 | `CommandRemoveListing` | `REMOVE_LISTING` | CommandRemoveListingBody | Remove a listing by index |
 | `CommandUpdateListing` | `UPDATE_LISTING` | CommandUpdateListingBody | Update listing price/bundles |
 | `CommandPurchaseBundle` | `PURCHASE_BUNDLE` | CommandPurchaseBundleBody | Purchase bundles from a listing |
@@ -171,8 +171,8 @@ Command[E] {
 
 ## Transaction Semantics
 
-- All consumed topics parse `SpanHeader` and `TenantHeader` (`consumer.SetHeaderParsers`); all produced messages carry `SpanHeaderDecorator` and `TenantHeaderDecorator` (`kafka/producer/producer.go:12-20`).
+- All consumed topics parse `SpanHeader` and `TenantHeader` (`consumer.SetHeaderParsers`); all produced messages carry span and tenant headers via `producer.ProviderImpl` (`SpanHeaderDecorator`/`TenantHeaderDecorator`, `github.com/Chronicle20/atlas/libs/atlas-kafka/producer`).
 - `transactionId` is not a Kafka header. It is a JSON envelope/body field on the compartment `Command`/`StatusEvent` and the character `Command` types only; the merchant `Command`, merchant `StatusEvent`, and `ListingEvent` envelopes carry no `transactionId`.
-- Most merchant status/listing events and compartment/character commands are enqueued to a transactional outbox and published by the outbox drainer (`outbox.EmitProvider` inside `database.ExecuteTransaction`; `main.go:75-83`). The visitor enter/exit paths emit directly through the producer (no accompanying Postgres write).
+- Most merchant status/listing events and compartment/character commands are enqueued to a transactional outbox and published by the outbox drainer (`outbox.EmitProvider` inside `database.ExecuteTransaction`, e.g. `shop/processor.go:1538-1546`). The visitor enter/exit paths emit directly through the producer (no accompanying Postgres write).
 - Compartment commands carry a `transactionId` for correlation with compartment status events; compartment status events are consumed for logging only.
 </content>

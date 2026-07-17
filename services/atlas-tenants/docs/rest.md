@@ -4,9 +4,11 @@
 
 ### GET /tenants
 
-Retrieves all tenants.
+Retrieves all tenants (paginated).
 
-**Parameters**: None
+**Parameters**:
+- `page[number]` (query, int, optional): Page number, 1-based. Default 1.
+- `page[size]` (query, int, optional): Page size. Default 50, maximum 250.
 
 **Request Model**: None
 
@@ -24,11 +26,27 @@ Retrieves all tenants.
         "minorVersion": 0
       }
     }
-  ]
+  ],
+  "meta": {
+    "total": 0,
+    "page": {
+      "number": 0,
+      "size": 0,
+      "last": 0
+    }
+  },
+  "links": {
+    "self": "string",
+    "first": "string",
+    "last": "string",
+    "prev": "string",
+    "next": "string"
+  }
 }
 ```
 
 **Error Conditions**:
+- 400: Invalid page[number] or page[size]
 - 500: Internal server error
 
 ---
@@ -171,10 +189,12 @@ Deletes a tenant.
 
 ### GET /tenants/{tenantId}/configurations/routes
 
-Retrieves all routes for a tenant.
+Retrieves all routes for a tenant (paginated).
 
 **Parameters**:
 - `tenantId` (path, uuid): Tenant identifier
+- `page[number]` (query, int, optional): Page number, 1-based. Default 1.
+- `page[size]` (query, int, optional): Page size. Default 50, maximum 250.
 
 **Request Model**: None
 
@@ -198,12 +218,27 @@ Retrieves all routes for a tenant.
         "cycleInterval": 0
       }
     }
-  ]
+  ],
+  "meta": {
+    "total": 0,
+    "page": {
+      "number": 0,
+      "size": 0,
+      "last": 0
+    }
+  },
+  "links": {
+    "self": "string",
+    "first": "string",
+    "last": "string",
+    "prev": "string",
+    "next": "string"
+  }
 }
 ```
 
 **Error Conditions**:
-- 400: Invalid tenant ID format
+- 400: Invalid tenant ID format or invalid page[number]/page[size]
 - 500: Internal server error
 
 ---
@@ -405,10 +440,12 @@ Deletes all existing routes for a tenant and loads them from seed files.
 
 ### GET /tenants/{tenantId}/configurations/vessels
 
-Retrieves all vessels for a tenant.
+Retrieves all vessels for a tenant (paginated).
 
 **Parameters**:
 - `tenantId` (path, uuid): Tenant identifier
+- `page[number]` (query, int, optional): Page number, 1-based. Default 1.
+- `page[size]` (query, int, optional): Page size. Default 50, maximum 250.
 
 **Request Model**: None
 
@@ -426,12 +463,27 @@ Retrieves all vessels for a tenant.
         "turnaroundDelay": 0
       }
     }
-  ]
+  ],
+  "meta": {
+    "total": 0,
+    "page": {
+      "number": 0,
+      "size": 0,
+      "last": 0
+    }
+  },
+  "links": {
+    "self": "string",
+    "first": "string",
+    "last": "string",
+    "prev": "string",
+    "next": "string"
+  }
 }
 ```
 
 **Error Conditions**:
-- 400: Invalid tenant ID format
+- 400: Invalid tenant ID format or invalid page[number]/page[size]
 - 500: Internal server error
 
 ---
@@ -603,10 +655,12 @@ Deletes all existing vessels for a tenant and loads them from seed files.
 
 ### GET /tenants/{tenantId}/configurations/instance-routes
 
-Retrieves all instance routes for a tenant.
+Retrieves all instance routes for a tenant (paginated).
 
 **Parameters**:
 - `tenantId` (path, uuid): Tenant identifier
+- `page[number]` (query, int, optional): Page number, 1-based. Default 1.
+- `page[size]` (query, int, optional): Page size. Default 50, maximum 250.
 
 **Request Model**: None
 
@@ -628,12 +682,27 @@ Retrieves all instance routes for a tenant.
         "transitMessage": "string"
       }
     }
-  ]
+  ],
+  "meta": {
+    "total": 0,
+    "page": {
+      "number": 0,
+      "size": 0,
+      "last": 0
+    }
+  },
+  "links": {
+    "self": "string",
+    "first": "string",
+    "last": "string",
+    "prev": "string",
+    "next": "string"
+  }
 }
 ```
 
 **Error Conditions**:
-- 400: Invalid tenant ID format
+- 400: Invalid tenant ID format or invalid page[number]/page[size]
 - 500: Internal server error
 
 ---
@@ -801,6 +870,232 @@ Deletes an instance route.
 ### POST /tenants/{tenantId}/configurations/instance-routes/seed
 
 Deletes all existing instance routes for a tenant and loads them from seed files.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+
+**Request Model**: None
+
+**Response Model**:
+```json
+{
+  "deletedCount": 0,
+  "createdCount": 0,
+  "failedCount": 0,
+  "errors": ["string"]
+}
+```
+
+**Error Conditions**:
+- 400: Invalid tenant ID format
+- 500: Internal server error
+
+---
+
+### GET /tenants/{tenantId}/configurations/mts-configs
+
+Retrieves the MTS configuration for a tenant.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+
+**Request Model**: None
+
+**Response Model**:
+```json
+{
+  "data": {
+    "type": "mts-configs",
+    "id": "string",
+    "attributes": {
+      "listingFee": 0,
+      "commissionRate": 0,
+      "maxActiveListings": 0,
+      "minLevel": 0,
+      "auctionMinHours": 0,
+      "auctionMaxHours": 0,
+      "priceFloor": 0,
+      "pageSize": 0,
+      "minBidIncrement": 0
+    }
+  }
+}
+```
+
+**Error Conditions**:
+- 400: Invalid tenant ID format
+- 404: No MTS configuration found for tenant
+
+---
+
+### GET /tenants/{tenantId}/configurations/mts-configs/{mtsConfigId}
+
+Retrieves an MTS configuration by ID.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+- `mtsConfigId` (path, string): MTS configuration identifier
+
+**Request Model**: None
+
+**Response Model**:
+```json
+{
+  "data": {
+    "type": "mts-configs",
+    "id": "string",
+    "attributes": {
+      "listingFee": 0,
+      "commissionRate": 0,
+      "maxActiveListings": 0,
+      "minLevel": 0,
+      "auctionMinHours": 0,
+      "auctionMaxHours": 0,
+      "priceFloor": 0,
+      "pageSize": 0,
+      "minBidIncrement": 0
+    }
+  }
+}
+```
+
+**Error Conditions**:
+- 400: Invalid tenant ID format or missing MTS configuration ID
+- 404: MTS configuration not found
+
+---
+
+### POST /tenants/{tenantId}/configurations/mts-configs
+
+Creates a new MTS configuration.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+
+**Request Model**:
+```json
+{
+  "data": {
+    "type": "mts-configs",
+    "attributes": {
+      "listingFee": 0,
+      "commissionRate": 0,
+      "maxActiveListings": 0,
+      "minLevel": 0,
+      "auctionMinHours": 0,
+      "auctionMaxHours": 0,
+      "priceFloor": 0,
+      "pageSize": 0,
+      "minBidIncrement": 0
+    }
+  }
+}
+```
+
+**Response Model**:
+```json
+{
+  "data": {
+    "type": "mts-configs",
+    "id": "string",
+    "attributes": {
+      "listingFee": 0,
+      "commissionRate": 0,
+      "maxActiveListings": 0,
+      "minLevel": 0,
+      "auctionMinHours": 0,
+      "auctionMaxHours": 0,
+      "priceFloor": 0,
+      "pageSize": 0,
+      "minBidIncrement": 0
+    }
+  }
+}
+```
+
+**Error Conditions**:
+- 400: Invalid request body or tenant ID format
+- 500: Internal server error
+
+---
+
+### PATCH /tenants/{tenantId}/configurations/mts-configs/{mtsConfigId}
+
+Updates an existing MTS configuration.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+- `mtsConfigId` (path, string): MTS configuration identifier
+
+**Request Model**:
+```json
+{
+  "data": {
+    "type": "mts-configs",
+    "id": "string",
+    "attributes": {
+      "listingFee": 0,
+      "commissionRate": 0,
+      "maxActiveListings": 0,
+      "minLevel": 0,
+      "auctionMinHours": 0,
+      "auctionMaxHours": 0,
+      "priceFloor": 0,
+      "pageSize": 0,
+      "minBidIncrement": 0
+    }
+  }
+}
+```
+
+**Response Model**:
+```json
+{
+  "data": {
+    "type": "mts-configs",
+    "id": "string",
+    "attributes": {
+      "listingFee": 0,
+      "commissionRate": 0,
+      "maxActiveListings": 0,
+      "minLevel": 0,
+      "auctionMinHours": 0,
+      "auctionMaxHours": 0,
+      "priceFloor": 0,
+      "pageSize": 0,
+      "minBidIncrement": 0
+    }
+  }
+}
+```
+
+**Error Conditions**:
+- 400: Invalid request body, tenant ID format, or missing MTS configuration ID
+- 500: Internal server error (includes MTS configuration not found)
+
+---
+
+### DELETE /tenants/{tenantId}/configurations/mts-configs/{mtsConfigId}
+
+Deletes an MTS configuration.
+
+**Parameters**:
+- `tenantId` (path, uuid): Tenant identifier
+- `mtsConfigId` (path, string): MTS configuration identifier
+
+**Request Model**: None
+
+**Response Model**: None (204 No Content)
+
+**Error Conditions**:
+- 400: Invalid tenant ID format or missing MTS configuration ID
+- 500: Internal server error
+
+---
+
+### POST /tenants/{tenantId}/configurations/mts-configs/seed
+
+Deletes all existing MTS configurations for a tenant and loads them from seed files.
 
 **Parameters**:
 - `tenantId` (path, uuid): Tenant identifier

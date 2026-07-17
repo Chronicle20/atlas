@@ -21,6 +21,7 @@ type ProcessorMock struct {
 	GetByIdFunc                       func(id uuid.UUID) (compartment.Model, error)
 	ByCharacterIdProviderFunc         func(characterId uint32) model.Provider[[]compartment.Model]
 	GetByCharacterIdFunc              func(characterId uint32) ([]compartment.Model, error)
+	CanAccommodateFunc                func(characterId uint32, reqs []compartment.AccommodationRequest) ([]compartment.AccommodationResult, error)
 	ByCharacterAndTypeProviderFunc    func(characterId uint32) func(inventoryType inventory.Type) model.Provider[compartment.Model]
 	GetByCharacterAndTypeFunc         func(characterId uint32) func(inventoryType inventory.Type) (compartment.Model, error)
 	DecorateAssetFunc                 func(m compartment.Model) (compartment.Model, error)
@@ -48,6 +49,10 @@ type ProcessorMock struct {
 	ExpireAssetAndEmitFunc            func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, isCash bool, replaceItemId uint32, replaceMessage string) error
 	ExpireAssetFunc                   func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, isCash bool, replaceItemId uint32, replaceMessage string) error
 	CreateAssetAndEmitFunc            func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error
+	SetAssetOwnerAndEmitFunc          func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, owner string) error
+	SetAssetOwnerFunc                 func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, owner string) error
+	ApplyAssetLockAndEmitFunc         func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time) error
+	ApplyAssetLockFunc                func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time) error
 	CreateAssetAndLockFunc            func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error
 	CreateAssetFunc                   func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error
 	AttemptEquipmentPickUpAndEmitFunc func(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, templateId uint32, ed dropMsg.EquipmentData) error
@@ -112,6 +117,13 @@ func (m *ProcessorMock) GetByCharacterId(characterId uint32) ([]compartment.Mode
 		return m.GetByCharacterIdFunc(characterId)
 	}
 	return []compartment.Model{}, nil
+}
+
+func (m *ProcessorMock) CanAccommodate(characterId uint32, reqs []compartment.AccommodationRequest) ([]compartment.AccommodationResult, error) {
+	if m.CanAccommodateFunc != nil {
+		return m.CanAccommodateFunc(characterId, reqs)
+	}
+	return []compartment.AccommodationResult{}, nil
 }
 
 func (m *ProcessorMock) ByCharacterAndTypeProvider(characterId uint32) func(inventoryType inventory.Type) model.Provider[compartment.Model] {
@@ -331,6 +343,38 @@ func (m *ProcessorMock) CreateAssetAndEmit(transactionId uuid.UUID, characterId 
 		return m.CreateAssetAndEmitFunc(transactionId, characterId, inventoryType, templateId, quantity, expiration, ownerId, flag, rechargeable, useAverageStats)
 	}
 	return nil
+}
+
+func (m *ProcessorMock) SetAssetOwnerAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, owner string) error {
+	if m.SetAssetOwnerAndEmitFunc != nil {
+		return m.SetAssetOwnerAndEmitFunc(transactionId, characterId, inventoryType, slot, owner)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) SetAssetOwner(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, owner string) error {
+	if m.SetAssetOwnerFunc != nil {
+		return m.SetAssetOwnerFunc(mb)
+	}
+	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, owner string) error {
+		return nil
+	}
+}
+
+func (m *ProcessorMock) ApplyAssetLockAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time) error {
+	if m.ApplyAssetLockAndEmitFunc != nil {
+		return m.ApplyAssetLockAndEmitFunc(transactionId, characterId, inventoryType, slot, expiration)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) ApplyAssetLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time) error {
+	if m.ApplyAssetLockFunc != nil {
+		return m.ApplyAssetLockFunc(mb)
+	}
+	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time) error {
+		return nil
+	}
 }
 
 func (m *ProcessorMock) CreateAssetAndLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error {

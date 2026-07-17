@@ -24,6 +24,7 @@ import (
 	"atlas-channel/kafka/consumer/gachapon"
 	"atlas-channel/kafka/consumer/guild"
 	"atlas-channel/kafka/consumer/guild/thread"
+	incubatorconsumer "atlas-channel/kafka/consumer/incubator"
 	"atlas-channel/kafka/consumer/instance_transport"
 	"atlas-channel/kafka/consumer/invite"
 	"atlas-channel/kafka/consumer/macro"
@@ -47,6 +48,7 @@ import (
 	"atlas-channel/kafka/consumer/quest"
 	"atlas-channel/kafka/consumer/reactor"
 	"atlas-channel/kafka/consumer/route"
+	rpsConsumer "atlas-channel/kafka/consumer/rps"
 	"atlas-channel/kafka/consumer/saga"
 	session2 "atlas-channel/kafka/consumer/session"
 	"atlas-channel/kafka/consumer/skill"
@@ -94,6 +96,7 @@ import (
 	fieldsb "github.com/Chronicle20/atlas/libs/atlas-packet/field/serverbound"
 	guildcb "github.com/Chronicle20/atlas/libs/atlas-packet/guild/clientbound"
 	guildsb "github.com/Chronicle20/atlas/libs/atlas-packet/guild/serverbound"
+	incubatorcb "github.com/Chronicle20/atlas/libs/atlas-packet/incubator/clientbound"
 	interaction2 "github.com/Chronicle20/atlas/libs/atlas-packet/interaction"
 	interactioncb "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/clientbound"
 	interactionsb "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/serverbound"
@@ -122,6 +125,8 @@ import (
 	questsb "github.com/Chronicle20/atlas/libs/atlas-packet/quest/serverbound"
 	reactorcb "github.com/Chronicle20/atlas/libs/atlas-packet/reactor/clientbound"
 	reactorsb "github.com/Chronicle20/atlas/libs/atlas-packet/reactor/serverbound"
+	rpscb "github.com/Chronicle20/atlas/libs/atlas-packet/rps/clientbound"
+	rpssb "github.com/Chronicle20/atlas/libs/atlas-packet/rps/serverbound"
 	socketcb "github.com/Chronicle20/atlas/libs/atlas-packet/socket/clientbound"
 	socketsb "github.com/Chronicle20/atlas/libs/atlas-packet/socket/serverbound"
 	stat2 "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
@@ -222,10 +227,12 @@ func main() {
 	note3.InitConsumers(l)(cmf)(consumerGroupId)
 	quest.InitConsumers(l)(cmf)(consumerGroupId)
 	route.InitConsumers(l)(cmf)(consumerGroupId)
+	rpsConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	instance_transport.InitConsumers(l)(cmf)(consumerGroupId)
 	saga.InitConsumers(l)(cmf)(consumerGroupId)
 	storage3.InitConsumers(l)(cmf)(consumerGroupId)
 	gachapon.InitConsumers(l)(cmf)(consumerGroupId)
+	incubatorconsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	merchantConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	minigameConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	mountConsumer.InitConsumers(l)(cmf)(consumerGroupId)
@@ -504,6 +511,9 @@ func buildListener(
 		if err := register(route.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
+		if err := register(rpsConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
 		if err := register(instance_transport.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
@@ -514,6 +524,9 @@ func buildListener(
 			return nil, err
 		}
 		if err := register(gachapon.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(incubatorconsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
 		if err := register(merchantConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
@@ -753,6 +766,8 @@ func produceWriters() []string {
 		doorcb.SpawnPortalWriter,
 		doorcb.RemoveTownDoorWriter,
 		charcb.BridleMobCatchFailWriter,
+		rpscb.RPSGameWriter,
+		incubatorcb.IncubatorResultWriter,
 	}
 }
 
@@ -858,9 +873,11 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[invsb.CompartmentMergeRequestHandle] = handler.CompartmentMergeHandleFunc
 	handlerMap[invsb.CompartmentSortRequestHandle] = handler.CompartmentSortHandleFunc
 	handlerMap[invsb.CharacterItemUseSummonBagHandle] = handler.CharacterItemUseSummonBagHandleFunc
+	handlerMap[invsb.CharacterItemUseLotteryHandle] = handler.CharacterItemUseLotteryHandleFunc
 	handlerMap[notesb.NoteOperationHandle] = handler.NoteOperationHandleFunc
 	handlerMap[questsb.QuestActionHandle] = handler.QuestActionHandleFunc
 	handlerMap[storagesb.StorageOperationHandle] = handler.StorageOperationHandleFunc
+	handlerMap[rpssb.RPSActionHandle] = handler.RPSActionHandleFunc
 	handlerMap[reactorsb.ReactorHitHandle] = handler.ReactorHitHandleFunc
 	handlerMap[socketsb.PongHandle] = handler.PongHandleFunc
 	handlerMap[charsb.MonsterDamageFriendlyHandle] = handler.MonsterDamageFriendlyHandleFunc

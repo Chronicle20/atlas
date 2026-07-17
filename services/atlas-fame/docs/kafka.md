@@ -130,6 +130,6 @@ Character command topic for requesting character operations.
 ## Transaction Semantics
 
 - Fame change requests are processed within a database transaction
-- On success, a REQUEST_CHANGE_FAME command is emitted to the character service
-- On failure, an ERROR event is emitted to the fame status topic
+- On success, the REQUEST_CHANGE_FAME command is enqueued to the transactional outbox (`atlas-outbox` library) within the same database transaction, then drained asynchronously to Kafka
+- On a handled validation rejection (character not found, below minimum level, already famed today/this month), the transaction is not committed and an ERROR event is emitted directly to the fame status topic via the Kafka producer, outside the outbox
 - Message partitioning uses characterId as the key

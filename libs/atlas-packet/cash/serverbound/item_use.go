@@ -20,6 +20,7 @@ const CharacterCashItemUseHandle = "CharacterCashItemUseHandle"
 //   - gms_v87 @0xa9fef9: Encode4(update_time); Encode2(nPOS); Encode4(nItemID); ...
 //   - jms_v185 @0xaef2f5: Encode4(update_time); Encode2(nPOS); Encode4(nItemID); ...
 //   - gms_v95 @0x9eb3e0: same (header-first) — the original >=95 gate.
+//
 // The two oldest versions (gms_v83 @0xa0a63f, gms_v84 by byte-identity) instead
 // append update_time as a TRAILING int32 in the send tail, so they omit it from
 // this header. Hence the layout switch is MajorVersion() >= 87, not >= 95.

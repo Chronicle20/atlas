@@ -69,7 +69,7 @@ DBS=(
   atlas-drops
   atlas-families
   atlas-fame
-  atlas-gachapons
+  atlas-reward-pools
   atlas-guilds
   atlas-inventory
   atlas-keys

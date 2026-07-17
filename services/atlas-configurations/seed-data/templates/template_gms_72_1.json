@@ -6,6 +6,21 @@
   "socket": {
     "handlers": [
       {
+        "opCode": "0x086",
+        "validator": "LoggedInValidator",
+        "handler": "RPSActionHandle",
+        "options": {
+          "operations": {
+            "START": 0,
+            "SELECT": 1,
+            "UPDATE": 2,
+            "CONTINUE": 3,
+            "EXIT": 4,
+            "RETRY": 5
+          }
+        }
+      },
+      {
         "opCode": "0x01",
         "validator": "NoOpValidator",
         "handler": "LoginHandle"
@@ -135,6 +150,11 @@
         "opCode": "0x47",
         "validator": "LoggedInValidator",
         "handler": "CharacterItemUseHandle"
+      },
+      {
+        "opCode": "0x6F",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseLotteryHandle"
       },
       {
         "opCode": "0x76",
@@ -776,6 +796,10 @@
       }
     ],
     "writers": [
+      {
+        "opCode": "0x42",
+        "writer": "IncubatorResult"
+      },
       {
         "opCode": "0x00",
         "writer": "AuthSuccess"
@@ -2359,6 +2383,18 @@
             "DENIED": 15,
             "MAINTENANCE": 16,
             "FM_ONLY": 21
+          }
+        }
+      },
+      {
+        "opCode": "0x116",
+        "writer": "RPSGame",
+        "options": {
+          "operations": {
+            "OPEN": 8,
+            "START_SELECT": 9,
+            "RESULT": 11,
+            "END": 13
           }
         }
       }

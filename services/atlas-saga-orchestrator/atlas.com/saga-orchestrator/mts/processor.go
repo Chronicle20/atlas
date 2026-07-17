@@ -51,6 +51,7 @@ type AcceptToMtsListingParams struct {
 	RingId        uint32
 	ViciousCount  uint32
 	Flags         uint16
+	Owner         string
 
 	ListValue      uint32
 	BuyNowPrice    *uint32

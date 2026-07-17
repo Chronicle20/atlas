@@ -1953,6 +1953,45 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "ErrorOneOfAKind", dir: csvpkg.DirClientbound, pkg: "storage"}}
 	case "CTrunkDlg::OnPacket#ErrorMessage":
 		return []candidate{{name: "ErrorMessage", dir: csvpkg.DirClientbound, pkg: "storage"}}
+	// --- rps sub-domain (task-132) ---
+	// Clientbound CRPSGameDlg::OnPacket is a mode-dispatched writer; synthetic
+	// #-suffix FNames map each atlas-emitted arm to its discrete struct. The
+	// four atlas-emitted arms are OPEN/START_SELECT/RESULT/END — see
+	// docs/packets/dispatchers/rps_game.yaml for why modes 6/7/10/12/14 are
+	// intentionally NOT wired here.
+	case "CRPSGameDlg::OnPacket#OPEN":
+		return []candidate{{name: "Open", dir: csvpkg.DirClientbound, pkg: "rps"}}
+	case "CRPSGameDlg::OnPacket#START_SELECT":
+		return []candidate{{name: "StartSelect", dir: csvpkg.DirClientbound, pkg: "rps"}}
+	case "CRPSGameDlg::OnPacket#RESULT":
+		return []candidate{{name: "Result", dir: csvpkg.DirClientbound, pkg: "rps"}}
+	case "CRPSGameDlg::OnPacket#END":
+		return []candidate{{name: "End", dir: csvpkg.DirClientbound, pkg: "rps"}}
+	// Serverbound RPS_ACTION senders (task-132, Task 17). Six real, distinct
+	// CRPSGameDlg sender functions share ONE opcode with a leading sub-op byte
+	// (docs/tasks/task-132-rps-npc-game/ida-rps-serverbound.md §0/§6): five are
+	// bodyless (the sub-op byte alone IS the wire content) and map to the
+	// generic Operation{mode} struct; only SendSelection (sub-op 1) carries a
+	// body (the throw byte) and maps to OperationSelect. Registry primary fname
+	// for RPS_ACTION is CRPSGameDlg::OnBtStart (gms_v83/v87/v95/jms_v185) or
+	// CRPSGameDlg::Update (gms_v84, task-100 cluster-H renumber) — both map to
+	// the SAME Operation struct so whichever is that version's primary resolves
+	// correctly; the other three bodyless senders (OnBtContinue/OnBtExit/
+	// OnBtRetry) are documented here too (registry fname_alts) even though no
+	// version's export needs them to independently claim the Operation report
+	// slot.
+	case "CRPSGameDlg::OnBtStart":
+		return []candidate{{name: "Operation", dir: csvpkg.DirServerbound, pkg: "rps"}}
+	case "CRPSGameDlg::Update":
+		return []candidate{{name: "Operation", dir: csvpkg.DirServerbound, pkg: "rps"}}
+	case "CRPSGameDlg::OnBtContinue":
+		return []candidate{{name: "Operation", dir: csvpkg.DirServerbound, pkg: "rps"}}
+	case "CRPSGameDlg::OnBtExit":
+		return []candidate{{name: "Operation", dir: csvpkg.DirServerbound, pkg: "rps"}}
+	case "CRPSGameDlg::OnBtRetry":
+		return []candidate{{name: "Operation", dir: csvpkg.DirServerbound, pkg: "rps"}}
+	case "CRPSGameDlg::SendSelection":
+		return []candidate{{name: "OperationSelect", dir: csvpkg.DirServerbound, pkg: "rps"}}
 	// Serverbound CTrunkDlg senders.
 	case "CTrunkDlg::SendGetItemRequest":
 		return []candidate{{name: "OperationRetrieveAsset", dir: csvpkg.DirServerbound, pkg: "storage"}}
@@ -2002,6 +2041,11 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "ItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
 	case "CWvsContext::SendUpgradeItemUseRequest":
 		return []candidate{{name: "ScrollUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	// Reward-box ("lottery") use (task-131). Struct LotteryItemUse in
+	// inventory/serverbound; body slot(int16) + itemId(int32). Opcode + codec
+	// exist from v72 up; v48/v61 lack the opcode (generic item-use path).
+	case "CWvsContext::SendLotteryItemUseRequest":
+		return []candidate{{name: "LotteryItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
 	// Vega's Spell (category 561) USE_CASH_ITEM sub-body (task-130 §2.1) shares
 	// the cash-item-use sender fname with task-126's AP/SP point-reset arm. Both
 	// candidates are keyed to the same fname, so return them together.
@@ -3091,6 +3135,13 @@ func candidatesFromFName(fname string) []candidate {
 			{name: "SpawnPortal", dir: csvpkg.DirClientbound},
 			{name: "RemoveTownDoor", dir: csvpkg.DirClientbound},
 		}
+	case "CWvsContext::OnIncubatorResult":
+		// INCUBATOR_RESULT. v83/v84/v87/jms_v185: Decode4(itemId) Decode2(count)
+		// = 6B. v95 adds Decode4(gachaponItemId) Decode4(bonusItemId)
+		// Decode4(bonusCount) = 18B (task-19 IDA verification of the live v83,
+		// v84, v87, v95, jms_v185 IDBs; v87/jms_v185 do NOT read the extended
+		// tail the Atlas writer sends for GMS>=87/JMS — see result_test.go).
+		return []candidate{{name: "IncubatorResult", pkg: "incubator", dir: csvpkg.DirClientbound, reportName: "IncubatorResult"}}
 	}
 	return nil
 }

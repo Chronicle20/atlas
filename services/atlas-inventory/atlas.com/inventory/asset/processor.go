@@ -5,16 +5,17 @@ import (
 	"atlas-inventory/data/equipment/statistics"
 	"atlas-inventory/data/etc"
 	"atlas-inventory/data/setup"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-inventory/kafka/message"
 	"atlas-inventory/kafka/message/asset"
 	"atlas-inventory/pet"
 	"context"
 	"errors"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"math"
 	"math/rand"
 	"time"
 
+	af "github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -46,6 +47,9 @@ type Processor interface {
 	UpdateEquipmentStats(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, assetId uint32, stats Model) error
 	ChangeTemplateAndEmit(transactionId uuid.UUID, characterId uint32, assetId uint32, newTemplateId uint32) error
 	ChangeTemplate(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, assetId uint32, newTemplateId uint32) error
+	UpdateOwner(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a Model, owner string) error
+	ApplyLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a Model, expiration time.Time) error
+	ClearLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a Model) error
 	DeleteAndEmit(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, assetId uint32) error
 	Create(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, templateId uint32, slot int16, opts CreateOptions) (Model, error)
 	CreateFromModel(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, m Model) (Model, error)
@@ -299,6 +303,54 @@ func (p *ProcessorImpl) UpdateEquipmentStats(mb *message.Buffer) func(transactio
 			return err
 		}
 		return mb.Put(asset.EnvEventTopicStatus, UpdatedEventStatusProvider(transactionId, characterId, updated))
+	}
+}
+
+// UpdateOwner stamps the owner field onto an asset in place and emits the
+// existing UPDATED status event.
+func (p *ProcessorImpl) UpdateOwner(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a Model, owner string) error {
+	return func(transactionId uuid.UUID, characterId uint32) func(a Model, owner string) error {
+		return func(a Model, owner string) error {
+			updated := Clone(a).SetOwner(owner).Build()
+			if err := updateOwner(p.db.WithContext(p.ctx), a.Id(), owner); err != nil {
+				return err
+			}
+			return mb.Put(asset.EnvEventTopicStatus, UpdatedEventStatusProvider(transactionId, characterId, updated))
+		}
+	}
+}
+
+// ApplyLock sets FlagLock and the expiration on an asset in place, emitting
+// the existing UPDATED status event. It rejects an asset that is not already
+// locked but carries a non-zero expiration — a genuinely time-limited item —
+// to prevent laundering it into a permanent lock.
+func (p *ProcessorImpl) ApplyLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a Model, expiration time.Time) error {
+	return func(transactionId uuid.UUID, characterId uint32) func(a Model, expiration time.Time) error {
+		return func(a Model, expiration time.Time) error {
+			if !a.Locked() && !a.Expiration().IsZero() {
+				return errors.New("asset has a non-lock expiration")
+			}
+			updated := Clone(a).AddFlag(af.FlagLock).SetExpiration(expiration).Build()
+			if err := updateFlagAndExpiration(p.db.WithContext(p.ctx), a.Id(), updated.Flag(), expiration); err != nil {
+				return err
+			}
+			return mb.Put(asset.EnvEventTopicStatus, UpdatedEventStatusProvider(transactionId, characterId, updated))
+		}
+	}
+}
+
+// ClearLock clears FlagLock and zeroes the expiration on an asset in place,
+// emitting the existing UPDATED status event. It is used when a locked
+// asset's expiration passes: the lock expires, not the asset.
+func (p *ProcessorImpl) ClearLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a Model) error {
+	return func(transactionId uuid.UUID, characterId uint32) func(a Model) error {
+		return func(a Model) error {
+			updated := Clone(a).RemoveFlag(af.FlagLock).SetExpiration(time.Time{}).Build()
+			if err := updateFlagAndExpiration(p.db.WithContext(p.ctx), a.Id(), updated.Flag(), time.Time{}); err != nil {
+				return err
+			}
+			return mb.Put(asset.EnvEventTopicStatus, UpdatedEventStatusProvider(transactionId, characterId, updated))
+		}
 	}
 }
 

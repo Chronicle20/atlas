@@ -8,6 +8,7 @@ type RestModel struct {
 	Id              uint32 `json:"-"`
 	StateChangeItem uint32 `json:"stateChangeItem"`
 	BgmPath         string `json:"bgmPath"`
+	ProtectTime     uint32 `json:"protectTime"`
 }
 
 func (r RestModel) GetName() string {

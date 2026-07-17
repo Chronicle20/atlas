@@ -2171,7 +2171,7 @@
         }
       ]
     },
-  "CField::SendAcceptFriendMsg": {
+    "CField::SendAcceptFriendMsg": {
       "address": "0x4c6643",
       "direction": "serverbound",
       "calls": [
@@ -5230,46 +5230,6 @@
         {
           "op": "Unresolved",
           "comment": "function not found in IDB"
-        }
-      ]
-    },
-    "CRPSGameDlg::OnPacket": {
-      "address": "0x5d5544",
-      "direction": "",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "a1 == (struct CInPacket *)234"
-        },
-        {
-          "op": "Decode1",
-          "comment": ""
-        },
-        {
-          "op": "Decode4",
-          "comment": "",
-          "guard": "v4 && v6"
-        },
-        {
-          "op": "Decode4",
-          "comment": "",
-          "guard": "v4 && v6"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "v4 && v6"
-        },
-        {
-          "op": "Decode4",
-          "comment": "",
-          "guard": "v4 && v19"
-        },
-        {
-          "op": "Decode4",
-          "comment": "",
-          "guard": "v4 && v19"
         }
       ]
     },
@@ -15043,6 +15003,78 @@
         {
           "op": "Decode2",
           "comment": "quantity @0x5b43af; NO maxPerSlot"
+        }
+      ]
+    },
+    "CRPSGameDlg::OnPacket#OPEN": {
+      "address": "0x5adc8f",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (real dispatcher sub_5ADB94 @0x5adba6, live IDA re-audit port 13337 2026-07-16; the v48 IDB mislabels this function -- ground truth per docs/tasks/task-132-rps-npc-game/ida-rps-legacy-reaudit.md; case 8 = OPEN)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "ante -- participation fee (CInPacket::Decode4 @0x5adc8f; StringPool(3313) notice that follows is a static resource, not a packet field)"
+        }
+      ]
+    },
+    "CRPSGameDlg::OnPacket#RESULT": {
+      "address": "0x5ade39",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (dispatcher sub_5ADB94 delegates modes 6/7/9-12/14 to sub_5ADDEC @0x5addec; case 11 = RESULT)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "npcThrow (CInPacket::Decode1 @0x5ade39)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "straightVictoryCount, SIGNED int8 (CInPacket::Decode1 @0x5ade44; client treats as signed __int8, branches on <0)"
+        }
+      ]
+    },
+    "CRPSGameDlg::OnPacket#START_SELECT": {
+      "address": "0x5ade8a",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte only (case 9 = START_SELECT; enable R/P/S buttons + arm selection timer, no further wire reads)"
+        }
+      ]
+    },
+    "CRPSGameDlg::OnPacket#END": {
+      "address": "0x5adc41",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte only (case 13 = CLOSE; CWnd::Destroy @0x5adc41, no further wire reads)"
+        }
+      ]
+    },
+    "CRPSGameDlg::OnBtStart": {
+      "address": "0x5adf94",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "sub-op byte (0=OnBtStart @0x5adf94/COutPacket(111); bodyless arm, no further fields -- docs/tasks/task-132-rps-npc-game/ida-rps-legacy-reaudit.md; live IDA port 13337 2026-07-16)"
+        }
+      ]
+    },
+    "CRPSGameDlg::SendSelection": {
+      "address": "0x5ae16c",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "throw (0=Rock/1=Paper/2=Scissors, RAW passthrough; CRPSGameDlg::SendSelection @0x5ae13a, COutPacket(111)+Encode1(1)+Encode1(throw) @0x5ae16c; sub-op mode byte 1 written earlier by the same sender, excluded here per the storage OperationMeso/StoreAsset/RetrieveAsset convention; live IDA port 13337 2026-07-16)"
         }
       ]
     }

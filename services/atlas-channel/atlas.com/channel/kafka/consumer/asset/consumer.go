@@ -124,6 +124,7 @@ func buildAssetFromCreatedBody(e asset2.StatusEvent[asset2.CreatedStatusEventBod
 		SetCreatedAt(e.Body.CreatedAt).
 		SetQuantity(e.Body.Quantity).
 		SetOwnerId(e.Body.OwnerId).
+		SetOwner(e.Body.Owner).
 		SetFlag(e.Body.Flag).
 		SetRechargeable(e.Body.Rechargeable).
 		SetStrength(e.Body.Strength).
@@ -162,6 +163,7 @@ func buildAssetFromUpdatedBody(e asset2.StatusEvent[asset2.UpdatedStatusEventBod
 		SetCreatedAt(e.Body.CreatedAt).
 		SetQuantity(e.Body.Quantity).
 		SetOwnerId(e.Body.OwnerId).
+		SetOwner(e.Body.Owner).
 		SetFlag(e.Body.Flag).
 		SetRechargeable(e.Body.Rechargeable).
 		SetStrength(e.Body.Strength).
@@ -200,6 +202,7 @@ func buildAssetFromAcceptedBody(e asset2.StatusEvent[asset2.AcceptedStatusEventB
 		SetCreatedAt(e.Body.CreatedAt).
 		SetQuantity(e.Body.Quantity).
 		SetOwnerId(e.Body.OwnerId).
+		SetOwner(e.Body.Owner).
 		SetFlag(e.Body.Flag).
 		SetRechargeable(e.Body.Rechargeable).
 		SetStrength(e.Body.Strength).

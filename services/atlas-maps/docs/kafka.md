@@ -8,6 +8,7 @@ Character status events from character service.
 
 | Type | Body Struct | Description |
 |------|-------------|-------------|
+| CREATED | StatusEventCreatedBody | Character was created |
 | LOGIN | StatusEventLoginBody | Character logged in |
 | LOGOUT | StatusEventLogoutBody | Character logged out |
 | MAP_CHANGED | StatusEventMapChangedBody | Character changed maps |
@@ -47,6 +48,39 @@ Map commands consumed by the service.
 |------|-------------|-------------|
 | WEATHER_START | WeatherStartCommandBody | Start weather effect in a map |
 
+### COMMAND_TOPIC_CHARACTER
+
+Character warp commands consumed by the service. This topic is also produced by the service (see Topics Produced).
+
+| Type | Body Struct | Description |
+|------|-------------|-------------|
+| CHANGE_MAP | ChangeMapBody | Move a character to a different map |
+
+### COMMAND_TOPIC_CHARACTER_CHANNEL_CHANGE_REQUEST
+
+Character channel-change requests.
+
+| Type | Body Struct | Description |
+|------|-------------|-------------|
+| CHANNEL_CHANGE_REQUEST | ChannelChangeRequestCommand | Request to move a character to a different channel |
+
+### COMMAND_TOPIC_MIST
+
+Mist lifecycle commands.
+
+| Type | Body Struct | Description |
+|------|-------------|-------------|
+| CREATE | CreateCommandBody | Create a mist on a map |
+| CANCEL | CancelCommandBody | Cancel an existing mist |
+
+### EVENT_TOPIC_DATA
+
+Data ingestion events, filtered to the MAP worker. Toggled off via DATA_EVENTS_CONSUMER_ENABLED.
+
+| Type | Body Struct | Description |
+|------|-------------|-------------|
+| DATA_UPDATED | dataUpdatedEventBody | Tenant's map data was re-ingested; triggers a spawn point registry flush for the tenant |
+
 ## Topics Produced
 
 ### EVENT_TOPIC_MAP_STATUS
@@ -85,6 +119,32 @@ Commands to map actions service.
 |------|-------------|-------------|
 | ENTER | EnterCommandBody | Trigger map entry script |
 
+### EVENT_TOPIC_CHARACTER_STATUS
+
+Character status events emitted by the service when it resolves a character's map or channel. This topic is also consumed by the service (see Topics Consumed).
+
+| Type | Body Struct | Description |
+|------|-------------|-------------|
+| MAP_CHANGED | StatusEventMapChangedBody | Character's map was changed via ChangeMap |
+| CHANNEL_CHANGED | ChangeChannelEventLoginBody | Character's channel was changed via a channel-change request |
+
+### EVENT_TOPIC_MIST
+
+Mist lifecycle events.
+
+| Type | Body Struct | Description |
+|------|-------------|-------------|
+| MIST_CREATED | CreatedBody | Mist was created |
+| MIST_DESTROYED | DestroyedBody | Mist was destroyed (expired or cancelled) |
+
+### COMMAND_TOPIC_CHARACTER_BUFF
+
+Disease-application commands sent when a character is inside an active mist's bounding box on a tick.
+
+| Type | Body Struct | Description |
+|------|-------------|-------------|
+| APPLY | applyDiseaseBody | Apply a disease/stat-change buff to a character |
+
 ## Message Types
 
 ### Character Status Event (Consumed)
@@ -92,10 +152,20 @@ Commands to map actions service.
 ```
 StatusEvent[E] {
     transactionId: UUID
+    worldId: world.Id
     characterId: uint32
     type: string
-    worldId: world.Id
     body: E
+}
+```
+
+#### StatusEventCreatedBody
+
+```
+{
+    name: string
+    mapId: map.Id
+    instance: UUID
 }
 ```
 
@@ -129,6 +199,9 @@ StatusEvent[E] {
     targetMapId: map.Id
     targetInstance: UUID
     targetPortalId: uint32
+    useTargetPosition: bool
+    targetX: int16
+    targetY: int16
 }
 ```
 
@@ -243,6 +316,81 @@ Command[E] {
 }
 ```
 
+### Character Channel Change Request Command (Consumed)
+
+```
+ChannelChangeRequestCommand {
+    transactionId: UUID
+    characterId: uint32
+    worldId: world.Id
+    oldChannelId: channel.Id
+    targetChannelId: channel.Id
+}
+```
+
+### Data Event (Consumed)
+
+```
+event[E] {
+    type: string
+    body: E
+}
+```
+
+#### dataUpdatedEventBody
+
+```
+{
+    tenantId: string
+    worker: string
+    completedAt: string
+}
+```
+
+### Mist Command (Consumed)
+
+```
+Command[E] {
+    tenant: UUID
+    type: string
+    body: E
+}
+```
+
+#### CreateCommandBody
+
+```
+{
+    worldId: world.Id
+    channelId: channel.Id
+    mapId: map.Id
+    instance: UUID
+    ownerType: string
+    ownerId: uint32
+    originX: int16
+    originY: int16
+    ltX: int16
+    ltY: int16
+    rbX: int16
+    rbY: int16
+    disease: string
+    diseaseValue: int32
+    diseaseDuration: int64
+    duration: int64
+    tickIntervalMs: int64
+    sourceSkillId: uint32
+    sourceSkillLevel: uint32
+}
+```
+
+#### CancelCommandBody
+
+```
+{
+    mistId: UUID
+}
+```
+
 ### Map Status Event (Produced)
 
 ```
@@ -319,6 +467,9 @@ Command[E] {
     mapId: map.Id
     instance: UUID
     portalId: uint32
+    useTargetPosition: bool
+    targetX: int16
+    targetY: int16
 }
 ```
 
@@ -374,11 +525,92 @@ Command[E] {
 }
 ```
 
+### Mist Event (Produced)
+
+```
+Event[E] {
+    tenant: UUID
+    worldId: world.Id
+    channelId: channel.Id
+    mapId: map.Id
+    instance: UUID
+    mistId: UUID
+    type: string
+    body: E
+}
+```
+
+#### CreatedBody
+
+```
+{
+    ownerType: string
+    ownerId: uint32
+    sourceSkillId: uint32
+    sourceSkillLevel: uint32
+    type: int32
+    originX: int16
+    originY: int16
+    ltX: int16
+    ltY: int16
+    rbX: int16
+    rbY: int16
+    duration: int64
+}
+```
+
+#### DestroyedBody
+
+```
+{
+    reason: string
+}
+```
+
+### Character Buff Command (Produced)
+
+```
+buffCommand[E] {
+    worldId: world.Id
+    channelId: channel.Id
+    mapId: map.Id
+    instance: UUID
+    characterId: uint32
+    type: string
+    body: E
+}
+```
+
+#### applyDiseaseBody
+
+```
+{
+    fromId: uint32
+    sourceId: int32
+    level: byte
+    duration: int32
+    changes: []statChange
+}
+```
+
+#### statChange
+
+```
+{
+    type: string
+    amount: int32
+}
+```
+
 ## Transaction Semantics
 
-- All messages include transactionId (UUID) for tracing
+- Most messages include transactionId (UUID) for tracing; Mist commands/events and the Character Buff command carry tenant/target identifiers instead of transactionId
 - Character status consumers generate new transactionId for downstream operations
 - Messages are keyed by mapId for partition ordering
-- MAP_TIMER_STARTED and CHANGE_MAP messages are keyed by characterId
+- MAP_TIMER_STARTED, CHANGE_MAP, MAP_CHANGED, CHANNEL_CHANGED, and Character Buff APPLY messages are keyed by characterId
+- Mist events are keyed by mistId
 - Headers include span and tenant information for distributed tracing and multi-tenancy
 - Map command consumer starts from last offset (does not replay historical commands)
+- Data event (EVENT_TOPIC_DATA) consumer starts from last offset and runs in a dedicated consumer group
+- EVENT_TOPIC_CHARACTER_STATUS MAP_CHANGED and CHANNEL_CHANGED are both consumed and produced by this service (self-consumption to update in-memory map registries after a persisted location change)
+- COMMAND_TOPIC_CHARACTER CHANGE_MAP is both consumed and produced by this service

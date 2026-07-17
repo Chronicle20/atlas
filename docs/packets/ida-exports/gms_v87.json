@@ -59,6 +59,22 @@
         }
       ]
     },
+    "CWvsContext::SendLotteryItemUseRequest": {
+      "address": "0xaa7ec6",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": "nPos (slot)",
+          "guard": "CWvsContext::CanSendExclRequest(this, 200, 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nItemID",
+          "guard": "CWvsContext::CanSendExclRequest(this, 200, 0)"
+        }
+      ]
+    },
     "CEmployeePool::OnEmployeeEnterField": {
       "address": "0x533528",
       "direction": "",
@@ -13882,6 +13898,21 @@
         }
       ]
     },
+    "CWvsContext::OnIncubatorResult": {
+      "address": "0xabff10",
+      "direction": "clientbound",
+      "notes": "Task 19 (live IDA re-verify, gms_v87 port 13343): reads int itemId (Decode4) + short count (Decode2) only — no further packet reads (no gachapon/bonus tail). Matches v83/v84/jms; only v95 reads the extended 5-field body.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "itemId"
+        },
+        {
+          "op": "Decode2",
+          "comment": "count"
+        }
+      ]
+    },
     "CField::OnItemUpgrade#Open": {
       "address": "0x55fa12",
       "direction": "clientbound",
@@ -13955,6 +13986,78 @@
         {
           "op": "Encode4",
           "comment": "m_nResult (this[39]; server-chosen round-trip token, set by sub_88F348's open-arm Decode4)"
+        }
+      ]
+    },
+    "CRPSGameDlg::OnBtStart": {
+      "address": "0x78afa8",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "sub-op byte (0=OnBtStart/2=Update-timeout/3=OnBtContinue/4=OnBtExit/5=OnBtRetry; bodyless arm, no further fields — docs/tasks/task-132-rps-npc-game/ida-rps-serverbound.md §0/§1-§5)"
+        }
+      ]
+    },
+    "CRPSGameDlg::SendSelection": {
+      "address": "0x78b178",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "throw (0=Rock/1=Paper/2=Scissors, RAW passthrough; sub-op mode byte 1 written earlier by the same sender, excluded here per the storage OperationMeso/StoreAsset/RetrieveAsset convention)"
+        }
+      ]
+    },
+    "CRPSGameDlg::OnPacket#OPEN": {
+      "address": "0x78acb0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (OnPacket entry Decode1 @0x78abb9; case 8 = OPEN)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "ante — participation fee (CInPacket::Decode4 @0x78acb0; the StringPool notice string that follows is a static resource, not a packet field)"
+        }
+      ]
+    },
+    "CRPSGameDlg::OnPacket#RESULT": {
+      "address": "0x78ae70",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (dispatcher sub_78AE23 (0x78ae23) case 11 = RESULT)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "npcThrow (CInPacket::Decode1 @0x78ae70)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "straightVictoryCount, SIGNED int8 (CInPacket::Decode1 @0x78ae7b; client treats as signed __int8, branches on <0)"
+        }
+      ]
+    },
+    "CRPSGameDlg::OnPacket#START_SELECT": {
+      "address": "0x78aec1",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte only (case 9 = START_SELECT; enable R/P/S buttons + arm selection timer, no further wire reads)"
+        }
+      ]
+    },
+    "CRPSGameDlg::OnPacket#END": {
+      "address": "0x78ac5a",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte only (case 13 = CLOSE; CWnd::Destroy @0x78ac5a, no further wire reads)"
         }
       ]
     }

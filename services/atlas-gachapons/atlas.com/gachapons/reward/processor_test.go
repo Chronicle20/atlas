@@ -313,6 +313,193 @@ func TestGetPrizePoolByTier(t *testing.T) {
 	}
 }
 
+// TestSelectRewardIncubatorKind seeds an incubator-kind gachapon whose
+// tier weights are ALL zero (which would make selectTier error out with
+// "total weight cannot be zero" if it were ever invoked), two
+// machine-scoped weighted items across different tiers, and a global item
+// on the "common" tier that must never be reachable. It asserts the reward
+// always comes from the machine pool, never the global pool, and that
+// SelectReward succeeds despite the zero tier weights — proving
+// selectTier was never called for an incubator-kind machine.
+func TestSelectRewardIncubatorKind(t *testing.T) {
+	processor, db, cleanup := test.CreateRewardProcessor(t)
+	defer cleanup()
+
+	tenantId := test.TestTenantId
+
+	gachaponModel, err := gachapon.NewBuilder(tenantId, "test-gachapon-incubator-1").
+		SetName("Test Incubator").
+		SetNpcIds([]uint32{9100200}).
+		SetCommonWeight(0).
+		SetUncommonWeight(0).
+		SetRareWeight(0).
+		SetKind("incubator").
+		Build()
+	if err != nil {
+		t.Fatalf("Failed to build incubator gachapon model: %v", err)
+	}
+	err = gachapon.CreateGachapon(db, gachaponModel)
+	if err != nil {
+		t.Fatalf("Failed to create incubator gachapon: %v", err)
+	}
+
+	commonItem, err := item.NewBuilder(tenantId, 0).
+		SetGachaponId("test-gachapon-incubator-1").
+		SetItemId(7000000).
+		SetQuantity(1).
+		SetTier("common").
+		SetWeight(1).
+		Build()
+	if err != nil {
+		t.Fatalf("Failed to build incubator common item: %v", err)
+	}
+	err = item.CreateItem(db, commonItem)
+	if err != nil {
+		t.Fatalf("Failed to create incubator common item: %v", err)
+	}
+
+	rareItem, err := item.NewBuilder(tenantId, 0).
+		SetGachaponId("test-gachapon-incubator-1").
+		SetItemId(7000001).
+		SetQuantity(1).
+		SetTier("rare").
+		SetWeight(3).
+		Build()
+	if err != nil {
+		t.Fatalf("Failed to build incubator rare item: %v", err)
+	}
+	err = item.CreateItem(db, rareItem)
+	if err != nil {
+		t.Fatalf("Failed to create incubator rare item: %v", err)
+	}
+
+	// Global item on the "common" tier — must never appear in an incubator
+	// roll, since incubator kind does not merge the global pool.
+	globalItem, err := global.NewBuilder(tenantId, 0).
+		SetItemId(7000002).
+		SetQuantity(1).
+		SetTier("common").
+		Build()
+	if err != nil {
+		t.Fatalf("Failed to build global item: %v", err)
+	}
+	err = global.CreateItem(db, globalItem)
+	if err != nil {
+		t.Fatalf("Failed to create global item: %v", err)
+	}
+
+	validItemIds := map[uint32]bool{7000000: true, 7000001: true}
+	seen := map[uint32]bool{}
+
+	for i := 0; i < 100; i++ {
+		result, err := processor.SelectReward("test-gachapon-incubator-1")
+		if err != nil {
+			t.Fatalf("Failed to select incubator reward: %v", err)
+		}
+
+		if !validItemIds[result.ItemId()] {
+			t.Fatalf("Unexpected incubator item ID: %d (expected only machine items 7000000/7000001)", result.ItemId())
+		}
+		if result.ItemId() == 7000002 {
+			t.Fatalf("Global item 7000002 must never appear in an incubator-kind roll")
+		}
+		if result.Tier() != "" {
+			t.Errorf("Expected empty tier for incubator-kind reward, got %q", result.Tier())
+		}
+
+		seen[result.ItemId()] = true
+	}
+
+	if !seen[7000000] {
+		t.Error("expected weight-1 incubator item 7000000 to appear across 100 draws, never did")
+	}
+	if !seen[7000001] {
+		t.Error("expected weight-3 incubator item 7000001 to appear across 100 draws, never did")
+	}
+}
+
+// TestSelectRewardGachaponKindUnchanged is the explicit control case for
+// the incubator branch above: a gachapon-kind machine (the default, and
+// the only kind that existed before this feature) must still go through
+// selectTier -> getMergedPool -> selectItem, reaching both machine and
+// global items for the tier it lands on.
+func TestSelectRewardGachaponKindUnchanged(t *testing.T) {
+	processor, db, cleanup := test.CreateRewardProcessor(t)
+	defer cleanup()
+
+	tenantId := test.TestTenantId
+
+	gachaponModel, err := gachapon.NewBuilder(tenantId, "test-gachapon-classic-1").
+		SetName("Test Classic Gachapon").
+		SetNpcIds([]uint32{9100201}).
+		SetCommonWeight(100).
+		SetUncommonWeight(0).
+		SetRareWeight(0).
+		Build()
+	if err != nil {
+		t.Fatalf("Failed to build classic gachapon model: %v", err)
+	}
+	err = gachapon.CreateGachapon(db, gachaponModel)
+	if err != nil {
+		t.Fatalf("Failed to create classic gachapon: %v", err)
+	}
+
+	if gachaponModel.Kind() != "gachapon" {
+		t.Fatalf("Expected default Kind() = %q, got %q", "gachapon", gachaponModel.Kind())
+	}
+
+	machineItem, err := item.NewBuilder(tenantId, 0).
+		SetGachaponId("test-gachapon-classic-1").
+		SetItemId(8000000).
+		SetQuantity(1).
+		SetTier("common").
+		Build()
+	if err != nil {
+		t.Fatalf("Failed to build machine item: %v", err)
+	}
+	err = item.CreateItem(db, machineItem)
+	if err != nil {
+		t.Fatalf("Failed to create machine item: %v", err)
+	}
+
+	globalItem, err := global.NewBuilder(tenantId, 0).
+		SetItemId(8000001).
+		SetQuantity(1).
+		SetTier("common").
+		Build()
+	if err != nil {
+		t.Fatalf("Failed to build global item: %v", err)
+	}
+	err = global.CreateItem(db, globalItem)
+	if err != nil {
+		t.Fatalf("Failed to create global item: %v", err)
+	}
+
+	validItemIds := map[uint32]bool{8000000: true, 8000001: true}
+	seen := map[uint32]bool{}
+
+	for i := 0; i < 100; i++ {
+		result, err := processor.SelectReward("test-gachapon-classic-1")
+		if err != nil {
+			t.Fatalf("Failed to select classic reward: %v", err)
+		}
+		if !validItemIds[result.ItemId()] {
+			t.Fatalf("Unexpected classic item ID: %d", result.ItemId())
+		}
+		if result.Tier() != "common" {
+			t.Errorf("Expected tier 'common', got %q", result.Tier())
+		}
+		seen[result.ItemId()] = true
+	}
+
+	if !seen[8000000] {
+		t.Error("expected machine item 8000000 to appear across 100 draws, never did")
+	}
+	if !seen[8000001] {
+		t.Error("expected global item 8000001 to appear across 100 draws, never did")
+	}
+}
+
 func TestGetPrizePoolMergesGlobalItems(t *testing.T) {
 	processor, db, cleanup := test.CreateRewardProcessor(t)
 	defer cleanup()

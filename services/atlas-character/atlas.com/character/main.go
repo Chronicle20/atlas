@@ -10,6 +10,7 @@ import (
 	character2 "atlas-character/kafka/consumer/character"
 	"atlas-character/kafka/consumer/drop"
 	session2 "atlas-character/kafka/consumer/session"
+	teleportrock2 "atlas-character/kafka/consumer/teleportrock"
 	"atlas-character/saved_location"
 	"atlas-character/service"
 	"atlas-character/session"
@@ -90,6 +91,7 @@ func main() {
 		character2.InitConsumers(l)(cmf)(consumerGroupId)
 		session2.InitConsumers(l)(cmf)(consumerGroupId)
 		drop.InitConsumers(l)(cmf)(consumerGroupId)
+		teleportrock2.InitConsumers(l)(cmf)(consumerGroupId)
 		if err := account2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
 			l.WithError(err).Fatal("Unable to register kafka handlers.")
 		}
@@ -100,6 +102,9 @@ func main() {
 			l.WithError(err).Fatal("Unable to register kafka handlers.")
 		}
 		if err := drop.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+			l.WithError(err).Fatal("Unable to register kafka handlers.")
+		}
+		if err := teleportrock2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
 			l.WithError(err).Fatal("Unable to register kafka handlers.")
 		}
 

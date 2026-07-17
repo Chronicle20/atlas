@@ -99,6 +99,29 @@ func (p *ProcessorImpl) SelectReward(gachaponId string) (Model, error) {
 }
 
 func (p *ProcessorImpl) GetPrizePool(gachaponId string, tier string) ([]Model, error) {
+	g, err := gachapon.NewProcessor(p.l, p.ctx, p.db).GetById(gachaponId)
+	if err != nil {
+		return nil, err
+	}
+
+	if g.Kind() == gachapon.KindIncubator {
+		// Incubator pools roll the whole machine weighted by item.Weight —
+		// they have no tiers and never merge the global pool (SelectReward).
+		machineItems, err := item.NewProcessor(p.l, p.ctx, p.db).GetByGachaponId(gachaponId)()
+		if err != nil {
+			return nil, err
+		}
+		var results []Model
+		for _, mi := range machineItems {
+			results = append(results, NewBuilder(gachaponId).
+				SetItemId(mi.ItemId()).
+				SetQuantity(mi.Quantity()).
+				SetWeight(mi.Weight()).
+				Build())
+		}
+		return results, nil
+	}
+
 	tiers := []string{"common", "uncommon", "rare"}
 	if tier != "" {
 		tiers = []string{tier}
@@ -115,6 +138,7 @@ func (p *ProcessorImpl) GetPrizePool(gachaponId string, tier string) ([]Model, e
 				SetItemId(pi.ItemId).
 				SetQuantity(pi.Quantity).
 				SetTier(t).
+				SetWeight(pi.Weight).
 				Build())
 		}
 	}

@@ -1,6 +1,7 @@
 package reward
 
 import (
+	"atlas-reward-pools/gachapon"
 	"atlas-reward-pools/global"
 	"atlas-reward-pools/item"
 	"encoding/json"
@@ -77,8 +78,16 @@ func seedGlobalItemRow(t *testing.T, db *gorm.DB, tenantId uuid.UUID, id uint32,
 // paginated envelope and deterministic ordering across pages (regression
 // coverage for the stable-sort-before-slice recipe).
 func TestGetPrizePoolPaginates(t *testing.T) {
-	db := databasetest.NewInMemoryTenantDB(t, item.Migration, global.Migration)
+	db := databasetest.NewInMemoryTenantDB(t, gachapon.Migration, item.Migration, global.Migration)
 	tenantId := uuid.New()
+
+	g, err := gachapon.NewBuilder(tenantId, "henesys").
+		SetName("Henesys Gachapon").
+		SetNpcIds([]uint32{9100100}).
+		SetCommonWeight(100).
+		Build()
+	require.NoError(t, err)
+	require.NoError(t, gachapon.CreateGachapon(db, g))
 
 	seedMachineItem(t, db, tenantId, 1, "henesys", 2000002, "common")
 	seedMachineItem(t, db, tenantId, 2, "henesys", 2000000, "common")

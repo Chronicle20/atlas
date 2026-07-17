@@ -4,6 +4,7 @@ type Builder struct {
 	itemId     uint32
 	quantity   uint32
 	tier       string
+	weight     uint32
 	gachaponId string
 }
 
@@ -26,11 +27,17 @@ func (b *Builder) SetTier(tier string) *Builder {
 	return b
 }
 
+func (b *Builder) SetWeight(weight uint32) *Builder {
+	b.weight = weight
+	return b
+}
+
 func (b *Builder) Build() Model {
 	return Model{
 		itemId:     b.itemId,
 		quantity:   b.quantity,
 		tier:       b.tier,
+		weight:     b.weight,
 		gachaponId: b.gachaponId,
 	}
 }

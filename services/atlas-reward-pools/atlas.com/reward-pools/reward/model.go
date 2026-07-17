@@ -4,6 +4,7 @@ type Model struct {
 	itemId     uint32
 	quantity   uint32
 	tier       string
+	weight     uint32
 	gachaponId string
 }
 
@@ -17,6 +18,10 @@ func (m Model) Quantity() uint32 {
 
 func (m Model) Tier() string {
 	return m.tier
+}
+
+func (m Model) Weight() uint32 {
+	return m.weight
 }
 
 func (m Model) GachaponId() string {

@@ -3,6 +3,318 @@
   "md5": "3c71fd8872d5efbe16183ae8c51f887d",
   "generated_at": "2026-05-13T00:00:00Z",
   "functions": {
+    "CWvsContext::OnBroadcastMsg": {
+      "address": "0xa04160",
+      "direction": "clientbound",
+      "calls": null
+    },
+    "CWvsContext::OnBroadcastMsg#Megaphone": {
+      "address": "0xa04160",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message - mode 2 has NO case arm in the first (field) switch; falls straight to the display switch with no further reads"
+        }
+      ]
+    },
+    "CWvsContext::OnBroadcastMsg#SuperMegaphone": {
+      "address": "0xa04160",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message"
+        },
+        {
+          "op": "Decode1",
+          "comment": "channelId - case 3: goto LABEL_31 directly (no pre-reads)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "whispersOn - LABEL_31"
+        }
+      ]
+    },
+    "CWvsContext::OnBroadcastMsg#ItemMegaphone": {
+      "address": "0xa04160",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message"
+        },
+        {
+          "op": "Decode1",
+          "comment": "channelId - case 8"
+        },
+        {
+          "op": "Decode1",
+          "comment": "whispersOn"
+        },
+        {
+          "op": "Decode1",
+          "comment": "hasItem"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "GW_ItemSlotBase::Decode(item) - opaque item block, guarded by hasItem, no slotPos byte",
+          "guard": "hasItem"
+        }
+      ]
+    },
+    "CWvsContext::OnBroadcastMsg#MultiMegaphone": {
+      "address": "0xa04160",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message[0]"
+        },
+        {
+          "op": "Decode1",
+          "comment": "count - case 10"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message[1]",
+          "guard": "count > 1"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message[2]",
+          "guard": "count > 2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "channelId - LABEL_31"
+        },
+        {
+          "op": "Decode1",
+          "comment": "whispersOn"
+        }
+      ]
+    },
+    "CWvsContext::OnSetAvatarMegaphone": {
+      "address": "0xa017e0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "itemId"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "name (sender name)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "lines[0]"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "lines[1]"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "lines[2]"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "lines[3]"
+        },
+        {
+          "op": "Decode4",
+          "comment": "channelId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "whispersOn"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "AvatarLook::Decode(look) - opaque avatar block (model.Avatar recurse)"
+        }
+      ]
+    },
+    "CWvsContext::OnClearAvatarMegaphone": {
+      "address": "0x9f0c90",
+      "direction": "clientbound",
+      "calls": null
+    },
+    "CWvsContext::OnAvatarMegaphoneRes": {
+      "address": "0xa016c0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "code - v4 = code - 96; v4==0 (code 96 WAITING_LINE) and v4==1 (code 97 LEVEL_GATE) skip the DecodeStr below; any other code reads it. Base offset SHIFTED from 83 (gms_v83) to 96 (gms_v95)."
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message - only when code is neither 96 nor 97",
+          "guard": "code != 96 && code != 97"
+        }
+      ]
+    },
+    "CMapleTVMan::OnSetMessage": {
+      "address": "0x60f870",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "flag (bit1 = receiverLook present)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "messageType"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "AvatarLook::Decode(senderLook) - opaque avatar block (model.Avatar recurse)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "senderName"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "receiverName"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "lines[0]"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "lines[1]"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "lines[2]"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "lines[3]"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "lines[4]"
+        },
+        {
+          "op": "Decode4",
+          "comment": "totalWaitSeconds"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "AvatarLook::Decode(receiverLook) - opaque avatar block",
+          "guard": "flag & 2"
+        }
+      ]
+    },
+    "CMapleTVMan::OnClearMessage": {
+      "address": "0x60f2f0",
+      "direction": "clientbound",
+      "calls": null
+    },
+    "CMapleTVMan::OnSendMessageResult": {
+      "address": "0x60f5f0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "hasError"
+        },
+        {
+          "op": "Decode1",
+          "comment": "code - code1=GM_MESSAGE(SP 3998), code2=WRONG_USER(SP 4000, the v5==0/'else' branch), code3=QUEUE_TOO_LONG(SP 3999, the v5==1 branch); same branch-order structure as gms_v83",
+          "guard": "hasError"
+        }
+      ]
+    },
+    "CWvsContext::SendConsumeCashItemUseRequest": {
+      "address": "0x9eb3e0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "update_time = get_update_time(); Encode4 in the SHARED HEADER, written FIRST (before nPOS/itemId) - definitively confirms updateTimeFirst=TRUE for gms_v95 @0x9eb4b7-0x9eb4c1"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nPOS - Encode2 @0x9eb4ce-0x9eb4d2"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId - Encode4 @0x9eb4df-0x9eb4e3, then get_consume_cash_item_type(itemId) drives the type switch"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message - shared cases 12/13/15/45 body, EncodeStr @0x9ebc59 (after CSpeakerWorldDlg/CUtilDlgEx message-input dialog returns)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "whisper - Encode1 @0x9ebc75, ONLY emitted when type==13 (SuperMegaphone) or type==45; type==12 (Megaphone) skips this write",
+          "guard": "type == 13 || type == 45"
+        }
+      ]
+    },
+    "CItemSpeakerDlg::_SendConsumeCashItemUseRequest": {
+      "address": "0x5c9e70",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "update_time = get_update_time(); Encode4 in this function's OWN header, written FIRST (before nPOS/itemId) @0x5c9fb3-0x5c9fbd - confirms updateTimeFirst=TRUE"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nPOS (this->_nPOS) - Encode2 @0x5c9fce"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (this->_nItemID) - Encode4 @0x5c9fde"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message = CCtrlEdit::GetText(_pEditInput) - EncodeStr @0x5c9ffa"
+        },
+        {
+          "op": "Decode1",
+          "comment": "whisper = _pCheckBoxWhisper.p->m_bChecked - Encode1 @0x5ca00d"
+        },
+        {
+          "op": "Decode1",
+          "comment": "hasItem = (_pItem.p != 0) - Encode1 @0x5ca024"
+        },
+        {
+          "op": "Decode4",
+          "comment": "invType (this->_nTargetTI) - Encode4 @0x5ca03d",
+          "guard": "hasItem"
+        },
+        {
+          "op": "Decode4",
+          "comment": "slot (this->_nTargetPOS) - Encode4 @0x5ca04d",
+          "guard": "hasItem"
+        }
+      ]
+    },
     "CWvsContext::SendLotteryItemUseRequest": {
       "address": "0x9d6c50",
       "direction": "serverbound",

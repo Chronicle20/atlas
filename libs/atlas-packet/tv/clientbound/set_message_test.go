@@ -67,6 +67,43 @@ func TestTvSetMessageRoundTripNoReceiver(t *testing.T) {
 	}
 }
 
+// IDA evidence (gms_v95 GMS_v95.0_U_DEVM.exe, port 13341, PDB-backed) —
+// CMapleTVMan::OnSetMessage@0x60f870:
+//
+//	nFlag = Decode1(iPacket)                        // flag (bit1=receiverLook)
+//	this->m_nMessageType = Decode1(iPacket)          // messageType
+//	AvatarLook::Decode(al1, iPacket) -> m_alSender = al1
+//	DecodeStr -> sSender -> DecodeStr -> sReceiver
+//	DecodeStr x5 -> sMsg1..sMsg5
+//	this->m_nTotalWaitTime = Decode4(iPacket)
+//	if (nFlag & 2) { AvatarLook::Decode(al2, iPacket) -> m_alReceiver = al2 }
+//	Read order matches TvSetMessage.Encode exactly: flag, messageType,
+//	senderLook, senderName, receiverName, 5 lines, totalWaitSeconds,
+//	[receiverLook] — byte-identical to gms_v83 (confirms "IDA v83≡v95").
+//
+// packet-audit:verify packet=tv/clientbound/TvTvSetMessage version=gms_v95 ida=0x60f870
+func TestTvSetMessageRoundTripV95(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	senderLook := testTvAvatar()
+	receiverLook := testTvAvatar()
+	lines := [5]string{"line one", "line two", "line three", "line four", "line five"}
+	input := NewTvSetMessage(1, senderLook, "SenderName", "ReceiverName", lines, 300, &receiverLook)
+	output := TvSetMessage{}
+	pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+	if output.Flag() != 3 {
+		t.Errorf("flag: got %v, want 3", output.Flag())
+	}
+	if output.ReceiverName() != "ReceiverName" {
+		t.Errorf("receiverName: got %q, want %q", output.ReceiverName(), "ReceiverName")
+	}
+	if output.ReceiverLook() == nil {
+		t.Fatalf("receiverLook: got nil, want non-nil")
+	}
+	if output.TotalWaitSeconds() != input.TotalWaitSeconds() {
+		t.Errorf("totalWaitSeconds: got %v, want %v", output.TotalWaitSeconds(), input.TotalWaitSeconds())
+	}
+}
+
 func TestTvSetMessageRoundTripWithReceiver(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

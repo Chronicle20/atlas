@@ -2049,19 +2049,37 @@ func candidatesFromFName(fname string) []candidate {
 	// Vega's Spell (category 561) USE_CASH_ITEM sub-body (task-130 §2.1) shares
 	// the cash-item-use sender fname with task-126's AP/SP point-reset arm. Both
 	// candidates are keyed to the same fname, so return them together.
-	// Megaphone family (task-123 phase 19, gms_v83 IDA-verified): cash-slot
-	// type 12 (Megaphone) and type 13 (SuperMegaphone) share the same body
-	// @0xa0a930 within SendConsumeCashItemUseRequest and both route through
-	// the shared exclusion-check + trailing-updateTime send tail
-	// (loc_A0EA53). ItemUseItemMegaphone/ItemUseTripleMegaphone/
-	// ItemUseAvatarMegaphone/ItemUseMapleTV remain unregistered here pending
-	// further IDA verification (case identity not yet pinned down).
-	case "CWvsContext::SendConsumeCashItemUseRequest", "CItemSpeakerDlg::_SendConsumeCashItemUseRequest":
+	// Megaphone family (task-123 phase 19, gms_v83+gms_v95 IDA-verified):
+	// cash-slot type 12 (Megaphone) and type 13 (SuperMegaphone) are sent
+	// INLINE by this function (shared jumptable body @0x9eb811 for v95).
+	// Avatar Megaphone (cash-slot type 43, item classification 539xxxx) is
+	// ALSO sent inline — SendConsumeCashItemUseRequest's jumptable case 43
+	// @0x9ebd1d (CUIAvatarMegaphone::GetText -> 4x EncodeStr +
+	// IsCheckWhisper -> Encode1). Item Megaphone (cash-slot type 14) is
+	// deliberately NOT listed here: this dispatcher's case 14 @0x9ebca1 only
+	// constructs+shows the CItemSpeakerDlg; the ACTUAL send happens in the
+	// separate CItemSpeakerDlg::_SendConsumeCashItemUseRequest function
+	// below (own case arm — do not merge, the two fnames are genuinely
+	// different senders and must not share a candidate list or the
+	// report-generator's last-write-wins file collision mispairs the
+	// wrong (fname, struct) combination). ItemUseTripleMegaphone/
+	// ItemUseMapleTV remain unregistered here pending further IDA
+	// verification (case identity not yet pinned down for either version).
+	case "CWvsContext::SendConsumeCashItemUseRequest":
 		return []candidate{
 			{name: "ItemUsePointReset", dir: csvpkg.DirServerbound, pkg: "cash"},
 			{name: "ItemUseVegaScroll", dir: csvpkg.DirServerbound, pkg: "cash"},
 			{name: "ItemUseMegaphone", dir: csvpkg.DirServerbound, pkg: "cash"},
 			{name: "ItemUseSuperMegaphone", dir: csvpkg.DirServerbound, pkg: "cash"},
+			{name: "ItemUseAvatarMegaphone", dir: csvpkg.DirServerbound, pkg: "cash"},
+		}
+	// Item Megaphone (cash-slot type 14): the REAL send function, separate
+	// from the main dispatcher above (task-123 phase 19, gms_v95
+	// IDA-verified @0x5c9e70). See the comment on the case above for why
+	// this is its own arm.
+	case "CItemSpeakerDlg::_SendConsumeCashItemUseRequest":
+		return []candidate{
+			{name: "ItemUseItemMegaphone", dir: csvpkg.DirServerbound, pkg: "cash"},
 		}
 	// --- interaction sub-domain (task-067) ---
 	// NOTE: the interaction serverbound dispatcher struct is also named `Operation`

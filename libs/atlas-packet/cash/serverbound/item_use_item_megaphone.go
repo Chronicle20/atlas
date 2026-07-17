@@ -10,8 +10,14 @@ import (
 )
 
 // ItemUseItemMegaphone is the USE_CASH_ITEM sub-body for the Item Megaphone
-// (5073xxx). Cosmic-derived (UseCashItemHandler case 3); per-version IDA
-// verification in task-123 phases 19-20.
+// (5076xxx, cash-slot type 14 — IDA-verified via get_cashslot_item_type on
+// gms_v95: itemId%10000/1000==6 -> type 14; the Cosmic-derived "5073xxx"
+// guess in earlier revisions of this comment did not match: 5073xxx (Heart
+// Megaphone) is cash-slot type 0, no send path). The real sender is the
+// CItemSpeakerDlg dialog's own OK-button handler, NOT the main
+// SendConsumeCashItemUseRequest dispatcher (which only constructs/shows the
+// dialog for this cash-slot type).
+// packet-audit:fname CItemSpeakerDlg::_SendConsumeCashItemUseRequest
 type ItemUseItemMegaphone struct {
 	message         string
 	whisper         bool

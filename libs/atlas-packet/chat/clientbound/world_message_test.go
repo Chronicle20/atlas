@@ -128,6 +128,90 @@ func TestWorldMessageSuperMegaphoneByteOutputV83(t *testing.T) {
 	}
 }
 
+// IDA evidence (gms_v95 GMS_v95.0_U_DEVM.exe, port 13341, PDB-backed) —
+// CWvsContext::OnBroadcastMsg@0xa04160:
+//
+//	v3 = Decode1(mode) -> (mode!=4, hasMessage-prefix branch skipped) ->
+//	DecodeStr(sNotice) -> first switch(v3): case 3 goto LABEL_31; case 8:
+//	sSpeakerName=Decode1(channelId), bWhisperIcon=Decode1(whispersOn),
+//	if(Decode1()) item=GW_ItemSlotBase::Decode(); case 9: ...; case 10:
+//	count=Decode1, [Decode1 msg[1] if>1] [Decode1 msg[2] if>2] goto LABEL_31.
+//	LABEL_31: sSpeakerName=Decode1(channelId), bWhisperIcon=Decode1(whispersOn).
+//	Mode 2 (Megaphone) has NO case arm in the first switch — falls straight
+//	to the display switch with no further reads. Wire is exactly mode(1) +
+//	message(str), identical to gms_v83. Confirms v95≡v83 for this arm.
+//
+// packet-audit:verify packet=chat/clientbound/ChatWorldMessageMegaphone version=gms_v95 ida=0xa04160
+func TestWorldMessageMegaphoneByteOutputV95(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	input := NewWorldMessageMegaphone(2, "hi")
+	expected := []byte{0x02, 0x02, 0x00, 0x68, 0x69}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v95 megaphone golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// IDA evidence (gms_v95 GMS_v95.0_U_DEVM.exe, port 13341) —
+// CWvsContext::OnBroadcastMsg@0xa04160, case 3: goto LABEL_31 directly (no
+// pre-reads) -> LABEL_31: channelId=Decode1, whispersOn=Decode1. Wire is
+// mode(1) + message(str) + channelId(1) + whispersOn(1), identical to
+// gms_v83.
+//
+// packet-audit:verify packet=chat/clientbound/ChatWorldMessageSuperMegaphone version=gms_v95 ida=0xa04160
+func TestWorldMessageSuperMegaphoneByteOutputV95(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	input := WorldMessageSuperMegaphone{mode: 3, message: "hi", channelId: 5, whispersOn: true}
+	expected := []byte{0x03, 0x02, 0x00, 0x68, 0x69, 0x05, 0x01}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v95 super megaphone golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// IDA evidence (gms_v95 GMS_v95.0_U_DEVM.exe, port 13341) —
+// CWvsContext::OnBroadcastMsg@0xa04160, case 8: sSpeakerName=Decode1
+// (channelId), bWhisperIcon=Decode1 (whispersOn), if(Decode1()) [hasItem]
+// item=GW_ItemSlotBase::Decode(). Same shape as gms_v83: no slotPos byte,
+// hasItem+item-block directly. Wire (no item): mode+message+channelId+
+// whispersOn+hasItem(0).
+//
+// packet-audit:verify packet=chat/clientbound/ChatWorldMessageItemMegaphone version=gms_v95 ida=0xa04160
+func TestWorldMessageItemMegaphoneByteOutputV95NoItem(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	input := NewWorldMessageItemMegaphone(8, "hi", 2, true, nil)
+	expected := []byte{0x08, 0x02, 0x00, 0x68, 0x69, 0x02, 0x01, 0x00}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v95 item megaphone (no item) golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// IDA evidence (gms_v95 GMS_v95.0_U_DEVM.exe, port 13341) —
+// CWvsContext::OnBroadcastMsg@0xa04160, case 10: sWarn=Decode1(count); if
+// count>1 DecodeStr(message[1]); if count>2 DecodeStr(message[2]); goto
+// LABEL_31: channelId=Decode1, whispersOn=Decode1. Plain channelId+
+// whispersOn trailer, NOT a channel*10+ear+1 formula — same as gms_v83.
+//
+// packet-audit:verify packet=chat/clientbound/ChatWorldMessageMultiMegaphone version=gms_v95 ida=0xa04160
+func TestWorldMessageMultiMegaphoneByteOutputV95(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	input := WorldMessageMultiMegaphone{mode: 10, messages: []string{"a", "b", "c"}, channelId: 1, whispersOn: true}
+	expected := []byte{
+		0x0A,             // mode
+		0x01, 0x00, 0x61, // message[0]="a"
+		0x03,             // count
+		0x01, 0x00, 0x62, // message[1]="b"
+		0x01, 0x00, 0x63, // message[2]="c"
+		0x01, // channelId
+		0x01, // whispersOn
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v95 multi megaphone golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
 func TestWorldMessageSuperMegaphoneRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

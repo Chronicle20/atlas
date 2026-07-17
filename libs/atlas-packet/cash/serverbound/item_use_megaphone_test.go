@@ -53,6 +53,42 @@ func TestItemUseMegaphoneByteOutputV83(t *testing.T) {
 	}
 }
 
+// IDA evidence (gms_v95 GMS_v95.0_U_DEVM.exe, port 13341, PDB-backed) —
+// CWvsContext::SendConsumeCashItemUseRequest@0x9eb3e0:
+//
+// The function header (0x9eb4a4-0x9eb4e8) is, in order: COutPacket ctor
+// (opcode 0x55) -> get_update_time() -> Encode4(update_time) -> Encode2(nPOS)
+// -> Encode4(itemId) -> get_consume_cash_item_type(itemId) -> switch(type-12).
+// This DEFINITIVELY resolves the trailing-updateTime question for v95:
+// update_time is encoded IMMEDIATELY after the opcode, BEFORE nPOS/itemId —
+// i.e. updateTimeFirst=TRUE for gms_v95, confirming the existing MajorVersion
+// >=95 gate. The shared jumptable block for types 12/13/15/45 (@0x9eb811,
+// entered via loc_9EBC44 after the CSpeakerWorldDlg/CUtilDlgEx message-input
+// dialog returns) does:
+//
+//	EncodeStr(message) @0x9ebc59
+//	cmp type,13; jz whisper; cmp type,45; jnz skip   @0x9ebc62-0x9ebc6a
+//	  (type 12 is NEITHER 13 NOR 45 -> whisper Encode1 SKIPPED)
+//	[shared cleanup, NO trailing update_time write]
+//
+// Wire (v95): message(str) ONLY — no whisper, no trailing updateTime (already
+// written in the shared header). Matches ItemUseMegaphone.Encode(updateTimeFirst=true)
+// exactly.
+//
+// packet-audit:verify packet=cash/serverbound/CashItemUseMegaphone version=gms_v95 ida=0x9eb3e0
+func TestItemUseMegaphoneByteOutputV95(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	input := NewItemUseMegaphone(true)
+	input.message = "Hello world!"
+	expected := []byte{
+		0x0C, 0x00, 'H', 'e', 'l', 'l', 'o', ' ', 'w', 'o', 'r', 'l', 'd', '!', // message
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v95 item use megaphone golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
 func TestItemUseMegaphoneRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

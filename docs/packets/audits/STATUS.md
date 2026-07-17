@@ -13,7 +13,7 @@ Tool: `0cc69bc23257b57be41197ca0337f9c945783fb727192223fb155b4649b5b9d5`
 - export gms_v83: `fbae9f57d49feee16a7cefaee842bf1d7506350c7fa598b383df641adb51619c`
 - export gms_v84: `16aa06642a2e9175bffbf157617fec25d6e7f0e213b8e296be83227c31f95cba`
 - export gms_v87: `3889fe313c39c73d945937bb0b823bdc3100788dfdbdafcdadc615a3665b2de8`
-- export gms_v95: `d33bdcf3b527f1a8d726dd0113a241737cef5a221e21bfdafda410cad567bd5b`
+- export gms_v95: `b08d604e43c3676be0b4a6923ec593fcc0456e57b765771b7dfc5ed67988c434`
 - export jms_v185: `886e6bc139a73a8b92e9b8c141818991e560434aac7e3eda3b409e271124ea69`
 
 ## Clientbound
@@ -92,7 +92,7 @@ Tool: `0cc69bc23257b57be41197ca0337f9c945783fb727192223fb155b4649b5b9d5`
 | GUILD_OPERATION | CWvsContext::OnGuildResult | guild/clientbound/GuildCapacityChange (T1) | 0x035 | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x041 | ✅ | 0x043 | ✅ | 0x043 | ✅ | 0x043 | ✅ | 0x03B | ✅ |
 | SPAWN_PORTAL | CWvsContext::OnTownPortal | door/clientbound/RemoveTownDoor | 0x036 | ❌ | 0x040 | ❌ | 0x040 | ❌ | 0x040 | ❌ | 0x043 | ✅ | 0x045 | ✅ | 0x045 | ✅ | 0x045 | ✅ | 0x03D | ✅ |
 | TRADE_MONEY_LIMIT | CWvsContext::OnTradeMoneyLimit |  |  | ⬜ | 0x036 | ❌ | 0x036 | ❌ | 0x036 | ❌ | 0x039 | ❌ | 0x039 | ❌ | 0x039 | ❌ | 0x039 | ❌ |  | ⬜ |
-| SERVERMESSAGE | CWvsContext::OnBroadcastMsg | chat/clientbound/ChatWorldMessageSimple (T1) | 0x037 | ✅ | 0x041 | ✅ | 0x041 | ✅ | 0x041 | ✅ | 0x044 | ✅ | 0x044 | ❌ | 0x046 | ❌ | 0x047 | ❌ | 0x03E | ❌ |
+| SERVERMESSAGE | CWvsContext::OnBroadcastMsg | chat/clientbound/ChatWorldMessageSimple (T1) | 0x037 | ✅ | 0x041 | ✅ | 0x041 | ✅ | 0x041 | ✅ | 0x044 | ✅ | 0x044 | ❌ | 0x046 | ❌ | 0x047 | ✅ | 0x03E | ❌ |
 | SET_GENDER | CWvsContext::OnSetGender |  |  | ⬜ | 0x037 | ❌ | 0x037 | ❌ | 0x037 | ❌ | 0x03A | ❌ | 0x03A | ❌ | 0x03A | ❌ | 0x03A | ❌ |  | ⬜ |
 | GUILD_BBS_PACKET | CUIGuildBBS::OnGuildBBSPacket | guild/clientbound/GuildBBSEntryNotFound (T1) |  | ⬜ | 0x038 | ✅ | 0x038 | ✅ | 0x038 | ✅ | 0x03B | ✅ | 0x03B | ✅ | 0x03B | ✅ | 0x03B | ✅ |  | ⬜ |
 | IDA_0X038 | CWvsContext::OnExpedtionResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x038 | ❌ |
@@ -107,8 +107,8 @@ Tool: `0cc69bc23257b57be41197ca0337f9c945783fb727192223fb155b4649b5b9d5`
 | IDA_0X03F | sub_720293 |  | 0x03F | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | EXPEDITION_RESULT | CWvsContext::OnExpedtionResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x040 | ❌ | 0x040 | ❌ |  | ⬜ |
 | MAPLE_TV_USE_RES | CWvsContext::OnMapleTVUseRes |  | 0x040 | ❌ | 0x052 | ❌ | 0x065 | ❌ | 0x067 | ❌ | 0x06D | ❌ | 0x070 | ❌ | 0x070 | ❌ | 0x071 | ❌ |  | ⬜ |
-| AVATAR_MEGAPHONE_RESULT | CWvsContext::OnAvatarMegaphoneRes | chat/clientbound/ChatAvatarMegaphoneResult | 0x041 | ❌ | 0x053 | ❌ | 0x066 | ❌ | 0x068 | ❌ | 0x06E | ✅ | 0x071 | ❌ | 0x071 | ❌ | 0x072 | ❌ |  | ⬜ |
-| SET_AVATAR_MEGAPHONE | CWvsContext::OnSetAvatarMegaphone | chat/clientbound/ChatSetAvatarMegaphone (T1) | 0x042 | ❌ | 0x054 | ❌ | 0x067 | ❌ | 0x069 | ❌ | 0x06F | ✅ | 0x072 | ❌ | 0x072 | ❌ | 0x073 | ❌ | 0x05A | ❌ |
+| AVATAR_MEGAPHONE_RESULT | CWvsContext::OnAvatarMegaphoneRes | chat/clientbound/ChatAvatarMegaphoneResult | 0x041 | ❌ | 0x053 | ❌ | 0x066 | ❌ | 0x068 | ❌ | 0x06E | ✅ | 0x071 | ❌ | 0x071 | ❌ | 0x072 | ✅ |  | ⬜ |
+| SET_AVATAR_MEGAPHONE | CWvsContext::OnSetAvatarMegaphone | chat/clientbound/ChatSetAvatarMegaphone (T1) | 0x042 | ❌ | 0x054 | ❌ | 0x067 | ❌ | 0x069 | ❌ | 0x06F | ✅ | 0x072 | ❌ | 0x072 | ❌ | 0x073 | ✅ | 0x05A | ❌ |
 | IDA_0X043 | sub_721465 |  | 0x043 | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | IDA_0X044 | sub_721481 |  | 0x044 | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | SHOP_LINK_RESULT | CWvsContext::OnShopLinkResult | merchant/clientbound/ShopLinkResult (T1) |  | ⬜ | 0x044 | ✅ | 0x044 | ✅ | 0x044 | ✅ | 0x047 | ✅ | 0x049 | ❌ | 0x049 | ❌ | 0x04A | ✅ | 0x041 | ❌ |
@@ -152,7 +152,7 @@ Tool: `0cc69bc23257b57be41197ca0337f9c945783fb727192223fb155b4649b5b9d5`
 | FIELD_SET_VARIABLE | CWvsContext::OnFieldSetVariable |  |  | ⬜ |  | ⬜ | 0x054 | ❌ | 0x055 | ❌ | 0x05C | ❌ | 0x05E | ❌ | 0x05E | ❌ | 0x05F | ❌ | 0x063 | ❌ |
 | IDA_0X054 | sub_AEC922 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x054 | ❌ |
 | BONUS_EXP_CHANGED | CWvsContext::OnBonusExpRateChanged |  |  | ⬜ |  | ⬜ | 0x055 | ❌ | 0x056 | ❌ | 0x05D | ❌ | 0x05F | ❌ | 0x05F | ❌ | 0x060 | ❌ | 0x064 | ❌ |
-| CLEAR_AVATAR_MEGAPHONE | CWvsContext::OnClearAvatarMegaphone | chat/clientbound/ChatClearAvatarMegaphone |  | ⬜ | 0x055 | ❌ | 0x068 | ❌ | 0x06A | ❌ | 0x070 | ✅ | 0x073 | ❌ | 0x073 | ❌ | 0x074 | ❌ | 0x05B | ❌ |
+| CLEAR_AVATAR_MEGAPHONE | CWvsContext::OnClearAvatarMegaphone | chat/clientbound/ChatClearAvatarMegaphone |  | ⬜ | 0x055 | ❌ | 0x068 | ❌ | 0x06A | ❌ | 0x070 | ✅ | 0x073 | ❌ | 0x073 | ❌ | 0x074 | ✅ | 0x05B | ❌ |
 | FIELD_OBSTACLE_ONOFF_LIST | CField::OnFieldObstacleOnOffStatus; sub_4C930A | field/clientbound/FieldFieldObstacleOnOffList (T1) | 0x055 | ✅ | 0x069 | ❌ | 0x080 | 🟡ᶠ | 0x084 | 🟡ᶠ | 0x08C | ✅ | 0x08F | ✅ | 0x094 | ✅ | 0x09C | ✅ | 0x089 | ✅ |
 | BLOW_WEATHER | CField::OnBlowWeather; sub_4C95F2; sub_4ED39C; sub_5723E6 | field/clientbound/FieldEffectWeather (T1) | 0x056 | ✅ | 0x06A | ❌ | 0x082 | 🟡ᶠ | 0x086 | 🟡ᶠ | 0x08E | ✅ | 0x091 | ✅ | 0x096 | ✅ | 0x09E | ✅ | 0x08B | ✅ |
 | CANCEL_NAME_CHANGE_RESULT | CWvsContext::OnCancelNameChangeResult |  |  | ⬜ | 0x056 | ❌ | 0x069 | ❌ | 0x06B | ❌ | 0x071 | ❌ | 0x074 | ❌ | 0x074 | ❌ | 0x075 | ❌ |  | ⬜ |
@@ -415,11 +415,11 @@ Tool: `0cc69bc23257b57be41197ca0337f9c945783fb727192223fb155b4649b5b9d5`
 | IDA_0X10A | CUserLocal::OnGoToCommoditySN |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x10A | ❌ |  | ⬜ |
 | IDA_0X10B | CUserLocal::OnDamageMeter |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x10B | ❌ |  | ⬜ |
 | IDA_0X10C | CUserLocal::OnTimeBombAttack |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x10C | ❌ |  | ⬜ |
-| SEND_TV | CMapleTVMan::OnSetMessage; sub_59BD98 | tv/clientbound/TvTvSetMessage (T1) |  | ⬜ | 0x10C | ❌ | 0x130 | ❌ | 0x13D | ❌ | 0x155 | ✅ | 0x15F | ❌ | 0x16A | ❌ | 0x195 | ❌ | 0x17A | ❌ |
+| SEND_TV | CMapleTVMan::OnSetMessage; sub_59BD98 | tv/clientbound/TvTvSetMessage (T1) |  | ⬜ | 0x10C | ❌ | 0x130 | ❌ | 0x13D | ❌ | 0x155 | ✅ | 0x15F | ❌ | 0x16A | ❌ | 0x195 | ✅ | 0x17A | ❌ |
 | IDA_0X10D | CUser::OnPassiveMove |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x10D | ❌ |  | ⬜ |
-| REMOVE_TV | CMapleTVMan::OnClearMessage; sub_59BD84 | tv/clientbound/TvTvClearMessage |  | ⬜ | 0x10D | ❌ | 0x131 | ❌ | 0x13E | ❌ | 0x156 | ✅ | 0x160 | ❌ | 0x16B | ❌ | 0x196 | ❌ | 0x17B | ❌ |
+| REMOVE_TV | CMapleTVMan::OnClearMessage; sub_59BD84 | tv/clientbound/TvTvClearMessage |  | ⬜ | 0x10D | ❌ | 0x131 | ❌ | 0x13E | ❌ | 0x156 | ✅ | 0x160 | ❌ | 0x16B | ❌ | 0x196 | ✅ | 0x17B | ❌ |
 | ZAKUM_SHRINE | CField::OnZakumTimer | field/clientbound/FieldZakumShrine (T1) |  | ⬜ |  | ⬜ | 0x10D | 🟡ᶠ | 0x119 | 🟡ᶠ | 0x12F | ✅ | 0x136 | ✅ | 0x140 | ✅ | 0x16A | ✅ | 0x148 | ✅ |
-| ENABLE_TV | CMapleTVMan::OnSendMessageResult; sub_59BF77 | tv/clientbound/TvTvSendMessageResult |  | ⬜ | 0x10E | ❌ | 0x132 | ❌ | 0x13F | ❌ | 0x157 | ✅ | 0x161 | ❌ | 0x16C | ❌ | 0x197 | ❌ | 0x17C | ❌ |
+| ENABLE_TV | CMapleTVMan::OnSendMessageResult; sub_59BF77 | tv/clientbound/TvTvSendMessageResult |  | ⬜ | 0x10E | ❌ | 0x132 | ❌ | 0x13F | ❌ | 0x157 | ✅ | 0x161 | ❌ | 0x16C | ❌ | 0x197 | ✅ | 0x17C | ❌ |
 | FOLLOW_CHARACTER_FAILED | CUserLocal::OnFollowCharacterFailed |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x10E | ❌ |  | ⬜ |
 | IDA_0X10F | CUserLocal::OnVengeanceSkillApply |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x10F | ❌ |  | ⬜ |
 | IDA_0X110 | CUserLocal::OnExJablinApply |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x110 | ❌ |  | ⬜ |
@@ -579,7 +579,7 @@ Tool: `0cc69bc23257b57be41197ca0337f9c945783fb727192223fb155b4649b5b9d5`
 | CANCEL_ITEM_EFFECT | CWvsContext::SendStatChangeItemCancelRequest; sub_70DD49 | character/serverbound/ItemCancel (T1) | 0x039 | ✅ | 0x044 | ✅ | 0x048 | ✅ | 0x047 | ✅ | 0x049 | ✅ | 0x049 | ✅ | 0x04C | ✅ | 0x04F | ✅ | 0x041 | ✅ |
 | REMOTE_STORE | CWvsContext::SendRemoteShopOpenRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x03B | ❌ | 0x03B | ❌ | 0x03E | ❌ | 0x040 | ❌ | 0x033 | ❌ |
 | HIRED_MERCHANT_REQUEST | CWvsContext::SendEntrustedShopCheckRequest; sub_715A7B; sub_971BE0 |  |  | ⬜ | 0x03E | ❌ | 0x03E | ❌ | 0x03D | ❌ | 0x03F | ❌ | 0x03F | ❌ | 0x042 | ❌ | 0x044 | ❌ | 0x037 | ❌ |
-| USE_CASH_ITEM | CItemSpeakerDlg::_SendConsumeCashItemUseRequest; CUICharacterSaleDlg::SendCreateNewCharacter; CUIIncubator::OnButtonClicked; CUIKarmaDlg::_SendConsumeCashItemUseRequest; CUIUnreleaseDlg::UnreleaseEquipItem; CWvsContext::SendConsumeCashItemUseRequest |  | 0x03E | ❌ | 0x049 | ❌ | 0x04E | ❌ | 0x04D | ❌ | 0x04F | ❌ | 0x04F | ❌ | 0x052 | ❌ | 0x055 | ❌ | 0x047 | ❌ |
+| USE_CASH_ITEM | CItemSpeakerDlg::_SendConsumeCashItemUseRequest; CUICharacterSaleDlg::SendCreateNewCharacter; CUIIncubator::OnButtonClicked; CUIKarmaDlg::_SendConsumeCashItemUseRequest; CUIUnreleaseDlg::UnreleaseEquipItem; CWvsContext::SendConsumeCashItemUseRequest | cash/serverbound/CashItemUseItemMegaphone (T1) | 0x03E | ❌ | 0x049 | ❌ | 0x04E | ❌ | 0x04D | ❌ | 0x04F | ❌ | 0x04F | ❌ | 0x052 | ❌ | 0x055 | ✅ | 0x047 | ❌ |
 | OWL_WARP | CUIShopScanResult::OnButtonClicked | merchant/serverbound/OwlWarp (T1) |  | ⬜ | 0x03F | ✅ | 0x042 | ✅ | 0x041 | ✅ | 0x043 | ✅ | 0x043 | ❌ | 0x046 | ❌ | 0x049 | ✅ | 0x03B | ❌ |
 | FREDRICK_ACTION | CStoreBankDlg::SendCalculateFeeRequest; CStoreBankDlg::SendGetAllRequest; CStoreBankDlg::SetRet |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x040 | ❌ | 0x040 | ❌ | 0x043 | ❌ | 0x045 | ❌ | 0x038 | ❌ |
 | ITEM_SORT | CWvsContext::SendGatherItemRequest; sub_954C6B | inventory/serverbound/InventoryCompartmentMergeRequest (T1) |  | ⬜ | 0x040 | ✅ | 0x044 | ✅ | 0x043 | ✅ | 0x045 | ✅ | 0x045 | ✅ | 0x048 | ✅ | 0x04B | ✅ | 0x03D | ✅ |
@@ -832,9 +832,10 @@ Tool: `0cc69bc23257b57be41197ca0337f9c945783fb727192223fb155b4649b5b9d5`
 | buddy/serverbound/BuddyOperationAccept (T1) |  |  | ❌ |  | ❌ |  | 🟡ᶠ |  | 🟡ᶠ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | buddy/serverbound/BuddyOperationAdd (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | buddy/serverbound/BuddyOperationDelete (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| cash/serverbound/CashItemUseMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
+| cash/serverbound/CashItemUseAvatarMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |
+| cash/serverbound/CashItemUseMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |
 | cash/serverbound/CashItemUsePointReset (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| cash/serverbound/CashItemUseSuperMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
+| cash/serverbound/CashItemUseSuperMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |
 | cash/serverbound/CashShopOperationBuy (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashShopOperationBuyCouple (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashShopOperationBuyFriendship (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -995,15 +996,15 @@ Tool: `0cc69bc23257b57be41197ca0337f9c945783fb727192223fb155b4649b5b9d5`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 166 | 0 | 2 | 158 | 634 | 0 | 50.9% |
-| v61 | 238 | 0 | 60 | 198 | 464 | 0 | 48.0% |
-| v72 | 248 | 0 | 73 | 216 | 423 | 0 | 46.2% |
-| v79 | 262 | 0 | 72 | 212 | 414 | 0 | 48.0% |
-| v83 | 412 | 0 | 0 | 324 | 224 | 0 | 56.0% |
-| v84 | 375 | 0 | 0 | 341 | 244 | 0 | 52.4% |
-| v87 | 409 | 0 | 0 | 364 | 187 | 0 | 52.9% |
-| v95 | 434 | 0 | 0 | 423 | 103 | 0 | 50.6% |
-| JMS185 | 390 | 0 | 0 | 376 | 194 | 0 | 50.9% |
+| v48 | 166 | 0 | 2 | 159 | 634 | 0 | 50.8% |
+| v61 | 238 | 0 | 60 | 199 | 464 | 0 | 47.9% |
+| v72 | 248 | 0 | 73 | 217 | 423 | 0 | 46.1% |
+| v79 | 262 | 0 | 72 | 213 | 414 | 0 | 47.9% |
+| v83 | 412 | 0 | 0 | 325 | 224 | 0 | 55.9% |
+| v84 | 375 | 0 | 0 | 342 | 244 | 0 | 52.3% |
+| v87 | 409 | 0 | 0 | 365 | 187 | 0 | 52.8% |
+| v95 | 445 | 0 | 0 | 413 | 103 | 0 | 51.9% |
+| JMS185 | 390 | 0 | 0 | 377 | 194 | 0 | 50.8% |
 
 ## Conflicts
 

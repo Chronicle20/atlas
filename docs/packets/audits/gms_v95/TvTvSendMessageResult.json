@@ -1,0 +1,30 @@
+{
+  "WriterName": "TvTvSendMessageResult",
+  "IDAName": "CMapleTVMan::OnSendMessageResult",
+  "Address": "0x60f5f0",
+  "Variant": "GMS/v95",
+  "BranchDepth": 1,
+  "AtlasFile": "libs/atlas-packet/tv/clientbound/send_message_result.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "hasError",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "code - code1=GM_MESSAGE(SP 3998), code2=WRONG_USER(SP 4000, the v5==0/'else' branch), code3=QUEUE_TOO_LONG(SP 3999, the v5==1 branch); same branch-order structure as gms_v83",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

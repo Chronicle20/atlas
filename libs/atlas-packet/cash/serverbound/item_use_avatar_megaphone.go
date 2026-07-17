@@ -10,8 +10,13 @@ import (
 )
 
 // ItemUseAvatarMegaphone is the USE_CASH_ITEM sub-body for the Avatar
-// Megaphone (5077xxx). Cosmic-derived (UseCashItemHandler case 6); per-version
-// IDA verification in task-123 phases 19-20.
+// Megaphone (item classification 539xxxx, cash-slot type 43 — IDA-verified
+// via get_cashslot_item_type on gms_v95; the Cosmic-derived "5077xxx" guess
+// in earlier revisions of this comment did not match: 5077xxx is Triple
+// Megaphone, cash-slot type 61 on gms_v95). Encoded inline by
+// SendConsumeCashItemUseRequest's jumptable case 43 (CUIAvatarMegaphone
+// dialog): 4 lines then whisper, no other fields.
+// packet-audit:fname CWvsContext::SendConsumeCashItemUseRequest
 type ItemUseAvatarMegaphone struct {
 	lines           [4]string
 	whisper         bool

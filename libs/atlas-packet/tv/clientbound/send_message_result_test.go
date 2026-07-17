@@ -46,6 +46,51 @@ func TestTvSendMessageResultSuccessByteOutput(t *testing.T) {
 	}
 }
 
+// IDA evidence (gms_v95 GMS_v95.0_U_DEVM.exe, port 13341, PDB-backed) —
+// CMapleTVMan::OnSendMessageResult@0x60f5f0:
+//
+//	v3 = Decode1(iPacket)             // hasError
+//	if (!v3) return;                  // success: no further reads
+//	v4 = Decode1(iPacket) - 1         // code
+//	if (!v4)      code==1 -> GetString(0xF9E=3998), CHATLOG_ADD  (GM_MESSAGE)
+//	v5 = v4 - 1
+//	if (v5) {
+//	  if (v5 != 1) return;
+//	  else code==3 -> GetString(0xF9F=3999), CHATLOG_ADD          (QUEUE_TOO_LONG)
+//	} else code==2 -> GetString(0xFA0=4000), CHATLOG_ADD          (WRONG_USER)
+//	Branch STRUCTURE (and hence code→semantic order: code1=first branch,
+//	code2="else"/v5==0 branch, code3=v5==1 branch) is byte-identical to
+//	gms_v83's OnSendMessageResult@0x6373a0 — only the StringPool ids differ
+//	(3998/3999/4000 vs v83's), confirming the SAME GM_MESSAGE=1/WRONG_USER=2/
+//	QUEUE_TOO_LONG=3 code mapping applies to gms_v95. template_gms_95_1.json
+//	previously carried the WRONG QUEUE_TOO_LONG=2/WRONG_USER=3 swap (design
+//	§1.2's error, propagated uncritically into the seed) — corrected in this
+//	commit to GM_MESSAGE=1/WRONG_USER=2/QUEUE_TOO_LONG=3.
+//
+// packet-audit:verify packet=tv/clientbound/TvTvSendMessageResult version=gms_v95 ida=0x60f5f0
+func TestTvSendMessageResultSuccessRoundTripV95(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	input := NewTvSendMessageResultSuccess()
+	output := TvSendMessageResult{}
+	pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+	if output.HasError() {
+		t.Errorf("hasError: got true, want false")
+	}
+}
+
+func TestTvSendMessageResultErrorRoundTripV95(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	input := NewTvSendMessageResultError(2)
+	output := TvSendMessageResult{}
+	pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+	if !output.HasError() {
+		t.Errorf("hasError: got false, want true")
+	}
+	if output.Code() != 2 {
+		t.Errorf("code: got %v, want 2", output.Code())
+	}
+}
+
 func TestTvSendMessageResultErrorRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

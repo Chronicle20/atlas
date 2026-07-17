@@ -104,6 +104,45 @@ func TestUseByMapDecodeV84(t *testing.T) {
 	}
 }
 
+// task-124 v87 verify pass (live GMSv87_4GB.exe, port 13343):
+// CWvsContext::SendMapTransferItemUseRequest @0xa9fc75 — already named in the
+// v87 IDB. Byte-identical read order to v83/v84: guard itemId/10000==232 &&
+// CanSendExclRequest(this,200,0), Encode2(nPOS) @0xa9fcc5, Encode4(nItemID)
+// @0xa9fcd0, then CWvsContext::RunMapTransferItem(this, &a3, 0) @0xa9fcdd
+// (renamed live this pass from sub_A9FD64, the shared target-payload helper —
+// same helper the cash ItemUseTeleportRock sub-body calls); on success
+// Encode4(get_update_time()) @0xa9fcef then SendPacket @0xa9fcfe — a genuine
+// trailing updateTime. Confirms the "version-invariant" claim above for v87
+// (this op never gates on updateTimeFirst, unlike the cash sub-body — see
+// item_use_teleport_rock_test.go's v87 case for the MajorVersion()>=87
+// contrast).
+//
+// packet-audit:verify packet=teleportrock/serverbound/Use version=gms_v87 ida=0xa9fc75
+func TestUseByMapDecodeV87(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 87, 1)
+	b := []byte{
+		0x02, 0x00, // slot = 2
+		0x80, 0x66, 0x23, 0x00, // itemId = 2320000
+		0x00,                   // byName = 0
+		0x00, 0xE1, 0xF5, 0x05, // mapId = 100000000
+		0x2A, 0x00, 0x00, 0x00, // updateTime = 42
+	}
+	req := request.Request(b)
+	r := request.NewRequestReader(&req, 0)
+	p := Use{}
+	p.Decode(l, ctx)(&r, nil)
+	if !p.Valid() {
+		t.Fatalf("expected valid decode")
+	}
+	if p.Slot() != 2 || p.ItemId() != 2320000 || p.UpdateTime() != 42 {
+		t.Fatalf("fields: %+v", p)
+	}
+	if p.Target().ByName() || p.Target().TargetMap() != 100000000 {
+		t.Fatalf("target: %+v", p.Target())
+	}
+}
+
 // Client sent the packet with no target payload (dialog closed without a
 // selection) — must decode as invalid, never panic.
 func TestUseAbsentTargetIsInvalid(t *testing.T) {

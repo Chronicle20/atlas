@@ -171,6 +171,57 @@ func TestMapTransferErrorGoldenV84(t *testing.T) {
 	}
 }
 
+// task-124 v87 verify pass (live GMSv87_4GB.exe, port 13343): already named in
+// the v87 IDB. CWvsContext::OnMapTransferResult @0xabceb4 — byte-identical
+// read order to v83/v84/v95: mode(Decode1)+targetList(Decode1) @0xabced4/
+// @0xabced7, then for mode in {2,3} exactly 5 (targetList==0) or 10
+// (targetList==1) x Decode4 mapId @0xabcf27 loop. Confirms the "identical
+// v83 0xA25268 / v95 0x9F9F90" claim in the file-level comment above for v87
+// too.
+//
+// packet-audit:verify packet=teleportrock/clientbound/MapTransferList version=gms_v87 ida=0xabceb4
+func TestMapTransferListRegularGoldenV87(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 87, 1)
+	m := NewMapTransferList(3, false, []_map.Id{100000000, 220000000})
+	got := m.Encode(l, ctx)(nil)
+	want := []byte{
+		0x03,                   // mode = REGISTER_LIST
+		0x00,                   // targetList = regular
+		0x00, 0xE1, 0xF5, 0x05, // 100000000
+		0x00, 0xEF, 0x1C, 0x0D, // 220000000
+		0xFF, 0xC9, 0x9A, 0x3B, // EmptyMapId
+		0xFF, 0xC9, 0x9A, 0x3B,
+		0xFF, 0xC9, 0x9A, 0x3B,
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("golden mismatch\n got: % x\nwant: % x", got, want)
+	}
+}
+
+// IDA (live GMSv87_4GB.exe v87, port 13343, task-124 verify pass):
+// CWvsContext::OnMapTransferResult @0xabceb4, same function as the list form
+// above — modes 5,6/7,8,9,10,11 (error/notice form, StringPool ids
+// 2994/2959/2994/2965/2962/2966 — a small offset from v83/v84/v95's ids that
+// does not affect wire bytes) read only mode(Decode1)+targetList(Decode1) and
+// never reach the Decode4 mapId loop. Same class of runtime/mode-guard
+// tooling gap as v83/v84/v95 (analyzer grades this candidate FlatInvalid even
+// though the 2-byte body is exactly what v87 sends for the error modes).
+// Evidence pinned to carry this cell via the linked-fixture path, mirroring
+// the v83/v84/v95 convention above.
+//
+// packet-audit:verify packet=teleportrock/clientbound/MapTransferError version=gms_v87 ida=0xabceb4
+func TestMapTransferErrorGoldenV87(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 87, 1)
+	m := NewMapTransferError(5, false)
+	got := m.Encode(l, ctx)(nil)
+	want := []byte{0x05, 0x00}
+	if !bytes.Equal(got, want) {
+		t.Errorf("golden mismatch\n got: % x\nwant: % x", got, want)
+	}
+}
+
 func TestMapTransferResultCrossVersionStable(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	m := NewMapTransferList(3, false, []_map.Id{100000000})

@@ -133,6 +133,46 @@ func TestItemUseTeleportRockByMapV95(t *testing.T) {
 	}
 }
 
+// task-124 v87 verify pass (live GMSv87_4GB.exe, port 13343): v87 is the
+// FIRST MajorVersion()>=87 version in the coverage set. The function prologue
+// of CWvsContext::SendConsumeCashItemUseRequest @0xa9fef9 writes
+// COutPacket::COutPacket(&pkt, 0x52) @0xa9ff67 (opcode 82, matches registry
+// USE_CASH_ITEM), then IMMEDIATELY Encode4(get_update_time()) @0xa9ff7c —
+// BEFORE Encode2(nPOS) @0xa9ff87 and Encode4(nItemID) @0xa9ff93 and the
+// switch on get_consume_cash_item_type(nItemID) @0xa9ff99 — i.e. a leading
+// common-header updateTime, exactly mirroring v95's 0x9eb3e0 shape. Case 22
+// (jumptable 00A9FFB5, label loc_AA240C @0xaa240c) computes
+// flag = (itemId/1000 != 5040) @0xaa2418-241d and calls
+// CWvsContext::RunMapTransferItem(this, &oPacket, flag) @0xaa242a — the SAME
+// helper USE_TELEPORT_ROCK calls (renamed live this pass from sub_A9FD64) —
+// then on success falls to the shared tail (CanSendExclRequest @0xaa01c9,
+// then on success SendPacketThunk @0xaa43ac, renamed live from sub_556185 and
+// confirmed via decompile to be a pure CClientSocket::SendPacket wrapper with
+// NO Encode call inside it): CONFIRMED there is NO further Encode4 anywhere
+// between the case-22 RunMapTransferItem call and the final SendPacket. This
+// CONFIRMS the v95 fix (item_use_teleport_rock.go's `!m.updateTimeFirst`
+// gate) generalizes to v87: like v95, the sub-body is ONLY the target
+// payload — no trailing updateTime, because update_time was already consumed
+// by the common header before the switch.
+//
+// packet-audit:verify packet=cash/serverbound/CashItemUseTeleportRock version=gms_v87 ida=0xa9fef9
+func TestItemUseTeleportRockByMapV87(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 87, 1)
+	b := []byte{
+		0x00,                   // byName = 0
+		0x00, 0xE1, 0xF5, 0x05, // mapId = 100000000
+		// nothing else — v87 has no trailing update-time budget in this sub-body
+	}
+	req := request.Request(b)
+	r := request.NewRequestReader(&req, 0)
+	p := NewItemUseTeleportRock(true)
+	p.Decode(l, ctx)(&r, nil)
+	if !p.Target().Valid() || p.Target().ByName() || p.Target().TargetMap() != 100000000 {
+		t.Fatalf("decode: target=%+v", p.Target())
+	}
+}
+
 func TestItemUseTeleportRockByName(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := pt.CreateContext("GMS", 95, 1)

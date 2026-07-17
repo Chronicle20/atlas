@@ -1,0 +1,10 @@
+packet: teleportrock/clientbound/MapTransferList
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMapTransferResult
+    address: "0xabceb4"
+    decompile_sha256: eb3a6370dce65519be6a4795ac71b350b1937052f3889319f4441da36d755737
+verifies:
+  - libs/atlas-packet/teleportrock/clientbound/result_test.go#TestMapTransferListRegularGoldenV87

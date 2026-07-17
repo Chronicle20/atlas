@@ -76,6 +76,30 @@ func TestAddMapDeleteDecodeV84(t *testing.T) {
 	}
 }
 
+// task-124 v87 verify pass (live GMSv87_4GB.exe, port 13343):
+// CWvsContext::SendMapTransferRequest @0xabde10 — already named in the v87
+// IDB. Byte-identical read order to v83/v84/v95: COutPacket::COutPacket(&a3,
+// 0x69) @0xabde22; Encode1(nType) @0xabde31; Encode1(bCanTransferContinent)
+// @0xabde3c; if(!nType) Encode4(dwTargetField) @0xabde4d; SendPacket
+// @0xabde5c. Confirms the "version-invariant" claim above for v87.
+//
+// packet-audit:verify packet=teleportrock/serverbound/AddMap version=gms_v87 ida=0xabde10
+func TestAddMapDeleteDecodeV87(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 87, 1)
+	b := []byte{
+		0x00, 0x00, // delete, regular list
+		0x00, 0xE1, 0xF5, 0x05, // mapId = 100000000
+	}
+	req := request.Request(b)
+	r := request.NewRequestReader(&req, 0)
+	p := AddMap{}
+	p.Decode(l, ctx)(&r, nil)
+	if p.Register() || p.Vip() || p.MapId() != 100000000 {
+		t.Fatalf("decode: %+v", p)
+	}
+}
+
 func TestAddMapRoundTrip(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	for _, v := range pt.Variants {

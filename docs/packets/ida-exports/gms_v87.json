@@ -13917,6 +13917,91 @@
           "comment": "m_nResult (this[39]; server-chosen round-trip token, set by sub_88F348's open-arm Decode4)"
         }
       ]
+    },
+    "CWvsContext::SendMapTransferItemUseRequest": {
+      "address": "0xa9fc75",
+      "direction": "serverbound",
+      "note": "USE_TELEPORT_ROCK (task-124 gms_v87 verify pass, live GMSv87_4GB.exe port 13343). Already named in the v87 IDB. Byte-identical read order to v83 0xa0a3bb / v84 0xa547ab: guard itemId/10000==232 && CanSendExclRequest(this,200,0), Encode2(a2=nPOS) @0xa9fcc5, Encode4(arg4=nItemID) @0xa9fcd0, then CWvsContext::RunMapTransferItem(this, &a3, 0) @0xa9fcdd (renamed live from sub_A9FD64, the shared target-payload helper); on success Encode4(get_update_time()) @0xa9fcef then SendPacket @0xa9fcfe — a genuine trailing updateTime, matching teleportrock/serverbound/Use's version-invariant trailing-updateTime claim (this op never gates on updateTimeFirst, unlike the cash sub-body below).",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CWvsContext::RunMapTransferItem(this, &a3, 0)"
+        }
+      ]
+    },
+    "CWvsContext::SendMapTransferRequest": {
+      "address": "0xabde10",
+      "direction": "serverbound",
+      "note": "TROCK_ADD_MAP (task-124 gms_v87 verify pass, live GMSv87_4GB.exe port 13343). Already named in the v87 IDB. Byte-identical read order to v83 0xa261bc / v84 0xa71972: COutPacket::COutPacket(&a3, 0x69) @0xabde22; Encode1(a2=nType) @0xabde31; Encode1(arg8=bCanTransferContinent) @0xabde3c; if(!a2) Encode4(arg4=dwTargetField) @0xabde4d; SendPacket @0xabde5c. Confirms the version-invariant claim (design §1 Q1) for v87.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!a2"
+        }
+      ]
+    },
+    "CWvsContext::OnMapTransferResult": {
+      "address": "0xabceb4",
+      "direction": "clientbound",
+      "note": "MAP_TRANSFER_RESULT (task-124 gms_v87 verify pass, live GMSv87_4GB.exe port 13343). Already named in the v87 IDB. Byte-identical read order to v83 0xa25268 / v84 0xa70963 / v95 0x9f9f90: mode(Decode1) @0xabced4 + targetList(Decode1) @0xabced7, then for mode in {2,3} exactly 5 (targetList==0) or 10 (targetList==1) x Decode4 mapId @0xabcf27 loop; modes 5,6/7,8,9,10,11 are the error/notice form (StringPool ids 2994/2959/2994/2965/2962/2966 — a small offset from v83/v84/v95's ids that does not affect wire bytes) reading only mode+targetList with no further payload. Confirms the identical-across-versions claim in the file-level test comment for v87.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v3 == 2 || v3 == 3"
+        }
+      ]
+    },
+    "CWvsContext::RunMapTransferItem": {
+      "address": "0xa9fd64",
+      "direction": "serverbound",
+      "note": "Shared teleport-rock target-payload helper (task-124 gms_v87 verify pass). Unnamed in the v87 IDB (sub_A9FD64) until this pass; renamed live. Called by both SendMapTransferItemUseRequest (flag=0, @0xa9fcdd) and the cash-item-use teleport-rock branch (case 22 of SendConsumeCashItemUseRequest, @0xaa242a). Live decompile (port 13343): a CDialog target-picker; on DoModal()==1, if a name was resolved: Encode1(1) then EncodeStr(name) @0xa9fe99-0xa9feaf; else if a map id is set (v18) and != 999999999 (EmptyMapId): Encode1(0) then Encode4(mapId) @0xa9fec8-0xa9fed3; otherwise no payload bytes are written at all (dialog confirmed with no selection). The parser cannot descend into this call because both callers consume its return value in an if-condition (treated as a guard, not a Delegate) — calls intentionally left absent (opaque relative to this static export), matching the v83/v84/v95 convention for this same helper.",
+      "calls": null
+    },
+    "CWvsContext::SendConsumeCashItemUseRequest": {
+      "address": "0xa9fef9",
+      "direction": "serverbound",
+      "note": "cash/serverbound/CashItemUseTeleportRock (task-124 gms_v87 verify pass, live GMSv87_4GB.exe port 13343). This is the FIRST MajorVersion()>=87 version in the coverage set: the function prologue writes COutPacket::COutPacket(&pkt, 0x52) @0xa9ff67 (opcode 82, matches registry USE_CASH_ITEM), then IMMEDIATELY Encode4(get_update_time()) @0xa9ff7c — BEFORE Encode2(nPOS) @0xa9ff87 and Encode4(nItemID) @0xa9ff93 and the switch on get_consume_cash_item_type(nItemID) @0xa9ff99 — i.e. update_time is a common-header LEADING field on v87, exactly mirroring v95's 0x9eb3e0 shape (updateTimeFirst := MajorVersion()>=87 in character_cash_item_use.go). Case 22 (jumptable 00A9FFB5, label loc_AA240C @0xaa240c) computes flag = (itemId/1000 != 5040) @0xaa2418-241d and calls CWvsContext::RunMapTransferItem(this, &oPacket, flag) @0xaa242a — the SAME helper USE_TELEPORT_ROCK calls, renamed live this same pass — then on success (eax!=0) falls to the shared tail at loc_AA01C0: CanSendExclRequest(this,500,0) @0xaa01c9, and on success (nonzero) jumps to loc_AA43A8 which calls SendPacketThunk(&pkt) @0xaa43ac (renamed live from sub_556185, confirmed via decompile to be a pure CClientSocket::SendPacket wrapper with NO Encode call inside it) — CONFIRMED: there is NO further Encode4 anywhere between the case-22 RunMapTransferItem call and the final SendPacket. This CORRECTS-BY-CONFIRMING the v95 fix (item_use_teleport_rock.go's `!m.updateTimeFirst` gate): v87, like v95, has the sub-body consist of ONLY the target payload — no trailing updateTime — because update_time was already consumed by the common header before the switch. Mirrors v95's export-entry style (header-only calls; the per-case body is opaque to this flat harvest, same class of gap as RunMapTransferItem).",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "update_time = get_update_time() — common header, leading (task-124 v87: MajorVersion()>=87 updateTimeFirst; first version in the set to confirm this shape after v95)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nPOS — common header"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nItemID — common header; switches via get_consume_cash_item_type(nItemID) to a per-case body (opaque to this flat harvest, same class of gap as RunMapTransferItem)"
+        }
+      ]
     }
   }
 }

@@ -97,13 +97,18 @@ func (p *ProcessorImpl) AllInChannelProvider(worldId world.Id, channelId channel
 }
 
 // InFieldModelProvider returns local sessions whose field exactly matches f
-// (world, channel, map, instance) and which have an assigned character.
+// (world, channel, map, instance), which have an assigned character, and which
+// are physically present in the field — i.e. not in a cash scene (cash shop or
+// MTS). A cash-shop session is already absent because its socket closes on
+// migrate; an MTS session stays alive on the channel connection (the ITC scene
+// renders in-place) flagged CashSceneMts, so it must be excluded here or it
+// would spawn as a ghost for players entering the map after it (task-173).
 func (p *ProcessorImpl) InFieldModelProvider(f field.Model) model.Provider[[]Model] {
 	return func() ([]Model, error) {
 		all := getRegistry().GetInTenant(p.t.Id())
 		result := make([]Model, 0)
 		for _, s := range all {
-			if s.CharacterId() != 0 && s.Field().Equals(f) {
+			if s.CharacterId() != 0 && s.CashScene() == CashSceneNone && s.Field().Equals(f) {
 				result = append(result, s)
 			}
 		}

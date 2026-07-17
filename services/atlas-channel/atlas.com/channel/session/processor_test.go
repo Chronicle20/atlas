@@ -867,6 +867,53 @@ func TestInFieldModelProvider_EmptyFieldNoError(t *testing.T) {
 	}
 }
 
+func TestInFieldModelProvider_ExcludesMtsScenedSessions(t *testing.T) {
+	logger, cleanup := testSetup()
+	defer cleanup()
+	ctx := test.CreateTestContext()
+	p := session.NewProcessor(logger, ctx)
+
+	// Both sessions are on the same field. One has entered the MTS (its session
+	// stays alive on the channel connection, flagged CashSceneMts), so it must
+	// not appear in the map's "who is here" snapshot — mirroring how a cash-shop
+	// session is absent because its session was destroyed.
+	f := field.NewBuilder(0, 0, _map.Id(100000000)).Build()
+	addFieldSession(t, p, 100, f)
+	mtsSessionId := addFieldSession(t, p, 200, f)
+	p.SetCashScene(mtsSessionId, session.CashSceneMts)
+
+	got, err := p.InFieldModelProvider(f)()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(got) != 1 || !characterIdSet(got)[100] {
+		t.Errorf("InFieldModelProvider = chars %v, want exactly {100} (MTS-scened 200 excluded)", characterIdSet(got))
+	}
+}
+
+func TestInFieldModelProvider_ExcludesCashShopScenedSessions(t *testing.T) {
+	logger, cleanup := testSetup()
+	defer cleanup()
+	ctx := test.CreateTestContext()
+	p := session.NewProcessor(logger, ctx)
+
+	// Defensive: a cash-shop session is normally gone from the registry (its
+	// socket closed on migrate), but if one lingers it is likewise not "in the
+	// field".
+	f := field.NewBuilder(0, 0, _map.Id(100000000)).Build()
+	addFieldSession(t, p, 100, f)
+	csSessionId := addFieldSession(t, p, 200, f)
+	p.SetCashScene(csSessionId, session.CashSceneCashShop)
+
+	got, err := p.InFieldModelProvider(f)()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(got) != 1 || !characterIdSet(got)[100] {
+		t.Errorf("InFieldModelProvider = chars %v, want exactly {100} (cash-shop-scened 200 excluded)", characterIdSet(got))
+	}
+}
+
 func TestInMapAllInstancesModelProvider_UnionsInstances(t *testing.T) {
 	logger, cleanup := testSetup()
 	defer cleanup()

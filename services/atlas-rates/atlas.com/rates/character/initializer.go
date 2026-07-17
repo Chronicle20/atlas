@@ -15,7 +15,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 )

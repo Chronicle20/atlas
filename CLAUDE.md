@@ -29,6 +29,13 @@ For large refactors expect multiple fix-and-rebuild cycles. Don't shortcut the b
    statements outside `libs/atlas-routine` and justified
    `//goroutine-guard:allow` sites (RR-6, task-115) — every goroutine must be
    spawned via `routine.Go`. Runs alongside `go vet ./...`.
+7. **`tools/lint.sh --check` clean from the repo root.** The shared lint &
+   format guard (task-171): golangci-lint v2 formatters (gofumpt + goimports,
+   tree-wide) and `standard` linters (rev-gated to new code) across every Go
+   module, plus Prettier + ESLint for atlas-ui. Fix mode (`tools/lint.sh`,
+   no flags) rewrites files in place — run it before committing. Item 2's
+   standalone `go vet` is intentionally retained (it runs full-module;
+   the guard's govet is diff-gated).
 
 ## Code Patterns
 

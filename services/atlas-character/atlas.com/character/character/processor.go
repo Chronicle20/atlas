@@ -9,6 +9,7 @@ import (
 	character2 "atlas-character/kafka/message/character"
 	"atlas-character/location"
 	skill2 "atlas-character/skill"
+	"atlas-character/teleport_rock"
 	"context"
 	"errors"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
@@ -347,6 +348,10 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(transactionId uuid.UUID,
 
 			err = delete(tx, characterId)
 			if err != nil {
+				return err
+			}
+
+			if err = teleport_rock.DeleteForCharacter(tx, p.t.Id(), characterId); err != nil {
 				return err
 			}
 

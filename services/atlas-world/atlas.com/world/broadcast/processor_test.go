@@ -2,18 +2,57 @@ package broadcast_test
 
 import (
 	"atlas-world/broadcast"
+	bmessage "atlas-world/kafka/message/broadcast"
 	"atlas-world/test"
+	"context"
+	"encoding/json"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	kproducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer/producertest"
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
+	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
-	goredis "github.com/redis/go-redis/v9"
+	"github.com/stretchr/testify/require"
 )
+
+// capturingWriter implements kproducer.Writer by recording every message
+// written to it, so a test can install it as the process-wide producer
+// manager's writer factory and then inspect exactly what Enqueue emitted —
+// without a mock broker (no network, no partitions; a synchronous in-memory
+// sink, same shape as producertest.NoopWriter but recording instead of
+// discarding).
+type capturingWriter struct {
+	topicName string
+	mu        sync.Mutex
+	messages  []kafka.Message
+}
+
+func (w *capturingWriter) Topic() string { return w.topicName }
+
+func (w *capturingWriter) WriteMessages(_ context.Context, msgs ...kafka.Message) error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.messages = append(w.messages, msgs...)
+	return nil
+}
+
+func (w *capturingWriter) Close() error { return nil }
+
+func (w *capturingWriter) snapshot() []kafka.Message {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	out := make([]kafka.Message, len(w.messages))
+	copy(out, w.messages)
+	return out
+}
 
 func setupTestRegistry(t *testing.T) {
 	t.Helper()
@@ -268,4 +307,96 @@ func TestEnqueue_ConcurrentCASConflict_BothLand(t *testing.T) {
 			t.Errorf("entry for characterId %d missing from final queue state", e.CharacterId)
 		}
 	}
+}
+
+// TestEnqueue_StartedPayloadFieldMapping exercises the real code path that
+// builds a STARTED event from an activated Entry — processor.Enqueue ->
+// (unexported) startedPayload() -> bproducer.StartedStatusEventProvider —
+// and asserts every one of the 11 mapped fields lands in the matching
+// StatusEvent slot. startedPayload() hand-maps fields of the same type
+// (SenderName/SenderMedal are both string; ReceiverName likewise); a future
+// refactor that swaps two of them would leave go build/go vet green with no
+// other test failing. This test installs a capturingWriter (in-process
+// recording sink, not a mock broker) as the producer manager's writer for
+// the duration of the test, so it can inspect the actual kafka.Message
+// Enqueue produced instead of discarding it via producertest.NoopWriter.
+func TestEnqueue_StartedPayloadFieldMapping(t *testing.T) {
+	processor, cleanup := setupProcessor(t)
+	defer cleanup()
+
+	cw := &capturingWriter{}
+	kproducer.ResetInstance()
+	kproducer.GetManager(kproducer.ConfigWriterFactory(func(topicName string) kproducer.Writer {
+		cw.topicName = topicName
+		return cw
+	}))
+	defer producertest.InstallNoop() // restore the process-wide noop manager for subsequent tests
+
+	receiverLook := sharedsaga.AvatarSnapshot{
+		Gender:       1,
+		SkinColor:    4,
+		Face:         21000,
+		Hair:         31000,
+		Equips:       map[int16]uint32{-1: 1002141},
+		MaskedEquips: map[int16]uint32{-101: 1002999},
+		Pets:         map[int8]uint32{1: 5000002},
+	}
+	e := broadcast.Entry{
+		Id:              uuid.New(),
+		CharacterId:     555,
+		DurationSeconds: 30,
+		Payload: broadcast.Payload{
+			ChannelId:     2,
+			SenderName:    "sender-name",
+			SenderMedal:   "sender-medal",
+			Messages:      []string{"line-one", "line-two"},
+			WhispersOn:    true,
+			ItemId:        5390000,
+			TvMessageType: "HEART",
+			SenderLook: sharedsaga.AvatarSnapshot{
+				Gender:       0,
+				SkinColor:    3,
+				Face:         20000,
+				Hair:         30000,
+				Equips:       map[int16]uint32{-1: 1002140},
+				MaskedEquips: map[int16]uint32{-5: 1040002},
+				Pets:         map[int8]uint32{0: 5000001},
+			},
+			ReceiverName: "receiver-name",
+			ReceiverLook: &receiverLook,
+		},
+	}
+
+	if err := processor.Enqueue(world.Id(11), broadcast.FamilyTV, e); err != nil {
+		t.Fatalf("Enqueue() unexpected error: %v", err)
+	}
+
+	var started *bmessage.StatusEvent
+	for _, m := range cw.snapshot() {
+		var se bmessage.StatusEvent
+		if err := json.Unmarshal(m.Value, &se); err != nil {
+			t.Fatalf("json.Unmarshal(message.Value) unexpected error: %v", err)
+		}
+		if se.Type == bmessage.StatusTypeStarted {
+			started = &se
+			break
+		}
+	}
+	if started == nil {
+		t.Fatalf("no STARTED event captured; got %d message(s)", len(cw.snapshot()))
+	}
+
+	require.Equal(t, e.CharacterId, started.CharacterId)
+	require.Equal(t, e.DurationSeconds, started.TotalWaitSeconds)
+	require.Equal(t, e.Payload.ChannelId, started.ChannelId)
+	require.Equal(t, e.Payload.SenderName, started.SenderName)
+	require.Equal(t, e.Payload.SenderMedal, started.SenderMedal)
+	require.Equal(t, e.Payload.Messages, started.Messages)
+	require.Equal(t, e.Payload.WhispersOn, started.WhispersOn)
+	require.Equal(t, e.Payload.ItemId, started.ItemId)
+	require.Equal(t, e.Payload.TvMessageType, started.TvMessageType)
+	require.Equal(t, e.Payload.SenderLook, started.SenderLook)
+	require.Equal(t, e.Payload.ReceiverName, started.ReceiverName)
+	require.NotNil(t, started.ReceiverLook)
+	require.Equal(t, *e.Payload.ReceiverLook, *started.ReceiverLook)
 }

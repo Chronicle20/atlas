@@ -3,7 +3,6 @@ package handler
 import (
 	"atlas-channel/chalkboard"
 	character2 "atlas-channel/character"
-	"atlas-channel/compartment"
 	"atlas-channel/consumable"
 	cashData "atlas-channel/data/cash"
 	"atlas-channel/incubator"
@@ -274,18 +273,19 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 				announceFailure(eggId)
 				return
 			}
-			rewardInvType, ok := inventory.TypeFromItemId(item.Id(reward.ItemId()))
-			if !ok {
+			if _, ok := inventory.TypeFromItemId(item.Id(reward.ItemId())); !ok {
 				l.Warnf("Incubator reward [%d] has no inventory type.", reward.ItemId())
 				announceFailure(eggId)
 				return
 			}
-			cm, err := compartment.NewProcessor(l, ctx).GetByType(s.CharacterId(), rewardInvType)
-			if err != nil || len(cm.Assets()) >= int(cm.Capacity()) {
-				l.Warnf("Character [%d] used incubator with full [%d] inventory.", s.CharacterId(), rewardInvType)
-				announceFailure(eggId)
-				return
-			}
+			// Inventory capacity is enforced by the saga's award_reward (AwardAsset)
+			// step: if the target inventory is full the award fails and the saga
+			// compensates, re-creating the consumed egg + incubator (compensator
+			// reverse-walk DestroyAsset*/->CreateItem). This mirrors the gachapon
+			// reward flow, which likewise has no channel-side capacity pre-check.
+			// The former pre-check here was broken — it fetched the compartment
+			// without its assets (so len(Assets) was always 0 and it never detected
+			// fullness) and reported any GetByType REST error as "inventory full".
 			f := s.Field()
 			transactionId := uuid.New()
 			now := time.Now()

@@ -11,7 +11,6 @@ import (
 const defaultRoutesPath = "/configurations/routes"
 const defaultInstanceRoutesPath = "/configurations/instance-routes"
 const defaultVesselsPath = "/configurations/vessels"
-const defaultIncubatorRewardsPath = "/configurations/incubator-rewards"
 const defaultMtsConfigsPath = "/configurations/mts-configs"
 
 // SeedResult represents the result of a seed operation
@@ -62,20 +61,6 @@ func getVesselsPath() string {
 // and parses them into map[string]interface{} structs.
 func LoadVesselFiles() ([]map[string]interface{}, []error) {
 	return loadSeedFiles(getVesselsPath())
-}
-
-// getIncubatorRewardsPath returns the path to the incubator rewards seed directory.
-func getIncubatorRewardsPath() string {
-	if path := os.Getenv("INCUBATOR_REWARDS_SEED_PATH"); path != "" {
-		return path
-	}
-	return defaultIncubatorRewardsPath
-}
-
-// LoadIncubatorRewardFiles reads all JSON files from the incubator rewards seed directory
-// and parses them into map[string]interface{} structs.
-func LoadIncubatorRewardFiles() ([]map[string]interface{}, []error) {
-	return loadSeedFiles(getIncubatorRewardsPath())
 }
 
 // getMtsConfigsPath returns the path to the mts configs seed directory.

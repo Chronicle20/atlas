@@ -79,18 +79,6 @@ func createTestVessel(id, name, routeAID, routeBID string) map[string]interface{
 	}
 }
 
-func createTestIncubatorReward(id string, itemId, quantity, weight uint32) map[string]interface{} {
-	return map[string]interface{}{
-		"type": "incubator-rewards",
-		"id":   id,
-		"attributes": map[string]interface{}{
-			"itemId":   float64(itemId),
-			"quantity": float64(quantity),
-			"weight":   float64(weight),
-		},
-	}
-}
-
 func (p *testProcessor) createRoute(tenantId uuid.UUID, route map[string]interface{}) (configuration.Model, error) {
 	resourceData, err := configuration.CreateSingleRouteJsonData(route)
 	if err != nil {
@@ -145,34 +133,6 @@ func (p *testProcessor) getAllVessels(tenantId uuid.UUID) ([]map[string]interfac
 
 func (p *testProcessor) getVesselById(tenantId uuid.UUID, vesselID string) (map[string]interface{}, error) {
 	return configuration.GetVesselByIdProvider(tenantId, vesselID)(p.db)()
-}
-
-func (p *testProcessor) createIncubatorReward(tenantId uuid.UUID, reward map[string]interface{}) (configuration.Model, error) {
-	resourceData, err := configuration.CreateSingleIncubatorRewardJsonData(reward)
-	if err != nil {
-		return configuration.Model{}, err
-	}
-
-	entity := configuration.NewEntityBuilder().
-		SetID(uuid.New()).
-		SetTenantId(tenantId).
-		SetResourceName("incubator-rewards").
-		SetResourceData(resourceData).
-		Build()
-
-	if err := configuration.CreateConfiguration(p.db, entity); err != nil {
-		return configuration.Model{}, err
-	}
-
-	return configuration.Make(entity)
-}
-
-func (p *testProcessor) getAllIncubatorRewards(tenantId uuid.UUID) ([]map[string]interface{}, error) {
-	return configuration.GetAllIncubatorRewardsProvider(tenantId)(p.db)()
-}
-
-func (p *testProcessor) getIncubatorRewardById(tenantId uuid.UUID, rewardID string) (map[string]interface{}, error) {
-	return configuration.GetIncubatorRewardByIdProvider(tenantId, rewardID)(p.db)()
 }
 
 func (p *testProcessor) createMtsConfig(tenantId uuid.UUID, cfg map[string]interface{}) (configuration.Model, error) {
@@ -389,107 +349,6 @@ func TestGetVesselById_NotFound(t *testing.T) {
 	}
 }
 
-// IncubatorReward Tests
-
-func TestCreateIncubatorReward_Success(t *testing.T) {
-	processor, cleanup := setupTestProcessor(t)
-	defer cleanup()
-
-	tenantId := uuid.New()
-	reward := createTestIncubatorReward("red-potion", 2000000, 50, 40)
-
-	m, err := processor.createIncubatorReward(tenantId, reward)
-	if err != nil {
-		t.Fatalf("createIncubatorReward() unexpected error: %v", err)
-	}
-	if m.TenantId() != tenantId {
-		t.Errorf("m.TenantId() = %v, want %v", m.TenantId(), tenantId)
-	}
-	if m.ResourceName() != "incubator-rewards" {
-		t.Errorf("m.ResourceName() = %s, want 'incubator-rewards'", m.ResourceName())
-	}
-}
-
-func TestGetAllIncubatorRewards_Empty(t *testing.T) {
-	processor, cleanup := setupTestProcessor(t)
-	defer cleanup()
-
-	tenantId := uuid.New()
-	_, err := processor.getAllIncubatorRewards(tenantId)
-	// When no configuration exists, this should error with record not found
-	if err == nil {
-		t.Error("getAllIncubatorRewards() expected error for non-existent configuration")
-	}
-}
-
-func TestGetAllIncubatorRewards_WithIncubatorRewards(t *testing.T) {
-	processor, cleanup := setupTestProcessor(t)
-	defer cleanup()
-
-	tenantId := uuid.New()
-	reward := createTestIncubatorReward("red-potion", 2000000, 50, 40)
-
-	_, err := processor.createIncubatorReward(tenantId, reward)
-	if err != nil {
-		t.Fatalf("createIncubatorReward() unexpected error: %v", err)
-	}
-
-	rewards, err := processor.getAllIncubatorRewards(tenantId)
-	if err != nil {
-		t.Fatalf("getAllIncubatorRewards() unexpected error: %v", err)
-	}
-	if len(rewards) != 1 {
-		t.Errorf("len(rewards) = %d, want 1", len(rewards))
-	}
-
-	attrs, ok := rewards[0]["attributes"].(map[string]interface{})
-	if !ok {
-		t.Fatalf("rewards[0][attributes] not a map")
-	}
-	if attrs["itemId"] != float64(2000000) {
-		t.Errorf("attrs[itemId] = %v, want 2000000", attrs["itemId"])
-	}
-}
-
-func TestGetIncubatorRewardById_Found(t *testing.T) {
-	processor, cleanup := setupTestProcessor(t)
-	defer cleanup()
-
-	tenantId := uuid.New()
-	reward := createTestIncubatorReward("red-potion", 2000000, 50, 40)
-
-	_, err := processor.createIncubatorReward(tenantId, reward)
-	if err != nil {
-		t.Fatalf("createIncubatorReward() unexpected error: %v", err)
-	}
-
-	found, err := processor.getIncubatorRewardById(tenantId, "red-potion")
-	if err != nil {
-		t.Fatalf("getIncubatorRewardById() unexpected error: %v", err)
-	}
-	if found["id"] != "red-potion" {
-		t.Errorf("found[id] = %v, want 'red-potion'", found["id"])
-	}
-}
-
-func TestGetIncubatorRewardById_NotFound(t *testing.T) {
-	processor, cleanup := setupTestProcessor(t)
-	defer cleanup()
-
-	tenantId := uuid.New()
-	reward := createTestIncubatorReward("red-potion", 2000000, 50, 40)
-
-	_, err := processor.createIncubatorReward(tenantId, reward)
-	if err != nil {
-		t.Fatalf("createIncubatorReward() unexpected error: %v", err)
-	}
-
-	_, err = processor.getIncubatorRewardById(tenantId, "non-existent")
-	if err == nil {
-		t.Error("getIncubatorRewardById() expected error for non-existent incubator reward")
-	}
-}
-
 // Entity Builder Tests
 
 func TestEntityBuilder(t *testing.T) {
@@ -607,27 +466,6 @@ func TestTransformVessel(t *testing.T) {
 	}
 }
 
-func TestTransformIncubatorReward(t *testing.T) {
-	reward := createTestIncubatorReward("red-potion", 2000000, 50, 40)
-
-	restModel, err := configuration.TransformIncubatorReward(reward)
-	if err != nil {
-		t.Fatalf("TransformIncubatorReward() unexpected error: %v", err)
-	}
-	if restModel.Id != "red-potion" {
-		t.Errorf("restModel.Id = %s, want 'red-potion'", restModel.Id)
-	}
-	if restModel.ItemId != 2000000 {
-		t.Errorf("restModel.ItemId = %d, want 2000000", restModel.ItemId)
-	}
-	if restModel.Quantity != 50 {
-		t.Errorf("restModel.Quantity = %d, want 50", restModel.Quantity)
-	}
-	if restModel.Weight != 40 {
-		t.Errorf("restModel.Weight = %d, want 40", restModel.Weight)
-	}
-}
-
 func TestExtractRoute(t *testing.T) {
 	restModel := configuration.RouteRestModel{
 		Id:                     "route-1",
@@ -673,62 +511,6 @@ func TestExtractVessel(t *testing.T) {
 	}
 	if vessel["type"] != "vessels" {
 		t.Errorf("vessel[type] = %v, want 'vessels'", vessel["type"])
-	}
-}
-
-func TestExtractIncubatorReward(t *testing.T) {
-	restModel := configuration.IncubatorRewardRestModel{
-		Id:       "red-potion",
-		ItemId:   2000000,
-		Quantity: 50,
-		Weight:   40,
-		EggId:    4170000,
-	}
-
-	reward, err := configuration.ExtractIncubatorReward(restModel)
-	if err != nil {
-		t.Fatalf("ExtractIncubatorReward() unexpected error: %v", err)
-	}
-	if reward["id"] != "red-potion" {
-		t.Errorf("reward[id] = %v, want 'red-potion'", reward["id"])
-	}
-	if reward["type"] != "incubator-rewards" {
-		t.Errorf("reward[type] = %v, want 'incubator-rewards'", reward["type"])
-	}
-	attrs, ok := reward["attributes"].(map[string]interface{})
-	if !ok {
-		t.Fatalf("reward[attributes] not a map")
-	}
-	if attrs["eggId"] != uint32(4170000) {
-		t.Errorf("attrs[eggId] = %v, want 4170000", attrs["eggId"])
-	}
-}
-
-func TestIncubatorRewardTransformExtractRoundTrip(t *testing.T) {
-	reward := createTestIncubatorReward("red-potion", 2000000, 50, 40)
-
-	restModel, err := configuration.TransformIncubatorReward(reward)
-	if err != nil {
-		t.Fatalf("TransformIncubatorReward() unexpected error: %v", err)
-	}
-
-	extracted, err := configuration.ExtractIncubatorReward(restModel)
-	if err != nil {
-		t.Fatalf("ExtractIncubatorReward() unexpected error: %v", err)
-	}
-
-	attrs, ok := extracted["attributes"].(map[string]interface{})
-	if !ok {
-		t.Fatalf("extracted[attributes] not a map")
-	}
-	if attrs["itemId"] != uint32(2000000) {
-		t.Errorf("attrs[itemId] = %v, want 2000000", attrs["itemId"])
-	}
-	if attrs["quantity"] != uint32(50) {
-		t.Errorf("attrs[quantity] = %v, want 50", attrs["quantity"])
-	}
-	if attrs["weight"] != uint32(40) {
-		t.Errorf("attrs[weight] = %v, want 40", attrs["weight"])
 	}
 }
 
@@ -868,46 +650,6 @@ func TestTenantIsolation_Vessels(t *testing.T) {
 	}
 }
 
-func TestTenantIsolation_IncubatorRewards(t *testing.T) {
-	processor, cleanup := setupTestProcessor(t)
-	defer cleanup()
-
-	tenant1 := uuid.New()
-	tenant2 := uuid.New()
-
-	// Create incubator reward for tenant 1
-	reward1 := createTestIncubatorReward("reward-t1", 2000000, 50, 40)
-	_, err := processor.createIncubatorReward(tenant1, reward1)
-	if err != nil {
-		t.Fatalf("createIncubatorReward() for tenant 1 unexpected error: %v", err)
-	}
-
-	// Create incubator reward for tenant 2
-	reward2 := createTestIncubatorReward("reward-t2", 2000001, 50, 30)
-	_, err = processor.createIncubatorReward(tenant2, reward2)
-	if err != nil {
-		t.Fatalf("createIncubatorReward() for tenant 2 unexpected error: %v", err)
-	}
-
-	// Tenant 1 should only see their incubator reward
-	rewards1, err := processor.getAllIncubatorRewards(tenant1)
-	if err != nil {
-		t.Fatalf("getAllIncubatorRewards() for tenant 1 unexpected error: %v", err)
-	}
-	if len(rewards1) != 1 {
-		t.Errorf("tenant 1 incubator rewards = %d, want 1", len(rewards1))
-	}
-
-	// Tenant 2 should only see their incubator reward
-	rewards2, err := processor.getAllIncubatorRewards(tenant2)
-	if err != nil {
-		t.Fatalf("getAllIncubatorRewards() for tenant 2 unexpected error: %v", err)
-	}
-	if len(rewards2) != 1 {
-		t.Errorf("tenant 2 incubator rewards = %d, want 1", len(rewards2))
-	}
-}
-
 // REST Model Interface Tests
 
 func TestRouteRestModel_GetID(t *testing.T) {
@@ -957,31 +699,6 @@ func TestVesselRestModel_GetName(t *testing.T) {
 	v := configuration.VesselRestModel{}
 	if v.GetName() != "vessels" {
 		t.Errorf("GetName() = %s, want 'vessels'", v.GetName())
-	}
-}
-
-func TestIncubatorRewardRestModel_GetID(t *testing.T) {
-	v := configuration.IncubatorRewardRestModel{Id: "test-id"}
-	if v.GetID() != "test-id" {
-		t.Errorf("GetID() = %s, want 'test-id'", v.GetID())
-	}
-}
-
-func TestIncubatorRewardRestModel_SetID(t *testing.T) {
-	v := configuration.IncubatorRewardRestModel{}
-	err := v.SetID("new-id")
-	if err != nil {
-		t.Fatalf("SetID() unexpected error: %v", err)
-	}
-	if v.Id != "new-id" {
-		t.Errorf("v.Id = %s, want 'new-id'", v.Id)
-	}
-}
-
-func TestIncubatorRewardRestModel_GetName(t *testing.T) {
-	v := configuration.IncubatorRewardRestModel{}
-	if v.GetName() != "incubator-rewards" {
-		t.Errorf("GetName() = %s, want 'incubator-rewards'", v.GetName())
 	}
 }
 

@@ -41,8 +41,8 @@ Configuration resource lifecycle events.
 ```json
 {
   "tenantId": "uuid",
-  "type": "ROUTE_CREATED | ROUTE_UPDATED | ROUTE_DELETED | VESSEL_CREATED | VESSEL_UPDATED | VESSEL_DELETED | INSTANCE_ROUTE_CREATED | INSTANCE_ROUTE_UPDATED | INSTANCE_ROUTE_DELETED | INCUBATOR_REWARD_CREATED | INCUBATOR_REWARD_UPDATED | INCUBATOR_REWARD_DELETED | MTS_CONFIG_CREATED | MTS_CONFIG_UPDATED | MTS_CONFIG_DELETED",
-  "resourceType": "route | vessel | instance-route | incubator-reward | mts-config",
+  "type": "ROUTE_CREATED | ROUTE_UPDATED | ROUTE_DELETED | VESSEL_CREATED | VESSEL_UPDATED | VESSEL_DELETED | INSTANCE_ROUTE_CREATED | INSTANCE_ROUTE_UPDATED | INSTANCE_ROUTE_DELETED | MTS_CONFIG_CREATED | MTS_CONFIG_UPDATED | MTS_CONFIG_DELETED",
+  "resourceType": "route | vessel | instance-route | mts-config",
   "resourceId": "string"
 }
 ```
@@ -57,9 +57,6 @@ Configuration resource lifecycle events.
 - `INSTANCE_ROUTE_CREATED`: Emitted when an instance route is created
 - `INSTANCE_ROUTE_UPDATED`: Emitted when an instance route is updated
 - `INSTANCE_ROUTE_DELETED`: Emitted when an instance route is deleted
-- `INCUBATOR_REWARD_CREATED`: Emitted when an incubator reward is created
-- `INCUBATOR_REWARD_UPDATED`: Emitted when an incubator reward is updated
-- `INCUBATOR_REWARD_DELETED`: Emitted when an incubator reward is deleted
 - `MTS_CONFIG_CREATED`: Emitted when an MTS config is created
 - `MTS_CONFIG_UPDATED`: Emitted when an MTS config is updated
 - `MTS_CONFIG_DELETED`: Emitted when an MTS config is deleted

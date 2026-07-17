@@ -16,7 +16,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 )
 
 const serviceName = "atlas-fame"

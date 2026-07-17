@@ -12,7 +12,7 @@ import { RewardPoolsPage } from "../RewardPoolsPage";
 const { pools } = vi.hoisted(() => ({
   pools: [
     { id: "henesys", type: "gachapons", attributes: { name: "Henesys", kind: "gachapon", npcIds: [9100100], commonWeight: 70, uncommonWeight: 25, rareWeight: 5 } },
-    { id: "4170001", type: "gachapons", attributes: { name: "Pigmy Egg (Victoria)", kind: "incubator", npcIds: [1012004], commonWeight: 0, uncommonWeight: 0, rareWeight: 0 } },
+    { id: "4170001", type: "gachapons", attributes: { name: "Pigmy Egg", kind: "incubator", npcIds: [1012004], commonWeight: 0, uncommonWeight: 0, rareWeight: 0 } },
   ],
 }));
 vi.mock("@/services/api/reward-pools.service", () => ({
@@ -30,8 +30,10 @@ vi.mock("@/components/item-name-cell", () => ({
   ItemNameCell: ({ itemId }: { itemId: string }) => <span>item-{itemId}</span>,
 }));
 vi.mock("@/lib/hooks/api/useItemStrings", () => ({
-  // Egg-name resolution falls back to the pool's seeded name when undefined —
-  // the assertions below rely on that fallback.
+  // Egg-name resolution falls back to the pool's seeded name when undefined.
+  // Pool id "4170001" maps to the Ellinia egg region (egg-regions.ts), so the
+  // fixture's "Pigmy Egg" fallback renders region-appended as
+  // "Pigmy Egg (Ellinia)" — the assertions below expect that exact string.
   useItemName: () => ({ data: undefined }),
 }));
 
@@ -50,9 +52,15 @@ describe("RewardPoolsPage", () => {
   it("shows both pools on the All tab with kind badges", async () => {
     renderPage();
     await waitFor(() => expect(screen.getByText("Henesys")).toBeInTheDocument());
-    expect(screen.getByText("Pigmy Egg (Victoria)")).toBeInTheDocument();
+    expect(screen.getByText("Pigmy Egg (Ellinia)")).toBeInTheDocument();
     expect(screen.getAllByText(/gachapon/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/incubator/i).length).toBeGreaterThan(0);
+  });
+
+  it("renders a single refresh control next to the tabs", async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Henesys")).toBeInTheDocument());
+    expect(screen.getByRole("button", { name: /refresh/i })).toBeInTheDocument();
   });
 
   it("Incubators tab filters out gachapon pools", async () => {
@@ -61,7 +69,7 @@ describe("RewardPoolsPage", () => {
     await waitFor(() => expect(screen.getByText("Henesys")).toBeInTheDocument());
     await user.click(screen.getByRole("tab", { name: /incubators/i }));
     expect(screen.queryByText("Henesys")).not.toBeInTheDocument();
-    expect(screen.getByText("Pigmy Egg (Victoria)")).toBeInTheDocument();
+    expect(screen.getByText("Pigmy Egg (Ellinia)")).toBeInTheDocument();
   });
 
   it("Global Pool tab lists global items", async () => {

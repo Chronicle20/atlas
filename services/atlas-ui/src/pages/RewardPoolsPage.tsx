@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { RefreshCw } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,7 @@ import { PoolFormDialog } from "@/components/features/reward-pools/PoolFormDialo
 import { PoolItemDialog } from "@/components/features/reward-pools/PoolItemDialog";
 import { ItemNameCell } from "@/components/item-name-cell";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { createErrorFromUnknown } from "@/types/api/errors";
 import type { GlobalRewardItemData } from "@/types/models/global-reward-item";
 import type { RewardPoolData } from "@/types/models/reward-pool";
@@ -23,7 +25,7 @@ export function RewardPoolsPage() {
   const { activeTenant } = useTenant();
   const poolsQuery = useRewardPools();
   const globalQuery = useGlobalRewardItems();
-  const { isRefreshing, onRefresh } = useGridRefresh([poolsQuery]);
+  const { isRefreshing, onRefresh } = useGridRefresh([poolsQuery, globalQuery]);
   const deleteGlobal = useDeleteGlobalItem();
 
   const [createOpen, setCreateOpen] = useState(false);
@@ -43,8 +45,6 @@ export function RewardPoolsPage() {
       columns={poolColumns}
       data={data}
       error={error}
-      onRefresh={onRefresh}
-      isRefreshing={isRefreshing}
       emptyState={{ title: emptyTitle, description: emptyDescription }}
     />
   );
@@ -57,12 +57,24 @@ export function RewardPoolsPage() {
       </div>
 
       <Tabs defaultValue="all">
-        <TabsList>
-          <TabsTrigger value="all">All ({pools.length})</TabsTrigger>
-          <TabsTrigger value="gachapons">Gachapons ({gachapons.length})</TabsTrigger>
-          <TabsTrigger value="incubators">Incubators ({incubators.length})</TabsTrigger>
-          <TabsTrigger value="global">Global Pool ({globalItems.length})</TabsTrigger>
-        </TabsList>
+        <div className="flex items-center justify-between">
+          <TabsList>
+            <TabsTrigger value="all">All ({pools.length})</TabsTrigger>
+            <TabsTrigger value="gachapons">Gachapons ({gachapons.length})</TabsTrigger>
+            <TabsTrigger value="incubators">Incubators ({incubators.length})</TabsTrigger>
+            <TabsTrigger value="global">Global Pool ({globalItems.length})</TabsTrigger>
+          </TabsList>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={onRefresh}
+            disabled={isRefreshing}
+            title="Refresh"
+            aria-busy={isRefreshing}
+          >
+            <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+          </Button>
+        </div>
 
         <TabsContent value="all" className="mt-4">
           {poolTable(pools, "No reward pools found", "Seed defaults from Setup, or create a pool.")}

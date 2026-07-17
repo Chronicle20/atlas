@@ -14,19 +14,4 @@ export const poolColumns: ColumnDef<RewardPoolData>[] = [
     header: "Kind",
     cell: ({ row }) => <KindBadge kind={row.original.attributes.kind} />,
   },
-  {
-    id: "details",
-    header: "Details",
-    cell: ({ row }) => {
-      const a = row.original.attributes;
-      if (a.kind === "incubator") {
-        return <span className="text-muted-foreground font-mono text-sm">egg {row.original.id}</span>;
-      }
-      return (
-        <span className="text-muted-foreground text-sm">
-          C/U/R {a.commonWeight}·{a.uncommonWeight}·{a.rareWeight} — {a.npcIds.length} NPC{a.npcIds.length === 1 ? "" : "s"}
-        </span>
-      );
-    },
-  },
 ];

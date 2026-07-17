@@ -112,6 +112,35 @@ func TestForeignSuppressedWhenHidden(t *testing.T) {
 	}
 }
 
+// TestForeignSuppressedWhenHiddenStateUnknown guards the fail-safe default: if
+// isGmHidden errors (hidden state unknown), the handler must treat the caster
+// as HIDDEN rather than visible — better to skip one cosmetic foreign
+// animation than to leak a hidden GM's position (design.md OQ-3 / FR-17). The
+// self-announce and the heal/dispel effects must still occur normally.
+func TestForeignSuppressedWhenHiddenStateUnknown(t *testing.T) {
+	recips := []channelhandler.PartyRecipient{
+		recip(1, 100, 1000, 100, 1000),
+	}
+	var cap capture
+	d := newDeps(superGm(1), nil, false, recips, &cap)
+	d.isGmHidden = func(uint32) (bool, error) { return false, errors.New("simulated buff-lookup failure") }
+
+	_ = applyHealDispel(tl(), field.NewBuilder(0, 0, 1).Build(), 1, d)
+
+	if cap.selfCount != 1 || cap.fgnCount != 0 {
+		t.Errorf("announce self=%d foreign=%d, want 1/0 (hidden state unknown must fail safe to hidden)", cap.selfCount, cap.fgnCount)
+	}
+	if cap.hp[1] != 900 {
+		t.Errorf("recipient 1 HP delta = %d, want 900 (heal must still occur despite hidden-state lookup error)", cap.hp[1])
+	}
+	if cap.mp[1] != 900 {
+		t.Errorf("recipient 1 MP delta = %d, want 900 (heal must still occur despite hidden-state lookup error)", cap.mp[1])
+	}
+	if len(cap.dispelled[1]) != 11 {
+		t.Errorf("dispel types = %d, want 11 (dispel must still occur despite hidden-state lookup error)", len(cap.dispelled[1]))
+	}
+}
+
 // TestPerRecipientIsolation guards the "log-and-continue, never abort"
 // invariant: a ChangeHP failure for one recipient must not prevent the loop
 // from processing the remaining recipients or from announcing self.

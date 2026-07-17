@@ -104,8 +104,8 @@ func applyHealDispel(l logrus.FieldLogger, f field.Model, characterId uint32, d 
 
 	hidden, hErr := d.isGmHidden(characterId)
 	if hErr != nil {
-		l.WithError(hErr).Debugf("Heal+Dispel: unable to resolve hidden state for caster [%d]; treating as visible.", characterId)
-		hidden = false
+		l.WithError(hErr).Debugf("Heal+Dispel: unable to resolve hidden state for caster [%d]; treating as HIDDEN (fail-safe: suppressing foreign broadcast to avoid leaking position).", characterId)
+		hidden = true
 	}
 
 	recipients := d.selectInMap(f)

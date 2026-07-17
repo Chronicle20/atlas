@@ -45,10 +45,15 @@ func (r *Registry) Get(ctx context.Context, t tenant.Model, worldId world.Id, fa
 }
 
 // Upsert applies fn to the current QueueModel for (tenant, worldId, family)
-// under CAS (WATCH/MULTI/EXEC), creating an empty QueueModel first if none
-// exists yet. Concurrent create-on-missing Puts are idempotent (both write
-// an empty QueueModel{}); the CAS Update that follows still serializes the
-// actual mutation. Also tracks t in the tenant set for Tenants().
+// under optimistic CAS (WATCH/MULTI/EXEC via TenantRegistry.Update), creating
+// an empty QueueModel first if none exists yet. Concurrent create-on-missing
+// Puts are idempotent (both write an empty QueueModel{}). WATCH/EXEC does not
+// serialize the mutation itself: it detects when another writer changed the
+// key between WATCH and EXEC, and the loser retries by re-reading the
+// current value and re-applying fn (bounded; see TenantRegistry.Update).
+// Because of this, fn may run more than once per Upsert call and must be
+// side-effect free / pure in its observable effects. Also tracks t in the
+// tenant set for Tenants().
 func (r *Registry) Upsert(ctx context.Context, t tenant.Model, worldId world.Id, family string, fn func(QueueModel) QueueModel) (QueueModel, error) {
 	key := queueKey(worldId, family)
 

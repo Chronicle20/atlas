@@ -3,6 +3,7 @@ package handler
 import (
 	"atlas-channel/character"
 	"atlas-channel/merchant"
+	"atlas-channel/minigame"
 	"atlas-channel/session"
 	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
@@ -77,6 +78,7 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			roomType := model.MiniRoomType(sp.RoomType())
 			if roomType == model.OmokMiniRoomType || roomType == model.MatchCardMiniRoomType {
 				l.Debugf("Character [%d] has created a mini-room. roomType [%d], title [%s], private [%t], password [%s], nGameSpec [%d].", s.CharacterId(), roomType, sp.Title(), sp.Private(), sp.Password(), sp.NGameSpec())
+				_ = minigame.NewProcessor(l, ctx).Create(s.Field(), s.CharacterId(), byte(roomType), sp.Title(), sp.Private(), sp.Password(), sp.NGameSpec())
 				return
 			}
 			if roomType == model.TradeMiniRoomType {
@@ -142,14 +144,20 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeVisit) {
-			sp := &interaction2.OperationVisit{}
+			// Serverbound VISIT (mode 4) is the balloon double-click join —
+			// int32 serialNumber, bool hasPassword, optional password string,
+			// trailing zero byte (CUserLocal::HandleLButtonDblClk, ida-notes §G4).
+			// The same send covers game rooms and shops, so both processors are
+			// notified; each service drops joins for rooms it does not own.
+			sp := &interaction2.OperationVisitGame{}
 			sp.Decode(l, ctx)(r, readerOptions)
-			l.Debugf("Character [%d] is visiting. serialNumber [%d], errorCode [%d], errorMessage [%s], something [%t], unk1 [%d], cashSerialNumber [%d].", s.CharacterId(), sp.SerialNumber(), sp.ErrorCode(), sp.ErrorMessage(), sp.Something(), sp.Unk1(), sp.CashSerialNumber())
+			l.Debugf("Character [%d] is visiting. serialNumber [%d], hasPassword [%t].", s.CharacterId(), sp.SerialNumber(), sp.HasPassword())
+			_ = minigame.NewProcessor(l, ctx).Visit(s.Field(), s.CharacterId(), sp.SerialNumber(), sp.Password())
 			ownerCharacterId := sp.SerialNumber()
 			mp := merchant.NewProcessor(l, ctx)
 			shops, err := mp.GetByCharacterId(ownerCharacterId)
 			if err != nil || len(shops) == 0 {
-				l.WithError(err).Errorf("Unable to find shop for owner [%d].", ownerCharacterId)
+				l.WithError(err).Debugf("No shop for owner [%d]; visit handled by the mini-game service if it owns room [%d].", ownerCharacterId, sp.SerialNumber())
 				return
 			}
 			// The owner may have historical Closed rows (and up to one shop of
@@ -174,10 +182,13 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			sp := &interaction2.OperationChat{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Debugf("Character [%d] is sending chat [%s].", s.CharacterId(), sp.Message())
+			// Chat covers game rooms and shops; each service drops chat from
+			// characters that are not members of one of its rooms.
+			_ = minigame.NewProcessor(l, ctx).Chat(s.Field(), s.CharacterId(), sp.Message())
 			mp := merchant.NewProcessor(l, ctx)
 			visiting, err := mp.GetVisitingShop(s.CharacterId())
 			if err != nil {
-				l.WithError(err).Errorf("Unable to get visiting shop for character [%d].", s.CharacterId())
+				l.WithError(err).Debugf("Character [%d] not visiting a shop; chat handled by the mini-game service if they are in a game room.", s.CharacterId())
 				return
 			}
 			_ = mp.SendMessage(s.CharacterId(), visiting.Id(), sp.Message())
@@ -185,6 +196,9 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeExit) {
 			l.Debugf("Character [%d] has stopped character interaction.", s.CharacterId())
+			// Exit covers game rooms and shops; each service drops exits from
+			// characters that are not members of one of its rooms.
+			_ = minigame.NewProcessor(l, ctx).Leave(s.Field(), s.CharacterId())
 			mp := merchant.NewProcessor(l, ctx)
 			visiting, err := mp.GetVisitingShop(s.CharacterId())
 			if err != nil {
@@ -532,66 +546,84 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMemoryGameAskTie) {
 			l.Debugf("Character [%d] in memory game, is asking for a tie.", s.CharacterId())
+			_ = minigame.NewProcessor(l, ctx).RequestTie(s.Field(), s.CharacterId())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMemoryGameTieAnswer) {
 			sp := &interaction2.OperationMemoryGameTieAnswer{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Debugf("Character [%d] in memory game, is answering tie request. response [%t].", s.CharacterId(), sp.Response())
+			_ = minigame.NewProcessor(l, ctx).AnswerTie(s.Field(), s.CharacterId(), sp.Response())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMemoryGameForfeit) {
 			l.Debugf("Character [%d] in memory game, is forfeiting.", s.CharacterId())
+			_ = minigame.NewProcessor(l, ctx).GiveUp(s.Field(), s.CharacterId())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMemoryGameAskRetreat) {
 			l.Debugf("Character [%d] in memory game, is asking to retreat.", s.CharacterId())
+			_ = minigame.NewProcessor(l, ctx).RequestRetreat(s.Field(), s.CharacterId())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMemoryGameRetreatAnswer) {
 			sp := &interaction2.OperationMemoryGameRetreatAnswer{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Debugf("Character [%d] in memory game, is answering retreat request. response [%t].", s.CharacterId(), sp.Response())
+			_ = minigame.NewProcessor(l, ctx).AnswerRetreat(s.Field(), s.CharacterId(), sp.Response())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMemoryGameExitAfterGame) {
 			l.Debugf("Character [%d] in memory game, wants to exit after it is completed.", s.CharacterId())
+			_ = minigame.NewProcessor(l, ctx).ExitAfterGame(s.Field(), s.CharacterId(), false)
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMemoryGameCancelExitAfterGame) {
 			l.Debugf("Character [%d] in memory game, does not want to exit after it is completed.", s.CharacterId())
+			_ = minigame.NewProcessor(l, ctx).ExitAfterGame(s.Field(), s.CharacterId(), true)
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMemoryGameReady) {
 			l.Debugf("Character [%d] is ready for a memory game.", s.CharacterId())
+			_ = minigame.NewProcessor(l, ctx).Ready(s.Field(), s.CharacterId())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMemoryGameUnready) {
 			l.Debugf("Character [%d] is not ready for a memory game.", s.CharacterId())
+			_ = minigame.NewProcessor(l, ctx).Unready(s.Field(), s.CharacterId())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMemoryGameExpel) {
 			l.Debugf("Character [%d] has expelled visitor from the memory game.", s.CharacterId())
+			_ = minigame.NewProcessor(l, ctx).Expel(s.Field(), s.CharacterId())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMemoryGameStart) {
 			l.Debugf("Character [%d] is starting a memory game.", s.CharacterId())
+			_ = minigame.NewProcessor(l, ctx).Start(s.Field(), s.CharacterId())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMemoryGameSkip) {
 			l.Debugf("Character [%d] in memory game, is being skipped.", s.CharacterId())
+			_ = minigame.NewProcessor(l, ctx).Skip(s.Field(), s.CharacterId())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMemoryGameMoveStone) {
 			sp := &interaction2.OperationMemoryGameMoveStone{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Debugf("Character [%d] in memory game, is moving stone. point [%d], color [%d].", s.CharacterId(), sp.Point(), sp.Color())
+			// The packed point is two DWORDs: x low, y high (written x-first by
+			// COmokDlg::PutStoneChecker).
+			x := uint32(sp.Point())
+			y := uint32(sp.Point() >> 32)
+			_ = minigame.NewProcessor(l, ctx).MoveStone(s.Field(), s.CharacterId(), x, y, sp.Color())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMemoryGameFlipCard) {
 			sp := &interaction2.OperationMemoryGameFlipCard{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Debugf("Character [%d] in memory game, is flipping card [%d]. first [%t].", s.CharacterId(), sp.Index(), sp.First())
+			_ = minigame.NewProcessor(l, ctx).FlipCard(s.Field(), s.CharacterId(), sp.First(), sp.Index())
 			return
 		}
 		l.Warnf("Character [%d] issued a unhandled character interaction [%d].", s.CharacterId(), mode)

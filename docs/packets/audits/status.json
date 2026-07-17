@@ -1,15 +1,15 @@
 {
-  "toolSha": "536851b2695e1662649a6195706f480da0a1c03d455adb5602b4cf714dd46e07",
+  "toolSha": "aafe52293aa7d281d57743c027833416a49c2640d8ec4f009010c855e55820b8",
   "exportHashes": {
-    "gms_v48": "c458ecfe23ae46fcf435bc8f953a1b5b9b17dd2d770b5fd8563965510f2c40d6",
-    "gms_v61": "4b33b6780c5a99351fc63ad0a14f15e269d8e478289be1b779bb0d27eabd804a",
-    "gms_v72": "8d8224b371800fc92bcfb473437055d03e409c09cef69ccad567e6cc08e62670",
-    "gms_v79": "b734bd2e2a14f5fb3ef6d3018084265c4c6dc0666e3a8a133c39406ffba589f6",
-    "gms_v83": "1d8bd695e0605be5ec91c80c5fe49386f52df719cda90dc7f30d9000ef8d4907",
-    "gms_v84": "8e48f5e283039e741adfecfd8f18cac9309108f7bac5ef816cbb9a030bd73936",
-    "gms_v87": "9cb8b35584c3052c7d747d39958fe3c24ee689ab5d37199f596b2587e8a6d63b",
-    "gms_v95": "3880e5a20ff3832c581e6ba5d66ab6a815df5e28de8fdb1f3fdfd13765377bdc",
-    "jms_v185": "624987cf4f4a54034d1306f7f1dce4ff472e9ec6b1a45b54551b7bda1b9b8c04"
+    "gms_v48": "a7f7dd20743f55f26646c1a912e4ba0e33dcb0b86f56183cd889c3bd2fd04021",
+    "gms_v61": "860627887e4c61add45e05bde16b247787ff5831eabbb1525aec000d83eea9db",
+    "gms_v72": "c5a50df5bf65eef32963aeb560428adfbefa431e58615252814bc57aebb6c9a7",
+    "gms_v79": "9b64f8fc1da43f8d7cfa4ae375ef91c23deb11c6e8ad216d0ea38e00ab267a6d",
+    "gms_v83": "4e917fcb4860f63c4462ac4876bc90fc06f22efb39b0989f485637969074a2b1",
+    "gms_v84": "3ad4771e83bbba138ebd0e534076a6553f92ef2cbc7f546e8b8eca22459d6f9f",
+    "gms_v87": "ff192ac103c071da22f1db22f138cad6f66637d2183c507a996188eaecc046fa",
+    "gms_v95": "8f76aa42e0d1035d365407d5798c6eeb237b5c58043580665b10d0d1dbc42982",
+    "jms_v185": "f01306a29d65ec0870767bc814ce42fa350d91ad9e754128f91291e4c8e9f6cd"
   },
   "rows": [
     {
@@ -18213,8 +18213,9 @@
     {
       "kind": "op",
       "op": "UPDATE_CHAR_BOX",
+      "packet": "interaction/clientbound/InteractionMiniRoomBalloon",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CUser::OnMiniRoomBalloon"
       ],
@@ -18224,43 +18225,35 @@
           "opcode": -1
         },
         "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 124
         },
         "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 150
         },
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 154
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 165
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 168
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 176
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 184
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 163
         }
       }
@@ -32952,6 +32945,55 @@
     },
     {
       "kind": "op",
+      "op": "PLAYER_INTERACTION",
+      "packet": "interaction/clientbound/InteractionInteractionEnter",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CMiniRoomBaseDlg::OnPacketBase"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "incomplete",
+          "note": "tier-1 without fixture; verdict ❌",
+          "opcode": 239
+        },
+        "gms_v61": {
+          "state": "verified",
+          "opcode": 244
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": 280
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 292
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 314
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 321
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 331
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 373
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 339
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "RAISE_PIECE_PUT_ITEM",
       "direction": "serverbound",
       "tier1": false,
@@ -33742,54 +33784,6 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 244
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "PLAYER_INTERACTION",
-      "packet": "interaction/clientbound/InteractionInteractionChat",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CMiniRoomBaseDlg::OnPacketBase"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "verified",
-          "opcode": 244
-        },
-        "gms_v72": {
-          "state": "verified",
-          "opcode": 280
-        },
-        "gms_v79": {
-          "state": "verified",
-          "opcode": 292
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 314
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 321
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 331
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 373
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 339
         }
       }
     },

@@ -2094,6 +2094,11 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "OperationMemoryGameMoveStone", dir: csvpkg.DirServerbound, pkg: "interaction"}}
 	case "COmokDlg::OnRetreatRequest":
 		return []candidate{{name: "OperationMemoryGameRetreatAnswer", dir: csvpkg.DirServerbound, pkg: "interaction"}}
+	// Miniroom balloon double-click join (task-133, ida-notes §G4). Mode 4
+	// ENTER/VISIT — shared by the game-room and shop-visit sends (same wire
+	// shape, gated by hasPassword rather than by destination type).
+	case "CUserLocal::HandleLButtonDblClk":
+		return []candidate{{name: "OperationVisitGame", dir: csvpkg.DirServerbound, pkg: "interaction"}}
 	// Entrusted-merchant sub-ops (share CPersonalShopDlg senders w/ different op-bytes).
 	case "CEntrustedShopDlg::AddBlackList":
 		return []candidate{{name: "OperationMerchantAddToBlackList", dir: csvpkg.DirServerbound, pkg: "interaction"}}
@@ -2121,6 +2126,78 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "InteractionChat", dir: csvpkg.DirClientbound, pkg: "interaction"}}
 	case "CMiniRoomBaseDlg::OnPacketBase#Leave":
 		return []candidate{{name: "InteractionLeave", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	// Omok / Match Cards mini-game arms (task-133). Each mode of the shared
+	// PLAYER_INTERACTION enum routes to a discrete clientbound struct in
+	// interaction/clientbound/interaction_minigame.go; the synthetic #-suffix
+	// FNames disambiguate the per-mode wire shapes. Read orders + addresses are
+	// grounded in docs/tasks/task-133-miniroom-minigames/ida-notes.md §G1/§G2/§G5,
+	// verified byte-identical on gms_v83 and gms_v95 (StartMatchCards + Result are
+	// v83-only — no v95 handler-body address recorded; see ida-notes §G1/§G5).
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameReady":
+		return []candidate{{name: "InteractionMiniGameReady", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameUnready":
+		return []candidate{{name: "InteractionMiniGameUnready", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameRequestTie":
+		return []candidate{{name: "InteractionMiniGameRequestTie", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameAnswerTie":
+		return []candidate{{name: "InteractionMiniGameAnswerTie", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameRetreatRequest":
+		return []candidate{{name: "InteractionMiniGameRetreatRequest", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameRetreatAnswer":
+		return []candidate{{name: "InteractionMiniGameRetreatAnswer", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameSkip":
+		return []candidate{{name: "InteractionMiniGameSkip", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameStartOmok":
+		return []candidate{{name: "InteractionMiniGameStartOmok", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameStartMatchCards":
+		return []candidate{{name: "InteractionMiniGameStartMatchCards", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameMoveStone":
+		return []candidate{{name: "InteractionMiniGameMoveStone", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGamePutStoneError":
+		return []candidate{{name: "InteractionMiniGamePutStoneError", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameCardSelectFirst":
+		return []candidate{{name: "InteractionMiniGameCardSelectFirst", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameCardSelectSecond":
+		return []candidate{{name: "InteractionMiniGameCardSelectSecond", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameResult":
+		return []candidate{{name: "InteractionMiniGameResult", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	// Game room-enter snapshot (task-7b). The EnterResult SUCCESS body for an
+	// Omok / Match Cards room differs from the shop-room body: yourSlot after
+	// capacity, and avatars + 20-byte records in TWO separate 0xFF-terminated
+	// lists (not the interleaved single list the old model used). Assembled by
+	// OnEnterResultStatic (roomType) -> OnEnterResultBase (capacity, yourSlot,
+	// avatar list; v83 0x65ec3d / v95 0x638e30) -> COmokDlg::OnEnterResult
+	// (record list, title, gameKind, tournament; v83 0x6e388e / v95 0x680e70) /
+	// CMemoryGameDlg::OnEnterResult (v83 0x64db.. / v95 0x628610). The vtable+92
+	// IsEntrusted() predicate is 0 for both game dialogs (sub_48315F), so the
+	// owner-slot-0 Decode4/RegisterEmployer int32 branch is dead for games —
+	// every occupant is a full avatar. See ida-notes.md §G5 "Room-enter blob —
+	// FULL RESOLUTION".
+	case "CMiniRoomBaseDlg::OnPacketBase#EnterResultSuccessMiniGame":
+		return []candidate{{name: "InteractionMiniGameRoom", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	// Game ENTER arm (task-133 / task-18b). The shared ENTER arm (mode 4) has a
+	// GAME shape distinct from the shop-room #Enter: where the shop enter stops
+	// after the visitor's name, the game dialogs read a trailing 20-byte
+	// win/tie/loss record. CMiniRoomBaseDlg::OnEnterBase (v83 0x65ed1c / v95
+	// 0x638f80: slot, DecodeAvatar, name, then v84+/JMS-only Decode2 jobCode)
+	// virtual-dispatches into COmokDlg::OnEnter (v83 sub_6E3BCC @0x6e3bcc / v95
+	// 0x6812e0) or CMemoryGameDlg::OnEnter (v95 0x628980), which read
+	// GW_MiniGameRecord::Decode (v95 0x4f2ad0 = DecodeBuffer(20) = 5×int32; v83
+	// sub_4E42FC). Sent to the room owner on ENTERED; the joining visitor gets
+	// the full InteractionMiniGameRoom snapshot instead. See ida-notes.md §G5.
+	case "CMiniRoomBaseDlg::OnPacketBase#EnterMiniGame":
+		return []candidate{{name: "InteractionMiniGameEnter", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	// UPDATE_CHAR_BOX mini-room balloon (task-133). Not a mode-prefix dispatcher:
+	// there is no mode byte. CUser::OnMiniRoomBalloon reads roomType then, when
+	// roomType != 0, the trailing balloon fields (ida-notes.md §G3, verified
+	// byte-identical on gms_v83 @0x938ba5 / gms_v95 @0x8e8d30). The roomType==0
+	// "remove" shape is a distinct wire shape modelled via a #-suffixed synthetic
+	// entry so the pipeline produces a second report; the base (#-less) entry maps
+	// the full-field balloon, keeping this a single-arm (non-dispatcher) fname.
+	case "CUser::OnMiniRoomBalloon":
+		return []candidate{{name: "MiniRoomBalloon", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CUser::OnMiniRoomBalloon#Remove":
+		return []candidate{{name: "MiniRoomBalloonRemove", dir: csvpkg.DirClientbound, pkg: "interaction"}}
 	case "CEntrustedShopDlg::OnRefresh#UpdateMerchant":
 		// UPDATE_MERCHANT (mode 25) is the hired-merchant shop refresh. The
 		// dispatcher's default case virtual-dispatches into the concrete dialog;

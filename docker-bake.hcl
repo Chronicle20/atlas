@@ -66,6 +66,7 @@ go_services = [
   "atlas-merchant",
   "atlas-messages",
   "atlas-messengers",
+  "atlas-mini-games",
   "atlas-monster-book",
   "atlas-monster-death",
   "atlas-monsters",

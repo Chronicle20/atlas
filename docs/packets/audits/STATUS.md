@@ -4,17 +4,17 @@
 > ✅ verified · 🧩 family (mode-prefix dispatcher; sub-arms unverified) · 🟡 partial · ❌ incomplete · ⬜ n-a · 🟥 conflict
 > Partial (🟡) sub-glyphs: 🟡ᶠ tier-1 needs byte-fixture · 🟡ᵈ tool-pass diff-only (no byte-test) · 🟡ᵖ evidence-pinned deferral
 
-Tool: `536851b2695e1662649a6195706f480da0a1c03d455adb5602b4cf714dd46e07`
+Tool: `aafe52293aa7d281d57743c027833416a49c2640d8ec4f009010c855e55820b8`
 
-- export gms_v48: `c458ecfe23ae46fcf435bc8f953a1b5b9b17dd2d770b5fd8563965510f2c40d6`
-- export gms_v61: `4b33b6780c5a99351fc63ad0a14f15e269d8e478289be1b779bb0d27eabd804a`
-- export gms_v72: `8d8224b371800fc92bcfb473437055d03e409c09cef69ccad567e6cc08e62670`
-- export gms_v79: `b734bd2e2a14f5fb3ef6d3018084265c4c6dc0666e3a8a133c39406ffba589f6`
-- export gms_v83: `1d8bd695e0605be5ec91c80c5fe49386f52df719cda90dc7f30d9000ef8d4907`
-- export gms_v84: `8e48f5e283039e741adfecfd8f18cac9309108f7bac5ef816cbb9a030bd73936`
-- export gms_v87: `9cb8b35584c3052c7d747d39958fe3c24ee689ab5d37199f596b2587e8a6d63b`
-- export gms_v95: `3880e5a20ff3832c581e6ba5d66ab6a815df5e28de8fdb1f3fdfd13765377bdc`
-- export jms_v185: `624987cf4f4a54034d1306f7f1dce4ff472e9ec6b1a45b54551b7bda1b9b8c04`
+- export gms_v48: `a7f7dd20743f55f26646c1a912e4ba0e33dcb0b86f56183cd889c3bd2fd04021`
+- export gms_v61: `860627887e4c61add45e05bde16b247787ff5831eabbb1525aec000d83eea9db`
+- export gms_v72: `c5a50df5bf65eef32963aeb560428adfbefa431e58615252814bc57aebb6c9a7`
+- export gms_v79: `9b64f8fc1da43f8d7cfa4ae375ef91c23deb11c6e8ad216d0ea38e00ab267a6d`
+- export gms_v83: `4e917fcb4860f63c4462ac4876bc90fc06f22efb39b0989f485637969074a2b1`
+- export gms_v84: `3ad4771e83bbba138ebd0e534076a6553f92ef2cbc7f546e8b8eca22459d6f9f`
+- export gms_v87: `ff192ac103c071da22f1db22f138cad6f66637d2183c507a996188eaecc046fa`
+- export gms_v95: `8f76aa42e0d1035d365407d5798c6eeb237b5c58043580665b10d0d1dbc42982`
+- export jms_v185: `f01306a29d65ec0870767bc814ce42fa350d91ad9e754128f91291e4c8e9f6cd`
 
 ## Clientbound
 
@@ -212,7 +212,7 @@ Tool: `536851b2695e1662649a6195706f480da0a1c03d455adb5602b4cf714dd46e07`
 | CHATTEXT | CUser::OnChat | chat/clientbound/ChatGeneralChat |  | ⬜ | 0x07A | ❌ | 0x093 | ❌ | 0x097 | ❌ | 0x0A2 | ❌ | 0x0A5 | ❌ | 0x0AD | ❌ | 0x0B5 | ✅ | 0x0A0 | ✅ |
 | CHALKBOARD | CUser::OnADBoard | character/clientbound/ChalkboardUse (T1) |  | ⬜ | 0x07B | ✅ | 0x095 | ✅ | 0x099 | ✅ | 0x0A4 | ✅ | 0x0A7 | ✅ | 0x0AF | ✅ | 0x0B7 | ✅ | 0x0A2 | ✅ |
 | DATA_CRC_CHECK_FAILED | CWvsContext::OnDataCRCCheckFailed |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x07B | ❌ | 0x07E | ❌ | 0x07E | ❌ | 0x080 | ❌ | 0x077 | ❌ |
-| UPDATE_CHAR_BOX | CUser::OnMiniRoomBalloon |  |  | ⬜ | 0x07C | ❌ | 0x096 | ❌ | 0x09A | ❌ | 0x0A5 | ❌ | 0x0A8 | ❌ | 0x0B0 | ❌ | 0x0B8 | ❌ | 0x0A3 | ❌ |
+| UPDATE_CHAR_BOX | CUser::OnMiniRoomBalloon | interaction/clientbound/InteractionMiniRoomBalloon (T1) |  | ⬜ | 0x07C | ✅ | 0x096 | ✅ | 0x09A | ✅ | 0x0A5 | ✅ | 0x0A8 | ✅ | 0x0B0 | ✅ | 0x0B8 | ✅ | 0x0A3 | ✅ |
 | SHOW_CONSUME_EFFECT | CUser::SetConsumeItemEffect |  |  | ⬜ | 0x07D | ❌ | 0x097 | ❌ | 0x09B | ❌ | 0x0A6 | ❌ | 0x0A9 | ❌ | 0x0B1 | ❌ | 0x0B9 | ❌ | 0x0A4 | ❌ |
 | IDA_0X07E | CWvsContext::OnSetPassenserRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x07E | ❌ |  | ⬜ |
 | SHOW_SCROLL_EFFECT | CUser::ShowItemUpgradeEffect | character/clientbound/ItemUpgrade (T1) |  | ⬜ | 0x07E | ✅ | 0x098 | ✅ | 0x09C | ✅ | 0x0A7 | ✅ | 0x0AA | ✅ | 0x0B2 | ✅ | 0x0BA | ✅ | 0x0A5 | ✅ |
@@ -382,6 +382,7 @@ Tool: `536851b2695e1662649a6195706f480da0a1c03d455adb5602b4cf714dd46e07`
 | IDA_0X0EE | sub_9F797D |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0EE | ❌ |
 | ADMIN_SHOP | CAdminShopDlg::OnPacket; sub_6910E4 |  |  | ⬜ | 0x0EF | ❌ | 0x112 | ❌ | 0x11E | ❌ | 0x134 | ❌ | 0x13B | ❌ | 0x145 | ❌ | 0x16F | ❌ | 0x14D | ❌ |
 | IDA_0X0EF | CUserLocal::OnRandomMesobag_Failed; sub_9F7C10 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0EF | ❌ | 0x0EF | ❌ |
+| PLAYER_INTERACTION | CMiniRoomBaseDlg::OnPacketBase | interaction/clientbound/InteractionInteractionEnter (T1) | 0x0EF | ❌ | 0x0F4 | ✅ | 0x118 | ✅ | 0x124 | ✅ | 0x13A | ✅ | 0x141 | ✅ | 0x14B | ✅ | 0x175 | ✅ | 0x153 | ✅ |
 | FREDRICK_MESSAGE | CStoreBankDlg::OnPacket |  |  | ⬜ | 0x0F0 | ❌ | 0x114 | ❌ | 0x120 | ❌ | 0x136 | ❌ | 0x13D | ❌ | 0x147 | ❌ | 0x171 | ❌ | 0x14F | ❌ |
 | IDA_0X0F0 | CUserLocal::OnFieldFadeInOut; sub_A2F6DE |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F0 | ❌ | 0x0F0 | ❌ |
 | FREDRICK | CStoreBankDlg::OnPacket |  |  | ⬜ | 0x0F1 | ❌ | 0x115 | ❌ | 0x121 | ❌ | 0x137 | ❌ | 0x13E | ❌ | 0x148 | ❌ | 0x172 | ❌ | 0x150 | ❌ |
@@ -391,7 +392,6 @@ Tool: `536851b2695e1662649a6195706f480da0a1c03d455adb5602b4cf714dd46e07`
 | IDA_0X0F3 | CUserLocal::OnNotifyHPDecByField; CUserLocal::OnRadioSchedule |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F3 | ❌ | 0x0F3 | ❌ |
 | MESSENGER | CUIMessenger::OnPacket; sub_6D34F1 | messenger/clientbound/MessengerAdd (T1) |  | ⬜ | 0x0F3 | ❌ | 0x117 | ✅ | 0x123 | ✅ | 0x139 | ✅ | 0x140 | ✅ | 0x14A | ✅ | 0x174 | ✅ | 0x152 | ✅ |
 | IDA_0X0F4 | CUserLocal::OnOpenSkillGuide |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F4 | ❌ |
-| PLAYER_INTERACTION | CMiniRoomBaseDlg::OnPacketBase | interaction/clientbound/InteractionInteractionChat (T1) |  | ⬜ | 0x0F4 | ✅ | 0x118 | ✅ | 0x124 | ✅ | 0x13A | ✅ | 0x141 | ✅ | 0x14B | ✅ | 0x175 | ✅ | 0x153 | ✅ |
 | IDA_0X0F5 | CUserLocal::OnNoticeMsg |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F5 | ❌ |
 | IDA_0X0F6 | CUserLocal::OnChatMsg |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F6 | ❌ |
 | IDA_0X0F7 | CUserLocal::OnBuffzoneEffect |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F7 | ❌ |
@@ -994,15 +994,15 @@ Tool: `536851b2695e1662649a6195706f480da0a1c03d455adb5602b4cf714dd46e07`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 169 | 0 | 2 | 156 | 632 | 0 | 51.7% |
-| v61 | 242 | 0 | 60 | 194 | 463 | 0 | 48.8% |
-| v72 | 252 | 0 | 73 | 212 | 422 | 0 | 46.9% |
-| v79 | 266 | 0 | 72 | 208 | 413 | 0 | 48.7% |
-| v83 | 407 | 0 | 0 | 328 | 224 | 0 | 55.4% |
-| v84 | 379 | 0 | 0 | 336 | 244 | 0 | 53.0% |
-| v87 | 413 | 0 | 0 | 359 | 187 | 0 | 53.5% |
-| v95 | 438 | 0 | 0 | 418 | 103 | 0 | 51.2% |
-| JMS185 | 394 | 0 | 0 | 371 | 194 | 0 | 51.5% |
+| v48 | 169 | 0 | 2 | 157 | 631 | 0 | 51.5% |
+| v61 | 243 | 0 | 60 | 193 | 463 | 0 | 49.0% |
+| v72 | 253 | 0 | 73 | 211 | 422 | 0 | 47.1% |
+| v79 | 267 | 0 | 72 | 207 | 413 | 0 | 48.9% |
+| v83 | 408 | 0 | 0 | 327 | 224 | 0 | 55.5% |
+| v84 | 380 | 0 | 0 | 335 | 244 | 0 | 53.1% |
+| v87 | 414 | 0 | 0 | 358 | 187 | 0 | 53.6% |
+| v95 | 439 | 0 | 0 | 417 | 103 | 0 | 51.3% |
+| JMS185 | 395 | 0 | 0 | 370 | 194 | 0 | 51.6% |
 
 ## Conflicts
 

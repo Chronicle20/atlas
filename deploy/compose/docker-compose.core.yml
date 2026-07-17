@@ -387,6 +387,19 @@ services:
     environment:
       LOG_LEVEL: debug
 
+  atlas-mini-games:
+    <<: *atlas-defaults
+    container_name: atlas-mini-games
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-mini-games
+    image: atlas-mini-games:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+      DB_NAME: atlas-mini-games
+
   atlas-monster-book:
     <<: *atlas-defaults
     container_name: atlas-monster-book

@@ -2282,6 +2282,11 @@
         }
       },
       {
+        "opCode": "0x9A",
+        "writer": "MiniRoom",
+        "options": {}
+      },
+      {
         "opCode": "0x124",
         "writer": "CharacterInteraction",
         "options": {
@@ -2294,6 +2299,18 @@
             "CHAT_THING": 8,
             "LEAVE": 10,
             "UPDATE_MERCHANT": 24,
+            "MEMORY_GAME_ASK_TIE": 49,
+            "MEMORY_GAME_TIE_ANSWER": 50,
+            "MEMORY_GAME_ASK_RETREAT": 53,
+            "MEMORY_GAME_RETREAT_ANSWER": 54,
+            "MEMORY_GAME_READY": 57,
+            "MEMORY_GAME_UNREADY": 58,
+            "MEMORY_GAME_START": 60,
+            "MEMORY_GAME_RESULT": 61,
+            "MEMORY_GAME_SKIP": 62,
+            "MEMORY_GAME_MOVE_STONE": 63,
+            "MEMORY_GAME_FIP_CARD": 67,
+            "MEMORY_GAME_PUT_STONE_ERROR": 64,
             "PERSONAL_STORE_ITEM_SOLD": 25
           },
           "enterError": {
@@ -2320,10 +2337,22 @@
             "INCORRECT_PASSWORD": 22,
             "ITEM_EXPIRED": 24
           },
+          "resultType": {
+            "WIN": 0,
+            "TIE": 1,
+            "FORFEIT": 2
+          },
+          "putStoneError": {
+            "DOUBLE_THREE": 66,
+            "CANNOT_PLACE": 0
+          },
           "leaveReason": {
             "CANNOT_ESTABLISH_HERE": 1,
             "SHOP_CLOSED": 3,
             "USER_BANNED": 5,
+            "MINIGAME_CLOSED": 3,
+            "MINIGAME_LEFT": 4,
+            "MINIGAME_EXPELLED": 5,
             "TIME_LIMIT_PASSED": 6,
             "OUT_OF_STOCK": 13,
             "BANNED_TIME_LIMIT": 14

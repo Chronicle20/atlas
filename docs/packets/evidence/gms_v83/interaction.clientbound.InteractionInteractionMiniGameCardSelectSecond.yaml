@@ -1,0 +1,10 @@
+packet: interaction/clientbound/InteractionInteractionMiniGameCardSelectSecond
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CMiniRoomBaseDlg::OnPacketBase#MemoryGameCardSelectSecond
+    address: "0x64e1c1"
+    decompile_sha256: 90780d11d075721d7cdb1e10597c9c6ece1a0f7441ba31b934a9a53d67567b29
+verifies:
+    - libs/atlas-packet/interaction/clientbound/interaction_minigame_test.go#TestInteractionMiniGameCardSelectSecondRoundTrip

@@ -1011,6 +1011,14 @@
     address: 6679375
   note: 'BODY-VERIFIED send-site 0x65eb4f: type demux (0=buddy sub_72ADD4, 1=party sub_72AC26, 2=guild sub_727148 target lists) then COutPacket(89)+Encode1(type 0/1/2)+Encode1(count)+loop Encode4(targetCharId[i])+EncodeStr(msg). = MULTI_CHAT (SendGroupMessage). v61 MULTI_CHAT=107 (Delta-18).'
 - op: PLAYER_INTERACTION
+  direction: clientbound
+  opcode: 239
+  fname: CMiniRoomBaseDlg::OnPacketBase
+  provenance: ida-discovered
+  ida:
+    address: 5528004
+  note: 'task-133 do-mode: clientbound mini-room dispatcher CMiniRoomBaseDlg_OnClientbound_op239 @0x5459c4 (GMS_v48_1_DEVM.exe). Decode1(mode) -> base arms (invite/enter/leave/chat) + default vtable+60 game-dispatch into the active dialog OnPacket (Omok type-1 @0x5731a9 / MemoryGame type-2 @0x5374c8). Registry previously had only the serverbound op93 row; this row wires the clientbound writer + the MEMORY_GAME_* mode arms.'
+- op: PLAYER_INTERACTION
   direction: serverbound
   opcode: 93
   fname: sub_69FA53

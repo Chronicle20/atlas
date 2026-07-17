@@ -8,6 +8,7 @@ import (
 	"atlas-channel/cashshop/wallet"
 	"atlas-channel/cashshop/wishlist"
 	"atlas-channel/character"
+	"atlas-channel/minigame"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"atlas-channel/storage"
@@ -30,6 +31,16 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 		// TODO block when in event
 		// TODO block when in mini dungeon
 		// TODO block when already in cash shop
+
+		// Block entry while seated at a mini-game (Omok / Match Cards) room: a
+		// player must not migrate to the cash shop mid-room. Fail open on a
+		// mini-games read error so an outage there does not break cash-shop entry.
+		if inGame, mgErr := minigame.NewProcessor(l, ctx).InGame(s.CharacterId()); mgErr != nil {
+			l.WithError(mgErr).Warnf("Unable to determine mini-game membership for character [%d]; allowing cash shop entry.", s.CharacterId())
+		} else if inGame {
+			l.Debugf("Blocking cash shop entry for character [%d] currently in a mini-game room.", s.CharacterId())
+			return
+		}
 
 		a, err := account.NewProcessor(l, ctx).GetById(s.AccountId())
 		if err != nil {

@@ -82,6 +82,7 @@ configMapGenerator:
       - COMMAND_TOPIC_MARRIAGE=COMMAND_TOPIC_MARRIAGE-main
       - COMMAND_TOPIC_MERCHANT=COMMAND_TOPIC_MERCHANT-main
       - COMMAND_TOPIC_MESSENGER=COMMAND_TOPIC_MESSENGER-main
+      - COMMAND_TOPIC_MINI_GAME=COMMAND_TOPIC_MINI_GAME-main
       - COMMAND_TOPIC_MIST=COMMAND_TOPIC_MIST-main
       - COMMAND_TOPIC_MONSTER=COMMAND_TOPIC_MONSTER-main
       - COMMAND_TOPIC_MONSTER_BOOK=COMMAND_TOPIC_MONSTER_BOOK-main
@@ -162,6 +163,7 @@ configMapGenerator:
       - EVENT_TOPIC_MERCHANT_STATUS=EVENT_TOPIC_MERCHANT_STATUS-main
       - EVENT_TOPIC_MESSENGER_MEMBER_STATUS=EVENT_TOPIC_MESSENGER_MEMBER_STATUS-main
       - EVENT_TOPIC_MESSENGER_STATUS=EVENT_TOPIC_MESSENGER_STATUS-main
+      - EVENT_TOPIC_MINI_GAME_STATUS=EVENT_TOPIC_MINI_GAME_STATUS-main
       - EVENT_TOPIC_MIST=EVENT_TOPIC_MIST-main
       - EVENT_TOPIC_MONSTER_BOOK_STATUS=EVENT_TOPIC_MONSTER_BOOK_STATUS-main
       - EVENT_TOPIC_MONSTER_MOVEMENT=EVENT_TOPIC_MONSTER_MOVEMENT-main
@@ -259,6 +261,8 @@ images:
     newTag: main-44b7526
   - name: ghcr.io/chronicle20/atlas-messengers/atlas-messengers
     newTag: main-44b7526
+  - name: ghcr.io/chronicle20/atlas-mini-games/atlas-mini-games
+    newTag: latest
   - name: ghcr.io/chronicle20/atlas-monster-book/atlas-monster-book
     newTag: main-44b7526
   - name: ghcr.io/chronicle20/atlas-monster-death/atlas-monster-death

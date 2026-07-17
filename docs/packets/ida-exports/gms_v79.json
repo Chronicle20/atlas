@@ -3,6 +3,20 @@
  "md5": "",
  "generated_at": "2026-06-30T15:47:21Z",
  "functions": {
+    "CUser::OnMiniRoomBalloon#Remove": {
+      "address": "0x8922ce",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId (consumed by CUserPool::OnUserCommonPacket GetUser)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "roomType (0 -> CChatBalloon::DestroyMiniRoomBalloon; no trailing fields)"
+        }
+      ]
+    },
   "CWvsContext::SendLotteryItemUseRequest": {
    "address": "0x95dd02",
    "direction": "serverbound",
@@ -9895,6 +9909,10 @@
    "address": "0x8922ce",
    "direction": "",
    "calls": [
+    {
+     "op": "Decode4",
+     "comment": "characterId (consumed by CUserPool::OnUserCommonPacket GetUser, not OnMiniRoomBalloon)"
+    },
     {
      "op": "Decode1",
      "comment": ""

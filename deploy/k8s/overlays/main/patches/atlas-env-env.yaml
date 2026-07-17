@@ -418,6 +418,19 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: atlas-mini-games
+spec:
+  template:
+    spec:
+      containers:
+        - name: mini-games
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: atlas-monster-book
 spec:
   template:

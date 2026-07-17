@@ -1,0 +1,10 @@
+packet: interaction/clientbound/InteractionInteractionMiniGameAnswerTie
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CMiniRoomBaseDlg::OnPacketBase#MemoryGameAnswerTie
+    address: "0x688b70"
+    decompile_sha256: 66750149149189543326cf9e7ba85f3cb37304fe06b02f9c1f0eda3efa8899f7
+verifies:
+    - libs/atlas-packet/interaction/clientbound/interaction_minigame_test.go#TestInteractionMiniGameAnswerTieRoundTrip

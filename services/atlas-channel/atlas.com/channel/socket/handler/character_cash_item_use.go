@@ -161,11 +161,22 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		// so megaphone/avatar-megaphone routing must branch on classification
 		// before any cash-slot-type sub-switch, never the other way around.
 		category := item.GetClassification(itemId)
-		if category == item.ClassificationMegaphones {
-			handleMegaphoneUse(l, ctx, wp)(s, r, readerOptions, t, itemId, source, updateTimeFirst)
-			return
-		}
-		if category == item.ClassificationAvatarMegaphone {
+		if category == item.ClassificationMegaphones || category == item.ClassificationAvatarMegaphone {
+			// Megaphones / Maple TV / avatar megaphones are a v83+ feature
+			// (design D9: scoped to GMS 83/84/87/95 + JMS 185). Legacy pre-v83
+			// versions (gms_48/61/72/79) DO carry this USE_CASH_ITEM handler but
+			// have no megaphone writer tables seeded; firing the consume saga
+			// there would destroy the cash item with no broadcast ever rendered
+			// (silent item loss). Gate to v83+ so unsupported versions ignore
+			// the use WITHOUT consuming, preserving the pre-feature no-op.
+			if t.MajorVersion() < 83 {
+				l.Warnf("Character [%d] attempted megaphone item [%d] on unsupported version [major %d]; ignoring without consuming.", s.CharacterId(), itemId, t.MajorVersion())
+				return
+			}
+			if category == item.ClassificationMegaphones {
+				handleMegaphoneUse(l, ctx, wp)(s, r, readerOptions, t, itemId, source, updateTimeFirst)
+				return
+			}
 			handleAvatarMegaphoneUse(l, ctx, wp)(s, r, readerOptions, t, itemId, source, updateTimeFirst)
 			return
 		}

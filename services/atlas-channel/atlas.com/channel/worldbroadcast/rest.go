@@ -32,3 +32,16 @@ func (r *RestModel) SetID(id string) error {
 	r.Id = id
 	return nil
 }
+
+// SetToOneReferenceID implements the jsonapi.UnmarshalToOneRelations interface.
+// The broadcast-queues resource carries no relationships, so this is a no-op;
+// it exists for interface-consistency with sibling channel REST-client models.
+func (r *RestModel) SetToOneReferenceID(_, _ string) error {
+	return nil
+}
+
+// SetToManyReferenceIDs implements the jsonapi.UnmarshalToManyRelations interface.
+// No relationships on this resource; no-op for interface consistency.
+func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
+	return nil
+}

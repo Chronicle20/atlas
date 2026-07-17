@@ -20,6 +20,7 @@ type Processor interface {
 	GetByCharacterId(characterId uint32) ([]Model, error)
 	Apply(f field.Model, fromId uint32, sourceId int32, level byte, duration int32, statups []statup.Model) model.Operator[uint32]
 	Cancel(f field.Model, characterId uint32, sourceId int32) error
+	CancelByTypes(f field.Model, characterId uint32, types []string) error
 }
 
 // ProcessorImpl implements the Processor interface
@@ -61,4 +62,9 @@ func (p *ProcessorImpl) Apply(f field.Model, fromId uint32, sourceId int32, leve
 func (p *ProcessorImpl) Cancel(f field.Model, characterId uint32, sourceId int32) error {
 	p.l.Debugf("Character [%d] cancelling effect from source [%d].", characterId, sourceId)
 	return producer.ProviderImpl(p.l)(p.ctx)(buff2.EnvCommandTopic)(CancelCommandProvider(f, characterId, sourceId))
+}
+
+func (p *ProcessorImpl) CancelByTypes(f field.Model, characterId uint32, types []string) error {
+	p.l.Debugf("Character [%d] cancelling buffs by types %v.", characterId, types)
+	return producer.ProviderImpl(p.l)(p.ctx)(buff2.EnvCommandTopic)(CancelByTypesCommandProvider(f, characterId, types))
 }

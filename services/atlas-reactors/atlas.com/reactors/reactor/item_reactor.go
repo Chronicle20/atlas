@@ -2,7 +2,6 @@ package reactor
 
 import (
 	dropMessage "atlas-reactors/kafka/message/drop"
-	"atlas-reactors/kafka/producer"
 	"context"
 	"os"
 	"strconv"

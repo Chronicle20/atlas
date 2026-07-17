@@ -139,6 +139,12 @@ func main() {
 		return false
 	})
 
+	// Heal any baseline restore that was interrupted (pod killed / cancelled
+	// mid-COPY) before this pod started: such a tenant carries a durable
+	// StatusRestoring marker and otherwise stays half-restored until an operator
+	// notices (the atlas-pr-933 empty item-search bug). Non-blocking.
+	baseline.Reconcile(rt.Context(), l, db, mc)
+
 	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	data2.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := data2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {

@@ -75,6 +75,6 @@ spec:
                 name: pihole-credentials
           env:
             - name: PR_NUMBER
-              value: "PLACEHOLDER_PR_NUMBER"
+              value: "933"
             - name: TRAEFIK_LB_IP
               value: "192.168.23.230"

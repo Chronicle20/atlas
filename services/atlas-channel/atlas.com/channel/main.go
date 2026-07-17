@@ -128,6 +128,7 @@ import (
 	storagesb "github.com/Chronicle20/atlas/libs/atlas-packet/storage/serverbound"
 	summoncb "github.com/Chronicle20/atlas/libs/atlas-packet/summon/clientbound"
 	summonsb "github.com/Chronicle20/atlas/libs/atlas-packet/summon/serverbound"
+	trsb "github.com/Chronicle20/atlas/libs/atlas-packet/teleportrock/serverbound"
 	ui2 "github.com/Chronicle20/atlas/libs/atlas-packet/ui/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 
@@ -866,6 +867,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[merchantsb.OwlWarpHandle] = handler.OwlWarpHandleFunc
 	handlerMap[merchantsb.ShopScannerItemUseHandle] = handler.ShopScannerItemUseHandleFunc
 	handlerMap[mbsb.MonsterBookCoverHandler] = handler.MonsterBookCoverHandleFunc
+	handlerMap[trsb.TeleportRockAddMapHandle] = handler.TeleportRockAddMapHandleFunc
 	return handlerMap
 }
 

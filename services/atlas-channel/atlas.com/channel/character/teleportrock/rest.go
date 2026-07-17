@@ -23,6 +23,14 @@ func (r *RestModel) SetID(id string) error {
 	return nil
 }
 
+func (r *RestModel) SetToOneReferenceID(_, _ string) error {
+	return nil
+}
+
+func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
+	return nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	return NewModel(rm.Regular, rm.Vip), nil
 }

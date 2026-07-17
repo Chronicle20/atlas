@@ -136,6 +136,10 @@ type Processor interface {
 	// RoomsInField returns every mini-game room registered in field f for the
 	// processor's tenant (the rooms-in-field REST read).
 	RoomsInField(f field.Model) []Room
+	// RoomForCharacter returns the room characterId is currently seated in (as
+	// owner or visitor), or (Room{}, false) if none. Backs the membership REST
+	// read atlas-channel uses to block cash-shop / MTS entry while in a room.
+	RoomForCharacter(characterId uint32) (Room, bool)
 }
 
 type ProcessorImpl struct {
@@ -237,6 +241,10 @@ func (p *ProcessorImpl) withTx(tx *gorm.DB) *ProcessorImpl {
 // rather than reaching into the registry directly (DOM-14).
 func (p *ProcessorImpl) RoomsInField(f field.Model) []Room {
 	return p.reg.GetInField(p.t, f)
+}
+
+func (p *ProcessorImpl) RoomForCharacter(characterId uint32) (Room, bool) {
+	return p.reg.GetByMember(p.t, characterId)
 }
 
 // gameTypeOf maps a room type discriminator to its persisted record game type.

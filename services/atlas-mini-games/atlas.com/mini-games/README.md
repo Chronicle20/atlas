@@ -33,6 +33,7 @@ Collection endpoints return a JSON:API paginated envelope (`meta.page` + `first`
 |--------|------|---------|
 | GET | `/api/characters/{characterId}/game-records` | Win/tie/loss record per game type (zero-filled for never-played types). Paginated. |
 | GET | `/api/worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/games` | Every mini-game room registered in the field (for atlas-channel's map-entry balloon reconcile). Paginated. |
+| GET | `/api/characters/{characterId}/games` | The (0-or-1) room the character is currently seated in (owner or visitor). Backs atlas-channel's cash-shop / MTS entry block while in a mini-game room. |
 
 ## Kafka topics
 

@@ -28,6 +28,7 @@ type ProcessorMock struct {
 	ExitAfterGameFunc       func(txId uuid.UUID, f field.Model, characterId uint32) error
 	CancelExitAfterGameFunc func(txId uuid.UUID, f field.Model, characterId uint32) error
 	RoomsInFieldFunc        func(f field.Model) []game.Room
+	RoomForCharacterFunc    func(characterId uint32) (game.Room, bool)
 }
 
 func (m *ProcessorMock) Create(txId uuid.UUID, f field.Model, characterId uint32, roomType byte, title string, private bool, password string, pieceType byte) error {
@@ -168,6 +169,13 @@ func (m *ProcessorMock) RoomsInField(f field.Model) []game.Room {
 		return m.RoomsInFieldFunc(f)
 	}
 	return nil
+}
+
+func (m *ProcessorMock) RoomForCharacter(characterId uint32) (game.Room, bool) {
+	if m.RoomForCharacterFunc != nil {
+		return m.RoomForCharacterFunc(characterId)
+	}
+	return game.Room{}, false
 }
 
 var _ game.Processor = (*ProcessorMock)(nil)

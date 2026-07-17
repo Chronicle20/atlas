@@ -33,6 +33,23 @@ func (p *Processor) ForEachInField(f field.Model, o model.Operator[Model]) error
 	return model.ForEachSlice(p.InFieldModelProvider(f), o, model.ParallelExecute())
 }
 
+// MemberModelProvider retrieves the (0-or-1) mini-game room characterId is
+// currently seated in (owner or visitor) from atlas-mini-games.
+func (p *Processor) MemberModelProvider(characterId uint32) model.Provider[[]Model] {
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByMember(characterId), Extract, model.Filters[Model]())
+}
+
+// InGame reports whether characterId is currently seated in a mini-game room.
+// Used to block cash-shop / MTS entry while in a room (a player must not migrate
+// out of the channel while seated at a mini-game table).
+func (p *Processor) InGame(characterId uint32) (bool, error) {
+	rooms, err := p.MemberModelProvider(characterId)()
+	if err != nil {
+		return false, err
+	}
+	return len(rooms) > 0, nil
+}
+
 func (p *Processor) Create(f field.Model, characterId uint32, roomType byte, title string, private bool, password string, pieceType byte) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(minigame2.EnvCommandTopic)(CreateCommandProvider(uuid.New(), f, characterId, roomType, title, private, password, pieceType))
 }

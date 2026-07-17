@@ -1081,6 +1081,30 @@ func TestSkip_TurnAndWho(t *testing.T) {
 	})
 }
 
+// --- MEMBERSHIP --------------------------------------------------------------
+
+func TestRoomForCharacter(t *testing.T) {
+	owner := uint32(9301)
+	visitor := uint32(9302)
+	h := newHarness(t)
+	seedRoom(t, h, runningOmokBuilder(h, owner, visitor, 1))
+
+	t.Run("owner is a member", func(t *testing.T) {
+		r, ok := h.p.RoomForCharacter(owner)
+		require.True(t, ok)
+		assert.Equal(t, owner, r.Id())
+	})
+	t.Run("visitor is a member", func(t *testing.T) {
+		r, ok := h.p.RoomForCharacter(visitor)
+		require.True(t, ok)
+		assert.Equal(t, owner, r.Id())
+	})
+	t.Run("non-member is not seated", func(t *testing.T) {
+		_, ok := h.p.RoomForCharacter(9999)
+		assert.False(t, ok)
+	})
+}
+
 // --- TIE ---------------------------------------------------------------------
 
 func TestTie_RequestGating(t *testing.T) {

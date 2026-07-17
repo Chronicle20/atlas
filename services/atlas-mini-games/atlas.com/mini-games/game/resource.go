@@ -20,7 +20,8 @@ import (
 )
 
 const (
-	GetGamesInField = "get_games_in_field"
+	GetGamesInField     = "get_games_in_field"
+	GetGameForCharacter = "get_game_for_character"
 )
 
 // InitResource wires GET /worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/games
@@ -38,7 +39,40 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 
 			r := router.PathPrefix("/worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/games").Subrouter()
 			r.HandleFunc("", registerGet(GetGamesInField, handleGetGamesInField(db))).Methods(http.MethodGet)
+
+			cr := router.PathPrefix("/characters/{characterId}/games").Subrouter()
+			cr.HandleFunc("", registerGet(GetGameForCharacter, handleGetGameForCharacter(db))).Methods(http.MethodGet)
 		}
+	}
+}
+
+// handleGetGameForCharacter serves GET /characters/{characterId}/games — the
+// (0-or-1) room the character is currently seated in (owner or visitor). It
+// backs atlas-channel's membership check that blocks cash-shop / MTS entry
+// while in a mini-game room. A collection (not a single resource) so the empty
+// case is a normal empty list rather than a 404, matching the channel's
+// SliceProvider read.
+func handleGetGameForCharacter(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				var rooms []Room
+				if room, ok := NewProcessor(d.Logger(), d.Context(), db).RoomForCharacter(characterId); ok {
+					rooms = append(rooms, room)
+				}
+
+				res, err := model.SliceMap(Transform)(model.FixedProvider(rooms))(model.ParallelMap())()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			}
+		})
 	}
 }
 

@@ -8,7 +8,8 @@ import (
 )
 
 const (
-	Resource = "worlds/%d/channels/%d/maps/%d/instances/%s/games"
+	Resource          = "worlds/%d/channels/%d/maps/%d/instances/%s/games"
+	CharacterResource = "characters/%d/games"
 )
 
 func getBaseRequest() string {
@@ -17,4 +18,9 @@ func getBaseRequest() string {
 
 func requestInField(f field.Model) requests.Request[[]RestModel] {
 	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+Resource, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String()))
+}
+
+// requestByMember reads the (0-or-1) mini-game room characterId is seated in.
+func requestByMember(characterId uint32) requests.Request[[]RestModel] {
+	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+CharacterResource, characterId))
 }

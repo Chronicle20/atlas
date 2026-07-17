@@ -12,7 +12,18 @@ Seed templates only apply at tenant creation. For every EXISTING tenant:
      `{"opCode": "<version's opcode>", "validator": "LoggedInValidator", "handler": "CharacterCashItemUseHandle"}`
      (gms_87: 0x52, gms_95: 0x55, jms_185: 0x47; gms_83/84 already have it at 0x4F;
      gms_48/61/72/79 already carry `CharacterCashItemUseHandle` from their own bring-up — no handler patch needed there).
-2. Seed the reward pool per tenant: `POST /api/tenants/{tenantId}/configurations/incubator-rewards/seed`.
+2. Seed the reward pool per tenant: `POST /api/gachapons/seed` (with the tenant
+   headers). **CHANGED — incubator/gachapons reconciliation (see
+   `design-incubator-gachapon-reconciliation.md`):** the incubator reward pool now
+   lives in `atlas-gachapons` as an `incubator`-kind gachapon keyed by the egg id
+   (machine `4170000`, catalog file `deploy/seed/<version>/gachapons/gachapon-4170000.json`),
+   NOT the former `incubator-rewards` tenant-config (that resource was removed). The
+   gachapons seed catalog is git-synced from the repo, so the new incubator machine
+   reaches a live tenant only after this branch's catalog file is on the git-sync ref
+   (merge to `main`, or point the PR env's `GITSYNC_REF` at the branch), followed by
+   `POST /api/gachapons/seed`. atlas-channel resolves the roll via
+   `POST /api/gachapons/{eggId}/rewards/select` (BASE_SERVICE_URL → ingress
+   `/api/gachapons`); no new per-service URL env is required.
 3. Restart atlas-channel (writers/handlers do not hot-reload).
 4. Smoke-test on a v83 tenant: tag an equip (name appears in tooltip, survives relog),
    seal an equip (lock icon + timer for timed variants), incubate an item (hatch dialog).

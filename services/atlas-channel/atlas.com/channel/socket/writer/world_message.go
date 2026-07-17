@@ -38,11 +38,11 @@ const (
 )
 
 func WorldMessageNoticeBody(message string) packet.Encode {
-	return worldMessageBody(WorldMessageNotice, []string{message}, 0, false, "", 0, 0)
+	return worldMessageBody(WorldMessageNotice, []string{message}, 0, false, "", 0)
 }
 
 func WorldMessagePopUpBody(message string) packet.Encode {
-	return worldMessageBody(WorldMessagePopUp, []string{message}, 0, false, "", 0, 0)
+	return worldMessageBody(WorldMessagePopUp, []string{message}, 0, false, "", 0)
 }
 
 func decorateNameForMessage(medal string, characterName string) string {
@@ -61,30 +61,30 @@ func decorateMegaphoneMessage(medal string, characterName string, message string
 }
 
 func WorldMessageTopScrollBody(message string) packet.Encode {
-	return worldMessageBody(WorldMessageTopScroll, []string{message}, 0, false, "", 0, 0)
+	return worldMessageBody(WorldMessageTopScroll, []string{message}, 0, false, "", 0)
 }
 
 func WorldMessagePinkTextBody(medal string, characterName string, message string) packet.Encode {
 	actualMessage := decorateMegaphoneMessage(medal, characterName, message)
-	return worldMessageBody(WorldMessagePinkText, []string{actualMessage}, 0, false, "", 0, 0)
+	return worldMessageBody(WorldMessagePinkText, []string{actualMessage}, 0, false, "", 0)
 }
 
 func WorldMessageBlueTextBody(medal string, characterName string, message string) packet.Encode {
 	actualMessage := decorateMegaphoneMessage(medal, characterName, message)
-	return worldMessageBody(WorldMessageBlueText, []string{actualMessage}, 0, false, "", 0, 0)
+	return worldMessageBody(WorldMessageBlueText, []string{actualMessage}, 0, false, "", 0)
 }
 
 func WorldMessageBlueTextItemBody(medal string, characterName string, message string, itemId uint32) packet.Encode {
 	actualMessage := decorateMegaphoneMessage(medal, characterName, message)
-	return worldMessageBody(WorldMessageBlueText, []string{actualMessage}, 0, false, "", itemId, 0)
+	return worldMessageBody(WorldMessageBlueText, []string{actualMessage}, 0, false, "", itemId)
 }
 
 func WorldMessageGachaponMegaphoneBody(medal string, characterName string, channelId channel.Id, townName string, itemId uint32) packet.Encode {
 	actualMessage := decorateNameForMessage(medal, characterName)
-	return worldMessageBody(WorldMessageGachapon, []string{actualMessage}, channelId, false, townName, itemId, 0)
+	return worldMessageBody(WorldMessageGachapon, []string{actualMessage}, channelId, false, townName, itemId)
 }
 
-func worldMessageBody(mode WorldMessageMode, messages []string, channel channel.Id, whispersOn bool, townName string, itemId uint32, slot int32) packet.Encode {
+func worldMessageBody(mode WorldMessageMode, messages []string, channel channel.Id, whispersOn bool, townName string, itemId uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
 			modeByte := getWorldMessageMode(l)(options, mode)
@@ -99,8 +99,6 @@ func worldMessageBody(mode WorldMessageMode, messages []string, channel channel.
 				return chatpkt.NewWorldMessageSuperMegaphone(modeByte, messages[0], byte(channel), whispersOn).Encode(l, ctx)(options)
 			case WorldMessageBlueText, WorldMessageNPC:
 				return chatpkt.NewWorldMessageBlueText(modeByte, messages[0], itemId).Encode(l, ctx)(options)
-			case WorldMessageItemMegaphone:
-				return chatpkt.NewWorldMessageItemMegaphone(modeByte, messages[0], byte(channel), whispersOn, slot).Encode(l, ctx)(options)
 			case WorldMessageYellowMegaphone:
 				return chatpkt.NewWorldMessageYellowMegaphone(modeByte, messages[0], byte(channel)).Encode(l, ctx)(options)
 			case WorldMessageMultiMegaphone:

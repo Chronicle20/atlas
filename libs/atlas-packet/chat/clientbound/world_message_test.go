@@ -3,7 +3,9 @@ package clientbound
 import (
 	"bytes"
 	"testing"
+	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
@@ -148,12 +150,12 @@ func TestWorldMessageBlueTextRoundTrip(t *testing.T) {
 	}
 }
 
-func TestWorldMessageItemMegaphoneRoundTrip(t *testing.T) {
+func TestWorldMessageMegaphoneRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-			input := WorldMessageItemMegaphone{mode: 8, message: "Item mega!", channelId: 2, whispersOn: false, slot: -1}
-			output := WorldMessageItemMegaphone{}
+			input := NewWorldMessageMegaphone(2, "Megaphone message")
+			output := WorldMessageMegaphone{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 			if output.Mode() != input.Mode() {
 				t.Errorf("mode: got %v, want %v", output.Mode(), input.Mode())
@@ -161,14 +163,30 @@ func TestWorldMessageItemMegaphoneRoundTrip(t *testing.T) {
 			if output.Message() != input.Message() {
 				t.Errorf("message: got %v, want %v", output.Message(), input.Message())
 			}
-			if output.ChannelId() != input.ChannelId() {
-				t.Errorf("channelId: got %v, want %v", output.ChannelId(), input.ChannelId())
+		})
+	}
+}
+
+func TestWorldMessageItemMegaphoneRoundTrip(t *testing.T) {
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			item := model.NewAsset(true, 5, 4001126, time.Time{}).SetStackableInfo(30, 0, 0)
+			input := NewWorldMessageItemMegaphone(8, "selling stuff", 2, true, &item)
+			output := WorldMessageItemMegaphone{}
+			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+			if output.Message() != input.Message() || output.ChannelId() != input.ChannelId() || output.WhispersOn() != input.WhispersOn() {
+				t.Errorf("scalar fields did not round-trip")
 			}
-			if output.WhispersOn() != input.WhispersOn() {
-				t.Errorf("whispersOn: got %v, want %v", output.WhispersOn(), input.WhispersOn())
+			if !output.HasItem() {
+				t.Errorf("hasItem: got false, want true")
 			}
-			if output.Slot() != input.Slot() {
-				t.Errorf("slot: got %v, want %v", output.Slot(), input.Slot())
+			// no-item variant
+			input2 := NewWorldMessageItemMegaphone(8, "no item", 2, false, nil)
+			output2 := WorldMessageItemMegaphone{}
+			pt.RoundTrip(t, ctx, input2.Encode, output2.Decode, nil)
+			if output2.HasItem() {
+				t.Errorf("hasItem: got true, want false")
 			}
 		})
 	}

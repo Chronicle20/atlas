@@ -19,6 +19,7 @@ type Processor interface {
 	// GetByTier.
 	GetByTierPaged(tier string, page model.Page) model.Provider[model.Paged[Model]]
 	Create(m Model) error
+	Update(id uint32, itemId uint32, quantity uint32, tier string) error
 	Delete(id uint32) error
 	Count() (int64, *time.Time, error)
 }
@@ -51,6 +52,10 @@ func (p *ProcessorImpl) GetByTierPaged(tier string, page model.Page) model.Provi
 
 func (p *ProcessorImpl) Create(m Model) error {
 	return CreateItem(p.db.WithContext(p.ctx), m)
+}
+
+func (p *ProcessorImpl) Update(id uint32, itemId uint32, quantity uint32, tier string) error {
+	return UpdateItem(p.db.WithContext(p.ctx), id, itemId, quantity, tier)
 }
 
 func (p *ProcessorImpl) Delete(id uint32) error {

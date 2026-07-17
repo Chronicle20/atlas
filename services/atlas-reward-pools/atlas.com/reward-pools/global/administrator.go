@@ -27,6 +27,16 @@ func BulkCreateItem(db *gorm.DB, models []Model) error {
 	})
 }
 
+func UpdateItem(db *gorm.DB, id uint32, itemId uint32, quantity uint32, tier string) error {
+	return db.Model(&entity{}).
+		Where(&entity{ID: id}).
+		Updates(map[string]interface{}{
+			"item_id":  itemId,
+			"quantity": quantity,
+			"tier":     tier,
+		}).Error
+}
+
 func DeleteItem(db *gorm.DB, id uint32) error {
 	return db.Where(&entity{ID: id}).Delete(&entity{}).Error
 }

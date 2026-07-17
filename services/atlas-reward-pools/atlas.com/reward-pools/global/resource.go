@@ -24,6 +24,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r := router.PathPrefix("/global-items").Subrouter()
 			r.HandleFunc("", registerGet("get_all_global_items", handleGetAllGlobalItems)).Methods(http.MethodGet)
 			r.HandleFunc("", registerInput("create_global_item", handleCreateGlobalItem)).Methods(http.MethodPost)
+			r.HandleFunc("/{itemId}", registerInput("update_global_item", handleUpdateGlobalItem)).Methods(http.MethodPatch)
 			r.HandleFunc("/{itemId}", registerGet("delete_global_item", handleDeleteGlobalItem)).Methods(http.MethodDelete)
 		}
 	}
@@ -87,6 +88,26 @@ func handleCreateGlobalItem(d *rest.HandlerDependency, c *rest.HandlerContext, r
 		}
 
 		w.WriteHeader(http.StatusCreated)
+	}
+}
+
+func handleUpdateGlobalItem(d *rest.HandlerDependency, c *rest.HandlerContext, rm RestModel) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		itemIdStr := mux.Vars(r)["itemId"]
+		itemId, err := strconv.ParseUint(itemIdStr, 10, 32)
+		if err != nil {
+			d.Logger().WithError(err).Errorf("Unable to parse itemId.")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		err = NewProcessor(d.Logger(), d.Context(), d.DB()).Update(uint32(itemId), rm.ItemId, rm.Quantity, rm.Tier)
+		if err != nil {
+			d.Logger().WithError(err).Errorf("Updating global item [%d].", itemId)
+			server.WriteErrorResponse(d.Logger())(w)(err)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
 	}
 }
 

@@ -68,6 +68,42 @@ func TestUseByNameDecode(t *testing.T) {
 	}
 }
 
+// task-124 v84 verify pass (live GMS_v84.1_U_DEVM.exe, port 13345):
+// CWvsContext::SendMapTransferItemUseRequest @0xa547ab — unnamed in the v84
+// IDB (sub_A547AB) until this pass; renamed live to the demangled registry
+// fname. Byte-identical read order to v83: guard itemId/10000==232,
+// Encode2(nPOS) @0xa547fb, Encode4(nItemID) @0xa54806, then
+// CWvsContext::RunMapTransferItem(this, &v11, 0) @0xa54813 (the shared
+// target-payload helper, also renamed live from sub_A5489A); on success
+// Encode4(get_update_time()) @0xa54825 then SendPacket @0xa54834 — a genuine
+// trailing updateTime. Confirms the "version-invariant" claim above for v84.
+//
+// packet-audit:verify packet=teleportrock/serverbound/Use version=gms_v84 ida=0xa547ab
+func TestUseByMapDecodeV84(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 84, 1)
+	b := []byte{
+		0x02, 0x00, // slot = 2
+		0x80, 0x66, 0x23, 0x00, // itemId = 2320000
+		0x00,                   // byName = 0
+		0x00, 0xE1, 0xF5, 0x05, // mapId = 100000000
+		0x2A, 0x00, 0x00, 0x00, // updateTime = 42
+	}
+	req := request.Request(b)
+	r := request.NewRequestReader(&req, 0)
+	p := Use{}
+	p.Decode(l, ctx)(&r, nil)
+	if !p.Valid() {
+		t.Fatalf("expected valid decode")
+	}
+	if p.Slot() != 2 || p.ItemId() != 2320000 || p.UpdateTime() != 42 {
+		t.Fatalf("fields: %+v", p)
+	}
+	if p.Target().ByName() || p.Target().TargetMap() != 100000000 {
+		t.Fatalf("target: %+v", p.Target())
+	}
+}
+
 // Client sent the packet with no target payload (dialog closed without a
 // selection) — must decode as invalid, never panic.
 func TestUseAbsentTargetIsInvalid(t *testing.T) {

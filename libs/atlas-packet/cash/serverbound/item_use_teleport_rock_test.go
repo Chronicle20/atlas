@@ -59,6 +59,39 @@ func TestItemUseTeleportRockAbsentTarget(t *testing.T) {
 	}
 }
 
+// task-124 v84 verify pass (live GMS_v84.1_U_DEVM.exe, port 13345): case 22
+// of the jumptable at CWvsContext::SendConsumeCashItemUseRequest @0xa54a2f
+// (case body @0xa56e9d, reached via byte_A58F60[22-12]=8 ->
+// jpt_A54ADD[8]=0xa56e9d) computes a flag = (itemId/1000 != 5040) @0xa56ea9
+// and calls CWvsContext::RunMapTransferItem(this, &v_pkt, flag) @0xa56ebb —
+// the SAME helper USE_TELEPORT_ROCK calls (0xa547ab, both renamed live from
+// sub_A5489A/sub_A547AB during this pass) — then on success falls through to
+// the shared send tail @0xa58e47: Encode4(get_update_time()) @0xa58e50;
+// SendPacket @0xa58e59 — a genuine TRAILING updateTime. No leading
+// updateTime precedes the switch dispatch (confirmed by disassembling the
+// function prologue from 0xa54a2f), consistent with updateTimeFirst :=
+// MajorVersion()>=87 (84 < 87) in character_cash_item_use.go — i.e. v84
+// behaves exactly like v83 here (updateTimeFirst=false, trailing updateTime),
+// NOT like v95's leading-header case below.
+//
+// packet-audit:verify packet=cash/serverbound/CashItemUseTeleportRock version=gms_v84 ida=0xa54a2f
+func TestItemUseTeleportRockByMapV84(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 84, 1)
+	b := []byte{
+		0x00,                   // byName = 0
+		0x00, 0xE1, 0xF5, 0x05, // mapId = 100000000
+		0x2A, 0x00, 0x00, 0x00, // trailing updateTime = 42
+	}
+	req := request.Request(b)
+	r := request.NewRequestReader(&req, 0)
+	p := NewItemUseTeleportRock(false)
+	p.Decode(l, ctx)(&r, nil)
+	if !p.Target().Valid() || p.Target().TargetMap() != 100000000 || p.UpdateTime() != 42 {
+		t.Fatalf("decode: target=%+v updateTime=%d", p.Target(), p.UpdateTime())
+	}
+}
+
 // task-124 v95 verify pass (live GMS_v95.0_U_DEVM.exe, port 13341):
 // CWvsContext::SendConsumeCashItemUseRequest @0x9eb3e0, opcode 0x55. The
 // header encodes update_time FIRST (Encode4 @0x9eb4b7, BEFORE

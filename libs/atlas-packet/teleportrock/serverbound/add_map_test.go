@@ -49,6 +49,33 @@ func TestAddMapDeleteDecode(t *testing.T) {
 	}
 }
 
+// task-124 v84 verify pass (live GMS_v84.1_U_DEVM.exe, port 13345):
+// CWvsContext::SendMapTransferRequest @0xa71972 — unnamed in the v84 IDB
+// (sub_A71972) until this pass, renamed live (byte-identical to v83's
+// sub_A261BC @0xa261bc, also unnamed there). COutPacket::COutPacket(&v4, 102)
+// @0xa71984; Encode1(a1=nType) @0xa71993; Encode1(a3=bCanTransferContinent)
+// @0xa7199e; if(!a1) Encode4(a2=dwTargetField) @0xa719af. Callers confirmed:
+// sub_865737 (register UI path) calls SendMapTransferRequest(1, 0, vipFlag);
+// sub_865A45 (delete UI path) calls SendMapTransferRequest(0, mapId,
+// vipFlag). Confirms the "version-invariant" claim above for v84.
+//
+// packet-audit:verify packet=teleportrock/serverbound/AddMap version=gms_v84 ida=0xa71972
+func TestAddMapDeleteDecodeV84(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 84, 1)
+	b := []byte{
+		0x00, 0x00, // delete, regular list
+		0x00, 0xE1, 0xF5, 0x05, // mapId = 100000000
+	}
+	req := request.Request(b)
+	r := request.NewRequestReader(&req, 0)
+	p := AddMap{}
+	p.Decode(l, ctx)(&r, nil)
+	if p.Register() || p.Vip() || p.MapId() != 100000000 {
+		t.Fatalf("decode: %+v", p)
+	}
+}
+
 func TestAddMapRoundTrip(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	for _, v := range pt.Variants {

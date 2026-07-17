@@ -25,8 +25,11 @@ import (
 var errNotFound = errors.New("not found")
 
 // Fixture (installed by installFixture, restored via t.Cleanup): character 42.
-// Regular list contains 102000000; VIP list contains 220000000 (different
-// continent, 2xx). fieldLimit: 103000000 -> 0x40 (rock-banned), else 0.
+// Regular list contains 102000000 and 103000000; VIP list contains 220000000
+// (different continent, 2xx). fieldLimit: 103000000 -> 0x40 (rock-banned),
+// else 0. 103000000 is in-list so the "target field barred" case reaches
+// step 4 (the fieldLimit bar) instead of failing earlier at step 2a
+// (list-membership).
 // characterByNameFunc: "Buddy" -> id 77 (session on map 102000000), else error.
 
 func TestUseRockRejections(t *testing.T) {
@@ -144,8 +147,13 @@ func installFixture(t *testing.T, _ _map.Id, announced *string, sagaCreated **sa
 	// continent — a target absent from the rock's list fails CANNOT_GO at
 	// 2a, never reaching the continent step). A player can register the
 	// same map in both their regular and VIP lists.
+	//
+	// 103000000 is also in the regular list so the "target field barred"
+	// case passes step 2a (list membership) and step 3 (not the current
+	// map) and actually reaches step 4 (target fieldLimit bar) — the
+	// server-only policy half of design §1 Q2 that this task uniquely adds.
 	listsFunc = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (chartrock.Model, error) {
-		return chartrock.NewModel([]_map.Id{102000000, 220000000}, []_map.Id{220000000}), nil
+		return chartrock.NewModel([]_map.Id{102000000, 220000000, 103000000}, []_map.Id{220000000}), nil
 	}
 
 	mapLimitFunc = func(_ logrus.FieldLogger, _ context.Context, mapId _map.Id) (uint32, error) {

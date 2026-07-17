@@ -73,3 +73,19 @@ Seed templates only apply at tenant creation. For every EXISTING tenant:
    sealing-lock arms are unaffected — they surface through the ordinary inventory
    update writers (already present in the gms_48 template), not through
    `IncubatorResult`.
+
+## Service rename — atlas-gachapons → atlas-reward-pools (2026-07-17)
+
+The gachapons service was renamed to **atlas-reward-pools** (it now hosts both
+gachapon and incubator reward pools). Deploy implications:
+- **New Deployment/Service/image `atlas-reward-pools`**; the old `atlas-gachapons`
+  workload is gone. Standard rollout picks up the renamed manifest.
+- **DB name changed** `atlas-gachapons` → `atlas-reward-pools`: a fresh empty DB is
+  created on deploy; the old DB's data is abandoned. **Re-seed the catalog** after
+  rollout: `POST /api/gachapons/seed` (URL prefix intentionally unchanged — the
+  `gachapon` resource type + `/gachapons` route were kept; only the service identity
+  was renamed).
+- The Kafka topic `gachapon_reward_won`, the REST URL `/gachapons`, and the JSON:API
+  `gachapon`/`gachapon-rewards` resource types are UNCHANGED — no caller (channel,
+  saga-orchestrator, atlas-ui) changed, and no tenant-config patch is needed for the
+  rename.

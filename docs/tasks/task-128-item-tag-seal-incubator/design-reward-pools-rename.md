@@ -1,6 +1,15 @@
 # atlas-gachapons → atlas-reward-pools: rename + topic + consumables-unification
 
-**Status:** design. Ships on task-128 / PR #909 (user directed all three deferred items be done in this task). Follows the reconciliation (`design-incubator-gachapon-reconciliation.md`).
+**Status:** LANDED (partial, by user decision 2026-07-17). Ships on task-128 / PR #909.
+Follows the reconciliation (`design-incubator-gachapon-reconciliation.md`).
+
+**What landed:** Piece 1 — the **service-identity rename** `atlas-gachapons` → `atlas-reward-pools`
+(module/dir/DB/deploy/host + registration files; `service-registration-guard` clean, bake green).
+**What did NOT land (user chose "stop — rename only"):** Piece 2 (topic rename) and Piece 3
+(saga-orchestrator unification) — both judged cosmetic/higher-risk once the unification mechanism
+was corrected (saga-orchestrator, not consumables) and shown to refactor a working path for
+little gain. The `gachapon` resource type / `/gachapons` URL / tables were kept as designed, so
+no caller (channel/saga/UI) changed.
 
 **Three pieces (user-confirmed 2026-07-17):**
 1. **Service rename** `atlas-gachapons` → `atlas-reward-pools` (module, dir, deploy, DB name, REST prefix, seed catalog, ~14 registration files).

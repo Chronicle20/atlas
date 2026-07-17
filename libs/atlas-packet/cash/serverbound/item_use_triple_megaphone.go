@@ -13,7 +13,10 @@ import (
 // Megaphone (5076xxx). Cosmic-derived (UseCashItemHandler case 4); per-version
 // IDA verification in task-123 phases 19-20. Decode reads exactly the count
 // carried on the wire; validating that count falls within 1..3 is the
-// caller's responsibility (a later task), not this codec's.
+// caller's responsibility (a later task), not this codec's. Encoded inline by
+// SendConsumeCashItemUseRequest's CSpeakerWorldDlgEx case (task-19/task-123
+// phase 20, gms_v95 IDA-verified): count(byte) + count×line(str) + whisper(bool).
+// packet-audit:fname CWvsContext::SendConsumeCashItemUseRequest
 type ItemUseTripleMegaphone struct {
 	lines           []string
 	whisper         bool

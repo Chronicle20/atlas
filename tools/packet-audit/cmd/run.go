@@ -2062,9 +2062,11 @@ func candidatesFromFName(fname string) []candidate {
 	// below (own case arm — do not merge, the two fnames are genuinely
 	// different senders and must not share a candidate list or the
 	// report-generator's last-write-wins file collision mispairs the
-	// wrong (fname, struct) combination). ItemUseTripleMegaphone/
-	// ItemUseMapleTV remain unregistered here pending further IDA
-	// verification (case identity not yet pinned down for either version).
+	// wrong (fname, struct) combination). Triple Megaphone (CSpeakerWorldDlgEx,
+	// GetResult@0x9eb5c8) and Maple TV (CUIMapleTV, six ctor sites @0x780fc0)
+	// are ALSO sent inline by this same dispatcher — task-123 phase 20/task-19
+	// IDA-verified (gms_v95): count/flag-byte(s) + line strings, no separate
+	// send function needed (unlike Item Megaphone above).
 	case "CWvsContext::SendConsumeCashItemUseRequest":
 		return []candidate{
 			{name: "ItemUsePointReset", dir: csvpkg.DirServerbound, pkg: "cash"},
@@ -2072,6 +2074,8 @@ func candidatesFromFName(fname string) []candidate {
 			{name: "ItemUseMegaphone", dir: csvpkg.DirServerbound, pkg: "cash"},
 			{name: "ItemUseSuperMegaphone", dir: csvpkg.DirServerbound, pkg: "cash"},
 			{name: "ItemUseAvatarMegaphone", dir: csvpkg.DirServerbound, pkg: "cash"},
+			{name: "ItemUseTripleMegaphone", dir: csvpkg.DirServerbound, pkg: "cash"},
+			{name: "ItemUseMapleTV", dir: csvpkg.DirServerbound, pkg: "cash"},
 		}
 	// Item Megaphone (cash-slot type 14): the REAL send function, separate
 	// from the main dispatcher above (task-123 phase 19, gms_v95

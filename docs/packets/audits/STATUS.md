@@ -833,9 +833,11 @@ Tool: `d87929ff3afeb348ecf3c66a83f61c325beba5189d5bb7bac4f4d620098d5519`
 | buddy/serverbound/BuddyOperationAdd (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | buddy/serverbound/BuddyOperationDelete (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | cash/serverbound/CashItemUseAvatarMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |
+| cash/serverbound/CashItemUseMapleTV (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |
 | cash/serverbound/CashItemUseMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |
 | cash/serverbound/CashItemUsePointReset (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | cash/serverbound/CashItemUseSuperMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |
+| cash/serverbound/CashItemUseTripleMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |
 | cash/serverbound/CashShopOperationBuy (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashShopOperationBuyCouple (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashShopOperationBuyFriendship (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -996,15 +998,15 @@ Tool: `d87929ff3afeb348ecf3c66a83f61c325beba5189d5bb7bac4f4d620098d5519`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 166 | 0 | 2 | 159 | 634 | 0 | 50.8% |
-| v61 | 238 | 0 | 60 | 199 | 464 | 0 | 47.9% |
-| v72 | 248 | 0 | 73 | 217 | 423 | 0 | 46.1% |
-| v79 | 262 | 0 | 72 | 213 | 414 | 0 | 47.9% |
-| v83 | 412 | 0 | 0 | 325 | 224 | 0 | 55.9% |
-| v84 | 382 | 0 | 0 | 335 | 244 | 0 | 53.3% |
-| v87 | 416 | 0 | 0 | 358 | 187 | 0 | 53.7% |
-| v95 | 445 | 0 | 0 | 413 | 103 | 0 | 51.9% |
-| JMS185 | 395 | 0 | 0 | 372 | 194 | 0 | 51.5% |
+| v48 | 166 | 0 | 2 | 161 | 634 | 0 | 50.5% |
+| v61 | 238 | 0 | 60 | 201 | 464 | 0 | 47.7% |
+| v72 | 248 | 0 | 73 | 219 | 423 | 0 | 45.9% |
+| v79 | 262 | 0 | 72 | 215 | 414 | 0 | 47.7% |
+| v83 | 413 | 0 | 0 | 326 | 224 | 0 | 55.9% |
+| v84 | 382 | 0 | 0 | 337 | 244 | 0 | 53.1% |
+| v87 | 416 | 0 | 0 | 360 | 187 | 0 | 53.6% |
+| v95 | 447 | 0 | 0 | 413 | 103 | 0 | 52.0% |
+| JMS185 | 395 | 0 | 0 | 374 | 194 | 0 | 51.4% |
 
 ## Conflicts
 

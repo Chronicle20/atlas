@@ -13,7 +13,12 @@ import (
 // (5075xxx / 5074000 on GMS>=95). tvType is derived by the CALLER from the
 // item id (itemId % 10) — it is not on the wire; it selects which prefix
 // fields exist. Cosmic-derived (UseCashItemHandler case 5); per-version IDA
-// verification in task-123 phases 19-20.
+// verification in task-123 phases 19-20. Encoded inline by
+// SendConsumeCashItemUseRequest's six CUIMapleTV cases, one per tvType
+// (task-19/task-123 phase 20, gms_v95 IDA-verified): the pad/ear/receiver
+// conditional prefix matches this struct's Encode/Decode exactly for all
+// six tvType arms (0-5).
+// packet-audit:fname CWvsContext::SendConsumeCashItemUseRequest
 type ItemUseMapleTV struct {
 	tvType          byte
 	pad             byte // present only when tvType == 3 (meaning unknown; drained)

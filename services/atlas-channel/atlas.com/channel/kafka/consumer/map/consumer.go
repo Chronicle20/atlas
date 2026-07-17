@@ -445,10 +445,49 @@ func spawnCharacterForSession(l logrus.FieldLogger) func(ctx context.Context) fu
 						bs = make([]buff.Model, 0)
 					}
 
+					// GM-hide suppression (task-156). A character hidden via the
+					// SuperGM Hide skill must not be spawned to any OTHER viewer.
+					// This is the single choke point for every character spawn —
+					// enterMap->others and SpawnForSelf-of-others both pass here —
+					// so a viewer entering while a GM is hidden never sees the
+					// spawn (race-safe: the check is in the same path that emits
+					// it). c is never the viewer's own character (both callers
+					// skip k == s.CharacterId()), so self-view is never suppressed.
+					if buff.IsGmHidden(bs) {
+						return nil
+					}
+
 					return session.Announce(l)(ctx)(wp)(charpkt.CharacterSpawnWriter)(writer.CharacterSpawnBody(c, bs, g, enteringField))(s)
 				}
 			}
 		}
+	}
+}
+
+// DespawnCharacterInMap broadcasts a CharacterDespawn for characterId to every
+// OTHER session in field f — the "hide on" half of the GM-hide toggle. Reuses
+// the existing per-session despawn operator so the packet matches a normal exit.
+func DespawnCharacterInMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(f field.Model, characterId uint32) error {
+	return func(f field.Model, characterId uint32) error {
+		return _map.NewProcessor(l, ctx).ForOtherSessionsInMap(f, characterId, despawnForSession(l)(ctx)(wp)(characterId))
+	}
+}
+
+// SpawnCharacterInMap broadcasts a CharacterSpawn for characterId to every OTHER
+// session in field f — the "hide off" (reveal) half of the GM-hide toggle. It
+// reuses spawnCharacterForSession so the spawn packet is byte-identical to a
+// normal map-entry spawn (buffs + guild + enteringField=false, since the caster
+// is already standing in the map). The suppression gate does NOT fire here
+// because, by the time this runs, the hide buff has been cancelled.
+func SpawnCharacterInMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(f field.Model, characterId uint32) error {
+	return func(f field.Model, characterId uint32) error {
+		cp := character.NewProcessor(l, ctx)
+		c, err := cp.GetById(cp.InventoryDecorator, cp.PetAssetEnrichmentDecorator)(characterId)
+		if err != nil {
+			return err
+		}
+		g, _ := guild.NewProcessor(l, ctx).GetByMemberId(characterId)
+		return _map.NewProcessor(l, ctx).ForOtherSessionsInMap(f, characterId, spawnCharacterForSession(l)(ctx)(wp)(c, g, false))
 	}
 }
 

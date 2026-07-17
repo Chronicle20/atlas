@@ -16,8 +16,8 @@ require (
 )
 
 require (
-	github.com/Chronicle20/atlas/libs/atlas-model v0.0.0 // indirect
-	github.com/Chronicle20/atlas/libs/atlas-tenant v0.0.0 // indirect
+	github.com/Chronicle20/atlas/libs/atlas-model v0.0.0
+	github.com/Chronicle20/atlas/libs/atlas-tenant v0.0.0
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/prometheus/client_golang v1.23.2 // indirect

@@ -1,8 +1,8 @@
 package gachapon_test
 
 import (
-	"atlas-gachapons/gachapon"
-	"atlas-gachapons/test"
+	"atlas-reward-pools/gachapon"
+	"atlas-reward-pools/test"
 	"context"
 	"testing"
 

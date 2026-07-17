@@ -1,11 +1,11 @@
 package main
 
 import (
-	"atlas-gachapons/gachapon"
-	"atlas-gachapons/global"
-	"atlas-gachapons/item"
-	"atlas-gachapons/reward"
-	"atlas-gachapons/seed"
+	"atlas-reward-pools/gachapon"
+	"atlas-reward-pools/global"
+	"atlas-reward-pools/item"
+	"atlas-reward-pools/reward"
+	"atlas-reward-pools/seed"
 	"os"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
@@ -15,7 +15,7 @@ import (
 	"gorm.io/gorm"
 )
 
-const serviceName = "atlas-gachapons"
+const serviceName = "atlas-reward-pools"
 
 type Server struct {
 	baseUrl string

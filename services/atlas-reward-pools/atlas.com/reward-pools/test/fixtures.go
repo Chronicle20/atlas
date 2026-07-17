@@ -1,10 +1,10 @@
 package test
 
 import (
-	"atlas-gachapons/gachapon"
-	"atlas-gachapons/global"
-	"atlas-gachapons/item"
-	"atlas-gachapons/reward"
+	"atlas-reward-pools/gachapon"
+	"atlas-reward-pools/global"
+	"atlas-reward-pools/item"
+	"atlas-reward-pools/reward"
 	"testing"
 
 	"github.com/sirupsen/logrus"

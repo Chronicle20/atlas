@@ -1,8 +1,8 @@
 package global_test
 
 import (
-	"atlas-gachapons/global"
-	"atlas-gachapons/test"
+	"atlas-reward-pools/global"
+	"atlas-reward-pools/test"
 	"testing"
 )
 

@@ -1,10 +1,10 @@
 package reward_test
 
 import (
-	"atlas-gachapons/gachapon"
-	"atlas-gachapons/global"
-	"atlas-gachapons/item"
-	"atlas-gachapons/test"
+	"atlas-reward-pools/gachapon"
+	"atlas-reward-pools/global"
+	"atlas-reward-pools/item"
+	"atlas-reward-pools/test"
 	"testing"
 )
 

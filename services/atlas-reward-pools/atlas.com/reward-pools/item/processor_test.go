@@ -1,7 +1,7 @@
 package item_test
 
 import (
-	"atlas-gachapons/item"
+	"atlas-reward-pools/item"
 	"context"
 	"testing"
 

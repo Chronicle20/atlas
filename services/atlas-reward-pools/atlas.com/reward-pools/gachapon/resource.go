@@ -1,7 +1,7 @@
 package gachapon
 
 import (
-	"atlas-gachapons/rest"
+	"atlas-reward-pools/rest"
 	"errors"
 	"net/http"
 

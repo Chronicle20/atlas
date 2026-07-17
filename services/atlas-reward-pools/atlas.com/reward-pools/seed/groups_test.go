@@ -1,9 +1,9 @@
 package seed
 
 import (
-	"atlas-gachapons/gachapon"
-	"atlas-gachapons/global"
-	"atlas-gachapons/item"
+	"atlas-reward-pools/gachapon"
+	"atlas-reward-pools/global"
+	"atlas-reward-pools/item"
 	"context"
 	"fmt"
 	"net/http"

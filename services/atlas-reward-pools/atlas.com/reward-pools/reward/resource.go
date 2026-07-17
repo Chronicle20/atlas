@@ -1,7 +1,7 @@
 package reward
 
 import (
-	"atlas-gachapons/rest"
+	"atlas-reward-pools/rest"
 	"net/http"
 	"sort"
 

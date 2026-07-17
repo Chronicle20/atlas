@@ -1,7 +1,7 @@
 package global
 
 import (
-	"atlas-gachapons/rest"
+	"atlas-reward-pools/rest"
 	"net/http"
 	"strconv"
 

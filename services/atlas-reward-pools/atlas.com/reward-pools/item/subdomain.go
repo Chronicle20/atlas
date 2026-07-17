@@ -1,7 +1,7 @@
 package item
 
 import (
-	"atlas-gachapons/gachapon"
+	"atlas-reward-pools/gachapon"
 	"fmt"
 	"regexp"
 	"time"

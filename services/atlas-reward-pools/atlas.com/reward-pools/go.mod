@@ -1,4 +1,4 @@
-module atlas-gachapons
+module atlas-reward-pools
 
 go 1.25.5
 

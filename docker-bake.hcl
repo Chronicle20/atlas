@@ -54,7 +54,7 @@ go_services = [
   "atlas-expressions",
   "atlas-fame",
   "atlas-families",
-  "atlas-gachapons",
+  "atlas-reward-pools",
   "atlas-guilds",
   "atlas-inventory",
   "atlas-invites",

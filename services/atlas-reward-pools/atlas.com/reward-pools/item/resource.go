@@ -1,7 +1,7 @@
 package item
 
 import (
-	"atlas-gachapons/rest"
+	"atlas-reward-pools/rest"
 	"net/http"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"

@@ -1,9 +1,9 @@
 package seed
 
 import (
-	"atlas-gachapons/gachapon"
-	"atlas-gachapons/global"
-	"atlas-gachapons/item"
+	"atlas-reward-pools/gachapon"
+	"atlas-reward-pools/global"
+	"atlas-reward-pools/item"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	seeder "github.com/Chronicle20/atlas/libs/atlas-seeder"

@@ -1,8 +1,8 @@
 package reward
 
 import (
-	"atlas-gachapons/global"
-	"atlas-gachapons/item"
+	"atlas-reward-pools/global"
+	"atlas-reward-pools/item"
 	"encoding/json"
 	"fmt"
 	"net/http"

@@ -42,6 +42,7 @@ func (Subdomain) Build(t tenant.Model, entityID string, attrs gachapon.GachaponA
 			SetItemId(it.ItemId).
 			SetQuantity(it.Quantity).
 			SetTier(it.Tier).
+			SetWeight(it.Weight).
 			Build()
 		if err != nil {
 			return nil, fmt.Errorf("item: build model %q[%d]: %w", entityID, i, err)

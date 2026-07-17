@@ -17,6 +17,7 @@ var _ seeder.Subdomain[GachaponAttributes, Model] = Subdomain{}
 // The Items slice is also present in the catalog file (used by the item subdomain).
 type GachaponAttributes struct {
 	Name           string       `json:"name"`
+	Kind           string       `json:"kind"`
 	NpcIds         []uint32     `json:"npcIds"`
 	CommonWeight   uint32       `json:"commonWeight"`
 	UncommonWeight uint32       `json:"uncommonWeight"`
@@ -29,6 +30,7 @@ type ItemAttrib struct {
 	ItemId   uint32 `json:"itemId"`
 	Quantity uint32 `json:"quantity"`
 	Tier     string `json:"tier"`
+	Weight   uint32 `json:"weight"`
 }
 
 // Subdomain implements seeder.Subdomain for the gachapon table.
@@ -54,13 +56,19 @@ func (Subdomain) Decode(payload []byte) (GachaponAttributes, error) {
 }
 
 func (Subdomain) Build(t tenant.Model, entityID string, attrs GachaponAttributes) ([]Model, error) {
-	m, err := NewBuilder(t.Id(), entityID).
+	b := NewBuilder(t.Id(), entityID).
 		SetName(attrs.Name).
 		SetNpcIds(attrs.NpcIds).
 		SetCommonWeight(attrs.CommonWeight).
 		SetUncommonWeight(attrs.UncommonWeight).
-		SetRareWeight(attrs.RareWeight).
-		Build()
+		SetRareWeight(attrs.RareWeight)
+	// Kind is optional in the catalog file: an absent/empty "kind" attribute
+	// must preserve the builder's "gachapon" default rather than blank it
+	// out (mirrors the inbound POST guard in resource.go).
+	if attrs.Kind != "" {
+		b = b.SetKind(attrs.Kind)
+	}
+	m, err := b.Build()
 	if err != nil {
 		return nil, fmt.Errorf("gachapon: build model %q: %w", entityID, err)
 	}

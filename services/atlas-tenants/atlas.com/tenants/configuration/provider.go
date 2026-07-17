@@ -5,8 +5,6 @@ import (
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 

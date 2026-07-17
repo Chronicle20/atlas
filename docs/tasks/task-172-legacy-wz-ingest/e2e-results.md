@@ -135,8 +135,15 @@ no per-category; JMS v185 → `Consume/Cash/Etc/Ins/Pet/Eqp`, no `Item.img`.)
 Fix: `resolveStringSources` now inverts the priority — **`Item.img` present ⇒
 legacy layout, used as the sole (complete) item-string source**; modern
 layouts (no `Item.img`) fall through unchanged. Regression test
-`TestResolveStringSourcesLegacyItemImgWins`. Re-verification pending the
-next `pr-1013` image build + re-ingest.
+`TestResolveStringSourcesLegacyItemImgWins`.
+
+**Re-verified** (re-ingest on `atlas-data:pr-1013-05812c0`): the String worker
+now logs `legacy String layout detected (single Item.img)`, and
+`item_string_search_index` holds **~2,924 rows** (was ~6). `search=Potion`
+returns Red/Orange/White/Blue/Dex Potion; item `2000000` = "Red Potion";
+nested-Eqp item `1002000` = "Brown Flight Headgear" — confirming the single
+`InitStringFlat` pass harvests both flat categories and the nested Eqp
+subtree.
 
 ### Out of task-172 scope (triaged from the same session)
 
@@ -152,7 +159,7 @@ next `pr-1013` image build + re-ingest.
 - **Parser layer (C-1, C-2, C-3-lib):** verified against all three real sample
   sets — 30,030 images, zero parse errors, C-2 fallback demonstrably exercised.
 - **Service/DB layer, GMS v12:** ingest Job succeeded; C-1/C-3/C-3.4/C-5 all
-  confirmed live. One C-4 item-string defect found and fixed on-branch
-  (re-ingest pending the next image build to confirm real item names load).
+  confirmed live. C-4 item-string defect found, fixed, and **re-verified** on
+  the rebuilt image — item search returns real names (~2,924 string rows).
 - **GMS v48 + JMS v185 live ingest:** still to run (v48 shares the v12 legacy
   String layout, so the C-4 fix covers it; JMS is modern).

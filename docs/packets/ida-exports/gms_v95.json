@@ -14530,6 +14530,85 @@
           "comment": "code (switch: 0 success/1 closed/2 full/3 busy/4 dead/7 no-trade/17 denied/18 maintenance/23 fm-only/default unable). IDB fn CUIShopScanResult::OnShopLinkResult"
         }
       ]
+    },
+    "CWvsContext::SendMapTransferItemUseRequest": {
+      "address": "0x9e6020",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CWvsContext::RunMapTransferItem(this, &oPacket, 0)"
+        }
+      ]
+    },
+    "CWvsContext::SendMapTransferRequest": {
+      "address": "0x9f3b90",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CWvsContext::OnMapTransferResult": {
+      "address": "0x9f9f90",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 == 3"
+        }
+      ]
+    },
+    "CWvsContext::SendConsumeCashItemUseRequest": {
+      "address": "0x9eb3e0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "update_time = get_update_time() \u2014 common header, leading (task-124 v95: MajorVersion()>=87 updateTimeFirst)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nPOS \u2014 common header"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nItemID \u2014 common header; switches via get_consume_cash_item_type(nItemID) to a per-case body (opaque to this flat harvest, same class of gap as RunMapTransferItem)"
+        }
+      ]
+    },
+    "CWvsContext::RunMapTransferItem": {
+      "address": "0x9e11c0",
+      "direction": "",
+      "calls": null
     }
   }
 }

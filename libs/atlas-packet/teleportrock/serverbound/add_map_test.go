@@ -13,13 +13,6 @@ import (
 // On register the client sends no map id — the server uses session state.
 //
 // packet-audit:verify packet=teleportrock/serverbound/AddMap version=gms_v83 ida=0xa261bc
-//
-// NOTE: no gms_v95 marker is carried here yet (task-124 is a v83-only verify
-// pass) — a marker without a v95 audit report/evidence record would itself
-// register as an orphan (mirrors the ItemUseVegaScroll convention in
-// cash/serverbound/item_use_vega_scroll_test.go). The 0x9f3b90 address noted
-// above is a design-time claim, not IDA-reverified this session; a separate
-// gms_v95 verify pass should add its own marker once that report lands.
 func TestAddMapRegisterDecode(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := pt.CreateContext("GMS", 83, 1)
@@ -33,6 +26,13 @@ func TestAddMapRegisterDecode(t *testing.T) {
 	}
 }
 
+// task-124 v95 verify pass (live GMS_v95.0_U_DEVM.exe, port 13341):
+// CWvsContext::SendMapTransferRequest @0x9f3b90 — byte-identical read order to
+// v83: Encode1(nType) @0x9f3bd0, Encode1(bCanTransferContinent) @0x9f3bde,
+// then `if (!nType) Encode4(dwTargetField)` @0x9f3be5-f0. Confirms the
+// "version-invariant" claim above for v95.
+//
+// packet-audit:verify packet=teleportrock/serverbound/AddMap version=gms_v95 ida=0x9f3b90
 func TestAddMapDeleteDecode(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := pt.CreateContext("GMS", 95, 1)

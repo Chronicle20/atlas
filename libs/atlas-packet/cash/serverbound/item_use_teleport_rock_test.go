@@ -82,10 +82,7 @@ func TestItemUseTeleportRockAbsentTarget(t *testing.T) {
 // this exact MajorVersion()>=87 path: a genuine 5-byte by-map payload with
 // nothing following was misread as "no selection").
 //
-// NOTE: no gms_v95 marker yet in this fix commit — it lands in the follow-up
-// verification commit alongside the pinned evidence record and audit report
-// (VERIFYING_A_PACKET.md §4: wire divergence is its own commit before the
-// verification commit).
+// packet-audit:verify packet=cash/serverbound/CashItemUseTeleportRock version=gms_v95 ida=0x9eb3e0
 func TestItemUseTeleportRockByMapV95(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := pt.CreateContext("GMS", 95, 1)

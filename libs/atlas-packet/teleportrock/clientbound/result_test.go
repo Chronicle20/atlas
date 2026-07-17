@@ -22,13 +22,6 @@ import (
 // unqualified entry for this fname (cmd/run.go).
 //
 // packet-audit:verify packet=teleportrock/clientbound/MapTransferList version=gms_v83 ida=0xa25268
-//
-// NOTE: no gms_v95 marker is carried here yet (task-124 is a v83-only verify
-// pass) — a marker without a v95 audit report/evidence record would itself
-// register as an orphan (mirrors the ItemUseVegaScroll convention in
-// cash/serverbound/item_use_vega_scroll_test.go). The 0x9F9F90 address noted
-// above is a design-time claim, not IDA-reverified this session; a separate
-// gms_v95 verify pass should add its own marker once that report lands.
 func TestMapTransferListRegularGolden(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := pt.CreateContext("GMS", 83, 1)
@@ -48,6 +41,14 @@ func TestMapTransferListRegularGolden(t *testing.T) {
 	}
 }
 
+// task-124 v95 verify pass (live GMS_v95.0_U_DEVM.exe, port 13341):
+// CWvsContext::OnMapTransferResult @0x9f9f90 — byte-identical read order to
+// v83: mode(Decode1)+targetList(Decode1) @0x9f9fca/0x9f9fcd, then for mode in
+// {2,3} exactly 5 (targetList==0) or 10 (targetList==1) x Decode4 mapId into
+// adwMapTransfer/adwMapTransferEx @0x9fa01d-23. Confirms the "identical v83
+// 0xA25268 / v95 0x9F9F90" claim in the file-level comment above.
+//
+// packet-audit:verify packet=teleportrock/clientbound/MapTransferList version=gms_v95 ida=0x9f9f90
 func TestMapTransferListVipPadsToTen(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := pt.CreateContext("GMS", 95, 1)
@@ -87,6 +88,28 @@ func TestMapTransferListVipPadsToTen(t *testing.T) {
 func TestMapTransferErrorGolden(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := pt.CreateContext("GMS", 83, 1)
+	m := NewMapTransferError(5, false)
+	got := m.Encode(l, ctx)(nil)
+	want := []byte{0x05, 0x00}
+	if !bytes.Equal(got, want) {
+		t.Errorf("golden mismatch\n got: % x\nwant: % x", got, want)
+	}
+}
+
+// task-124 v95 verify pass (live GMS_v95.0_U_DEVM.exe, port 13341):
+// CWvsContext::OnMapTransferResult @0x9f9f90, same function as the list form
+// above — modes 5-11 read only mode(Decode1)+targetList(Decode1) and never
+// reach the Decode4 mapId loop (guarded on `case 2/3` in the v95 switch,
+// byte-identical branch structure to v83's `v3 == 3 && !v4` guard). Same
+// class of runtime/mode-guard flat-diff tooling gap as v83 (report graded
+// FlatInvalid "atlas short — missing trailing field" even though the 2-byte
+// body is exactly what v95 sends for modes 5-11). Evidence pinned to carry
+// this cell via the linked-fixture path, mirroring the v83 convention above.
+//
+// packet-audit:verify packet=teleportrock/clientbound/MapTransferError version=gms_v95 ida=0x9f9f90
+func TestMapTransferErrorGoldenV95(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 95, 1)
 	m := NewMapTransferError(5, false)
 	got := m.Encode(l, ctx)(nil)
 	want := []byte{0x05, 0x00}

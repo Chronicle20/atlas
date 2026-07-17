@@ -36,8 +36,8 @@ import (
 )
 
 var (
-	blockedNameErr  = errors.New("blocked name")
-	invalidLevelErr = errors.New("invalid level")
+	errBlockedName  = errors.New("blocked name")
+	errInvalidLevel = errors.New("invalid level")
 )
 
 // ErrNotEnoughMeso signals a rejected meso change: no state was written and
@@ -283,11 +283,11 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(transactionId uuid.UUID,
 		}
 		if !ok {
 			p.l.Infof("Attempting to create a character with an invalid name [%s].", input.Name())
-			return Model{}, blockedNameErr
+			return Model{}, errBlockedName
 		}
 		if input.Level() < 1 || input.Level() > 200 {
 			p.l.Infof("Attempting to create character with an invalid level [%d].", input.Level())
-			return Model{}, invalidLevelErr
+			return Model{}, errInvalidLevel
 		}
 
 		var res Model

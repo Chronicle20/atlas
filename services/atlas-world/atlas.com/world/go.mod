@@ -8,6 +8,7 @@ require (
 	github.com/Chronicle20/atlas/libs/atlas-model v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-redis v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-rest v0.0.0
+	github.com/Chronicle20/atlas/libs/atlas-saga v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-service v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-tenant v0.0.0
 	github.com/alicebob/miniredis/v2 v2.38.0
@@ -18,7 +19,6 @@ require (
 	github.com/segmentio/kafka-go v0.4.51
 	github.com/sirupsen/logrus v1.9.4
 	github.com/stretchr/testify v1.11.1
-	go.elastic.co/ecslogrus v1.0.0
 	go.opentelemetry.io/otel v1.44.0
 )
 
@@ -31,6 +31,7 @@ require (
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.66.1 // indirect
 	github.com/prometheus/procfs v0.16.1 // indirect
+	go.elastic.co/ecslogrus v1.0.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.44.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.44.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.44.0 // indirect
@@ -42,7 +43,7 @@ require (
 require (
 	github.com/Chronicle20/atlas/libs/atlas-retry v0.0.0 // indirect
 	github.com/Chronicle20/atlas/libs/atlas-routine v0.0.0-00010101000000-000000000000
-	github.com/Chronicle20/atlas/libs/atlas-tracing v0.0.0
+	github.com/Chronicle20/atlas/libs/atlas-tracing v0.0.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/gedex/inflector v0.0.0-20170307190818-16278e9db813 // indirect

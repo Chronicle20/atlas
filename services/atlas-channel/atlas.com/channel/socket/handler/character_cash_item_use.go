@@ -156,6 +156,20 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			return
 		}
 
+		// Classification-FIRST dispatch (design §1.1): cash-slot type 12
+		// collides with teleport rock (task-124), type 42 with pet evolution,
+		// so megaphone/avatar-megaphone routing must branch on classification
+		// before any cash-slot-type sub-switch, never the other way around.
+		category := item.GetClassification(itemId)
+		if category == item.ClassificationMegaphones {
+			handleMegaphoneUse(l, ctx, wp)(s, r, readerOptions, t, itemId, source, updateTimeFirst)
+			return
+		}
+		if category == item.ClassificationAvatarMegaphone {
+			handleAvatarMegaphoneUse(l, ctx, wp)(s, r, readerOptions, t, itemId, source, updateTimeFirst)
+			return
+		}
+
 		l.Warnf("Character [%d] attempting to use cash item [%d] in slot [%d] of type [%d]. updateTime [%d].", s.CharacterId(), itemId, source, it, updateTime)
 	}
 }

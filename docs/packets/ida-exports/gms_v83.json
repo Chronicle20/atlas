@@ -13842,6 +13842,16 @@
         }
       ]
     },
+    "CRPSGameDlg::OnPacket#START_SELECT": {
+      "address": "0x7402e9",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte only (case 9 = START_SELECT; enable R/P/S buttons + arm selection timer, no further wire reads)"
+        }
+      ]
+    },
     "CRPSGameDlg::OnPacket#END": {
       "address": "0x74009e",
       "direction": "clientbound",

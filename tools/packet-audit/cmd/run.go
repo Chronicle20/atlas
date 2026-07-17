@@ -1955,11 +1955,14 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "ErrorMessage", dir: csvpkg.DirClientbound, pkg: "storage"}}
 	// --- rps sub-domain (task-132) ---
 	// Clientbound CRPSGameDlg::OnPacket is a mode-dispatched writer; synthetic
-	// #-suffix FNames map each atlas-emitted arm to its discrete struct. Only
-	// OPEN/RESULT/END are implemented — see docs/packets/dispatchers/rps_game.yaml
-	// for why modes 6/7/9/10/12/14 are intentionally NOT wired here.
+	// #-suffix FNames map each atlas-emitted arm to its discrete struct. The
+	// four atlas-emitted arms are OPEN/START_SELECT/RESULT/END — see
+	// docs/packets/dispatchers/rps_game.yaml for why modes 6/7/10/12/14 are
+	// intentionally NOT wired here.
 	case "CRPSGameDlg::OnPacket#OPEN":
 		return []candidate{{name: "Open", dir: csvpkg.DirClientbound, pkg: "rps"}}
+	case "CRPSGameDlg::OnPacket#START_SELECT":
+		return []candidate{{name: "StartSelect", dir: csvpkg.DirClientbound, pkg: "rps"}}
 	case "CRPSGameDlg::OnPacket#RESULT":
 		return []candidate{{name: "Result", dir: csvpkg.DirClientbound, pkg: "rps"}}
 	case "CRPSGameDlg::OnPacket#END":

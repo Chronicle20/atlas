@@ -82,19 +82,25 @@ func TestRPSGameOpen(t *testing.T) {
 // TestRPSGameStartSelect exercises the START_SELECT arm (mode 9): mode byte
 // only, no body (client enables R/P/S buttons + arms the selection timer, no
 // further wire reads — §0/§1-§5 of the IDA note). The mode byte is version-
-// invariant, so the fixture runs across all seven versions and proves the wire
-// format everywhere.
+// invariant, so the fixture runs across all seven versions.
 //
-// NOTE — matrix promotion pending. This cell has no packet-audit:verify marker
-// yet: promoting it to ✅ requires splicing a CRPSGameDlg::OnPacket#START_SELECT
-// arm (the verbatim case-9 decompile) into each version's IDA export, which
-// needs a live IDA pass (docs/tasks/task-132-rps-npc-game — the mode-9 arm was
-// out of scope for the original Task-14 export splice). The case-9 handler
-// addresses are known from the committed clientbound note §1-§5 (v83 0x7402e9,
-// v84 0x76200d, v87 0x78aec1, v95 0x6d72ec, jms185 0x7ae6d4); the four legacy
-// versions share the same byte-identical dispatcher but their case-9 offsets
-// were never derived. Until the export-splice pass runs, the byte-fixture below
-// is the wire-format guarantee; no fabricated address is cited.
+// The case-9 handler is `case 9: goto LABEL_13` (the START_SELECT/case-12
+// alias body) in the RPS sub-dispatcher — byte-identical across all nine
+// versions (re-confirmed live 2026-07-17): it sets the switching/limit timers
+// and re-enables the 3 R/P/S buttons, with NO CInPacket read after the mode
+// byte. The four legacy case-9 addresses were derived in the same live pass
+// (v48 sub_5ADDEC, v61 sub_63C166, v72/v79 CRPSGameDlg__OnResult_delegate);
+// the five modern ones match the committed clientbound note §1-§5.
+//
+// packet-audit:verify packet=rps/clientbound/RpsStartSelect version=gms_v48 ida=0x5ade8a
+// packet-audit:verify packet=rps/clientbound/RpsStartSelect version=gms_v61 ida=0x63c204
+// packet-audit:verify packet=rps/clientbound/RpsStartSelect version=gms_v72 ida=0x69c843
+// packet-audit:verify packet=rps/clientbound/RpsStartSelect version=gms_v79 ida=0x6c2053
+// packet-audit:verify packet=rps/clientbound/RpsStartSelect version=gms_v83 ida=0x7402e9
+// packet-audit:verify packet=rps/clientbound/RpsStartSelect version=gms_v84 ida=0x76200d
+// packet-audit:verify packet=rps/clientbound/RpsStartSelect version=gms_v87 ida=0x78aec1
+// packet-audit:verify packet=rps/clientbound/RpsStartSelect version=gms_v95 ida=0x6d72ec
+// packet-audit:verify packet=rps/clientbound/RpsStartSelect version=jms_v185 ida=0x7ae6d4
 func TestRPSGameStartSelect(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	for _, v := range rpsVariants {

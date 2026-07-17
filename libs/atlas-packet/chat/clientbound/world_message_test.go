@@ -495,6 +495,238 @@ func TestWorldMessageUnknown8RoundTrip(t *testing.T) {
 	}
 }
 
+// IDA evidence (gms_v84 GMS_v84.1_U_DEVM.exe, port 13345) — sub_A6DC97 (the
+// client's OnBroadcastMsg for opcode 0x46; unnamed/stripped on this IDB)
+// @0xa6dc97:
+//
+//	v3 = Decode1(mode) -> (mode!=4, hasMessage-prefix branch skipped) ->
+//	DecodeStr(message) (v6/sub_418C8E copy) -> mode 2 (MEGAPHONE) has no case
+//	arm in the pre-decode dispatch chain (only 3/8/9/10/11/12/13 branch) —
+//	falls straight to the LABEL_28 display switch with no further wire reads.
+//	Wire is exactly mode(1) + message(str), byte-identical to gms_v83/v95.
+//
+// packet-audit:verify packet=chat/clientbound/ChatWorldMessageMegaphone version=gms_v84 ida=0xa6dc97
+func TestWorldMessageMegaphoneByteOutputV84(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 84, 1)
+	input := NewWorldMessageMegaphone(2, "hi")
+	expected := []byte{0x02, 0x02, 0x00, 0x68, 0x69}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v84 megaphone golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// IDA evidence (gms_v84 GMS_v84.1_U_DEVM.exe, port 13345) — sub_A6DC97
+// @0xa6dc97: mode==3 goto LABEL_18 directly (no pre-reads) -> LABEL_18:
+// channelId=Decode1, whispersOn=Decode1. Wire: mode(1) + message(str) +
+// channelId(1) + whispersOn(1), byte-identical to gms_v83/v95.
+//
+// packet-audit:verify packet=chat/clientbound/ChatWorldMessageSuperMegaphone version=gms_v84 ida=0xa6dc97
+func TestWorldMessageSuperMegaphoneByteOutputV84(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 84, 1)
+	input := WorldMessageSuperMegaphone{mode: 3, message: "hi", channelId: 5, whispersOn: true}
+	expected := []byte{0x03, 0x02, 0x00, 0x68, 0x69, 0x05, 0x01}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v84 super megaphone golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// IDA evidence (gms_v84 GMS_v84.1_U_DEVM.exe, port 13345) — sub_A6DC97
+// @0xa6dc97, mode==8 branch: channelId=Decode1, whispersOn=Decode1,
+// if(Decode1()) [hasItem] item=GW_ItemSlotBase::Decode. Same shape as
+// gms_v83/v95: no slotPos byte, hasItem+item-block directly. Wire (no item):
+// mode+message+channelId+whispersOn+hasItem(0).
+//
+// packet-audit:verify packet=chat/clientbound/ChatWorldMessageItemMegaphone version=gms_v84 ida=0xa6dc97
+func TestWorldMessageItemMegaphoneByteOutputV84NoItem(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 84, 1)
+	input := NewWorldMessageItemMegaphone(8, "hi", 2, true, nil)
+	expected := []byte{0x08, 0x02, 0x00, 0x68, 0x69, 0x02, 0x01, 0x00}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v84 item megaphone (no item) golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// IDA evidence (gms_v84 GMS_v84.1_U_DEVM.exe, port 13345) — sub_A6DC97
+// @0xa6dc97, mode==10 branch: v137=Decode1(count); if(count>1) DecodeStr
+// message[1]; if(count>2) DecodeStr message[2]; LABEL_18: channelId=Decode1,
+// whispersOn=Decode1. Plain channelId+whispersOn trailer, same as
+// gms_v83/v95 (not a channel*10+ear+1 formula).
+//
+// packet-audit:verify packet=chat/clientbound/ChatWorldMessageMultiMegaphone version=gms_v84 ida=0xa6dc97
+func TestWorldMessageMultiMegaphoneByteOutputV84(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 84, 1)
+	input := WorldMessageMultiMegaphone{mode: 10, messages: []string{"a", "b", "c"}, channelId: 1, whispersOn: true}
+	expected := []byte{
+		0x0A,             // mode
+		0x01, 0x00, 0x61, // message[0]="a"
+		0x03,             // count
+		0x01, 0x00, 0x62, // message[1]="b"
+		0x01, 0x00, 0x63, // message[2]="c"
+		0x01, // channelId
+		0x01, // whispersOn
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v84 multi megaphone golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// IDA evidence (gms_v87 GMSv87_4GB.exe, port 13343) —
+// CWvsContext::OnBroadcastMsg@0xab9fd5: v3=Decode1(mode) -> (mode!=4, prefix
+// branch skipped) -> DecodeStr(message) -> switch(v3): mode 2 has no case
+// arm (only 3/8/9/10/11/12/13) — falls straight to the LABEL_28 display
+// switch, no further reads. Wire: mode(1)+message(str), byte-identical to
+// gms_v83/v84/v95.
+//
+// packet-audit:verify packet=chat/clientbound/ChatWorldMessageMegaphone version=gms_v87 ida=0xab9fd5
+func TestWorldMessageMegaphoneByteOutputV87(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 87, 1)
+	input := NewWorldMessageMegaphone(2, "hi")
+	expected := []byte{0x02, 0x02, 0x00, 0x68, 0x69}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v87 megaphone golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// IDA evidence (gms_v87 GMSv87_4GB.exe, port 13343) —
+// CWvsContext::OnBroadcastMsg@0xab9fd5: case 3: goto LABEL_18 directly ->
+// channelId=Decode1, whispersOn=Decode1. Wire: mode(1)+message(str)+
+// channelId(1)+whispersOn(1), byte-identical to gms_v83/v84/v95.
+//
+// packet-audit:verify packet=chat/clientbound/ChatWorldMessageSuperMegaphone version=gms_v87 ida=0xab9fd5
+func TestWorldMessageSuperMegaphoneByteOutputV87(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 87, 1)
+	input := WorldMessageSuperMegaphone{mode: 3, message: "hi", channelId: 5, whispersOn: true}
+	expected := []byte{0x03, 0x02, 0x00, 0x68, 0x69, 0x05, 0x01}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v87 super megaphone golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// IDA evidence (gms_v87 GMSv87_4GB.exe, port 13343) —
+// CWvsContext::OnBroadcastMsg@0xab9fd5, case 8: channelId=Decode1,
+// whispersOn=Decode1, if(Decode1()) [hasItem] item=GW_ItemSlotBase::Decode.
+// Same shape as gms_v83/v84/v95: no slotPos byte. Wire (no item):
+// mode+message+channelId+whispersOn+hasItem(0).
+//
+// packet-audit:verify packet=chat/clientbound/ChatWorldMessageItemMegaphone version=gms_v87 ida=0xab9fd5
+func TestWorldMessageItemMegaphoneByteOutputV87NoItem(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 87, 1)
+	input := NewWorldMessageItemMegaphone(8, "hi", 2, true, nil)
+	expected := []byte{0x08, 0x02, 0x00, 0x68, 0x69, 0x02, 0x01, 0x00}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v87 item megaphone (no item) golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// IDA evidence (gms_v87 GMSv87_4GB.exe, port 13343) —
+// CWvsContext::OnBroadcastMsg@0xab9fd5, case 10: v131=Decode1(count);
+// if(v131>1) DecodeStr message[1]; if(v131>2) DecodeStr message[2];
+// LABEL_18: channelId=Decode1, whispersOn=Decode1. Plain trailer, same as
+// gms_v83/v84/v95.
+//
+// packet-audit:verify packet=chat/clientbound/ChatWorldMessageMultiMegaphone version=gms_v87 ida=0xab9fd5
+func TestWorldMessageMultiMegaphoneByteOutputV87(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 87, 1)
+	input := WorldMessageMultiMegaphone{mode: 10, messages: []string{"a", "b", "c"}, channelId: 1, whispersOn: true}
+	expected := []byte{
+		0x0A,             // mode
+		0x01, 0x00, 0x61, // message[0]="a"
+		0x03,             // count
+		0x01, 0x00, 0x62, // message[1]="b"
+		0x01, 0x00, 0x63, // message[2]="c"
+		0x01, // channelId
+		0x01, // whispersOn
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v87 multi megaphone golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// IDA evidence (jms_v185 MapleStory_dump_SCY.exe, port 13344) —
+// CWvsContext::OnBroadcastMsg@0xb0985b: v3=Decode1(mode) -> (mode!=4, prefix
+// branch skipped) -> DecodeStr(message) -> mode 2 does not match the
+// (3||11||12), 8, 9, 10, 13, 14 pre-decode arms — falls straight to the
+// LABEL_27 display switch with no further reads. Wire: mode(1)+message(str),
+// same shape as GMS.
+//
+// packet-audit:verify packet=chat/clientbound/ChatWorldMessageMegaphone version=jms_v185 ida=0xb0985b
+func TestWorldMessageMegaphoneByteOutputJms(t *testing.T) {
+	ctx := pt.CreateContext("JMS", 185, 1)
+	input := NewWorldMessageMegaphone(2, "hi")
+	expected := []byte{0x02, 0x02, 0x00, 0x68, 0x69}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("jms megaphone golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// IDA evidence (jms_v185 MapleStory_dump_SCY.exe, port 13344) —
+// CWvsContext::OnBroadcastMsg@0xb0985b: `if (v3==3 || v3==11 || v3==12) {
+// channelId=Decode1; whispersOn=Decode1; goto LABEL_27}` — mode 3 shares
+// this minimal pre-decode with two jms-only modes (11/12, unmapped/
+// unenrolled per task-18-report.md). Wire for mode 3:
+// mode(1)+message(str)+channelId(1)+whispersOn(1), same shape as GMS.
+//
+// packet-audit:verify packet=chat/clientbound/ChatWorldMessageSuperMegaphone version=jms_v185 ida=0xb0985b
+func TestWorldMessageSuperMegaphoneByteOutputJms(t *testing.T) {
+	ctx := pt.CreateContext("JMS", 185, 1)
+	input := WorldMessageSuperMegaphone{mode: 3, message: "hi", channelId: 5, whispersOn: true}
+	expected := []byte{0x03, 0x02, 0x00, 0x68, 0x69, 0x05, 0x01}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("jms super megaphone golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// IDA evidence (jms_v185 MapleStory_dump_SCY.exe, port 13344) —
+// CWvsContext::OnBroadcastMsg@0xb0985b, mode==8: channelId=Decode1,
+// whispersOn=Decode1, if(Decode1()) [hasItem] item=GW_ItemSlotBase::Decode.
+// Same shape as GMS: no slotPos byte. Wire (no item):
+// mode+message+channelId+whispersOn+hasItem(0).
+//
+// packet-audit:verify packet=chat/clientbound/ChatWorldMessageItemMegaphone version=jms_v185 ida=0xb0985b
+func TestWorldMessageItemMegaphoneByteOutputJmsNoItem(t *testing.T) {
+	ctx := pt.CreateContext("JMS", 185, 1)
+	input := NewWorldMessageItemMegaphone(8, "hi", 2, true, nil)
+	expected := []byte{0x08, 0x02, 0x00, 0x68, 0x69, 0x02, 0x01, 0x00}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("jms item megaphone (no item) golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// IDA evidence (jms_v185 MapleStory_dump_SCY.exe, port 13344) —
+// CWvsContext::OnBroadcastMsg@0xb0985b, mode==10: v163=Decode1(count);
+// if(v163>1) DecodeStr message[1]; if(v163>2) DecodeStr message[2];
+// channelId=Decode1, whispersOn=Decode1. Plain trailer, same as GMS.
+//
+// packet-audit:verify packet=chat/clientbound/ChatWorldMessageMultiMegaphone version=jms_v185 ida=0xb0985b
+func TestWorldMessageMultiMegaphoneByteOutputJms(t *testing.T) {
+	ctx := pt.CreateContext("JMS", 185, 1)
+	input := WorldMessageMultiMegaphone{mode: 10, messages: []string{"a", "b", "c"}, channelId: 1, whispersOn: true}
+	expected := []byte{
+		0x0A,             // mode
+		0x01, 0x00, 0x61, // message[0]="a"
+		0x03,             // count
+		0x01, 0x00, 0x62, // message[1]="b"
+		0x01, 0x00, 0x63, // message[2]="c"
+		0x01, // channelId
+		0x01, // whispersOn
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("jms multi megaphone golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
 func TestWorldMessageGachaponRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

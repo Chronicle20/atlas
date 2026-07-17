@@ -78,6 +78,116 @@ func TestTvSendMessageResultSuccessRoundTripV95(t *testing.T) {
 	}
 }
 
+// IDA evidence (gms_v84 GMS_v84.1_U_DEVM.exe, port 13345) —
+// CMapleTVMan::OnSendMessageResult@0x64c9ca (unnamed sub_64C9CA on this
+// stripped IDB):
+//
+//	if (Decode1(a1)) {           // hasError
+//	  v1 = Decode1(a1) - 1;      // code
+//	  if (!v1)      code==1 -> StringPool 3960 (GM_MESSAGE)
+//	  v3 = v1 - 1;
+//	  if (!v3)      code==2 -> StringPool 3962 (WRONG_USER, "!v3" branch)
+//	  if (v3 == 1)  code==3 -> StringPool 3961 (QUEUE_TOO_LONG, "v3==1" branch)
+//	}
+//	Same branch STRUCTURE as gms_v83/v95 (code1=first check, code2="!v3"
+//	branch, code3="v3==1" branch) — confirms GM_MESSAGE=1/WRONG_USER=2/
+//	QUEUE_TOO_LONG=3. template_gms_84_1.json previously carried the WRONG
+//	QUEUE_TOO_LONG=2/WRONG_USER=3 swap — corrected in this commit.
+//
+// packet-audit:verify packet=tv/clientbound/TvTvSendMessageResult version=gms_v84 ida=0x64c9ca
+func TestTvSendMessageResultSuccessRoundTripV84(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 84, 1)
+	input := NewTvSendMessageResultSuccess()
+	output := TvSendMessageResult{}
+	pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+	if output.HasError() {
+		t.Errorf("hasError: got true, want false")
+	}
+}
+
+func TestTvSendMessageResultErrorRoundTripV84(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 84, 1)
+	input := NewTvSendMessageResultError(2)
+	output := TvSendMessageResult{}
+	pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+	if !output.HasError() {
+		t.Errorf("hasError: got false, want true")
+	}
+	if output.Code() != 2 {
+		t.Errorf("code: got %v, want 2", output.Code())
+	}
+}
+
+// IDA evidence (gms_v87 GMSv87_4GB.exe, port 13343) —
+// CMapleTVMan::OnSendMessageResult@0x67040f: identical branch structure to
+// gms_v84 (StringPool ids 3965/3967/3966 for code 1/2/3 respectively) —
+// confirms GM_MESSAGE=1/WRONG_USER=2/QUEUE_TOO_LONG=3. template_gms_87_1.json
+// previously carried the same WRONG swap as v84 — corrected in this commit.
+//
+// packet-audit:verify packet=tv/clientbound/TvTvSendMessageResult version=gms_v87 ida=0x67040f
+func TestTvSendMessageResultSuccessRoundTripV87(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 87, 1)
+	input := NewTvSendMessageResultSuccess()
+	output := TvSendMessageResult{}
+	pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+	if output.HasError() {
+		t.Errorf("hasError: got true, want false")
+	}
+}
+
+func TestTvSendMessageResultErrorRoundTripV87(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 87, 1)
+	input := NewTvSendMessageResultError(2)
+	output := TvSendMessageResult{}
+	pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+	if !output.HasError() {
+		t.Errorf("hasError: got false, want true")
+	}
+	if output.Code() != 2 {
+		t.Errorf("code: got %v, want 2", output.Code())
+	}
+}
+
+// IDA evidence (jms_v185 MapleStory_dump_SCY.exe, port 13344) —
+// CMapleTVMan::OnSendMessageResult@0x6ab68d:
+//
+//	if (Decode1(iPacket)) {         // hasError
+//	  v2 = Decode1(iPacket) - 1;    // code
+//	  if (!v2) code==1 -> "Non-GM character tried to send GM message." (GM_MESSAGE)
+//	  v3 = v2 - 1;
+//	  if (!v3) code==2 -> "You entered wrong user name." (WRONG_USER)
+//	  if (v3==1) code==3 -> "You have to wait for more than 1 Hour..." (QUEUE_TOO_LONG)
+//	}
+//	Literal string content (not just StringPool ids, since jms strings are
+//	inline ASCII on this IDB) directly confirms GM_MESSAGE=1/WRONG_USER=2/
+//	QUEUE_TOO_LONG=3 — the same branch order as GMS. template_jms_185_1.json
+//	previously carried the same WRONG QUEUE_TOO_LONG=2/WRONG_USER=3 swap as
+//	the GMS templates — corrected in this commit.
+//
+// packet-audit:verify packet=tv/clientbound/TvTvSendMessageResult version=jms_v185 ida=0x6ab68d
+func TestTvSendMessageResultSuccessRoundTripJms(t *testing.T) {
+	ctx := pt.CreateContext("JMS", 185, 1)
+	input := NewTvSendMessageResultSuccess()
+	output := TvSendMessageResult{}
+	pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+	if output.HasError() {
+		t.Errorf("hasError: got true, want false")
+	}
+}
+
+func TestTvSendMessageResultErrorRoundTripJms(t *testing.T) {
+	ctx := pt.CreateContext("JMS", 185, 1)
+	input := NewTvSendMessageResultError(2)
+	output := TvSendMessageResult{}
+	pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+	if !output.HasError() {
+		t.Errorf("hasError: got false, want true")
+	}
+	if output.Code() != 2 {
+		t.Errorf("code: got %v, want 2", output.Code())
+	}
+}
+
 func TestTvSendMessageResultErrorRoundTripV95(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 95, 1)
 	input := NewTvSendMessageResultError(2)

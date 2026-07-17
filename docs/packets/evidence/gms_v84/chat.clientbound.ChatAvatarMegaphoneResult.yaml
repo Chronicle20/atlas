@@ -1,0 +1,10 @@
+packet: chat/clientbound/ChatAvatarMegaphoneResult
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnAvatarMegaphoneRes
+    address: "0xa75b7f"
+    decompile_sha256: 9b886c28a441ce226dbc7a05ad1e66b8b3cae7eb77bcc72d286b5c26f4619e1a
+verifies:
+    - libs/atlas-packet/chat/clientbound/avatar_megaphone_test.go#TestAvatarMegaphoneResultRoundTripNoMessageV84

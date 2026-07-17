@@ -7,6 +7,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -16,7 +17,14 @@ const AvatarMegaphoneResultWriter = "AvatarMegaphoneResult"
 
 // SetAvatarMegaphone arms the avatar (Mega Phone / character-look) megaphone
 // UI: itemId, sender name, 4 message lines, channel, whisper flag, and the
-// sender's AvatarLook (design §1.2, IDA v83≡v95).
+// sender's AvatarLook (design §1.2, IDA v83≡v84≡v87≡v95).
+//
+// jms_v185 DIVERGES (task-123 phase 20, IDA-verified via raw disasm —
+// CWvsContext::OnSetAvatarMegaphone@0xb117bb): the client decodes only ONE
+// message line, not four — Decode4(itemId), DecodeStr(name), DecodeStr(ONE
+// line), Decode4(channelId), Decode1(whispersOn), AvatarLook::Decode. Only
+// lines[0] is written/read for JMS; lines[1..3] are not on the wire at all
+// (not merely blank — genuinely absent). GMS keeps writing/reading all 4.
 // packet-audit:fname CWvsContext::OnSetAvatarMegaphone
 type SetAvatarMegaphone struct {
 	itemId     uint32
@@ -51,11 +59,18 @@ func (m SetAvatarMegaphone) String() string {
 
 func (m SetAvatarMegaphone) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
+	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
 		w.WriteInt(m.itemId)
 		w.WriteAsciiString(m.name)
-		for _, line := range m.lines {
-			w.WriteAsciiString(line)
+		if t.Region() == "JMS" {
+			// IDA-verified (CWvsContext::OnSetAvatarMegaphone@0xb117bb): jms
+			// reads only ONE message line, not four.
+			w.WriteAsciiString(m.lines[0])
+		} else {
+			for _, line := range m.lines {
+				w.WriteAsciiString(line)
+			}
 		}
 		w.WriteInt(m.channelId)
 		w.WriteBool(m.whispersOn)
@@ -66,10 +81,15 @@ func (m SetAvatarMegaphone) Encode(l logrus.FieldLogger, ctx context.Context) fu
 
 func (m *SetAvatarMegaphone) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
+		t := tenant.MustFromContext(ctx)
 		m.itemId = r.ReadUint32()
 		m.name = r.ReadAsciiString()
-		for i := range m.lines {
-			m.lines[i] = r.ReadAsciiString()
+		if t.Region() == "JMS" {
+			m.lines[0] = r.ReadAsciiString()
+		} else {
+			for i := range m.lines {
+				m.lines[i] = r.ReadAsciiString()
+			}
 		}
 		m.channelId = r.ReadUint32()
 		m.whispersOn = r.ReadBool()

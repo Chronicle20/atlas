@@ -27123,6 +27123,251 @@
           "comment": "m_nResult (a1[35]; server-chosen round-trip token, set by the decoder's open-arm Decode4)"
         }
       ]
+    },
+    "CWvsContext::OnBroadcastMsg": {
+      "address": "0xa6dc97",
+      "direction": "clientbound",
+      "calls": null
+    },
+    "CWvsContext::OnBroadcastMsg#Megaphone": {
+      "address": "0xa6dc97",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=2, MEGAPHONE)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message — mode 2 has no case in the body pre-decode switch, falls straight to the display switch with no further wire reads"
+        }
+      ]
+    },
+    "CWvsContext::OnBroadcastMsg#SuperMegaphone": {
+      "address": "0xa6dc97",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=3, SUPER_MEGAPHONE)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message"
+        },
+        {
+          "op": "Decode1",
+          "comment": "channelId — case 3 shared tail with case 10"
+        },
+        {
+          "op": "Decode1",
+          "comment": "whispersOn — shared tail second read"
+        }
+      ]
+    },
+    "CWvsContext::OnBroadcastMsg#ItemMegaphone": {
+      "address": "0xa6dc97",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=8, ITEM_MEGAPHONE)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message"
+        },
+        {
+          "op": "Decode1",
+          "comment": "channelId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "whispersOn"
+        },
+        {
+          "op": "Decode1",
+          "comment": "hasItem bool"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "GW_ItemSlotBase::Decode(item) — only when hasItem true; no separate slotPos byte before/around the block",
+          "guard": "hasItem"
+        }
+      ]
+    },
+    "CWvsContext::OnBroadcastMsg#MultiMegaphone": {
+      "address": "0xa6dc97",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=10, MULTI_MEGAPHONE)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message[0] (first message, common prefix read)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "count byte"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message[1]",
+          "guard": "count>1"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message[2]",
+          "guard": "count>2"
+        },
+        {
+          "op": "Decode1",
+          "comment": "channelId — shared tail with case 3"
+        },
+        {
+          "op": "Decode1",
+          "comment": "whispersOn"
+        }
+      ]
+    },
+    "CWvsContext::OnSetAvatarMegaphone": {
+      "address": "0xa75c49",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "itemId"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "name (sender name)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "lines[0]"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "lines[1]"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "lines[2]"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "lines[3]"
+        },
+        {
+          "op": "Decode4",
+          "comment": "channelId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "whispersOn"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "AvatarLook::Decode(look) — opaque avatar block (model.Avatar recurse)"
+        }
+      ]
+    },
+    "CWvsContext::OnClearAvatarMegaphone": {
+      "address": "0xa75e1e",
+      "direction": "clientbound",
+      "calls": null
+    },
+    "CWvsContext::OnAvatarMegaphoneRes": {
+      "address": "0xa75b7f",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "code — v = code - 86; v==0 (code 86 WAITING_LINE) and v==1 (code 87 LEVEL_GATE) skip the DecodeStr below; any other code reads it"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message — only when code is neither 86 nor 87",
+          "guard": "code != 86 && code != 87"
+        }
+      ]
+    },
+    "CMapleTVMan::OnSetMessage": {
+      "address": "0x64c7eb",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "flag (bit1 = receiverLook present)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "messageType"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "AvatarLook::Decode(senderLook) — opaque avatar block (model.Avatar recurse)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "senderName"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "receiverName"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "lines[0]"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "lines[1]"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "lines[2]"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "lines[3]"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "lines[4]"
+        },
+        {
+          "op": "Decode4",
+          "comment": "totalWaitSeconds"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "AvatarLook::Decode(receiverLook) — opaque avatar block",
+          "guard": "flag & 2"
+        }
+      ]
+    },
+    "CMapleTVMan::OnClearMessage": {
+      "address": "0x64c7d7",
+      "direction": "clientbound",
+      "calls": null
+    },
+    "CMapleTVMan::OnSendMessageResult": {
+      "address": "0x64c9ca",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "hasError"
+        },
+        {
+          "op": "Decode1",
+          "comment": "code",
+          "guard": "hasError"
+        }
+      ]
     }
   }
 }

@@ -1,0 +1,11 @@
+{
+  "WriterName": "ChatClearAvatarMegaphone",
+  "IDAName": "CWvsContext::OnClearAvatarMegaphone",
+  "Address": "0xa75e1e",
+  "Variant": "GMS/v84",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/chat/clientbound/avatar_megaphone.go",
+  "Rows": null,
+  "Verdict": 0,
+  "FlatInvalid": false
+}

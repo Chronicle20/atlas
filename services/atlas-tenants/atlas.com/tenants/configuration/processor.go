@@ -105,6 +105,24 @@ type Processor interface {
 	// AllMtsConfigsProvider returns a provider for all mts configs for a tenant
 	AllMtsConfigsProvider(tenantId uuid.UUID) model.Provider[[]map[string]interface{}]
 
+	// Rankings operations
+	// CreateRankings creates (or replaces) the tenant's rankings configuration
+	CreateRankings(mb *message.Buffer) func(tenantId uuid.UUID) func(rankings map[string]interface{}) (Model, error)
+	// CreateRankingsAndEmit creates the rankings configuration and emits events
+	CreateRankingsAndEmit(tenantId uuid.UUID, rankings map[string]interface{}) (Model, error)
+	// UpdateRankings updates the existing rankings configuration
+	UpdateRankings(mb *message.Buffer) func(tenantId uuid.UUID) func(rankings map[string]interface{}) (Model, error)
+	// UpdateRankingsAndEmit updates the rankings configuration and emits events
+	UpdateRankingsAndEmit(tenantId uuid.UUID, rankings map[string]interface{}) (Model, error)
+	// DeleteRankings deletes the rankings configuration
+	DeleteRankings(mb *message.Buffer) func(tenantId uuid.UUID) error
+	// DeleteRankingsAndEmit deletes the rankings configuration and emits events
+	DeleteRankingsAndEmit(tenantId uuid.UUID) error
+	// GetRankings gets the rankings configuration for a tenant
+	GetRankings(tenantId uuid.UUID) (map[string]interface{}, error)
+	// RankingsProvider returns a provider for the rankings configuration
+	RankingsProvider(tenantId uuid.UUID) model.Provider[map[string]interface{}]
+
 	// Seed operations
 	// SeedRoutes clears existing routes for a tenant and loads them from seed files
 	SeedRoutes(tenantId uuid.UUID) (SeedResult, error)
@@ -1254,4 +1272,151 @@ func (p *ProcessorImpl) SeedMtsConfigs(tenantId uuid.UUID) (SeedResult, error) {
 		tenantId, result.DeletedCount, result.CreatedCount, result.FailedCount)
 
 	return result, nil
+}
+
+// CreateRankings creates (or replaces) the tenant's rankings configuration
+func (p *ProcessorImpl) CreateRankings(mb *message.Buffer) func(tenantId uuid.UUID) func(rankings map[string]interface{}) (Model, error) {
+	return func(tenantId uuid.UUID) func(rankings map[string]interface{}) (Model, error) {
+		return func(rankings map[string]interface{}) (Model, error) {
+			rankingsId := ""
+			if id, ok := rankings["id"].(string); ok {
+				rankingsId = id
+			}
+
+			resourceData, err := CreateSingleRankingsJsonData(rankings)
+			if err != nil {
+				return Model{}, err
+			}
+
+			existingProvider := GetByTenantIdAndResourceNameProvider(tenantId, "rankings")(p.db)
+			existing, err := existingProvider()
+			if err == nil {
+				existing.ResourceData = resourceData
+				if err := UpdateConfiguration(p.db, existing); err != nil {
+					return Model{}, err
+				}
+				m, err := Make(existing)
+				if err != nil {
+					return Model{}, err
+				}
+				if err := mb.Put(EventTopicConfigurationStatus, CreateRankingsStatusEventProvider(tenantId, EventTypeRankingsUpdated, rankingsId)); err != nil {
+					return Model{}, err
+				}
+				return m, nil
+			} else if errors.Is(err, gorm.ErrRecordNotFound) {
+				entity := Entity{
+					ID:           uuid.New(),
+					TenantId:     tenantId,
+					ResourceName: "rankings",
+					ResourceData: resourceData,
+				}
+				if err := CreateConfiguration(p.db, entity); err != nil {
+					return Model{}, err
+				}
+				m, err := Make(entity)
+				if err != nil {
+					return Model{}, err
+				}
+				if err := mb.Put(EventTopicConfigurationStatus, CreateRankingsStatusEventProvider(tenantId, EventTypeRankingsCreated, rankingsId)); err != nil {
+					return Model{}, err
+				}
+				return m, nil
+			}
+			return Model{}, err
+		}
+	}
+}
+
+// CreateRankingsAndEmit creates the rankings configuration and emits events
+func (p *ProcessorImpl) CreateRankingsAndEmit(tenantId uuid.UUID, rankings map[string]interface{}) (Model, error) {
+	var result Model
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		var err error
+		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+			return func(tenantId uuid.UUID) (Model, error) {
+				return NewProcessor(p.l, p.ctx, tx).CreateRankings(mb)(tenantId)(rankings)
+			}
+		})(tenantId)
+		return err
+	})
+	return result, txErr
+}
+
+// UpdateRankings updates the existing rankings configuration
+func (p *ProcessorImpl) UpdateRankings(mb *message.Buffer) func(tenantId uuid.UUID) func(rankings map[string]interface{}) (Model, error) {
+	return func(tenantId uuid.UUID) func(rankings map[string]interface{}) (Model, error) {
+		return func(rankings map[string]interface{}) (Model, error) {
+			existingProvider := GetByTenantIdAndResourceNameProvider(tenantId, "rankings")(p.db)
+			existing, err := existingProvider()
+			if err != nil {
+				return Model{}, err
+			}
+
+			rankingsId := ""
+			if id, ok := rankings["id"].(string); ok {
+				rankingsId = id
+			}
+
+			resourceData, err := CreateSingleRankingsJsonData(rankings)
+			if err != nil {
+				return Model{}, err
+			}
+			existing.ResourceData = resourceData
+			if err := UpdateConfiguration(p.db, existing); err != nil {
+				return Model{}, err
+			}
+			m, err := Make(existing)
+			if err != nil {
+				return Model{}, err
+			}
+			if err := mb.Put(EventTopicConfigurationStatus, CreateRankingsStatusEventProvider(tenantId, EventTypeRankingsUpdated, rankingsId)); err != nil {
+				return Model{}, err
+			}
+			return m, nil
+		}
+	}
+}
+
+// UpdateRankingsAndEmit updates the rankings configuration and emits events
+func (p *ProcessorImpl) UpdateRankingsAndEmit(tenantId uuid.UUID, rankings map[string]interface{}) (Model, error) {
+	var result Model
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		var err error
+		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+			return func(tenantId uuid.UUID) (Model, error) {
+				return NewProcessor(p.l, p.ctx, tx).UpdateRankings(mb)(tenantId)(rankings)
+			}
+		})(tenantId)
+		return err
+	})
+	return result, txErr
+}
+
+// DeleteRankings deletes the rankings configuration
+func (p *ProcessorImpl) DeleteRankings(mb *message.Buffer) func(tenantId uuid.UUID) error {
+	return func(tenantId uuid.UUID) error {
+		if _, err := DeleteConfigurationByResourceName(p.db, tenantId, "rankings"); err != nil {
+			return err
+		}
+		return mb.Put(EventTopicConfigurationStatus, CreateRankingsStatusEventProvider(tenantId, EventTypeRankingsDeleted, ""))
+	}
+}
+
+// DeleteRankingsAndEmit deletes the rankings configuration and emits events
+func (p *ProcessorImpl) DeleteRankingsAndEmit(tenantId uuid.UUID) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return NewProcessor(p.l, p.ctx, tx).DeleteRankings(mb)(tenantId)
+		})
+	})
+}
+
+// GetRankings gets the rankings configuration for a tenant
+func (p *ProcessorImpl) GetRankings(tenantId uuid.UUID) (map[string]interface{}, error) {
+	return p.RankingsProvider(tenantId)()
+}
+
+// RankingsProvider returns a provider for the rankings configuration
+func (p *ProcessorImpl) RankingsProvider(tenantId uuid.UUID) model.Provider[map[string]interface{}] {
+	return GetRankingsProvider(tenantId)(p.db)
 }

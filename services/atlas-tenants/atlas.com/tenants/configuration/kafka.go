@@ -21,6 +21,9 @@ const (
 	EventTypeMtsConfigCreated          = "MTS_CONFIG_CREATED"
 	EventTypeMtsConfigUpdated          = "MTS_CONFIG_UPDATED"
 	EventTypeMtsConfigDeleted          = "MTS_CONFIG_DELETED"
+	EventTypeRankingsCreated           = "RANKINGS_CREATED"
+	EventTypeRankingsUpdated           = "RANKINGS_UPDATED"
+	EventTypeRankingsDeleted           = "RANKINGS_DELETED"
 )
 
 // ConfigurationStatusEvent is a generic event for configuration status changes
@@ -75,6 +78,18 @@ func CreateInstanceRouteStatusEventProvider(tenantId uuid.UUID, eventType string
 		Type:         eventType,
 		ResourceType: "instance-route",
 		ResourceId:   instanceRouteId,
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// CreateRankingsStatusEventProvider creates a provider for rankings configuration status events
+func CreateRankingsStatusEventProvider(tenantId uuid.UUID, eventType string, rankingsId string) model.Provider[[]kafka.Message] {
+	key := []byte(tenantId.String())
+	value := ConfigurationStatusEvent{
+		TenantId:     tenantId,
+		Type:         eventType,
+		ResourceType: "rankings",
+		ResourceId:   rankingsId,
 	}
 	return producer.SingleMessageProvider(key, value)
 }

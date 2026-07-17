@@ -3076,6 +3076,10 @@
         "writer": "SummonSkill"
       },
       {
+        "opCode": "0x47",
+        "writer": "IncubatorResult"
+      },
+      {
         "opCode": "0x170",
         "writer": "VegaScroll",
         "options": {

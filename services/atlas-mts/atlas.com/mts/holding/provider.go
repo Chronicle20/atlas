@@ -136,6 +136,7 @@ func modelFromEntity(e entity) (Model, error) {
 		SetRingId(e.RingId).
 		SetViciousCount(e.ViciousCount).
 		SetFlags(e.Flags).
+		SetOwner(e.Owner).
 		SetCreatedAt(e.CreatedAt)
 	return b.Build()
 }

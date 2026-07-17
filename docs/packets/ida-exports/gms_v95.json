@@ -14292,6 +14292,33 @@
         }
       ]
     },
+    "CWvsContext::OnIncubatorResult": {
+      "address": "0xa00380",
+      "direction": "clientbound",
+      "note": "task-19: itemId<=0 renders the failure dialog (no further reads). v95 adds the gachaponItemId/bonusItemId/bonusCount tail vs v83/v84/v87/jms_v185 (verified: v87 and jms_v185 do NOT read this tail — see task-19 report).",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "itemId (v3)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "count (v4)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nGachaponItemID"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nBonusItemID"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nBonusCount"
+        }
+      ]
+    },
     "CField::OnItemUpgrade#Failure": {
       "address": "0x52a430",
       "direction": "clientbound",

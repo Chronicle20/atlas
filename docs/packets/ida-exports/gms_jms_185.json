@@ -13238,6 +13238,21 @@
           "comment": "code byte (case 2/3/6/7 = error — no further reads in v83)"
         }
       ]
+    },
+    "CWvsContext::OnIncubatorResult": {
+      "address": "0xb0f30b",
+      "direction": "clientbound",
+      "notes": "Task 19 (live IDA re-verify, jms_v185 port 13344): reads int itemId (Decode4) + short count (Decode2) only — no further packet reads (no gachapon/bonus tail). Matches v83/v84/gms_v87; only v95 reads the extended 5-field body.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "itemId"
+        },
+        {
+          "op": "Decode2",
+          "comment": "count"
+        }
+      ]
     }
   }
 }

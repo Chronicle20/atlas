@@ -124,6 +124,7 @@ func CreateListing(db *gorm.DB, m Model) (Model, error) {
 		RingId:           m.RingId(),
 		ViciousCount:     m.ViciousCount(),
 		Flags:            m.Flags(),
+		Owner:            m.Owner(),
 		ListValue:        m.ListValue(),
 		BuyNowPrice:      m.BuyNowPrice(),
 		CommissionRate:   m.CommissionRate(),

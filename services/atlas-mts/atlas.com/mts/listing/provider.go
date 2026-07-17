@@ -274,6 +274,7 @@ func modelFromEntity(e entity) (Model, error) {
 		SetRingId(e.RingId).
 		SetViciousCount(e.ViciousCount).
 		SetFlags(e.Flags).
+		SetOwner(e.Owner).
 		SetListValue(e.ListValue).
 		SetBuyNowPrice(e.BuyNowPrice).
 		SetCommissionRate(e.CommissionRate).

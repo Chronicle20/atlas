@@ -261,17 +261,17 @@ services:
       LOG_LEVEL: debug
       DB_NAME: atlas-fame
 
-  atlas-gachapons:
+  atlas-reward-pools:
     <<: [*atlas-defaults, *seed-catalog]
-    container_name: atlas-gachapons
+    container_name: atlas-reward-pools
     build:
       context: ../..
       dockerfile: Dockerfile
       args:
-        SERVICE: atlas-gachapons
-    image: atlas-gachapons:${ATLAS_IMAGE_TAG:-local}
+        SERVICE: atlas-reward-pools
+    image: atlas-reward-pools:${ATLAS_IMAGE_TAG:-local}
     environment:
-      DB_NAME: atlas-gachapons
+      DB_NAME: atlas-reward-pools
       SEED_CATALOG_ROOT: /var/run/seed-catalog
 
   atlas-guilds:

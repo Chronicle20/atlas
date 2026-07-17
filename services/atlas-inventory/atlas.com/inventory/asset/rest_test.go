@@ -47,6 +47,7 @@ func TestMarshalUnmarshalSunny(t *testing.T) {
 		SetSlots(7).
 		SetStrength(10).
 		SetDexterity(5).
+		SetOwner("Tumi").
 		Build()
 	ierm, err := model.Map(asset.Transform)(model.FixedProvider(ieam))()
 	if err != nil {
@@ -90,5 +91,8 @@ func TestMarshalUnmarshalSunny(t *testing.T) {
 	}
 	if ieam.Slots() != oeam.Slots() {
 		t.Errorf("Slots mismatch: %d != %d", ieam.Slots(), oeam.Slots())
+	}
+	if ieam.Owner() != oeam.Owner() {
+		t.Errorf("Owner mismatch: %q != %q", ieam.Owner(), oeam.Owner())
 	}
 }

@@ -2607,6 +2607,10 @@
         }
       },
       {
+        "opCode": "0x47",
+        "writer": "IncubatorResult"
+      },
+      {
         "opCode": "0x17B",
         "writer": "VegaScroll",
         "options": {

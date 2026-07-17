@@ -106,6 +106,8 @@ type DestroyAssetFromSlotPayload struct {
 	Slot          int16  `json:"slot"`          // Slot to destroy from (negative for equipped slots, positive for inventory slots)
 	Quantity      uint32 `json:"quantity"`      // Quantity to destroy (0 or 1 for equipment)
 	ShowEffect    bool   `json:"showEffect"`    // Render the item-loss chat line on the client when true
+	// TemplateId lets the compensator re-create a slot-destroyed asset
+	TemplateId uint32 `json:"templateId,omitempty"`
 }
 
 // EquipAssetPayload represents the payload required to equip an asset from one inventory slot to an equipped slot.
@@ -658,6 +660,7 @@ type AcceptToMtsListingPayload struct {
 	RingId        uint32 `json:"ringId"`
 	ViciousCount  uint32 `json:"viciousCount"`
 	Flags         uint16 `json:"flags"`
+	Owner         string `json:"owner"`
 
 	// Sale params
 	ListValue      uint32     `json:"listValue"`
@@ -916,4 +919,30 @@ type FieldEffectWeatherPayload struct {
 	ItemId    uint32     `json:"itemId"`    // Cash shop weather item ID
 	Message   string     `json:"message"`   // Weather message text
 	Duration  uint32     `json:"duration"`  // Duration in seconds
+}
+
+// SetAssetOwnerPayload represents the payload required to set the owner tag on an asset in a specific inventory slot.
+type SetAssetOwnerPayload struct {
+	CharacterId   uint32 `json:"characterId"`   // CharacterId associated with the action
+	InventoryType byte   `json:"inventoryType"` // Type of inventory (1=equip, 2=use, 3=setup, 4=etc, 5=cash)
+	Slot          int16  `json:"slot"`          // Slot of the asset to tag (negative for equipped slots, positive for inventory slots)
+	Owner         string `json:"owner"`         // Owner name to set on the asset
+}
+
+// ApplyAssetLockPayload represents the payload required to apply a sealing lock (expiration) to an asset in a specific inventory slot.
+type ApplyAssetLockPayload struct {
+	CharacterId   uint32    `json:"characterId"`   // CharacterId associated with the action
+	InventoryType byte      `json:"inventoryType"` // Type of inventory (1=equip, 2=use, 3=setup, 4=etc, 5=cash)
+	Slot          int16     `json:"slot"`          // Slot of the asset to lock (negative for equipped slots, positive for inventory slots)
+	Expiration    time.Time `json:"expiration"`    // Expiration time to apply to the asset
+}
+
+// IncubatorResultPayload represents the payload required to deliver the result of an incubator use to a character.
+type IncubatorResultPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	ItemId      uint32     `json:"itemId"`      // ItemId of the resulting item
+	Count       uint32     `json:"count"`       // Count of the resulting item
+	EggId       uint32     `json:"eggId"`       // EggId of the sacrificed Pigmy Egg (v95 client uses it to pick the region success NPC)
 }

@@ -149,6 +149,7 @@ configMapGenerator:
       - EVENT_TOPIC_GACHAPON_REWARD_WON=EVENT_TOPIC_GACHAPON_REWARD_WON-main
       - EVENT_TOPIC_GUILD_STATUS=EVENT_TOPIC_GUILD_STATUS-main
       - EVENT_TOPIC_GUILD_THREAD_STATUS=EVENT_TOPIC_GUILD_THREAD_STATUS-main
+      - EVENT_TOPIC_INCUBATOR_RESULT=EVENT_TOPIC_INCUBATOR_RESULT-main
       - EVENT_TOPIC_INSTANCE_TRANSPORT=EVENT_TOPIC_INSTANCE_TRANSPORT-main
       - EVENT_TOPIC_INVENTORY_CHANGED=EVENT_TOPIC_INVENTORY_CHANGED-main
       - EVENT_TOPIC_INVENTORY_STATUS=EVENT_TOPIC_INVENTORY_STATUS-main
@@ -232,7 +233,7 @@ images:
     newTag: main-fdbd4c4
   - name: ghcr.io/chronicle20/atlas-families/atlas-families
     newTag: main-fdbd4c4
-  - name: ghcr.io/chronicle20/atlas-gachapons/atlas-gachapons
+  - name: ghcr.io/chronicle20/atlas-reward-pools/atlas-reward-pools
     newTag: main-fdbd4c4
   - name: ghcr.io/chronicle20/atlas-guilds/atlas-guilds
     newTag: main-fdbd4c4

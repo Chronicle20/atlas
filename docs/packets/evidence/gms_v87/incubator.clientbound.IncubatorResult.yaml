@@ -1,0 +1,10 @@
+packet: incubator/clientbound/IncubatorResult
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnIncubatorResult
+    address: "0xabff10"
+    decompile_sha256: 93aee49e7e341d955bf4e00ff4f651a00b0fa472c4f69df892512f470a88c66b
+verifies:
+    - libs/atlas-packet/incubator/clientbound/result_test.go#TestIncubatorResult

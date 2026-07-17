@@ -4,6 +4,7 @@ import (
 	"atlas-inventory/asset"
 	"atlas-inventory/data/consumable"
 	"atlas-inventory/kafka/message"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
@@ -30,6 +31,9 @@ type ProcessorMock struct {
 	UpdateEquipmentStatsFunc         func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, assetId uint32, stats asset.Model) error
 	ChangeTemplateAndEmitFunc        func(transactionId uuid.UUID, characterId uint32, assetId uint32, newTemplateId uint32) error
 	ChangeTemplateFunc               func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, assetId uint32, newTemplateId uint32) error
+	UpdateOwnerFunc                  func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a asset.Model, owner string) error
+	ApplyLockFunc                    func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a asset.Model, expiration time.Time) error
+	ClearLockFunc                    func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a asset.Model) error
 	DeleteAndEmitFunc                func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, assetId uint32) error
 	CreateFunc                       func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, templateId uint32, slot int16, opts asset.CreateOptions) (asset.Model, error)
 	CreateFromModelFunc              func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, m asset.Model) (asset.Model, error)
@@ -191,6 +195,39 @@ func (m *ProcessorMock) ChangeTemplate(mb *message.Buffer) func(transactionId uu
 	}
 	return func(transactionId uuid.UUID, characterId uint32, assetId uint32, newTemplateId uint32) error {
 		return nil
+	}
+}
+
+func (m *ProcessorMock) UpdateOwner(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a asset.Model, owner string) error {
+	if m.UpdateOwnerFunc != nil {
+		return m.UpdateOwnerFunc(mb)
+	}
+	return func(transactionId uuid.UUID, characterId uint32) func(a asset.Model, owner string) error {
+		return func(a asset.Model, owner string) error {
+			return nil
+		}
+	}
+}
+
+func (m *ProcessorMock) ApplyLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a asset.Model, expiration time.Time) error {
+	if m.ApplyLockFunc != nil {
+		return m.ApplyLockFunc(mb)
+	}
+	return func(transactionId uuid.UUID, characterId uint32) func(a asset.Model, expiration time.Time) error {
+		return func(a asset.Model, expiration time.Time) error {
+			return nil
+		}
+	}
+}
+
+func (m *ProcessorMock) ClearLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a asset.Model) error {
+	if m.ClearLockFunc != nil {
+		return m.ClearLockFunc(mb)
+	}
+	return func(transactionId uuid.UUID, characterId uint32) func(a asset.Model) error {
+		return func(a asset.Model) error {
+			return nil
+		}
 	}
 }
 

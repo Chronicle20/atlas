@@ -358,15 +358,15 @@ func CreateSingleMtsConfigJsonData(config map[string]interface{}) (json.RawMessa
 
 // InstanceRouteRestModel is the JSON:API resource for instance routes
 type InstanceRouteRestModel struct {
-	Id                    string `json:"-"`
-	Name                  string `json:"name"`
-	StartMapId            uint32 `json:"startMapId"`
+	Id                    string   `json:"-"`
+	Name                  string   `json:"name"`
+	StartMapId            uint32   `json:"startMapId"`
 	TransitMapIds         []uint32 `json:"transitMapIds"`
-	DestinationMapId      uint32 `json:"destinationMapId"`
-	Capacity              uint32 `json:"capacity"`
-	BoardingWindowSeconds uint32 `json:"boardingWindowSeconds"`
-	TravelDurationSeconds uint32 `json:"travelDurationSeconds"`
-	TransitMessage        string `json:"transitMessage,omitempty"`
+	DestinationMapId      uint32   `json:"destinationMapId"`
+	Capacity              uint32   `json:"capacity"`
+	BoardingWindowSeconds uint32   `json:"boardingWindowSeconds"`
+	TravelDurationSeconds uint32   `json:"travelDurationSeconds"`
+	TransitMessage        string   `json:"transitMessage,omitempty"`
 }
 
 // GetID returns the resource ID

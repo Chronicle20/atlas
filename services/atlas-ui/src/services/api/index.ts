@@ -138,7 +138,6 @@ export {
 export { monstersService } from './monsters.service';
 export { reactorsService } from './reactors.service';
 export { dropsService } from './drops.service';
-export { gachaponsService } from './gachapons.service';
 export { itemStringsService } from './item-strings.service';
 export { itemsService } from './items.service';
 export { skillsService } from './skills.service';
@@ -149,8 +148,6 @@ export { seedService } from './seed.service';
 export type { MonsterData, MonsterAttributes } from '@/types/models/monster';
 export type { ReactorData, ReactorAttributes } from '@/types/models/reactor';
 export type { DropData, ReactorDropData } from '@/types/models/drop';
-export type { GachaponData, GachaponAttributes } from '@/types/models/gachapon';
-export type { GachaponRewardData, GachaponRewardAttributes } from '@/types/models/gachapon-reward';
 export type { ItemStringData, ItemStringAttributes } from '@/types/models/item-string';
 export type { PortalScriptData } from './portal-scripts.service';
 export type { ReactorScriptData } from './reactor-scripts.service';

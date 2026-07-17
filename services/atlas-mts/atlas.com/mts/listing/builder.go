@@ -47,6 +47,7 @@ type Builder struct {
 	ringId        uint32
 	viciousCount  uint32
 	flags         uint16
+	owner         string
 
 	listValue      uint32
 	buyNowPrice    *uint32
@@ -226,6 +227,11 @@ func (b *Builder) SetFlags(v uint16) *Builder {
 	return b
 }
 
+func (b *Builder) SetOwner(v string) *Builder {
+	b.owner = v
+	return b
+}
+
 func (b *Builder) SetListValue(v uint32) *Builder {
 	b.listValue = v
 	return b
@@ -334,6 +340,7 @@ func (b *Builder) Build() (Model, error) {
 		ringId:           b.ringId,
 		viciousCount:     b.viciousCount,
 		flags:            b.flags,
+		owner:            b.owner,
 		listValue:        b.listValue,
 		buyNowPrice:      b.buyNowPrice,
 		commissionRate:   b.commissionRate,

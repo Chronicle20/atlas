@@ -109,6 +109,7 @@ const mockAsset: Asset = {
     createdAt: '2024-01-01T00:00:00.000Z',
     quantity: 1,
     ownerId: 123,
+    owner: '',
     flag: 0,
     rechargeable: 0,
     strength: 0,

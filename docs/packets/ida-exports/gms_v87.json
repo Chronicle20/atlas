@@ -13842,6 +13842,21 @@
         }
       ]
     },
+    "CWvsContext::OnIncubatorResult": {
+      "address": "0xabff10",
+      "direction": "clientbound",
+      "notes": "Task 19 (live IDA re-verify, gms_v87 port 13343): reads int itemId (Decode4) + short count (Decode2) only — no further packet reads (no gachapon/bonus tail). Matches v83/v84/jms; only v95 reads the extended 5-field body.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "itemId"
+        },
+        {
+          "op": "Decode2",
+          "comment": "count"
+        }
+      ]
+    },
     "CField::OnItemUpgrade#Open": {
       "address": "0x55fa12",
       "direction": "clientbound",

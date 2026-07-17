@@ -48,6 +48,7 @@ type Compensator interface {
 	compensateSelectGachaponReward(s Saga, failedStep Step[any]) error
 	compensateCharacterCreation(s Saga, failedStep Step[any]) error
 	compensatePetEvolution(s Saga, failedStep Step[any]) error
+	compensateCashItemUse(s Saga, failedStep Step[any]) error
 	compensatePointReset(s Saga, failedStep Step[any]) error
 	compensateMtsOperation(s Saga, failedStep Step[any]) error
 
@@ -73,6 +74,13 @@ type Compensator interface {
 	// and the deducted mesos (AwardMesos → inverse credit). No lifecycle
 	// transitions, no Failed emission, no cache eviction — callers handle those.
 	DispatchPetEvolutionRollbacks(s Saga)
+
+	// DispatchCashItemUseRollbacks reverse-walks the completed steps of a
+	// cash-item-use saga (ItemTagUse/SealingLockUse/IncubatorUse), re-creating
+	// every consumed item (DestroyAsset/DestroyAssetFromSlot → CreateItem) and
+	// destroying every awarded result (AwardAsset → DestroyItem). No lifecycle
+	// transitions, no Failed emission, no cache eviction — callers handle those.
+	DispatchCashItemUseRollbacks(s Saga)
 
 	// DispatchPointResetRollbacks reverse-walks the completed steps of a
 	// point_reset saga, re-awarding the destroyed AP/SP Reset item
@@ -206,6 +214,14 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 	// rather than only compensating the failed step.
 	if s.SagaType() == PetEvolution {
 		return c.compensatePetEvolution(s, failedStep)
+	}
+
+	// Cash-item-use reverse-walk (Task 10). A failed item_tag_use /
+	// sealing_lock_use / incubator_use must refund the already-completed
+	// consume steps (the tagged/sealed/incubated item) and undo any awarded
+	// result rather than only compensating the failed step.
+	if s.SagaType() == ItemTagUse || s.SagaType() == SealingLockUse || s.SagaType() == IncubatorUse {
+		return c.compensateCashItemUse(s, failedStep)
 	}
 
 	// Point-reset reverse-walk (task-126, shape B). A destroy-first saga:
@@ -1169,6 +1185,131 @@ func (c *CompensatorImpl) DispatchPetEvolutionRollbacks(s Saga) {
 	}
 }
 
+// compensateCashItemUse is the reverse-walk compensator for cash-item-use
+// sagas (ItemTagUse/SealingLockUse/IncubatorUse — Task 10). On a failed step
+// (e.g. the terminal incubator_result emit) it walks the saga's completed
+// steps in reverse, re-creating consumed items and destroying awarded
+// results, emits exactly one StatusEventTypeFailed, cancels the Phase-4
+// timer, and evicts the saga. The FAILED event is what triggers the channel's
+// INCUBATOR_RESULT(0) announcement.
+//
+// Double-emission is prevented by TryTransition(Compensating → Failed): if the
+// timer already emitted Failed, the transition is refused and this function
+// returns without re-emitting. Mirrors compensatePetEvolution.
+func (c *CompensatorImpl) compensateCashItemUse(s Saga, failedStep Step[any]) error {
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"saga_type":      s.SagaType(),
+		"failed_step":    failedStep.StepId(),
+		"failed_action":  failedStep.Action(),
+		"tenant_id":      c.t.Id().String(),
+	}).Info("Cash-item-use saga failing — dispatching reverse-walk compensation.")
+
+	c.DispatchCashItemUseRollbacks(s)
+
+	if !GetCache().TryTransition(c.ctx, s.TransactionId(), SagaLifecycleCompensating, SagaLifecycleFailed) {
+		c.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Info("saga already in terminal Failed state; reverse-walk emission skipped.")
+		SagaTimers().Cancel(s.TransactionId())
+		GetCache().Remove(c.ctx, s.TransactionId())
+		return nil
+	}
+
+	SagaTimers().Cancel(s.TransactionId())
+	GetCache().Remove(c.ctx, s.TransactionId())
+
+	reason := fmt.Sprintf("Cash item use (%s) failed at step [%s] action [%s]", s.SagaType(), failedStep.StepId(), failedStep.Action())
+	if err := EmitSagaFailed(c.l, c.ctx, s, sagaMsg.ErrorCodeUnknown, reason, failedStep.StepId()); err != nil {
+		c.l.WithError(err).WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Error("Failed to emit saga failed event after cash-item-use compensation.")
+		return err
+	}
+
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"tenant_id":      c.t.Id().String(),
+	}).Info("Cash-item-use reverse-walk compensation complete; saga terminated.")
+	return nil
+}
+
+// DispatchCashItemUseRollbacks reverse-walks the saga's completed steps and
+// dispatches the inverse compensation command for each. This is the pure
+// "dispatch" half — no lifecycle transitions, no event emission, no cache
+// eviction. Callers are responsible for those.
+//
+// Inverses:
+//   - DestroyAsset (item consumed by templateId) → CreateItem (refund it).
+//   - DestroyAssetFromSlot (item consumed from a specific slot, e.g. the tag/
+//     seal item or the incubator's sacrificed target) → CreateItem, using the
+//     TemplateId carried on the payload. A payload with no TemplateId is
+//     skipped (nothing to re-create) rather than issuing a zero-templateId
+//     create.
+//   - AwardAsset (a granted result, e.g. the incubator's produced item)  →
+//     DestroyItem (mirrors DispatchCharacterCreationRollbacks's AwardAsset
+//     inverse).
+//
+// An error refunding one step does not abort the chain.
+func (c *CompensatorImpl) DispatchCashItemUseRollbacks(s Saga) {
+	steps := s.Steps()
+	for i := len(steps) - 1; i >= 0; i-- {
+		step := steps[i]
+		if step.Status() != Completed {
+			continue
+		}
+		switch step.Action() {
+		case DestroyAsset:
+			if payload, ok := step.Payload().(DestroyAssetPayload); ok {
+				qty := payload.Quantity
+				if qty == 0 {
+					qty = 1
+				}
+				if err := c.compP.RequestCreateItem(s.TransactionId(), payload.CharacterId, payload.TemplateId, qty, time.Time{}); err != nil {
+					c.l.WithError(err).WithFields(logrus.Fields{
+						"transaction_id": s.TransactionId().String(),
+						"step_id":        step.StepId(),
+						"template_id":    payload.TemplateId,
+					}).Error("Reverse-walk: DestroyAsset -> CreateItem dispatch failed; continuing chain.")
+				}
+			}
+		case DestroyAssetFromSlot:
+			if payload, ok := step.Payload().(DestroyAssetFromSlotPayload); ok {
+				if payload.TemplateId == 0 {
+					c.l.WithFields(logrus.Fields{
+						"transaction_id": s.TransactionId().String(),
+						"step_id":        step.StepId(),
+					}).Error("Reverse-walk: DestroyAssetFromSlot payload has no templateId; cannot re-create.")
+					continue
+				}
+				qty := payload.Quantity
+				if qty == 0 {
+					qty = 1
+				}
+				if err := c.compP.RequestCreateItem(s.TransactionId(), payload.CharacterId, payload.TemplateId, qty, time.Time{}); err != nil {
+					c.l.WithError(err).WithFields(logrus.Fields{
+						"transaction_id": s.TransactionId().String(),
+						"step_id":        step.StepId(),
+						"template_id":    payload.TemplateId,
+					}).Error("Reverse-walk: DestroyAssetFromSlot -> CreateItem dispatch failed; continuing chain.")
+				}
+			}
+		case AwardAsset:
+			if payload, ok := step.Payload().(AwardItemActionPayload); ok {
+				if err := c.compP.RequestDestroyItem(s.TransactionId(), payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity, false); err != nil {
+					c.l.WithError(err).WithFields(logrus.Fields{
+						"transaction_id": s.TransactionId().String(),
+						"step_id":        step.StepId(),
+						"template_id":    payload.Item.TemplateId,
+					}).Error("Reverse-walk: AwardAsset -> DestroyItem dispatch failed; continuing chain.")
+				}
+			}
+		}
+	}
+}
+
 // compensatePointReset is the point-reset reverse-walk compensator (task-126,
 // design §3 shape B). On a failed transfer_ap / transfer_sp it re-awards the
 // already-consumed AP/SP Reset item (destroy-first saga) and emits exactly one
@@ -1435,6 +1576,7 @@ func assetDataFromMtsListingSnapshot(p AcceptToMtsListingPayload) asset2.AssetDa
 		Level:         p.Level,
 		Experience:    p.ItemExp,
 		Flag:          p.Flags,
+		Owner:         p.Owner,
 	}
 }
 

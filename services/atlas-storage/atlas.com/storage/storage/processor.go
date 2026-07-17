@@ -108,6 +108,7 @@ func (p *ProcessorImpl) Deposit(worldId world.Id, accountId uint32, body message
 		SetExpiration(body.Expiration).
 		SetQuantity(body.Quantity).
 		SetOwnerId(body.OwnerId).
+		SetOwner(body.Owner).
 		SetFlag(body.Flag).
 		SetRechargeable(body.Rechargeable).
 		SetStrength(body.Strength).
@@ -258,6 +259,7 @@ func (p *ProcessorImpl) Accept(worldId world.Id, accountId uint32, body compartm
 		SetExpiration(body.Expiration).
 		SetQuantity(body.Quantity).
 		SetOwnerId(body.OwnerId).
+		SetOwner(body.Owner).
 		SetFlag(body.Flag).
 		SetRechargeable(body.Rechargeable).
 		SetStrength(body.Strength).

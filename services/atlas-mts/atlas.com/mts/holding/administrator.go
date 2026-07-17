@@ -105,6 +105,7 @@ func CreateHolding(db *gorm.DB, m Model) (Model, error) {
 		RingId:        m.RingId(),
 		ViciousCount:  m.ViciousCount(),
 		Flags:         m.Flags(),
+		Owner:         m.Owner(),
 		CreatedAt:     createdAt,
 	}
 	if err := db.Create(&e).Error; err != nil {

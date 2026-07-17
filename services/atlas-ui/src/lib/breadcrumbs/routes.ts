@@ -190,11 +190,16 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
     entityType: 'reactor',
   },
 
-  // Gachapon routes
+  // Reward pool routes
   {
-    pattern: '/gachapons',
-    label: 'Gachapons',
+    pattern: '/reward-pools',
+    label: 'Reward Pools',
     parent: '/',
+  },
+  {
+    pattern: '/reward-pools/[id]',
+    label: 'Pool',
+    parent: '/reward-pools',
   },
 
   // Setup routes
@@ -485,7 +490,7 @@ export const ROUTE_PATTERNS = {
   MAP_DETAIL: '/maps/[id]',
   MAP_PORTAL_DETAIL: '/maps/[id]/portals/[portalId]',
   REACTOR_DETAIL: '/reactors/[id]',
-  GACHAPONS: '/gachapons',
+  REWARD_POOLS: '/reward-pools',
   SETUP: '/setup',
   TENANTS: '/tenants',
   TENANT_DETAIL: '/tenants/[id]',

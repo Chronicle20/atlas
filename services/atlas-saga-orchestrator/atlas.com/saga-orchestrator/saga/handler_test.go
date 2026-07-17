@@ -419,7 +419,6 @@ func TestHandleAwardAsset(t *testing.T) {
 	}
 }
 
-
 func TestHandleAwardLevel(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -1256,4 +1255,66 @@ func TestHandleCreateAndEquipAsset_PayloadConversion(t *testing.T) {
 	assert.Equal(t, sagaPayload.CharacterId, capturedPayload.CharacterId)
 	assert.Equal(t, sagaPayload.Item.TemplateId, capturedPayload.Item.TemplateId)
 	assert.Equal(t, sagaPayload.Item.Quantity, capturedPayload.Item.Quantity)
+}
+
+// TestGetHandlerIncubatorResult verifies IncubatorResult is registered in the
+// GetHandler dispatch table (Task 10).
+func TestGetHandlerIncubatorResult(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	_, ctx := setupContext()
+
+	h := NewHandler(logger, ctx)
+	_, ok := h.GetHandler(IncubatorResult)
+	assert.True(t, ok, "IncubatorResult handler not registered")
+}
+
+// TestHandleIncubatorResult verifies the fire-and-forget IncubatorResult
+// handler emits EVENT_TOPIC_INCUBATOR_RESULT and immediately marks the step
+// complete (no response event advances an IncubatorResult step; see
+// event_acceptance.go's self-completing entry).
+func TestHandleIncubatorResult(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+
+	_, ctx := setupContext()
+
+	transactionId := uuid.New()
+	saga, err := NewBuilder().
+		SetTransactionId(transactionId).
+		SetSagaType(IncubatorUse).
+		SetInitiatedBy("test").
+		Build()
+	assert.NoError(t, err)
+
+	payload := IncubatorResultPayload{
+		CharacterId: 12345,
+		WorldId:     world.Id(0),
+		ChannelId:   channel.Id(1),
+		ItemId:      5000000,
+		Count:       1,
+	}
+	step := NewStep[any]("incubator-result-step", Pending, IncubatorResult, payload)
+
+	err = NewHandler(logger, ctx).handleIncubatorResult(saga, step)
+	assert.NoError(t, err)
+}
+
+// TestHandleIncubatorResult_InvalidPayload verifies the invalid-payload guard.
+func TestHandleIncubatorResult_InvalidPayload(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	_, ctx := setupContext()
+
+	transactionId := uuid.New()
+	saga, err := NewBuilder().
+		SetTransactionId(transactionId).
+		SetSagaType(IncubatorUse).
+		SetInitiatedBy("test").
+		Build()
+	assert.NoError(t, err)
+
+	step := NewStep[any]("incubator-result-step", Pending, IncubatorResult, "invalid-payload-type")
+
+	err = NewHandler(logger, ctx).handleIncubatorResult(saga, step)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid payload")
 }

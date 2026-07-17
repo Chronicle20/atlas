@@ -435,6 +435,23 @@ func spawnSummonForSession(l logrus.FieldLogger) func(ctx context.Context) func(
 	}
 }
 
+// emitCharacterSpawn sends the CharacterSpawn packet for c to session s using
+// the already-fetched buff state bs. This is the single wire-emit choke point
+// shared by the gated (spawnCharacterForSession) and ungated
+// (spawnCharacterForSessionRevealed) operators below — it contains NO
+// suppression logic itself; callers decide whether/when a spawn is gated.
+func emitCharacterSpawn(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(c character.Model, bs []buff.Model, g guild.Model, enteringField bool) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(c character.Model, bs []buff.Model, g guild.Model, enteringField bool) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(c character.Model, bs []buff.Model, g guild.Model, enteringField bool) model.Operator[session.Model] {
+			return func(c character.Model, bs []buff.Model, g guild.Model, enteringField bool) model.Operator[session.Model] {
+				return func(s session.Model) error {
+					return session.Announce(l)(ctx)(wp)(charpkt.CharacterSpawnWriter)(writer.CharacterSpawnBody(c, bs, g, enteringField))(s)
+				}
+			}
+		}
+	}
+}
+
 func spawnCharacterForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(c character.Model, g guild.Model, enteringField bool) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(c character.Model, g guild.Model, enteringField bool) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(c character.Model, g guild.Model, enteringField bool) model.Operator[session.Model] {
@@ -457,7 +474,46 @@ func spawnCharacterForSession(l logrus.FieldLogger) func(ctx context.Context) fu
 						return nil
 					}
 
-					return session.Announce(l)(ctx)(wp)(charpkt.CharacterSpawnWriter)(writer.CharacterSpawnBody(c, bs, g, enteringField))(s)
+					return emitCharacterSpawn(l)(ctx)(wp)(c, bs, g, enteringField)(s)
+				}
+			}
+		}
+	}
+}
+
+// spawnCharacterForSessionRevealed sends a CharacterSpawn for c to session s
+// with NO GM-hide suppression check. It exists solely for the "hide off"
+// reveal path (SpawnCharacterInMap below).
+//
+// It is intentionally ungated: the reveal caller (skill/handler/hide) has
+// just PRODUCED an async CANCEL command for the hide buff to atlas-buffs —
+// that cancellation is Kafka-mediated and eventually-consistent, not a
+// synchronous local mutation. A gated read here (buff.NewProcessor(...).
+// GetByCharacterId + buff.IsGmHidden, as spawnCharacterForSession above does)
+// would very likely still observe the not-yet-cancelled hide buff and wrongly
+// re-suppress the very spawn that is supposed to un-hide the character,
+// leaving the GM permanently invisible to anyone already in the map. The
+// reveal caller is the one deciding to end the hide, so this path must force
+// the spawn rather than depend on server-side buff state catching up.
+//
+// Including the still-present DARK_SIGHT buff in bs is safe: DARK_SIGHT
+// foreign-encodes as a no-op on a remote character, and nothing in the spawn
+// packet itself hides a remote character — only the server declining to emit
+// CharacterSpawn does. No filtering of bs is needed.
+//
+// NO reference to buff.IsGmHidden appears in this function — that absence is
+// the structural guarantee that the reveal path can never be gated.
+func spawnCharacterForSessionRevealed(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(c character.Model, g guild.Model, enteringField bool) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(c character.Model, g guild.Model, enteringField bool) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(c character.Model, g guild.Model, enteringField bool) model.Operator[session.Model] {
+			return func(c character.Model, g guild.Model, enteringField bool) model.Operator[session.Model] {
+				return func(s session.Model) error {
+					bs, err := buff.NewProcessor(l, ctx).GetByCharacterId(c.Id())
+					if err != nil {
+						bs = make([]buff.Model, 0)
+					}
+
+					return emitCharacterSpawn(l)(ctx)(wp)(c, bs, g, enteringField)(s)
 				}
 			}
 		}
@@ -475,10 +531,14 @@ func DespawnCharacterInMap(l logrus.FieldLogger, ctx context.Context, wp writer.
 
 // SpawnCharacterInMap broadcasts a CharacterSpawn for characterId to every OTHER
 // session in field f — the "hide off" (reveal) half of the GM-hide toggle. It
-// reuses spawnCharacterForSession so the spawn packet is byte-identical to a
-// normal map-entry spawn (buffs + guild + enteringField=false, since the caster
-// is already standing in the map). The suppression gate does NOT fire here
-// because, by the time this runs, the hide buff has been cancelled.
+// uses spawnCharacterForSessionRevealed (NOT the gated spawnCharacterForSession)
+// so the spawn packet is byte-identical to a normal map-entry spawn (buffs +
+// guild + enteringField=false, since the caster is already standing in the
+// map) while being immune to the async-cancel race: the hide-buff CANCEL this
+// caller just produced to atlas-buffs is eventually-consistent, so a gated
+// read here could still observe the stale hide buff and wrongly re-suppress
+// the reveal, leaving the GM permanently invisible. See
+// spawnCharacterForSessionRevealed's doc comment for the full rationale.
 func SpawnCharacterInMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(f field.Model, characterId uint32) error {
 	return func(f field.Model, characterId uint32) error {
 		cp := character.NewProcessor(l, ctx)
@@ -487,7 +547,7 @@ func SpawnCharacterInMap(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 			return err
 		}
 		g, _ := guild.NewProcessor(l, ctx).GetByMemberId(characterId)
-		return _map.NewProcessor(l, ctx).ForOtherSessionsInMap(f, characterId, spawnCharacterForSession(l)(ctx)(wp)(c, g, false))
+		return _map.NewProcessor(l, ctx).ForOtherSessionsInMap(f, characterId, spawnCharacterForSessionRevealed(l)(ctx)(wp)(c, g, false))
 	}
 }
 

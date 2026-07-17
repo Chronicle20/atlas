@@ -21,8 +21,49 @@
 - **Verification gates (every changed module/service):** `go test -race ./...`, `go vet ./...`, `go build ./...`, `docker buildx bake atlas-<svc>` (channel, world, saga-orchestrator, configurations), `tools/redis-key-guard.sh`, and `go run ./tools/packet-audit` `dispatcher-lint` / `matrix --check` / `fname-doc --check` / `operations --check` all exit 0.
 - **Grounding:** wire shapes in Tasks 1–6 are Cosmic-derived or v83/v95-IDA-derived (design §1.2/§1.3); Tasks 18–20 IDA-verify them per version and are allowed to change the structs. Never claim a version verified without an IDB-backed fixture. v83 opcodes/read orders cited in design §1.2 were verified against the open v83 dump (`MapleStory_dump.exe`) and v95 (`GMS_v95.0_U_DEVM.exe`).
 - **Commit prefix convention:** `feat(task-123): …` / `test(task-123): …` / `docs(task-123): …`, committed on branch `task-123-megaphones-maple-tv` inside this worktree.
+- **DOM-25 (client-interpreted bytes are config-resolved) applies to EVERY client wire code, not just WorldMessage modes** — see Amendment A1. No client wire code may appear as a Go literal outside `libs/atlas-packet` codec internals, and no domain service may emit one in a Kafka event.
 
 **Working directory for all commands:** the task worktree root (`.worktrees/task-123-megaphones-maple-tv`). All paths below are worktree-relative.
+
+## Amendment A1 — DOM-25 config-resolution (execution-phase decision, binding)
+
+**Status:** approved by the human partner at execution start; **overrides the task-body code samples below wherever they conflict.**
+
+The plan as drafted config-resolves WorldMessage mode bytes but hard-codes three other client-interpreted values. DOM-25 (`.claude/agents/backend-guidelines-reviewer.md:104`) forbids that: "No client wire code appears as a Go literal outside `libs/atlas-packet` codec internals… 'version-stable (IDA-verified identical)' does NOT exempt it." The task-129 precedent (`docs/tasks/task-129-vicious-hammer-use/audit-backend.md:183-226`) rated this exact class **Important** and required end-to-end rework. Fix pattern is task-129's `ViciousHammerFailureBody`.
+
+**A1.1 — Three values become config-resolved:**
+
+| Value | Was (plan text) | Becomes |
+|---|---|---|
+| Avatar megaphone result code | `NewAvatarMegaphoneResult(83, "")` | `AvatarMegaphoneResultBody(reason)`, `errorCodes` table |
+| TV send-result error code | `NewTvSendMessageResultError(2)` | `TvSendMessageResultErrorBody(reason)`, `errorCodes` table |
+| TV message type | `TvMessageType byte` (0/1/2) | `TvMessageType string` semantic key, `messageTypes` table |
+
+**A1.2 — Semantic keys and their seed values** (design §1.2-cited; Tasks 19–20 IDA-verify per version and may correct the table values — never the key names):
+
+- `AvatarMegaphoneResult` writer, `errorCodes` table: `WAITING_LINE` 83, `LEVEL_GATE` 84. (jms has no `AvatarMegaphoneResult` writer → **no table for jms**, D9.)
+- `TvSendMessageResult` writer, `errorCodes` table: `GM_MESSAGE` 1, `QUEUE_TOO_LONG` 2, `WRONG_USER` 3.
+- `TvSetMessage` writer, `messageTypes` table: `NORMAL` 0, `STAR` 1, `HEART` 2.
+
+**A1.3 — The codec branches on the semantic reason, never on the resolved byte.** `AvatarMegaphoneResult`'s trailing-string rule (plan text: `if code != 83 && code != 84 { WriteAsciiString }`) must NOT compare a resolved byte against literals — that silently breaks on any version whose table differs. The body function decides string-presence from the reason: `WAITING_LINE`/`LEVEL_GATE` carry no string; a notice reason carries one. Same rule for `TvSendMessageResult` (success = no error byte; error reasons resolve a code).
+
+**A1.4 — Values that are NOT in scope** (do not "fix" these): the `TvSetMessage` `flag` byte (1/3) and `ClearAvatarMegaphone`'s byte are computed **inside** the codec → codec-internal, exempt. TV durations 15/30/60, wait caps 3600/15, avatar duration 10 are **server policy**, not wire codes → stay as Go constants. Tier/Scope/Family/status strings are semantic keys already.
+
+**A1.5 — Per-task deltas** (each affected task body carries an "A1 delta" note):
+
+| Task | Delta |
+|---|---|
+| 2 | `EnqueueWorldBroadcastPayload.TvMessageType` → `string` |
+| 5 | Add `libs/atlas-packet/chat/avatar_megaphone_body.go`: `AvatarMegaphoneResultBody(reason)` resolving `errorCodes`; reason type + consts live in `chat` |
+| 6 | Add `libs/atlas-packet/tv/tv_body.go` (new `tv` package, sibling of `tv/clientbound/`, mirroring `field/`): `TvSetMessageBody` (resolves `messageTypes`), `TvSendMessageResultSuccessBody`, `TvSendMessageResultErrorBody(reason)` (resolves `errorCodes`) |
+| 7 | `broadcast.Payload.TvMessageType` → `string` |
+| 8 | `EnqueueCommand.TvMessageType` / `StatusEvent.TvMessageType` → `string` (DOM-25(c): atlas-world is a domain service and must not emit a client byte) |
+| 10 | orchestrator `EnqueueCommand.TvMessageType` → `string` |
+| 11 | channel `StatusEvent.TvMessageType` → `string` |
+| 12 | `tvMessageType(tvType)` returns the semantic key (`NORMAL`/`STAR`/`HEART`); rejections call the body funcs with reasons, never `(83, "")` / `(2)` |
+| 14 | Pass `e.TvMessageType` (semantic) to `TvSetMessageBody`; announce via body funcs |
+| 16 | Seed the three tables into every template that has the writer (`errorCodes` ×2, `messageTypes`); **jms gets no `AvatarMegaphoneResult` table** |
+| 17 | Rollout runbook documents the new writer-options tables (DOM-25(d): seed templates never retroactively apply to live tenants) |
 
 ## Key protocol facts (pin these — they are used across tasks)
 
@@ -442,7 +483,7 @@ type EnqueueWorldBroadcastPayload struct {
 	Messages        []string        `json:"messages"` // 5 for TV, 4 for AVATAR
 	WhispersOn      bool            `json:"whispersOn"`
 	ItemId          uint32          `json:"itemId"`        // AVATAR: used item id (SET packet field)
-	TvMessageType   byte            `json:"tvMessageType"` // TV wire value 0/1/2
+	TvMessageType   string          `json:"tvMessageType"` // A1 delta: semantic key NORMAL|STAR|HEART (was byte 0/1/2)
 	DurationSeconds uint32          `json:"durationSeconds"`
 	SenderLook      AvatarSnapshot  `json:"senderLook"`
 	ReceiverName    string          `json:"receiverName"`
@@ -742,6 +783,23 @@ git commit -m "feat(task-123): WorldMessage per-mode body functions with resolve
 **Files:**
 - Create: `libs/atlas-packet/chat/clientbound/avatar_megaphone.go`
 - Test: `libs/atlas-packet/chat/clientbound/avatar_megaphone_test.go`
+- Create (**A1 delta**): `libs/atlas-packet/chat/avatar_megaphone_body.go` + `_test.go`
+
+> **A1 delta (binding — see Amendment A1):** the result code is config-resolved, not a literal. Add to the `chat` package (the one Task 4 creates), following `libs/atlas-packet/field/vicious_hammer_body.go` verbatim in idiom (that file is the DOM-25 reference implementation — match its doc-comment style and its explicit `func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte` return type):
+> ```go
+> type AvatarMegaphoneResultReason string
+> const (
+> 	AvatarMegaphoneWaitingLine AvatarMegaphoneResultReason = "WAITING_LINE" // seed 83
+> 	AvatarMegaphoneLevelGate   AvatarMegaphoneResultReason = "LEVEL_GATE"   // seed 84
+> )
+> // Resolves errorCodes/<reason> via atlas_packet.WithResolvedCode.
+> func AvatarMegaphoneResultBody(reason AvatarMegaphoneResultReason) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte
+> ```
+> Both reason consts are declared (they enumerate the client's switch arms, exactly as `ViciousHammerFailureReason` declares all four); only `WAITING_LINE` has a call site in this task — do **not** add a notice/`message` body function, nothing calls it (YAGNI).
+>
+> **A1.3 applies to the struct:** `AvatarMegaphoneResult`'s trailing-string rule must not compare a resolved byte against 83/84. Carry an explicit `hasMessage bool` (or equivalent) set by the constructor, so `NewAvatarMegaphoneResult(code, "")` writes code-only regardless of what byte the tenant resolved. Decode mirrors via the same flag derived from remaining bytes.
+>
+> Test the resolution against an options map (Task 4's test shape) and the unconfigured-reason → 99 degrade (mirror `libs/atlas-packet/field/vicious_hammer_body_test.go`).
 
 **Interfaces:**
 - Consumes: `model.Avatar` (`libs/atlas-packet/model/avatar.go` — has Encode and Decode; construct via `model.NewAvatar(gender, skinColor, face, mega, hair, equips, maskedEquips, pets)`; test-value shape per `libs/atlas-packet/messenger/clientbound/add_test.go` `testAvatar()`).
@@ -782,6 +840,31 @@ git commit -m "feat(task-123): avatar megaphone clientbound codecs (set/clear/re
 - Create: `libs/atlas-packet/tv/clientbound/clear_message.go`
 - Create: `libs/atlas-packet/tv/clientbound/send_message_result.go`
 - Test: matching `_test.go` per file
+- Create (**A1 delta**): `libs/atlas-packet/tv/tv_body.go` + `_test.go`
+
+> **A1 delta (binding — see Amendment A1):** messageType and the error code are config-resolved. Add a new `tv` package at `libs/atlas-packet/tv/` (sibling of `tv/clientbound/`, mirroring `field/`):
+> ```go
+> type TvMessageType string
+> const (
+> 	TvMessageNormal TvMessageType = "NORMAL" // seed 0
+> 	TvMessageStar   TvMessageType = "STAR"   // seed 1
+> 	TvMessageHeart  TvMessageType = "HEART"  // seed 2
+> )
+> type TvResultReason string
+> const (
+> 	TvResultGmMessage    TvResultReason = "GM_MESSAGE"     // seed 1
+> 	TvResultQueueTooLong TvResultReason = "QUEUE_TOO_LONG" // seed 2
+> 	TvResultWrongUser    TvResultReason = "WRONG_USER"     // seed 3
+> )
+> // All return func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte
+> // (the explicit idiom used by libs/atlas-packet/field/*_body.go — the DOM-25
+> // reference implementation is field/vicious_hammer_body.go; match it verbatim in style).
+> func TvSetMessageBody(msgType TvMessageType, senderLook model.Avatar, senderName, receiverName string, lines [5]string, totalWaitSeconds uint32, receiverLook *model.Avatar) // resolves messageTypes/<msgType>
+> func TvClearMessageBody()                                  // empty body, no resolution
+> func TvSendMessageResultSuccessBody()                      // 00, no resolution needed
+> func TvSendMessageResultErrorBody(reason TvResultReason)   // resolves errorCodes/<reason>
+> ```
+> All three `TvResultReason` consts are declared (they enumerate the client's switch arms, as `ViciousHammerFailureReason` does); only `QUEUE_TOO_LONG` has a call site in this task. The `flag` byte (1/3) stays computed inside the codec — A1.4, exempt. Test resolution + unconfigured-key → 99 degrade.
 
 **Interfaces:**
 - Produces (used by Task 14):
@@ -841,7 +924,7 @@ type Payload struct {
 	Messages      []string                   `json:"messages"`
 	WhispersOn    bool                       `json:"whispersOn"`
 	ItemId        uint32                     `json:"itemId"`
-	TvMessageType byte                       `json:"tvMessageType"`
+	TvMessageType string                     `json:"tvMessageType"` // A1 delta: semantic key NORMAL|STAR|HEART
 	SenderLook    sharedsaga.AvatarSnapshot  `json:"senderLook"`
 	ReceiverName  string                     `json:"receiverName"`
 	ReceiverLook  *sharedsaga.AvatarSnapshot `json:"receiverLook,omitempty"`
@@ -937,7 +1020,7 @@ type EnqueueCommand struct {
 	Messages        []string                   `json:"messages"`
 	WhispersOn      bool                       `json:"whispersOn"`
 	ItemId          uint32                     `json:"itemId"`
-	TvMessageType   byte                       `json:"tvMessageType"`
+	TvMessageType   string                     `json:"tvMessageType"` // A1 delta: semantic key (DOM-25(c) — a domain service must not emit a client byte)
 	DurationSeconds uint32                     `json:"durationSeconds"`
 	SenderLook      sharedsaga.AvatarSnapshot  `json:"senderLook"`
 	ReceiverName    string                     `json:"receiverName"`
@@ -960,7 +1043,7 @@ type StatusEvent struct {
 	Messages         []string                   `json:"messages"`
 	WhispersOn       bool                       `json:"whispersOn"`
 	ItemId           uint32                     `json:"itemId"`
-	TvMessageType    byte                       `json:"tvMessageType"`
+	TvMessageType    string                     `json:"tvMessageType"` // A1 delta: semantic key (DOM-25(c))
 	SenderLook       sharedsaga.AvatarSnapshot  `json:"senderLook"`
 	ReceiverName     string                     `json:"receiverName"`
 	ReceiverLook     *sharedsaga.AvatarSnapshot `json:"receiverLook,omitempty"`
@@ -1085,6 +1168,7 @@ type BroadcastEvent struct {
 }
 // kafka/message/broadcast/kafka.go — EnvCommandTopicWorldBroadcast + EnqueueCommand,
 // byte-for-byte the same JSON shape as Task 8's world-side struct.
+// A1 delta: TvMessageType is `string` (semantic key NORMAL|STAR|HEART), not byte.
 ```
 
 ```go
@@ -1149,7 +1233,7 @@ git commit -m "feat(task-123): orchestrator EmitMegaphone and EnqueueWorldBroadc
 
 **Files:**
 - Create: `services/atlas-channel/atlas.com/channel/kafka/message/megaphone/kafka.go` (identical `BroadcastEvent` + `EnvEventTopicMegaphone` as Task 10's megaphone message)
-- Create: `services/atlas-channel/atlas.com/channel/kafka/message/worldbroadcast/kafka.go` (identical `StatusEvent` + `EnvEventTopicWorldBroadcastStatus` + `StatusTypeQueued/Started/Ended` as Task 8's status event)
+- Create: `services/atlas-channel/atlas.com/channel/kafka/message/worldbroadcast/kafka.go` (identical `StatusEvent` + `EnvEventTopicWorldBroadcastStatus` + `StatusTypeQueued/Started/Ended` as Task 8's status event; **A1 delta:** `TvMessageType` is `string`)
 - Create: `services/atlas-channel/atlas.com/channel/worldbroadcast/requests.go`
 - Create: `services/atlas-channel/atlas.com/channel/worldbroadcast/rest.go`
 - Create: `services/atlas-channel/atlas.com/channel/worldbroadcast/processor.go`
@@ -1271,8 +1355,10 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	cashsb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/serverbound"
-	chatpkt "github.com/Chronicle20/atlas/libs/atlas-packet/chat/clientbound"
-	tvpkt "github.com/Chronicle20/atlas/libs/atlas-packet/tv/clientbound"
+	chatpkg "github.com/Chronicle20/atlas/libs/atlas-packet/chat"        // A1: body funcs (resolved codes)
+	chatpkt "github.com/Chronicle20/atlas/libs/atlas-packet/chat/clientbound" // writer name consts
+	tvpkg "github.com/Chronicle20/atlas/libs/atlas-packet/tv"            // A1: body funcs (resolved codes)
+	tvpkt "github.com/Chronicle20/atlas/libs/atlas-packet/tv/clientbound"     // writer name consts
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
@@ -1305,12 +1391,22 @@ func tvDurationSeconds(tvType byte) uint32 {
 	}
 }
 
-// tvMessageType — wire value: Cosmic PacketCreator.sendTV call site (type <= 2 ? type : type - 3).
-func tvMessageType(tvType byte) byte {
-	if tvType <= 2 {
-		return tvType
+// tvMessageType — A1 delta: returns the SEMANTIC key, not a wire byte. The
+// client byte is resolved from the tenant messageTypes table by tvpkg.TvSetMessageBody.
+// Selector rule: Cosmic PacketCreator.sendTV call site (type <= 2 ? type : type - 3).
+func tvMessageType(tvType byte) tvpkg.TvMessageType {
+	sel := tvType
+	if sel > 2 {
+		sel -= 3
 	}
-	return tvType - 3
+	switch sel {
+	case 1:
+		return tvpkg.TvMessageStar
+	case 2:
+		return tvpkg.TvMessageHeart
+	default:
+		return tvpkg.TvMessageNormal
+	}
 }
 
 func handleMegaphoneUse(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}, t tenant.Model, itemId item.Id, source slot.Position, updateTimeFirst bool) {
@@ -1447,7 +1543,8 @@ func handleMapleTVUse(l logrus.FieldLogger, ctx context.Context, wp writer.Produ
 			if err != nil {
 				l.WithError(err).Warnf("Unable to check TV queue for world [%d]; rejecting without consuming.", f.WorldId())
 			}
-			_ = session.Announce(l)(ctx)(wp)(tvpkt.TvSendMessageResultWriter)(tvpkt.NewTvSendMessageResultError(2).Encode)(s)
+			// A1 delta: config-resolved reason, not the literal 2.
+			_ = session.Announce(l)(ctx)(wp)(tvpkt.TvSendMessageResultWriter)(tvpkg.TvSendMessageResultErrorBody(tvpkg.TvResultQueueTooLong))(s)
 			return
 		}
 
@@ -1470,7 +1567,7 @@ func handleMapleTVUse(l logrus.FieldLogger, ctx context.Context, wp writer.Produ
 			WorldId: f.WorldId(), ChannelId: f.ChannelId(), CharacterId: s.CharacterId(),
 			SenderName: c.Name(), SenderMedal: "",
 			Messages:        lines,
-			TvMessageType:   tvMessageType(tvType),
+			TvMessageType:   string(tvMessageType(tvType)), // A1 delta: semantic key on the wire-free payload
 			DurationSeconds: tvDurationSeconds(tvType),
 			SenderLook:      socketmodel.NewAvatarSnapshot(c),
 			ReceiverName:    receiverName,
@@ -1535,7 +1632,8 @@ func handleAvatarMegaphoneUse(l logrus.FieldLogger, ctx context.Context, wp writ
 			if t.Region() == "JMS" {
 				return // no AVATAR_MEGAPHONE_RESULT op in jms (STATUS.md line 143)
 			}
-			_ = session.Announce(l)(ctx)(wp)(chatpkt.AvatarMegaphoneResultWriter)(chatpkt.NewAvatarMegaphoneResult(83, "").Encode)(s)
+			// A1 delta: config-resolved reason, not the literal 83.
+			_ = session.Announce(l)(ctx)(wp)(chatpkt.AvatarMegaphoneResultWriter)(chatpkg.AvatarMegaphoneResultBody(chatpkg.AvatarMegaphoneWaitingLine))(s)
 		}
 
 		wait, err := worldbroadcast.NewProcessor(l, ctx).GetWaitSeconds(f.WorldId(), worldbroadcast.FamilyAvatar)
@@ -1722,10 +1820,12 @@ func handleStatus(sc server.Model, wp writer.Producer) message.Handler[wb2.Statu
 
 `announceStarted` builds the packet once and announces to all sessions in the pod's channel (`AllInChannelProvider`, gachapon loop):
 
-- Family TV: `tvpkt.NewTvSetMessage(e.TvMessageType, socketmodel.NewAvatarFromSnapshot(e.SenderLook, false), decorateName(e.SenderMedal, e.SenderName), e.ReceiverName, [5]string{…from e.Messages, padded…}, e.TotalWaitSeconds, receiverLookOrNil)` — sender name decoration via the exported wrapper added in Task 13 (add `func DecorateNameForMessage(medal, name string) string { return decorateNameForMessage(medal, name) }` to `world_message.go` if needed, or export the helper — pick ONE and use it in both consumers).
-- Family AVATAR: `chatpkt.NewSetAvatarMegaphone(e.ItemId, decoratedName, [4]string{…}, uint32(e.ChannelId), e.WhispersOn, socketmodel.NewAvatarFromSnapshot(e.SenderLook, true))`.
+- Family TV (**A1 delta** — body func resolves `messageTypes`; `e.TvMessageType` is the semantic key): `tvpkg.TvSetMessageBody(tvpkg.TvMessageType(e.TvMessageType), socketmodel.NewAvatarFromSnapshot(e.SenderLook, false), decorateName(e.SenderMedal, e.SenderName), e.ReceiverName, [5]string{…from e.Messages, padded…}, e.TotalWaitSeconds, receiverLookOrNil)` — sender name decoration via the exported wrapper added in Task 13 (add `func DecorateNameForMessage(medal, name string) string { return decorateNameForMessage(medal, name) }` to `world_message.go` if needed, or export the helper — pick ONE and use it in both consumers).
+- Family AVATAR: `chatpkt.NewSetAvatarMegaphone(e.ItemId, decoratedName, [4]string{…}, uint32(e.ChannelId), e.WhispersOn, socketmodel.NewAvatarFromSnapshot(e.SenderLook, true))` (no client wire code here — itemId/channel are data, not lookup selectors).
 
-`announceEnded`: Family TV → `tvpkt.NewTvClearMessage()`; Family AVATAR → `chatpkt.NewClearAvatarMegaphone()` (idempotent client-side; belt-and-braces on the 10 s auto-clear, design D6). Announce to all sessions in channel.
+`announceEnded`: Family TV → `tvpkg.TvClearMessageBody()`; Family AVATAR → `chatpkt.NewClearAvatarMegaphone()` (idempotent client-side; belt-and-braces on the 10 s auto-clear, design D6). Announce to all sessions in channel.
+
+**A1 delta:** the QUEUED success ack uses `tvpkg.TvSendMessageResultSuccessBody()` (no resolution needed — success is the bare `00`).
 
 Structured logs at info on STARTED/ENDED with tenant/world/family/characterId (NFR observability).
 
@@ -1805,6 +1905,14 @@ git commit -m "feat(task-123): wire megaphone/world-broadcast consumers, writers
 
   Match each file's existing opCode hex formatting (e.g. `"0x6F"` vs `"0x06F"` — inspect neighbors and conform).
 
+- [ ] **Step 1b (A1 delta): seed the three DOM-25 writer-options tables** on the writers added in Step 1, in **every** template that has the writer (memory: a new writer table goes in EVERY version template that has the writer). Shape follows the existing `WorldMessage` `options.operations` entry:
+
+  - `AvatarMegaphoneResult` writer → `"options": {"errorCodes": {"WAITING_LINE": 83, "LEVEL_GATE": 84}}` — gms_83/84/87/95 only; **jms has no such writer, so no table** (D9).
+  - `TvSendMessageResult` writer → `"options": {"errorCodes": {"GM_MESSAGE": 1, "QUEUE_TOO_LONG": 2, "WRONG_USER": 3}}` — all 5 templates.
+  - `TvSetMessage` writer → `"options": {"messageTypes": {"NORMAL": 0, "STAR": 1, "HEART": 2}}` — all 5 templates.
+
+  Seed values are design §1.2-cited; Tasks 19–20 IDA-verify each version against its own IDB and correct any drift (never rename keys).
+
 - [ ] **Step 2: Add the USE_CASH_ITEM handler entry** where missing (v87/v95/jms; gms_83/84 already have it at `0x4F`):
 
 ```json
@@ -1833,7 +1941,7 @@ git commit -m "feat(task-123): seed avatar-megaphone and Maple TV writers + USE_
 Seed templates apply only at tenant creation; existing tenants must be PATCHed and atlas-channel restarted (projection does not hot-reload handlers/writers) — FR-6.3.
 
 - [ ] **Step 1: Write `rollout.md`** containing, concretely:
-  1. The full list of writer/handler/operations deltas per version (copy the Task 16 + Task 18 tables — the runbook is version-keyed).
+  1. The full list of writer/handler/operations deltas per version (copy the Task 16 + Task 18 tables — the runbook is version-keyed). **A1 delta (DOM-25(d)):** this MUST include the three new writer-options tables (`AvatarMegaphoneResult.errorCodes`, `TvSendMessageResult.errorCodes`, `TvSetMessage.messageTypes`) — seed templates never retroactively apply to live tenants, so an unpatched live tenant resolves an unconfigured key and degrades.
   2. The PATCH procedure for each live tenant's socket configuration via the atlas-configurations REST API (cite the exact endpoint and JSON:API envelope used by existing tenant-config PATCH flows — locate with `grep -rn "configurations" services/atlas-configurations/atlas.com/configurations/*/resource.go` and reference the UI's known envelope requirement: bare bodies 400).
   3. `kubectl rollout restart deployment/atlas-channel` (and note new pods must go Ready before testing).
   4. Deploy-order note: atlas-world and atlas-saga-orchestrator must be deployed **before or with** atlas-channel (channel REST-checks the world queue and creates sagas with new actions); topic env vars (Task 15) must exist in the environment before any pod restart.

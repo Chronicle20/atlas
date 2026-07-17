@@ -131,8 +131,8 @@ func TestProcessRPSActionState_BuildsEntrySagaAndParks(t *testing.T) {
 	if mesoPayload.ActorType != "NPC" {
 		t.Errorf("AwardMesos.ActorType = %q, want %q", mesoPayload.ActorType, "NPC")
 	}
-	if mesoPayload.ShowEffect != false {
-		t.Errorf("AwardMesos.ShowEffect = %v, want false", mesoPayload.ShowEffect)
+	if mesoPayload.ShowEffect != true {
+		t.Errorf("AwardMesos.ShowEffect = %v, want true", mesoPayload.ShowEffect)
 	}
 
 	// Step 2: StartRPSGame carrying the npcId.

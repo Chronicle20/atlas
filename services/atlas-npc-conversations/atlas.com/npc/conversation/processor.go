@@ -1044,7 +1044,7 @@ func (p *ProcessorImpl) processRPSActionState(ctx ConversationContext, state Sta
 		ActorId:     ctx.NpcId(),
 		ActorType:   "NPC",
 		Amount:      -int32(rpsAction.EntryCostMeso()),
-		ShowEffect:  false,
+		ShowEffect:  true, // surface the participation fee to the player
 	}
 	sagaBuilder.AddStep("deduct_entry_cost", saga.Pending, saga.AwardMesos, mesoPayload)
 

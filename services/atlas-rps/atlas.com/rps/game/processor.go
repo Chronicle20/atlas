@@ -649,7 +649,7 @@ func buildFeeDeductionSaga(m Model, entryCostMeso uint32) sharedsaga.Saga {
 			ActorId:     m.NpcId(),
 			ActorType:   "NPC",
 			Amount:      -int32(entryCostMeso),
-			ShowEffect:  false,
+			ShowEffect:  true, // surface the participation fee to the player (matches the entry-fee deduct)
 		}).
 		Build()
 }

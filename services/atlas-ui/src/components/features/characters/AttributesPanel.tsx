@@ -41,7 +41,6 @@ export function AttributesPanel({ character, tenantConfig, tenant }: Props) {
   } = useCharacterEffectiveStats(tenant, a.worldId, character.id);
 
   if (effectiveErrored) {
-    // eslint-disable-next-line no-console
     console.warn(
       "[AttributesPanel] atlas-effective-stats fetch failed; HP/MP and primary-stat bonuses are using the raw character record as a fallback.",
       effectiveError,

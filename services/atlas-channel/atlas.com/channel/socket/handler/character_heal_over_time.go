@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"atlas-channel/character"
+	"atlas-channel/chair"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
@@ -16,11 +16,9 @@ func CharacterHealOverTimeHandleFunc(l logrus.FieldLogger, ctx context.Context, 
 		p := character2.HealOverTime{}
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
-		if p.HP() != 0 {
-			_ = character.NewProcessor(l, ctx).ChangeHP(s.Field(), s.CharacterId(), p.HP())
+		if p.HP() == 0 && p.MP() == 0 {
+			return
 		}
-		if p.MP() != 0 {
-			_ = character.NewProcessor(l, ctx).ChangeMP(s.Field(), s.CharacterId(), p.MP())
-		}
+		_ = chair.NewProcessor(l, ctx).Recover(s.Field(), s.CharacterId(), p.HP(), p.MP())
 	}
 }

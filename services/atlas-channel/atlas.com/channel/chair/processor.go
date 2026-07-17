@@ -17,6 +17,7 @@ type Processor interface {
 	ForEachInMap(f field.Model, o model.Operator[Model]) error
 	Use(f field.Model, chairType string, chairId uint32, characterId uint32) error
 	Cancel(f field.Model, characterId uint32) error
+	Recover(f field.Model, characterId uint32, hp int16, mp int16) error
 }
 
 // ProcessorImpl implements the Processor interface
@@ -54,4 +55,8 @@ func (p *ProcessorImpl) Use(f field.Model, chairType string, chairId uint32, cha
 
 func (p *ProcessorImpl) Cancel(f field.Model, characterId uint32) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(chair2.EnvCommandTopic)(CancelCommandProvider(f, characterId))
+}
+
+func (p *ProcessorImpl) Recover(f field.Model, characterId uint32, hp int16, mp int16) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(chair2.EnvCommandTopic)(RecoveryCommandProvider(f, characterId, hp, mp))
 }

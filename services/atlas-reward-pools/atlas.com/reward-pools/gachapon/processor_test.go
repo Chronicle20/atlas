@@ -144,7 +144,7 @@ func TestProcessorImpl_Create_CrossTenantSameSlug(t *testing.T) {
 
 	// Slug-based Update must not reach across tenants. With a shared slug this
 	// is only correct because the tenant callback scopes the write; assert it.
-	if err := p1.Update("henesys", "renamed-by-1", 60, 30, 10); err != nil {
+	if err := p1.Update("henesys", "renamed-by-1", []uint32{9100100}, 60, 30, 10); err != nil {
 		t.Fatalf("tenant 1 Update(henesys): %v", err)
 	}
 	g2After, err := p2.GetById("henesys")
@@ -270,7 +270,7 @@ func TestGachaponProcessorCRUD(t *testing.T) {
 
 	t.Run("Update", func(t *testing.T) {
 		// Update the first gachapon
-		err := processor.Update("crud-test-1", "Updated Name", 60, 30, 10)
+		err := processor.Update("crud-test-1", "Updated Name", []uint32{9100100, 9100101}, 60, 30, 10)
 		if err != nil {
 			t.Fatalf("Failed to update gachapon: %v", err)
 		}

@@ -122,7 +122,7 @@ func handleCreateGachapon(d *rest.HandlerDependency, c *rest.HandlerContext, rm 
 func handleUpdateGachapon(d *rest.HandlerDependency, c *rest.HandlerContext, rm RestModel) http.HandlerFunc {
 	return rest.ParseGachaponId(d.Logger(), func(gachaponId string) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			err := NewProcessor(d.Logger(), d.Context(), d.DB()).Update(gachaponId, rm.Name, rm.CommonWeight, rm.UncommonWeight, rm.RareWeight)
+			err := NewProcessor(d.Logger(), d.Context(), d.DB()).Update(gachaponId, rm.Name, rm.NpcIds, rm.CommonWeight, rm.UncommonWeight, rm.RareWeight)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Updating gachapon [%s].", gachaponId)
 				server.WriteErrorResponse(d.Logger())(w)(err)

@@ -38,11 +38,16 @@ func BulkCreateGachapon(db *gorm.DB, models []Model) error {
 	})
 }
 
-func UpdateGachapon(db *gorm.DB, id string, name string, commonWeight uint32, uncommonWeight uint32, rareWeight uint32) error {
+func UpdateGachapon(db *gorm.DB, id string, name string, npcIds []uint32, commonWeight uint32, uncommonWeight uint32, rareWeight uint32) error {
+	dbNpcIds := make(int64Array, len(npcIds))
+	for i, nid := range npcIds {
+		dbNpcIds[i] = int64(nid)
+	}
 	return db.Model(&entity{}).
 		Where(&entity{ID: id}).
 		Updates(map[string]interface{}{
 			"name":            name,
+			"npc_ids":         dbNpcIds,
 			"common_weight":   commonWeight,
 			"uncommon_weight": uncommonWeight,
 			"rare_weight":     rareWeight,

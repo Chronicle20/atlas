@@ -13,7 +13,7 @@ type Processor interface {
 	GetAll(page model.Page) model.Provider[model.Paged[Model]]
 	GetById(id string) (Model, error)
 	Create(m Model) error
-	Update(id string, name string, commonWeight uint32, uncommonWeight uint32, rareWeight uint32) error
+	Update(id string, name string, npcIds []uint32, commonWeight uint32, uncommonWeight uint32, rareWeight uint32) error
 	Delete(id string) error
 	Count() (int64, *time.Time, error)
 }
@@ -47,8 +47,8 @@ func (p *ProcessorImpl) Create(m Model) error {
 	return CreateGachapon(p.db.WithContext(p.ctx), m)
 }
 
-func (p *ProcessorImpl) Update(id string, name string, commonWeight uint32, uncommonWeight uint32, rareWeight uint32) error {
-	return UpdateGachapon(p.db.WithContext(p.ctx), id, name, commonWeight, uncommonWeight, rareWeight)
+func (p *ProcessorImpl) Update(id string, name string, npcIds []uint32, commonWeight uint32, uncommonWeight uint32, rareWeight uint32) error {
+	return UpdateGachapon(p.db.WithContext(p.ctx), id, name, npcIds, commonWeight, uncommonWeight, rareWeight)
 }
 
 func (p *ProcessorImpl) Delete(id string) error {

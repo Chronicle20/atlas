@@ -1,8 +1,10 @@
 package saga
 
 import (
+	"atlas-saga-orchestrator/kafka/message/broadcast"
 	"atlas-saga-orchestrator/kafka/message/conversation_reward_notice"
 	"atlas-saga-orchestrator/kafka/message/gachapon"
+	"atlas-saga-orchestrator/kafka/message/megaphone"
 	"atlas-saga-orchestrator/kafka/message/saga"
 	"context"
 
@@ -311,6 +313,51 @@ func GachaponRewardWonEventProvider(payload EmitGachaponWinPayload, assetId uint
 		GachaponId:   payload.GachaponId,
 		GachaponName: payload.GachaponName,
 		AssetId:      assetId,
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// MegaphoneBroadcastEventProvider builds the megaphone.BroadcastEvent for the
+// stateless megaphone tiers (MEGAPHONE/SUPER/ITEM/TRIPLE). Keyed by WorldId
+// for single-partition ordering per world (D1).
+func MegaphoneBroadcastEventProvider(payload EmitMegaphonePayload) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(payload.WorldId))
+	value := &megaphone.BroadcastEvent{
+		Tier:        payload.Tier,
+		Scope:       payload.Scope,
+		WorldId:     byte(payload.WorldId),
+		ChannelId:   byte(payload.ChannelId),
+		CharacterId: payload.CharacterId,
+		SenderName:  payload.SenderName,
+		SenderMedal: payload.SenderMedal,
+		Messages:    payload.Messages,
+		WhispersOn:  payload.WhispersOn,
+		Item:        payload.Item,
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// WorldBroadcastEnqueueCommandProvider builds the broadcast.EnqueueCommand
+// for the serialized world broadcast tiers (TV/AVATAR). Keyed by WorldId for
+// single-partition ordering per world (D1) — atlas-world's per-world queue
+// consumer depends on strictly ordered enqueue commands.
+func WorldBroadcastEnqueueCommandProvider(payload EnqueueWorldBroadcastPayload) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(payload.WorldId))
+	value := &broadcast.EnqueueCommand{
+		Family:          payload.Family,
+		WorldId:         byte(payload.WorldId),
+		ChannelId:       byte(payload.ChannelId),
+		CharacterId:     payload.CharacterId,
+		SenderName:      payload.SenderName,
+		SenderMedal:     payload.SenderMedal,
+		Messages:        payload.Messages,
+		WhispersOn:      payload.WhispersOn,
+		ItemId:          payload.ItemId,
+		TvMessageType:   payload.TvMessageType,
+		DurationSeconds: payload.DurationSeconds,
+		SenderLook:      payload.SenderLook,
+		ReceiverName:    payload.ReceiverName,
+		ReceiverLook:    payload.ReceiverLook,
 	}
 	return producer.SingleMessageProvider(key, value)
 }

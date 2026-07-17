@@ -219,6 +219,8 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.SelectGachaponReward:       {},
 	sharedsaga.EmitGachaponWin:            {},
 	sharedsaga.StartInstanceTransport:     {},
+	sharedsaga.EmitMegaphone:              {},
+	sharedsaga.EnqueueWorldBroadcast:      {},
 }
 
 // StepAcceptsEvent reports whether a saga step's Action can be legitimately

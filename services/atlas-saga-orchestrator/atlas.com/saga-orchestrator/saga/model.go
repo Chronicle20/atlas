@@ -180,6 +180,10 @@ const (
 	// Field effect actions
 	FieldEffectWeather = sharedsaga.FieldEffectWeather
 
+	// Megaphone / world broadcast actions
+	EmitMegaphone         = sharedsaga.EmitMegaphone
+	EnqueueWorldBroadcast = sharedsaga.EnqueueWorldBroadcast
+
 	// Rebalance AP stat-name constants
 	RebalanceStatStrength     = sharedsaga.RebalanceStatStrength
 	RebalanceStatDexterity    = sharedsaga.RebalanceStatDexterity
@@ -276,6 +280,12 @@ type (
 	StageClearAttemptPqPayload          = sharedsaga.StageClearAttemptPqPayload
 	FieldEffectWeatherPayload           = sharedsaga.FieldEffectWeatherPayload
 	ExperienceDistributions             = sharedsaga.ExperienceDistributions
+
+	// Megaphone / world broadcast payload types
+	EmitMegaphonePayload         = sharedsaga.EmitMegaphonePayload
+	EnqueueWorldBroadcastPayload = sharedsaga.EnqueueWorldBroadcastPayload
+	AssetSnapshot                = sharedsaga.AssetSnapshot
+	AvatarSnapshot               = sharedsaga.AvatarSnapshot
 )
 
 // ============================================================
@@ -1499,6 +1509,18 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case RequestGuildCapacityIncrease:
 		var payload RequestGuildCapacityIncreasePayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case EmitMegaphone:
+		var payload EmitMegaphonePayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case EnqueueWorldBroadcast:
+		var payload EnqueueWorldBroadcastPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

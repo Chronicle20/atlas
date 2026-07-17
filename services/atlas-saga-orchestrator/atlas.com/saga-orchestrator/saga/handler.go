@@ -12,8 +12,10 @@ import (
 	"atlas-saga-orchestrator/gachapon"
 	"atlas-saga-orchestrator/guild"
 	"atlas-saga-orchestrator/invite"
+	broadcast2 "atlas-saga-orchestrator/kafka/message/broadcast"
 	character2 "atlas-saga-orchestrator/kafka/message/character"
 	gachapon2 "atlas-saga-orchestrator/kafka/message/gachapon"
+	megaphone2 "atlas-saga-orchestrator/kafka/message/megaphone"
 	questmessage "atlas-saga-orchestrator/kafka/message/quest"
 	saga2 "atlas-saga-orchestrator/kafka/message/saga"
 	storage2 "atlas-saga-orchestrator/kafka/message/storage"
@@ -157,6 +159,8 @@ type Handler interface {
 	handleStageClearAttemptPq(s Saga, st Step[any]) error
 	handleEnterPartyQuestBonus(s Saga, st Step[any]) error
 	handleFieldEffectWeather(s Saga, st Step[any]) error
+	handleEmitMegaphone(s Saga, st Step[any]) error
+	handleEnqueueWorldBroadcast(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
@@ -897,6 +901,10 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleEnterPartyQuestBonus, true
 	case FieldEffectWeather:
 		return h.handleFieldEffectWeather, true
+	case EmitMegaphone:
+		return h.handleEmitMegaphone, true
+	case EnqueueWorldBroadcast:
+		return h.handleEnqueueWorldBroadcast, true
 	}
 	return nil, false
 }
@@ -3070,6 +3078,64 @@ func (h *HandlerImpl) handleFieldEffectWeather(s Saga, st Step[any]) error {
 	err := h.mapCommandP.FieldEffectWeather(s.TransactionId(), f, payload.ItemId, payload.Message, durationMs)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to show field effect weather.")
+		return err
+	}
+
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+	return nil
+}
+
+// handleEmitMegaphone handles the EmitMegaphone action.
+// Produces a BroadcastEvent to EVENT_TOPIC_MEGAPHONE for the stateless
+// megaphone tiers (MEGAPHONE/SUPER/ITEM/TRIPLE). Fire-and-forget — no Kafka
+// event advances this step, so it is marked complete immediately after the
+// event is produced.
+func (h *HandlerImpl) handleEmitMegaphone(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(EmitMegaphonePayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"character_id":   payload.CharacterId,
+		"tier":           payload.Tier,
+		"world_id":       payload.WorldId,
+	}).Info("Emitting megaphone broadcast event.")
+
+	err := producer.ProviderImpl(h.l)(h.ctx)(megaphone2.EnvEventTopicMegaphone)(MegaphoneBroadcastEventProvider(payload))
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to emit megaphone broadcast event.")
+		return err
+	}
+
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+	return nil
+}
+
+// handleEnqueueWorldBroadcast handles the EnqueueWorldBroadcast action.
+// Produces an EnqueueCommand to COMMAND_TOPIC_WORLD_BROADCAST for the
+// serialized world broadcast tiers (TV/AVATAR); atlas-world appends it to
+// the (WorldId, Family) queue. Fire-and-forget — no Kafka event advances
+// this step, so it is marked complete immediately after the command is
+// produced.
+func (h *HandlerImpl) handleEnqueueWorldBroadcast(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(EnqueueWorldBroadcastPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id":   s.TransactionId().String(),
+		"character_id":     payload.CharacterId,
+		"family":           payload.Family,
+		"world_id":         payload.WorldId,
+		"duration_seconds": payload.DurationSeconds,
+	}).Info("Enqueuing world broadcast command.")
+
+	err := producer.ProviderImpl(h.l)(h.ctx)(broadcast2.EnvCommandTopicWorldBroadcast)(WorldBroadcastEnqueueCommandProvider(payload))
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to enqueue world broadcast command.")
 		return err
 	}
 

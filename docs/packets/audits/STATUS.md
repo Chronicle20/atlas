@@ -4,7 +4,7 @@
 > ✅ verified · 🧩 family (mode-prefix dispatcher; sub-arms unverified) · 🟡 partial · ❌ incomplete · ⬜ n-a · 🟥 conflict
 > Partial (🟡) sub-glyphs: 🟡ᶠ tier-1 needs byte-fixture · 🟡ᵈ tool-pass diff-only (no byte-test) · 🟡ᵖ evidence-pinned deferral
 
-Tool: `0e579f0e7c5e41a9da087014d006ef917f45af08d629b54bb5c6fb576032fb63`
+Tool: `708b213f9715880f3185ef3ca10292ae8371ebb806d45cbb330f50d0b3438ae0`
 
 - export gms_v48: `054d404fcb6f0feed776b8c1453f2ab48a35f479463e82ea00d6d28ebca512dc`
 - export gms_v61: `b1111abee79b6b10cf1a05305e3c4a7707819f6862a80314c0b2ebce424852f7`

@@ -75,7 +75,7 @@ func Reconcile(ctx context.Context, l logrus.FieldLogger, store Store, req Reque
 	for _, bucket := range store.Buckets() {
 		ids, err := store.ListTenantIDs(ctx, bucket)
 		if err != nil {
-			return Report{}, err
+			return rep, err
 		}
 		for _, id := range ids {
 			if _, ok := keep[id]; ok {
@@ -87,7 +87,7 @@ func Reconcile(ctx context.Context, l logrus.FieldLogger, store Store, req Reque
 			prefix := "tenants/" + id + "/"
 			info, err := store.PrefixInfo(ctx, bucket, prefix)
 			if err != nil {
-				return Report{}, err
+				return rep, err
 			}
 			if info.Count == 0 {
 				continue
@@ -100,7 +100,7 @@ func Reconcile(ctx context.Context, l logrus.FieldLogger, store Store, req Reque
 			if !req.DryRun {
 				if err := store.RemovePrefix(ctx, bucket, prefix); err != nil {
 					l.WithError(err).Warnf("reconcile: failed to remove %s/%s", bucket, prefix)
-					return Report{}, err
+					return rep, err
 				}
 				action = "deleted"
 			}

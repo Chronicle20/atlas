@@ -94,6 +94,7 @@ export function AccountsPage() {
 
   useEffect(() => {
     if (accounts.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- marks the in-flight async ban-status fetch this effect is about to kick off; the fetch itself must stay in the effect
       fetchBanStatuses(accounts);
     }
   }, [accounts, fetchBanStatuses]);

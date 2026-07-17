@@ -40,15 +40,13 @@ const { pools } = vi.hoisted(() => ({
 vi.mock("@/services/api/reward-pools.service", () => ({
   rewardPoolsService: {
     getAllPools: vi.fn().mockResolvedValue(pools),
-    getGlobalItems: vi
-      .fn()
-      .mockResolvedValue([
-        {
-          id: "1",
-          type: "global-gachapon-items",
-          attributes: { itemId: 2000000, quantity: 1, tier: "common" },
-        },
-      ]),
+    getGlobalItems: vi.fn().mockResolvedValue([
+      {
+        id: "1",
+        type: "global-gachapon-items",
+        attributes: { itemId: 2000000, quantity: 1, tier: "common" },
+      },
+    ]),
   },
 }));
 vi.mock("@/context/tenant-context", () => ({

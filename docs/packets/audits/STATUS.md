@@ -4,17 +4,17 @@
 > ✅ verified · 🧩 family (mode-prefix dispatcher; sub-arms unverified) · 🟡 partial · ❌ incomplete · ⬜ n-a · 🟥 conflict
 > Partial (🟡) sub-glyphs: 🟡ᶠ tier-1 needs byte-fixture · 🟡ᵈ tool-pass diff-only (no byte-test) · 🟡ᵖ evidence-pinned deferral
 
-Tool: `4bf71682250bdef5e05e37e738606e57deca11e1933b849b6d559b1e390025d2`
+Tool: `536851b2695e1662649a6195706f480da0a1c03d455adb5602b4cf714dd46e07`
 
 - export gms_v48: `c458ecfe23ae46fcf435bc8f953a1b5b9b17dd2d770b5fd8563965510f2c40d6`
 - export gms_v61: `4b33b6780c5a99351fc63ad0a14f15e269d8e478289be1b779bb0d27eabd804a`
 - export gms_v72: `8d8224b371800fc92bcfb473437055d03e409c09cef69ccad567e6cc08e62670`
 - export gms_v79: `b734bd2e2a14f5fb3ef6d3018084265c4c6dc0666e3a8a133c39406ffba589f6`
-- export gms_v83: `739cf05d829c738246b2dd2276d5d01fd46a9d473a5693e9baec073b7b63e8b8`
-- export gms_v84: `257ea901bf74931112e543c3f4261554150ec77661edf6cd6460ce5ddd7127e1`
-- export gms_v87: `320c102f1151e560b2574242761ed1d9ba8430a352195e3804142945d45cff15`
-- export gms_v95: `0f0fa30f89389bf162fcf2a05eeb6c78acd1b19a07fb397f1d2df6e26a304cef`
-- export jms_v185: `a4f9f3057959f76ae0b988ea9b9a68f75971b83eab435fccc23b4d774c007e55`
+- export gms_v83: `1d8bd695e0605be5ec91c80c5fe49386f52df719cda90dc7f30d9000ef8d4907`
+- export gms_v84: `8e48f5e283039e741adfecfd8f18cac9309108f7bac5ef816cbb9a030bd73936`
+- export gms_v87: `9cb8b35584c3052c7d747d39958fe3c24ee689ab5d37199f596b2587e8a6d63b`
+- export gms_v95: `3880e5a20ff3832c581e6ba5d66ab6a815df5e28de8fdb1f3fdfd13765377bdc`
+- export jms_v185: `624987cf4f4a54034d1306f7f1dce4ff472e9ec6b1a45b54551b7bda1b9b8c04`
 
 ## Clientbound
 
@@ -76,7 +76,7 @@ Tool: `4bf71682250bdef5e05e37e738606e57deca11e1933b849b6d559b1e390025d2`
 | CLAIM_STATUS_CHANGED | CWvsContext::OnClaimSvrStatusChanged; sub_71F54E |  | 0x027 | ❌ | 0x02C | ❌ | 0x02C | ❌ | 0x02C | ❌ | 0x02F | ❌ | 0x02F | ❌ | 0x02F | ❌ | 0x02E | ❌ | 0x02C | ❌ |
 | SET_TAMING_MOB_INFO | CWvsContext::OnSetTamingMobInfo; sub_72032B | character/clientbound/CharacterSetTamingMobInfo (T1) | 0x028 | ✅ | 0x02D | 🟡ᶠ | 0x02D | 🟡ᶠ | 0x02D | 🟡ᶠ | 0x030 | ✅ | 0x030 | ✅ | 0x030 | ✅ | 0x02F | ✅ | 0x02D | ✅ |
 | QUEST_CLEAR | CWvsContext::OnQuestClear |  | 0x029 | ❌ | 0x02E | ❌ | 0x02E | ❌ | 0x02E | ❌ | 0x031 | ❌ | 0x031 | ❌ | 0x031 | ❌ | 0x030 | ❌ | 0x02E | ❌ |
-| INCUBATOR_RESULT | CWvsContext::OnIncubatorResult |  | 0x02A | ❌ | 0x042 | ❌ | 0x042 | ❌ | 0x042 | ❌ | 0x045 | ❌ | 0x047 | ❌ | 0x047 | ❌ | 0x048 | ❌ | 0x03F | ❌ |
+| INCUBATOR_RESULT | CWvsContext::OnIncubatorResult | incubator/clientbound/IncubatorResult | 0x02A | ❌ | 0x042 | ✅ | 0x042 | ✅ | 0x042 | ✅ | 0x045 | ✅ | 0x047 | ✅ | 0x047 | ✅ | 0x048 | ✅ | 0x03F | ✅ |
 | IDA_0X02B | sub_71A135 |  | 0x02B | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | SUE_CHARACTER_RESULT | CWvsContext::OnSueCharacterResult |  | 0x02C | ❌ | 0x034 | ❌ | 0x034 | ❌ | 0x034 | ❌ | 0x037 | ❌ | 0x037 | ❌ | 0x037 | ❌ | 0x037 | ❌ |  | ⬜ |
 | IDA_0X02E | sub_71CE62 |  | 0x02E | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
@@ -995,14 +995,14 @@ Tool: `4bf71682250bdef5e05e37e738606e57deca11e1933b849b6d559b1e390025d2`
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
 | v48 | 169 | 0 | 2 | 156 | 632 | 0 | 51.7% |
-| v61 | 241 | 0 | 60 | 195 | 463 | 0 | 48.6% |
-| v72 | 251 | 0 | 73 | 213 | 422 | 0 | 46.7% |
-| v79 | 265 | 0 | 72 | 209 | 413 | 0 | 48.5% |
-| v83 | 406 | 0 | 0 | 329 | 224 | 0 | 55.2% |
-| v84 | 378 | 0 | 0 | 337 | 244 | 0 | 52.9% |
-| v87 | 412 | 0 | 0 | 360 | 187 | 0 | 53.4% |
-| v95 | 437 | 0 | 0 | 419 | 103 | 0 | 51.1% |
-| JMS185 | 393 | 0 | 0 | 372 | 194 | 0 | 51.4% |
+| v61 | 242 | 0 | 60 | 194 | 463 | 0 | 48.8% |
+| v72 | 252 | 0 | 73 | 212 | 422 | 0 | 46.9% |
+| v79 | 266 | 0 | 72 | 208 | 413 | 0 | 48.7% |
+| v83 | 407 | 0 | 0 | 328 | 224 | 0 | 55.4% |
+| v84 | 379 | 0 | 0 | 336 | 244 | 0 | 53.0% |
+| v87 | 413 | 0 | 0 | 359 | 187 | 0 | 53.5% |
+| v95 | 438 | 0 | 0 | 418 | 103 | 0 | 51.2% |
+| JMS185 | 394 | 0 | 0 | 371 | 194 | 0 | 51.5% |
 
 ## Conflicts
 

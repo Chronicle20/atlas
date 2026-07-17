@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   JOB_GRAPH, BRANCH_FLOORS, JOB_ROOTS,
-  childrenOf, rootOf, floorOf, visibleRoots, jobTreePath,
+  childrenOf, rootOf, floorOf, visibleRoots, visibleChildrenOf, jobTreePath,
 } from "@/lib/jobs/job-advancement-tree";
 
 describe("job-advancement-tree", () => {
@@ -48,6 +48,17 @@ describe("job-advancement-tree", () => {
     expect(r12).not.toContain(1000); // Cygnus (v83) hidden
     expect(r12).not.toContain(2000); // Aran (v80) hidden
     expect(r12).not.toContain(800);  // Maple Leaf Brigadier (special) hidden
+  });
+
+  it("gates the Pirate subtree at v62 while its launch-era siblings stay visible", () => {
+    // Pirate (500) was added in GMS v62; the other four explorer classes existed at launch.
+    expect(floorOf(500)).toBe(62);
+    expect(floorOf(100)).toBe(1); // Warrior — launch-era
+    // On a sub-62 tenant Pirate is hidden from the Beginner tree; the others show.
+    expect(visibleChildrenOf(0, 12)).toEqual(expect.arrayContaining([100, 200, 300, 400]));
+    expect(visibleChildrenOf(0, 12)).not.toContain(500);
+    // On v83 Pirate is visible again.
+    expect(visibleChildrenOf(0, 83)).toContain(500);
   });
 
   it("jobTreePath returns root->node inclusive", () => {

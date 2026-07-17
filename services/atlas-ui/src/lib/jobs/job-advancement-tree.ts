@@ -125,6 +125,15 @@ export const BRANCH_FLOORS: Record<number, number> = {
   0: 1, 800: 83, 900: 1, 910: 1, 1000: 83, 2000: 80, 2001: 84,
 };
 
+// NODE_FLOORS overrides the floor for a subtree that arrived later than its
+// branch root. The Adventurer root (0) is launch-era, but Pirate (500) was
+// added in GMS v62 — so on sub-62 tenants (e.g. v12/v48) the four original
+// classes show while Pirate is hidden. A node inherits the strictest floor on
+// its path to the root (see floorOf).
+export const NODE_FLOORS: Record<number, number> = {
+  500: 62, // Pirate — introduced GMS v62
+};
+
 /** Branch root ids (parent === null), ascending. */
 export const JOB_ROOTS: number[] = Object.values(JOB_GRAPH)
   .filter((e) => e.parent === null)
@@ -151,14 +160,40 @@ export function rootOf(id: number): number {
   return cur.id;
 }
 
-/** Version floor for a node = its root's BRANCH_FLOORS entry (0 = fail-open if unfloored). */
+/**
+ * Version floor for a node: the strictest floor on its path to the branch
+ * root. A per-node override (NODE_FLOORS, e.g. Pirate) can raise the floor
+ * above its root's BRANCH_FLOORS; otherwise the node inherits the root floor.
+ * 0 = fail-open if neither is set.
+ */
 export function floorOf(id: number): number {
-  return BRANCH_FLOORS[rootOf(id)] ?? 0;
+  let cur: JobEntry | undefined = JOB_GRAPH[id];
+  let floor = 0;
+  while (cur) {
+    const nodeFloor = NODE_FLOORS[cur.id];
+    if (nodeFloor !== undefined && nodeFloor > floor) floor = nodeFloor;
+    if (cur.parent == null) {
+      const rootFloor = BRANCH_FLOORS[cur.id] ?? 0;
+      if (rootFloor > floor) floor = rootFloor;
+      break;
+    }
+    cur = JOB_GRAPH[cur.parent];
+  }
+  return floor;
 }
 
 /** Root ids visible at the given tenant major version, ascending. */
 export function visibleRoots(major: number): number[] {
   return JOB_ROOTS.filter((r) => floorOf(r) <= major);
+}
+
+/**
+ * Direct children of a node that are visible at the given tenant major
+ * version. Lets the tree hide a later-added subtree (e.g. Pirate on a v12
+ * tenant) while showing its launch-era siblings.
+ */
+export function visibleChildrenOf(id: number, major: number): number[] {
+  return childrenOf(id).filter((c) => floorOf(c) <= major);
 }
 
 /** Root -> node advancement path (inclusive), for breadcrumbs. */

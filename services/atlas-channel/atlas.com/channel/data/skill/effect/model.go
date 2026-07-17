@@ -112,6 +112,24 @@ func (m Model) HP() uint16 {
 	return m.hp
 }
 
+// MP exposes the skill's `mp` flat recovery attribute (used by the GM
+// Heal + Dispel restore formula, alongside HP()).
+func (m Model) MP() uint16 {
+	return m.mp
+}
+
+// HpR exposes the skill's `hpR` recovery ratio (fraction of effective
+// MaxHp restored). Zero means no ratio component.
+func (m Model) HpR() float64 {
+	return m.hpr
+}
+
+// MpR exposes the skill's `mpR` recovery ratio (fraction of effective
+// MaxMp restored). Zero means no ratio component.
+func (m Model) MpR() float64 {
+	return m.mpr
+}
+
 // LT returns the skill effect's left-top rectangle corner relative to
 // the caster's position. A zero-valued point.Model indicates the source
 // data did not provide a rectangle; callers should treat that as a

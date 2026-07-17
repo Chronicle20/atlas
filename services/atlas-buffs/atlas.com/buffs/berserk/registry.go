@@ -90,13 +90,48 @@ func (r *Registry) GetTenants(ctx context.Context) ([]tenant.Model, error) {
 	return tenants, nil
 }
 
+// maxUpdateAttempts bounds updateWithRetry: a lost WATCH race resolves on
+// the very next read (nothing to wait out), so a small fixed cap is enough
+// to absorb concurrent-writer contention without risking an unbounded loop.
+const maxUpdateAttempts = 3
+
+// updateWithRetry wraps r.entries.Update with a bounded retry on a lost
+// WATCH race. TenantRegistry.Update (tenant_registry.go:130) is a single-
+// attempt WATCH/GET/MULTI/EXEC: if another writer commits between our GET
+// and EXEC, go-redis aborts the transaction and returns goredis.TxFailedErr,
+// and the caller's write is silently dropped unless someone retries. For the
+// mutator methods that route through this helper, a dropped write is a real
+// defect (a lost mark/update/store), unlike the CLAIM methods where losing
+// the race is the intended single-winner outcome (see ClaimReeval/
+// ClaimBroadcast, which call r.entries.Update directly and must not retry).
+//
+// atlas.ErrNotFound is terminal (the entry isn't tracked) and is never
+// retried. Any other error (connection failure, marshal error, etc.) is
+// returned as-is after the first failure. fn is re-invoked on each attempt,
+// which is safe because it recomputes its result from the freshly read
+// value on every call.
+func (r *Registry) updateWithRetry(ctx context.Context, t tenant.Model, characterId uint32, fn func(Model) Model) (Model, error) {
+	var m Model
+	var err error
+	for attempt := 0; attempt < maxUpdateAttempts; attempt++ {
+		m, err = r.entries.Update(ctx, t, characterId, fn)
+		if err == nil || !errors.Is(err, goredis.TxFailedErr) {
+			return m, err
+		}
+	}
+	return m, err
+}
+
 // MarkDirty schedules a re-evaluation at/after `at`. Untracked characters are
 // ignored (most characters are not Dark Knights). Last-writer-wins on dirtyAt
-// is intentional: re-evaluations are idempotent and compute from current data,
-// so which trigger fires one is immaterial (design §5).
+// among committed writes is intentional: re-evaluations are idempotent and
+// compute from current data, so which trigger commits first is immaterial
+// (design §5). A lost WATCH race is a different failure mode than that —
+// nothing commits at all — so it is not a "loss" in the last-writer-wins
+// sense; updateWithRetry retries it so the mark is not silently dropped.
 func (r *Registry) MarkDirty(ctx context.Context, characterId uint32, at time.Time) error {
 	t := tenant.MustFromContext(ctx)
-	_, err := r.entries.Update(ctx, t, characterId, func(m Model) Model {
+	_, err := r.updateWithRetry(ctx, t, characterId, func(m Model) Model {
 		return m.dirtyMarked(at)
 	})
 	if errors.Is(err, atlas.ErrNotFound) {
@@ -107,7 +142,7 @@ func (r *Registry) MarkDirty(ctx context.Context, characterId uint32, at time.Ti
 
 func (r *Registry) UpdateChannel(ctx context.Context, characterId uint32, worldId world.Id, channelId channel.Id) error {
 	t := tenant.MustFromContext(ctx)
-	_, err := r.entries.Update(ctx, t, characterId, func(m Model) Model {
+	_, err := r.updateWithRetry(ctx, t, characterId, func(m Model) Model {
 		return m.channelUpdated(worldId, channelId)
 	})
 	if errors.Is(err, atlas.ErrNotFound) {
@@ -118,7 +153,7 @@ func (r *Registry) UpdateChannel(ctx context.Context, characterId uint32, worldI
 
 func (r *Registry) UpdateSkillLevel(ctx context.Context, characterId uint32, level byte) error {
 	t := tenant.MustFromContext(ctx)
-	_, err := r.entries.Update(ctx, t, characterId, func(m Model) Model {
+	_, err := r.updateWithRetry(ctx, t, characterId, func(m Model) Model {
 		return m.skillLevelUpdated(level)
 	})
 	if errors.Is(err, atlas.ErrNotFound) {
@@ -174,7 +209,7 @@ func (r *Registry) ClaimBroadcast(ctx context.Context, characterId uint32, now t
 // (Cosmic parity: every re-evaluation replaces the schedule, design D2).
 func (r *Registry) StoreEvaluation(ctx context.Context, characterId uint32, active bool, characterLevel byte, nextBroadcastAt time.Time) error {
 	t := tenant.MustFromContext(ctx)
-	_, err := r.entries.Update(ctx, t, characterId, func(m Model) Model {
+	_, err := r.updateWithRetry(ctx, t, characterId, func(m Model) Model {
 		return m.evaluated(active, characterLevel, nextBroadcastAt)
 	})
 	if errors.Is(err, atlas.ErrNotFound) {

@@ -140,35 +140,53 @@ func TestClaimBroadcast(t *testing.T) {
 // TestConcurrentClaimSingleWinner is the cancel-reschedule race from the PRD's
 // acceptance criteria: when two replicas scan the same due entry, exactly one
 // claim wins.
+//
+// A start barrier holds every claimant goroutine at the gate until all of
+// them are ready, then releases them together so their WATCH+GET windows
+// overlap and at least one loses the race to a concurrent EXEC (rather than
+// serializing goroutine-by-goroutine, which would make single-winner
+// trivially true even for a non-atomic get-then-set implementation). The
+// scenario is repeated across many rounds, each with a fresh entry and a
+// fresh StoreEvaluation, so the property is pinned by `go test` alone rather
+// than relying on the caller passing -count.
 func TestConcurrentClaimSingleWinner(t *testing.T) {
 	setupTestRegistry(t)
 	ctx := setupTestContext(t, setupTestTenant(t))
-	now := time.Now()
 
-	assert.NoError(t, GetRegistry().Track(ctx, trackedModel(42)))
-	assert.NoError(t, GetRegistry().StoreEvaluation(ctx, 42, true, 120, now))
-
+	const rounds = 50
 	const attempts = 8
-	wins := make(chan bool, attempts)
-	var wg sync.WaitGroup
-	for i := 0; i < attempts; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			_, ok := GetRegistry().ClaimBroadcast(ctx, 42, now)
-			wins <- ok
-		}()
-	}
-	wg.Wait()
-	close(wins)
 
-	winners := 0
-	for w := range wins {
-		if w {
-			winners++
+	for round := 0; round < rounds; round++ {
+		characterId := uint32(1000 + round)
+		now := time.Now()
+
+		assert.NoError(t, GetRegistry().Track(ctx, trackedModel(characterId)))
+		assert.NoError(t, GetRegistry().StoreEvaluation(ctx, characterId, true, 120, now))
+
+		start := make(chan struct{})
+		wins := make(chan bool, attempts)
+		var wg sync.WaitGroup
+		for i := 0; i < attempts; i++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				<-start
+				_, ok := GetRegistry().ClaimBroadcast(ctx, characterId, now)
+				wins <- ok
+			}()
 		}
+		close(start)
+		wg.Wait()
+		close(wins)
+
+		winners := 0
+		for w := range wins {
+			if w {
+				winners++
+			}
+		}
+		assert.Equal(t, 1, winners, "exactly one claimant may emit per deadline (round %d)", round)
 	}
-	assert.Equal(t, 1, winners, "exactly one claimant may emit per deadline")
 }
 
 func TestTenantIsolation(t *testing.T) {

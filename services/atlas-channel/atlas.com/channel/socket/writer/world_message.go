@@ -6,7 +6,9 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	atlas_packet "github.com/Chronicle20/atlas/libs/atlas-packet"
+	chat "github.com/Chronicle20/atlas/libs/atlas-packet/chat"
 	chatpkt "github.com/Chronicle20/atlas/libs/atlas-packet/chat/clientbound"
+	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 )
@@ -58,6 +60,32 @@ func decorateMegaphoneMessage(medal string, characterName string, message string
 		return message
 	}
 	return fmt.Sprintf("%s : %s", name, message)
+}
+
+// WorldMessageMegaphoneBody, WorldMessageSuperMegaphoneBody,
+// WorldMessageItemMegaphoneBody, and WorldMessageMultiMegaphoneBody
+// (task-123 Task 13) decorate the message text with the sender's medal/name
+// prefix and delegate mode-byte resolution to the Task 4 chat.*Body
+// functions, which are consumed by the megaphone broadcast consumer
+// (kafka/consumer/megaphone/consumer.go).
+func WorldMessageMegaphoneBody(medal string, characterName string, message string) packet.Encode {
+	return chat.WorldMessageMegaphoneBody(decorateMegaphoneMessage(medal, characterName, message))
+}
+
+func WorldMessageSuperMegaphoneBody(medal string, characterName string, message string, channelId channel.Id, whispersOn bool) packet.Encode {
+	return chat.WorldMessageSuperMegaphoneBody(decorateMegaphoneMessage(medal, characterName, message), byte(channelId), whispersOn)
+}
+
+func WorldMessageItemMegaphoneBody(medal string, characterName string, message string, channelId channel.Id, whispersOn bool, item *packetmodel.Asset) packet.Encode {
+	return chat.WorldMessageItemMegaphoneBody(decorateMegaphoneMessage(medal, characterName, message), byte(channelId), whispersOn, item)
+}
+
+func WorldMessageMultiMegaphoneBody(medal string, characterName string, messages []string, channelId channel.Id, whispersOn bool) packet.Encode {
+	decorated := make([]string, 0, len(messages))
+	for _, m := range messages {
+		decorated = append(decorated, decorateMegaphoneMessage(medal, characterName, m))
+	}
+	return chat.WorldMessageMultiMegaphoneBody(decorated, byte(channelId), whispersOn)
 }
 
 func WorldMessageTopScrollBody(message string) packet.Encode {

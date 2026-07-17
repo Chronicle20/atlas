@@ -523,7 +523,6 @@ func TestProcessor_Retry_RestartsAfterLoss(t *testing.T) {
 	require.Equal(t, game.StatusEnded, lost.Status())
 	require.Equal(t, 1, lost.Rung())
 
-	// The loss itself submits nothing (consolation is deferred to this Retry).
 	require.Empty(t, captured, "no saga on the loss itself")
 
 	retryBuf := message.NewBuffer()
@@ -532,16 +531,12 @@ func TestProcessor_Retry_RestartsAfterLoss(t *testing.T) {
 	assert.Equal(t, game.StatusAwaitingSelect, m.Status())
 	assert.Equal(t, 0, m.Rung(), "retry resets to a fresh round at rung 0")
 
-	// Retry awards the deferred consolation (+500) THEN re-charges the fee (-1000).
-	require.Len(t, captured, 2, "retry submits the deferred consolation then the fee deduction")
-
-	consolation, ok := captured[0].Steps[0].Payload.(sharedsaga.AwardMesosPayload)
+	// This loss was at rung 1 (the player had won a round), so there is NO
+	// consolation - retry costs the full entry fee only.
+	require.Len(t, captured, 1, "post-win retry submits only the fee deduction (no consolation)")
+	feePayload, ok := captured[0].Steps[0].Payload.(sharedsaga.AwardMesosPayload)
 	require.True(t, ok)
-	assert.Equal(t, int32(500), consolation.Amount, "deferred consolation (positive)")
-
-	feePayload, ok := captured[1].Steps[0].Payload.(sharedsaga.AwardMesosPayload)
-	require.True(t, ok)
-	assert.Equal(t, int32(-1000), feePayload.Amount, "retry re-charges the entry fee (negative amount)")
+	assert.Equal(t, int32(-1000), feePayload.Amount, "retry re-charges the full entry fee (negative amount)")
 
 	msgs := retryBuf.GetAll()[rps.EnvEventTopic]
 	require.Len(t, msgs, 1, "retry buffers exactly one RoundStarted event")
@@ -584,6 +579,77 @@ func TestProcessor_Retry_NoSessionReturnsError(t *testing.T) {
 	mb := message.NewBuffer()
 	_, err := p.Retry(mb, uint32(1017))
 	assert.ErrorIs(t, err, game.ErrSessionNotFound)
+}
+
+// TestProcessor_Retry_RungZeroLoss_AwardsConsolationThenFee verifies a Retry
+// from a first-round (rung 0) loss awards the deferred consolation (+500) then
+// re-charges the entry fee (-1000).
+func TestProcessor_Retry_RungZeroLoss_AwardsConsolationThenFee(t *testing.T) {
+	setupRegistryTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
+	characterId := uint32(1019)
+
+	var captured []sharedsaga.Saga
+	// Paper beats Rock -> a first-round loss at rung 0.
+	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowPaper), ladderProviderFor(consolationLadder()), capturingSagaSubmitter(&captured))
+
+	mb := message.NewBuffer()
+	_, err := p.Start(mb, characterId, testWorldId, testChannelId, testNpcId)
+	require.NoError(t, err)
+	lost, err := p.Select(mb, characterId, game.ThrowRock)
+	require.NoError(t, err)
+	require.Equal(t, 0, lost.Rung())
+	require.Empty(t, captured, "no saga on the loss itself")
+
+	_, err = p.Retry(mb, characterId)
+	require.NoError(t, err)
+
+	require.Len(t, captured, 2, "rung-0 retry: consolation then fee")
+	consolation, ok := captured[0].Steps[0].Payload.(sharedsaga.AwardMesosPayload)
+	require.True(t, ok)
+	assert.Equal(t, int32(500), consolation.Amount, "deferred consolation (positive)")
+	feePayload, ok := captured[1].Steps[0].Payload.(sharedsaga.AwardMesosPayload)
+	require.True(t, ok)
+	assert.Equal(t, int32(-1000), feePayload.Amount, "retry re-charges the full entry fee")
+}
+
+// TestProcessor_Collect_AfterWinLoss_NoConsolation verifies that Exit after a
+// loss that came AFTER a win (rung >= 1) awards no consolation - the player
+// gambled their winnings.
+func TestProcessor_Collect_AfterWinLoss_NoConsolation(t *testing.T) {
+	setupRegistryTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
+	characterId := uint32(1020)
+
+	ladder := game.Ladder{
+		EntryCostMeso:   1000,
+		ConsolationMeso: 500,
+		Rungs: []game.Rung{
+			{Rung: 1, ItemId: item.Id(4031332), Quantity: 1, Meso: 0},
+			{Rung: 2, ItemId: item.Id(4031333), Quantity: 1, Meso: 0},
+		},
+	}
+	var captured []sharedsaga.Saga
+	// win (opponent Scissors) then loss (opponent Paper), both vs player Rock.
+	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowScissors, game.ThrowPaper), ladderProviderFor(ladder), capturingSagaSubmitter(&captured))
+
+	mb := message.NewBuffer()
+	_, err := p.Start(mb, characterId, testWorldId, testChannelId, testNpcId)
+	require.NoError(t, err)
+	_, err = p.Select(mb, characterId, game.ThrowRock) // win -> rung 1
+	require.NoError(t, err)
+	_, err = p.Continue(mb, characterId)
+	require.NoError(t, err)
+	lost, err := p.Select(mb, characterId, game.ThrowRock) // loss at rung 1
+	require.NoError(t, err)
+	require.Equal(t, 1, lost.Rung())
+
+	_, err = p.Collect(mb, characterId)
+	require.NoError(t, err)
+
+	assert.Empty(t, captured, "no consolation after a loss that followed a win")
 }
 
 // TestProcessor_Continue_ForcesCollectAtMaxRung verifies that Continue, when

@@ -477,7 +477,16 @@ func (p *ProcessorImpl) ContinueAndEmit(characterId uint32) (Model, error) {
 // saga-submit failure is logged, never fatal - the leave/restart still
 // proceeds. Only meaningful for a post-loss StatusEnded session; callers guard
 // on that.
+//
+// The consolation is a pity prize for losing WITHOUT having won anything: only
+// a loss still at rung 0 (the player never won a round this game) qualifies. A
+// player who won at least one round (rung >= 1) and then lost gambled their
+// winnings and gets nothing - so a post-win Retry costs the full entry fee with
+// no consolation offset.
 func (p *ProcessorImpl) submitConsolation(m Model) {
+	if m.Rung() != 0 {
+		return
+	}
 	ladder, err := p.ladderProvider()
 	if err != nil {
 		p.l.WithError(err).Warnf("Unable to resolve ladder for RPS consolation prize (character [%d]); skipping consolation.", m.CharacterId())

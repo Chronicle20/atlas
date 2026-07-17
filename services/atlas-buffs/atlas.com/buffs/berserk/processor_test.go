@@ -134,14 +134,33 @@ func TestProcessTicksReevaluates(t *testing.T) {
 	assert.True(t, m.NextBroadcastAt().Equal(now.Add(InitialBroadcastDelay)), "fresh 5s schedule")
 }
 
+// TestProcessTicksReevalDoesNotBroadcastSamePass pins that a SUCCESSFUL
+// re-evaluation does not also broadcast in the same pass. The load-bearing
+// assertion is about emission, which producertest.InstallNoop makes a no-op,
+// so this pins the invariant via observable schedule state instead: after
+// the pass, NextBroadcastAt must be exactly now+InitialBroadcastDelay (the
+// re-eval's fresh schedule, StoreEvaluation/registry.go), and NOT
+// now+BroadcastPeriod (what a ClaimBroadcast claim would have left,
+// registry.go ClaimBroadcast). ProcessTicks itself does not enforce
+// "one or the other" via control flow (both `if e.DirtyDue` and
+// `if e.BroadcastDue` run unconditionally against the pre-pass snapshot) —
+// it is ClaimBroadcast's *fresh* re-read inside the Redis Update transaction
+// that declines the broadcast, because by the time it runs
+// nextBroadcastAt is already now+InitialBroadcastDelay (not due). Do not
+// reintroduce a `continue` after the re-eval branch to "enforce" this
+// mutual exclusion — it is already guaranteed by ClaimBroadcast's freshness
+// check, and a `continue` there instead starves broadcasts during a
+// sustained re-evaluation lookup failure (see
+// TestProcessTicksLookupFailureStillBroadcasts).
 func TestProcessTicksReevalDoesNotBroadcastSamePass(t *testing.T) {
 	setupTestRegistry(t)
 	ctx := setupTestContext(t, setupTestTenant(t))
 	now := time.Now()
 	p := testProcessor(t, ctx, now)
 
-	// Dirty AND broadcast-due: the re-evaluation wins the pass and replaces
-	// the schedule (Cosmic cancel-and-replace semantics).
+	// Dirty AND broadcast-due: the re-evaluation succeeds and replaces
+	// the schedule (Cosmic cancel-and-replace semantics); the broadcast claim
+	// must decline because the fresh schedule is no longer due.
 	m := NewBuilder(world.Id(0), 42, 10).SetChannel(channel.Id(1)).SetDirtyAt(now).Build().
 		evaluated(false, 120, now)
 	assert.NoError(t, GetRegistry().Track(ctx, m))
@@ -150,7 +169,10 @@ func TestProcessTicksReevalDoesNotBroadcastSamePass(t *testing.T) {
 
 	got, _ := GetRegistry().Get(ctx, 42)
 	assert.True(t, got.NextBroadcastAt().Equal(now.Add(InitialBroadcastDelay)),
-		"schedule replaced by re-evaluation, not advanced by a broadcast claim")
+		"schedule is the re-evaluation's fresh now+InitialBroadcastDelay")
+	assert.False(t, got.NextBroadcastAt().Equal(now.Add(BroadcastPeriod)),
+		"schedule must NOT be now+BroadcastPeriod, which is what a broadcast claim advancing the "+
+			"pre-reeval schedule would have produced")
 }
 
 func TestProcessTicksBroadcastAdvancesSchedule(t *testing.T) {
@@ -187,6 +209,38 @@ func TestProcessTicksLookupFailureRearms(t *testing.T) {
 	assert.True(t, got.DirtyAt().Equal(now.Add(ReevalRetryDelay)), "re-armed for retry")
 	assert.True(t, got.Active(), "last-known state kept")
 	assert.True(t, got.NextBroadcastAt().Equal(now.Add(time.Minute)), "existing schedule untouched")
+}
+
+// TestProcessTicksLookupFailureStillBroadcasts pins FR-5: an entry that is
+// BOTH dirty-due AND broadcast-due at the same pass must still broadcast its
+// last-known state when the re-evaluation lookup fails. Without this, a
+// sustained REST outage (ReevalRetryDelay == the ticker's scan interval)
+// re-arms dirtyAt to exactly the next pass forever, so the re-evaluation
+// branch claims the entry on every single pass and the broadcast branch is
+// never reached — the aura freezes for the whole outage. Unlike
+// TestProcessTicksLookupFailureRearms (which parks nextBroadcastAt a minute
+// out so it never comes due, and so cannot exercise this path), this test
+// sets nextBroadcastAt to `now` so both branches are due on the same pass.
+func TestProcessTicksLookupFailureStillBroadcasts(t *testing.T) {
+	setupTestRegistry(t)
+	ctx := setupTestContext(t, setupTestTenant(t))
+	now := time.Now()
+	p := testProcessor(t, ctx, now)
+	p.getMaxHp = func(world.Id, channel.Id, uint32) (uint32, error) { return 0, errors.New("effective-stats down") }
+
+	// Dirty-due AND broadcast-due at `now`, with a known last-evaluated Active
+	// state.
+	m := NewBuilder(world.Id(0), 42, 10).SetChannel(channel.Id(1)).SetDirtyAt(now).Build().
+		evaluated(true, 120, now)
+	assert.NoError(t, GetRegistry().Track(ctx, m))
+
+	assert.NoError(t, p.ProcessTicks(), "lookup failure never fails the pass")
+
+	got, _ := GetRegistry().Get(ctx, 42)
+	assert.True(t, got.DirtyAt().Equal(now.Add(ReevalRetryDelay)), "re-armed for retry")
+	assert.True(t, got.NextBroadcastAt().Equal(now.Add(BroadcastPeriod)),
+		"broadcast still happened despite the failed re-eval, advancing the schedule")
+	assert.True(t, got.Active(), "last-known state preserved and broadcast")
 }
 
 func TestProcessTicksMaxHpZeroGuard(t *testing.T) {

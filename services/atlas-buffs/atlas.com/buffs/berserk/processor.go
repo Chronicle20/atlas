@@ -174,7 +174,6 @@ func (p *ProcessorImpl) ProcessTicks() error {
 				if m, ok := GetRegistry().ClaimReeval(p.ctx, e.CharacterId(), now); ok {
 					p.reevaluate(m, now)
 				}
-				continue
 			}
 			if e.BroadcastDue(now) {
 				if m, ok := GetRegistry().ClaimBroadcast(p.ctx, e.CharacterId(), now); ok {
@@ -194,7 +193,9 @@ func (p *ProcessorImpl) ProcessTicks() error {
 func (p *ProcessorImpl) reevaluate(m Model, now time.Time) {
 	rearm := func(reason string, err error) {
 		p.l.WithError(err).Warnf("Berserk re-evaluation for character [%d] failed (%s); retrying.", m.CharacterId(), reason)
-		_ = GetRegistry().MarkDirty(p.ctx, m.CharacterId(), now.Add(ReevalRetryDelay))
+		if err := GetRegistry().MarkDirty(p.ctx, m.CharacterId(), now.Add(ReevalRetryDelay)); err != nil {
+			p.l.WithError(err).Warnf("Unable to re-arm berserk re-evaluation for character [%d].", m.CharacterId())
+		}
 	}
 
 	x, err := p.getEffectX(m.SkillLevel())

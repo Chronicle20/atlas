@@ -3,9 +3,10 @@ package handler
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/writer"
-	"github.com/sirupsen/logrus"
 )
 
 type MessageValidator[S any] func(l logrus.FieldLogger, ctx context.Context) func(s S) bool

@@ -98,9 +98,11 @@ export function buildBrowseListingsQuery(filter: BrowseListingsFilter): string {
   if (filter.subCategory) params.set("subCategory", filter.subCategory);
   if (filter.saleType) params.set("saleType", filter.saleType);
   if (filter.sellerName) params.set("sellerName", filter.sellerName);
-  if (filter.itemId !== undefined && filter.itemId > 0) params.set("itemId", String(filter.itemId));
+  if (filter.itemId !== undefined && filter.itemId > 0)
+    params.set("itemId", String(filter.itemId));
   if (filter.page !== undefined) params.set("page", String(filter.page));
-  if (filter.pageSize !== undefined) params.set("pageSize", String(filter.pageSize));
+  if (filter.pageSize !== undefined)
+    params.set("pageSize", String(filter.pageSize));
   const qs = params.toString();
   return qs ? `?${qs}` : "";
 }

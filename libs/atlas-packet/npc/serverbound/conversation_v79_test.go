@@ -5,8 +5,9 @@ import (
 	"encoding/binary"
 	"testing"
 
-	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	testlog "github.com/sirupsen/logrus/hooks/test"
+
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 // v79 serverbound NPC conversation/reply byte fixtures (GMS_v79_1_DEVM.exe,

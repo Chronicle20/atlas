@@ -3,19 +3,21 @@ package asset
 import (
 	"atlas-cashshop/cashshop/commodity"
 	"atlas-cashshop/configuration"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-cashshop/kafka/message"
 	"atlas-cashshop/kafka/message/item"
 	"atlas-cashshop/kafka/producer"
 	itemProducer "atlas-cashshop/kafka/producer/item"
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Processor interface {

@@ -8,12 +8,13 @@ import (
 	"os"
 	"time"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 )
 
 // EnvTenantStatusTopic names the env var carrying the Kafka topic that

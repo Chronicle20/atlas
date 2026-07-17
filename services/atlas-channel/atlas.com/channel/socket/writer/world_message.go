@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	atlas_packet "github.com/Chronicle20/atlas/libs/atlas-packet"
 	chatpkt "github.com/Chronicle20/atlas/libs/atlas-packet/chat/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
-	"github.com/sirupsen/logrus"
 )
 
 type WorldMessageMode string

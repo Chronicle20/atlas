@@ -12,7 +12,10 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	model2 "github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -21,8 +24,7 @@ import (
 	npcpkt "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
 	petpkt "github.com/Chronicle20/atlas/libs/atlas-packet/pet/clientbound"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type ProcessorImpl struct {

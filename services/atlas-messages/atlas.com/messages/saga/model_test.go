@@ -5,8 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 func TestSaga_Failing(t *testing.T) {
@@ -534,7 +535,6 @@ func TestStep_UnmarshalJSON_UnknownAction(t *testing.T) {
 
 	var step Step
 	err := json.Unmarshal([]byte(jsonData), &step)
-
 	// Shared library handles unknown actions gracefully by unmarshaling payload to map[string]any
 	if err != nil {
 		t.Errorf("Unexpected error for unknown action: %v", err)
@@ -547,9 +547,9 @@ func TestStep_UnmarshalJSON_UnknownAction(t *testing.T) {
 
 func TestStep_UnmarshalJSON_AllActions(t *testing.T) {
 	testCases := []struct {
-		name       string
-		action     Action
-		jsonData   string
+		name        string
+		action      Action
+		jsonData    string
 		payloadType string
 	}{
 		{

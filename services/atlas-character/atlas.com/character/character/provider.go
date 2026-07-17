@@ -3,9 +3,10 @@ package character
 import (
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 
+	"gorm.io/gorm"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"gorm.io/gorm"
 )
 
 func getById(characterId uint32) database.EntityProvider[entity] {

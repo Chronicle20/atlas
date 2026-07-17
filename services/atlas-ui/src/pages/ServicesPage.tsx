@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Plus } from "lucide-react";
 
@@ -10,7 +9,10 @@ import {
   DeleteServiceDialog,
 } from "@/components/features/services";
 
-import { useServices, useInvalidateServices } from "@/lib/hooks/api/useServices";
+import {
+  useServices,
+  useInvalidateServices,
+} from "@/lib/hooks/api/useServices";
 import { useGridRefresh } from "@/lib/hooks/useGridRefresh";
 import { getColumns } from "./services-columns";
 import type { Service } from "@/types/models/service";
@@ -50,7 +52,8 @@ export function ServicesPage() {
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Services</h2>
           <p className="text-muted-foreground">
-            Manage service configurations for login, channel, and drops services.
+            Manage service configurations for login, channel, and drops
+            services.
           </p>
         </div>
         <Button onClick={() => setCreateDialogOpen(true)}>

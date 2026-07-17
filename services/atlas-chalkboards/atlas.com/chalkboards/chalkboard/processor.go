@@ -6,10 +6,11 @@ import (
 	"context"
 	"errors"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Processor interface {

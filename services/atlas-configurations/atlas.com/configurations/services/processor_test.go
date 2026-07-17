@@ -7,12 +7,13 @@ import (
 	"encoding/json"
 	"testing"
 
-	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 )
 
 // testEntity is a SQLite-compatible version of Entity for testing

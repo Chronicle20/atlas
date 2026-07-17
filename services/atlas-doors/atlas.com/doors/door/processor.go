@@ -6,6 +6,9 @@ import (
 
 	doorproducer "atlas-doors/kafka/producer"
 
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
@@ -13,8 +16,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
 )
 
 // Processor is the door engine: spawn (with FR-1.4 recast replace), remove,

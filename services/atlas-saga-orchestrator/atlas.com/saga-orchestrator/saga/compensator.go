@@ -19,11 +19,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 type Compensator interface {
@@ -316,7 +317,7 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 			return err
 		}
 
-		if err := GetCache().Put(c.ctx,updatedSaga); err != nil {
+		if err := GetCache().Put(c.ctx, updatedSaga); err != nil {
 			return err
 		}
 		return nil
@@ -378,7 +379,7 @@ func (c *CompensatorImpl) compensateEquipAsset(s Saga, failedStep Step[any]) err
 			return err
 		}
 
-		if err := GetCache().Put(c.ctx,updatedSaga); err != nil {
+		if err := GetCache().Put(c.ctx, updatedSaga); err != nil {
 			return err
 		}
 	}
@@ -441,7 +442,7 @@ func (c *CompensatorImpl) compensateUnequipAsset(s Saga, failedStep Step[any]) e
 			return err
 		}
 
-		if err := GetCache().Put(c.ctx,updatedSaga); err != nil {
+		if err := GetCache().Put(c.ctx, updatedSaga); err != nil {
 			return err
 		}
 	}
@@ -499,7 +500,7 @@ func (c *CompensatorImpl) compensateCreateCharacter(s Saga, failedStep Step[any]
 			return err
 		}
 
-		if err := GetCache().Put(c.ctx,updatedSaga); err != nil {
+		if err := GetCache().Put(c.ctx, updatedSaga); err != nil {
 			return err
 		}
 	}
@@ -623,7 +624,7 @@ func (c *CompensatorImpl) compensateCreateAndEquipAsset(s Saga, failedStep Step[
 			return err
 		}
 
-		if err := GetCache().Put(c.ctx,updatedSaga); err != nil {
+		if err := GetCache().Put(c.ctx, updatedSaga); err != nil {
 			return err
 		}
 	}
@@ -681,7 +682,7 @@ func (c *CompensatorImpl) compensateChangeHair(s Saga, failedStep Step[any]) err
 			return err
 		}
 
-		if err := GetCache().Put(c.ctx,updatedSaga); err != nil {
+		if err := GetCache().Put(c.ctx, updatedSaga); err != nil {
 			return err
 		}
 	}
@@ -739,7 +740,7 @@ func (c *CompensatorImpl) compensateChangeFace(s Saga, failedStep Step[any]) err
 			return err
 		}
 
-		if err := GetCache().Put(c.ctx,updatedSaga); err != nil {
+		if err := GetCache().Put(c.ctx, updatedSaga); err != nil {
 			return err
 		}
 	}
@@ -797,7 +798,7 @@ func (c *CompensatorImpl) compensateChangeSkin(s Saga, failedStep Step[any]) err
 			return err
 		}
 
-		if err := GetCache().Put(c.ctx,updatedSaga); err != nil {
+		if err := GetCache().Put(c.ctx, updatedSaga); err != nil {
 			return err
 		}
 	}
@@ -1437,6 +1438,7 @@ func assetDataFromMtsListingSnapshot(p AcceptToMtsListingPayload) asset2.AssetDa
 		Flag:          p.Flags,
 	}
 }
+
 // extractCharacterCreationWorldId reads the WorldId out of the CharacterCreate
 // step's payload. Returns 0 if the step is not present.
 func extractCharacterCreationWorldId(s Saga) world.Id {
@@ -1468,6 +1470,7 @@ func extractCharacterCreationWorldId(s Saga) world.Id {
 //     deterministic buyer holding and returns the listing sold->active, so a buy
 //     that lands late after the buyer's prepaid was refunded delivers no free
 //     item. (The currency legs are AwardCurrency, already covered.)
+//
 // task-136 removed the timeout trigger, so a late MTS custody success is now rare.
 var lateCompensableActions = map[Action]struct{}{
 	AwardAsset:              {},

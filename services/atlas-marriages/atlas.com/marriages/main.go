@@ -1,15 +1,17 @@
 package main
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-marriages/kafka/consumer/character"
 	"atlas-marriages/kafka/consumer/marriage"
 	"atlas-marriages/logger"
 	marriageService "atlas-marriages/marriage"
 	"atlas-marriages/scheduler"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"

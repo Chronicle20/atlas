@@ -1,20 +1,21 @@
 package guild
 
 import (
-	"errors"
-	"testing"
-
 	"atlas-guilds/guild/character"
 	"atlas-guilds/guild/member"
 	"atlas-guilds/kafka/message"
+	"errors"
+	"testing"
+
 	guild2 "atlas-guilds/kafka/message/guild"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 )
 
 func outboxTestDb(t *testing.T) *gorm.DB {

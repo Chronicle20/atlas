@@ -3,8 +3,9 @@ package inventory
 import (
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 )
 
 // weaponEquipSlot is the equip-compartment slot occupied by the main weapon.

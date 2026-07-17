@@ -7,7 +7,19 @@ import eslintConfigPrettier from "eslint-config-prettier/flat";
 import { defineConfig, globalIgnores } from "eslint/config";
 
 export default defineConfig([
-  globalIgnores(["dist", "node_modules", ".next", "app", "components", "context", "hooks", "lib", "services", "types", "tests"]),
+  globalIgnores([
+    "dist",
+    "node_modules",
+    ".next",
+    "app",
+    "components",
+    "context",
+    "hooks",
+    "lib",
+    "services",
+    "types",
+    "tests",
+  ]),
   {
     files: ["src/**/*.{ts,tsx}"],
     extends: [
@@ -24,7 +36,11 @@ export default defineConfig([
     rules: {
       "@typescript-eslint/no-unused-vars": [
         "error",
-        { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" },
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
       ],
     },
   },

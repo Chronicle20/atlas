@@ -8,12 +8,13 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
@@ -22,7 +23,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			register := rest.RegisterHandler(l)(db)(si)
 			registerInput := rest.RegisterInputHandler[RestModel](l)(db)(si)
 			registerPinAttemptInput := rest.RegisterInputHandler[PinAttemptInputRestModel](l)(db)(si)
-		registerPicAttemptInput := rest.RegisterInputHandler[PicAttemptInputRestModel](l)(db)(si)
+			registerPicAttemptInput := rest.RegisterInputHandler[PicAttemptInputRestModel](l)(db)(si)
 
 			r := router.PathPrefix("/accounts").Subrouter()
 			r.HandleFunc("/", registerInput("create_account", handleCreateAccount)).Methods(http.MethodPost)

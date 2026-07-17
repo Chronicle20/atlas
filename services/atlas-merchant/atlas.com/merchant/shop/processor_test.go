@@ -8,9 +8,6 @@ import (
 	"context"
 	"testing"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
@@ -18,6 +15,10 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func setupTestDB(t *testing.T) *gorm.DB {

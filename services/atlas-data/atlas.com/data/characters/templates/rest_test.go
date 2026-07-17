@@ -7,9 +7,10 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 type Server struct {

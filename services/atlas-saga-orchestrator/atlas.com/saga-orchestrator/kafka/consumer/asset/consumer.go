@@ -9,6 +9,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -16,9 +20,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
 )
 
 // emitRewardNoticeForCurrentStep inspects the saga's current pending step (the

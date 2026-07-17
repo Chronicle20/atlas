@@ -8,7 +8,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // packet-audit:verify packet=character/clientbound/BuffGive version=gms_v72 ida=0x918b24

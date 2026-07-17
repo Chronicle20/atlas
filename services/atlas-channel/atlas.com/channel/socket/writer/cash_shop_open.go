@@ -7,11 +7,11 @@ import (
 	"atlas-channel/maps/location"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	cashpkt "github.com/Chronicle20/atlas/libs/atlas-packet/cash/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
-	"github.com/sirupsen/logrus"
 )
-
 
 func CashShopOpenBody(a account.Model, c character.Model, bl buddylist.Model) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {

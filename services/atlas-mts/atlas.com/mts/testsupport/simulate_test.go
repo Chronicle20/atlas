@@ -1,6 +1,8 @@
 package testsupport
 
 import (
+	"atlas-mts/listing"
+	"atlas-mts/test"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -10,17 +12,15 @@ import (
 	"testing"
 	"time"
 
-	"atlas-mts/listing"
-	"atlas-mts/test"
-
 	mtsmsg "atlas-mts/kafka/message/mts"
 
-	kprod "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	kprod "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // recordedCommand captures one emitted MTS command for assertions.

@@ -8,9 +8,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+
 	ts "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
-	"github.com/google/uuid"
 )
 
 // Reference item IDs used across the tests.

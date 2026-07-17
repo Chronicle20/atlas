@@ -5,12 +5,23 @@ import { npcsService } from "@/services/api";
 import { type NpcSearchResult, type Commodity } from "@/types/models/npc";
 import { tenantHeaders } from "@/lib/headers";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Table,
   TableBody,
@@ -28,8 +39,16 @@ import { getAssetIconUrl } from "@/lib/utils/asset-url";
 import { useDebounce } from "@/lib/utils/debounce";
 import { lazy } from "react";
 
-const NpcDialogs = lazy(() => import("@/components/features/npc/NpcDialogs").then(mod => ({ default: mod.NpcDialogs })));
-const AdvancedNpcActions = lazy(() => import("@/components/features/npc/AdvancedNpcActions").then(mod => ({ default: mod.AdvancedNpcActions })));
+const NpcDialogs = lazy(() =>
+  import("@/components/features/npc/NpcDialogs").then((mod) => ({
+    default: mod.NpcDialogs,
+  })),
+);
+const AdvancedNpcActions = lazy(() =>
+  import("@/components/features/npc/AdvancedNpcActions").then((mod) => ({
+    default: mod.AdvancedNpcActions,
+  })),
+);
 
 const MIN_QUERY_LENGTH = 2;
 const DEBOUNCE_MS = 250;
@@ -67,19 +86,35 @@ function NpcsPageContent() {
   const enabled = !!activeTenant && (hasQuery || urlStorebank);
 
   const searchQuery = useQuery<NpcSearchResult[], Error>({
-    queryKey: ["npcs", "search", activeTenant?.id ?? "no-tenant", urlQuery, urlStorebank],
-    queryFn: () => npcsService.searchNpcs(hasQuery ? urlQuery : "", urlStorebank),
+    queryKey: [
+      "npcs",
+      "search",
+      activeTenant?.id ?? "no-tenant",
+      urlQuery,
+      urlStorebank,
+    ],
+    queryFn: () =>
+      npcsService.searchNpcs(hasQuery ? urlQuery : "", urlStorebank),
     enabled,
     placeholderData: keepPreviousData,
   });
 
-  const statusQuery = useQuery<Map<number, { hasShop: boolean; hasConversation: boolean }>, Error>({
+  const statusQuery = useQuery<
+    Map<number, { hasShop: boolean; hasConversation: boolean }>,
+    Error
+  >({
     queryKey: ["npcs", "status-map", activeTenant?.id ?? "no-tenant"],
     queryFn: async () => {
       const allNpcs = await npcsService.getAllNPCs();
-      const statusMap = new Map<number, { hasShop: boolean; hasConversation: boolean }>();
-      allNpcs.forEach(npc => {
-        statusMap.set(npc.id, { hasShop: npc.hasShop, hasConversation: npc.hasConversation });
+      const statusMap = new Map<
+        number,
+        { hasShop: boolean; hasConversation: boolean }
+      >();
+      allNpcs.forEach((npc) => {
+        statusMap.set(npc.id, {
+          hasShop: npc.hasShop,
+          hasConversation: npc.hasConversation,
+        });
       });
       return statusMap;
     },
@@ -89,13 +124,17 @@ function NpcsPageContent() {
   const results = searchQuery.data ?? [];
   const fetching = searchQuery.isFetching;
   const statusLoading = statusQuery.isFetching;
-  const npcStatus = statusQuery.data ?? new Map<number, { hasShop: boolean; hasConversation: boolean }>();
+  const npcStatus =
+    statusQuery.data ??
+    new Map<number, { hasShop: boolean; hasConversation: boolean }>();
   const hasSearched = enabled;
 
   // Shop management state
   const [isCreateShopDialogOpen, setIsCreateShopDialogOpen] = useState(false);
-  const [isDeleteAllShopsDialogOpen, setIsDeleteAllShopsDialogOpen] = useState(false);
-  const [isBulkUpdateShopDialogOpen, setIsBulkUpdateShopDialogOpen] = useState(false);
+  const [isDeleteAllShopsDialogOpen, setIsDeleteAllShopsDialogOpen] =
+    useState(false);
+  const [isBulkUpdateShopDialogOpen, setIsBulkUpdateShopDialogOpen] =
+    useState(false);
   const [selectedNpcId] = useState<number | null>(null);
   const [createShopJson, setCreateShopJson] = useState("");
   const [bulkUpdateShopJson, setBulkUpdateShopJson] = useState("");
@@ -110,7 +149,11 @@ function NpcsPageContent() {
     if (!activeTenant) return;
     try {
       const jsonData = JSON.parse(createShopJson);
-      if (!jsonData.data || !jsonData.data.attributes || !jsonData.data.attributes.npcId) {
+      if (
+        !jsonData.data ||
+        !jsonData.data.attributes ||
+        !jsonData.data.attributes.npcId
+      ) {
         toast.error("Invalid JSON format. Missing npcId in data.attributes");
         return;
       }
@@ -119,7 +162,8 @@ function NpcsPageContent() {
         toast.error("Please provide a valid NPC ID in the JSON");
         return;
       }
-      const rootUrl = import.meta.env.VITE_ROOT_API_URL || window.location.origin;
+      const rootUrl =
+        import.meta.env.VITE_ROOT_API_URL || window.location.origin;
       const response = await fetch(rootUrl + "/api/npcs/" + npcId + "/shop", {
         method: "POST",
         headers: tenantHeaders(activeTenant),
@@ -133,7 +177,10 @@ function NpcsPageContent() {
       setIsCreateShopDialogOpen(false);
       setCreateShopJson("");
     } catch (err: unknown) {
-      toast.error("Failed to create shop: " + (err instanceof Error ? err.message : String(err)));
+      toast.error(
+        "Failed to create shop: " +
+          (err instanceof Error ? err.message : String(err)),
+      );
     }
   };
 
@@ -144,7 +191,10 @@ function NpcsPageContent() {
       toast.success("All shops deleted successfully");
       setIsDeleteAllShopsDialogOpen(false);
     } catch (err: unknown) {
-      toast.error("Failed to delete all shops: " + (err instanceof Error ? err.message : String(err)));
+      toast.error(
+        "Failed to delete all shops: " +
+          (err instanceof Error ? err.message : String(err)),
+      );
     }
   };
 
@@ -159,12 +209,19 @@ function NpcsPageContent() {
         commoditiesToUpdate = jsonData.data.included;
       }
       const rechargerValue = jsonData.data.attributes?.recharger;
-      await npcsService.updateShop(selectedNpcId, commoditiesToUpdate, rechargerValue);
+      await npcsService.updateShop(
+        selectedNpcId,
+        commoditiesToUpdate,
+        rechargerValue,
+      );
       setIsBulkUpdateShopDialogOpen(false);
       setBulkUpdateShopJson("");
       toast.success("Shop updated successfully");
     } catch (err: unknown) {
-      toast.error("Failed to update shop: " + (err instanceof Error ? err.message : String(err)));
+      toast.error(
+        "Failed to update shop: " +
+          (err instanceof Error ? err.message : String(err)),
+      );
     }
   };
 
@@ -246,14 +303,16 @@ function NpcsPageContent() {
                   <TableBody>
                     {results.map((npc) => {
                       const status = npcStatus.get(npc.id);
-                      const iconUrl = activeTenant ? getAssetIconUrl(
-                        activeTenant.id,
-                        activeTenant.attributes.region,
-                        activeTenant.attributes.majorVersion,
-                        activeTenant.attributes.minorVersion,
-                        'npc',
-                        npc.id,
-                      ) : undefined;
+                      const iconUrl = activeTenant
+                        ? getAssetIconUrl(
+                            activeTenant.id,
+                            activeTenant.attributes.region,
+                            activeTenant.attributes.majorVersion,
+                            activeTenant.attributes.minorVersion,
+                            "npc",
+                            npc.id,
+                          )
+                        : undefined;
                       return (
                         <TableRow key={npc.id}>
                           <TableCell>
@@ -272,7 +331,9 @@ function NpcsPageContent() {
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Link to={`/npcs/${npc.id}`}>
-                                    <Badge variant="secondary">{npc.name}</Badge>
+                                    <Badge variant="secondary">
+                                      {npc.name}
+                                    </Badge>
                                   </Link>
                                 </TooltipTrigger>
                                 <TooltipContent copyable>
@@ -286,13 +347,21 @@ function NpcsPageContent() {
                               <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
                             ) : status?.hasShop ? (
                               <Link to={`/npcs/${npc.id}`}>
-                                <Badge variant="default" className="cursor-pointer">
+                                <Badge
+                                  variant="default"
+                                  className="cursor-pointer"
+                                >
                                   <ShoppingBag className="h-3 w-3 mr-1" />
                                   Shop
                                 </Badge>
                               </Link>
                             ) : status ? (
-                              <Badge variant="outline" className="text-muted-foreground">None</Badge>
+                              <Badge
+                                variant="outline"
+                                className="text-muted-foreground"
+                              >
+                                None
+                              </Badge>
                             ) : null}
                           </TableCell>
                           <TableCell>
@@ -300,13 +369,21 @@ function NpcsPageContent() {
                               <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
                             ) : status?.hasConversation ? (
                               <Link to={`/npcs/${npc.id}`}>
-                                <Badge variant="default" className="cursor-pointer">
+                                <Badge
+                                  variant="default"
+                                  className="cursor-pointer"
+                                >
                                   <MessageCircle className="h-3 w-3 mr-1" />
                                   Chat
                                 </Badge>
                               </Link>
                             ) : status ? (
-                              <Badge variant="outline" className="text-muted-foreground">None</Badge>
+                              <Badge
+                                variant="outline"
+                                className="text-muted-foreground"
+                              >
+                                None
+                              </Badge>
                             ) : null}
                           </TableCell>
                         </TableRow>

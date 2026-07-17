@@ -1,12 +1,14 @@
 package configuration
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"encoding/json"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // GetByTenantIdAndResourceNameProvider returns a provider for a configuration by tenant ID and resource name

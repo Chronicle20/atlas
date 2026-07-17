@@ -5,11 +5,12 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	model2 "github.com/Chronicle20/atlas/libs/atlas-model/model"
 	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character"
 	charcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
-	"github.com/sirupsen/logrus"
 )
 
 // AnnounceSkillUse is the self-facing CharacterEffect broadcast for a

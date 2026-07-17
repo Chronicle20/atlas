@@ -3,9 +3,10 @@ package portal
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/sirupsen/logrus"
 )
 
 func GetByMapId(l logrus.FieldLogger, ctx context.Context) func(mapId uint32) model.Provider[[]Model] {

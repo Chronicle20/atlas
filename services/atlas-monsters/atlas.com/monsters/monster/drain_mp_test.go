@@ -6,12 +6,13 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // TestDrainMp_HappyPath_EmitsMpChanged verifies that DrainMp on a non-boss
@@ -316,4 +317,3 @@ func TestDrainMp_SkipsBoss(t *testing.T) {
 		t.Errorf("Mp after boss DrainMp = %d, want 3000 (unchanged)", got.Mp())
 	}
 }
-

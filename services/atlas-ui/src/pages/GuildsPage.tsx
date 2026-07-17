@@ -23,10 +23,17 @@ export function GuildsPage() {
   const characters = charactersQuery.data ?? [];
   const tenantConfig = tenantConfigQuery.data ?? null;
 
-  const loading = guildsQuery.isLoading || charactersQuery.isLoading || tenantConfigQuery.isLoading;
-  const error = guildsQuery.error?.message ?? charactersQuery.error?.message ?? tenantConfigQuery.error?.message ?? null;
+  const loading =
+    guildsQuery.isLoading ||
+    charactersQuery.isLoading ||
+    tenantConfigQuery.isLoading;
+  const error =
+    guildsQuery.error?.message ??
+    charactersQuery.error?.message ??
+    tenantConfigQuery.error?.message ??
+    null;
 
-  const characterMap = new Map(characters.map(c => [c.id, c]));
+  const characterMap = new Map(characters.map((c) => [c.id, c]));
   const columns = getColumns({ tenant: tenantConfig, characterMap });
 
   if (loading) {

@@ -6,11 +6,12 @@ import (
 	"context"
 	"testing"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func createTestModel(t *testing.T, npcId uint32) Model {

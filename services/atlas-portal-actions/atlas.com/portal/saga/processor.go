@@ -5,8 +5,9 @@ import (
 	"atlas-portal-actions/kafka/producer"
 	"context"
 
-	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	"github.com/sirupsen/logrus"
+
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 )
 
 type Processor interface {

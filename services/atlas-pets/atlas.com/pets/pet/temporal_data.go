@@ -7,9 +7,10 @@ import (
 	"sync"
 	"time"
 
+	goredis "github.com/redis/go-redis/v9"
+
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	goredis "github.com/redis/go-redis/v9"
 )
 
 type TemporalData struct {
@@ -107,8 +108,10 @@ func (r *temporalRegistryImpl) Shutdown() {
 	r.reg.Shutdown()
 }
 
-var once sync.Once
-var instance *temporalRegistryImpl
+var (
+	once     sync.Once
+	instance *temporalRegistryImpl
+)
 
 func InitTemporalRegistry(rc *goredis.Client) {
 	once.Do(func() {

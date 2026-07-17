@@ -195,13 +195,14 @@ func TestAttackMeleeNoTargetsRoundTrip(t *testing.T) {
 //	    Decode1 @0x8d6822 hitAction; (non-meso) loop nDamagePerMob(3) Decode4 @0x8d68f7 damages
 //	a2==173? (RANGED only) -> no bulletX/Y for melee
 //	keydown skill? skillId 0 -> none
+//
 // packet-audit:verify packet=character/clientbound/Attack version=gms_v79 ida=0x8d66a1
 var attackV79MeleeBody = []byte{
 	0x39, 0x30, 0x00, 0x00, // characterId 12345
-	0x23,                   // packed (nMob 2 << 4) | hits 3
-	0x00,                   // skillLevel byte = 0 (no skill) -- NO level byte on v79
-	0x10,                   // mask1/option
-	0x05, 0x80,             // mask2 = (1<<15)|0x05
+	0x23,       // packed (nMob 2 << 4) | hits 3
+	0x00,       // skillLevel byte = 0 (no skill) -- NO level byte on v79
+	0x10,       // mask1/option
+	0x05, 0x80, // mask2 = (1<<15)|0x05
 	0x04,                   // actionSpeed
 	0x0F,                   // mastery
 	0xF0, 0x95, 0x1F, 0x00, // bulletItemId 2070000 (=0x1F95F0)
@@ -260,6 +261,7 @@ func TestAttackBytesV79(t *testing.T) {
 //	  Decode4 monsterOid; if !=0: Decode1 hitAction; loop nDamagePerMob(3) Decode4 damages
 //	a2==169? (RANGED only) -> no bulletX/Y for melee
 //	keydown skill? skillId 0 -> none
+//
 // packet-audit:verify packet=character/clientbound/Attack version=gms_v72 ida=0x889828
 var attackV72MeleeBody = []byte{
 	0x39, 0x30, 0x00, 0x00, // characterId 12345
@@ -326,6 +328,7 @@ func TestAttackBytesV72(t *testing.T) {
 //	    nDamagePerMob(3) Decode4 @0x7c964c damages
 //	a2==143? (RANGED only) -> no bulletX/Y for melee
 //	keydown skill? skillId 0 -> none
+//
 // packet-audit:verify packet=character/clientbound/Attack version=gms_v61 ida=0x7c9403
 var attackV61MeleeBody = []byte{
 	0x39, 0x30, 0x00, 0x00, // characterId 12345

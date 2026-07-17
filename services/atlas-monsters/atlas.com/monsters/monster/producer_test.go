@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 func TestStartControlBodyEncodesControllerHasAggro(t *testing.T) {
@@ -25,7 +26,7 @@ func TestStartControlBodyEncodesControllerHasAggro(t *testing.T) {
 		t.Fatalf("expected 1 message, got %d", len(msgs))
 	}
 	var env struct {
-		Type string                       `json:"type"`
+		Type string                      `json:"type"`
 		Body statusEventStartControlBody `json:"body"`
 	}
 	if err := json.Unmarshal(msgs[0].Value, &env); err != nil {
@@ -57,8 +58,8 @@ func TestAggroChangedBodyEncoding(t *testing.T) {
 		t.Fatalf("expected 1 message, got %d", len(msgs))
 	}
 	var env struct {
-		Type string                        `json:"type"`
-		Body statusEventAggroChangedBody  `json:"body"`
+		Type string                      `json:"type"`
+		Body statusEventAggroChangedBody `json:"body"`
 	}
 	if err := json.Unmarshal(msgs[0].Value, &env); err != nil {
 		t.Fatalf("decode: %v", err)

@@ -18,6 +18,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/alicebob/miniredis/v2"
+	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/test"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
@@ -27,14 +36,6 @@ import (
 	kafkaproducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer/producertest"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/alicebob/miniredis/v2"
-	"github.com/google/uuid"
-	goredis "github.com/redis/go-redis/v9"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
-	"github.com/sirupsen/logrus/hooks/test"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 )
 
 // capturingWriter records every message written to it, keyed by resolved

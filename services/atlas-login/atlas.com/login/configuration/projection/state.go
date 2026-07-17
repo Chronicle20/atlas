@@ -1,11 +1,10 @@
 package projection
 
 import (
-	"encoding/json"
-	"sync"
-
 	"atlas-login/configuration"
 	"atlas-login/configuration/tenant"
+	"encoding/json"
+	"sync"
 
 	"github.com/google/uuid"
 )

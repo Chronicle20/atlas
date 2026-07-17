@@ -8,9 +8,10 @@ import (
 	"math"
 	"math/rand"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
-	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {

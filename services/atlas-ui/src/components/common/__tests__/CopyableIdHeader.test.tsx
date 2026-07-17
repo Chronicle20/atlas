@@ -18,9 +18,11 @@ describe("CopyableIdHeader", () => {
         title="Aran4th"
         id="42"
         actions={<button>Promote</button>}
-      />
+      />,
     );
-    expect(screen.getByRole("button", { name: /promote/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /promote/i }),
+    ).toBeInTheDocument();
   });
 
   it("renders without actions when none provided", () => {

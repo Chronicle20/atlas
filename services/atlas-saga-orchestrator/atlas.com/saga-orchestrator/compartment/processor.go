@@ -8,10 +8,11 @@ import (
 	"errors"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 )
 
 // ItemPayload represents an individual item in a transaction

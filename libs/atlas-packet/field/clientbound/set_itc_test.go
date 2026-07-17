@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"testing"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
+
 	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
-	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 // SET_ITC (CStage::OnSetITC) — the MTS/ITC scene-transition packet. The wire

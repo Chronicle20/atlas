@@ -14,6 +14,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
@@ -28,9 +31,7 @@ import (
 	merchantpkt "github.com/Chronicle20/atlas/libs/atlas-packet/merchant"
 	merchantcb "github.com/Chronicle20/atlas/libs/atlas-packet/merchant/clientbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...atlasmodel.Decorator[consumer.Config])) func(consumerGroupId string) {

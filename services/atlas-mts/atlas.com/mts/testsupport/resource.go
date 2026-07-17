@@ -14,6 +14,12 @@ import (
 	mtsmsg "atlas-mts/kafka/message/mts"
 	producer2 "atlas-mts/kafka/producer"
 
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
+	"github.com/jtumidanski/api2go/jsonapi"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
@@ -21,11 +27,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/gorilla/mux"
-	"github.com/jtumidanski/api2go/jsonapi"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 // providerFn matches the per-context producer factory shape the Kafka

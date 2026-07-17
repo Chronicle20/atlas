@@ -4,8 +4,9 @@ import (
 	"regexp"
 	"time"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"gorm.io/gorm"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Subdomain[J any, M any] interface {

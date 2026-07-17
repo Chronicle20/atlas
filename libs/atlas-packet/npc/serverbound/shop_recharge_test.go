@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"testing"
 
-	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	testlog "github.com/sirupsen/logrus/hooks/test"
+
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 // TestShopRechargeByteV79 pins the gms_v79 NPC_SHOP RECHARGE body (op byte 2,

@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	testlog "github.com/sirupsen/logrus/hooks/test"
+
+	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 // packet-audit:verify packet=monster/clientbound/MonsterDestroy version=gms_v83 ida=0x67961d

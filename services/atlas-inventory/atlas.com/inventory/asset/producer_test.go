@@ -1,11 +1,11 @@
 package asset_test
 
 import (
+	"atlas-inventory/asset"
 	"encoding/json"
 	"testing"
 	"time"
 
-	"atlas-inventory/asset"
 	assetmsg "atlas-inventory/kafka/message/asset"
 
 	"github.com/google/uuid"

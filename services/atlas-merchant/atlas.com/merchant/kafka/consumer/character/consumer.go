@@ -6,13 +6,14 @@ import (
 	"atlas-merchant/shop"
 	"context"
 
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+
 	consumer2 "github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer2.Config, decorators ...model.Decorator[consumer2.Config])) func(consumerGroupId string) {

@@ -1,7 +1,6 @@
 package main
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	characterClient "atlas-maps/character"
 	"atlas-maps/character/location"
 	"atlas-maps/character/warp"
@@ -16,13 +15,20 @@ import (
 	_map "atlas-maps/map"
 	spawnMonster "atlas-maps/map/monster"
 	"atlas-maps/map/weather"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-maps/tasks"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"atlas-maps/visit"
 	"context"
 	"os"
 	"time"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
+
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
+
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
@@ -30,14 +36,14 @@ import (
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 const serviceName = "atlas-maps"
 
-var consumerGroupId = consumergroup.Resolve("Map Service")
-var dataEventsConsumerGroupId = consumergroup.Resolve("Map Spawn Registry Invalidator")
+var (
+	consumerGroupId           = consumergroup.Resolve("Map Service")
+	dataEventsConsumerGroupId = consumergroup.Resolve("Map Spawn Registry Invalidator")
+)
 
 type Server struct {
 	baseUrl string

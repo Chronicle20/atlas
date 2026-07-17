@@ -9,12 +9,13 @@ import (
 	"atlas-gachapons/seed"
 	"os"
 
+	"gorm.io/gorm"
+
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	service "github.com/Chronicle20/atlas/libs/atlas-service"
 	seeder "github.com/Chronicle20/atlas/libs/atlas-seeder"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
-	"gorm.io/gorm"
 )
 
 const serviceName = "atlas-gachapons"

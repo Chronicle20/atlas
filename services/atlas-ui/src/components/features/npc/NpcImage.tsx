@@ -21,10 +21,10 @@ interface NpcImageProps {
   lazyRootMargin?: string; // Custom root margin for lazy loading
 }
 
-export function NpcImage({ 
-  npcId, 
-  name, 
-  iconUrl, 
+export function NpcImage({
+  npcId,
+  name,
+  iconUrl,
   className,
   size = 48,
   showRetryButton = false,
@@ -33,7 +33,7 @@ export function NpcImage({
   onRetry,
   maintainLayout = true,
   lazy = true,
-  lazyRootMargin = "100px"
+  lazyRootMargin = "100px",
 }: NpcImageProps) {
   const [imageError, setImageError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -52,7 +52,7 @@ export function NpcImage({
   const [prevIconUrl, setPrevIconUrl] = useState(iconUrl);
   if (iconUrl !== prevIconUrl) {
     setPrevIconUrl(iconUrl);
-    if (iconUrl && typeof iconUrl === 'string') {
+    if (iconUrl && typeof iconUrl === "string") {
       setImageError(false);
       setIsLoading(true);
       setRetryCount(0);
@@ -62,10 +62,16 @@ export function NpcImage({
 
   // Determine if we should attempt to load the image
   const shouldAttemptLoad = !lazy || shouldLoad;
-  
+
   // If no iconUrl provided, image failed to load, or lazy loading not triggered, show placeholder
-  const showPlaceholder = !iconUrl || typeof iconUrl !== 'string' || imageError || !shouldAttemptLoad;
-  const canRetry = retryCount < maxRetries && imageError && iconUrl && typeof iconUrl === 'string' && shouldAttemptLoad;
+  const showPlaceholder =
+    !iconUrl || typeof iconUrl !== "string" || imageError || !shouldAttemptLoad;
+  const canRetry =
+    retryCount < maxRetries &&
+    imageError &&
+    iconUrl &&
+    typeof iconUrl === "string" &&
+    shouldAttemptLoad;
 
   const handleImageLoad = useCallback(() => {
     setIsLoading(false);
@@ -76,27 +82,27 @@ export function NpcImage({
   const handleImageError = useCallback(() => {
     setIsLoading(false);
     setIsRetrying(false);
-    
+
     // Only set error if we haven't exceeded retry limit
     if (retryCount < maxRetries) {
       // Auto-retry with exponential backoff
       const retryDelay = Math.min(1000 * Math.pow(2, retryCount), 5000);
       setTimeout(() => {
-        setRetryCount(prev => prev + 1);
+        setRetryCount((prev) => prev + 1);
         setIsRetrying(true);
         setIsLoading(true);
         setImageError(false);
       }, retryDelay);
     } else {
       setImageError(true);
-      
+
       // Log error for monitoring
       const errorMsg = `Failed to load NPC image after ${maxRetries} retries`;
       errorLogger.logError(new Error(errorMsg), undefined, {
         userId: npcId.toString(), // Use userId field for NPC ID
-        url: iconUrl || 'unknown',
+        url: iconUrl || "unknown",
       });
-      
+
       if (onError) {
         onError(errorMsg);
       }
@@ -105,14 +111,14 @@ export function NpcImage({
 
   const handleManualRetry = useCallback(() => {
     if (!canRetry) return;
-    
-    errorLogger.logUserAction('npc_image_manual_retry', { 
-      npcId, 
+
+    errorLogger.logUserAction("npc_image_manual_retry", {
+      npcId,
       retryCount,
-      iconUrl 
+      iconUrl,
     });
-    
-    setRetryCount(prev => prev + 1);
+
+    setRetryCount((prev) => prev + 1);
     setIsRetrying(true);
     setIsLoading(true);
     setImageError(false);
@@ -121,24 +127,29 @@ export function NpcImage({
     }
   }, [canRetry, npcId, retryCount, iconUrl, onRetry]);
 
-  const altText = (typeof name === 'string' && name) ? `${name} (NPC ${npcId})` : `NPC ${npcId}`;
+  const altText =
+    typeof name === "string" && name
+      ? `${name} (NPC ${npcId})`
+      : `NPC ${npcId}`;
 
   return (
-    <div 
+    <div
       ref={lazyRef}
       className={cn(
         "relative overflow-hidden border border-border/50",
         maintainLayout && "flex-shrink-0", // Prevent flex shrinking
-        className
+        className,
       )}
       style={maintainLayout ? { width: size, height: size } : undefined}
     >
       {showPlaceholder ? (
         // Placeholder when no image or error
-        <div className={cn(
-          "w-full h-full flex flex-col items-center justify-center bg-muted",
-          isLoading && "animate-pulse"
-        )}>
+        <div
+          className={cn(
+            "w-full h-full flex flex-col items-center justify-center bg-muted",
+            isLoading && "animate-pulse",
+          )}
+        >
           {isRetrying ? (
             <RefreshCw className="w-4 h-4 text-muted-foreground animate-spin" />
           ) : imageError ? (
@@ -174,7 +185,9 @@ export function NpcImage({
               {isRetrying ? (
                 <div className="flex flex-col items-center space-y-1">
                   <RefreshCw className="w-4 h-4 text-muted-foreground animate-spin" />
-                  <span className="text-xs text-muted-foreground">Retrying...</span>
+                  <span className="text-xs text-muted-foreground">
+                    Retrying...
+                  </span>
                 </div>
               ) : (
                 <div className="flex flex-col items-center space-y-1">
@@ -186,9 +199,9 @@ export function NpcImage({
               )}
             </div>
           )}
-          
+
           {/* Actual image */}
-          {iconUrl && typeof iconUrl === 'string' && (
+          {iconUrl && typeof iconUrl === "string" && (
             <img
               key={`${npcId}-${iconUrl}-${retryCount}`} // Force re-render on retry
               src={iconUrl}
@@ -198,16 +211,18 @@ export function NpcImage({
               loading={getImageLoadingStrategy()}
               className={cn(
                 "w-full h-full object-contain transition-all duration-300 ease-in-out",
-                (isLoading || isRetrying) ? "opacity-0 scale-95" : "opacity-100 scale-100"
+                isLoading || isRetrying
+                  ? "opacity-0 scale-95"
+                  : "opacity-100 scale-100",
               )}
-              style={{ maxWidth: '100%', maxHeight: '100%' }}
+              style={{ maxWidth: "100%", maxHeight: "100%" }}
               onLoad={handleImageLoad}
               onError={handleImageError}
             />
           )}
         </>
       )}
-      
+
       {/* Error indicator for development */}
       {import.meta.env.DEV && imageError && (
         <div className="absolute bottom-0 right-0 bg-destructive text-destructive-foreground text-xs px-1 rounded-tl">

@@ -15,12 +15,13 @@ import (
 	"errors"
 	"sort"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	inventory2 "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/sirupsen/logrus"
 )
 
 // Processor interface defines the operations for character processing
@@ -233,7 +234,7 @@ type DistributePacket struct {
 }
 
 func (p *ProcessorImpl) RequestDistributeAp(f field.Model, characterId uint32, _ uint32, distributes []DistributePacket) error {
-	var distributions = make([]character2.DistributePair, 0)
+	distributions := make([]character2.DistributePair, 0)
 	for _, d := range distributes {
 		a, err := abilityFromFlag(d.Flag)
 		if err != nil {

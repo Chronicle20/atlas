@@ -1,17 +1,17 @@
 package holding
 
 import (
+	"atlas-mts/saga"
 	"context"
 	"fmt"
 	"time"
 
-	"atlas-mts/saga"
-
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // SagaEmitter abstracts the saga-command emission so the take-home flow can be

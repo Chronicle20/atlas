@@ -3,8 +3,16 @@ import { Link } from "react-router-dom";
 import { Briefcase, ChevronRight } from "lucide-react";
 import { useTenant } from "@/context/tenant-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { JOB_GRAPH, childrenOf, visibleRoots } from "@/lib/jobs/job-advancement-tree";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  JOB_GRAPH,
+  childrenOf,
+  visibleRoots,
+} from "@/lib/jobs/job-advancement-tree";
 
 function JobTreeNode({ id, depth }: { id: number; depth: number }) {
   const entry = JOB_GRAPH[id];
@@ -54,7 +62,8 @@ export function JobsPage() {
   const { activeTenant } = useTenant();
 
   const roots = useMemo(
-    () => (activeTenant ? visibleRoots(activeTenant.attributes.majorVersion) : []),
+    () =>
+      activeTenant ? visibleRoots(activeTenant.attributes.majorVersion) : [],
     [activeTenant],
   );
 

@@ -5,9 +5,10 @@ import (
 	"atlas-channel/kafka/producer"
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 // Processor emits COMMAND_TOPIC_MTS commands to atlas-mts. The per-arm

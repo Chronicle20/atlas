@@ -5,9 +5,10 @@ import (
 	"atlas-channel/kafka/producer"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {

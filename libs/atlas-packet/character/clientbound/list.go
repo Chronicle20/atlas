@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const CharacterListWriter = "CharacterList"
@@ -29,11 +30,11 @@ func NewCharacterList(status byte, characters []model.CharacterListEntry, hasPic
 	}
 }
 
-func (m CharacterList) Status() byte                              { return m.status }
-func (m CharacterList) Characters() []model.CharacterListEntry    { return m.characters }
-func (m CharacterList) HasPic() bool                              { return m.hasPic }
-func (m CharacterList) CharacterSlots() uint32                    { return m.characterSlots }
-func (m CharacterList) Operation() string                         { return CharacterListWriter }
+func (m CharacterList) Status() byte                           { return m.status }
+func (m CharacterList) Characters() []model.CharacterListEntry { return m.characters }
+func (m CharacterList) HasPic() bool                           { return m.hasPic }
+func (m CharacterList) CharacterSlots() uint32                 { return m.characterSlots }
+func (m CharacterList) Operation() string                      { return CharacterListWriter }
 func (m CharacterList) String() string {
 	return fmt.Sprintf("status [%d], characters [%d]", m.status, len(m.characters))
 }

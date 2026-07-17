@@ -50,8 +50,8 @@ type CreatedStatusEventBody struct {
 	Hands          uint16     `json:"hands"`
 	Speed          uint16     `json:"speed"`
 	Jump           uint16     `json:"jump"`
-	Slots     uint16 `json:"slots"`
-	LevelType byte   `json:"levelType"`
+	Slots          uint16     `json:"slots"`
+	LevelType      byte       `json:"levelType"`
 	Level          byte       `json:"level"`
 	Experience     uint32     `json:"experience"`
 	HammersApplied uint32     `json:"hammersApplied"`
@@ -84,8 +84,8 @@ type UpdatedStatusEventBody struct {
 	Hands          uint16     `json:"hands"`
 	Speed          uint16     `json:"speed"`
 	Jump           uint16     `json:"jump"`
-	Slots     uint16 `json:"slots"`
-	LevelType byte   `json:"levelType"`
+	Slots          uint16     `json:"slots"`
+	LevelType      byte       `json:"levelType"`
 	Level          byte       `json:"level"`
 	Experience     uint32     `json:"experience"`
 	HammersApplied uint32     `json:"hammersApplied"`
@@ -96,8 +96,7 @@ type UpdatedStatusEventBody struct {
 	PetId          uint32     `json:"petId"`
 }
 
-type DeletedStatusEventBody struct {
-}
+type DeletedStatusEventBody struct{}
 
 type MovedStatusEventBody struct {
 	OldSlot int16 `json:"oldSlot"`
@@ -130,8 +129,8 @@ type AcceptedStatusEventBody struct {
 	Hands          uint16     `json:"hands"`
 	Speed          uint16     `json:"speed"`
 	Jump           uint16     `json:"jump"`
-	Slots     uint16 `json:"slots"`
-	LevelType byte   `json:"levelType"`
+	Slots          uint16     `json:"slots"`
+	LevelType      byte       `json:"levelType"`
 	Level          byte       `json:"level"`
 	Experience     uint32     `json:"experience"`
 	HammersApplied uint32     `json:"hammersApplied"`

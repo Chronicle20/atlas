@@ -1,22 +1,23 @@
 package main
 
 import (
-	"context"
-
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-
 	"atlas-skills/kafka/consumer/character"
-	macro2 "atlas-skills/kafka/consumer/macro"
-	skill2 "atlas-skills/kafka/consumer/skill"
 	"atlas-skills/logger"
 	"atlas-skills/macro"
 	"atlas-skills/skill"
 	"atlas-skills/tasks"
+	"context"
+	"os"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
+	macro2 "atlas-skills/kafka/consumer/macro"
+	skill2 "atlas-skills/kafka/consumer/skill"
+
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
-	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"

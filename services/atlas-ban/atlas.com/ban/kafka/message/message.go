@@ -4,8 +4,9 @@ import (
 	"atlas-ban/kafka/producer"
 	"sync"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/segmentio/kafka-go"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 type Buffer struct {

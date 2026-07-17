@@ -3,9 +3,10 @@ package clientbound
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const MobEscortStopWriter = "MobEscortStop"
@@ -25,8 +26,7 @@ const MobEscortStopWriter = "MobEscortStop"
 // v95-only registry row; jms dispatches case 273 but carries no registry row
 // (reported gap). Absent in v83/v84/v87.
 // packet-audit:fname CMob::OnEscortStopEndPermmision
-type MobEscortStop struct {
-}
+type MobEscortStop struct{}
 
 func (m MobEscortStop) Operation() string { return MobEscortStopWriter }
 func (m MobEscortStop) String() string    { return "" }

@@ -41,8 +41,13 @@ export const mobSkillsService = {
     return rows[0]?.attributes.name ?? "";
   },
 
-  async getMobSkillDetail(skillId: number, level: number): Promise<MobSkillDetailAttributes> {
-    const data = await api.getOne<MobSkillDetailData>(`${BASE_PATH}/${skillId}/${level}`);
+  async getMobSkillDetail(
+    skillId: number,
+    level: number,
+  ): Promise<MobSkillDetailAttributes> {
+    const data = await api.getOne<MobSkillDetailData>(
+      `${BASE_PATH}/${skillId}/${level}`,
+    );
     return data.attributes;
   },
 };

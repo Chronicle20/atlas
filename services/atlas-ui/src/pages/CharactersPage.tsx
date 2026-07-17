@@ -27,11 +27,23 @@ export function CharactersPage() {
   const accounts = accountsQuery.data ?? [];
   const tenantConfig = tenantConfigQuery.data ?? null;
 
-  const loading = charactersQuery.isLoading || accountsQuery.isLoading || tenantConfigQuery.isLoading;
-  const error = charactersQuery.error?.message ?? accountsQuery.error?.message ?? tenantConfigQuery.error?.message ?? null;
+  const loading =
+    charactersQuery.isLoading ||
+    accountsQuery.isLoading ||
+    tenantConfigQuery.isLoading;
+  const error =
+    charactersQuery.error?.message ??
+    accountsQuery.error?.message ??
+    tenantConfigQuery.error?.message ??
+    null;
 
-  const accountMap = new Map(accounts.map(a => [a.id, a]));
-  const columns = getColumns({ tenant: activeTenant, tenantConfig, accountMap, onRefresh });
+  const accountMap = new Map(accounts.map((a) => [a.id, a]));
+  const columns = getColumns({
+    tenant: activeTenant,
+    tenantConfig,
+    accountMap,
+    onRefresh,
+  });
 
   if (loading) {
     return <CharacterPageSkeleton />;

@@ -9,7 +9,6 @@ import (
 	"atlas-npc/data/equipable"
 	"atlas-npc/data/etc"
 	"atlas-npc/data/setup"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	inventory2 "atlas-npc/inventory"
 	"atlas-npc/kafka/message"
 	"atlas-npc/kafka/message/shops"
@@ -21,14 +20,17 @@ import (
 	"sort"
 	"time"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 type Processor interface {
@@ -318,7 +320,6 @@ func (p *ProcessorImpl) DeleteAllShops() error {
 		}
 		return p.cp.WithTransaction(tx).DeleteAllCommodities()
 	})
-
 }
 
 func (p *ProcessorImpl) GetAllShops(decorators ...model.Decorator[Model]) ([]Model, error) {

@@ -4,11 +4,12 @@ import (
 	"atlas-portals/kafka/producer"
 	"context"
 
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	producer2 "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
 )
 
 func EnterCommandProvider(f field.Model, portalId uint32, characterId uint32, portalName string) model.Provider[[]kafka.Message] {

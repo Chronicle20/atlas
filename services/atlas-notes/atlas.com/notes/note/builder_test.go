@@ -13,7 +13,6 @@ func TestBuilder_Build_Valid(t *testing.T) {
 		SetMessage("Hello").
 		SetFlag(0).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
 	}
@@ -96,7 +95,6 @@ func TestBuilder_Build_AllFields(t *testing.T) {
 		SetFlag(5).
 		SetTimestamp(timestamp).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
 	}

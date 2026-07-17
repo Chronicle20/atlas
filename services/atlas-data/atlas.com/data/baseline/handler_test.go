@@ -1,17 +1,18 @@
 package baseline
 
 import (
+	"atlas-data/rest"
 	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"atlas-data/rest"
 	minio "atlas-data/storage/minio"
 
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 // nonNilSentinelClient returns a non-nil *minio.Client used to bypass the

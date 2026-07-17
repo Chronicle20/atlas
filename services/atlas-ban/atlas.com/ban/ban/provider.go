@@ -1,11 +1,13 @@
 package ban
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 func entityById(id uint32) database.EntityProvider[Entity] {

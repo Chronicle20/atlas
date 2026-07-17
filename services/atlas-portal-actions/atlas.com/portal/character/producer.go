@@ -1,16 +1,16 @@
 package character
 
 import (
+	"atlas-portal-actions/kafka/producer"
 	"context"
 
-	"atlas-portal-actions/kafka/producer"
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	kfkProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
 )
 
 // statusEvent represents a character status event

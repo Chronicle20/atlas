@@ -8,13 +8,14 @@ import (
 	"context"
 	"fmt"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Processor interface {

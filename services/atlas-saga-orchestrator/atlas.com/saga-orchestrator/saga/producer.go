@@ -7,11 +7,12 @@ import (
 	"atlas-saga-orchestrator/kafka/producer"
 	"context"
 
-	kproducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
+
+	kproducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 func CompletedStatusEventProvider(s Saga) model.Provider[[]kafka.Message] {

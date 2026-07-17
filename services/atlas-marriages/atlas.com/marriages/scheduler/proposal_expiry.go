@@ -1,15 +1,14 @@
 package scheduler
 
 import (
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-
+	"atlas-marriages/marriage"
 	"context"
 	"time"
 
-	"atlas-marriages/marriage"
+	retry "github.com/Chronicle20/atlas/libs/atlas-retry"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 
-	"github.com/Chronicle20/atlas/libs/atlas-retry"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -136,7 +135,6 @@ func (s *ProposalExpiryScheduler) processExpiredProposalsForTenant(tenantId uuid
 		err = processor.ProcessExpiredProposals()
 		return err != nil, err
 	})
-
 	if err != nil {
 		s.log.WithFields(logrus.Fields{
 			"tenantId": tenantId,

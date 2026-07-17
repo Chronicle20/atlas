@@ -8,13 +8,14 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	tenantlib "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	tenantlib "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {

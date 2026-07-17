@@ -7,10 +7,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // Processor exposes the lifecycle operations for tenant-scoped mists. Create
@@ -65,8 +66,8 @@ func (p *ProcessorImpl) Create(body mistKafka.CreateCommandBody) (Mist, error) {
 		SetOrigin(body.OriginX, body.OriginY).
 		SetBounds(body.LtX, body.LtY, body.RbX, body.RbY).
 		SetDisease(body.Disease, body.DiseaseValue, time.Duration(body.DiseaseDuration)*time.Millisecond).
-		SetDuration(time.Duration(body.Duration) * time.Millisecond).
-		SetTickInterval(time.Duration(body.TickIntervalMs) * time.Millisecond).
+		SetDuration(time.Duration(body.Duration)*time.Millisecond).
+		SetTickInterval(time.Duration(body.TickIntervalMs)*time.Millisecond).
 		SetSource(body.SourceSkillId, body.SourceSkillLevel).
 		Build()
 

@@ -64,7 +64,9 @@ export function MonsterDropWidget({ drop }: MonsterDropWidgetProps) {
           <div className="space-y-0.5">
             <div className="flex gap-4">
               <span className="text-muted-foreground">Chance</span>
-              <span className="ml-auto">{drop.attributes.chance.toLocaleString()}</span>
+              <span className="ml-auto">
+                {drop.attributes.chance.toLocaleString()}
+              </span>
             </div>
             <div className="flex gap-4">
               <span className="text-muted-foreground">Min Qty</span>
@@ -77,7 +79,9 @@ export function MonsterDropWidget({ drop }: MonsterDropWidgetProps) {
             {drop.attributes.questId > 0 && (
               <div className="flex gap-4">
                 <span className="text-muted-foreground">Quest</span>
-                <span className="ml-auto font-mono">{drop.attributes.questId}</span>
+                <span className="ml-auto font-mono">
+                  {drop.attributes.questId}
+                </span>
               </div>
             )}
           </div>

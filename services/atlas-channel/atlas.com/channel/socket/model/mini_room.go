@@ -4,12 +4,13 @@ import (
 	"atlas-channel/asset"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	interactionpkt "github.com/Chronicle20/atlas/libs/atlas-packet/interaction"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 type MiniRoomType byte

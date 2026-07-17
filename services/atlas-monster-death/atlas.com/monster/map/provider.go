@@ -3,10 +3,11 @@ package _map
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/sirupsen/logrus"
 )
 
 func CharacterIdsInFieldModelProvider(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model) model.Provider[[]uint32] {

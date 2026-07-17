@@ -10,12 +10,13 @@ import (
 	"atlas-pets/pet/exclude"
 	"atlas-pets/tasks"
 	"context"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 	"time"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"

@@ -4,10 +4,11 @@ import (
 	"atlas-channel/asset"
 	"context"
 
-	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
-	model "github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	"github.com/sirupsen/logrus"
+
+	model "github.com/Chronicle20/atlas/libs/atlas-model/model"
+	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 )
 
 func NewAsset(zeroPosition bool, a asset.Model) packetmodel.Asset {

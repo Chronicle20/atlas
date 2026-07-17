@@ -1,18 +1,17 @@
 package main
 
 import (
-	"context"
-
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-
 	"atlas-mounts/kafka/consumer/buff"
 	"atlas-mounts/kafka/consumer/character"
 	"atlas-mounts/kafka/consumer/food"
 	"atlas-mounts/logger"
 	"atlas-mounts/mount"
 	"atlas-mounts/tasks"
+	"context"
 	"os"
 	"time"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -21,7 +20,7 @@ import (
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 )
 

@@ -12,6 +12,9 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
@@ -20,9 +23,7 @@ import (
 	messengerpkt "github.com/Chronicle20/atlas/libs/atlas-packet/messenger"
 	messengercb "github.com/Chronicle20/atlas/libs/atlas-packet/messenger/clientbound"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -93,7 +94,6 @@ func handleLeft(sc server.Model, wp writer.Producer) message.Handler[messenger2.
 				l.WithError(err).Errorf("Unable to announce character [%d] has left messenger [%d].", tc.Id(), p.Id())
 			}
 		})
-
 	}
 }
 

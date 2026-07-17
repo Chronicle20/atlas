@@ -10,6 +10,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/alicebob/miniredis/v2"
+	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
@@ -18,12 +24,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/alicebob/miniredis/v2"
-	"github.com/google/uuid"
-	goredis "github.com/redis/go-redis/v9"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // emittedEvent captures a single Kafka message emitted during a test.
@@ -1708,9 +1709,9 @@ func TestUseBasicAttack_DeadMonster_Skips(t *testing.T) {
 func applyDoomEffectFromPlayer(durationMs int) StatusEffect {
 	return NewStatusEffect(
 		SourceTypePlayerSkill,
-		1001,                          // sourceCharacterId
+		1001,                            // sourceCharacterId
 		uint32(skillconst.PriestDoomId), // sourceSkillId
-		30,                            // sourceSkillLevel
+		30,                              // sourceSkillLevel
 		map[string]int32{monster2.StatusDoom: 1},
 		time.Duration(durationMs)*time.Millisecond,
 		0,

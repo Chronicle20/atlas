@@ -18,7 +18,7 @@ import (
 	once "atlas-consumables/kafka/once/compartment"
 	"atlas-consumables/kafka/producer"
 	"atlas-consumables/location"
-	"atlas-consumables/map"
+	_map "atlas-consumables/map"
 	character2 "atlas-consumables/map/character"
 	"atlas-consumables/monster"
 	"atlas-consumables/monster/drop/position"
@@ -27,6 +27,9 @@ import (
 	"errors"
 	"math"
 	"math/rand"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	ts "github.com/Chronicle20/atlas/libs/atlas-constants/character"
@@ -40,8 +43,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 var ErrPetCannotConsume = errors.New("pet cannot consume")

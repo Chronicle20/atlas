@@ -5,8 +5,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 func parseCashId(name string) (uint32, error) {

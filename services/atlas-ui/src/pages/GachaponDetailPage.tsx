@@ -1,9 +1,17 @@
 import { useParams } from "react-router-dom";
-import { useGachapon, useGachaponPrizePool } from "@/lib/hooks/api/useGachapons";
+import {
+  useGachapon,
+  useGachaponPrizePool,
+} from "@/lib/hooks/api/useGachapons";
 import { useItemName } from "@/lib/hooks/api/useItemStrings";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { PageLoader } from "@/components/common/PageLoader";
 import { Link } from "react-router-dom";
 import { ErrorDisplay } from "@/components/common/ErrorDisplay";
@@ -27,7 +35,15 @@ function tierBadgeVariant(tier: string) {
   }
 }
 
-function PrizeRow({ itemId, quantity, tier }: { itemId: number; quantity: number; tier: string }) {
+function PrizeRow({
+  itemId,
+  quantity,
+  tier,
+}: {
+  itemId: number;
+  quantity: number;
+  tier: string;
+}) {
   const idStr = String(itemId);
   const { data: name } = useItemName(idStr);
   return (
@@ -68,7 +84,10 @@ export function GachaponDetailPage() {
   if (error || !gachapon) {
     return (
       <div className="p-10">
-        <ErrorDisplay error={error ?? "Gachapon not found"} retry={() => refetch()} />
+        <ErrorDisplay
+          error={error ?? "Gachapon not found"}
+          retry={() => refetch()}
+        />
       </div>
     );
   }
@@ -84,7 +103,9 @@ export function GachaponDetailPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
-          <CardHeader><CardTitle className="text-sm font-medium">Tier Weights</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">Tier Weights</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Common</span>
@@ -102,12 +123,16 @@ export function GachaponDetailPage() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="text-sm font-medium">NPCs</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">NPCs</CardTitle>
+          </CardHeader>
           <CardContent className="text-sm">
             {attrs.npcIds && attrs.npcIds.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {attrs.npcIds.map((npcId) => (
-                  <span key={npcId} className="font-mono text-muted-foreground">{npcId}</span>
+                  <span key={npcId} className="font-mono text-muted-foreground">
+                    {npcId}
+                  </span>
                 ))}
               </div>
             ) : (
@@ -125,7 +150,9 @@ export function GachaponDetailPage() {
         </CardHeader>
         <CardContent>
           {poolLoading ? (
-            <p className="text-sm text-muted-foreground">Loading prize pool...</p>
+            <p className="text-sm text-muted-foreground">
+              Loading prize pool...
+            </p>
           ) : prizePool && prizePool.length > 0 ? (
             <Table>
               <TableHeader>
@@ -147,7 +174,9 @@ export function GachaponDetailPage() {
               </TableBody>
             </Table>
           ) : (
-            <p className="text-sm text-muted-foreground">No items in the prize pool.</p>
+            <p className="text-sm text-muted-foreground">
+              No items in the prize pool.
+            </p>
           )}
         </CardContent>
       </Card>

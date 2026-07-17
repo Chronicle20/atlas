@@ -7,9 +7,10 @@ import (
 	"context"
 	"time"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // AcceptToMtsListingParams carries the full listing-creation snapshot dispatched

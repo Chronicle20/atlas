@@ -11,8 +11,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 )
 
 // IsInitialized checks if a character has been initialized

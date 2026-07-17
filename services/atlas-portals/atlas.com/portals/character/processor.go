@@ -4,8 +4,9 @@ import (
 	"atlas-portals/kafka/producer"
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
 type Processor interface {

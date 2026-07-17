@@ -38,9 +38,9 @@ func handleGetNameValidity(d *rest.HandlerDependency, _ *rest.HandlerContext) ht
 		}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(NameValidityResponse{
-			Valid:   res.Valid,
-			Reason:  res.Reason,
-			Detail:  res.Detail,
+			Valid:  res.Valid,
+			Reason: res.Reason,
+			Detail: res.Detail,
 		})
 	}
 }

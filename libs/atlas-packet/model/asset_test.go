@@ -4,8 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	testlog "github.com/sirupsen/logrus/hooks/test"
+
+	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
@@ -13,8 +14,8 @@ import (
 func TestAssetEquipable(t *testing.T) {
 	exp := time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)
 	a := NewAsset(false, -5, 1302000, exp). // equip slot -5, templateId in equip range (1xxxxxx)
-							SetEquipmentStats(10, 11, 12, 13, 100, 50, 80, 70, 30, 25, 15, 20, 10, 5, 3).
-							SetEquipmentMeta(7, 1, 2, 500, 3, 0x0001)
+						SetEquipmentStats(10, 11, 12, 13, 100, 50, 80, 70, 30, 25, 15, 20, 10, 5, 3).
+						SetEquipmentMeta(7, 1, 2, 500, 3, 0x0001)
 
 	for _, v := range test.Variants {
 		t.Run(v.Name, func(t *testing.T) {

@@ -1,15 +1,14 @@
 package templates
 
 import (
-	"encoding/json"
-	"testing"
-
 	"atlas-configurations/templates/characters"
 	"atlas-configurations/templates/npcs"
 	"atlas-configurations/templates/socket"
 	"atlas-configurations/templates/socket/handler"
 	"atlas-configurations/templates/socket/writer"
 	"atlas-configurations/templates/worlds"
+	"encoding/json"
+	"testing"
 )
 
 func TestRestModel_GetName(t *testing.T) {
@@ -151,4 +150,3 @@ func TestRestModel_EmptyState(t *testing.T) {
 		t.Errorf("expected GetID() to return empty string for empty model, got '%s'", rm.GetID())
 	}
 }
-

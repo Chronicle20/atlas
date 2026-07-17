@@ -6,19 +6,19 @@ import (
 	"atlas-transports/kafka/message"
 	"bytes"
 	"context"
+	"testing"
 	"time"
 
-	"testing"
-
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/alicebob/miniredis/v2"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func setupTransportTestRegistry(t *testing.T) {

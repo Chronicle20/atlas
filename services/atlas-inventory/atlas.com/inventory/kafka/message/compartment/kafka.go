@@ -4,10 +4,11 @@ import (
 	"atlas-inventory/kafka/message/asset"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
@@ -112,11 +113,9 @@ type RechargeCommandBody struct {
 	Quantity uint32 `json:"quantity"`
 }
 
-type MergeCommandBody struct {
-}
+type MergeCommandBody struct{}
 
-type SortCommandBody struct {
-}
+type SortCommandBody struct{}
 
 type AcceptCommandBody struct {
 	TransactionId uuid.UUID `json:"transactionId"`
@@ -157,9 +156,9 @@ type ModifyEquipmentCommandBody struct {
 	Hands          uint16    `json:"hands"`
 	Speed          uint16    `json:"speed"`
 	Jump           uint16    `json:"jump"`
-	Slots     uint16 `json:"slots"`
-	Flag      uint16 `json:"flag"`
-	LevelType byte   `json:"levelType"`
+	Slots          uint16    `json:"slots"`
+	Flag           uint16    `json:"flag"`
+	LevelType      byte      `json:"levelType"`
 	Level          byte      `json:"level"`
 	Experience     uint32    `json:"experience"`
 	HammersApplied uint32    `json:"hammersApplied"`
@@ -209,8 +208,7 @@ type CreatedStatusEventBody struct {
 	Capacity uint32 `json:"capacity"`
 }
 
-type DeletedStatusEventBody struct {
-}
+type DeletedStatusEventBody struct{}
 
 type CapacityChangedEventBody struct {
 	Type     byte   `json:"type"`

@@ -1,15 +1,15 @@
-import * as React from "react"
+import * as React from "react";
 
-const MOBILE_BREAKPOINT = 768
+const MOBILE_BREAKPOINT = 768;
 
 function subscribe(onChange: () => void) {
-  const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
-  mql.addEventListener("change", onChange)
-  return () => mql.removeEventListener("change", onChange)
+  const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
+  mql.addEventListener("change", onChange);
+  return () => mql.removeEventListener("change", onChange);
 }
 
 function getSnapshot() {
-  return window.innerWidth < MOBILE_BREAKPOINT
+  return window.innerWidth < MOBILE_BREAKPOINT;
 }
 
 // useSyncExternalStore (rather than an effect that calls setState) is the
@@ -17,5 +17,5 @@ function getSnapshot() {
 // it reads the snapshot synchronously on first render instead of flashing
 // a default value until the effect commits.
 export function useIsMobile() {
-  return React.useSyncExternalStore(subscribe, getSnapshot)
+  return React.useSyncExternalStore(subscribe, getSnapshot);
 }

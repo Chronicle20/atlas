@@ -6,11 +6,12 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 )
 
 // newTestExpansionProcessor builds a *ProcessorImpl wired only with a tenant

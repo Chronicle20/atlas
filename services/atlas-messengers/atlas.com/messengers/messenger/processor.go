@@ -11,22 +11,25 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const StartMessengerId = uint32(1000000000)
 
-var ErrNotFound = errors.New("not found")
-var ErrAtCapacity = errors.New("at capacity")
-var ErrAlreadyIn = errors.New("already in messenger")
-var ErrNotIn = errors.New("not in messenger")
-var ErrNotAsBeginner = errors.New("not as beginner")
-var ErrNotAsGm = errors.New("not as gm")
+var (
+	ErrNotFound      = errors.New("not found")
+	ErrAtCapacity    = errors.New("at capacity")
+	ErrAlreadyIn     = errors.New("already in messenger")
+	ErrNotIn         = errors.New("not in messenger")
+	ErrNotAsBeginner = errors.New("not as beginner")
+	ErrNotAsGm       = errors.New("not as gm")
+)
 
 func AllProvider(ctx context.Context) model.Provider[[]Model] {
 	return GetAllProvider(ctx)

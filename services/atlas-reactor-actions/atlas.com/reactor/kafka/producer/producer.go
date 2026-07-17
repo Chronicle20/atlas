@@ -3,8 +3,9 @@ package producer
 import (
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 )
 
 type Provider func(token string) producer.MessageProducer

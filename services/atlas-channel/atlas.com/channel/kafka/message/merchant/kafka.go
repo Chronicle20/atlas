@@ -1,9 +1,10 @@
 package merchant
 
 import (
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
@@ -104,12 +105,12 @@ type CommandPurchaseBundleBody struct {
 const (
 	EnvStatusEventTopic = "EVENT_TOPIC_MERCHANT_STATUS"
 
-	StatusEventShopOpened         = "SHOP_OPENED"
-	StatusEventShopClosed         = "SHOP_CLOSED"
-	StatusEventMaintenanceEntered = "MAINTENANCE_ENTERED"
-	StatusEventMaintenanceExited  = "MAINTENANCE_EXITED"
-	StatusEventVisitorEntered     = "VISITOR_ENTERED"
-	StatusEventVisitorExited      = "VISITOR_EXITED"
+	StatusEventShopOpened            = "SHOP_OPENED"
+	StatusEventShopClosed            = "SHOP_CLOSED"
+	StatusEventMaintenanceEntered    = "MAINTENANCE_ENTERED"
+	StatusEventMaintenanceExited     = "MAINTENANCE_EXITED"
+	StatusEventVisitorEntered        = "VISITOR_ENTERED"
+	StatusEventVisitorExited         = "VISITOR_EXITED"
 	StatusEventVisitorEjected        = "VISITOR_EJECTED"
 	StatusEventCapacityFull          = "CAPACITY_FULL"
 	StatusEventPurchaseFailed        = "PURCHASE_FAILED"

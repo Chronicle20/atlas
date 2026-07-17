@@ -3,10 +3,11 @@ package history
 import (
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 func Migration(db *gorm.DB) error {

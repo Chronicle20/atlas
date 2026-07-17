@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
 
 	minio "atlas-data/storage/minio"
 )

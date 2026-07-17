@@ -3,7 +3,6 @@ package list
 import (
 	"atlas-buddies/buddy"
 	"atlas-buddies/character"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-buddies/invite"
 	"atlas-buddies/kafka/message"
 	list2 "atlas-buddies/kafka/message/list"
@@ -12,16 +11,18 @@ import (
 	"context"
 	"errors"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+
 	character2 "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
-
 
 type Processor interface {
 	WithTransaction(*gorm.DB) Processor
@@ -186,7 +187,7 @@ func (p *ProcessorImpl) RequestAddBuddy(mb *message.Buffer) func(characterId uin
 				return errors.New("buddy list is at capacity")
 			}
 
-			var found = false
+			found := false
 			for _, b := range cbl.Buddies() {
 				if b.CharacterId() == targetId {
 					found = true
@@ -297,7 +298,7 @@ func (p *ProcessorImpl) RequestDeleteBuddy(mb *message.Buffer) func(characterId 
 				return err
 			}
 
-			var found = false
+			found := false
 			for _, b := range cbl.Buddies() {
 				if b.CharacterId() == targetId {
 					found = true
@@ -388,7 +389,7 @@ func (p *ProcessorImpl) AcceptInvite(mb *message.Buffer) func(characterId uint32
 				return errors.New("buddy list is at capacity")
 			}
 
-			var found = false
+			found := false
 			for _, b := range cbl.Buddies() {
 				if b.CharacterId() == targetId {
 					found = true

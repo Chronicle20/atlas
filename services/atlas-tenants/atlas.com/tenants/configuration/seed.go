@@ -8,10 +8,12 @@ import (
 	"strings"
 )
 
-const defaultRoutesPath = "/configurations/routes"
-const defaultInstanceRoutesPath = "/configurations/instance-routes"
-const defaultVesselsPath = "/configurations/vessels"
-const defaultMtsConfigsPath = "/configurations/mts-configs"
+const (
+	defaultRoutesPath         = "/configurations/routes"
+	defaultInstanceRoutesPath = "/configurations/instance-routes"
+	defaultVesselsPath        = "/configurations/vessels"
+	defaultMtsConfigsPath     = "/configurations/mts-configs"
+)
 
 // SeedResult represents the result of a seed operation
 type SeedResult struct {

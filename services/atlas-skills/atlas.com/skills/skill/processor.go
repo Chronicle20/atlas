@@ -1,8 +1,6 @@
 package skill
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"atlas-skills/kafka/message"
 	skill2 "atlas-skills/kafka/message/skill"
 	"atlas-skills/kafka/producer"
@@ -12,15 +10,19 @@ import (
 	"strconv"
 	"time"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	constskill "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/degrade"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 // Processor defines the interface for skill processing operations

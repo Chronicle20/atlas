@@ -68,7 +68,9 @@ export function MapImagePanel({
 
   if (!activeTenant) {
     return (
-      <Card className={`w-full ${PREVIEW_MAX_HEIGHT} flex items-center justify-center`}>
+      <Card
+        className={`w-full ${PREVIEW_MAX_HEIGHT} flex items-center justify-center`}
+      >
         <CardContent className="flex flex-col items-center gap-2 text-muted-foreground">
           <MapIcon className="w-10 h-10" />
           <p className="text-sm">No active tenant</p>
@@ -89,7 +91,9 @@ export function MapImagePanel({
 
   if (state === "placeholder") {
     return (
-      <Card className={`w-full ${PREVIEW_MAX_HEIGHT} flex items-center justify-center bg-muted/30`}>
+      <Card
+        className={`w-full ${PREVIEW_MAX_HEIGHT} flex items-center justify-center bg-muted/30`}
+      >
         <CardContent className="flex flex-col items-center gap-2 py-10 text-muted-foreground">
           <MapIcon className="w-10 h-10" />
           <p className="text-sm">No render available</p>

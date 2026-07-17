@@ -11,6 +11,8 @@ import (
 	"context"
 	"math/rand"
 
+	"github.com/sirupsen/logrus"
+
 	charcon "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	inventoryconst "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
@@ -21,7 +23,6 @@ import (
 	model2 "github.com/Chronicle20/atlas/libs/atlas-model/model"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 // loadCasterFunc is the caster-load seam tests can replace. Production

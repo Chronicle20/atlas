@@ -67,7 +67,7 @@ function StateNode({ id, data }: NodeProps<NodeData>) {
   const isShared = inbound >= SHARED_TARGET_THRESHOLD;
   const hasIssue =
     analysis.duplicateIds.includes(id) ||
-    analysis.brokenRefs.some(r => r.source === id);
+    analysis.brokenRefs.some((r) => r.source === id);
   const isUnreachable = !analysis.reachable.has(id) && !isStart;
 
   const ring = isSelected
@@ -132,7 +132,7 @@ function StateNode({ id, data }: NodeProps<NodeData>) {
             <button
               key={i}
               type="button"
-              onClick={e => {
+              onClick={(e) => {
                 e.stopPropagation();
                 if (t.target) onSelect(t.target);
               }}
@@ -161,7 +161,10 @@ function CanvasInner({
   showFullLoopEdges,
 }: Omit<ConversationCanvasProps, "height">) {
   const analysis = useMemo(() => analyze(conversation), [conversation]);
-  const transitions = useMemo(() => allTransitions(conversation), [conversation]);
+  const transitions = useMemo(
+    () => allTransitions(conversation),
+    [conversation],
+  );
 
   const jumpBacksBySource = useMemo(() => {
     const m = new Map<string, Transition[]>();
@@ -177,18 +180,20 @@ function CanvasInner({
     return m;
   }, [transitions, analysis, showFullLoopEdges]);
 
-  const [positions, setPositions] = useState<Map<string, { x: number; y: number }>>(
-    () => new Map(),
-  );
+  const [positions, setPositions] = useState<
+    Map<string, { x: number; y: number }>
+  >(() => new Map());
   const [laying, setLaying] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- marks the in-flight async ELK layout this effect is about to kick off; the layout computation itself must stay in the effect
     setLaying(true);
-    const ids = conversation.attributes.states.map(s => s.id);
+    const ids = conversation.attributes.states.map((s) => s.id);
     const forwardEdges = transitions
-      .filter(t => t.target && !analysis.backEdges.has(`${t.source}->${t.target}`))
+      .filter(
+        (t) => t.target && !analysis.backEdges.has(`${t.source}->${t.target}`),
+      )
       .map((t, i) => ({
         source: t.source,
         target: t.target!,
@@ -200,12 +205,12 @@ function CanvasInner({
       nodeWidth: NODE_WIDTH,
       nodeHeight: NODE_HEIGHT_BASE,
     })
-      .then(result => {
+      .then((result) => {
         if (cancelled) return;
         setPositions(result.positions);
         setLaying(false);
       })
-      .catch(err => {
+      .catch((err) => {
         if (cancelled) return;
         console.error("ELK layout failed", err);
         setLaying(false);
@@ -216,7 +221,7 @@ function CanvasInner({
   }, [conversation, transitions, analysis]);
 
   const nodes = useMemo<Node<NodeData>[]>(() => {
-    return conversation.attributes.states.map(state => {
+    return conversation.attributes.states.map((state) => {
       const pos = positions.get(state.id) ?? { x: 0, y: 0 };
       const jumpBacks = jumpBacksBySource.get(state.id) ?? [];
       const extraHeight = jumpBacks.length * NODE_HEIGHT_PER_JUMP;
@@ -236,7 +241,14 @@ function CanvasInner({
         style: { width: NODE_WIDTH, height: NODE_HEIGHT_BASE + extraHeight },
       };
     });
-  }, [conversation, positions, analysis, selectedStateId, jumpBacksBySource, onSelect]);
+  }, [
+    conversation,
+    positions,
+    analysis,
+    selectedStateId,
+    jumpBacksBySource,
+    onSelect,
+  ]);
 
   const edges = useMemo<Edge[]>(() => {
     const isDense =
@@ -326,12 +338,12 @@ function CanvasInner({
   );
 }
 
-export function ConversationCanvas({ height, ...props }: ConversationCanvasProps) {
+export function ConversationCanvas({
+  height,
+  ...props
+}: ConversationCanvasProps) {
   return (
-    <div
-      className="w-full rounded-md border bg-background"
-      style={{ height }}
-    >
+    <div className="w-full rounded-md border bg-background" style={{ height }}>
       <ReactFlowProvider>
         <CanvasInner {...props} />
       </ReactFlowProvider>

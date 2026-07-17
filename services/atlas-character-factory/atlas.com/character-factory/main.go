@@ -1,8 +1,6 @@
 package main
 
 import (
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-
 	"atlas-character-factory/configuration"
 	"atlas-character-factory/configuration/projection"
 	"atlas-character-factory/factory"
@@ -15,14 +13,17 @@ import (
 	"sync/atomic"
 	"time"
 
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
+
+	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
-	"github.com/google/uuid"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 )
 
 const serviceName = "atlas-character-factory"

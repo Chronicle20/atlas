@@ -13,11 +13,12 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/sirupsen/logrus"
+
 	fieldpkt "github.com/Chronicle20/atlas/libs/atlas-packet/field"
 	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
 	fieldsb "github.com/Chronicle20/atlas/libs/atlas-packet/field/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 // EnterMtsHandleFunc handles the bodiless ENTER_MTS

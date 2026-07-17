@@ -32,7 +32,10 @@ export function MapDetailPage() {
   if (error || !map) {
     return (
       <div className="p-10">
-        <ErrorDisplay error={error ?? "Map not found"} retry={() => refetch()} />
+        <ErrorDisplay
+          error={error ?? "Map not found"}
+          retry={() => refetch()}
+        />
       </div>
     );
   }

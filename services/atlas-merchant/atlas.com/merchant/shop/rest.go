@@ -174,4 +174,3 @@ func TransformSearchResult(sr ListingSearchResult) (ListingSearchRestModel, erro
 		PricePerBundle:   sr.Listing.PricePerBundle(),
 	}, nil
 }
-

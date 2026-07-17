@@ -10,16 +10,17 @@ import (
 	"errors"
 	"net"
 
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	socketpkt "github.com/Chronicle20/atlas/libs/atlas-packet/socket/clientbound"
 	socket "github.com/Chronicle20/atlas/libs/atlas-socket"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
-	"go.opentelemetry.io/otel"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Processor interface {

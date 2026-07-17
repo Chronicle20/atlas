@@ -1,9 +1,8 @@
 package data
 
 import (
-	"testing"
-
 	"atlas-data/data/workers"
+	"testing"
 )
 
 func containsWorker(ws []workers.Worker, name string) bool {

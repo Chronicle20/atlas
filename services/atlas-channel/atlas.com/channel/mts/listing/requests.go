@@ -19,10 +19,10 @@ const Resource = "worlds/%d/listings"
 // the GET_ITC_LIST / SEARCH_ITC_LIST ITC_OPERATION arms. Empty/zero fields are
 // omitted from the query string (atlas-mts treats absent params as unfiltered).
 type BrowseFilter struct {
-	Category        string
-	SubCategory     string
-	SaleType        string
-	ItemId          uint32
+	Category    string
+	SubCategory string
+	SaleType    string
+	ItemId      uint32
 	// TemplateIds restricts the browse to this set of item template ids (the
 	// resolved hits of a SEARCH_ITC_LIST name search). When non-empty it renders
 	// the comma-joined `itemIds` param, which atlas-mts maps to `template_id IN (?)`.

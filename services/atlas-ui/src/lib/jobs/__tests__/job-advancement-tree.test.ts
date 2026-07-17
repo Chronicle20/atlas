@@ -1,7 +1,13 @@
 import { describe, it, expect } from "vitest";
 import {
-  JOB_GRAPH, BRANCH_FLOORS, JOB_ROOTS,
-  childrenOf, rootOf, floorOf, visibleRoots, jobTreePath,
+  JOB_GRAPH,
+  BRANCH_FLOORS,
+  JOB_ROOTS,
+  childrenOf,
+  rootOf,
+  floorOf,
+  visibleRoots,
+  jobTreePath,
 } from "@/lib/jobs/job-advancement-tree";
 
 describe("job-advancement-tree", () => {
@@ -16,7 +22,7 @@ describe("job-advancement-tree", () => {
   });
 
   it("walks to the branch root", () => {
-    expect(rootOf(112)).toBe(0);    // Hero -> Beginner
+    expect(rootOf(112)).toBe(0); // Hero -> Beginner
     expect(rootOf(1112)).toBe(1000); // Dawn Warrior 4 -> Noblesse
     expect(rootOf(2112)).toBe(2000); // Aran 4 -> Legend
     expect(rootOf(2218)).toBe(2001); // Evan 10 -> Evan root
@@ -24,8 +30,16 @@ describe("job-advancement-tree", () => {
   });
 
   it("uses the corrected per-branch floors, inherited from the root", () => {
-    expect(BRANCH_FLOORS).toEqual({ 0: 83, 800: 83, 900: 83, 910: 83, 1000: 83, 2000: 80, 2001: 84 });
-    expect(floorOf(112)).toBe(83);  // Adventurer
+    expect(BRANCH_FLOORS).toEqual({
+      0: 83,
+      800: 83,
+      900: 83,
+      910: 83,
+      1000: 83,
+      2000: 80,
+      2001: 84,
+    });
+    expect(floorOf(112)).toBe(83); // Adventurer
     expect(floorOf(1112)).toBe(83); // Cygnus corrected 92 -> 83
     expect(floorOf(2112)).toBe(80); // Aran corrected 88 -> 80
     expect(floorOf(2218)).toBe(84); // Evan
@@ -34,15 +48,19 @@ describe("job-advancement-tree", () => {
   it("shows Cygnus + Aran on v83 and hides Evan until v84", () => {
     const r83 = visibleRoots(83);
     expect(r83).toContain(0);
-    expect(r83).toContain(1000);     // Cygnus visible on v83
-    expect(r83).toContain(2000);     // Aran visible on v83
+    expect(r83).toContain(1000); // Cygnus visible on v83
+    expect(r83).toContain(2000); // Aran visible on v83
     expect(r83).not.toContain(2001); // Evan hidden on v83
     expect(visibleRoots(84)).toContain(2001); // Evan visible on v84
   });
 
   it("jobTreePath returns root->node inclusive", () => {
     expect(jobTreePath(112).map((j) => j.name)).toEqual([
-      "Beginner", "Warrior", "Fighter", "Crusader", "Hero",
+      "Beginner",
+      "Warrior",
+      "Fighter",
+      "Crusader",
+      "Hero",
     ]);
     expect(jobTreePath(0).map((j) => j.name)).toEqual(["Beginner"]);
     expect(jobTreePath(99999)).toEqual([]);

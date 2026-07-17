@@ -10,6 +10,9 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
@@ -19,8 +22,6 @@ import (
 	charcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	mbcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound/monsterbook"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
 )
 
 // Package-level seams: these wrap the singleton/registry-backed

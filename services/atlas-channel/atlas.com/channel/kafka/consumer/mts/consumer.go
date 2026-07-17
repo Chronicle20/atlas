@@ -16,6 +16,10 @@ import (
 	"context"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
@@ -26,9 +30,6 @@ import (
 	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
 )
 
 // mtsTakeHomePurchaseTab is the tab value the MoveItcPurchaseItemLtoSDone arm

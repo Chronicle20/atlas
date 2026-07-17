@@ -104,7 +104,11 @@ export function QuestConversationProvider({
 
   const startConversation = useMemo(
     () =>
-      machineToConversation(draft.id, draft.attributes.startStateMachine, "start"),
+      machineToConversation(
+        draft.id,
+        draft.attributes.startStateMachine,
+        "start",
+      ),
     [draft],
   );
   const endConversation = useMemo(() => {
@@ -120,7 +124,7 @@ export function QuestConversationProvider({
   );
 
   const applyStart = (next: Conversation) => {
-    setDraft(current => ({
+    setDraft((current) => ({
       ...current,
       attributes: {
         ...current.attributes,
@@ -131,7 +135,7 @@ export function QuestConversationProvider({
   };
 
   const applyEnd = (next: Conversation) => {
-    setDraft(current => ({
+    setDraft((current) => ({
       ...current,
       attributes: {
         ...current.attributes,

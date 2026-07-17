@@ -8,7 +8,6 @@ import (
 	compartment2 "atlas-cashshop/character/compartment"
 	inventory2 "atlas-cashshop/character/inventory"
 	dataPet "atlas-cashshop/data/pet"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-cashshop/kafka/message"
 	"atlas-cashshop/kafka/message/cashshop"
 	"atlas-cashshop/kafka/producer"
@@ -18,18 +17,23 @@ import (
 	"context"
 	"errors"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
-var ErrInsufficientFunds = errors.New("insufficient funds")
-var ErrMaxSlots = errors.New("max slots")
-var ErrAssetAlreadyReserved = errors.New("asset already reserved")
+var (
+	ErrInsufficientFunds    = errors.New("insufficient funds")
+	ErrMaxSlots             = errors.New("max slots")
+	ErrAssetAlreadyReserved = errors.New("asset already reserved")
+)
 
 // errPurchaseRejected is an internal sentinel used to abort the Purchase
 // transaction closure on a handled rejection (e.g. inventory full) whose
@@ -99,7 +103,6 @@ func (p *ProcessorImpl) Purchase(mb *message.Buffer) func(characterId uint32, cu
 		// were part of the committed transaction (recipe failure-path pitfall #1).
 		var rejectEmit func() error
 		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
-
 			ci, err := p.comP.GetById(serialNumber)
 			if err != nil {
 				_ = mb.Put(cashshop.EnvEventTopicStatus, cashshop2.ErrorStatusEventProvider(characterId, "UNKNOWN_ERROR"))

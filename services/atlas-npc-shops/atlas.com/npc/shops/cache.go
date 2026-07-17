@@ -5,11 +5,12 @@ import (
 	"context"
 	"errors"
 
-	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
 )
 
 // ConsumableCacheInterface defines the interface for the consumable cache

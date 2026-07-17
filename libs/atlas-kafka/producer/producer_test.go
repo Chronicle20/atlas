@@ -4,9 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 type testEvent struct {

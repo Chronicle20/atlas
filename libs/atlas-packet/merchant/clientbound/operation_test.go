@@ -4,8 +4,9 @@ import (
 	"encoding/binary"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	testlog "github.com/sirupsen/logrus/hooks/test"
+
+	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 // packet-audit:verify packet=merchant/clientbound/ConfirmManage version=gms_v83 ida=0xa27d75

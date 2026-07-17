@@ -1,8 +1,9 @@
 package mount
 
 import (
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"gorm.io/gorm"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // create inserts a new mount row for the given model. The tenant_id is sourced

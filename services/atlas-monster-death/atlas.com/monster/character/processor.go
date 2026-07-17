@@ -4,8 +4,9 @@ import (
 	"atlas-monster-death/kafka/producer"
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 )
 
 type Processor interface {

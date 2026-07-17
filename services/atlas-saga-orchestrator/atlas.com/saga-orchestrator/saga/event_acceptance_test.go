@@ -3,8 +3,9 @@ package saga
 import (
 	"testing"
 
-	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	"github.com/stretchr/testify/assert"
+
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 )
 
 // allActions lists every Action constant from libs/atlas-saga/model.go (lines

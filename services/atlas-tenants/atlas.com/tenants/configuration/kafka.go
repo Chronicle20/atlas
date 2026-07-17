@@ -1,10 +1,11 @@
 package configuration
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 const (
@@ -12,15 +13,15 @@ const (
 	EventTypeRouteCreated         = "ROUTE_CREATED"
 	EventTypeRouteUpdated         = "ROUTE_UPDATED"
 	EventTypeRouteDeleted         = "ROUTE_DELETED"
-	EventTypeVesselCreated             = "VESSEL_CREATED"
-	EventTypeVesselUpdated             = "VESSEL_UPDATED"
-	EventTypeVesselDeleted             = "VESSEL_DELETED"
-	EventTypeInstanceRouteCreated      = "INSTANCE_ROUTE_CREATED"
-	EventTypeInstanceRouteUpdated      = "INSTANCE_ROUTE_UPDATED"
-	EventTypeInstanceRouteDeleted      = "INSTANCE_ROUTE_DELETED"
-	EventTypeMtsConfigCreated          = "MTS_CONFIG_CREATED"
-	EventTypeMtsConfigUpdated          = "MTS_CONFIG_UPDATED"
-	EventTypeMtsConfigDeleted          = "MTS_CONFIG_DELETED"
+	EventTypeVesselCreated        = "VESSEL_CREATED"
+	EventTypeVesselUpdated        = "VESSEL_UPDATED"
+	EventTypeVesselDeleted        = "VESSEL_DELETED"
+	EventTypeInstanceRouteCreated = "INSTANCE_ROUTE_CREATED"
+	EventTypeInstanceRouteUpdated = "INSTANCE_ROUTE_UPDATED"
+	EventTypeInstanceRouteDeleted = "INSTANCE_ROUTE_DELETED"
+	EventTypeMtsConfigCreated     = "MTS_CONFIG_CREATED"
+	EventTypeMtsConfigUpdated     = "MTS_CONFIG_UPDATED"
+	EventTypeMtsConfigDeleted     = "MTS_CONFIG_DELETED"
 )
 
 // ConfigurationStatusEvent is a generic event for configuration status changes

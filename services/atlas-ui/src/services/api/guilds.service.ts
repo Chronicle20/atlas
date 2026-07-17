@@ -11,9 +11,9 @@
  * through in-game systems via Kafka events.
  */
 
-import type { ServiceOptions } from '@/lib/api/query-params';
-import type { Guild, GuildAttributes, GuildMember } from '@/types/models/guild';
-import { api } from '@/lib/api/client';
+import type { ServiceOptions } from "@/lib/api/query-params";
+import type { Guild, GuildAttributes, GuildMember } from "@/types/models/guild";
+import { api } from "@/lib/api/client";
 
 /**
  * Guilds service class with tenant-aware read-only API operations.
@@ -23,7 +23,7 @@ import { api } from '@/lib/api/client';
  * tenant argument.
  */
 class GuildsService {
-  private basePath = '/api/guilds';
+  private basePath = "/api/guilds";
 
   async getAll(options?: ServiceOptions): Promise<Guild[]> {
     const guilds = await api.getList<Guild>(this.basePath, options);
@@ -31,50 +31,76 @@ class GuildsService {
   }
 
   async getById(guildId: string, options?: ServiceOptions): Promise<Guild> {
-    const guild = await api.getOne<Guild>(`${this.basePath}/${guildId}`, options);
+    const guild = await api.getOne<Guild>(
+      `${this.basePath}/${guildId}`,
+      options,
+    );
     return this.transformGuildResponse(guild);
   }
 
-  async getByWorld(worldId: number, options?: ServiceOptions): Promise<Guild[]> {
+  async getByWorld(
+    worldId: number,
+    options?: ServiceOptions,
+  ): Promise<Guild[]> {
     const guilds = await this.getAll(options);
-    return guilds.filter(guild => guild.attributes.worldId === worldId);
+    return guilds.filter((guild) => guild.attributes.worldId === worldId);
   }
 
   /**
    * Fetch guilds containing a specific member, using the backend's
    * `filter[members.id]` query string. Returns an array (possibly empty).
    */
-  async getByMemberId(memberId: string, options?: ServiceOptions): Promise<Guild[]> {
-    const qs = new URLSearchParams({ "filter[members.id]": memberId }).toString();
+  async getByMemberId(
+    memberId: string,
+    options?: ServiceOptions,
+  ): Promise<Guild[]> {
+    const qs = new URLSearchParams({
+      "filter[members.id]": memberId,
+    }).toString();
     return api.getList<Guild>(`${this.basePath}?${qs}`, options);
   }
 
-  async search(searchTerm: string, worldId?: number, options?: ServiceOptions): Promise<Guild[]> {
+  async search(
+    searchTerm: string,
+    worldId?: number,
+    options?: ServiceOptions,
+  ): Promise<Guild[]> {
     const guilds = await this.getAll(options);
-    let filtered = guilds.filter(guild =>
-      guild.attributes.name.toLowerCase().includes(searchTerm.toLowerCase())
+    let filtered = guilds.filter((guild) =>
+      guild.attributes.name.toLowerCase().includes(searchTerm.toLowerCase()),
     );
     if (worldId !== undefined) {
-      filtered = filtered.filter(guild => guild.attributes.worldId === worldId);
+      filtered = filtered.filter(
+        (guild) => guild.attributes.worldId === worldId,
+      );
     }
     return filtered;
   }
 
-  async getWithSpace(worldId?: number, options?: ServiceOptions): Promise<Guild[]> {
+  async getWithSpace(
+    worldId?: number,
+    options?: ServiceOptions,
+  ): Promise<Guild[]> {
     const guilds = await this.getAll(options);
-    let filtered = guilds.filter(guild =>
-      guild.attributes.members.length < guild.attributes.capacity
+    let filtered = guilds.filter(
+      (guild) => guild.attributes.members.length < guild.attributes.capacity,
     );
     if (worldId !== undefined) {
-      filtered = filtered.filter(guild => guild.attributes.worldId === worldId);
+      filtered = filtered.filter(
+        (guild) => guild.attributes.worldId === worldId,
+      );
     }
     return filtered;
   }
 
-  async getRankings(worldId?: number, limit = 50, options?: ServiceOptions): Promise<Guild[]> {
+  async getRankings(
+    worldId?: number,
+    limit = 50,
+    options?: ServiceOptions,
+  ): Promise<Guild[]> {
     let guilds = await this.getAll(options);
     if (worldId !== undefined) {
-      guilds = guilds.filter(guild => guild.attributes.worldId === worldId);
+      guilds = guilds.filter((guild) => guild.attributes.worldId === worldId);
     }
     return guilds.slice(0, limit);
   }
@@ -84,14 +110,22 @@ class GuildsService {
       await this.getById(guildId, options);
       return true;
     } catch (error) {
-      if (error && typeof error === 'object' && 'status' in error && error.status === 404) {
+      if (
+        error &&
+        typeof error === "object" &&
+        "status" in error &&
+        error.status === 404
+      ) {
         return false;
       }
       throw error;
     }
   }
 
-  async getMemberCount(guildId: string, options?: ServiceOptions): Promise<number> {
+  async getMemberCount(
+    guildId: string,
+    options?: ServiceOptions,
+  ): Promise<number> {
     const guild = await this.getById(guildId, options);
     return guild.attributes.members.length;
   }
@@ -108,16 +142,18 @@ class GuildsService {
   private transformGuildResponse(guild: Guild): Guild {
     const transformed = { ...guild };
     if (transformed.attributes.members) {
-      transformed.attributes.members = [...transformed.attributes.members].sort((a, b) => {
-        if (a.title !== b.title) {
-          return a.title - b.title;
-        }
-        return b.level - a.level;
-      });
+      transformed.attributes.members = [...transformed.attributes.members].sort(
+        (a, b) => {
+          if (a.title !== b.title) {
+            return a.title - b.title;
+          }
+          return b.level - a.level;
+        },
+      );
     }
     if (transformed.attributes.titles) {
       transformed.attributes.titles = [...transformed.attributes.titles].sort(
-        (a, b) => a.index - b.index
+        (a, b) => a.index - b.index,
       );
     }
     return transformed;

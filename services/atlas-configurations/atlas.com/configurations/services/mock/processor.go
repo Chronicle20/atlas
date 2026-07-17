@@ -4,8 +4,9 @@ import (
 	"atlas-configurations/services"
 	"atlas-configurations/services/service"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 type ProcessorMock struct {

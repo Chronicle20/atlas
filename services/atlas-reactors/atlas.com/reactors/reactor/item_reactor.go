@@ -1,26 +1,27 @@
 package reactor
 
 import (
-	"atlas-reactors/kafka/producer"
 	dropMessage "atlas-reactors/kafka/message/drop"
+	"atlas-reactors/kafka/producer"
 	"context"
 	"os"
 	"strconv"
 	"sync"
 	"time"
 
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const (
-	itemReactorStateType               = int32(100)
-	defaultItemReactorActivationDelay  = 5000
-	envItemReactorActivationDelayMs    = "ITEM_REACTOR_ACTIVATION_DELAY_MS"
+	itemReactorStateType              = int32(100)
+	defaultItemReactorActivationDelay = 5000
+	envItemReactorActivationDelayMs   = "ITEM_REACTOR_ACTIVATION_DELAY_MS"
 )
 
 var (

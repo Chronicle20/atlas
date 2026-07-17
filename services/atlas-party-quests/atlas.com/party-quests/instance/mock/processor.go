@@ -4,55 +4,56 @@ import (
 	"atlas-party-quests/instance"
 	"atlas-party-quests/kafka/message"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	"github.com/google/uuid"
 )
 
 type ProcessorMock struct {
-	RegisterFunc              func(mb *message.Buffer) func(questId string, partyId uint32, channelId channel.Id, mapId uint32, characters []instance.CharacterEntry) (instance.Model, error)
-	RegisterAndEmitFunc       func(questId string, partyId uint32, channelId channel.Id, mapId uint32, characters []instance.CharacterEntry) (instance.Model, error)
-	StartFunc                 func(mb *message.Buffer) func(instanceId uuid.UUID) error
-	StartAndEmitFunc          func(instanceId uuid.UUID) error
-	StageClearAttemptFunc     func(mb *message.Buffer) func(instanceId uuid.UUID) error
-	StageClearAttemptAndEmitFunc func(instanceId uuid.UUID) error
-	StageAdvanceFunc          func(mb *message.Buffer) func(instanceId uuid.UUID) error
-	StageAdvanceAndEmitFunc   func(instanceId uuid.UUID) error
-	ForfeitFunc               func(mb *message.Buffer) func(instanceId uuid.UUID) error
-	ForfeitAndEmitFunc        func(instanceId uuid.UUID) error
-	LeaveFunc                 func(mb *message.Buffer) func(characterId uint32, reason string) error
-	LeaveAndEmitFunc          func(characterId uint32, reason string) error
-	UpdateStageStateFunc      func(instanceId uuid.UUID, itemCounts map[uint32]uint32, monsterKills map[uint32]uint32) error
-	UpdateCustomDataFunc      func(instanceId uuid.UUID, updates map[string]string, increments []string) error
-	BroadcastMessageFunc      func(mb *message.Buffer) func(instanceId uuid.UUID, messageType string, msg string) error
-	BroadcastMessageAndEmitFunc func(instanceId uuid.UUID, messageType string, msg string) error
-	HandleFriendlyMonsterDamagedFunc      func(mb *message.Buffer) func(f field.Model, monsterId uint32) error
+	RegisterFunc                            func(mb *message.Buffer) func(questId string, partyId uint32, channelId channel.Id, mapId uint32, characters []instance.CharacterEntry) (instance.Model, error)
+	RegisterAndEmitFunc                     func(questId string, partyId uint32, channelId channel.Id, mapId uint32, characters []instance.CharacterEntry) (instance.Model, error)
+	StartFunc                               func(mb *message.Buffer) func(instanceId uuid.UUID) error
+	StartAndEmitFunc                        func(instanceId uuid.UUID) error
+	StageClearAttemptFunc                   func(mb *message.Buffer) func(instanceId uuid.UUID) error
+	StageClearAttemptAndEmitFunc            func(instanceId uuid.UUID) error
+	StageAdvanceFunc                        func(mb *message.Buffer) func(instanceId uuid.UUID) error
+	StageAdvanceAndEmitFunc                 func(instanceId uuid.UUID) error
+	ForfeitFunc                             func(mb *message.Buffer) func(instanceId uuid.UUID) error
+	ForfeitAndEmitFunc                      func(instanceId uuid.UUID) error
+	LeaveFunc                               func(mb *message.Buffer) func(characterId uint32, reason string) error
+	LeaveAndEmitFunc                        func(characterId uint32, reason string) error
+	UpdateStageStateFunc                    func(instanceId uuid.UUID, itemCounts map[uint32]uint32, monsterKills map[uint32]uint32) error
+	UpdateCustomDataFunc                    func(instanceId uuid.UUID, updates map[string]string, increments []string) error
+	BroadcastMessageFunc                    func(mb *message.Buffer) func(instanceId uuid.UUID, messageType string, msg string) error
+	BroadcastMessageAndEmitFunc             func(instanceId uuid.UUID, messageType string, msg string) error
+	HandleFriendlyMonsterDamagedFunc        func(mb *message.Buffer) func(f field.Model, monsterId uint32) error
 	HandleFriendlyMonsterDamagedAndEmitFunc func(f field.Model, monsterId uint32) error
-	HandleFriendlyMonsterKilledFunc        func(mb *message.Buffer) func(f field.Model, monsterId uint32) error
-	HandleFriendlyMonsterKilledAndEmitFunc func(f field.Model, monsterId uint32) error
-	HandleFriendlyMonsterDropFunc          func(mb *message.Buffer) func(f field.Model, monsterId uint32, itemCount uint32) error
-	HandleFriendlyMonsterDropAndEmitFunc   func(f field.Model, monsterId uint32, itemCount uint32) error
-	GetByFieldInstanceFunc    func(fieldInstance uuid.UUID) (instance.Model, error)
-	DestroyFunc               func(mb *message.Buffer) func(instanceId uuid.UUID, reason string) error
-	DestroyAndEmitFunc        func(instanceId uuid.UUID, reason string) error
-	TickGlobalTimerFunc       func(mb *message.Buffer) error
-	TickGlobalTimerAndEmitFunc func() error
-	TickStageTimerFunc        func(mb *message.Buffer) error
-	TickStageTimerAndEmitFunc func() error
-	TickBonusTimerFunc        func(mb *message.Buffer) error
-	TickBonusTimerAndEmitFunc func() error
-	TickRegistrationTimerFunc func(mb *message.Buffer) error
-	TickRegistrationTimerAndEmitFunc func() error
-	GracefulShutdownFunc      func(mb *message.Buffer) error
-	GracefulShutdownAndEmitFunc func() error
-	EnterBonusFunc            func(mb *message.Buffer) func(instanceId uuid.UUID) error
-	EnterBonusAndEmitFunc     func(instanceId uuid.UUID) error
-	TickCompletionTimerFunc   func(mb *message.Buffer) error
-	TickCompletionTimerAndEmitFunc func() error
-	GetByIdFunc               func(instanceId uuid.UUID) (instance.Model, error)
-	GetByCharacterFunc        func(characterId uint32) (instance.Model, error)
-	GetTimerByCharacterFunc   func(characterId uint32) (uint64, error)
-	GetAllFunc                func() []instance.Model
+	HandleFriendlyMonsterKilledFunc         func(mb *message.Buffer) func(f field.Model, monsterId uint32) error
+	HandleFriendlyMonsterKilledAndEmitFunc  func(f field.Model, monsterId uint32) error
+	HandleFriendlyMonsterDropFunc           func(mb *message.Buffer) func(f field.Model, monsterId uint32, itemCount uint32) error
+	HandleFriendlyMonsterDropAndEmitFunc    func(f field.Model, monsterId uint32, itemCount uint32) error
+	GetByFieldInstanceFunc                  func(fieldInstance uuid.UUID) (instance.Model, error)
+	DestroyFunc                             func(mb *message.Buffer) func(instanceId uuid.UUID, reason string) error
+	DestroyAndEmitFunc                      func(instanceId uuid.UUID, reason string) error
+	TickGlobalTimerFunc                     func(mb *message.Buffer) error
+	TickGlobalTimerAndEmitFunc              func() error
+	TickStageTimerFunc                      func(mb *message.Buffer) error
+	TickStageTimerAndEmitFunc               func() error
+	TickBonusTimerFunc                      func(mb *message.Buffer) error
+	TickBonusTimerAndEmitFunc               func() error
+	TickRegistrationTimerFunc               func(mb *message.Buffer) error
+	TickRegistrationTimerAndEmitFunc        func() error
+	GracefulShutdownFunc                    func(mb *message.Buffer) error
+	GracefulShutdownAndEmitFunc             func() error
+	EnterBonusFunc                          func(mb *message.Buffer) func(instanceId uuid.UUID) error
+	EnterBonusAndEmitFunc                   func(instanceId uuid.UUID) error
+	TickCompletionTimerFunc                 func(mb *message.Buffer) error
+	TickCompletionTimerAndEmitFunc          func() error
+	GetByIdFunc                             func(instanceId uuid.UUID) (instance.Model, error)
+	GetByCharacterFunc                      func(characterId uint32) (instance.Model, error)
+	GetTimerByCharacterFunc                 func(characterId uint32) (uint64, error)
+	GetAllFunc                              func() []instance.Model
 }
 
 func (m *ProcessorMock) Register(mb *message.Buffer) func(questId string, partyId uint32, channelId channel.Id, mapId uint32, characters []instance.CharacterEntry) (instance.Model, error) {

@@ -5,11 +5,12 @@ import (
 	"encoding/binary"
 	"testing"
 
-	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
+
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 // TestAffectedAreaCreatedWireShape proves the client RECT-buffer layout at the

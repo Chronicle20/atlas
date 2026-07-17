@@ -5,9 +5,10 @@ import (
 	"atlas-portals/kafka/consumer/character"
 	"atlas-portals/logger"
 	"atlas-portals/portal"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
+
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"

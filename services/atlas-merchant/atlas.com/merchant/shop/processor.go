@@ -2,10 +2,10 @@ package shop
 
 import (
 	"atlas-merchant/frederick"
+	message "atlas-merchant/kafka/message"
 	asset2 "atlas-merchant/kafka/message/asset"
 	character "atlas-merchant/kafka/message/character"
 	"atlas-merchant/kafka/message/compartment"
-	message "atlas-merchant/kafka/message"
 	merchant "atlas-merchant/kafka/message/merchant"
 	kafkaProducer "atlas-merchant/kafka/producer"
 	"atlas-merchant/listing"
@@ -17,6 +17,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
@@ -25,13 +29,12 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
-const MaxListings = 16
-const MaxVisitors = 3
+const (
+	MaxListings = 16
+	MaxVisitors = 3
+)
 
 type Processor interface {
 	WithTransaction(tx *gorm.DB) Processor
@@ -98,15 +101,17 @@ type ListingSearchResult struct {
 	MapId     uint32
 }
 
-var ErrNotFound = errors.New("not found")
-var ErrInvalidTransition = errors.New("invalid state transition")
-var ErrShopLimitReached = errors.New("active shop limit reached")
-var ErrListingLimitReached = errors.New("listing limit reached")
-var ErrInsufficientBundles = errors.New("insufficient bundles")
-var ErrVersionConflict = errors.New("version conflict")
-var ErrNoListings = errors.New("shop has no listings")
-var ErrShopFull = errors.New("shop is full")
-var ErrFrederickPending = errors.New("items or mesos pending at Frederick")
+var (
+	ErrNotFound            = errors.New("not found")
+	ErrInvalidTransition   = errors.New("invalid state transition")
+	ErrShopLimitReached    = errors.New("active shop limit reached")
+	ErrListingLimitReached = errors.New("listing limit reached")
+	ErrInsufficientBundles = errors.New("insufficient bundles")
+	ErrVersionConflict     = errors.New("version conflict")
+	ErrNoListings          = errors.New("shop has no listings")
+	ErrShopFull            = errors.New("shop is full")
+	ErrFrederickPending    = errors.New("items or mesos pending at Frederick")
+)
 
 type ProcessorImpl struct {
 	l        logrus.FieldLogger

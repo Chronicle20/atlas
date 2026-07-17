@@ -1,14 +1,15 @@
 package portal
 
 import (
+	"atlas-saga-orchestrator/kafka/message"
+	"atlas-saga-orchestrator/kafka/producer"
 	"context"
 
-	"atlas-saga-orchestrator/kafka/message"
 	portalMsg "atlas-saga-orchestrator/kafka/message/portal"
-	"atlas-saga-orchestrator/kafka/producer"
+
+	"github.com/sirupsen/logrus"
 
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
-	"github.com/sirupsen/logrus"
 )
 
 // Processor is the interface for portal blocking operations

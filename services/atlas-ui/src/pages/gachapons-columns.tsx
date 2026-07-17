@@ -1,8 +1,12 @@
-
 import { type ColumnDef } from "@tanstack/react-table";
 import type { GachaponData } from "@/types/models/gachapon";
 import { Link } from "react-router-dom";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export const columns: ColumnDef<GachaponData>[] = [
   {
@@ -13,7 +17,9 @@ export const columns: ColumnDef<GachaponData>[] = [
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className="font-medium">{row.original.attributes.name}</span>
+              <span className="font-medium">
+                {row.original.attributes.name}
+              </span>
             </TooltipTrigger>
             <TooltipContent copyable>
               <p>{row.original.id}</p>

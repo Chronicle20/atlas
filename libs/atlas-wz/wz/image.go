@@ -1,9 +1,10 @@
 package wz
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-wz/wz/property"
 	"fmt"
 	"io"
+
+	"github.com/Chronicle20/atlas/libs/atlas-wz/wz/property"
 )
 
 // Image represents a WZ image (a group of properties, corresponding to a .img entry).

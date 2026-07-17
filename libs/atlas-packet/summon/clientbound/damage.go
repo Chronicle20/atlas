@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const SummonDamageWriter = "SummonDamage"
@@ -75,7 +76,7 @@ func (m *SummonDamage) Decode(l logrus.FieldLogger, ctx context.Context) func(r 
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.cid = r.ReadUint32()
 		m.oid = r.ReadUint32() // present on all versions (see Encode)
-		r.Skip(1) // attackIdx (12)
+		r.Skip(1)              // attackIdx (12)
 		m.damage = r.ReadUint32()
 		m.monsterIdFrom = r.ReadUint32()
 		r.Skip(1) // bLeft (final field — no trailing dir byte on any version)

@@ -1,12 +1,13 @@
 package character
 
 import (
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/stat"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
@@ -61,24 +62,24 @@ type Command[E any] struct {
 }
 
 type CreateCharacterCommandBody struct {
-	AccountId    uint32  `json:"accountId"`
+	AccountId    uint32   `json:"accountId"`
 	WorldId      world.Id `json:"worldId"`
-	Name         string  `json:"name"`
-	Level        byte    `json:"level"`
-	Strength     uint16  `json:"strength"`
-	Dexterity    uint16  `json:"dexterity"`
-	Intelligence uint16  `json:"intelligence"`
-	Luck         uint16  `json:"luck"`
-	MaxHp        uint16  `json:"maxHp"`
-	MaxMp        uint16  `json:"maxMp"`
-	JobId        job.Id  `json:"jobId"`
-	Gender       byte    `json:"gender"`
-	Hair         uint32  `json:"hair"`
-	Face         uint32  `json:"face"`
-	SkinColor    byte    `json:"skinColor"`
-	MapId        _map.Id `json:"mapId"`
-	Gm           int     `json:"gm,omitempty"`
-	Meso         uint32  `json:"meso,omitempty"`
+	Name         string   `json:"name"`
+	Level        byte     `json:"level"`
+	Strength     uint16   `json:"strength"`
+	Dexterity    uint16   `json:"dexterity"`
+	Intelligence uint16   `json:"intelligence"`
+	Luck         uint16   `json:"luck"`
+	MaxHp        uint16   `json:"maxHp"`
+	MaxMp        uint16   `json:"maxMp"`
+	JobId        job.Id   `json:"jobId"`
+	Gender       byte     `json:"gender"`
+	Hair         uint32   `json:"hair"`
+	Face         uint32   `json:"face"`
+	SkinColor    byte     `json:"skinColor"`
+	MapId        _map.Id  `json:"mapId"`
+	Gm           int      `json:"gm,omitempty"`
+	Meso         uint32   `json:"meso,omitempty"`
 }
 
 type ChangeMapBody struct {
@@ -108,7 +109,7 @@ type ChangeSkinCommandBody struct {
 	StyleId   byte       `json:"styleId"`
 }
 
-type AwardExperienceCommandBody struct{
+type AwardExperienceCommandBody struct {
 	ChannelId     channel.Id                `json:"channelId"`
 	Distributions []ExperienceDistributions `json:"distributions"`
 	ShowEffect    bool                      `json:"showEffect"`
@@ -323,8 +324,7 @@ type LevelChangedStatusEventBody struct {
 	Current   byte       `json:"current"`
 }
 
-type StatusEventDeletedBody struct {
-}
+type StatusEventDeletedBody struct{}
 
 type StatusEventErrorBody[F any] struct {
 	Error string `json:"error"`

@@ -80,7 +80,6 @@ func (w *Writer) WriteBool(val bool) {
 }
 
 func (w *Writer) WriteAsciiString(s string) {
-
 	e := japanese.ShiftJIS.NewEncoder()
 	r := strings.NewReader(s)
 	ebs, err := io.ReadAll(transform.NewReader(r, e))

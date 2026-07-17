@@ -1,4 +1,4 @@
-import type { CanonicalSelection } from '@/lib/headers';
+import type { CanonicalSelection } from "@/lib/headers";
 
 export function selectionKey(sel: CanonicalSelection): string {
   return `${sel.region}/${sel.majorVersion}.${sel.minorVersion}`;
@@ -28,7 +28,8 @@ export function dedupeSelections(
   }
   return [...map.values()].sort((a, b) => {
     if (a.region !== b.region) return a.region.localeCompare(b.region);
-    if (a.majorVersion !== b.majorVersion) return a.majorVersion - b.majorVersion;
+    if (a.majorVersion !== b.majorVersion)
+      return a.majorVersion - b.majorVersion;
     return a.minorVersion - b.minorVersion;
   });
 }
@@ -45,5 +46,9 @@ export function parseCustomSelection(
   const trimmed = region.trim();
   if (!trimmed) return null;
   if (!/^\d+$/.test(major) || !/^\d+$/.test(minor)) return null;
-  return { region: trimmed, majorVersion: Number(major), minorVersion: Number(minor) };
+  return {
+    region: trimmed,
+    majorVersion: Number(major),
+    minorVersion: Number(minor),
+  };
 }

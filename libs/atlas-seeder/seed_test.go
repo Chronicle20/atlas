@@ -9,8 +9,9 @@ import (
 	"testing"
 	"time"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"gorm.io/gorm"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type widgetAttrs struct {
@@ -28,10 +29,13 @@ type widgetSubdomain struct {
 	rows    []widgetRow
 }
 
-func (w *widgetSubdomain) Name() string                    { return "widgets" }
-func (w *widgetSubdomain) Path() string                    { return "widgets" }
-func (w *widgetSubdomain) Type() string                    { return "widget" }
-func (w *widgetSubdomain) EntityIDPattern() *regexp.Regexp { return regexp.MustCompile(`^widget-(\d+)\.json$`) }
+func (w *widgetSubdomain) Name() string { return "widgets" }
+func (w *widgetSubdomain) Path() string { return "widgets" }
+func (w *widgetSubdomain) Type() string { return "widget" }
+func (w *widgetSubdomain) EntityIDPattern() *regexp.Regexp {
+	return regexp.MustCompile(`^widget-(\d+)\.json$`)
+}
+
 func (w *widgetSubdomain) DeleteAllForTenant(_ *gorm.DB) (int64, error) {
 	w.mu.Lock()
 	cleared := int64(len(w.rows))
@@ -54,10 +58,12 @@ func (w *widgetSubdomain) Decode(b []byte) (widgetAttrs, error) {
 	}
 	return a, nil
 }
+
 func (w *widgetSubdomain) Build(_ tenant.Model, id string, a widgetAttrs) ([]widgetRow, error) {
 	n, _ := uintFromString(id)
 	return []widgetRow{{ID: n, Name: a.Name}}, nil
 }
+
 func (w *widgetSubdomain) BulkCreate(_ *gorm.DB, rows []widgetRow) error {
 	w.mu.Lock()
 	w.rows = append(w.rows, rows...)
@@ -65,10 +71,12 @@ func (w *widgetSubdomain) BulkCreate(_ *gorm.DB, rows []widgetRow) error {
 	w.created.Add(int64(len(rows)))
 	return nil
 }
+
 func (w *widgetSubdomain) Count(_ *gorm.DB) (int64, *time.Time, error) {
 	now := time.Now().UTC()
 	return w.created.Load(), &now, nil
 }
+
 func (w *widgetSubdomain) Rows() []widgetRow {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -138,14 +146,17 @@ func TestSeed_SuccessfulRunPersistsStateAndCountsCreated(t *testing.T) {
 
 type failingSubdomain struct{}
 
-func (f *failingSubdomain) Name() string                    { return "broken" }
-func (f *failingSubdomain) Path() string                    { return "widgets" }
-func (f *failingSubdomain) Type() string                    { return "widget" }
-func (f *failingSubdomain) EntityIDPattern() *regexp.Regexp { return regexp.MustCompile(`^widget-(\d+)\.json$`) }
+func (f *failingSubdomain) Name() string { return "broken" }
+func (f *failingSubdomain) Path() string { return "widgets" }
+func (f *failingSubdomain) Type() string { return "widget" }
+func (f *failingSubdomain) EntityIDPattern() *regexp.Regexp {
+	return regexp.MustCompile(`^widget-(\d+)\.json$`)
+}
 func (f *failingSubdomain) DeleteAllForTenant(_ *gorm.DB) (int64, error) { return 0, nil }
 func (f *failingSubdomain) Decode(_ []byte) (widgetAttrs, error) {
 	return widgetAttrs{}, errBad
 }
+
 func (f *failingSubdomain) Build(_ tenant.Model, _ string, _ widgetAttrs) ([]widgetRow, error) {
 	return nil, nil
 }

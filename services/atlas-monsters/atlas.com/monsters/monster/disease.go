@@ -1,6 +1,9 @@
 package monster
 
 import (
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
@@ -8,8 +11,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
 )
 
 // debuffWireValue returns the nValue to ship in an APPLY command for a mob
@@ -56,8 +57,7 @@ type applyDiseaseBody struct {
 	Changes  []statChange `json:"changes"`
 }
 
-type cancelAllBuffsBody struct {
-}
+type cancelAllBuffsBody struct{}
 
 type statChange struct {
 	Type   string `json:"type"`

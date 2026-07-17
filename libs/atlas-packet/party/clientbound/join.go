@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/party"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 // packet-audit:fname CWvsContext::OnPartyResult#Join
@@ -23,11 +24,11 @@ func NewJoin(mode byte, partyId uint32, targetName string, members []party.Party
 	return Join{mode: mode, partyId: partyId, targetName: targetName, members: members, leaderId: leaderId}
 }
 
-func (m Join) Mode() byte             { return m.mode }
-func (m Join) PartyId() uint32        { return m.partyId }
-func (m Join) TargetName() string     { return m.targetName }
+func (m Join) Mode() byte                   { return m.mode }
+func (m Join) PartyId() uint32              { return m.partyId }
+func (m Join) TargetName() string           { return m.targetName }
 func (m Join) Members() []party.PartyMember { return m.members }
-func (m Join) LeaderId() uint32       { return m.leaderId }
+func (m Join) LeaderId() uint32             { return m.leaderId }
 
 func (m Join) Operation() string {
 	return PartyOperationWriter

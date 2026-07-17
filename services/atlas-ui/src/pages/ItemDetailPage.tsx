@@ -40,7 +40,13 @@ export function ItemDetailPage() {
   });
 
   const detailQuery = useQuery({
-    queryKey: ["items", "detail", activeTenant?.id ?? "no-tenant", itemId, itemType],
+    queryKey: [
+      "items",
+      "detail",
+      activeTenant?.id ?? "no-tenant",
+      itemId,
+      itemType,
+    ],
     queryFn: () => itemsService.getItemDetail(itemId),
     enabled: !!activeTenant && !!itemId && itemType !== "Unknown",
     staleTime: 10 * 60 * 1000,
@@ -48,8 +54,13 @@ export function ItemDetailPage() {
 
   const { data: drops, isLoading: dropsLoading } = useItemDrops(itemId);
   const { data: sellers, isLoading: sellersLoading } = useItemSellers(itemId);
-  const { data: commodities, isLoading: commoditiesLoading } = useItemCommodities(itemId);
-  const { data: recipes, isLoading: recipesLoading, error: recipesError } = useItemRecipes(itemId);
+  const { data: commodities, isLoading: commoditiesLoading } =
+    useItemCommodities(itemId);
+  const {
+    data: recipes,
+    isLoading: recipesLoading,
+    error: recipesError,
+  } = useItemRecipes(itemId);
 
   const itemName = nameQuery.data ?? null;
   const detail = detailQuery.data ?? null;
@@ -93,7 +104,11 @@ export function ItemDetailPage() {
         price={price}
       />
 
-      <RecipesByItemCard recipes={recipes} isLoading={recipesLoading} error={recipesError} />
+      <RecipesByItemCard
+        recipes={recipes}
+        isLoading={recipesLoading}
+        error={recipesError}
+      />
 
       <Card>
         <CardHeader>
@@ -103,7 +118,9 @@ export function ItemDetailPage() {
         </CardHeader>
         <CardContent>
           {dropsLoading ? (
-            <p className="text-sm text-muted-foreground">Loading drop sources...</p>
+            <p className="text-sm text-muted-foreground">
+              Loading drop sources...
+            </p>
           ) : sortedDrops.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
               {sortedDrops.map((drop) => (
@@ -111,7 +128,9 @@ export function ItemDetailPage() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">No monsters drop this item.</p>
+            <p className="text-sm text-muted-foreground">
+              No monsters drop this item.
+            </p>
           )}
         </CardContent>
       </Card>
@@ -151,9 +170,10 @@ function SoldByCard({
   const hasCommodities = commodities && commodities.length > 0;
   const loading = sellersLoading || commoditiesLoading;
 
-  const title = hasSellers || hasCommodities
-    ? `Sold By (NPC: ${sellers?.length ?? 0}, Cash Shop: ${commodities?.length ?? 0})`
-    : "Sold By";
+  const title =
+    hasSellers || hasCommodities
+      ? `Sold By (NPC: ${sellers?.length ?? 0}, Cash Shop: ${commodities?.length ?? 0})`
+      : "Sold By";
 
   return (
     <Card>
@@ -164,7 +184,9 @@ function SoldByCard({
         {loading ? (
           <p className="text-sm text-muted-foreground">Loading shop data...</p>
         ) : !hasSellers && !hasCommodities ? (
-          <p className="text-sm text-muted-foreground">No shops or commodities sell this item.</p>
+          <p className="text-sm text-muted-foreground">
+            No shops or commodities sell this item.
+          </p>
         ) : (
           <>
             {hasSellers && (
@@ -174,7 +196,10 @@ function SoldByCard({
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {sellers!.map((commodity) => (
-                    <ItemNpcShopWidget key={commodity.id} commodity={commodity} />
+                    <ItemNpcShopWidget
+                      key={commodity.id}
+                      commodity={commodity}
+                    />
                   ))}
                 </div>
               </div>
@@ -186,7 +211,10 @@ function SoldByCard({
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {commodities!.map((commodity) => (
-                    <ItemCashShopWidget key={commodity.id} commodity={commodity} />
+                    <ItemCashShopWidget
+                      key={commodity.id}
+                      commodity={commodity}
+                    />
                   ))}
                 </div>
               </div>
@@ -203,25 +231,43 @@ function SoldByCard({
   );
 }
 
-function InfoField({ label, value, mono }: { label: string; value: string | number | boolean; mono?: boolean }) {
-  const displayValue = typeof value === "boolean" ? (value ? "Yes" : "No") : String(value);
+function InfoField({
+  label,
+  value,
+  mono,
+}: {
+  label: string;
+  value: string | number | boolean;
+  mono?: boolean;
+}) {
+  const displayValue =
+    typeof value === "boolean" ? (value ? "Yes" : "No") : String(value);
   return (
     <div className="space-y-1">
       <p className="text-sm text-muted-foreground">{label}</p>
-      <p className={`text-sm font-medium ${mono ? "font-mono" : ""}`}>{displayValue}</p>
+      <p className={`text-sm font-medium ${mono ? "font-mono" : ""}`}>
+        {displayValue}
+      </p>
     </div>
   );
 }
 
 function renderTypeSpecificSection(type: ItemType, detail: ItemDetailData) {
   switch (type) {
-    case "Equipment": return <EquipmentSection data={detail as EquipmentData} />;
-    case "Consumable": return <ConsumableSection data={detail as ConsumableData} />;
-    case "Setup": return <SetupSection data={detail as SetupData} />;
-    case "Etc": return <EtcSection data={detail as EtcData} />;
-    case "Cash": return <CashSection data={detail as CashItemData} />;
-    case "Pet": return <PetSection data={detail as PetData} />;
-    default: return null;
+    case "Equipment":
+      return <EquipmentSection data={detail as EquipmentData} />;
+    case "Consumable":
+      return <ConsumableSection data={detail as ConsumableData} />;
+    case "Setup":
+      return <SetupSection data={detail as SetupData} />;
+    case "Etc":
+      return <EtcSection data={detail as EtcData} />;
+    case "Cash":
+      return <CashSection data={detail as CashItemData} />;
+    case "Pet":
+      return <PetSection data={detail as PetData} />;
+    default:
+      return null;
   }
 }
 
@@ -387,7 +433,11 @@ function CashSection({ data }: { data: CashItemData }) {
           <CardContent>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {a.timeWindows.map((tw, idx) => (
-                <InfoField key={idx} label={tw.day} value={`${tw.startHour}:00 - ${tw.endHour}:00`} />
+                <InfoField
+                  key={idx}
+                  label={tw.day}
+                  value={`${tw.startHour}:00 - ${tw.endHour}:00`}
+                />
               ))}
             </div>
           </CardContent>

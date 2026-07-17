@@ -1,14 +1,15 @@
 package invite
 
 import (
+	"atlas-saga-orchestrator/kafka/producer"
 	"context"
 
 	invite2 "atlas-saga-orchestrator/kafka/message/invite"
-	"atlas-saga-orchestrator/kafka/producer"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 type Processor interface {

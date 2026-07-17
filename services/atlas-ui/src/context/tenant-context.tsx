@@ -1,181 +1,209 @@
-import {createContext, type ReactNode, useCallback, useContext, useEffect, useRef, useState} from "react";
-import {useQueryClient} from "@tanstack/react-query";
-import {tenantsService} from "@/services/api";
-import {api} from "@/lib/api/client";
-import type {Tenant, TenantConfig} from "@/types/models/tenant";
-import {createErrorFromUnknown} from "@/types/api/errors";
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { tenantsService } from "@/services/api";
+import { api } from "@/lib/api/client";
+import type { Tenant, TenantConfig } from "@/types/models/tenant";
+import { createErrorFromUnknown } from "@/types/api/errors";
 
 type TenantContextType = {
-    tenants: Tenant[];
-    activeTenant: Tenant | null;
-    loading: boolean;
-    setActiveTenant: (tenant: Tenant) => void;
-    refreshTenants: () => Promise<void>;
-    refreshAndSelectTenant: (tenantId: string) => Promise<Tenant | null>;
-    fetchTenantConfiguration: (tenantId: string) => Promise<TenantConfig>;
+  tenants: Tenant[];
+  activeTenant: Tenant | null;
+  loading: boolean;
+  setActiveTenant: (tenant: Tenant) => void;
+  refreshTenants: () => Promise<void>;
+  refreshAndSelectTenant: (tenantId: string) => Promise<Tenant | null>;
+  fetchTenantConfiguration: (tenantId: string) => Promise<TenantConfig>;
 };
 
 // Create Context
 const TenantContext = createContext<TenantContextType | undefined>(undefined);
 
 // Provider Component
-export function TenantProvider({children}: { children: ReactNode }) {
-    const queryClient = useQueryClient();
-    const [activeTenant, setActiveTenantState] = useState<Tenant | null>(null);
-    const [tenants, setTenants] = useState<Tenant[]>([]);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [_error, setError] = useState<string | null>(null);
+export function TenantProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
+  const [activeTenant, setActiveTenantState] = useState<Tenant | null>(null);
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [_error, setError] = useState<string | null>(null);
 
-    const LOCAL_STORAGE_KEY = "activeTenantId";
+  const LOCAL_STORAGE_KEY = "activeTenantId";
 
-    // Centralise tenant wiring. `applyTenant` updates the API client tenant and
-    // clears the React Query cache exactly once per distinct tenant id. Called
-    // synchronously from the user-action handler (so headers are set BEFORE any
-    // tenant-keyed query can fetch) AND from the catch-all effect below (which
-    // covers programmatic switches: initial hydration, refreshTenants,
-    // refreshAndSelectTenant). Double calls per switch are idempotent — the
-    // same-id branch re-sets headers cheaply without a second cache clear.
-    const previousTenantRef = useRef<Tenant | null>(null);
+  // Centralise tenant wiring. `applyTenant` updates the API client tenant and
+  // clears the React Query cache exactly once per distinct tenant id. Called
+  // synchronously from the user-action handler (so headers are set BEFORE any
+  // tenant-keyed query can fetch) AND from the catch-all effect below (which
+  // covers programmatic switches: initial hydration, refreshTenants,
+  // refreshAndSelectTenant). Double calls per switch are idempotent — the
+  // same-id branch re-sets headers cheaply without a second cache clear.
+  const previousTenantRef = useRef<Tenant | null>(null);
 
-    const applyTenant = useCallback((tenant: Tenant | null) => {
-        // Initial null→null mount: nothing to wire, nothing to clear.
-        if (tenant === null && previousTenantRef.current === null) {
-            return;
-        }
-        // Same id (e.g. rename rehydrate): wire the fresh object, DO NOT clear.
-        if (previousTenantRef.current?.id === tenant?.id) {
-            previousTenantRef.current = tenant;
-            api.setTenant(tenant);
-            return;
-        }
+  const applyTenant = useCallback(
+    (tenant: Tenant | null) => {
+      // Initial null→null mount: nothing to wire, nothing to clear.
+      if (tenant === null && previousTenantRef.current === null) {
+        return;
+      }
+      // Same id (e.g. rename rehydrate): wire the fresh object, DO NOT clear.
+      if (previousTenantRef.current?.id === tenant?.id) {
         previousTenantRef.current = tenant;
         api.setTenant(tenant);
-        queryClient.clear();
-    }, [queryClient]);
+        return;
+      }
+      previousTenantRef.current = tenant;
+      api.setTenant(tenant);
+      queryClient.clear();
+    },
+    [queryClient],
+  );
 
-    // Catch-all for programmatic tenant changes that bypass setActiveTenant
-    // (initial hydration, refreshTenants, refreshAndSelectTenant).
-    useEffect(() => {
-        applyTenant(activeTenant);
-    }, [activeTenant, applyTenant]);
+  // Catch-all for programmatic tenant changes that bypass setActiveTenant
+  // (initial hydration, refreshTenants, refreshAndSelectTenant).
+  useEffect(() => {
+    applyTenant(activeTenant);
+  }, [activeTenant, applyTenant]);
 
-    // Fetch tenants data (you can replace this with your actual data fetching logic)
-    useEffect(() => {
-        tenantsService.getAllTenants()
-            .then((data) => {
-                setTenants(data);
+  // Fetch tenants data (you can replace this with your actual data fetching logic)
+  useEffect(() => {
+    tenantsService
+      .getAllTenants()
+      .then((data) => {
+        setTenants(data);
 
-                const storedId = localStorage.getItem(LOCAL_STORAGE_KEY);
-                const storedTenant = data.find((t) => t.id === storedId);
+        const storedId = localStorage.getItem(LOCAL_STORAGE_KEY);
+        const storedTenant = data.find((t) => t.id === storedId);
 
-                // Prefer localStorage value, fallback to first tenant
-                setActiveTenantState(storedTenant ?? data[0] ?? null);
-            })
-            .catch((err: unknown) => {
-                const errorInfo = createErrorFromUnknown(err, "Failed to fetch tenants");
-                setError(errorInfo.message);
-            })
-            .finally(() => setLoading(false));
-    }, []);
+        // Prefer localStorage value, fallback to first tenant
+        setActiveTenantState(storedTenant ?? data[0] ?? null);
+      })
+      .catch((err: unknown) => {
+        const errorInfo = createErrorFromUnknown(
+          err,
+          "Failed to fetch tenants",
+        );
+        setError(errorInfo.message);
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
-    // User-action handler: wire the API client + clear the cache SYNCHRONOUSLY,
-    // before the state update re-renders the grids — eliminating the
-    // parent-effect-vs-child-fetch header race.
-    const setActiveTenant = (tenant: Tenant) => {
-        applyTenant(tenant);
-        setActiveTenantState(tenant);
-        localStorage.setItem(LOCAL_STORAGE_KEY, tenant.id);
-    };
+  // User-action handler: wire the API client + clear the cache SYNCHRONOUSLY,
+  // before the state update re-renders the grids — eliminating the
+  // parent-effect-vs-child-fetch header race.
+  const setActiveTenant = (tenant: Tenant) => {
+    applyTenant(tenant);
+    setActiveTenantState(tenant);
+    localStorage.setItem(LOCAL_STORAGE_KEY, tenant.id);
+  };
 
-    // Function to refresh tenants list
-    const refreshTenants = async () => {
-        try {
-            setLoading(true);
-            setError(null); // Clear previous errors
-            const data = await tenantsService.getAllTenants();
-            setTenants(data);
+  // Function to refresh tenants list
+  const refreshTenants = async () => {
+    try {
+      setLoading(true);
+      setError(null); // Clear previous errors
+      const data = await tenantsService.getAllTenants();
+      setTenants(data);
 
-            if (activeTenant) {
-                const refreshedActive = data.find(t => t.id === activeTenant.id);
-                if (refreshedActive) {
-                    // Rehydrate the active tenant so attribute changes (e.g. rename)
-                    // propagate without a reload. Same id → id-compare effect skips
-                    // the query-cache clear.
-                    setActiveTenantState(refreshedActive);
-                } else {
-                    // Active tenant was deleted; fall back to stored/first.
-                    const storedId = localStorage.getItem(LOCAL_STORAGE_KEY);
-                    const storedTenant = data.find((t) => t.id === storedId);
-                    setActiveTenantState(storedTenant ?? data[0] ?? null);
-                }
-            }
-        } catch (err: unknown) {
-            const errorInfo = createErrorFromUnknown(err, "Failed to refresh tenants");
-            setError(errorInfo.message);
-            console.error("Failed to refresh tenants:", errorInfo);
-        } finally {
-            setLoading(false);
+      if (activeTenant) {
+        const refreshedActive = data.find((t) => t.id === activeTenant.id);
+        if (refreshedActive) {
+          // Rehydrate the active tenant so attribute changes (e.g. rename)
+          // propagate without a reload. Same id → id-compare effect skips
+          // the query-cache clear.
+          setActiveTenantState(refreshedActive);
+        } else {
+          // Active tenant was deleted; fall back to stored/first.
+          const storedId = localStorage.getItem(LOCAL_STORAGE_KEY);
+          const storedTenant = data.find((t) => t.id === storedId);
+          setActiveTenantState(storedTenant ?? data[0] ?? null);
         }
-    };
+      }
+    } catch (err: unknown) {
+      const errorInfo = createErrorFromUnknown(
+        err,
+        "Failed to refresh tenants",
+      );
+      setError(errorInfo.message);
+      console.error("Failed to refresh tenants:", errorInfo);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    // Function to refresh tenants and select a specific tenant by ID
-    // Useful after creating a new tenant
-    const refreshAndSelectTenant = async (tenantId: string): Promise<Tenant | null> => {
-        try {
-            setLoading(true);
-            setError(null);
-            const data = await tenantsService.getAllTenants();
-            setTenants(data);
+  // Function to refresh tenants and select a specific tenant by ID
+  // Useful after creating a new tenant
+  const refreshAndSelectTenant = async (
+    tenantId: string,
+  ): Promise<Tenant | null> => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await tenantsService.getAllTenants();
+      setTenants(data);
 
-            // Find and select the specified tenant
-            const newTenant = data.find(t => t.id === tenantId);
-            if (newTenant) {
-                setActiveTenantState(newTenant);
-                localStorage.setItem(LOCAL_STORAGE_KEY, newTenant.id);
-                return newTenant;
-            }
+      // Find and select the specified tenant
+      const newTenant = data.find((t) => t.id === tenantId);
+      if (newTenant) {
+        setActiveTenantState(newTenant);
+        localStorage.setItem(LOCAL_STORAGE_KEY, newTenant.id);
+        return newTenant;
+      }
 
-            return null;
-        } catch (err: unknown) {
-            const errorInfo = createErrorFromUnknown(err, "Failed to refresh tenants");
-            setError(errorInfo.message);
-            console.error("Failed to refresh tenants:", errorInfo);
-            return null;
-        } finally {
-            setLoading(false);
-        }
-    };
+      return null;
+    } catch (err: unknown) {
+      const errorInfo = createErrorFromUnknown(
+        err,
+        "Failed to refresh tenants",
+      );
+      setError(errorInfo.message);
+      console.error("Failed to refresh tenants:", errorInfo);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    // Function to fetch a tenant configuration
-    const fetchTenantConfig = async (tenantId: string): Promise<TenantConfig> => {
-        try {
-            return await tenantsService.getTenantConfigurationById(tenantId);
-        } catch (err: unknown) {
-            const errorInfo = createErrorFromUnknown(err, `Failed to fetch configuration for tenant ${tenantId}`);
-            throw errorInfo;
-        }
-    };
+  // Function to fetch a tenant configuration
+  const fetchTenantConfig = async (tenantId: string): Promise<TenantConfig> => {
+    try {
+      return await tenantsService.getTenantConfigurationById(tenantId);
+    } catch (err: unknown) {
+      const errorInfo = createErrorFromUnknown(
+        err,
+        `Failed to fetch configuration for tenant ${tenantId}`,
+      );
+      throw errorInfo;
+    }
+  };
 
-    return (
-        <TenantContext.Provider value={{
-            tenants,
-            activeTenant,
-            loading,
-            setActiveTenant,
-            refreshTenants,
-            refreshAndSelectTenant,
-            fetchTenantConfiguration: fetchTenantConfig
-        }}>
-            {children}
-        </TenantContext.Provider>
-    );
+  return (
+    <TenantContext.Provider
+      value={{
+        tenants,
+        activeTenant,
+        loading,
+        setActiveTenant,
+        refreshTenants,
+        refreshAndSelectTenant,
+        fetchTenantConfiguration: fetchTenantConfig,
+      }}
+    >
+      {children}
+    </TenantContext.Provider>
+  );
 }
 
 // Hook to use tenants context
 export function useTenant() {
-    const context = useContext(TenantContext);
-    if (!context) {
-        throw new Error("useTenant must be used within a TenantProvider");
-    }
-    return context;
+  const context = useContext(TenantContext);
+  if (!context) {
+    throw new Error("useTenant must be used within a TenantProvider");
+  }
+  return context;
 }

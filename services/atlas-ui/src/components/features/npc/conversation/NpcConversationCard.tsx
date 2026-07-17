@@ -37,7 +37,7 @@ export function NpcConversationCard({
 
   const [selectedStateId, setSelectedStateId] = useState<string | null>(() => {
     const start = draft.attributes.startState;
-    return draft.attributes.states.some(s => s.id === start) ? start : null;
+    return draft.attributes.states.some((s) => s.id === start) ? start : null;
   });
 
   const handleDraftChange = (next: Conversation) => {

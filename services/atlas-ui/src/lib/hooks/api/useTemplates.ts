@@ -1,6 +1,6 @@
 /**
  * React Query hooks for template management
- * 
+ *
  * Provides optimized data fetching, caching, and mutation capabilities for:
  * - Basic template operations (CRUD)
  * - Template searching and filtering by region, version
@@ -10,29 +10,63 @@
  * - Template cloning and export functionality
  */
 
-import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
-import { templatesService } from '@/services/api/templates.service';
-import type { Template, TemplateAttributes } from '@/types/models/template';
-import type { ServiceOptions, QueryOptions, BatchResult } from '@/lib/api/query-params';
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type UseMutationResult,
+  type UseQueryResult,
+} from "@tanstack/react-query";
+import { templatesService } from "@/services/api/templates.service";
+import type { Template, TemplateAttributes } from "@/types/models/template";
+import type {
+  ServiceOptions,
+  QueryOptions,
+  BatchResult,
+} from "@/lib/api/query-params";
 
 // Query keys for consistent cache management
 export const templateKeys = {
-  all: ['templates'] as const,
-  lists: () => [...templateKeys.all, 'list'] as const,
+  all: ["templates"] as const,
+  lists: () => [...templateKeys.all, "list"] as const,
   list: (options?: QueryOptions) => [...templateKeys.lists(), options] as const,
-  details: () => [...templateKeys.all, 'detail'] as const,
+  details: () => [...templateKeys.all, "detail"] as const,
   detail: (id: string) => [...templateKeys.details(), id] as const,
-  
+
   // Specialized query keys for filtering
-  byRegion: (region: string, options?: QueryOptions) => [...templateKeys.all, 'region', region, options] as const,
-  byVersion: (majorVersion: number, minorVersion?: number, options?: QueryOptions) => 
-    [...templateKeys.all, 'version', majorVersion, minorVersion, options] as const,
-  byRegionAndVersion: (region: string, majorVersion: number, minorVersion?: number, options?: QueryOptions) => 
-    [...templateKeys.all, 'regionVersion', region, majorVersion, minorVersion, options] as const,
-    
+  byRegion: (region: string, options?: QueryOptions) =>
+    [...templateKeys.all, "region", region, options] as const,
+  byVersion: (
+    majorVersion: number,
+    minorVersion?: number,
+    options?: QueryOptions,
+  ) =>
+    [
+      ...templateKeys.all,
+      "version",
+      majorVersion,
+      minorVersion,
+      options,
+    ] as const,
+  byRegionAndVersion: (
+    region: string,
+    majorVersion: number,
+    minorVersion?: number,
+    options?: QueryOptions,
+  ) =>
+    [
+      ...templateKeys.all,
+      "regionVersion",
+      region,
+      majorVersion,
+      minorVersion,
+      options,
+    ] as const,
+
   // Utility query keys
-  validation: (id: string) => [...templateKeys.all, 'validation', id] as const,
-  export: (format: string, options?: QueryOptions) => [...templateKeys.all, 'export', format, options] as const,
+  validation: (id: string) => [...templateKeys.all, "validation", id] as const,
+  export: (format: string, options?: QueryOptions) =>
+    [...templateKeys.all, "export", format, options] as const,
 };
 
 // ============================================================================
@@ -42,7 +76,9 @@ export const templateKeys = {
 /**
  * Hook to fetch all templates with automatic sorting
  */
-export function useTemplates(options?: QueryOptions): UseQueryResult<Template[], Error> {
+export function useTemplates(
+  options?: QueryOptions,
+): UseQueryResult<Template[], Error> {
   return useQuery({
     queryKey: templateKeys.list(options),
     queryFn: () => templatesService.getAll({ ...options, useCache: false }),
@@ -53,10 +89,14 @@ export function useTemplates(options?: QueryOptions): UseQueryResult<Template[],
 /**
  * Hook to fetch a specific template by ID
  */
-export function useTemplate(id: string, options?: ServiceOptions): UseQueryResult<Template, Error> {
+export function useTemplate(
+  id: string,
+  options?: ServiceOptions,
+): UseQueryResult<Template, Error> {
   return useQuery({
     queryKey: templateKeys.detail(id),
-    queryFn: () => templatesService.getById(id, { ...options, useCache: false }),
+    queryFn: () =>
+      templatesService.getById(id, { ...options, useCache: false }),
     enabled: !!id,
     gcTime: 10 * 60 * 1000,
   });
@@ -65,9 +105,12 @@ export function useTemplate(id: string, options?: ServiceOptions): UseQueryResul
 /**
  * Hook to check if a template exists
  */
-export function useTemplateExists(id: string, options?: ServiceOptions): UseQueryResult<boolean, Error> {
+export function useTemplateExists(
+  id: string,
+  options?: ServiceOptions,
+): UseQueryResult<boolean, Error> {
   return useQuery({
-    queryKey: [...templateKeys.details(), id, 'exists'],
+    queryKey: [...templateKeys.details(), id, "exists"],
     queryFn: () => templatesService.exists(id, { ...options, useCache: false }),
     enabled: !!id,
     gcTime: 5 * 60 * 1000,
@@ -77,30 +120,46 @@ export function useTemplateExists(id: string, options?: ServiceOptions): UseQuer
 /**
  * Hook to create a new template
  */
-export function useCreateTemplate(): UseMutationResult<Template, Error, TemplateAttributes> {
+export function useCreateTemplate(): UseMutationResult<
+  Template,
+  Error,
+  TemplateAttributes
+> {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (attributes: TemplateAttributes) => templatesService.create(attributes),
+    mutationFn: (attributes: TemplateAttributes) =>
+      templatesService.create(attributes),
     onSuccess: (newTemplate) => {
       // Invalidate and refetch template lists
       queryClient.invalidateQueries({ queryKey: templateKeys.lists() });
-      
+
       // Add the new template to the cache
-      queryClient.setQueryData(templateKeys.detail(newTemplate.id), newTemplate);
-      
+      queryClient.setQueryData(
+        templateKeys.detail(newTemplate.id),
+        newTemplate,
+      );
+
       // Invalidate region-based queries that might include this template
-      queryClient.invalidateQueries({ 
-        queryKey: [...templateKeys.all, 'region', newTemplate.attributes.region] 
+      queryClient.invalidateQueries({
+        queryKey: [
+          ...templateKeys.all,
+          "region",
+          newTemplate.attributes.region,
+        ],
       });
-      
+
       // Invalidate version-based queries
-      queryClient.invalidateQueries({ 
-        queryKey: [...templateKeys.all, 'version', newTemplate.attributes.majorVersion] 
+      queryClient.invalidateQueries({
+        queryKey: [
+          ...templateKeys.all,
+          "version",
+          newTemplate.attributes.majorVersion,
+        ],
       });
     },
     onError: (error) => {
-      console.error('Failed to create template:', error);
+      console.error("Failed to create template:", error);
     },
   });
 }
@@ -120,10 +179,12 @@ export function useUpdateTemplate(): UseMutationResult<
     onMutate: async ({ id, updates }) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: templateKeys.detail(id) });
-      
+
       // Snapshot the previous value
-      const previousTemplate = queryClient.getQueryData<Template>(templateKeys.detail(id));
-      
+      const previousTemplate = queryClient.getQueryData<Template>(
+        templateKeys.detail(id),
+      );
+
       // Optimistically update the cache if we have previous data
       if (previousTemplate) {
         const optimisticTemplate: Template = {
@@ -132,28 +193,37 @@ export function useUpdateTemplate(): UseMutationResult<
         };
         queryClient.setQueryData(templateKeys.detail(id), optimisticTemplate);
       }
-      
+
       return { previousTemplate };
     },
     onError: (error, variables, context) => {
       // Revert optimistic update on error
       if (context?.previousTemplate) {
-        queryClient.setQueryData(templateKeys.detail(variables.id), context.previousTemplate);
+        queryClient.setQueryData(
+          templateKeys.detail(variables.id),
+          context.previousTemplate,
+        );
       }
-      console.error('Failed to update template:', error);
+      console.error("Failed to update template:", error);
     },
     onSettled: (data, _error, variables) => {
       // Invalidate and refetch relevant queries
-      queryClient.invalidateQueries({ queryKey: templateKeys.detail(variables.id) });
+      queryClient.invalidateQueries({
+        queryKey: templateKeys.detail(variables.id),
+      });
       queryClient.invalidateQueries({ queryKey: templateKeys.lists() });
-      
+
       // Invalidate filtered queries if the updated fields might affect them
       if (data) {
-        queryClient.invalidateQueries({ 
-          queryKey: [...templateKeys.all, 'region', data.attributes.region] 
+        queryClient.invalidateQueries({
+          queryKey: [...templateKeys.all, "region", data.attributes.region],
         });
-        queryClient.invalidateQueries({ 
-          queryKey: [...templateKeys.all, 'version', data.attributes.majorVersion] 
+        queryClient.invalidateQueries({
+          queryKey: [
+            ...templateKeys.all,
+            "version",
+            data.attributes.majorVersion,
+          ],
         });
       }
     },
@@ -174,13 +244,16 @@ export function usePatchTemplate(): UseMutationResult<
     mutationFn: ({ id, updates }) => templatesService.patch(id, updates),
     onSuccess: (updatedTemplate) => {
       // Update cache with the new template data
-      queryClient.setQueryData(templateKeys.detail(updatedTemplate.id), updatedTemplate);
-      
+      queryClient.setQueryData(
+        templateKeys.detail(updatedTemplate.id),
+        updatedTemplate,
+      );
+
       // Invalidate lists to reflect changes
       queryClient.invalidateQueries({ queryKey: templateKeys.lists() });
     },
     onError: (error) => {
-      console.error('Failed to patch template:', error);
+      console.error("Failed to patch template:", error);
     },
   });
 }
@@ -188,7 +261,11 @@ export function usePatchTemplate(): UseMutationResult<
 /**
  * Hook to delete a template
  */
-export function useDeleteTemplate(): UseMutationResult<void, Error, { id: string }> {
+export function useDeleteTemplate(): UseMutationResult<
+  void,
+  Error,
+  { id: string }
+> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -196,21 +273,26 @@ export function useDeleteTemplate(): UseMutationResult<void, Error, { id: string
     onMutate: async ({ id }) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: templateKeys.detail(id) });
-      
+
       // Snapshot the previous value
-      const previousTemplate = queryClient.getQueryData<Template>(templateKeys.detail(id));
-      
+      const previousTemplate = queryClient.getQueryData<Template>(
+        templateKeys.detail(id),
+      );
+
       // Optimistically remove from cache
       queryClient.removeQueries({ queryKey: templateKeys.detail(id) });
-      
+
       return { previousTemplate };
     },
     onError: (error, variables, context) => {
       // Restore the template to cache on error
       if (context?.previousTemplate) {
-        queryClient.setQueryData(templateKeys.detail(variables.id), context.previousTemplate);
+        queryClient.setQueryData(
+          templateKeys.detail(variables.id),
+          context.previousTemplate,
+        );
       }
-      console.error('Failed to delete template:', error);
+      console.error("Failed to delete template:", error);
     },
     onSettled: () => {
       // Invalidate template lists
@@ -234,18 +316,19 @@ export function useCreateTemplatesBatch(): UseMutationResult<
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ templates, options }) => templatesService.createBatch(templates, options),
+    mutationFn: ({ templates, options }) =>
+      templatesService.createBatch(templates, options),
     onSuccess: (result) => {
       // Invalidate template lists
       queryClient.invalidateQueries({ queryKey: templateKeys.lists() });
-      
+
       // Add successful templates to individual caches
-      result.successes.forEach(template => {
+      result.successes.forEach((template) => {
         queryClient.setQueryData(templateKeys.detail(template.id), template);
       });
     },
     onError: (error) => {
-      console.error('Failed to create templates batch:', error);
+      console.error("Failed to create templates batch:", error);
     },
   });
 }
@@ -256,23 +339,27 @@ export function useCreateTemplatesBatch(): UseMutationResult<
 export function useUpdateTemplatesBatch(): UseMutationResult<
   BatchResult<Template>,
   Error,
-  { updates: Array<{ id: string; data: Partial<TemplateAttributes> }>; options?: ServiceOptions }
+  {
+    updates: Array<{ id: string; data: Partial<TemplateAttributes> }>;
+    options?: ServiceOptions;
+  }
 > {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ updates, options }) => templatesService.updateBatch(updates, options),
+    mutationFn: ({ updates, options }) =>
+      templatesService.updateBatch(updates, options),
     onSuccess: (result) => {
       // Update caches for successful updates
-      result.successes.forEach(template => {
+      result.successes.forEach((template) => {
         queryClient.setQueryData(templateKeys.detail(template.id), template);
       });
-      
+
       // Invalidate lists
       queryClient.invalidateQueries({ queryKey: templateKeys.lists() });
     },
     onError: (error) => {
-      console.error('Failed to update templates batch:', error);
+      console.error("Failed to update templates batch:", error);
     },
   });
 }
@@ -288,25 +375,26 @@ export function useDeleteTemplatesBatch(): UseMutationResult<
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ ids, options }) => templatesService.deleteBatch(ids, options),
+    mutationFn: ({ ids, options }) =>
+      templatesService.deleteBatch(ids, options),
     onMutate: async ({ ids }) => {
       // Cancel queries for all templates being deleted
-      const cancelPromises = ids.map(id => 
-        queryClient.cancelQueries({ queryKey: templateKeys.detail(id) })
+      const cancelPromises = ids.map((id) =>
+        queryClient.cancelQueries({ queryKey: templateKeys.detail(id) }),
       );
       await Promise.all(cancelPromises);
-      
+
       // Snapshot previous values
-      const previousTemplates = ids.map(id => ({
+      const previousTemplates = ids.map((id) => ({
         id,
-        template: queryClient.getQueryData<Template>(templateKeys.detail(id))
+        template: queryClient.getQueryData<Template>(templateKeys.detail(id)),
       }));
-      
+
       // Optimistically remove from caches
-      ids.forEach(id => {
+      ids.forEach((id) => {
         queryClient.removeQueries({ queryKey: templateKeys.detail(id) });
       });
-      
+
       return { previousTemplates };
     },
     onError: (error, _variables, context) => {
@@ -318,7 +406,7 @@ export function useDeleteTemplatesBatch(): UseMutationResult<
           }
         });
       }
-      console.error('Failed to delete templates batch:', error);
+      console.error("Failed to delete templates batch:", error);
     },
     onSettled: () => {
       // Invalidate template lists
@@ -334,10 +422,14 @@ export function useDeleteTemplatesBatch(): UseMutationResult<
 /**
  * Hook to fetch templates by region
  */
-export function useTemplatesByRegion(region: string, options?: QueryOptions): UseQueryResult<Template[], Error> {
+export function useTemplatesByRegion(
+  region: string,
+  options?: QueryOptions,
+): UseQueryResult<Template[], Error> {
   return useQuery({
     queryKey: templateKeys.byRegion(region, options),
-    queryFn: () => templatesService.getByRegion(region, { ...options, useCache: false }),
+    queryFn: () =>
+      templatesService.getByRegion(region, { ...options, useCache: false }),
     enabled: !!region,
     gcTime: 10 * 60 * 1000,
   });
@@ -349,11 +441,15 @@ export function useTemplatesByRegion(region: string, options?: QueryOptions): Us
 export function useTemplatesByVersion(
   majorVersion: number,
   minorVersion?: number,
-  options?: QueryOptions
+  options?: QueryOptions,
 ): UseQueryResult<Template[], Error> {
   return useQuery({
     queryKey: templateKeys.byVersion(majorVersion, minorVersion, options),
-    queryFn: () => templatesService.getByVersion(majorVersion, minorVersion, { ...options, useCache: false }),
+    queryFn: () =>
+      templatesService.getByVersion(majorVersion, minorVersion, {
+        ...options,
+        useCache: false,
+      }),
     enabled: majorVersion >= 0,
     gcTime: 10 * 60 * 1000,
   });
@@ -366,11 +462,22 @@ export function useTemplatesByRegionAndVersion(
   region: string,
   majorVersion: number,
   minorVersion?: number,
-  options?: QueryOptions
+  options?: QueryOptions,
 ): UseQueryResult<Template[], Error> {
   return useQuery({
-    queryKey: templateKeys.byRegionAndVersion(region, majorVersion, minorVersion, options),
-    queryFn: () => templatesService.getByRegionAndVersion(region, majorVersion, minorVersion, { ...options, useCache: false }),
+    queryKey: templateKeys.byRegionAndVersion(
+      region,
+      majorVersion,
+      minorVersion,
+      options,
+    ),
+    queryFn: () =>
+      templatesService.getByRegionAndVersion(
+        region,
+        majorVersion,
+        minorVersion,
+        { ...options, useCache: false },
+      ),
     enabled: !!region && majorVersion >= 0,
     gcTime: 10 * 60 * 1000,
   });
@@ -383,10 +490,9 @@ export function useTemplatesByRegionAndVersion(
 /**
  * Hook to validate template consistency
  */
-export function useValidateTemplate(templateId: string): UseQueryResult<
-  { isValid: boolean; errors: string[] },
-  Error
-> {
+export function useValidateTemplate(
+  templateId: string,
+): UseQueryResult<{ isValid: boolean; errors: string[] }, Error> {
   return useQuery({
     queryKey: templateKeys.validation(templateId),
     queryFn: () => templatesService.validateTemplateConsistency(templateId),
@@ -401,12 +507,13 @@ export function useValidateTemplate(templateId: string): UseQueryResult<
 export function useExportTemplates(): UseMutationResult<
   Blob,
   Error,
-  { format?: 'json' | 'csv'; options?: QueryOptions }
+  { format?: "json" | "csv"; options?: QueryOptions }
 > {
   return useMutation({
-    mutationFn: ({ format = 'json', options }) => templatesService.export(format, options),
+    mutationFn: ({ format = "json", options }) =>
+      templatesService.export(format, options),
     onError: (error) => {
-      console.error('Failed to export templates:', error);
+      console.error("Failed to export templates:", error);
     },
   });
 }
@@ -429,17 +536,22 @@ export function useCloneTemplate() {
  */
 export function useInvalidateTemplates() {
   const queryClient = useQueryClient();
-  
+
   return {
-    invalidateAll: () => queryClient.invalidateQueries({ queryKey: templateKeys.all }),
-    invalidateLists: () => queryClient.invalidateQueries({ queryKey: templateKeys.lists() }),
-    invalidateTemplate: (id: string) => queryClient.invalidateQueries({ queryKey: templateKeys.detail(id) }),
-    invalidateByRegion: (region: string) => queryClient.invalidateQueries({ 
-      queryKey: [...templateKeys.all, 'region', region] 
-    }),
-    invalidateByVersion: (majorVersion: number, minorVersion?: number) => queryClient.invalidateQueries({ 
-      queryKey: [...templateKeys.all, 'version', majorVersion, minorVersion] 
-    }),
+    invalidateAll: () =>
+      queryClient.invalidateQueries({ queryKey: templateKeys.all }),
+    invalidateLists: () =>
+      queryClient.invalidateQueries({ queryKey: templateKeys.lists() }),
+    invalidateTemplate: (id: string) =>
+      queryClient.invalidateQueries({ queryKey: templateKeys.detail(id) }),
+    invalidateByRegion: (region: string) =>
+      queryClient.invalidateQueries({
+        queryKey: [...templateKeys.all, "region", region],
+      }),
+    invalidateByVersion: (majorVersion: number, minorVersion?: number) =>
+      queryClient.invalidateQueries({
+        queryKey: [...templateKeys.all, "version", majorVersion, minorVersion],
+      }),
     clearCache: () => {
       queryClient.invalidateQueries({ queryKey: templateKeys.all });
       queryClient.invalidateQueries({ queryKey: templateKeys.all });
@@ -452,7 +564,7 @@ export function useInvalidateTemplates() {
  */
 export function useTemplateCacheStats() {
   return useQuery({
-    queryKey: [...templateKeys.all, 'cacheStats'],
+    queryKey: [...templateKeys.all, "cacheStats"],
     queryFn: () => ({ size: 0, entries: [] as Array<{ key: string }> }),
     gcTime: 60 * 1000, // 1 minute
   });

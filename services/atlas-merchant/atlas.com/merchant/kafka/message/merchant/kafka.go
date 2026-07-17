@@ -3,26 +3,27 @@ package merchant
 import (
 	"atlas-merchant/kafka/message/asset"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
 	EnvCommandTopic = "COMMAND_TOPIC_MERCHANT"
 
-	CommandPlaceShop        = "PLACE_SHOP"
-	CommandOpenShop         = "OPEN_SHOP"
-	CommandCloseShop        = "CLOSE_SHOP"
-	CommandEnterMaintenance = "ENTER_MAINTENANCE"
-	CommandExitMaintenance  = "EXIT_MAINTENANCE"
-	CommandAddListing       = "ADD_LISTING"
-	CommandRemoveListing    = "REMOVE_LISTING"
-	CommandUpdateListing    = "UPDATE_LISTING"
-	CommandPurchaseBundle   = "PURCHASE_BUNDLE"
-	CommandEnterShop        = "ENTER_SHOP"
-	CommandExitShop         = "EXIT_SHOP"
-	CommandSendMessage      = "SEND_MESSAGE"
+	CommandPlaceShop         = "PLACE_SHOP"
+	CommandOpenShop          = "OPEN_SHOP"
+	CommandCloseShop         = "CLOSE_SHOP"
+	CommandEnterMaintenance  = "ENTER_MAINTENANCE"
+	CommandExitMaintenance   = "EXIT_MAINTENANCE"
+	CommandAddListing        = "ADD_LISTING"
+	CommandRemoveListing     = "REMOVE_LISTING"
+	CommandUpdateListing     = "UPDATE_LISTING"
+	CommandPurchaseBundle    = "PURCHASE_BUNDLE"
+	CommandEnterShop         = "ENTER_SHOP"
+	CommandExitShop          = "EXIT_SHOP"
+	CommandSendMessage       = "SEND_MESSAGE"
 	CommandRetrieveFrederick = "RETRIEVE_FREDERICK"
 )
 
@@ -105,23 +106,22 @@ type CommandSendMessageBody struct {
 	Content string `json:"content"`
 }
 
-type CommandRetrieveFrederickBody struct {
-}
+type CommandRetrieveFrederickBody struct{}
 
 const (
 	EnvStatusEventTopic = "EVENT_TOPIC_MERCHANT_STATUS"
 
-	StatusEventShopOpened          = "SHOP_OPENED"
-	StatusEventShopClosed          = "SHOP_CLOSED"
-	StatusEventMaintenanceEntered  = "MAINTENANCE_ENTERED"
-	StatusEventMaintenanceExited   = "MAINTENANCE_EXITED"
-	StatusEventVisitorEntered      = "VISITOR_ENTERED"
-	StatusEventVisitorExited       = "VISITOR_EXITED"
-	StatusEventVisitorEjected      = "VISITOR_EJECTED"
-	StatusEventCapacityFull        = "CAPACITY_FULL"
-	StatusEventPurchaseFailed          = "PURCHASE_FAILED"
-	StatusEventFrederickNotification   = "FREDERICK_NOTIFICATION"
-	StatusEventMessageSent             = "MESSAGE_SENT"
+	StatusEventShopOpened            = "SHOP_OPENED"
+	StatusEventShopClosed            = "SHOP_CLOSED"
+	StatusEventMaintenanceEntered    = "MAINTENANCE_ENTERED"
+	StatusEventMaintenanceExited     = "MAINTENANCE_EXITED"
+	StatusEventVisitorEntered        = "VISITOR_ENTERED"
+	StatusEventVisitorExited         = "VISITOR_EXITED"
+	StatusEventVisitorEjected        = "VISITOR_EJECTED"
+	StatusEventCapacityFull          = "CAPACITY_FULL"
+	StatusEventPurchaseFailed        = "PURCHASE_FAILED"
+	StatusEventFrederickNotification = "FREDERICK_NOTIFICATION"
+	StatusEventMessageSent           = "MESSAGE_SENT"
 )
 
 type StatusEvent[E any] struct {

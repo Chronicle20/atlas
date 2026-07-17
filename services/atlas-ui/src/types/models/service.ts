@@ -3,20 +3,20 @@
  */
 
 // Service type discriminator
-export type ServiceType = 'login-service' | 'channel-service' | 'drops-service';
+export type ServiceType = "login-service" | "channel-service" | "drops-service";
 
 // Task configuration
 export interface TaskConfig {
   type: string;
-  interval: number;  // milliseconds
-  duration: number;  // milliseconds
+  interval: number; // milliseconds
+  duration: number; // milliseconds
 }
 
 // Predefined task types by service (must match backend expectations)
 export const TASK_TYPES_BY_SERVICE: Record<ServiceType, string[]> = {
-  'login-service': ['timeout'],
-  'channel-service': ['timeout', 'heartbeat'],
-  'drops-service': ['drop_expiration_task'],
+  "login-service": ["timeout"],
+  "channel-service": ["timeout", "heartbeat"],
+  "drops-service": ["drop_expiration_task"],
 };
 
 // Login service tenant configuration
@@ -27,12 +27,12 @@ export interface LoginTenant {
 
 // Channel service nested types
 export interface ChannelChannel {
-  id: number;  // byte 0-255
+  id: number; // byte 0-255
   port: number;
 }
 
 export interface ChannelWorld {
-  id: number;  // byte 0-255
+  id: number; // byte 0-255
   channels: ChannelChannel[];
 }
 
@@ -44,23 +44,24 @@ export interface ChannelTenant {
 
 // Service attributes (what comes inside the JSON:API attributes object)
 export interface LoginServiceAttributes {
-  type: 'login-service';
+  type: "login-service";
   tasks: TaskConfig[];
   tenants: LoginTenant[];
 }
 
 export interface ChannelServiceAttributes {
-  type: 'channel-service';
+  type: "channel-service";
   tasks: TaskConfig[];
   tenants: ChannelTenant[];
 }
 
 export interface DropsServiceAttributes {
-  type: 'drops-service';
+  type: "drops-service";
   tasks: TaskConfig[];
 }
 
-export type ServiceAttributes = LoginServiceAttributes | ChannelServiceAttributes | DropsServiceAttributes;
+export type ServiceAttributes =
+  LoginServiceAttributes | ChannelServiceAttributes | DropsServiceAttributes;
 
 // Full service models (with id from JSON:API)
 export interface LoginService {
@@ -83,20 +84,20 @@ export type Service = LoginService | ChannelService | DropsService;
 
 // Type guards
 export function isLoginService(service: Service): service is LoginService {
-  return service.attributes.type === 'login-service';
+  return service.attributes.type === "login-service";
 }
 
 export function isChannelService(service: Service): service is ChannelService {
-  return service.attributes.type === 'channel-service';
+  return service.attributes.type === "channel-service";
 }
 
 export function isDropsService(service: Service): service is DropsService {
-  return service.attributes.type === 'drops-service';
+  return service.attributes.type === "drops-service";
 }
 
 // Input types for create/update operations
 export interface CreateServiceInput {
-  id?: string;  // Optional UUID, will be generated if not provided
+  id?: string; // Optional UUID, will be generated if not provided
   type: ServiceType;
   tasks: TaskConfig[];
   tenants?: LoginTenant[] | ChannelTenant[];
@@ -111,12 +112,12 @@ export interface UpdateServiceInput {
 // Helper to get display name for service type
 export function getServiceTypeDisplayName(type: ServiceType): string {
   switch (type) {
-    case 'login-service':
-      return 'Login Service';
-    case 'channel-service':
-      return 'Channel Service';
-    case 'drops-service':
-      return 'Drops Service';
+    case "login-service":
+      return "Login Service";
+    case "channel-service":
+      return "Channel Service";
+    case "drops-service":
+      return "Drops Service";
     default:
       return type;
   }

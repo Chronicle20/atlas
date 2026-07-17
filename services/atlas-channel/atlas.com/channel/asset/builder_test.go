@@ -26,7 +26,6 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 		SetStrength(10).
 		SetDexterity(20).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -94,7 +93,6 @@ func TestCloneModel(t *testing.T) {
 	cloned, err := asset.CloneModel(original).
 		SetSlot(10).
 		Build()
-
 	if err != nil {
 		t.Fatalf("CloneModel().Build() unexpected error: %v", err)
 	}

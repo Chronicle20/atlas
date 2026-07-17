@@ -13,6 +13,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
@@ -20,15 +22,16 @@ import (
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
-	"github.com/sirupsen/logrus"
 )
 
 const serviceName = "atlas-monsters"
 
-var consumerGroupId = consumergroup.Resolve("Monster Registry Service")
-var dataEventsConsumerGroupId = consumergroup.Resolve("Monster Data Cache Invalidator")
+var (
+	consumerGroupId           = consumergroup.Resolve("Monster Registry Service")
+	dataEventsConsumerGroupId = consumergroup.Resolve("Monster Data Cache Invalidator")
+)
 
 type Server struct {
 	baseUrl string

@@ -1,13 +1,19 @@
 package summon
 
 import (
-	charmsg "atlas-summons/character"
 	buffmsg "atlas-summons/buff"
+	charmsg "atlas-summons/character"
 	"context"
 	"encoding/json"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/alicebob/miniredis/v2"
+	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -16,11 +22,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	objectid "github.com/Chronicle20/atlas/libs/atlas-object-id"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/alicebob/miniredis/v2"
-	"github.com/google/uuid"
-	goredis "github.com/redis/go-redis/v9"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
 )
 
 // capture records the topic and decoded payload of every emitted message so the

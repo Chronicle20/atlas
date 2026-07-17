@@ -15,7 +15,6 @@ func TestBuilderValidBuild(t *testing.T) {
 		SetHWID("ABC123").
 		SetSuccess(true).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Expected successful build, got error: %v", err)
 	}
@@ -71,7 +70,6 @@ func TestBuilderAllSetters(t *testing.T) {
 		SetFailureReason("INCORRECT_PASSWORD").
 		SetCreatedAt(now).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build failed: %v", err)
 	}
@@ -111,7 +109,6 @@ func TestBuilderAllSetters(t *testing.T) {
 
 func TestBuilderDefaults(t *testing.T) {
 	m, err := NewBuilder(uuid.New(), 1, "user").Build()
-
 	if err != nil {
 		t.Fatalf("Build failed: %v", err)
 	}

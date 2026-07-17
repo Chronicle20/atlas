@@ -1,18 +1,20 @@
 package macro
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"atlas-skills/kafka/message"
 	macro2 "atlas-skills/kafka/message/macro"
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
+
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // Processor defines the interface for macro processing operations

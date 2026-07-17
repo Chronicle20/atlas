@@ -10,19 +10,19 @@ import (
 // RestStateModel represents the REST model for conversation states
 // This is shared between NPC conversations and quest state machines
 type RestStateModel struct {
-	Id              string                     `json:"id"`                        // State ID
-	StateType       string                     `json:"type"`                      // State type
-	Dialogue        *RestDialogueModel         `json:"dialogue,omitempty"`        // Dialogue model (if type is dialogue)
-	GenericAction   *RestGenericActionModel    `json:"genericAction,omitempty"`   // Generic action model (if type is genericAction)
-	CraftAction     *RestCraftActionModel      `json:"craftAction,omitempty"`     // Craft action model (if type is craftAction)
-	TransportAction *RestTransportActionModel  `json:"transportAction,omitempty"` // Transport action model (if type is transportAction)
-	GachaponAction   *RestGachaponActionModel   `json:"gachaponAction,omitempty"`   // Gachapon action model (if type is gachaponAction)
+	Id                    string                          `json:"id"`                              // State ID
+	StateType             string                          `json:"type"`                            // State type
+	Dialogue              *RestDialogueModel              `json:"dialogue,omitempty"`              // Dialogue model (if type is dialogue)
+	GenericAction         *RestGenericActionModel         `json:"genericAction,omitempty"`         // Generic action model (if type is genericAction)
+	CraftAction           *RestCraftActionModel           `json:"craftAction,omitempty"`           // Craft action model (if type is craftAction)
+	TransportAction       *RestTransportActionModel       `json:"transportAction,omitempty"`       // Transport action model (if type is transportAction)
+	GachaponAction        *RestGachaponActionModel        `json:"gachaponAction,omitempty"`        // Gachapon action model (if type is gachaponAction)
 	PartyQuestAction      *RestPartyQuestActionModel      `json:"partyQuestAction,omitempty"`      // Party quest action model (if type is partyQuestAction)
 	PartyQuestBonusAction *RestPartyQuestBonusActionModel `json:"partyQuestBonusAction,omitempty"` // Party quest bonus action model (if type is partyQuestBonusAction)
 	ListSelection         *RestListSelectionModel         `json:"listSelection,omitempty"`         // List selection model (if type is listSelection)
-	AskNumber     *RestAskNumberModel    `json:"askNumber,omitempty"`     // Ask number model (if type is askNumber)
-	AskStyle                   *RestAskStyleModel                   `json:"askStyle,omitempty"`                   // Ask style model (if type is askStyle)
-	AskSlideMenu               *RestAskSlideMenuModel               `json:"askSlideMenu,omitempty"`               // Ask slide menu model (if type is askSlideMenu)
+	AskNumber             *RestAskNumberModel             `json:"askNumber,omitempty"`             // Ask number model (if type is askNumber)
+	AskStyle              *RestAskStyleModel              `json:"askStyle,omitempty"`              // Ask style model (if type is askStyle)
+	AskSlideMenu          *RestAskSlideMenuModel          `json:"askSlideMenu,omitempty"`          // Ask slide menu model (if type is askSlideMenu)
 }
 
 // GetID returns the resource ID
@@ -148,10 +148,10 @@ type RestGachaponActionModel struct {
 
 // RestPartyQuestActionModel represents the REST model for party quest action states
 type RestPartyQuestActionModel struct {
-	QuestId         string `json:"questId"`                    // Party quest definition ID
-	FailureState    string `json:"failureState"`               // General failure state ID
-	NotInPartyState string `json:"notInPartyState,omitempty"`  // State when character has no party
-	NotLeaderState  string `json:"notLeaderState,omitempty"`   // State when character isn't party leader
+	QuestId         string `json:"questId"`                   // Party quest definition ID
+	FailureState    string `json:"failureState"`              // General failure state ID
+	NotInPartyState string `json:"notInPartyState,omitempty"` // State when character has no party
+	NotLeaderState  string `json:"notLeaderState,omitempty"`  // State when character isn't party leader
 }
 
 // RestPartyQuestBonusActionModel represents the REST model for party quest bonus action states
@@ -186,10 +186,10 @@ type RestAskStyleModel struct {
 
 // RestAskSlideMenuModel represents the REST model for ask slide menu states
 type RestAskSlideMenuModel struct {
-	Title      string            `json:"title"`                 // Slide menu title
-	MenuType   uint32            `json:"menuType"`              // Menu type (determines UI style)
-	ContextKey string            `json:"contextKey,omitempty"`  // Context key (defaults to "selectedOption")
-	Choices    []RestChoiceModel `json:"choices,omitempty"`     // Menu choices
+	Title      string            `json:"title"`                // Slide menu title
+	MenuType   uint32            `json:"menuType"`             // Menu type (determines UI style)
+	ContextKey string            `json:"contextKey,omitempty"` // Context key (defaults to "selectedOption")
+	Choices    []RestChoiceModel `json:"choices,omitempty"`    // Menu choices
 }
 
 // RestOptionSetModel represents the REST model for option sets
@@ -715,7 +715,6 @@ func ExtractOutcome(r RestOutcomeModel) (OutcomeModel, error) {
 			SetStep(c.Step).
 			SetIncludeEquipped(c.IncludeEquipped).
 			Build()
-
 		if err != nil {
 			return OutcomeModel{}, err
 		}

@@ -7,10 +7,11 @@
 package serial
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 // Next atomically assigns and returns the next serial for (tenantId, worldId).

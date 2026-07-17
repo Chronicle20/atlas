@@ -3,13 +3,14 @@ package saga
 import (
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 // AwardItemActionPayload represents the data needed to award an item to a character.
@@ -597,15 +598,15 @@ type TransferToMtsPayload struct {
 	AssetId             uint32     `json:"assetId"`
 	Quantity            uint32     `json:"quantity"`
 	ListingId           uuid.UUID  `json:"listingId"`
-	SellerName          string     `json:"sellerName"`     // Seller character name for the listing
-	SaleType            string     `json:"saleType"`       // Sale type (e.g. "buy_now", "auction")
-	ListValue           uint32     `json:"listValue"`      // Seller's asking/starting price in NX
-	BuyNowPrice         *uint32    `json:"buyNowPrice"`    // Optional buy-now price (nil = none)
-	CommissionRate      float64    `json:"commissionRate"` // Commission rate applied at settlement
-	Category            string     `json:"category"`       // Listing category
-	SubCategory         string     `json:"subCategory"`    // Listing sub-category
-	EndsAt              *time.Time `json:"endsAt"`         // Auction end time (nil = none)
-	MinIncrement        uint32     `json:"minIncrement"`   // Minimum bid increment for auctions
+	SellerName          string     `json:"sellerName"`       // Seller character name for the listing
+	SaleType            string     `json:"saleType"`         // Sale type (e.g. "buy_now", "auction")
+	ListValue           uint32     `json:"listValue"`        // Seller's asking/starting price in NX
+	BuyNowPrice         *uint32    `json:"buyNowPrice"`      // Optional buy-now price (nil = none)
+	CommissionRate      float64    `json:"commissionRate"`   // Commission rate applied at settlement
+	Category            string     `json:"category"`         // Listing category
+	SubCategory         string     `json:"subCategory"`      // Listing sub-category
+	EndsAt              *time.Time `json:"endsAt"`           // Auction end time (nil = none)
+	MinIncrement        uint32     `json:"minIncrement"`     // Minimum bid increment for auctions
 	OfferWishSerial     uint32     `json:"offerWishSerial"`  // Want-ad serial an `offer` listing fulfills (0 for non-offers)
 	OfferWishOwnerId    uint32     `json:"offerWishOwnerId"` // Want-ad poster id an `offer` listing fulfills (0 for non-offers)
 }

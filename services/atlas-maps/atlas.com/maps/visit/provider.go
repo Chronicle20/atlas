@@ -1,9 +1,10 @@
 package visit
 
 import (
+	"gorm.io/gorm"
+
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"gorm.io/gorm"
 )
 
 func getByCharacterIdProvider(characterId uint32) func(db *gorm.DB) model.Provider[[]Entity] {

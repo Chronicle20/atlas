@@ -1,12 +1,15 @@
 package main
 
 import (
-	"os"
-
 	"atlas-portal-actions/action"
-	saga "atlas-portal-actions/kafka/consumer/saga"
 	"atlas-portal-actions/logger"
 	"atlas-portal-actions/script"
+	"os"
+
+	saga "atlas-portal-actions/kafka/consumer/saga"
+
+	"gorm.io/gorm"
+
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
@@ -16,7 +19,6 @@ import (
 	seeder "github.com/Chronicle20/atlas/libs/atlas-seeder"
 	service "github.com/Chronicle20/atlas/libs/atlas-service"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
-	"gorm.io/gorm"
 )
 
 const serviceName = "atlas-portal-actions"

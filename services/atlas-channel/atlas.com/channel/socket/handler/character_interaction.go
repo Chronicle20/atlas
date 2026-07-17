@@ -8,9 +8,10 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	interaction2 "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 type CharacterInteractionMode string

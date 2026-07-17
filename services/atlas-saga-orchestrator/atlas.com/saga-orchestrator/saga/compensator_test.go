@@ -8,16 +8,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // TestPetEvolutionCompensationRefundsResources verifies that when a PetEvolution
@@ -43,11 +44,11 @@ func TestPetEvolutionCompensationRefundsResources(t *testing.T) {
 	tctx := tenant.WithContext(ctx, te)
 
 	const (
-		testCharId   = uint32(77001)
-		rockId       = uint32(5380000)
-		mesosCost    = int32(50000)
-		testWorldId  = world.Id(0)
-		testChannel  = channel.Id(1)
+		testCharId  = uint32(77001)
+		rockId      = uint32(5380000)
+		mesosCost   = int32(50000)
+		testWorldId = world.Id(0)
+		testChannel = channel.Id(1)
 	)
 
 	// Spy compartment processor capturing Rock re-creation.

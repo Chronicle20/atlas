@@ -1,5 +1,5 @@
-import { api } from '@/lib/api/client';
-import type { DropData, ReactorDropData } from '@/types/models/drop';
+import { api } from "@/lib/api/client";
+import type { DropData, ReactorDropData } from "@/types/models/drop";
 
 class DropsService {
   async getMonsterDrops(monsterId: string): Promise<DropData[]> {

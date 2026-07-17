@@ -126,9 +126,11 @@ describe("AssetTooltipContent", () => {
 
   it("shows the fixed required-stats list (LEV/POP/STR/DEX/INT/LUK) for equipment, even when all are 0", () => {
     renderTooltip(<AssetTooltipContent asset={baseAsset()} />);
-    ["REQ LEV", "REQ POP", "REQ STR", "REQ DEX", "REQ INT", "REQ LUK"].forEach((label) => {
-      expect(screen.getByText(label)).toBeInTheDocument();
-    });
+    ["REQ LEV", "REQ POP", "REQ STR", "REQ DEX", "REQ INT", "REQ LUK"].forEach(
+      (label) => {
+        expect(screen.getByText(label)).toBeInTheDocument();
+      },
+    );
   });
 
   it("hides REQ FAM when reqFame is 0", () => {
@@ -138,10 +140,12 @@ describe("AssetTooltipContent", () => {
 
   it("highlights all six job badges when reqJob is 0 (Beginner-tier)", () => {
     renderTooltip(<AssetTooltipContent asset={baseAsset()} />);
-    ["BEGINNER", "WARRIOR", "MAGICIAN", "BOWMAN", "THIEF", "PIRATE"].forEach((j) => {
-      const badge = screen.getByText(j);
-      expect(badge).toHaveClass("bg-orange-500/80");
-    });
+    ["BEGINNER", "WARRIOR", "MAGICIAN", "BOWMAN", "THIEF", "PIRATE"].forEach(
+      (j) => {
+        const badge = screen.getByText(j);
+        expect(badge).toHaveClass("bg-orange-500/80");
+      },
+    );
   });
 
   it("highlights only the bitmask-active classes when reqJob is non-zero", () => {
@@ -160,7 +164,9 @@ describe("AssetTooltipContent", () => {
 
   it("shows non-zero stats from the asset and omits zero ones", () => {
     renderTooltip(
-      <AssetTooltipContent asset={baseAsset({ weaponDefense: 3, strength: 5 })} />,
+      <AssetTooltipContent
+        asset={baseAsset({ weaponDefense: 3, strength: 5 })}
+      />,
     );
     expect(screen.getByText("WEAPON DEF")).toBeInTheDocument();
     expect(screen.getByText("STR")).toBeInTheDocument();
@@ -169,7 +175,11 @@ describe("AssetTooltipContent", () => {
   });
 
   it("always shows UPGRADES AVAILABLE and HAMMERS APPLIED for equipment", () => {
-    renderTooltip(<AssetTooltipContent asset={baseAsset({ slots: 7, hammersApplied: 0 })} />);
+    renderTooltip(
+      <AssetTooltipContent
+        asset={baseAsset({ slots: 7, hammersApplied: 0 })}
+      />,
+    );
     expect(screen.getByText("UPGRADES AVAILABLE")).toBeInTheDocument();
     expect(screen.getByText("HAMMERS APPLIED")).toBeInTheDocument();
   });
@@ -183,26 +193,34 @@ describe("AssetTooltipContent", () => {
 
   it("shows quantity for non-equipment items when > 1", () => {
     renderTooltip(
-      <AssetTooltipContent asset={baseAsset({ templateId: 2000000, quantity: 50 })} />,
+      <AssetTooltipContent
+        asset={baseAsset({ templateId: 2000000, quantity: 50 })}
+      />,
     );
     expect(screen.getByText(/QUANTITY:/)).toBeInTheDocument();
     expect(screen.getByText("50")).toBeInTheDocument();
   });
 
   it("hides expiration row for the zero-date sentinel and shows real dates", () => {
-    const { rerender } = renderTooltip(<AssetTooltipContent asset={baseAsset()} />);
+    const { rerender } = renderTooltip(
+      <AssetTooltipContent asset={baseAsset()} />,
+    );
     expect(screen.queryByText(/EXPIRES:/)).not.toBeInTheDocument();
 
     rerender(
       <QueryClientProvider client={new QueryClient()}>
-        <AssetTooltipContent asset={baseAsset({ expiration: "2027-01-01T00:00:00Z" })} />
+        <AssetTooltipContent
+          asset={baseAsset({ expiration: "2027-01-01T00:00:00Z" })}
+        />
       </QueryClientProvider>,
     );
     expect(screen.getByText(/EXPIRES:/)).toBeInTheDocument();
   });
 
   it("renders the slotName override beside the name", () => {
-    renderTooltip(<AssetTooltipContent asset={baseAsset()} slotName="Bottom" />);
+    renderTooltip(
+      <AssetTooltipContent asset={baseAsset()} slotName="Bottom" />,
+    );
     expect(screen.getByText("(Bottom)")).toBeInTheDocument();
   });
 });

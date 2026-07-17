@@ -9,7 +9,6 @@ import (
 	"atlas-data/cosmetic/face"
 	"atlas-data/cosmetic/hair"
 	"atlas-data/data"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-data/document"
 	"atlas-data/equipment"
 	"atlas-data/etc"
@@ -26,17 +25,21 @@ import (
 	"atlas-data/reactor"
 	"atlas-data/runtime/ingest"
 	restruntime "atlas-data/runtime/rest"
-	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-data/setup"
 	"atlas-data/skill"
 	minio "atlas-data/storage/minio"
 	"atlas-data/tenantpurge"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"atlas-data/wzinput"
 	"context"
 	"os"
 	"time"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+
+	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
+
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"

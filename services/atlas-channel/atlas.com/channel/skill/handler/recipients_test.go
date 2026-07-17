@@ -1,22 +1,22 @@
 package handler
 
 import (
+	"atlas-channel/character"
+	"atlas-channel/data/skill/effect"
+	"atlas-channel/party"
 	"context"
 	"errors"
 	"io"
 	"sort"
 	"testing"
 
-	"atlas-channel/character"
-	"atlas-channel/data/skill/effect"
-	"atlas-channel/party"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 func testLogger() logrus.FieldLogger {
@@ -338,10 +338,10 @@ func TestSelectDeadInRangeMapPlayers_AllDeadRegardlessOfParty(t *testing.T) {
 	caster := uint32(1)
 	inMap := map[uint32]struct{}{1: {}, 2: {}, 3: {}, 4: {}}
 	players := map[uint32]character.Model{
-		1: mkPlayerCharAt(1, 800, 0, 0),    // caster (alive) — excluded
-		2: mkPlayerCharAt(2, 0, 100, 50),   // dead, in range
-		3: mkPlayerCharAt(3, 600, 0, 0),    // alive — excluded
-		4: mkPlayerCharAt(4, 0, 5000, 0),   // dead but out of range — excluded
+		1: mkPlayerCharAt(1, 800, 0, 0),  // caster (alive) — excluded
+		2: mkPlayerCharAt(2, 0, 100, 50), // dead, in range
+		3: mkPlayerCharAt(3, 600, 0, 0),  // alive — excluded
+		4: mkPlayerCharAt(4, 0, 5000, 0), // dead but out of range — excluded
 	}
 	installMapSeams(t, inMap, players)
 	got := SelectDeadInRangeMapPlayers(testLogger(), context.Background(), mkField(), caster, 0, 0, rectEffect(t))

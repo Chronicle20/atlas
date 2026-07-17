@@ -1,20 +1,20 @@
 package collection
 
 import (
+	"atlas-monster-book/card"
+	"atlas-monster-book/data/consumable"
+	"atlas-monster-book/kafka/message"
 	"context"
 	"errors"
 	"testing"
 
-	"atlas-monster-book/card"
-	"atlas-monster-book/data/consumable"
-	"atlas-monster-book/kafka/message"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 func tenantCtx(t *testing.T, id uuid.UUID) context.Context {

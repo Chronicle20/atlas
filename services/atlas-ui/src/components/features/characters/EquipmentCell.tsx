@@ -1,5 +1,8 @@
 import {
-  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from "@/components/ui/tooltip";
 import type { Asset } from "@/services/api/inventory.service";
 import type { Tenant } from "@/services/api/tenants.service";
@@ -21,12 +24,18 @@ export function EquipmentCell({ slotName, asset, tenant, itemName }: Props) {
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <div tabIndex={0} className="w-full h-full p-1 cursor-help focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <div
+                tabIndex={0}
+                className="w-full h-full p-1 cursor-help focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
                 <img
                   src={getAssetIconUrl(
-                    tenant.id, tenant.attributes.region,
-                    tenant.attributes.majorVersion, tenant.attributes.minorVersion,
-                    "item", asset.attributes.templateId,
+                    tenant.id,
+                    tenant.attributes.region,
+                    tenant.attributes.majorVersion,
+                    tenant.attributes.minorVersion,
+                    "item",
+                    asset.attributes.templateId,
                   )}
                   alt={itemName ?? slotName}
                   className="w-full h-full object-contain"
@@ -34,7 +43,11 @@ export function EquipmentCell({ slotName, asset, tenant, itemName }: Props) {
               </div>
             </TooltipTrigger>
             <TooltipContent>
-              <AssetTooltipContent asset={asset} itemName={itemName} slotName={slotName} />
+              <AssetTooltipContent
+                asset={asset}
+                itemName={itemName}
+                slotName={slotName}
+              />
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

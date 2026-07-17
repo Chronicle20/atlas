@@ -4,8 +4,9 @@ import (
 	"atlas-party-quests/kafka/producer"
 	"sync"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/segmentio/kafka-go"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 type Buffer struct {
@@ -60,7 +61,7 @@ func Emit(p producer.Provider) func(f func(buf *Buffer) error) error {
 func EmitWithResult[M any, B any](p producer.Provider) func(func(*Buffer) func(B) (M, error)) func(B) (M, error) {
 	return func(f func(*Buffer) func(B) (M, error)) func(B) (M, error) {
 		return func(input B) (M, error) {
-			var buf = NewBuffer()
+			buf := NewBuffer()
 			result, err := f(buf)(input)
 			if err != nil {
 				return result, err

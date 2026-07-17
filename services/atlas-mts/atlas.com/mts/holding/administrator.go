@@ -1,16 +1,16 @@
 package holding
 
 import (
+	"atlas-mts/serial"
 	"fmt"
 	"time"
 
-	"atlas-mts/serial"
+	"github.com/google/uuid"
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 // parseId converts a string id into a uuid, returning uuid.Nil on a malformed

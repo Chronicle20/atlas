@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 // legacyGMS reports whether the tenant is a pre-v83 GMS build. The v79
@@ -28,9 +29,9 @@ type ShopOperationBuyPackage struct {
 	serialNumber uint32
 }
 
-func (m ShopOperationBuyPackage) PointType() bool       { return m.pointType }
-func (m ShopOperationBuyPackage) Option() uint32         { return m.option }
-func (m ShopOperationBuyPackage) SerialNumber() uint32   { return m.serialNumber }
+func (m ShopOperationBuyPackage) PointType() bool      { return m.pointType }
+func (m ShopOperationBuyPackage) Option() uint32       { return m.option }
+func (m ShopOperationBuyPackage) SerialNumber() uint32 { return m.serialNumber }
 
 func (m ShopOperationBuyPackage) Operation() string {
 	return CashShopOperationBuyPackageHandle

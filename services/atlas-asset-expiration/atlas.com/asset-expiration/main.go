@@ -4,11 +4,12 @@ import (
 	session2 "atlas-asset-expiration/kafka/consumer/session"
 	"atlas-asset-expiration/logger"
 	"atlas-asset-expiration/task"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 	"strconv"
 	"time"
+
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"

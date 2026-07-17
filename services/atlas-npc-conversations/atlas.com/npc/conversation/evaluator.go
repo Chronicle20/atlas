@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	scriptctx "github.com/Chronicle20/atlas/libs/atlas-script-core/context"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // Evaluator is the interface for evaluating conditions in conversations

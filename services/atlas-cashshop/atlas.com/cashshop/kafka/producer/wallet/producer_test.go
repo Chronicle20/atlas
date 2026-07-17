@@ -1,10 +1,9 @@
 package wallet
 
 import (
+	"atlas-cashshop/kafka/message/wallet"
 	"encoding/json"
 	"testing"
-
-	"atlas-cashshop/kafka/message/wallet"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"

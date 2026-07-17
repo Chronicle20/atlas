@@ -5,10 +5,11 @@ import (
 	"image"
 	"image/draw"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-wz/mapimage"
 	"github.com/Chronicle20/atlas/libs/atlas-wz/maplayout"
 	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
-	"github.com/sirupsen/logrus"
 )
 
 // CompositeFromWZ composites a map render directly from a parsed *wz.File

@@ -28,11 +28,17 @@ function wrap(
 
 export const questConversationsService = {
   async getAll(options?: ServiceOptions): Promise<QuestConversation[]> {
-    const response = await api.get<QuestConversationsResponse>(BASE_PATH, options);
+    const response = await api.get<QuestConversationsResponse>(
+      BASE_PATH,
+      options,
+    );
     return response.data ?? [];
   },
 
-  async getById(id: string, options?: ServiceOptions): Promise<QuestConversation> {
+  async getById(
+    id: string,
+    options?: ServiceOptions,
+  ): Promise<QuestConversation> {
     return api.getOne<QuestConversation>(`${BASE_PATH}/${id}`, options);
   },
 

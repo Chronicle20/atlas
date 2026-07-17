@@ -11,11 +11,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Processor interface {
@@ -1044,7 +1045,6 @@ func (p *ProcessorImpl) processAskNumberState(ctx ConversationContext, state Sta
 
 	// Send the ask number request to the client
 	err = npcSender.NewProcessor(p.l, p.ctx).SendNumber(ctx.Field().Channel(), ctx.CharacterId(), ctx.NpcId(), processedText, askNumber.DefaultValue(), askNumber.MinValue(), askNumber.MaxValue())
-
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to send number request for state [%s] to character [%d]", state.Id(), ctx.CharacterId())
 		return "", err
@@ -1103,7 +1103,6 @@ func (p *ProcessorImpl) processAskStyleState(ctx ConversationContext, state Stat
 
 	// Send the ask style request to the client
 	err = npcSender.NewProcessor(p.l, p.ctx).SendStyle(ctx.Field().Channel(), ctx.CharacterId(), ctx.NpcId(), processedText, styles)
-
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to send style request for state [%s] to character [%d]", state.Id(), ctx.CharacterId())
 		return "", err
@@ -1146,7 +1145,6 @@ func (p *ProcessorImpl) processAskSlideMenuState(ctx ConversationContext, state 
 
 	// Send the slide menu request to the client
 	err = npcSender.NewProcessor(p.l, p.ctx).SendSlideMenu(ctx.Field().Channel(), ctx.CharacterId(), ctx.NpcId(), mb.String(), askSlideMenu.MenuType())
-
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to send slide menu request for state [%s] to character [%d]", state.Id(), ctx.CharacterId())
 		return "", err

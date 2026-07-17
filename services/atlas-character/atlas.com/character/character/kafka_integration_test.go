@@ -7,13 +7,14 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 func TestKafkaCreateCharacterIntegration(t *testing.T) {
@@ -435,7 +436,6 @@ func TestKafkaCreateCharacterIntegrationWithErrorEventEmission(t *testing.T) {
 				// Use the Create function with buffer to populate error events manually
 				processor := character.NewProcessor(l, ctx, db)
 				_, err := processor.Create(buf)(c.TransactionId, model, c.Body.MapId)
-
 				// Manually emit creation failed event on error (simulating CreateAndEmit behavior)
 				if err != nil {
 					// This is expected for our test cases

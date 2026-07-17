@@ -5,23 +5,26 @@ import (
 	npcConversation "atlas-npc-conversations/conversation/npc"
 	"atlas-npc-conversations/conversation/quest"
 	"atlas-npc-conversations/conversation/recipe"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	seeder "github.com/Chronicle20/atlas/libs/atlas-seeder"
 	"atlas-npc-conversations/kafka/consumer/character"
 	"atlas-npc-conversations/kafka/consumer/npc"
 	questConsumer "atlas-npc-conversations/kafka/consumer/quest"
 	"atlas-npc-conversations/kafka/consumer/saga"
 	"atlas-npc-conversations/logger"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	seeder "github.com/Chronicle20/atlas/libs/atlas-seeder"
+
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
+
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	"gorm.io/gorm"
 )
 
 const serviceName = "atlas-npc-conversations"

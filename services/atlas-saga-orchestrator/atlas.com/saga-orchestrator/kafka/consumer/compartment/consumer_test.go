@@ -1,6 +1,8 @@
 package compartment
 
 import (
+	"atlas-saga-orchestrator/kafka/message/compartment"
+	"atlas-saga-orchestrator/saga"
 	"context"
 	"testing"
 
@@ -11,9 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-
-	"atlas-saga-orchestrator/kafka/message/compartment"
-	"atlas-saga-orchestrator/saga"
 )
 
 func mustTenantCtx(t *testing.T) context.Context {

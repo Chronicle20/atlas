@@ -5,7 +5,6 @@ import (
 	"atlas-inventory/data/equipment/statistics"
 	"atlas-inventory/data/etc"
 	"atlas-inventory/data/setup"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-inventory/kafka/message"
 	"atlas-inventory/kafka/message/asset"
 	"atlas-inventory/pet"
@@ -15,15 +14,18 @@ import (
 	"math/rand"
 	"time"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 type Processor interface {

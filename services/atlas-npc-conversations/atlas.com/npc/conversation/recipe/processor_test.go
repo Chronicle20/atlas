@@ -6,9 +6,10 @@ import (
 	"context"
 	"testing"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	logtest "github.com/sirupsen/logrus/hooks/test"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func craftState(t *testing.T, stateId, itemId string, mats, qtys []uint32, mesos uint32, stimId uint32, stimFail float64) conversation.StateModel {

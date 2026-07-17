@@ -6,9 +6,10 @@ import (
 	"regexp"
 	"time"
 
+	"gorm.io/gorm"
+
 	seeder "github.com/Chronicle20/atlas/libs/atlas-seeder"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"gorm.io/gorm"
 )
 
 // compile-time assertion

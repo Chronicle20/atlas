@@ -9,12 +9,13 @@ import (
 	"atlas-inventory/kafka/consumer/drop"
 	"atlas-inventory/logger"
 	"context"
+	"os"
+
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
-	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"

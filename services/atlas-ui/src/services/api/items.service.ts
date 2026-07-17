@@ -57,8 +57,10 @@ function compartmentFromWire(raw: string | undefined): Compartment {
 export function buildItemSearchQuery(filters: ItemSearchFilters): string {
   const params = new URLSearchParams();
   if (filters.q && filters.q.length > 0) params.set("search", filters.q);
-  if (filters.compartment) params.set("filter[compartment]", filters.compartment);
-  if (filters.subcategory) params.set("filter[subcategory]", filters.subcategory);
+  if (filters.compartment)
+    params.set("filter[compartment]", filters.compartment);
+  if (filters.subcategory)
+    params.set("filter[subcategory]", filters.subcategory);
   if (filters.classes && filters.classes.length > 0) {
     if (filters.classes.length === 1 && filters.classes[0] === "any") {
       params.set("filter[class]", "any");
@@ -93,7 +95,9 @@ export const itemsService = {
   },
 
   async getItemName(itemId: string): Promise<string> {
-    const item = await api.getOne<ItemStringSearchData>(`${BASE_PATH}/${itemId}`);
+    const item = await api.getOne<ItemStringSearchData>(
+      `${BASE_PATH}/${itemId}`,
+    );
     return item.attributes.name;
   },
 
@@ -124,13 +128,20 @@ export const itemsService = {
   async getItemDetail(itemId: string): Promise<ItemDetailData> {
     const type = getItemType(itemId);
     switch (type) {
-      case "Equipment": return itemsService.getEquipment(itemId);
-      case "Consumable": return itemsService.getConsumable(itemId);
-      case "Setup": return itemsService.getSetup(itemId);
-      case "Etc": return itemsService.getEtc(itemId);
-      case "Cash": return itemsService.getCashItem(itemId);
-      case "Pet": return itemsService.getPet(itemId);
-      default: throw new Error(`Unknown item type for ID ${itemId}`);
+      case "Equipment":
+        return itemsService.getEquipment(itemId);
+      case "Consumable":
+        return itemsService.getConsumable(itemId);
+      case "Setup":
+        return itemsService.getSetup(itemId);
+      case "Etc":
+        return itemsService.getEtc(itemId);
+      case "Cash":
+        return itemsService.getCashItem(itemId);
+      case "Pet":
+        return itemsService.getPet(itemId);
+      default:
+        throw new Error(`Unknown item type for ID ${itemId}`);
     }
   },
 };

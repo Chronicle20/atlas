@@ -1,11 +1,13 @@
 package shops
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"errors"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // getByNpcId returns a provider that gets a shop entity by NPC ID

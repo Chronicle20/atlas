@@ -6,14 +6,15 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func testDatabase(t *testing.T) *gorm.DB {

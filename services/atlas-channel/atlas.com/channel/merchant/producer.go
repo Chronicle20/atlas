@@ -3,11 +3,12 @@ package merchant
 import (
 	merchant2 "atlas-channel/kafka/message/merchant"
 
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
 )
 
 func PlaceShopCommandProvider(f field.Model, characterId uint32, shopType byte, title string, permitItemId uint32, x int16, y int16) model.Provider[[]kafka.Message] {

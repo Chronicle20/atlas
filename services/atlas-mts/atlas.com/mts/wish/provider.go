@@ -1,10 +1,11 @@
 package wish
 
 import (
+	"gorm.io/gorm"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"gorm.io/gorm"
 )
 
 func getAll() database.EntityProvider[[]entity] {

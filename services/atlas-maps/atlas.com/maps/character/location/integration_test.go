@@ -1,15 +1,15 @@
 package location
 
 import (
+	"atlas-maps/data/map/info"
 	"testing"
 
-	"atlas-maps/data/map/info"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 // These tests cover the integration scenarios enumerated in design.md §8 that
@@ -111,7 +111,8 @@ func TestI3_DisconnectOnTimeLimitedMap_RelocatesToForcedReturn(t *testing.T) {
 
 // scenarioI4DisconnectOnHenesysHuntingGround — design.md §8 row I4.
 // "Disconnect on Henesys Hunting Ground 1 (100020000, sentinel forcedReturn)
-//  → Login lands at 100020000, same instance as before logout."
+//
+//	→ Login lands at 100020000, same instance as before logout."
 func TestI4_DisconnectOnHenesysHuntingGround_StaysPut(t *testing.T) {
 	ctx := newCtxTenant(t)
 	db := newTestDB(t)

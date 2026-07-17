@@ -10,14 +10,15 @@ import (
 
 	mistKafka "atlas-maps/kafka/message/mist"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // recordingProducer captures emitted messages by topic for assertions

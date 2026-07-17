@@ -10,7 +10,11 @@ const toastSuccess = vi.fn();
 const toastError = vi.fn();
 
 vi.mock("@/lib/hooks/api/useTemplates", () => ({
-  useTemplates: () => ({ data: mockTemplatesList, isLoading: false, error: null }),
+  useTemplates: () => ({
+    data: mockTemplatesList,
+    isLoading: false,
+    error: null,
+  }),
   useInvalidateTemplates: () => ({ invalidateAll: vi.fn() }),
   useCreateTemplate: () => ({ mutate: vi.fn(), isPending: false }),
   useDeleteTemplate: () => ({ mutate: vi.fn(), isPending: false }),
@@ -117,7 +121,10 @@ describe("TemplatesPage create-tenant-from-template dialog", () => {
     await user.click(createButton);
 
     await waitFor(() => {
-      expect(onboardTenantMock).toHaveBeenCalledWith("My Tenant", sampleTemplate);
+      expect(onboardTenantMock).toHaveBeenCalledWith(
+        "My Tenant",
+        sampleTemplate,
+      );
     });
   });
 });

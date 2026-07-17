@@ -8,6 +8,8 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character"
@@ -15,7 +17,6 @@ import (
 	doorsb "github.com/Chronicle20/atlas/libs/atlas-packet/door/serverbound"
 	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 // doorsByOwnerFunc lists the owner's live door(s) via the atlas-doors by-owner

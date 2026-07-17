@@ -34,7 +34,7 @@ func TestFetchTimeoutDefaultsAndOverride(t *testing.T) {
 		t.Fatalf("expected default maxConsecutiveTimeouts=3, got %d", c.maxConsecutiveTimeouts)
 	}
 
-	c, err := model.Decorate(model.Decorators(SetFetchTimeout(20*time.Minute)))(c)
+	c, err := model.Decorate(model.Decorators(SetFetchTimeout(20 * time.Minute)))(c)
 	if err != nil || c.fetchTimeout != 20*time.Minute {
 		t.Fatalf("expected SetFetchTimeout to override to 20m, got %v (err=%v)", c.fetchTimeout, err)
 	}

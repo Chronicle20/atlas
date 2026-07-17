@@ -3,8 +3,9 @@ package quest
 import (
 	"context"
 
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/sirupsen/logrus"
+
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 // Processor provides quest definition lookup functionality from atlas-data.

@@ -110,5 +110,16 @@ func pruneFree(free []freeRect) []freeRect {
 	return out
 }
 
-func minInt(a, b int) int { if a < b { return a }; return b }
-func maxInt(a, b int) int { if a > b { return a }; return b }
+func minInt(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func maxInt(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}

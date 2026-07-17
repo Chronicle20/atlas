@@ -10,8 +10,9 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
 // AwardTamenessCommandProducer handles the GM command

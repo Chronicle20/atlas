@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"testing"
 
-	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	testlog "github.com/sirupsen/logrus/hooks/test"
+
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 // gms_v79 CONFIRM_SHOP_TRANSACTION (CShopDlg::OnPacket @0x6d6eb9, op 284;

@@ -3,10 +3,11 @@ package party
 import (
 	"testing"
 
+	"github.com/sirupsen/logrus"
+
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 // TestPartyDataTownPortalRoundTrip verifies a member's Mystic Door town portal

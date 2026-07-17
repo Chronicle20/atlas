@@ -36,7 +36,8 @@ export function useAccountByName(
     enabled: !!tenant?.id && !!name && !timedOut,
     refetchInterval: ({ state }) => {
       if (timedOut || !options.pollUntilFound) return false;
-      const found = Array.isArray(state.data) && (state.data as Account[]).length > 0;
+      const found =
+        Array.isArray(state.data) && (state.data as Account[]).length > 0;
       return found ? false : interval;
     },
   });

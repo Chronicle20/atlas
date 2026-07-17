@@ -8,10 +8,11 @@ import (
 	"math/rand"
 	"strconv"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 // DropType constants for drop behavior

@@ -4,10 +4,11 @@ import (
 	"context"
 	"strconv"
 
+	goredis "github.com/redis/go-redis/v9"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	goredis "github.com/redis/go-redis/v9"
 )
 
 type Registry struct {

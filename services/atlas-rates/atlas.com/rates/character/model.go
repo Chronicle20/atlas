@@ -6,7 +6,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // Model holds all rate factors for a character

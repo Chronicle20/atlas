@@ -10,15 +10,15 @@ import (
 
 // ProcessorMock is a mock implementation of the compartment.Processor interface
 type ProcessorMock struct {
-	RequestCreateItemFunc           func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time) error
-	RequestCreateItemWithStatsFunc  func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time, useAverageStats bool) error
-	RequestDestroyItemFunc          func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, removeAll bool) error
-	RequestEquipAssetFunc           func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
-	RequestUnequipAssetFunc         func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
-	RequestCreateAndEquipAssetFunc  func(transactionId uuid.UUID, payload compartment.CreateAndEquipAssetPayload) error
-	RequestAcceptAssetFunc          func(transactionId uuid.UUID, characterId uint32, inventoryType byte, templateId uint32, assetData asset2.AssetData) error
-	RequestReleaseAssetFunc         func(transactionId uuid.UUID, characterId uint32, inventoryType byte, assetId uint32, quantity uint32) error
-	RequestDestroyItemFromSlotFunc  func(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, quantity uint32) error
+	RequestCreateItemFunc          func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time) error
+	RequestCreateItemWithStatsFunc func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time, useAverageStats bool) error
+	RequestDestroyItemFunc         func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, removeAll bool) error
+	RequestEquipAssetFunc          func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
+	RequestUnequipAssetFunc        func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
+	RequestCreateAndEquipAssetFunc func(transactionId uuid.UUID, payload compartment.CreateAndEquipAssetPayload) error
+	RequestAcceptAssetFunc         func(transactionId uuid.UUID, characterId uint32, inventoryType byte, templateId uint32, assetData asset2.AssetData) error
+	RequestReleaseAssetFunc        func(transactionId uuid.UUID, characterId uint32, inventoryType byte, assetId uint32, quantity uint32) error
+	RequestDestroyItemFromSlotFunc func(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, quantity uint32) error
 }
 
 // RequestCreateItem is a mock implementation of the compartment.Processor.RequestCreateItem method

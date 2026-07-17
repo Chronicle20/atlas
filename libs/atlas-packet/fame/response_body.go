@@ -3,10 +3,11 @@ package fame
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	atlas_packet "github.com/Chronicle20/atlas/libs/atlas-packet"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/fame/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
-	"github.com/sirupsen/logrus"
 )
 
 func ReceiveFameResponseBody(fromName string, amount int8) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {

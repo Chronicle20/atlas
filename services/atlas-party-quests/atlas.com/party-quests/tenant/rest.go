@@ -1,8 +1,9 @@
 package tenant
 
 import (
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type RestModel struct {

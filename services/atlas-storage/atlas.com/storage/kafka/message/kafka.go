@@ -3,10 +3,11 @@ package message
 import (
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
@@ -143,12 +144,10 @@ type MesosUpdatedEventBody struct {
 }
 
 // ArrangeBody contains the data needed to arrange storage (empty for now)
-type ArrangeBody struct {
-}
+type ArrangeBody struct{}
 
 // ArrangedEventBody contains the data for an arranged event
-type ArrangedEventBody struct {
-}
+type ArrangedEventBody struct{}
 
 // ErrorEventBody contains the data for an error event
 type ErrorEventBody struct {

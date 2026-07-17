@@ -6,8 +6,9 @@ import (
 	"atlas-saga-orchestrator/kafka/producer"
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
 // Processor is the interface for buff operations

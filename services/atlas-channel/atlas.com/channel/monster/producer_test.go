@@ -6,11 +6,12 @@ import (
 
 	monster2 "atlas-channel/kafka/message/monster"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 func TestDamageCommandProvider_EncodesDamagesSlice(t *testing.T) {

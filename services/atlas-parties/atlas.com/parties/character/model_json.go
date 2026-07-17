@@ -3,9 +3,10 @@ package character
 import (
 	"encoding/json"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
-	"github.com/google/uuid"
 )
 
 func (m Model) MarshalJSON() ([]byte, error) {

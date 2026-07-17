@@ -1,19 +1,25 @@
 package main
 
 import (
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-
 	"atlas-drops/configuration"
 	"atlas-drops/drop"
-	drop2 "atlas-drops/kafka/consumer/drop"
 	"atlas-drops/logger"
-	_map "atlas-drops/map"
 	"atlas-drops/tasks"
 	"context"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 	"time"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
+	drop2 "atlas-drops/kafka/consumer/drop"
+
+	_map "atlas-drops/map"
+
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
+
+	"github.com/google/uuid"
+	"go.opentelemetry.io/otel"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
@@ -21,9 +27,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"go.opentelemetry.io/otel"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const serviceName = "atlas-drops"

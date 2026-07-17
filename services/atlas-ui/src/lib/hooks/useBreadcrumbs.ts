@@ -1,6 +1,6 @@
 /**
  * React hook for breadcrumb navigation management
- * 
+ *
  * Provides comprehensive breadcrumb functionality including:
  * - Route parsing and hierarchy generation
  * - Dynamic label resolution with caching
@@ -10,31 +10,31 @@
  * - Performance optimizations
  */
 
-import { useEffect, useMemo, useState, useRef } from 'react';
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useTenant } from '@/context/tenant-context';
-import { 
-  parsePathname, 
-  buildBreadcrumbPath, 
-  getParentBreadcrumb, 
+import { useTenant } from "@/context/tenant-context";
+import {
+  parsePathname,
+  buildBreadcrumbPath,
+  getParentBreadcrumb,
   getBreadcrumbKey,
   filterVisibleBreadcrumbs,
-  type BreadcrumbSegment 
-} from '@/lib/breadcrumbs/utils';
-import { 
-  resolveEntityLabel, 
+  type BreadcrumbSegment,
+} from "@/lib/breadcrumbs/utils";
+import {
+  resolveEntityLabel,
   preloadEntityLabels,
   invalidateEntityLabels,
   getEntityTypeFromRoute,
   type EntityType,
   type ResolvedLabel,
-  type ResolverOptions 
-} from '@/lib/breadcrumbs/resolvers';
-import { 
-  findRouteConfig, 
+  type ResolverOptions,
+} from "@/lib/breadcrumbs/resolvers";
+import {
+  findRouteConfig,
   getBreadcrumbsFromRoute,
-  type RouteConfig 
-} from '@/lib/breadcrumbs/routes';
+  type RouteConfig,
+} from "@/lib/breadcrumbs/routes";
 
 // Hook configuration options
 export interface UseBreadcrumbsOptions {
@@ -84,11 +84,17 @@ export interface UseBreadcrumbsResult {
   /** Label resolution utilities */
   resolution: {
     /** Manually resolve a specific entity label */
-    resolveLabel: (entityType: EntityType, entityId: string) => Promise<ResolvedLabel>;
+    resolveLabel: (
+      entityType: EntityType,
+      entityId: string,
+    ) => Promise<ResolvedLabel>;
     /** Invalidate cached labels for specific entities */
     invalidateLabels: (entityType: EntityType, entityIds: string[]) => void;
     /** Preload labels for better performance */
-    preloadLabels: (entityType: EntityType, entityIds: string[]) => Promise<void>;
+    preloadLabels: (
+      entityType: EntityType,
+      entityIds: string[],
+    ) => Promise<void>;
     /** Get resolution state for all breadcrumbs */
     resolutionStates: Map<string, BreadcrumbResolutionState>;
   };
@@ -109,7 +115,7 @@ const DEFAULT_OPTIONS: Required<UseBreadcrumbsOptions> = {
   showEllipsis: true,
   hiddenRoutes: [],
   resolverOptions: {
-    fallback: 'Unknown',
+    fallback: "Unknown",
     timeout: 5000,
     useCache: true,
   },
@@ -120,17 +126,21 @@ const DEFAULT_OPTIONS: Required<UseBreadcrumbsOptions> = {
 /**
  * Main breadcrumbs hook
  */
-export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcrumbsResult {
+export function useBreadcrumbs(
+  options: UseBreadcrumbsOptions = {},
+): UseBreadcrumbsResult {
   const opts = { ...DEFAULT_OPTIONS, ...options };
   const pathname = useLocation().pathname;
   const navigate = useNavigate();
   const { activeTenant } = useTenant();
-  
+
   // Destructure specific options to avoid dependency issues
   const { autoResolve, resolverOptions, enablePreloading } = opts;
 
   // State management
-  const [resolutionStates, setResolutionStates] = useState<Map<string, BreadcrumbResolutionState>>(new Map());
+  const [resolutionStates, setResolutionStates] = useState<
+    Map<string, BreadcrumbResolutionState>
+  >(new Map());
 
   // Memoized route analysis
   const routeConfig = useMemo(() => findRouteConfig(pathname), [pathname]);
@@ -144,10 +154,10 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
       if (routeBreadcrumbs.length > 0) {
         return {
           success: true,
-          breadcrumbs: routeBreadcrumbs.map(partial => ({
-            segment: partial.segment || '',
-            label: partial.label || 'Unknown',
-            href: partial.href || '',
+          breadcrumbs: routeBreadcrumbs.map((partial) => ({
+            segment: partial.segment || "",
+            label: partial.label || "Unknown",
+            href: partial.href || "",
             dynamic: partial.dynamic || false,
             isCurrentPage: partial.isCurrentPage || false,
             ...(partial.entityId && { entityId: partial.entityId }),
@@ -167,7 +177,10 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
       return {
         success: false,
         breadcrumbs: [] as BreadcrumbSegment[],
-        error: error instanceof Error ? error : new Error('Failed to parse breadcrumbs'),
+        error:
+          error instanceof Error
+            ? error
+            : new Error("Failed to parse breadcrumbs"),
       };
     }
   }, [pathname]);
@@ -176,15 +189,20 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
   // directly instead of syncing via an effect (see the `error:` field below).
 
   // Process breadcrumbs with dynamic label resolution
-  const [processedBreadcrumbs, setProcessedBreadcrumbs] = useState<BreadcrumbSegment[]>(initialBreadcrumbs.breadcrumbs);
+  const [processedBreadcrumbs, setProcessedBreadcrumbs] = useState<
+    BreadcrumbSegment[]
+  >(initialBreadcrumbs.breadcrumbs);
 
   // Create a stable key based on breadcrumbs structure to prevent infinite loops
-  const breadcrumbsKey = useMemo(() =>
-    initialBreadcrumbs.breadcrumbs.map(b => `${b.segment}:${b.entityId || 'static'}`).join('|'),
-    [initialBreadcrumbs.breadcrumbs]
+  const breadcrumbsKey = useMemo(
+    () =>
+      initialBreadcrumbs.breadcrumbs
+        .map((b) => `${b.segment}:${b.entityId || "static"}`)
+        .join("|"),
+    [initialBreadcrumbs.breadcrumbs],
   );
-  
-  const prevBreadcrumbsKeyRef = useRef<string>('');
+
+  const prevBreadcrumbsKeyRef = useRef<string>("");
 
   // Effect to resolve dynamic labels when breadcrumbs structure changes
   useEffect(() => {
@@ -192,7 +210,7 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
     if (prevBreadcrumbsKeyRef.current === breadcrumbsKey) {
       return;
     }
-    
+
     prevBreadcrumbsKeyRef.current = breadcrumbsKey;
 
     if (!activeTenant || !autoResolve) {
@@ -201,7 +219,9 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
       return;
     }
 
-    const dynamicBreadcrumbs = initialBreadcrumbs.breadcrumbs.filter(b => b.dynamic && b.entityId && b.entityType);
+    const dynamicBreadcrumbs = initialBreadcrumbs.breadcrumbs.filter(
+      (b) => b.dynamic && b.entityId && b.entityType,
+    );
 
     if (dynamicBreadcrumbs.length === 0) {
       setProcessedBreadcrumbs(initialBreadcrumbs.breadcrumbs);
@@ -214,9 +234,13 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
       const updatedBreadcrumbs = [...initialBreadcrumbs.breadcrumbs];
 
       // Set all items to loading state
-      dynamicBreadcrumbs.forEach(breadcrumb => {
+      dynamicBreadcrumbs.forEach((breadcrumb) => {
         const key = `${breadcrumb.entityType}:${breadcrumb.entityId}`;
-        resolutionResults.set(key, { loading: true, error: null, resolved: null });
+        resolutionResults.set(key, {
+          loading: true,
+          error: null,
+          resolved: null,
+        });
       });
 
       // Update resolution states once for loading
@@ -225,21 +249,23 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
       // Process all resolutions in parallel
       const resolutionPromises = dynamicBreadcrumbs.map(async (breadcrumb) => {
         const key = `${breadcrumb.entityType}:${breadcrumb.entityId}`;
-        
+
         try {
           const resolved = await resolveEntityLabel(
             breadcrumb.entityType as EntityType,
             breadcrumb.entityId!,
             activeTenant,
-            resolverOptions
+            resolverOptions,
           );
-          
+
           // Store the result for batch update
           resolutionResults.set(key, { loading: false, error: null, resolved });
-          
+
           // Update the breadcrumb in our local array
-          const index = updatedBreadcrumbs.findIndex(b => 
-            b.entityId === breadcrumb.entityId && b.entityType === breadcrumb.entityType
+          const index = updatedBreadcrumbs.findIndex(
+            (b) =>
+              b.entityId === breadcrumb.entityId &&
+              b.entityType === breadcrumb.entityType,
           );
           if (index !== -1) {
             const current = updatedBreadcrumbs[index];
@@ -255,11 +281,18 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
               };
             }
           }
-          
         } catch (error) {
-          const err = error instanceof Error ? error : new Error('Resolution failed');
-          resolutionResults.set(key, { loading: false, error: err, resolved: null });
-          console.warn(`Failed to resolve ${breadcrumb.entityType}:${breadcrumb.entityId}`, error);
+          const err =
+            error instanceof Error ? error : new Error("Resolution failed");
+          resolutionResults.set(key, {
+            loading: false,
+            error: err,
+            resolved: null,
+          });
+          console.warn(
+            `Failed to resolve ${breadcrumb.entityType}:${breadcrumb.entityId}`,
+            error,
+          );
         }
       });
 
@@ -272,7 +305,13 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
     };
 
     resolveDynamicLabels();
-  }, [breadcrumbsKey, activeTenant, autoResolve, resolverOptions, initialBreadcrumbs.breadcrumbs]);
+  }, [
+    breadcrumbsKey,
+    activeTenant,
+    autoResolve,
+    resolverOptions,
+    initialBreadcrumbs.breadcrumbs,
+  ]);
 
   // Effect to preload labels
   useEffect(() => {
@@ -282,23 +321,34 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
       const entityType = getEntityTypeFromRoute(pathname);
       if (!entityType) return;
 
-      const dynamicBreadcrumbs = initialBreadcrumbs.breadcrumbs.filter(b =>
-        b.dynamic && b.entityId && b.entityType === entityType
+      const dynamicBreadcrumbs = initialBreadcrumbs.breadcrumbs.filter(
+        (b) => b.dynamic && b.entityId && b.entityType === entityType,
       );
 
       if (dynamicBreadcrumbs.length === 0) return;
 
-      const entityIds = dynamicBreadcrumbs.map(b => b.entityId!);
-      
+      const entityIds = dynamicBreadcrumbs.map((b) => b.entityId!);
+
       try {
-        await preloadEntityLabels(entityType, entityIds, activeTenant, resolverOptions);
+        await preloadEntityLabels(
+          entityType,
+          entityIds,
+          activeTenant,
+          resolverOptions,
+        );
       } catch (error) {
         console.warn(`Failed to preload labels for ${entityType}:`, error);
       }
     };
 
     preloadLabelsForRoute();
-  }, [pathname, initialBreadcrumbs.breadcrumbs, activeTenant, enablePreloading, resolverOptions]);
+  }, [
+    pathname,
+    initialBreadcrumbs.breadcrumbs,
+    activeTenant,
+    enablePreloading,
+    resolverOptions,
+  ]);
 
   // Build final breadcrumbs with filtering and truncation
   const finalBreadcrumbs = useMemo(() => {
@@ -310,68 +360,98 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
       maxItems: opts.maxItems,
       showEllipsis: opts.showEllipsis,
     });
-  }, [processedBreadcrumbs, opts.hiddenRoutes, opts.maxItems, opts.showEllipsis]);
+  }, [
+    processedBreadcrumbs,
+    opts.hiddenRoutes,
+    opts.maxItems,
+    opts.showEllipsis,
+  ]);
 
   // Calculate loading state
   const loading = useMemo(() => {
-    return Array.from(resolutionStates.values()).some(state => state.loading);
+    return Array.from(resolutionStates.values()).some((state) => state.loading);
   }, [resolutionStates]);
 
   // Navigation utilities
-  const navigation = useMemo(() => ({
-    goToParent: () => {
-      const parent = getParentBreadcrumb(finalBreadcrumbs);
-      if (parent && parent.href) {
-        navigate(parent.href);
-      }
-    },
-    navigateTo: (breadcrumb: BreadcrumbSegment) => {
-      if (breadcrumb.href && !breadcrumb.isCurrentPage) {
-        navigate(breadcrumb.href);
-      }
-    },
-    getParent: () => getParentBreadcrumb(finalBreadcrumbs),
-  }), [finalBreadcrumbs, navigate]);
+  const navigation = useMemo(
+    () => ({
+      goToParent: () => {
+        const parent = getParentBreadcrumb(finalBreadcrumbs);
+        if (parent && parent.href) {
+          navigate(parent.href);
+        }
+      },
+      navigateTo: (breadcrumb: BreadcrumbSegment) => {
+        if (breadcrumb.href && !breadcrumb.isCurrentPage) {
+          navigate(breadcrumb.href);
+        }
+      },
+      getParent: () => getParentBreadcrumb(finalBreadcrumbs),
+    }),
+    [finalBreadcrumbs, navigate],
+  );
 
   // Label resolution utilities
-  const resolution = useMemo(() => ({
-    resolveLabel: async (entityType: EntityType, entityId: string) => {
-      if (!activeTenant) throw new Error('No active tenant');
-      return resolveEntityLabel(entityType, entityId, activeTenant, resolverOptions);
-    },
-    invalidateLabels: (entityType: EntityType, entityIds: string[]) => {
-      if (!activeTenant) return;
-      invalidateEntityLabels(entityType, entityIds, activeTenant);
-      
-      // Clear resolution states for invalidated entities
-      entityIds.forEach(entityId => {
-        const key = `${entityType}:${entityId}`;
-        setResolutionStates(prev => {
-          const newMap = new Map(prev);
-          newMap.delete(key);
-          return newMap;
-        });
-      });
+  const resolution = useMemo(
+    () => ({
+      resolveLabel: async (entityType: EntityType, entityId: string) => {
+        if (!activeTenant) throw new Error("No active tenant");
+        return resolveEntityLabel(
+          entityType,
+          entityId,
+          activeTenant,
+          resolverOptions,
+        );
+      },
+      invalidateLabels: (entityType: EntityType, entityIds: string[]) => {
+        if (!activeTenant) return;
+        invalidateEntityLabels(entityType, entityIds, activeTenant);
 
-      // Reset to allow re-resolution by updating the key reference
-      prevBreadcrumbsKeyRef.current = '';
-      setProcessedBreadcrumbs(initialBreadcrumbs.breadcrumbs);
-    },
-    preloadLabels: async (entityType: EntityType, entityIds: string[]) => {
-      if (!activeTenant) throw new Error('No active tenant');
-      await preloadEntityLabels(entityType, entityIds, activeTenant, resolverOptions);
-    },
-    resolutionStates,
-  }), [activeTenant, resolverOptions, resolutionStates, initialBreadcrumbs.breadcrumbs]);
+        // Clear resolution states for invalidated entities
+        entityIds.forEach((entityId) => {
+          const key = `${entityType}:${entityId}`;
+          setResolutionStates((prev) => {
+            const newMap = new Map(prev);
+            newMap.delete(key);
+            return newMap;
+          });
+        });
+
+        // Reset to allow re-resolution by updating the key reference
+        prevBreadcrumbsKeyRef.current = "";
+        setProcessedBreadcrumbs(initialBreadcrumbs.breadcrumbs);
+      },
+      preloadLabels: async (entityType: EntityType, entityIds: string[]) => {
+        if (!activeTenant) throw new Error("No active tenant");
+        await preloadEntityLabels(
+          entityType,
+          entityIds,
+          activeTenant,
+          resolverOptions,
+        );
+      },
+      resolutionStates,
+    }),
+    [
+      activeTenant,
+      resolverOptions,
+      resolutionStates,
+      initialBreadcrumbs.breadcrumbs,
+    ],
+  );
 
   // Utility functions
-  const utils = useMemo(() => ({
-    getCacheKey: () => getBreadcrumbKey(finalBreadcrumbs),
-    isValidRoute,
-    getFilteredBreadcrumbs: () => filterVisibleBreadcrumbs(processedBreadcrumbs, {
-      hiddenRoutes: opts.hiddenRoutes,
+  const utils = useMemo(
+    () => ({
+      getCacheKey: () => getBreadcrumbKey(finalBreadcrumbs),
+      isValidRoute,
+      getFilteredBreadcrumbs: () =>
+        filterVisibleBreadcrumbs(processedBreadcrumbs, {
+          hiddenRoutes: opts.hiddenRoutes,
+        }),
     }),
-  }), [finalBreadcrumbs, isValidRoute, processedBreadcrumbs, opts.hiddenRoutes]);
+    [finalBreadcrumbs, isValidRoute, processedBreadcrumbs, opts.hiddenRoutes],
+  );
 
   return {
     breadcrumbs: finalBreadcrumbs,
@@ -391,7 +471,7 @@ export function useSimpleBreadcrumbs(): BreadcrumbSegment[] {
     autoResolve: false,
     enablePreloading: false,
   });
-  
+
   return breadcrumbs;
 }
 
@@ -401,10 +481,10 @@ export function useBreadcrumbNavigation() {
     autoResolve: false,
     enablePreloading: false,
   });
-  
+
   return {
     ...navigation,
-    breadcrumbs: breadcrumbs.map(b => ({
+    breadcrumbs: breadcrumbs.map((b) => ({
       label: b.label,
       href: b.href,
       isCurrentPage: b.isCurrentPage,

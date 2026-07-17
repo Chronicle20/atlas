@@ -1,6 +1,6 @@
 package socket
 
-import "github.com/Chronicle20/atlas/libs/atlas-opcodes"
+import opcodes "github.com/Chronicle20/atlas/libs/atlas-opcodes"
 
 type RestModel struct {
 	Handlers []opcodes.HandlerConfig `json:"handlers"`

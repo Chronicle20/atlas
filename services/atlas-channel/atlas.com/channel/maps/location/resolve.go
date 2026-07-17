@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/sirupsen/logrus"
+
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 // ResolveMapId returns the character's current map from atlas-maps, or 0 when

@@ -4,10 +4,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 )
 
 // Proposal acceptance updates the proposal row then creates the marriage row

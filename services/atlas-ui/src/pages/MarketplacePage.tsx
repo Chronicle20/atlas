@@ -58,7 +58,13 @@ export function MarketplacePage() {
     saleType: string;
     sellerName: string;
     itemId: number;
-  }>({ category: "", subCategory: "", saleType: "", sellerName: "", itemId: 0 });
+  }>({
+    category: "",
+    subCategory: "",
+    saleType: "",
+    sellerName: "",
+    itemId: 0,
+  });
 
   const listingsQuery = useMtsListings(
     activeTenant?.id ?? "",
@@ -106,7 +112,13 @@ export function MarketplacePage() {
     setSaleTypeInput(SALE_TYPE_ANY);
     setSellerNameInput("");
     setItemIdInput("");
-    setApplied({ category: "", subCategory: "", saleType: "", sellerName: "", itemId: 0 });
+    setApplied({
+      category: "",
+      subCategory: "",
+      saleType: "",
+      sellerName: "",
+      itemId: 0,
+    });
     setPage(1);
   };
 
@@ -231,13 +243,17 @@ export function MarketplacePage() {
         </CardHeader>
         <CardContent className="flex-1 min-h-0 flex flex-col">
           {!activeTenant ? (
-            <div className="text-center py-8 text-muted-foreground">Select a tenant to browse listings.</div>
+            <div className="text-center py-8 text-muted-foreground">
+              Select a tenant to browse listings.
+            </div>
           ) : listingsQuery.error ? (
             <div className="text-center py-8 text-destructive">
               {listingsQuery.error.message}
             </div>
           ) : loading ? (
-            <div className="text-center py-8 text-muted-foreground">Loading listings...</div>
+            <div className="text-center py-8 text-muted-foreground">
+              Loading listings...
+            </div>
           ) : listings.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No listings found matching your search criteria.
@@ -314,7 +330,9 @@ function ListingRow({ listing }: { listing: MtsListing }) {
         </span>
       </TableCell>
       <TableCell>
-        <span className="font-mono">{a.currentBid > 0 ? a.currentBid.toLocaleString() : "—"}</span>
+        <span className="font-mono">
+          {a.currentBid > 0 ? a.currentBid.toLocaleString() : "—"}
+        </span>
       </TableCell>
       <TableCell>{formatEndsAt(a.endsAt)}</TableCell>
     </TableRow>

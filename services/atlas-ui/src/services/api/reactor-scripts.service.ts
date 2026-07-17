@@ -1,4 +1,4 @@
-import { api } from '@/lib/api/client';
+import { api } from "@/lib/api/client";
 
 export interface ReactorScriptData {
   id: string;
@@ -12,9 +12,13 @@ export interface ReactorScriptData {
 }
 
 class ReactorScriptsService {
-  async getScriptsByReactor(reactorId: string): Promise<ReactorScriptData | null> {
+  async getScriptsByReactor(
+    reactorId: string,
+  ): Promise<ReactorScriptData | null> {
     try {
-      const results = await api.getList<ReactorScriptData>(`/api/reactors/${reactorId}/actions`);
+      const results = await api.getList<ReactorScriptData>(
+        `/api/reactors/${reactorId}/actions`,
+      );
       return results[0] ?? null;
     } catch {
       return null;

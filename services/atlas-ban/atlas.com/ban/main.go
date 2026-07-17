@@ -1,21 +1,22 @@
 package main
 
 import (
+	"atlas-ban/ban"
+	"atlas-ban/history"
+	"atlas-ban/logger"
+	"atlas-ban/tasks"
 	"context"
+	"os"
+	"time"
 
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 
-	"atlas-ban/ban"
-	"atlas-ban/history"
 	account2 "atlas-ban/kafka/consumer/account"
 	ban2 "atlas-ban/kafka/consumer/ban"
-	"atlas-ban/logger"
-	"atlas-ban/tasks"
+
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
-	"os"
-	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"

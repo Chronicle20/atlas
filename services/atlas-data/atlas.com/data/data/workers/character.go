@@ -1,10 +1,18 @@
 package workers
 
 import (
+	"atlas-data/characters/templates"
+	"atlas-data/cosmetic/face"
+	"atlas-data/cosmetic/hair"
+	"atlas-data/equipment"
+	"atlas-data/item"
 	"bytes"
 	"context"
 	"fmt"
 	"path/filepath"
+
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-wz/atlas"
 	"github.com/Chronicle20/atlas/libs/atlas-wz/atlas/pngenc"
@@ -12,14 +20,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-wz/icons"
 	"github.com/Chronicle20/atlas/libs/atlas-wz/manifest"
 	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 
-	"atlas-data/characters/templates"
-	"atlas-data/cosmetic/face"
-	"atlas-data/cosmetic/hair"
-	"atlas-data/equipment"
-	"atlas-data/item"
 	minio "atlas-data/storage/minio"
 )
 

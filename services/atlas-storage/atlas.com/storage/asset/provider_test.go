@@ -7,16 +7,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func testLogger() logrus.FieldLogger {
@@ -257,11 +258,11 @@ func TestAsset_IsStackable(t *testing.T) {
 		templateId  uint32
 		isStackable bool
 	}{
-		{"equip", 1302000, false},       // equip (1xxx)
-		{"consumable", 2000000, true},   // use (2xxx)
-		{"setup", 3000000, true},        // setup (3xxx)
-		{"etc", 4000000, true},          // etc (4xxx)
-		{"cash", 5000000, false},        // cash (5xxx)
+		{"equip", 1302000, false},     // equip (1xxx)
+		{"consumable", 2000000, true}, // use (2xxx)
+		{"setup", 3000000, true},      // setup (3xxx)
+		{"etc", 4000000, true},        // etc (4xxx)
+		{"cash", 5000000, false},      // cash (5xxx)
 	}
 
 	testStorageId := uuid.New()

@@ -4,8 +4,9 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 )
 
 // WithResolvedCode resolves a byte code from options at encode time and delegates to the factory-produced encoder.

@@ -1,18 +1,18 @@
 package character
 
 import (
+	"atlas-effective-stats/external/data/equipment"
+	"atlas-effective-stats/stat"
 	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"atlas-effective-stats/external/data/equipment"
-	"atlas-effective-stats/stat"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus/hooks/test"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus/hooks/test"
 )
 
 // TestFetchEquippedSnapshots_HydratesEquipmentStats stubs atlas-inventory with

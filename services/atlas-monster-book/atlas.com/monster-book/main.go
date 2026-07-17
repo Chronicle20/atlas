@@ -1,28 +1,31 @@
 package main
 
 import (
-	"context"
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-	"os"
-
 	"atlas-monster-book/card"
 	"atlas-monster-book/character"
 	"atlas-monster-book/collection"
+	"atlas-monster-book/logger"
+	"context"
+	"os"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	character2 "atlas-monster-book/kafka/consumer/character"
 	mbconsumer "atlas-monster-book/kafka/consumer/monsterbook"
-	"atlas-monster-book/logger"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 )
 
-const serviceName = "atlas-monster-book"
-const consumerGroupId = "Monster Book Service"
+const (
+	serviceName     = "atlas-monster-book"
+	consumerGroupId = "Monster Book Service"
+)
 
 type Server struct {
 	baseUrl string

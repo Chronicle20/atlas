@@ -7,8 +7,9 @@ import (
 	"sync"
 	"syscall"
 
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/sirupsen/logrus"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 )
 
 type Manager struct {
@@ -19,8 +20,10 @@ type Manager struct {
 	cancel    context.CancelFunc
 }
 
-var manager *Manager
-var once sync.Once
+var (
+	manager *Manager
+	once    sync.Once
+)
 
 func GetTeardownManager() *Manager {
 	once.Do(func() {

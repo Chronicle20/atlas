@@ -3,8 +3,9 @@ package _map
 import (
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
 // Processor provides operations for querying map player counts

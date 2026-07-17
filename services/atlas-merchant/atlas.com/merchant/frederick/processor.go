@@ -4,10 +4,11 @@ import (
 	"atlas-merchant/kafka/message/asset"
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Processor interface {
@@ -91,4 +92,3 @@ func (p *ProcessorImpl) ClearNotifications(characterId uint32) error {
 	_, err := clearNotifications(characterId)(p.db.WithContext(p.ctx))()
 	return err
 }
-

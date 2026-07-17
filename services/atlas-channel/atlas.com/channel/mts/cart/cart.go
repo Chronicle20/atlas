@@ -5,9 +5,10 @@ import (
 	mtswish "atlas-channel/mts/wish"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
-	"github.com/sirupsen/logrus"
 )
 
 // Items renders a character's Cart (SET_ZZIM favorites) as browse ITCITEMs, one

@@ -5,8 +5,9 @@ import (
 	"context"
 	"time"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type StatusExpirationTask struct {

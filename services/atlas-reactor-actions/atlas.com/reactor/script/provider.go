@@ -1,9 +1,10 @@
 package script
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // getByIdProvider returns a provider for retrieving a reactor script by ID

@@ -8,12 +8,15 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-retry"
 	"github.com/sirupsen/logrus"
+
+	retry "github.com/Chronicle20/atlas/libs/atlas-retry"
 )
 
-var ErrBadRequest = errors.New("bad request")
-var ErrNotFound = errors.New("not found")
+var (
+	ErrBadRequest = errors.New("bad request")
+	ErrNotFound   = errors.New("not found")
+)
 
 // ErrServiceUnavailable is returned when a GET exhausted its attempts and the
 // final response was 503 Service Unavailable — the dependency is saturated

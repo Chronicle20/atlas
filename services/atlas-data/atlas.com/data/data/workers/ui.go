@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+
 	"github.com/Chronicle20/atlas/libs/atlas-wz/canvas"
 	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
 	"github.com/Chronicle20/atlas/libs/atlas-wz/wz/property"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 
 	minio "atlas-data/storage/minio"
 )
@@ -99,4 +100,3 @@ func findWorldIconCanvases(loginProps []property.Property) map[string]*property.
 	}
 	return out
 }
-

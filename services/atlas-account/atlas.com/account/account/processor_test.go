@@ -6,9 +6,10 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus/hooks/test"
 	"golang.org/x/crypto/bcrypt"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func TestCreate(t *testing.T) {

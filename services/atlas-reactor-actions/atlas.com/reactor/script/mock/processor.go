@@ -1,12 +1,12 @@
 package mock
 
 import (
+	"atlas-reactor-actions/script"
 	"time"
 
-	"atlas-reactor-actions/script"
+	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
 )
 
 type ProcessorMock struct {

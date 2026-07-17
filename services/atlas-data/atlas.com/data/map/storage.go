@@ -1,18 +1,18 @@
 package _map
 
 import (
-	"context"
-	"time"
-
 	"atlas-data/document"
 	"atlas-data/monster"
 	"atlas-data/npc"
 	"atlas-data/searchindex"
+	"context"
+	"time"
+
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 type Storage struct {

@@ -1,22 +1,24 @@
 package resurrection
 
 import (
+	"atlas-channel/character"
+	"atlas-channel/data/skill/effect"
+	"atlas-channel/portal"
+	"atlas-channel/session"
+	"atlas-channel/socket/writer"
 	"context"
 	"math"
 
-	"atlas-channel/character"
-	"atlas-channel/data/skill/effect"
 	channelmap "atlas-channel/map"
-	"atlas-channel/portal"
-	"atlas-channel/session"
+
 	channelhandler "atlas-channel/skill/handler"
 	socketHandler "atlas-channel/socket/handler"
-	"atlas-channel/socket/writer"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
-	"github.com/sirupsen/logrus"
 )
 
 func init() {

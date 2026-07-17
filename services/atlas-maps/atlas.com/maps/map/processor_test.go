@@ -12,19 +12,20 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func TestMain(m *testing.M) {

@@ -48,20 +48,20 @@ var statBlockV79 = []byte{
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // pet long 0 (DecodeBuffer 24) /*0x4d6eb6*/
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // pet long 1
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // pet long 2
-	0x0a,                   // level (Decode1)                     /*0x4d6ec5*/
-	0x64, 0x00,             // job (Decode2)                       /*0x4d6ed1*/
-	0x04, 0x00,             // str (Decode2)                       /*0x4d6ee5*/
-	0x05, 0x00,             // dex                                 /*0x4d6ef9*/
-	0x06, 0x00,             // int                                 /*0x4d6f0d*/
-	0x07, 0x00,             // luck                                /*0x4d6f21*/
-	0x64, 0x00,             // hp                                  /*0x4d6f35*/
-	0x64, 0x00,             // maxHp                               /*0x4d6f49*/
-	0x32, 0x00,             // mp                                  /*0x4d6f5d*/
-	0x32, 0x00,             // maxMp                               /*0x4d6f71*/
-	0x03, 0x00,             // ap (Decode2)                        /*0x4d6f85*/
-	0x02, 0x00,             // sp (Decode2)                        /*0x4d6f9f*/
+	0x0a,       // level (Decode1)                     /*0x4d6ec5*/
+	0x64, 0x00, // job (Decode2)                       /*0x4d6ed1*/
+	0x04, 0x00, // str (Decode2)                       /*0x4d6ee5*/
+	0x05, 0x00, // dex                                 /*0x4d6ef9*/
+	0x06, 0x00, // int                                 /*0x4d6f0d*/
+	0x07, 0x00, // luck                                /*0x4d6f21*/
+	0x64, 0x00, // hp                                  /*0x4d6f35*/
+	0x64, 0x00, // maxHp                               /*0x4d6f49*/
+	0x32, 0x00, // mp                                  /*0x4d6f5d*/
+	0x32, 0x00, // maxMp                               /*0x4d6f71*/
+	0x03, 0x00, // ap (Decode2)                        /*0x4d6f85*/
+	0x02, 0x00, // sp (Decode2)                        /*0x4d6f9f*/
 	0x00, 0x00, 0x00, 0x00, // exp (Decode4)                       /*0x4d6fb9*/
-	0x08, 0x00,             // fame (Decode2)                      /*0x4d6fd3*/
+	0x08, 0x00, // fame (Decode2)                      /*0x4d6fd3*/
 	0x00, 0x00, 0x00, 0x00, // gachaExp (Decode4)                  /*0x4d6fed*/
 	0xb8, 0x0b, 0x00, 0x00, // mapId (Decode4)                     /*0x4d7007*/
 	0x00,                   // spawnPoint (Decode1)                /*0x4d7028*/
@@ -121,9 +121,9 @@ func TestCharacterListByteOutputV79(t *testing.T) {
 	want = append(want, 0x01) // count = 1             /*0x5ce6e8*/
 	want = append(want, statBlockV79...)
 	want = append(want, avatarBlockV79...)
-	want = append(want, 0x00)          // family/viewAll flag  /*0x5ce743*/
-	want = append(want, 0x01)          // rankEnabled = !gm    /*0x5ce745*/
-	want = append(want, rank16V79...)  // rank ints            /*0x5ce760*/
+	want = append(want, 0x00)                   // family/viewAll flag  /*0x5ce743*/
+	want = append(want, 0x01)                   // rankEnabled = !gm    /*0x5ce745*/
+	want = append(want, rank16V79...)           // rank ints            /*0x5ce760*/
 	want = append(want, 0x08, 0x00, 0x00, 0x00) // slots — no hasPic /*0x5ce7ac*/
 
 	if !bytes.Equal(got, want) {
@@ -271,9 +271,11 @@ func TestCharacterNameResponseByteOutputV79(t *testing.T) {
 // all sub-writers pin against the same base function address.
 
 // CharacterViewAllCount v79 byte-fixture — mode 1 (case 1u @0x5ceead):
+//
 //	mode  = Decode1                       // dispatcher mode (1 = world/char count) /*0x5ceead*/
 //	svrCount = Decode4                    // *((_DWORD*)this+66)                     /*0x5ceeca*/
 //	charCount= Decode4                    // *((_DWORD*)this+67)                     /*0x5ceee1*/
+//
 // Atlas CharacterViewAllCount writes [byte code][int worldCount][int unk]; code
 // carries the mode byte (1).
 //
@@ -395,12 +397,12 @@ func TestCharacterSpawnByteOutputV79(t *testing.T) {
 	var wantPrefix []byte
 	wantPrefix = append(wantPrefix, 0x39, 0x30, 0x00, 0x00) // characterId 12345 (Decode4) /*0x8c898c*/
 	// NO level byte /*(v83 @0x97f589)*/
-	wantPrefix = append(wantPrefix, 0x08, 0x00, 0x54, 0x65, 0x73, 0x74, 0x43, 0x68, 0x61, 0x72) // "TestChar" /*0x8d58c9*/
+	wantPrefix = append(wantPrefix, 0x08, 0x00, 0x54, 0x65, 0x73, 0x74, 0x43, 0x68, 0x61, 0x72)       // "TestChar" /*0x8d58c9*/
 	wantPrefix = append(wantPrefix, 0x09, 0x00, 0x54, 0x65, 0x73, 0x74, 0x47, 0x75, 0x69, 0x6c, 0x64) // "TestGuild" /*0x8d58f9*/
-	wantPrefix = append(wantPrefix, 0x01, 0x00) // logoBg (Decode2)      /*0x8d592f*/
-	wantPrefix = append(wantPrefix, 0x02)       // logoBgColor (Decode1) /*0x8d593d*/
-	wantPrefix = append(wantPrefix, 0x03, 0x00) // logo (Decode2)        /*0x8d594a*/
-	wantPrefix = append(wantPrefix, 0x04)       // logoColor (Decode1)   /*0x8d5956*/
+	wantPrefix = append(wantPrefix, 0x01, 0x00)                                                       // logoBg (Decode2)      /*0x8d592f*/
+	wantPrefix = append(wantPrefix, 0x02)                                                             // logoBgColor (Decode1) /*0x8d593d*/
+	wantPrefix = append(wantPrefix, 0x03, 0x00)                                                       // logo (Decode2)        /*0x8d594a*/
+	wantPrefix = append(wantPrefix, 0x04)                                                             // logoColor (Decode1)   /*0x8d5956*/
 	if !bytes.HasPrefix(got, wantPrefix) {
 		t.Errorf("v79 CharacterSpawn prefix (no level byte):\n got %x\nwant %x", got[:min(len(got), len(wantPrefix))], wantPrefix)
 	}
@@ -409,27 +411,27 @@ func TestCharacterSpawnByteOutputV79(t *testing.T) {
 	// (the last wire byte is the single effect flag @0x8d5f67).
 	avatarBytes := model.Avatar{}.Encode(nil, ctx)(nil)
 	var wantSuffix []byte
-	wantSuffix = append(wantSuffix, 0x64, 0x00) // jobId 100 (Decode2)   /*0x8d597a*/
-	wantSuffix = append(wantSuffix, avatarBytes...) // avatar (opaque §5) /*0x8d59b3*/
+	wantSuffix = append(wantSuffix, 0x64, 0x00)             // jobId 100 (Decode2)   /*0x8d597a*/
+	wantSuffix = append(wantSuffix, avatarBytes...)         // avatar (opaque §5) /*0x8d59b3*/
 	wantSuffix = append(wantSuffix, 0x00, 0x00, 0x00, 0x00) // choco (Decode4)      /*0x8d59c8*/
 	wantSuffix = append(wantSuffix, 0x00, 0x00, 0x00, 0x00) // itemEffect (Decode4) /*0x8d59d2*/
 	wantSuffix = append(wantSuffix, 0x00, 0x00, 0x00, 0x00) // chair (Decode4)      /*0x8d59dc*/
-	wantSuffix = append(wantSuffix, 0x64, 0x00) // x 100 (Decode2)       /*0x8d59ec*/
-	wantSuffix = append(wantSuffix, 0xc8, 0x00) // y 200 (Decode2)       /*0x8d59f9*/
-	wantSuffix = append(wantSuffix, 0x03)       // stance (Decode1)      /*0x8d5a04*/
-	wantSuffix = append(wantSuffix, 0x00, 0x00) // foothold (Decode2)    /*0x8d5a14*/
-	wantSuffix = append(wantSuffix, 0x00)       // bShowAdmin (Decode1)  /*0x8d5a91*/
-	wantSuffix = append(wantSuffix, 0x00)       // pets terminator       /*0x8d5b21*/
+	wantSuffix = append(wantSuffix, 0x64, 0x00)             // x 100 (Decode2)       /*0x8d59ec*/
+	wantSuffix = append(wantSuffix, 0xc8, 0x00)             // y 200 (Decode2)       /*0x8d59f9*/
+	wantSuffix = append(wantSuffix, 0x03)                   // stance (Decode1)      /*0x8d5a04*/
+	wantSuffix = append(wantSuffix, 0x00, 0x00)             // foothold (Decode2)    /*0x8d5a14*/
+	wantSuffix = append(wantSuffix, 0x00)                   // bShowAdmin (Decode1)  /*0x8d5a91*/
+	wantSuffix = append(wantSuffix, 0x00)                   // pets terminator       /*0x8d5b21*/
 	wantSuffix = append(wantSuffix, 0x01, 0x00, 0x00, 0x00) // mountLevel (Decode4) /*0x8d5b9a*/
 	wantSuffix = append(wantSuffix, 0x00, 0x00, 0x00, 0x00) // mountExp (Decode4)   /*0x8d5ba7*/
 	wantSuffix = append(wantSuffix, 0x00, 0x00, 0x00, 0x00) // mountTired (Decode4) /*0x8d5bb4*/
-	wantSuffix = append(wantSuffix, 0x00) // miniRoom (Decode1)    /*0x8d5bc9*/
-	wantSuffix = append(wantSuffix, 0x00) // adBoard (Decode1)     /*0x8d5d2f*/
-	wantSuffix = append(wantSuffix, 0x00) // couple (Decode1)      /*0x8d5e5c*/
-	wantSuffix = append(wantSuffix, 0x00) // friend (Decode1)      /*0x8d5ea1*/
-	wantSuffix = append(wantSuffix, 0x00) // marriage (Decode1)    /*0x8d5ee6*/
-	wantSuffix = append(wantSuffix, 0x00) // newYearCard (Decode1) /*0x8d5f2b*/
-	wantSuffix = append(wantSuffix, 0x00) // effectFlag (Decode1, last read) /*0x8d5f67*/
+	wantSuffix = append(wantSuffix, 0x00)                   // miniRoom (Decode1)    /*0x8d5bc9*/
+	wantSuffix = append(wantSuffix, 0x00)                   // adBoard (Decode1)     /*0x8d5d2f*/
+	wantSuffix = append(wantSuffix, 0x00)                   // couple (Decode1)      /*0x8d5e5c*/
+	wantSuffix = append(wantSuffix, 0x00)                   // friend (Decode1)      /*0x8d5ea1*/
+	wantSuffix = append(wantSuffix, 0x00)                   // marriage (Decode1)    /*0x8d5ee6*/
+	wantSuffix = append(wantSuffix, 0x00)                   // newYearCard (Decode1) /*0x8d5f2b*/
+	wantSuffix = append(wantSuffix, 0x00)                   // effectFlag (Decode1, last read) /*0x8d5f67*/
 	if !bytes.HasSuffix(got, wantSuffix) {
 		n := len(wantSuffix)
 		if n > len(got) {
@@ -598,7 +600,7 @@ func TestCharacterKeyMapByteOutputV79(t *testing.T) {
 	got := NewCharacterKeyMap(keys).Encode(nil, ctx)(nil)
 
 	var want []byte
-	want = append(want, 0x00) // not-reset flag (Decode1 == 0) /*0x569e71*/
+	want = append(want, 0x00)        // not-reset flag (Decode1 == 0) /*0x569e71*/
 	for i := int32(0); i < 89; i++ { // v79 reads 89 FUNCKEY_MAPPED entries /*0x569ea6 v5=89*/
 		if k, ok := keys[i]; ok {
 			want = append(want, byte(k.KeyType)) // nType (DecodeBuffer byte 0) /*0x569ead*/

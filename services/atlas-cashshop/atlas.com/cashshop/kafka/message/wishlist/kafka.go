@@ -5,10 +5,10 @@ import (
 )
 
 const (
-	EnvEventTopicStatus        = "EVENT_TOPIC_WISHLIST_STATUS"
-	StatusEventTypeAdded       = "ADDED"
-	StatusEventTypeDeleted     = "DELETED"
-	StatusEventTypeDeletedAll  = "DELETED_ALL"
+	EnvEventTopicStatus       = "EVENT_TOPIC_WISHLIST_STATUS"
+	StatusEventTypeAdded      = "ADDED"
+	StatusEventTypeDeleted    = "DELETED"
+	StatusEventTypeDeletedAll = "DELETED_ALL"
 )
 
 type StatusEvent[E any] struct {
@@ -18,7 +18,7 @@ type StatusEvent[E any] struct {
 }
 
 type StatusEventAddedBody struct {
-	SerialNumber uint32 `json:"serialNumber"`
+	SerialNumber uint32    `json:"serialNumber"`
 	ItemId       uuid.UUID `json:"itemId"`
 }
 

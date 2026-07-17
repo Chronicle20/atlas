@@ -1,21 +1,20 @@
 package main
 
 import (
-	"context"
-
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-
 	"atlas-configurations/logger"
 	"atlas-configurations/seeder"
 	"atlas-configurations/services"
 	"atlas-configurations/templates"
 	"atlas-configurations/tenants"
+	"context"
 	"os"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 )
 

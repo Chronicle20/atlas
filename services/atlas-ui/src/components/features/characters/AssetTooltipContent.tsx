@@ -75,7 +75,9 @@ export function AssetTooltipContent({ asset, itemName, slotName }: Props) {
   // Two-column key/value grid where labels in column 1 and column 3 each
   // size to their widest content (`max-content`) — that's what makes the
   // values line up vertically across rows like the in-game tooltip.
-  const colsStyle = { gridTemplateColumns: "max-content auto max-content auto" };
+  const colsStyle = {
+    gridTemplateColumns: "max-content auto max-content auto",
+  };
 
   return (
     <div className="space-y-2 w-[400px]">
@@ -150,7 +152,9 @@ export function AssetTooltipContent({ asset, itemName, slotName }: Props) {
           <StatRow label="SPEED" value={a.speed} />
           <StatRow label="JUMP" value={a.jump} />
           {a.level > 0 && <StatRow label="ITEM LEV" value={a.level} />}
-          {a.experience > 0 && <StatRow label="ITEM EXP" value={a.experience} />}
+          {a.experience > 0 && (
+            <StatRow label="ITEM EXP" value={a.experience} />
+          )}
         </dl>
       )}
 

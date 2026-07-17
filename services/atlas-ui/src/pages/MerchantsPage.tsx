@@ -3,13 +3,22 @@ import { Suspense, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { merchantsService } from "@/services/api/merchants.service";
 import { itemsService } from "@/services/api/items.service";
-import type { MerchantShop, ListingSearchResult } from "@/types/models/merchant";
+import type {
+  MerchantShop,
+  ListingSearchResult,
+} from "@/types/models/merchant";
 import type { TenantConfig } from "@/services/api/tenants.service";
 import { useTenantConfiguration } from "@/lib/hooks/api/useTenants";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -44,7 +53,11 @@ async function searchListingsByQuery(
   query: string,
   pageNumber: number,
   pageSize: number,
-): Promise<{ listings: ListingSearchResult[]; total: number; lastPage: number }> {
+): Promise<{
+  listings: ListingSearchResult[];
+  total: number;
+  lastPage: number;
+}> {
   // Numeric short-circuit: query is an item id — no item-strings lookup needed.
   const itemId = parseInt(query, 10);
   if (!isNaN(itemId) && String(itemId) === query) {
@@ -52,7 +65,11 @@ async function searchListingsByQuery(
     return { listings, total: listings.length, lastPage: 1 };
   }
   // Name path: use server-side paged item lookup, then expand listings per item.
-  const page = await itemsService.searchItems({ q: query, pageNumber, pageSize });
+  const page = await itemsService.searchItems({
+    q: query,
+    pageNumber,
+    pageSize,
+  });
   const allResults: ListingSearchResult[] = [];
   for (const item of page.items) {
     const data = await merchantsService.searchListings(parseInt(item.id, 10));
@@ -79,9 +96,20 @@ function MerchantsPageContent() {
 
   const tenantConfigQuery = useTenantConfiguration(activeTenant?.id ?? "");
 
-  const searchResultsQuery = useQuery<{ listings: ListingSearchResult[]; total: number; lastPage: number }, Error>({
-    queryKey: ["merchants", "search-listings", activeTenant?.id ?? "no-tenant", urlQuery, pageNumber, MERCHANTS_PAGE_SIZE],
-    queryFn: () => searchListingsByQuery(urlQuery, pageNumber, MERCHANTS_PAGE_SIZE),
+  const searchResultsQuery = useQuery<
+    { listings: ListingSearchResult[]; total: number; lastPage: number },
+    Error
+  >({
+    queryKey: [
+      "merchants",
+      "search-listings",
+      activeTenant?.id ?? "no-tenant",
+      urlQuery,
+      pageNumber,
+      MERCHANTS_PAGE_SIZE,
+    ],
+    queryFn: () =>
+      searchListingsByQuery(urlQuery, pageNumber, MERCHANTS_PAGE_SIZE),
     enabled: !!activeTenant && urlQuery.length > 0,
   });
 
@@ -90,7 +118,11 @@ function MerchantsPageContent() {
   const error = shopsQuery.error?.message ?? null;
   const tenantConfig: TenantConfig | null = tenantConfigQuery.data ?? null;
 
-  const searchPage = searchResultsQuery.data ?? { listings: [], total: 0, lastPage: 1 };
+  const searchPage = searchResultsQuery.data ?? {
+    listings: [],
+    total: 0,
+    lastPage: 1,
+  };
   const searchResults = searchPage.listings;
   const searchLoading = searchResultsQuery.isFetching;
   const hasSearched = urlQuery.length > 0;
@@ -105,7 +137,10 @@ function MerchantsPageContent() {
       return;
     }
     setPageNumber(1);
-    setSearchParams({ tab: "search", q: searchInput.trim() }, { replace: true });
+    setSearchParams(
+      { tab: "search", q: searchInput.trim() },
+      { replace: true },
+    );
   };
 
   const handleClear = () => {
@@ -139,7 +174,11 @@ function MerchantsPageContent() {
         <h2 className="text-2xl font-bold tracking-tight">Merchants</h2>
       </div>
 
-      <Tabs defaultValue={initialTab} onValueChange={handleTabChange} className="flex-1 min-h-0 flex flex-col">
+      <Tabs
+        defaultValue={initialTab}
+        onValueChange={handleTabChange}
+        className="flex-1 min-h-0 flex flex-col"
+      >
         <TabsList>
           <TabsTrigger value="shops">Shops</TabsTrigger>
           <TabsTrigger value="search">Search Listings</TabsTrigger>
@@ -154,11 +193,18 @@ function MerchantsPageContent() {
             onRefresh={onRefresh}
             isRefreshing={isRefreshing}
             initialVisibilityState={hiddenColumns}
-            emptyState={{ title: "No merchant shops found", description: "There are no active merchant shops for this tenant." }}
+            emptyState={{
+              title: "No merchant shops found",
+              description:
+                "There are no active merchant shops for this tenant.",
+            }}
           />
         </TabsContent>
 
-        <TabsContent value="search" className="flex-1 min-h-0 flex flex-col space-y-4">
+        <TabsContent
+          value="search"
+          className="flex-1 min-h-0 flex flex-col space-y-4"
+        >
           <Card>
             <CardHeader>
               <CardTitle>Search Item Listings</CardTitle>
@@ -184,7 +230,11 @@ function MerchantsPageContent() {
                   )}
                   Search
                 </Button>
-                <Button variant="outline" onClick={handleClear} disabled={searchLoading}>
+                <Button
+                  variant="outline"
+                  onClick={handleClear}
+                  disabled={searchLoading}
+                >
                   Clear
                 </Button>
               </div>
@@ -198,14 +248,17 @@ function MerchantsPageContent() {
                   Results
                   {searchResults.length > 0 && (
                     <span className="ml-2 text-muted-foreground font-normal">
-                      ({searchResults.length} {searchResults.length === 1 ? "listing" : "listings"})
+                      ({searchResults.length}{" "}
+                      {searchResults.length === 1 ? "listing" : "listings"})
                     </span>
                   )}
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex-1 min-h-0 flex flex-col">
                 {searchLoading ? (
-                  <div className="text-center py-8 text-muted-foreground">Searching...</div>
+                  <div className="text-center py-8 text-muted-foreground">
+                    Searching...
+                  </div>
                 ) : searchResults.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     No listings found matching your search criteria.
@@ -227,7 +280,11 @@ function MerchantsPageContent() {
                       </TableHeader>
                       <TableBody>
                         {searchResults.map((result) => (
-                          <SearchResultRow key={result.id} result={result} tenantConfig={tenantConfig} />
+                          <SearchResultRow
+                            key={result.id}
+                            result={result}
+                            tenantConfig={tenantConfig}
+                          />
                         ))}
                       </TableBody>
                     </Table>
@@ -251,19 +308,28 @@ function MerchantsPageContent() {
   );
 }
 
-function SearchResultRow({ result, tenantConfig }: { result: ListingSearchResult; tenantConfig: TenantConfig | null }) {
+function SearchResultRow({
+  result,
+  tenantConfig,
+}: {
+  result: ListingSearchResult;
+  tenantConfig: TenantConfig | null;
+}) {
   const { activeTenant } = useTenant();
   const a = result.attributes;
-  const worldName = tenantConfig?.attributes.worlds[a.worldId]?.name || `World ${a.worldId}`;
+  const worldName =
+    tenantConfig?.attributes.worlds[a.worldId]?.name || `World ${a.worldId}`;
 
-  const iconUrl = activeTenant ? getAssetIconUrl(
-    activeTenant.id,
-    activeTenant.attributes.region,
-    activeTenant.attributes.majorVersion,
-    activeTenant.attributes.minorVersion,
-    'item',
-    a.itemId,
-  ) : '';
+  const iconUrl = activeTenant
+    ? getAssetIconUrl(
+        activeTenant.id,
+        activeTenant.attributes.region,
+        activeTenant.attributes.majorVersion,
+        activeTenant.attributes.minorVersion,
+        "item",
+        a.itemId,
+      )
+    : "";
 
   return (
     <TableRow>
@@ -286,7 +352,10 @@ function SearchResultRow({ result, tenantConfig }: { result: ListingSearchResult
         </Link>
       </TableCell>
       <TableCell>
-        <Link to={`/merchants/${a.shopId}`} className="font-medium text-primary hover:underline">
+        <Link
+          to={`/merchants/${a.shopId}`}
+          className="font-medium text-primary hover:underline"
+        >
           {a.shopTitle || "Untitled"}
         </Link>
       </TableCell>

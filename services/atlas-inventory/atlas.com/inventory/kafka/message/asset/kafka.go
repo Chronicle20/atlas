@@ -51,8 +51,8 @@ type AssetData struct {
 	Hands          uint16     `json:"hands"`
 	Speed          uint16     `json:"speed"`
 	Jump           uint16     `json:"jump"`
-	Slots     uint16 `json:"slots"`
-	LevelType byte   `json:"levelType"`
+	Slots          uint16     `json:"slots"`
+	LevelType      byte       `json:"levelType"`
 	Level          byte       `json:"level"`
 	Experience     uint32     `json:"experience"`
 	HammersApplied uint32     `json:"hammersApplied"`
@@ -71,8 +71,7 @@ type UpdatedStatusEventBody struct {
 	AssetData
 }
 
-type DeletedStatusEventBody struct {
-}
+type DeletedStatusEventBody struct{}
 
 type MovedStatusEventBody struct {
 	OldSlot   int16     `json:"oldSlot"`

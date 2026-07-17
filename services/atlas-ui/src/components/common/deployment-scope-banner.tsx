@@ -15,7 +15,9 @@ export function DeploymentScopeBanner() {
   return (
     <Alert variant="warning" className="mx-2 w-auto py-2">
       <Globe className="h-4 w-4" />
-      <AlertDescription>Changes on this page affect all tenants.</AlertDescription>
+      <AlertDescription>
+        Changes on this page affect all tenants.
+      </AlertDescription>
     </Alert>
   );
 }

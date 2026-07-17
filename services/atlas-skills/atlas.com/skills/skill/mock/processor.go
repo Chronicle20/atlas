@@ -5,8 +5,9 @@ import (
 	"atlas-skills/skill"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // ProcessorMock is a mock implementation of skill.Processor

@@ -9,6 +9,8 @@ import (
 	"atlas-login/socket/writer"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
@@ -16,7 +18,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {

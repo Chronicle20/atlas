@@ -4,12 +4,13 @@ import (
 	"atlas-merchant/listing"
 	"errors"
 
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 func getById(id uuid.UUID) database.EntityProvider[Entity] {

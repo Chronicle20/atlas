@@ -2,7 +2,6 @@ package main
 
 import (
 	"atlas-storage/asset"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	account2 "atlas-storage/kafka/consumer/account"
 	"atlas-storage/kafka/consumer/character"
 	"atlas-storage/kafka/consumer/compartment"
@@ -11,16 +10,20 @@ import (
 	"atlas-storage/projection"
 	"atlas-storage/service"
 	"atlas-storage/storage"
+	"os"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+
 	lifecycle "github.com/Chronicle20/atlas/libs/atlas-service"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
-	"os"
+
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	"gorm.io/gorm"
 )
 
 const serviceName = "atlas-storage"
@@ -99,7 +102,7 @@ func main() {
 			l.WithError(err).Fatal("Unable to register kafka handlers.")
 		}
 
-	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
+		tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 	}
 

@@ -8,9 +8,10 @@ import (
 	"sync"
 	"time"
 
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const (

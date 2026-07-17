@@ -27,17 +27,16 @@ import (
 	"atlas-channel/kafka/consumer/instance_transport"
 	"atlas-channel/kafka/consumer/invite"
 	"atlas-channel/kafka/consumer/macro"
-	"atlas-channel/kafka/consumer/map"
+	_map "atlas-channel/kafka/consumer/map"
 	merchantConsumer "atlas-channel/kafka/consumer/merchant"
 	"atlas-channel/kafka/consumer/message"
 	"atlas-channel/kafka/consumer/messenger"
 	mistConsumer "atlas-channel/kafka/consumer/mist"
-	mtsConsumer "atlas-channel/kafka/consumer/mts"
 	"atlas-channel/kafka/consumer/monster"
 	mbconsumer "atlas-channel/kafka/consumer/monsterbook"
 	mountConsumer "atlas-channel/kafka/consumer/mount"
+	mtsConsumer "atlas-channel/kafka/consumer/mts"
 	note3 "atlas-channel/kafka/consumer/note"
-	walletConsumer "atlas-channel/kafka/consumer/wallet"
 	"atlas-channel/kafka/consumer/npc/conversation"
 	"atlas-channel/kafka/consumer/npc/shop"
 	"atlas-channel/kafka/consumer/party"
@@ -53,6 +52,7 @@ import (
 	storage3 "atlas-channel/kafka/consumer/storage"
 	summonConsumer "atlas-channel/kafka/consumer/summon"
 	"atlas-channel/kafka/consumer/system_message"
+	walletConsumer "atlas-channel/kafka/consumer/wallet"
 	"atlas-channel/listener"
 	"atlas-channel/logger"
 	monsterDomain "atlas-channel/monster"
@@ -132,23 +132,26 @@ import (
 	summoncb "github.com/Chronicle20/atlas/libs/atlas-packet/summon/clientbound"
 	summonsb "github.com/Chronicle20/atlas/libs/atlas-packet/summon/serverbound"
 	ui2 "github.com/Chronicle20/atlas/libs/atlas-packet/ui/clientbound"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	channel2 "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
-	"github.com/Chronicle20/atlas/libs/atlas-opcodes"
+	opcodes "github.com/Chronicle20/atlas/libs/atlas-opcodes"
 	restserver "github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	socket2 "github.com/Chronicle20/atlas/libs/atlas-socket"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
-const serviceName = "atlas-channel"
-const consumerGroupIdTemplate = "Channel Service - %s"
+const (
+	serviceName             = "atlas-channel"
+	consumerGroupIdTemplate = "Channel Service - %s"
+)
 
 func main() {
 	l := logger.CreateLogger(serviceName)
@@ -162,7 +165,7 @@ func main() {
 	}
 
 	serviceId := uuid.MustParse(os.Getenv("SERVICE_ID"))
-	var consumerGroupId = consumergroup.Resolve(consumerGroupIdTemplate, serviceId.String())
+	consumerGroupId := consumergroup.Resolve(consumerGroupIdTemplate, serviceId.String())
 
 	validatorMap := produceValidators()
 	handlerMap := produceHandlers()

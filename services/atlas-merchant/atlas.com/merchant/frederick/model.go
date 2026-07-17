@@ -15,11 +15,11 @@ type ItemModel struct {
 	itemSnapshot asset.AssetData
 }
 
-func (m ItemModel) Id() uuid.UUID         { return m.id }
-func (m ItemModel) CharacterId() uint32    { return m.characterId }
-func (m ItemModel) ItemId() uint32         { return m.itemId }
-func (m ItemModel) ItemType() byte         { return m.itemType }
-func (m ItemModel) Quantity() uint16       { return m.quantity }
+func (m ItemModel) Id() uuid.UUID                 { return m.id }
+func (m ItemModel) CharacterId() uint32           { return m.characterId }
+func (m ItemModel) ItemId() uint32                { return m.itemId }
+func (m ItemModel) ItemType() byte                { return m.itemType }
+func (m ItemModel) Quantity() uint16              { return m.quantity }
 func (m ItemModel) ItemSnapshot() asset.AssetData { return m.itemSnapshot }
 
 func MakeItem(e ItemEntity) (ItemModel, error) {
@@ -39,7 +39,7 @@ type MesoModel struct {
 	amount      uint32
 }
 
-func (m MesoModel) Id() uuid.UUID      { return m.id }
+func (m MesoModel) Id() uuid.UUID       { return m.id }
 func (m MesoModel) CharacterId() uint32 { return m.characterId }
 func (m MesoModel) Amount() uint32      { return m.amount }
 

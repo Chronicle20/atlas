@@ -1,14 +1,14 @@
 package guild
 
 import (
-	"context"
-
 	"atlas-saga-orchestrator/kafka/message/guild"
 	"atlas-saga-orchestrator/kafka/producer"
+	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 )
 
 type Processor interface {

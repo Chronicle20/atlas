@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 const WeddingProgressWriter = "WeddingProgress"
@@ -23,9 +24,9 @@ func NewWeddingProgress(step byte, groomId uint32, brideId uint32) WeddingProgre
 	return WeddingProgress{step: step, groomId: groomId, brideId: brideId}
 }
 
-func (m WeddingProgress) Step() byte       { return m.step }
-func (m WeddingProgress) GroomId() uint32  { return m.groomId }
-func (m WeddingProgress) BrideId() uint32  { return m.brideId }
+func (m WeddingProgress) Step() byte      { return m.step }
+func (m WeddingProgress) GroomId() uint32 { return m.groomId }
+func (m WeddingProgress) BrideId() uint32 { return m.brideId }
 
 func (m WeddingProgress) Operation() string { return WeddingProgressWriter }
 func (m WeddingProgress) String() string {

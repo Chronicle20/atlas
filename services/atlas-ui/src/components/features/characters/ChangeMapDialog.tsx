@@ -1,12 +1,22 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { type Character } from "@/types/models/character";
 import { useTenant } from "@/context/tenant-context";
-import { useCharacterLocation, characterLocationKeys } from "@/lib/hooks/api/useCharacterLocation";
+import {
+  useCharacterLocation,
+  characterLocationKeys,
+} from "@/lib/hooks/api/useCharacterLocation";
 import { locationsService } from "@/services/api/locations.service";
 import { toast } from "sonner";
 
@@ -17,14 +27,23 @@ interface ChangeMapDialogProps {
   onSuccess?: () => void;
 }
 
-export function ChangeMapDialog({ character, open, onOpenChange, onSuccess }: ChangeMapDialogProps) {
+export function ChangeMapDialog({
+  character,
+  open,
+  onOpenChange,
+  onSuccess,
+}: ChangeMapDialogProps) {
   const { activeTenant } = useTenant();
   const queryClient = useQueryClient();
   const { data: location } = useCharacterLocation(activeTenant, character.id);
   const currentMapId = location?.attributes.mapId;
 
-  const [mapId, setMapId] = useState<string>(currentMapId != null ? String(currentMapId) : "");
-  const [syncedMapId, setSyncedMapId] = useState<number | undefined>(currentMapId);
+  const [mapId, setMapId] = useState<string>(
+    currentMapId != null ? String(currentMapId) : "",
+  );
+  const [syncedMapId, setSyncedMapId] = useState<number | undefined>(
+    currentMapId,
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [validationError, setValidationError] = useState<string>("");
 
@@ -39,51 +58,51 @@ export function ChangeMapDialog({ character, open, onOpenChange, onSuccess }: Ch
   const validateMapId = (value: string): string => {
     // Clear any existing validation error
     setValidationError("");
-    
+
     // Check if empty
     if (!value.trim()) {
       return "Map ID is required";
     }
-    
+
     // Check if contains only digits (no decimals, no scientific notation, no negative signs)
     if (!/^\d+$/.test(value.trim())) {
       return "Map ID must contain only numbers";
     }
-    
+
     const numValue = parseInt(value, 10);
-    
+
     // Check for valid integer range (Map IDs are typically positive integers)
     if (numValue < 0) {
       return "Map ID must be a positive number";
     }
-    
+
     // Check for reasonable upper bound (prevent extremely large numbers)
     if (numValue > 2147483647) {
       return "Map ID is too large";
     }
-    
+
     // Check if same as current map
     if (currentMapId != null && numValue === currentMapId) {
       return "Character is already on this map";
     }
-    
+
     return "";
   };
 
   const handleMapIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setMapId(value);
-    
+
     const error = validateMapId(value);
     setValidationError(error);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Clear any existing validation errors
     setValidationError("");
-    
+
     if (!activeTenant) {
       toast.error("No active tenant selected");
       return;
@@ -100,10 +119,12 @@ export function ChangeMapDialog({ character, open, onOpenChange, onSuccess }: Ch
     const mapIdNumber = parseInt(mapId, 10);
 
     setIsLoading(true);
-    
+
     try {
       await locationsService.changeMap(character.id, { mapId: mapIdNumber });
-      toast.success(`Successfully changed ${character.attributes.name}'s map to ${mapIdNumber}`);
+      toast.success(
+        `Successfully changed ${character.attributes.name}'s map to ${mapIdNumber}`,
+      );
 
       // Refresh the character's location so the dialog/table reflect the new map.
       queryClient.invalidateQueries({
@@ -122,16 +143,19 @@ export function ChangeMapDialog({ character, open, onOpenChange, onSuccess }: Ch
 
       if (error instanceof Error) {
         errorMessage = error.message;
-        
+
         // Add contextual information for specific error types
         if (error.message.includes("Network error")) {
-          errorMessage += ". Please check your internet connection and try again.";
+          errorMessage +=
+            ". Please check your internet connection and try again.";
         } else if (error.message.includes("Authentication failed")) {
           errorMessage += ". Please refresh the page and try again.";
         } else if (error.message.includes("Permission denied")) {
-          errorMessage += ". You may not have the required permissions to perform this action.";
+          errorMessage +=
+            ". You may not have the required permissions to perform this action.";
         } else if (error.message.includes("Server error")) {
-          errorMessage += ". Please try again later or contact support if the issue persists.";
+          errorMessage +=
+            ". Please try again later or contact support if the issue persists.";
         } else if (error.message.includes("Invalid map ID")) {
           // This is a validation error from the server, reset to show it in validation
           setValidationError("The map ID is invalid or does not exist");
@@ -139,14 +163,15 @@ export function ChangeMapDialog({ character, open, onOpenChange, onSuccess }: Ch
         }
       } else {
         // Handle non-Error objects
-        errorMessage = "An unexpected error occurred while updating the character map";
+        errorMessage =
+          "An unexpected error occurred while updating the character map";
       }
-      
+
       toast.error(errorMessage);
-      
+
       // Log error for debugging (only in development)
       if (import.meta.env.DEV) {
-        console.error('Map change error:', error);
+        console.error("Map change error:", error);
       }
     } finally {
       setIsLoading(false);
@@ -171,9 +196,11 @@ export function ChangeMapDialog({ character, open, onOpenChange, onSuccess }: Ch
           <DialogHeader>
             <DialogTitle>Change Map Location</DialogTitle>
             <DialogDescription>
-              Change the map location for character <strong>{character.attributes.name}</strong>.
+              Change the map location for character{" "}
+              <strong>{character.attributes.name}</strong>.
               <br />
-              Current map: <strong>{currentMapId != null ? currentMapId : "—"}</strong>
+              Current map:{" "}
+              <strong>{currentMapId != null ? currentMapId : "—"}</strong>
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -187,7 +214,11 @@ export function ChangeMapDialog({ character, open, onOpenChange, onSuccess }: Ch
                 placeholder="Enter map ID"
                 disabled={isLoading}
                 required
-                className={validationError ? "border-red-500 focus-visible:ring-red-500" : ""}
+                className={
+                  validationError
+                    ? "border-red-500 focus-visible:ring-red-500"
+                    : ""
+                }
               />
               {validationError && (
                 <p className="text-sm text-red-500 mt-1">{validationError}</p>

@@ -6,14 +6,15 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
 )
 
 // -----------------------------------------------------------------------------
@@ -552,4 +553,3 @@ func TestReslotEmitsSlotChangedAndNoOpsWhenUnchanged(t *testing.T) {
 		t.Fatalf("reslot not persisted: slot=%d portal=%d x=%d y=%d", got.Slot(), got.TownPortalId(), got.TownX(), got.TownY())
 	}
 }
-

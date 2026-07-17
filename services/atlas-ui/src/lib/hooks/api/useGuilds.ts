@@ -10,25 +10,40 @@
  * are handled through in-game systems via Kafka events.
  */
 
-import { useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query';
-import { guildsService, type Guild, type GuildAttributes, type GuildMember } from '@/services/api/guilds.service';
-import type { ServiceOptions, QueryOptions } from '@/lib/api/query-params';
-import type { Tenant } from '@/types/models/tenant';
+import {
+  useQuery,
+  useQueryClient,
+  type UseQueryResult,
+} from "@tanstack/react-query";
+import {
+  guildsService,
+  type Guild,
+  type GuildAttributes,
+  type GuildMember,
+} from "@/services/api/guilds.service";
+import type { ServiceOptions, QueryOptions } from "@/lib/api/query-params";
+import type { Tenant } from "@/types/models/tenant";
 
 // Query keys for consistent cache management
 export const guildKeys = {
-  all: ['guilds'] as const,
-  lists: () => [...guildKeys.all, 'list'] as const,
-  list: (tenant: Tenant | null, options?: QueryOptions) => [...guildKeys.lists(), tenant?.id, options] as const,
-  details: () => [...guildKeys.all, 'detail'] as const,
-  detail: (tenant: Tenant | null, id: string) => [...guildKeys.details(), tenant?.id, id] as const,
+  all: ["guilds"] as const,
+  lists: () => [...guildKeys.all, "list"] as const,
+  list: (tenant: Tenant | null, options?: QueryOptions) =>
+    [...guildKeys.lists(), tenant?.id, options] as const,
+  details: () => [...guildKeys.all, "detail"] as const,
+  detail: (tenant: Tenant | null, id: string) =>
+    [...guildKeys.details(), tenant?.id, id] as const,
 
   // Specialized query keys
-  searches: () => [...guildKeys.all, 'search'] as const,
-  search: (tenant: Tenant | null, searchTerm: string, worldId?: number) => [...guildKeys.searches(), tenant?.id, searchTerm, worldId] as const,
-  byWorld: (tenant: Tenant | null, worldId: number) => [...guildKeys.lists(), tenant?.id, 'world', worldId] as const,
-  withSpace: (tenant: Tenant | null, worldId?: number) => [...guildKeys.lists(), tenant?.id, 'space', worldId] as const,
-  rankings: (tenant: Tenant | null, worldId?: number, limit?: number) => [...guildKeys.lists(), tenant?.id, 'rankings', worldId, limit] as const,
+  searches: () => [...guildKeys.all, "search"] as const,
+  search: (tenant: Tenant | null, searchTerm: string, worldId?: number) =>
+    [...guildKeys.searches(), tenant?.id, searchTerm, worldId] as const,
+  byWorld: (tenant: Tenant | null, worldId: number) =>
+    [...guildKeys.lists(), tenant?.id, "world", worldId] as const,
+  withSpace: (tenant: Tenant | null, worldId?: number) =>
+    [...guildKeys.lists(), tenant?.id, "space", worldId] as const,
+  rankings: (tenant: Tenant | null, worldId?: number, limit?: number) =>
+    [...guildKeys.lists(), tenant?.id, "rankings", worldId, limit] as const,
 };
 
 // ============================================================================
@@ -38,10 +53,16 @@ export const guildKeys = {
 /**
  * Hook to fetch all guilds for a tenant
  */
-export function useGuilds(tenant: Tenant | null, options?: QueryOptions): UseQueryResult<Guild[], Error> {
+export function useGuilds(
+  tenant: Tenant | null,
+  options?: QueryOptions,
+): UseQueryResult<Guild[], Error> {
   return useQuery({
     queryKey: guildKeys.list(tenant, options),
-    queryFn: () => tenant ? guildsService.getAll({ ...options, useCache: false }) : Promise.reject(new Error('Tenant is required')),
+    queryFn: () =>
+      tenant
+        ? guildsService.getAll({ ...options, useCache: false })
+        : Promise.reject(new Error("Tenant is required")),
     enabled: !!tenant?.id,
     gcTime: 10 * 60 * 1000, // 10 minutes
   });
@@ -50,10 +71,15 @@ export function useGuilds(tenant: Tenant | null, options?: QueryOptions): UseQue
 /**
  * Hook to fetch a specific guild by ID
  */
-export function useGuild(tenant: Tenant, guildId: string, options?: ServiceOptions): UseQueryResult<Guild, Error> {
+export function useGuild(
+  tenant: Tenant,
+  guildId: string,
+  options?: ServiceOptions,
+): UseQueryResult<Guild, Error> {
   return useQuery({
     queryKey: guildKeys.detail(tenant, guildId),
-    queryFn: () => guildsService.getById( guildId, { ...options, useCache: false }),
+    queryFn: () =>
+      guildsService.getById(guildId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!guildId,
     gcTime: 10 * 60 * 1000,
   });
@@ -62,10 +88,15 @@ export function useGuild(tenant: Tenant, guildId: string, options?: ServiceOptio
 /**
  * Hook to fetch guilds by world ID
  */
-export function useGuildsByWorld(tenant: Tenant, worldId: number, options?: ServiceOptions): UseQueryResult<Guild[], Error> {
+export function useGuildsByWorld(
+  tenant: Tenant,
+  worldId: number,
+  options?: ServiceOptions,
+): UseQueryResult<Guild[], Error> {
   return useQuery({
     queryKey: guildKeys.byWorld(tenant, worldId),
-    queryFn: () => guildsService.getByWorld(worldId, { ...options, useCache: false }),
+    queryFn: () =>
+      guildsService.getByWorld(worldId, { ...options, useCache: false }),
     enabled: !!tenant?.id && worldId !== undefined,
     gcTime: 10 * 60 * 1000,
   });
@@ -78,11 +109,15 @@ export function useGuildSearch(
   tenant: Tenant,
   searchTerm: string,
   worldId?: number,
-  options?: ServiceOptions
+  options?: ServiceOptions,
 ): UseQueryResult<Guild[], Error> {
   return useQuery({
     queryKey: guildKeys.search(tenant, searchTerm, worldId),
-    queryFn: () => guildsService.search(searchTerm, worldId, { ...options, useCache: false }),
+    queryFn: () =>
+      guildsService.search(searchTerm, worldId, {
+        ...options,
+        useCache: false,
+      }),
     enabled: !!tenant?.id && !!searchTerm,
     gcTime: 5 * 60 * 1000,
   });
@@ -91,10 +126,15 @@ export function useGuildSearch(
 /**
  * Hook to fetch guilds with available space
  */
-export function useGuildsWithSpace(tenant: Tenant, worldId?: number, options?: ServiceOptions): UseQueryResult<Guild[], Error> {
+export function useGuildsWithSpace(
+  tenant: Tenant,
+  worldId?: number,
+  options?: ServiceOptions,
+): UseQueryResult<Guild[], Error> {
   return useQuery({
     queryKey: guildKeys.withSpace(tenant, worldId),
-    queryFn: () => guildsService.getWithSpace(worldId, { ...options, useCache: false }),
+    queryFn: () =>
+      guildsService.getWithSpace(worldId, { ...options, useCache: false }),
     enabled: !!tenant?.id,
     gcTime: 8 * 60 * 1000,
   });
@@ -107,11 +147,15 @@ export function useGuildRankings(
   tenant: Tenant,
   worldId?: number,
   limit = 50,
-  options?: ServiceOptions
+  options?: ServiceOptions,
 ): UseQueryResult<Guild[], Error> {
   return useQuery({
     queryKey: guildKeys.rankings(tenant, worldId, limit),
-    queryFn: () => guildsService.getRankings(worldId, limit, { ...options, useCache: false }),
+    queryFn: () =>
+      guildsService.getRankings(worldId, limit, {
+        ...options,
+        useCache: false,
+      }),
     enabled: !!tenant?.id,
     gcTime: 15 * 60 * 1000,
   });
@@ -120,10 +164,15 @@ export function useGuildRankings(
 /**
  * Hook to check if a guild exists
  */
-export function useGuildExists(tenant: Tenant, guildId: string, options?: ServiceOptions): UseQueryResult<boolean, Error> {
+export function useGuildExists(
+  tenant: Tenant,
+  guildId: string,
+  options?: ServiceOptions,
+): UseQueryResult<boolean, Error> {
   return useQuery({
-    queryKey: [...guildKeys.detail(tenant, guildId), 'exists'],
-    queryFn: () => guildsService.exists(guildId, { ...options, useCache: false }),
+    queryKey: [...guildKeys.detail(tenant, guildId), "exists"],
+    queryFn: () =>
+      guildsService.exists(guildId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!guildId,
     gcTime: 10 * 60 * 1000,
   });
@@ -132,10 +181,15 @@ export function useGuildExists(tenant: Tenant, guildId: string, options?: Servic
 /**
  * Hook to get guild member count
  */
-export function useGuildMemberCount(tenant: Tenant, guildId: string, options?: ServiceOptions): UseQueryResult<number, Error> {
+export function useGuildMemberCount(
+  tenant: Tenant,
+  guildId: string,
+  options?: ServiceOptions,
+): UseQueryResult<number, Error> {
   return useQuery({
-    queryKey: [...guildKeys.detail(tenant, guildId), 'memberCount'],
-    queryFn: () => guildsService.getMemberCount(guildId, { ...options, useCache: false }),
+    queryKey: [...guildKeys.detail(tenant, guildId), "memberCount"],
+    queryFn: () =>
+      guildsService.getMemberCount(guildId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!guildId,
     gcTime: 8 * 60 * 1000,
   });
@@ -152,16 +206,24 @@ export function useInvalidateGuilds() {
   const queryClient = useQueryClient();
 
   return {
-    invalidateAll: () => queryClient.invalidateQueries({ queryKey: guildKeys.all }),
-    invalidateLists: () => queryClient.invalidateQueries({ queryKey: guildKeys.lists() }),
+    invalidateAll: () =>
+      queryClient.invalidateQueries({ queryKey: guildKeys.all }),
+    invalidateLists: () =>
+      queryClient.invalidateQueries({ queryKey: guildKeys.lists() }),
     invalidateGuild: (tenant: Tenant, guildId: string) =>
-      queryClient.invalidateQueries({ queryKey: guildKeys.detail(tenant, guildId) }),
+      queryClient.invalidateQueries({
+        queryKey: guildKeys.detail(tenant, guildId),
+      }),
     invalidateByWorld: (tenant: Tenant, worldId: number) =>
-      queryClient.invalidateQueries({ queryKey: guildKeys.byWorld(tenant, worldId) }),
-    invalidateSearches: () => queryClient.invalidateQueries({ queryKey: guildKeys.searches() }),
-    invalidateRankings: () => queryClient.invalidateQueries({
-      queryKey: [...guildKeys.lists(), undefined, undefined, 'rankings']
-    }),
+      queryClient.invalidateQueries({
+        queryKey: guildKeys.byWorld(tenant, worldId),
+      }),
+    invalidateSearches: () =>
+      queryClient.invalidateQueries({ queryKey: guildKeys.searches() }),
+    invalidateRankings: () =>
+      queryClient.invalidateQueries({
+        queryKey: [...guildKeys.lists(), undefined, undefined, "rankings"],
+      }),
   };
 }
 

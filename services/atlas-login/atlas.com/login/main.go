@@ -25,7 +25,7 @@ import (
 
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 
-	"github.com/Chronicle20/atlas/libs/atlas-opcodes"
+	opcodes "github.com/Chronicle20/atlas/libs/atlas-opcodes"
 	account3 "github.com/Chronicle20/atlas/libs/atlas-packet/account/serverbound"
 	charcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	charsb "github.com/Chronicle20/atlas/libs/atlas-packet/character/serverbound"
@@ -33,7 +33,10 @@ import (
 	loginSB "github.com/Chronicle20/atlas/libs/atlas-packet/login/serverbound"
 	socketcb "github.com/Chronicle20/atlas/libs/atlas-packet/socket/clientbound"
 	socketsb "github.com/Chronicle20/atlas/libs/atlas-packet/socket/serverbound"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
@@ -41,13 +44,13 @@ import (
 	restserver "github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	socket2 "github.com/Chronicle20/atlas/libs/atlas-socket"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
-const serviceName = "atlas-login"
-const consumerGroupIdTemplate = "ChannelConnect Service - %s"
+const (
+	serviceName             = "atlas-login"
+	consumerGroupIdTemplate = "ChannelConnect Service - %s"
+)
 
 func main() {
 	l := logger.CreateLogger(serviceName)
@@ -61,7 +64,7 @@ func main() {
 	}
 
 	serviceId := uuid.MustParse(os.Getenv("SERVICE_ID"))
-	var consumerGroupId = consumergroup.Resolve(consumerGroupIdTemplate, serviceId.String())
+	consumerGroupId := consumergroup.Resolve(consumerGroupIdTemplate, serviceId.String())
 
 	validatorMap := produceValidators()
 	handlerMap := produceHandlers()

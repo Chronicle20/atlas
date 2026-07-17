@@ -13,9 +13,10 @@ import (
 	"atlas-merchant/tasks"
 	"atlas-merchant/visitor"
 	"context"
+	"os"
+
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
-	"os"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"

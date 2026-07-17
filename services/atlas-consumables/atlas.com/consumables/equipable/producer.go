@@ -4,11 +4,12 @@ import (
 	"atlas-consumables/asset"
 	"atlas-consumables/kafka/message/compartment"
 
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
 )
 
 type Change func(b *asset.ModelBuilder)
@@ -37,9 +38,9 @@ func modifyEquipmentProvider(characterId uint32, transactionId uuid.UUID, a asse
 			Hands:          a.Hands(),
 			Speed:          a.Speed(),
 			Jump:           a.Jump(),
-			Slots:     a.Slots(),
-			Flag:      a.Flag(),
-			LevelType: a.LevelType(),
+			Slots:          a.Slots(),
+			Flag:           a.Flag(),
+			LevelType:      a.LevelType(),
 			Level:          a.Level(),
 			Experience:     a.Experience(),
 			HammersApplied: a.HammersApplied(),

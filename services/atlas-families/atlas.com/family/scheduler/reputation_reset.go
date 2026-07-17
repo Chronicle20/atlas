@@ -1,16 +1,15 @@
 package scheduler
 
 import (
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-
+	"atlas-family/family"
+	"atlas-family/kafka/message"
 	"atlas-family/kafka/producer"
 	"context"
 	"os"
 	"strconv"
 	"time"
 
-	"atlas-family/family"
-	"atlas-family/kafka/message"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"

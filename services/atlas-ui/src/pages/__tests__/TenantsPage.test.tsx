@@ -60,9 +60,9 @@ function defaultUseTenantValue() {
 
 async function openRenameDialogFor(tenantId: string) {
   const user = userEvent.setup();
-  const row = screen.getByText(
-    tenantId === "aaa" ? "Acme" : "Beta",
-  ).closest("tr");
+  const row = screen
+    .getByText(tenantId === "aaa" ? "Acme" : "Beta")
+    .closest("tr");
   if (!row) throw new Error("row not found");
 
   const menuButton = within(row as HTMLElement).getByRole("button", {
@@ -122,7 +122,9 @@ describe("TenantsPage rename flow", () => {
     const save = within(dialog).getByRole("button", { name: /^save$/i });
     expect(save).toBeDisabled();
     await waitFor(() => {
-      expect(within(dialog).getByText(/tenant name is required/i)).toBeInTheDocument();
+      expect(
+        within(dialog).getByText(/tenant name is required/i),
+      ).toBeInTheDocument();
     });
     expect(updateTenantMock).not.toHaveBeenCalled();
   });
@@ -163,7 +165,9 @@ describe("TenantsPage rename flow", () => {
     await user.click(save);
 
     await waitFor(() => {
-      expect(updateTenantMock).toHaveBeenCalledWith(tenantA, { name: "Acme Renamed" });
+      expect(updateTenantMock).toHaveBeenCalledWith(tenantA, {
+        name: "Acme Renamed",
+      });
     });
     expect(refreshTenantsMock).toHaveBeenCalled();
     await waitFor(() => {
@@ -175,7 +179,9 @@ describe("TenantsPage rename flow", () => {
   });
 
   it("keeps dialog open, shows error toast, logs to console.error on PATCH failure", async () => {
-    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
     (updateTenantMock as Mock).mockRejectedValueOnce(new Error("boom"));
 
     renderPage();

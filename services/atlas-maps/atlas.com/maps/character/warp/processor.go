@@ -1,19 +1,21 @@
 package warp
 
 import (
-	"context"
-
 	"atlas-maps/character/location"
 	"atlas-maps/kafka/message"
-	characterKafka "atlas-maps/kafka/message/character"
 	"atlas-maps/kafka/producer"
+	"context"
+
+	characterKafka "atlas-maps/kafka/message/character"
+
 	_map "atlas-maps/map"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 // mapTransitioner is the narrow slice of _map.Processor that warp needs. It

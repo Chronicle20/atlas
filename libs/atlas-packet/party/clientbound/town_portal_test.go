@@ -3,10 +3,11 @@ package clientbound
 import (
 	"testing"
 
+	"github.com/sirupsen/logrus"
+
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 // TestTownPortalWire pins the PARTY_OPERATION town-portal body across versions.

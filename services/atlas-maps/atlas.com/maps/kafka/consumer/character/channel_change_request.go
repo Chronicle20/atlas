@@ -8,10 +8,11 @@ import (
 	_map "atlas-maps/map"
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
 // handleChannelChangeRequestFunc consumes CHANNEL_CHANGE_REQUEST commands

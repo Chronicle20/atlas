@@ -7,10 +7,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const WeatherTask = "weather_task"

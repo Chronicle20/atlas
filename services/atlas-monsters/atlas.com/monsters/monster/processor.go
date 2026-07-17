@@ -12,15 +12,16 @@ import (
 	"sort"
 	"time"
 
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	map2 "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
-	"go.opentelemetry.io/otel"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // Processor defines the interface for monster processing operations
@@ -284,7 +285,7 @@ func (p *ProcessorImpl) getControllerCandidate(f field.Model, monsterX int16, mo
 		return nil
 	})
 
-	var index = uint32(0)
+	index := uint32(0)
 	for key, val := range controlCounts {
 		if index == 0 {
 			index = key

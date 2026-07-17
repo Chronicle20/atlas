@@ -23,9 +23,9 @@ const VIRTUALIZATION_CONFIG = {
   throttleMs: 16, // Throttle scroll events to ~60fps
 };
 
-export function VirtualizedNpcGrid({ 
-  npcs, 
-  isLoading = false, 
+export function VirtualizedNpcGrid({
+  npcs,
+  isLoading = false,
   containerHeight = 600,
   onBulkUpdateShop,
   enableVirtualization = true,
@@ -40,7 +40,7 @@ export function VirtualizedNpcGrid({
   // Initialize with a sensible default based on window width to avoid single-column flash on large screens
   const getInitialItemsPerRow = (): number => {
     if (itemsPerRow) return itemsPerRow;
-    if (typeof window === 'undefined') return 6; // SSR default
+    if (typeof window === "undefined") return 6; // SSR default
     const width = window.innerWidth;
     if (width >= 1536) return 8;
     if (width >= 1280) return 6;
@@ -49,20 +49,25 @@ export function VirtualizedNpcGrid({
     if (width >= 640) return 3;
     return 2;
   };
-  const [actualItemsPerRow, setActualItemsPerRow] = useState(getInitialItemsPerRow);
-  
-  // Calculate items per row based on container width and responsive breakpoints
-  const calculateItemsPerRow = useCallback((width: number): number => {
-    if (itemsPerRow) return itemsPerRow;
+  const [actualItemsPerRow, setActualItemsPerRow] = useState(
+    getInitialItemsPerRow,
+  );
 
-    // More columns for compact cards
-    if (width >= 1536) return 8; // 2xl
-    if (width >= 1280) return 6; // xl
-    if (width >= 1024) return 5; // lg
-    if (width >= 768) return 4;  // md
-    if (width >= 640) return 3;  // sm
-    return 2;
-  }, [itemsPerRow]);
+  // Calculate items per row based on container width and responsive breakpoints
+  const calculateItemsPerRow = useCallback(
+    (width: number): number => {
+      if (itemsPerRow) return itemsPerRow;
+
+      // More columns for compact cards
+      if (width >= 1536) return 8; // 2xl
+      if (width >= 1280) return 6; // xl
+      if (width >= 1024) return 5; // lg
+      if (width >= 768) return 4; // md
+      if (width >= 640) return 3; // sm
+      return 2;
+    },
+    [itemsPerRow],
+  );
 
   // Update container dimensions and items per row
   useEffect(() => {
@@ -75,8 +80,8 @@ export function VirtualizedNpcGrid({
     };
 
     updateDimensions();
-    window.addEventListener('resize', updateDimensions);
-    return () => window.removeEventListener('resize', updateDimensions);
+    window.addEventListener("resize", updateDimensions);
+    return () => window.removeEventListener("resize", updateDimensions);
   }, [calculateItemsPerRow]);
 
   // Throttled scroll handler to improve performance
@@ -101,15 +106,20 @@ export function VirtualizedNpcGrid({
       }
     };
 
-    container.addEventListener('scroll', throttledScrollHandler, { passive: true });
-    return () => container.removeEventListener('scroll', throttledScrollHandler);
+    container.addEventListener("scroll", throttledScrollHandler, {
+      passive: true,
+    });
+    return () =>
+      container.removeEventListener("scroll", throttledScrollHandler);
   }, [handleScroll]);
 
   // Determine if we should use virtualization
   const shouldVirtualize = useMemo(() => {
-    return enableVirtualization && 
-           npcs.length >= VIRTUALIZATION_CONFIG.minItemsForVirtualization &&
-           actualItemsPerRow > 0;
+    return (
+      enableVirtualization &&
+      npcs.length >= VIRTUALIZATION_CONFIG.minItemsForVirtualization &&
+      actualItemsPerRow > 0
+    );
   }, [enableVirtualization, npcs.length, actualItemsPerRow]);
 
   // Calculate virtual scrolling parameters
@@ -124,7 +134,7 @@ export function VirtualizedNpcGrid({
 
     const startIndex = visibleStartRow * actualItemsPerRow;
     const endIndex = Math.min(endRow * actualItemsPerRow, npcs.length);
-    
+
     return {
       totalRows,
       totalHeight: totalRows * itemHeight,
@@ -133,23 +143,37 @@ export function VirtualizedNpcGrid({
       endIndex,
       offsetY: visibleStartRow * itemHeight,
     };
-  }, [shouldVirtualize, npcs.length, actualItemsPerRow, containerHeight, itemHeight, scrollTop, overscan]);
+  }, [
+    shouldVirtualize,
+    npcs.length,
+    actualItemsPerRow,
+    containerHeight,
+    itemHeight,
+    scrollTop,
+    overscan,
+  ]);
 
   // Memoize the bulk update handler to prevent re-renders
-  const handleBulkUpdate = useCallback((npcId: number) => {
-    if (onBulkUpdateShop) {
-      onBulkUpdateShop(npcId);
-    }
-  }, [onBulkUpdateShop]);
+  const handleBulkUpdate = useCallback(
+    (npcId: number) => {
+      if (onBulkUpdateShop) {
+        onBulkUpdateShop(npcId);
+      }
+    },
+    [onBulkUpdateShop],
+  );
 
   // Render visible items
   const renderedItems = useMemo(() => {
     if (isLoading) {
       // Show skeleton cards during loading
-      const skeletonCount = shouldVirtualize ? 
-        Math.min(Math.ceil(containerHeight / itemHeight) * actualItemsPerRow, 20) : 
-        12;
-      
+      const skeletonCount = shouldVirtualize
+        ? Math.min(
+            Math.ceil(containerHeight / itemHeight) * actualItemsPerRow,
+            20,
+          )
+        : 12;
+
       return Array.from({ length: skeletonCount }).map((_, index) => (
         <div key={`skeleton-${index}`}>
           <NpcCardSkeleton />
@@ -159,7 +183,10 @@ export function VirtualizedNpcGrid({
 
     if (shouldVirtualize && virtualItems) {
       // Render only visible items for large lists
-      const visibleNpcs = npcs.slice(virtualItems.startIndex, virtualItems.endIndex);
+      const visibleNpcs = npcs.slice(
+        virtualItems.startIndex,
+        virtualItems.endIndex,
+      );
       return visibleNpcs.map((npc, index) => (
         <div key={`npc-${npc.id}-${virtualItems.startIndex + index}`}>
           <NpcCard
@@ -180,16 +207,16 @@ export function VirtualizedNpcGrid({
       ));
     }
   }, [
-    isLoading, 
-    shouldVirtualize, 
-    virtualItems, 
-    npcs, 
+    isLoading,
+    shouldVirtualize,
+    virtualItems,
+    npcs,
     handleBulkUpdate,
-    containerHeight, 
-    itemHeight, 
-    actualItemsPerRow
+    containerHeight,
+    itemHeight,
+    actualItemsPerRow,
   ]);
-  
+
   // Handle empty state
   if (!isLoading && npcs.length === 0) {
     return (
@@ -197,21 +224,23 @@ export function VirtualizedNpcGrid({
         <div className="text-muted-foreground">
           <User className="w-12 h-12 mx-auto mb-2 opacity-50" />
           <p className="text-lg font-medium">No NPCs found</p>
-          <p className="text-sm">Try refreshing the page or check your connection.</p>
+          <p className="text-sm">
+            Try refreshing the page or check your connection.
+          </p>
         </div>
       </div>
     );
   }
-  
+
   if (shouldVirtualize && virtualItems) {
     // Virtual scrolling implementation
     return (
-      <div 
+      <div
         ref={containerRef}
         className="overflow-auto"
         style={{ height: containerHeight }}
       >
-        <div style={{ height: virtualItems.totalHeight, position: 'relative' }}>
+        <div style={{ height: virtualItems.totalHeight, position: "relative" }}>
           <div
             className="grid gap-2"
             style={{
@@ -239,4 +268,4 @@ export function VirtualizedNpcGrid({
 }
 
 // Export with display name for better debugging
-VirtualizedNpcGrid.displayName = 'VirtualizedNpcGrid';
+VirtualizedNpcGrid.displayName = "VirtualizedNpcGrid";

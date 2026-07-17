@@ -55,7 +55,11 @@ import type {
   PartyQuestBonusActionState,
   TransportActionState,
 } from "@/types/models/conversation";
-import { buildStateIndex, getTransitions, type Transition } from "./transitions";
+import {
+  buildStateIndex,
+  getTransitions,
+  type Transition,
+} from "./transitions";
 import { type GraphAnalysis } from "./graphAnalysis";
 import { STATE_TYPE_META } from "./stateMeta";
 import {
@@ -126,7 +130,9 @@ export function ConversationInspector({
   const inbound = analysis.inboundCount.get(state.id) ?? 0;
   const predecessors = findPredecessors(conversation, state.id);
 
-  const brokenOutbound = analysis.brokenRefs.filter(r => r.source === state.id);
+  const brokenOutbound = analysis.brokenRefs.filter(
+    (r) => r.source === state.id,
+  );
   const isUnreachable = !analysis.reachable.has(state.id) && !isStart;
   const isDuplicate = analysis.duplicateIds.includes(state.id);
 
@@ -152,12 +158,18 @@ export function ConversationInspector({
             />
           )}
           {inbound >= 3 && (
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 gap-1">
+            <Badge
+              variant="secondary"
+              className="text-[10px] px-1.5 py-0 gap-1"
+            >
               <Share2 className="h-2.5 w-2.5" /> {inbound} inbound
             </Badge>
           )}
           {(brokenOutbound.length > 0 || isDuplicate || isUnreachable) && (
-            <Badge variant="destructive" className="text-[10px] px-1.5 py-0 gap-1">
+            <Badge
+              variant="destructive"
+              className="text-[10px] px-1.5 py-0 gap-1"
+            >
               <AlertTriangle className="h-2.5 w-2.5" /> issues
             </Badge>
           )}
@@ -197,7 +209,7 @@ export function ConversationInspector({
         />
         <TypePicker
           currentType={state.type}
-          onSwitch={next => onSwitchType(state.id, next)}
+          onSwitch={(next) => onSwitchType(state.id, next)}
           disabled={readOnly}
         />
       </div>
@@ -274,7 +286,7 @@ function IdRow({
       <div className="flex items-center gap-2">
         <Input
           value={value}
-          onChange={e => setValue(e.target.value)}
+          onChange={(e) => setValue(e.target.value)}
           disabled={readOnly}
           className="font-mono text-sm h-8 flex-1"
         />
@@ -321,7 +333,7 @@ function TypePicker({
       </Label>
       <Select
         value={currentType}
-        onValueChange={v => {
+        onValueChange={(v) => {
           if (v !== currentType) onSwitch(v as ConversationStateType);
         }}
         disabled={disabled}
@@ -330,11 +342,13 @@ function TypePicker({
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {(Object.keys(STATE_TYPE_META) as ConversationStateType[]).map(t => (
-            <SelectItem key={t} value={t}>
-              {STATE_TYPE_META[t].label}
-            </SelectItem>
-          ))}
+          {(Object.keys(STATE_TYPE_META) as ConversationStateType[]).map(
+            (t) => (
+              <SelectItem key={t} value={t}>
+                {STATE_TYPE_META[t].label}
+              </SelectItem>
+            ),
+          )}
         </SelectContent>
       </Select>
     </div>
@@ -474,7 +488,11 @@ function TypeFields({
               <KV label="min" value={state.askNumber.minValue} mono />
               <KV label="max" value={state.askNumber.maxValue} mono />
               {state.askNumber.contextKey && (
-                <KV label="contextKey" value={state.askNumber.contextKey} mono />
+                <KV
+                  label="contextKey"
+                  value={state.askNumber.contextKey}
+                  mono
+                />
               )}
             </>
           ) : (
@@ -530,7 +548,11 @@ function TypeFields({
                 value={state.craftAction.quantities?.join(", ") ?? "—"}
                 mono
               />
-              <KV label="mesoCost" value={state.craftAction.mesoCost ?? 0} mono />
+              <KV
+                label="mesoCost"
+                value={state.craftAction.mesoCost ?? 0}
+                mono
+              />
               {state.craftAction.stimulatorId !== undefined && (
                 <KV
                   label="stimulator"
@@ -554,7 +576,11 @@ function TypeFields({
       return readOnly ? (
         <Section title="Transport">
           {state.transportAction ? (
-            <KV label="routeName" value={state.transportAction.routeName} mono />
+            <KV
+              label="routeName"
+              value={state.transportAction.routeName}
+              mono
+            />
           ) : (
             <Empty />
           )}
@@ -751,7 +777,8 @@ function ChoicesEditor({
 
   const isExit = (i: number) => mode === "exitLocked" && i === total - 1;
   const canReorder = mode !== "fixed";
-  const canDelete = (i: number) => mode === "open" || (mode === "exitLocked" && !isExit(i));
+  const canDelete = (i: number) =>
+    mode === "open" || (mode === "exitLocked" && !isExit(i));
   const canMoveUp = (i: number) =>
     canReorder && i > 0 && !isExit(i) && !isExit(i - 1);
   const canMoveDown = (i: number) =>
@@ -784,7 +811,7 @@ function ChoicesEditor({
             canMoveDown={canMoveDown(i)}
             showReorder={canReorder}
             clearMode={mode === "fixed"}
-            onChange={next => updateChoice(i, next)}
+            onChange={(next) => updateChoice(i, next)}
             onRemove={() => removeChoice(i)}
             onMoveUp={() => moveUp(i)}
             onMoveDown={() => moveDown(i)}
@@ -901,7 +928,7 @@ function ChoiceRow({
           <div className="flex flex-col">
             <Input
               value={choice.text}
-              onChange={e => onChange({ ...choice, text: e.target.value })}
+              onChange={(e) => onChange({ ...choice, text: e.target.value })}
               placeholder={`${itemLabel} ${index + 1}`}
               className="h-8 text-xs"
               readOnly={isExit}
@@ -914,7 +941,7 @@ function ChoiceRow({
           </div>
           <Select
             value={choice.nextState || "__end__"}
-            onValueChange={v =>
+            onValueChange={(v) =>
               onChange({ ...choice, nextState: v === "__end__" ? null : v })
             }
           >
@@ -923,7 +950,7 @@ function ChoiceRow({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="__end__">&lt;end&gt;</SelectItem>
-              {otherIds.map(id => (
+              {otherIds.map((id) => (
                 <SelectItem key={id} value={id}>
                   {id}
                 </SelectItem>
@@ -936,7 +963,7 @@ function ChoiceRow({
             size="icon"
             className="h-8 w-8"
             onClick={() =>
-              ctxKeys.length > 0 ? setExpanded(v => !v) : addKey()
+              ctxKeys.length > 0 ? setExpanded((v) => !v) : addKey()
             }
             title={
               ctxKeys.length > 0
@@ -958,7 +985,9 @@ function ChoiceRow({
               size="icon"
               className="h-8 w-8 text-muted-foreground hover:text-destructive"
               onClick={onClear}
-              disabled={!onClear || (choice.nextState === null || choice.nextState === "")}
+              disabled={
+                !onClear || choice.nextState === null || choice.nextState === ""
+              }
               title="Clear — set target to <end> and remove any now-unreachable states"
               aria-label="Clear choice"
             >
@@ -973,9 +1002,7 @@ function ChoiceRow({
               onClick={onRemove}
               disabled={!canDelete}
               title={
-                canDelete
-                  ? `Remove ${itemLabel}`
-                  : `Cannot remove exit slot`
+                canDelete ? `Remove ${itemLabel}` : `Cannot remove exit slot`
               }
               aria-label={`Remove ${itemLabel}`}
             >
@@ -1014,17 +1041,17 @@ function ChoiceRow({
               (no context)
             </p>
           ) : (
-            ctxKeys.map(k => (
+            ctxKeys.map((k) => (
               <div key={k} className="grid grid-cols-[1fr_1fr_auto] gap-1">
                 <Input
                   defaultValue={k}
-                  onBlur={e => setKey(k, e.target.value.trim())}
+                  onBlur={(e) => setKey(k, e.target.value.trim())}
                   placeholder="key"
                   className="h-7 text-[11px] font-mono"
                 />
                 <Input
                   value={choice.context?.[k] ?? ""}
-                  onChange={e => setValue(k, e.target.value)}
+                  onChange={(e) => setValue(k, e.target.value)}
                   placeholder="value"
                   className="h-7 text-[11px] font-mono"
                 />
@@ -1070,14 +1097,11 @@ function DialogueForm({
   };
 
   const otherIds = conversation.attributes.states
-    .map(s => s.id)
-    .filter(id => id !== state.id);
+    .map((s) => s.id)
+    .filter((id) => id !== state.id);
 
   const switchDialogueType = (nextType: DialogueType) => {
-    const resized = resizeChoicesForDialogueType(
-      nextType,
-      d.choices ?? [],
-    );
+    const resized = resizeChoicesForDialogueType(nextType, d.choices ?? []);
     onUpdateState(state.id, {
       ...state,
       dialogue: { ...d, dialogueType: nextType, choices: resized },
@@ -1097,7 +1121,10 @@ function DialogueForm({
     });
 
   const dialogueTypeBadge = (
-    <Select value={d.dialogueType} onValueChange={v => switchDialogueType(v as DialogueType)}>
+    <Select
+      value={d.dialogueType}
+      onValueChange={(v) => switchDialogueType(v as DialogueType)}
+    >
       <SelectTrigger className="h-6 w-[140px] text-[11px] font-mono">
         <SelectValue />
       </SelectTrigger>
@@ -1116,7 +1143,7 @@ function DialogueForm({
     <Section title="Dialogue" action={dialogueTypeBadge}>
       <Textarea
         value={d.text}
-        onChange={e => setText(e.target.value)}
+        onChange={(e) => setText(e.target.value)}
         className="min-h-[120px] text-xs"
         placeholder="What the NPC says…"
       />
@@ -1125,7 +1152,7 @@ function DialogueForm({
         onChange={setChoices}
         otherIds={otherIds}
         mode="fixed"
-        onClear={i => onClearTransition(state.id, "choice", i)}
+        onClear={(i) => onClearTransition(state.id, "choice", i)}
       />
     </Section>
   );
@@ -1140,29 +1167,32 @@ function ListSelectionForm({
   conversation: Conversation;
   onUpdateState: (id: string, next: ConversationState) => void;
 }) {
-  const l: ListSelectionState = state.listSelection ?? { title: "", choices: [] };
+  const l: ListSelectionState = state.listSelection ?? {
+    title: "",
+    choices: [],
+  };
   const update = (patch: Partial<ListSelectionState>) =>
     onUpdateState(state.id, {
       ...state,
       listSelection: { ...l, ...patch },
     });
   const otherIds = conversation.attributes.states
-    .map(s => s.id)
-    .filter(id => id !== state.id);
+    .map((s) => s.id)
+    .filter((id) => id !== state.id);
   return (
     <Section title="List Selection">
       <div className="grid grid-cols-[90px_1fr] gap-2 items-center">
         <Label className="text-xs text-muted-foreground">title</Label>
         <Input
           value={l.title}
-          onChange={e => update({ title: e.target.value })}
+          onChange={(e) => update({ title: e.target.value })}
           placeholder="Menu title (optional)"
           className="h-8 text-xs"
         />
       </div>
       <ChoicesEditor
         choices={l.choices ?? []}
-        onChange={next => update({ choices: next })}
+        onChange={(next) => update({ choices: next })}
         otherIds={otherIds}
         label="Items"
         itemLabel="Item"
@@ -1192,15 +1222,15 @@ function AskSlideMenuForm({
       askSlideMenu: { ...m, ...patch },
     });
   const otherIds = conversation.attributes.states
-    .map(s => s.id)
-    .filter(id => id !== state.id);
+    .map((s) => s.id)
+    .filter((id) => id !== state.id);
   return (
     <Section title="Slide Menu">
       <div className="grid grid-cols-[90px_1fr] gap-2 items-center">
         <Label className="text-xs text-muted-foreground">title</Label>
         <Input
           value={m.title}
-          onChange={e => update({ title: e.target.value })}
+          onChange={(e) => update({ title: e.target.value })}
           placeholder="Menu title (optional)"
           className="h-8 text-xs"
         />
@@ -1210,13 +1240,13 @@ function AskSlideMenuForm({
         <Input
           type="number"
           value={m.menuType ?? 0}
-          onChange={e => update({ menuType: Number(e.target.value) })}
+          onChange={(e) => update({ menuType: Number(e.target.value) })}
           className="h-8 text-xs"
         />
       </div>
       <ChoicesEditor
         choices={m.choices ?? []}
-        onChange={next => update({ choices: next })}
+        onChange={(next) => update({ choices: next })}
         otherIds={otherIds}
         label="Options"
         itemLabel="Option"
@@ -1245,15 +1275,15 @@ function AskNumberForm({
   const update = (patch: Partial<AskNumberState>) =>
     onUpdateState(state.id, { ...state, askNumber: { ...a, ...patch } });
   const otherIds = conversation.attributes.states
-    .map(s => s.id)
-    .filter(id => id !== state.id);
+    .map((s) => s.id)
+    .filter((id) => id !== state.id);
   return (
     <Section title="Ask Number">
       <div className="grid grid-cols-[90px_1fr] gap-2">
         <Label className="text-xs text-muted-foreground pt-1">text</Label>
         <Textarea
           value={a.text}
-          onChange={e => update({ text: e.target.value })}
+          onChange={(e) => update({ text: e.target.value })}
           className="min-h-[72px] text-xs"
           placeholder="Prompt text"
         />
@@ -1263,21 +1293,21 @@ function AskNumberForm({
         <Input
           type="number"
           value={a.minValue}
-          onChange={e => update({ minValue: Number(e.target.value) })}
+          onChange={(e) => update({ minValue: Number(e.target.value) })}
           placeholder="min"
           className="h-8 text-xs"
         />
         <Input
           type="number"
           value={a.defaultValue}
-          onChange={e => update({ defaultValue: Number(e.target.value) })}
+          onChange={(e) => update({ defaultValue: Number(e.target.value) })}
           placeholder="default"
           className="h-8 text-xs"
         />
         <Input
           type="number"
           value={a.maxValue}
-          onChange={e => update({ maxValue: Number(e.target.value) })}
+          onChange={(e) => update({ maxValue: Number(e.target.value) })}
           placeholder="max"
           className="h-8 text-xs"
         />
@@ -1285,7 +1315,7 @@ function AskNumberForm({
       <OptionalTextField
         label="contextKey"
         value={a.contextKey}
-        onChange={v => update({ contextKey: v })}
+        onChange={(v) => update({ contextKey: v })}
         onRemove={() => {
           const next = { ...a };
           delete next.contextKey;
@@ -1296,7 +1326,7 @@ function AskNumberForm({
         <Label className="text-xs text-muted-foreground">answer →</Label>
         <StatePicker
           value={a.nextState}
-          onChange={v => update({ nextState: v })}
+          onChange={(v) => update({ nextState: v })}
           otherIds={otherIds}
         />
       </div>
@@ -1317,8 +1347,8 @@ function AskStyleForm({
   const update = (patch: Partial<AskStyleState>) =>
     onUpdateState(state.id, { ...state, askStyle: { ...a, ...patch } });
   const otherIds = conversation.attributes.states
-    .map(s => s.id)
-    .filter(id => id !== state.id);
+    .map((s) => s.id)
+    .filter((id) => id !== state.id);
   const stylesText = (a.styles ?? []).join(", ");
   return (
     <Section title="Ask Style">
@@ -1326,7 +1356,7 @@ function AskStyleForm({
         <Label className="text-xs text-muted-foreground pt-1">text</Label>
         <Textarea
           value={a.text}
-          onChange={e => update({ text: e.target.value })}
+          onChange={(e) => update({ text: e.target.value })}
           className="min-h-[72px] text-xs"
           placeholder="Prompt text"
         />
@@ -1335,13 +1365,13 @@ function AskStyleForm({
         <Label className="text-xs text-muted-foreground">styles</Label>
         <Input
           value={stylesText}
-          onChange={e => {
+          onChange={(e) => {
             const parts = e.target.value
               .split(",")
-              .map(s => s.trim())
-              .filter(s => s.length > 0)
-              .map(s => Number(s))
-              .filter(n => !Number.isNaN(n));
+              .map((s) => s.trim())
+              .filter((s) => s.length > 0)
+              .map((s) => Number(s))
+              .filter((n) => !Number.isNaN(n));
             update({ styles: parts });
           }}
           placeholder="comma-separated style ids"
@@ -1351,7 +1381,7 @@ function AskStyleForm({
       <OptionalTextField
         label="stylesContextKey"
         value={a.stylesContextKey}
-        onChange={v => update({ stylesContextKey: v })}
+        onChange={(v) => update({ stylesContextKey: v })}
         onRemove={() => {
           const next = { ...a };
           delete next.stylesContextKey;
@@ -1361,7 +1391,7 @@ function AskStyleForm({
       <OptionalTextField
         label="contextKey"
         value={a.contextKey}
-        onChange={v => update({ contextKey: v })}
+        onChange={(v) => update({ contextKey: v })}
         onRemove={() => {
           const next = { ...a };
           delete next.contextKey;
@@ -1372,7 +1402,7 @@ function AskStyleForm({
         <Label className="text-xs text-muted-foreground">selection →</Label>
         <StatePicker
           value={a.nextState}
-          onChange={v => update({ nextState: v })}
+          onChange={(v) => update({ nextState: v })}
           otherIds={otherIds}
         />
       </div>
@@ -1396,8 +1426,8 @@ function TransportActionForm({
   const update = (patch: Partial<TransportActionState>) =>
     onUpdateState(state.id, { ...state, transportAction: { ...t, ...patch } });
   const otherIds = conversation.attributes.states
-    .map(s => s.id)
-    .filter(id => id !== state.id);
+    .map((s) => s.id)
+    .filter((id) => id !== state.id);
   const removeKey = (key: keyof TransportActionState) => {
     const next = { ...t };
     delete next[key];
@@ -1410,7 +1440,7 @@ function TransportActionForm({
         <Label className="text-xs text-muted-foreground">routeName</Label>
         <Input
           value={t.routeName}
-          onChange={e => update({ routeName: e.target.value })}
+          onChange={(e) => update({ routeName: e.target.value })}
           placeholder="route identifier"
           className="h-8 text-xs font-mono"
         />
@@ -1419,7 +1449,7 @@ function TransportActionForm({
         <Label className="text-xs text-muted-foreground">failure →</Label>
         <StatePicker
           value={t.failureState}
-          onChange={v => update({ failureState: v })}
+          onChange={(v) => update({ failureState: v })}
           otherIds={otherIds}
         />
       </div>
@@ -1427,28 +1457,28 @@ function TransportActionForm({
         label="capacity full"
         value={t.capacityFullState}
         otherIds={otherIds}
-        onChange={v => update({ capacityFullState: v })}
+        onChange={(v) => update({ capacityFullState: v })}
         onRemove={() => removeKey("capacityFullState")}
       />
       <OptionalSlot
         label="in transit"
         value={t.alreadyInTransitState}
         otherIds={otherIds}
-        onChange={v => update({ alreadyInTransitState: v })}
+        onChange={(v) => update({ alreadyInTransitState: v })}
         onRemove={() => removeKey("alreadyInTransitState")}
       />
       <OptionalSlot
         label="route missing"
         value={t.routeNotFoundState}
         otherIds={otherIds}
-        onChange={v => update({ routeNotFoundState: v })}
+        onChange={(v) => update({ routeNotFoundState: v })}
         onRemove={() => removeKey("routeNotFoundState")}
       />
       <OptionalSlot
         label="service error"
         value={t.serviceErrorState}
         otherIds={otherIds}
-        onChange={v => update({ serviceErrorState: v })}
+        onChange={(v) => update({ serviceErrorState: v })}
         onRemove={() => removeKey("serviceErrorState")}
       />
     </Section>
@@ -1474,8 +1504,8 @@ function PartyQuestActionForm({
       partyQuestAction: { ...p, ...patch },
     });
   const otherIds = conversation.attributes.states
-    .map(s => s.id)
-    .filter(id => id !== state.id);
+    .map((s) => s.id)
+    .filter((id) => id !== state.id);
   const removeKey = (key: keyof PartyQuestActionState) => {
     const next = { ...p };
     delete next[key];
@@ -1488,7 +1518,7 @@ function PartyQuestActionForm({
         <Label className="text-xs text-muted-foreground">questId</Label>
         <Input
           value={p.questId}
-          onChange={e => update({ questId: e.target.value })}
+          onChange={(e) => update({ questId: e.target.value })}
           placeholder="quest identifier"
           className="h-8 text-xs font-mono"
         />
@@ -1497,7 +1527,7 @@ function PartyQuestActionForm({
         <Label className="text-xs text-muted-foreground">failure →</Label>
         <StatePicker
           value={p.failureState}
-          onChange={v => update({ failureState: v })}
+          onChange={(v) => update({ failureState: v })}
           otherIds={otherIds}
         />
       </div>
@@ -1505,14 +1535,14 @@ function PartyQuestActionForm({
         label="not in party"
         value={p.notInPartyState}
         otherIds={otherIds}
-        onChange={v => update({ notInPartyState: v })}
+        onChange={(v) => update({ notInPartyState: v })}
         onRemove={() => removeKey("notInPartyState")}
       />
       <OptionalSlot
         label="not leader"
         value={p.notLeaderState}
         otherIds={otherIds}
-        onChange={v => update({ notLeaderState: v })}
+        onChange={(v) => update({ notLeaderState: v })}
         onRemove={() => removeKey("notLeaderState")}
       />
     </Section>
@@ -1528,16 +1558,17 @@ function PartyQuestBonusActionForm({
   conversation: Conversation;
   onUpdateState: (id: string, next: ConversationState) => void;
 }) {
-  const p: PartyQuestBonusActionState =
-    state.partyQuestBonusAction ?? { failureState: "" };
+  const p: PartyQuestBonusActionState = state.partyQuestBonusAction ?? {
+    failureState: "",
+  };
   const update = (patch: Partial<PartyQuestBonusActionState>) =>
     onUpdateState(state.id, {
       ...state,
       partyQuestBonusAction: { ...p, ...patch },
     });
   const otherIds = conversation.attributes.states
-    .map(s => s.id)
-    .filter(id => id !== state.id);
+    .map((s) => s.id)
+    .filter((id) => id !== state.id);
   return (
     <Section title="PQ Bonus">
       <p className="text-xs text-muted-foreground">
@@ -1547,7 +1578,7 @@ function PartyQuestBonusActionForm({
         <Label className="text-xs text-muted-foreground">failure →</Label>
         <StatePicker
           value={p.failureState}
-          onChange={v => update({ failureState: v })}
+          onChange={(v) => update({ failureState: v })}
           otherIds={otherIds}
         />
       </div>
@@ -1572,15 +1603,15 @@ function GachaponActionForm({
   const update = (patch: Partial<GachaponActionState>) =>
     onUpdateState(state.id, { ...state, gachaponAction: { ...g, ...patch } });
   const otherIds = conversation.attributes.states
-    .map(s => s.id)
-    .filter(id => id !== state.id);
+    .map((s) => s.id)
+    .filter((id) => id !== state.id);
   return (
     <Section title="Gachapon">
       <div className="grid grid-cols-[90px_1fr] gap-2 items-center">
         <Label className="text-xs text-muted-foreground">gachaponId</Label>
         <Input
           value={g.gachaponId}
-          onChange={e => update({ gachaponId: e.target.value })}
+          onChange={(e) => update({ gachaponId: e.target.value })}
           placeholder="gachapon identifier"
           className="h-8 text-xs font-mono"
         />
@@ -1590,7 +1621,7 @@ function GachaponActionForm({
         <Input
           type="number"
           value={g.ticketItemId}
-          onChange={e => update({ ticketItemId: Number(e.target.value) })}
+          onChange={(e) => update({ ticketItemId: Number(e.target.value) })}
           className="h-8 text-xs"
         />
       </div>
@@ -1598,7 +1629,7 @@ function GachaponActionForm({
         <Label className="text-xs text-muted-foreground">failure →</Label>
         <StatePicker
           value={g.failureState}
-          onChange={v => update({ failureState: v })}
+          onChange={(v) => update({ failureState: v })}
           otherIds={otherIds}
         />
       </div>
@@ -1625,7 +1656,7 @@ function OptionalTextField({
           type="checkbox"
           className="h-3.5 w-3.5"
           checked={enabled}
-          onChange={e => {
+          onChange={(e) => {
             if (e.target.checked) onChange("");
             else onRemove();
           }}
@@ -1635,7 +1666,7 @@ function OptionalTextField({
       {enabled && (
         <Input
           value={value ?? ""}
-          onChange={e => onChange(e.target.value)}
+          onChange={(e) => onChange(e.target.value)}
           className="h-8 text-xs font-mono ml-5 w-[calc(100%-1.25rem)]"
         />
       )}
@@ -1664,7 +1695,7 @@ function OptionalSlot({
           type="checkbox"
           className="h-3.5 w-3.5"
           checked={enabled}
-          onChange={e => {
+          onChange={(e) => {
             if (e.target.checked) onChange("");
             else onRemove();
           }}
@@ -1698,14 +1729,14 @@ function StatePicker({
   return (
     <Select
       value={value || (allowEnd ? "__end__" : "")}
-      onValueChange={v => onChange(v === "__end__" ? "" : v)}
+      onValueChange={(v) => onChange(v === "__end__" ? "" : v)}
     >
       <SelectTrigger className="h-8 text-xs">
         <SelectValue placeholder="select state" />
       </SelectTrigger>
       <SelectContent>
         {allowEnd && <SelectItem value="__end__">&lt;end&gt;</SelectItem>}
-        {otherIds.map(id => (
+        {otherIds.map((id) => (
           <SelectItem key={id} value={id}>
             {id}
           </SelectItem>
@@ -1740,8 +1771,8 @@ function CraftActionForm({
     });
 
   const otherIds = conversation.attributes.states
-    .map(s => s.id)
-    .filter(id => id !== state.id);
+    .map((s) => s.id)
+    .filter((id) => id !== state.id);
 
   const rows = Math.max(c.materials?.length ?? 0, c.quantities?.length ?? 0);
   const materials = Array.from(
@@ -1753,7 +1784,10 @@ function CraftActionForm({
     (_, i) => c.quantities?.[i] ?? 0,
   );
 
-  const setRow = (i: number, patch: { material?: number; quantity?: number }) => {
+  const setRow = (
+    i: number,
+    patch: { material?: number; quantity?: number },
+  ) => {
     const nextMats = [...materials];
     const nextQtys = [...quantities];
     if (patch.material !== undefined) nextMats[i] = patch.material;
@@ -1779,7 +1813,7 @@ function CraftActionForm({
         <Input
           type="number"
           value={c.itemId ?? 0}
-          onChange={e => update({ itemId: Number(e.target.value) })}
+          onChange={(e) => update({ itemId: Number(e.target.value) })}
           className="h-8 text-xs"
         />
       </div>
@@ -1788,7 +1822,7 @@ function CraftActionForm({
         <Input
           type="number"
           value={c.mesoCost ?? 0}
-          onChange={e => update({ mesoCost: Number(e.target.value) })}
+          onChange={(e) => update({ mesoCost: Number(e.target.value) })}
           className="h-8 text-xs"
         />
       </div>
@@ -1816,18 +1850,14 @@ function CraftActionForm({
             <Input
               type="number"
               value={materials[i]!}
-              onChange={e =>
-                setRow(i, { material: Number(e.target.value) })
-              }
+              onChange={(e) => setRow(i, { material: Number(e.target.value) })}
               placeholder="item id"
               className="h-8 text-xs"
             />
             <Input
               type="number"
               value={quantities[i]!}
-              onChange={e =>
-                setRow(i, { quantity: Number(e.target.value) })
-              }
+              onChange={(e) => setRow(i, { quantity: Number(e.target.value) })}
               placeholder="qty"
               className="h-8 text-xs"
             />
@@ -1850,7 +1880,7 @@ function CraftActionForm({
         <Label className="text-xs text-muted-foreground">success →</Label>
         <StatePicker
           value={c.successState}
-          onChange={v => update({ successState: v })}
+          onChange={(v) => update({ successState: v })}
           otherIds={otherIds}
         />
       </div>
@@ -1858,7 +1888,7 @@ function CraftActionForm({
         <Label className="text-xs text-muted-foreground">failure →</Label>
         <StatePicker
           value={c.failureState}
-          onChange={v => update({ failureState: v })}
+          onChange={(v) => update({ failureState: v })}
           otherIds={otherIds}
         />
       </div>
@@ -1866,7 +1896,7 @@ function CraftActionForm({
         <Label className="text-xs text-muted-foreground">missing →</Label>
         <StatePicker
           value={c.missingMaterialsState}
-          onChange={v => update({ missingMaterialsState: v })}
+          onChange={(v) => update({ missingMaterialsState: v })}
           otherIds={otherIds}
         />
       </div>
@@ -1877,7 +1907,7 @@ function CraftActionForm({
           type="checkbox"
           className="h-3.5 w-3.5"
           checked={stimulatorEnabled}
-          onChange={e => {
+          onChange={(e) => {
             if (e.target.checked) {
               update({ stimulatorId: 0, stimulatorFailChance: 0 });
             } else {
@@ -1899,9 +1929,7 @@ function CraftActionForm({
             <Input
               type="number"
               value={c.stimulatorId ?? 0}
-              onChange={e =>
-                update({ stimulatorId: Number(e.target.value) })
-              }
+              onChange={(e) => update({ stimulatorId: Number(e.target.value) })}
               className="h-8 text-xs"
             />
           </div>
@@ -1910,7 +1938,7 @@ function CraftActionForm({
             <Input
               type="number"
               value={c.stimulatorFailChance ?? 0}
-              onChange={e =>
+              onChange={(e) =>
                 update({ stimulatorFailChance: Number(e.target.value) })
               }
               className="h-8 text-xs"
@@ -1942,13 +1970,10 @@ function GenericActionForm({
     });
 
   const otherIds = conversation.attributes.states
-    .map(s => s.id)
-    .filter(id => id !== state.id);
+    .map((s) => s.id)
+    .filter((id) => id !== state.id);
 
-  const updateOperation = (
-    i: number,
-    next: GenericActionOperation,
-  ) => {
+  const updateOperation = (i: number, next: GenericActionOperation) => {
     const ops = [...(g.operations ?? [])];
     ops[i] = next;
     update({ operations: ops });
@@ -1999,7 +2024,7 @@ function GenericActionForm({
           <OperationEditor
             key={i}
             op={op}
-            onChange={next => updateOperation(i, next)}
+            onChange={(next) => updateOperation(i, next)}
             onRemove={() => removeOperation(i)}
           />
         ))}
@@ -2043,7 +2068,7 @@ function GenericActionForm({
             </div>
             <ConditionsEditor
               conditions={outcome.conditions ?? []}
-              onChange={next =>
+              onChange={(next) =>
                 updateOutcome(i, { ...outcome, conditions: next })
               }
             />
@@ -2051,9 +2076,7 @@ function GenericActionForm({
               <Label className="text-xs text-muted-foreground">→</Label>
               <StatePicker
                 value={outcome.nextState}
-                onChange={v =>
-                  updateOutcome(i, { ...outcome, nextState: v })
-                }
+                onChange={(v) => updateOutcome(i, { ...outcome, nextState: v })}
                 otherIds={otherIds}
               />
             </div>
@@ -2115,19 +2138,19 @@ function ConditionsEditor({
             >
               <Input
                 value={c.type}
-                onChange={e => update(i, { type: e.target.value })}
+                onChange={(e) => update(i, { type: e.target.value })}
                 placeholder="type"
                 className="h-7 text-[11px] font-mono"
               />
               <Input
                 value={c.operator}
-                onChange={e => update(i, { operator: e.target.value })}
+                onChange={(e) => update(i, { operator: e.target.value })}
                 placeholder="op"
                 className="h-7 text-[11px] font-mono"
               />
               <Input
                 value={c.value}
-                onChange={e => update(i, { value: e.target.value })}
+                onChange={(e) => update(i, { value: e.target.value })}
                 placeholder="value"
                 className="h-7 text-[11px] font-mono"
               />
@@ -2145,9 +2168,7 @@ function ConditionsEditor({
               {c.referenceId !== undefined ? (
                 <Input
                   value={c.referenceId}
-                  onChange={e =>
-                    update(i, { referenceId: e.target.value })
-                  }
+                  onChange={(e) => update(i, { referenceId: e.target.value })}
                   placeholder="referenceId"
                   className="col-span-4 h-7 text-[11px] font-mono"
                 />
@@ -2206,7 +2227,7 @@ function OperationEditor({
       <div className="grid grid-cols-[1fr_auto] gap-1.5 items-center">
         <Input
           value={op.type}
-          onChange={e => onChange({ ...op, type: e.target.value })}
+          onChange={(e) => onChange({ ...op, type: e.target.value })}
           placeholder="operation type"
           className="h-8 text-xs font-mono"
         />
@@ -2247,13 +2268,13 @@ function OperationEditor({
             <div key={k} className="grid grid-cols-[1fr_1fr_auto] gap-1.5">
               <Input
                 defaultValue={k}
-                onBlur={e => setKey(k, e.target.value.trim())}
+                onBlur={(e) => setKey(k, e.target.value.trim())}
                 placeholder="key"
                 className="h-7 text-[11px] font-mono"
               />
               <Input
                 value={v}
-                onChange={e => setValue(k, e.target.value)}
+                onChange={(e) => setValue(k, e.target.value)}
                 placeholder="value"
                 className="h-7 text-[11px] font-mono"
               />
@@ -2282,7 +2303,6 @@ function deriveUniqueParamKey(params: Record<string, string>): string {
   return `key${i}`;
 }
 
-
 function renderAddChildAction({
   state,
   transitions,
@@ -2300,7 +2320,7 @@ function renderAddChildAction({
 }): ReactNode {
   if (state.type === "dialogue") {
     const eligible = transitions.filter(
-      t => t.kind === "choice" && (t.target === null || t.target === ""),
+      (t) => t.kind === "choice" && (t.target === null || t.target === ""),
     );
     if (eligible.length === 0) {
       return (
@@ -2328,7 +2348,7 @@ function renderAddChildAction({
             Wire a choice to a new state
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          {eligible.map(t => (
+          {eligible.map((t) => (
             <DropdownMenuItem
               key={t.ordinal}
               onSelect={() => onInsertBetween(state.id, t.kind, t.ordinal)}
@@ -2342,11 +2362,7 @@ function renderAddChildAction({
   }
   if (canAddChild(state.type)) {
     return (
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={() => onAddChild(state.id)}
-      >
+      <Button size="sm" variant="outline" onClick={() => onAddChild(state.id)}>
         <Plus className="h-3 w-3" />
         Add child
       </Button>
@@ -2366,17 +2382,14 @@ function TransitionsSection({
   analysis: GraphAnalysis;
   onSelect: (stateId: string) => void;
   action: ReactNode | null;
-  onInsertBetween:
-    | ((kind: Transition["kind"], ordinal: number) => void)
-    | null;
+  onInsertBetween: ((kind: Transition["kind"], ordinal: number) => void) | null;
 }) {
   if (transitions.length === 0) {
     return (
-      <Section
-        title="Transitions"
-        {...(action && { action })}
-      >
-        <p className="text-xs text-muted-foreground">No outgoing transitions.</p>
+      <Section title="Transitions" {...(action && { action })}>
+        <p className="text-xs text-muted-foreground">
+          No outgoing transitions.
+        </p>
       </Section>
     );
   }
@@ -2394,7 +2407,7 @@ function TransitionsSection({
           const broken =
             !!target &&
             analysis.brokenRefs.some(
-              r => r.source === t.source && r.target === target,
+              (r) => r.source === t.source && r.target === target,
             );
           return (
             <li key={i} className="flex items-center gap-2 px-2 py-1.5 text-xs">
@@ -2417,7 +2430,9 @@ function TransitionsSection({
                   type="button"
                   onClick={() => onSelect(target)}
                   className={`font-mono text-[11px] hover:underline flex items-center gap-1 ${
-                    isBack ? "text-amber-600 dark:text-amber-400" : "text-primary"
+                    isBack
+                      ? "text-amber-600 dark:text-amber-400"
+                      : "text-primary"
                   }`}
                 >
                   {isBack && <CornerUpLeft className="h-2.5 w-2.5" />}

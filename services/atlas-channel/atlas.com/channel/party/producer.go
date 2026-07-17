@@ -3,9 +3,10 @@ package party
 import (
 	party2 "atlas-channel/kafka/message/party"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 )
 
 func CreateCommandProvider(actorId uint32) model.Provider[[]kafka.Message] {

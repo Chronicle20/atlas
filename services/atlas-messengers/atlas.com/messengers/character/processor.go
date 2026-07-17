@@ -6,12 +6,13 @@ import (
 	"context"
 	"errors"
 
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 func Login(l logrus.FieldLogger) func(ctx context.Context) func(transactionID uuid.UUID, field field.Model, characterId uint32) error {

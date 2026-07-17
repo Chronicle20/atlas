@@ -44,7 +44,9 @@ export function ConnectedMapsRow({ mapId, portals }: ConnectedMapsRowProps) {
 
   return (
     <section>
-      <h3 className="text-sm font-semibold mb-2">Connected maps ({targets.length})</h3>
+      <h3 className="text-sm font-semibold mb-2">
+        Connected maps ({targets.length})
+      </h3>
       <div className="flex flex-wrap gap-1.5">
         {targets.map((target) => (
           <Link

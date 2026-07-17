@@ -4,12 +4,13 @@ import (
 	"atlas-consumables/asset"
 	"atlas-consumables/consumable"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	inventory2 "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	item2 "github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 type ProcessorMock struct {

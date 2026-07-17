@@ -8,9 +8,10 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 func TestProcessorMock_DefaultBehavior(t *testing.T) {

@@ -7,9 +7,9 @@ import (
 )
 
 const (
-	questsResource     = "data/quests"
-	questByIdResource  = "data/quests/%d"
-	autoStartQuests    = "data/quests/auto-start"
+	questsResource    = "data/quests"
+	questByIdResource = "data/quests/%d"
+	autoStartQuests   = "data/quests/auto-start"
 )
 
 func getBaseRequest() string {

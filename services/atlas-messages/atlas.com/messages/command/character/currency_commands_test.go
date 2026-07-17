@@ -4,9 +4,10 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/sirupsen/logrus/hooks/test"
 	"golang.org/x/net/context"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
 // TestAwardCurrencyCommandProducer_RegexPatterns tests the currency command regex
@@ -164,7 +165,7 @@ func TestAwardCurrencyCommandProducer_GmCheck(t *testing.T) {
 
 			producer := AwardCurrencyCommandProducer(logger)
 			f := field.NewBuilder(1, 1, 100000000).Build()
-			_, found := producer(ctx)(f,char, tc.message)
+			_, found := producer(ctx)(f, char, tc.message)
 
 			if found != tc.expectFound {
 				t.Errorf("Expected found=%v for GM=%v, got found=%v", tc.expectFound, tc.isGm, found)
@@ -236,7 +237,7 @@ func TestAwardCurrencyCommandProducer_NoMatchReturnsNil(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			producer := AwardCurrencyCommandProducer(logger)
 			f := field.NewBuilder(1, 1, 100000000).Build()
-			executor, found := producer(ctx)(f,gmChar, tc.message)
+			executor, found := producer(ctx)(f, gmChar, tc.message)
 
 			if found {
 				t.Errorf("Expected found=false for message '%s', got found=true", tc.message)

@@ -16,7 +16,9 @@ interface CommodityData {
 
 export const commoditiesService = {
   async getByItem(itemId: string | number): Promise<ItemCashShopCommodity[]> {
-    const rows = await api.getList<CommodityData>(`/api/data/commodity/by-item/${itemId}`);
+    const rows = await api.getList<CommodityData>(
+      `/api/data/commodity/by-item/${itemId}`,
+    );
     return rows.map((row) => ({
       id: row.id,
       itemId: row.attributes.itemId,

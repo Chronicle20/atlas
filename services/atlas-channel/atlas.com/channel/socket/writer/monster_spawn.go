@@ -5,11 +5,12 @@ import (
 	"atlas-channel/monster"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	monsterpkt "github.com/Chronicle20/atlas/libs/atlas-packet/monster/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func buildMonsterTemporaryStat(l logrus.FieldLogger, t tenant.Model, m monster.Model) *packetmodel.MonsterTemporaryStat {

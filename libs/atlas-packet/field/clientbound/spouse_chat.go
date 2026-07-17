@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const SpouseChatWriter = "SpouseChat"
@@ -51,11 +52,11 @@ func NewSpouseChat(mode byte, sender string, flag byte, chatText string, partner
 	return SpouseChat{mode: mode, sender: sender, flag: flag, chatText: chatText, partnerFlag: partnerFlag, partnerText: partnerText}
 }
 
-func (m SpouseChat) Mode() byte         { return m.mode }
-func (m SpouseChat) Sender() string     { return m.sender }
-func (m SpouseChat) Flag() byte         { return m.flag }
-func (m SpouseChat) ChatText() string   { return m.chatText }
-func (m SpouseChat) PartnerFlag() byte  { return m.partnerFlag }
+func (m SpouseChat) Mode() byte          { return m.mode }
+func (m SpouseChat) Sender() string      { return m.sender }
+func (m SpouseChat) Flag() byte          { return m.flag }
+func (m SpouseChat) ChatText() string    { return m.chatText }
+func (m SpouseChat) PartnerFlag() byte   { return m.partnerFlag }
 func (m SpouseChat) PartnerText() string { return m.partnerText }
 
 func (m SpouseChat) Operation() string { return SpouseChatWriter }
@@ -66,11 +67,11 @@ func (m SpouseChat) String() string {
 func (m SpouseChat) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
-		w.WriteByte(m.mode)            // Decode1: mode discriminator
-		w.WriteAsciiString(m.sender)   // DecodeStr: sender (mode-4 segment)
-		w.WriteByte(m.flag)            // Decode1: flag (mode-4 segment)
-		w.WriteAsciiString(m.chatText) // DecodeStr: chatText (mode-4 segment)
-		w.WriteByte(m.partnerFlag)     // Decode1: flag (mode-5 segment)
+		w.WriteByte(m.mode)               // Decode1: mode discriminator
+		w.WriteAsciiString(m.sender)      // DecodeStr: sender (mode-4 segment)
+		w.WriteByte(m.flag)               // Decode1: flag (mode-4 segment)
+		w.WriteAsciiString(m.chatText)    // DecodeStr: chatText (mode-4 segment)
+		w.WriteByte(m.partnerFlag)        // Decode1: flag (mode-5 segment)
 		w.WriteAsciiString(m.partnerText) // DecodeStr: chatText (mode-5 segment)
 		return w.Bytes()
 	}

@@ -6,11 +6,12 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 const (
@@ -44,7 +45,7 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 
 func handleGetParties(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var filters = make([]model.Filter[Model], 0)
+		filters := make([]model.Filter[Model], 0)
 		if memberFilter, ok := mux.Vars(r)["memberId"]; ok {
 			memberId, err := strconv.Atoi(memberFilter)
 			if err != nil {

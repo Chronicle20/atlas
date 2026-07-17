@@ -1,15 +1,17 @@
 package main
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-family/family"
 	"atlas-family/kafka/consumer/character"
 	family2 "atlas-family/kafka/consumer/family"
 	"atlas-family/logger"
 	"atlas-family/scheduler"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"

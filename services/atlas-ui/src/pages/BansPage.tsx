@@ -52,8 +52,11 @@ export function BansPage() {
   const [selectedBan, setSelectedBan] = useState<Ban | null>(null);
 
   const bansQueryOptions = useMemo(
-    () => (typeFilter !== "all" ? { type: Number(typeFilter) as BanType } : undefined),
-    [typeFilter]
+    () =>
+      typeFilter !== "all"
+        ? { type: Number(typeFilter) as BanType }
+        : undefined,
+    [typeFilter],
   );
   const bansQuery = useBans(activeTenant, bansQueryOptions);
   const { invalidateAll } = useInvalidateBans();
@@ -64,8 +67,14 @@ export function BansPage() {
   const error = bansQuery.error?.message ?? null;
 
   const handleView = (ban: Ban) => navigate(`/bans/${ban.id}`);
-  const handleDelete = (ban: Ban) => { setSelectedBan(ban); setDeleteDialogOpen(true); };
-  const handleExpire = (ban: Ban) => { setSelectedBan(ban); setExpireDialogOpen(true); };
+  const handleDelete = (ban: Ban) => {
+    setSelectedBan(ban);
+    setDeleteDialogOpen(true);
+  };
+  const handleExpire = (ban: Ban) => {
+    setSelectedBan(ban);
+    setExpireDialogOpen(true);
+  };
   const handleDeleteSuccess = () => setSelectedBan(null);
   const handleExpireSuccess = () => setSelectedBan(null);
 
@@ -117,9 +126,10 @@ export function BansPage() {
           initialVisibilityState={hiddenColumns}
           emptyState={{
             title: "No bans found",
-            description: typeFilter !== "all"
-              ? "No bans match the selected filter. Try selecting a different type or create a new ban."
-              : "There are no bans to display. Create a new ban to get started.",
+            description:
+              typeFilter !== "all"
+                ? "No bans match the selected filter. Try selecting a different type or create a new ban."
+                : "There are no bans to display. Create a new ban to get started.",
             action: {
               label: "Create Ban",
               onClick: () => setCreateDialogOpen(true),

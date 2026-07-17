@@ -88,8 +88,11 @@ export function NpcShopCommodityDialog({
                   type="number"
                   value={form[key]}
                   disabled={disabled}
-                  onChange={e =>
-                    setForm(prev => ({ ...prev, [key]: Number(e.target.value) }))
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      [key]: Number(e.target.value),
+                    }))
                   }
                   className="col-span-3"
                 />

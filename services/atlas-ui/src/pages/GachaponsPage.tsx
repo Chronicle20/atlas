@@ -1,4 +1,3 @@
-
 import { useGachapons } from "@/lib/hooks/api/useGachapons";
 import { DataTableWrapper } from "@/components/common/DataTableWrapper";
 import { columns } from "./gachapons-columns";
@@ -28,7 +27,8 @@ export function GachaponsPage() {
           isRefreshing={isRefreshing}
           emptyState={{
             title: "No gachapons found",
-            description: "Gachapon data may not have been seeded yet. Go to Setup to seed gachapons.",
+            description:
+              "Gachapon data may not have been seeded yet. Go to Setup to seed gachapons.",
           }}
         />
       </div>

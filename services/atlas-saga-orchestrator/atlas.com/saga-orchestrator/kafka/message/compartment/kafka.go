@@ -4,10 +4,11 @@ import (
 	asset2 "atlas-saga-orchestrator/kafka/message/asset"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
@@ -131,11 +132,9 @@ type RechargeCommandBody struct {
 	Quantity uint32 `json:"quantity"`
 }
 
-type MergeCommandBody struct {
-}
+type MergeCommandBody struct{}
 
-type SortCommandBody struct {
-}
+type SortCommandBody struct{}
 
 type AcceptCommandBody struct {
 	TransactionId uuid.UUID `json:"transactionId"`
@@ -190,8 +189,7 @@ type CreationFailedStatusEventBody struct {
 	Message   string `json:"message"`
 }
 
-type DeletedStatusEventBody struct {
-}
+type DeletedStatusEventBody struct{}
 
 type CapacityChangedEventBody struct {
 	Type     byte   `json:"type"`

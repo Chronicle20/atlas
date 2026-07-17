@@ -3,8 +3,9 @@ package account
 import (
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 func entityById(id uint32) database.EntityProvider[Entity] {
@@ -39,4 +40,3 @@ func allInTenant() database.EntityProvider[[]Entity] {
 		return model.FixedProvider[[]Entity](results)
 	}
 }
-

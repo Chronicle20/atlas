@@ -1,10 +1,9 @@
 package projection
 
 import (
+	"atlas-character-factory/configuration/tenant"
 	"encoding/json"
 	"sync"
-
-	"atlas-character-factory/configuration/tenant"
 
 	"github.com/google/uuid"
 )

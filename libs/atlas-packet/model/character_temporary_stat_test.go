@@ -152,7 +152,7 @@ func TestCTSMonsterRidingBaseStatEncodesVehicleAndSkill(t *testing.T) {
 
 	// The Monster Riding base-stat block must contain nOption=1902000 then rOption=1004
 	// as consecutive little-endian int32s.
-	want := []byte{0xb0, 0x05, 0x1d, 0x00, /* 1902000 */ 0xec, 0x03, 0x00, 0x00 /* 1004 */}
+	want := []byte{0xb0, 0x05, 0x1d, 0x00 /* 1902000 */, 0xec, 0x03, 0x00, 0x00 /* 1004 */}
 	if !bytes.Contains(got, want) {
 		t.Fatalf("Monster Riding base stat missing nOption=1902000,rOption=1004; got % x", got)
 	}

@@ -11,6 +11,9 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
@@ -19,8 +22,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {
@@ -98,6 +99,7 @@ var _ Processor = (*ProcessorImpl)(nil)
 func (p *ProcessorImpl) GetById(id uint32) (Model, error) {
 	return GetRegistry().Get(p.ctx, p.t, id)
 }
+
 func (p *ProcessorImpl) GetInField(f field.Model) ([]Model, error) {
 	return GetRegistry().GetInField(p.ctx, p.t, f)
 }

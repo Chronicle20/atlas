@@ -4,13 +4,13 @@ import (
 	"atlas-channel/guild/thread"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	guildbody "github.com/Chronicle20/atlas/libs/atlas-packet/guild"
 	guildpkt "github.com/Chronicle20/atlas/libs/atlas-packet/guild/clientbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
-	"github.com/sirupsen/logrus"
 )
-
 
 func GuildBBSThreadsBody(ts []thread.Model, startIndex uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
@@ -76,4 +76,3 @@ func GuildBBSThreadBody(t thread.Model) packet.Encode {
 		}
 	}
 }
-

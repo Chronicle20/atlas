@@ -4,9 +4,10 @@ import (
 	"atlas-data/xml"
 	"strconv"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/sirupsen/logrus"
 )
 
 func parseConsumableId(name string) (uint32, error) {

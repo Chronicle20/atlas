@@ -6,13 +6,14 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+	logtest "github.com/sirupsen/logrus/hooks/test"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
-	logtest "github.com/sirupsen/logrus/hooks/test"
 )
 
 func setupProcessor(t *testing.T) (quest.Processor, *test.MockDataProcessor, *test.MockValidationProcessor, func()) {
@@ -69,7 +70,6 @@ func TestStart_HappyPath(t *testing.T) {
 	mockData.AddQuestDefinition(questId, test.CreateSimpleQuestDefinition(questId))
 
 	model, failedConditions, err := processor.Start(uuid.Nil, characterId, questId, createTestField(), false, nil)
-
 	if err != nil {
 		t.Fatalf("Start() unexpected error: %v", err)
 	}
@@ -213,7 +213,6 @@ func TestStart_SkipValidation(t *testing.T) {
 
 	// Start with skipValidation = true
 	model, _, err := processor.Start(uuid.Nil, characterId, questId, createTestField(), true, nil)
-
 	if err != nil {
 		t.Fatalf("Start() with skipValidation=true unexpected error: %v", err)
 	}
@@ -272,7 +271,6 @@ func TestComplete_WithChain(t *testing.T) {
 	// Start and complete
 	_, _, _ = processor.Start(uuid.Nil, characterId, questId, createTestField(), false, nil)
 	nextQuestId, err := processor.Complete(uuid.Nil, characterId, questId, createTestField(), false, nil)
-
 	if err != nil {
 		t.Fatalf("Complete() unexpected error: %v", err)
 	}

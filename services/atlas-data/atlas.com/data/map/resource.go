@@ -13,13 +13,14 @@ import (
 	"strings"
 	"time"
 
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteInitializer {
@@ -104,10 +105,10 @@ func handleSearchMaps(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Handl
 
 				if t, terr := tenant.FromContext(d.Context())(); terr == nil {
 					d.Logger().WithFields(logrus.Fields{
-						"tenant_id":   t.Id().String(),
-						"query_len":   len(q),
-						"result_ct":   len(results),
-						"elapsed_ms":  elapsedMs,
+						"tenant_id":  t.Id().String(),
+						"query_len":  len(q),
+						"result_ct":  len(results),
+						"elapsed_ms": elapsedMs,
 					}).Debugf("Map search served.")
 				}
 

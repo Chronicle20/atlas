@@ -116,7 +116,13 @@ export const JOB_GRAPH: Record<number, JobEntry> = {
 //   2000 Legend (Aran)         — product owner (PRD FR-8.1): Aran introduced v80
 //   2001 Evan                  — reference_maplestory_version_timeline: Evan introduced v84
 export const BRANCH_FLOORS: Record<number, number> = {
-  0: 83, 800: 83, 900: 83, 910: 83, 1000: 83, 2000: 80, 2001: 84,
+  0: 83,
+  800: 83,
+  900: 83,
+  910: 83,
+  1000: 83,
+  2000: 80,
+  2001: 84,
 };
 
 /** Branch root ids (parent === null), ascending. */

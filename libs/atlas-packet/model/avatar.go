@@ -3,11 +3,12 @@ package model
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Avatar struct {
@@ -34,14 +35,14 @@ func NewAvatar(gender byte, skinColor byte, face uint32, mega bool, hair uint32,
 	}
 }
 
-func (m Avatar) Gender() byte                          { return m.gender }
-func (m Avatar) SkinColor() byte                       { return m.skinColor }
-func (m Avatar) Face() uint32                          { return m.face }
-func (m Avatar) Mega() bool                            { return m.mega }
-func (m Avatar) Hair() uint32                          { return m.hair }
-func (m Avatar) Equipment() map[slot.Position]uint32   { return m.equipment }
+func (m Avatar) Gender() byte                              { return m.gender }
+func (m Avatar) SkinColor() byte                           { return m.skinColor }
+func (m Avatar) Face() uint32                              { return m.face }
+func (m Avatar) Mega() bool                                { return m.mega }
+func (m Avatar) Hair() uint32                              { return m.hair }
+func (m Avatar) Equipment() map[slot.Position]uint32       { return m.equipment }
 func (m Avatar) MaskedEquipment() map[slot.Position]uint32 { return m.maskedEquipment }
-func (m Avatar) Pets() map[int8]uint32                 { return m.pets }
+func (m Avatar) Pets() map[int8]uint32                     { return m.pets }
 
 func (m Avatar) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)

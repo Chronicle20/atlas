@@ -1,11 +1,12 @@
 package merchant
 
 import (
+	"github.com/google/uuid"
+	"github.com/jtumidanski/api2go/jsonapi"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 type RestModel struct {

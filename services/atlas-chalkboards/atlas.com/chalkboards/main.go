@@ -6,9 +6,10 @@ import (
 	chalkboard2 "atlas-chalkboards/kafka/consumer/chalkboard"
 	"atlas-chalkboards/kafka/consumer/character"
 	"atlas-chalkboards/logger"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
+
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"

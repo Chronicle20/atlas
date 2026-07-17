@@ -1,27 +1,35 @@
 /**
  * React Query hooks for character management
- * 
+ *
  * Provides optimized data fetching, caching, and mutation capabilities for:
  * - Character retrieval operations (getAll, getById)
- * - Character update operations 
+ * - Character update operations
  * - Optimistic updates and cache invalidation
  * - Proper error handling and loading states
  * - Tenant-aware operations
  */
 
-import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
-import { charactersService } from '@/services/api/characters.service';
-import type { Character, UpdateCharacterData } from '@/types/models/character';
-import type { Tenant } from '@/types/models/tenant';
-import type { ServiceOptions } from '@/lib/api/query-params';
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type UseMutationResult,
+  type UseQueryResult,
+} from "@tanstack/react-query";
+import { charactersService } from "@/services/api/characters.service";
+import type { Character, UpdateCharacterData } from "@/types/models/character";
+import type { Tenant } from "@/types/models/tenant";
+import type { ServiceOptions } from "@/lib/api/query-params";
 
 // Query keys for consistent cache management
 export const characterKeys = {
-  all: ['characters'] as const,
-  lists: () => [...characterKeys.all, 'list'] as const,
-  list: (tenant: Tenant, options?: ServiceOptions) => [...characterKeys.lists(), tenant?.id, options] as const,
-  details: () => [...characterKeys.all, 'detail'] as const,
-  detail: (tenant: Tenant, characterId: string) => [...characterKeys.details(), tenant?.id, characterId] as const,
+  all: ["characters"] as const,
+  lists: () => [...characterKeys.all, "list"] as const,
+  list: (tenant: Tenant, options?: ServiceOptions) =>
+    [...characterKeys.lists(), tenant?.id, options] as const,
+  details: () => [...characterKeys.all, "detail"] as const,
+  detail: (tenant: Tenant, characterId: string) =>
+    [...characterKeys.details(), tenant?.id, characterId] as const,
 };
 
 // ============================================================================
@@ -31,7 +39,10 @@ export const characterKeys = {
 /**
  * Hook to fetch all characters for a specific tenant
  */
-export function useCharacters(tenant: Tenant, options?: ServiceOptions): UseQueryResult<Character[], Error> {
+export function useCharacters(
+  tenant: Tenant,
+  options?: ServiceOptions,
+): UseQueryResult<Character[], Error> {
   return useQuery({
     queryKey: characterKeys.list(tenant, options),
     queryFn: () => charactersService.getAll({ ...options, useCache: false }),
@@ -46,11 +57,12 @@ export function useCharacters(tenant: Tenant, options?: ServiceOptions): UseQuer
 export function useCharacter(
   tenant: Tenant,
   characterId: string,
-  options?: ServiceOptions
+  options?: ServiceOptions,
 ): UseQueryResult<Character, Error> {
   return useQuery({
     queryKey: characterKeys.detail(tenant, characterId),
-    queryFn: () => charactersService.getById( characterId, { ...options, useCache: false }),
+    queryFn: () =>
+      charactersService.getById(characterId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!characterId,
     gcTime: 5 * 60 * 1000,
   });
@@ -71,50 +83,54 @@ export function useUpdateCharacter(): UseMutationResult<
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ characterId, updates }) => 
-      charactersService.update( characterId, updates),
+    mutationFn: ({ characterId, updates }) =>
+      charactersService.update(characterId, updates),
     onMutate: async ({ tenant, characterId, updates }) => {
       // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: characterKeys.detail(tenant, characterId) });
-      
+      await queryClient.cancelQueries({
+        queryKey: characterKeys.detail(tenant, characterId),
+      });
+
       // Snapshot the previous value
       const previousCharacter = queryClient.getQueryData<Character>(
-        characterKeys.detail(tenant, characterId)
+        characterKeys.detail(tenant, characterId),
       );
-      
+
       // Optimistically update the cache if we have the previous character
       if (previousCharacter) {
         const optimisticCharacter: Character = {
           ...previousCharacter,
           attributes: { ...previousCharacter.attributes, ...updates },
         };
-        queryClient.setQueryData(characterKeys.detail(tenant, characterId), optimisticCharacter);
+        queryClient.setQueryData(
+          characterKeys.detail(tenant, characterId),
+          optimisticCharacter,
+        );
       }
-      
+
       return { previousCharacter };
     },
     onError: (error, variables, context) => {
       // Revert optimistic update on error
       if (context?.previousCharacter) {
         queryClient.setQueryData(
-          characterKeys.detail(variables.tenant, variables.characterId), 
-          context.previousCharacter
+          characterKeys.detail(variables.tenant, variables.characterId),
+          context.previousCharacter,
         );
       }
-      console.error('Failed to update character:', error);
+      console.error("Failed to update character:", error);
     },
     onSettled: (_data, _error, variables) => {
       // Invalidate and refetch relevant queries
-      queryClient.invalidateQueries({ 
-        queryKey: characterKeys.detail(variables.tenant, variables.characterId) 
+      queryClient.invalidateQueries({
+        queryKey: characterKeys.detail(variables.tenant, variables.characterId),
       });
-      queryClient.invalidateQueries({ 
-        queryKey: characterKeys.list(variables.tenant) 
+      queryClient.invalidateQueries({
+        queryKey: characterKeys.list(variables.tenant),
       });
     },
   });
 }
-
 
 // ============================================================================
 // UTILITY HOOKS
@@ -125,13 +141,16 @@ export function useUpdateCharacter(): UseMutationResult<
  */
 export function useInvalidateCharacters() {
   const queryClient = useQueryClient();
-  
+
   return {
-    invalidateAll: () => queryClient.invalidateQueries({ queryKey: characterKeys.all }),
-    invalidateList: (tenant: Tenant) => 
+    invalidateAll: () =>
+      queryClient.invalidateQueries({ queryKey: characterKeys.all }),
+    invalidateList: (tenant: Tenant) =>
       queryClient.invalidateQueries({ queryKey: characterKeys.list(tenant) }),
-    invalidateCharacter: (tenant: Tenant, characterId: string) => 
-      queryClient.invalidateQueries({ queryKey: characterKeys.detail(tenant, characterId) }),
+    invalidateCharacter: (tenant: Tenant, characterId: string) =>
+      queryClient.invalidateQueries({
+        queryKey: characterKeys.detail(tenant, characterId),
+      }),
   };
 }
 
@@ -144,8 +163,8 @@ export function usePrefetchCharacters() {
   return (tenant: Tenant, options?: ServiceOptions) => {
     queryClient.prefetchQuery({
       queryKey: characterKeys.list(tenant, options),
-      queryFn: () => charactersService.getAll( options),
-      });
+      queryFn: () => charactersService.getAll(options),
+    });
   };
 }
 
@@ -158,8 +177,8 @@ export function usePrefetchCharacter() {
   return (tenant: Tenant, characterId: string, options?: ServiceOptions) => {
     queryClient.prefetchQuery({
       queryKey: characterKeys.detail(tenant, characterId),
-      queryFn: () => charactersService.getById( characterId, options),
-      });
+      queryFn: () => charactersService.getById(characterId, options),
+    });
   };
 }
 

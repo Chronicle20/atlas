@@ -5,8 +5,9 @@ import (
 	"atlas-mts/test"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 // resetListings clears the listings table. The shared in-memory SQLite DB

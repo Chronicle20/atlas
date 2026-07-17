@@ -7,7 +7,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 // A mutable holder so individual tests can flip the active tenant (e.g. the
 // "no tenant selected" empty state) without re-declaring the module mock.
 const { tenantHolder } = vi.hoisted(() => ({
-  tenantHolder: { activeTenant: { id: "test-tenant" } as { id: string } | null },
+  tenantHolder: {
+    activeTenant: { id: "test-tenant" } as { id: string } | null,
+  },
 }));
 
 vi.mock("@/context/tenant-context", () => ({
@@ -18,7 +20,9 @@ vi.mock("@/context/tenant-context", () => ({
 // is enough for these tests (world selection is a Radix Select, not exercised
 // here — jsdom lacks the pointer-capture APIs Radix needs).
 vi.mock("@/lib/hooks/api/useTenants", () => ({
-  useTenantConfiguration: () => ({ data: { attributes: { worlds: [{ name: "Scania" }] } } }),
+  useTenantConfiguration: () => ({
+    data: { attributes: { worlds: [{ name: "Scania" }] } },
+  }),
 }));
 
 // ItemNameCell resolves an item name over its own query/tenant; stub it so a
@@ -56,7 +60,11 @@ describe("MarketplacePage", () => {
   beforeEach(() => {
     tenantHolder.activeTenant = { id: "test-tenant" };
     vi.mocked(mtsListingsService.browse).mockReset();
-    vi.mocked(mtsListingsService.browse).mockResolvedValue({ listings: [], total: 0, lastPage: 1 });
+    vi.mocked(mtsListingsService.browse).mockResolvedValue({
+      listings: [],
+      total: 0,
+      lastPage: 1,
+    });
   });
 
   it("browses on mount, converting the 1-based UI page to the 0-based wire page", async () => {
@@ -71,7 +79,9 @@ describe("MarketplacePage", () => {
   it("does not browse until a tenant is active, showing the empty state instead", async () => {
     tenantHolder.activeTenant = null;
     renderPage();
-    expect(screen.getByText(/select a tenant to browse listings/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/select a tenant to browse listings/i),
+    ).toBeInTheDocument();
     expect(mtsListingsService.browse).not.toHaveBeenCalled();
   });
 

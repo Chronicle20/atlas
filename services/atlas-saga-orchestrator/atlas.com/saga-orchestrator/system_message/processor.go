@@ -5,9 +5,10 @@ import (
 	"atlas-saga-orchestrator/kafka/producer"
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 )
 
 // Processor is the interface for system message operations

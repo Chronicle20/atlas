@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"testing"
 
-	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 

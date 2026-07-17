@@ -7,7 +7,10 @@ const BASE_PATH = "/api/gachapons";
 
 export const gachaponsService = {
   async getAllGachapons(options?: QueryOptions): Promise<GachaponData[]> {
-    return api.getList<GachaponData>(`${BASE_PATH}${buildQueryString(options)}`, options);
+    return api.getList<GachaponData>(
+      `${BASE_PATH}${buildQueryString(options)}`,
+      options,
+    );
   },
 
   async getGachaponById(id: string): Promise<GachaponData> {
@@ -15,6 +18,8 @@ export const gachaponsService = {
   },
 
   async getPrizePool(gachaponId: string): Promise<GachaponRewardData[]> {
-    return api.getList<GachaponRewardData>(`${BASE_PATH}/${gachaponId}/prize-pool`);
+    return api.getList<GachaponRewardData>(
+      `${BASE_PATH}/${gachaponId}/prize-pool`,
+    );
   },
 };

@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const NPCActionHandle = "NPCActionHandle"
@@ -21,11 +22,11 @@ type ActionRequest struct {
 	movement    model.Movement
 }
 
-func (m ActionRequest) ObjectId() uint32              { return m.objectId }
-func (m ActionRequest) Unk() byte                     { return m.unk }
-func (m ActionRequest) Unk2() byte                    { return m.unk2 }
-func (m ActionRequest) HasMovement() bool             { return m.hasMovement }
-func (m ActionRequest) MovementData() model.Movement  { return m.movement }
+func (m ActionRequest) ObjectId() uint32             { return m.objectId }
+func (m ActionRequest) Unk() byte                    { return m.unk }
+func (m ActionRequest) Unk2() byte                   { return m.unk2 }
+func (m ActionRequest) HasMovement() bool            { return m.hasMovement }
+func (m ActionRequest) MovementData() model.Movement { return m.movement }
 
 func (m ActionRequest) Operation() string {
 	return NPCActionHandle

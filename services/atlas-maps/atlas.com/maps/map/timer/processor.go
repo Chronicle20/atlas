@@ -1,21 +1,22 @@
 package timer
 
 import (
+	"atlas-maps/kafka/message"
+	"atlas-maps/kafka/producer"
 	"context"
 	"time"
 
-	"atlas-maps/kafka/message"
 	characterKafka "atlas-maps/kafka/message/character"
 	mapKafka "atlas-maps/kafka/message/map"
-	"atlas-maps/kafka/producer"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Processor interface {

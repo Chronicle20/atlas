@@ -1,9 +1,10 @@
 package thread
 
 import (
+	"gorm.io/gorm"
+
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"gorm.io/gorm"
 )
 
 func getAll(guildId uint32) database.EntityProvider[[]Entity] {

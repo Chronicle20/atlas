@@ -104,9 +104,9 @@ func (p *ProjectileProcessorImpl) Plan(c character.Model, ai packetmodel.AttackI
 		buffs = nil
 	}
 
-	if (weaponType == item.WeaponTypeBow || weaponType == item.WeaponTypeCrossbow) && hasBuff(buffs, ts.TemporaryStatTypeSoulArrow) {
+	if projectileConsumptionSkipped(weaponType, buffs) {
 		p.l.WithField("characterId", c.Id()).WithField("skillId", ai.SkillId()).
-			Debugf("Skipping projectile consumption: Soul Arrow active.")
+			Debugf("Skipping projectile consumption: weapon buff active (Soul Arrow / Shadow Stars).")
 		return nil, false
 	}
 
@@ -202,6 +202,20 @@ func hasBuff(buffs []buff.Model, statType ts.TemporaryStatType) bool {
 				return true
 			}
 		}
+	}
+	return false
+}
+
+// projectileConsumptionSkipped reports whether an active buff exempts this
+// weapon type from per-attack projectile consumption: Soul Arrow for
+// bow/crossbow, Shadow Stars (SHADOW_CLAW) for claw. Expired buffs are ignored
+// by hasBuff, so a stale buff falls through to normal consumption.
+func projectileConsumptionSkipped(weaponType item.WeaponType, buffs []buff.Model) bool {
+	if (weaponType == item.WeaponTypeBow || weaponType == item.WeaponTypeCrossbow) && hasBuff(buffs, ts.TemporaryStatTypeSoulArrow) {
+		return true
+	}
+	if weaponType == item.WeaponTypeClaw && hasBuff(buffs, ts.TemporaryStatTypeShadowClaw) {
+		return true
 	}
 	return false
 }

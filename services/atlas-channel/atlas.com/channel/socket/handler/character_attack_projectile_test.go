@@ -183,6 +183,35 @@ func TestResolvePlan_EmptyQtySlotsSkipped(t *testing.T) {
 	}
 }
 
+func TestProjectileConsumptionSkipped(t *testing.T) {
+	soulArrow := []buff.Model{buffWithStat(ts.TemporaryStatTypeSoulArrow)}
+	shadowClaw := []buff.Model{buffWithStat(ts.TemporaryStatTypeShadowClaw)}
+	expiredClaw := []buff.Model{expiredBuffWithStat(ts.TemporaryStatTypeShadowClaw)}
+
+	cases := []struct {
+		name   string
+		weapon item.WeaponType
+		buffs  []buff.Model
+		want   bool
+	}{
+		{"bow + soul arrow -> skip", item.WeaponTypeBow, soulArrow, true},
+		{"crossbow + soul arrow -> skip", item.WeaponTypeCrossbow, soulArrow, true},
+		{"claw + shadow claw -> skip", item.WeaponTypeClaw, shadowClaw, true},
+		{"claw + no buff -> consume", item.WeaponTypeClaw, nil, false},
+		{"claw + expired shadow claw -> consume", item.WeaponTypeClaw, expiredClaw, false},
+		{"claw + soul arrow -> consume", item.WeaponTypeClaw, soulArrow, false},
+		{"bow + shadow claw -> consume", item.WeaponTypeBow, shadowClaw, false},
+		{"gun + shadow claw -> consume", item.WeaponTypeGun, shadowClaw, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := projectileConsumptionSkipped(tc.weapon, tc.buffs); got != tc.want {
+				t.Fatalf("projectileConsumptionSkipped(%v) = %v, want %v", tc.weapon, got, tc.want)
+			}
+		})
+	}
+}
+
 func TestResolvePlan_ClientHintExactMatch(t *testing.T) {
 	// Client-suggested slot has exactly enough; preferred over equally-valid slot 1.
 	assets := []asset.Model{

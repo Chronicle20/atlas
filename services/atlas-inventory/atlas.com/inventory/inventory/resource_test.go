@@ -40,7 +40,7 @@ func (c failConn) ExecContext(context.Context, string, []driver.NamedValue) (dri
 type failConnector struct{ err error }
 
 func (f failConnector) Connect(context.Context) (driver.Conn, error) {
-	return failConn{err: f.err}, nil
+	return failConn(f), nil
 }
 func (f failConnector) Driver() driver.Driver { return nil }
 

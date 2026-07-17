@@ -173,6 +173,46 @@ func TestItemUseTeleportRockByMapV87(t *testing.T) {
 	}
 }
 
+// task-124 jms_v185 verify pass (live MapleStory_dump_SCY.exe, port 13344):
+// jms_v185 MajorVersion() is 185, so >=87 — like v87/v95, the sub-body has no
+// trailing update-time budget. CWvsContext::SendConsumeCashItemUseRequest
+// @0xaef2f5 writes COutPacket::COutPacket(&pkt,0x47) @0xaef363 (opcode 71,
+// matches registry USE_CASH_ITEM), then IMMEDIATELY Encode4(get_update_time())
+// @0xaef36c — BEFORE Encode2(nPOS) @0xaef37a and Encode4(nItemID) @0xaef385
+// and the switch on get_consume_cash_item_type(nItemID) @0xaef393 — i.e. a
+// leading common-header updateTime, exactly mirroring v87/v95's shape. Case 22
+// (jumptable 00AEF3A8, label loc_AF14BA @0xaf14ba) calls a validity check
+// (sub_AF2D2B @0xaf14bd), then on the success path computes
+// flag = (itemId/1000 != 5040) @0xaf14e6-14f0 and calls
+// CWvsContext::RunMapTransferItem(this,&oPacket,flag) @0xaf14f9 — the SAME
+// helper USE_TELEPORT_ROCK calls (renamed live this pass from sub_AEF160,
+// shared with the jms Use codec's helper at the same address 0xaef160) — then
+// on success falls to the shared tail (loc_AF2AD2: CanSendExclRequest
+// @0xaf2adb, then on success sub_56BC92 @0xaf2afc, decompiled and confirmed to
+// be a pure CClientSocket::SendPacket wrapper with NO Encode call inside it):
+// CONFIRMED there is no further Encode4 anywhere between the case-22
+// RunMapTransferItem call and the final SendPacket. This CONFIRMS the v87/v95
+// fix (item_use_teleport_rock.go's `!m.updateTimeFirst` gate) generalizes to
+// jms_v185: the sub-body is ONLY the target payload — no trailing updateTime.
+//
+// packet-audit:verify packet=cash/serverbound/CashItemUseTeleportRock version=jms_v185 ida=0xaef2f5
+func TestItemUseTeleportRockByMapJms(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("JMS", 185, 1)
+	b := []byte{
+		0x00,                   // byName = 0
+		0x00, 0xE1, 0xF5, 0x05, // mapId = 100000000
+		// nothing else — jms has no trailing update-time budget in this sub-body
+	}
+	req := request.Request(b)
+	r := request.NewRequestReader(&req, 0)
+	p := NewItemUseTeleportRock(true)
+	p.Decode(l, ctx)(&r, nil)
+	if !p.Target().Valid() || p.Target().ByName() || p.Target().TargetMap() != 100000000 {
+		t.Fatalf("decode: target=%+v", p.Target())
+	}
+}
+
 func TestItemUseTeleportRockByName(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := pt.CreateContext("GMS", 95, 1)

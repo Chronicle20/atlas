@@ -100,6 +100,31 @@ func TestAddMapDeleteDecodeV87(t *testing.T) {
 	}
 }
 
+// task-124 jms_v185 verify pass (live MapleStory_dump_SCY.exe, port 13344):
+// CWvsContext::SendMapTransferRequest @0xb0d9eb — already named in the jms
+// IDB. Byte-identical read order to v83/v84/v87/v95: COutPacket::COutPacket(
+// &v5,0x61) @0xb0d9fd (opcode 97, matches registry TROCK_ADD_MAP);
+// Encode1(nType) @0xb0da0c; Encode1(bCanTransferContinent) @0xb0da17;
+// if(!nType) Encode4(dwTargetField) @0xb0da28; SendPacket @0xb0da37. Confirms
+// the "version-invariant" claim above for jms_v185.
+//
+// packet-audit:verify packet=teleportrock/serverbound/AddMap version=jms_v185 ida=0xb0d9eb
+func TestAddMapDeleteDecodeJms(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("JMS", 185, 1)
+	b := []byte{
+		0x00, 0x00, // delete, regular list
+		0x00, 0xE1, 0xF5, 0x05, // mapId = 100000000
+	}
+	req := request.Request(b)
+	r := request.NewRequestReader(&req, 0)
+	p := AddMap{}
+	p.Decode(l, ctx)(&r, nil)
+	if p.Register() || p.Vip() || p.MapId() != 100000000 {
+		t.Fatalf("decode: %+v", p)
+	}
+}
+
 func TestAddMapRoundTrip(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	for _, v := range pt.Variants {

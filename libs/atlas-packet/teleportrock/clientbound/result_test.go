@@ -222,6 +222,57 @@ func TestMapTransferErrorGoldenV87(t *testing.T) {
 	}
 }
 
+// task-124 jms_v185 verify pass (live MapleStory_dump_SCY.exe, port 13344):
+// CWvsContext::OnMapTransferResult @0xb0c8c2 — byte-identical read order to
+// v83/v84/v87/v95: mode(Decode1)+targetList(Decode1) @0xb0c8e2/0xb0c8e5, then
+// for mode in {2,3} exactly 5 (targetList==0) or 10 (targetList==1) x
+// Decode4 mapId @0xb0c935 loop. Confirms the "identical v83 0xA25268 / v95
+// 0x9F9F90" claim in the file-level comment above for jms_v185 too.
+//
+// packet-audit:verify packet=teleportrock/clientbound/MapTransferList version=jms_v185 ida=0xb0c8c2
+func TestMapTransferListRegularGoldenJms(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("JMS", 185, 1)
+	m := NewMapTransferList(3, false, []_map.Id{100000000, 220000000})
+	got := m.Encode(l, ctx)(nil)
+	want := []byte{
+		0x03,                   // mode = REGISTER_LIST
+		0x00,                   // targetList = regular
+		0x00, 0xE1, 0xF5, 0x05, // 100000000
+		0x00, 0xEF, 0x1C, 0x0D, // 220000000
+		0xFF, 0xC9, 0x9A, 0x3B, // EmptyMapId
+		0xFF, 0xC9, 0x9A, 0x3B,
+		0xFF, 0xC9, 0x9A, 0x3B,
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("golden mismatch\n got: % x\nwant: % x", got, want)
+	}
+}
+
+// IDA (live MapleStory_dump_SCY.exe jms_v185, port 13344, task-124 verify
+// pass): CWvsContext::OnMapTransferResult @0xb0c8c2, same function as the
+// list form above — modes 5,6/7,8,9,10 (error/notice form, StringPool ids
+// 0xC90/0xC6A/0xC70/0xC6D — jms-local string ids, does not affect wire bytes;
+// jms has no case 11 in this switch, unlike gms_v87's 5-11 spread, which does
+// not affect the byte shape tested here) read only
+// mode(Decode1)+targetList(Decode1) and never reach the Decode4 mapId loop.
+// Same class of runtime/mode-guard tooling gap as v83/v84/v87/v95 (analyzer
+// grades this candidate FlatInvalid even though the 2-byte body is exactly
+// what jms sends for the error modes). Evidence pinned to carry this cell via
+// the linked-fixture path, mirroring the v83/v84/v87/v95 convention above.
+//
+// packet-audit:verify packet=teleportrock/clientbound/MapTransferError version=jms_v185 ida=0xb0c8c2
+func TestMapTransferErrorGoldenJms(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("JMS", 185, 1)
+	m := NewMapTransferError(5, false)
+	got := m.Encode(l, ctx)(nil)
+	want := []byte{0x05, 0x00}
+	if !bytes.Equal(got, want) {
+		t.Errorf("golden mismatch\n got: % x\nwant: % x", got, want)
+	}
+}
+
 func TestMapTransferResultCrossVersionStable(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	m := NewMapTransferList(3, false, []_map.Id{100000000})

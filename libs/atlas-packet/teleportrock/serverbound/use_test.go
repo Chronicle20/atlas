@@ -143,6 +143,45 @@ func TestUseByMapDecodeV87(t *testing.T) {
 	}
 }
 
+// task-124 jms_v185 verify pass (live MapleStory_dump_SCY.exe, port 13344):
+// CWvsContext::SendMapTransferItemUseRequest @0xaef071 — byte-identical read
+// order to v83/v84/v87/v95: guard nItemID/10000==232 && CanSendExclRequest(this,
+// 200,0) @0xaef0a0, COutPacket::COutPacket(&pkt,0x4C) @0xaef0b2 (opcode 76,
+// matches registry USE_TELEPORT_ROCK), Encode2(nPOS) @0xaef0c1, Encode4(nItemID)
+// @0xaef0cc, then CWvsContext::RunMapTransferItem(this,&pkt,0) @0xaef0d9 (the
+// shared target-payload helper, renamed live this pass from sub_AEF160 — same
+// helper the cash CashItemUseTeleportRock sub-body calls); on success
+// Encode4(get_update_time()) @0xaef0eb then SendPacket @0xaef0fa — a genuine
+// trailing updateTime. Confirms the "version-invariant" claim above for
+// jms_v185 too (this op never gates on updateTimeFirst, matching the gms_v87
+// contrast noted in the v87 case above).
+//
+// packet-audit:verify packet=teleportrock/serverbound/Use version=jms_v185 ida=0xaef071
+func TestUseByMapDecodeJms(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("JMS", 185, 1)
+	b := []byte{
+		0x02, 0x00, // slot = 2
+		0x80, 0x66, 0x23, 0x00, // itemId = 2320000
+		0x00,                   // byName = 0
+		0x00, 0xE1, 0xF5, 0x05, // mapId = 100000000
+		0x2A, 0x00, 0x00, 0x00, // updateTime = 42
+	}
+	req := request.Request(b)
+	r := request.NewRequestReader(&req, 0)
+	p := Use{}
+	p.Decode(l, ctx)(&r, nil)
+	if !p.Valid() {
+		t.Fatalf("expected valid decode")
+	}
+	if p.Slot() != 2 || p.ItemId() != 2320000 || p.UpdateTime() != 42 {
+		t.Fatalf("fields: %+v", p)
+	}
+	if p.Target().ByName() || p.Target().TargetMap() != 100000000 {
+		t.Fatalf("target: %+v", p.Target())
+	}
+}
+
 // Client sent the packet with no target payload (dialog closed without a
 // selection) — must decode as invalid, never panic.
 func TestUseAbsentTargetIsInvalid(t *testing.T) {

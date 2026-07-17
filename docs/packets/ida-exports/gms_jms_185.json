@@ -13238,6 +13238,91 @@
           "comment": "code byte (case 2/3/6/7 = error — no further reads in v83)"
         }
       ]
+    },
+    "CWvsContext::SendMapTransferItemUseRequest": {
+      "address": "0xaef071",
+      "direction": "serverbound",
+      "notes": "USE_TELEPORT_ROCK (task-124 jms_v185 verify pass, live MapleStory_dump_SCY.exe port 13344). Byte-identical read order to v83/v84/v87/v95: guard nItemID/10000==232 && CanSendExclRequest(this,200,0) @0xaef0a0, COutPacket::COutPacket(&pkt,0x4C) @0xaef0b2 (opcode 76, matches registry USE_TELEPORT_ROCK), Encode2(nPOS) @0xaef0c1, Encode4(nItemID) @0xaef0cc, then CWvsContext::RunMapTransferItem(this,&pkt,0) @0xaef0d9 (renamed live this pass from sub_AEF160, the shared target-payload helper — also called by the cash CashItemUseTeleportRock sub-body below); on success Encode4(get_update_time()) @0xaef0eb then SendPacket @0xaef0fa — a genuine trailing updateTime, matching teleportrock/serverbound/Use's version-invariant trailing-updateTime claim.",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CWvsContext::RunMapTransferItem(this, &pkt, 0)"
+        }
+      ]
+    },
+    "CWvsContext::SendMapTransferRequest": {
+      "address": "0xb0d9eb",
+      "direction": "serverbound",
+      "notes": "TROCK_ADD_MAP (task-124 jms_v185 verify pass, live MapleStory_dump_SCY.exe port 13344). Byte-identical read order to v83/v84/v87/v95: COutPacket::COutPacket(&v5,0x61) @0xb0d9fd (opcode 97, matches registry TROCK_ADD_MAP); Encode1(nType) @0xb0da0c; Encode1(bCanTransferContinent) @0xb0da17; if(!nType) Encode4(dwTargetField) @0xb0da28; SendPacket @0xb0da37.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!nType"
+        }
+      ]
+    },
+    "CWvsContext::OnMapTransferResult": {
+      "address": "0xb0c8c2",
+      "direction": "clientbound",
+      "notes": "MAP_TRANSFER_RESULT (task-124 jms_v185 verify pass, live MapleStory_dump_SCY.exe port 13344). Byte-identical read order to v83/v84/v87/v95: mode(Decode1) @0xb0c8e2 + targetList(Decode1) @0xb0c8e5, then for mode in {2,3} exactly 5 (targetList==0) or 10 (targetList==1) x Decode4 mapId @0xb0c935 loop; modes 5,6/7,8,9,10 are the error/notice form (StringPool ids 0xC90/0xC6A/0xC70/0xC6D — jms-local string ids, no case 11 in this switch, does not affect wire bytes) reading only mode+targetList with no further payload.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v3 == 2 || v3 == 3"
+        }
+      ]
+    },
+    "CWvsContext::RunMapTransferItem": {
+      "address": "0xaef160",
+      "direction": "serverbound",
+      "notes": "Shared teleport-rock target-payload helper (task-124 jms_v185 verify pass). Unnamed in the jms IDB (sub_AEF160) until this pass; renamed live. Called by both SendMapTransferItemUseRequest (flag=0, @0xaef0d9) and the cash-item-use teleport-rock branch (case 22 of SendConsumeCashItemUseRequest, @0xaf14f9). Live decompile (port 13344): a CDialog target-picker; on DoModal()==1, if a name was resolved: Encode1(1) then EncodeStr(name) @0xaef295-2ab; else if n is set and != 999999999 (EmptyMapId): Encode1(0) then Encode4(n) @0xaef2c4-2cf; otherwise no payload bytes are written at all (dialog confirmed with no selection). The parser cannot descend into this call because both callers consume its return value in an if-condition (treated as a guard, not a Delegate) — calls intentionally left absent (opaque relative to this static export), matching the v83/v84/v87/v95 convention for this same helper.",
+      "calls": null
+    },
+    "CWvsContext::SendConsumeCashItemUseRequest": {
+      "address": "0xaef2f5",
+      "direction": "serverbound",
+      "notes": "cash/serverbound/CashItemUseTeleportRock (task-124 jms_v185 verify pass, live MapleStory_dump_SCY.exe port 13344). jms MajorVersion() is 185 (>=87): the function prologue writes COutPacket::COutPacket(&pkt,0x47) @0xaef363 (opcode 71, matches registry USE_CASH_ITEM), then IMMEDIATELY Encode4(get_update_time()) @0xaef36c — BEFORE Encode2(nPOS) @0xaef37a and Encode4(nItemID) @0xaef385 and the switch on get_consume_cash_item_type(nItemID) @0xaef393 — i.e. update_time is a common-header LEADING field, exactly mirroring v87/v95's shape (updateTimeFirst := MajorVersion()>=87 in character_cash_item_use.go). Case 22 (jumptable 00AEF3A8, label loc_AF14BA @0xaf14ba) calls a validity check (sub_AF2D2B @0xaf14bd), then on success computes flag = (itemId/1000 != 5040) @0xaf14e6-f0 and calls CWvsContext::RunMapTransferItem(this,&oPacket,flag) @0xaf14f9 — the SAME helper USE_TELEPORT_ROCK calls (renamed live this pass from sub_AEF160) — then on success falls to the shared tail (loc_AF2AD2: CanSendExclRequest @0xaf2adb, then sub_56BC92 @0xaf2afc, decompiled and confirmed to be a pure CClientSocket::SendPacket wrapper with NO Encode call inside it): no further Encode4 anywhere between the case-22 RunMapTransferItem call and the final SendPacket.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "update_time = get_update_time() — common header, leading (task-124 jms: MajorVersion()>=87 updateTimeFirst)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nPOS — common header"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nItemID — common header; switches via get_consume_cash_item_type(nItemID) to a per-case body (opaque to this flat harvest, same class of gap as RunMapTransferItem)"
+        }
+      ]
     }
   }
 }

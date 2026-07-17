@@ -37,6 +37,40 @@ type File struct {
 	gameVersion   int
 	encryptionKey *crypto.WzKey
 	parseMu       sync.Mutex
+	// keyRanges maps image byte extents to per-image fallback keys
+	// (task-172 C-2). Written under parseMu during lazy image parse; read
+	// concurrently by canvas decompression, hence its own RWMutex.
+	keyRangesMu sync.RWMutex
+	keyRanges   []keyRange
+}
+
+// keyRange records that bytes in [start, end) decode with key (a per-image
+// fallback key, task-172 C-2).
+type keyRange struct {
+	start, end int64
+	key        []byte
+}
+
+func (wz *File) registerImageKey(start int64, size int32, key []byte) {
+	wz.keyRangesMu.Lock()
+	defer wz.keyRangesMu.Unlock()
+	wz.keyRanges = append(wz.keyRanges, keyRange{start: start, end: start + int64(size), key: key})
+}
+
+// CanvasEncryptionKeyFor returns the canvas-block decryption key for a
+// canvas whose data begins at offset: the per-image fallback key when the
+// owning image parsed under one (its canvases lie inside the image's byte
+// extent), else the file-level key. Canvas decompression call sites must
+// use this instead of CanvasEncryptionKey (task-172 C-2).
+func (wz *File) CanvasEncryptionKeyFor(offset int64) []byte {
+	wz.keyRangesMu.RLock()
+	defer wz.keyRangesMu.RUnlock()
+	for _, kr := range wz.keyRanges {
+		if offset >= kr.start && offset < kr.end {
+			return kr.key
+		}
+	}
+	return wz.CanvasEncryptionKey()
 }
 
 // LockParse acquires the file-wide parse mutex and returns an unlock func

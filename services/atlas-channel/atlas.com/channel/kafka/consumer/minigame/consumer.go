@@ -287,8 +287,30 @@ func handleChatEvent(sc server.Model, wp writer.Producer) func(l logrus.FieldLog
 			return
 		}
 		l.Debugf("Chat in mini-game room [%d] from slot [%d].", e.RoomId, e.Body.Slot)
-		announceToRoom(l, ctx, sc, wp, e, interactioncb.CharacterInteractionChatBody(e.Body.Slot, e.Body.Message))
+		// The miniroom chat wire carries no separate name field — the client
+		// renders the message string verbatim and splits on " : " only to
+		// recolor/filter (CMiniRoomBaseDlg::OnChat, v95 @0x639AD0). Prepend the
+		// speaker's name so other viewers see who spoke, mirroring the
+		// hired-merchant / personal-shop chat path (merchant consumer's
+		// resolveOwnerName). One fix covers both Omok and Match Cards (shared codec).
+		chatText := e.Body.Message
+		if name := resolveChatName(l, ctx, e.CharacterId); name != "" {
+			chatText = name + " : " + e.Body.Message
+		}
+		announceToRoom(l, ctx, sc, wp, e, interactioncb.CharacterInteractionChatBody(e.Body.Slot, chatText))
 	}
+}
+
+// resolveChatName looks up the speaking character's name to prepend to a
+// miniroom chat line, returning "" (chat still delivered, just without the
+// prefix) if the lookup fails.
+func resolveChatName(l logrus.FieldLogger, ctx context.Context, characterId uint32) string {
+	c, err := character.NewProcessor(l, ctx).GetById()(characterId)
+	if err != nil {
+		l.WithError(err).Warnf("Unable to resolve chat sender name for character [%d].", characterId)
+		return ""
+	}
+	return c.Name()
 }
 
 // handleBodylessGameEvent routes the four bodyless game events: READY/UNREADY

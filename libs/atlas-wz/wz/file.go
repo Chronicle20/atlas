@@ -42,6 +42,10 @@ type File struct {
 	// concurrently by canvas decompression, hence its own RWMutex.
 	keyRangesMu sync.RWMutex
 	keyRanges   []keyRange
+	// parent links a sub-archive veneer (NewSubFile) back to the File that
+	// owns the underlying reader, key table, and parse mutex. nil for
+	// normally-opened files (task-172 C-3, monolithic Data.wz).
+	parent *File
 }
 
 // keyRange records that bytes in [start, end) decode with key (a per-image
@@ -52,6 +56,10 @@ type keyRange struct {
 }
 
 func (wz *File) registerImageKey(start int64, size int32, key []byte) {
+	if wz.parent != nil {
+		wz.parent.registerImageKey(start, size, key)
+		return
+	}
 	wz.keyRangesMu.Lock()
 	defer wz.keyRangesMu.Unlock()
 	wz.keyRanges = append(wz.keyRanges, keyRange{start: start, end: start + int64(size), key: key})
@@ -63,6 +71,9 @@ func (wz *File) registerImageKey(start int64, size int32, key []byte) {
 // extent), else the file-level key. Canvas decompression call sites must
 // use this instead of CanvasEncryptionKey (task-172 C-2).
 func (wz *File) CanvasEncryptionKeyFor(offset int64) []byte {
+	if wz.parent != nil {
+		return wz.parent.CanvasEncryptionKeyFor(offset)
+	}
 	wz.keyRangesMu.RLock()
 	defer wz.keyRangesMu.RUnlock()
 	for _, kr := range wz.keyRanges {
@@ -75,8 +86,13 @@ func (wz *File) CanvasEncryptionKeyFor(offset int64) []byte {
 
 // LockParse acquires the file-wide parse mutex and returns an unlock func
 // for `defer`. Used by lazy-parse paths (Image.parse) to serialise
-// Seek+Read sequences across goroutines.
+// Seek+Read sequences across goroutines. Sub-file views (NewSubFile)
+// delegate to the parent so parsing under a sub-root serialises against
+// parsing under the parent or any sibling sub-view (task-172 C-3).
 func (wz *File) LockParse() func() {
+	if wz.parent != nil {
+		return wz.parent.LockParse()
+	}
 	wz.parseMu.Lock()
 	return wz.parseMu.Unlock
 }
@@ -87,6 +103,28 @@ func (wz *File) LockParse() func() {
 // Intended for constructing in-memory WZ trees in tests and tooling.
 func NewFileWithRoot(name string, root *Directory) *File {
 	return &File{name: name, root: root}
+}
+
+// NewSubFile returns a virtual archive rooted at a subdirectory of parent,
+// sharing the parent's reader, encryption key, version, and parse
+// serialization (task-172 C-3 — monolithic Data.wz category views). The
+// images under root keep pointing at parent, so lazy parsing naturally
+// locks the parent's parseMu. Close on a sub-file is a no-op: the parent
+// owns the file handle and must outlive every sub-file view.
+func NewSubFile(parent *File, root *Directory, name string) *File {
+	return &File{
+		l:             parent.l,
+		path:          parent.path,
+		name:          name,
+		f:             parent.f,
+		reader:        parent.reader,
+		root:          root,
+		contentStart:  parent.contentStart,
+		versionHash:   parent.versionHash,
+		gameVersion:   parent.gameVersion,
+		encryptionKey: parent.encryptionKey,
+		parent:        parent,
+	}
 }
 
 // Open opens and parses a WZ file from disk.
@@ -122,8 +160,12 @@ func Open(l logrus.FieldLogger, path string) (*File, error) {
 	return wz, nil
 }
 
-// Close releases resources associated with the WZ file.
+// Close releases resources associated with the WZ file. No-op for sub-file
+// views — the parent owns the handle.
 func (wz *File) Close() {
+	if wz.parent != nil {
+		return
+	}
 	if wz.f != nil {
 		wz.f.Close()
 	}

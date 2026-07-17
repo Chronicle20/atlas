@@ -13,13 +13,23 @@ import (
 
 // tenantsFixture renders a JSON:API document for two tenants with distinct,
 // non-overlapping region/version values so a field transposition in
-// Extract/Transform would be caught. Each item carries an empty
-// relationships block: the real atlas-tenants /tenants response does not
-// currently emit one (see services/atlas-tenants/atlas.com/tenants/tenant/rest.go),
-// but including it here exercises api2go's relationship-unmarshal path and
-// guards the SetToOneReferenceID/SetToManyReferenceIDs/SetReferencedStructs
-// stubs on RestModel (rest.go) — without them, api2go errors on any
-// response that does carry a relationships block.
+// Extract/Transform would be caught. The real atlas-tenants /tenants
+// response does not currently emit a relationships block (see
+// services/atlas-tenants/atlas.com/tenants/tenant/rest.go — it has no
+// SetToOneReferenceID/SetToManyReferenceIDs/SetReferencedStructs methods at
+// all), so this fixture manufactures a synthetic named to-one relationship
+// ("createdBy"), a synthetic to-many relationship ("configurations"), and a
+// top-level "included" section, mirroring the working pattern in
+// character/processor_test.go. This genuinely drives api2go's
+// setRelationshipIDs/setIncludedIntoTarget unmarshal path (jsonapi/unmarshal.go)
+// into all three stub methods on RestModel (rest.go): a non-empty
+// "relationships" map with "data": {...} triggers SetToOneReferenceID, a
+// "data": [...] array triggers SetToManyReferenceIDs, and a non-empty
+// top-level "included" list triggers SetReferencedStructs. Without those
+// three stubs, api2go's type assertion fails and GetAll returns an error
+// instead of a decoded list — an empty "relationships": {} block would NOT
+// catch that, since setRelationshipIDs's range loop performs zero
+// iterations over an empty map.
 func tenantsFixture(id1, id2 uuid.UUID) string {
 	return `{
   "data": [
@@ -32,7 +42,10 @@ func tenantsFixture(id1, id2 uuid.UUID) string {
         "majorVersion": 83,
         "minorVersion": 1
       },
-      "relationships": {}
+      "relationships": {
+        "createdBy": {"data": {"type": "accounts", "id": "500"}},
+        "configurations": {"data": [{"type": "configurations", "id": "cfg-1"}]}
+      }
     },
     {
       "type": "tenants",
@@ -43,8 +56,15 @@ func tenantsFixture(id1, id2 uuid.UUID) string {
         "majorVersion": 185,
         "minorVersion": 2
       },
-      "relationships": {}
+      "relationships": {
+        "createdBy": {"data": {"type": "accounts", "id": "501"}},
+        "configurations": {"data": [{"type": "configurations", "id": "cfg-2"}]}
+      }
     }
+  ],
+  "included": [
+    {"type": "configurations", "id": "cfg-1", "attributes": {}},
+    {"type": "configurations", "id": "cfg-2", "attributes": {}}
   ]
 }`
 }

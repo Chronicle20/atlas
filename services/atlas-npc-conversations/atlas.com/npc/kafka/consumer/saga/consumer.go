@@ -107,6 +107,18 @@ func handleStatusEventCompleted(l logrus.FieldLogger, db *gorm.DB) message.Handl
 			return
 		}
 
+		// Check if this is an RPS action (entry saga succeeded - the client
+		// dialog takes over via the atlas-rps GameOpened event, end conversation)
+		if _, isRPS := conversationCtx.Context()["rpsAction_failureState"]; isRPS {
+			l.WithField("character_id", conversationCtx.CharacterId()).Debug("RPS entry saga completed - game opened, ending conversation")
+			delete(conversationCtx.Context(), "rpsAction_failureState")
+			conversationCtx = conversationCtx.ClearPendingSaga()
+			conversation.GetRegistry().UpdateContext(ctx, conversationCtx.CharacterId(), conversationCtx)
+			_ = conversation.NewProcessor(l, ctx, db).End(conversationCtx.CharacterId())
+			npcSender.NewProcessor(l, ctx).Dispose(conversationCtx.Field().Channel(), conversationCtx.CharacterId())
+			return
+		}
+
 		// Get the success state from context (craft actions)
 		successState, exists := conversationCtx.Context()["craftAction_successState"]
 		if !exists || successState == "" {
@@ -195,6 +207,9 @@ func handleStatusEventFailed(l logrus.FieldLogger, db *gorm.DB) message.Handler[
 
 		// Clean up temporary context values (gachapon action)
 		delete(conversationCtx.Context(), "gachaponAction_failureState")
+
+		// Clean up temporary context values (RPS action)
+		delete(conversationCtx.Context(), "rpsAction_failureState")
 
 		// Clean up temporary context values (party quest action)
 		delete(conversationCtx.Context(), "partyQuestAction_failureState")
@@ -286,6 +301,11 @@ func resolveFailureState(ctx conversation.ConversationContext, errorCode string,
 
 	// Fall back to gachapon action failure state
 	if state, exists := ctx.Context()["gachaponAction_failureState"]; exists && state != "" {
+		return state
+	}
+
+	// Fall back to RPS action failure state
+	if state, exists := ctx.Context()["rpsAction_failureState"]; exists && state != "" {
 		return state
 	}
 

@@ -850,6 +850,14 @@ type EmitGachaponWinPayload struct {
 	GachaponName string   `json:"gachaponName"` // Gachapon display name
 }
 
+// StartRPSGamePayload represents the payload required to open an RPS game session for a character.
+type StartRPSGamePayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId the game opens for
+	WorldId     world.Id   `json:"worldId"`     // WorldId of the session
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId for the client dialog routing
+	NpcId       uint32     `json:"npcId"`       // Entry NPC (9000019)
+}
+
 // RegisterPartyQuestPayload represents the payload required to register a party for a party quest.
 type RegisterPartyQuestPayload struct {
 	CharacterId uint32     `json:"characterId"` // CharacterId initiating the registration

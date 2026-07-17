@@ -756,6 +756,31 @@ func TestUnmarshalAwaitInventoryCreatedStep_ZeroCharacterId(t *testing.T) {
 	}
 }
 
+func TestUnmarshalStartRPSGameStep(t *testing.T) {
+	raw := `{
+		"stepId": "start_rps_game-1",
+		"status": "pending",
+		"action": "start_rps_game",
+		"payload": { "characterId": 100, "worldId": 0, "channelId": 1, "npcId": 9000019 },
+		"createdAt": "2026-07-04T00:00:00Z",
+		"updatedAt": "2026-07-04T00:00:00Z"
+	}`
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != StartRPSGame {
+		t.Fatalf("expected action StartRPSGame, got %s", step.Action)
+	}
+	p, ok := step.Payload.(StartRPSGamePayload)
+	if !ok {
+		t.Fatalf("expected StartRPSGamePayload, got %T", step.Payload)
+	}
+	if p.CharacterId != 100 || p.NpcId != 9000019 {
+		t.Errorf("payload mismatch: %+v", p)
+	}
+}
+
 func TestUnmarshalSetAssetOwnerStep(t *testing.T) {
 	data := []byte(`{"stepId":"s1","status":"pending","action":"set_asset_owner","payload":{"characterId":7,"inventoryType":1,"slot":-5,"owner":"Tumi"},"createdAt":"2026-07-02T00:00:00Z","updatedAt":"2026-07-02T00:00:00Z"}`)
 	var s Step[any]

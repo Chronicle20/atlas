@@ -54,6 +54,7 @@ resources:
   - atlas-quest.yaml
   - atlas-rates.yaml
   - atlas-renders.yaml
+  - atlas-rps.yaml
   - atlas-reactor-actions.yaml
   - atlas-reactors.yaml
   - atlas-saga-orchestrator.yaml

@@ -3,6 +3,11 @@ location ~ ^/api/merchants(/.*)?$ {
   proxy_pass http://$u$request_uri;
 }
 
+location ~ ^/api/rps(/.*)?$ {
+  set $u "atlas-rps.${POD_NAMESPACE}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
 location ~ ^/api/messengers(/.*)?$ {
   set $u "atlas-messengers.${POD_NAMESPACE}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;

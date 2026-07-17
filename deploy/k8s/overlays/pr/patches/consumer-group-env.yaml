@@ -680,6 +680,21 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: atlas-rps
+spec:
+  template:
+    spec:
+      containers:
+        - name: rps
+          env:
+            - name: KAFKA_CONSUMER_GROUP
+              value: "RPS Service [PLACEHOLDER_ATLAS_ENV]"
+            - name: ATLAS_ENV
+              value: "PLACEHOLDER_ATLAS_ENV"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: atlas-saga-orchestrator
 spec:
   template:

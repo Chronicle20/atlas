@@ -160,6 +160,9 @@ const (
 	SelectGachaponReward Action = "select_gachapon_reward"
 	EmitGachaponWin      Action = "emit_gachapon_win"
 
+	// RPS actions
+	StartRPSGame Action = "start_rps_game"
+
 	// Party quest actions
 	RegisterPartyQuest         Action = "register_party_quest"
 	WarpPartyQuestMembersToMap Action = "warp_party_quest_members_to_map"

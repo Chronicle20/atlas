@@ -429,6 +429,14 @@
       "docker_context": "."
     },
     {
+      "name": "atlas-rps",
+      "type": "go-service",
+      "path": "services/atlas-rps",
+      "module_path": "services/atlas-rps/atlas.com/rps",
+      "docker_image": "ghcr.io/chronicle20/atlas-rps/atlas-rps",
+      "docker_context": "."
+    },
+    {
       "name": "atlas-saga-orchestrator",
       "type": "go-service",
       "path": "services/atlas-saga-orchestrator",

@@ -8,7 +8,6 @@ import (
 
 	"atlas-rankings/rest"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -73,7 +72,7 @@ func handleGetRankingsForCharacters(d *rest.HandlerDependency, c *rest.HandlerCo
 			return
 		}
 
-		res, err := model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())()
+		res, err := TransformSlice(ms)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
 			server.WriteErrorResponse(d.Logger())(w)(err)

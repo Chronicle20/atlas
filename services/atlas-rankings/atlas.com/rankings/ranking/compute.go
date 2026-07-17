@@ -28,7 +28,7 @@ type Ranked struct {
 	JobRank     uint32
 }
 
-// JobCategory buckets a job id, Cosmic parity: jobId / 100.
+// JobCategory buckets a job id into its top-level job division: jobId / 100.
 // 0=beginner, 1=warrior, 2=magician, 3=bowman, 4=thief, 5=pirate;
 // Cygnus (10-15) and Aran (20-21) fall out of the same division.
 func JobCategory(jobId job.Id) uint16 {

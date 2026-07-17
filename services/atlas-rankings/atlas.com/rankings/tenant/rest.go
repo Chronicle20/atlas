@@ -3,6 +3,7 @@ package tenant
 import (
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
+	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 // RestModel is the JSON:API resource for tenants
@@ -28,6 +29,21 @@ func (r *RestModel) SetID(id string) error {
 // GetName returns the resource name
 func (r RestModel) GetName() string {
 	return "tenants"
+}
+
+// Relationship stubs — required because atlas-tenants responses may carry a
+// relationships block; without these api2go errors during unmarshal (see
+// character/rest.go in this same service for the same pattern).
+func (r *RestModel) SetToOneReferenceID(_, _ string) error {
+	return nil
+}
+
+func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
+	return nil
+}
+
+func (r *RestModel) SetReferencedStructs(_ map[string]map[string]jsonapi.Data) error {
+	return nil
 }
 
 // Transform converts a Model to a RestModel

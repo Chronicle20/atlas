@@ -44,6 +44,14 @@ func main() {
 	db := database.Connect(l, database.SetMigrations(ranking.Migration))
 	rc := atlas.Connect(l)
 
+	server.RegisterTransientErrorClassifier(func(err error) bool {
+		if database.IsTransientConnectionError(err) {
+			database.CountTransient(err)
+			return true
+		}
+		return false
+	})
+
 	server.New(l).
 		WithContext(rt.Context()).
 		WithWaitGroup(rt.WaitGroup()).

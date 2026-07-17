@@ -16,25 +16,28 @@ func rankedById(rs []Ranked) map[uint32]Ranked {
 
 func TestJobCategory(t *testing.T) {
 	cases := []struct {
+		name  string
 		jobId job.Id
 		want  uint16
 	}{
-		{job.Id(0), 0},     // beginner
-		{job.Id(100), 1},   // warrior
-		{job.Id(112), 1},   // hero
-		{job.Id(200), 2},   // magician
-		{job.Id(312), 3},   // bowman 4th
-		{job.Id(412), 4},   // thief 4th
-		{job.Id(522), 5},   // pirate 4th
-		{job.Id(1000), 10}, // noblesse
-		{job.Id(1112), 11}, // dawn warrior 3rd
-		{job.Id(2000), 20}, // aran beginner
-		{job.Id(2112), 21}, // aran 4th
+		{"beginner", job.Id(0), 0},
+		{"warrior", job.Id(100), 1},
+		{"hero", job.Id(112), 1},
+		{"magician", job.Id(200), 2},
+		{"bowman_4th", job.Id(312), 3},
+		{"thief_4th", job.Id(412), 4},
+		{"pirate_4th", job.Id(522), 5},
+		{"noblesse", job.Id(1000), 10},
+		{"dawn_warrior_3rd", job.Id(1112), 11},
+		{"aran_beginner", job.Id(2000), 20},
+		{"aran_4th", job.Id(2112), 21},
 	}
 	for _, c := range cases {
-		if got := JobCategory(c.jobId); got != c.want {
-			t.Errorf("JobCategory(%d) = %d, want %d", c.jobId, got, c.want)
-		}
+		t.Run(c.name, func(t *testing.T) {
+			if got := JobCategory(c.jobId); got != c.want {
+				t.Errorf("JobCategory(%d) = %d, want %d", c.jobId, got, c.want)
+			}
+		})
 	}
 }
 
@@ -93,17 +96,20 @@ func TestJobRankRestrictedToCategory(t *testing.T) {
 
 func TestMove(t *testing.T) {
 	cases := []struct {
+		name       string
 		prev, next uint32
 		want       int32
 	}{
-		{0, 5, 0},  // first-seen → 0
-		{5, 3, 2},  // moved up
-		{3, 5, -2}, // moved down
-		{4, 4, 0},  // unchanged
+		{"first_seen", 0, 5, 0},
+		{"moved_up", 5, 3, 2},
+		{"moved_down", 3, 5, -2},
+		{"unchanged", 4, 4, 0},
 	}
 	for _, c := range cases {
-		if got := Move(c.prev, c.next); got != c.want {
-			t.Errorf("Move(%d,%d) = %d, want %d", c.prev, c.next, got, c.want)
-		}
+		t.Run(c.name, func(t *testing.T) {
+			if got := Move(c.prev, c.next); got != c.want {
+				t.Errorf("Move(%d,%d) = %d, want %d", c.prev, c.next, got, c.want)
+			}
+		})
 	}
 }

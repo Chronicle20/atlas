@@ -45,3 +45,17 @@ func Transform(m Model) (RestModel, error) {
 		ComputedAt:  m.ComputedAt(),
 	}, nil
 }
+
+// TransformSlice maps a slice of domain Models to their REST projections.
+// Returns the first transform error encountered, if any.
+func TransformSlice(ms []Model) ([]RestModel, error) {
+	out := make([]RestModel, 0, len(ms))
+	for _, m := range ms {
+		rm, err := Transform(m)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, rm)
+	}
+	return out, nil
+}

@@ -110,6 +110,11 @@ func (p *ProcessorImpl) decorateRankings(cs []Model) []Model {
 	rs, err := p.rankings(ids)
 	if err != nil {
 		p.l.WithError(err).Warnf("Unable to fetch character rankings, character select will render without ranks.")
+		// This decoration is slice-level (one bulk call for the whole
+		// character list), not per-model like InventoryDecorator, so there
+		// is no single entity to attribute the failure to; entityId=0
+		// signals a list-wide degradation rather than a specific character.
+		degrade.Observe(p.l, "login.character.rankings", 0, err)
 		return cs
 	}
 	return MergeRankings(cs, rs)

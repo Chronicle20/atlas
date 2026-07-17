@@ -1,8 +1,10 @@
 package ranking
 
 import (
+	"fmt"
 	"time"
 
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -39,14 +41,25 @@ func upsertBatch(db *gorm.DB, tenantId uuid.UUID, entities []Entity) error {
 }
 
 // pruneBefore removes rows not restamped by the current cycle — deleted
-// characters and characters that became GM. Tenant scoping relies entirely
-// on the GORM delete callback registered by database.RegisterTenantCallbacks
+// characters and characters that became GM. Tenant scoping relies on the
+// GORM delete callback registered by database.RegisterTenantCallbacks
 // against the context-bearing db handle passed in by the caller; this
 // function must never be called with a db that was not derived via
-// db.WithContext(ctx). This is the highest-risk operation in this package —
-// a bypassed callback would delete every tenant's stale rows, not just the
-// caller's.
+// db.WithContext(ctx). This is the highest-risk operation in this
+// package — a bypassed callback would delete every tenant's stale rows,
+// not just the caller's.
+//
+// That callback is fail-open by design (it returns without adding a WHERE
+// clause when tenant.FromContext errors — see
+// libs/atlas-database/tenant_scope.go), so pruneBefore fails closed itself
+// by resolving the tenant from the same context before issuing the DELETE.
+// A caller that passes a db handle with no resolvable tenant (e.g. a raw
+// handle from database.Connect rather than db.WithContext(ctx)) gets an
+// error instead of an unscoped DELETE across every tenant's rows.
 func pruneBefore(db *gorm.DB, cycleTime time.Time) error {
+	if _, err := tenant.FromContext(db.Statement.Context)(); err != nil {
+		return fmt.Errorf("pruneBefore: no tenant resolvable from context, refusing unscoped delete: %w", err)
+	}
 	return db.Where("computed_at < ?", cycleTime).Delete(&Entity{}).Error
 }
 

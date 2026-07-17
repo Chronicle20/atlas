@@ -189,6 +189,42 @@ func TestTenantIsolation(t *testing.T) {
 	}
 }
 
+func TestPruneBeforeWithoutTenantContextFailsClosed(t *testing.T) {
+	// The GORM tenant delete callback is fail-open by design: when
+	// tenant.FromContext errors it skips adding a WHERE clause rather than
+	// erroring, so an unscoped call would DELETE FROM character_rankings
+	// with no tenant predicate at all. pruneBefore must guard against this
+	// itself and refuse to run rather than relying solely on the callback.
+	db := testDatabase(t)
+	tmA, ctxA := testTenantContext(t)
+	tmB, ctxB := testTenantContext(t)
+	dbA := db.WithContext(ctxA)
+	dbB := db.WithContext(ctxB)
+
+	past := time.Now()
+	future := past.Add(time.Hour)
+	if err := upsertBatch(dbA, tmA.Id(), []Entity{entityFor(401, 1, past)}); err != nil {
+		t.Fatalf("seed A failed: %v", err)
+	}
+	if err := upsertBatch(dbB, tmB.Id(), []Entity{entityFor(402, 1, past)}); err != nil {
+		t.Fatalf("seed B failed: %v", err)
+	}
+
+	// db (no WithContext applied) carries no resolvable tenant. A cutoff
+	// after both seeded rows' computed_at would delete everything if the
+	// guard did not fire.
+	if err := pruneBefore(db, future); err == nil {
+		t.Fatal("expected pruneBefore to return an error with no tenant context, got nil")
+	}
+
+	if _, err := byCharacterIdEntityProvider(401)(dbA)(); err != nil {
+		t.Fatalf("tenant A row must survive a contextless prune call: %v", err)
+	}
+	if _, err := byCharacterIdEntityProvider(402)(dbB)(); err != nil {
+		t.Fatalf("tenant B row must survive a contextless prune call: %v", err)
+	}
+}
+
 func TestCycleRows(t *testing.T) {
 	db := testDatabase(t)
 	tm, ctx := testTenantContext(t)

@@ -1029,6 +1029,22 @@ func TestSkip_TurnAndWho(t *testing.T) {
 		require.Len(t, evs, 1)
 		assert.Equal(t, byte(0), evs[0].Body.Who, "next mover = owner")
 	})
+
+	t.Run("out-of-turn skip is dropped (dual time-over)", func(t *testing.T) {
+		// Both clients count the same 30s turn timer and BOTH fire the mode-63
+		// time-over SKIP on expiry (IDA COmokDlg::Update @0x6e4f68 gates the send
+		// on game-active, not whose-turn). Only the current-turn player's skip may
+		// advance the turn; the opponent's duplicate must be ignored, otherwise the
+		// turn ping-pongs (owner->visitor->owner).
+		h := newHarness(t)
+		seedRoom(t, h, runningOmokBuilder(h, owner, visitor, 1).SetCurrentTurn(0))
+		buf := message.NewBuffer()
+		require.NoError(t, h.p.skip(buf, uuid.New(), visitor)) // opponent, not current turn
+		evs := decodeEvents[minigame.SkippedEventBody](t, buf, minigame.EventTypeSkipped)
+		require.Empty(t, evs, "opponent's duplicate time-over skip must be ignored")
+		r, _ := h.p.reg.Get(h.t, owner)
+		assert.Equal(t, byte(0), r.CurrentTurn(), "current turn unchanged by out-of-turn skip")
+	})
 }
 
 // --- TIE ---------------------------------------------------------------------

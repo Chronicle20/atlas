@@ -932,13 +932,21 @@ func (p *ProcessorImpl) Skip(txId uuid.UUID, f field.Model, characterId uint32) 
 // == new CurrentTurn): owner-skip emits 1, visitor-skip emits 0, matching
 // getMiniGameSkipOwner(0x01)/getMiniGameSkipVisitor(0x00) read as "next mover"
 // per ida-notes §G5.
+//
+// The mode-63 packet is the client turn-timer's OnTimeOver auto-send (IDA
+// COmokDlg::Update @0x6e4f68), and BOTH clients count the same 30s timer and
+// fire it — the send is gated on game-active, not whose-turn. So the opponent's
+// duplicate time-over skip arrives too; it is dropped by the current-turn gate
+// below (mirroring moveStone/flipCard), leaving skip idempotent. Without the
+// gate each of the two packets toggles CurrentTurn and the turn ping-pongs
+// (owner->visitor->owner).
 func (p *ProcessorImpl) skip(mb *message.Buffer, txId uuid.UUID, characterId uint32) error {
 	room, ok := p.reg.GetByMember(p.t, characterId)
 	if !ok || !room.InProgress() {
 		return nil
 	}
 	slot, ok := room.SlotOf(characterId)
-	if !ok {
+	if !ok || slot != room.CurrentTurn() {
 		return nil
 	}
 	next := byte(1) - slot

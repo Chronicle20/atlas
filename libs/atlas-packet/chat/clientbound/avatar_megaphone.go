@@ -17,6 +17,7 @@ const AvatarMegaphoneResultWriter = "AvatarMegaphoneResult"
 // SetAvatarMegaphone arms the avatar (Mega Phone / character-look) megaphone
 // UI: itemId, sender name, 4 message lines, channel, whisper flag, and the
 // sender's AvatarLook (design §1.2, IDA v83≡v95).
+// packet-audit:fname CWvsContext::OnSetAvatarMegaphone
 type SetAvatarMegaphone struct {
 	itemId     uint32
 	name       string
@@ -78,32 +79,32 @@ func (m *SetAvatarMegaphone) Decode(l logrus.FieldLogger, ctx context.Context) f
 	}
 }
 
-// ClearAvatarMegaphone tears down the avatar megaphone UI. Cosmic sends a
-// single guard byte (1); the client's clear handler is idempotent regardless
-// of the byte value.
+// ClearAvatarMegaphone tears down the avatar megaphone UI. IDA-verified
+// (gms_v83 CWvsContext::OnClearAvatarMegaphone@0xa2a65b): the handler never
+// touches its CInPacket argument — it only flips local state
+// (this->m_tAM_LastUpdate = 0) and, if it was previously set, calls
+// CAvatarMegaphone::ByeAvatarMegaphone. The body is therefore EMPTY (no guard
+// byte); Cosmic's single-byte body does not match the real client read.
+// packet-audit:fname CWvsContext::OnClearAvatarMegaphone
 type ClearAvatarMegaphone struct {
-	flag byte
 }
 
 func NewClearAvatarMegaphone() ClearAvatarMegaphone {
-	return ClearAvatarMegaphone{flag: 1}
+	return ClearAvatarMegaphone{}
 }
 
-func (m ClearAvatarMegaphone) Flag() byte        { return m.flag }
 func (m ClearAvatarMegaphone) Operation() string { return ClearAvatarMegaphoneWriter }
 func (m ClearAvatarMegaphone) String() string    { return "clear avatar megaphone" }
 
 func (m ClearAvatarMegaphone) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
-		w.WriteByte(1)
 		return w.Bytes()
 	}
 }
 
 func (m *ClearAvatarMegaphone) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
-		m.flag = r.ReadByte()
 	}
 }
 
@@ -114,6 +115,7 @@ func (m *ClearAvatarMegaphone) Decode(_ logrus.FieldLogger, _ context.Context) f
 // 83/84 would silently break on any tenant whose errorCodes table maps those
 // reasons to different bytes. NewAvatarMegaphoneResult(code, "") always
 // writes code-only, regardless of what byte the tenant resolved.
+// packet-audit:fname CWvsContext::OnAvatarMegaphoneRes
 type AvatarMegaphoneResult struct {
 	code       byte
 	hasMessage bool

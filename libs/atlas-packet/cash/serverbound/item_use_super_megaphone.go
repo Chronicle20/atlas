@@ -12,6 +12,7 @@ import (
 // ItemUseSuperMegaphone is the USE_CASH_ITEM sub-body for the Super Megaphone
 // (5072xxx). Cosmic-derived (UseCashItemHandler case 2); per-version IDA
 // verification in task-123 phases 19-20.
+// packet-audit:fname CWvsContext::SendConsumeCashItemUseRequest
 type ItemUseSuperMegaphone struct {
 	message         string
 	whisper         bool

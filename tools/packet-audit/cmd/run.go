@@ -1479,6 +1479,23 @@ func candidatesFromFName(fname string) []candidate {
 		// mode 10: pre-decode line count + up to 2 extra strings + channel + whisper.
 		return []candidate{{name: "WorldMessageMultiMegaphone", pkg: "chat", dir: csvpkg.DirClientbound}}
 
+	// Avatar megaphone family (task-123 phase 19, gms_v83 IDA-verified). Each op
+	// is a dedicated (non-dispatched) fname.
+	case "CWvsContext::OnSetAvatarMegaphone":
+		return []candidate{{name: "SetAvatarMegaphone", pkg: "chat", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnClearAvatarMegaphone":
+		return []candidate{{name: "ClearAvatarMegaphone", pkg: "chat", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnAvatarMegaphoneRes":
+		return []candidate{{name: "AvatarMegaphoneResult", pkg: "chat", dir: csvpkg.DirClientbound}}
+
+	// Maple TV family (task-123 phase 19, gms_v83 IDA-verified).
+	case "CMapleTVMan::OnSetMessage":
+		return []candidate{{name: "TvSetMessage", pkg: "tv", dir: csvpkg.DirClientbound}}
+	case "CMapleTVMan::OnClearMessage":
+		return []candidate{{name: "TvClearMessage", pkg: "tv", dir: csvpkg.DirClientbound}}
+	case "CMapleTVMan::OnSendMessageResult":
+		return []candidate{{name: "TvSendMessageResult", pkg: "tv", dir: csvpkg.DirClientbound}}
+
 	// --- Social: chat (serverbound) ---
 	// CSV: GENERAL_CHAT (0x36 / 54) → CField::SendChatMsg.
 	// Wire: Encode4(update_time) + EncodeStr(sText) + Encode1(bOnlyBalloon).
@@ -2032,10 +2049,19 @@ func candidatesFromFName(fname string) []candidate {
 	// Vega's Spell (category 561) USE_CASH_ITEM sub-body (task-130 §2.1) shares
 	// the cash-item-use sender fname with task-126's AP/SP point-reset arm. Both
 	// candidates are keyed to the same fname, so return them together.
+	// Megaphone family (task-123 phase 19, gms_v83 IDA-verified): cash-slot
+	// type 12 (Megaphone) and type 13 (SuperMegaphone) share the same body
+	// @0xa0a930 within SendConsumeCashItemUseRequest and both route through
+	// the shared exclusion-check + trailing-updateTime send tail
+	// (loc_A0EA53). ItemUseItemMegaphone/ItemUseTripleMegaphone/
+	// ItemUseAvatarMegaphone/ItemUseMapleTV remain unregistered here pending
+	// further IDA verification (case identity not yet pinned down).
 	case "CWvsContext::SendConsumeCashItemUseRequest", "CItemSpeakerDlg::_SendConsumeCashItemUseRequest":
 		return []candidate{
 			{name: "ItemUsePointReset", dir: csvpkg.DirServerbound, pkg: "cash"},
 			{name: "ItemUseVegaScroll", dir: csvpkg.DirServerbound, pkg: "cash"},
+			{name: "ItemUseMegaphone", dir: csvpkg.DirServerbound, pkg: "cash"},
+			{name: "ItemUseSuperMegaphone", dir: csvpkg.DirServerbound, pkg: "cash"},
 		}
 	// --- interaction sub-domain (task-067) ---
 	// NOTE: the interaction serverbound dispatcher struct is also named `Operation`

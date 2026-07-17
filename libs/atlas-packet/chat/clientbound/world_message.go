@@ -82,6 +82,7 @@ func (m *WorldMessageTopScroll) Decode(_ logrus.FieldLogger, _ context.Context) 
 }
 
 // WorldMessageSuperMegaphone - mode(3), message, channel, whispersOn
+// packet-audit:fname CWvsContext::OnBroadcastMsg#SuperMegaphone
 type WorldMessageSuperMegaphone struct {
 	mode       byte
 	message    string
@@ -160,6 +161,7 @@ func (m *WorldMessageBlueText) Decode(_ logrus.FieldLogger, _ context.Context) f
 // WorldMessageMegaphone - discrete MEGAPHONE arm (mode 2 in v83): mode, message.
 // Discrete (not WorldMessageSimple) so the dispatcher #-entry maps one struct
 // to one mode (DISPATCHER_FAMILY.md INV-1).
+// packet-audit:fname CWvsContext::OnBroadcastMsg#Megaphone
 type WorldMessageMegaphone struct {
 	mode    byte
 	message string
@@ -197,6 +199,7 @@ func (m *WorldMessageMegaphone) Decode(_ logrus.FieldLogger, _ context.Context) 
 // when present addItemInfo(p, item, true) (zero-position item block). The exact
 // presence/order of a slotPos byte is IDA-verified in Task 19; this ships the
 // Cosmic-cited shape hasItem + item block.
+// packet-audit:fname CWvsContext::OnBroadcastMsg#ItemMegaphone
 type WorldMessageItemMegaphone struct {
 	mode       byte
 	message    string
@@ -285,6 +288,7 @@ func (m *WorldMessageYellowMegaphone) Decode(_ logrus.FieldLogger, _ context.Con
 }
 
 // WorldMessageMultiMegaphone - mode, messages, channel, whispersOn
+// packet-audit:fname CWvsContext::OnBroadcastMsg#MultiMegaphone
 type WorldMessageMultiMegaphone struct {
 	mode       byte
 	messages   []string

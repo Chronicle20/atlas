@@ -22,6 +22,7 @@ const TvSetMessageWriter = "TvSetMessage"
 // receiverLook is non-nil — callers never pass a raw flag (A1.4: this byte is
 // codec-internal, not client-interpreted config, so it is exempt from DOM-25
 // resolution).
+// packet-audit:fname CMapleTVMan::OnSetMessage
 type TvSetMessage struct {
 	flag             byte
 	messageType      byte

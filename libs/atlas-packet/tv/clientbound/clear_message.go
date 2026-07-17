@@ -12,6 +12,7 @@ const TvClearMessageWriter = "TvClearMessage"
 
 // TvClearMessage tears down the Maple TV UI. The body is empty — no fields,
 // no resolution needed.
+// packet-audit:fname CMapleTVMan::OnClearMessage
 type TvClearMessage struct {
 }
 

@@ -15,6 +15,21 @@ func testTvAvatar() model.Avatar {
 	return model.NewAvatar(0, 1, 20000, false, 30000, equip, masked, pets)
 }
 
+// IDA evidence (gms_v83 MapleStory_dump.exe, port 13342) —
+// CMapleTVMan::OnSetMessage@0x6371c1:
+//
+//	a2_3   = Decode1(a2);              // flag (bit1 = receiverLook present)
+//	this[988] = Decode1(a2);           // messageType
+//	AvatarLook::Decode(senderLook, a2);
+//	DecodeStr -> senderName
+//	DecodeStr -> receiverName
+//	DecodeStr x5 -> lines[0..4]
+//	this[243] = Decode4(a2);           // totalWaitSeconds
+//	if (flag & 2) AvatarLook::Decode(receiverLook, a2);
+//	Matches TvSetMessage.Encode exactly: flag, messageType, senderLook,
+//	senderName, receiverName, 5 lines, totalWaitSeconds, [receiverLook].
+//
+// packet-audit:verify packet=tv/clientbound/TvTvSetMessage version=gms_v83 ida=0x6371c1
 func TestTvSetMessageRoundTripNoReceiver(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

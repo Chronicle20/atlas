@@ -17,6 +17,14 @@ func TestTvClearMessageRoundTrip(t *testing.T) {
 	}
 }
 
+// IDA evidence (gms_v83 MapleStory_dump.exe, port 13342):
+//
+//	CMapleTVMan::OnClearMessage@0x6371ad never touches its CInPacket argument
+//	— body is `*this=0; *(this+243)=0; *(this+1)=1;` (local state only).
+//	Wire body is EMPTY. Matches TvClearMessage.Encode exactly (already
+//	empty — no change needed).
+//
+// packet-audit:verify packet=tv/clientbound/TvTvClearMessage version=gms_v83 ida=0x6371ad
 func TestTvClearMessageByteOutput(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 83, 1)
 	input := NewTvClearMessage()

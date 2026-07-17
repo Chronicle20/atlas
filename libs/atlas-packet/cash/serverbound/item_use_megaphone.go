@@ -12,6 +12,7 @@ import (
 // ItemUseMegaphone is the USE_CASH_ITEM sub-body for the basic Megaphone
 // (5071xxx, cash-slot type 12 within classification 507).
 // Cosmic-derived (UseCashItemHandler case 1); per-version IDA verification in task-123 phases 19-20.
+// packet-audit:fname CWvsContext::SendConsumeCashItemUseRequest
 type ItemUseMegaphone struct {
 	message         string
 	updateTime      uint32

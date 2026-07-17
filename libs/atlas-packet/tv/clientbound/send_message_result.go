@@ -13,6 +13,7 @@ const TvSendMessageResultWriter = "TvSendMessageResult"
 
 // TvSendMessageResult reports the outcome of a TV message submission:
 // success (00) or an error carrying a config-resolved code (01 <code>).
+// packet-audit:fname CMapleTVMan::OnSendMessageResult
 type TvSendMessageResult struct {
 	hasError bool
 	code     byte
@@ -23,10 +24,13 @@ func NewTvSendMessageResultSuccess() TvSendMessageResult {
 	return TvSendMessageResult{hasError: false}
 }
 
-// NewTvSendMessageResultError builds the error wire: 01 <code>. code 2 means
-// the queue is over an hour (design-cited; the concrete byte a domain service
-// selects is resolved from the tenant errorCodes table by TvSendMessageResultErrorBody,
-// never passed as a literal by callers outside this codec).
+// NewTvSendMessageResultError builds the error wire: 01 <code>. IDA-verified
+// (gms_v83 CMapleTVMan::OnSendMessageResult@0x6373a0): code 1 = GM_MESSAGE
+// ("non-GM character tried to send GM message"), code 2 = WRONG_USER
+// ("you've entered the wrong user name"), code 3 = QUEUE_TOO_LONG ("waiting
+// line is longer than an hour"). The concrete byte a domain service selects
+// is resolved from the tenant errorCodes table by TvSendMessageResultErrorBody,
+// never passed as a literal by callers outside this codec.
 func NewTvSendMessageResultError(code byte) TvSendMessageResult {
 	return TvSendMessageResult{hasError: true, code: code}
 }

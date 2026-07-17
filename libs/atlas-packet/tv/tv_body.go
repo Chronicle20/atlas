@@ -26,18 +26,20 @@ const (
 
 // TvResultReason is the SEMANTIC notice a domain service selects when a TV
 // message submission is rejected. The concrete client-interpreted wire byte
-// (design-cited from IDA v83/v95 — Tasks 19-20 IDA-verify per version) is
-// config-resolved per tenant from the tenant TvSendMessageResult writer's
+// is config-resolved per tenant from the tenant TvSendMessageResult writer's
 // "errorCodes" table — the wire value is never a Go literal (DOM-25). All
 // three reasons are declared here (they enumerate the client's switch arms,
 // mirroring ViciousHammerFailureReason); only QUEUE_TOO_LONG has a call site
-// today.
+// today. Seed values below are IDA-verified for v83
+// (CMapleTVMan::OnSendMessageResult@0x6373a0, task-123 phase 19) — the
+// original Cosmic-derived guess had WRONG_USER/QUEUE_TOO_LONG swapped; the
+// gms_v83 seed template has been corrected to match.
 type TvResultReason string
 
 const (
-	TvResultGmMessage    TvResultReason = "GM_MESSAGE"     // seed 1
-	TvResultQueueTooLong TvResultReason = "QUEUE_TOO_LONG" // seed 2
-	TvResultWrongUser    TvResultReason = "WRONG_USER"     // seed 3
+	TvResultGmMessage    TvResultReason = "GM_MESSAGE"     // seed 1 (IDA-verified v83)
+	TvResultWrongUser    TvResultReason = "WRONG_USER"     // seed 2 (IDA-verified v83)
+	TvResultQueueTooLong TvResultReason = "QUEUE_TOO_LONG" // seed 3 (IDA-verified v83)
 )
 
 // TvSetMessageBody arms the Maple TV UI. messageType is resolved from the

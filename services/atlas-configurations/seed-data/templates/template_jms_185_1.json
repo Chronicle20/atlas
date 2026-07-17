@@ -352,6 +352,11 @@
         "handler": "CharacterHealOverTimeHandle"
       },
       {
+        "opCode": "0x42",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterStateChangeByPortableChairHandle"
+      },
+      {
         "opCode": "0x55",
         "validator": "LoggedInValidator",
         "handler": "CharacterDistributeSpHandle"

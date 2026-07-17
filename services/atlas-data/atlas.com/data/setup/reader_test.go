@@ -20,8 +20,8 @@ func TestReader(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if len(res) != 3 {
-		t.Fatalf("Expected 3 setup items, got %d", len(res))
+	if len(res) != 4 {
+		t.Fatalf("Expected 4 setup items, got %d", len(res))
 	}
 
 	// Test the first setup item
@@ -37,6 +37,10 @@ func TestReader(t *testing.T) {
 	}
 	if setup1.RecoveryHP != 50 {
 		t.Fatalf("Expected recoveryHP 50, got %d", setup1.RecoveryHP)
+	}
+	// setup1 (03010000): both stats
+	if setup1.RecoveryMP != 60 {
+		t.Fatalf("Expected recoveryMP 60, got %d", setup1.RecoveryMP)
 	}
 	if !setup1.TradeBlock {
 		t.Fatalf("Expected tradeBlock true, got false")
@@ -58,6 +62,10 @@ func TestReader(t *testing.T) {
 	}
 	if setup2.RecoveryHP != 35 {
 		t.Fatalf("Expected recoveryHP 35, got %d", setup2.RecoveryHP)
+	}
+	// setup2 (03010001): HP-only chair
+	if setup2.RecoveryMP != 0 {
+		t.Fatalf("Expected recoveryMP 0, got %d", setup2.RecoveryMP)
 	}
 	if setup2.ReqLevel != 6 {
 		t.Fatalf("Expected reqLevel 6, got %d", setup2.ReqLevel)
@@ -89,6 +97,18 @@ func TestReader(t *testing.T) {
 	if setup3.Direction != 21 {
 		t.Fatalf("Expected direction 21, got %d", setup3.Direction)
 	}
+
+	// setup4 (03010900): neither stat
+	setup4 := res[3]
+	if setup4.Id != 3010900 {
+		t.Fatalf("Expected ID 3010900, got %d", setup4.Id)
+	}
+	if setup4.RecoveryHP != 0 {
+		t.Fatalf("Expected recoveryHP 0, got %d", setup4.RecoveryHP)
+	}
+	if setup4.RecoveryMP != 0 {
+		t.Fatalf("Expected recoveryMP 0, got %d", setup4.RecoveryMP)
+	}
 }
 
 const testXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -104,6 +124,7 @@ const testXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
       <int name="price" value="100"/>
       <int name="slotMax" value="1"/>
       <int name="recoveryHP" value="50"/>
+      <int name="recoveryMP" value="60"/>
       <int name="tradeBlock" value="1"/>
       <int name="notSale" value="1"/>
     </imgdir>
@@ -169,6 +190,12 @@ const testXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
       </canvas>
       <int name="z" value="3"/>
       <int name="pos" value="1"/>
+    </imgdir>
+  </imgdir>
+  <imgdir name="03010900">
+    <imgdir name="info">
+      <int name="price" value="300"/>
+      <int name="slotMax" value="1"/>
     </imgdir>
   </imgdir>
 </imgdir>`

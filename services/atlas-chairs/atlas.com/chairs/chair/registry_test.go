@@ -228,3 +228,37 @@ func TestRegistry_TenantIsolation(t *testing.T) {
 		t.Error("Expected tenant2 data to still exist")
 	}
 }
+
+func TestRegistry_RecoveryTimestampsRoundTrip(t *testing.T) {
+	setupTestRegistry(t)
+	ctx := testCtx()
+
+	characterId := uint32(22345)
+	m := Model{id: 3010000, chairType: "PORTABLE"}.
+		WithHpRecoveryAt(1751234567890).
+		WithMpRecoveryAt(1751234570000)
+
+	GetRegistry().Set(ctx, characterId, m)
+
+	got, ok := GetRegistry().Get(ctx, characterId)
+	if !ok {
+		t.Fatal("Expected character to exist in registry after Set")
+	}
+	if got.LastHpRecoveryAt() != 1751234567890 {
+		t.Errorf("lastHpRecoveryAt: got %d, want 1751234567890", got.LastHpRecoveryAt())
+	}
+	if got.LastMpRecoveryAt() != 1751234570000 {
+		t.Errorf("lastMpRecoveryAt: got %d, want 1751234570000", got.LastMpRecoveryAt())
+	}
+	if got.Id() != 3010000 || got.Type() != "PORTABLE" {
+		t.Errorf("existing fields lost in round-trip: id %d type %s", got.Id(), got.Type())
+	}
+
+	// A model without timestamps unmarshals to zero (backward-compatible with
+	// pre-task-141 registry entries).
+	GetRegistry().Set(ctx, characterId+1, Model{id: 1, chairType: "FIXED"})
+	got2, _ := GetRegistry().Get(ctx, characterId+1)
+	if got2.LastHpRecoveryAt() != 0 || got2.LastMpRecoveryAt() != 0 {
+		t.Errorf("expected zero timestamps, got %d/%d", got2.LastHpRecoveryAt(), got2.LastMpRecoveryAt())
+	}
+}

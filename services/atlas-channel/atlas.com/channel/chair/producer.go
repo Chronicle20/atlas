@@ -40,3 +40,20 @@ func CancelCommandProvider(f field.Model, characterId uint32) model.Provider[[]k
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func RecoveryCommandProvider(f field.Model, characterId uint32, hp int16, mp int16) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &chair.Command[chair.RecoveryCommandBody]{
+		WorldId:   f.WorldId(),
+		ChannelId: f.ChannelId(),
+		MapId:     f.MapId(),
+		Instance:  f.Instance(),
+		Type:      chair.CommandRecovery,
+		Body: chair.RecoveryCommandBody{
+			CharacterId: characterId,
+			Hp:          hp,
+			Mp:          mp,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

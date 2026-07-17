@@ -72,6 +72,7 @@
       },
       {
         "opCode": "0x14",
+        "validator": "NoOpValidator",
         "handler": "CharacterLoggedInHandle"
       },
       {
@@ -101,6 +102,7 @@
       },
       {
         "opCode": "0x1A",
+        "validator": "NoOpValidator",
         "handler": "StartErrorHandle"
       },
       {
@@ -140,6 +142,7 @@
       },
       {
         "opCode": "0x2A",
+        "validator": "LoggedInValidator",
         "handler": "ChannelChangeHandle"
       },
       {
@@ -174,6 +177,7 @@
       },
       {
         "opCode": "0x36",
+        "validator": "LoggedInValidator",
         "handler": "CharacterChatGeneralHandle"
       },
       {
@@ -208,30 +212,37 @@
       },
       {
         "opCode": "0x41",
+        "validator": "LoggedInValidator",
         "handler": "NPCContinueConversationHandle"
       },
       {
         "opCode": "0x4B",
+        "validator": "LoggedInValidator",
         "handler": "CompartmentMergeHandle"
       },
       {
         "opCode": "0x4C",
+        "validator": "LoggedInValidator",
         "handler": "CompartmentSortHandle"
       },
       {
         "opCode": "0x4D",
+        "validator": "LoggedInValidator",
         "handler": "CharacterInventoryMoveHandle"
       },
       {
         "opCode": "0x4E",
+        "validator": "LoggedInValidator",
         "handler": "CharacterItemUseHandle"
       },
       {
         "opCode": "0x4F",
+        "validator": "LoggedInValidator",
         "handler": "CharacterItemCancelHandle"
       },
       {
         "opCode": "0x52",
+        "validator": "LoggedInValidator",
         "handler": "PetFoodHandle"
       },
       {
@@ -246,18 +257,27 @@
       },
       {
         "opCode": "0x5D",
+        "validator": "LoggedInValidator",
         "handler": "CharacterItemUseScrollHandle"
       },
       {
         "opCode": "0x62",
+        "validator": "LoggedInValidator",
         "handler": "CharacterDistributeApHandle"
       },
       {
         "opCode": "0x64",
+        "validator": "LoggedInValidator",
         "handler": "CharacterHealOverTimeHandle"
       },
       {
+        "opCode": "0x50",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterStateChangeByPortableChairHandle"
+      },
+      {
         "opCode": "0x66",
+        "validator": "LoggedInValidator",
         "handler": "CharacterDistributeSpHandle"
       },
       {
@@ -277,18 +297,22 @@
       },
       {
         "opCode": "0x6B",
+        "validator": "LoggedInValidator",
         "handler": "FameChangeHandle"
       },
       {
         "opCode": "0x6D",
+        "validator": "LoggedInValidator",
         "handler": "CharacterInfoRequestHandle"
       },
       {
         "opCode": "0x6E",
+        "validator": "LoggedInValidator",
         "handler": "PetSpawnHandle"
       },
       {
         "opCode": "0x77",
+        "validator": "LoggedInValidator",
         "handler": "QuestActionHandle"
       },
       {
@@ -308,10 +332,12 @@
       },
       {
         "opCode": "0x8F",
+        "validator": "LoggedInValidator",
         "handler": "MessengerOperationHandle"
       },
       {
         "opCode": "0x91",
+        "validator": "LoggedInValidator",
         "handler": "PartyOperationHandle"
       },
       {
@@ -336,10 +362,12 @@
       },
       {
         "opCode": "0x99",
+        "validator": "LoggedInValidator",
         "handler": "BuddyOperationHandle"
       },
       {
         "opCode": "0x9A",
+        "validator": "LoggedInValidator",
         "handler": "NoteOperationHandle"
       },
       {
@@ -384,30 +412,37 @@
       },
       {
         "opCode": "0xC7",
+        "validator": "LoggedInValidator",
         "handler": "PetMovementHandle"
       },
       {
         "opCode": "0xC8",
+        "validator": "LoggedInValidator",
         "handler": "PetChatHandle"
       },
       {
         "opCode": "0xC9",
+        "validator": "LoggedInValidator",
         "handler": "PetCommandHandle"
       },
       {
         "opCode": "0xCA",
+        "validator": "LoggedInValidator",
         "handler": "PetDropPickUpHandle"
       },
       {
         "opCode": "0xCB",
+        "validator": "LoggedInValidator",
         "handler": "PetItemUseHandle"
       },
       {
         "opCode": "0xCC",
+        "validator": "LoggedInValidator",
         "handler": "PetItemExcludeHandle"
       },
       {
         "opCode": "0xE3",
+        "validator": "LoggedInValidator",
         "handler": "MonsterMovementHandle"
       },
       {
@@ -462,14 +497,17 @@
       },
       {
         "opCode": "0xF1",
+        "validator": "LoggedInValidator",
         "handler": "NPCActionHandle"
       },
       {
         "opCode": "0xF6",
+        "validator": "LoggedInValidator",
         "handler": "DropPickUpHandle"
       },
       {
         "opCode": "0xF9",
+        "validator": "LoggedInValidator",
         "handler": "ReactorHitHandle"
       },
       {
@@ -504,10 +542,12 @@
       },
       {
         "opCode": "0x112",
+        "validator": "LoggedInValidator",
         "handler": "CashShopCheckWalletHandle"
       },
       {
         "opCode": "0x113",
+        "validator": "LoggedInValidator",
         "handler": "CashShopOperationHandle"
       },
       {

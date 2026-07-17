@@ -8,6 +8,29 @@ import (
 )
 
 const (
+	EnvCommandTopic = "COMMAND_TOPIC_CHARACTER"
+	CommandChangeHP = "CHANGE_HP"
+	CommandChangeMP = "CHANGE_MP"
+)
+
+type Command[E any] struct {
+	WorldId     world.Id `json:"worldId"`
+	CharacterId uint32   `json:"characterId"`
+	Type        string   `json:"type"`
+	Body        E        `json:"body"`
+}
+
+type ChangeHPCommandBody struct {
+	ChannelId channel.Id `json:"channelId"`
+	Amount    int16      `json:"amount"`
+}
+
+type ChangeMPCommandBody struct {
+	ChannelId channel.Id `json:"channelId"`
+	Amount    int16      `json:"amount"`
+}
+
+const (
 	EnvEventTopicCharacterStatus           = "EVENT_TOPIC_CHARACTER_STATUS"
 	EventCharacterStatusTypeLogin          = "LOGIN"
 	EventCharacterStatusTypeLogout         = "LOGOUT"

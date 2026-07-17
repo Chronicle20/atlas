@@ -810,6 +810,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[charsb.CharacterAutoDistributeApHandle] = handler.CharacterAutoDistributeApHandleFunc
 	handlerMap[guildsb.GuildBBSHandle] = handler.GuildBBSHandleFunc
 	handlerMap[charsb.CharacterChairPortableHandle] = handler.CharacterChairPortableHandleFunc
+	handlerMap[charsb.CharacterStateChangeByPortableChairHandle] = handler.CharacterStateChangeByPortableChairHandleFunc
 	handlerMap[charsb.CharacterChairInteractionHandle] = handler.CharacterChairFixedHandleFunc
 	handlerMap[dropsb.DropPickUpHandle] = handler.DropPickUpHandleFunc
 	handlerMap[charsb.CharacterDropMesoHandle] = handler.CharacterDropMesoHandleFunc

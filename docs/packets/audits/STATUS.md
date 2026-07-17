@@ -4,17 +4,17 @@
 > ✅ verified · 🧩 family (mode-prefix dispatcher; sub-arms unverified) · 🟡 partial · ❌ incomplete · ⬜ n-a · 🟥 conflict
 > Partial (🟡) sub-glyphs: 🟡ᶠ tier-1 needs byte-fixture · 🟡ᵈ tool-pass diff-only (no byte-test) · 🟡ᵖ evidence-pinned deferral
 
-Tool: `0e579f0e7c5e41a9da087014d006ef917f45af08d629b54bb5c6fb576032fb63`
+Tool: `f3c0af3bba48320e5512053ae6b5026f44aa6d50d76ef2eb9f31ce6b38dd3549`
 
 - export gms_v48: `054d404fcb6f0feed776b8c1453f2ab48a35f479463e82ea00d6d28ebca512dc`
 - export gms_v61: `b1111abee79b6b10cf1a05305e3c4a7707819f6862a80314c0b2ebce424852f7`
 - export gms_v72: `ad7f0800d7560bca21baba98f5116103094c20f991781829ffa65b37db9d963b`
 - export gms_v79: `ccb6069530dad5014ec311b23540f79cfb1e9dd46fc3c681a34948edbe21e790`
-- export gms_v83: `3397a66fafdd738100c4dc54715180bae3eb4ce1a68490d812e3b57bf29eb772`
-- export gms_v84: `16aa06642a2e9175bffbf157617fec25d6e7f0e213b8e296be83227c31f95cba`
-- export gms_v87: `3889fe313c39c73d945937bb0b823bdc3100788dfdbdafcdadc615a3665b2de8`
-- export gms_v95: `d33bdcf3b527f1a8d726dd0113a241737cef5a221e21bfdafda410cad567bd5b`
-- export jms_v185: `886e6bc139a73a8b92e9b8c141818991e560434aac7e3eda3b409e271124ea69`
+- export gms_v83: `4c25feb71f0c08aaa60d03f93737807099297d17c89a93b5a26267914422ffad`
+- export gms_v84: `5e9989f1bdaf42ab00bd968ae9d1ecbe9ac11872caa7c0dc5acd19ac96ac454d`
+- export gms_v87: `c804d245c51e846784797341babd58299e3421ac8726ae52926bf3d7d3a8203e`
+- export gms_v95: `679e0d440706736867bf7230daf26178b13b56fbb3e8b3c9639f3efb301c4870`
+- export jms_v185: `995694747e144c8246a09af43bf794ee07b856575c56c6f3c5e1dc702342ae64`
 
 ## Clientbound
 
@@ -595,7 +595,7 @@ Tool: `0e579f0e7c5e41a9da087014d006ef917f45af08d629b54bb5c6fb576032fb63`
 | SKILL_EFFECT | CUserLocal::DoActiveSkill_Prepare; sub_6ADD4C | character/serverbound/CharacterSkillPrepare (T1) | 0x048 | ✅ | 0x055 | ✅ | 0x05C | ✅ | 0x05B | ✅ | 0x05D | ✅ | 0x05D | ✅ | 0x060 | ✅ | 0x069 | ✅ | 0x058 | ✅ |
 | DISTRIBUTE_SP | CWvsContext::SendSkillUpRequest; sub_71CEB3; sub_8458EB | character/serverbound/DistributeSp (T1) | 0x049 | ✅ | 0x052 | ✅ | 0x059 | ✅ | 0x058 | ✅ | 0x05A | ✅ | 0x05A | ✅ | 0x05D | ✅ | 0x066 | ✅ | 0x055 | ✅ |
 | GIVE_FAME | CWvsContext::SendGivePopularityRequest; sub_71CF3B; sub_845A65; sub_96E07F | fame/serverbound/Change | 0x04A | ❌ | 0x057 | ❌ | 0x05E | ❌ | 0x05D | ❌ | 0x05F | ✅ | 0x05F | ✅ | 0x062 | ✅ | 0x06B | ✅ | 0x05A | ✅ |
-| STATE_CHANGE_BY_PORTABLE_CHAIR_REQUEST | CWvsContext::TryRecovery |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x04A | ❌ | 0x04A | ❌ | 0x04D | ❌ | 0x050 | ❌ | 0x042 | ❌ |
+| STATE_CHANGE_BY_PORTABLE_CHAIR_REQUEST | CWvsContext::TryRecovery | character/serverbound/StateChangeByPortableChair (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x04A | ✅ | 0x04A | ✅ | 0x04D | ✅ | 0x050 | ✅ | 0x042 | ✅ |
 | USE_SUMMON_BAG | CWvsContext::SendMobSummonItemUseRequest; sub_832005; sub_955499 |  |  | ⬜ | 0x04A | ❌ | 0x04A | ❌ | 0x049 | ❌ | 0x04B | ❌ | 0x04B | ❌ | 0x04E | ❌ | 0x051 | ❌ | 0x043 | ❌ |
 | PET_FOOD | CWvsContext::SendPetFoodItemUseRequest; sub_8325D2 | pet/serverbound/PetFood (T1) |  | ⬜ | 0x04B | ❌ | 0x04B | 🟡ᶠ | 0x04A | 🟡ᶠ | 0x04C | ✅ | 0x04C | ✅ | 0x04F | ✅ | 0x052 | ✅ | 0x044 | ✅ |
 | CHAR_INFO_REQUEST | CWvsContext::SendCharacterInfoRequest; sub_71D059; sub_845B68 | character/serverbound/InfoRequest (T1) | 0x04C | ✅ | 0x059 | ✅ | 0x060 | ✅ | 0x05F | ✅ | 0x061 | ✅ | 0x061 | ✅ | 0x064 | ✅ | 0x06D | ✅ | 0x05C | ✅ |
@@ -997,11 +997,11 @@ Tool: `0e579f0e7c5e41a9da087014d006ef917f45af08d629b54bb5c6fb576032fb63`
 | v61 | 238 | 0 | 60 | 196 | 464 | 0 | 48.2% |
 | v72 | 248 | 0 | 73 | 214 | 423 | 0 | 46.4% |
 | v79 | 262 | 0 | 72 | 210 | 414 | 0 | 48.2% |
-| v83 | 403 | 0 | 0 | 331 | 224 | 0 | 54.9% |
-| v84 | 375 | 0 | 0 | 339 | 244 | 0 | 52.5% |
-| v87 | 409 | 0 | 0 | 362 | 187 | 0 | 53.0% |
-| v95 | 434 | 0 | 0 | 421 | 103 | 0 | 50.8% |
-| JMS185 | 390 | 0 | 0 | 374 | 194 | 0 | 51.0% |
+| v83 | 404 | 0 | 0 | 330 | 224 | 0 | 55.0% |
+| v84 | 376 | 0 | 0 | 338 | 244 | 0 | 52.7% |
+| v87 | 410 | 0 | 0 | 361 | 187 | 0 | 53.2% |
+| v95 | 435 | 0 | 0 | 420 | 103 | 0 | 50.9% |
+| JMS185 | 391 | 0 | 0 | 373 | 194 | 0 | 51.2% |
 
 ## Conflicts
 

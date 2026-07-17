@@ -180,7 +180,7 @@ func handleCreateCharacter(d *rest.HandlerDependency, c *rest.HandlerContext, in
 		}
 		cs, err := NewProcessor(d.Logger(), d.Context(), d.DB()).CreateAndEmit(uuid.New(), m, input.MapId)
 		if err != nil {
-			if errors.Is(err, blockedNameErr) || errors.Is(err, invalidLevelErr) {
+			if errors.Is(err, errBlockedName) || errors.Is(err, errInvalidLevel) {
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}

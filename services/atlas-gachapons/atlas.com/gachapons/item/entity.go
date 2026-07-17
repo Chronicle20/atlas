@@ -16,6 +16,11 @@ type entity struct {
 	ItemId     uint32    `gorm:"not null"`
 	Quantity   uint32    `gorm:"not null;default:1"`
 	Tier       string    `gorm:"not null;index:idx_gachapon_items_tier"`
+	// Weight is an optional explicit roll weight for this item, used by
+	// weighted (e.g. incubator) reward pools. `default:0` backfills
+	// pre-existing rows when AutoMigrate adds this column; the existing
+	// tier-based roll does not consume it.
+	Weight uint32 `gorm:"not null;default:0"`
 }
 
 func (e entity) TableName() string {

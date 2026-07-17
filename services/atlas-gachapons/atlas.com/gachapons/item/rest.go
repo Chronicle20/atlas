@@ -8,6 +8,7 @@ type RestModel struct {
 	ItemId     uint32 `json:"itemId"`
 	Quantity   uint32 `json:"quantity"`
 	Tier       string `json:"tier"`
+	Weight     uint32 `json:"weight"`
 }
 
 func (r RestModel) GetName() string {
@@ -34,6 +35,7 @@ func Transform(m Model) (RestModel, error) {
 		ItemId:     m.ItemId(),
 		Quantity:   m.Quantity(),
 		Tier:       m.Tier(),
+		Weight:     m.Weight(),
 	}, nil
 }
 
@@ -42,4 +44,5 @@ type JSONModel struct {
 	ItemId     uint32 `json:"itemId"`
 	Quantity   uint32 `json:"quantity"`
 	Tier       string `json:"tier"`
+	Weight     uint32 `json:"weight"`
 }

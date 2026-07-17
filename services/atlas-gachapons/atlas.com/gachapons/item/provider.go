@@ -13,6 +13,14 @@ func getByGachaponIdPagedProvider(gachaponId string, page model.Page) database.E
 	}
 }
 
+// getByGachaponId returns every item for the given gachapon, regardless of
+// tier. Modeled on getByGachaponIdAndTier, minus the tier filter.
+func getByGachaponId(gachaponId string) database.EntityProvider[[]entity] {
+	return func(db *gorm.DB) model.Provider[[]entity] {
+		return database.SliceQuery[entity](db, &entity{GachaponId: gachaponId})
+	}
+}
+
 func getByGachaponIdAndTier(gachaponId string, tier string) database.EntityProvider[[]entity] {
 	return func(db *gorm.DB) model.Provider[[]entity] {
 		return database.SliceQuery[entity](db, &entity{GachaponId: gachaponId, Tier: tier})
@@ -31,5 +39,6 @@ func modelFromEntity(e entity) (Model, error) {
 		SetItemId(e.ItemId).
 		SetQuantity(e.Quantity).
 		SetTier(e.Tier).
+		SetWeight(e.Weight).
 		Build()
 }

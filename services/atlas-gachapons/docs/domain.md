@@ -121,7 +121,8 @@ CRUD operations for gachapon-specific items.
 
 | Method | Description |
 |--------|-------------|
-| GetByGachaponId | Retrieve a page of items for a gachapon |
+| GetByGachaponId | Retrieve all items for a gachapon, unpaged and regardless of tier |
+| GetByGachaponIdPaged | Retrieve a page of items for a gachapon |
 | GetByGachaponIdAndTier | Retrieve all items for a gachapon filtered by tier, unpaged |
 | GetByGachaponIdAndTierPaged | Retrieve a page of items for a gachapon filtered by tier |
 | Create | Create a new gachapon item |

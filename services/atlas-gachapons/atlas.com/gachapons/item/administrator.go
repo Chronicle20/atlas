@@ -13,6 +13,7 @@ func CreateItem(db *gorm.DB, m Model) error {
 		ItemId:     m.ItemId(),
 		Quantity:   m.Quantity(),
 		Tier:       m.Tier(),
+		Weight:     m.Weight(),
 	}
 	return db.Create(e).Error
 }

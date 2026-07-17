@@ -94,6 +94,64 @@ func TestProcessorImpl_Count_Populated(t *testing.T) {
 	}
 }
 
+// TestProcessorImpl_GetByGachaponId_AllTiers seeds two items for the same
+// gachaponId across different tiers and verifies GetByGachaponId returns
+// both regardless of tier — the existing tier-scoped roll
+// (GetByGachaponIdAndTier) is unaffected by this method.
+func TestProcessorImpl_GetByGachaponId_AllTiers(t *testing.T) {
+	l := logrus.New()
+	te := countTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), te)
+	db := countTestDatabase(t)
+
+	p := item.NewProcessor(l, ctx, db)
+
+	commonItem, err := item.NewBuilder(te.Id(), 0).
+		SetGachaponId("gacha-multi-tier").
+		SetItemId(4000000).
+		SetQuantity(1).
+		SetTier("common").
+		Build()
+	if err != nil {
+		t.Fatalf("Failed to build common item: %v", err)
+	}
+	if err := p.Create(commonItem); err != nil {
+		t.Fatalf("Failed to create common item: %v", err)
+	}
+
+	rareItem, err := item.NewBuilder(te.Id(), 0).
+		SetGachaponId("gacha-multi-tier").
+		SetItemId(4000001).
+		SetQuantity(1).
+		SetTier("rare").
+		Build()
+	if err != nil {
+		t.Fatalf("Failed to build rare item: %v", err)
+	}
+	if err := p.Create(rareItem); err != nil {
+		t.Fatalf("Failed to create rare item: %v", err)
+	}
+
+	items, err := p.GetByGachaponId("gacha-multi-tier")()
+	if err != nil {
+		t.Fatalf("GetByGachaponId() returned error: %v", err)
+	}
+	if len(items) != 2 {
+		t.Fatalf("Expected 2 items across tiers, got %d", len(items))
+	}
+
+	tiers := make(map[string]bool)
+	for _, it := range items {
+		tiers[it.Tier()] = true
+	}
+	if !tiers["common"] {
+		t.Errorf("Expected common-tier item in result, tiers seen: %v", tiers)
+	}
+	if !tiers["rare"] {
+		t.Errorf("Expected rare-tier item in result, tiers seen: %v", tiers)
+	}
+}
+
 func TestProcessorImpl_Count_TenantIsolation(t *testing.T) {
 	l := logrus.New()
 	te1 := countTestTenant(t)

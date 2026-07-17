@@ -9,6 +9,7 @@ type Model struct {
 	itemId     uint32
 	quantity   uint32
 	tier       string
+	weight     uint32
 }
 
 func (m Model) TenantId() uuid.UUID {
@@ -33,4 +34,11 @@ func (m Model) Quantity() uint32 {
 
 func (m Model) Tier() string {
 	return m.tier
+}
+
+// Weight is an optional explicit roll weight for this item, used by
+// weighted (e.g. incubator) reward pools. Items that never set a weight
+// read 0; the existing tier-based roll does not consume this value.
+func (m Model) Weight() uint32 {
+	return m.weight
 }

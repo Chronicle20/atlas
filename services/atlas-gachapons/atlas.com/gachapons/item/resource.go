@@ -44,7 +44,7 @@ func handleGetItems(d *rest.HandlerDependency, c *rest.HandlerContext) http.Hand
 			if tier != "" {
 				paged, err = p.GetByGachaponIdAndTierPaged(gachaponId, tier, page)()
 			} else {
-				paged, err = p.GetByGachaponId(gachaponId, page)()
+				paged, err = p.GetByGachaponIdPaged(gachaponId, page)()
 			}
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Retrieving items for gachapon [%s].", gachaponId)
@@ -75,6 +75,7 @@ func handleCreateItem(d *rest.HandlerDependency, c *rest.HandlerContext, rm Rest
 				SetItemId(rm.ItemId).
 				SetQuantity(rm.Quantity).
 				SetTier(rm.Tier).
+				SetWeight(rm.Weight).
 				Build()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Building item model.")

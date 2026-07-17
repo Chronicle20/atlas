@@ -13,6 +13,7 @@ type Builder struct {
 	itemId     uint32
 	quantity   uint32
 	tier       string
+	weight     uint32
 }
 
 func NewBuilder(tenantId uuid.UUID, id uint32) *Builder {
@@ -39,6 +40,14 @@ func (b *Builder) SetTier(tier string) *Builder {
 	return b
 }
 
+// SetWeight sets an optional explicit roll weight for weighted (e.g.
+// incubator) reward pools. Callers that never invoke it leave weight at its
+// zero value.
+func (b *Builder) SetWeight(weight uint32) *Builder {
+	b.weight = weight
+	return b
+}
+
 func (b *Builder) Build() (Model, error) {
 	if b.tenantId == uuid.Nil {
 		return Model{}, errors.New("tenantId cannot be nil")
@@ -53,6 +62,7 @@ func (b *Builder) Build() (Model, error) {
 		itemId:     b.itemId,
 		quantity:   b.quantity,
 		tier:       b.tier,
+		weight:     b.weight,
 	}, nil
 }
 

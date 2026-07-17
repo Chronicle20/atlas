@@ -42,7 +42,7 @@ The plan as drafted config-resolves WorldMessage mode bytes but hard-codes three
 **A1.2 — Semantic keys and their seed values** (design §1.2-cited; Tasks 19–20 IDA-verify per version and may correct the table values — never the key names):
 
 - `AvatarMegaphoneResult` writer, `errorCodes` table: `WAITING_LINE` 83, `LEVEL_GATE` 84. (jms has no `AvatarMegaphoneResult` writer → **no table for jms**, D9.)
-- `TvSendMessageResult` writer, `errorCodes` table: `GM_MESSAGE` 1, `QUEUE_TOO_LONG` 2, `WRONG_USER` 3.
+- `TvSendMessageResult` writer, `errorCodes` table: `GM_MESSAGE` 1, `WRONG_USER` 2, `QUEUE_TOO_LONG` 3. **(Corrected 2026-07-17 by the Task 19 v83 IDA pass: design §1.2 had codes 2/3 backwards. `CMapleTVMan::OnSendMessageResult@0x6373a0` maps code 2→`SP_3959_YOUVE_ENTERED_THE_WRONG_USER_NAME`, code 3→`SP_3958_THE_WAITING_LINE_IS_LONGER_THAN_AN_HOUR`. Controller-verified against the v83 IDB.)**
 - `TvSetMessage` writer, `messageTypes` table: `NORMAL` 0, `STAR` 1, `HEART` 2.
 
 **A1.3 — The codec branches on the semantic reason, never on the resolved byte.** `AvatarMegaphoneResult`'s trailing-string rule (plan text: `if code != 83 && code != 84 { WriteAsciiString }`) must NOT compare a resolved byte against literals — that silently breaks on any version whose table differs. The body function decides string-presence from the reason: `WAITING_LINE`/`LEVEL_GATE` carry no string; a notice reason carries one. Same rule for `TvSendMessageResult` (success = no error byte; error reasons resolve a code).
@@ -1908,7 +1908,7 @@ git commit -m "feat(task-123): wire megaphone/world-broadcast consumers, writers
 - [ ] **Step 1b (A1 delta): seed the three DOM-25 writer-options tables** on the writers added in Step 1, in **every** template that has the writer (memory: a new writer table goes in EVERY version template that has the writer). Shape follows the existing `WorldMessage` `options.operations` entry:
 
   - `AvatarMegaphoneResult` writer → `"options": {"errorCodes": {"WAITING_LINE": 83, "LEVEL_GATE": 84}}` — gms_83/84/87/95 only; **jms has no such writer, so no table** (D9).
-  - `TvSendMessageResult` writer → `"options": {"errorCodes": {"GM_MESSAGE": 1, "QUEUE_TOO_LONG": 2, "WRONG_USER": 3}}` — all 5 templates.
+  - `TvSendMessageResult` writer → `"options": {"errorCodes": {"GM_MESSAGE": 1, "WRONG_USER": 2, "QUEUE_TOO_LONG": 3}}` — all 5 templates. **(IDA-corrected — see Amendment A1.2 note; design §1.2 had 2/3 backwards.)**
   - `TvSetMessage` writer → `"options": {"messageTypes": {"NORMAL": 0, "STAR": 1, "HEART": 2}}` — all 5 templates.
 
   Seed values are design §1.2-cited; Tasks 19–20 IDA-verify each version against its own IDB and correct any drift (never rename keys).

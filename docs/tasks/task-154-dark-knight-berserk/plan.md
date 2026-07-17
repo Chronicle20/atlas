@@ -78,7 +78,7 @@ Docs: `docs/tasks/task-154-dark-knight-berserk/context.md` (Task 10).
 - Consumes: `world.Id`, `channel.Id` from `libs/atlas-constants`.
 - Produces: `Model` (getters above), `NewBuilder(worldId world.Id, characterId uint32, skillLevel byte) *Builder` with `SetChannel(channel.Id)`, `SetCharacterLevel(byte)`, `SetDirtyAt(time.Time)`, `Build() Model`; package-private functional mutators `channelUpdated`, `skillLevelUpdated`, `dirtyMarked`, `dirtyCleared`, `evaluated`, `broadcastScheduled` (used by Task 3's registry closures); JSON round-trip via MarshalJSON/UnmarshalJSON (required because fields are private and the value is stored in Redis — same pattern as `character/model.go:47-76`).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `berserk/model_test.go`:
 
@@ -173,12 +173,12 @@ func TestDueHelpers(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run (from `services/atlas-buffs/atlas.com/buffs`): `go test ./berserk/... -run 'TestModel|TestBuilder|TestMutators|TestDue' -v`
 Expected: FAIL — package does not exist / undefined identifiers.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 `berserk/model.go`:
 
@@ -381,12 +381,12 @@ func (b *Builder) Build() Model {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `go test ./berserk/... -v`
 Expected: PASS (all four tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add berserk/model.go berserk/builder.go berserk/model_test.go
@@ -404,7 +404,7 @@ git commit -m "feat(task-154): berserk entry model and builder"
 **Interfaces:**
 - Produces: `Evaluate(skillLevel byte, hp uint16, effectiveMaxHp uint32, x int16) bool` — the FR-1 computation. `hp` is `uint16` (atlas-character REST `hp`), `effectiveMaxHp` is `uint32` (effective-stats `maxHP`), `x` is `int16` (atlas-data effect `x`).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `berserk/evaluate_test.go`:
 
@@ -451,12 +451,12 @@ func TestEvaluate(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `go test ./berserk/... -run TestEvaluate -v`
 Expected: FAIL — `undefined: Evaluate`.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 `berserk/evaluate.go`:
 
@@ -481,12 +481,12 @@ func Evaluate(skillLevel byte, hp uint16, effectiveMaxHp uint32, x int16) bool {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `go test ./berserk/... -run TestEvaluate -v`
 Expected: PASS (15 subtests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add berserk/evaluate.go berserk/evaluate_test.go
@@ -518,7 +518,7 @@ git commit -m "feat(task-154): pure berserk state evaluation with strict-less-th
   - `ClaimBroadcast(ctx, characterId uint32, now time.Time) (Model, bool)` — atomically advances nextBroadcastAt by `BroadcastPeriod` iff due; returns the pre-advance state to emit
   - `StoreEvaluation(ctx, characterId uint32, active bool, characterLevel byte, nextBroadcastAt time.Time) error`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `berserk/testmain_test.go` (same shape as `character/testmain_test.go`):
 
@@ -729,12 +729,12 @@ func TestTenantIsolation(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `go test ./berserk/... -run 'TestTrack|TestMark|TestClaim|TestConcurrent|TestTenant' -v`
 Expected: FAIL — `undefined: InitRegistry` etc.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 `berserk/registry.go`:
 
@@ -927,12 +927,12 @@ func (r *Registry) StoreEvaluation(ctx context.Context, characterId uint32, acti
 
 Note for the implementer: `ClaimBroadcast` returns the post-`Update` model (whose `nextBroadcastAt` is already advanced) — that is fine because the emitter only reads `WorldId/ChannelId/CharacterId/CharacterLevel/SkillLevel/Active`, none of which the claim touches.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `go test -race ./berserk/... -v`
 Expected: PASS, including `TestConcurrentClaimSingleWinner` under `-race`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add berserk/registry.go berserk/registry_test.go berserk/testmain_test.go
@@ -960,7 +960,7 @@ git commit -m "feat(task-154): redis-backed berserk registry with atomic reeval/
   - `external/dataskill.RequestById(skillId uint32) requests.Request[RestModel]` — `GET data/skills/{id}`, RestModel has `Effects []EffectModel` with `X int16` (tag `x`)
   - `berserk.NewEffectXCache(fetch func(l logrus.FieldLogger, ctx context.Context) (dataskill.RestModel, error)) *EffectXCache` with `X(l, ctx, skillLevel byte) (int16, error)`; package singleton `GetEffectXCache()` (sync.Once) wired to `dataskill.RequestById(uint32(skill.DarkKnightBerserkId))`
 
-- [ ] **Step 1: Write the failing cache test**
+- [x] **Step 1: Write the failing cache test**
 
 `berserk/cache_test.go`:
 
@@ -1064,12 +1064,12 @@ func TestEffectXCacheFetchFailureNotCached(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `go test ./berserk/... -run TestEffectXCache -v`
 Expected: FAIL — `atlas-buffs/external/dataskill` does not exist / `undefined: NewEffectXCache`.
 
-- [ ] **Step 3: Write the clients and cache**
+- [x] **Step 3: Write the clients and cache**
 
 `external/character/rest.go`:
 
@@ -1373,12 +1373,12 @@ func (c *EffectXCache) X(l logrus.FieldLogger, ctx context.Context, skillLevel b
 }
 ```
 
-- [ ] **Step 4: Run tests and build**
+- [x] **Step 4: Run tests and build**
 
 Run: `go build ./... && go test ./berserk/... -run TestEffectXCache -v`
 Expected: build clean, cache tests PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add external berserk/cache.go berserk/cache_test.go
@@ -1400,7 +1400,7 @@ git commit -m "feat(task-154): outbound REST clients and per-tenant effect-x cac
 
 Design note (D6): a new event type on the EXISTING `EVENT_TOPIC_CHARACTER_BUFF_STATUS` topic — existing consumers type-guard and ignore unknown types; a dedicated topic would need configmap/overlay wiring (known failure family). The envelope has no transaction id, so it rides in the body. Key = character id → per-character ordering alongside the character's other buff events.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `berserk/producer_test.go`:
 
@@ -1462,12 +1462,12 @@ func TestBerserkStatusEventJSONFieldNames(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `go test ./berserk/... -run TestBerserkStatus -v`
 Expected: FAIL — `undefined: character2.BerserkStatusEventBody` / `berserkStatusEventProvider`.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Append to `kafka/message/character/kafka.go` (after `ExpiredStatusEventBody`, line 90):
 
@@ -1528,12 +1528,12 @@ func berserkStatusEventProvider(transactionId uuid.UUID, m Model) model.Provider
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `go test ./berserk/... -run TestBerserkStatus -v && go build ./...`
 Expected: PASS, build clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add kafka/message/character/kafka.go berserk/producer.go berserk/producer_test.go
@@ -1575,7 +1575,7 @@ Design rules encoded here (D3/D5/D7/§4.1):
 - A skills REST 404 means level 0 (character never learned the skill) — not an error.
 - Per pass an entry either re-evaluates or broadcasts, never both (5s initial delay always separates them).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `berserk/processor_test.go`:
 
@@ -1787,12 +1787,12 @@ func TestProcessTicksMaxHpZeroGuard(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `go test ./berserk/... -run 'TestTrackOnLogin|TestHandle|TestProcessTicks' -v`
 Expected: FAIL — `undefined: ProcessorImpl`.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 `berserk/processor.go`:
 
@@ -2095,12 +2095,12 @@ After `go tasks.Register(tasks.NewPoisonTick(l, 1000))` add:
 
 Add `"atlas-buffs/berserk"` to the imports.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `go test -race ./... && go vet ./... && go build ./...`
 Expected: all PASS/clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add berserk/processor.go berserk/processor_test.go tasks/berserk.go main.go
@@ -2139,7 +2139,7 @@ Consumer semantics (design §4.1 trigger table):
 
 Both consumers use `consumer.SetStartOffset(kafka.LastOffset)` (transient signals; state reconstructs from the next trigger — same convention as atlas-channel's buff status consumer).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `kafka/consumer/characterstatus/testmain_test.go` and `kafka/consumer/skillstatus/testmain_test.go` (identical content, own package names `characterstatus`/`skillstatus`):
 
@@ -2382,12 +2382,12 @@ func TestHandleDeletedUntracks(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `go test ./kafka/consumer/... -v`
 Expected: FAIL — packages do not exist.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 `kafka/message/characterstatus/kafka.go`:
 
@@ -2691,12 +2691,12 @@ with imports:
 
 Deploy note (verified, design §2): `EVENT_TOPIC_CHARACTER_STATUS` and `EVENT_TOPIC_SKILL_STATUS` are already in the shared configmap (`deploy/k8s/base/env-configmap.yaml`) and atlas-buffs inherits via `envFrom` — no manifest changes.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `go test -race ./... && go build ./...`
 Expected: PASS/clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add kafka/message/characterstatus kafka/message/skillstatus kafka/consumer/characterstatus kafka/consumer/skillstatus main.go
@@ -2718,7 +2718,7 @@ git commit -m "feat(task-154): character-status and skill-status consumers drivi
 
 No import cycle: `berserk` does not import `atlas-buffs/character`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `character/maxhp_test.go`:
 
@@ -2832,12 +2832,12 @@ func TestApplyNonMaxHpBuffDoesNotMarkDirty(t *testing.T) {
 
 Note: `1301007` (Hyper Body) and `2001001` here are buff **source ids in test fixtures**, consistent with the existing `registry_test.go` usage of literal source ids in this package's tests; the production code path carries them opaquely.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `go test ./character/... -run 'TestAffectsMaxHp|TestApplyHyper|TestCancelHyper|TestApplyNonMaxHp' -v`
 Expected: FAIL — `undefined: affectsMaxHp`.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 `character/maxhp.go`:
 
@@ -2993,12 +2993,12 @@ In `ExpireBuffs`, add the hook inside the per-character loop, after the inner `f
 
 (Comment-preserving note: keep the existing comments in these methods exactly as they are; only the return shape changes.)
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `go test -race ./... && go vet ./...`
 Expected: PASS/clean — including all pre-existing `character` package tests (the emit-then-hook refactor must not change any existing behavior).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add character/maxhp.go character/maxhp_test.go character/processor.go
@@ -3023,7 +3023,7 @@ Import note: `kafka/consumer/buff/consumer.go` already imports `libs/atlas-kafka
 
 Testing scope note (deviation from design §6, justified): atlas-channel has no harness for session-touching consumer handlers — existing consumer tests (e.g. `kafka/consumer/drop/consumer_test.go`) cover extracted pure helpers only. The handler here is a guard + two announce calls whose shape mirrors the already-shipped `handleStatusEventApplied`/`handleStatusEventLevelChanged`; the wire bytes are pinned by the packet lib fixtures. What IS testable and load-bearing is the **cross-service JSON contract** — the golden decode test below (emit-side twin lives in Task 5).
 
-- [ ] **Step 1: Write the failing contract test**
+- [x] **Step 1: Write the failing contract test**
 
 `kafka/message/buff/kafka_test.go`:
 
@@ -3072,12 +3072,12 @@ func TestBerserkStatusEventDecodeInactive(t *testing.T) {
 
 (The `1320006` inside the JSON string is wire-fixture data, asserted against `skill.DarkKnightBerserkId` — the same pattern the packet byte fixtures use.)
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run (from `services/atlas-channel/atlas.com/channel`): `go test ./kafka/message/buff/... -v`
 Expected: FAIL — `undefined: BerserkStatusEventBody`.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Append to `kafka/message/buff/kafka.go`:
 
@@ -3179,12 +3179,12 @@ func handleStatusEventBerserk(sc server.Model, wp writer.Producer) message.Handl
 
 No `main.go` changes: the buff consumer/handlers are already registered (`main.go:200` region and `main.go:500` region).
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run (from `services/atlas-channel/atlas.com/channel`): `go test -race ./... && go vet ./... && go build ./...`
 Expected: PASS/clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add kafka/message/buff/kafka.go kafka/message/buff/kafka_test.go socket/handler/effects.go kafka/consumer/buff/consumer.go
@@ -3197,7 +3197,7 @@ git commit -m "feat(task-154): translate berserk ticks into own+foreign EffectSk
 
 **Files:** none created — verification only. Fix-and-recommit anything that fails, then re-run the full suite from the top.
 
-- [ ] **Step 1: atlas-buffs module checks**
+- [x] **Step 1: atlas-buffs module checks**
 
 Run (from `services/atlas-buffs/atlas.com/buffs`):
 
@@ -3207,7 +3207,7 @@ go test -race ./... && go vet ./... && go build ./...
 
 Expected: all PASS/clean.
 
-- [ ] **Step 2: atlas-channel module checks**
+- [x] **Step 2: atlas-channel module checks**
 
 Run (from `services/atlas-channel/atlas.com/channel`):
 
@@ -3217,7 +3217,7 @@ go test -race ./... && go vet ./... && go build ./...
 
 Expected: all PASS/clean.
 
-- [ ] **Step 3: Docker bake both services (mandatory — go.mod-touching or not, both services changed)**
+- [x] **Step 3: Docker bake both services (mandatory — go.mod-touching or not, both services changed)**
 
 Run (from the worktree root):
 
@@ -3227,7 +3227,7 @@ docker buildx bake atlas-buffs atlas-channel
 
 Expected: both images build. This is the only check that catches shared-Dockerfile `COPY libs/...` gaps; `go build` against `go.work` will not. No new shared lib was added, so no Dockerfile/go.work edits are expected — if bake fails on a missing lib COPY, fix the root `Dockerfile` per CLAUDE.md and re-bake.
 
-- [ ] **Step 4: Redis key guard**
+- [x] **Step 4: Redis key guard**
 
 Run (from the worktree root, no global GOWORK=off prefix):
 
@@ -3237,7 +3237,7 @@ tools/redis-key-guard.sh
 
 Expected: clean. All new Redis access is via `atlas.TenantRegistry`/`atlas.Set`.
 
-- [ ] **Step 5: Acceptance criteria sweep**
+- [x] **Step 5: Acceptance criteria sweep**
 
 Walk the PRD's acceptance criteria against the implementation (full sweep, not spot-check). The mapping:
 
@@ -3259,7 +3259,7 @@ Walk the PRD's acceptance criteria against the implementation (full sweep, not s
 
 Expected: every row checks out; any gap is a finding to fix now, not to defer.
 
-- [ ] **Step 6: Commit any verification fixes**
+- [x] **Step 6: Commit any verification fixes**
 
 ```bash
 git status --short   # must be clean, or commit fixes with feat(task-154)/fix(task-154)

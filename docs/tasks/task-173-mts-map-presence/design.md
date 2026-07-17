@@ -107,8 +107,16 @@ field broadcasts — consistent with cash shop.
 
 ## Scope
 
-- Change: one predicate in `InFieldModelProvider`
-  (`services/atlas-channel/atlas.com/channel/session/processor.go`).
+- Change: the same cash-scene guard in **both** field-membership queries in
+  `services/atlas-channel/atlas.com/channel/session/processor.go`:
+  - `InFieldModelProvider` — feeds the map-enter snapshot and field-scoped
+    broadcasts (the reported ghost).
+  - `InMapAllInstancesModelProvider` — its sole production consumer is the
+    transport arrival/departure broadcast (`kafka/consumer/route/consumer.go:70`,
+    `:91` via `map/processor.go:88` `ForSessionsInMapAllInstances`). Without the
+    guard an MTS-scened session in a transport map would still receive
+    `FieldTransportStateWriter` announcements — the same "queried as present when
+    not physically there" defect. Added in the same change for consistency.
 - No packet, template, Kafka, or atlas-maps changes. The entry event, despawn
   broadcast, and exit/reset paths are unchanged and already correct.
 - No behaviour change for cash-shop sessions (already absent from the registry)

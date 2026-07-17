@@ -937,3 +937,30 @@ func TestInMapAllInstancesModelProvider_UnionsInstances(t *testing.T) {
 		t.Errorf("InMapAllInstancesModelProvider = chars %v, want exactly {100, 200}", set)
 	}
 }
+
+func TestInMapAllInstancesModelProvider_ExcludesCashSceneSessions(t *testing.T) {
+	logger, cleanup := testSetup()
+	defer cleanup()
+	ctx := test.CreateTestContext()
+	p := session.NewProcessor(logger, ctx)
+
+	// A character in the MTS keeps its session on the map's world/channel/map but
+	// is not physically present, so it must not receive all-instances broadcasts
+	// (e.g. transport arrival/departure). A lingering cash-shop session is
+	// likewise excluded.
+	f := field.NewBuilder(0, 0, _map.Id(100000000)).Build()
+	addFieldSession(t, p, 100, f)
+	mtsSessionId := addFieldSession(t, p, 200, f)
+	csSessionId := addFieldSession(t, p, 300, f)
+	p.SetCashScene(mtsSessionId, session.CashSceneMts)
+	p.SetCashScene(csSessionId, session.CashSceneCashShop)
+
+	got, err := p.InMapAllInstancesModelProvider(0, 0, _map.Id(100000000))()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	set := characterIdSet(got)
+	if len(got) != 1 || !set[100] {
+		t.Errorf("InMapAllInstancesModelProvider = chars %v, want exactly {100} (cash-scene 200/300 excluded)", set)
+	}
+}

@@ -117,13 +117,18 @@ func (p *ProcessorImpl) InFieldModelProvider(f field.Model) model.Provider[[]Mod
 }
 
 // InMapAllInstancesModelProvider returns local sessions on the given
-// world/channel/map across all instances, with an assigned character.
+// world/channel/map across all instances, with an assigned character, that are
+// physically present in the field. Like InFieldModelProvider it excludes
+// cash-scene sessions (cash shop / MTS) so an MTS session — which stays alive on
+// the channel connection while the ITC scene renders in-place — is not treated
+// as in the map (e.g. it must not receive transport arrival/departure
+// broadcasts). task-173.
 func (p *ProcessorImpl) InMapAllInstancesModelProvider(worldId world.Id, channelId channel.Id, mapId _map.Id) model.Provider[[]Model] {
 	return func() ([]Model, error) {
 		all := getRegistry().GetInTenant(p.t.Id())
 		result := make([]Model, 0)
 		for _, s := range all {
-			if s.CharacterId() != 0 && s.WorldId() == worldId && s.ChannelId() == channelId && s.MapId() == mapId {
+			if s.CharacterId() != 0 && s.CashScene() == CashSceneNone && s.WorldId() == worldId && s.ChannelId() == channelId && s.MapId() == mapId {
 				result = append(result, s)
 			}
 		}

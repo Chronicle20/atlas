@@ -106,6 +106,13 @@ func (m Model) BulletConsume() uint16 {
 	return m.bulletConsume
 }
 
+// BulletCount returns the WZ `bulletCount` attribute — the one-time star
+// batch charged when casting Shadow Stars (200 in reference data). Distinct
+// from BulletConsume (per-attack projectile count).
+func (m Model) BulletCount() uint16 {
+	return m.bulletCount
+}
+
 // HP exposes the skill's `hp` percentage attribute (used by Heal's
 // amount formula).
 func (m Model) HP() uint16 {

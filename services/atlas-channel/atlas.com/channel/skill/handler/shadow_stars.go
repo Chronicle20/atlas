@@ -1,13 +1,24 @@
 package handler
 
 import (
+	"context"
 	"sort"
 
 	"atlas-channel/asset"
+	"atlas-channel/character"
+	"atlas-channel/compartment"
 	"atlas-channel/data/skill/effect/statup"
+	compartmentMsg "atlas-channel/kafka/message/compartment"
+	once "atlas-channel/kafka/once/compartment"
 
 	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 )
 
 // StarDraw is one slot-level consume of a chosen throwing star for the
@@ -99,4 +110,58 @@ func resolveShadowStarsCast(assets []asset.Model, statups []statup.Model, starIt
 	draws, available := resolveStarConsume(assets, starItemId, bulletCount)
 	rewritten = rewriteShadowClawStatups(statups, starItemId)
 	return rewritten, draws, available < bulletCount, true
+}
+
+// loadCasterInventoryFunc is the caster-inventory load seam tests can replace.
+// Production loads the character with the inventory decorator and returns the
+// consumable (USE) compartment assets — the same decorated load the generic
+// item-consume block in UseSkill uses.
+var loadCasterInventoryFunc = func(cp character.Processor, characterId uint32) ([]asset.Model, error) {
+	c, err := cp.GetById(cp.InventoryDecorator)(characterId)
+	if err != nil {
+		return nil, err
+	}
+	return c.Inventory().Consumable().Assets(), nil
+}
+
+// emitStarConsume charges the Shadow Stars cast cost by reserving then consuming
+// each StarDraw from the USE compartment. Mirrors the projectile Emit path:
+// register a one-time reservation-observed handler that issues the consume, then
+// request the reservation. Reservation atomicity means a slot that no longer
+// holds the item fails cleanly without over-consuming.
+func emitStarConsume(l logrus.FieldLogger, ctx context.Context, characterId uint32, draws []StarDraw) error {
+	if len(draws) == 0 {
+		return nil
+	}
+	cpp := compartment.NewProcessor(l, ctx)
+	t, err := topic.EnvProvider(l)(compartmentMsg.EnvEventTopicStatus)()
+	if err != nil {
+		return err
+	}
+	for _, draw := range draws {
+		draw := draw
+		txId := uuid.New()
+		validator := once.ReservationValidator(txId, draw.ItemId)
+		handler := reservedStarToConsume(l, cpp, characterId, txId, inventory.TypeValueUse, draw.Slot)
+		if _, rerr := consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(validator, handler))); rerr != nil {
+			l.WithError(rerr).WithField("characterId", characterId).
+				Errorf("Unable to register one-time consume handler for Shadow Stars reservation.")
+			continue
+		}
+		reserves := []compartmentMsg.ItemBody{{Source: draw.Slot, ItemId: draw.ItemId, Quantity: draw.Quantity}}
+		if rerr := cpp.RequestReserve(txId, characterId, inventory.TypeValueUse, reserves); rerr != nil {
+			l.WithError(rerr).WithField("characterId", characterId).WithField("slot", draw.Slot).
+				Errorf("Unable to emit Shadow Stars reservation request.")
+		}
+	}
+	return nil
+}
+
+func reservedStarToConsume(l logrus.FieldLogger, cpp compartment.Processor, characterId uint32, txId uuid.UUID, invType inventory.Type, slot int16) message.Handler[compartmentMsg.StatusEvent[compartmentMsg.ReservedEventBody]] {
+	return func(_ logrus.FieldLogger, _ context.Context, _ compartmentMsg.StatusEvent[compartmentMsg.ReservedEventBody]) {
+		if err := cpp.Consume(txId, characterId, invType, slot); err != nil {
+			l.WithError(err).WithField("characterId", characterId).WithField("slot", slot).
+				Errorf("Unable to emit Shadow Stars consume command.")
+		}
+	}
 }

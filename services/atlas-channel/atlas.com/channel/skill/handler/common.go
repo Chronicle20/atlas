@@ -70,6 +70,31 @@ var cancelStatusFunc = func(p monster.Processor, f field.Model, monsterId uint32
 func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer, f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) error {
 	return func(ctx context.Context) func(wp writer.Producer, f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) error {
 		return func(wp writer.Producer, f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) error {
+			// Shadow Stars pre-flight (FR-5): validate the client-chosen star
+			// and resolve the cast cost BEFORE any HP/MP/cooldown spend. A bogus
+			// or unowned star aborts the whole cast — no MP, no cooldown, no buff,
+			// no consume — so a crafted client cannot inject an id into the buff
+			// or trigger consumption of an unintended item.
+			statupsToApply := e.StatUps()
+			var shadowStarDraws []StarDraw
+			if skill2.Id(info.SkillId()) == skill2.NightLordShadowStarsId {
+				assets, invErr := loadCasterInventoryFunc(character.NewProcessor(l, ctx), characterId)
+				if invErr != nil {
+					l.WithError(invErr).Warnf("Character [%d] cast Shadow Stars [%d] but inventory load failed; aborting cast.", characterId, info.SkillId())
+					return nil
+				}
+				rewritten, draws, shortfall, ok := resolveShadowStarsCast(assets, e.StatUps(), info.SpiritJavelinItemId(), int(e.BulletCount()))
+				if !ok {
+					l.Warnf("Character [%d] cast Shadow Stars [%d] with invalid star [%d] (not a throwing star or not owned); aborting cast.", characterId, info.SkillId(), info.SpiritJavelinItemId())
+					return nil
+				}
+				if shortfall {
+					l.Warnf("Character [%d] cast Shadow Stars [%d]: insufficient star [%d] for cast cost [%d]; consuming what's available.", characterId, info.SkillId(), info.SpiritJavelinItemId(), e.BulletCount())
+				}
+				statupsToApply = rewritten
+				shadowStarDraws = draws
+			}
+
 			if e.HPConsume() > 0 {
 				_ = character.NewProcessor(l, ctx).ChangeHP(f, characterId, -int16(e.HPConsume()))
 			}
@@ -104,10 +129,19 @@ func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Pro
 				return nil
 			}
 
-			if e.Duration() > 0 && len(e.StatUps()) > 0 {
-				applyBuffFunc := buff.NewProcessor(l, ctx).Apply(f, characterId, int32(info.SkillId()), info.SkillLevel(), e.Duration(), e.StatUps())
+			if e.Duration() > 0 && len(statupsToApply) > 0 {
+				applyBuffFunc := buff.NewProcessor(l, ctx).Apply(f, characterId, int32(info.SkillId()), info.SkillLevel(), e.Duration(), statupsToApply)
 				_ = applyBuffFunc(characterId)
 				_ = applyToParty(l)(ctx)(f, characterId, info.AffectedPartyMemberBitmap())(applyBuffFunc)
+			}
+
+			// Shadow Stars cast cost (FR-4): charge bulletCount of the chosen
+			// star after the buff is applied. shadowStarDraws is empty for every
+			// other skill.
+			if len(shadowStarDraws) > 0 {
+				if err := emitStarConsume(l, ctx, characterId, shadowStarDraws); err != nil {
+					l.WithError(err).Errorf("Character [%d] Shadow Stars cast-cost consume failed.", characterId)
+				}
 			}
 
 			// Handle mob-affecting buffs (crash, dispel, etc.)

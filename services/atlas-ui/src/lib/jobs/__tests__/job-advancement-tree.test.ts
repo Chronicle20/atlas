@@ -24,8 +24,8 @@ describe("job-advancement-tree", () => {
   });
 
   it("uses the corrected per-branch floors, inherited from the root", () => {
-    expect(BRANCH_FLOORS).toEqual({ 0: 83, 800: 83, 900: 83, 910: 83, 1000: 83, 2000: 80, 2001: 84 });
-    expect(floorOf(112)).toBe(83);  // Adventurer
+    expect(BRANCH_FLOORS).toEqual({ 0: 1, 800: 83, 900: 1, 910: 1, 1000: 83, 2000: 80, 2001: 84 });
+    expect(floorOf(112)).toBe(1);   // Adventurer — present since launch
     expect(floorOf(1112)).toBe(83); // Cygnus corrected 92 -> 83
     expect(floorOf(2112)).toBe(80); // Aran corrected 88 -> 80
     expect(floorOf(2218)).toBe(84); // Evan
@@ -38,6 +38,16 @@ describe("job-advancement-tree", () => {
     expect(r83).toContain(2000);     // Aran visible on v83
     expect(r83).not.toContain(2001); // Evan hidden on v83
     expect(visibleRoots(84)).toContain(2001); // Evan visible on v84
+  });
+
+  it("shows base Adventurers + admin jobs on legacy sub-83 versions (GMS v12/v48)", () => {
+    const r12 = visibleRoots(12);
+    expect(r12).toContain(0);        // Adventurers — the jobs page was empty before this
+    expect(r12).toContain(900);      // GM — always present
+    expect(r12).toContain(910);      // Super GM — always present
+    expect(r12).not.toContain(1000); // Cygnus (v83) hidden
+    expect(r12).not.toContain(2000); // Aran (v80) hidden
+    expect(r12).not.toContain(800);  // Maple Leaf Brigadier (special) hidden
   });
 
   it("jobTreePath returns root->node inclusive", () => {

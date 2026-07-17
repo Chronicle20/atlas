@@ -4,6 +4,7 @@ import (
 	"atlas-expressions/kafka/message"
 	expression2 "atlas-expressions/kafka/message/expression"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/google/uuid"

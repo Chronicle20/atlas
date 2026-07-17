@@ -4,6 +4,7 @@ import (
 	note2 "atlas-channel/kafka/message/note"
 	"context"
 	"errors"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"
@@ -38,7 +39,6 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 }
 
 var _ Processor = (*ProcessorImpl)(nil)
-
 
 // ByCharacterProvider fetches the complete set of notes for a character.
 // The upstream atlas-notes list is now paginated (task-117); callers here

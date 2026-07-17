@@ -229,7 +229,9 @@ describe("AssetTooltipContent", () => {
   describe("tag/seal", () => {
     it("shows owner when tagged", () => {
       renderTooltip(
-        <AssetTooltipContent asset={baseAsset({ templateId: 2000000, owner: "Chronicle" })} />,
+        <AssetTooltipContent
+          asset={baseAsset({ templateId: 2000000, owner: "Chronicle" })}
+        />,
       );
       expect(screen.getByText(/Chronicle/)).toBeInTheDocument();
     });
@@ -237,7 +239,11 @@ describe("AssetTooltipContent", () => {
     it("shows 'SEALED' (no date) for a permanent seal and suppresses EXPIRES", () => {
       renderTooltip(
         <AssetTooltipContent
-          asset={baseAsset({ templateId: 2000000, flag: FLAG_LOCK, expiration: "0001-01-01T00:00:00Z" })}
+          asset={baseAsset({
+            templateId: 2000000,
+            flag: FLAG_LOCK,
+            expiration: "0001-01-01T00:00:00Z",
+          })}
         />,
       );
       expect(screen.getByText(/SEALED/i)).toBeInTheDocument();
@@ -247,7 +253,11 @@ describe("AssetTooltipContent", () => {
     it("shows 'SEALED UNTIL' for a timed seal and suppresses EXPIRES", () => {
       renderTooltip(
         <AssetTooltipContent
-          asset={baseAsset({ templateId: 2000000, flag: FLAG_LOCK, expiration: "2027-08-01T00:00:00Z" })}
+          asset={baseAsset({
+            templateId: 2000000,
+            flag: FLAG_LOCK,
+            expiration: "2027-08-01T00:00:00Z",
+          })}
         />,
       );
       expect(screen.getByText(/SEALED UNTIL/i)).toBeInTheDocument();
@@ -257,7 +267,11 @@ describe("AssetTooltipContent", () => {
     it("keeps EXPIRES for a non-sealed timed item", () => {
       renderTooltip(
         <AssetTooltipContent
-          asset={baseAsset({ templateId: 2000000, flag: 0, expiration: "2027-08-01T00:00:00Z" })}
+          asset={baseAsset({
+            templateId: 2000000,
+            flag: 0,
+            expiration: "2027-08-01T00:00:00Z",
+          })}
         />,
       );
       expect(screen.getByText(/EXPIRES/i)).toBeInTheDocument();

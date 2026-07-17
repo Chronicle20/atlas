@@ -25,12 +25,21 @@ vi.mock("@/services/api/accounts.service", () => ({
 }));
 
 vi.mock("@/lib/hooks/api/useTenants", () => ({
-  useTenantConfiguration: () => ({ data: null, isLoading: false, error: null, isFetching: false, refetch: vi.fn() }),
+  useTenantConfiguration: () => ({
+    data: null,
+    isLoading: false,
+    error: null,
+    isFetching: false,
+    refetch: vi.fn(),
+  }),
 }));
 
 vi.mock("@/context/tenant-context", () => ({
   useTenant: () => ({
-    activeTenant: { id: "test-tenant", attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 } },
+    activeTenant: {
+      id: "test-tenant",
+      attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 },
+    },
   }),
 }));
 

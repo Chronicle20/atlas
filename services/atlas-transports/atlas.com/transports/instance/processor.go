@@ -5,8 +5,9 @@ import (
 	it "atlas-transports/kafka/message/instance_transport"
 	"context"
 	"errors"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"time"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"

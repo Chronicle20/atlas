@@ -3,8 +3,9 @@ package inventory
 import (
 	"strconv"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/jtumidanski/api2go/jsonapi"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 )
 
 // CompartmentRestModel mirrors the atlas-inventory compartment resource; the

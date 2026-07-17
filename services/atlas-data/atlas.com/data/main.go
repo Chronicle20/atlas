@@ -30,18 +30,16 @@ import (
 	"atlas-data/tenantpurge"
 	"atlas-data/wzinput"
 	"context"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"os"
 	"time"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 
 	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	service "github.com/Chronicle20/atlas/libs/atlas-service"
-
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"

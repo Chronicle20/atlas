@@ -7,9 +7,10 @@ import (
 	"atlas-summons/inventory"
 	monstermsg "atlas-summons/monster"
 	"context"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"math/rand"
 	"time"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"

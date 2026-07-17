@@ -38,7 +38,10 @@ const BASE_PATH = "/api/data/mob-skills";
 
 export const mobSkillsService = {
   async getMobSkillName(skillId: number): Promise<string> {
-    const result = await fetchPaged<MobSkillSummary>(`${BASE_PATH}/${skillId}`, { number: 1, size: 1 });
+    const result = await fetchPaged<MobSkillSummary>(
+      `${BASE_PATH}/${skillId}`,
+      { number: 1, size: 1 },
+    );
     return result.data[0]?.attributes.name ?? "";
   },
 

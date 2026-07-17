@@ -22,13 +22,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"

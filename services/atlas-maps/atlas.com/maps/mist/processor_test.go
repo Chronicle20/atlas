@@ -3,10 +3,11 @@ package mist
 import (
 	"context"
 	"encoding/json"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	mistKafka "atlas-maps/kafka/message/mist"
 

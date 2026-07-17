@@ -9,11 +9,12 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	interactioncb "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/clientbound"
 	interaction2 "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 type CharacterInteractionMode string

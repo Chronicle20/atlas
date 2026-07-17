@@ -183,14 +183,20 @@ export function AssetTooltipContent({ asset, itemName, slotName }: Props) {
       {isSealed(asset) ? (
         <div className="text-xs">
           <span className="text-muted-foreground">
-            {a.expiration && a.expiration !== "" && a.expiration !== ZERO_DATE ? "SEALED UNTIL: " : "SEALED"}
+            {a.expiration && a.expiration !== "" && a.expiration !== ZERO_DATE
+              ? "SEALED UNTIL: "
+              : "SEALED"}
           </span>
-          {a.expiration && a.expiration !== "" && a.expiration !== ZERO_DATE && (
-            <span>{new Date(a.expiration).toLocaleDateString()}</span>
-          )}
+          {a.expiration &&
+            a.expiration !== "" &&
+            a.expiration !== ZERO_DATE && (
+              <span>{new Date(a.expiration).toLocaleDateString()}</span>
+            )}
         </div>
       ) : (
-        a.expiration && a.expiration !== "" && a.expiration !== ZERO_DATE && (
+        a.expiration &&
+        a.expiration !== "" &&
+        a.expiration !== ZERO_DATE && (
           <div className="text-xs">
             <span className="text-muted-foreground">EXPIRES: </span>
             <span>{new Date(a.expiration).toLocaleDateString()}</span>

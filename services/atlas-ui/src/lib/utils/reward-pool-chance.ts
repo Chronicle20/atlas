@@ -15,17 +15,22 @@ export interface ChanceRow {
  * (Σweight = 0), the server's selectItem falls back to a uniform pick,
  * so a non-empty zero-total pool yields 1/N per item. Empty pool → empty map.
  */
-export function incubatorChances(items: { id: string; weight: number }[]): Map<string, number> {
+export function incubatorChances(
+  items: { id: string; weight: number }[],
+): Map<string, number> {
   if (items.length === 0) return new Map();
   const total = items.reduce((s, i) => s + i.weight, 0);
-  return new Map(items.map((i) => [i.id, total > 0 ? i.weight / total : 1 / items.length]));
+  return new Map(
+    items.map((i) => [i.id, total > 0 ? i.weight / total : 1 / items.length]),
+  );
 }
 
 export function gachaponChances(
   tierWeights: { common: number; uncommon: number; rare: number },
   rows: { key: string; tier: "common" | "uncommon" | "rare"; weight: number }[],
 ): Map<string, ChanceRow> {
-  const tierTotal = tierWeights.common + tierWeights.uncommon + tierWeights.rare;
+  const tierTotal =
+    tierWeights.common + tierWeights.uncommon + tierWeights.rare;
   const result = new Map<string, ChanceRow>();
   for (const tier of ["common", "uncommon", "rare"] as const) {
     const tierRows = rows.filter((r) => r.tier === tier);
@@ -44,7 +49,12 @@ export function gachaponChances(
   return result;
 }
 
-export function tierHasMixedWeights(rows: { tier: string; weight: number }[], tier: string): boolean {
+export function tierHasMixedWeights(
+  rows: { tier: string; weight: number }[],
+  tier: string,
+): boolean {
   const tierRows = rows.filter((r) => r.tier === tier);
-  return tierRows.some((r) => r.weight > 0) && tierRows.some((r) => r.weight === 0);
+  return (
+    tierRows.some((r) => r.weight > 0) && tierRows.some((r) => r.weight === 0)
+  );
 }

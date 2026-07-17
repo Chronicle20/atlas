@@ -6,6 +6,7 @@ import (
 	character2 "atlas-transports/kafka/message/character"
 	"context"
 	"errors"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"

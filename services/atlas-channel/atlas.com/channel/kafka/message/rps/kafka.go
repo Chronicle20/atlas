@@ -64,8 +64,7 @@ type Command[E any] struct {
 
 // BeginCommandBody signals the player clicked "Start" to open the first round
 // of an already-open session. It carries no data.
-type BeginCommandBody struct {
-}
+type BeginCommandBody struct{}
 
 // SelectCommandBody carries the player's rock/paper/scissors throw. The
 // value is passed through RAW (0=Rock/1=Paper/2=Scissors) - unremapped, per
@@ -76,19 +75,16 @@ type SelectCommandBody struct {
 
 // ContinueCommandBody signals the player wants to play another round at the
 // current rung. It carries no data.
-type ContinueCommandBody struct {
-}
+type ContinueCommandBody struct{}
 
 // CollectCommandBody signals the player wants to end the session - banking
 // the current prize if one is owed (StatusAwaitingDecision), or forfeiting
 // otherwise. It carries no data.
-type CollectCommandBody struct {
-}
+type CollectCommandBody struct{}
 
 // RetryCommandBody signals the player wants to restart after a loss (paying
 // the entry fee again). It carries no data.
-type RetryCommandBody struct {
-}
+type RetryCommandBody struct{}
 
 // Event represents an event emitted by atlas-rps as a session progresses. E
 // is the type-specific body payload. Mirrors atlas-rps's Event[E] - keep the

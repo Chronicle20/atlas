@@ -4,9 +4,10 @@ import (
 	"atlas-ban/kafka/message"
 	ban2 "atlas-ban/kafka/message/ban"
 	"context"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"strconv"
 	"time"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"

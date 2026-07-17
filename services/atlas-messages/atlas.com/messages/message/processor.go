@@ -6,6 +6,7 @@ import (
 	message2 "atlas-messages/kafka/message/message"
 	"context"
 	"errors"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"

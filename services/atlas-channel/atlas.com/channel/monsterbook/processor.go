@@ -3,6 +3,7 @@ package monsterbook
 import (
 	mbmsg "atlas-channel/kafka/message/monsterbook"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"

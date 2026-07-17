@@ -13,14 +13,27 @@ vi.mock("@/services/api/reward-pools.service", () => ({
   },
 }));
 vi.mock("@/context/tenant-context", () => ({
-  useTenant: () => ({ activeTenant: { id: "t1", attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 } } }),
+  useTenant: () => ({
+    activeTenant: {
+      id: "t1",
+      attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 },
+    },
+  }),
 }));
 
-function renderDialog(props: Partial<Parameters<typeof PoolItemDialog>[0]> = {}) {
+function renderDialog(
+  props: Partial<Parameters<typeof PoolItemDialog>[0]> = {},
+) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <PoolItemDialog open onOpenChange={() => {}} kind="incubator" poolId="4170001" {...props} />
+      <PoolItemDialog
+        open
+        onOpenChange={() => {}}
+        kind="incubator"
+        poolId="4170001"
+        {...props}
+      />
     </QueryClientProvider>,
   );
 }
@@ -49,7 +62,10 @@ describe("PoolItemDialog", () => {
     await user.click(screen.getByRole("button", { name: /save|add/i }));
     await waitFor(() =>
       expect(rewardPoolsService.createItem).toHaveBeenCalledWith("4170001", {
-        itemId: 2000000, quantity: 1, tier: "common", weight: 50,
+        itemId: 2000000,
+        quantity: 1,
+        tier: "common",
+        weight: 50,
       }),
     );
   });
@@ -61,7 +77,11 @@ describe("PoolItemDialog", () => {
     await user.type(screen.getByLabelText(/quantity/i), "1");
     await user.type(screen.getByLabelText(/weight/i), "0");
     await user.click(screen.getByRole("button", { name: /save|add/i }));
-    await waitFor(() => expect(screen.getByText(/weight must be at least 1/i)).toBeInTheDocument());
+    await waitFor(() =>
+      expect(
+        screen.getByText(/weight must be at least 1/i),
+      ).toBeInTheDocument(),
+    );
     expect(rewardPoolsService.createItem).not.toHaveBeenCalled();
   });
 });

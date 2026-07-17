@@ -10,6 +10,7 @@ import (
 	"atlas-maps/map/timer"
 	"atlas-maps/visit"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"

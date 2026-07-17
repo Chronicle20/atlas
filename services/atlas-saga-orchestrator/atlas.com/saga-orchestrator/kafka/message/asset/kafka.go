@@ -83,5 +83,4 @@ type QuantityChangedEventBody struct {
 // UpdatedStatusEventBody carries no fields of its own; the saga step it
 // completes (SetAssetOwner / ApplyAssetLock) is matched via the envelope's
 // TransactionId and AcceptEvent gating, not via body content.
-type UpdatedStatusEventBody struct {
-}
+type UpdatedStatusEventBody struct{}

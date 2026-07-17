@@ -3,6 +3,7 @@ package door
 import (
 	doormsg "atlas-channel/kafka/message/door"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"

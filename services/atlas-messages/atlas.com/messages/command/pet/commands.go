@@ -6,9 +6,10 @@ import (
 	"atlas-messages/kafka/message/pet"
 	petlookup "atlas-messages/pet"
 	"context"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"regexp"
 	"strconv"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"
 

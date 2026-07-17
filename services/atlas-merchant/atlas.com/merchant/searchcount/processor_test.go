@@ -4,11 +4,12 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 )
 
 func newTestProcessor(t *testing.T) (Processor, Processor) {

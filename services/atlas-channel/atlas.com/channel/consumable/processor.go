@@ -3,6 +3,7 @@ package consumable
 import (
 	consumable2 "atlas-channel/kafka/message/consumable"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"

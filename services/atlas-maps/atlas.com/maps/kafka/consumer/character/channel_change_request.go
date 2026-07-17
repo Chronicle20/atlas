@@ -7,6 +7,7 @@ import (
 	mapsproducer "atlas-maps/kafka/producer"
 	_map "atlas-maps/map"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/google/uuid"

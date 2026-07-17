@@ -12,7 +12,9 @@ describe("SealIcon", () => {
     const { getByTestId } = render(<SealIcon tenant={tenant} />);
     const el = getByTestId("seal-icon");
     expect(el.tagName).toBe("IMG");
-    expect(el.getAttribute("src")).toContain("t1/GMS/83.1/ui/item-protector/icon.png");
+    expect(el.getAttribute("src")).toContain(
+      "t1/GMS/83.1/ui/item-protector/icon.png",
+    );
   });
 
   it("falls back to the lucide lock when no tenant is resolvable", () => {

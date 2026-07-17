@@ -6,6 +6,7 @@ import (
 	wallet2 "atlas-cashshop/kafka/producer/wallet"
 	"context"
 	"fmt"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/google/uuid"

@@ -3,10 +3,26 @@ import { Link } from "react-router-dom";
 import { Briefcase, ChevronRight } from "lucide-react";
 import { useTenant } from "@/context/tenant-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { JOB_GRAPH, visibleChildrenOf, visibleRoots } from "@/lib/jobs/job-advancement-tree";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  JOB_GRAPH,
+  visibleChildrenOf,
+  visibleRoots,
+} from "@/lib/jobs/job-advancement-tree";
 
-function JobTreeNode({ id, depth, major }: { id: number; depth: number; major: number }) {
+function JobTreeNode({
+  id,
+  depth,
+  major,
+}: {
+  id: number;
+  depth: number;
+  major: number;
+}) {
   const entry = JOB_GRAPH[id];
   const name = entry?.name ?? `Job ${id}`;
   const children = visibleChildrenOf(id, major);
@@ -43,7 +59,12 @@ function JobTreeNode({ id, depth, major }: { id: number; depth: number; major: n
       </div>
       <CollapsibleContent>
         {children.map((childId) => (
-          <JobTreeNode key={childId} id={childId} depth={depth + 1} major={major} />
+          <JobTreeNode
+            key={childId}
+            id={childId}
+            depth={depth + 1}
+            major={major}
+          />
         ))}
       </CollapsibleContent>
     </Collapsible>

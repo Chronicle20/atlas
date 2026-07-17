@@ -4,6 +4,7 @@ import (
 	"atlas-messengers/kafka/message/character"
 	"context"
 	"errors"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/google/uuid"

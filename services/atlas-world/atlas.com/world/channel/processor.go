@@ -6,6 +6,7 @@ import (
 	channel2 "atlas-world/kafka/message/channel"
 	channel3 "atlas-world/kafka/producer/channel"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/google/uuid"

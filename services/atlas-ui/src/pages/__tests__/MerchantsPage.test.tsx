@@ -17,12 +17,21 @@ vi.mock("@/services/api/merchants.service", () => ({
 }));
 
 vi.mock("@/lib/hooks/api/useTenants", () => ({
-  useTenantConfiguration: () => ({ data: null, isLoading: false, error: null, isFetching: false, refetch: vi.fn() }),
+  useTenantConfiguration: () => ({
+    data: null,
+    isLoading: false,
+    error: null,
+    isFetching: false,
+    refetch: vi.fn(),
+  }),
 }));
 
 vi.mock("@/context/tenant-context", () => ({
   useTenant: () => ({
-    activeTenant: { id: "test-tenant", attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 } },
+    activeTenant: {
+      id: "test-tenant",
+      attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 },
+    },
   }),
 }));
 
@@ -75,7 +84,10 @@ describe("MerchantsPage shops tab", () => {
     renderAt("/merchants");
 
     await waitFor(() => {
-      expect(merchantsService.getShopsPage).toHaveBeenCalledWith({ number: 1, size: 50 });
+      expect(merchantsService.getShopsPage).toHaveBeenCalledWith({
+        number: 1,
+        size: 50,
+      });
     });
   });
 
@@ -93,7 +105,9 @@ describe("MerchantsPage shops tab", () => {
     await user.click(screen.getByRole("button", { name: /next page/i }));
 
     await waitFor(() => {
-      const lastCall = vi.mocked(merchantsService.getShopsPage).mock.calls.at(-1)!;
+      const lastCall = vi
+        .mocked(merchantsService.getShopsPage)
+        .mock.calls.at(-1)!;
       expect(lastCall[0]).toEqual({ number: 2, size: 50 });
     });
   });

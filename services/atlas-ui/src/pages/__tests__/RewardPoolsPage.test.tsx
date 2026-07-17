@@ -11,20 +11,53 @@ import { RewardPoolsPage } from "../RewardPoolsPage";
 // vi.hoisted (see MarketplacePage.test.tsx for the same idiom).
 const { pools } = vi.hoisted(() => ({
   pools: [
-    { id: "henesys", type: "gachapons", attributes: { name: "Henesys", kind: "gachapon", npcIds: [9100100], commonWeight: 70, uncommonWeight: 25, rareWeight: 5 } },
-    { id: "4170001", type: "gachapons", attributes: { name: "Pigmy Egg", kind: "incubator", npcIds: [1012004], commonWeight: 0, uncommonWeight: 0, rareWeight: 0 } },
+    {
+      id: "henesys",
+      type: "gachapons",
+      attributes: {
+        name: "Henesys",
+        kind: "gachapon",
+        npcIds: [9100100],
+        commonWeight: 70,
+        uncommonWeight: 25,
+        rareWeight: 5,
+      },
+    },
+    {
+      id: "4170001",
+      type: "gachapons",
+      attributes: {
+        name: "Pigmy Egg",
+        kind: "incubator",
+        npcIds: [1012004],
+        commonWeight: 0,
+        uncommonWeight: 0,
+        rareWeight: 0,
+      },
+    },
   ],
 }));
 vi.mock("@/services/api/reward-pools.service", () => ({
   rewardPoolsService: {
     getAllPools: vi.fn().mockResolvedValue(pools),
-    getGlobalItems: vi.fn().mockResolvedValue([
-      { id: "1", type: "global-gachapon-items", attributes: { itemId: 2000000, quantity: 1, tier: "common" } },
-    ]),
+    getGlobalItems: vi
+      .fn()
+      .mockResolvedValue([
+        {
+          id: "1",
+          type: "global-gachapon-items",
+          attributes: { itemId: 2000000, quantity: 1, tier: "common" },
+        },
+      ]),
   },
 }));
 vi.mock("@/context/tenant-context", () => ({
-  useTenant: () => ({ activeTenant: { id: "t1", attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 } } }),
+  useTenant: () => ({
+    activeTenant: {
+      id: "t1",
+      attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 },
+    },
+  }),
 }));
 vi.mock("@/components/item-name-cell", () => ({
   ItemNameCell: ({ itemId }: { itemId: string }) => <span>item-{itemId}</span>,
@@ -51,7 +84,9 @@ function renderPage() {
 describe("RewardPoolsPage", () => {
   it("shows both pools on the All tab with kind badges", async () => {
     renderPage();
-    await waitFor(() => expect(screen.getByText("Henesys")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText("Henesys")).toBeInTheDocument(),
+    );
     expect(screen.getByText("Pigmy Egg (Ellinia)")).toBeInTheDocument();
     expect(screen.getAllByText(/gachapon/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/incubator/i).length).toBeGreaterThan(0);
@@ -59,14 +94,20 @@ describe("RewardPoolsPage", () => {
 
   it("renders a single refresh control next to the tabs", async () => {
     renderPage();
-    await waitFor(() => expect(screen.getByText("Henesys")).toBeInTheDocument());
-    expect(screen.getByRole("button", { name: /refresh/i })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByText("Henesys")).toBeInTheDocument(),
+    );
+    expect(
+      screen.getByRole("button", { name: /refresh/i }),
+    ).toBeInTheDocument();
   });
 
   it("Incubators tab filters out gachapon pools", async () => {
     const user = userEvent.setup();
     renderPage();
-    await waitFor(() => expect(screen.getByText("Henesys")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText("Henesys")).toBeInTheDocument(),
+    );
     await user.click(screen.getByRole("tab", { name: /incubators/i }));
     expect(screen.queryByText("Henesys")).not.toBeInTheDocument();
     expect(screen.getByText("Pigmy Egg (Ellinia)")).toBeInTheDocument();
@@ -75,21 +116,31 @@ describe("RewardPoolsPage", () => {
   it("Global Pool tab lists global items", async () => {
     const user = userEvent.setup();
     renderPage();
-    await waitFor(() => expect(screen.getByText("Henesys")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText("Henesys")).toBeInTheDocument(),
+    );
     await user.click(screen.getByRole("tab", { name: /global pool/i }));
-    await waitFor(() => expect(screen.getByText("item-2000000")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText("item-2000000")).toBeInTheDocument(),
+    );
   });
 
   it("Global Pool tab surfaces a fetch error instead of a false empty state", async () => {
     // The global-items query fires at mount (tenant present), so the rejection
     // must be queued before renderPage(); Once keeps the other tests' default
     // resolved mock intact.
-    vi.mocked(rewardPoolsService.getGlobalItems).mockRejectedValueOnce(new Error("global items unavailable"));
+    vi.mocked(rewardPoolsService.getGlobalItems).mockRejectedValueOnce(
+      new Error("global items unavailable"),
+    );
     const user = userEvent.setup();
     renderPage();
-    await waitFor(() => expect(screen.getByText("Henesys")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText("Henesys")).toBeInTheDocument(),
+    );
     await user.click(screen.getByRole("tab", { name: /global pool/i }));
-    await waitFor(() => expect(screen.getByTestId("error-display")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByTestId("error-display")).toBeInTheDocument(),
+    );
     expect(screen.getByText("global items unavailable")).toBeInTheDocument();
     expect(screen.queryByText("No global items.")).not.toBeInTheDocument();
   });

@@ -3,6 +3,7 @@ package messenger
 import (
 	messenger2 "atlas-channel/kafka/message/messenger"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"

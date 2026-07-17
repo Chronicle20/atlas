@@ -3,6 +3,7 @@ package compartment
 import (
 	"atlas-channel/kafka/message/compartment"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/google/uuid"

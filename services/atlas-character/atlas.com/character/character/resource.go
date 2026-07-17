@@ -6,15 +6,16 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 )
 
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
@@ -107,7 +108,7 @@ func handleGetCharactersForAccountInWorld(d *rest.HandlerDependency, c *rest.Han
 }
 
 func decoratorsFromInclude(_ *http.Request, _ *rest.HandlerDependency, _ *rest.HandlerContext) []model.Decorator[Model] {
-	var decorators = make([]model.Decorator[Model], 0)
+	decorators := make([]model.Decorator[Model], 0)
 	return decorators
 }
 

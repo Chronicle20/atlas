@@ -42,7 +42,7 @@ export function getItemProtectorIconUrl(
   majorVersion: number,
   minorVersion: number,
 ): string {
-  const baseUrl = import.meta.env.VITE_ASSET_BASE_URL || '/api/assets';
+  const baseUrl = import.meta.env.VITE_ASSET_BASE_URL || "/api/assets";
   const version = `${majorVersion}.${minorVersion}`;
   return `${baseUrl}/${tenantId}/${region}/${version}/ui/item-protector/icon.png`;
 }

@@ -12,8 +12,9 @@ import (
 	"atlas-channel/quest"
 	"context"
 	"errors"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"sort"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"
 

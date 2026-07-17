@@ -3,6 +3,7 @@ package chair
 import (
 	chair2 "atlas-channel/kafka/message/chair"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"

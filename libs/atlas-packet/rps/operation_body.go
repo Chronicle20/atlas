@@ -3,10 +3,11 @@ package rps
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	atlas_packet "github.com/Chronicle20/atlas/libs/atlas-packet"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/rps/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
-	"github.com/sirupsen/logrus"
 )
 
 // RPSGameMode is the operations-table key type for the RPSGame writer's mode

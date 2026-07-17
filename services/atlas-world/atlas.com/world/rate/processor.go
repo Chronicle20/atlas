@@ -5,6 +5,7 @@ import (
 	rateMessage "atlas-world/kafka/message/rate"
 	rateProducer "atlas-world/kafka/producer/rate"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"

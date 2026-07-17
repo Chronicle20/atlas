@@ -5,6 +5,7 @@ import (
 	"atlas-maps/kafka/message"
 	reactorKafka "atlas-maps/kafka/message/reactor"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/google/uuid"

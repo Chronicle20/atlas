@@ -3,9 +3,10 @@ package saga
 import (
 	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 )
 
 // createCommandProvider builds the single-message Kafka provider for

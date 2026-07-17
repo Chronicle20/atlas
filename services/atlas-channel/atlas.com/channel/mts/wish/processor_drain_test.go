@@ -1,6 +1,7 @@
 package wish_test
 
 import (
+	"atlas-channel/mts/wish"
 	"context"
 	"fmt"
 	"net/http"
@@ -9,11 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"atlas-channel/mts/wish"
-
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // wishListDoc renders a JSON:API "wish-entries" list response for entries

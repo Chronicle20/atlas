@@ -31,7 +31,6 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 
 var _ Processor = (*ProcessorImpl)(nil)
 
-
 // ByCharacterIdProvider fetches every key binding for a character. The
 // upstream atlas-keys list is now paginated (task-117); callers here need
 // the complete key map (e.g. sending the full key-map record on channel

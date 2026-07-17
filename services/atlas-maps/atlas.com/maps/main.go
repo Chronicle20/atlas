@@ -17,16 +17,15 @@ import (
 	"atlas-maps/tasks"
 	"atlas-maps/visit"
 	"context"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"os"
 	"time"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 
 	service "github.com/Chronicle20/atlas/libs/atlas-service"
-
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"

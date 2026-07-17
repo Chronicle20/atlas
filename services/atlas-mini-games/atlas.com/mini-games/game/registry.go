@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // ErrOwnerHasRoom is returned by Create when the room's owner is already a
@@ -29,8 +29,10 @@ type Registry struct {
 	members map[tenant.Model]map[uint32]uint32
 }
 
-var registry *Registry
-var once sync.Once
+var (
+	registry *Registry
+	once     sync.Once
+)
 
 // GetRegistry returns the process-wide Registry singleton.
 func GetRegistry() *Registry {

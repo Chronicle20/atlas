@@ -5,6 +5,7 @@ import (
 	mistKafka "atlas-maps/kafka/message/mist"
 	mistDomain "atlas-maps/mist"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"

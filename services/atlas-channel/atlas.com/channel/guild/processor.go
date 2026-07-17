@@ -4,8 +4,9 @@ import (
 	"atlas-channel/guild/member"
 	guild2 "atlas-channel/kafka/message/guild"
 	"context"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"strings"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"
 

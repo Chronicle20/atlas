@@ -1,6 +1,8 @@
 package game_test
 
 import (
+	"atlas-rps/game"
+	"atlas-rps/rest"
 	"bytes"
 	"context"
 	"fmt"
@@ -9,15 +11,13 @@ import (
 	"strconv"
 	"testing"
 
-	"atlas-rps/game"
-	"atlas-rps/rest"
-
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // newResourceRouter wires game.InitResource against a fresh mux.Router, with

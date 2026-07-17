@@ -1,16 +1,13 @@
 package rps
 
 import (
+	"atlas-rps/game"
 	"context"
 	"sync"
 	"testing"
 
-	"atlas-rps/game"
 	rpsMsg "atlas-rps/kafka/message/rps"
 
-	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
-	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
@@ -18,6 +15,10 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // capturingWriter records every WriteMessages call so tests can verify what

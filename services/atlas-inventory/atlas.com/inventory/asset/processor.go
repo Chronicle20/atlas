@@ -10,10 +10,15 @@ import (
 	"atlas-inventory/pet"
 	"context"
 	"errors"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"math"
 	"math/rand"
 	"time"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
 	af "github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
@@ -22,9 +27,6 @@ import (
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 type Processor interface {

@@ -7,10 +7,11 @@ import (
 	monster2 "atlas-maps/map/monster"
 	"context"
 	"encoding/json"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"os"
 	"sync"
 	"testing"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"

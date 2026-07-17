@@ -2,7 +2,10 @@ import { useState } from "react";
 import { useTenant } from "@/context/tenant-context";
 import { useTenantConfiguration } from "@/lib/hooks/api/useTenants";
 import { useMtsListings } from "@/lib/hooks/api/useMtsListings";
-import type { MtsListing, MtsListingAttributes } from "@/services/api/mts-listings.service";
+import type {
+  MtsListing,
+  MtsListingAttributes,
+} from "@/services/api/mts-listings.service";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -325,7 +328,11 @@ export function ListingItemCell({
       </Link>
       {tagged && (
         <span className="inline-flex items-center gap-0.5 text-xs text-muted-foreground">
-          <Tag data-testid="tag-icon" className="h-3 w-3 text-amber-500" aria-label="Named item" />
+          <Tag
+            data-testid="tag-icon"
+            className="h-3 w-3 text-amber-500"
+            aria-label="Named item"
+          />
           {attributes.owner}
         </span>
       )}

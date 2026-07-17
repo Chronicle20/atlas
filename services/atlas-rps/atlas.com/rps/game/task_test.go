@@ -1,20 +1,21 @@
 package game_test
 
 import (
+	"atlas-rps/game"
+	"atlas-rps/kafka/message/rps"
 	"context"
 	"encoding/json"
 	"sync"
 	"testing"
 	"time"
 
-	"atlas-rps/game"
-	"atlas-rps/kafka/message/rps"
 	rpsSaga "atlas-rps/kafka/message/saga"
 
-	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/segmentio/kafka-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 )
 
 // sweepCapturingWriter records every WriteMessages call so sweep tests can

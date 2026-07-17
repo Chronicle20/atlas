@@ -99,7 +99,6 @@ func getBody(l logrus.FieldLogger, ctx context.Context) func(url string, configu
 		}
 		cfg := retry.DefaultConfig().WithMaxRetries(c.retries).WithInitialDelay(200 * time.Millisecond).WithMaxDelay(2 * time.Second)
 		err := retry.Try(ctx, cfg, get)
-
 		if err != nil {
 			if errors.Is(err, errServiceUnavailableAttempt) {
 				l.WithError(err).Errorf("Service unavailable after retries calling [%s] on [%s].", http.MethodGet, url)

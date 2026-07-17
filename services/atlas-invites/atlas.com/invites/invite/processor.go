@@ -4,6 +4,7 @@ import (
 	"atlas-invites/kafka/message"
 	invite2 "atlas-invites/kafka/message/invite"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/google/uuid"

@@ -2,12 +2,14 @@ package rps
 
 import (
 	rpsMsg "atlas-channel/kafka/message/rps"
-	producer2 "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"context"
+
+	producer2 "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/sirupsen/logrus"
 )
 
 // Processor emits COMMAND_TOPIC_RPS commands on behalf of the serverbound

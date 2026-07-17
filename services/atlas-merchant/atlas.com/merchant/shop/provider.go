@@ -1,11 +1,10 @@
 package shop
 
 import (
-	"time"
-
 	"atlas-merchant/listing"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"

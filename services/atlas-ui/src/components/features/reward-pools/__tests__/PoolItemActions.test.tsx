@@ -6,7 +6,9 @@ import { PoolItemActions } from "../PoolItemActions";
 describe("PoolItemActions", () => {
   it("renders a trigger button with the accessible name 'Open menu'", () => {
     render(<PoolItemActions onEdit={() => {}} onDelete={() => {}} />);
-    expect(screen.getByRole("button", { name: "Open menu" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Open menu" }),
+    ).toBeInTheDocument();
   });
 
   it("opens the menu and shows Edit and Delete items, calling the right handler for each", async () => {

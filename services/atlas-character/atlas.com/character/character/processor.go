@@ -11,12 +11,13 @@ import (
 	skill2 "atlas-character/skill"
 	"context"
 	"errors"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"math"
 	"math/rand"
 	"regexp"
 	"time"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 

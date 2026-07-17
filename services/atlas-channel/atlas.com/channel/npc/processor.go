@@ -3,6 +3,7 @@ package npc
 import (
 	"atlas-channel/kafka/message/npc"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"

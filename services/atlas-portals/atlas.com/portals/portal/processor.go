@@ -5,8 +5,9 @@ import (
 	"atlas-portals/character"
 	"atlas-portals/portal_actions"
 	"context"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"math/rand"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"
 

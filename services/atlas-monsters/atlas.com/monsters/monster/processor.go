@@ -7,10 +7,11 @@ import (
 	"atlas-monsters/monster/mobskill"
 	"context"
 	"errors"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"math/rand"
 	"sort"
 	"time"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"

@@ -4,6 +4,7 @@ import (
 	chalkboard2 "atlas-chalkboards/kafka/message/chalkboard"
 	"context"
 	"errors"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/google/uuid"

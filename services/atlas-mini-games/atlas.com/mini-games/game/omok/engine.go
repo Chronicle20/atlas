@@ -1,7 +1,9 @@
 package omok
 
-const BoardSize = 15
-const Cells = BoardSize * BoardSize
+const (
+	BoardSize = 15
+	Cells     = BoardSize * BoardSize
+)
 
 // PlaceResult is the outcome of an attempted Omok stone placement.
 type PlaceResult int

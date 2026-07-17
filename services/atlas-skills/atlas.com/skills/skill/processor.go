@@ -6,11 +6,12 @@ import (
 	"atlas-skills/macro"
 	"context"
 	"errors"
+	"strconv"
+	"time"
+
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
-	"strconv"
-	"time"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"

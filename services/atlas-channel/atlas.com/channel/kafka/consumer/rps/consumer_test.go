@@ -8,14 +8,15 @@ import (
 	"math"
 	"testing"
 
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+	testlog "github.com/sirupsen/logrus/hooks/test"
+
 	channelconst "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	rpscb "github.com/Chronicle20/atlas/libs/atlas-packet/rps/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
-	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 // rpsGameOperations mirrors the operations table the RPS_GAME writer's mode

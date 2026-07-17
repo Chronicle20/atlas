@@ -181,7 +181,7 @@ func EnterShopCommandProvider(characterId uint32, shopId uuid.UUID, visitorName 
 		Type:        merchant2.CommandEnterShop,
 		Body: merchant2.CommandEnterShopBody{
 			VisitorName: visitorName,
-			ShopId: shopId.String(),
+			ShopId:      shopId.String(),
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

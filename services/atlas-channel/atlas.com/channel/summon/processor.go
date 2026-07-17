@@ -3,6 +3,7 @@ package summon
 import (
 	summon2 "atlas-channel/kafka/message/summon"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"

@@ -5,9 +5,10 @@ import (
 	"atlas-messages/command"
 	mapKafka "atlas-messages/kafka/message/map"
 	"context"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"regexp"
 	"strconv"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"

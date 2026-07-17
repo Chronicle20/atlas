@@ -3,6 +3,7 @@ package macro
 import (
 	macro2 "atlas-channel/kafka/message/macro"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"

@@ -3,9 +3,10 @@ package monster
 import (
 	"atlas-monsters/monster/drop"
 	"context"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"math/rand"
 	"time"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"
 

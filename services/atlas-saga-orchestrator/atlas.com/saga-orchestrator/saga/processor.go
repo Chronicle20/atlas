@@ -15,9 +15,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"sync"
 	"time"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"

@@ -3,6 +3,7 @@ package buddylist
 import (
 	buddylist2 "atlas-channel/kafka/message/buddylist"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"

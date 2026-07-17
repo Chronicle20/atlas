@@ -1,10 +1,10 @@
 package shop
 
 import (
-	"time"
-
 	"atlas-merchant/kafka/message/asset"
 	"atlas-merchant/listing"
+	"time"
+
 	msg "atlas-merchant/message"
 
 	"github.com/google/uuid"

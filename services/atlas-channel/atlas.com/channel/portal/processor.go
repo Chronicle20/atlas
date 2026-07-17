@@ -4,6 +4,7 @@ import (
 	portalData "atlas-channel/data/portal"
 	"atlas-channel/kafka/message/portal"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"

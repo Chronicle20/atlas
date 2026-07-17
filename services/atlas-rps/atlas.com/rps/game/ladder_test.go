@@ -1,9 +1,8 @@
 package game_test
 
 import (
-	"testing"
-
 	"atlas-rps/game"
+	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 )

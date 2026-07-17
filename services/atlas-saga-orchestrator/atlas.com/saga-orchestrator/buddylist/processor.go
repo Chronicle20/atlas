@@ -1,17 +1,19 @@
 package buddylist
 
 import (
+	"atlas-saga-orchestrator/kafka/message"
 	"context"
 
-	"atlas-saga-orchestrator/kafka/message"
 	buddylist2 "atlas-saga-orchestrator/kafka/message/buddylist"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {

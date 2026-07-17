@@ -6,6 +6,7 @@ import (
 	message "atlas-asset-expiration/kafka/message/session"
 	"atlas-asset-expiration/session"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"

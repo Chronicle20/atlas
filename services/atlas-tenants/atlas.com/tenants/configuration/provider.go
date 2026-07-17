@@ -2,6 +2,7 @@ package configuration
 
 import (
 	"encoding/json"
+
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"

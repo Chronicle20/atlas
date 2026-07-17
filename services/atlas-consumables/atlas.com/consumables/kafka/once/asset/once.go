@@ -4,9 +4,10 @@ import (
 	"atlas-consumables/kafka/message/asset"
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 )
 
 // GrantConfirmedValidator matches the asset event atlas-inventory emits on

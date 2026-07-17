@@ -4,10 +4,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-wz/crypto"
 	"github.com/Chronicle20/atlas/libs/atlas-wz/wz/property"
 	"github.com/Chronicle20/atlas/libs/atlas-wz/wztest"
-	"github.com/sirupsen/logrus"
 )
 
 // smallArchive builds a one-dir/one-image archive under the given encryption.

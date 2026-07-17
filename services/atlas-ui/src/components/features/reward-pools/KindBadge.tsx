@@ -8,7 +8,9 @@ import type { RewardPoolKind } from "@/types/models/reward-pool";
  */
 export function KindBadge({ kind }: { kind: RewardPoolKind }) {
   return kind === "incubator" ? (
-    <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-transparent">Incubator</Badge>
+    <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-transparent">
+      Incubator
+    </Badge>
   ) : (
     <Badge variant="secondary">Gachapon</Badge>
   );

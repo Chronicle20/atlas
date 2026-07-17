@@ -5,8 +5,9 @@ import (
 	"atlas-maps/map/monster"
 	"atlas-maps/reactor"
 	"context"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"time"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"

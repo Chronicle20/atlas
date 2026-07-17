@@ -6,6 +6,7 @@ import (
 	"atlas-effective-stats/stat"
 	"context"
 	"fmt"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/google/uuid"

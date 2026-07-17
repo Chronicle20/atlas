@@ -3,6 +3,7 @@ package food
 import (
 	"atlas-channel/kafka/message/food"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"

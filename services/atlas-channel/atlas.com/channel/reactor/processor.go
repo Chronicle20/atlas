@@ -3,6 +3,7 @@ package reactor
 import (
 	reactor2 "atlas-channel/kafka/message/reactor"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"

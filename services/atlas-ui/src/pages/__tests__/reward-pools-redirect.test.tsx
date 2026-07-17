@@ -1,6 +1,12 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { MemoryRouter, Navigate, Route, Routes, useParams } from "react-router-dom";
+import {
+  MemoryRouter,
+  Navigate,
+  Route,
+  Routes,
+  useParams,
+} from "react-router-dom";
 
 vi.mock("@/context/tenant-context", () => ({
   useTenant: () => ({ activeTenant: null }),
@@ -16,8 +22,14 @@ function renderAt(path: string) {
     <MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route path="/reward-pools" element={<div>reward pools list</div>} />
-        <Route path="/reward-pools/:id" element={<div>reward pool detail</div>} />
-        <Route path="/gachapons" element={<Navigate to="/reward-pools" replace />} />
+        <Route
+          path="/reward-pools/:id"
+          element={<div>reward pool detail</div>}
+        />
+        <Route
+          path="/gachapons"
+          element={<Navigate to="/reward-pools" replace />}
+        />
         <Route path="/gachapons/:id" element={<GachaponDetailRedirect />} />
       </Routes>
     </MemoryRouter>,

@@ -12,6 +12,9 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/miniroom"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -22,9 +25,7 @@ import (
 	interactionpkt "github.com/Chronicle20/atlas/libs/atlas-packet/interaction"
 	interactioncb "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const (

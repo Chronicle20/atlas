@@ -1,9 +1,10 @@
 package message
 
 import (
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 )
 
 // Buffer batches emitted messages by topic so a command handler collects every

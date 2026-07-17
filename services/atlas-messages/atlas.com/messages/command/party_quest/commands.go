@@ -8,8 +8,9 @@ import (
 	party_quest "atlas-messages/party_quest"
 	"context"
 	"fmt"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"regexp"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"
 

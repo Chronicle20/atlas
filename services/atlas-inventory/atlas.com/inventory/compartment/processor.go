@@ -11,11 +11,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"math"
 	"sort"
 	"time"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 

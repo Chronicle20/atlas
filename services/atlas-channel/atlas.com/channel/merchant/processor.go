@@ -4,6 +4,7 @@ import (
 	"atlas-channel/character"
 	merchant2 "atlas-channel/kafka/message/merchant"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/google/uuid"

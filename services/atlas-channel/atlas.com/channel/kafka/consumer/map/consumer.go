@@ -698,13 +698,13 @@ func spawnMerchantsForSession(l logrus.FieldLogger) func(ctx context.Context) fu
 						// serialNumber and the server resolves via
 						// GetByCharacterId(serialNumber), so it must be the owner's
 						// character id (task-127; see merchant consumer note).
-						Id:              m.CharacterId(),
-						Title:           m.Title(),
-						Spec:            merchant.StoreSkinSpec(m.PermitItemId()),
-						CapacityVal:     4,
-						OwnerId:         m.CharacterId(),
-						VisitorCount:    byte(len(m.Visitors())),
-						VisitorList:     []interactionpkt.MiniRoomVisitor{},
+						Id:           m.CharacterId(),
+						Title:        m.Title(),
+						Spec:         merchant.StoreSkinSpec(m.PermitItemId()),
+						CapacityVal:  4,
+						OwnerId:      m.CharacterId(),
+						VisitorCount: byte(len(m.Visitors())),
+						VisitorList:  []interactionpkt.MiniRoomVisitor{},
 					}
 					return session.Announce(l)(ctx)(wp)(interactionpkt.MiniRoomWriter)(mr.Spawn(m.CharacterId()))(s)
 				}

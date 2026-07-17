@@ -3,6 +3,7 @@ package invite
 import (
 	invite2 "atlas-buddies/kafka/message/invite"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"

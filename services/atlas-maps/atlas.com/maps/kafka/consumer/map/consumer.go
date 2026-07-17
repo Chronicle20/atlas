@@ -5,8 +5,9 @@ import (
 	mapKafka "atlas-maps/kafka/message/map"
 	"atlas-maps/map/weather"
 	"context"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"time"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"

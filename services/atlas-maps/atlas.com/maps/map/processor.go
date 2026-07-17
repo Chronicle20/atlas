@@ -11,6 +11,7 @@ import (
 	"atlas-maps/visit"
 	"context"
 	"errors"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/google/uuid"

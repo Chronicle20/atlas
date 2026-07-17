@@ -55,7 +55,10 @@ export function BansPage() {
   const [expireDialogOpen, setExpireDialogOpen] = useState(false);
   const [selectedBan, setSelectedBan] = useState<Ban | null>(null);
 
-  const pageNumber = Math.max(1, Number.parseInt(searchParams.get("page") ?? "1", 10) || 1);
+  const pageNumber = Math.max(
+    1,
+    Number.parseInt(searchParams.get("page") ?? "1", 10) || 1,
+  );
 
   const bansQueryOptions = useMemo(
     () =>
@@ -64,7 +67,11 @@ export function BansPage() {
         : undefined,
     [typeFilter],
   );
-  const bansQuery = useBansPage(activeTenant, { number: pageNumber, size: PAGE_SIZE }, bansQueryOptions);
+  const bansQuery = useBansPage(
+    activeTenant,
+    { number: pageNumber, size: PAGE_SIZE },
+    bansQueryOptions,
+  );
   const { invalidateAll } = useInvalidateBans();
   const { isRefreshing, onRefresh } = useGridRefresh([bansQuery]);
 

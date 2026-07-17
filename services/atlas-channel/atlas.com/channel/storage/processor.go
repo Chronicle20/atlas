@@ -4,6 +4,7 @@ import (
 	"atlas-channel/asset"
 	"atlas-channel/kafka/message/storage"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/google/uuid"

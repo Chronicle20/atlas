@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"testing"
 
-	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	testlog "github.com/sirupsen/logrus/hooks/test"
+
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 // Task 19 / task-128 merge: IDA-verified read order for OnIncubatorResult.

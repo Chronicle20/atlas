@@ -3,6 +3,7 @@ package expression
 import (
 	expression2 "atlas-channel/kafka/message/expression"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"

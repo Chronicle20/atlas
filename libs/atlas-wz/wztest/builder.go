@@ -37,6 +37,7 @@ func Str(name, v string) Prop       { return Prop{Name: name, Kind: KindString, 
 func Sub(name string, children ...Prop) Prop {
 	return Prop{Name: name, Kind: KindSub, Children: children}
 }
+
 func Canvas(name string, payload []byte) Prop {
 	return Prop{Name: name, Kind: KindCanvas, Canvas: payload}
 }

@@ -9,6 +9,7 @@ import (
 	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
+
 	producer2 "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	channel3 "github.com/Chronicle20/atlas/libs/atlas-packet/channel/serverbound"

@@ -20,10 +20,14 @@
  * `filter[worldId]` would let those page server-side too.
  */
 
-import type { ServiceOptions } from '@/lib/api/query-params';
-import type { Guild, GuildAttributes, GuildMember } from '@/types/models/guild';
-import { api } from '@/lib/api/client';
-import { fetchAll, fetchPaged, type PagedResult } from '@/services/api/pagination';
+import type { ServiceOptions } from "@/lib/api/query-params";
+import type { Guild, GuildAttributes, GuildMember } from "@/types/models/guild";
+import { api } from "@/lib/api/client";
+import {
+  fetchAll,
+  fetchPaged,
+  type PagedResult,
+} from "@/services/api/pagination";
 
 /**
  * Guilds service class with tenant-aware read-only API operations.
@@ -33,19 +37,25 @@ import { fetchAll, fetchPaged, type PagedResult } from '@/services/api/paginatio
  * tenant argument.
  */
 class GuildsService {
-  private basePath = '/api/guilds';
+  private basePath = "/api/guilds";
 
   /**
    * Get a single page of guilds. Used by the Guilds list view (task-117),
    * which pages server-side.
    */
-  async getPage(page: { number: number; size: number }, options?: ServiceOptions): Promise<PagedResult<Guild>> {
+  async getPage(
+    page: { number: number; size: number },
+    options?: ServiceOptions,
+  ): Promise<PagedResult<Guild>> {
     const result = await fetchPaged<Guild>(this.basePath, page, options);
     return { data: this.sortGuilds(result.data), meta: result.meta };
   }
 
   async getById(guildId: string, options?: ServiceOptions): Promise<Guild> {
-    const guild = await api.getOne<Guild>(`${this.basePath}/${guildId}`, options);
+    const guild = await api.getOne<Guild>(
+      `${this.basePath}/${guildId}`,
+      options,
+    );
     return this.transformGuildResponse(guild);
   }
 
@@ -53,9 +63,17 @@ class GuildsService {
    * Fetch guilds by name substring via the backend's `filter[name]` query
    * (task-117 / Task 11's server-side contract), a single page at a time.
    */
-  async search(searchTerm: string, page: { number: number; size: number }, options?: ServiceOptions): Promise<PagedResult<Guild>> {
+  async search(
+    searchTerm: string,
+    page: { number: number; size: number },
+    options?: ServiceOptions,
+  ): Promise<PagedResult<Guild>> {
     const qs = new URLSearchParams({ "filter[name]": searchTerm }).toString();
-    const result = await fetchPaged<Guild>(`${this.basePath}?${qs}`, page, options);
+    const result = await fetchPaged<Guild>(
+      `${this.basePath}?${qs}`,
+      page,
+      options,
+    );
     return { data: this.sortGuilds(result.data), meta: result.meta };
   }
 
@@ -63,8 +81,13 @@ class GuildsService {
    * Fetch guilds containing a specific member, using the backend's
    * `filter[members.id]` query string. Returns an array (possibly empty).
    */
-  async getByMemberId(memberId: string, options?: ServiceOptions): Promise<Guild[]> {
-    const qs = new URLSearchParams({ "filter[members.id]": memberId }).toString();
+  async getByMemberId(
+    memberId: string,
+    options?: ServiceOptions,
+  ): Promise<Guild[]> {
+    const qs = new URLSearchParams({
+      "filter[members.id]": memberId,
+    }).toString();
     return api.getList<Guild>(`${this.basePath}?${qs}`, options);
   }
 
@@ -73,9 +96,14 @@ class GuildsService {
    * atlas-guilds yet, so this drains the full collection and filters
    * in-memory (correct, just not page-bounded).
    */
-  async getByWorld(worldId: number, options?: ServiceOptions): Promise<Guild[]> {
+  async getByWorld(
+    worldId: number,
+    options?: ServiceOptions,
+  ): Promise<Guild[]> {
     const guilds = await fetchAll<Guild>(this.basePath, undefined, options);
-    return this.sortGuilds(guilds.filter(guild => guild.attributes.worldId === worldId));
+    return this.sortGuilds(
+      guilds.filter((guild) => guild.attributes.worldId === worldId),
+    );
   }
 
   /**
@@ -83,13 +111,18 @@ class GuildsService {
    * server-side support for either filter, so this drains + filters
    * in-memory (correct, just not page-bounded).
    */
-  async getWithSpace(worldId?: number, options?: ServiceOptions): Promise<Guild[]> {
+  async getWithSpace(
+    worldId?: number,
+    options?: ServiceOptions,
+  ): Promise<Guild[]> {
     const guilds = await fetchAll<Guild>(this.basePath, undefined, options);
-    let filtered = guilds.filter(guild =>
-      guild.attributes.members.length < guild.attributes.capacity
+    let filtered = guilds.filter(
+      (guild) => guild.attributes.members.length < guild.attributes.capacity,
     );
     if (worldId !== undefined) {
-      filtered = filtered.filter(guild => guild.attributes.worldId === worldId);
+      filtered = filtered.filter(
+        (guild) => guild.attributes.worldId === worldId,
+      );
     }
     return this.sortGuilds(filtered);
   }
@@ -99,10 +132,14 @@ class GuildsService {
    * Ranking requires the whole collection to sort correctly, so this
    * drains + filters + sorts in-memory (correct, just not page-bounded).
    */
-  async getRankings(worldId?: number, limit = 50, options?: ServiceOptions): Promise<Guild[]> {
+  async getRankings(
+    worldId?: number,
+    limit = 50,
+    options?: ServiceOptions,
+  ): Promise<Guild[]> {
     let guilds = await fetchAll<Guild>(this.basePath, undefined, options);
     if (worldId !== undefined) {
-      guilds = guilds.filter(guild => guild.attributes.worldId === worldId);
+      guilds = guilds.filter((guild) => guild.attributes.worldId === worldId);
     }
     return this.sortGuilds(guilds).slice(0, limit);
   }
@@ -112,14 +149,22 @@ class GuildsService {
       await this.getById(guildId, options);
       return true;
     } catch (error) {
-      if (error && typeof error === 'object' && 'status' in error && error.status === 404) {
+      if (
+        error &&
+        typeof error === "object" &&
+        "status" in error &&
+        error.status === 404
+      ) {
         return false;
       }
       throw error;
     }
   }
 
-  async getMemberCount(guildId: string, options?: ServiceOptions): Promise<number> {
+  async getMemberCount(
+    guildId: string,
+    options?: ServiceOptions,
+  ): Promise<number> {
     const guild = await this.getById(guildId, options);
     return guild.attributes.members.length;
   }
@@ -136,16 +181,18 @@ class GuildsService {
   private transformGuildResponse(guild: Guild): Guild {
     const transformed = { ...guild };
     if (transformed.attributes.members) {
-      transformed.attributes.members = [...transformed.attributes.members].sort((a, b) => {
-        if (a.title !== b.title) {
-          return a.title - b.title;
-        }
-        return b.level - a.level;
-      });
+      transformed.attributes.members = [...transformed.attributes.members].sort(
+        (a, b) => {
+          if (a.title !== b.title) {
+            return a.title - b.title;
+          }
+          return b.level - a.level;
+        },
+      );
     }
     if (transformed.attributes.titles) {
       transformed.attributes.titles = [...transformed.attributes.titles].sort(
-        (a, b) => a.index - b.index
+        (a, b) => a.index - b.index,
       );
     }
     return transformed;

@@ -1,10 +1,11 @@
 package searchcount
 
 import (
+	"gorm.io/gorm"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"gorm.io/gorm"
 )
 
 // getTopByWorld returns the highest-count entities for a world. Uses a

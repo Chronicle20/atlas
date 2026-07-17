@@ -4,8 +4,9 @@ import (
 	"atlas-saga-orchestrator/kafka/message"
 	mtsCustody "atlas-saga-orchestrator/kafka/message/mts/custody"
 	"context"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"time"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"

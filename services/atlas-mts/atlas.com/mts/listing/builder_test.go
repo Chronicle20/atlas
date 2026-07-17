@@ -40,7 +40,7 @@ func TestBuilder_BuildsFixedListing(t *testing.T) {
 // TestBuilder_SetOwnerRoundTrip asserts the item-tag owner name set via
 // SetOwner survives Build() and is exposed by Model.Owner(), mirroring the
 // existing Flags()/SetFlags() round trip. The empty case covers an untagged
-// item (the column's default-'' state).
+// item (the column's default-” state).
 func TestBuilder_SetOwnerRoundTrip(t *testing.T) {
 	tests := []struct {
 		name  string

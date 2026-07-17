@@ -4,6 +4,7 @@ import (
 	"atlas-messages/data/skill"
 	"atlas-messages/kafka/message/buff"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"

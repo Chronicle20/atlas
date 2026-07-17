@@ -1,6 +1,6 @@
 /**
  * React Query hooks for account management
- * 
+ *
  * Provides optimized data fetching, caching, and mutation capabilities for:
  * - Account retrieval operations with tenant context
  * - Account session management (terminate sessions)
@@ -9,27 +9,44 @@
  * - Proper error handling and loading states
  */
 
-import { useMutation, useQuery, useQueryClient, keepPreviousData, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
-import { accountsService, type Account, type AccountAttributes, type AccountQueryOptions } from '@/services/api/accounts.service';
-import type { PagedResult } from '@/services/api/pagination';
-import type { Tenant } from '@/types/models/tenant';
-import type { ServiceOptions } from '@/lib/api/query-params';
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  keepPreviousData,
+  type UseMutationResult,
+  type UseQueryResult,
+} from "@tanstack/react-query";
+import {
+  accountsService,
+  type Account,
+  type AccountAttributes,
+  type AccountQueryOptions,
+} from "@/services/api/accounts.service";
+import type { PagedResult } from "@/services/api/pagination";
+import type { Tenant } from "@/types/models/tenant";
+import type { ServiceOptions } from "@/lib/api/query-params";
 
 // Query keys for consistent cache management
 export const accountKeys = {
-  all: ['accounts'] as const,
-  lists: () => [...accountKeys.all, 'list'] as const,
-  list: (tenant: Tenant | null, options?: AccountQueryOptions) => [...accountKeys.lists(), tenant?.id || 'no-tenant', options] as const,
+  all: ["accounts"] as const,
+  lists: () => [...accountKeys.all, "list"] as const,
+  list: (tenant: Tenant | null, options?: AccountQueryOptions) =>
+    [...accountKeys.lists(), tenant?.id || "no-tenant", options] as const,
   pagedList: (tenant: Tenant | null, page: number, size: number) =>
-    [...accountKeys.lists(), tenant?.id || 'no-tenant', page, size] as const,
-  details: () => [...accountKeys.all, 'detail'] as const,
-  detail: (tenant: Tenant | null, id: string) => [...accountKeys.details(), tenant?.id || 'no-tenant', id] as const,
-  
+    [...accountKeys.lists(), tenant?.id || "no-tenant", page, size] as const,
+  details: () => [...accountKeys.all, "detail"] as const,
+  detail: (tenant: Tenant | null, id: string) =>
+    [...accountKeys.details(), tenant?.id || "no-tenant", id] as const,
+
   // Specialized queries
-  searches: () => [...accountKeys.all, 'search'] as const,
-  search: (tenant: Tenant | null, pattern: string) => [...accountKeys.searches(), tenant?.id || 'no-tenant', pattern] as const,
-  loggedIn: (tenant: Tenant | null) => [...accountKeys.all, 'loggedIn', tenant?.id || 'no-tenant'] as const,
-  stats: (tenant: Tenant | null) => [...accountKeys.all, 'stats', tenant?.id || 'no-tenant'] as const,
+  searches: () => [...accountKeys.all, "search"] as const,
+  search: (tenant: Tenant | null, pattern: string) =>
+    [...accountKeys.searches(), tenant?.id || "no-tenant", pattern] as const,
+  loggedIn: (tenant: Tenant | null) =>
+    [...accountKeys.all, "loggedIn", tenant?.id || "no-tenant"] as const,
+  stats: (tenant: Tenant | null) =>
+    [...accountKeys.all, "stats", tenant?.id || "no-tenant"] as const,
 };
 
 // ============================================================================
@@ -41,11 +58,12 @@ export const accountKeys = {
  */
 export function useAccounts(
   tenant: Tenant,
-  options?: AccountQueryOptions
+  options?: AccountQueryOptions,
 ): UseQueryResult<Account[], Error> {
   return useQuery({
     queryKey: accountKeys.list(tenant, options),
-    queryFn: () => accountsService.getAllAccounts({ ...options, useCache: false }),
+    queryFn: () =>
+      accountsService.getAllAccounts({ ...options, useCache: false }),
     enabled: !!tenant?.id,
     gcTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -59,11 +77,12 @@ export function useAccounts(
 export function useAccountsPage(
   tenant: Tenant | null,
   page: { number: number; size: number },
-  options?: AccountQueryOptions
+  options?: AccountQueryOptions,
 ): UseQueryResult<PagedResult<Account>, Error> {
   return useQuery({
     queryKey: accountKeys.pagedList(tenant, page.number, page.size),
-    queryFn: () => accountsService.getAccountsPage(page, { ...options, useCache: false }),
+    queryFn: () =>
+      accountsService.getAccountsPage(page, { ...options, useCache: false }),
     enabled: !!tenant?.id,
     placeholderData: keepPreviousData,
     gcTime: 5 * 60 * 1000,
@@ -76,11 +95,12 @@ export function useAccountsPage(
 export function useAccount(
   tenant: Tenant,
   id: string,
-  options?: ServiceOptions
+  options?: ServiceOptions,
 ): UseQueryResult<Account, Error> {
   return useQuery({
     queryKey: accountKeys.detail(tenant, id),
-    queryFn: () => accountsService.getAccountById( id, { ...options, useCache: false }),
+    queryFn: () =>
+      accountsService.getAccountById(id, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!id,
     gcTime: 5 * 60 * 1000,
   });
@@ -92,11 +112,12 @@ export function useAccount(
 export function useAccountExists(
   tenant: Tenant,
   id: string,
-  options?: ServiceOptions
+  options?: ServiceOptions,
 ): UseQueryResult<boolean, Error> {
   return useQuery({
-    queryKey: [...accountKeys.detail(tenant, id), 'exists'],
-    queryFn: () => accountsService.accountExists(id, { ...options, useCache: false }),
+    queryKey: [...accountKeys.detail(tenant, id), "exists"],
+    queryFn: () =>
+      accountsService.accountExists(id, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!id,
     gcTime: 2 * 60 * 1000,
   });
@@ -108,11 +129,15 @@ export function useAccountExists(
 export function useAccountSearch(
   tenant: Tenant,
   namePattern: string,
-  options?: ServiceOptions
+  options?: ServiceOptions,
 ): UseQueryResult<Account[], Error> {
   return useQuery({
     queryKey: accountKeys.search(tenant, namePattern),
-    queryFn: () => accountsService.searchAccountsByName(namePattern, { ...options, useCache: false }),
+    queryFn: () =>
+      accountsService.searchAccountsByName(namePattern, {
+        ...options,
+        useCache: false,
+      }),
     enabled: !!tenant?.id && !!namePattern && namePattern.length > 0,
     gcTime: 3 * 60 * 1000,
   });
@@ -123,11 +148,12 @@ export function useAccountSearch(
  */
 export function useLoggedInAccounts(
   tenant: Tenant,
-  options?: ServiceOptions
+  options?: ServiceOptions,
 ): UseQueryResult<Account[], Error> {
   return useQuery({
     queryKey: accountKeys.loggedIn(tenant),
-    queryFn: () => accountsService.getLoggedInAccounts({ ...options, useCache: false }),
+    queryFn: () =>
+      accountsService.getLoggedInAccounts({ ...options, useCache: false }),
     enabled: !!tenant?.id,
     gcTime: 2 * 60 * 1000,
     refetchInterval: 60 * 1000, // Auto-refresh every minute
@@ -139,16 +165,20 @@ export function useLoggedInAccounts(
  */
 export function useAccountStats(
   tenant: Tenant,
-  options?: ServiceOptions
-): UseQueryResult<{
-  total: number;
-  loggedIn: number;
-  totalCharacterSlots: number;
-  averageCharacterSlots: number;
-}, Error> {
+  options?: ServiceOptions,
+): UseQueryResult<
+  {
+    total: number;
+    loggedIn: number;
+    totalCharacterSlots: number;
+    averageCharacterSlots: number;
+  },
+  Error
+> {
   return useQuery({
     queryKey: accountKeys.stats(tenant),
-    queryFn: () => accountsService.getAccountStats({ ...options, useCache: false }),
+    queryFn: () =>
+      accountsService.getAccountStats({ ...options, useCache: false }),
     enabled: !!tenant?.id,
     gcTime: 5 * 60 * 1000,
   });
@@ -169,15 +199,19 @@ export function useTerminateAccountSession(): UseMutationResult<
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ accountId, options }) => 
-      accountsService.terminateAccountSession( accountId, options),
+    mutationFn: ({ accountId, options }) =>
+      accountsService.terminateAccountSession(accountId, options),
     onMutate: async ({ tenant, accountId }) => {
       // Cancel any outgoing refetches for this account
-      await queryClient.cancelQueries({ queryKey: accountKeys.detail(tenant, accountId) });
-      
+      await queryClient.cancelQueries({
+        queryKey: accountKeys.detail(tenant, accountId),
+      });
+
       // Snapshot the previous account data
-      const previousAccount = queryClient.getQueryData<Account>(accountKeys.detail(tenant, accountId));
-      
+      const previousAccount = queryClient.getQueryData<Account>(
+        accountKeys.detail(tenant, accountId),
+      );
+
       // Optimistically update the account to show as logged out
       if (previousAccount) {
         const optimisticAccount: Account = {
@@ -187,21 +221,29 @@ export function useTerminateAccountSession(): UseMutationResult<
             loggedIn: 0,
           },
         };
-        queryClient.setQueryData(accountKeys.detail(tenant, accountId), optimisticAccount);
+        queryClient.setQueryData(
+          accountKeys.detail(tenant, accountId),
+          optimisticAccount,
+        );
       }
-      
+
       return { previousAccount };
     },
     onError: (error, { tenant, accountId }, context) => {
       // Revert optimistic update on error
       if (context?.previousAccount) {
-        queryClient.setQueryData(accountKeys.detail(tenant, accountId), context.previousAccount);
+        queryClient.setQueryData(
+          accountKeys.detail(tenant, accountId),
+          context.previousAccount,
+        );
       }
-      console.error('Failed to terminate account session:', error);
+      console.error("Failed to terminate account session:", error);
     },
     onSettled: (_data, _error, { tenant, accountId }) => {
       // Invalidate and refetch relevant queries
-      queryClient.invalidateQueries({ queryKey: accountKeys.detail(tenant, accountId) });
+      queryClient.invalidateQueries({
+        queryKey: accountKeys.detail(tenant, accountId),
+      });
       queryClient.invalidateQueries({ queryKey: accountKeys.loggedIn(tenant) });
       queryClient.invalidateQueries({ queryKey: accountKeys.stats(tenant) });
       queryClient.invalidateQueries({ queryKey: accountKeys.lists() });
@@ -224,20 +266,24 @@ export function useTerminateMultipleSessions(): UseMutationResult<
       accountsService.terminateMultipleSessions(accountIds, options),
     onMutate: async ({ tenant, accountIds }) => {
       // Cancel outgoing refetches for affected accounts
-      const cancelPromises = accountIds.map(accountId =>
-        queryClient.cancelQueries({ queryKey: accountKeys.detail(tenant, accountId) })
+      const cancelPromises = accountIds.map((accountId) =>
+        queryClient.cancelQueries({
+          queryKey: accountKeys.detail(tenant, accountId),
+        }),
       );
       await Promise.all(cancelPromises);
-      
+
       // Snapshot previous account data
       const previousAccounts = new Map<string, Account>();
-      
+
       // Optimistically update all accounts to show as logged out
-      accountIds.forEach(accountId => {
-        const previousAccount = queryClient.getQueryData<Account>(accountKeys.detail(tenant, accountId));
+      accountIds.forEach((accountId) => {
+        const previousAccount = queryClient.getQueryData<Account>(
+          accountKeys.detail(tenant, accountId),
+        );
         if (previousAccount) {
           previousAccounts.set(accountId, previousAccount);
-          
+
           const optimisticAccount: Account = {
             ...previousAccount,
             attributes: {
@@ -245,28 +291,36 @@ export function useTerminateMultipleSessions(): UseMutationResult<
               loggedIn: 0,
             },
           };
-          queryClient.setQueryData(accountKeys.detail(tenant, accountId), optimisticAccount);
+          queryClient.setQueryData(
+            accountKeys.detail(tenant, accountId),
+            optimisticAccount,
+          );
         }
       });
-      
+
       return { previousAccounts };
     },
     onError: (error, { tenant, accountIds }, context) => {
       // Revert optimistic updates on error
       if (context?.previousAccounts) {
-        accountIds.forEach(accountId => {
+        accountIds.forEach((accountId) => {
           const previousAccount = context.previousAccounts.get(accountId);
           if (previousAccount) {
-            queryClient.setQueryData(accountKeys.detail(tenant, accountId), previousAccount);
+            queryClient.setQueryData(
+              accountKeys.detail(tenant, accountId),
+              previousAccount,
+            );
           }
         });
       }
-      console.error('Failed to terminate multiple account sessions:', error);
+      console.error("Failed to terminate multiple account sessions:", error);
     },
     onSettled: (_data, _error, { tenant, accountIds }) => {
       // Invalidate and refetch relevant queries
-      accountIds.forEach(accountId => {
-        queryClient.invalidateQueries({ queryKey: accountKeys.detail(tenant, accountId) });
+      accountIds.forEach((accountId) => {
+        queryClient.invalidateQueries({
+          queryKey: accountKeys.detail(tenant, accountId),
+        });
       });
       queryClient.invalidateQueries({ queryKey: accountKeys.loggedIn(tenant) });
       queryClient.invalidateQueries({ queryKey: accountKeys.stats(tenant) });
@@ -284,48 +338,55 @@ export function useTerminateMultipleSessions(): UseMutationResult<
  */
 export function useInvalidateAccounts() {
   const queryClient = useQueryClient();
-  
+
   return {
     /**
      * Invalidate all account queries
      */
-    invalidateAll: () => queryClient.invalidateQueries({ queryKey: accountKeys.all }),
-    
+    invalidateAll: () =>
+      queryClient.invalidateQueries({ queryKey: accountKeys.all }),
+
     /**
      * Invalidate all account lists for a tenant
      */
-    invalidateLists: () => 
+    invalidateLists: () =>
       queryClient.invalidateQueries({ queryKey: accountKeys.lists() }),
-    
+
     /**
      * Invalidate specific account list for a tenant
      */
     invalidateList: (tenant: Tenant, options?: AccountQueryOptions) =>
-      queryClient.invalidateQueries({ queryKey: accountKeys.list(tenant, options) }),
-    
+      queryClient.invalidateQueries({
+        queryKey: accountKeys.list(tenant, options),
+      }),
+
     /**
      * Invalidate specific account details
      */
     invalidateAccount: (tenant: Tenant, id: string) =>
-      queryClient.invalidateQueries({ queryKey: accountKeys.detail(tenant, id) }),
-    
+      queryClient.invalidateQueries({
+        queryKey: accountKeys.detail(tenant, id),
+      }),
+
     /**
      * Invalidate logged-in accounts for a tenant
      */
     invalidateLoggedIn: (tenant: Tenant) =>
       queryClient.invalidateQueries({ queryKey: accountKeys.loggedIn(tenant) }),
-    
+
     /**
      * Invalidate account statistics for a tenant
      */
     invalidateStats: (tenant: Tenant) =>
       queryClient.invalidateQueries({ queryKey: accountKeys.stats(tenant) }),
-    
+
     /**
      * Invalidate all account-related queries for a specific tenant
      */
     invalidateAllForTenant: (tenant: Tenant) => {
-      queryClient.invalidateQueries({ queryKey: [...accountKeys.all, tenant.id] });
+      queryClient.invalidateQueries({
+        queryKey: [...accountKeys.all, tenant.id],
+      });
     },
   };
 }
@@ -335,7 +396,7 @@ export function useInvalidateAccounts() {
  */
 export function usePrefetchAccounts() {
   const queryClient = useQueryClient();
-  
+
   return {
     /**
      * Prefetch all accounts for a tenant
@@ -343,18 +404,18 @@ export function usePrefetchAccounts() {
     prefetchAccounts: (tenant: Tenant, options?: AccountQueryOptions) =>
       queryClient.prefetchQuery({
         queryKey: accountKeys.list(tenant, options),
-        queryFn: () => accountsService.getAllAccounts( options),
-          }),
-    
+        queryFn: () => accountsService.getAllAccounts(options),
+      }),
+
     /**
      * Prefetch specific account
      */
     prefetchAccount: (tenant: Tenant, id: string, options?: ServiceOptions) =>
       queryClient.prefetchQuery({
         queryKey: accountKeys.detail(tenant, id),
-        queryFn: () => accountsService.getAccountById( id, options),
-          }),
-    
+        queryFn: () => accountsService.getAccountById(id, options),
+      }),
+
     /**
      * Prefetch logged-in accounts
      */
@@ -363,7 +424,7 @@ export function usePrefetchAccounts() {
         queryKey: accountKeys.loggedIn(tenant),
         queryFn: () => accountsService.getLoggedInAccounts(options),
       }),
-    
+
     /**
      * Prefetch account statistics
      */
@@ -371,7 +432,7 @@ export function usePrefetchAccounts() {
       queryClient.prefetchQuery({
         queryKey: accountKeys.stats(tenant),
         queryFn: () => accountsService.getAccountStats(options),
-          }),
+      }),
   };
 }
 

@@ -27,11 +27,12 @@ import (
 	"atlas-consumables/pet"
 	"context"
 	"errors"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
-	"github.com/Chronicle20/atlas/libs/atlas-rest/degrade"
 	"math"
 	"math/rand"
 	"time"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/degrade"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"

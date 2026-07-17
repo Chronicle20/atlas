@@ -3,6 +3,7 @@ package monster
 import (
 	monster2 "atlas-channel/kafka/message/monster"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"

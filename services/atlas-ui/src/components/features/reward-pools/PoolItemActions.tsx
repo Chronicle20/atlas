@@ -24,7 +24,10 @@ export function PoolItemActions({ onEdit, onDelete }: PoolItemActionsProps) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={onEdit}>Edit</DropdownMenuItem>
-        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={onDelete}>
+        <DropdownMenuItem
+          className="text-destructive focus:text-destructive"
+          onClick={onDelete}
+        >
           Delete
         </DropdownMenuItem>
       </DropdownMenuContent>

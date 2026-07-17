@@ -31,4 +31,3 @@ type MesoModel struct {
 func (m MesoModel) Id() uuid.UUID       { return m.id }
 func (m MesoModel) CharacterId() uint32 { return m.characterId }
 func (m MesoModel) Amount() uint32      { return m.amount }
-

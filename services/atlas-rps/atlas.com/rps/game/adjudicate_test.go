@@ -1,9 +1,8 @@
 package game_test
 
 import (
-	"testing"
-
 	"atlas-rps/game"
+	"testing"
 )
 
 func TestAdjudicateAllCombinations(t *testing.T) {

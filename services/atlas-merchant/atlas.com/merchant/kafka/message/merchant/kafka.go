@@ -3,32 +3,33 @@ package merchant
 import (
 	"atlas-merchant/kafka/message/asset"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
 	EnvCommandTopic = "COMMAND_TOPIC_MERCHANT"
 
-	CommandPlaceShop        = "PLACE_SHOP"
-	CommandOpenShop         = "OPEN_SHOP"
-	CommandCloseShop        = "CLOSE_SHOP"
-	CommandEnterMaintenance = "ENTER_MAINTENANCE"
-	CommandExitMaintenance  = "EXIT_MAINTENANCE"
-	CommandAddListing       = "ADD_LISTING"
-	CommandRemoveListing    = "REMOVE_LISTING"
-	CommandUpdateListing    = "UPDATE_LISTING"
-	CommandPurchaseBundle   = "PURCHASE_BUNDLE"
-	CommandEnterShop        = "ENTER_SHOP"
-	CommandExitShop         = "EXIT_SHOP"
-	CommandSendMessage      = "SEND_MESSAGE"
+	CommandPlaceShop         = "PLACE_SHOP"
+	CommandOpenShop          = "OPEN_SHOP"
+	CommandCloseShop         = "CLOSE_SHOP"
+	CommandEnterMaintenance  = "ENTER_MAINTENANCE"
+	CommandExitMaintenance   = "EXIT_MAINTENANCE"
+	CommandAddListing        = "ADD_LISTING"
+	CommandRemoveListing     = "REMOVE_LISTING"
+	CommandUpdateListing     = "UPDATE_LISTING"
+	CommandPurchaseBundle    = "PURCHASE_BUNDLE"
+	CommandEnterShop         = "ENTER_SHOP"
+	CommandExitShop          = "EXIT_SHOP"
+	CommandSendMessage       = "SEND_MESSAGE"
 	CommandRetrieveFrederick = "RETRIEVE_FREDERICK"
-	CommandRecordItemSearch = "RECORD_ITEM_SEARCH"
-	CommandWithdrawMeso     = "WITHDRAW_MESO"
-	CommandOrganizeListings = "ORGANIZE_LISTINGS"
-	CommandAddBlacklist     = "ADD_BLACKLIST"
-	CommandRemoveBlacklist  = "REMOVE_BLACKLIST"
+	CommandRecordItemSearch  = "RECORD_ITEM_SEARCH"
+	CommandWithdrawMeso      = "WITHDRAW_MESO"
+	CommandOrganizeListings  = "ORGANIZE_LISTINGS"
+	CommandAddBlacklist      = "ADD_BLACKLIST"
+	CommandRemoveBlacklist   = "REMOVE_BLACKLIST"
 )
 
 type Command[E any] struct {
@@ -99,7 +100,7 @@ type CommandPurchaseBundleBody struct {
 
 type CommandEnterShopBody struct {
 	VisitorName string `json:"visitorName"`
-	ShopId string `json:"shopId"`
+	ShopId      string `json:"shopId"`
 }
 
 type CommandExitShopBody struct {
@@ -111,8 +112,7 @@ type CommandSendMessageBody struct {
 	Content string `json:"content"`
 }
 
-type CommandRetrieveFrederickBody struct {
-}
+type CommandRetrieveFrederickBody struct{}
 
 type CommandRecordItemSearchBody struct {
 	ItemId uint32 `json:"itemId"`
@@ -138,22 +138,22 @@ type CommandBlacklistBody struct {
 const (
 	EnvStatusEventTopic = "EVENT_TOPIC_MERCHANT_STATUS"
 
-	StatusEventShopOpened          = "SHOP_OPENED"
-	StatusEventShopSetup           = "SHOP_SETUP"
-	StatusEventShopClosed          = "SHOP_CLOSED"
-	StatusEventMaintenanceEntered  = "MAINTENANCE_ENTERED"
-	StatusEventMaintenanceExited   = "MAINTENANCE_EXITED"
-	StatusEventVisitorEntered      = "VISITOR_ENTERED"
-	StatusEventVisitorExited       = "VISITOR_EXITED"
-	StatusEventVisitorEjected      = "VISITOR_EJECTED"
-	StatusEventCapacityFull        = "CAPACITY_FULL"
-	StatusEventPurchaseFailed          = "PURCHASE_FAILED"
-	StatusEventFrederickNotification   = "FREDERICK_NOTIFICATION"
-	StatusEventMessageSent             = "MESSAGE_SENT"
-	StatusEventShopCreateFailed        = "SHOP_CREATE_FAILED"
-	StatusEventShopUpdated             = "SHOP_UPDATED"
-	StatusEventEnterFailed             = "ENTER_FAILED"
-	StatusEventBlacklistUpdated        = "BLACKLIST_UPDATED"
+	StatusEventShopOpened            = "SHOP_OPENED"
+	StatusEventShopSetup             = "SHOP_SETUP"
+	StatusEventShopClosed            = "SHOP_CLOSED"
+	StatusEventMaintenanceEntered    = "MAINTENANCE_ENTERED"
+	StatusEventMaintenanceExited     = "MAINTENANCE_EXITED"
+	StatusEventVisitorEntered        = "VISITOR_ENTERED"
+	StatusEventVisitorExited         = "VISITOR_EXITED"
+	StatusEventVisitorEjected        = "VISITOR_EJECTED"
+	StatusEventCapacityFull          = "CAPACITY_FULL"
+	StatusEventPurchaseFailed        = "PURCHASE_FAILED"
+	StatusEventFrederickNotification = "FREDERICK_NOTIFICATION"
+	StatusEventMessageSent           = "MESSAGE_SENT"
+	StatusEventShopCreateFailed      = "SHOP_CREATE_FAILED"
+	StatusEventShopUpdated           = "SHOP_UPDATED"
+	StatusEventEnterFailed           = "ENTER_FAILED"
+	StatusEventBlacklistUpdated      = "BLACKLIST_UPDATED"
 )
 
 // Reasons carried by StatusEventEnterFailedBody -> mapped to enter-error modes.

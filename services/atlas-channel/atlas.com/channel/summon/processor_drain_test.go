@@ -1,6 +1,7 @@
 package summon_test
 
 import (
+	"atlas-channel/summon"
 	"context"
 	"fmt"
 	"net/http"
@@ -9,15 +10,14 @@ import (
 	"strings"
 	"testing"
 
-	"atlas-channel/summon"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus/hooks/test"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	mapconst "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus/hooks/test"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // summonsDoc renders a JSON:API "summons" document for summon ids

@@ -3,10 +3,11 @@ package asset
 import (
 	"time"
 
+	"github.com/google/uuid"
+
 	af "github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
-	"github.com/google/uuid"
 )
 
 type Model struct {

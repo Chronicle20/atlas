@@ -4,9 +4,10 @@ import (
 	"atlas-monster-death/data/equipment/statistics"
 	"atlas-monster-death/monster/drop/position"
 	"context"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"math"
 	"math/rand"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"
 

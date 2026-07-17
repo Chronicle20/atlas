@@ -3,6 +3,7 @@ package session
 import (
 	session2 "atlas-channel/kafka/message/account/session"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/google/uuid"

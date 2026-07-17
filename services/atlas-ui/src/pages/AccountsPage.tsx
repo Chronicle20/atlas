@@ -21,9 +21,15 @@ const PAGE_SIZE = 50;
 export function AccountsPage() {
   const { activeTenant } = useTenant();
   const [searchParams, setSearchParams] = useSearchParams();
-  const pageNumber = Math.max(1, Number.parseInt(searchParams.get("page") ?? "1", 10) || 1);
+  const pageNumber = Math.max(
+    1,
+    Number.parseInt(searchParams.get("page") ?? "1", 10) || 1,
+  );
 
-  const accountsQuery = useAccountsPage(activeTenant, { number: pageNumber, size: PAGE_SIZE });
+  const accountsQuery = useAccountsPage(activeTenant, {
+    number: pageNumber,
+    size: PAGE_SIZE,
+  });
   const { isRefreshing, onRefresh } = useGridRefresh([accountsQuery]);
 
   const accounts = accountsQuery.data?.data ?? [];
@@ -38,7 +44,9 @@ export function AccountsPage() {
     setSearchParams(next, { replace: false });
   };
 
-  const [banStatuses, setBanStatuses] = useState<Map<string, CheckBanAttributes>>(new Map());
+  const [banStatuses, setBanStatuses] = useState<
+    Map<string, CheckBanAttributes>
+  >(new Map());
   const [banStatusLoading, setBanStatusLoading] = useState(false);
   const [createBanDialogOpen, setCreateBanDialogOpen] = useState(false);
   const [deleteBanDialogOpen, setDeleteBanDialogOpen] = useState(false);
@@ -61,14 +69,19 @@ export function AccountsPage() {
         const batch = accountList.slice(i, i + concurrency);
         const results = await Promise.allSettled(
           batch.map(async (account) => {
-            const result = await bansService.checkBan({ accountId: Number(account.id) });
+            const result = await bansService.checkBan({
+              accountId: Number(account.id),
+            });
             return { accountId: account.id, result };
-          })
+          }),
         );
 
         for (const result of results) {
           if (result.status === "fulfilled") {
-            statuses.set(result.value.accountId, result.value.result.attributes);
+            statuses.set(
+              result.value.accountId,
+              result.value.result.attributes,
+            );
           }
         }
       }
@@ -76,7 +89,7 @@ export function AccountsPage() {
       setBanStatuses(statuses);
       setBanStatusLoading(false);
     },
-    [activeTenant]
+    [activeTenant],
   );
 
   useEffect(() => {
@@ -95,7 +108,7 @@ export function AccountsPage() {
 
     try {
       const bans = await bansService.getBansByType(BanType.Account);
-      const matchingBan = bans.find(b => b.attributes.value === account.id);
+      const matchingBan = bans.find((b) => b.attributes.value === account.id);
 
       if (matchingBan) {
         setBanToDelete(matchingBan);
@@ -104,7 +117,10 @@ export function AccountsPage() {
         toast.error("Could not find an active ban for this account");
       }
     } catch (err: unknown) {
-      toast.error("Failed to look up ban: " + (err instanceof Error ? err.message : "Unknown error"));
+      toast.error(
+        "Failed to look up ban: " +
+          (err instanceof Error ? err.message : "Unknown error"),
+      );
     }
   };
 
@@ -170,10 +186,14 @@ export function AccountsPage() {
         onOpenChange={setCreateBanDialogOpen}
         tenant={activeTenant}
         onSuccess={handleBanCreated}
-        prefill={selectedAccount ? {
-          banType: BanType.Account,
-          value: selectedAccount.id,
-        } : undefined}
+        prefill={
+          selectedAccount
+            ? {
+                banType: BanType.Account,
+                value: selectedAccount.id,
+              }
+            : undefined
+        }
       />
 
       <DeleteBanDialog

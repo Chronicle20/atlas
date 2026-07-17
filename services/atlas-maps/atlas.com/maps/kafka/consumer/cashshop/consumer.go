@@ -5,6 +5,7 @@ import (
 	cashshopKafka "atlas-maps/kafka/message/cashshop"
 	_map "atlas-maps/map"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/google/uuid"

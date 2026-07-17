@@ -1,10 +1,9 @@
 package game
 
 import (
-	"time"
-
 	"atlas-mini-games/game/omok"
 	"atlas-mini-games/record"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )

@@ -5,6 +5,7 @@ import (
 	"atlas-parties/location"
 	"context"
 	"errors"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"

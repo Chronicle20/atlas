@@ -38,15 +38,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 type Handler interface {
@@ -933,7 +935,6 @@ func (h *HandlerImpl) handleAwardAsset(s Saga, st Step[any]) error {
 	}
 
 	err := h.compP.RequestCreateItem(s.TransactionId(), payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity, payload.Item.Expiration)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to award asset.")
 		return err
@@ -955,7 +956,6 @@ func (h *HandlerImpl) handleWarpToRandomPortal(s Saga, st Step[any]) error {
 	}
 
 	err := h.charP.WarpRandomAndEmit(s.TransactionId(), payload.CharacterId, f)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to warp to random portal.")
 		return err
@@ -983,7 +983,6 @@ func (h *HandlerImpl) handleWarpToPortal(s Saga, st Step[any]) error {
 	}
 
 	err := h.charP.WarpToPortalAndEmit(s.TransactionId(), payload.CharacterId, f, portalProvider)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to warp to specific portal.")
 		return err
@@ -1005,7 +1004,6 @@ func (h *HandlerImpl) handleAwardExperience(s Saga, st Step[any]) error {
 
 	eds := TransformExperienceDistributions(distributions)
 	err := h.charP.AwardExperienceAndEmit(s.TransactionId(), ch, payload.CharacterId, eds, payload.ShowEffect)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to award experience.")
 		return err
@@ -1023,7 +1021,6 @@ func (h *HandlerImpl) handleAwardLevel(s Saga, st Step[any]) error {
 
 	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
 	err := h.charP.AwardLevelAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.Amount)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to award level.")
 		return err
@@ -1041,7 +1038,6 @@ func (h *HandlerImpl) handleAwardMesos(s Saga, st Step[any]) error {
 
 	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
 	err := h.charP.AwardMesosAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.ActorId, payload.ActorType, payload.Amount, payload.ShowEffect)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to award mesos.")
 		return err
@@ -1058,7 +1054,6 @@ func (h *HandlerImpl) handleAwardCurrency(s Saga, st Step[any]) error {
 	}
 
 	err := h.cashshopP.AwardCurrencyAndEmit(s.TransactionId(), payload.AccountId, payload.CurrencyType, payload.Amount)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to award currency.")
 		return err
@@ -1075,7 +1070,6 @@ func (h *HandlerImpl) handleDestroyAsset(s Saga, st Step[any]) error {
 	}
 
 	err := h.compP.RequestDestroyItem(s.TransactionId(), payload.CharacterId, payload.TemplateId, payload.Quantity, payload.RemoveAll)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to destroy asset.")
 		return err
@@ -1142,7 +1136,6 @@ func (h *HandlerImpl) handleDestroyAssetFromSlot(s Saga, st Step[any]) error {
 	}
 
 	err := h.compP.RequestDestroyItemFromSlot(s.TransactionId(), payload.CharacterId, payload.InventoryType, payload.Slot, payload.Quantity)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to destroy asset from slot.")
 		return err
@@ -1159,7 +1152,6 @@ func (h *HandlerImpl) handleEquipAsset(s Saga, st Step[any]) error {
 	}
 
 	err := h.compP.RequestEquipAsset(s.TransactionId(), payload.CharacterId, byte(payload.InventoryType), payload.Source, payload.Destination)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to equip asset.")
 		return err
@@ -1176,7 +1168,6 @@ func (h *HandlerImpl) handleUnequipAsset(s Saga, st Step[any]) error {
 	}
 
 	err := h.compP.RequestUnequipAsset(s.TransactionId(), payload.CharacterId, byte(payload.InventoryType), payload.Source, payload.Destination)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to unequip asset.")
 		return err
@@ -1194,7 +1185,6 @@ func (h *HandlerImpl) handleChangeJob(s Saga, st Step[any]) error {
 
 	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
 	err := h.charP.ChangeJobAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.JobId)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to change job.")
 		return err
@@ -1212,7 +1202,6 @@ func (h *HandlerImpl) handleChangeHair(s Saga, st Step[any]) error {
 
 	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
 	err := h.charP.ChangeHairAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.StyleId)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to change hair.")
 		return err
@@ -1230,7 +1219,6 @@ func (h *HandlerImpl) handleChangeFace(s Saga, st Step[any]) error {
 
 	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
 	err := h.charP.ChangeFaceAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.StyleId)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to change face.")
 		return err
@@ -1248,7 +1236,6 @@ func (h *HandlerImpl) handleChangeSkin(s Saga, st Step[any]) error {
 
 	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
 	err := h.charP.ChangeSkinAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.StyleId)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to change skin.")
 		return err
@@ -1265,7 +1252,6 @@ func (h *HandlerImpl) handleCreateSkill(s Saga, st Step[any]) error {
 	}
 
 	err := h.skillP.RequestCreateAndEmit(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.SkillId, payload.Level, payload.MasterLevel, payload.Expiration)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to create skill.")
 		return err
@@ -1282,7 +1268,6 @@ func (h *HandlerImpl) handleUpdateSkill(s Saga, st Step[any]) error {
 	}
 
 	err := h.skillP.RequestUpdateAndEmit(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.SkillId, payload.Level, payload.MasterLevel, payload.Expiration)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to update skill.")
 		return err
@@ -1298,7 +1283,6 @@ func (h *HandlerImpl) handleIncreaseBuddyCapacity(s Saga, st Step[any]) error {
 	}
 
 	err := h.buddyListP.IncreaseCapacityAndEmit(s.TransactionId(), payload.CharacterId, payload.WorldId, payload.Amount)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to increase buddy capacity.")
 		return err
@@ -1314,7 +1298,6 @@ func (h *HandlerImpl) handleGainCloseness(s Saga, st Step[any]) error {
 	}
 
 	err := h.petP.GainClosenessAndEmit(s.TransactionId(), payload.PetId, payload.Amount)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to gain pet closeness.")
 		return err
@@ -1330,7 +1313,6 @@ func (h *HandlerImpl) handleEvolvePet(s Saga, st Step[any]) error {
 	}
 
 	err := h.petP.EvolveAndEmit(s.TransactionId(), payload.PetId)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to evolve pet.")
 		return err
@@ -1869,7 +1851,6 @@ func (h *HandlerImpl) handleAcceptToStorage(s Saga, st Step[any]) error {
 		payload.TemplateId,
 		payload.AssetData,
 	)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to accept asset to storage.")
 		return err
@@ -1893,7 +1874,6 @@ func (h *HandlerImpl) handleReleaseFromCharacter(s Saga, st Step[any]) error {
 		payload.AssetId,
 		payload.Quantity,
 	)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to release asset from character.")
 		return err
@@ -1920,7 +1900,6 @@ func (h *HandlerImpl) handleAcceptToCharacter(s Saga, st Step[any]) error {
 		payload.TemplateId,
 		payload.AssetData,
 	)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to accept asset to character.")
 		return err
@@ -1945,7 +1924,6 @@ func (h *HandlerImpl) handleReleaseFromStorage(s Saga, st Step[any]) error {
 		asset.Id(payload.AssetId),
 		asset.Quantity(payload.Quantity),
 	)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to release asset from storage.")
 		return err
@@ -1979,7 +1957,6 @@ func (h *HandlerImpl) handleAcceptToCashShop(s Saga, st Step[any]) error {
 		payload.PurchasedBy,
 		payload.Flag,
 	)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to accept asset to cash shop.")
 		return err
@@ -2009,7 +1986,6 @@ func (h *HandlerImpl) handleReleaseFromCashShop(s Saga, st Step[any]) error {
 		payload.CashId,
 		payload.TemplateId,
 	)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to release asset from cash shop.")
 		return err

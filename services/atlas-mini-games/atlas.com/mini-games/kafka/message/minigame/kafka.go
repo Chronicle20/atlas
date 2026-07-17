@@ -1,10 +1,11 @@
 package minigame
 
 import (
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 // Command envelope. Mirrored byte-for-byte by atlas-channel (task-17); struct
@@ -76,8 +77,7 @@ type AnswerCommandBody struct {
 	Accept bool `json:"accept"`
 }
 
-type EmptyCommandBody struct {
-}
+type EmptyCommandBody struct{}
 
 // StatusEvent envelope. Every event populates RoomId/OwnerId/VisitorId;
 // CharacterId is the acting character.
@@ -170,8 +170,7 @@ type ChatEventBody struct {
 	Message string `json:"message"`
 }
 
-type EmptyEventBody struct {
-}
+type EmptyEventBody struct{}
 
 // StartedEventBody Deck is empty for omok.
 type StartedEventBody struct {

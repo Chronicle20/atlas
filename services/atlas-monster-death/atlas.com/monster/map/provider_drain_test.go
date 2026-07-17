@@ -11,13 +11,14 @@ import (
 
 	_map "atlas-monster-death/map"
 
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus/hooks/test"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	mapconst "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus/hooks/test"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // charactersDoc renders a JSON:API "characters" document for character ids

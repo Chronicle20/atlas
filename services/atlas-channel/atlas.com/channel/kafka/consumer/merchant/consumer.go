@@ -171,13 +171,13 @@ func handleShopOpenedEvent(sc server.Model, wp writer.Producer) func(l logrus.Fi
 				// GetByCharacterId(serialNumber) — so the SN must be the owner's
 				// character id, else the visit lookup hits characters/0/merchants
 				// and no one can enter the store (task-127).
-				Id:              e.CharacterId,
-				Title:           e.Body.Title,
-				Spec:            skinSpec,
-				CapacityVal:     4,
-				OwnerId:         e.CharacterId,
-				VisitorCount:    0,
-				VisitorList:     []interactionpkt.MiniRoomVisitor{},
+				Id:           e.CharacterId,
+				Title:        e.Body.Title,
+				Spec:         skinSpec,
+				CapacityVal:  4,
+				OwnerId:      e.CharacterId,
+				VisitorCount: 0,
+				VisitorList:  []interactionpkt.MiniRoomVisitor{},
 			}
 			if err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, session.Announce(l)(ctx)(wp)(interactionpkt.MiniRoomWriter)(mr.Spawn(e.CharacterId))); err != nil {
 				l.WithError(err).Errorf("Unable to spawn personal store [%s] for characters in map [%d] instance [%s].", e.Body.ShopId, e.Body.MapId, e.Body.InstanceId)

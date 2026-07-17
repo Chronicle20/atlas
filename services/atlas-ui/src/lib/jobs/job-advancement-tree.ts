@@ -122,7 +122,13 @@ export const JOB_GRAPH: Record<number, JobEntry> = {
 // Branches that truly existed since launch use floor 1; genuinely later
 // classes (Cygnus/Aran/Evan, the special Brigadier) keep their real floor.
 export const BRANCH_FLOORS: Record<number, number> = {
-  0: 1, 800: 83, 900: 1, 910: 1, 1000: 83, 2000: 80, 2001: 84,
+  0: 1,
+  800: 83,
+  900: 1,
+  910: 1,
+  1000: 83,
+  2000: 80,
+  2001: 84,
 };
 
 // NODE_FLOORS overrides the floor for a subtree that arrived later than its

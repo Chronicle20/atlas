@@ -3,6 +3,7 @@ package shops
 import (
 	shops2 "atlas-channel/kafka/message/npc/shop"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"

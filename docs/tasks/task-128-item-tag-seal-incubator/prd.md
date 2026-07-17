@@ -144,3 +144,54 @@ Follows the established generic-JSONB configuration pattern (`configurations` ta
 - [ ] Asset owner field present in DB, domain, REST, Kafka, and packet encode; existing empty-owner fixtures unaffected.
 - [ ] Live tenant configs patched with the new opcode(s) and channel restarted (or documented as the deploy step).
 - [ ] Full verification suite clean: `go test -race ./...`, `go vet ./...`, `go build ./...`, `docker buildx bake` for touched services, `tools/redis-key-guard.sh`.
+
+---
+
+## 11. Addendum — Incubator/gachapon reconciliation (2026-07-16)
+
+**Why this addendum:** §1 states the incubator is "the precursor to gachapon" and
+§8 seeds its reward pool as a flat `incubator-rewards` tenant-config, rolled inline
+in the channel. Review surfaced that Atlas already has a full `atlas-gachapons` DDD
+service that owns exactly this concern (weighted reward pools + a server-side roll),
+and that the incubator is architecturally the *same mechanic* — so the flat-config
+approach is a redundant second implementation. This addendum extends the task's
+Incubator goal: **the incubator's reward pool and roll are reconciled onto
+`atlas-gachapons`** rather than living as a standalone tenant-config. Full analysis:
+`design-incubator-gachapon-reconciliation.md` (decisions in its §6).
+
+**In scope on this task (behavior-preserving):**
+- `atlas-gachapons`: add a `kind` discriminator (`gachapon | incubator`) to the
+  `gachapon` model, and an optional per-item `weight` to the `item` model. The
+  `reward` roll honors `weight` when set (single-stage weighted = incubator
+  semantics) and falls back to the existing tier roll when unset (gachapon
+  semantics unchanged).
+- Each Pigmy Egg (`4170000–4170009`) is modeled as an `incubator`-kind gachapon
+  keyed by egg id, with `npcIds` = the region's Pigmy & Etran success NPC. The
+  per-egg pools seeded in §8 move into the `atlas-gachapons` seed catalog.
+- `atlas-channel`: the inline incubator roll (`incubator/{rest,roll,requests}.go`,
+  `PickWeighted`) is replaced by a `POST /gachapons/rewards/select?gachaponId=<eggId>`
+  call. The `IncubatorUse` saga and the version-gated `INCUBATOR_RESULT` packet
+  (carrying `gachaponItemID = eggId`) are unchanged.
+- The flat `incubator-rewards` tenant-config resource (`atlas-tenants`) is retired;
+  its atlas-ui admin page folds into the gachapon admin filtered to `kind=incubator`.
+
+**Acceptance criteria (supersede the incubator rows in §10):**
+- [ ] Incubator awards a weighted-random reward sourced from the matching
+      `incubator`-kind gachapon in `atlas-gachapons` (not from `incubator-rewards`);
+      the egg + incubator are consumed; `INCUBATOR_RESULT` shows the correct
+      region NPC on v95 and the flat result on v83/84/87/jms.
+- [ ] Existing (classic) gachapon rolls are unaffected — tier roll unchanged when
+      no per-item `weight` is set; `atlas-gachapons` and `atlas-consumables` test
+      suites stay green.
+- [ ] The `incubator-rewards` tenant-config resource, its channel reader, and its
+      atlas-ui page are removed; the gachapon admin surfaces `incubator`-kind pools.
+- [ ] `go test -race`/`go vet`/`go build` clean and `docker buildx bake` green for
+      every service whose `go.mod` changed (`atlas-gachapons`, `atlas-channel`,
+      `atlas-tenants`), plus atlas-ui build+test.
+
+**Explicitly deferred to a follow-up PR (NOT this task):**
+- Renaming the service/module `atlas-gachapons` → **`atlas-reward-pools`** across
+  the ~14 hand-maintained registration files (services.json, docker-bake, go.work,
+  k8s base + both overlays, db-bootstrap, ingress/routes, compose, seed group/URL).
+- Optionally routing the incubator trigger through `atlas-consumables` to unify both
+  draw paths, and migrating the `gachapon_reward_won` topic / DB names.

@@ -58,31 +58,18 @@ type healDispelDeps struct {
 	announceForeign func(level byte) error
 }
 
-// ratioAmount returns floor(max * ratio) as an int, or 0 for a non-positive ratio.
-func ratioAmount(max uint16, ratio float64) int {
-	if ratio <= 0 {
-		return 0
-	}
-	return int(math.Floor(float64(max) * ratio))
-}
-
-// clampRestore turns a computed restore into the int16 delta to apply, clamped
-// to [0, max-current] (never past the effective cap) and to the int16 ceiling.
-func clampRestore(restore int, current uint16, max uint16) int16 {
-	if restore <= 0 {
+// fullRestoreDelta returns the int16 delta needed to bring current up to max
+// (a full restore), clamped to [0, math.MaxInt16]. A recipient already at or
+// above max yields 0 (no-op, caller skips the change call).
+func fullRestoreDelta(current uint16, max uint16) int16 {
+	if max <= current {
 		return 0
 	}
 	headroom := int(max) - int(current)
-	if headroom <= 0 {
-		return 0
+	if headroom > math.MaxInt16 {
+		headroom = math.MaxInt16
 	}
-	if restore > headroom {
-		restore = headroom
-	}
-	if restore > math.MaxInt16 {
-		restore = math.MaxInt16
-	}
-	return int16(restore)
+	return int16(headroom)
 }
 
 // effectiveMaxOrBase narrows an effective-stats max (uint32) into uint16,
@@ -98,10 +85,13 @@ func effectiveMaxOrBase(effective uint32, base uint16) uint16 {
 	return uint16(effective)
 }
 
-// applyHealDispel is the tested core: gate, select recipients, restore HP/MP,
-// dispel diseases, then broadcast. Per-recipient failures are logged and never
-// abort the others. No experience is ever awarded (GM utility, not combat heal).
-func applyHealDispel(l logrus.FieldLogger, f field.Model, characterId uint32, e effect.Model, d healDispelDeps) error {
+// applyHealDispel is the tested core: gate, select recipients, restore HP/MP
+// to full, dispel diseases, then broadcast. Per-recipient failures are logged
+// and never abort the others. No experience is ever awarded (GM utility, not
+// combat heal). HEAL restores to the recipient's effective max (WZ live data
+// for skill 9101000 has hp=mp=hpR=mpR=0 on every version, so the flat+ratio
+// formula would restore nothing; SuperGM Heal is full-restore by design).
+func applyHealDispel(l logrus.FieldLogger, f field.Model, characterId uint32, d healDispelDeps) error {
 	c, err := d.loadCaster(characterId)
 	if err != nil {
 		l.WithError(err).Errorf("Heal+Dispel: failed to load caster [%d].", characterId)
@@ -127,12 +117,12 @@ func applyHealDispel(l logrus.FieldLogger, f field.Model, characterId uint32, e 
 		maxHp := effectiveMaxOrBase(effMaxHpRaw, r.MaxHp())
 		maxMp := effectiveMaxOrBase(effMaxMpRaw, r.MaxMp())
 
-		if hpDelta := clampRestore(int(e.HP())+ratioAmount(maxHp, e.HpR()), r.Hp(), maxHp); hpDelta > 0 {
+		if hpDelta := fullRestoreDelta(r.Hp(), maxHp); hpDelta > 0 {
 			if err := d.changeHP(f, r.Id(), hpDelta); err != nil {
 				l.WithError(err).Errorf("Heal+Dispel: ChangeHP failed for recipient [%d].", r.Id())
 			}
 		}
-		if mpDelta := clampRestore(int(e.MP())+ratioAmount(maxMp, e.MpR()), r.Mp(), maxMp); mpDelta > 0 {
+		if mpDelta := fullRestoreDelta(r.Mp(), maxMp); mpDelta > 0 {
 			if err := d.changeMP(f, r.Id(), mpDelta); err != nil {
 				l.WithError(err).Errorf("Heal+Dispel: ChangeMP failed for recipient [%d].", r.Id())
 			}
@@ -205,7 +195,7 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 					)
 				},
 			}
-			return applyHealDispel(l, f, characterId, e, d)
+			return applyHealDispel(l, f, characterId, d)
 		}
 	}
 }

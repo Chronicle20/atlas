@@ -295,7 +295,13 @@ func getEffect(skillId skill.Id, overTime bool, node xml.Node) effect.RestModel 
 	} else if skill.Is(skillId, skill.ChiefBanditPickpocketId) {
 		statups = produceBuffStatAmount(statups, character.TemporaryStatTypePickPocket, int32(e.X()))
 	} else if skill.Is(skillId, skill.NightLordShadowStarsId) {
-		statups = produceBuffStatAmount(statups, character.TemporaryStatTypeShadowClaw, 0)
+		// The SHADOW_CLAW placeholder value MUST be nonzero: produceBuffStatAmount
+		// drops the statup entirely when value == 0 (its `if value != 0` guard),
+		// so a literal 0 here means SHADOW_CLAW never reaches atlas-channel at
+		// all. atlas-channel overwrites this placeholder with the client-chosen
+		// throwing-star item id at cast time (rewriteShadowClawStatups); the
+		// value here only needs to survive the guard.
+		statups = produceBuffStatAmount(statups, character.TemporaryStatTypeShadowClaw, 1)
 	} else if skill.Is(skillId, skill.PirateDashId, skill.ThunderBreakerStage1DashId) {
 		// TODO space dash
 		statups = produceBuffStatAmount(statups, character.TemporaryStatTypeDashSpeed, int32(e.X()))

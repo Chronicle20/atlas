@@ -21,7 +21,7 @@ type StarDraw struct {
 // validateShadowStar reports whether starItemId is a throwing-star
 // classification AND present (quantity > 0) in the caster's consumable assets.
 func validateShadowStar(assets []asset.Model, starItemId uint32) bool {
-	if item.GetClassification(item.Id(starItemId)) != item.ClassificationConsumableThrowingStar {
+	if !item.IsThrowingStar(item.Id(starItemId)) {
 		return false
 	}
 	for _, a := range assets {
@@ -65,16 +65,25 @@ func resolveStarConsume(assets []asset.Model, starItemId uint32, count int) (dra
 }
 
 // rewriteShadowClawStatups returns a copy of statups with the SHADOW_CLAW
-// entry's amount set to starItemId. Non-SHADOW_CLAW statups pass through
-// unchanged. Mirrors mount.go's tamedMountStatups for MONSTER_RIDING.
+// entry's amount set to starItemId, preserving any other statups. atlas-data's
+// produceBuffStatAmount drops zero-value statups (its `if value != 0` guard),
+// so the SHADOW_CLAW placeholder never survives the reader for 4121006 — the
+// statups atlas-channel actually receives carry NO SHADOW_CLAW entry. If the
+// entry is absent, one is appended so the star id always reaches the buff.
+// Mirrors mount.go's tamedMountStatups for MONSTER_RIDING.
 func rewriteShadowClawStatups(statups []statup.Model, starItemId uint32) []statup.Model {
-	out := make([]statup.Model, 0, len(statups))
+	out := make([]statup.Model, 0, len(statups)+1)
+	hasClaw := false
 	for _, su := range statups {
 		if su.Mask() == string(charconst.TemporaryStatTypeShadowClaw) {
 			out = append(out, statup.NewModel(su.Mask(), int32(starItemId)))
+			hasClaw = true
 			continue
 		}
 		out = append(out, su)
+	}
+	if !hasClaw {
+		out = append(out, statup.NewModel(string(charconst.TemporaryStatTypeShadowClaw), int32(starItemId)))
 	}
 	return out
 }

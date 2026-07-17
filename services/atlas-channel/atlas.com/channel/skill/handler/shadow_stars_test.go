@@ -95,6 +95,44 @@ func TestRewriteShadowClawStatups(t *testing.T) {
 	}
 }
 
+// TestRewriteShadowClawStatups_AppendsWhenAbsent covers the production
+// shape: atlas-data's produceBuffStatAmount drops a zero-value SHADOW_CLAW
+// statup (its `if value != 0` guard), so the statups reaching the channel
+// for skill 4121006 carry NO SHADOW_CLAW entry at all. rewriteShadowClawStatups
+// must append one carrying the star id rather than silently no-op'ing, or the
+// cast consumes stars while the buff never reaches the client. Mirrors
+// tamedMountStatups' append-if-missing branch in mount.go.
+func TestRewriteShadowClawStatups_AppendsWhenAbsent(t *testing.T) {
+	in := []statup.Model{
+		statup.NewModel(string(charconst.TemporaryStatTypeShadowPartner), 5),
+	}
+	out := rewriteShadowClawStatups(in, starIlbi)
+	var sawClaw, sawPartner bool
+	for _, su := range out {
+		switch su.Mask() {
+		case string(charconst.TemporaryStatTypeShadowClaw):
+			sawClaw = true
+			if su.Amount() != int32(starIlbi) {
+				t.Fatalf("appended SHADOW_CLAW amount = %d, want %d", su.Amount(), starIlbi)
+			}
+		case string(charconst.TemporaryStatTypeShadowPartner):
+			sawPartner = true
+			if su.Amount() != 5 {
+				t.Fatalf("non-SHADOW_CLAW statup mutated: amount = %d, want 5", su.Amount())
+			}
+		}
+	}
+	if !sawClaw {
+		t.Fatalf("expected SHADOW_CLAW to be appended when absent from input; out = %+v", out)
+	}
+	if !sawPartner {
+		t.Fatalf("expected existing statups preserved; out = %+v", out)
+	}
+	if len(out) != 2 {
+		t.Fatalf("len(out) = %d, want 2 (1 preserved + 1 appended)", len(out))
+	}
+}
+
 func TestResolveShadowStarsCast(t *testing.T) {
 	statups := []statup.Model{statup.NewModel(string(charconst.TemporaryStatTypeShadowClaw), 0)}
 
@@ -111,6 +149,39 @@ func TestResolveShadowStarsCast(t *testing.T) {
 	}
 	if len(rewritten) != 1 || rewritten[0].Amount() != int32(starIlbi) {
 		t.Fatalf("rewritten SHADOW_CLAW amount = %+v, want %d", rewritten, starIlbi)
+	}
+	total := 0
+	for _, d := range draws {
+		total += int(d.Quantity)
+	}
+	if total != 200 {
+		t.Fatalf("drawn total = %d, want 200", total)
+	}
+}
+
+// TestResolveShadowStarsCast_NoShadowClawInInput proves the composed path
+// (validate -> consume -> rewrite) still yields a SHADOW_CLAW statup carrying
+// the star id when the input statups (as atlas-data actually produces them
+// for 4121006) lack a SHADOW_CLAW entry entirely.
+func TestResolveShadowStarsCast_NoShadowClawInInput(t *testing.T) {
+	statups := []statup.Model{statup.NewModel(string(charconst.TemporaryStatTypeShadowPartner), 5)}
+	assets := []asset.Model{starAsset(1, starIlbi, 200)}
+
+	rewritten, draws, shortfall, ok := resolveShadowStarsCast(assets, statups, starIlbi, 200)
+	if !ok || shortfall {
+		t.Fatalf("valid star: ok=%v shortfall=%v, want ok=true shortfall=false", ok, shortfall)
+	}
+	var sawClaw bool
+	for _, su := range rewritten {
+		if su.Mask() == string(charconst.TemporaryStatTypeShadowClaw) {
+			sawClaw = true
+			if su.Amount() != int32(starIlbi) {
+				t.Fatalf("SHADOW_CLAW amount = %d, want %d", su.Amount(), starIlbi)
+			}
+		}
+	}
+	if !sawClaw {
+		t.Fatalf("expected SHADOW_CLAW appended to rewritten statups when absent from input; rewritten = %+v", rewritten)
 	}
 	total := 0
 	for _, d := range draws {

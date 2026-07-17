@@ -509,10 +509,14 @@ func (p *ProcessorImpl) submitConsolation(m Model) {
 // frame is needed. Only valid on a StatusEnded (post-loss) session still in
 // the registry (before the player exits or the TTL sweeper reaps it).
 //
-// The fee-deduction saga is submitted best-effort (fire-and-forget, mirroring
-// the payout path): Retry does not pre-check the player's balance or route a
-// FAIL_NOT_ENOUGH_MESO frame on an insufficient-funds failure. A balance-gated
-// retry (with the mode-6 fail frame) is a documented follow-up.
+// The fee is re-charged BEFORE the round restarts and a saga-submit failure
+// BLOCKS the restart (returns the error, leaving the session StatusEnded so a
+// retried Retry re-attempts) - swallowing it would reopen the round without
+// charging, i.e. a free re-roll on a transient blip. This mirrors the Collect
+// payout path. Note this guards the submit path only: an insufficient-funds
+// failure surfaces downstream (the AwardMesos step fails in the orchestrator),
+// not here - a balance pre-check that routes a FAIL_NOT_ENOUGH_MESO (mode 6)
+// frame is a documented follow-up.
 func (p *ProcessorImpl) Retry(mb *message.Buffer, characterId uint32) (Model, error) {
 	m, ok := GetRegistry().Get(p.ctx, characterId)
 	if !ok {
@@ -527,16 +531,17 @@ func (p *ProcessorImpl) Retry(mb *message.Buffer, characterId uint32) (Model, er
 		return Model{}, err
 	}
 
-	// Deferred consolation for the loss the player is retrying from (see
-	// submitConsolation) - the player has now seen the loss screen.
-	p.submitConsolation(m)
-
-	// Re-charge the participation fee (best-effort - see the method doc).
+	// Re-charge the participation fee FIRST; a submit failure blocks the restart
+	// (see the method doc) so the round never reopens uncharged.
 	if ladder.EntryCostMeso > 0 {
 		if serr := p.sagaSubmitter(buildFeeDeductionSaga(m, ladder.EntryCostMeso)); serr != nil {
-			p.l.WithError(serr).Warnf("Unable to submit RPS retry fee deduction for character [%d]; restarting anyway.", characterId)
+			return Model{}, serr
 		}
 	}
+
+	// Deferred consolation for the loss being retried from (best-effort; the
+	// fee is now charged, so the restart proceeds regardless). Rung-0 only.
+	p.submitConsolation(m)
 
 	updated, err := CloneModelBuilder(m).SetRung(0).SetStatus(StatusAwaitingSelect).Build()
 	if err != nil {

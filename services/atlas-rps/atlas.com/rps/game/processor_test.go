@@ -581,10 +581,10 @@ func TestProcessor_Retry_NoSessionReturnsError(t *testing.T) {
 	assert.ErrorIs(t, err, game.ErrSessionNotFound)
 }
 
-// TestProcessor_Retry_RungZeroLoss_AwardsConsolationThenFee verifies a Retry
-// from a first-round (rung 0) loss awards the deferred consolation (+500) then
-// re-charges the entry fee (-1000).
-func TestProcessor_Retry_RungZeroLoss_AwardsConsolationThenFee(t *testing.T) {
+// TestProcessor_Retry_RungZeroLoss_ChargesFeeThenConsolation verifies a Retry
+// from a first-round (rung 0) loss re-charges the entry fee (-1000) FIRST, then
+// awards the deferred consolation (+500).
+func TestProcessor_Retry_RungZeroLoss_ChargesFeeThenConsolation(t *testing.T) {
 	setupRegistryTest(t)
 	ten := setupTestTenant(t)
 	ctx := testCtx(ten)
@@ -605,13 +605,49 @@ func TestProcessor_Retry_RungZeroLoss_AwardsConsolationThenFee(t *testing.T) {
 	_, err = p.Retry(mb, characterId)
 	require.NoError(t, err)
 
-	require.Len(t, captured, 2, "rung-0 retry: consolation then fee")
-	consolation, ok := captured[0].Steps[0].Payload.(sharedsaga.AwardMesosPayload)
+	require.Len(t, captured, 2, "rung-0 retry: fee then consolation")
+	feePayload, ok := captured[0].Steps[0].Payload.(sharedsaga.AwardMesosPayload)
 	require.True(t, ok)
-	assert.Equal(t, int32(500), consolation.Amount, "deferred consolation (positive)")
-	feePayload, ok := captured[1].Steps[0].Payload.(sharedsaga.AwardMesosPayload)
+	assert.Equal(t, int32(-1000), feePayload.Amount, "retry re-charges the full entry fee FIRST")
+	consolation, ok := captured[1].Steps[0].Payload.(sharedsaga.AwardMesosPayload)
 	require.True(t, ok)
-	assert.Equal(t, int32(-1000), feePayload.Amount, "retry re-charges the full entry fee")
+	assert.Equal(t, int32(500), consolation.Amount, "deferred consolation (positive) after the fee")
+}
+
+// TestProcessor_Retry_FeeSubmitFailureBlocksRestart verifies that a
+// fee-deduction saga-submit failure BLOCKS the restart: Retry returns the
+// error, the session is left StatusEnded (so a retried Retry re-attempts), no
+// RoundStarted is buffered, and — critically — the consolation is NOT awarded
+// (it runs only after the fee succeeds), so a failed Retry is not a free
+// re-roll or a double-award.
+func TestProcessor_Retry_FeeSubmitFailureBlocksRestart(t *testing.T) {
+	setupRegistryTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
+	characterId := uint32(1021)
+
+	submitErr := errors.New("kafka unavailable")
+	var calls int
+	// Rung-0 loss (Paper beats Rock), then a saga submitter that always fails.
+	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowPaper), ladderProviderFor(consolationLadder()), erroringSagaSubmitter(submitErr, &calls))
+
+	mb := message.NewBuffer()
+	_, err := p.Start(mb, characterId, testWorldId, testChannelId, testNpcId)
+	require.NoError(t, err)
+	lost, err := p.Select(mb, characterId, game.ThrowRock)
+	require.NoError(t, err)
+	require.Equal(t, game.StatusEnded, lost.Status())
+
+	retryBuf := message.NewBuffer()
+	_, err = p.Retry(retryBuf, characterId)
+	assert.ErrorIs(t, err, submitErr, "a fee-submit failure must propagate, not be swallowed")
+	assert.Equal(t, 1, calls, "only the fee submit is attempted; consolation is not reached")
+
+	// Session unchanged (still the post-loss ended state) and no restart frame.
+	kept, found := game.GetRegistry().Get(ctx, characterId)
+	require.True(t, found, "the session must remain so a retried Retry can re-attempt")
+	assert.Equal(t, game.StatusEnded, kept.Status())
+	assert.Empty(t, retryBuf.GetAll()[rps.EnvEventTopic], "no RoundStarted on a blocked retry")
 }
 
 // TestProcessor_Collect_AfterWinLoss_NoConsolation verifies that Exit after a

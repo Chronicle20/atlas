@@ -17,6 +17,19 @@ unhandled message with op 0x%02X.` (INFO) and silently drops the packet — no
 Kafka command emitted, no clientbound frame sent, no error surfaced to the
 player.
 
+> **Amendment (2026-07-17, round-loop completion).** The `RPSGame` writer's
+> `operations` table gained a **`START_SELECT: 9`** mode (the frame that enables
+> the client's R/P/S buttons). A tenant provisioned before this landed will
+> render the fee-confirm dialog and board but the throw buttons stay disabled
+> after "Start" — the same silent-config-drift symptom. The per-version writer
+> entries in §2 already include `START_SELECT`; a live tenant needs the same
+> one-key add to its stored `RPSGame` writer `operations`
+> (`{ "OPEN": 8, "START_SELECT": 9, "RESULT": 11, "END": 13 }`), then an
+> `atlas-channel` restart. (The serverbound `RPSActionHandle` `operations` table
+> is unchanged — `RETRY: 5` was already present.) The new `rps-rewards` config
+> resource (certificate ladder + `consolationMeso`) is a **separate** PATCH on
+> atlas-tenants — see `reward-ladder.md`.
+
 ---
 
 ## 1. Resource to PATCH
@@ -81,7 +94,7 @@ copied verbatim from the Task 20 seed-template edits (IDA-verified, Tasks
 {
   "opCode": "0x138",
   "writer": "RPSGame",
-  "options": { "operations": { "OPEN": 8, "RESULT": 11, "END": 13 } }
+  "options": { "operations": { "OPEN": 8, "START_SELECT": 9, "RESULT": 11, "END": 13 } }
 }
 ```
 
@@ -101,7 +114,7 @@ copied verbatim from the Task 20 seed-template edits (IDA-verified, Tasks
 {
   "opCode": "0x13F",
   "writer": "RPSGame",
-  "options": { "operations": { "OPEN": 8, "RESULT": 11, "END": 13 } }
+  "options": { "operations": { "OPEN": 8, "START_SELECT": 9, "RESULT": 11, "END": 13 } }
 }
 ```
 
@@ -121,7 +134,7 @@ copied verbatim from the Task 20 seed-template edits (IDA-verified, Tasks
 {
   "opCode": "0x149",
   "writer": "RPSGame",
-  "options": { "operations": { "OPEN": 8, "RESULT": 11, "END": 13 } }
+  "options": { "operations": { "OPEN": 8, "START_SELECT": 9, "RESULT": 11, "END": 13 } }
 }
 ```
 
@@ -141,7 +154,7 @@ copied verbatim from the Task 20 seed-template edits (IDA-verified, Tasks
 {
   "opCode": "0x173",
   "writer": "RPSGame",
-  "options": { "operations": { "OPEN": 8, "RESULT": 11, "END": 13 } }
+  "options": { "operations": { "OPEN": 8, "START_SELECT": 9, "RESULT": 11, "END": 13 } }
 }
 ```
 
@@ -161,7 +174,7 @@ copied verbatim from the Task 20 seed-template edits (IDA-verified, Tasks
 {
   "opCode": "0x151",
   "writer": "RPSGame",
-  "options": { "operations": { "OPEN": 8, "RESULT": 11, "END": 13 } }
+  "options": { "operations": { "OPEN": 8, "START_SELECT": 9, "RESULT": 11, "END": 13 } }
 }
 ```
 

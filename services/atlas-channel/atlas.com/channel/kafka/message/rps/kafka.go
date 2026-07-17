@@ -43,10 +43,11 @@ const (
 	OutcomeTie  = 1
 	OutcomeWin  = 2
 
-	// ReasonCollected/Lost/Quit/Disconnected are the terminal reasons a
-	// GameEnded event can carry.
+	// ReasonCollected/Quit/Disconnected are the terminal reasons a GameEnded
+	// event can carry (a loss no longer emits GameEnded on its own — see
+	// atlas-rps game.Processor.Select). The channel's END frame is bodyless and
+	// reason-agnostic; these mirror the atlas-rps contract for completeness.
 	ReasonCollected    = "collected"
-	ReasonLost         = "lost"
 	ReasonQuit         = "quit"
 	ReasonDisconnected = "disconnected"
 )

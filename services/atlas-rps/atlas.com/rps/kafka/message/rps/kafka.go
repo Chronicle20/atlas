@@ -30,11 +30,12 @@ const (
 	EventTypeRoundResult  = "ROUND_RESULT"
 	EventTypeGameEnded    = "GAME_ENDED"
 
-	// ReasonCollected/Lost/Quit/Disconnected are the terminal reasons a
-	// GameEnded event can carry. GrantedPrize is only populated when
-	// Reason is ReasonCollected.
+	// ReasonCollected/Quit/Disconnected are the terminal reasons a GameEnded
+	// event can carry. GrantedPrize is only populated when Reason is
+	// ReasonCollected. (A loss no longer emits GameEnded on its own — the loss
+	// keeps the session for the player's Exit/Retry, which then emits
+	// ReasonQuit; see game.Processor.Select's OutcomeLose branch.)
 	ReasonCollected    = "collected"
-	ReasonLost         = "lost"
 	ReasonQuit         = "quit"
 	ReasonDisconnected = "disconnected"
 )

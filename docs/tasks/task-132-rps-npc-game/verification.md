@@ -110,36 +110,48 @@ known pre-existing environmental issue, not a task-132 regression:
 `kustomize` (standalone binary, `~/.local/bin/kustomize`) was available; no
 fallback to `kubectl kustomize` was needed.
 
-## Parked follow-ups
+## Round-loop completion (2026-07-17)
 
-These are known, previously-scoped gaps in task-132's delivered feature set.
-None block this verification pass; they are recorded here for visibility per
-the task's own design/plan docs.
+The items below were previously parked; they were completed this session after
+live end-to-end testing in `atlas-pr-933` exposed that the round could not
+actually begin/complete without them. All are wired end-to-end and covered by
+tests (see the round-loop commits `3745d5c`..`b775bc0` + `78b6caf`):
+
+- **START_SELECT (mode 9)** — the serverbound `START(0)`→`BEGIN`
+  command→`ROUND_STARTED` event→clientbound `START_SELECT` frame handshake that
+  enables the client's R/P/S buttons (and re-arms them after `CONTINUE`). Byte-
+  fixtures + a verified matrix cell on all 9 versions (see the packet-audit).
+- **Retry (mode 5) restart-with-fee** — `atlas-channel` now emits a `RETRY`
+  command; `atlas-rps` re-charges the full `entryCostMeso` (blocking — a
+  saga-submit failure aborts the restart, no free re-roll) and reopens a fresh
+  round at rung 0 via `START_SELECT`.
+- **Loss consolation prize** — `consolationMeso` (default 500, matching
+  `SP_3681`) is granted on a **rung-0** loss (never won this game), deferred to
+  the leave action (Exit/Retry) so the meso effect lands after the client
+  renders the loss. A loss at rung ≥ 1 pays nothing. See `reward-ladder.md`.
+- **Reward-ladder item content** — the ladder now ships the 10 streak
+  certificates `4031332`–`4031341` (WZ- and live-verified; see
+  `reward-ladder.md`), replacing the meso-only placeholder.
+- **Fee visibility** — entry and retry fee deductions now set `ShowEffect`.
+
+## Remaining parked follow-ups
+
+None block merge; recorded for visibility.
 
 1. **v92 support** — parked, needs a v92 IDB to verify RPS packet opcodes/body
    layout before it can be implemented. Mirrors the existing
-   `project_v92_mount_food_parked` precedent (task-086 mount-food handler):
-   same class of blocker (no v92 IDB available), same resolution path (unblocks
-   when a v92 IDB exists).
-2. **Retry(5) restart-with-fee** — `atlas-channel` currently log-drops the
-   `OnBtRetry` sub-op case; the "restart the minigame paying the fee again"
-   flow is deferred. In the interim the player re-talks to the NPC to start a
-   fresh round — functionally equivalent from the player's perspective, just
-   not wired to the in-UI retry button.
-3. **Loss consolation prize** — the client's RPS UI shows a "500 meso
-   consolation" string (`SP_3681`) on a loss, but the server does not grant
-   any meso on loss. This is an explicit design default (see `design.md` /
-   `context.md`): only an explicit collect (win) pays out; the client string
-   is cosmetic/decorative in this implementation and not backed by a server
-   grant.
-4. **Reward-ladder item content** — the shipped `rps-rewards` default config
-   is meso-only (no item rewards seeded). Per `reward-ladder.md`, neither an
-   authentic Cosmic reward-ladder source nor an in-environment WZ/atlas-data
-   item-id verification path was available, and CLAUDE.md's "do not ship an
-   unverified item id" rule is binding — so item rewards were intentionally
-   left out of the seed rather than guessed. Operators can add item rewards
-   per tenant via the `rps-rewards` configuration resource (see
-   `live-config-patch.md`).
+   `project_v92_mount_food_parked` precedent (same blocker: no v92 IDB).
+2. **Balance-gated Retry / `FAIL_NOT_ENOUGH_MESO` (mode 6)** — Retry blocks on
+   a fee-saga *submit* failure, but does not pre-check the player's balance or
+   route the client's mode-6 "not enough mesos" frame when the deduction fails
+   *downstream* (insufficient funds). Feature-sized (needs a balance query or a
+   saga-failure feedback loop); the client currently just restarts and the
+   AwardMesos step fails server-side. Deferred.
+3. **Consolation on pure abandonment** — the consolation requires the player to
+   acknowledge the loss (Exit/Retry). A player who loses at rung 0 and simply
+   disconnects/walks away forfeits it: the TTL sweeper (`game/task.go`) is
+   intentionally payout-free (no ladder/saga plumbing) and reaps the session
+   without awarding. Accepted tradeoff, not a silent gap.
 5. **Blocked-pending-IDB versions from Tasks 14/16** — **none.** All 5
    supported tenant versions (v83/v84/v87/v95/jms per the task's version
    matrix) were IDA-verified for the RPS packet family; there is no

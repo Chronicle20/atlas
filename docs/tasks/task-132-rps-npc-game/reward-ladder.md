@@ -1,75 +1,70 @@
 # RPS Reward Ladder — Sourcing & Verification (task-132, Task 26)
 
-## Outcome
+## Outcome (updated 2026-07-17)
 
-**The `rps-rewards` config ships an operator-tunable, meso-only ladder.** No item-reward
-entries are seeded, because neither the authentic Cosmic reward set nor an item-id
-verification path was available in this execution environment, and the project rule
-**"Do not ship an unverified item id"** (CLAUDE.md → Grounding & Honesty) is binding.
+**The `rps-rewards` config ships a 10-rung streak-certificate ladder plus a
+consolation prize.** Rung N (N consecutive wins) grants the "Certificate of
+N-straight Win(s)" item; a first-round loss pays a small meso consolation.
 
 Seeded default (`services/atlas-tenants/configurations/rps-rewards/default.json`):
 
 | rung | itemId | quantity | meso |
 |------|--------|----------|------|
-| entry cost | — | — | 1000 |
-| 1 | 0 (none) | 0 | 2000 |
-| 2 | 0 (none) | 0 | 5000 |
-| 3 | 0 (none) | 0 | 10000 |
+| entry cost | — | — | 1000 (deducted on entry; ShowEffect) |
+| consolation (rung-0 loss only) | — | — | 500 |
+| 1 | 4031332 | 1 | 0 |
+| 2 | 4031333 | 1 | 0 |
+| 3 | 4031334 | 1 | 0 |
+| 4 | 4031335 | 1 | 0 |
+| 5 | 4031336 | 1 | 0 |
+| 6 | 4031337 | 1 | 0 |
+| 7 | 4031338 | 1 | 0 |
+| 8 | 4031339 | 1 | 0 |
+| 9 | 4031340 | 1 | 0 |
+| 10 | 4031341 | 1 | 0 |
 
-`entryCostMeso: 1000` is consistent with the NPC 9000019 conversation seed
-(`deploy/seed/*/npc-conversations/npc/npc-9000019.json`, `rpsAction.entryCostMeso: 1000`)
-and the dialogue text, by convention (design decision D-context #2). The meso escalation
-(2000 / 5000 / 10000 for a 1000 ante) is a **tunable default, explicitly not claimed
-authentic** — operators tune it per tenant via the `rps-rewards` configuration resource
-(PATCH; see `live-config-patch.md`).
+`entryCostMeso: 1000` matches the NPC 9000019 conversation seed
+(`rpsAction.entryCostMeso: 1000`) and the dialogue text. `consolationMeso: 500`
+matches the v83 client string `SP_3681` ("here's 500 mesos as a consolation
+prize"). Operators tune all of these per tenant via the `rps-rewards`
+configuration resource (PATCH — see `live-config-patch.md`).
 
-## Why item rewards were not seeded (verification constraints)
+## Item-id verification (the "no unverified item id" rule is satisfied)
 
-Task 26's brief requires the ladder be **Cosmic-sourced and every item id WZ/atlas-data
-verified**. Both prerequisites were unavailable here:
+The certificate item ids were supplied by the maintainer (external authority)
+and independently verified two ways before shipping — they are **not** invented
+from memory, so CLAUDE.md's Grounding rule is honored:
 
-1. **No Cosmic source in-repo.** There is no Cosmic `9000019.js` (or equivalent RPS reward
-   reference) checked into this repository (`docs/research/`, `docs/`, and the seed trees
-   contain none). The design named Cosmic as the reference but did not vendor it.
-2. **No item-id verification path in-environment.** Verifying an item id requires either
-   local WZ item data or a reachable `atlas-data` item endpoint:
-   - No WZ data files are present at a queryable path (the `libs/atlas-wz` *library* exists,
-     but no bundled/mounted WZ item tables were found to resolve ids against).
-   - No running `atlas-data` instance / `DATA_SERVICE_URL` was configured in this
-     environment to resolve ids at runtime.
-3. **Fetching Cosmic externally would not unblock the constraint.** Even if the Cosmic
-   script were fetched from an external source, its item ids could not be verified against
-   local WZ/atlas-data here — so seeding them would ship **unverified** item ids, which the
-   grounding rule forbids. The blocker is *verification capability*, not merely *sourcing*.
+1. **WZ-verified.** `Item.wz/Etc/0403.img` + `String.wz/Etc.img` resolve
+   `4031332`–`4031341` to real items named **"Certificate of 1-straight Win"**
+   … **"Certificate of 10-straight Wins"** — the ids and their 1:1 mapping to
+   the streak count are correct (`4031331 + N` → N straight wins).
+2. **Live-verified end-to-end.** In the `atlas-pr-933` env a win-streak Collect
+   at rung 6 emitted the payout saga and the asset-status event confirmed the
+   item was actually created in the character's inventory
+   (`templateId:4031337, type:CREATED, quantity:1`) — i.e. the ids resolve in
+   the tenant's atlas-data and `AwardAsset` grants them.
 
-Per the brief's own instruction — *"Any id that does not resolve is dropped or replaced with
-a meso equivalent … Do not ship an unverified item id"* — the ladder is therefore meso-only.
-This is the safe, correct terminal outcome given the environment, not a silently skipped step:
-the config, the codec, the channel writer, the NPC entry saga, and the payout saga all support
-item rewards (`AwardAsset`), so filling the ladder later is a **data-only change** (a config
-PATCH per tenant, or an updated `default.json` re-seed) with no code changes required.
+## Payout wiring
 
-## Follow-up (to replace the meso-only default with verified item rewards)
+- **Win → climb.** Each win advances the rung (the streak). The player may
+  **Collect** (bank the current rung's certificate via the payout saga's
+  `AwardAsset` step) or **Continue** (risk it for the next rung).
+- **Loss at rung 0** (never won this game) → **consolation** `consolationMeso`
+  via an `AwardMesos` step, awarded when the player leaves the loss screen
+  (Exit/Retry), deferred so the meso effect lands after the client renders the
+  loss. A loss at rung ≥ 1 (after a win) pays nothing — the streak was gambled.
+- **Retry** re-charges the full `entryCostMeso` (blocking — a saga-submit
+  failure aborts the restart) and reopens a fresh round at rung 0.
 
-When a Cosmic RPS reward reference **and** an item-id verification path (local WZ item data or
-a reachable `atlas-data`) are both available:
+The config, codec, channel writer, NPC entry saga, and payout saga all support
+both meso and item rewards, so re-tuning the ladder is a **data-only change**
+(a config PATCH per tenant, or an updated `default.json` re-seed).
 
-1. Obtain the authentic Cosmic `9000019` reward set; record the raw ladder here.
-2. For **every** item id, verify it resolves in local WZ / atlas-data. Drop or meso-substitute
-   any id that does not resolve; record each decision.
-3. Write the verified ladder into `default.json` (and PATCH live tenants). Keep `entryCostMeso`
-   consistent with the NPC seed — **if the authentic entry cost differs from 1000, update BOTH
-   the config and all five `npc-9000019.json` seeds** (the dialogue text quotes the cost).
-4. Re-run the atlas-tenants module gate; re-verify the atlas-rps `GetLadder` round-trip.
+## Historical note
 
-This follow-up is recorded in `verification.md` (Task 27) alongside the v92 and Retry parks.
-
-## What was verified
-
-- The meso-only ladder contains **zero item ids** → nothing unverified is shipped.
-- `entryCostMeso` (1000) matches the NPC conversation seed and the dialogue text.
-- The ladder round-trips through `atlas-rps` `configuration.GetLadder` (Task 7/21 contract,
-  array-shaped JSON:API) and resolves via `game.Ladder.PrizeAt` (Task 6) — a rung with
-  `itemId: 0, quantity: 0` yields a meso-only prize, and the payout saga (Task 12) emits an
-  `AwardMesos`-only step (no `AwardAsset`) for such a rung, which is exercised by the
-  atlas-rps meso-only Collect test.
+An earlier revision of this doc shipped a meso-only placeholder ladder
+(2000/5000/10000, `itemId: 0`) because no item-id verification path was
+available in that execution environment. That constraint was lifted once the
+maintainer supplied the certificate ids and both the WZ tables and a live
+atlas-data tenant became reachable for verification (above).

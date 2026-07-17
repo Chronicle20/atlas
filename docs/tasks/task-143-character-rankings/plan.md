@@ -41,7 +41,7 @@
 - Produces: package `ranking` with `Migration(db *gorm.DB) error`, `Entity` (table `character_rankings`), `CycleEntity` (table `ranking_cycles`). Module name `atlas-rankings`.
 - Produces: package `rest` with `HandlerDependency` (`Logger()`, `DB()`, `Context()`), `HandlerContext` (`ServerInformation()`), `GetHandler`, `RegisterHandler(l)(db)(si)(name, handler)`.
 
-- [ ] **Step 1: Create the module skeleton**
+- [x] **Step 1: Create the module skeleton**
 
 Create `services/atlas-rankings/atlas.com/rankings/go.mod`. Copy `services/atlas-fame/atlas.com/fame/go.mod` verbatim, then: change line 1 to `module atlas-rankings`; delete the `github.com/Chronicle20/atlas/libs/atlas-kafka` and `github.com/segmentio/kafka-go` require lines; add to the replace block:
 
@@ -61,7 +61,7 @@ Add to `go.work` `use (…)` block, alphabetically after `./services/atlas-quest
 	./services/atlas-rankings/atlas.com/rankings
 ```
 
-- [ ] **Step 2: Write the failing entity/migration test**
+- [x] **Step 2: Write the failing entity/migration test**
 
 Create `services/atlas-rankings/atlas.com/rankings/ranking/entity_test.go`:
 
@@ -101,12 +101,12 @@ func TestMigrationCreatesTables(t *testing.T) {
 }
 ```
 
-- [ ] **Step 3: Run test to verify it fails**
+- [x] **Step 3: Run test to verify it fails**
 
 Run (from `services/atlas-rankings/atlas.com/rankings`): `go test ./ranking/ -run TestMigrationCreatesTables -v`
 Expected: FAIL — compile error, `Migration` undefined (entity.go does not exist yet).
 
-- [ ] **Step 4: Write entity.go**
+- [x] **Step 4: Write entity.go**
 
 Create `services/atlas-rankings/atlas.com/rankings/ranking/entity.go`:
 
@@ -175,7 +175,7 @@ func (e CycleEntity) TableName() string {
 }
 ```
 
-- [ ] **Step 5: Write main.go**
+- [x] **Step 5: Write main.go**
 
 Create `services/atlas-rankings/atlas.com/rankings/main.go` (route initializer and ticker are wired in Tasks 7–8; `db` is used by `database.SetMigrations` at connect time):
 
@@ -243,7 +243,7 @@ func main() {
 
 (`_ = db` is removed in Task 7 when `ranking.InitResource` consumes it.)
 
-- [ ] **Step 6: Tidy and run tests**
+- [x] **Step 6: Tidy and run tests**
 
 Run from `services/atlas-rankings/atlas.com/rankings`:
 
@@ -256,7 +256,7 @@ go vet ./...
 
 Expected: build clean, `TestMigrationCreatesTables` PASS, vet clean.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add services/atlas-rankings go.work go.work.sum
@@ -276,7 +276,7 @@ git commit -m "feat(task-143): scaffold atlas-rankings service module with ranki
 **Interfaces:**
 - Produces: `Model` with getters `CharacterId() uint32`, `WorldId() world.Id`, `JobCategory() uint16`, `OverallRank() uint32`, `OverallRankMove() int32`, `JobRank() uint32`, `JobRankMove() int32`, `ComputedAt() time.Time`; `NewBuilder() *Builder` with `SetCharacterId/SetWorldId/SetJobCategory/SetOverallRank/SetOverallRankMove/SetJobRank/SetJobRankMove/SetComputedAt` and `Build() Model`; `Make(e Entity) (Model, error)`; `CycleModel` with `LastStartedAt() time.Time`, `LastCompletedAt() *time.Time`, `CharactersRanked() uint32`, `DurationMs() uint32`; `MakeCycle(e CycleEntity) (CycleModel, error)`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `services/atlas-rankings/atlas.com/rankings/ranking/model_test.go`:
 
@@ -327,12 +327,12 @@ func TestMakeFromEntity(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `go test ./ranking/ -run 'TestBuilderRoundTrip|TestMakeFromEntity' -v`
 Expected: FAIL — `NewBuilder`, `Make` undefined.
 
-- [ ] **Step 3: Write model.go and builder.go**
+- [x] **Step 3: Write model.go and builder.go**
 
 Create `services/atlas-rankings/atlas.com/rankings/ranking/model.go`:
 
@@ -453,12 +453,12 @@ func MakeCycle(e CycleEntity) (CycleModel, error) {
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `go test -race ./ranking/ -v`
 Expected: PASS (all three tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-rankings/atlas.com/rankings/ranking
@@ -476,7 +476,7 @@ git commit -m "feat(task-143): ranking domain model and builder"
 **Interfaces:**
 - Produces: `Input{CharacterId uint32; WorldId world.Id; JobId job.Id; Level byte; Experience uint32}`, `Ranked{CharacterId uint32; WorldId world.Id; JobCategory uint16; OverallRank uint32; JobRank uint32}`, `JobCategory(jobId job.Id) uint16`, `Rank(inputs []Input) []Ranked`, `Move(prev uint32, next uint32) int32`. Pure functions, no side effects. Callers (Task 6) filter GM characters BEFORE building `Input`s.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `services/atlas-rankings/atlas.com/rankings/ranking/compute_test.go`:
 
@@ -593,12 +593,12 @@ func TestMove(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `go test ./ranking/ -run 'TestJobCategory|TestRank|TestMove' -v`
 Expected: FAIL — `Input`, `Rank`, `Move`, `JobCategory` undefined.
 
-- [ ] **Step 3: Write compute.go**
+- [x] **Step 3: Write compute.go**
 
 Create `services/atlas-rankings/atlas.com/rankings/ranking/compute.go`:
 
@@ -689,12 +689,12 @@ func Move(prev uint32, next uint32) int32 {
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `go test -race ./ranking/ -v`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-rankings/atlas.com/rankings/ranking
@@ -721,7 +721,7 @@ git commit -m "feat(task-143): pure ranking computation with ordering, job categ
   - `startCycle(db *gorm.DB, tenantId uuid.UUID, startedAt time.Time) error` — upsert on `tenant_id`
   - `completeCycle(db *gorm.DB, tenantId uuid.UUID, completedAt time.Time, charactersRanked uint32, durationMs uint32) error`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `services/atlas-rankings/atlas.com/rankings/ranking/administrator_test.go`:
 
@@ -884,12 +884,12 @@ func TestCycleRows(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `go test ./ranking/ -run 'TestUpsert|TestPrune|TestTenantIsolation|TestCycleRows' -v`
 Expected: FAIL — `upsertBatch`, `pruneBefore`, `byCharacterIdEntityProvider`, `cycleEntityProvider`, `startCycle`, `completeCycle` undefined.
 
-- [ ] **Step 3: Write provider.go**
+- [x] **Step 3: Write provider.go**
 
 Create `services/atlas-rankings/atlas.com/rankings/ranking/provider.go`:
 
@@ -947,7 +947,7 @@ func cycleEntityProvider() database.EntityProvider[CycleEntity] {
 }
 ```
 
-- [ ] **Step 4: Write administrator.go**
+- [x] **Step 4: Write administrator.go**
 
 Create `services/atlas-rankings/atlas.com/rankings/ranking/administrator.go`:
 
@@ -1015,12 +1015,12 @@ func completeCycle(db *gorm.DB, tenantId uuid.UUID, completedAt time.Time, chara
 }
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `go test -race ./ranking/ -v`
 Expected: PASS (all tests so far).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-rankings/atlas.com/rankings/ranking
@@ -1050,7 +1050,7 @@ git commit -m "feat(task-143): ranking DB providers, batch upsert, prune, cycle 
 - Produces: `configuration.GetRecomputeInterval(l, ctx) func(tenantId uuid.UUID) time.Duration` and `configuration.DefaultRecomputeInterval = 60 * time.Minute`.
 - Env: `CHARACTERS_SERVICE_URL` / `TENANTS_SERVICE_URL` with `BASE_SERVICE_URL` fallback via `requests.RootUrl`.
 
-- [ ] **Step 1: Write the failing character-client test (httptest, realistic fixture WITH relationships)**
+- [x] **Step 1: Write the failing character-client test (httptest, realistic fixture WITH relationships)**
 
 The libs/atlas-rest CLAUDE.md requires an httptest-backed test with a `relationships` block — the jsonapi stubs are load-bearing, and FakeClient-style mocks would not catch their absence.
 
@@ -1142,12 +1142,12 @@ func TestGetAllDecodesTrimmedModel(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `go test ./character/ -v`
 Expected: FAIL — package does not exist / `NewProcessor` undefined.
 
-- [ ] **Step 3: Write the character client**
+- [x] **Step 3: Write the character client**
 
 Create `services/atlas-rankings/atlas.com/rankings/character/rest.go`:
 
@@ -1304,16 +1304,16 @@ func (p *ProcessorImpl) GetAll() ([]Model, error) {
 }
 ```
 
-- [ ] **Step 4: Run character test to verify it passes**
+- [x] **Step 4: Run character test to verify it passes**
 
 Run: `go mod tidy && go test -race ./character/ -v`
 Expected: PASS.
 
-- [ ] **Step 5: Write the tenant client (copy atlas-transports precedent)**
+- [x] **Step 5: Write the tenant client (copy atlas-transports precedent)**
 
 Copy these three files verbatim from `services/atlas-transports/atlas.com/transports/tenant/` to `services/atlas-rankings/atlas.com/rankings/tenant/`: `rest.go`, `requests.go`, `processor.go`. They only import libs (`atlas-rest/requests`, `atlas-tenant`, `atlas-model/model`) — no service-local imports, so they are portable unchanged. The package exposes `NewProcessor(l, ctx).GetAll() ([]tenant.Model, error)` against `GET {TENANTS_SERVICE_URL|BASE_SERVICE_URL}tenants`.
 
-- [ ] **Step 6: Write the failing configuration-client test**
+- [x] **Step 6: Write the failing configuration-client test**
 
 Create `services/atlas-rankings/atlas.com/rankings/configuration/requests_test.go`:
 
@@ -1384,12 +1384,12 @@ func TestGetRecomputeIntervalDefaultsOnZero(t *testing.T) {
 }
 ```
 
-- [ ] **Step 7: Run test to verify it fails**
+- [x] **Step 7: Run test to verify it fails**
 
 Run: `go test ./configuration/ -v`
 Expected: FAIL — package does not exist.
 
-- [ ] **Step 8: Write the configuration client**
+- [x] **Step 8: Write the configuration client**
 
 Create `services/atlas-rankings/atlas.com/rankings/configuration/rest.go`:
 
@@ -1476,12 +1476,12 @@ func GetRecomputeInterval(l logrus.FieldLogger, ctx context.Context) func(tenant
 }
 ```
 
-- [ ] **Step 9: Run all module tests**
+- [x] **Step 9: Run all module tests**
 
 Run from module root: `go mod tidy && go test -race ./... && go vet ./... && go build ./...`
 Expected: all PASS/clean.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add services/atlas-rankings/atlas.com/rankings
@@ -1518,7 +1518,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 
 `GetByCharacterId` returns `gorm.ErrRecordNotFound`-wrapped error when absent (Task 7 maps to 404).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `services/atlas-rankings/atlas.com/rankings/ranking/processor_test.go`:
 
@@ -1715,12 +1715,12 @@ func TestIsDue(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `go test ./ranking/ -run 'TestRecompute|TestGetByCharacterIds|TestIsDue' -v`
 Expected: FAIL — `NewProcessor`, `CharacterSupplier` undefined.
 
-- [ ] **Step 3: Write processor.go**
+- [x] **Step 3: Write processor.go**
 
 Create `services/atlas-rankings/atlas.com/rankings/ranking/processor.go`:
 
@@ -1893,12 +1893,12 @@ func (p *ProcessorImpl) Recompute(now time.Time) error {
 
 Note: the job move is computed against the previous job rank regardless of a category change (design §3.4 — "did my displayed number improve").
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `go test -race ./ranking/ -v`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-rankings/atlas.com/rankings/ranking
@@ -1919,7 +1919,7 @@ git commit -m "feat(task-143): ranking processor with recompute cycle, due-check
 - Consumes: Task 6 `Processor.GetByCharacterIds` / `GetByCharacterId`, Task 1 `rest.RegisterHandler`.
 - Produces: `InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer`; JSON:API resource type `rankings`, id = characterId; routes `GET /rankings/characters?ids=…` and `GET /rankings/characters/{characterId}` under base path `/api/`.
 
-- [ ] **Step 1: Write the failing handler tests**
+- [x] **Step 1: Write the failing handler tests**
 
 Create `services/atlas-rankings/atlas.com/rankings/ranking/resource_test.go`:
 
@@ -2046,12 +2046,12 @@ func TestSingleEndpoint(t *testing.T) {
 
 Note: `seedRanking` uses `db.Create` on a context-free handle with an explicit `TenantId` — the create callback only injects the tenant when the field is zero, so this seeds tenant-scoped rows without a context.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `go test ./ranking/ -run 'TestBulkEndpoint|TestSingleEndpoint' -v`
 Expected: FAIL — `InitResource` undefined.
 
-- [ ] **Step 3: Write rest.go**
+- [x] **Step 3: Write rest.go**
 
 Create `services/atlas-rankings/atlas.com/rankings/ranking/rest.go`:
 
@@ -2105,7 +2105,7 @@ func Transform(m Model) (RestModel, error) {
 }
 ```
 
-- [ ] **Step 4: Write resource.go**
+- [x] **Step 4: Write resource.go**
 
 Create `services/atlas-rankings/atlas.com/rankings/ranking/resource.go`:
 
@@ -2228,7 +2228,7 @@ func handleGetRankingForCharacter(d *rest.HandlerDependency, c *rest.HandlerCont
 }
 ```
 
-- [ ] **Step 5: Wire into main.go**
+- [x] **Step 5: Wire into main.go**
 
 In `services/atlas-rankings/atlas.com/rankings/main.go`, delete the `_ = db` line and add the route initializer before `MountReadiness`:
 
@@ -2243,12 +2243,12 @@ In `services/atlas-rankings/atlas.com/rankings/main.go`, delete the `_ = db` lin
 		Run()
 ```
 
-- [ ] **Step 6: Run tests to verify they pass**
+- [x] **Step 6: Run tests to verify they pass**
 
 Run: `go test -race ./... && go vet ./... && go build ./...`
 Expected: PASS/clean.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add services/atlas-rankings/atlas.com/rankings
@@ -2271,11 +2271,11 @@ git commit -m "feat(task-143): rankings JSON:API resource with bulk and single c
 - Produces: `tasks.Register(l, ctx)(t Task)` (Task iface: `Run()`, `SleepTime() time.Duration`); `tasks.NewRecomputeTask(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, interval time.Duration) *RecomputeTask`.
 - Env (parsed by leaderconfig.go): `RANKINGS_LEADER_ELECTION_ENABLED` (default true), `RANKINGS_LEADER_TTL`, `RANKINGS_LEADER_REFRESH`, `RANKINGS_LEADER_BACKOFF`.
 
-- [ ] **Step 1: Copy the ticker registry**
+- [x] **Step 1: Copy the ticker registry**
 
 Copy `services/atlas-monsters/atlas.com/monsters/tasks/task.go` verbatim to `services/atlas-rankings/atlas.com/rankings/tasks/task.go` (package `tasks`; `Task` interface + `Register` — service-agnostic).
 
-- [ ] **Step 2: Write the failing scheduler tests**
+- [x] **Step 2: Write the failing scheduler tests**
 
 Create `services/atlas-rankings/atlas.com/rankings/tasks/recompute_test.go`:
 
@@ -2410,12 +2410,12 @@ func TestRunToleratesTenantEnumerationFailure(t *testing.T) {
 }
 ```
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 Run: `go test ./tasks/ -v`
 Expected: FAIL — `RecomputeTask` undefined.
 
-- [ ] **Step 4: Write recompute.go**
+- [x] **Step 4: Write recompute.go**
 
 Create `services/atlas-rankings/atlas.com/rankings/tasks/recompute.go`:
 
@@ -2499,12 +2499,12 @@ func (t *RecomputeTask) Run() {
 }
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `go test -race ./tasks/ -v`
 Expected: PASS.
 
-- [ ] **Step 6: Add leaderconfig.go and wire main.go**
+- [x] **Step 6: Add leaderconfig.go and wire main.go**
 
 Copy `services/atlas-monsters/atlas.com/monsters/leaderconfig.go` verbatim to `services/atlas-rankings/atlas.com/rankings/leaderconfig.go`, then rename the four env constants:
 
@@ -2622,7 +2622,7 @@ func main() {
 }
 ```
 
-- [ ] **Step 7: Full module verification**
+- [x] **Step 7: Full module verification**
 
 Run from module root:
 
@@ -2635,7 +2635,7 @@ go build ./...
 
 Expected: all clean. (`go mod tidy` now pulls atlas-lock/atlas-redis into requires.)
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add services/atlas-rankings/atlas.com/rankings
@@ -2661,7 +2661,7 @@ git commit -m "feat(task-143): leader-gated per-tenant recompute scheduler"
 - Consumes: the complete Task 1–8 module.
 - Produces: bakeable image target `atlas-rankings`, routable `/api/rankings/*`, deployable manifests.
 
-- [ ] **Step 1: Register the service in services.json and docker-bake.hcl**
+- [x] **Step 1: Register the service in services.json and docker-bake.hcl**
 
 In `.github/config/services.json`, insert after the `atlas-quest` entry (alphabetical: rankings < rates):
 
@@ -2679,7 +2679,7 @@ In `docker-bake.hcl`, inside `go_services = [...]`, insert after `"atlas-quest",
 
 (Both lists are hand-synced — HCL cannot read services.json.)
 
-- [ ] **Step 2: Write the k8s base manifest**
+- [x] **Step 2: Write the k8s base manifest**
 
 Create `deploy/k8s/base/atlas-rankings.yaml`:
 
@@ -2745,7 +2745,7 @@ spec:
 
 Register it in `deploy/k8s/base/kustomization.yaml`: insert `  - atlas-rankings.yaml` between `  - atlas-quest.yaml` and `  - atlas-rates.yaml`.
 
-- [ ] **Step 3: Add DB_NAME suffix overlay patches**
+- [x] **Step 3: Add DB_NAME suffix overlay patches**
 
 In `deploy/k8s/overlays/main/patches/db-name-suffix.yaml`, insert at the alphabetical position (after the `atlas-quest` block, before `atlas-rates`):
 
@@ -2783,7 +2783,7 @@ spec:
               value: "atlas-rankings-PLACEHOLDER_ATLAS_ENV"
 ```
 
-- [ ] **Step 4: Add the ingress route and sync**
+- [x] **Step 4: Add the ingress route and sync**
 
 In `deploy/shared/routes.conf`, insert at the alphabetical position among the simple `/api/*` blocks:
 
@@ -2802,7 +2802,7 @@ Then run:
 
 and stage whatever files it regenerates.
 
-- [ ] **Step 5: Bruno collection**
+- [x] **Step 5: Bruno collection**
 
 Create `services/atlas-rankings/.bruno/bruno.json`:
 
@@ -2863,7 +2863,7 @@ get {
 }
 ```
 
-- [ ] **Step 6: Service README**
+- [x] **Step 6: Service README**
 
 Create `services/atlas-rankings/README.md`:
 
@@ -2927,7 +2927,7 @@ sort. Acceptable at tens of thousands of characters; adopt list-endpoint
 pagination (task-117) as a drop-in improvement if populations outgrow it.
 ```
 
-- [ ] **Step 7: Verify bake and manifests**
+- [x] **Step 7: Verify bake and manifests**
 
 Run from the repo root:
 
@@ -2939,7 +2939,7 @@ kubectl kustomize deploy/k8s/overlays/pr > /dev/null
 
 Expected: image builds cleanly; both overlays render without errors. If bake fails on a missing lib COPY, the shared Dockerfile is missing nothing for this task (no new libs) — re-check services.json/docker-bake entries instead.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add .github/config/services.json docker-bake.hcl deploy services/atlas-rankings/.bruno services/atlas-rankings/README.md
@@ -2964,7 +2964,7 @@ git commit -m "feat(task-143): atlas-rankings deployment scaffolding (bake, k8s,
 - Produces `Processor` additions: `GetRankings(tenantId) (map[string]interface{}, error)`, `RankingsProvider(tenantId) model.Provider[map[string]interface{}]`, `CreateRankings(mb)(tenantId)(rankings) (Model, error)` + `CreateRankingsAndEmit`, `UpdateRankings(mb)(tenantId)(rankings) (Model, error)` + `UpdateRankingsAndEmit`, `DeleteRankings(mb)(tenantId) error` + `DeleteRankingsAndEmit`.
 - Storage: one `configurations` row per tenant with `resource_name = "rankings"`, `resource_data = {"data": {single object}}` (single-object variant of the routes/vessels pattern).
 
-- [ ] **Step 1: Write the failing processor tests**
+- [x] **Step 1: Write the failing processor tests**
 
 Create `services/atlas-tenants/atlas.com/tenants/configuration/rankings_test.go`:
 
@@ -3111,12 +3111,12 @@ func TestRankingsTenantsIsolated(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run (from `services/atlas-tenants/atlas.com/tenants`): `go test ./configuration/ -run TestRankings -v`
 Expected: FAIL — `CreateRankings`, `GetRankings`, etc. undefined.
 
-- [ ] **Step 3: rest.go additions**
+- [x] **Step 3: rest.go additions**
 
 Append to `services/atlas-tenants/atlas.com/tenants/configuration/rest.go` (mirroring the Route equivalents; `uuid` may need adding to imports):
 
@@ -3182,7 +3182,7 @@ func CreateSingleRankingsJsonData(rankings map[string]interface{}) (json.RawMess
 }
 ```
 
-- [ ] **Step 4: kafka.go additions**
+- [x] **Step 4: kafka.go additions**
 
 Append to the `const` block in `services/atlas-tenants/atlas.com/tenants/configuration/kafka.go`:
 
@@ -3208,7 +3208,7 @@ func CreateRankingsStatusEventProvider(tenantId uuid.UUID, eventType string, ran
 }
 ```
 
-- [ ] **Step 5: provider.go addition**
+- [x] **Step 5: provider.go addition**
 
 Append to `services/atlas-tenants/atlas.com/tenants/configuration/provider.go`:
 
@@ -3232,7 +3232,7 @@ func GetRankingsProvider(tenantID uuid.UUID) func(db *gorm.DB) model.Provider[ma
 }
 ```
 
-- [ ] **Step 6: processor.go additions**
+- [x] **Step 6: processor.go additions**
 
 Add to the `Processor` interface (after the vessel block, matching comment style):
 
@@ -3370,7 +3370,7 @@ func (p *ProcessorImpl) RankingsProvider(tenantId uuid.UUID) model.Provider[map[
 
 For `CreateRankingsAndEmit` / `UpdateRankingsAndEmit` / `DeleteRankingsAndEmit`: copy the exact wrapper shape of `CreateRouteAndEmit` / `UpdateRouteAndEmit` / `DeleteRouteAndEmit` from this file (they wrap the buffered variant in `message.Emit(p.p)`), substituting the Rankings methods and dropping the id parameter where the Route version takes one.
 
-- [ ] **Step 7: mock additions (mandatory — tests fail otherwise)**
+- [x] **Step 7: mock additions (mandatory — tests fail otherwise)**
 
 In `services/atlas-tenants/atlas.com/tenants/configuration/mock/processor.go`, add to `ProcessorMock`:
 
@@ -3388,7 +3388,7 @@ In `services/atlas-tenants/atlas.com/tenants/configuration/mock/processor.go`, a
 
 and the eight method implementations following the file's existing nil-check pattern (return the func field's result when set; otherwise zero values / no-op closures, exactly like the Route methods do).
 
-- [ ] **Step 8: resource.go handlers + routes**
+- [x] **Step 8: resource.go handlers + routes**
 
 Append handlers to `services/atlas-tenants/atlas.com/tenants/configuration/resource.go`:
 
@@ -3542,7 +3542,7 @@ In `RegisterRoutes`, add after the instance-route endpoints:
 
 (Declare `registerRankingsInputHandler` alongside the existing `registerVesselInputHandler` declarations at the top of the function instead if that matches the file layout better.)
 
-- [ ] **Step 9: Run tests to verify they pass**
+- [x] **Step 9: Run tests to verify they pass**
 
 Run from `services/atlas-tenants/atlas.com/tenants`:
 
@@ -3554,7 +3554,7 @@ go build ./...
 
 Expected: TestRankings* PASS and the whole existing suite stays green (the mock compile-time check `var _ configuration.Processor = (*ProcessorMock)(nil)` catches any interface mismatch).
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add services/atlas-tenants
@@ -3572,7 +3572,7 @@ git commit -m "feat(task-143): rankings configuration resource in atlas-tenants"
 **Interfaces:**
 - Produces: `Model` fields `rank uint32`, `rankMove int32`, `jobRank uint32`, `jobRankMove int32`; getters `Rank() uint32`, `RankMove() uint32` (two's-complement pass-through of the signed move), `JobRank() uint32`, `JobRankMove() uint32`; Builder setters `SetRank(uint32)`, `SetRankMove(int32)`, `SetJobRank(uint32)`, `SetJobRankMove(int32)`; `ToBuilder()` round-trips all four. The packet writer (`socket/writer/character_list.go:61`) already consumes these getters — no writer change.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `services/atlas-login/atlas.com/login/character/model_rank_test.go`:
 
@@ -3617,12 +3617,12 @@ func TestRankDefaultsToZero(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run (from `services/atlas-login/atlas.com/login`): `go test ./character/ -run TestRank -v`
 Expected: FAIL — `SetRank` undefined.
 
-- [ ] **Step 3: Modify model.go**
+- [x] **Step 3: Modify model.go**
 
 In `services/atlas-login/atlas.com/login/character/model.go`:
 
@@ -3666,12 +3666,12 @@ func (b *Builder) SetJobRank(v uint32) *Builder     { b.jobRank = v; return b }
 func (b *Builder) SetJobRankMove(v int32) *Builder  { b.jobRankMove = v; return b }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `go test -race ./character/ -v`
 Expected: PASS (new tests plus the package's existing suite).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-login/atlas.com/login/character
@@ -3695,7 +3695,7 @@ git commit -m "feat(task-143): real rank fields on login character model"
 - Produces: `ranking.Model` with `CharacterId() uint32`, `Rank() uint32`, `RankMove() int32`, `JobRank() uint32`, `JobRankMove() int32`; `ranking.NewProcessor(l, ctx).GetByCharacterIds(ids []uint32) ([]Model, error)` with a 2s per-call timeout; `character.MergeRankings(cs []Model, rs []ranking.Model) []Model` (exported for tests).
 - Env: `RANKINGS_SERVICE_URL` with `BASE_SERVICE_URL` fallback. Do NOT add either to any configmap.
 
-- [ ] **Step 1: Write the failing decoration tests**
+- [x] **Step 1: Write the failing decoration tests**
 
 Create `services/atlas-login/atlas.com/login/character/processor_rank_test.go`:
 
@@ -3762,12 +3762,12 @@ func TestDecorateRankingsFailsOpen(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `go test ./character/ -run 'TestMergeRankings|TestDecorateRankings' -v`
 Expected: FAIL — package `atlas-login/ranking` missing, `MergeRankings` undefined.
 
-- [ ] **Step 3: Write the ranking client package**
+- [x] **Step 3: Write the ranking client package**
 
 Create `services/atlas-login/atlas.com/login/ranking/rest.go`:
 
@@ -3929,7 +3929,7 @@ func (p *ProcessorImpl) GetByCharacterIds(ids []uint32) ([]Model, error) {
 }
 ```
 
-- [ ] **Step 4: Wire the decoration into character/processor.go**
+- [x] **Step 4: Wire the decoration into character/processor.go**
 
 In `services/atlas-login/atlas.com/login/character/processor.go`:
 
@@ -4016,7 +4016,7 @@ func MergeRankings(cs []Model, rs []ranking.Model) []Model {
 }
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run from `services/atlas-login/atlas.com/login`:
 
@@ -4028,7 +4028,7 @@ go build ./...
 
 Expected: new tests PASS, existing login suite stays green.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-login/atlas.com/login
@@ -4041,7 +4041,7 @@ git commit -m "feat(task-143): login fetches character rankings with fail-open d
 
 **Files:** none new — verification and any fix-ups it forces.
 
-- [ ] **Step 1: Per-module verification**
+- [x] **Step 1: Per-module verification**
 
 Run in each of the three changed modules (`services/atlas-rankings/atlas.com/rankings`, `services/atlas-login/atlas.com/login`, `services/atlas-tenants/atlas.com/tenants`):
 
@@ -4053,7 +4053,7 @@ go build ./...
 
 Expected: all clean.
 
-- [ ] **Step 2: Docker bake**
+- [x] **Step 2: Docker bake**
 
 From the repo root:
 
@@ -4063,7 +4063,7 @@ docker buildx bake atlas-rankings
 
 Expected: builds clean. `go.mod` files of atlas-login/atlas-tenants are only touched if `go mod tidy` changed them — check `git status`; if either module's `go.mod`/`go.sum` changed, also run `docker buildx bake atlas-login atlas-tenants`.
 
-- [ ] **Step 3: Redis key guard + ingress sync check**
+- [x] **Step 3: Redis key guard + ingress sync check**
 
 From the repo root:
 
@@ -4074,7 +4074,7 @@ tools/redis-key-guard.sh
 
 Expected: guard clean (atlas-lock usage is through the lib); sync produces no further diff.
 
-- [ ] **Step 4: Fix anything the sweep surfaced, then commit**
+- [x] **Step 4: Fix anything the sweep surfaced, then commit**
 
 ```bash
 git add -A
@@ -4083,7 +4083,7 @@ git commit -m "chore(task-143): verification sweep fix-ups"
 
 (Skip the commit if the sweep was already clean.)
 
-- [ ] **Step 5: Code review**
+- [x] **Step 5: Code review**
 
 Run `superpowers:requesting-code-review` (dispatches plan-adherence-reviewer + backend-guidelines-reviewer) BEFORE opening any PR. Address findings in `docs/tasks/task-143-character-rankings/audit.md`.
 

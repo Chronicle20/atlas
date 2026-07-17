@@ -487,9 +487,13 @@ type RpsRewardRungRestModel struct {
 
 // RpsRewardRestModel is the JSON:API resource for the rps-rewards configuration
 type RpsRewardRestModel struct {
-	Id            string                   `json:"-"`
-	EntryCostMeso uint32                   `json:"entryCostMeso"`
-	Ladder        []RpsRewardRungRestModel `json:"ladder"`
+	Id string `json:"-"`
+	// EntryCostMeso is the participation fee charged to enter (and to Retry).
+	EntryCostMeso uint32 `json:"entryCostMeso"`
+	// ConsolationMeso is the meso awarded on a loss (the client's "consolation
+	// prize" message). 0 disables the consolation award.
+	ConsolationMeso uint32                   `json:"consolationMeso"`
+	Ladder          []RpsRewardRungRestModel `json:"ladder"`
 }
 
 // GetID returns the resource ID
@@ -520,6 +524,11 @@ func TransformRpsReward(data map[string]interface{}) (RpsRewardRestModel, error)
 	entryCostMeso := uint32(0)
 	if val, ok := attributes["entryCostMeso"].(float64); ok {
 		entryCostMeso = uint32(val)
+	}
+
+	consolationMeso := uint32(0)
+	if val, ok := attributes["consolationMeso"].(float64); ok {
+		consolationMeso = uint32(val)
 	}
 
 	ladder := make([]RpsRewardRungRestModel, 0)
@@ -560,9 +569,10 @@ func TransformRpsReward(data map[string]interface{}) (RpsRewardRestModel, error)
 	}
 
 	return RpsRewardRestModel{
-		Id:            id,
-		EntryCostMeso: entryCostMeso,
-		Ladder:        ladder,
+		Id:              id,
+		EntryCostMeso:   entryCostMeso,
+		ConsolationMeso: consolationMeso,
+		Ladder:          ladder,
 	}, nil
 }
 
@@ -572,8 +582,9 @@ func ExtractRpsReward(r RpsRewardRestModel) (map[string]interface{}, error) {
 		"type": "rps-rewards",
 		"id":   r.Id,
 		"attributes": map[string]interface{}{
-			"entryCostMeso": r.EntryCostMeso,
-			"ladder":        r.Ladder,
+			"entryCostMeso":   r.EntryCostMeso,
+			"consolationMeso": r.ConsolationMeso,
+			"ladder":          r.Ladder,
 		},
 	}, nil
 }

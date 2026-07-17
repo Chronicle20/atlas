@@ -50,6 +50,20 @@ func ContinueCommandProvider(characterId uint32, worldId world.Id, channelId cha
 	return producer.SingleMessageProvider(key, value)
 }
 
+// RetryCommandProvider creates a RETRY command for the rps service - the
+// client clicked "Restart" after a loss to replay (re-charging the entry fee).
+func RetryCommandProvider(characterId uint32, worldId world.Id, channelId channel.Id) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &rps.Command[rps.RetryCommandBody]{
+		CharacterId: characterId,
+		WorldId:     worldId,
+		ChannelId:   channelId,
+		Type:        rps.CommandTypeRetry,
+		Body:        rps.RetryCommandBody{},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 // CollectCommandProvider creates a COLLECT command for the rps service. The
 // rps service treats COLLECT as collect-or-forfeit depending on session
 // status - it is also the command emitted for the client's EXIT sub-op,

@@ -46,6 +46,10 @@ var emitRPSContinueFunc = func(l logrus.FieldLogger, ctx context.Context, charac
 	return rps.NewProcessor(l, ctx).Continue(characterId, worldId, channelId)
 }
 
+var emitRPSRetryFunc = func(l logrus.FieldLogger, ctx context.Context, characterId uint32, worldId world.Id, channelId channel.Id) error {
+	return rps.NewProcessor(l, ctx).Retry(characterId, worldId, channelId)
+}
+
 var emitRPSCollectFunc = func(l logrus.FieldLogger, ctx context.Context, characterId uint32, worldId world.Id, channelId channel.Id) error {
 	return rps.NewProcessor(l, ctx).Collect(characterId, worldId, channelId)
 }
@@ -65,10 +69,10 @@ var emitRPSCollectFunc = func(l logrus.FieldLogger, ctx context.Context, charact
 //	EXIT(4)            -> CommandTypeCollect (the client's only "leave" action;
 //	                      there is no dedicated collect sub-op - atlas-rps's
 //	                      Collect handles collect-or-forfeit by session status)
+//	RETRY(5)           -> CommandTypeRetry (restart after a loss: atlas-rps
+//	                      re-charges the entry fee and reopens a fresh round,
+//	                      re-arming the client via START_SELECT)
 //	UPDATE(2, timeout) -> no-op (TTL sweeper reaps abandoned sessions)
-//	RETRY(5)           -> no-op; parked follow-up (restart-with-fee is
-//	                      unimplemented; see docs/tasks/task-132-rps-npc-game
-//	                      verification notes)
 func RPSActionHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		p := rpssb.Operation{}
@@ -112,8 +116,10 @@ func RPSActionHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Pro
 			return
 		}
 		if isRPSAction(l)(readerOptions, mode, RPSActionModeRetry) {
-			// Retry (restart-with-fee) is a parked follow-up; see docs/tasks/task-132-rps-npc-game verification notes
-			l.Debugf("Character [%d] issued RPS RETRY; parked follow-up, no-op.", s.CharacterId())
+			l.Debugf("Character [%d] chose to retry (restart) their RPS session.", s.CharacterId())
+			if err := emitRPSRetryFunc(l, ctx, s.CharacterId(), s.WorldId(), s.ChannelId()); err != nil {
+				l.WithError(err).Errorf("Unable to emit RPS RETRY command for character [%d].", s.CharacterId())
+			}
 			return
 		}
 		l.Warnf("Character [%d] issued an unhandled RPS_ACTION mode [%d].", s.CharacterId(), mode)

@@ -44,6 +44,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleContinueCommand))); err != nil {
 			return err
 		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRetryCommand))); err != nil {
+			return err
+		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCollectCommand))); err != nil {
 			return err
 		}
@@ -117,6 +120,15 @@ func handleContinueCommand(l logrus.FieldLogger, ctx context.Context, c rpsMsg.C
 	}
 	if _, err := newProcessor(l, ctx).ContinueAndEmit(c.CharacterId); err != nil {
 		l.WithError(err).Errorf("Unable to process CONTINUE command for character [%d].", c.CharacterId)
+	}
+}
+
+func handleRetryCommand(l logrus.FieldLogger, ctx context.Context, c rpsMsg.Command[rpsMsg.RetryCommandBody]) {
+	if c.Type != rpsMsg.CommandTypeRetry {
+		return
+	}
+	if _, err := newProcessor(l, ctx).RetryAndEmit(c.CharacterId); err != nil {
+		l.WithError(err).Errorf("Unable to process RETRY command for character [%d].", c.CharacterId)
 	}
 }
 

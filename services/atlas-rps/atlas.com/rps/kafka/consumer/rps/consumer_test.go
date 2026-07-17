@@ -201,6 +201,48 @@ func TestHandleBeginCommand_WrongTypeSkips(t *testing.T) {
 	assert.Nil(t, reg.get(rpsMsg.EnvEventTopic), "no event should be emitted for a wrong-type command")
 }
 
+// TestHandleRetryCommand_InvokesProcessorAndEmits verifies a RETRY command
+// against a post-loss StatusEnded session resets it to a fresh round
+// (StatusAwaitingSelect, rung 0) and emits a RoundStarted event.
+func TestHandleRetryCommand_InvokesProcessorAndEmits(t *testing.T) {
+	setupRegistry(t)
+	reg := setupCapturingProducer(t)
+	ctx, ten := tenantCtx(t)
+	characterId := uint32(5020)
+
+	// Seed a post-loss StatusEnded session directly.
+	m := game.NewModelBuilder(ten).
+		SetCharacterId(characterId).
+		SetWorldId(0).
+		SetChannelId(1).
+		SetNpcId(9020000).
+		SetRung(1).
+		SetStatus(game.StatusEnded).
+		MustBuild()
+	game.GetRegistry().Put(ctx, m)
+
+	withStubProcessor(t, fixedThrows(game.ThrowScissors))
+
+	cmd := rpsMsg.Command[rpsMsg.RetryCommandBody]{
+		CharacterId: characterId,
+		WorldId:     0,
+		ChannelId:   1,
+		Type:        rpsMsg.CommandTypeRetry,
+		Body:        rpsMsg.RetryCommandBody{},
+	}
+
+	handleRetryCommand(testLogger(), ctx, cmd)
+
+	updated, found := game.GetRegistry().Get(ctx, characterId)
+	require.True(t, found, "session should still be present after RETRY")
+	assert.Equal(t, game.StatusAwaitingSelect, updated.Status())
+	assert.Equal(t, 0, updated.Rung(), "retry resets to rung 0")
+
+	w := reg.get(rpsMsg.EnvEventTopic)
+	require.NotNil(t, w, "expected the RPS event topic writer to have been used")
+	require.Len(t, w.Messages(), 1, "expected exactly one RoundStarted event")
+}
+
 // TestHandleSelectCommand_InvokesProcessorAndEmits verifies a SELECT command
 // against an open session is applied by the game.Processor (registry state
 // changes) and buffers/emits a RoundResult event via the real

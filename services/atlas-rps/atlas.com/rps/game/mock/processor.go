@@ -26,6 +26,9 @@ type ProcessorMock struct {
 	ContinueFunc        func(mb *message.Buffer, characterId uint32) (game.Model, error)
 	ContinueAndEmitFunc func(characterId uint32) (game.Model, error)
 
+	RetryFunc        func(mb *message.Buffer, characterId uint32) (game.Model, error)
+	RetryAndEmitFunc func(characterId uint32) (game.Model, error)
+
 	CollectFunc        func(mb *message.Buffer, characterId uint32) (game.Model, error)
 	CollectAndEmitFunc func(characterId uint32) (game.Model, error)
 
@@ -97,6 +100,20 @@ func (m *ProcessorMock) Continue(mb *message.Buffer, characterId uint32) (game.M
 func (m *ProcessorMock) ContinueAndEmit(characterId uint32) (game.Model, error) {
 	if m.ContinueAndEmitFunc != nil {
 		return m.ContinueAndEmitFunc(characterId)
+	}
+	return game.Model{}, nil
+}
+
+func (m *ProcessorMock) Retry(mb *message.Buffer, characterId uint32) (game.Model, error) {
+	if m.RetryFunc != nil {
+		return m.RetryFunc(mb, characterId)
+	}
+	return game.Model{}, nil
+}
+
+func (m *ProcessorMock) RetryAndEmit(characterId uint32) (game.Model, error) {
+	if m.RetryAndEmitFunc != nil {
+		return m.RetryAndEmitFunc(characterId)
 	}
 	return game.Model{}, nil
 }

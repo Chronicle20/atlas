@@ -20,9 +20,10 @@ type RungRestModel struct {
 // RpsRewardRestModel is the JSON:API resource for the rps-rewards
 // configuration served by atlas-tenants.
 type RpsRewardRestModel struct {
-	Id            string          `json:"-"`
-	EntryCostMeso uint32          `json:"entryCostMeso"`
-	Ladder        []RungRestModel `json:"ladder"`
+	Id              string          `json:"-"`
+	EntryCostMeso   uint32          `json:"entryCostMeso"`
+	ConsolationMeso uint32          `json:"consolationMeso"`
+	Ladder          []RungRestModel `json:"ladder"`
 }
 
 // GetID returns the resource ID.
@@ -62,7 +63,8 @@ func Extract(r RpsRewardRestModel) (game.Ladder, error) {
 		})
 	}
 	return game.Ladder{
-		EntryCostMeso: r.EntryCostMeso,
-		Rungs:         rungs,
+		EntryCostMeso:   r.EntryCostMeso,
+		ConsolationMeso: r.ConsolationMeso,
+		Rungs:           rungs,
 	}, nil
 }

@@ -19,7 +19,10 @@ type Rung struct {
 // the Rung field rather than by slice position, so gaps are tolerated.
 type Ladder struct {
 	EntryCostMeso uint32
-	Rungs         []Rung
+	// ConsolationMeso is the meso granted on a loss (the client's "consolation
+	// prize"). 0 disables the consolation award.
+	ConsolationMeso uint32
+	Rungs           []Rung
 }
 
 // PrizeAt resolves the prize for a given 1-based rung. Rung 0 (fresh, no

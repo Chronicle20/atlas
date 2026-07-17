@@ -21,6 +21,9 @@ const (
 	CommandTypeContinue = "CONTINUE"
 	CommandTypeCollect  = "COLLECT"
 	CommandTypeQuit     = "QUIT"
+	// CommandTypeRetry restarts a lost game: it re-charges the entry fee and
+	// reopens a fresh round (the client's post-loss "Restart" button).
+	CommandTypeRetry = "RETRY"
 
 	EventTypeGameOpened   = "GAME_OPENED"
 	EventTypeRoundStarted = "ROUND_STARTED"
@@ -69,6 +72,11 @@ type CollectCommandBody struct {
 // QuitCommandBody signals the player is abandoning the session, forfeiting
 // any unclaimed prize. It carries no data.
 type QuitCommandBody struct {
+}
+
+// RetryCommandBody signals the player wants to restart after a loss (paying
+// the entry fee again). It carries no data.
+type RetryCommandBody struct {
 }
 
 // Event represents an event emitted by atlas-rps as a session progresses.

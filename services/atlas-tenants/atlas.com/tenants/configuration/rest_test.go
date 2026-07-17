@@ -5,14 +5,16 @@ import (
 )
 
 // TestRpsRewardRoundTrip verifies that TransformRpsReward(ExtractRpsReward(m))
-// round-trips the entryCostMeso attribute and a 2-rung ladder.
+// round-trips the entryCostMeso/consolationMeso attributes and a 2-rung
+// certificate ladder.
 func TestRpsRewardRoundTrip(t *testing.T) {
 	original := RpsRewardRestModel{
-		Id:            "rps-rewards",
-		EntryCostMeso: 1000,
+		Id:              "rps-rewards",
+		EntryCostMeso:   1000,
+		ConsolationMeso: 500,
 		Ladder: []RpsRewardRungRestModel{
-			{Rung: 1, ItemId: 0, Quantity: 0, Meso: 2000},
-			{Rung: 2, ItemId: 0, Quantity: 0, Meso: 5000},
+			{Rung: 1, ItemId: 4031332, Quantity: 1, Meso: 0},
+			{Rung: 2, ItemId: 4031333, Quantity: 1, Meso: 0},
 		},
 	}
 
@@ -46,6 +48,10 @@ func TestRpsRewardRoundTrip(t *testing.T) {
 
 	if transformed.EntryCostMeso != original.EntryCostMeso {
 		t.Errorf("EntryCostMeso mismatch: got %d, want %d", transformed.EntryCostMeso, original.EntryCostMeso)
+	}
+
+	if transformed.ConsolationMeso != original.ConsolationMeso {
+		t.Errorf("ConsolationMeso mismatch: got %d, want %d", transformed.ConsolationMeso, original.ConsolationMeso)
 	}
 
 	if len(transformed.Ladder) != len(original.Ladder) {

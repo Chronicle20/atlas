@@ -51,10 +51,15 @@ func installRPSEmitSeams(t *testing.T) (*[]rpsEmitCall, func()) {
 	origBegin := emitRPSBeginFunc
 	origSelect := emitRPSSelectFunc
 	origContinue := emitRPSContinueFunc
+	origRetry := emitRPSRetryFunc
 	origCollect := emitRPSCollectFunc
 
 	emitRPSBeginFunc = func(_ logrus.FieldLogger, _ context.Context, _ uint32, _ world.Id, _ channel.Id) error {
 		*calls = append(*calls, rpsEmitCall{kind: "BEGIN"})
+		return nil
+	}
+	emitRPSRetryFunc = func(_ logrus.FieldLogger, _ context.Context, _ uint32, _ world.Id, _ channel.Id) error {
+		*calls = append(*calls, rpsEmitCall{kind: "RETRY"})
 		return nil
 	}
 	emitRPSSelectFunc = func(_ logrus.FieldLogger, _ context.Context, _ uint32, _ world.Id, _ channel.Id, throw byte) error {
@@ -74,6 +79,7 @@ func installRPSEmitSeams(t *testing.T) (*[]rpsEmitCall, func()) {
 		emitRPSBeginFunc = origBegin
 		emitRPSSelectFunc = origSelect
 		emitRPSContinueFunc = origContinue
+		emitRPSRetryFunc = origRetry
 		emitRPSCollectFunc = origCollect
 	}
 }
@@ -138,10 +144,10 @@ func TestRPSActionUpdateIsDropped(t *testing.T) {
 	}
 }
 
-func TestRPSActionRetryIsDropped(t *testing.T) {
+func TestRPSActionRetryEmitsRetryCommand(t *testing.T) {
 	calls := runRPSAction(t, []byte{5})
-	if len(*calls) != 0 {
-		t.Fatalf("RETRY must be a parked no-op, got %+v", *calls)
+	if len(*calls) != 1 || (*calls)[0].kind != "RETRY" {
+		t.Fatalf("RETRY must emit a single RETRY command (restart after a loss), got %+v", *calls)
 	}
 }
 

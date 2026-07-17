@@ -389,6 +389,166 @@ func TestProcessor_Collect_AfterLossForfeitsAndEnds(t *testing.T) {
 	assert.Nil(t, ended.Body.GrantedPrize, "a forfeited (lost) session pays nothing")
 }
 
+// TestProcessor_Select_Loss_AwardsConsolation verifies a loss submits a
+// single-step AwardMesos payout saga for the ladder's ConsolationMeso (the
+// client's "consolation prize"), while still keeping the session and emitting
+// only the RoundResult(lose).
+func TestProcessor_Select_Loss_AwardsConsolation(t *testing.T) {
+	setupRegistryTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
+	characterId := uint32(1013)
+
+	ladder := game.Ladder{
+		EntryCostMeso:   1000,
+		ConsolationMeso: 500,
+		Rungs: []game.Rung{
+			{Rung: 1, ItemId: item.Id(4031332), Quantity: 1, Meso: 0},
+		},
+	}
+	var captured []sharedsaga.Saga
+	// Paper beats the player's Rock -> loss.
+	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowPaper), ladderProviderFor(ladder), capturingSagaSubmitter(&captured))
+
+	mb := message.NewBuffer()
+	_, err := p.Start(mb, characterId, testWorldId, testChannelId, testNpcId)
+	require.NoError(t, err)
+	m, err := p.Select(mb, characterId, game.ThrowRock)
+	require.NoError(t, err)
+	require.Equal(t, game.StatusEnded, m.Status())
+
+	require.Len(t, captured, 1, "a loss should submit exactly one consolation saga")
+	s := captured[0]
+	require.Len(t, s.Steps, 1, "consolation is meso-only")
+	assert.Equal(t, sharedsaga.AwardMesos, s.Steps[0].Action)
+	mesoPayload, ok := s.Steps[0].Payload.(sharedsaga.AwardMesosPayload)
+	require.True(t, ok)
+	assert.Equal(t, int32(500), mesoPayload.Amount, "consolation meso must be positive")
+	assert.Equal(t, characterId, mesoPayload.CharacterId)
+
+	// The loss still keeps the session and emits only RoundResult(lose).
+	kept, found := game.GetRegistry().Get(ctx, characterId)
+	require.True(t, found)
+	assert.Equal(t, game.StatusEnded, kept.Status())
+	msgs := mb.GetAll()[rps.EnvEventTopic]
+	require.Len(t, msgs, 2, "GameOpened + RoundResult(lose), no GameEnded")
+	assert.Equal(t, rps.EventTypeRoundResult, decodeEventType(t, msgs[1]))
+}
+
+// TestProcessor_Select_Loss_NoConsolationWhenZero verifies that a zero
+// ConsolationMeso submits no saga on a loss.
+func TestProcessor_Select_Loss_NoConsolationWhenZero(t *testing.T) {
+	setupRegistryTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
+	characterId := uint32(1014)
+
+	// twoRungLadder has ConsolationMeso == 0.
+	var captured []sharedsaga.Saga
+	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowPaper), ladderProviderFor(twoRungLadder()), capturingSagaSubmitter(&captured))
+
+	mb := message.NewBuffer()
+	_, err := p.Start(mb, characterId, testWorldId, testChannelId, testNpcId)
+	require.NoError(t, err)
+	_, err = p.Select(mb, characterId, game.ThrowRock)
+	require.NoError(t, err)
+
+	assert.Empty(t, captured, "no consolation saga when ConsolationMeso is 0")
+}
+
+// TestProcessor_Retry_RestartsAfterLoss verifies Retry on a post-loss
+// StatusEnded session submits a fee-deduction saga (negative meso), resets the
+// session to rung 0 / StatusAwaitingSelect, and buffers a RoundStarted event.
+func TestProcessor_Retry_RestartsAfterLoss(t *testing.T) {
+	setupRegistryTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
+	characterId := uint32(1015)
+
+	ladder := game.Ladder{
+		EntryCostMeso:   1000,
+		ConsolationMeso: 500,
+		Rungs: []game.Rung{
+			{Rung: 1, ItemId: item.Id(4031332), Quantity: 1, Meso: 0},
+			{Rung: 2, ItemId: item.Id(4031333), Quantity: 1, Meso: 0},
+		},
+	}
+	// win (opponent Scissors) then loss (opponent Paper), both vs player Rock.
+	var captured []sharedsaga.Saga
+	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowScissors, game.ThrowPaper), ladderProviderFor(ladder), capturingSagaSubmitter(&captured))
+
+	mb := message.NewBuffer()
+	_, err := p.Start(mb, characterId, testWorldId, testChannelId, testNpcId)
+	require.NoError(t, err)
+	_, err = p.Select(mb, characterId, game.ThrowRock) // win -> rung 1, AwaitingDecision
+	require.NoError(t, err)
+	_, err = p.Continue(mb, characterId) // rung 1, AwaitingSelect
+	require.NoError(t, err)
+	lost, err := p.Select(mb, characterId, game.ThrowRock) // loss -> StatusEnded, rung 1
+	require.NoError(t, err)
+	require.Equal(t, game.StatusEnded, lost.Status())
+	require.Equal(t, 1, lost.Rung())
+
+	// Isolate the retry fee from the loss's consolation saga.
+	captured = nil
+
+	retryBuf := message.NewBuffer()
+	m, err := p.Retry(retryBuf, characterId)
+	require.NoError(t, err)
+	assert.Equal(t, game.StatusAwaitingSelect, m.Status())
+	assert.Equal(t, 0, m.Rung(), "retry resets to a fresh round at rung 0")
+
+	require.Len(t, captured, 1, "retry should submit exactly one fee-deduction saga")
+	s := captured[0]
+	require.Len(t, s.Steps, 1)
+	assert.Equal(t, sharedsaga.AwardMesos, s.Steps[0].Action)
+	feePayload, ok := s.Steps[0].Payload.(sharedsaga.AwardMesosPayload)
+	require.True(t, ok)
+	assert.Equal(t, int32(-1000), feePayload.Amount, "retry re-charges the entry fee (negative amount)")
+
+	msgs := retryBuf.GetAll()[rps.EnvEventTopic]
+	require.Len(t, msgs, 1, "retry buffers exactly one RoundStarted event")
+	assert.Equal(t, rps.EventTypeRoundStarted, decodeEventType(t, msgs[0]))
+	assert.Equal(t, 0, decodeRoundStarted(t, msgs[0]).Body.Rung)
+}
+
+// TestProcessor_Retry_InvalidStatusReturnsError verifies Retry is rejected on a
+// session that is not StatusEnded (here: fresh StatusOpen), buffering no event
+// and submitting no fee saga.
+func TestProcessor_Retry_InvalidStatusReturnsError(t *testing.T) {
+	setupRegistryTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
+	characterId := uint32(1016)
+
+	var captured []sharedsaga.Saga
+	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowRock), ladderProviderFor(twoRungLadder()), capturingSagaSubmitter(&captured))
+
+	mb := message.NewBuffer()
+	_, err := p.Start(mb, characterId, testWorldId, testChannelId, testNpcId)
+	require.NoError(t, err)
+
+	retryBuf := message.NewBuffer()
+	_, err = p.Retry(retryBuf, characterId)
+	assert.ErrorIs(t, err, game.ErrInvalidStatus)
+	assert.Empty(t, retryBuf.GetAll()[rps.EnvEventTopic])
+	assert.Empty(t, captured, "a rejected retry deducts no fee")
+}
+
+// TestProcessor_Retry_NoSessionReturnsError verifies Retry against a character
+// with no active session returns ErrSessionNotFound.
+func TestProcessor_Retry_NoSessionReturnsError(t *testing.T) {
+	setupRegistryTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
+
+	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowRock), ladderProviderFor(twoRungLadder()), noopSagaSubmitter())
+
+	mb := message.NewBuffer()
+	_, err := p.Retry(mb, uint32(1017))
+	assert.ErrorIs(t, err, game.ErrSessionNotFound)
+}
+
 // TestProcessor_Continue_ForcesCollectAtMaxRung verifies that Continue, when
 // called at the ladder's highest configured rung, transparently performs a
 // Collect instead of reopening the AWAITING_SELECT state.

@@ -106,6 +106,13 @@ type Processor interface {
 	Continue(mb *message.Buffer, characterId uint32) (Model, error)
 	ContinueAndEmit(characterId uint32) (Model, error)
 
+	// Retry restarts a lost game (a post-loss StatusEnded session still in the
+	// registry): it re-charges the entry fee and reopens a fresh round at rung
+	// 0 (StatusAwaitingSelect), buffering a RoundStarted event so the channel
+	// re-arms the client's buttons with a START_SELECT frame.
+	Retry(mb *message.Buffer, characterId uint32) (Model, error)
+	RetryAndEmit(characterId uint32) (Model, error)
+
 	// Collect ends the session from any active status - the client's only
 	// "leave" action has no dedicated collect sub-op. From
 	// StatusAwaitingDecision it pays the resolved prize at the current rung
@@ -371,6 +378,22 @@ func (p *ProcessorImpl) Select(mb *message.Buffer, characterId uint32, throw Thr
 		// (needs Open/AwaitingSelect), Continue (needs AwaitingDecision) and
 		// Begin (needs Open) all correctly reject it, and Collect treats it as
 		// a forfeit.
+		//
+		// Consolation prize: award the tenant-configured ConsolationMeso (the
+		// client's "here are N mesos as a consolation prize" message) via a
+		// payout saga. This is best-effort - a ladder-resolution or saga-submit
+		// failure is logged but must NOT swallow the loss RESULT frame, so the
+		// round still resolves and the client renders the loss either way.
+		if ladder, lerr := p.ladderProvider(); lerr != nil {
+			p.l.WithError(lerr).Warnf("Unable to resolve ladder for RPS consolation prize (character [%d]); skipping consolation.", characterId)
+		} else if ladder.ConsolationMeso > 0 {
+			if s, hasSteps := buildPayoutSaga(m, Rung{Meso: ladder.ConsolationMeso}); hasSteps {
+				if serr := p.sagaSubmitter(s); serr != nil {
+					p.l.WithError(serr).Warnf("Unable to submit RPS consolation payout for character [%d]; loss still recorded.", characterId)
+				}
+			}
+		}
+
 		updated, err := CloneModelBuilder(m).SetStatus(StatusEnded).SetLastThrow(throw).Build()
 		if err != nil {
 			return Model{}, err
@@ -450,6 +473,61 @@ func (p *ProcessorImpl) ContinueAndEmit(characterId uint32) (Model, error) {
 	})(characterId)
 }
 
+// Retry restarts a lost game: it re-charges the participation fee and reopens
+// a fresh round at rung 0 (StatusAwaitingSelect), buffering a RoundStarted
+// event so the channel re-arms the client's R/P/S buttons with a START_SELECT
+// frame - the client's board is still open on the loss screen, so no new OPEN
+// frame is needed. Only valid on a StatusEnded (post-loss) session still in
+// the registry (before the player exits or the TTL sweeper reaps it).
+//
+// The fee-deduction saga is submitted best-effort (fire-and-forget, mirroring
+// the payout path): Retry does not pre-check the player's balance or route a
+// FAIL_NOT_ENOUGH_MESO frame on an insufficient-funds failure. A balance-gated
+// retry (with the mode-6 fail frame) is a documented follow-up.
+func (p *ProcessorImpl) Retry(mb *message.Buffer, characterId uint32) (Model, error) {
+	m, ok := GetRegistry().Get(p.ctx, characterId)
+	if !ok {
+		return Model{}, ErrSessionNotFound
+	}
+	if m.Status() != StatusEnded {
+		return Model{}, ErrInvalidStatus
+	}
+
+	ladder, err := p.ladderProvider()
+	if err != nil {
+		return Model{}, err
+	}
+
+	// Re-charge the participation fee (best-effort - see the method doc).
+	if ladder.EntryCostMeso > 0 {
+		if serr := p.sagaSubmitter(buildFeeDeductionSaga(m, ladder.EntryCostMeso)); serr != nil {
+			p.l.WithError(serr).Warnf("Unable to submit RPS retry fee deduction for character [%d]; restarting anyway.", characterId)
+		}
+	}
+
+	updated, err := CloneModelBuilder(m).SetRung(0).SetStatus(StatusAwaitingSelect).Build()
+	if err != nil {
+		return Model{}, err
+	}
+	GetRegistry().Put(p.ctx, updated)
+
+	if err := mb.Put(rps.EnvEventTopic, roundStartedEventProvider(characterId, m.WorldId(), m.ChannelId(), updated.Rung())); err != nil {
+		return Model{}, err
+	}
+	return updated, nil
+}
+
+// RetryAndEmit restarts a lost game and emits the buffered RoundStarted event.
+func (p *ProcessorImpl) RetryAndEmit(characterId uint32) (Model, error) {
+	return message.EmitWithResult[Model, uint32](
+		producer.ProviderImpl(p.l)(p.ctx),
+	)(func(mb *message.Buffer) func(characterId uint32) (Model, error) {
+		return func(characterId uint32) (Model, error) {
+			return p.Retry(mb, characterId)
+		}
+	})(characterId)
+}
+
 // Collect ends the session for the given character from any active status.
 // The client's only "leave the game" action (Exit) has no dedicated
 // "collect" sub-op - it maps to Collect regardless of the session's current
@@ -514,6 +592,26 @@ func (p *ProcessorImpl) Collect(mb *message.Buffer, characterId uint32) (Model, 
 // quantity. hasSteps is false (and the returned Saga is the zero value) when
 // the prize grants neither - e.g. a rung configured with meso=0 and
 // itemId=0 - in which case no saga should be submitted.
+// buildFeeDeductionSaga builds a single-step AwardMesos saga that deducts the
+// participation fee (a negative meso award) for a Retry, mirroring the entry
+// conversation's deduct step in atlas-npc-conversations.
+func buildFeeDeductionSaga(m Model, entryCostMeso uint32) sharedsaga.Saga {
+	return sharedsaga.NewBuilder().
+		SetTransactionId(uuid.New()).
+		SetSagaType(sharedsaga.InventoryTransaction).
+		SetInitiatedBy(fmt.Sprintf("NPC_%d_rps_retry_fee", m.NpcId())).
+		AddStep("deduct_mesos", sharedsaga.Pending, sharedsaga.AwardMesos, sharedsaga.AwardMesosPayload{
+			CharacterId: m.CharacterId(),
+			WorldId:     m.WorldId(),
+			ChannelId:   m.ChannelId(),
+			ActorId:     m.NpcId(),
+			ActorType:   "NPC",
+			Amount:      -int32(entryCostMeso),
+			ShowEffect:  false,
+		}).
+		Build()
+}
+
 func buildPayoutSaga(m Model, prize Rung) (sharedsaga.Saga, bool) {
 	b := sharedsaga.NewBuilder().
 		SetTransactionId(uuid.New()).

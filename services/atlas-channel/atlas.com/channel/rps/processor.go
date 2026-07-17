@@ -16,6 +16,7 @@ type Processor interface {
 	Begin(characterId uint32, worldId world.Id, channelId channel.Id) error
 	Select(characterId uint32, worldId world.Id, channelId channel.Id, throw byte) error
 	Continue(characterId uint32, worldId world.Id, channelId channel.Id) error
+	Retry(characterId uint32, worldId world.Id, channelId channel.Id) error
 	Collect(characterId uint32, worldId world.Id, channelId channel.Id) error
 }
 
@@ -45,6 +46,12 @@ func (p *ProcessorImpl) Select(characterId uint32, worldId world.Id, channelId c
 func (p *ProcessorImpl) Continue(characterId uint32, worldId world.Id, channelId channel.Id) error {
 	p.l.Debugf("Sending RPS CONTINUE command for character [%d].", characterId)
 	return producer2.ProviderImpl(p.l)(p.ctx)(rpsMsg.EnvCommandTopic)(ContinueCommandProvider(characterId, worldId, channelId))
+}
+
+// Retry sends a RETRY command - the client clicked "Restart" after a loss.
+func (p *ProcessorImpl) Retry(characterId uint32, worldId world.Id, channelId channel.Id) error {
+	p.l.Debugf("Sending RPS RETRY command for character [%d].", characterId)
+	return producer2.ProviderImpl(p.l)(p.ctx)(rpsMsg.EnvCommandTopic)(RetryCommandProvider(characterId, worldId, channelId))
 }
 
 // Collect sends a COLLECT command. atlas-rps treats this as collect-or-forfeit

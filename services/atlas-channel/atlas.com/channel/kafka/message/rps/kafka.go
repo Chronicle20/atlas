@@ -24,6 +24,9 @@ const (
 	CommandTypeSelect   = "SELECT"
 	CommandTypeContinue = "CONTINUE"
 	CommandTypeCollect  = "COLLECT"
+	// CommandTypeRetry restarts a lost game (re-charges the entry fee): the
+	// client's post-loss "Restart" button (serverbound RPS_ACTION sub-op 5).
+	CommandTypeRetry = "RETRY"
 
 	// EventTypeGameOpened/RoundStarted/RoundResult/GameEnded mirror atlas-rps's
 	// Event.Type values (services/atlas-rps/atlas.com/rps/kafka/message/rps/kafka.go).
@@ -79,6 +82,11 @@ type ContinueCommandBody struct {
 // the current prize if one is owed (StatusAwaitingDecision), or forfeiting
 // otherwise. It carries no data.
 type CollectCommandBody struct {
+}
+
+// RetryCommandBody signals the player wants to restart after a loss (paying
+// the entry fee again). It carries no data.
+type RetryCommandBody struct {
 }
 
 // Event represents an event emitted by atlas-rps as a session progresses. E

@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
@@ -72,6 +74,47 @@ func (r *Registry) Upsert(ctx context.Context, t tenant.Model, worldId world.Id,
 
 	r.trackTenant(ctx, t)
 	return result, nil
+}
+
+// QueueKey identifies one (worldId, family) queue.
+type QueueKey struct {
+	WorldId world.Id
+	Family  string
+}
+
+// AllQueues returns a snapshot of every (worldId, family) queue for tenant t,
+// keyed by the typed QueueKey (reconstructed from the opaque Redis key
+// suffix). The snapshot may be stale by the time a caller acts on it; any
+// mutation must go back through Upsert under CAS.
+func (r *Registry) AllQueues(ctx context.Context, t tenant.Model) (map[QueueKey]QueueModel, error) {
+	entries, err := r.queues.GetAllEntries(ctx, t)
+	if err != nil {
+		return nil, err
+	}
+	result := make(map[QueueKey]QueueModel, len(entries))
+	for suffix, q := range entries {
+		key, ok := parseQueueKey(suffix)
+		if !ok {
+			continue
+		}
+		result[key] = q
+	}
+	return result, nil
+}
+
+// parseQueueKey reverses queueKey: "<worldId>:<family>" -> QueueKey. Returns
+// ok=false for malformed suffixes (skipped by AllQueues rather than erroring
+// the whole scan).
+func parseQueueKey(s string) (QueueKey, bool) {
+	idx := strings.IndexByte(s, ':')
+	if idx < 0 {
+		return QueueKey{}, false
+	}
+	n, err := strconv.ParseUint(s[:idx], 10, 8)
+	if err != nil {
+		return QueueKey{}, false
+	}
+	return QueueKey{WorldId: world.Id(n), Family: s[idx+1:]}, true
 }
 
 func (r *Registry) Tenants() []tenant.Model {

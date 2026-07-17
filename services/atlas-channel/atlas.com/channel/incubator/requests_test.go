@@ -21,7 +21,7 @@ func newTestTenant(t *testing.T) tenant.Model {
 }
 
 // TestSelectReward_RoundTrip stands up an httptest server standing in for
-// atlas-gachapons, asserts NewProcessor.SelectReward POSTs to
+// atlas-reward-pools, asserts NewProcessor.SelectReward POSTs to
 // gachapons/{eggId}/rewards/select (eggId as a path segment, not a query
 // param) and decodes the returned gachapon-rewards resource into a
 // populated Reward.
@@ -47,7 +47,7 @@ func TestSelectReward_RoundTrip(t *testing.T) {
 }
 
 // TestSelectReward_QuantityDefaultsToOne guards the documented quantity
-// 0->1 default when atlas-gachapons omits quantity.
+// 0->1 default when atlas-reward-pools omits quantity.
 func TestSelectReward_QuantityDefaultsToOne(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/vnd.api+json")
@@ -67,7 +67,7 @@ func TestSelectReward_QuantityDefaultsToOne(t *testing.T) {
 	require.Equal(t, uint32(1), reward.Quantity(), "quantity 0 must default to 1")
 }
 
-// TestSelectReward_InfrastructureError verifies a 5xx from atlas-gachapons
+// TestSelectReward_InfrastructureError verifies a 5xx from atlas-reward-pools
 // surfaces as a non-nil error rather than being silently swallowed into a
 // zero-value reward.
 func TestSelectReward_InfrastructureError(t *testing.T) {

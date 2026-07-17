@@ -10,7 +10,7 @@ import (
 // Processor defines the interface for incubator reward selection.
 type Processor interface {
 	// SelectReward rolls one reward for the given Pigmy Egg id via
-	// atlas-gachapons.
+	// atlas-reward-pools.
 	SelectReward(eggId uint32) (Reward, error)
 }
 
@@ -31,7 +31,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 // SelectReward rolls one reward for the given Pigmy Egg id via
-// atlas-gachapons.
+// atlas-reward-pools.
 func (p *ProcessorImpl) SelectReward(eggId uint32) (Reward, error) {
 	return requests.Provider[RewardRestModel, Reward](p.l, p.ctx)(requestSelectReward(eggId), Extract)()
 }

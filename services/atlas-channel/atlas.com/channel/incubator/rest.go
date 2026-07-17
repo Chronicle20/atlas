@@ -1,6 +1,6 @@
 package incubator
 
-// RewardRestModel is the JSON:API attribute payload for the atlas-gachapons
+// RewardRestModel is the JSON:API attribute payload for the atlas-reward-pools
 // gachapon-rewards resource returned by POST
 // /gachapons/{gachaponId}/rewards/select.
 type RewardRestModel struct {
@@ -24,7 +24,7 @@ func (r *RewardRestModel) SetToOneReferenceID(_ string, _ string) error { return
 // SetToManyReferenceIDs satisfies the api2go UnmarshalToManyRelations interface.
 func (r *RewardRestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
 
-// Reward is the incubator reward selected by atlas-gachapons for one roll.
+// Reward is the incubator reward selected by atlas-reward-pools for one roll.
 type Reward struct {
 	itemId   uint32
 	quantity uint32

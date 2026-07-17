@@ -10,7 +10,7 @@ func getBaseRequest() string {
 	return requests.RootUrl("GACHAPONS")
 }
 
-// requestSelectReward creates a request to atlas-gachapons that rolls one
+// requestSelectReward creates a request to atlas-reward-pools that rolls one
 // reward for the given gachapon (egg) id. The server reads no request body;
 // a nil body is passed (mirrors atlas-saga-orchestrator's gachapon client)
 // since jsonapi.Marshal would panic on a body value that does not implement

@@ -1,6 +1,6 @@
 {
   "version": "1",
-  "name": "atlas-gachapons",
+  "name": "atlas-reward-pools",
   "type": "collection",
   "ignore": [
     "node_modules",

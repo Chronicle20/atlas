@@ -1,4 +1,4 @@
-# atlas-gachapons
+# atlas-reward-pools
 
 Gachapon management service for the Atlas platform.
 

@@ -8,6 +8,10 @@ const (
 	// FieldLimitNoMysticDoor prevents mystic door skill usage
 	FieldLimitNoMysticDoor uint32 = 0x02
 
+	// FieldLimitNoTeleportItem prevents teleport-rock item usage in the map
+	// (client RunMapTransferItem checks fieldLimit & 0x40; design task-124 §1 Q2)
+	FieldLimitNoTeleportItem uint32 = 0x40
+
 	// FieldLimitNoSummoningBag prevents summoning bag usage
 	FieldLimitNoSummoningBag uint32 = 0x04
 

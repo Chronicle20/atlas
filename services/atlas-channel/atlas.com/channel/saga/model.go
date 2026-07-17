@@ -23,6 +23,7 @@ type (
 	DeductExperiencePayload      = sharedsaga.DeductExperiencePayload
 	CancelAllBuffsPayload        = sharedsaga.CancelAllBuffsPayload
 	WarpToPortalPayload          = sharedsaga.WarpToPortalPayload
+	WarpToRandomPortalPayload    = sharedsaga.WarpToRandomPortalPayload
 	ApplyConsumableEffectPayload = sharedsaga.ApplyConsumableEffectPayload
 	FieldEffectWeatherPayload    = sharedsaga.FieldEffectWeatherPayload
 
@@ -46,6 +47,7 @@ const (
 	CashShopOperation    = sharedsaga.CashShopOperation
 	CharacterRespawn     = sharedsaga.CharacterRespawn
 	FieldEffectUse       = sharedsaga.FieldEffectUse
+	TeleportRockUse      = sharedsaga.TeleportRockUse
 	PointReset           = sharedsaga.PointReset
 
 	// Status constants
@@ -71,6 +73,7 @@ const (
 	DeductExperience      = sharedsaga.DeductExperience
 	CancelAllBuffs        = sharedsaga.CancelAllBuffs
 	WarpToPortal          = sharedsaga.WarpToPortal
+	WarpToRandomPortal    = sharedsaga.WarpToRandomPortal
 	FieldEffectWeather    = sharedsaga.FieldEffectWeather
 	ApplyConsumableEffect = sharedsaga.ApplyConsumableEffect
 	TransferAP            = sharedsaga.TransferAP

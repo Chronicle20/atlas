@@ -351,3 +351,113 @@ func TestMapStatupType(t *testing.T) {
 		})
 	}
 }
+
+func TestBonusesForBuffChange_Flat(t *testing.T) {
+	// Table ported row-for-row from the old TestMapBuffStatType flat rows.
+	tests := []struct {
+		input        string
+		expectedType Type
+	}{
+		{"WEAPON_ATTACK", TypeWeaponAttack},
+		{"PAD", TypeWeaponAttack},
+		{"MAGIC_ATTACK", TypeMagicAttack},
+		{"MAD", TypeMagicAttack},
+		{"WEAPON_DEFENSE", TypeWeaponDefense},
+		{"PDD", TypeWeaponDefense},
+		{"MAGIC_DEFENSE", TypeMagicDefense},
+		{"MDD", TypeMagicDefense},
+		{"ACCURACY", TypeAccuracy},
+		{"ACC", TypeAccuracy},
+		{"AVOIDABILITY", TypeAvoidability},
+		{"AVOID", TypeAvoidability},
+		{"EVA", TypeAvoidability},
+		{"SPEED", TypeSpeed},
+		{"JUMP", TypeJump},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			bs := BonusesForBuffChange("buff:1", tt.input, 20)
+			if len(bs) != 1 {
+				t.Fatalf("len = %v, want 1", len(bs))
+			}
+			b := bs[0]
+			if b.StatType() != tt.expectedType {
+				t.Errorf("StatType() = %v, want %v", b.StatType(), tt.expectedType)
+			}
+			if b.Amount() != 20 {
+				t.Errorf("Amount() = %v, want 20", b.Amount())
+			}
+			if b.Multiplier() != 0.0 || b.BasePercent() != 0 {
+				t.Errorf("kind leaked: multiplier=%v basePercent=%v, want 0/0", b.Multiplier(), b.BasePercent())
+			}
+			if b.Source() != "buff:1" {
+				t.Errorf("Source() = %v, want buff:1", b.Source())
+			}
+		})
+	}
+}
+
+func TestBonusesForBuffChange_HyperBody(t *testing.T) {
+	tests := []struct {
+		input        string
+		expectedType Type
+	}{
+		{"HYPER_BODY_HP", TypeMaxHp},
+		{"HYPER_BODY_MP", TypeMaxMp},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			bs := BonusesForBuffChange("buff:1", tt.input, 60)
+			if len(bs) != 1 {
+				t.Fatalf("len = %v, want 1", len(bs))
+			}
+			b := bs[0]
+			if b.StatType() != tt.expectedType {
+				t.Errorf("StatType() = %v, want %v", b.StatType(), tt.expectedType)
+			}
+			if b.Multiplier() != 0.60 {
+				t.Errorf("Multiplier() = %v, want 0.60", b.Multiplier())
+			}
+			if b.Amount() != 0 || b.BasePercent() != 0 {
+				t.Errorf("kind leaked: amount=%v basePercent=%v, want 0/0", b.Amount(), b.BasePercent())
+			}
+		})
+	}
+}
+
+func TestBonusesForBuffChange_MapleWarrior(t *testing.T) {
+	bs := BonusesForBuffChange("buff:2311003", "MAPLE_WARRIOR", 10)
+	if len(bs) != 4 {
+		t.Fatalf("len = %v, want 4", len(bs))
+	}
+
+	got := make(map[Type]Bonus, 4)
+	for _, b := range bs {
+		got[b.StatType()] = b
+	}
+	for _, want := range []Type{TypeStrength, TypeDexterity, TypeIntelligence, TypeLuck} {
+		b, ok := got[want]
+		if !ok {
+			t.Errorf("missing base-percent bonus for %v", want)
+			continue
+		}
+		if b.BasePercent() != 10 {
+			t.Errorf("%v BasePercent() = %v, want 10", want, b.BasePercent())
+		}
+		if b.Amount() != 0 || b.Multiplier() != 0.0 {
+			t.Errorf("%v kind leaked: amount=%v multiplier=%v, want 0/0", want, b.Amount(), b.Multiplier())
+		}
+		if b.Source() != "buff:2311003" {
+			t.Errorf("%v Source() = %v, want buff:2311003", want, b.Source())
+		}
+	}
+}
+
+func TestBonusesForBuffChange_Unknown(t *testing.T) {
+	bs := BonusesForBuffChange("buff:1", "UNKNOWN", 20)
+	if len(bs) != 0 {
+		t.Errorf("len = %v, want 0", len(bs))
+	}
+}

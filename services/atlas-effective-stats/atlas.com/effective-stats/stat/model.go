@@ -432,6 +432,50 @@ func (b *Base) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// BonusesForBuffChange converts one buff stat change into the stat bonuses
+// it grants. Returns an empty slice for unknown buff types.
+//
+// One buff change can affect several stats (MAPLE_WARRIOR grants a
+// base-percent bonus to all four primary stats); the amount-to-bonus
+// conversion lives here so the live-apply and initializer paths cannot
+// drift.
+func BonusesForBuffChange(source string, buffType string, amount int32) []Bonus {
+	switch buffType {
+	case "WEAPON_ATTACK", "PAD":
+		return []Bonus{NewBonus(source, TypeWeaponAttack, amount)}
+	case "MAGIC_ATTACK", "MAD":
+		return []Bonus{NewBonus(source, TypeMagicAttack, amount)}
+	case "WEAPON_DEFENSE", "PDD":
+		return []Bonus{NewBonus(source, TypeWeaponDefense, amount)}
+	case "MAGIC_DEFENSE", "MDD":
+		return []Bonus{NewBonus(source, TypeMagicDefense, amount)}
+	case "ACCURACY", "ACC":
+		return []Bonus{NewBonus(source, TypeAccuracy, amount)}
+	case "AVOIDABILITY", "AVOID", "EVA":
+		return []Bonus{NewBonus(source, TypeAvoidability, amount)}
+	case "SPEED":
+		return []Bonus{NewBonus(source, TypeSpeed, amount)}
+	case "JUMP":
+		return []Bonus{NewBonus(source, TypeJump, amount)}
+	case "HYPER_BODY_HP":
+		return []Bonus{NewMultiplierBonus(source, TypeMaxHp, float64(amount)/100.0)}
+	case "HYPER_BODY_MP":
+		return []Bonus{NewMultiplierBonus(source, TypeMaxMp, float64(amount)/100.0)}
+	case "MAPLE_WARRIOR":
+		// Client applies rate% of the RAW base stat (never base+equip) to each
+		// primary stat, truncating per stat (IDA-verified v83 BasicStat::SetFrom
+		// @0x77ec9f, v95 @0x732ba0 — see PRD §4.1).
+		return []Bonus{
+			NewBasePercentBonus(source, TypeStrength, amount),
+			NewBasePercentBonus(source, TypeDexterity, amount),
+			NewBasePercentBonus(source, TypeIntelligence, amount),
+			NewBasePercentBonus(source, TypeLuck, amount),
+		}
+	default:
+		return []Bonus{}
+	}
+}
+
 // MapBuffStatType maps buff stat type strings to Type and indicates if it's a multiplier.
 // Returns empty string for unknown buff types.
 func MapBuffStatType(buffType string) (Type, bool) {

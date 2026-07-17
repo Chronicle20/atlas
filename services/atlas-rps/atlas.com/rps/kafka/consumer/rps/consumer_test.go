@@ -146,6 +146,61 @@ func openSession(t *testing.T, ctx context.Context, ten tenant.Model, characterI
 	game.GetRegistry().Put(ctx, m)
 }
 
+// TestHandleBeginCommand_InvokesProcessorAndEmits verifies a BEGIN command
+// against an open session transitions it to StatusAwaitingSelect and
+// emits a RoundStarted event.
+func TestHandleBeginCommand_InvokesProcessorAndEmits(t *testing.T) {
+	setupRegistry(t)
+	reg := setupCapturingProducer(t)
+	ctx, ten := tenantCtx(t)
+	characterId := uint32(5010)
+	openSession(t, ctx, ten, characterId)
+
+	withStubProcessor(t, fixedThrows(game.ThrowScissors))
+
+	cmd := rpsMsg.Command[rpsMsg.BeginCommandBody]{
+		CharacterId: characterId,
+		WorldId:     0,
+		ChannelId:   1,
+		Type:        rpsMsg.CommandTypeBegin,
+		Body:        rpsMsg.BeginCommandBody{},
+	}
+
+	handleBeginCommand(testLogger(), ctx, cmd)
+
+	updated, found := game.GetRegistry().Get(ctx, characterId)
+	require.True(t, found, "session should still be present after BEGIN")
+	assert.Equal(t, game.StatusAwaitingSelect, updated.Status())
+
+	w := reg.get(rpsMsg.EnvEventTopic)
+	require.NotNil(t, w, "expected the RPS event topic writer to have been used")
+	require.Len(t, w.Messages(), 1, "expected exactly one RoundStarted event")
+}
+
+// TestHandleBeginCommand_WrongTypeSkips verifies the handler ignores commands
+// whose Type is not BEGIN.
+func TestHandleBeginCommand_WrongTypeSkips(t *testing.T) {
+	setupRegistry(t)
+	reg := setupCapturingProducer(t)
+	ctx, ten := tenantCtx(t)
+	characterId := uint32(5011)
+	openSession(t, ctx, ten, characterId)
+	withStubProcessor(t, fixedThrows(game.ThrowScissors))
+
+	cmd := rpsMsg.Command[rpsMsg.BeginCommandBody]{
+		CharacterId: characterId,
+		Type:        "OTHER",
+		Body:        rpsMsg.BeginCommandBody{},
+	}
+
+	handleBeginCommand(testLogger(), ctx, cmd)
+
+	updated, found := game.GetRegistry().Get(ctx, characterId)
+	require.True(t, found)
+	assert.Equal(t, game.StatusOpen, updated.Status(), "session must be untouched for a wrong-type command")
+	assert.Nil(t, reg.get(rpsMsg.EnvEventTopic), "no event should be emitted for a wrong-type command")
+}
+
 // TestHandleSelectCommand_InvokesProcessorAndEmits verifies a SELECT command
 // against an open session is applied by the game.Processor (registry state
 // changes) and buffers/emits a RoundResult event via the real

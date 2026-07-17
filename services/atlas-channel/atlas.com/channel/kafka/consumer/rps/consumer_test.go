@@ -19,12 +19,13 @@ import (
 )
 
 // rpsGameOperations mirrors the operations table the RPS_GAME writer's mode
-// byte is resolved from (rps_game.yaml OPEN=8/RESULT=11/END=13 - see
-// libs/atlas-packet/rps/clientbound/operation.go).
+// byte is resolved from (rps_game.yaml OPEN=8/START_SELECT=9/RESULT=11/END=13 -
+// see libs/atlas-packet/rps/clientbound/operation.go).
 var rpsGameOperations = map[string]interface{}{
-	"OPEN":   float64(8),
-	"RESULT": float64(11),
-	"END":    float64(13),
+	"OPEN":         float64(8),
+	"START_SELECT": float64(9),
+	"RESULT":       float64(11),
+	"END":          float64(13),
 }
 
 // announceCall captures one invocation of the rpsAnnouncer seam: which
@@ -132,6 +133,77 @@ func TestGameOpenedEvent_AnnouncesOpenWithNpcId(t *testing.T) {
 	}
 	if open.NpcId() != 9010000 {
 		t.Fatalf("want npcId 9010000, got %d", open.NpcId())
+	}
+}
+
+func decodeStartSelect(t *testing.T, b []byte) rpscb.StartSelect {
+	t.Helper()
+	l, _ := testlog.NewNullLogger()
+	req := request.Request(b)
+	reader := request.NewRequestReader(&req, 0)
+	var ss rpscb.StartSelect
+	ss.Decode(l, context.Background())(&reader, nil)
+	return ss
+}
+
+// TestRoundStartedEvent_AnnouncesStartSelect asserts a ROUND_STARTED event
+// selects the bodyless START_SELECT body func (resolved mode byte 9) and
+// targets the character's session - this is the frame that enables the
+// client's R/P/S buttons.
+func TestRoundStartedEvent_AnnouncesStartSelect(t *testing.T) {
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	sc := newTestServer(t, tm)
+
+	restore, calls := withRecordingAnnouncer(t)
+	defer restore()
+
+	h := handleRoundStartedEvent(sc, nil)
+	h(logrus.New(), ctx, rpsmsg.Event[rpsmsg.RoundStartedEventBody]{
+		CharacterId: 2007,
+		WorldId:     sc.WorldId(),
+		ChannelId:   sc.Channel().Id(),
+		Type:        rpsmsg.EventTypeRoundStarted,
+		Body:        rpsmsg.RoundStartedEventBody{Rung: 1},
+	})
+
+	if len(*calls) != 1 {
+		t.Fatalf("want 1 announce call, got %d", len(*calls))
+	}
+	call := (*calls)[0]
+	if call.characterId != 2007 {
+		t.Fatalf("want session targeted for character 2007, got %d", call.characterId)
+	}
+	ss := decodeStartSelect(t, call.bytes)
+	if ss.Mode() != 9 {
+		t.Fatalf("want resolved START_SELECT mode byte 9, got %d", ss.Mode())
+	}
+	if len(call.bytes) != 1 {
+		t.Fatalf("START_SELECT must be bodyless (1 byte), got %d bytes", len(call.bytes))
+	}
+}
+
+// TestRoundStartedEvent_WrongTypeIgnored asserts the handler ignores a
+// non-ROUND_STARTED event type (defensive, mirrors the other handlers).
+func TestRoundStartedEvent_WrongTypeIgnored(t *testing.T) {
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	sc := newTestServer(t, tm)
+
+	restore, calls := withRecordingAnnouncer(t)
+	defer restore()
+
+	h := handleRoundStartedEvent(sc, nil)
+	h(logrus.New(), ctx, rpsmsg.Event[rpsmsg.RoundStartedEventBody]{
+		CharacterId: 2008,
+		WorldId:     sc.WorldId(),
+		ChannelId:   sc.Channel().Id(),
+		Type:        rpsmsg.EventTypeGameOpened, // wrong type for this handler
+		Body:        rpsmsg.RoundStartedEventBody{Rung: 0},
+	})
+
+	if len(*calls) != 0 {
+		t.Fatalf("want 0 announce calls for wrong event type, got %d", len(*calls))
 	}
 }
 

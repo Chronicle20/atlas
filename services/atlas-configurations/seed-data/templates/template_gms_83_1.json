@@ -3058,6 +3058,7 @@
         "options": {
           "operations": {
             "OPEN": 8,
+            "START_SELECT": 9,
             "RESULT": 11,
             "END": 13
           }

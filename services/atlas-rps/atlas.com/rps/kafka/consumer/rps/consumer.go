@@ -35,6 +35,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 	return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 		var t string
 		t, _ = topic.EnvProvider(l)(rpsMsg.EnvCommandTopic)()
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleBeginCommand))); err != nil {
+			return err
+		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSelectCommand))); err != nil {
 			return err
 		}
@@ -88,6 +91,15 @@ func SagaSubmitterFor(l logrus.FieldLogger, ctx context.Context) game.SagaSubmit
 // pattern used by mount/consumer.go's tamingMobInfoBroadcaster.
 var newProcessor = func(l logrus.FieldLogger, ctx context.Context) game.Processor {
 	return game.NewProcessorWithLadder(l, ctx, game.DefaultThrowSource, LadderProviderFor(l, ctx), SagaSubmitterFor(l, ctx))
+}
+
+func handleBeginCommand(l logrus.FieldLogger, ctx context.Context, c rpsMsg.Command[rpsMsg.BeginCommandBody]) {
+	if c.Type != rpsMsg.CommandTypeBegin {
+		return
+	}
+	if _, err := newProcessor(l, ctx).BeginAndEmit(c.CharacterId); err != nil {
+		l.WithError(err).Errorf("Unable to process BEGIN command for character [%d].", c.CharacterId)
+	}
 }
 
 func handleSelectCommand(l logrus.FieldLogger, ctx context.Context, c rpsMsg.Command[rpsMsg.SelectCommandBody]) {

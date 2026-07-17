@@ -16,18 +16,21 @@ const (
 	EnvCommandTopic = "COMMAND_TOPIC_RPS"
 	EnvEventTopic   = "EVENT_TOPIC_RPS"
 
-	// CommandTypeSelect submits the player's rock/paper/scissors throw for
-	// the current round. CommandTypeContinue/Collect carry no body data of
-	// their own.
+	// CommandTypeBegin opens the first round of an already-open session (the
+	// player clicked "Start"; serverbound RPS_ACTION sub-op 0). CommandTypeSelect
+	// submits the player's rock/paper/scissors throw for the current round.
+	// CommandTypeContinue/Collect carry no body data of their own.
+	CommandTypeBegin    = "BEGIN"
 	CommandTypeSelect   = "SELECT"
 	CommandTypeContinue = "CONTINUE"
 	CommandTypeCollect  = "COLLECT"
 
-	// EventTypeGameOpened/RoundResult/GameEnded mirror atlas-rps's Event.Type
-	// values (services/atlas-rps/atlas.com/rps/kafka/message/rps/kafka.go).
-	EventTypeGameOpened  = "GAME_OPENED"
-	EventTypeRoundResult = "ROUND_RESULT"
-	EventTypeGameEnded   = "GAME_ENDED"
+	// EventTypeGameOpened/RoundStarted/RoundResult/GameEnded mirror atlas-rps's
+	// Event.Type values (services/atlas-rps/atlas.com/rps/kafka/message/rps/kafka.go).
+	EventTypeGameOpened   = "GAME_OPENED"
+	EventTypeRoundStarted = "ROUND_STARTED"
+	EventTypeRoundResult  = "ROUND_RESULT"
+	EventTypeGameEnded    = "GAME_ENDED"
 
 	// Outcome values mirror atlas-rps's game.Outcome iota
 	// (services/atlas-rps/atlas.com/rps/game/adjudicate.go): Lose=0, Tie=1,
@@ -53,6 +56,11 @@ type Command[E any] struct {
 	ChannelId   channel.Id `json:"channelId"`
 	Type        string     `json:"type"`
 	Body        E          `json:"body"`
+}
+
+// BeginCommandBody signals the player clicked "Start" to open the first round
+// of an already-open session. It carries no data.
+type BeginCommandBody struct {
 }
 
 // SelectCommandBody carries the player's rock/paper/scissors throw. The
@@ -91,6 +99,14 @@ type Event[E any] struct {
 type GameOpenedEventBody struct {
 	NpcId uint32 `json:"npcId"`
 	Ante  uint32 `json:"ante"`
+}
+
+// RoundStartedEventBody signals a round is now open for the player's throw;
+// the channel translates it to the clientbound START_SELECT frame (mode 9).
+// Rung is informational (the frame itself is bodyless). Mirrors atlas-rps's
+// RoundStartedEventBody.
+type RoundStartedEventBody struct {
+	Rung int `json:"rung"`
 }
 
 // Prize describes a reward granted at a ladder rung.

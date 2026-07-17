@@ -5,15 +5,19 @@
 # client-side dispatch = modes 6,7,8,9,10,11,12,13,14, all decompiled and
 # cited by decompile address per version (v83/v84/v87/v95/jms185).
 #
-# SCOPE: only the THREE modes atlas-rps (the feature service) ever emits are
-# implemented as Atlas structs/body-funcs — OPEN (8), RESULT (11), END (13).
-# Modes 6 (FAIL_NOT_ENOUGH_MESO), 7 (FAIL_NEED_FREE_SLOT), 9/12 (START_SELECT,
-# alias pair), 10 (SHOW_RESULT), and 14 (RESET) exist client-side (bodyless —
-# mode byte only, per the IDA note §0) but are NOT wired here: no atlas-rps
-# path emits them today. Adding writers for unemitted modes would be unwired
-# dead code (CLAUDE.md "no stubs"); a later milestone may add them if the
-# server needs to send them — do not invent modes 6/7/9/10/12/14 body-funcs
-# ahead of that need.
+# SCOPE: the FOUR modes atlas-rps (the feature service) emits to drive a game
+# are implemented as Atlas structs/body-funcs — OPEN (8), START_SELECT (9),
+# RESULT (11), END (13). START_SELECT was added 2026-07-17 after live testing
+# proved the client's board keeps its R/P/S buttons disabled until it receives
+# mode 9: atlas-rps sends it in response to the serverbound START (sub-op 0,
+# first round) and CONTINUE (sub-op 3, each subsequent round). Modes 6
+# (FAIL_NOT_ENOUGH_MESO), 7 (FAIL_NEED_FREE_SLOT), 10 (SHOW_RESULT), 12
+# (wire-distinct alias of 9), and 14 (RESET) exist client-side (bodyless — mode
+# byte only, per the IDA note §0) but are NOT wired here: no atlas-rps path
+# emits them today. Adding writers for unemitted modes would be unwired dead
+# code (CLAUDE.md "no stubs"); a later milestone may add them if the server
+# needs to send them — do not invent modes 6/7/10/12/14 body-funcs ahead of
+# that need.
 #
 # UNIFORM MODE BYTES (unlike storage's jms -1 shift): the IDA note's §0
 # executive summary and §6 per-version table establish that the RPS_GAME
@@ -44,6 +48,7 @@ fname: CRPSGameDlg::OnPacket
 op: RPS_GAME
 direction: clientbound
 operations:
-  - { key: OPEN,   modes: { gms_v48: 8,  gms_v61: 8,  gms_v72: 8,  gms_v79: 8,  gms_v83: 8,  gms_v84: 8,  gms_v87: 8,  gms_v95: 8,  jms_v185: 8  } }
-  - { key: RESULT, modes: { gms_v48: 11, gms_v61: 11, gms_v72: 11, gms_v79: 11, gms_v83: 11, gms_v84: 11, gms_v87: 11, gms_v95: 11, jms_v185: 11 } }
-  - { key: END,    modes: { gms_v48: 13, gms_v61: 13, gms_v72: 13, gms_v79: 13, gms_v83: 13, gms_v84: 13, gms_v87: 13, gms_v95: 13, jms_v185: 13 } }
+  - { key: OPEN,         modes: { gms_v48: 8,  gms_v61: 8,  gms_v72: 8,  gms_v79: 8,  gms_v83: 8,  gms_v84: 8,  gms_v87: 8,  gms_v95: 8,  jms_v185: 8  } }
+  - { key: START_SELECT, modes: { gms_v48: 9,  gms_v61: 9,  gms_v72: 9,  gms_v79: 9,  gms_v83: 9,  gms_v84: 9,  gms_v87: 9,  gms_v95: 9,  jms_v185: 9  } }
+  - { key: RESULT,       modes: { gms_v48: 11, gms_v61: 11, gms_v72: 11, gms_v79: 11, gms_v83: 11, gms_v84: 11, gms_v87: 11, gms_v95: 11, jms_v185: 11 } }
+  - { key: END,          modes: { gms_v48: 13, gms_v61: 13, gms_v72: 13, gms_v79: 13, gms_v83: 13, gms_v84: 13, gms_v87: 13, gms_v95: 13, jms_v185: 13 } }

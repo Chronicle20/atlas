@@ -17,6 +17,9 @@ type ProcessorMock struct {
 	StartFunc        func(mb *message.Buffer, characterId uint32, worldId world.Id, channelId channel.Id, npcId uint32) (game.Model, error)
 	StartAndEmitFunc func(characterId uint32, worldId world.Id, channelId channel.Id, npcId uint32) (game.Model, error)
 
+	BeginFunc        func(mb *message.Buffer, characterId uint32) (game.Model, error)
+	BeginAndEmitFunc func(characterId uint32) (game.Model, error)
+
 	SelectFunc        func(mb *message.Buffer, characterId uint32, throw game.Throw) (game.Model, error)
 	SelectAndEmitFunc func(characterId uint32, throw game.Throw) (game.Model, error)
 
@@ -52,6 +55,20 @@ func (m *ProcessorMock) Start(mb *message.Buffer, characterId uint32, worldId wo
 func (m *ProcessorMock) StartAndEmit(characterId uint32, worldId world.Id, channelId channel.Id, npcId uint32) (game.Model, error) {
 	if m.StartAndEmitFunc != nil {
 		return m.StartAndEmitFunc(characterId, worldId, channelId, npcId)
+	}
+	return game.Model{}, nil
+}
+
+func (m *ProcessorMock) Begin(mb *message.Buffer, characterId uint32) (game.Model, error) {
+	if m.BeginFunc != nil {
+		return m.BeginFunc(mb, characterId)
+	}
+	return game.Model{}, nil
+}
+
+func (m *ProcessorMock) BeginAndEmit(characterId uint32) (game.Model, error) {
+	if m.BeginAndEmitFunc != nil {
+		return m.BeginAndEmitFunc(characterId)
 	}
 	return game.Model{}, nil
 }

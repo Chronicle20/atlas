@@ -40,7 +40,7 @@ type rpsEmitCall struct {
 	throw byte
 }
 
-// installRPSEmitSeams swaps the three emit funcs to capture invocations
+// installRPSEmitSeams swaps the four emit funcs to capture invocations
 // instead of hitting a real Kafka producer, and returns the recorded calls
 // plus a restore func. Mirrors the door handler's doorsByOwnerFunc/
 // partyMemberIdsFunc seam pattern (mystic_door_enter.go).
@@ -48,10 +48,15 @@ func installRPSEmitSeams(t *testing.T) (*[]rpsEmitCall, func()) {
 	t.Helper()
 	calls := &[]rpsEmitCall{}
 
+	origBegin := emitRPSBeginFunc
 	origSelect := emitRPSSelectFunc
 	origContinue := emitRPSContinueFunc
 	origCollect := emitRPSCollectFunc
 
+	emitRPSBeginFunc = func(_ logrus.FieldLogger, _ context.Context, _ uint32, _ world.Id, _ channel.Id) error {
+		*calls = append(*calls, rpsEmitCall{kind: "BEGIN"})
+		return nil
+	}
 	emitRPSSelectFunc = func(_ logrus.FieldLogger, _ context.Context, _ uint32, _ world.Id, _ channel.Id, throw byte) error {
 		*calls = append(*calls, rpsEmitCall{kind: "SELECT", throw: throw})
 		return nil
@@ -66,6 +71,7 @@ func installRPSEmitSeams(t *testing.T) (*[]rpsEmitCall, func()) {
 	}
 
 	return calls, func() {
+		emitRPSBeginFunc = origBegin
 		emitRPSSelectFunc = origSelect
 		emitRPSContinueFunc = origContinue
 		emitRPSCollectFunc = origCollect
@@ -118,10 +124,10 @@ func TestRPSActionExitEmitsCollectCommand(t *testing.T) {
 	}
 }
 
-func TestRPSActionStartIsDropped(t *testing.T) {
+func TestRPSActionStartEmitsBeginCommand(t *testing.T) {
 	calls := runRPSAction(t, []byte{0})
-	if len(*calls) != 0 {
-		t.Fatalf("START must be a no-op, got %+v", *calls)
+	if len(*calls) != 1 || (*calls)[0].kind != "BEGIN" {
+		t.Fatalf("START must emit a single BEGIN command (opens the first round), got %+v", *calls)
 	}
 }
 

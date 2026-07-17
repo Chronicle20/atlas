@@ -128,6 +128,13 @@ func decodeGameOpened(t *testing.T, msg kafka.Message) rps.Event[rps.GameOpenedE
 	return e
 }
 
+func decodeRoundStarted(t *testing.T, msg kafka.Message) rps.Event[rps.RoundStartedEventBody] {
+	t.Helper()
+	var e rps.Event[rps.RoundStartedEventBody]
+	require.NoError(t, json.Unmarshal(msg.Value, &e))
+	return e
+}
+
 func decodeRoundResult(t *testing.T, msg kafka.Message) rps.Event[rps.RoundResultEventBody] {
 	t.Helper()
 	var e rps.Event[rps.RoundResultEventBody]
@@ -148,10 +155,13 @@ const (
 	testNpcId     = uint32(9020000)
 )
 
-// TestProcessor_FullHappyPath drives Start -> Select(win) -> Continue ->
-// Select(tie) -> Select(win) -> Collect against a 2-rung ladder, asserting
-// the rung/status transitions at each step and the full ordered sequence of
-// buffered events.
+// TestProcessor_FullHappyPath drives Start -> Begin -> Select(win) ->
+// Continue -> Select(tie) -> Select(win) -> Collect against a 2-rung ladder,
+// asserting the rung/status transitions at each step and the full ordered
+// sequence of buffered events. Begin (first round) and Continue (each
+// subsequent round) each buffer a RoundStarted event -> the client's
+// START_SELECT frame; a tie does NOT (the client re-enables selection
+// locally), so the tie round buffers only a RoundResult.
 func TestProcessor_FullHappyPath(t *testing.T) {
 	setupRegistryTest(t)
 	ten := setupTestTenant(t)
@@ -167,6 +177,11 @@ func TestProcessor_FullHappyPath(t *testing.T) {
 	m, err := p.Start(mb, characterId, testWorldId, testChannelId, testNpcId)
 	require.NoError(t, err)
 	assert.Equal(t, game.StatusOpen, m.Status())
+	assert.Equal(t, 0, m.Rung())
+
+	m, err = p.Begin(mb, characterId) // player clicks Start on the board
+	require.NoError(t, err)
+	assert.Equal(t, game.StatusAwaitingSelect, m.Status())
 	assert.Equal(t, 0, m.Rung())
 
 	m, err = p.Select(mb, characterId, game.ThrowRock) // win
@@ -197,39 +212,111 @@ func TestProcessor_FullHappyPath(t *testing.T) {
 	assert.False(t, found, "session should be removed from the registry after Collect")
 
 	msgs := mb.GetAll()[rps.EnvEventTopic]
-	require.Len(t, msgs, 5, "expected GameOpened, RoundResult(win), RoundResult(tie), RoundResult(win), GameEnded(collected)")
+	require.Len(t, msgs, 7, "expected GameOpened, RoundStarted, RoundResult(win), RoundStarted, RoundResult(tie), RoundResult(win), GameEnded(collected)")
 
 	assert.Equal(t, rps.EventTypeGameOpened, decodeEventType(t, msgs[0]))
 	opened := decodeGameOpened(t, msgs[0])
 	assert.Equal(t, testNpcId, opened.Body.NpcId)
 	assert.Equal(t, uint32(1000), opened.Body.Ante, "ante should be sourced from the ladder's EntryCostMeso")
 
-	assert.Equal(t, rps.EventTypeRoundResult, decodeEventType(t, msgs[1]))
-	round1 := decodeRoundResult(t, msgs[1])
+	assert.Equal(t, rps.EventTypeRoundStarted, decodeEventType(t, msgs[1]), "Begin opens the first round")
+	assert.Equal(t, 0, decodeRoundStarted(t, msgs[1]).Body.Rung)
+
+	assert.Equal(t, rps.EventTypeRoundResult, decodeEventType(t, msgs[2]))
+	round1 := decodeRoundResult(t, msgs[2])
 	assert.Equal(t, byte(game.ThrowScissors), round1.Body.OpponentThrow)
 	assert.Equal(t, int(game.OutcomeWin), round1.Body.Outcome)
 	assert.Equal(t, 1, round1.Body.Rung)
 	assert.Equal(t, uint32(4000000), uint32(round1.Body.Prize.ItemId))
 
-	assert.Equal(t, rps.EventTypeRoundResult, decodeEventType(t, msgs[2]))
-	round2 := decodeRoundResult(t, msgs[2])
+	assert.Equal(t, rps.EventTypeRoundStarted, decodeEventType(t, msgs[3]), "Continue opens the next round")
+	assert.Equal(t, 1, decodeRoundStarted(t, msgs[3]).Body.Rung)
+
+	assert.Equal(t, rps.EventTypeRoundResult, decodeEventType(t, msgs[4]))
+	round2 := decodeRoundResult(t, msgs[4])
 	assert.Equal(t, byte(game.ThrowRock), round2.Body.OpponentThrow)
 	assert.Equal(t, int(game.OutcomeTie), round2.Body.Outcome)
 	assert.Equal(t, 1, round2.Body.Rung)
 
-	assert.Equal(t, rps.EventTypeRoundResult, decodeEventType(t, msgs[3]))
-	round3 := decodeRoundResult(t, msgs[3])
+	assert.Equal(t, rps.EventTypeRoundResult, decodeEventType(t, msgs[5]))
+	round3 := decodeRoundResult(t, msgs[5])
 	assert.Equal(t, byte(game.ThrowScissors), round3.Body.OpponentThrow)
 	assert.Equal(t, int(game.OutcomeWin), round3.Body.Outcome)
 	assert.Equal(t, 2, round3.Body.Rung)
 	assert.Equal(t, uint32(4000001), uint32(round3.Body.Prize.ItemId))
 
-	assert.Equal(t, rps.EventTypeGameEnded, decodeEventType(t, msgs[4]))
-	ended := decodeGameEnded(t, msgs[4])
+	assert.Equal(t, rps.EventTypeGameEnded, decodeEventType(t, msgs[6]))
+	ended := decodeGameEnded(t, msgs[6])
 	assert.Equal(t, rps.ReasonCollected, ended.Body.Reason)
 	if assert.NotNil(t, ended.Body.GrantedPrize) {
 		assert.Equal(t, uint32(4000001), uint32(ended.Body.GrantedPrize.ItemId))
 	}
+}
+
+// TestProcessor_Begin_OpensFirstRound verifies Begin transitions a StatusOpen
+// session to StatusAwaitingSelect and buffers exactly one RoundStarted event
+// carrying the current rung.
+func TestProcessor_Begin_OpensFirstRound(t *testing.T) {
+	setupRegistryTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
+	characterId := uint32(1401)
+
+	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowRock), ladderProviderFor(twoRungLadder()), noopSagaSubmitter())
+
+	mb := message.NewBuffer()
+	_, err := p.Start(mb, characterId, testWorldId, testChannelId, testNpcId)
+	require.NoError(t, err)
+
+	beginBuf := message.NewBuffer()
+	m, err := p.Begin(beginBuf, characterId)
+	require.NoError(t, err)
+	assert.Equal(t, game.StatusAwaitingSelect, m.Status())
+	assert.Equal(t, 0, m.Rung())
+
+	msgs := beginBuf.GetAll()[rps.EnvEventTopic]
+	require.Len(t, msgs, 1, "Begin should buffer exactly one RoundStarted event")
+	assert.Equal(t, rps.EventTypeRoundStarted, decodeEventType(t, msgs[0]))
+	assert.Equal(t, 0, decodeRoundStarted(t, msgs[0]).Body.Rung)
+}
+
+// TestProcessor_Begin_InvalidStatusReturnsError verifies Begin is rejected
+// once the game is past the open state (here: after a win, StatusAwaitingDecision),
+// and buffers no event.
+func TestProcessor_Begin_InvalidStatusReturnsError(t *testing.T) {
+	setupRegistryTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
+	characterId := uint32(1402)
+
+	// Rock beats Scissors -> a win puts the session in StatusAwaitingDecision.
+	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowScissors), ladderProviderFor(twoRungLadder()), noopSagaSubmitter())
+
+	mb := message.NewBuffer()
+	_, err := p.Start(mb, characterId, testWorldId, testChannelId, testNpcId)
+	require.NoError(t, err)
+	won, err := p.Select(mb, characterId, game.ThrowRock)
+	require.NoError(t, err)
+	require.Equal(t, game.StatusAwaitingDecision, won.Status())
+
+	beginBuf := message.NewBuffer()
+	_, err = p.Begin(beginBuf, characterId)
+	assert.ErrorIs(t, err, game.ErrInvalidStatus)
+	assert.Empty(t, beginBuf.GetAll()[rps.EnvEventTopic], "a rejected Begin buffers no event")
+}
+
+// TestProcessor_Begin_NoSessionReturnsError verifies Begin against a character
+// with no active session returns ErrSessionNotFound.
+func TestProcessor_Begin_NoSessionReturnsError(t *testing.T) {
+	setupRegistryTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
+
+	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowRock), ladderProviderFor(twoRungLadder()), noopSagaSubmitter())
+
+	mb := message.NewBuffer()
+	_, err := p.Begin(mb, uint32(1403))
+	assert.ErrorIs(t, err, game.ErrSessionNotFound)
 }
 
 // TestProcessor_Select_Loss verifies that a losing round removes the

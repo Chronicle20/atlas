@@ -10,18 +10,22 @@ const (
 	EnvCommandTopic = "COMMAND_TOPIC_RPS"
 	EnvEventTopic   = "EVENT_TOPIC_RPS"
 
-	// CommandTypeSelect submits the player's rock/paper/scissors throw for
-	// the current round. CommandTypeContinue/Collect/Quit carry no body
-	// data of their own. StartGame is not a Command here; it arrives via
-	// REST (see Task 11).
+	// CommandTypeBegin opens the first round of an already-created (StatusOpen)
+	// session: the player clicked "Start" on the board (serverbound RPS_ACTION
+	// sub-op 0). CommandTypeSelect submits the player's rock/paper/scissors
+	// throw for the current round. CommandTypeContinue/Collect/Quit carry no
+	// body data of their own. StartGame (session creation) is not a Command
+	// here; it arrives via REST (see Task 11).
+	CommandTypeBegin    = "BEGIN"
 	CommandTypeSelect   = "SELECT"
 	CommandTypeContinue = "CONTINUE"
 	CommandTypeCollect  = "COLLECT"
 	CommandTypeQuit     = "QUIT"
 
-	EventTypeGameOpened  = "GAME_OPENED"
-	EventTypeRoundResult = "ROUND_RESULT"
-	EventTypeGameEnded   = "GAME_ENDED"
+	EventTypeGameOpened   = "GAME_OPENED"
+	EventTypeRoundStarted = "ROUND_STARTED"
+	EventTypeRoundResult  = "ROUND_RESULT"
+	EventTypeGameEnded    = "GAME_ENDED"
 
 	// ReasonCollected/Lost/Quit/Disconnected are the terminal reasons a
 	// GameEnded event can carry. GrantedPrize is only populated when
@@ -40,6 +44,11 @@ type Command[E any] struct {
 	ChannelId   channel.Id `json:"channelId"`
 	Type        string     `json:"type"`
 	Body        E          `json:"body"`
+}
+
+// BeginCommandBody signals the player clicked "Start" on the board to open the
+// first round of an already-open session. It carries no data.
+type BeginCommandBody struct {
 }
 
 // SelectCommandBody carries the player's rock/paper/scissors throw.
@@ -79,6 +88,17 @@ type Event[E any] struct {
 type GameOpenedEventBody struct {
 	NpcId uint32 `json:"npcId"`
 	Ante  uint32 `json:"ante"`
+}
+
+// RoundStartedEventBody signals a round is now open for the player's throw -
+// the channel translates it to the clientbound START_SELECT frame (mode 9),
+// which enables the client's R/P/S buttons and arms its selection timer. Rung
+// is the rung the round is being played at (0-based; informational - the frame
+// itself is bodyless). Emitted on the first round (BEGIN) and each subsequent
+// round the player advances to (CONTINUE); NOT on a tie replay, which the
+// client re-enables locally with no server frame.
+type RoundStartedEventBody struct {
+	Rung int `json:"rung"`
 }
 
 // Prize describes a reward granted at a ladder rung.

@@ -28,6 +28,23 @@ func gameOpenedEventProvider(characterId uint32, worldId world.Id, channelId cha
 	return producer.SingleMessageProvider(key, value)
 }
 
+// roundStartedEventProvider builds the RoundStarted event emitted when a round
+// opens for the player's throw. The channel translates it to the clientbound
+// START_SELECT frame (mode 9). rung is the rung being played (informational).
+func roundStartedEventProvider(characterId uint32, worldId world.Id, channelId channel.Id, rung int) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &rps.Event[rps.RoundStartedEventBody]{
+		CharacterId: characterId,
+		WorldId:     worldId,
+		ChannelId:   channelId,
+		Type:        rps.EventTypeRoundStarted,
+		Body: rps.RoundStartedEventBody{
+			Rung: rung,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 // roundResultEventProvider builds the RoundResult event emitted after a
 // round is adjudicated, carrying the opponent's throw, the outcome, the
 // resulting rung, and any prize resolved at that rung.

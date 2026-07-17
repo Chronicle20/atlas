@@ -13,6 +13,7 @@ import (
 // Processor emits COMMAND_TOPIC_RPS commands on behalf of the serverbound
 // RPS_ACTION handler.
 type Processor interface {
+	Begin(characterId uint32, worldId world.Id, channelId channel.Id) error
 	Select(characterId uint32, worldId world.Id, channelId channel.Id, throw byte) error
 	Continue(characterId uint32, worldId world.Id, channelId channel.Id) error
 	Collect(characterId uint32, worldId world.Id, channelId channel.Id) error
@@ -25,6 +26,13 @@ type ProcessorImpl struct {
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{l: l, ctx: ctx}
+}
+
+// Begin sends a BEGIN command - the client clicked "Start" on the board to
+// open the first round of an already-open session.
+func (p *ProcessorImpl) Begin(characterId uint32, worldId world.Id, channelId channel.Id) error {
+	p.l.Debugf("Sending RPS BEGIN command for character [%d].", characterId)
+	return producer2.ProviderImpl(p.l)(p.ctx)(rpsMsg.EnvCommandTopic)(BeginCommandProvider(characterId, worldId, channelId))
 }
 
 // Select sends a SELECT command carrying the player's raw throw byte.

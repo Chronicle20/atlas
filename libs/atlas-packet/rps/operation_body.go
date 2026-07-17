@@ -17,9 +17,10 @@ import (
 type RPSGameMode = string
 
 const (
-	RPSGameModeOpen   RPSGameMode = "OPEN"
-	RPSGameModeResult RPSGameMode = "RESULT"
-	RPSGameModeEnd    RPSGameMode = "END"
+	RPSGameModeOpen        RPSGameMode = "OPEN"
+	RPSGameModeStartSelect RPSGameMode = "START_SELECT"
+	RPSGameModeResult      RPSGameMode = "RESULT"
+	RPSGameModeEnd         RPSGameMode = "END"
 )
 
 // RPSGameOpenBody constructs the OPEN arm body function. npcId is the RPS
@@ -30,6 +31,17 @@ const (
 func RPSGameOpenBody(npcId uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", RPSGameModeOpen, func(mode byte) packet.Encoder {
 		return clientbound.NewRPSGameOpen(mode, npcId)
+	})
+}
+
+// RPSGameStartSelectBody constructs the START_SELECT arm body function. No arm
+// data — mode byte only. atlas-rps emits it to open each round: the client
+// enables its R/P/S buttons and arms the selection timer on receipt. The mode
+// byte is resolved per-tenant from the operations table (rps_game.yaml
+// START_SELECT row), never hard-coded.
+func RPSGameStartSelectBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", RPSGameModeStartSelect, func(mode byte) packet.Encoder {
+		return clientbound.NewRPSGameStartSelect(mode)
 	})
 }
 

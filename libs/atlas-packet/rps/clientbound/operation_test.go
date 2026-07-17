@@ -79,6 +79,41 @@ func TestRPSGameOpen(t *testing.T) {
 	}
 }
 
+// TestRPSGameStartSelect exercises the START_SELECT arm (mode 9): mode byte
+// only, no body (client enables R/P/S buttons + arms the selection timer, no
+// further wire reads — §0/§1-§5 of the IDA note). The mode byte is version-
+// invariant, so the fixture runs across all seven versions and proves the wire
+// format everywhere.
+//
+// NOTE — matrix promotion pending. This cell has no packet-audit:verify marker
+// yet: promoting it to ✅ requires splicing a CRPSGameDlg::OnPacket#START_SELECT
+// arm (the verbatim case-9 decompile) into each version's IDA export, which
+// needs a live IDA pass (docs/tasks/task-132-rps-npc-game — the mode-9 arm was
+// out of scope for the original Task-14 export splice). The case-9 handler
+// addresses are known from the committed clientbound note §1-§5 (v83 0x7402e9,
+// v84 0x76200d, v87 0x78aec1, v95 0x6d72ec, jms185 0x7ae6d4); the four legacy
+// versions share the same byte-identical dispatcher but their case-9 offsets
+// were never derived. Until the export-splice pass runs, the byte-fixture below
+// is the wire-format guarantee; no fabricated address is cited.
+func TestRPSGameStartSelect(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	for _, v := range rpsVariants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			input := NewRPSGameStartSelect(9)
+			b := input.Encode(l, ctx)(nil)
+			if len(b) != 1 || b[0] != 9 {
+				t.Fatalf("StartSelect body: got %v, want [9]", b)
+			}
+			output := StartSelect{}
+			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+			if output.Mode() != input.Mode() {
+				t.Errorf("mode: got %v, want %v", output.Mode(), input.Mode())
+			}
+		})
+	}
+}
+
 // TestRPSGameResult exercises the RESULT arm (mode 11): Decode1 npcThrow +
 // Decode1 straightVictoryCount (SIGNED int8). Uses a NEGATIVE
 // straightVictoryCount (-5) to prove WriteInt8/ReadInt8 sign-extension is

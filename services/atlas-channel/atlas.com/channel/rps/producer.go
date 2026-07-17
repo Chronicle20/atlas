@@ -10,6 +10,20 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
+// BeginCommandProvider creates a BEGIN command for the rps service - the
+// client clicked "Start" to open the first round of an already-open session.
+func BeginCommandProvider(characterId uint32, worldId world.Id, channelId channel.Id) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &rps.Command[rps.BeginCommandBody]{
+		CharacterId: characterId,
+		WorldId:     worldId,
+		ChannelId:   channelId,
+		Type:        rps.CommandTypeBegin,
+		Body:        rps.BeginCommandBody{},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 // SelectCommandProvider creates a SELECT command for the rps service.
 func SelectCommandProvider(characterId uint32, worldId world.Id, channelId channel.Id, throw byte) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))

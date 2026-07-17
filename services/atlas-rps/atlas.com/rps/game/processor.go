@@ -87,6 +87,14 @@ type Processor interface {
 	Start(mb *message.Buffer, characterId uint32, worldId world.Id, channelId channel.Id, npcId uint32) (Model, error)
 	StartAndEmit(characterId uint32, worldId world.Id, channelId channel.Id, npcId uint32) (Model, error)
 
+	// Begin opens the first round of a StatusOpen session (the player clicked
+	// "Start" on the board), transitions it to StatusAwaitingSelect, and
+	// buffers a RoundStarted event. The client keeps its R/P/S buttons disabled
+	// until it receives the START_SELECT frame that RoundStarted drives, so
+	// without Begin the round cannot start.
+	Begin(mb *message.Buffer, characterId uint32) (Model, error)
+	BeginAndEmit(characterId uint32) (Model, error)
+
 	// Select submits the player's throw for the current round, adjudicates
 	// it against a drawn opponent throw, and buffers a RoundResult event
 	// (plus a terminal GameEnded on a loss).
@@ -248,6 +256,45 @@ func (p *ProcessorImpl) StartAndEmit(characterId uint32, worldId world.Id, chann
 	})(startInput{characterId: characterId, worldId: worldId, channelId: channelId, npcId: npcId})
 }
 
+// Begin opens the first round of a StatusOpen session: the player clicked
+// "Start" on the board (serverbound RPS_ACTION sub-op 0). It transitions the
+// session to StatusAwaitingSelect and buffers a RoundStarted event so the
+// channel writes the clientbound START_SELECT frame that enables the client's
+// R/P/S buttons. Only valid from StatusOpen - a Begin against any other status
+// is a no-op error (the round is already underway or the game is over), which
+// the command handler logs without sending a frame.
+func (p *ProcessorImpl) Begin(mb *message.Buffer, characterId uint32) (Model, error) {
+	m, ok := GetRegistry().Get(p.ctx, characterId)
+	if !ok {
+		return Model{}, ErrSessionNotFound
+	}
+	if m.Status() != StatusOpen {
+		return Model{}, ErrInvalidStatus
+	}
+
+	updated, err := CloneModelBuilder(m).SetStatus(StatusAwaitingSelect).Build()
+	if err != nil {
+		return Model{}, err
+	}
+	GetRegistry().Put(p.ctx, updated)
+
+	if err := mb.Put(rps.EnvEventTopic, roundStartedEventProvider(characterId, m.WorldId(), m.ChannelId(), m.Rung())); err != nil {
+		return Model{}, err
+	}
+	return updated, nil
+}
+
+// BeginAndEmit opens the first round and emits its buffered events.
+func (p *ProcessorImpl) BeginAndEmit(characterId uint32) (Model, error) {
+	return message.EmitWithResult[Model, uint32](
+		producer.ProviderImpl(p.l)(p.ctx),
+	)(func(mb *message.Buffer) func(characterId uint32) (Model, error) {
+		return func(characterId uint32) (Model, error) {
+			return p.Begin(mb, characterId)
+		}
+	})(characterId)
+}
+
 // Select submits the player's throw, draws an opponent throw via the
 // injected ThrowSource, adjudicates the round, and applies the resulting
 // state transition:
@@ -365,6 +412,13 @@ func (p *ProcessorImpl) Continue(mb *message.Buffer, characterId uint32) (Model,
 		return Model{}, err
 	}
 	GetRegistry().Put(p.ctx, updated)
+
+	// Open the next round: the channel writes START_SELECT (mode 9), which
+	// re-enables the client's R/P/S buttons for the new rung. Mirrors Begin's
+	// event for the first round.
+	if err := mb.Put(rps.EnvEventTopic, roundStartedEventProvider(characterId, m.WorldId(), m.ChannelId(), updated.Rung())); err != nil {
+		return Model{}, err
+	}
 	return updated, nil
 }
 

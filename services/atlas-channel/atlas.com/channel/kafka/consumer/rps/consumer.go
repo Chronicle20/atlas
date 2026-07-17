@@ -49,6 +49,11 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 					return nil, err
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleRoundStartedEvent(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleRoundResultEvent(sc, wp))))
 				if err != nil {
 					return nil, err
@@ -95,6 +100,28 @@ func handleGameOpenedEvent(sc server.Model, wp writer.Producer) message.Handler[
 		l.Debugf("Received RPS GAME_OPENED event for character [%d], NPC [%d], ante [%d].", e.CharacterId, e.Body.NpcId, e.Body.Ante)
 
 		rpsAnnouncer(l, ctx, wp, sc, e.CharacterId, rpspkt.RPSGameOpenBody(e.Body.NpcId))
+	}
+}
+
+// handleRoundStartedEvent translates a ROUND_STARTED event into the
+// START_SELECT frame (mode 9). The frame is bodyless - on receipt the client
+// enables its R/P/S buttons and arms the 30s selection timer. atlas-rps emits
+// ROUND_STARTED on the first round (the player's START sub-op) and on each
+// round it advances to via CONTINUE; a tie does NOT emit it (the client
+// re-enables selection locally), so a tie produces only a RESULT frame.
+func handleRoundStartedEvent(sc server.Model, wp writer.Producer) message.Handler[rpsmsg.Event[rpsmsg.RoundStartedEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e rpsmsg.Event[rpsmsg.RoundStartedEventBody]) {
+		if e.Type != rpsmsg.EventTypeRoundStarted {
+			return
+		}
+
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+			return
+		}
+
+		l.Debugf("Received RPS ROUND_STARTED event for character [%d], rung [%d].", e.CharacterId, e.Body.Rung)
+
+		rpsAnnouncer(l, ctx, wp, sc, e.CharacterId, rpspkt.RPSGameStartSelectBody())
 	}
 }
 

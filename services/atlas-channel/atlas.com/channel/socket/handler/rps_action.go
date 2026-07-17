@@ -31,9 +31,13 @@ const (
 	RPSActionModeRetry    RPSActionMode = "RETRY"
 )
 
-// emitRPSSelectFunc/emitRPSContinueFunc/emitRPSCollectFunc are seams over
-// rps.NewProcessor, swappable in tests (mirrors the door handler's
+// emitRPSBeginFunc/emitRPSSelectFunc/emitRPSContinueFunc/emitRPSCollectFunc are
+// seams over rps.NewProcessor, swappable in tests (mirrors the door handler's
 // doorsByOwnerFunc/partyMemberIdsFunc seam pattern in mystic_door_enter.go).
+var emitRPSBeginFunc = func(l logrus.FieldLogger, ctx context.Context, characterId uint32, worldId world.Id, channelId channel.Id) error {
+	return rps.NewProcessor(l, ctx).Begin(characterId, worldId, channelId)
+}
+
 var emitRPSSelectFunc = func(l logrus.FieldLogger, ctx context.Context, characterId uint32, worldId world.Id, channelId channel.Id, throw byte) error {
 	return rps.NewProcessor(l, ctx).Select(characterId, worldId, channelId, throw)
 }
@@ -50,12 +54,17 @@ var emitRPSCollectFunc = func(l logrus.FieldLogger, ctx context.Context, charact
 // matching atlas-rps command. Sub-op -> command mapping (IDA-verified,
 // Task 16 + atlas-rps amendment Task 17b):
 //
+//	START(0)           -> CommandTypeBegin (opens the first round: atlas-rps
+//	                      transitions the open session to awaiting-select and
+//	                      emits RoundStarted, which the channel turns into the
+//	                      clientbound START_SELECT frame that enables the R/P/S
+//	                      buttons - the client blocks on this before it will let
+//	                      the player pick, so it is NOT a no-op)
 //	SELECT(1, +throw) -> CommandTypeSelect{Throw}  (throw passed RAW, unremapped)
 //	CONTINUE(3)        -> CommandTypeContinue
 //	EXIT(4)            -> CommandTypeCollect (the client's only "leave" action;
 //	                      there is no dedicated collect sub-op - atlas-rps's
 //	                      Collect handles collect-or-forfeit by session status)
-//	START(0)           -> no-op (session pre-created by the entry saga)
 //	UPDATE(2, timeout) -> no-op (TTL sweeper reaps abandoned sessions)
 //	RETRY(5)           -> no-op; parked follow-up (restart-with-fee is
 //	                      unimplemented; see docs/tasks/task-132-rps-npc-game
@@ -92,7 +101,10 @@ func RPSActionHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Pro
 			return
 		}
 		if isRPSAction(l)(readerOptions, mode, RPSActionModeStart) {
-			l.Debugf("Character [%d] issued RPS START; no-op, session is pre-created by the entry saga.", s.CharacterId())
+			l.Debugf("Character [%d] issued RPS START; opening the first round.", s.CharacterId())
+			if err := emitRPSBeginFunc(l, ctx, s.CharacterId(), s.WorldId(), s.ChannelId()); err != nil {
+				l.WithError(err).Errorf("Unable to emit RPS BEGIN command for character [%d].", s.CharacterId())
+			}
 			return
 		}
 		if isRPSAction(l)(readerOptions, mode, RPSActionModeUpdate) {

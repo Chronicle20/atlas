@@ -33,13 +33,13 @@ func main() {
 	l := rt.Logger()
 
 	db := database.Connect(l, database.SetMigrations(ranking.Migration))
-	_ = db
 
 	server.New(l).
 		WithContext(rt.Context()).
 		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(ranking.InitResource(GetServer())(db)).
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 

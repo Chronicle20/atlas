@@ -35,13 +35,37 @@ deferred deep-domain rename. nginx already routes `/api/gachapons` → the `atla
 host (Task 2), so no caller/seed-dir churn is needed. Only the **service identity** (module,
 dir, DB, deploy, host) + **topic** + **unification** change.
 
-## Piece 3 — consumables-unification (the real design work)
+## Piece 3 — unification (CORRECTED 2026-07-17: saga-orchestrator, NOT consumables)
 
-**Today:** the classic gachapon coupon flows client→channel→(cash dialog)→**atlas-consumables** which rolls (calls reward-pools `rewards/select`), awards, and emits `gachapon_reward_won`; the channel consumer broadcasts a chat line. The incubator, by contrast, is handled entirely in the **channel** (`character_cash_item_use.go` → `IncubatorUse` saga: consume egg + incubator, award, emit `INCUBATOR_RESULT`).
+**Correction:** an earlier version of this doc said the gachapon roll lives in
+`atlas-consumables`. That was wrong. The classic gachapon roll+emit is owned by the
+**`atlas-saga-orchestrator`**: `handleSelectGachaponReward` (`saga/handler.go:2635`) calls
+`h.gachaponP.SelectReward(gachaponId)` (the reward-pools REST client), dynamically appends an
+`AwardAsset` step for the won item, then `handleEmitGachaponWin` (`:2732`) emits
+`gachapon_reward_won` (reading the assetId from the completed AwardAsset step). Consumables'
+topic is `EVENT_TOPIC_CONSUMABLE_STATUS`, unrelated. So "unify through consumables" is a
+mischaracterization — the correct unification is through the **saga-orchestrator**.
 
-**Unified:** move the incubator trigger into `atlas-consumables` alongside the gachapon-coupon path. Consumables consumes the trigger (coupon, or incubator+egg), calls the pool roll keyed by pool id (gachapon id / egg id), awards, and emits **one** `pool_reward_won` event carrying a **presentation discriminator** (`kind`: `gachapon` | `incubator`, + `poolId`/`eggId`). The **channel consumer branches on `kind`**: `gachapon` → chat broadcast (as today); `incubator` → the version-gated `INCUBATOR_RESULT` (with `gachaponItemID = eggId`, as today). The `INCUBATOR_RESULT` codec and its version gating are UNCHANGED — only *where the event originates* moves (channel-inline saga → consumables producer + channel consumer branch).
+**Today's incubator (post-reconciliation):** the **channel** rolls inline
+(`incubator.SelectReward(eggId)`), then builds an `IncubatorUse` saga with a *pre-rolled*
+reward: `DestroyAsset`(egg) + `DestroyAsset`(incubator) + `AwardAsset`(reward) +
+`IncubatorResult`(emit `INCUBATOR_RESULT`). The roll is channel-side; the gachapon roll is
+saga-side. THAT asymmetry is what "unify" should remove.
 
-**Consequence:** the channel's inline `IncubatorUse` saga + the `incubator` REST client (built in the reconciliation) are removed; the incubator eligibility gate (`isPigmyEgg`) + egg-target resolution move into consumables. `atlas-saga-orchestrator`'s `IncubatorResult` step and the `EVENT_TOPIC_INCUBATOR_RESULT` path are re-evaluated (the incubator result now rides `pool_reward_won` + the channel branch, so the separate incubator saga type may be retired — confirm during implementation, do not assume).
+**Accurate unification:** generalize the saga's `SelectGachaponReward` step into a pool-generic
+`SelectPoolReward` (keyed by poolId = gachaponId or eggId, via the renamed reward-pools client),
+and route the incubator through it: the channel stops rolling inline and instead creates a saga
+with `DestroyAsset`(egg) + `DestroyAsset`(incubator) + `SelectPoolReward`(eggId) [saga rolls +
+dynamic AwardAsset] + a result-emit step branched by pool `kind` — `gachapon` → the win event
+(renamed `pool_reward_won`), `incubator` → the version-gated `INCUBATOR_RESULT`
+(`gachaponItemID = eggId`, UNCHANGED wire output). The channel's inline `incubator.SelectReward`
+REST client (built in the reconciliation) is removed; the `INCUBATOR_RESULT` codec is untouched.
+
+**Risk (elevated vs the earlier framing):** this refactors the WORKING classic-gachapon saga
+path (`handleSelectGachaponReward`/`handleEmitGachaponWin` + their compensators + dynamic
+AwardAsset step) to be pool-generic — so it can regress classic gachapon, not just incubator.
+The classic gachapon flow must stay behaviorally identical; the incubator `INCUBATOR_RESULT`
+bytes must stay identical before/after.
 
 ## Execution order (each an SDD task, verified + reviewed)
 

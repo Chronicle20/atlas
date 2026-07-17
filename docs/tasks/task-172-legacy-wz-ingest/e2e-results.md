@@ -99,9 +99,60 @@ QUEST skipped for v12), the presence/absence of the C-5 warning, and any parse
 warnings. Compare document magnitudes against the parser-layer image counts
 above.
 
+## Layer 2 — Service/DB ingest (live run in `atlas-pr-1013`)
+
+Ran the GMS v12 monolithic set through this branch's `atlas-data`
+(`atlas-data:pr-1013`) via the real upload → process flow (tenant
+`3182f3ec…`, GMS 12.1). The ingest **Job completed successfully**.
+
+Confirmed on live v12 data:
+
+- **C-1 detection:** `Detected version 12 (hash=1651) with encryption=None,
+  keyEmpty=true` — matches the parser-layer harness exactly.
+- **C-3 monolithic service path:** `monolithic Data.wz detected … serving
+  archives as sub-views`. Every category worker resolved its sub-view; maps
+  (~482, with names), monsters, npcs, skills (e.g. `1001003` = "Iron Body",
+  full effects), and all icon sets (mob 148, item 903, npc 245, skill 175)
+  ingested.
+- **C-3.4 skip-tolerance:** `QUEST: Quest.wz absent from monolithic Data.wz —
+  skipping worker` — the one genuinely-absent category, skipped cleanly; the
+  run did not fail.
+- **C-5 version cross-check:** no warning (detected 12 == params 12), correct.
+- No fatal parse errors; the run's only warnings were benign legacy-layout
+  gaps (`MobSkill.img`/`Eqp.img` absent from v12's `String.wz`).
+
+### Defect found and fixed on-branch: C-4 legacy item strings (v12 + v48)
+
+Item search returned **only 6 pets (named "MISSINGNO")** and no real items.
+Root cause: real GMS v12 **and** v48 `String.wz` ship the legacy single
+`Item.img` (Con 378 / Ins 132 / Etc 372 / Eqp 14 sub-cats / Pet 6) **and** a
+standalone `Pet.img`. The `Pet.img.xml` matched `resolveStringSources`'s
+modern per-category list, so the resolver misclassified the set as *modern*
+and skipped `Item.img` entirely — only the redundant standalone `Pet.img`
+was processed. (Verified `String.wz` layouts: v12/v48 → `Item.img`+`Pet.img`,
+no per-category; JMS v185 → `Consume/Cash/Etc/Ins/Pet/Eqp`, no `Item.img`.)
+
+Fix: `resolveStringSources` now inverts the priority — **`Item.img` present ⇒
+legacy layout, used as the sole (complete) item-string source**; modern
+layouts (no `Item.img`) fall through unchanged. Regression test
+`TestResolveStringSourcesLegacyItemImgWins`. Re-verification pending the
+next `pr-1013` image build + re-ingest.
+
+### Out of task-172 scope (triaged from the same session)
+
+- **Map rendering fallback** — map *documents* ingested correctly (~482 maps
+  with names); rendering is an `atlas-renders` concern downstream of ingest.
+- **Skills/jobs list pages** — skill/job *data* ingested (individual skill GET
+  works); the list endpoints' HTTP 400 is a pre-existing "list requires a
+  filter" behavior, not an ingest gap.
+- **Account creation 400** — `atlas-account`, unrelated to WZ ingest.
+
 ## Status
 
 - **Parser layer (C-1, C-2, C-3-lib):** verified against all three real sample
   sets — 30,030 images, zero parse errors, C-2 fallback demonstrably exercised.
-- **Service/DB layer (C-3-service, C-3.4, C-4, C-5, domain readers):** pending
-  the `deploy-env` ingest run described above.
+- **Service/DB layer, GMS v12:** ingest Job succeeded; C-1/C-3/C-3.4/C-5 all
+  confirmed live. One C-4 item-string defect found and fixed on-branch
+  (re-ingest pending the next image build to confirm real item names load).
+- **GMS v48 + JMS v185 live ingest:** still to run (v48 shares the v12 legacy
+  String layout, so the C-4 fix covers it; JMS is modern).

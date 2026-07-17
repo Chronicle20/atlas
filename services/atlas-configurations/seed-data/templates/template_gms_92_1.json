@@ -203,6 +203,16 @@
         "opCode": "0x4A",
         "validator": "LoggedInValidator",
         "handler": "OwlWarpHandle"
+      },
+      {
+        "opCode": "0x5B",
+        "validator": "LoggedInValidator",
+        "handler": "TeleportRockUseHandle"
+      },
+      {
+        "opCode": "0x71",
+        "validator": "LoggedInValidator",
+        "handler": "TeleportRockAddMapHandle"
       }
     ],
     "writers": [{
@@ -522,6 +532,23 @@
             "DENIED": 17,
             "MAINTENANCE": 18,
             "FM_ONLY": 23
+          }
+        }
+      },
+      {
+        "opCode": "0x2B",
+        "writer": "MapTransferResult",
+        "options": {
+          "operations": {
+            "DELETE_LIST": "0x02",
+            "REGISTER_LIST": "0x03",
+            "CANNOT_GO": "0x05",
+            "UNABLE_TO_LOCATE": "0x06",
+            "UNABLE_TO_LOCATE_2": "0x07",
+            "CANNOT_GO_CONTINENT": "0x08",
+            "CURRENT_MAP": "0x09",
+            "MAP_NOT_AVAILABLE": "0x0A",
+            "MAPLE_ISLAND_LEVEL7": "0x0B"
           }
         }
       }

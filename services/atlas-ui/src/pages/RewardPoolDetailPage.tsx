@@ -1,17 +1,18 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { PageLoader } from "@/components/common/PageLoader";
 import { ErrorDisplay } from "@/components/common/ErrorDisplay";
+import { NpcImage } from "@/components/features/npc/NpcImage";
 import { useTenant } from "@/context/tenant-context";
 import { useRewardPool, useRewardPoolItems, useGlobalRewardItems, useDeletePoolItem, useDeleteRewardPool } from "@/lib/hooks/api/useRewardPools";
 import { useItemName } from "@/lib/hooks/api/useItemStrings";
 import { useNPC } from "@/lib/hooks/api/useNpcs";
 import { getAssetIconUrl } from "@/lib/utils/asset-url";
+import { formatIncubatorName } from "@/lib/utils/egg-regions";
 import { createErrorFromUnknown } from "@/types/api/errors";
 import { KindBadge } from "@/components/features/reward-pools/KindBadge";
 import { PoolFormDialog } from "@/components/features/reward-pools/PoolFormDialog";
@@ -20,12 +21,21 @@ import { PoolItemsTable } from "@/components/features/reward-pools/PoolItemsTabl
 import type { RewardPoolItemData } from "@/types/models/reward-pool-item";
 import type { Tenant } from "@/types/models/tenant";
 
-function NpcChip({ npcId, tenant }: { npcId: number; tenant: Tenant }) {
+function NpcRow({ npcId, tenant }: { npcId: number; tenant: Tenant }) {
   const { data: npc } = useNPC(tenant, npcId);
+  const iconUrl = getAssetIconUrl(
+    tenant.id,
+    tenant.attributes.region,
+    tenant.attributes.majorVersion,
+    tenant.attributes.minorVersion,
+    "npc",
+    npcId,
+  );
   return (
-    <Link to={`/npcs/${npcId}`} className="hover:underline">
-      <Badge variant="secondary">{npc?.name ?? npcId}</Badge>
-    </Link>
+    <div className="flex items-center gap-2">
+      <NpcImage npcId={npcId} iconUrl={iconUrl} size={24} lazy showRetryButton={false} maxRetries={1} />
+      <Link to={`/npcs/${npcId}`} className="text-sm hover:underline">{npc?.name ?? npcId}</Link>
+    </div>
   );
 }
 
@@ -61,49 +71,33 @@ export function RewardPoolDetailPage() {
   const attrs = pool.attributes;
   const items = itemsQuery.data ?? [];
   const globalItems = isIncubator ? [] : (globalQuery.data ?? []);
-  const totalWeight = items.reduce((s, i) => s + i.attributes.weight, 0);
   const tierTotal = attrs.commonWeight + attrs.uncommonWeight + attrs.rareWeight;
   const eggIconUrl =
     isIncubator && activeTenant
       ? getAssetIconUrl(activeTenant.id, activeTenant.attributes.region, activeTenant.attributes.majorVersion, activeTenant.attributes.minorVersion, "item", parseInt(id, 10))
       : null;
+  const firstNpcId = attrs.npcIds[0];
+  const machineIconUrl =
+    !isIncubator && activeTenant && firstNpcId !== undefined
+      ? getAssetIconUrl(activeTenant.id, activeTenant.attributes.region, activeTenant.attributes.majorVersion, activeTenant.attributes.minorVersion, "npc", firstNpcId)
+      : null;
+  const headerName = isIncubator ? formatIncubatorName(eggName ?? attrs.name, pool.id) : attrs.name;
 
   return (
-    <div className="flex flex-col flex-1 space-y-6 p-10 pb-16 overflow-y-auto">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col flex-1 min-h-0 gap-6 p-10 pb-6">
+      <div className="shrink-0 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          {eggIconUrl && <img src={eggIconUrl} alt="" width={32} height={32} />}
-          <h2 className="text-2xl font-bold tracking-tight">{attrs.name}</h2>
+          {isIncubator && eggIconUrl && <img src={eggIconUrl} alt="" width={32} height={32} />}
+          {!isIncubator && machineIconUrl && <img src={machineIconUrl} alt="" width={32} height={32} />}
+          <h2 className="text-2xl font-bold tracking-tight">{headerName}</h2>
           <KindBadge kind={attrs.kind} />
           <span className="text-muted-foreground font-mono">#{pool.id}</span>
         </div>
         <Button variant="outline" onClick={() => setEditPoolOpen(true)}>Edit Pool</Button>
       </div>
 
-      {isIncubator ? (
-        <Card>
-          <CardHeader><CardTitle className="text-sm font-medium">Egg</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Egg item</span>
-              <Link to={`/items/${pool.id}`} className="hover:underline">{eggName ?? pool.id}</Link>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-muted-foreground">Success NPC</span>
-              {attrs.npcIds.length > 0 && activeTenant ? (
-                <NpcChip npcId={attrs.npcIds[0] as number} tenant={activeTenant} />
-              ) : (
-                <span className="text-muted-foreground">none</span>
-              )}
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Total weight</span>
-              <span>{totalWeight}</span>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {!isIncubator && (
+        <div className="shrink-0 grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card>
             <CardHeader><CardTitle className="text-sm font-medium">Tier Weights</CardTitle></CardHeader>
             <CardContent className="space-y-2 text-sm">
@@ -122,8 +116,8 @@ export function RewardPoolDetailPage() {
             <CardHeader><CardTitle className="text-sm font-medium">NPCs</CardTitle></CardHeader>
             <CardContent className="text-sm">
               {attrs.npcIds.length > 0 && activeTenant ? (
-                <div className="flex flex-wrap gap-2">
-                  {attrs.npcIds.map((npcId) => <NpcChip key={npcId} npcId={npcId} tenant={activeTenant} />)}
+                <div className="flex flex-col gap-2">
+                  {attrs.npcIds.map((npcId) => <NpcRow key={npcId} npcId={npcId} tenant={activeTenant} />)}
                 </div>
               ) : (
                 <span className="text-muted-foreground">No NPCs assigned</span>
@@ -133,29 +127,26 @@ export function RewardPoolDetailPage() {
         </div>
       )}
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+      <Card className="flex-1 min-h-0 flex flex-col">
+        <CardHeader className="shrink-0 flex flex-row items-center justify-between">
           <CardTitle className="text-sm font-medium">Pool Items ({items.length})</CardTitle>
           <Button size="sm" onClick={() => setItemDialog({ open: true })}>Add Item</Button>
         </CardHeader>
-        <CardContent>
-          {itemsQuery.isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading pool items...</p>
-          ) : (
-            <PoolItemsTable
-              kind={isIncubator ? "incubator" : "gachapon"}
-              poolId={id}
-              tierWeights={{ common: attrs.commonWeight, uncommon: attrs.uncommonWeight, rare: attrs.rareWeight }}
-              items={items}
-              globalItems={globalItems}
-              onEdit={(item) => setItemDialog({ open: true, item })}
-              onDelete={setItemDelete}
-            />
-          )}
+        <CardContent className="flex-1 min-h-0 flex flex-col">
+          {itemsQuery.isLoading && <p className="shrink-0 text-sm text-muted-foreground mb-2">Loading pool items...</p>}
+          <PoolItemsTable
+            kind={isIncubator ? "incubator" : "gachapon"}
+            poolId={id}
+            tierWeights={{ common: attrs.commonWeight, uncommon: attrs.uncommonWeight, rare: attrs.rareWeight }}
+            items={items}
+            globalItems={globalItems}
+            onEdit={(item) => setItemDialog({ open: true, item })}
+            onDelete={setItemDelete}
+          />
         </CardContent>
       </Card>
 
-      <Card className="border-destructive/40">
+      <Card className="shrink-0 border-destructive/40">
         <CardHeader><CardTitle className="text-sm font-medium">Danger Zone</CardTitle></CardHeader>
         <CardContent>
           <Button variant="destructive" onClick={() => setPoolDeleteOpen(true)}>Delete Pool</Button>

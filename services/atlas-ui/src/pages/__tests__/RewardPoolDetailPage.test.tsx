@@ -25,6 +25,11 @@ vi.mock("@/lib/hooks/api/useItemStrings", () => ({
 vi.mock("@/lib/hooks/api/useNpcs", () => ({
   useNPC: () => ({ data: { attributes: { name: "Pigmy & Etran" } } }),
 }));
+// NpcRow renders NpcImage, which lazy-loads via IntersectionObserver — not
+// available in jsdom. Same stub pattern as InventoryGrid.test.tsx.
+vi.mock("@/lib/hooks/useIntersectionObserver", () => ({
+  useLazyLoad: () => ({ shouldLoad: true, ref: { current: null } }),
+}));
 
 function renderAt(id: string) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -40,7 +45,7 @@ function renderAt(id: string) {
 }
 
 describe("RewardPoolDetailPage", () => {
-  it("gachapon: shows tier weights card and tier-grouped pool with global rows badged", async () => {
+  it("gachapon: shows tier weights card and a flat item grid with global rows badged", async () => {
     mocks.getPoolById.mockResolvedValue(henesys);
     mocks.getItems.mockResolvedValue([
       { id: "1", type: "gachapon-items", attributes: { gachaponId: "henesys", itemId: 2000000, quantity: 1, tier: "common", weight: 0 } },
@@ -57,7 +62,7 @@ describe("RewardPoolDetailPage", () => {
     expect(screen.getAllByText("35.00%").length).toBe(2);
   });
 
-  it("incubator: shows egg card, weight column, weight-based chance; no tier weights card", async () => {
+  it("incubator: shows region-formatted header name, weight column, weight-based chance; no tier weights card", async () => {
     mocks.getPoolById.mockResolvedValue(egg);
     mocks.getItems.mockResolvedValue([
       { id: "1", type: "gachapon-items", attributes: { gachaponId: "4170001", itemId: 2000000, quantity: 1, tier: "common", weight: 75 } },
@@ -65,9 +70,10 @@ describe("RewardPoolDetailPage", () => {
     ]);
     mocks.getGlobalItems.mockResolvedValue([]);
     renderAt("4170001");
-    await waitFor(() => expect(screen.getByText("Pigmy Egg (Victoria)")).toBeInTheDocument());
+    // useItemName is mocked to "Pigmy Egg"; formatIncubatorName appends the
+    // region for id 4170001 (Ellinia), regardless of the pool's own attrs.name.
+    await waitFor(() => expect(screen.getByText("Pigmy Egg (Ellinia)")).toBeInTheDocument());
     expect(screen.queryByText(/tier weights/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/success npc/i)).toBeInTheDocument();
     expect(screen.getByText("75.00%")).toBeInTheDocument();
     expect(screen.getByText("25.00%")).toBeInTheDocument();
   });

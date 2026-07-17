@@ -16,9 +16,25 @@ import (
 //	  0 -> int dwTargetField (only encoded when a map was actually selected)
 //
 // The client omits the payload entirely when the dialog resolves with neither
-// a name nor a valid map. A trailing 4-byte updateTime always follows the
-// payload in both wrapping ops, so Decode budgets those 4 bytes and marks the
-// target invalid (never panics) when the remainder is too short.
+// a name nor a valid map.
+//
+// Whether a trailing 4-byte updateTime follows the payload depends on the
+// WRAPPING op, not on Target itself (task-124 v95 verify pass, live
+// GMS_v95.0_U_DEVM.exe port 13341):
+//   - teleportrock/serverbound.Use (CWvsContext::SendMapTransferItemUseRequest,
+//     v83 0xa0a3bb / v95 0x9e6020) always Encode4(update_time) AFTER
+//     RunMapTransferItem succeeds, on every version — genuinely trailing.
+//   - cash/serverbound.ItemUseTeleportRock (the RunMapTransferItem call inside
+//     CWvsContext::SendConsumeCashItemUseRequest, case 22 @ v95 0x9ee059) has NO
+//     such trailing write for MajorVersion()>=87: v95's decompile shows
+//     Encode4(update_time) happens ONCE, in the common header prologue
+//     (@0x9eb4b7, BEFORE Encode2(nPOS)/Encode4(nItemID) and the case switch),
+//     already consumed by the parent ItemUse struct
+//     (services/atlas-channel .../character_cash_item_use.go's updateTimeFirst
+//     gate). Reserving 4 phantom trailing bytes here for that context would
+//     misdecode a genuine 5-byte by-map payload (byName=0 + 4-byte mapId,
+//     nothing following) as "no selection" — the caller must say whether a
+//     trailing updateTime budget applies via hasTrailingUpdateTime.
 type Target struct {
 	byName     bool
 	targetName string
@@ -50,22 +66,33 @@ func (t Target) String() string {
 // after the target payload.
 const trailingUpdateTimeBytes = 4
 
-func (t *Target) Decode(_ logrus.FieldLogger) func(r *request.Reader) {
+// Decode reads the target payload. hasTrailingUpdateTime tells Decode whether
+// the WRAPPING op still has a 4-byte updateTime to come after this payload —
+// true for teleportrock/serverbound.Use (every version) and for
+// cash/serverbound.ItemUseTeleportRock on MajorVersion()<87 (v83/v84, trailing
+// tail write); false for ItemUseTeleportRock on MajorVersion()>=87 (v87/v95/
+// jms — updateTime already consumed by the parent ItemUse header, nothing
+// follows the target payload on the wire).
+func (t *Target) Decode(_ logrus.FieldLogger, hasTrailingUpdateTime bool) func(r *request.Reader) {
+	reserve := 0
+	if hasTrailingUpdateTime {
+		reserve = trailingUpdateTimeBytes
+	}
 	return func(r *request.Reader) {
 		t.valid = false
-		if r.Available() <= trailingUpdateTimeBytes {
+		if r.Available() <= reserve {
 			return // payload omitted entirely
 		}
 		t.byName = r.ReadBool()
 		if t.byName {
-			if r.Available() < 2+trailingUpdateTimeBytes {
-				return // not even a string length prefix before the updateTime
+			if r.Available() < 2+reserve {
+				return // not even a string length prefix before the reserved budget
 			}
 			t.targetName = r.ReadAsciiString()
 			t.valid = len(t.targetName) > 0
 			return
 		}
-		if r.Available() < 4+trailingUpdateTimeBytes {
+		if r.Available() < 4+reserve {
 			return // byName=0 but no map id was encoded (no selection)
 		}
 		t.targetMap = r.ReadUint32()

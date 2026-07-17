@@ -60,7 +60,10 @@ func (m *Use) Decode(l logrus.FieldLogger, _ context.Context) func(r *request.Re
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.slot = r.ReadInt16()
 		m.itemId = r.ReadUint32()
-		m.target.Decode(l)(r)
+		// Use always has a genuine trailing updateTime (verified v83 0xa0a3bb and
+		// v95 0x9e6020: both Encode4(update_time) unconditionally after
+		// RunMapTransferItem succeeds), unlike ItemUseTeleportRock's >=87 case.
+		m.target.Decode(l, true)(r)
 		if r.Available() >= 4 {
 			m.updateTime = r.ReadUint32()
 		}

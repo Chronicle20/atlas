@@ -60,3 +60,25 @@ func (e *CycleEntity) BeforeCreate(_ *gorm.DB) error {
 func (e CycleEntity) TableName() string {
 	return "ranking_cycles"
 }
+
+func Make(e Entity) (Model, error) {
+	return NewBuilder().
+		SetCharacterId(e.CharacterId).
+		SetWorldId(e.WorldId).
+		SetJobCategory(e.JobCategory).
+		SetOverallRank(e.OverallRank).
+		SetOverallRankMove(e.OverallRankMove).
+		SetJobRank(e.JobRank).
+		SetJobRankMove(e.JobRankMove).
+		SetComputedAt(e.ComputedAt).
+		Build(), nil
+}
+
+func MakeCycle(e CycleEntity) (CycleModel, error) {
+	return CycleModel{
+		lastStartedAt:    e.LastStartedAt,
+		lastCompletedAt:  e.LastCompletedAt,
+		charactersRanked: e.CharactersRanked,
+		durationMs:       e.DurationMs,
+	}, nil
+}

@@ -23,3 +23,9 @@ formatters:
       # derives it per module from each go.mod.
       local-prefixes:
         - github.com/Chronicle20/atlas
+      # NOTE (task-171): libs/atlas-tenant declares `package tenant` but its
+      # import path ends in `atlas-tenant`. goimports cannot reconcile that for
+      # an UNaliased import and injects a duplicate `tenant "…/atlas-tenant"`
+      # (→ "tenant redeclared", build break). Import it ALIASED — always write
+      # `tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"`. Do not
+      # "simplify" that alias away. CI's lint-go --check fails loudly if you do.

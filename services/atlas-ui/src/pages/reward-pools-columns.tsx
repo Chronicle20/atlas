@@ -1,5 +1,5 @@
 import { type ColumnDef } from "@tanstack/react-table";
-import { Badge } from "@/components/ui/badge";
+import { KindBadge } from "@/components/features/reward-pools/KindBadge";
 import { PoolNameCell } from "@/components/features/reward-pools/PoolNameCell";
 import type { RewardPoolData } from "@/types/models/reward-pool";
 
@@ -12,12 +12,7 @@ export const poolColumns: ColumnDef<RewardPoolData>[] = [
   {
     accessorKey: "attributes.kind",
     header: "Kind",
-    cell: ({ row }) =>
-      row.original.attributes.kind === "incubator" ? (
-        <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-transparent">Incubator</Badge>
-      ) : (
-        <Badge variant="secondary">Gachapon</Badge>
-      ),
+    cell: ({ row }) => <KindBadge kind={row.original.attributes.kind} />,
   },
   {
     id: "details",

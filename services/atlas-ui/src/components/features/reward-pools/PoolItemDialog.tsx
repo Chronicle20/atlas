@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useForm, type DefaultValues } from "react-hook-form";
+import { useForm, Controller, type DefaultValues } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -104,17 +104,20 @@ export function PoolItemDialog({ open, onOpenChange, kind, poolId, item }: PoolI
           ) : (
             <div className="space-y-2">
               <Label htmlFor="pi-tier">Tier</Label>
-              <Select
-                value={form.watch("tier" as const)}
-                onValueChange={(v) => form.setValue("tier" as const, v as "common" | "uncommon" | "rare")}
-              >
-                <SelectTrigger id="pi-tier" aria-label="Tier"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="common">common</SelectItem>
-                  <SelectItem value="uncommon">uncommon</SelectItem>
-                  <SelectItem value="rare">rare</SelectItem>
-                </SelectContent>
-              </Select>
+              <Controller
+                control={form.control}
+                name={"tier" as const}
+                render={({ field }) => (
+                  <Select value={field.value as "common" | "uncommon" | "rare"} onValueChange={field.onChange}>
+                    <SelectTrigger id="pi-tier" aria-label="Tier"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="common">common</SelectItem>
+                      <SelectItem value="uncommon">uncommon</SelectItem>
+                      <SelectItem value="rare">rare</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
           )}
           <DialogFooter>

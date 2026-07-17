@@ -13,6 +13,7 @@ import { useItemName } from "@/lib/hooks/api/useItemStrings";
 import { useNPC } from "@/lib/hooks/api/useNpcs";
 import { getAssetIconUrl } from "@/lib/utils/asset-url";
 import { createErrorFromUnknown } from "@/types/api/errors";
+import { KindBadge } from "@/components/features/reward-pools/KindBadge";
 import { PoolFormDialog } from "@/components/features/reward-pools/PoolFormDialog";
 import { PoolItemDialog } from "@/components/features/reward-pools/PoolItemDialog";
 import { PoolItemsTable } from "@/components/features/reward-pools/PoolItemsTable";
@@ -73,11 +74,7 @@ export function RewardPoolDetailPage() {
         <div className="flex items-center gap-3">
           {eggIconUrl && <img src={eggIconUrl} alt="" width={32} height={32} />}
           <h2 className="text-2xl font-bold tracking-tight">{attrs.name}</h2>
-          {isIncubator ? (
-            <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-transparent">Incubator</Badge>
-          ) : (
-            <Badge variant="secondary">Gachapon</Badge>
-          )}
+          <KindBadge kind={attrs.kind} />
           <span className="text-muted-foreground font-mono">#{pool.id}</span>
         </div>
         <Button variant="outline" onClick={() => setEditPoolOpen(true)}>Edit Pool</Button>

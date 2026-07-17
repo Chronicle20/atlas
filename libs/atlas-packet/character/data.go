@@ -104,6 +104,11 @@ type CharacterData struct {
 	StartedQuests   []QuestProgress
 	CompletedQuests []QuestCompleted
 	MonsterBook     MonsterBookData
+	// TeleportMaps / VipTeleportMaps are the saved teleport-rock lists
+	// (regular: 5 slots, VIP: 10 slots). Encoding pads with EmptyMapId;
+	// decoding strips the padding.
+	TeleportMaps    []_map.Id
+	VipTeleportMaps []_map.Id
 }
 
 func (m CharacterData) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
@@ -699,22 +704,36 @@ func (m *CharacterData) decodeRings(r *request.Reader, t tenant.Model) {
 
 func (m *CharacterData) encodeTeleports(w *response.Writer, t tenant.Model) {
 	for i := 0; i < 5; i++ {
-		w.WriteInt(uint32(_map.EmptyMapId))
+		v := _map.EmptyMapId
+		if i < len(m.TeleportMaps) {
+			v = m.TeleportMaps[i]
+		}
+		w.WriteInt(uint32(v))
 	}
 	if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
 		for i := 0; i < 10; i++ {
-			w.WriteInt(uint32(_map.EmptyMapId))
+			v := _map.EmptyMapId
+			if i < len(m.VipTeleportMaps) {
+				v = m.VipTeleportMaps[i]
+			}
+			w.WriteInt(uint32(v))
 		}
 	}
 }
 
 func (m *CharacterData) decodeTeleports(r *request.Reader, t tenant.Model) {
 	for i := 0; i < 5; i++ {
-		_ = r.ReadUint32()
+		v := _map.Id(r.ReadUint32())
+		if v != _map.EmptyMapId {
+			m.TeleportMaps = append(m.TeleportMaps, v)
+		}
 	}
 	if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
 		for i := 0; i < 10; i++ {
-			_ = r.ReadUint32()
+			v := _map.Id(r.ReadUint32())
+			if v != _map.EmptyMapId {
+				m.VipTeleportMaps = append(m.VipTeleportMaps, v)
+			}
 		}
 	}
 }

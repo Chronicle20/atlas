@@ -379,21 +379,14 @@ func (p *ProcessorImpl) Select(mb *message.Buffer, characterId uint32, throw Thr
 		// Begin (needs Open) all correctly reject it, and Collect treats it as
 		// a forfeit.
 		//
-		// Consolation prize: award the tenant-configured ConsolationMeso (the
-		// client's "here are N mesos as a consolation prize" message) via a
-		// payout saga. This is best-effort - a ladder-resolution or saga-submit
-		// failure is logged but must NOT swallow the loss RESULT frame, so the
-		// round still resolves and the client renders the loss either way.
-		if ladder, lerr := p.ladderProvider(); lerr != nil {
-			p.l.WithError(lerr).Warnf("Unable to resolve ladder for RPS consolation prize (character [%d]); skipping consolation.", characterId)
-		} else if ladder.ConsolationMeso > 0 {
-			if s, hasSteps := buildPayoutSaga(m, Rung{Meso: ladder.ConsolationMeso}); hasSteps {
-				if serr := p.sagaSubmitter(s); serr != nil {
-					p.l.WithError(serr).Warnf("Unable to submit RPS consolation payout for character [%d]; loss still recorded.", characterId)
-				}
-			}
-		}
-
+		// The consolation prize (ConsolationMeso, the client's "here are N
+		// mesos" message) is NOT awarded here. The client reveals the loss
+		// ~2-3s after this RESULT frame (the throw animation), and the server
+		// has no signal for that moment, so awarding now pops the meso effect
+		// before the player ever sees the loss. It is deferred to the action
+		// that leaves the loss screen - Exit (-> Collect) or Retry - which is
+		// the earliest point the server knows the client has shown the result.
+		// See submitConsolation.
 		updated, err := CloneModelBuilder(m).SetStatus(StatusEnded).SetLastThrow(throw).Build()
 		if err != nil {
 			return Model{}, err
@@ -473,6 +466,33 @@ func (p *ProcessorImpl) ContinueAndEmit(characterId uint32) (Model, error) {
 	})(characterId)
 }
 
+// submitConsolation awards the tenant-configured ConsolationMeso for a lost
+// game, best-effort. It is invoked when the player LEAVES the loss screen
+// (Exit -> Collect, or Retry), NOT when the loss is adjudicated: the client
+// reveals the loss ~2-3s after the RESULT frame (the throw-reveal animation),
+// and the server has no signal for that moment other than the player's next
+// action, so awarding at adjudication time pops the meso effect before the
+// loss is ever shown. Deferring to the leave action lands the award (and its
+// ShowEffect) after the player has seen the result. A ladder-resolution or
+// saga-submit failure is logged, never fatal - the leave/restart still
+// proceeds. Only meaningful for a post-loss StatusEnded session; callers guard
+// on that.
+func (p *ProcessorImpl) submitConsolation(m Model) {
+	ladder, err := p.ladderProvider()
+	if err != nil {
+		p.l.WithError(err).Warnf("Unable to resolve ladder for RPS consolation prize (character [%d]); skipping consolation.", m.CharacterId())
+		return
+	}
+	if ladder.ConsolationMeso == 0 {
+		return
+	}
+	if s, hasSteps := buildPayoutSaga(m, Rung{Meso: ladder.ConsolationMeso}); hasSteps {
+		if serr := p.sagaSubmitter(s); serr != nil {
+			p.l.WithError(serr).Warnf("Unable to submit RPS consolation payout for character [%d].", m.CharacterId())
+		}
+	}
+}
+
 // Retry restarts a lost game: it re-charges the participation fee and reopens
 // a fresh round at rung 0 (StatusAwaitingSelect), buffering a RoundStarted
 // event so the channel re-arms the client's R/P/S buttons with a START_SELECT
@@ -497,6 +517,10 @@ func (p *ProcessorImpl) Retry(mb *message.Buffer, characterId uint32) (Model, er
 	if err != nil {
 		return Model{}, err
 	}
+
+	// Deferred consolation for the loss the player is retrying from (see
+	// submitConsolation) - the player has now seen the loss screen.
+	p.submitConsolation(m)
 
 	// Re-charge the participation fee (best-effort - see the method doc).
 	if ladder.EntryCostMeso > 0 {
@@ -552,6 +576,15 @@ func (p *ProcessorImpl) Collect(mb *message.Buffer, characterId uint32) (Model, 
 	}
 
 	if m.Status() != StatusAwaitingDecision {
+		// A StatusEnded session in the registry is a post-loss game the player
+		// is now leaving (Exit) - award the deferred consolation prize now that
+		// they have seen the loss screen (see submitConsolation). StatusOpen /
+		// StatusAwaitingSelect are a mid-game quit with no loss, so no
+		// consolation.
+		if m.Status() == StatusEnded {
+			p.submitConsolation(m)
+		}
+
 		GetRegistry().Remove(p.ctx, characterId)
 
 		if err := mb.Put(rps.EnvEventTopic, gameEndedEventProvider(characterId, m.WorldId(), m.ChannelId(), rps.ReasonQuit, nil)); err != nil {

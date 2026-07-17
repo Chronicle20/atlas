@@ -389,26 +389,31 @@ func TestProcessor_Collect_AfterLossForfeitsAndEnds(t *testing.T) {
 	assert.Nil(t, ended.Body.GrantedPrize, "a forfeited (lost) session pays nothing")
 }
 
-// TestProcessor_Select_Loss_AwardsConsolation verifies a loss submits a
-// single-step AwardMesos payout saga for the ladder's ConsolationMeso (the
-// client's "consolation prize"), while still keeping the session and emitting
-// only the RoundResult(lose).
-func TestProcessor_Select_Loss_AwardsConsolation(t *testing.T) {
-	setupRegistryTest(t)
-	ten := setupTestTenant(t)
-	ctx := testCtx(ten)
-	characterId := uint32(1013)
-
-	ladder := game.Ladder{
+// consolationLadder is a 1-rung certificate ladder that also configures a
+// ConsolationMeso, for the deferred-consolation tests.
+func consolationLadder() game.Ladder {
+	return game.Ladder{
 		EntryCostMeso:   1000,
 		ConsolationMeso: 500,
 		Rungs: []game.Rung{
 			{Rung: 1, ItemId: item.Id(4031332), Quantity: 1, Meso: 0},
 		},
 	}
+}
+
+// TestProcessor_Loss_DefersConsolation verifies a loss itself submits NO saga -
+// the consolation is deferred to the leave-the-loss-screen action so the meso
+// effect does not pop before the client reveals the loss. The session is kept
+// (StatusEnded) and only RoundResult(lose) is emitted.
+func TestProcessor_Loss_DefersConsolation(t *testing.T) {
+	setupRegistryTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
+	characterId := uint32(1013)
+
 	var captured []sharedsaga.Saga
 	// Paper beats the player's Rock -> loss.
-	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowPaper), ladderProviderFor(ladder), capturingSagaSubmitter(&captured))
+	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowPaper), ladderProviderFor(consolationLadder()), capturingSagaSubmitter(&captured))
 
 	mb := message.NewBuffer()
 	_, err := p.Start(mb, characterId, testWorldId, testChannelId, testNpcId)
@@ -417,16 +422,8 @@ func TestProcessor_Select_Loss_AwardsConsolation(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, game.StatusEnded, m.Status())
 
-	require.Len(t, captured, 1, "a loss should submit exactly one consolation saga")
-	s := captured[0]
-	require.Len(t, s.Steps, 1, "consolation is meso-only")
-	assert.Equal(t, sharedsaga.AwardMesos, s.Steps[0].Action)
-	mesoPayload, ok := s.Steps[0].Payload.(sharedsaga.AwardMesosPayload)
-	require.True(t, ok)
-	assert.Equal(t, int32(500), mesoPayload.Amount, "consolation meso must be positive")
-	assert.Equal(t, characterId, mesoPayload.CharacterId)
+	assert.Empty(t, captured, "the loss itself must NOT submit the consolation saga (deferred to Exit/Retry)")
 
-	// The loss still keeps the session and emits only RoundResult(lose).
 	kept, found := game.GetRegistry().Get(ctx, characterId)
 	require.True(t, found)
 	assert.Equal(t, game.StatusEnded, kept.Status())
@@ -435,25 +432,62 @@ func TestProcessor_Select_Loss_AwardsConsolation(t *testing.T) {
 	assert.Equal(t, rps.EventTypeRoundResult, decodeEventType(t, msgs[1]))
 }
 
-// TestProcessor_Select_Loss_NoConsolationWhenZero verifies that a zero
-// ConsolationMeso submits no saga on a loss.
-func TestProcessor_Select_Loss_NoConsolationWhenZero(t *testing.T) {
+// TestProcessor_Collect_AfterLoss_AwardsConsolation verifies that Exit (->
+// Collect) on a post-loss StatusEnded session awards the deferred consolation
+// (a single-step AwardMesos saga) and ends the session.
+func TestProcessor_Collect_AfterLoss_AwardsConsolation(t *testing.T) {
 	setupRegistryTest(t)
 	ten := setupTestTenant(t)
 	ctx := testCtx(ten)
 	characterId := uint32(1014)
 
-	// twoRungLadder has ConsolationMeso == 0.
 	var captured []sharedsaga.Saga
-	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowPaper), ladderProviderFor(twoRungLadder()), capturingSagaSubmitter(&captured))
+	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowPaper), ladderProviderFor(consolationLadder()), capturingSagaSubmitter(&captured))
 
 	mb := message.NewBuffer()
 	_, err := p.Start(mb, characterId, testWorldId, testChannelId, testNpcId)
 	require.NoError(t, err)
-	_, err = p.Select(mb, characterId, game.ThrowRock)
+	lost, err := p.Select(mb, characterId, game.ThrowRock)
+	require.NoError(t, err)
+	require.Equal(t, game.StatusEnded, lost.Status())
+	require.Empty(t, captured, "no saga on the loss itself")
+
+	// Player clicks Exit -> Collect on the kept StatusEnded session.
+	_, err = p.Collect(mb, characterId)
 	require.NoError(t, err)
 
-	assert.Empty(t, captured, "no consolation saga when ConsolationMeso is 0")
+	require.Len(t, captured, 1, "Exit after a loss awards exactly one consolation saga")
+	s := captured[0]
+	require.Len(t, s.Steps, 1, "consolation is meso-only")
+	assert.Equal(t, sharedsaga.AwardMesos, s.Steps[0].Action)
+	mesoPayload, ok := s.Steps[0].Payload.(sharedsaga.AwardMesosPayload)
+	require.True(t, ok)
+	assert.Equal(t, int32(500), mesoPayload.Amount, "consolation meso must be positive")
+	assert.Equal(t, characterId, mesoPayload.CharacterId)
+
+	_, found := game.GetRegistry().Get(ctx, characterId)
+	assert.False(t, found, "Exit removes the session")
+}
+
+// TestProcessor_Collect_MidGameQuit_NoConsolation verifies that Exit from a
+// non-loss active state (StatusOpen, a mid-game quit) awards no consolation.
+func TestProcessor_Collect_MidGameQuit_NoConsolation(t *testing.T) {
+	setupRegistryTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
+	characterId := uint32(1018)
+
+	var captured []sharedsaga.Saga
+	p := game.NewProcessorWithLadder(testLogger(), ctx, fixedThrows(game.ThrowRock), ladderProviderFor(consolationLadder()), capturingSagaSubmitter(&captured))
+
+	mb := message.NewBuffer()
+	_, err := p.Start(mb, characterId, testWorldId, testChannelId, testNpcId) // StatusOpen, no loss
+	require.NoError(t, err)
+
+	_, err = p.Collect(mb, characterId)
+	require.NoError(t, err)
+
+	assert.Empty(t, captured, "a mid-game quit (no loss) awards no consolation")
 }
 
 // TestProcessor_Retry_RestartsAfterLoss verifies Retry on a post-loss
@@ -489,8 +523,8 @@ func TestProcessor_Retry_RestartsAfterLoss(t *testing.T) {
 	require.Equal(t, game.StatusEnded, lost.Status())
 	require.Equal(t, 1, lost.Rung())
 
-	// Isolate the retry fee from the loss's consolation saga.
-	captured = nil
+	// The loss itself submits nothing (consolation is deferred to this Retry).
+	require.Empty(t, captured, "no saga on the loss itself")
 
 	retryBuf := message.NewBuffer()
 	m, err := p.Retry(retryBuf, characterId)
@@ -498,11 +532,14 @@ func TestProcessor_Retry_RestartsAfterLoss(t *testing.T) {
 	assert.Equal(t, game.StatusAwaitingSelect, m.Status())
 	assert.Equal(t, 0, m.Rung(), "retry resets to a fresh round at rung 0")
 
-	require.Len(t, captured, 1, "retry should submit exactly one fee-deduction saga")
-	s := captured[0]
-	require.Len(t, s.Steps, 1)
-	assert.Equal(t, sharedsaga.AwardMesos, s.Steps[0].Action)
-	feePayload, ok := s.Steps[0].Payload.(sharedsaga.AwardMesosPayload)
+	// Retry awards the deferred consolation (+500) THEN re-charges the fee (-1000).
+	require.Len(t, captured, 2, "retry submits the deferred consolation then the fee deduction")
+
+	consolation, ok := captured[0].Steps[0].Payload.(sharedsaga.AwardMesosPayload)
+	require.True(t, ok)
+	assert.Equal(t, int32(500), consolation.Amount, "deferred consolation (positive)")
+
+	feePayload, ok := captured[1].Steps[0].Payload.(sharedsaga.AwardMesosPayload)
 	require.True(t, ok)
 	assert.Equal(t, int32(-1000), feePayload.Amount, "retry re-charges the entry fee (negative amount)")
 

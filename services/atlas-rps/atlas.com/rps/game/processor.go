@@ -300,7 +300,9 @@ func (p *ProcessorImpl) BeginAndEmit(characterId uint32) (Model, error) {
 // state transition:
 //   - win: rung+1, StatusAwaitingDecision, buffers RoundResult{win, prize at new rung}.
 //   - tie: rung unchanged, StatusAwaitingSelect, buffers RoundResult{tie}.
-//   - loss: session removed, buffers RoundResult{lose} then GameEnded{lost}.
+//   - loss: StatusEnded but the session is KEPT in the registry; buffers only
+//     RoundResult{lose}. GameEnded (and the clientbound END frame it drives)
+//     is intentionally NOT emitted here - see the loss branch for why.
 func (p *ProcessorImpl) Select(mb *message.Buffer, characterId uint32, throw Throw) (Model, error) {
 	m, ok := GetRegistry().Get(p.ctx, characterId)
 	if !ok {
@@ -355,16 +357,30 @@ func (p *ProcessorImpl) Select(mb *message.Buffer, characterId uint32, throw Thr
 		return updated, nil
 
 	default: // OutcomeLose
-		GetRegistry().Remove(p.ctx, characterId)
+		// A loss ends the game with no payout, but the session is KEPT in the
+		// registry (StatusEnded) and ONLY the RESULT frame (mode 11, whose
+		// negative straightVictoryCount signals the loss) is emitted here. The
+		// client shows the loss and offers Retry/Exit. Emitting GameEnded now
+		// would drive the clientbound END frame (CWnd::Destroy) and tear the
+		// dialog down before the player ever sees the result (live-confirmed
+		// 2026-07-17). GameEnded/END is deferred to the player's Exit: sub-op 4
+		// -> Collect finds this StatusEnded session and forfeits it (GameEnded
+		// {quit} -> END closes the dialog). If the player just walks away, the
+		// TTL sweeper reaps the session. StatusEnded is therefore now a
+		// legitimately-present registry state (post-loss, pre-exit) - Select
+		// (needs Open/AwaitingSelect), Continue (needs AwaitingDecision) and
+		// Begin (needs Open) all correctly reject it, and Collect treats it as
+		// a forfeit.
+		updated, err := CloneModelBuilder(m).SetStatus(StatusEnded).SetLastThrow(throw).Build()
+		if err != nil {
+			return Model{}, err
+		}
+		GetRegistry().Put(p.ctx, updated)
 
 		if err := mb.Put(rps.EnvEventTopic, roundResultEventProvider(characterId, m.WorldId(), m.ChannelId(), opponentThrow, outcome, m.Rung(), rps.Prize{})); err != nil {
 			return Model{}, err
 		}
-		if err := mb.Put(rps.EnvEventTopic, gameEndedEventProvider(characterId, m.WorldId(), m.ChannelId(), rps.ReasonLost, nil)); err != nil {
-			return Model{}, err
-		}
-
-		return CloneModelBuilder(m).SetStatus(StatusEnded).SetLastThrow(throw).Build()
+		return updated, nil
 	}
 }
 

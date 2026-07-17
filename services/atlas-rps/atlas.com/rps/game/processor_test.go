@@ -319,9 +319,11 @@ func TestProcessor_Begin_NoSessionReturnsError(t *testing.T) {
 	assert.ErrorIs(t, err, game.ErrSessionNotFound)
 }
 
-// TestProcessor_Select_Loss verifies that a losing round removes the
-// session and buffers RoundResult{lose} followed by GameEnded{lost}, with no
-// granted prize.
+// TestProcessor_Select_Loss verifies that a losing round transitions the
+// session to StatusEnded but KEEPS it in the registry, buffering only a
+// RoundResult{lose} - no GameEnded (and therefore no clientbound END frame)
+// is emitted on the loss itself, so the client can show the result before the
+// player exits.
 func TestProcessor_Select_Loss(t *testing.T) {
 	setupRegistryTest(t)
 	ten := setupTestTenant(t)
@@ -340,20 +342,51 @@ func TestProcessor_Select_Loss(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, game.StatusEnded, m.Status())
 
-	_, found := game.GetRegistry().Get(ctx, characterId)
-	assert.False(t, found, "session should be removed from the registry after a loss")
+	kept, found := game.GetRegistry().Get(ctx, characterId)
+	require.True(t, found, "session should be KEPT in the registry after a loss (until the player exits)")
+	assert.Equal(t, game.StatusEnded, kept.Status())
 
 	msgs := mb.GetAll()[rps.EnvEventTopic]
-	require.Len(t, msgs, 3, "expected GameOpened, RoundResult(lose), GameEnded(lost)")
+	require.Len(t, msgs, 2, "expected GameOpened, RoundResult(lose) - NO GameEnded on the loss itself")
 
 	assert.Equal(t, rps.EventTypeRoundResult, decodeEventType(t, msgs[1]))
 	round := decodeRoundResult(t, msgs[1])
 	assert.Equal(t, int(game.OutcomeLose), round.Body.Outcome)
+}
 
-	assert.Equal(t, rps.EventTypeGameEnded, decodeEventType(t, msgs[2]))
-	ended := decodeGameEnded(t, msgs[2])
-	assert.Equal(t, rps.ReasonLost, ended.Body.Reason)
-	assert.Nil(t, ended.Body.GrantedPrize)
+// TestProcessor_Collect_AfterLossForfeitsAndEnds verifies the deferred close:
+// after a loss leaves a StatusEnded session in the registry, the player's Exit
+// (-> Collect) forfeits it (no payout) and buffers a GameEnded event, which
+// drives the clientbound END frame that closes the dialog.
+func TestProcessor_Collect_AfterLossForfeitsAndEnds(t *testing.T) {
+	setupRegistryTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
+	characterId := uint32(1012)
+
+	throws := fixedThrows(game.ThrowPaper) // Paper beats Rock -> loss
+	p := game.NewProcessorWithLadder(testLogger(), ctx, throws, ladderProviderFor(twoRungLadder()), noopSagaSubmitter())
+
+	mb := message.NewBuffer()
+	_, err := p.Start(mb, characterId, testWorldId, testChannelId, testNpcId)
+	require.NoError(t, err)
+	lost, err := p.Select(mb, characterId, game.ThrowRock)
+	require.NoError(t, err)
+	require.Equal(t, game.StatusEnded, lost.Status())
+
+	// Player clicks Exit -> Collect on the kept StatusEnded session.
+	collectBuf := message.NewBuffer()
+	_, err = p.Collect(collectBuf, characterId)
+	require.NoError(t, err)
+
+	_, found := game.GetRegistry().Get(ctx, characterId)
+	assert.False(t, found, "Exit after a loss should remove the session")
+
+	msgs := collectBuf.GetAll()[rps.EnvEventTopic]
+	require.Len(t, msgs, 1, "Exit after a loss buffers a single GameEnded (forfeit)")
+	assert.Equal(t, rps.EventTypeGameEnded, decodeEventType(t, msgs[0]))
+	ended := decodeGameEnded(t, msgs[0])
+	assert.Nil(t, ended.Body.GrantedPrize, "a forfeited (lost) session pays nothing")
 }
 
 // TestProcessor_Continue_ForcesCollectAtMaxRung verifies that Continue, when

@@ -54,3 +54,6 @@ export * from './useMapEntities';
 
 // Seed hooks
 export * from './useSeed';
+
+// Reward pool hooks
+export * from './useRewardPools';

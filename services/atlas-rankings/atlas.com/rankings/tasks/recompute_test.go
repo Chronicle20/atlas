@@ -15,10 +15,11 @@ import (
 )
 
 type fakeProcessor struct {
-	due          bool
-	dueErr       error
-	recomputeErr error
-	recomputed   *int
+	due            bool
+	dueErr         error
+	recomputeErr   error
+	recomputed     *int
+	afterRecompute func()
 }
 
 func (f fakeProcessor) ByCharacterIdProvider(uint32) model.Provider[ranking.Model] {
@@ -35,6 +36,9 @@ func (f fakeProcessor) Recompute(time.Time) error {
 		return f.recomputeErr
 	}
 	*f.recomputed++
+	if f.afterRecompute != nil {
+		f.afterRecompute()
+	}
 	return nil
 }
 func (f fakeProcessor) WithCharacterSupplier(ranking.CharacterSupplier) ranking.Processor {
@@ -104,6 +108,101 @@ func TestRunSkipsNotDueTenants(t *testing.T) {
 	task.Run()
 	if count != 0 {
 		t.Fatalf("not-due tenant must not recompute, got %d", count)
+	}
+}
+
+func TestRunSkipsAllTenantsWhenContextAlreadyCancelled(t *testing.T) {
+	ts := testTenants(t, 2)
+	count := 0
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	task := &RecomputeTask{
+		l:        logrus.New(),
+		ctx:      ctx,
+		interval: time.Minute,
+		tenants:  func() ([]tenant.Model, error) { return ts, nil },
+		intervalFor: func(context.Context, uuid.UUID) time.Duration {
+			return time.Hour
+		},
+		processorFor: func(context.Context) ranking.Processor {
+			t.Fatal("must not construct a processor when context is already cancelled")
+			return nil
+		},
+	}
+
+	task.Run()
+
+	if count != 0 {
+		t.Fatalf("already-cancelled context must process zero tenants, got %d", count)
+	}
+}
+
+func TestRunStopsTenantLoopOnMidTickCancellation(t *testing.T) {
+	ts := testTenants(t, 4)
+	countBefore, countAfter := 0, 0
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	task := &RecomputeTask{
+		l:        logrus.New(),
+		ctx:      ctx,
+		interval: time.Minute,
+		tenants:  func() ([]tenant.Model, error) { return ts, nil },
+		intervalFor: func(context.Context, uuid.UUID) time.Duration {
+			return time.Hour
+		},
+		processorFor: func(pctx context.Context) ranking.Processor {
+			tm := tenant.MustFromContext(pctx)
+			switch tm.Id() {
+			case ts[0].Id():
+				// After the first tenant recomputes, cancel the context to
+				// simulate a lease loss landing mid-tick.
+				return fakeProcessor{due: true, recomputed: &countBefore, afterRecompute: cancel}
+			default:
+				return fakeProcessor{due: true, recomputed: &countAfter}
+			}
+		},
+	}
+
+	task.Run()
+
+	if countBefore != 1 {
+		t.Fatalf("first tenant should have recomputed before cancellation, got %d", countBefore)
+	}
+	if countAfter != 0 {
+		t.Fatalf("cancellation mid-tick must stop the remaining tenants, got %d processed", countAfter)
+	}
+}
+
+func TestRunSkipsTenantWhenIsDueErrorsAndContinues(t *testing.T) {
+	ts := testTenants(t, 2)
+	countB := 0
+
+	task := &RecomputeTask{
+		l:        logrus.New(),
+		ctx:      context.Background(),
+		interval: time.Minute,
+		tenants:  func() ([]tenant.Model, error) { return ts, nil },
+		intervalFor: func(context.Context, uuid.UUID) time.Duration {
+			return time.Hour
+		},
+		processorFor: func(ctx context.Context) ranking.Processor {
+			tm := tenant.MustFromContext(ctx)
+			switch tm.Id() {
+			case ts[0].Id():
+				return fakeProcessor{dueErr: errors.New("cadence lookup failed"), recomputed: new(int)}
+			default:
+				return fakeProcessor{due: true, recomputed: &countB}
+			}
+		},
+	}
+
+	task.Run()
+
+	if countB != 1 {
+		t.Fatalf("IsDue error on one tenant must not stop the others, got %d", countB)
 	}
 }
 

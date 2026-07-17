@@ -49,6 +49,10 @@ func (t *RecomputeTask) SleepTime() time.Duration {
 }
 
 func (t *RecomputeTask) Run() {
+	if t.ctx.Err() != nil {
+		return
+	}
+
 	ts, err := t.tenants()
 	if err != nil {
 		t.l.WithError(err).Warnf("Unable to enumerate tenants; skipping rankings recompute tick.")
@@ -56,6 +60,11 @@ func (t *RecomputeTask) Run() {
 	}
 
 	for _, ten := range ts {
+		if t.ctx.Err() != nil {
+			t.l.Infof("Context cancelled mid-tick; abandoning remaining tenants for this tick.")
+			return
+		}
+
 		tctx := tenant.WithContext(t.ctx, ten)
 		interval := t.intervalFor(tctx, ten.Id())
 		p := t.processorFor(tctx)

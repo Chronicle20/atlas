@@ -28,6 +28,7 @@ import (
 	"atlas-channel/kafka/consumer/invite"
 	"atlas-channel/kafka/consumer/macro"
 	"atlas-channel/kafka/consumer/map"
+	megaphoneConsumer "atlas-channel/kafka/consumer/megaphone"
 	merchantConsumer "atlas-channel/kafka/consumer/merchant"
 	"atlas-channel/kafka/consumer/message"
 	"atlas-channel/kafka/consumer/messenger"
@@ -53,6 +54,7 @@ import (
 	summonConsumer "atlas-channel/kafka/consumer/summon"
 	"atlas-channel/kafka/consumer/system_message"
 	walletConsumer "atlas-channel/kafka/consumer/wallet"
+	worldbroadcastConsumer "atlas-channel/kafka/consumer/worldbroadcast"
 	"atlas-channel/listener"
 	monsterDomain "atlas-channel/monster"
 	monsterinfo "atlas-channel/monster/information"
@@ -128,6 +130,7 @@ import (
 	storagesb "github.com/Chronicle20/atlas/libs/atlas-packet/storage/serverbound"
 	summoncb "github.com/Chronicle20/atlas/libs/atlas-packet/summon/clientbound"
 	summonsb "github.com/Chronicle20/atlas/libs/atlas-packet/summon/serverbound"
+	tvCB "github.com/Chronicle20/atlas/libs/atlas-packet/tv/clientbound"
 	ui2 "github.com/Chronicle20/atlas/libs/atlas-packet/ui/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 
@@ -227,6 +230,8 @@ func main() {
 	gachapon.InitConsumers(l)(cmf)(consumerGroupId)
 	merchantConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	mountConsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	megaphoneConsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	worldbroadcastConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 
 	rt.AwaitProjectionCatchUp()
 	l.Info("Configuration projection caught up; starting listener apply loop.")
@@ -520,6 +525,12 @@ func buildListener(
 		if err := register(mountConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
+		if err := register(megaphoneConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(worldbroadcastConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
 
 		hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(tenantCfg.Socket.Handlers, validatorMap, handlerMap)
 		socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, wp, sc, cfg.IPAddress, cfg.Port)
@@ -748,6 +759,12 @@ func produceWriters() []string {
 		doorcb.SpawnPortalWriter,
 		doorcb.RemoveTownDoorWriter,
 		charcb.BridleMobCatchFailWriter,
+		chatCB.SetAvatarMegaphoneWriter,
+		chatCB.ClearAvatarMegaphoneWriter,
+		chatCB.AvatarMegaphoneResultWriter,
+		tvCB.TvSetMessageWriter,
+		tvCB.TvClearMessageWriter,
+		tvCB.TvSendMessageResultWriter,
 	}
 }
 

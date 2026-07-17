@@ -48,12 +48,17 @@ func (b *Builder) SetWeight(weight uint32) *Builder {
 	return b
 }
 
+// ErrInvalidTier is returned when a caller supplies a tier outside the valid
+// set. Shared by Builder.Build (create path) and Processor.Update (patch
+// path) so both enforce the same rule.
+var ErrInvalidTier = errors.New("tier must be one of: common, uncommon, rare")
+
 func (b *Builder) Build() (Model, error) {
 	if b.tenantId == uuid.Nil {
 		return Model{}, errors.New("tenantId cannot be nil")
 	}
 	if !isValidTier(b.tier) {
-		return Model{}, errors.New("tier must be one of: common, uncommon, rare")
+		return Model{}, ErrInvalidTier
 	}
 	return Model{
 		tenantId:   b.tenantId,

@@ -43,7 +43,7 @@ func UpdateGachapon(db *gorm.DB, id string, name string, npcIds []uint32, common
 	for i, nid := range npcIds {
 		dbNpcIds[i] = int64(nid)
 	}
-	return db.Model(&entity{}).
+	result := db.Model(&entity{}).
 		Where(&entity{ID: id}).
 		Updates(map[string]interface{}{
 			"name":            name,
@@ -51,7 +51,14 @@ func UpdateGachapon(db *gorm.DB, id string, name string, npcIds []uint32, common
 			"common_weight":   commonWeight,
 			"uncommon_weight": uncommonWeight,
 			"rare_weight":     rareWeight,
-		}).Error
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
 
 func DeleteGachapon(db *gorm.DB, id string) error {

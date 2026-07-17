@@ -68,6 +68,9 @@ func (p *ProcessorImpl) Create(m Model) error {
 }
 
 func (p *ProcessorImpl) Update(id uint32, itemId uint32, quantity uint32, tier string, weight uint32) error {
+	if !isValidTier(tier) {
+		return ErrInvalidTier
+	}
 	return UpdateItem(p.db.WithContext(p.ctx), id, itemId, quantity, tier, weight)
 }
 

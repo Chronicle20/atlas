@@ -30,14 +30,21 @@ func BulkCreateItem(db *gorm.DB, models []Model) error {
 }
 
 func UpdateItem(db *gorm.DB, id uint32, itemId uint32, quantity uint32, tier string, weight uint32) error {
-	return db.Model(&entity{}).
+	result := db.Model(&entity{}).
 		Where(&entity{ID: id}).
 		Updates(map[string]interface{}{
 			"item_id":  itemId,
 			"quantity": quantity,
 			"tier":     tier,
 			"weight":   weight,
-		}).Error
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
 
 func DeleteItem(db *gorm.DB, id uint32) error {

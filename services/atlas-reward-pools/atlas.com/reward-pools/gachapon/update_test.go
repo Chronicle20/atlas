@@ -3,7 +3,10 @@ package gachapon_test
 import (
 	"atlas-reward-pools/gachapon"
 	"atlas-reward-pools/test"
+	"errors"
 	"testing"
+
+	"gorm.io/gorm"
 )
 
 func TestUpdateGachaponNpcIds(t *testing.T) {
@@ -40,5 +43,15 @@ func TestUpdateGachaponNpcIds(t *testing.T) {
 	}
 	if got.Kind() != "gachapon" {
 		t.Errorf("kind must be untouched: %q", got.Kind())
+	}
+}
+
+func TestUpdateGachaponNotFound(t *testing.T) {
+	processor, _, cleanup := test.CreateGachaponProcessor(t)
+	defer cleanup()
+
+	err := processor.Update("nonexistent", "Nonexistent Gachapon", []uint32{9100100}, 60, 30, 10)
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		t.Fatalf("Expected gorm.ErrRecordNotFound for nonexistent id, got %v", err)
 	}
 }

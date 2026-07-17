@@ -2,6 +2,7 @@ package item
 
 import (
 	"atlas-reward-pools/rest"
+	"errors"
 	"net/http"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -102,6 +103,14 @@ func handleUpdateItem(d *rest.HandlerDependency, c *rest.HandlerContext, rm Rest
 			return func(w http.ResponseWriter, r *http.Request) {
 				err := NewProcessor(d.Logger(), d.Context(), d.DB()).Update(itemId, rm.ItemId, rm.Quantity, rm.Tier, rm.Weight)
 				if err != nil {
+					if errors.Is(err, gorm.ErrRecordNotFound) {
+						w.WriteHeader(http.StatusNotFound)
+						return
+					}
+					if errors.Is(err, ErrInvalidTier) {
+						server.WriteBadRequest(d.Logger(), w, err.Error())
+						return
+					}
 					d.Logger().WithError(err).Errorf("Updating item [%d] for gachapon [%s].", itemId, gachaponId)
 					server.WriteErrorResponse(d.Logger())(w)(err)
 					return

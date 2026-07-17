@@ -2,6 +2,7 @@ package global
 
 import (
 	"atlas-reward-pools/rest"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -103,6 +104,14 @@ func handleUpdateGlobalItem(d *rest.HandlerDependency, c *rest.HandlerContext, r
 
 		err = NewProcessor(d.Logger(), d.Context(), d.DB()).Update(uint32(itemId), rm.ItemId, rm.Quantity, rm.Tier)
 		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
+			if errors.Is(err, ErrInvalidTier) {
+				server.WriteBadRequest(d.Logger(), w, err.Error())
+				return
+			}
 			d.Logger().WithError(err).Errorf("Updating global item [%d].", itemId)
 			server.WriteErrorResponse(d.Logger())(w)(err)
 			return

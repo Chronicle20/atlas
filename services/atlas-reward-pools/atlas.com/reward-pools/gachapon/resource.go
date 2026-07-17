@@ -124,6 +124,10 @@ func handleUpdateGachapon(d *rest.HandlerDependency, c *rest.HandlerContext, rm 
 		return func(w http.ResponseWriter, r *http.Request) {
 			err := NewProcessor(d.Logger(), d.Context(), d.DB()).Update(gachaponId, rm.Name, rm.NpcIds, rm.CommonWeight, rm.UncommonWeight, rm.RareWeight)
 			if err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
 				d.Logger().WithError(err).Errorf("Updating gachapon [%s].", gachaponId)
 				server.WriteErrorResponse(d.Logger())(w)(err)
 				return

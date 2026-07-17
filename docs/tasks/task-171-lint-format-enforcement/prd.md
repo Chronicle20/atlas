@@ -277,27 +277,27 @@ No runtime service behavior changes. No packet, WZ, tenant-config, or Kafka surf
 
 ## 10. Acceptance Criteria
 
-- [ ] `tools/lint.sh` exists, is executable, supports fix (default) and `--check` modes, and
+- [x] `tools/lint.sh` exists, is executable, supports fix (default) and `--check` modes, and
       `--help` documents usage.
-- [ ] Fix mode applies gofumpt + goimports + golangci-lint `--fix` + Prettier + eslint `--fix`;
+- [x] Fix mode applies gofumpt + goimports + golangci-lint `--fix` + Prettier + eslint `--fix`;
       running it twice is a no-op (idempotent).
-- [ ] `--check` mode exits non-zero with a readable file list on any formatting or lint violation,
+- [x] `--check` mode exits non-zero with a readable file list on any formatting or lint violation,
       and exits 0 on a clean tree.
-- [ ] Tool versions are pinned in one place read by both the script and CI; local and CI run
+- [x] Tool versions are pinned in one place read by both the script and CI; local and CI run
       identical versions.
-- [ ] Root `.golangci.yml` enables the broad default set and is the single config source; runs
+- [x] Root `.golangci.yml` enables the broad default set and is the single config source; runs
       per-module across all 80 modules without requiring `go work sync`.
-- [ ] atlas-ui has Prettier + config + `.prettierignore` + `format`/`format:check` scripts, with
+- [x] atlas-ui has Prettier + config + `.prettierignore` + `format`/`format:check` scripts, with
       `eslint-config-prettier` preventing rule conflicts.
-- [ ] The whole tree is reformatted in an isolated, formatter-only baseline commit; the formatter
+- [x] The whole tree is reformatted in an isolated, formatter-only baseline commit; the formatter
       portion of `--check` passes tree-wide with zero diffs afterward.
-- [ ] The chosen §4.4 CI-green mechanism is implemented such that `pr-validation.yml`'s new
+- [x] The chosen §4.4 CI-green mechanism is implemented such that `pr-validation.yml`'s new
       guard job passes on this branch.
 - [ ] `pr-validation.yml` has a `lint-format` (or `lint-go` + `lint-ui`) job gated on
       `detect-changes` that runs the guard in `--check` mode and fails a PR on violations; a
       deliberately-broken test commit is shown failing the job.
-- [ ] A Claude Code formatting hook is configured in `.claude/settings.json`.
-- [ ] Root `CLAUDE.md` Build & Verification checklist includes the `tools/lint.sh --check` step.
-- [ ] All existing verifications still pass: `go test -race ./...`, `go build ./...`, affected
+- [x] A Claude Code formatting hook is configured in `.claude/settings.json`.
+- [x] Root `CLAUDE.md` Build & Verification checklist includes the `tools/lint.sh --check` step.
+- [x] All existing verifications still pass: `go test -race ./...`, `go build ./...`, affected
       `docker buildx bake` targets, `tools/redis-key-guard.sh`, and the atlas-ui `build` + `test`.
-- [ ] A follow-up task is filed if §4.4 option (b) is chosen (baseline burn-down).
+- [x] A follow-up task is filed if §4.4 option (b) is chosen (baseline burn-down).

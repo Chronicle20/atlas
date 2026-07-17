@@ -54,7 +54,7 @@
 - Produces: bootstrapped binary at `.cache/tools/bin/golangci-lint-v2.12.2` — reused by the hook (Task 7).
 - Note: the UI layer of `lint.sh` calls npm scripts (`format`, `format:check`, `lint`) that do not exist until Task 2. That is fine — Task 1's verification exercises only the `--go` path.
 
-- [ ] **Step 1: Write `tools/lint.versions`**
+- [x] **Step 1: Write `tools/lint.versions`**
 
 ```bash
 # Tool version pins for tools/lint.sh — the single source of truth read by
@@ -64,7 +64,7 @@
 GOLANGCI_LINT_VERSION=v2.12.2
 ```
 
-- [ ] **Step 2: Write `.golangci.yml`**
+- [x] **Step 2: Write `.golangci.yml`**
 
 ```yaml
 # Root golangci-lint v2 config — the single config source for every Go module
@@ -94,7 +94,7 @@ formatters:
         - github.com/Chronicle20/atlas
 ```
 
-- [ ] **Step 3: Append the tool-cache dir to `.gitignore`**
+- [x] **Step 3: Append the tool-cache dir to `.gitignore`**
 
 Append this line to the end of `.gitignore`:
 
@@ -102,7 +102,7 @@ Append this line to the end of `.gitignore`:
 /.cache/
 ```
 
-- [ ] **Step 4: Write `tools/lint.sh`**
+- [x] **Step 4: Write `tools/lint.sh`**
 
 ```bash
 #!/usr/bin/env bash
@@ -339,13 +339,13 @@ echo "lint.sh: OK"
 
 Then: `chmod +x tools/lint.sh`
 
-- [ ] **Step 5: Verify bootstrap + check mode on one small module**
+- [x] **Step 5: Verify bootstrap + check mode on one small module**
 
 Run: `tools/lint.sh --check --go libs/atlas-model`
 
 Expected: first run prints `installing golangci-lint v2.12.2 ...` (takes a few minutes — it compiles from source), then either `lint.sh: OK` or `FMT FAIL — libs/atlas-model` with a diff (the tree is pre-baseline; a formatting diff here is a legitimate finding, NOT a script bug). The failure condition for this step is a crash: bootstrap error, `unknown flag`, config parse error, or golangci-lint panic. If `golangci-lint fmt ./...` rejects the `./...` argument, drop `./...` from both `fmt` invocations (it then defaults to the current directory tree — same scope) and re-run.
 
-- [ ] **Step 6: Verify check mode catches a deliberately broken file (Go)**
+- [x] **Step 6: Verify check mode catches a deliberately broken file (Go)**
 
 ```bash
 mkdir -p libs/atlas-model/scratchlint
@@ -365,7 +365,7 @@ tools/lint.sh --check --go libs/atlas-model; echo "exit=$?"
 
 Expected: `FMT FAIL — libs/atlas-model` (gofumpt spacing/indent diff) AND `LINT FAIL — libs/atlas-model` (errcheck: unchecked `os.Open` error — a NEW file relative to the merge base, so `--new-from-rev` must catch it), summary listing both, `exit=1`.
 
-- [ ] **Step 7: Drop the scratch commit and verify fix mode is a no-op on a clean module**
+- [x] **Step 7: Drop the scratch commit and verify fix mode is a no-op on a clean module**
 
 ```bash
 git reset --hard HEAD~1
@@ -374,7 +374,7 @@ tools/lint.sh --fmt --go libs/atlas-constants && git diff --exit-code -- libs/at
 
 Expected: if atlas-constants is already gofumpt-clean, `lint.sh: OK` and `exit=0` (no diff). If it produces a formatting diff, that is pre-baseline drift — `git checkout -- libs/atlas-constants` to revert it (the baseline reformat lands in Task 4, not here) and treat the step as passed (fix mode wrote only formatter output).
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add tools/lint.versions tools/lint.sh .golangci.yml .gitignore
@@ -396,7 +396,7 @@ git commit -m "feat(task-171): shared lint & format guard — tools/lint.sh + go
 - Produces: npm scripts `format` (`prettier --write .`) and `format:check` (`prettier --check .`) — called by `lint.sh`'s UI layer (Task 1's contract) and by the hook indirectly (Task 7 uses `npx prettier` directly).
 - Produces: `eslint-config-prettier` appended last in the eslint `extends` chain (FR-3.4).
 
-- [ ] **Step 1: Install exact-pinned devDependencies**
+- [x] **Step 1: Install exact-pinned devDependencies**
 
 ```bash
 source ~/.nvm/nvm.sh && nvm use 22
@@ -406,7 +406,7 @@ npm install --save-dev --save-exact prettier@3.9.5 eslint-config-prettier@10.1.8
 
 Expected: `package.json` devDependencies gain `"prettier": "3.9.5"` and `"eslint-config-prettier": "10.1.8"` (no `^`); `package-lock.json` updated. If either exact version has vanished from the registry, STOP and report — do not substitute a different version silently.
 
-- [ ] **Step 2: Add the npm scripts**
+- [x] **Step 2: Add the npm scripts**
 
 In `services/atlas-ui/package.json`, extend the `scripts` block (existing entries unchanged):
 
@@ -424,7 +424,7 @@ In `services/atlas-ui/package.json`, extend the `scripts` block (existing entrie
   },
 ```
 
-- [ ] **Step 3: Write `services/atlas-ui/.prettierrc`**
+- [x] **Step 3: Write `services/atlas-ui/.prettierrc`**
 
 ```json
 {}
@@ -432,7 +432,7 @@ In `services/atlas-ui/package.json`, extend the `scripts` block (existing entrie
 
 (Pure Prettier defaults. The file's existence — not its contents — is what pins determinism; house-style overrides can be added later as their own reviewed change.)
 
-- [ ] **Step 4: Write `services/atlas-ui/.prettierignore`**
+- [x] **Step 4: Write `services/atlas-ui/.prettierignore`**
 
 ```
 # Mirrors eslint.config.js globalIgnores. Entries are root-anchored (leading
@@ -457,7 +457,7 @@ In `services/atlas-ui/package.json`, extend the `scripts` block (existing entrie
 *.md
 ```
 
-- [ ] **Step 5: Append eslint-config-prettier to `eslint.config.js`**
+- [x] **Step 5: Append eslint-config-prettier to `eslint.config.js`**
 
 Full resulting file (two changes vs current: the new import and `eslintConfigPrettier` LAST in `extends`):
 
@@ -501,7 +501,7 @@ export default defineConfig([
 
 If the `eslint-config-prettier/flat` import path errors under this eslint-config-prettier version, use the package default export instead: `import eslintConfigPrettier from "eslint-config-prettier";` — same object shape for flat-config use.
 
-- [ ] **Step 6: Verify the wiring executes**
+- [x] **Step 6: Verify the wiring executes**
 
 ```bash
 cd services/atlas-ui
@@ -512,7 +512,7 @@ npm run lint || true
 
 Expected: `prettier --check` runs and reports (pass or "Code style issues found" — the tree is pre-baseline, failures are legitimate); `format:check` exercises the ignore file without erroring on config; `npm run lint` still runs (existing errors expected — remediated in Task 3). Failure condition: config parse errors, unknown-option errors, or eslint crashing on the new import.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add services/atlas-ui/package.json services/atlas-ui/package-lock.json \
@@ -535,7 +535,7 @@ The design makes `npm run lint` a hard CI gate (`lint-ui`), and it currently FAI
 - Consumes: Task 2's eslint.config.js (edits build on it).
 - Produces: `npm run lint` exit 0 — required by `lint.sh --check --ui` (Task 1 contract) and the `lint-ui` CI job (Task 6).
 
-- [ ] **Step 1: Capture the authoritative error list**
+- [x] **Step 1: Capture the authoritative error list**
 
 ```bash
 source ~/.nvm/nvm.sh && nvm use 22
@@ -545,11 +545,11 @@ npm run lint 2>&1 | tee /tmp/eslint-before.txt
 
 Expected: non-zero exit; the file list drives Steps 2–4.
 
-- [ ] **Step 2: Fix `react-refresh/only-export-components` via scoped config overrides**
+- [x] **Step 2: Fix `react-refresh/only-export-components` via scoped config overrides**
 
 These fire in colocated non-page modules (columns/forms files that export helpers alongside components) — the codebase's deliberate colocation pattern, already exempted for `providers/ui/context` in the existing override block. Extend that block rather than refactoring ~30 files: collect the offending file paths from `/tmp/eslint-before.txt`, derive the narrowest glob(s) that cover them (e.g. `src/pages/**/*-columns.tsx`, `src/components/features/**/*-columns.tsx` — derive from the actual list, do not guess), and add them to the existing `files` array of the override that sets `"react-refresh/only-export-components": "off"`. If a handful of offenders don't fit a colocation glob, fix those individually by moving the non-component export to its own file. Do NOT turn the rule off globally.
 
-- [ ] **Step 3: Fix `@typescript-eslint/no-unused-vars` (≈12)**
+- [x] **Step 3: Fix `@typescript-eslint/no-unused-vars` (≈12)**
 
 For each: delete the unused binding if it is dead code; if it must stay for signature/documentation reasons, prefix it with `_` AND add the ignore-pattern config once, in the main config object's `rules`:
 
@@ -562,14 +562,14 @@ For each: delete the unused binding if it is dead code; if it must stay for sign
     },
 ```
 
-- [ ] **Step 4: Fix the mechanical remainder**
+- [x] **Step 4: Fix the mechanical remainder**
 
 - `no-useless-escape` (4): remove the unnecessary `\` escapes (e.g. `\.` inside a character class in `src/services/errorLogger.ts:58`).
 - `no-useless-assignment` (2): delete the dead assignment.
 - `preserve-caught-error` (1, `src/services/api/npcs.service.ts:94`): attach the caught error: `throw new Error("...", { cause: err })`.
 - Anything else on the list: fix mechanically per the rule's documented remedy. If a fix would change runtime behavior non-trivially, STOP and flag it rather than guessing.
 
-- [ ] **Step 5: Verify lint is clean and nothing broke**
+- [x] **Step 5: Verify lint is clean and nothing broke**
 
 ```bash
 cd services/atlas-ui
@@ -578,7 +578,7 @@ npm test              # expect: PASS
 npm run build         # expect: tsc -b + vite build succeed
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-ui
@@ -596,7 +596,7 @@ git commit -m "fix(task-171): atlas-ui eslint remediation to zero errors"
 - Consumes: `tools/lint.sh --fmt` (Task 1), npm `format` script (Task 2).
 - Produces: a tree where `tools/lint.sh --check --fmt` passes with zero diffs — required by Tasks 5, 6, 9.
 
-- [ ] **Step 1: Confirm a clean working tree, then run the formatter layer tree-wide**
+- [x] **Step 1: Confirm a clean working tree, then run the formatter layer tree-wide**
 
 ```bash
 git status --porcelain   # expect: empty
@@ -605,7 +605,7 @@ tools/lint.sh --fmt      # Go: golangci-lint fmt per module; UI: prettier --writ
 
 Expected: exits 0. (Whole-tree run over 80 modules — expect minutes, not seconds.)
 
-- [ ] **Step 2: Verify the diff is formatter-only**
+- [x] **Step 2: Verify the diff is formatter-only**
 
 ```bash
 git diff --stat | tail -5
@@ -614,14 +614,14 @@ git diff | grep -E '^\+' | grep -vE '^\+\+\+' | grep -iE 'TODO|FIXME|func [a-z]+
 
 Spot-read a few hunks (`git diff -- <a-large-service-file>`): every change must be whitespace, import ordering/grouping, or gofumpt/prettier canonicalization. No logic, no renames, no new symbols. If anything else appears, STOP — a formatter must never do that.
 
-- [ ] **Step 3: Verify the formatter layer is now clean and idempotent tree-wide**
+- [x] **Step 3: Verify the formatter layer is now clean and idempotent tree-wide**
 
 ```bash
 tools/lint.sh --check --fmt     # expect: lint.sh: OK
 tools/lint.sh --fmt && git diff --exit-code   # second fix run must be a no-op
 ```
 
-- [ ] **Step 4: Verify nothing broke — full Go + UI test sweep**
+- [x] **Step 4: Verify nothing broke — full Go + UI test sweep**
 
 ```bash
 tools/test-all-go.sh 2>&1 | tail -20    # expect: no test failures (long run)
@@ -630,7 +630,7 @@ cd services/atlas-ui && npm test && npm run build && cd ../..
 
 Note: the reformat touches `.go` source but NO `go.mod` files, so the CLAUDE.md bake mandate ("every service whose go.mod was touched") does not trigger; CI's docker matrix will build all images on the PR regardless (expected, per design §5).
 
-- [ ] **Step 5: Commit (single, isolated, machine-generated)**
+- [x] **Step 5: Commit (single, isolated, machine-generated)**
 
 ```bash
 git add -A
@@ -651,7 +651,7 @@ git commit -m "style(task-171): baseline reformat — gofumpt + goimports + pret
 - Consumes: `tools/lint.sh --check --go` (Task 1), post-reformat tree (Task 4).
 - Produces: `tools/lint.sh --check` exit 0 on this branch — required by Task 6 (CI green) and Task 9.
 
-- [ ] **Step 1: Collect the residue**
+- [x] **Step 1: Collect the residue**
 
 ```bash
 tools/lint.sh --check --go 2>&1 | tee /tmp/lint-residue.txt
@@ -660,7 +660,7 @@ grep -c 'LINT FAIL' /tmp/lint-residue.txt || true
 
 Expected: `FMT FAIL` count must be ZERO (Task 4 guarantees it). `LINT FAIL` modules are the work list. If the list is empty, skip to Step 4.
 
-- [ ] **Step 2: Fix findings module by module, in reviewed commits**
+- [x] **Step 2: Fix findings module by module, in reviewed commits**
 
 For each failing module, re-run to see the findings (`cd <module> && ../../../../.cache/tools/bin/golangci-lint-v2.12.2 run -c <repo-root>/.golangci.yml --new-from-rev "$(git merge-base HEAD origin/main)" ./...` — or just re-run `tools/lint.sh --check --go <module-path>`). Typical `standard`-group fixes:
 - `errcheck`: handle or explicitly assign the error (`_ = f.Close()` only where ignoring is genuinely correct and obvious).
@@ -669,7 +669,7 @@ For each failing module, re-run to see the findings (`cd <module> && ../../../..
 
 An errcheck fix that would change behavior (e.g. surfacing an error that was silently dropped in a hot path) is still in-scope — these are real findings on lines this PR touches — but if one looks risky, prefer the explicit `_ =` acknowledgment over a behavior change, and note it in the commit message. Group fixes into per-service or per-theme commits: `git commit -m "fix(task-171): lint residue — <module or theme>"`.
 
-- [ ] **Step 3 (escape hatch, only if a cluster is pathological): scoped exclusion**
+- [x] **Step 3 (escape hatch, only if a cluster is pathological): scoped exclusion**
 
 If one module has an unreasonable finding count (e.g. hundreds of errcheck hits), add a scoped exclusion to `.golangci.yml` instead — visible, commented, tracked:
 
@@ -687,7 +687,7 @@ linters:
 
 (Adjust `path`/`linters` to the actual cluster. Every escape-hatch block MUST carry the burn-down comment.)
 
-- [ ] **Step 4: Verify both ecosystems fully clean**
+- [x] **Step 4: Verify both ecosystems fully clean**
 
 ```bash
 tools/lint.sh --check    # expect: lint.sh: OK, exit 0
@@ -695,7 +695,7 @@ tools/lint.sh --check    # expect: lint.sh: OK, exit 0
 
 Run the affected services' tests for every module Step 2 touched: `cd <module> && go test -race ./... && go vet ./...` — clean. If any touched module's fix altered non-test source, this is behavior-adjacent: also `go build ./...` in it.
 
-- [ ] **Step 5: Final commit for any stragglers**
+- [x] **Step 5: Final commit for any stragglers**
 
 ```bash
 git status --porcelain    # expect: empty (everything committed in Steps 2–3)
@@ -712,7 +712,7 @@ git status --porcelain    # expect: empty (everything committed in Steps 2–3)
 - Consumes: `tools/lint.sh --check` contract (Task 1); `detect-changes` outputs `go-services-matrix` / `go-libraries-matrix` (entries carry `module_path`, e.g. `services/atlas-account/atlas.com/account`), `has-ui-changes`, `has-workflow-changes`.
 - Produces: required PR checks `Lint & Format Guard (Go)` and `Lint & Format Guard (UI)`; both wired into `pr-validation-complete`.
 
-- [ ] **Step 1: Add the two jobs**
+- [x] **Step 1: Add the two jobs**
 
 Insert after the `gen-lb-ports` job (keeping the guard jobs grouped):
 
@@ -793,7 +793,7 @@ Insert after the `gen-lb-ports` job (keeping the guard jobs grouped):
         run: ./tools/lint.sh --check --ui
 ```
 
-- [ ] **Step 2: Wire both jobs into `pr-validation-complete`**
+- [x] **Step 2: Wire both jobs into `pr-validation-complete`**
 
 Three edits to the existing summary job:
 
@@ -821,7 +821,7 @@ Three edits to the existing summary job:
           if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$OVERLAY_RESULT" == "failure" ] || [ "$GUARD_RESULT" == "failure" ] || [ "$OUTBOX_GUARD_RESULT" == "failure" ] || [ "$GOROUTINE_GUARD_RESULT" == "failure" ] || [ "$LBPORTS_RESULT" == "failure" ] || [ "$LINT_GO_RESULT" == "failure" ] || [ "$LINT_UI_RESULT" == "failure" ]; then
 ```
 
-- [ ] **Step 3: Validate the workflow file parses**
+- [x] **Step 3: Validate the workflow file parses**
 
 ```bash
 python3 -c "import yaml,sys; yaml.safe_load(open('.github/workflows/pr-validation.yml')); print('yaml OK')"
@@ -829,7 +829,7 @@ python3 -c "import yaml,sys; yaml.safe_load(open('.github/workflows/pr-validatio
 
 Expected: `yaml OK`. (If `actionlint` happens to be installed, run it too; do not install it just for this.)
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add .github/workflows/pr-validation.yml
@@ -848,7 +848,7 @@ git commit -m "ci(task-171): Lint & Format Guard jobs (lint-go, lint-ui) in pr-v
 - Consumes: `tools/lint.versions` + the cached binary path convention `.cache/tools/bin/golangci-lint-$GOLANGCI_LINT_VERSION` (Task 1); atlas-ui's installed prettier (Task 2).
 - Produces: automatic formatting of just-written `.go` and atlas-ui `.ts/.tsx` files during agent sessions. Deliberately fail-open (design §3.6): this hook must NEVER block an edit.
 
-- [ ] **Step 1: Write `.claude/hooks/format-on-write.sh`**
+- [x] **Step 1: Write `.claude/hooks/format-on-write.sh`**
 
 ```bash
 #!/usr/bin/env bash
@@ -895,7 +895,7 @@ exit 0
 
 Then: `chmod +x .claude/hooks/format-on-write.sh`
 
-- [ ] **Step 2: Register it in `.claude/settings.json`**
+- [x] **Step 2: Register it in `.claude/settings.json`**
 
 Add a `PostToolUse` block alongside the existing `PreToolUse` one (rest of the file unchanged):
 
@@ -913,7 +913,7 @@ Add a `PostToolUse` block alongside the existing `PreToolUse` one (rest of the f
     ],
 ```
 
-- [ ] **Step 3: Verify by simulating the hook's stdin contract**
+- [x] **Step 3: Verify by simulating the hook's stdin contract**
 
 ```bash
 mkdir -p libs/atlas-model/scratchhook
@@ -926,7 +926,7 @@ rm -rf libs/atlas-model/scratchhook
 
 Expected: `x.go` comes back gofumpt-formatted (`func Ugly() int { return 1 }` with proper spacing); the nonexistent-file call prints nothing and `exit=0` (fail-open).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add .claude/hooks/format-on-write.sh .claude/settings.json
@@ -945,7 +945,7 @@ git commit -m "feat(task-171): PostToolUse format-on-write hook"
 - Consumes: the finished guard (Tasks 1–7) — the docs describe reality, so they land last-but-one.
 - Produces: the FR-6.2 checklist obligation and the FR-4.4(b) tracked follow-up.
 
-- [ ] **Step 1: Add checklist item 7 to CLAUDE.md**
+- [x] **Step 1: Add checklist item 7 to CLAUDE.md**
 
 In the `## Build & Verification` numbered list, after item 6 (`tools/goroutine-guard.sh`), add:
 
@@ -961,7 +961,7 @@ In the `## Build & Verification` numbered list, after item 6 (`tools/goroutine-g
 
 (Item 2 `go vet` stays unchanged — design decision 4.)
 
-- [ ] **Step 2: File the burn-down follow-up in docs/TODO.md**
+- [x] **Step 2: File the burn-down follow-up in docs/TODO.md**
 
 Locate `docs/TODO.md` (Grep for "Priority Summary" to confirm the path) and add under `### High Priority (Feature Incomplete)`:
 
@@ -975,7 +975,7 @@ Locate `docs/TODO.md` (Grep for "Priority Summary" to confirm the path) and add 
   layer enforces whole-tree like the formatters already do.
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add CLAUDE.md docs/TODO.md
@@ -993,7 +993,7 @@ git commit -m "docs(task-171): lint guard verification checklist item + burn-dow
 - Consumes: everything.
 - Produces: the evidence for the PRD acceptance criteria. The CI-observation half of the deliberate-failure criterion runs at PR time (see Step 4) — it needs an open PR to show a red check.
 
-- [ ] **Step 1: Full clean gate + idempotence**
+- [x] **Step 1: Full clean gate + idempotence**
 
 ```bash
 source ~/.nvm/nvm.sh && nvm use 22
@@ -1003,7 +1003,7 @@ tools/lint.sh && git diff --exit-code && echo "FIX MODE IDEMPOTENT"
 
 Expected: both echo lines print. Fix mode over the whole clean tree must produce zero diff.
 
-- [ ] **Step 2: Existing guards + verification checklist still pass**
+- [x] **Step 2: Existing guards + verification checklist still pass**
 
 ```bash
 tools/redis-key-guard.sh && tools/goroutine-guard.sh && tools/outbox-guard.sh
@@ -1012,7 +1012,7 @@ tools/gen-lb-ports.sh --check && tools/check-version-coverage.sh
 
 Expected: all exit 0. (The Go/UI test sweeps already ran in Tasks 4/5; re-run any module you have touched since.)
 
-- [ ] **Step 3: Deliberate-failure exercise, local half**
+- [x] **Step 3: Deliberate-failure exercise, local half**
 
 ```bash
 mkdir -p libs/atlas-model/scratchlint
@@ -1045,7 +1045,7 @@ git push --force-with-lease origin task-171-lint-format-enforcement
 
 Confirm both guard jobs then go green on the re-run. If executing this plan before any PR exists, perform Step 3, then `git reset --hard HEAD~1` immediately, and leave this step's CI half as the documented final action of the PR checklist — it is the one acceptance criterion that structurally cannot run pre-PR.
 
-- [ ] **Step 5: Confirm the tree is back to clean**
+- [x] **Step 5: Confirm the tree is back to clean**
 
 ```bash
 git log --oneline -3        # no scratch commit

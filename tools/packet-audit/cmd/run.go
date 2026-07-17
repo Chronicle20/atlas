@@ -1457,6 +1457,28 @@ func candidatesFromFName(fname string) []candidate {
 		// Use WorldMessageSimple as the representative struct (covers the common Notice/PopUp/Megaphone modes).
 		return []candidate{{name: "WorldMessageSimple", pkg: "chat", dir: csvpkg.DirClientbound}}
 
+	// WorldMessage dispatcher family (task-123 Task 18): CWvsContext::OnBroadcastMsg
+	// dispatches on a leading mode byte (Decode1); modelled via #-suffixed synthetic
+	// IDA entries, one per enrolled megaphone arm (docs/packets/dispatchers/worldmessage.yaml,
+	// design D5 — only these four arms enroll; the other 15 modes stay outside the
+	// family lint surface for this task). Mode-value evidence (IDA decompile,
+	// task-18-report.md): the case-3/8/9/10 group sharing one code block is
+	// byte-identical across gms_v83 (0xa22785), gms_v84 (0xa6dc97), gms_v87
+	// (0xab9fd5), gms_v95 (0xa04160), and jms_v185 (0xb0985b) — MEGAPHONE=2,
+	// SUPER_MEGAPHONE=3, ITEM_MEGAPHONE=8, MULTI_MEGAPHONE=10 in all five.
+	case "CWvsContext::OnBroadcastMsg#Megaphone":
+		// mode 2: curse-filtered "name : msg" chat line, no extra fields.
+		return []candidate{{name: "WorldMessageMegaphone", pkg: "chat", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnBroadcastMsg#SuperMegaphone":
+		// mode 3: shared megaphone-family pre-decode (channel + whisper only).
+		return []candidate{{name: "WorldMessageSuperMegaphone", pkg: "chat", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnBroadcastMsg#ItemMegaphone":
+		// mode 8: pre-decode channel + whisper + conditional GW_ItemSlotBase.
+		return []candidate{{name: "WorldMessageItemMegaphone", pkg: "chat", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnBroadcastMsg#MultiMegaphone":
+		// mode 10: pre-decode line count + up to 2 extra strings + channel + whisper.
+		return []candidate{{name: "WorldMessageMultiMegaphone", pkg: "chat", dir: csvpkg.DirClientbound}}
+
 	// --- Social: chat (serverbound) ---
 	// CSV: GENERAL_CHAT (0x36 / 54) → CField::SendChatMsg.
 	// Wire: Encode4(update_time) + EncodeStr(sText) + Encode1(bOnlyBalloon).

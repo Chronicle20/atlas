@@ -1374,14 +1374,12 @@
             "ITEM_MEGAPHONE": 8,
             "YELLOW_MEGAPHONE": 9,
             "MULTI_MEGAPHONE": 10,
-            "WEATHER": 11,
-            "GACHAPON": 12,
-            "UNKNOWN_3": 13,
-            "UNKNOWN_4": 14,
-            "CLIPBOARD_NOTICE_1": 15,
-            "CLIPBOARD_NOTICE_2": 16,
-            "UNKNOWN_7": 17,
-            "UNKNOWN_8": 18
+            "GACHAPON": 11,
+            "UNKNOWN_3": 12,
+            "UNKNOWN_4": 13,
+            "CLIPBOARD_NOTICE_1": 14,
+            "CLIPBOARD_NOTICE_2": 15,
+            "UNKNOWN_7": 17
           }
         }
       },

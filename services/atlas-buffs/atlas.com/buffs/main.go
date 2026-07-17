@@ -1,6 +1,7 @@
 package main
 
 import (
+	"atlas-buffs/berserk"
 	"atlas-buffs/character"
 	character2 "atlas-buffs/kafka/consumer/character"
 	"atlas-buffs/tasks"
@@ -46,6 +47,7 @@ func main() {
 
 	rc := atlas.Connect(l)
 	character.InitRegistry(rc)
+	berserk.InitRegistry(rc)
 
 	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	character2.InitConsumers(l)(cmf)(consumerGroupId)
@@ -60,6 +62,9 @@ func main() {
 	})
 	routine.Go(l, rt.Context(), func(_ context.Context) {
 		tasks.Register(l, rt.Context())(tasks.NewPoisonTick(l, 1000))
+	})
+	routine.Go(l, rt.Context(), func(_ context.Context) {
+		tasks.Register(l, rt.Context())(tasks.NewBerserkTick(l, 1000))
 	})
 
 	server.New(l).

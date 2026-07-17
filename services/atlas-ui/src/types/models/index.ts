@@ -17,7 +17,6 @@ export * from './monster';
 export * from './reactor';
 export * from './drop';
 export * from './portal';
-export * from './gachapon';
 export * from './wallet';
 export * from './reward-pool';
 export * from './reward-pool-item';

@@ -74,7 +74,7 @@ describe('SetupPage (tenant-only)', () => {
     render(<SetupPage />);
     for (const label of [
       'Monster & Reactor Drops',
-      'Gachapons',
+      'Reward Pools',
       'NPC Conversations',
       'Quest Conversations',
       'NPC Shops',

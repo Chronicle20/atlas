@@ -54,6 +54,17 @@ func decorateNameForMessage(medal string, characterName string) string {
 	return fmt.Sprintf("<%s> %s", medal, characterName)
 }
 
+// DecorateNameForMessage exports decorateNameForMessage for consumers outside
+// this package that need to prefix a sender name with their medal (e.g. the
+// world-broadcast status consumer, task-123 Task 14, which renders a bare
+// sender name onto TV / avatar megaphone packets rather than a full "name :
+// message" line). Kept as the single name-decoration helper — the megaphone
+// broadcast consumer (Task 13) reaches the same logic indirectly via
+// decorateMegaphoneMessage above.
+func DecorateNameForMessage(medal string, characterName string) string {
+	return decorateNameForMessage(medal, characterName)
+}
+
 func decorateMegaphoneMessage(medal string, characterName string, message string) string {
 	name := decorateNameForMessage(medal, characterName)
 	if len(name) == 0 {

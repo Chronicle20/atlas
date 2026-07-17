@@ -1,5 +1,6 @@
 export interface GachaponAttributes {
   name: string;
+  kind: string;
   npcIds: number[];
   commonWeight: number;
   uncommonWeight: number;

@@ -19,12 +19,13 @@ vi.mock("@/context/tenant-context", () => ({
   }),
 }));
 
-function makeGachapon(id: string, name: string): GachaponData {
+function makeGachapon(id: string, name: string, kind = "gachapon"): GachaponData {
   return {
     id,
     type: "gachapons",
     attributes: {
       name,
+      kind,
       npcIds: [9010000],
       commonWeight: 70,
       uncommonWeight: 25,
@@ -85,6 +86,23 @@ describe("GachaponsPage", () => {
       const lastCall = vi.mocked(gachaponsService.getPage).mock.calls.at(-1)!;
       expect(lastCall[0]).toEqual({ number: 2, size: 50 });
     });
+  });
+
+  it("renders the Kind column so incubator machines are distinguishable from gachapon machines", async () => {
+    vi.mocked(gachaponsService.getPage).mockResolvedValue({
+      data: [
+        makeGachapon("1", "Standard Gachapon", "gachapon"),
+        makeGachapon("2", "Snow Island Incubator", "incubator"),
+      ],
+      meta: { total: 2, page: { number: 1, size: 50, last: 1 } },
+    });
+
+    renderAt("/gachapons");
+
+    await screen.findByText("Standard Gachapon");
+    expect(screen.getByRole("columnheader", { name: "Kind" })).toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: "gachapon" })).toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: "incubator" })).toBeInTheDocument();
   });
 
   it("hydrates the page number from ?page= in the URL", async () => {

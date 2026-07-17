@@ -63,7 +63,6 @@ const TenantsPropertiesPage = lazy(() => import("@/pages/TenantsPropertiesPage")
 const TenantsCharacterTemplatesPage = lazy(() => import("@/pages/TenantsCharacterTemplatesPage").then(m => ({ default: m.TenantsCharacterTemplatesPage })));
 const TenantsCharacterPresetsPage = lazy(() => import("@/pages/TenantsCharacterPresetsPage").then(m => ({ default: m.TenantsCharacterPresetsPage })));
 const TenantsMtsConfigPage = lazy(() => import("@/pages/TenantsMtsConfigPage").then(m => ({ default: m.TenantsMtsConfigPage })));
-const TenantsIncubatorRewardsPage = lazy(() => import("@/pages/TenantsIncubatorRewardsPage").then(m => ({ default: m.TenantsIncubatorRewardsPage })));
 
 export function App() {
   return (
@@ -127,7 +126,6 @@ export function App() {
                     <Route path="/tenants/:id/character/templates" element={<TenantsCharacterTemplatesPage />} />
                     <Route path="/tenants/:id/character/presets" element={<TenantsCharacterPresetsPage />} />
                     <Route path="/tenants/:id/mts-config" element={<TenantsMtsConfigPage />} />
-                    <Route path="/tenants/:id/incubator-rewards" element={<TenantsIncubatorRewardsPage />} />
                   </Route>
                   <Route path="*" element={<NotFoundPage />} />
                 </Routes>

@@ -24,6 +24,10 @@ export const columns: ColumnDef<GachaponData>[] = [
     ),
   },
   {
+    accessorKey: "attributes.kind",
+    header: "Kind",
+  },
+  {
     accessorKey: "attributes.commonWeight",
     header: "Common Weight",
   },

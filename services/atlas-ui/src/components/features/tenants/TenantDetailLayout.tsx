@@ -17,7 +17,6 @@ export function TenantDetailLayout({ children }: TenantDetailLayoutProps) {
         { title: "Socket Writers",      href: `/tenants/${id}/writers` },
         { title: "Worlds",              href: `/tenants/${id}/worlds` },
         { title: "MTS Configuration",   href: `/tenants/${id}/mts-config` },
-        { title: "Incubator Rewards",   href: `/tenants/${id}/incubator-rewards` },
     ];
     return (
         <div className="flex flex-1 flex-col overflow-hidden space-y-6 p-10 pb-16">

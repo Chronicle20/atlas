@@ -26,8 +26,15 @@ type Processor interface {
 	// since the last cycle start (true when no cycle has ever run).
 	IsDue(interval time.Duration, now time.Time) (bool, error)
 	// Recompute scans characters, ranks them, upserts rows stamped with
-	// now, prunes rows older than now, and records the cycle. Idempotent
-	// and convergent — a crashed run is fully repaired by the next one.
+	// now, prunes rows older than now, and records the cycle. Ranks are
+	// idempotent and convergent — a crashed run's ranks are fully repaired
+	// by the next one. The move fields (OverallRankMove/JobRankMove) are
+	// not: a crash between upsertBatch and completeCycle, or any
+	// back-to-back double-run, makes the next cycle build prevById from
+	// its own freshly-written ranks, so Move(new, new) reads 0 for every
+	// unchanged character for that one cycle. This is structural to the
+	// single-row schema (there is no previous-rank column) and self-heals
+	// on the following cycle.
 	Recompute(now time.Time) error
 	WithCharacterSupplier(s CharacterSupplier) Processor
 }
@@ -146,7 +153,30 @@ func (p *ProcessorImpl) Recompute(now time.Time) error {
 	if err := upsertBatch(tdb, p.t.Id(), entities); err != nil {
 		return err
 	}
-	if err := pruneBefore(tdb, now); err != nil {
+
+	// Guard: an entirely empty character scan against a non-empty rankings
+	// table is indistinguishable, from here, between a genuinely-emptied
+	// tenant and a transient empty-without-error scan (e.g.
+	// character.Processor.GetAll draining an HTTP 200 with an empty data
+	// array — a known failure mode in this codebase). Pruning
+	// unconditionally in that case would zero every live player's rank
+	// for up to a full recompute interval. Skipping the prune leaves dead
+	// rows for a genuinely-emptied tenant, which is the safer failure:
+	// nothing reads rankings for characters that no longer exist, whereas
+	// every live player's rank is player-visible. The cycle itself must
+	// still be recorded either way so IsDue advances.
+	//
+	// This is gated on the raw scan (cs), not the post-filter entities
+	// slice: a scan that returns real characters who are all GM or all
+	// departed since last cycle is a legitimate zero-entities cycle and
+	// must still prune (e.g. the last non-GM character on a world just
+	// got GM'd — their stale row must go).
+	if len(cs) == 0 && len(prev) > 0 {
+		p.l.WithFields(logrus.Fields{
+			"tenant":        p.t.Id().String(),
+			"existing_rows": len(prev),
+		}).Warnf("Rankings recompute character scan returned zero characters while %d existing rows remain for this tenant; skipping prune to avoid wiping live rankings on a possibly-transient empty scan.", len(prev))
+	} else if err := pruneBefore(tdb, now); err != nil {
 		return err
 	}
 

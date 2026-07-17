@@ -187,6 +187,117 @@ func TestIsDue(t *testing.T) {
 	if err != nil || !due {
 		t.Fatalf("61m into a 60m interval must be due: due=%v err=%v", due, err)
 	}
+
+	// Pin the >= boundary precisely: exactly one interval elapsed must
+	// already be due. A `>` implementation would pass the 30m/61m cases
+	// above but wrongly report not-due here.
+	due, err = p.IsDue(time.Hour, now.Add(time.Hour))
+	if err != nil || !due {
+		t.Fatalf("exactly 60m into a 60m interval must be due (>= semantics): due=%v err=%v", due, err)
+	}
+}
+
+// TestRecomputeSkipsPruneOnEmptyScanWithExistingRows proves the Finding-1
+// guard: a scan that returns ([], nil) — the same shape an HTTP 200 with an
+// empty `data` array produces via requests.DrainProvider — must not wipe an
+// already-populated tenant's rankings. Without the guard, upsertBatch no-ops
+// on the empty entities slice and pruneBefore(tdb, now) deletes every row
+// whose computed_at predates `now`, i.e. every row seeded by cycle one.
+func TestRecomputeSkipsPruneOnEmptyScanWithExistingRows(t *testing.T) {
+	db := testDatabase(t)
+	_, ctx := testTenantContext(t)
+	l := logrus.New()
+
+	now := time.Now()
+	first := NewProcessor(l, ctx, db).WithCharacterSupplier(supplierOf(
+		characterFixture(t, 11, 0, 100, 50, 0, 0),
+		characterFixture(t, 12, 0, 100, 60, 0, 0),
+	))
+	if err := first.Recompute(now); err != nil {
+		t.Fatalf("cycle 1: %v", err)
+	}
+
+	// Cycle two's scan comes back empty-without-error — the transient
+	// failure mode this guard exists for.
+	second := NewProcessor(l, ctx, db).WithCharacterSupplier(supplierOf())
+	next := now.Add(time.Hour)
+	if err := second.Recompute(next); err != nil {
+		t.Fatalf("cycle 2: %v", err)
+	}
+
+	// Character 12 (level 60) outranks character 11 (level 50): rank 1 vs 2.
+	m1, err := second.GetByCharacterId(11)
+	if err != nil {
+		t.Fatalf("existing row for character 11 must survive an empty-scan cycle: %v", err)
+	}
+	if m1.OverallRank() != 2 {
+		t.Fatalf("character 11's rank must be untouched by the skipped prune: %+v", m1)
+	}
+	m2, err := second.GetByCharacterId(12)
+	if err != nil {
+		t.Fatalf("existing row for character 12 must survive an empty-scan cycle: %v", err)
+	}
+	if m2.OverallRank() != 1 {
+		t.Fatalf("character 12's rank must be untouched by the skipped prune: %+v", m2)
+	}
+
+	// The cycle must still be recorded and advanced even though the prune
+	// was skipped, so IsDue reflects the attempted cycle rather than
+	// looping on the stale cycle-one timestamp.
+	tdb := db.WithContext(ctx)
+	c, err := cycleEntityProvider()(tdb)()
+	if err != nil {
+		t.Fatalf("cycle row read: %v", err)
+	}
+	if !c.LastStartedAt.Equal(next) {
+		t.Fatalf("cycle 2 start must be recorded: got %v, want %v", c.LastStartedAt, next)
+	}
+	if c.LastCompletedAt == nil {
+		t.Fatal("cycle 2 must still complete even though the prune was skipped")
+	}
+	if c.CharactersRanked != 0 {
+		t.Fatalf("cycle 2 ranked 0 characters: got %d", c.CharactersRanked)
+	}
+}
+
+// TestRecomputeEmptyTenantStillRecordsCycle proves the flip side of the
+// Finding-1 guard: when the rankings table is genuinely empty (no prior
+// rows), an empty scan is not held back — the cycle records and completes
+// normally, and IsDue still advances. This must keep passing under the
+// guard exactly as it did before (TestIsDue already depends on this shape).
+func TestRecomputeEmptyTenantStillRecordsCycle(t *testing.T) {
+	db := testDatabase(t)
+	_, ctx := testTenantContext(t)
+	l := logrus.New()
+
+	p := NewProcessor(l, ctx, db).WithCharacterSupplier(supplierOf())
+	now := time.Now()
+	if err := p.Recompute(now); err != nil {
+		t.Fatalf("recompute: %v", err)
+	}
+
+	tdb := db.WithContext(ctx)
+	c, err := cycleEntityProvider()(tdb)()
+	if err != nil {
+		t.Fatalf("cycle row read: %v", err)
+	}
+	if !c.LastStartedAt.Equal(now) {
+		t.Fatalf("cycle start must be recorded: got %v, want %v", c.LastStartedAt, now)
+	}
+	if c.LastCompletedAt == nil {
+		t.Fatal("a legitimately empty tenant must still complete its cycle")
+	}
+	if c.CharactersRanked != 0 {
+		t.Fatalf("expected 0 ranked characters, got %d", c.CharactersRanked)
+	}
+
+	var count int64
+	if err := tdb.Model(&Entity{}).Count(&count).Error; err != nil {
+		t.Fatalf("count: %v", err)
+	}
+	if count != 0 {
+		t.Fatalf("a genuinely empty tenant must have no rows: got %d", count)
+	}
 }
 
 // TestRecomputeGmBoundaryIsGreaterThanZero pins Seam 1 precisely: eligibility

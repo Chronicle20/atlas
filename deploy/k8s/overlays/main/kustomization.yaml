@@ -196,7 +196,7 @@ configMapGenerator:
       - EVENT_TOPIC_WORLD_RATE=EVENT_TOPIC_WORLD_RATE-main
 images:
   - name: ghcr.io/chronicle20/atlas-account/atlas-account
-    newTag: main-99650b7
+    newTag: main-93fbf02
   - name: ghcr.io/chronicle20/atlas-asset-expiration/atlas-asset-expiration
     newTag: main-99650b7
   - name: ghcr.io/chronicle20/atlas-ban/atlas-ban
@@ -222,7 +222,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-consumables/atlas-consumables
     newTag: main-99650b7
   - name: ghcr.io/chronicle20/atlas-data/atlas-data
-    newTag: main-99650b7
+    newTag: main-93fbf02
   - name: ghcr.io/chronicle20/atlas-doors/atlas-doors
     newTag: main-99650b7
   - name: ghcr.io/chronicle20/atlas-drop-information/atlas-drop-information
@@ -302,7 +302,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-reactors/atlas-reactors
     newTag: main-99650b7
   - name: ghcr.io/chronicle20/atlas-renders/atlas-renders
-    newTag: main-99650b7
+    newTag: main-93fbf02
   - name: ghcr.io/chronicle20/atlas-rps/atlas-rps
     newTag: main-99650b7
   - name: ghcr.io/chronicle20/atlas-saga-orchestrator/atlas-saga-orchestrator
@@ -320,6 +320,6 @@ images:
   - name: ghcr.io/chronicle20/atlas-world/atlas-world
     newTag: main-99650b7
   - name: ghcr.io/chronicle20/atlas-ui/atlas-ui
-    newTag: main-99650b7
+    newTag: main-93fbf02
 commonLabels:
   atlas.env: main

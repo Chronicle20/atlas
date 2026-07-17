@@ -19,13 +19,21 @@
 |---|---|---|
 | service / module / dir | `atlas-gachapons` | `atlas-reward-pools` |
 | DB name | `atlas-gachapons` | `atlas-reward-pools` |
-| REST prefix | `/gachapons` | `/reward-pools` |
-| roll endpoint | `POST /gachapons/{id}/rewards/select` | `POST /reward-pools/{id}/rewards/select` |
-| seed group / catalog dir | `gachapons` / `deploy/seed/*/gachapons/` | `reward-pools` / `deploy/seed/*/reward-pools/` |
-| REST domain env (callers) | `GACHAPONS` / `GACHAPONS_URL` | `REWARD_POOLS` / `REWARD_POOLS_URL` (→ BASE_SERVICE_URL fallback) |
 | Kafka topic | `gachapon_reward_won` | `pool_reward_won` |
 | topic env | `EVENT_TOPIC_GACHAPON_REWARD_WON` | `EVENT_TOPIC_POOL_REWARD_WON` |
-| domain type / tables (KEPT) | `gachapon`, `gachapons`, `gachapon_items` | unchanged |
+| REST prefix / roll endpoint (KEPT) | `/gachapons`, `POST /gachapons/{id}/rewards/select` | unchanged |
+| seed group / catalog dir (KEPT) | `gachapons`, `deploy/seed/*/gachapons/` | unchanged |
+| REST domain env (callers, KEPT) | `GACHAPONS` / `GACHAPONS_URL` | unchanged |
+| domain type / tables / JSON:API resource types (KEPT) | `gachapon`, `gachapons`, `gachapon_items`, `gachapon`/`gachapon-rewards` | unchanged |
+
+**Coherence note (revised 2026-07-17):** the REST URL prefix, seed catalog dir/group,
+REST domain env, and JSON:API resource types are KEPT as `gachapon(s)` — they name the
+**resource** (`gachapon`, one kind of pool), which the boundary keeps, not the **service**
+(`atlas-reward-pools`). Renaming the URL to `/reward-pools` while the resource type stays
+`gachapon` would be an incoherent half-measure; renaming the resource type too is the
+deferred deep-domain rename. nginx already routes `/api/gachapons` → the `atlas-reward-pools`
+host (Task 2), so no caller/seed-dir churn is needed. Only the **service identity** (module,
+dir, DB, deploy, host) + **topic** + **unification** change.
 
 ## Piece 3 — consumables-unification (the real design work)
 

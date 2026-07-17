@@ -15,6 +15,7 @@ import (
 	"atlas-character/session"
 	"atlas-character/session/history"
 	"atlas-character/tasks"
+	"atlas-character/teleport_rock"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	lifecycle "github.com/Chronicle20/atlas/libs/atlas-service"
@@ -61,7 +62,7 @@ func main() {
 	session.InitRegistry(rc)
 	character.InitTemporalRegistry(rc)
 
-	db := database.Connect(l, database.SetMigrations(character.Migration, history.Migration, saved_location.Migration, outboxlib.Migration))
+	db := database.Connect(l, database.SetMigrations(character.Migration, history.Migration, saved_location.Migration, teleport_rock.Migration, outboxlib.Migration))
 
 	// Boot the outbox drainer: publishes the transactional outbox to Kafka.
 	// Leadership is gated by a postgres advisory lock — replicas are safe.

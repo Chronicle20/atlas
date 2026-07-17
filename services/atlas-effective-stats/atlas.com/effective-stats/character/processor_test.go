@@ -504,3 +504,28 @@ func TestRegistry_SetWearerProfile_PersistsLevelAndJob(t *testing.T) {
 		t.Errorf("wearer not persisted: %+v", m.Wearer())
 	}
 }
+
+func TestProcessor_AddBuffBonuses_PreservesBasePercent(t *testing.T) {
+	p, _, ctx, _ := setupProcessorTest(t)
+
+	ch := channel.NewModel(1, 2)
+	in := []stat.Bonus{stat.NewBasePercentBonus("", stat.TypeStrength, 10)}
+	if err := p.AddBuffBonuses(ch, 12345, 2311003, in); err != nil {
+		t.Fatalf("AddBuffBonuses() error = %v", err)
+	}
+
+	m, err := GetRegistry().Get(ctx, 12345)
+	if err != nil {
+		t.Fatalf("Registry.Get() error = %v", err)
+	}
+	bonuses := m.Bonuses()
+	if len(bonuses) != 1 {
+		t.Fatalf("Bonuses count = %v, want 1", len(bonuses))
+	}
+	if bonuses[0].Source() != "buff:2311003" {
+		t.Errorf("Source() = %v, want buff:2311003", bonuses[0].Source())
+	}
+	if bonuses[0].BasePercent() != 10 {
+		t.Errorf("BasePercent() = %v, want 10 (re-sourcing dropped the dimension)", bonuses[0].BasePercent())
+	}
+}

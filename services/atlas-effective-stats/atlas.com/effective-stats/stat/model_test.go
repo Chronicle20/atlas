@@ -1,6 +1,7 @@
 package stat
 
 import (
+	"encoding/json"
 	"testing"
 )
 
@@ -226,6 +227,77 @@ func TestMapBuffStatType(t *testing.T) {
 				t.Errorf("MapBuffStatType(%q) isMultiplier = %v, want %v", tt.input, isMultiplier, tt.isMultiplier)
 			}
 		})
+	}
+}
+
+func TestNewBasePercentBonus(t *testing.T) {
+	b := NewBasePercentBonus("buff:2311003", TypeStrength, 10)
+
+	if b.Source() != "buff:2311003" {
+		t.Errorf("Source() = %v, want buff:2311003", b.Source())
+	}
+	if b.StatType() != TypeStrength {
+		t.Errorf("StatType() = %v, want %v", b.StatType(), TypeStrength)
+	}
+	if b.Amount() != 0 {
+		t.Errorf("Amount() = %v, want 0", b.Amount())
+	}
+	if b.Multiplier() != 0.0 {
+		t.Errorf("Multiplier() = %v, want 0.0", b.Multiplier())
+	}
+	if b.BasePercent() != 10 {
+		t.Errorf("BasePercent() = %v, want 10", b.BasePercent())
+	}
+}
+
+func TestBonusWithSource_PreservesDimensions(t *testing.T) {
+	bp := NewBasePercentBonus("", TypeLuck, 10).WithSource("buff:2311003")
+	if bp.Source() != "buff:2311003" {
+		t.Errorf("Source() = %v, want buff:2311003", bp.Source())
+	}
+	if bp.BasePercent() != 10 {
+		t.Errorf("BasePercent() = %v, want 10 (dimension dropped by WithSource)", bp.BasePercent())
+	}
+	if bp.StatType() != TypeLuck {
+		t.Errorf("StatType() = %v, want %v", bp.StatType(), TypeLuck)
+	}
+
+	full := NewFullBonus("old", TypeStrength, 7, 0.5).WithSource("new")
+	if full.Source() != "new" {
+		t.Errorf("Source() = %v, want new", full.Source())
+	}
+	if full.Amount() != 7 || full.Multiplier() != 0.5 || full.BasePercent() != 0 {
+		t.Errorf("WithSource altered dimensions: amount=%v multiplier=%v basePercent=%v, want 7/0.5/0",
+			full.Amount(), full.Multiplier(), full.BasePercent())
+	}
+}
+
+func TestBonusJSONRoundTrip_BasePercent(t *testing.T) {
+	b := NewBasePercentBonus("buff:2311003", TypeIntelligence, 15)
+	data, err := json.Marshal(b)
+	if err != nil {
+		t.Fatalf("Marshal() error = %v", err)
+	}
+	var out Bonus
+	if err := json.Unmarshal(data, &out); err != nil {
+		t.Fatalf("Unmarshal() error = %v", err)
+	}
+	if out != b {
+		t.Errorf("round-trip = %+v, want %+v", out, b)
+	}
+}
+
+func TestBonusUnmarshal_LegacyWithoutBasePercent(t *testing.T) {
+	legacy := []byte(`{"source":"equipment:1","statType":"strength","amount":20,"multiplier":0}`)
+	var b Bonus
+	if err := json.Unmarshal(legacy, &b); err != nil {
+		t.Fatalf("Unmarshal() error = %v", err)
+	}
+	if b.BasePercent() != 0 {
+		t.Errorf("BasePercent() = %v, want 0 for legacy JSON without the field", b.BasePercent())
+	}
+	if b.Source() != "equipment:1" || b.StatType() != TypeStrength || b.Amount() != 20 {
+		t.Errorf("legacy fields corrupted: %+v", b)
 	}
 }
 

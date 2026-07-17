@@ -52,6 +52,7 @@ import (
 	storage3 "atlas-channel/kafka/consumer/storage"
 	summonConsumer "atlas-channel/kafka/consumer/summon"
 	"atlas-channel/kafka/consumer/system_message"
+	teleportrockConsumer "atlas-channel/kafka/consumer/teleportrock"
 	walletConsumer "atlas-channel/kafka/consumer/wallet"
 	"atlas-channel/listener"
 	monsterDomain "atlas-channel/monster"
@@ -128,6 +129,7 @@ import (
 	storagesb "github.com/Chronicle20/atlas/libs/atlas-packet/storage/serverbound"
 	summoncb "github.com/Chronicle20/atlas/libs/atlas-packet/summon/clientbound"
 	summonsb "github.com/Chronicle20/atlas/libs/atlas-packet/summon/serverbound"
+	trcb "github.com/Chronicle20/atlas/libs/atlas-packet/teleportrock/clientbound"
 	trsb "github.com/Chronicle20/atlas/libs/atlas-packet/teleportrock/serverbound"
 	ui2 "github.com/Chronicle20/atlas/libs/atlas-packet/ui/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
@@ -211,6 +213,7 @@ func main() {
 	buff.InitConsumers(l)(cmf)(consumerGroupId)
 	chalkboard.InitConsumers(l)(cmf)(consumerGroupId)
 	messenger.InitConsumers(l)(cmf)(consumerGroupId)
+	teleportrockConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	pet.InitConsumers(l)(cmf)(consumerGroupId)
 	consumable.InitConsumers(l)(cmf)(consumerGroupId)
 	conversation_reward_notice.InitConsumers(l)(cmf)(consumerGroupId)
@@ -468,6 +471,9 @@ func buildListener(
 			return nil, err
 		}
 		if err := register(messenger.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(teleportrockConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
 		if err := register(pet.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
@@ -746,6 +752,7 @@ func produceWriters() []string {
 		charcb.SetTamingMobInfoWriter,
 		doorcb.SpawnDoorWriter,
 		doorcb.RemoveDoorWriter,
+		trcb.MapTransferResultWriter,
 		doorcb.SpawnPortalWriter,
 		doorcb.RemoveTownDoorWriter,
 		charcb.BridleMobCatchFailWriter,

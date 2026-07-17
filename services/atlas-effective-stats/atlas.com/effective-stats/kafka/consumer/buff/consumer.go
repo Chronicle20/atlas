@@ -47,23 +47,16 @@ func handleBuffApplied(l logrus.FieldLogger, ctx context.Context, e buff.StatusE
 
 	p := character.NewProcessor(l, ctx)
 
-	// Convert buff stat changes to stat bonuses
+	// Convert buff stat changes to stat bonuses. Source stays "" here —
+	// AddBuffBonuses stamps "buff:<sourceId>" via WithSource.
 	bonuses := make([]stat.Bonus, 0)
 	for _, change := range e.Body.Changes {
-		statType, isMultiplier := stat.MapBuffStatType(change.Type)
-		if statType == "" {
+		bs := stat.BonusesForBuffChange("", change.Type, change.Amount)
+		if len(bs) == 0 {
 			l.Debugf("Unknown buff stat type: %s", change.Type)
 			continue
 		}
-
-		if isMultiplier {
-			// Percentage buff (e.g., HYPER_BODY_HP gives 60% = 0.60 multiplier)
-			multiplier := float64(change.Amount) / 100.0
-			bonuses = append(bonuses, stat.NewMultiplierBonus("", statType, multiplier))
-		} else {
-			// Flat buff
-			bonuses = append(bonuses, stat.NewBonus("", statType, change.Amount))
-		}
+		bonuses = append(bonuses, bs...)
 	}
 
 	if len(bonuses) > 0 {

@@ -183,17 +183,12 @@ func fetchBuffBonuses(l logrus.FieldLogger, ctx context.Context, characterId uin
 	for _, buff := range buffList {
 		source := fmt.Sprintf("buff:%d", buff.SourceId)
 		for _, change := range buff.Changes {
-			statType, isMultiplier := stat.MapBuffStatType(change.Type)
-			if statType == "" {
+			bs := stat.BonusesForBuffChange(source, change.Type, change.Amount)
+			if len(bs) == 0 {
 				l.Debugf("Unknown buff stat type: %s", change.Type)
 				continue
 			}
-			if isMultiplier {
-				multiplier := float64(change.Amount) / 100.0
-				bonuses = append(bonuses, stat.NewMultiplierBonus(source, statType, multiplier))
-			} else {
-				bonuses = append(bonuses, stat.NewBonus(source, statType, change.Amount))
-			}
+			bonuses = append(bonuses, bs...)
 		}
 	}
 

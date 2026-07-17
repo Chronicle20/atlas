@@ -187,49 +187,6 @@ func TestAllTypes(t *testing.T) {
 	}
 }
 
-func TestMapBuffStatType(t *testing.T) {
-	tests := []struct {
-		input        string
-		expectedType Type
-		isMultiplier bool
-	}{
-		// Flat bonuses
-		{"WEAPON_ATTACK", TypeWeaponAttack, false},
-		{"PAD", TypeWeaponAttack, false},
-		{"MAGIC_ATTACK", TypeMagicAttack, false},
-		{"MAD", TypeMagicAttack, false},
-		{"WEAPON_DEFENSE", TypeWeaponDefense, false},
-		{"PDD", TypeWeaponDefense, false},
-		{"MAGIC_DEFENSE", TypeMagicDefense, false},
-		{"MDD", TypeMagicDefense, false},
-		{"ACCURACY", TypeAccuracy, false},
-		{"ACC", TypeAccuracy, false},
-		{"AVOIDABILITY", TypeAvoidability, false},
-		{"AVOID", TypeAvoidability, false},
-		{"EVA", TypeAvoidability, false},
-		{"SPEED", TypeSpeed, false},
-		{"JUMP", TypeJump, false},
-		// Multiplier bonuses
-		{"HYPER_BODY_HP", TypeMaxHp, true},
-		{"HYPER_BODY_MP", TypeMaxMp, true},
-		{"MAPLE_WARRIOR", TypeStrength, true},
-		// Unknown type
-		{"UNKNOWN", "", false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			statType, isMultiplier := MapBuffStatType(tt.input)
-			if statType != tt.expectedType {
-				t.Errorf("MapBuffStatType(%q) type = %v, want %v", tt.input, statType, tt.expectedType)
-			}
-			if isMultiplier != tt.isMultiplier {
-				t.Errorf("MapBuffStatType(%q) isMultiplier = %v, want %v", tt.input, isMultiplier, tt.isMultiplier)
-			}
-		})
-	}
-}
-
 func TestNewBasePercentBonus(t *testing.T) {
 	b := NewBasePercentBonus("buff:2311003", TypeStrength, 10)
 
@@ -353,7 +310,7 @@ func TestMapStatupType(t *testing.T) {
 }
 
 func TestBonusesForBuffChange_Flat(t *testing.T) {
-	// Table ported row-for-row from the old TestMapBuffStatType flat rows.
+	// Table ported row-for-row from the old buff-stat-type-mapping test's flat rows.
 	tests := []struct {
 		input        string
 		expectedType Type

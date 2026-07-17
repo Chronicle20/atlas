@@ -476,40 +476,6 @@ func BonusesForBuffChange(source string, buffType string, amount int32) []Bonus 
 	}
 }
 
-// MapBuffStatType maps buff stat type strings to Type and indicates if it's a multiplier.
-// Returns empty string for unknown buff types.
-func MapBuffStatType(buffType string) (Type, bool) {
-	switch buffType {
-	case "WEAPON_ATTACK", "PAD":
-		return TypeWeaponAttack, false
-	case "MAGIC_ATTACK", "MAD":
-		return TypeMagicAttack, false
-	case "WEAPON_DEFENSE", "PDD":
-		return TypeWeaponDefense, false
-	case "MAGIC_DEFENSE", "MDD":
-		return TypeMagicDefense, false
-	case "ACCURACY", "ACC":
-		return TypeAccuracy, false
-	case "AVOIDABILITY", "AVOID", "EVA":
-		return TypeAvoidability, false
-	case "SPEED":
-		return TypeSpeed, false
-	case "JUMP":
-		return TypeJump, false
-	case "HYPER_BODY_HP":
-		return TypeMaxHp, true
-	case "HYPER_BODY_MP":
-		return TypeMaxMp, true
-	case "MAPLE_WARRIOR":
-		// Maple Warrior affects all primary stats - we need to handle this specially
-		// For now, return strength as the representative stat
-		// The actual implementation should add bonuses for all 4 primary stats
-		return TypeStrength, true
-	default:
-		return "", false
-	}
-}
-
 // MapStatupType maps statup/passive skill stat type strings to Type.
 // Returns empty string for unknown stat types.
 func MapStatupType(statupType string) Type {

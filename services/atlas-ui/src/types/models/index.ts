@@ -19,3 +19,6 @@ export * from './drop';
 export * from './portal';
 export * from './gachapon';
 export * from './wallet';
+export * from './reward-pool';
+export * from './reward-pool-item';
+export * from './global-reward-item';

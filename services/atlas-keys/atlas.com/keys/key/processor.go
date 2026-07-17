@@ -18,10 +18,7 @@ var (
 	defaultAction = []int32{0, 106, 10, 1, 12, 13, 18, 24, 8, 5, 4, 19, 14, 15, 2, 17, 11, 3, 20, 16, 9, 50, 51, 6, 7, 53, 100, 101, 102, 103, 104, 105, 54, 22, 52, 21, 25, 26, 23, 27}
 )
 
-var (
-	entityModelMapper = model.Map(Make)
-	entitySliceMapper = model.SliceMap(Make)
-)
+var entitySliceMapper = model.SliceMap(Make)
 
 // Processor defines the interface for key processing operations
 type Processor interface {

@@ -119,7 +119,7 @@ func (p *ProcessorImpl) DeleteByCharacterId(characterId character.Id) error {
 	return deleteByCharacter(p.db.WithContext(p.ctx), p.t.Id(), characterId)
 }
 
-// computeBookLevel applies the Cosmic monster-book book-level formula.
+// computeBookLevel applies the monster-book book-level formula.
 // Starting from level=0, expToNext=1, increment level and add level*10 to
 // expToNext while the running threshold is still <= total. Return the level
 // that first failed the condition.
@@ -136,7 +136,7 @@ func computeBookLevel(totalUniqueCards uint16) uint16 {
 }
 
 // computeExpBonusPercent returns the EXP bonus percentage granted by the
-// monster book at the given book level. In Cosmic v83, the bonus equals the
+// monster book at the given book level. The bonus equals the
 // book level itself (level 7 → +7% party EXP).
 func computeExpBonusPercent(bookLevel uint16) uint16 {
 	return bookLevel

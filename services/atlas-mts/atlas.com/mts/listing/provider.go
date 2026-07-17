@@ -151,23 +151,23 @@ func getBrowse(worldId world.Id, state State, f BrowseFilter) database.EntityPro
 
 		q := browseFilterQuery(db, worldId, state, f)
 
-		// PageSize < 0 disables paging entirely and returns every filtered
-		// row: the channel derives the client's categoryItemCnt total from
-		// the full set (the v83 page selector is ceil(total/16) —
-		// CITCWnd_List::ChangeCategorySub, 0x5BDD12 — so the total must span
-		// all pages) and slices the 16-item page window itself.
-		// PageSize == 0 keeps the DefaultPageSize window.
-		if f.PageSize >= 0 {
-			pageSize := f.PageSize
-			if pageSize == 0 {
-				pageSize = DefaultPageSize
-			}
-			page := f.Page
-			if page < 0 {
-				page = 0
-			}
-			q = q.Limit(pageSize).Offset(page * pageSize)
+		// f.Page/f.PageSize are 0-based/positive internal offset fields fed
+		// by the REST handler's 1-based page[number]/page[size] mapping
+		// (task-117: f.Page = page.Number-1, f.PageSize = page.Size, and
+		// page.Size is always >=1 per paginate.ParseParams). PageSize==0
+		// (an internal caller that didn't set it) keeps the DefaultPageSize
+		// window; a non-positive Page floors to 0. There is no more "unpaged"
+		// escape hatch — a caller that needs every row now pages through and
+		// accumulates, e.g. via requests.DrainProvider on the channel side.
+		pageSize := f.PageSize
+		if pageSize <= 0 {
+			pageSize = DefaultPageSize
 		}
+		page := f.Page
+		if page < 0 {
+			page = 0
+		}
+		q = q.Limit(pageSize).Offset(page * pageSize)
 
 		err := q.Find(&results).Error
 		if err != nil {
@@ -275,6 +275,7 @@ func modelFromEntity(e entity) (Model, error) {
 		SetRingId(e.RingId).
 		SetViciousCount(e.ViciousCount).
 		SetFlags(e.Flags).
+		SetOwner(e.Owner).
 		SetListValue(e.ListValue).
 		SetBuyNowPrice(e.BuyNowPrice).
 		SetCommissionRate(e.CommissionRate).

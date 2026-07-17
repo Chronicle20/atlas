@@ -14,6 +14,7 @@ import (
 	"atlas-data/data/wztoxml"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"image"
 	stdpng "image/png"
@@ -103,41 +104,127 @@ func serializeArchive(l logrus.FieldLogger, p Params, file *wz.File) (string, er
 	return root, nil
 }
 
-// fetchArchive downloads <BucketWZ>/<scope>/regions/<region>/versions/<x.y>/<archive>
-// from MinIO into ScratchDir and opens it as a wz.File. Returns the parsed
-// file along with a cleanup func the caller MUST invoke (defer) to close the
-// file and remove the scratch download. Unlike fetchAndSerializeArchive, this
-// helper skips the XML serialization step — workers that only need to read a
-// single .img out of the archive (smap.img from Base.wz, gauge data from
-// UI.wz) avoid the cost of materializing the whole tree to disk.
+// ErrCategoryAbsent reports that the scope stores a monolithic Data.wz whose
+// root has no subdirectory for the requested archive (v12 has no
+// Quest/Morph/TamingMob). Split-layout scopes (no Data.wz) never produce
+// this error — a missing archive there stays a hard failure, matching
+// pre-monolithic behavior (task-172 C-3.4).
+var ErrCategoryAbsent = errors.New("category absent from monolithic Data.wz")
+
+// monolith memoizes the scope's Data.wz for the lifetime of one ingest job.
+// Same job-scoped reasoning as archiveCache: Params are constant per job and
+// the ingest pod exits when the job completes. RunWorkers defers
+// CloseMonolith to release the handle and reset the memo.
+type monolithState struct {
+	once      sync.Once
+	file      *wz.File
+	localPath string
+	found     bool
+	err       error
+}
+
+var monolith monolithState
+
+func monolithFile(ctx context.Context, l logrus.FieldLogger, mc *minio.Client, p Params) (*wz.File, bool, error) {
+	monolith.once.Do(func() {
+		key := fmt.Sprintf("%s/regions/%s/versions/%d.%d/Data.wz", p.ScopeKey, p.Region, p.MajorVersion, p.MinorVersion)
+		exists, err := mc.Stat(ctx, mc.Cfg().BucketWZ, key)
+		if err != nil {
+			monolith.err = fmt.Errorf("stat %s: %w", key, err)
+			return
+		}
+		if !exists {
+			return
+		}
+		localPath, err := mc.DownloadToScratch(ctx, mc.Cfg().BucketWZ, key, p.ScratchDir)
+		if err != nil {
+			monolith.err = fmt.Errorf("download %s: %w", key, err)
+			return
+		}
+		f, err := wz.Open(l, localPath)
+		if err != nil {
+			_ = os.Remove(localPath)
+			monolith.err = fmt.Errorf("open %s: %w", localPath, err)
+			return
+		}
+		l.Infof("monolithic Data.wz detected for scope %s — serving archives as sub-views", p.ScopeKey)
+		monolith.file, monolith.localPath, monolith.found = f, localPath, true
+	})
+	return monolith.file, monolith.found, monolith.err
+}
+
+// CloseMonolith closes and removes the memoized Data.wz and resets the memo.
+// Deferred by data.RunWorkers; also used by tests between cases. Must only
+// run after all workers have finished (sub-views share the handle).
+func CloseMonolith() {
+	if monolith.file != nil {
+		monolith.file.Close()
+		_ = os.Remove(monolith.localPath)
+	}
+	monolith = monolithState{}
+}
+
+// monolithSubArchive resolves an archive name against a parsed Data.wz:
+// Base.wz maps to the root itself (root-level smap.img/zmap.img play the
+// Base.wz role); any other archive maps to the root subdirectory with the
+// same stem (Item.wz → Item/).
+func monolithSubArchive(mono *wz.File, archive string) (*wz.File, error) {
+	stem := strings.TrimSuffix(archive, ".wz")
+	if archive == "Base.wz" {
+		return wz.NewSubFile(mono, mono.Root(), stem), nil
+	}
+	for _, d := range mono.Root().Directories() {
+		if d.Name() == stem {
+			return wz.NewSubFile(mono, d, stem), nil
+		}
+	}
+	return nil, fmt.Errorf("%s: %w", archive, ErrCategoryAbsent)
+}
+
+// OpenArchive resolves an archive for the worker scope: the per-archive
+// MinIO object when present, else a sub-archive view over the scope's
+// monolithic Data.wz (task-172 C-3). The returned cleanup MUST be deferred;
+// it is a no-op for monolithic views — the shared Data.wz is closed once by
+// CloseMonolith when the job ends.
 //
-// Concurrency: fetchArchive opens a fresh wz.File on a freshly-downloaded
-// local path. The returned *wz.File is published to a single worker
-// goroutine that holds it until the caller-provided cleanup runs. Other
-// workers fetching the same archive name receive their own *wz.File on
-// their own local copy (archiveSerialization memoizes the SERIALIZED form
-// but not the *wz.File itself), so the Seek+Read sequence inside
-// wz.Open's parseHeader/detectVersion/parseRoot runs single-threaded
-// per File and needs no parseMu coverage. See task-076 F4 / CONCURRENCY-03.
-func fetchArchive(ctx context.Context, l logrus.FieldLogger, mc *minio.Client, p Params, archive string) (*wz.File, func(), error) {
+// Concurrency: per-archive opens get a private file as before. Monolithic
+// sub-views share one *wz.File across workers; lazy image parsing is
+// serialized by the parent's parseMu (see wz.File docs), trading some
+// parallelism for correctness.
+func OpenArchive(ctx context.Context, l logrus.FieldLogger, mc *minio.Client, p Params, archive string) (*wz.File, func(), error) {
+	noop := func() {}
 	if mc == nil {
-		return nil, func() {}, fmt.Errorf("minio client unavailable")
+		return nil, noop, fmt.Errorf("minio client unavailable")
 	}
 	key := fmt.Sprintf("%s/regions/%s/versions/%d.%d/%s", p.ScopeKey, p.Region, p.MajorVersion, p.MinorVersion, archive)
-	localPath, err := mc.DownloadToScratch(ctx, mc.Cfg().BucketWZ, key, p.ScratchDir)
+	exists, err := mc.Stat(ctx, mc.Cfg().BucketWZ, key)
 	if err != nil {
-		return nil, func() {}, fmt.Errorf("download %s: %w", key, err)
+		return nil, noop, fmt.Errorf("stat %s: %w", key, err)
 	}
-	f, err := wz.Open(l, localPath)
+	if exists {
+		localPath, err := mc.DownloadToScratch(ctx, mc.Cfg().BucketWZ, key, p.ScratchDir)
+		if err != nil {
+			return nil, noop, fmt.Errorf("download %s: %w", key, err)
+		}
+		f, err := wz.Open(l, localPath)
+		if err != nil {
+			_ = os.Remove(localPath)
+			return nil, noop, fmt.Errorf("open %s: %w", localPath, err)
+		}
+		return f, func() { f.Close(); _ = os.Remove(localPath) }, nil
+	}
+	mono, found, err := monolithFile(ctx, l, mc, p)
 	if err != nil {
-		_ = os.Remove(localPath)
-		return nil, func() {}, fmt.Errorf("open %s: %w", localPath, err)
+		return nil, noop, err
 	}
-	cleanup := func() {
-		f.Close()
-		_ = os.Remove(localPath)
+	if !found {
+		return nil, noop, fmt.Errorf("archive %s not found (no per-archive object and no Data.wz in scope)", key)
 	}
-	return f, cleanup, nil
+	sub, err := monolithSubArchive(mono, archive)
+	if err != nil {
+		return nil, noop, err
+	}
+	return sub, noop, nil
 }
 
 // archiveSerialization memoizes one cross-archive fetch+serialize per archive
@@ -191,17 +278,11 @@ func fetchAndSerializeArchive(ctx context.Context, l logrus.FieldLogger, mc *min
 // at most once per (archive, ingest-process) by fetchAndSerializeArchive's
 // sync.Once gate.
 func fetchAndSerializeArchiveOnce(ctx context.Context, l logrus.FieldLogger, mc *minio.Client, p Params, archive string) (string, error) {
-	key := fmt.Sprintf("%s/regions/%s/versions/%d.%d/%s", p.ScopeKey, p.Region, p.MajorVersion, p.MinorVersion, archive)
-	localPath, err := mc.DownloadToScratch(ctx, mc.Cfg().BucketWZ, key, p.ScratchDir)
+	f, cleanup, err := OpenArchive(ctx, l, mc, p, archive)
 	if err != nil {
-		return "", fmt.Errorf("download %s: %w", key, err)
+		return "", err
 	}
-	defer os.Remove(localPath)
-	f, err := wz.Open(l, localPath)
-	if err != nil {
-		return "", fmt.Errorf("open %s: %w", localPath, err)
-	}
-	defer f.Close()
+	defer cleanup()
 	return serializeArchive(l, p, f)
 }
 

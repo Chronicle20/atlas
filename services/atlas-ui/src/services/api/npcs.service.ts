@@ -1,38 +1,24 @@
 import { api } from "@/lib/api/client";
-import {
-  type ServiceOptions,
-  type QueryOptions,
-  type ValidationError,
-} from "@/lib/api/query-params";
+import { type ServiceOptions, type QueryOptions, type ValidationError } from "@/lib/api/query-params";
+import { fetchAll, fetchPaged } from "@/services/api/pagination";
 import { conversationsService } from "./conversations.service";
-import type {
-  NPC,
-  NpcSearchResult,
-  Shop,
-  Commodity,
-  CommodityAttributes,
-  ShopResponse,
-  NpcSpawnMap,
-  NpcSpawnMapData,
-} from "@/types/models/npc";
+import type { NPC, NpcSearchResult, Shop, Commodity, CommodityAttributes, ShopResponse, NpcSpawnMap, NpcSpawnMapData } from "@/types/models/npc";
 import type { QuestDefinition } from "@/types/models/quest";
 
 const BASE_PATH = "/api/npcs";
+
+// NpcsPage advertises "Results are limited to 50 entries" — searchNpcs is a
+// bounded single-page lookup, not a drained browse (task-117).
+const SEARCH_RESULT_LIMIT = 50;
 
 interface CreateShopInput {
   data: {
     type: "shops";
     id: string;
     attributes: { npcId: number; recharger?: boolean };
-    relationships: {
-      commodities: { data: Array<{ type: "commodities"; id: string }> };
-    };
+    relationships: { commodities: { data: Array<{ type: "commodities"; id: string }> } };
   };
-  included: Array<{
-    type: "commodities";
-    id: string;
-    attributes: Omit<CommodityAttributes, "id">;
-  }>;
+  included: Array<{ type: "commodities"; id: string; attributes: Omit<CommodityAttributes, "id"> }>;
 }
 
 interface UpdateShopInput {
@@ -40,15 +26,9 @@ interface UpdateShopInput {
     type: "shops";
     id: string;
     attributes: { npcId: number; recharger?: boolean };
-    relationships: {
-      commodities: { data: Array<{ type: "commodities"; id: string }> };
-    };
+    relationships: { commodities: { data: Array<{ type: "commodities"; id: string }> } };
   };
-  included: Array<{
-    type: "commodities";
-    id: string;
-    attributes: CommodityAttributes;
-  }>;
+  included: Array<{ type: "commodities"; id: string; attributes: CommodityAttributes }>;
 }
 
 interface CreateCommodityInput {
@@ -61,57 +41,34 @@ interface UpdateCommodityInput {
 
 function validateCommodity(data: CommodityAttributes): ValidationError[] {
   const errors: ValidationError[] = [];
-  if (data.templateId <= 0)
-    errors.push({
-      field: "templateId",
-      message: "Template ID must be positive",
-    });
-  if (data.mesoPrice < 0)
-    errors.push({
-      field: "mesoPrice",
-      message: "Meso price must be non-negative",
-    });
+  if (data.templateId <= 0) errors.push({ field: "templateId", message: "Template ID must be positive" });
+  if (data.mesoPrice < 0) errors.push({ field: "mesoPrice", message: "Meso price must be non-negative" });
   if (data.discountRate < 0 || data.discountRate > 100) {
-    errors.push({
-      field: "discountRate",
-      message: "Discount rate must be between 0 and 100",
-    });
+    errors.push({ field: "discountRate", message: "Discount rate must be between 0 and 100" });
   }
-  if (data.tokenPrice < 0)
-    errors.push({
-      field: "tokenPrice",
-      message: "Token price must be non-negative",
-    });
-  if (data.period < 0)
-    errors.push({ field: "period", message: "Period must be non-negative" });
-  if (data.levelLimit < 0)
-    errors.push({
-      field: "levelLimit",
-      message: "Level limit must be non-negative",
-    });
+  if (data.tokenPrice < 0) errors.push({ field: "tokenPrice", message: "Token price must be non-negative" });
+  if (data.period < 0) errors.push({ field: "period", message: "Period must be non-negative" });
+  if (data.levelLimit < 0) errors.push({ field: "levelLimit", message: "Level limit must be non-negative" });
   return errors;
 }
 
-function throwIfInvalidCommodity(
-  attrs: CommodityAttributes,
-  shouldValidate: boolean,
-): void {
+function throwIfInvalidCommodity(attrs: CommodityAttributes, shouldValidate: boolean): void {
   if (!shouldValidate) return;
   const errors = validateCommodity(attrs);
   if (errors.length > 0) {
-    throw new Error(
-      `Commodity validation failed: ${errors.map((e) => e.message).join(", ")}`,
-    );
+    throw new Error(`Commodity validation failed: ${errors.map(e => e.message).join(", ")}`);
   }
 }
 
 export const npcsService = {
   /**
-   * Combine shop and conversation lookups into a single NPC list.
+   * Combine shop and conversation lookups into a single NPC list, draining
+   * all pages of each (task-117) — the status map this feeds needs every
+   * NPC, not a page at a time.
    */
   async getAllNPCs(options?: QueryOptions): Promise<NPC[]> {
     try {
-      const shops = await api.getList<Shop>("/api/shops", options);
+      const shops = await fetchAll<Shop>("/api/shops", undefined, options);
       const npcsWithShops: NPC[] = shops.map((shop: Shop) => ({
         id: shop.attributes.npcId,
         hasShop: true,
@@ -120,17 +77,15 @@ export const npcsService = {
 
       try {
         const conversations = await conversationsService.getAll();
-        const npcsWithConversations: NPC[] = conversations.map(
-          (conversation) => ({
-            id: conversation.attributes.npcId,
-            hasShop: false,
-            hasConversation: true,
-          }),
-        );
+        const npcsWithConversations: NPC[] = conversations.map(conversation => ({
+          id: conversation.attributes.npcId,
+          hasShop: false,
+          hasConversation: true,
+        }));
 
         const npcMap = new Map<number, NPC>();
-        npcsWithShops.forEach((npc) => npcMap.set(npc.id, npc));
-        npcsWithConversations.forEach((npc) => {
+        npcsWithShops.forEach(npc => npcMap.set(npc.id, npc));
+        npcsWithConversations.forEach(npc => {
           const existing = npcMap.get(npc.id);
           if (existing) existing.hasConversation = true;
           else npcMap.set(npc.id, npc);
@@ -138,46 +93,29 @@ export const npcsService = {
 
         return Array.from(npcMap.values()).sort((a, b) => a.id - b.id);
       } catch (conversationError) {
-        console.error(
-          "Failed to fetch NPCs with conversations:",
-          conversationError,
-        );
+        console.error("Failed to fetch NPCs with conversations:", conversationError);
         return npcsWithShops.sort((a, b) => a.id - b.id);
       }
     } catch (error) {
       console.error("Failed to fetch NPCs:", error);
-      throw new Error("Unable to retrieve NPC data. Please try again later.", {
-        cause: error,
-      });
+      throw new Error("Unable to retrieve NPC data. Please try again later.");
     }
   },
 
-  async searchNpcs(
-    query: string,
-    storebankOnly = false,
-  ): Promise<NpcSearchResult[]> {
+  async searchNpcs(query: string, storebankOnly = false): Promise<NpcSearchResult[]> {
     const params = new URLSearchParams();
     if (query) params.set("search", query);
     if (storebankOnly) params.set("filter[storebank]", "true");
     const qs = params.toString();
-    const npcs = await api.getList<{
-      id: string;
-      attributes: { name: string; storebank?: boolean };
-    }>(`/api/data/npcs${qs ? `?${qs}` : ""}`);
-    return npcs.map((npc) => ({
-      id: parseInt(npc.id),
-      name: npc.attributes.name,
-    }));
+    const result = await fetchPaged<{ id: string; attributes: { name: string; storebank?: boolean } }>(
+      `/api/data/npcs${qs ? `?${qs}` : ""}`,
+      { number: 1, size: SEARCH_RESULT_LIMIT },
+    );
+    return result.data.map(npc => ({ id: parseInt(npc.id), name: npc.attributes.name }));
   },
 
-  async getNPCShop(
-    npcId: number,
-    options?: ServiceOptions,
-  ): Promise<ShopResponse> {
-    return api.get<ShopResponse>(
-      `${BASE_PATH}/${npcId}/shop?include=commodities`,
-      options,
-    );
+  async getNPCShop(npcId: number, options?: ServiceOptions): Promise<ShopResponse> {
+    return api.get<ShopResponse>(`${BASE_PATH}/${npcId}/shop?include=commodities`, options);
   },
 
   async createShop(
@@ -196,10 +134,7 @@ export const npcsService = {
       id: `temp-id-${index}`,
       attributes: commodity,
     }));
-    const commodityReferences = includedCommodities.map((c) => ({
-      type: "commodities" as const,
-      id: c.id,
-    }));
+    const commodityReferences = includedCommodities.map(c => ({ type: "commodities" as const, id: c.id }));
 
     const input: CreateShopInput = {
       data: {
@@ -211,11 +146,7 @@ export const npcsService = {
       included: includedCommodities,
     };
 
-    const response = await api.post<{ data: Shop }>(
-      `${BASE_PATH}/${npcId}/shop`,
-      input,
-      options,
-    );
+    const response = await api.post<{ data: Shop }>(`${BASE_PATH}/${npcId}/shop`, input, options);
     return response.data;
   },
 
@@ -230,11 +161,8 @@ export const npcsService = {
       throwIfInvalidCommodity(commodity.attributes, shouldValidate);
     }
 
-    const commodityReferences = commodities.map((c) => ({
-      type: "commodities" as const,
-      id: c.id,
-    }));
-    const includedCommodities = commodities.map((c) => ({
+    const commodityReferences = commodities.map(c => ({ type: "commodities" as const, id: c.id }));
+    const includedCommodities = commodities.map(c => ({
       type: "commodities" as const,
       id: c.id,
       attributes: c.attributes,
@@ -250,11 +178,7 @@ export const npcsService = {
       included: includedCommodities,
     };
 
-    const response = await api.put<{ data: Shop }>(
-      `${BASE_PATH}/${npcId}/shop`,
-      input,
-      options,
-    );
+    const response = await api.put<{ data: Shop }>(`${BASE_PATH}/${npcId}/shop`, input, options);
     return response.data;
   },
 
@@ -263,9 +187,7 @@ export const npcsService = {
     commodityAttributes: CommodityAttributes,
     options?: ServiceOptions,
   ): Promise<Commodity> {
-    const input: CreateCommodityInput = {
-      data: { type: "commodities", attributes: commodityAttributes },
-    };
+    const input: CreateCommodityInput = { data: { type: "commodities", attributes: commodityAttributes } };
     const response = await api.post<{ data: Commodity }>(
       `${BASE_PATH}/${npcId}/shop/relationships/commodities`,
       input,
@@ -280,9 +202,7 @@ export const npcsService = {
     commodityAttributes: Partial<CommodityAttributes>,
     options?: ServiceOptions,
   ): Promise<Commodity> {
-    const input: UpdateCommodityInput = {
-      data: { type: "commodities", attributes: commodityAttributes },
-    };
+    const input: UpdateCommodityInput = { data: { type: "commodities", attributes: commodityAttributes } };
     const response = await api.put<{ data: Commodity }>(
       `${BASE_PATH}/${npcId}/shop/relationships/commodities/${commodityId}`,
       input,
@@ -306,10 +226,7 @@ export const npcsService = {
     npcId: number,
     options?: ServiceOptions,
   ): Promise<void> {
-    return api.delete(
-      `${BASE_PATH}/${npcId}/shop/relationships/commodities`,
-      options,
-    );
+    return api.delete(`${BASE_PATH}/${npcId}/shop/relationships/commodities`, options);
   },
 
   async deleteAllShops(options?: ServiceOptions): Promise<void> {
@@ -324,11 +241,7 @@ export const npcsService = {
     const results: Commodity[] = [];
     for (const commodity of commodities) {
       try {
-        const result = await npcsService.createCommodity(
-          npcId,
-          commodity,
-          options,
-        );
+        const result = await npcsService.createCommodity(npcId, commodity, options);
         results.push(result);
       } catch (error) {
         console.error(`Failed to create commodity for NPC ${npcId}:`, error);
@@ -339,35 +252,31 @@ export const npcsService = {
   },
 
   async getNPCsWithShops(options?: QueryOptions): Promise<NPC[]> {
-    const allNPCs = await npcsService.getAllNPCs(options);
-    return allNPCs.filter((npc) => npc.hasShop);
+    const allNPCs = await npcsService.getAllNPCs( options);
+    return allNPCs.filter(npc => npc.hasShop);
   },
 
   async getNPCsWithConversations(options?: QueryOptions): Promise<NPC[]> {
-    const allNPCs = await npcsService.getAllNPCs(options);
-    return allNPCs.filter((npc) => npc.hasConversation);
+    const allNPCs = await npcsService.getAllNPCs( options);
+    return allNPCs.filter(npc => npc.hasConversation);
   },
 
-  async getNPCById(
-    npcId: number,
-    options?: ServiceOptions,
-  ): Promise<NPC | null> {
-    const allNPCs = await npcsService.getAllNPCs(options);
-    return allNPCs.find((npc) => npc.id === npcId) || null;
+  async getNPCById(npcId: number, options?: ServiceOptions): Promise<NPC | null> {
+    const allNPCs = await npcsService.getAllNPCs( options);
+    return allNPCs.find(npc => npc.id === npcId) || null;
   },
 
   async getNpcName(npcId: number): Promise<string> {
-    const npc = await api.getOne<{ id: string; attributes: { name: string } }>(
-      `/api/data/npcs/${npcId}`,
-    );
+    const npc = await api.getOne<{ id: string; attributes: { name: string } }>(`/api/data/npcs/${npcId}`);
     return npc.attributes.name;
   },
 
+  /**
+   * Get every map this NPC spawns on, draining all pages (task-117).
+   */
   async getNpcSpawnMaps(npcId: number): Promise<NpcSpawnMap[]> {
-    const rows = await api.getList<NpcSpawnMapData>(
-      `/api/data/npcs/${npcId}/maps`,
-    );
-    return rows.map((row) => ({
+    const rows = await fetchAll<NpcSpawnMapData>(`/api/data/npcs/${npcId}/maps`);
+    return rows.map(row => ({
       npcId,
       mapId: row.attributes.mapId,
       name: row.attributes.name,
@@ -376,17 +285,12 @@ export const npcsService = {
     }));
   },
 
+  /**
+   * Get every quest referencing this NPC, draining all pages (task-117).
+   */
   async getNpcQuests(npcId: number): Promise<QuestDefinition[]> {
-    return api.getList<QuestDefinition>(`/api/data/npcs/${npcId}/quests`);
+    return fetchAll<QuestDefinition>(`/api/data/npcs/${npcId}/quests`);
   },
 };
 
-export type {
-  NPC,
-  NpcSearchResult,
-  Shop,
-  Commodity,
-  CommodityAttributes,
-  ShopResponse,
-  NpcSpawnMap,
-};
+export type { NPC, NpcSearchResult, Shop, Commodity, CommodityAttributes, ShopResponse, NpcSpawnMap };

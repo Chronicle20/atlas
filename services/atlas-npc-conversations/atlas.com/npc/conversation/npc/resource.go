@@ -8,15 +8,15 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
@@ -41,8 +41,20 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 // GetAllConversationsHandler handles GET /conversations
 func GetAllConversationsHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		mp := NewProcessor(d.Logger(), d.Context(), d.DB()).AllProvider()
-		rm, err := model.SliceMap(Transform)(mp)(model.ParallelMap())()
+		page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+		if err != nil {
+			server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+			return
+		}
+
+		paged, err := NewProcessor(d.Logger(), d.Context(), d.DB()).AllProvider(page)()
+		if err != nil {
+			d.Logger().WithError(err).Errorf("Retrieving conversations.")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		rm, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
 			server.WriteErrorResponse(d.Logger())(w)(err)
@@ -51,7 +63,7 @@ func GetAllConversationsHandler(d *rest.HandlerDependency, c *rest.HandlerContex
 
 		query := r.URL.Query()
 		queryParams := jsonapi.ParseQueryFields(&query)
-		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+		server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm, paginate.EnvelopeFor(paged), r)
 	}
 }
 
@@ -177,8 +189,20 @@ func DeleteConversationHandler(d *rest.HandlerDependency, _ *rest.HandlerContext
 func GetConversationsByNpcHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseNpcId(d.Logger(), func(npcId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			mp := NewProcessor(d.Logger(), d.Context(), d.DB()).AllByNpcIdProvider(npcId)
-			rm, err := model.SliceMap(Transform)(mp)(model.ParallelMap())()
+			page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+				return
+			}
+
+			paged, err := NewProcessor(d.Logger(), d.Context(), d.DB()).AllByNpcIdProvider(npcId, page)()
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Retrieving conversations for NPC [%d].", npcId)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			rm, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				server.WriteErrorResponse(d.Logger())(w)(err)
@@ -187,7 +211,7 @@ func GetConversationsByNpcHandler(d *rest.HandlerDependency, c *rest.HandlerCont
 
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm, paginate.EnvelopeFor(paged), r)
 		}
 	})
 }

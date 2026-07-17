@@ -12,6 +12,12 @@ import (
 
 var ErrNotFound = errors.New("listing not found")
 
+// getByShopId retrieves every listing for a shop, unpaged. Kept for internal
+// callers that need the complete set (bounded by shop.MaxListings=16):
+// shop detail (GET /merchants/{shopId}), CloseShop's item-return snapshot,
+// and storeToFrederick. The HTTP list route
+// (GET /merchants/{shopId}/relationships/listings) uses the paged sibling
+// below.
 func getByShopId(shopId uuid.UUID) database.EntityProvider[[]Entity] {
 	return func(db *gorm.DB) model.Provider[[]Entity] {
 		var results []Entity
@@ -20,6 +26,13 @@ func getByShopId(shopId uuid.UUID) database.EntityProvider[[]Entity] {
 			return model.ErrorProvider[[]Entity](err)
 		}
 		return model.FixedProvider(results)
+	}
+}
+
+// getByShopIdPaged is the paged sibling of getByShopId (task-117).
+func getByShopIdPaged(shopId uuid.UUID, page model.Page) database.EntityProvider[model.Paged[Entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[Entity]] {
+		return database.PagedQuery[Entity](db.Where("shop_id = ?", shopId).Order("display_order ASC"), page)
 	}
 }
 

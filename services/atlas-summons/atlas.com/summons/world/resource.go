@@ -4,11 +4,7 @@ import (
 	"atlas-summons/rest"
 	"atlas-summons/summon"
 	"net/http"
-
-	"github.com/google/uuid"
-	"github.com/gorilla/mux"
-	"github.com/jtumidanski/api2go/jsonapi"
-	"github.com/sirupsen/logrus"
+	"sort"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -16,6 +12,11 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
+	"github.com/jtumidanski/api2go/jsonapi"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -35,6 +36,12 @@ func handleGetSummonsInMap(d *rest.HandlerDependency, c *rest.HandlerContext) ht
 			return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
 				return rest.ParseInstanceId(d.Logger(), func(instance uuid.UUID) http.HandlerFunc {
 					return func(w http.ResponseWriter, r *http.Request) {
+						page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+						if err != nil {
+							server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+							return
+						}
+
 						f := field.NewBuilder(worldId, channelId, mapId).SetInstance(instance).Build()
 						p := summon.NewProcessor(d.Logger(), d.Context())
 						ms, err := p.GetInField(f)
@@ -44,14 +51,19 @@ func handleGetSummonsInMap(d *rest.HandlerDependency, c *rest.HandlerContext) ht
 							return
 						}
 
-						res, err := model.SliceMap(summon.Transform)(model.FixedProvider(ms))(model.ParallelMap())()
+						sorted := make([]summon.Model, len(ms))
+						copy(sorted, ms)
+						sort.Slice(sorted, func(i, j int) bool { return sorted[i].Id() < sorted[j].Id() })
+						paged := paginate.Slice(sorted, page)
+
+						res, err := model.SliceMap(summon.Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 						if err != nil {
 							d.Logger().WithError(err).Errorf("Creating REST model.")
 							w.WriteHeader(http.StatusInternalServerError)
 							return
 						}
 
-						server.MarshalResponse[[]summon.RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
+						server.MarshalPaginatedResponse[[]summon.RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res, paginate.EnvelopeFor(paged), r)
 					}
 				})
 			})

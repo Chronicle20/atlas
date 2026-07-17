@@ -37,10 +37,10 @@ type recordingProducer struct {
 }
 
 // provider returns the two-level per-context producer factory the handler
-// expects (func(ctx) func(token) MessageProducer), matching the shape of
+// expects (func(ctx) producer.Provider), matching the shape of
 // producer.ProviderImpl(l). Every emitted message is decoded and recorded.
-func (r *recordingProducer) provider() func(ctx context.Context) func(token string) kprod.MessageProducer {
-	return func(ctx context.Context) func(token string) kprod.MessageProducer {
+func (r *recordingProducer) provider() func(ctx context.Context) kprod.Provider {
+	return func(ctx context.Context) kprod.Provider {
 		return func(token string) kprod.MessageProducer {
 			return func(p model.Provider[[]kafka.Message]) error {
 				ms, err := p()
@@ -129,6 +129,7 @@ func newAcceptCommand(transactionId uuid.UUID, listingId uuid.UUID) custody.Comm
 			WeaponAttack:   17,
 			Slots:          7,
 			Level:          1,
+			Owner:          "Chronicle",
 			ListValue:      1000,
 			CommissionRate: 0.10,
 			Category:       "equip",
@@ -163,6 +164,9 @@ func TestAcceptToMtsListing_CreatesListingAndAcks(t *testing.T) {
 	}
 	if stored.TemplateId() != 1302000 || stored.Quantity() != 1 || stored.WeaponAttack() != 17 {
 		t.Fatalf("snapshot not persisted: tmpl=%d qty=%d watk=%d", stored.TemplateId(), stored.Quantity(), stored.WeaponAttack())
+	}
+	if stored.Owner() != "Chronicle" {
+		t.Fatalf("expected owner %q carried through the wire command into the listing row, got %q", "Chronicle", stored.Owner())
 	}
 	// Category is derived server-side from the templateId's inventory type
 	// (1302000 -> equip -> "1"), overriding the payload's "equip" string so the

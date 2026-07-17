@@ -3,9 +3,8 @@ package asset
 import (
 	"time"
 
-	"github.com/google/uuid"
-
 	af "github.com/Chronicle20/atlas/libs/atlas-constants/asset"
+	"github.com/google/uuid"
 )
 
 func Clone(m Model) *ModelBuilder {
@@ -18,6 +17,7 @@ func Clone(m Model) *ModelBuilder {
 		createdAt:      m.createdAt,
 		quantity:       m.quantity,
 		ownerId:        m.ownerId,
+		owner:          m.owner,
 		flag:           m.flag,
 		rechargeable:   m.rechargeable,
 		strength:       m.strength,
@@ -58,6 +58,7 @@ type ModelBuilder struct {
 	// stackable fields
 	quantity     uint32
 	ownerId      uint32
+	owner        string
 	flag         uint16
 	rechargeable uint64
 	// equipment fields
@@ -105,6 +106,7 @@ func (b *ModelBuilder) SetExpiration(e time.Time) *ModelBuilder     { b.expirati
 func (b *ModelBuilder) SetCreatedAt(t time.Time) *ModelBuilder      { b.createdAt = t; return b }
 func (b *ModelBuilder) SetQuantity(q uint32) *ModelBuilder          { b.quantity = q; return b }
 func (b *ModelBuilder) SetOwnerId(id uint32) *ModelBuilder          { b.ownerId = id; return b }
+func (b *ModelBuilder) SetOwner(o string) *ModelBuilder             { b.owner = o; return b }
 func (b *ModelBuilder) SetFlag(f uint16) *ModelBuilder              { b.flag = f; return b }
 func (b *ModelBuilder) SetRechargeable(r uint64) *ModelBuilder      { b.rechargeable = r; return b }
 func (b *ModelBuilder) SetStrength(v uint16) *ModelBuilder          { b.strength = v; return b }
@@ -131,7 +133,6 @@ func (b *ModelBuilder) SetLocked(v bool) *ModelBuilder {
 	}
 	return b
 }
-
 func (b *ModelBuilder) SetSpikes(v bool) *ModelBuilder {
 	if v {
 		b.flag = af.SetFlag(b.flag, af.FlagSpikes)
@@ -140,7 +141,6 @@ func (b *ModelBuilder) SetSpikes(v bool) *ModelBuilder {
 	}
 	return b
 }
-
 func (b *ModelBuilder) SetKarmaUsed(v bool) *ModelBuilder {
 	if v {
 		b.flag = af.SetFlag(b.flag, af.FlagKarmaEquip)
@@ -149,7 +149,6 @@ func (b *ModelBuilder) SetKarmaUsed(v bool) *ModelBuilder {
 	}
 	return b
 }
-
 func (b *ModelBuilder) SetCold(v bool) *ModelBuilder {
 	if v {
 		b.flag = af.SetFlag(b.flag, af.FlagCold)
@@ -158,7 +157,6 @@ func (b *ModelBuilder) SetCold(v bool) *ModelBuilder {
 	}
 	return b
 }
-
 func (b *ModelBuilder) SetCanBeTraded(v bool) *ModelBuilder {
 	if v {
 		b.flag = af.ClearFlag(b.flag, af.FlagUntradeable)
@@ -167,12 +165,10 @@ func (b *ModelBuilder) SetCanBeTraded(v bool) *ModelBuilder {
 	}
 	return b
 }
-
 func (b *ModelBuilder) AddFlag(f af.Flag) *ModelBuilder {
 	b.flag = af.SetFlag(b.flag, f)
 	return b
 }
-
 func (b *ModelBuilder) RemoveFlag(f af.Flag) *ModelBuilder {
 	b.flag = af.ClearFlag(b.flag, f)
 	return b
@@ -197,6 +193,7 @@ func (b *ModelBuilder) Build() Model {
 		createdAt:      b.createdAt,
 		quantity:       b.quantity,
 		ownerId:        b.ownerId,
+		owner:          b.owner,
 		flag:           b.flag,
 		rechargeable:   b.rechargeable,
 		strength:       b.strength,

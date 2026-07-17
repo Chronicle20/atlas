@@ -2,8 +2,8 @@ package mts
 
 import (
 	mtsmsg "atlas-channel/kafka/message/mts"
-	"atlas-channel/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"

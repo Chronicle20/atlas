@@ -4,9 +4,9 @@ import (
 	"atlas-parties/character"
 	"atlas-parties/invite"
 	"atlas-parties/kafka/message"
-	"atlas-parties/kafka/producer"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"
 

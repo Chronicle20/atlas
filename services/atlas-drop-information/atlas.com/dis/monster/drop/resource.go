@@ -5,13 +5,13 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
@@ -31,7 +31,13 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 func handleGetAllDrops(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseMonsterId(d.Logger(), func(monsterId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			ms, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetForMonster(monsterId)()
+			page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+				return
+			}
+
+			paged, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetForMonster(monsterId, page)()
 			if err != nil {
 				if errors.Is(err, ErrNotFound) {
 					w.WriteHeader(http.StatusNotFound)
@@ -42,7 +48,7 @@ func handleGetAllDrops(d *rest.HandlerDependency, c *rest.HandlerContext) http.H
 				return
 			}
 
-			res, err := model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())()
+			res, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				server.WriteErrorResponse(d.Logger())(w)(err)
@@ -51,7 +57,7 @@ func handleGetAllDrops(d *rest.HandlerDependency, c *rest.HandlerContext) http.H
 
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
 		}
 	})
 }
@@ -59,7 +65,13 @@ func handleGetAllDrops(d *rest.HandlerDependency, c *rest.HandlerContext) http.H
 func handleGetItemDrops(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseItemId(d.Logger(), func(itemId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			ms, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetForItem(itemId)()
+			page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+				return
+			}
+
+			paged, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetForItem(itemId, page)()
 			if err != nil {
 				if errors.Is(err, ErrNotFound) {
 					w.WriteHeader(http.StatusNotFound)
@@ -70,7 +82,7 @@ func handleGetItemDrops(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 				return
 			}
 
-			res, err := model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())()
+			res, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				server.WriteErrorResponse(d.Logger())(w)(err)
@@ -79,7 +91,7 @@ func handleGetItemDrops(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
 		}
 	})
 }

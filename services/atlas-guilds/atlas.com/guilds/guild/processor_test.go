@@ -6,6 +6,9 @@ import (
 	"context"
 	"testing"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
@@ -14,9 +17,6 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func setupTestLogger(t *testing.T) logrus.FieldLogger {
@@ -212,7 +212,7 @@ func TestProcessor_GetByName_CaseInsensitive(t *testing.T) {
 	assert.Equal(t, e.Id, result.Id())
 }
 
-func TestProcessor_GetSlice_Empty(t *testing.T) {
+func TestProcessor_AllProvider_Empty(t *testing.T) {
 	ten := setupTestTenant(t)
 	ctx := setupTestContext(t, ten)
 	l := setupTestLogger(t)
@@ -220,13 +220,14 @@ func TestProcessor_GetSlice_Empty(t *testing.T) {
 
 	p := NewProcessor(l, ctx, db)
 
-	result, err := p.GetSlice()
+	paged, err := p.AllProvider(model.Page{Number: 1, Size: 50})()
 
 	assert.NoError(t, err)
-	assert.Empty(t, result)
+	assert.Empty(t, paged.Items)
+	assert.Equal(t, 0, paged.Total)
 }
 
-func TestProcessor_GetSlice_ReturnsGuilds(t *testing.T) {
+func TestProcessor_AllProvider_ReturnsGuilds(t *testing.T) {
 	ten := setupTestTenant(t)
 	ctx := setupTestContext(t, ten)
 	l := setupTestLogger(t)
@@ -252,19 +253,21 @@ func TestProcessor_GetSlice_ReturnsGuilds(t *testing.T) {
 
 	p := NewProcessor(l, ctx, db)
 
-	result, err := p.GetSlice()
+	paged, err := p.AllProvider(model.Page{Number: 1, Size: 50})()
 
 	assert.NoError(t, err)
-	assert.Len(t, result, 2)
+	assert.Len(t, paged.Items, 2)
+	assert.Equal(t, 2, paged.Total)
 }
 
-func TestProcessor_GetSlice_WithMemberFilter(t *testing.T) {
+func TestProcessor_ByMemberIdProvider_ReturnsGuild(t *testing.T) {
 	ten := setupTestTenant(t)
 	ctx := setupTestContext(t, ten)
 	l := setupTestLogger(t)
 	db := setupTestDatabase(t)
 
-	// Create test entities directly in database
+	// Create test guild, its live member row, and the character->guild cache
+	// row that ByMemberIdProvider (via GetByMemberId) actually reads.
 	e1 := Entity{
 		TenantId: ten.Id(),
 		WorldId:  0,
@@ -272,17 +275,8 @@ func TestProcessor_GetSlice_WithMemberFilter(t *testing.T) {
 		LeaderId: 100,
 		Capacity: 30,
 	}
-	e2 := Entity{
-		TenantId: ten.Id(),
-		WorldId:  0,
-		Name:     "GuildWithoutMember",
-		LeaderId: 200,
-		Capacity: 30,
-	}
 	db.Create(&e1)
-	db.Create(&e2)
 
-	// Add member to first guild
 	m := member.Entity{
 		TenantId:    ten.Id(),
 		GuildId:     e1.Id,
@@ -292,13 +286,36 @@ func TestProcessor_GetSlice_WithMemberFilter(t *testing.T) {
 	}
 	db.Create(&m)
 
+	c := character.Entity{
+		TenantId:    ten.Id(),
+		CharacterId: 500,
+		GuildId:     e1.Id,
+	}
+	db.Create(&c)
+
 	p := NewProcessor(l, ctx, db)
 
-	result, err := p.GetSlice(MemberFilter(500))
+	paged, err := p.ByMemberIdProvider(500, model.Page{Number: 1, Size: 50})()
 
 	assert.NoError(t, err)
-	assert.Len(t, result, 1)
-	assert.Equal(t, e1.Id, result[0].Id())
+	require.Len(t, paged.Items, 1)
+	assert.Equal(t, e1.Id, paged.Items[0].Id())
+	assert.Equal(t, 1, paged.Total)
+}
+
+func TestProcessor_ByMemberIdProvider_NotFoundReturnsEmptyPage(t *testing.T) {
+	ten := setupTestTenant(t)
+	ctx := setupTestContext(t, ten)
+	l := setupTestLogger(t)
+	db := setupTestDatabase(t)
+
+	p := NewProcessor(l, ctx, db)
+
+	paged, err := p.ByMemberIdProvider(9999, model.Page{Number: 1, Size: 50})()
+
+	assert.NoError(t, err)
+	assert.Empty(t, paged.Items)
+	assert.Equal(t, 0, paged.Total)
 }
 
 func TestProcessor_TenantIsolation(t *testing.T) {
@@ -330,11 +347,11 @@ func TestProcessor_TenantIsolation(t *testing.T) {
 
 	p := NewProcessor(l, ctx, db)
 
-	result, err := p.GetSlice()
+	paged, err := p.AllProvider(model.Page{Number: 1, Size: 50})()
 
 	assert.NoError(t, err)
-	assert.Len(t, result, 1)
-	assert.Equal(t, "Tenant1Guild", result[0].name)
+	assert.Len(t, paged.Items, 1)
+	assert.Equal(t, "Tenant1Guild", paged.Items[0].name)
 }
 
 func TestProcessor_GetByMemberId_NotFound(t *testing.T) {

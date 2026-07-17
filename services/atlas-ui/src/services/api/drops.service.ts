@@ -1,17 +1,19 @@
-import { api } from "@/lib/api/client";
-import type { DropData, ReactorDropData } from "@/types/models/drop";
+import { fetchAll } from '@/services/api/pagination';
+import type { DropData, ReactorDropData } from '@/types/models/drop';
 
+// Each *DetailPage widget renders the full drop table for one monster/reactor/
+// item, not a page at a time — drain every page (task-117).
 class DropsService {
   async getMonsterDrops(monsterId: string): Promise<DropData[]> {
-    return api.getList<DropData>(`/api/monsters/${monsterId}/drops`);
+    return fetchAll<DropData>(`/api/monsters/${monsterId}/drops`);
   }
 
   async getReactorDrops(reactorId: string): Promise<ReactorDropData[]> {
-    return api.getList<ReactorDropData>(`/api/reactors/${reactorId}/drops`);
+    return fetchAll<ReactorDropData>(`/api/reactors/${reactorId}/drops`);
   }
 
   async getItemDrops(itemId: string): Promise<DropData[]> {
-    return api.getList<DropData>(`/api/items/${itemId}/drops`);
+    return fetchAll<DropData>(`/api/items/${itemId}/drops`);
   }
 }
 

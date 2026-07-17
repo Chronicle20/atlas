@@ -43,3 +43,14 @@ func getAllByAccountIdProvider(accountId uint32) database.EntityProvider[[]Entit
 		}
 	}
 }
+
+// getAllByAccountIdPagedProvider backs the REST list handler only (GET
+// /accounts/{accountId}/cash-shop/inventory/compartments?type=, task-117).
+// getAllByAccountIdProvider above stays unpaged for the internal
+// business-logic callers (the aggregate cash-inventory wrapper,
+// DeleteAllByAccountId) that genuinely need every compartment.
+func getAllByAccountIdPagedProvider(accountId uint32, page model.Page) database.EntityProvider[model.Paged[Entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[Entity]] {
+		return database.PagedQuery[Entity](db.Where("account_id = ?", accountId), page)
+	}
+}

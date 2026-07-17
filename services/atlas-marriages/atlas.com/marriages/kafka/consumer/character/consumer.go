@@ -1,25 +1,22 @@
 package character
 
 import (
-	"atlas-marriages/kafka/message"
-	"atlas-marriages/kafka/producer"
 	"context"
 
 	localConsumer "atlas-marriages/kafka/consumer"
-
+	"atlas-marriages/kafka/message"
 	characterMsg "atlas-marriages/kafka/message/character"
-
 	marriageService "atlas-marriages/marriage"
-
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	kafka "github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 // NewConfig creates a new consumer configuration for character events

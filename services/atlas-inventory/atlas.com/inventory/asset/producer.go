@@ -17,6 +17,7 @@ func makeAssetData(a Model) asset.AssetData {
 		CreatedAt:      a.createdAt,
 		Quantity:       a.quantity,
 		OwnerId:        a.ownerId,
+		Owner:          a.owner,
 		Flag:           a.flag,
 		Rechargeable:   a.rechargeable,
 		Strength:       a.strength,

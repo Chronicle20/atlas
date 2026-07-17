@@ -25,13 +25,18 @@ The channel service acts as the primary interface between game clients and the b
   - DATA - Static game data (maps, NPCs, skills, portals, quests, cash items)
   - DOORS - Mystic Door state
   - DROPS - Drop state
+  - EFFECTIVE_STATS - Session-effective character stats
   - GUILDS - Guild data
   - GUILD_THREADS - Guild BBS
   - INVENTORY - Character inventory (compartments and unified assets)
   - KEYS - Key bindings
-  - MAPS - Map character tracking
+  - MAPS - Map character tracking and durable character location
+  - MERCHANT - Personal shop / hired merchant state, listings, blacklist, visit list, Frederick status, and owl-of-Minerva shop search
   - MESSENGERS - Messenger rooms
+  - MONSTER_BOOK - Monster-book collection and owned cards
   - MONSTERS - Monster state
+  - MOUNTS - Mount progression
+  - MTS - MTS marketplace listings, holdings, transactions, and wishlist
   - NOTES - Mail notes
   - NPC_SHOP - NPC shop data
   - PARTIES - Party data
@@ -42,6 +47,8 @@ The channel service acts as the primary interface between game clients and the b
   - ROUTES - Transport routes
   - SKILLS - Character skills
   - STORAGE - Storage data and projections
+  - SUMMONS - Summon (puppet/Beholder/etc.) state
+  - TENANTS - Per-tenant MTS configuration
   - WEATHER - Weather state
   - WORLDS - World data
 
@@ -68,6 +75,7 @@ The channel service acts as the primary interface between game clients and the b
 | EVENT_TOPIC_CHARACTER_STATUS | Character status events |
 | EVENT_TOPIC_COMPARTMENT_STATUS | Compartment status events |
 | EVENT_TOPIC_CONSUMABLE_STATUS | Consumable status events |
+| EVENT_TOPIC_CONVERSATION_REWARD_NOTICE | Conversation-sourced item gain/loss notice events |
 | EVENT_TOPIC_DROP_STATUS | Drop status events |
 | EVENT_TOPIC_EXPRESSION | Expression events |
 | EVENT_TOPIC_FAME_STATUS | Fame status events |
@@ -77,8 +85,14 @@ The channel service acts as the primary interface between game clients and the b
 | EVENT_TOPIC_INSTANCE_TRANSPORT | Instance transport events |
 | EVENT_TOPIC_INVITE_STATUS | Invite status events |
 | EVENT_TOPIC_MAP_STATUS | Map status events |
+| EVENT_TOPIC_MERCHANT_STATUS | Personal shop / hired merchant status events |
+| EVENT_TOPIC_MERCHANT_LISTING | Merchant listing events |
 | EVENT_TOPIC_MESSENGER_STATUS | Messenger status events |
+| EVENT_TOPIC_MIST | Mist / affected-area create and destroy events |
+| EVENT_TOPIC_MONSTER_BOOK_STATUS | Monster-book status events |
 | EVENT_TOPIC_MONSTER_STATUS | Monster status events |
+| EVENT_TOPIC_MOUNT_STATUS | Mount status events |
+| EVENT_TOPIC_MTS_STATUS | MTS marketplace status events |
 | EVENT_TOPIC_NOTE_STATUS | Note status events |
 | EVENT_TOPIC_NPC_SHOP_STATUS | NPC shop status events |
 | EVENT_TOPIC_PARTY_STATUS | Party status events |
@@ -92,7 +106,9 @@ The channel service acts as the primary interface between game clients and the b
 | EVENT_TOPIC_SKILL_STATUS | Skill status events |
 | EVENT_TOPIC_STORAGE_COMPARTMENT_STATUS | Storage compartment status events |
 | EVENT_TOPIC_STORAGE_STATUS | Storage status events |
+| EVENT_TOPIC_SUMMON_STATUS | Summon status events |
 | EVENT_TOPIC_TRANSPORT_STATUS | Transport status events |
+| EVENT_TOPIC_WALLET_STATUS | NX wallet balance-updated events |
 | COMMAND_TOPIC_ACCOUNT_SESSION | Account session commands |
 | COMMAND_TOPIC_BUDDY_LIST | Buddy list commands |
 | COMMAND_TOPIC_CASH_SHOP | Cash shop commands |
@@ -103,6 +119,7 @@ The channel service acts as the primary interface between game clients and the b
 | COMMAND_TOPIC_CHARACTER_BUFF | Buff commands |
 | COMMAND_TOPIC_CHARACTER_CHAT | Chat commands |
 | COMMAND_TOPIC_CHARACTER_MOVEMENT | Character movement commands |
+| COMMAND_TOPIC_MERCHANT | Personal shop / hired merchant commands |
 | COMMAND_TOPIC_COMPARTMENT | Compartment commands |
 | COMMAND_TOPIC_CONSUMABLE | Consumable commands |
 | COMMAND_TOPIC_DROP | Drop commands |
@@ -113,7 +130,9 @@ The channel service acts as the primary interface between game clients and the b
 | COMMAND_TOPIC_INVITE | Invite commands |
 | COMMAND_TOPIC_MESSENGER | Messenger commands |
 | COMMAND_TOPIC_MONSTER | Monster commands |
+| COMMAND_TOPIC_MONSTER_BOOK | Monster-book commands |
 | COMMAND_TOPIC_MONSTER_MOVEMENT | Monster movement commands |
+| COMMAND_TOPIC_MTS | MTS marketplace commands |
 | COMMAND_TOPIC_NOTE | Note commands |
 | COMMAND_TOPIC_NPC | NPC commands |
 | COMMAND_TOPIC_NPC_CONVERSATION | NPC conversation commands |
@@ -129,7 +148,14 @@ The channel service acts as the primary interface between game clients and the b
 | COMMAND_TOPIC_SKILL | Skill commands |
 | COMMAND_TOPIC_SKILL_MACRO | Skill macro commands |
 | COMMAND_TOPIC_STORAGE | Storage commands |
+| COMMAND_TOPIC_SUMMON | Summon commands |
 | COMMAND_TOPIC_SYSTEM_MESSAGE | System message commands |
+| COMMAND_TOPIC_TAMING_MOB_FOOD | Taming-mob (mount) food consumption commands |
+| REST_PORT | HTTP port for the debug/readiness endpoints |
+| DRAIN_DEADLINE_MS | Per-listener drain deadline in milliseconds on teardown (default 5000, capped at 10000) |
+| MONSTER_INFO_CACHE_ENABLED | Enables the in-process monster template attack-data cache (default true) |
+| MONSTER_INFO_CACHE_TTL | Monster info cache positive-entry TTL (default 5m, range 1s-24h) |
+| MONSTER_INFO_CACHE_NEGATIVE_TTL | Monster info cache not-found-entry TTL (default 30s, range 0-5m) |
 
 ## Documentation
 

@@ -1,0 +1,11 @@
+meta {
+  name: Get Character Game Records
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/characters/{{characterId}}/game-records
+  body: none
+  auth: none
+}

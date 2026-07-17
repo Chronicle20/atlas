@@ -19,15 +19,15 @@ func getAll() database.EntityProvider[[]entity] {
 	}
 }
 
-func getByMonsterId(monsterId uint32) database.EntityProvider[[]entity] {
-	return func(db *gorm.DB) model.Provider[[]entity] {
-		return database.SliceQuery[entity](db, &entity{MonsterId: monsterId})
+func getByMonsterIdPagedProvider(monsterId uint32, page model.Page) database.EntityProvider[model.Paged[entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[entity]] {
+		return database.PagedQuery[entity](db.Where(&entity{MonsterId: monsterId}), page)
 	}
 }
 
-func getByItemId(itemId uint32) database.EntityProvider[[]entity] {
-	return func(db *gorm.DB) model.Provider[[]entity] {
-		return database.SliceQuery[entity](db, &entity{ItemId: itemId})
+func getByItemIdPagedProvider(itemId uint32, page model.Page) database.EntityProvider[model.Paged[entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[entity]] {
+		return database.PagedQuery[entity](db.Where(&entity{ItemId: itemId}), page)
 	}
 }
 

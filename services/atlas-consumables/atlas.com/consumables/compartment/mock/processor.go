@@ -2,6 +2,7 @@ package mock
 
 import (
 	"atlas-consumables/compartment"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -13,6 +14,7 @@ type ProcessorMock struct {
 	ConsumeItemFunc           func(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, slot int16) error
 	DestroyItemFunc           func(characterId uint32, inventoryType inventory.Type, slot int16) error
 	CancelItemReservationFunc func(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, slot int16) error
+	RequestCreateItemFunc     func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time) error
 }
 
 var _ compartment.Processor = (*ProcessorMock)(nil)
@@ -41,6 +43,13 @@ func (m *ProcessorMock) DestroyItem(characterId uint32, inventoryType inventory.
 func (m *ProcessorMock) CancelItemReservation(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, slot int16) error {
 	if m.CancelItemReservationFunc != nil {
 		return m.CancelItemReservationFunc(characterId, inventoryType, transactionId, slot)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) RequestCreateItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time) error {
+	if m.RequestCreateItemFunc != nil {
+		return m.RequestCreateItemFunc(transactionId, characterId, templateId, quantity, expiration)
 	}
 	return nil
 }

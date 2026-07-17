@@ -28,5 +28,5 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetByMonsterId(monsterId uint32) ([]Model, error) {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestForMonster(monsterId), Extract, model.Filters[Model]())()
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(monsterDropsUrl(monsterId), 250, Extract, model.Filters[Model]())()
 }

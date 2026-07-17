@@ -1,21 +1,18 @@
 package main
 
 import (
-	"atlas-invites/character"
-	"atlas-invites/invite"
-	"atlas-invites/logger"
-	"atlas-invites/tasks"
 	"context"
-	"os"
-	"time"
 
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 
+	"atlas-invites/character"
+	"atlas-invites/invite"
 	character2 "atlas-invites/kafka/consumer/character"
 	invite2 "atlas-invites/kafka/consumer/invite"
-
-	service "github.com/Chronicle20/atlas/libs/atlas-service"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
+	"atlas-invites/tasks"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
+	"os"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
@@ -49,20 +46,13 @@ func GetServer() Server {
 }
 
 func main() {
-	l := logger.CreateLogger(serviceName)
-	l.Infoln("Starting main service.")
-
-	tdm := service.GetTeardownManager()
+	rt := service.Bootstrap(serviceName)
+	l := rt.Logger()
 
 	rc := atlas.Connect(l)
 	invite.InitRegistry(rc)
 
-	tc, err := tracing.InitTracer(serviceName)
-	if err != nil {
-		l.WithError(err).Fatal("Unable to initialize tracer.")
-	}
-
-	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	invite2.InitConsumers(l)(cmf)(consumerGroupId)
 	character2.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := invite2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
@@ -72,24 +62,22 @@ func main() {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 
-	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
+	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 	// Create the service with the router
 	server.New(l).
-		WithContext(tdm.Context()).
-		WithWaitGroup(tdm.WaitGroup()).
+		WithContext(rt.Context()).
+		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(character.InitResource(GetServer())).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
+		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
-	routine.Go(l, tdm.Context(), func(_ context.Context) {
-		tasks.Register(l, tdm.Context())(invite.NewInviteTimeout(l, time.Second*time.Duration(5)))
+	routine.Go(l, rt.Context(), func(_ context.Context) {
+		tasks.Register(l, rt.Context())(invite.NewInviteTimeout(l, time.Second*time.Duration(5)))
 	})
 
-	tdm.TeardownFunc(tracing.Teardown(l)(tc))
-
-	tdm.Wait()
-	l.Infoln("Service shutdown.")
+	rt.Wait()
 }

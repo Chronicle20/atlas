@@ -1,10 +1,10 @@
 package script
 
 import (
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // getByIdProvider returns a provider for retrieving a reactor script by ID
@@ -29,11 +29,10 @@ func getByReactorIdProvider(reactorId string) func(db *gorm.DB) model.Provider[E
 	}
 }
 
-// getAllProvider returns a provider for retrieving all reactor scripts for a tenant
-func getAllProvider(db *gorm.DB) model.Provider[[]Entity] {
-	return func() ([]Entity, error) {
-		var entities []Entity
-		result := db.Find(&entities)
-		return entities, result.Error
+// getAllPagedProvider returns a provider for retrieving one page of reactor
+// scripts for a tenant
+func getAllPagedProvider(page model.Page) database.EntityProvider[model.Paged[Entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[Entity]] {
+		return database.PagedQuery[Entity](db, page)
 	}
 }

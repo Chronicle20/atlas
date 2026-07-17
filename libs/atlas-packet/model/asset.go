@@ -46,6 +46,7 @@ type Asset struct {
 	// stackable fields
 	quantity     uint32
 	rechargeable uint64
+	owner        string
 	// pet fields
 	petId     uint32
 	petName   string
@@ -167,6 +168,15 @@ func (m Asset) SetPetInfo(petId uint32, petName string, petLevel, fullness byte,
 	return m
 }
 
+func (m Asset) SetOwner(owner string) Asset {
+	m.owner = owner
+	return m
+}
+
+func (m Asset) Owner() string {
+	return m.owner
+}
+
 func (m *Asset) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	if m.IsEquipment() && !m.IsCashEquipment() {
 		return m.encodeEquipableInfo(l, ctx)
@@ -207,7 +217,7 @@ func (m *Asset) encodeEquipableInfo(l logrus.FieldLogger, ctx context.Context) f
 		m.encodeEquipmentStats(w)
 
 		if (t.Region() == "GMS" && t.MajorVersion() > 12) || t.Region() == "JMS" {
-			w.WriteAsciiString("")
+			w.WriteAsciiString(m.owner)
 			w.WriteShort(m.flag)
 		}
 
@@ -259,7 +269,7 @@ func (m *Asset) encodeCashEquipableInfo(l logrus.FieldLogger, ctx context.Contex
 		m.encodeEquipmentStats(w)
 
 		if (t.Region() == "GMS" && t.MajorVersion() > 12) || t.Region() == "JMS" {
-			w.WriteAsciiString("")
+			w.WriteAsciiString(m.owner)
 			w.WriteShort(m.flag)
 
 			if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
@@ -285,7 +295,7 @@ func (m *Asset) encodeStackableInfo(l logrus.FieldLogger, _ context.Context) fun
 		w.WriteBool(false)
 		w.WriteInt64(MsTime(m.expiration))
 		w.WriteShort(uint16(m.quantity))
-		w.WriteAsciiString("")
+		w.WriteAsciiString(m.owner)
 		w.WriteShort(m.flag)
 		if item.IsBullet(item.Id(m.templateId)) || item.IsThrowingStar(item.Id(m.templateId)) {
 			w.WriteLong(m.rechargeable)
@@ -330,7 +340,7 @@ func (m *Asset) encodeCashItemInfo(l logrus.FieldLogger, _ context.Context) func
 		w.WriteInt64(m.cashId)
 		w.WriteInt64(MsTime(m.expiration))
 		w.WriteShort(uint16(m.quantity))
-		w.WriteAsciiString("")
+		w.WriteAsciiString(m.owner)
 		w.WriteShort(m.flag)
 		return w.Bytes()
 	}

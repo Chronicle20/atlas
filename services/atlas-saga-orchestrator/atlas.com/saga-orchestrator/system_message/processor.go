@@ -2,8 +2,8 @@ package system_message
 
 import (
 	"atlas-saga-orchestrator/kafka/message/system_message"
-	"atlas-saga-orchestrator/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"

@@ -51,7 +51,8 @@ func inventoryCompartmentDoc(assetId string, templateId uint32) string {
 					"strength": 5,
 					"weaponAttack": 7,
 					"slots": 3,
-					"flag": 2
+					"flag": 2,
+					"owner": "Chronicle"
 				}
 			}
 		]
@@ -120,6 +121,7 @@ func TestExpandTransferToMts(t *testing.T) {
 	require.Equal(t, uint16(7), acc.WeaponAttack)
 	require.Equal(t, uint16(3), acc.Slots)
 	require.Equal(t, uint16(2), acc.Flags)
+	require.Equal(t, "Chronicle", acc.Owner)
 	// identity + sale params
 	require.Equal(t, listingId, acc.ListingId)
 	require.Equal(t, uint32(1001), acc.SellerId)

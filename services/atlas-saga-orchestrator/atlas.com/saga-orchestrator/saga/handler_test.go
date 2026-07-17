@@ -7,7 +7,11 @@ import (
 	character2 "atlas-saga-orchestrator/kafka/message/character"
 	"atlas-saga-orchestrator/validation"
 	mock3 "atlas-saga-orchestrator/validation/mock"
+	"encoding/json"
 	"errors"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -1256,4 +1260,147 @@ func TestHandleCreateAndEquipAsset_PayloadConversion(t *testing.T) {
 	assert.Equal(t, sagaPayload.CharacterId, capturedPayload.CharacterId)
 	assert.Equal(t, sagaPayload.Item.TemplateId, capturedPayload.Item.TemplateId)
 	assert.Equal(t, sagaPayload.Item.Quantity, capturedPayload.Item.Quantity)
+}
+
+// TestHandleStartRPSGame verifies that handleStartRPSGame POSTs the payload
+// to atlas-rps's POST /rps/games endpoint (JSON:API body matching
+// game.RestModel's field/json-tag shape) and self-completes the step -
+// StartRPSGame is a synchronous REST action (the gachapon/transport
+// precedent), not one that waits on an async Kafka event.
+func TestHandleStartRPSGame(t *testing.T) {
+	var capturedBody []byte
+	var capturedPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
+		b, _ := io.ReadAll(r.Body)
+		capturedBody = b
+		w.Header().Set("Content-Type", "application/vnd.api+json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = io.WriteString(w, `{"data":{"type":"rps-games","id":"1001","attributes":{"characterId":1001,"worldId":0,"channelId":1,"npcId":9000019,"rung":0,"status":"in_progress"}}}`)
+	}))
+	defer srv.Close()
+
+	t.Setenv("RPS_URL_SERVICE_URL", srv.URL+"/")
+
+	logger, _ := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+
+	_, ctx := setupContext()
+
+	payload := StartRPSGamePayload{
+		CharacterId: 1001,
+		WorldId:     0,
+		ChannelId:   1,
+		NpcId:       9000019,
+	}
+
+	transactionId := uuid.New()
+	sg, err := NewBuilder().
+		SetTransactionId(transactionId).
+		SetSagaType(QuestReward).
+		SetInitiatedBy("test").
+		AddStep("start_rps_game", Pending, StartRPSGame, payload).
+		Build()
+	assert.NoError(t, err)
+	assert.NoError(t, GetCache().Put(ctx, sg))
+
+	step := sg.Steps()[0]
+
+	// Execute
+	err = NewHandler(logger, ctx).handleStartRPSGame(sg, step)
+	assert.NoError(t, err)
+
+	// Verify the request hit atlas-rps's /rps/games endpoint.
+	assert.Contains(t, capturedPath, "rps/games")
+
+	// Verify the POST body carried the payload as a rps-games JSON:API
+	// resource, matching atlas-rps's game.RestModel shape exactly.
+	var body struct {
+		Data struct {
+			Type       string `json:"type"`
+			Attributes struct {
+				CharacterId uint32     `json:"characterId"`
+				WorldId     world.Id   `json:"worldId"`
+				ChannelId   channel.Id `json:"channelId"`
+				NpcId       uint32     `json:"npcId"`
+			} `json:"attributes"`
+		} `json:"data"`
+	}
+	assert.NoError(t, json.Unmarshal(capturedBody, &body))
+	assert.Equal(t, "rps-games", body.Data.Type)
+	assert.Equal(t, payload.CharacterId, body.Data.Attributes.CharacterId)
+	assert.Equal(t, payload.WorldId, body.Data.Attributes.WorldId)
+	assert.Equal(t, payload.ChannelId, body.Data.Attributes.ChannelId)
+	assert.Equal(t, payload.NpcId, body.Data.Attributes.NpcId)
+
+	// Verify the step self-completed with no follow-on step injected: this
+	// was the saga's only step, so StepCompleted's cascade into p.Step()
+	// finds no remaining pending step and removes the saga from the cache
+	// as fully completed. If handleStartRPSGame had (wrongly) injected a
+	// follow-on step - the way handleSelectGachaponReward injects AwardAsset -
+	// that step would still be pending and the saga would still be present.
+	_, ok := GetCache().GetById(ctx, transactionId)
+	assert.False(t, ok, "saga should be fully completed and removed from the cache - handleStartRPSGame must not inject a follow-on step")
+}
+
+// TestGetHandlerIncubatorResult verifies IncubatorResult is registered in the
+// GetHandler dispatch table (Task 10).
+func TestGetHandlerIncubatorResult(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	_, ctx := setupContext()
+
+	h := NewHandler(logger, ctx)
+	_, ok := h.GetHandler(IncubatorResult)
+	assert.True(t, ok, "IncubatorResult handler not registered")
+}
+
+// TestHandleIncubatorResult verifies the fire-and-forget IncubatorResult
+// handler emits EVENT_TOPIC_INCUBATOR_RESULT and immediately marks the step
+// complete (no response event advances an IncubatorResult step; see
+// event_acceptance.go's self-completing entry).
+func TestHandleIncubatorResult(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+
+	_, ctx := setupContext()
+
+	transactionId := uuid.New()
+	saga, err := NewBuilder().
+		SetTransactionId(transactionId).
+		SetSagaType(IncubatorUse).
+		SetInitiatedBy("test").
+		Build()
+	assert.NoError(t, err)
+
+	payload := IncubatorResultPayload{
+		CharacterId: 12345,
+		WorldId:     world.Id(0),
+		ChannelId:   channel.Id(1),
+		ItemId:      5000000,
+		Count:       1,
+	}
+	step := NewStep[any]("incubator-result-step", Pending, IncubatorResult, payload)
+
+	err = NewHandler(logger, ctx).handleIncubatorResult(saga, step)
+	assert.NoError(t, err)
+}
+
+// TestHandleIncubatorResult_InvalidPayload verifies the invalid-payload guard.
+func TestHandleIncubatorResult_InvalidPayload(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	_, ctx := setupContext()
+
+	transactionId := uuid.New()
+	saga, err := NewBuilder().
+		SetTransactionId(transactionId).
+		SetSagaType(IncubatorUse).
+		SetInitiatedBy("test").
+		Build()
+	assert.NoError(t, err)
+
+	step := NewStep[any]("incubator-result-step", Pending, IncubatorResult, "invalid-payload-type")
+
+	err = NewHandler(logger, ctx).handleIncubatorResult(saga, step)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid payload")
 }

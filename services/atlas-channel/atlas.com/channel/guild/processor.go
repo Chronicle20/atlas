@@ -3,8 +3,8 @@ package guild
 import (
 	"atlas-channel/guild/member"
 	guild2 "atlas-channel/kafka/message/guild"
-	"atlas-channel/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"strings"
 
 	"github.com/sirupsen/logrus"

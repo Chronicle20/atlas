@@ -16,6 +16,9 @@ import (
 type Processor interface {
 	GetByCharacter(characterId uint32) ([]Model, error)
 	Create(m Model) (Model, error)
+	// ByCharacterPagedProvider returns one page of a character's transaction
+	// history, newest-first (the REST list handler, task-117).
+	ByCharacterPagedProvider(characterId uint32, page model.Page) model.Provider[model.Paged[Model]]
 }
 
 type ProcessorImpl struct {
@@ -34,12 +37,13 @@ func (p *ProcessorImpl) GetByCharacter(characterId uint32) ([]Model, error) {
 	return model.SliceMap(modelFromEntity)(getByCharacter(characterId)(p.db.WithContext(p.ctx)))()()
 }
 
-// GetAll resolves every transaction visible to the request's tenant.
-func (p *ProcessorImpl) GetAll() ([]Model, error) {
-	return model.SliceMap(modelFromEntity)(getAll()(p.db.WithContext(p.ctx)))()()
-}
-
 // Create persists a new transaction-history row and returns the stored Model.
 func (p *ProcessorImpl) Create(m Model) (Model, error) {
 	return CreateTransaction(p.db.WithContext(p.ctx), m)
+}
+
+// ByCharacterPagedProvider returns one page of a character's transaction
+// history, newest-first.
+func (p *ProcessorImpl) ByCharacterPagedProvider(characterId uint32, page model.Page) model.Provider[model.Paged[Model]] {
+	return model.MapPaged(modelFromEntity)(getByCharacterPaged(characterId, page)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }

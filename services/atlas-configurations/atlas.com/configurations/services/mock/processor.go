@@ -11,8 +11,7 @@ import (
 
 type ProcessorMock struct {
 	ByIdProviderFunc func(id uuid.UUID) model.Provider[interface{}]
-	AllProviderFunc  func() model.Provider[[]interface{}]
-	GetAllFunc       func() ([]interface{}, error)
+	AllProviderFunc  func(page model.Page) model.Provider[model.Paged[interface{}]]
 	GetByIdFunc      func(id uuid.UUID) (interface{}, error)
 	CreateFunc       func(input service.InputRestModel) (uuid.UUID, error)
 	UpdateByIdFunc   func(serviceId uuid.UUID, input service.InputRestModel) error
@@ -28,18 +27,11 @@ func (m *ProcessorMock) ByIdProvider(id uuid.UUID) model.Provider[interface{}] {
 	return model.FixedProvider[interface{}](nil)
 }
 
-func (m *ProcessorMock) AllProvider() model.Provider[[]interface{}] {
+func (m *ProcessorMock) AllProvider(page model.Page) model.Provider[model.Paged[interface{}]] {
 	if m.AllProviderFunc != nil {
-		return m.AllProviderFunc()
+		return m.AllProviderFunc(page)
 	}
-	return model.FixedProvider([]interface{}{})
-}
-
-func (m *ProcessorMock) GetAll() ([]interface{}, error) {
-	if m.GetAllFunc != nil {
-		return m.GetAllFunc()
-	}
-	return nil, nil
+	return model.FixedProvider(model.Paged[interface{}]{})
 }
 
 func (m *ProcessorMock) GetById(id uuid.UUID) (interface{}, error) {

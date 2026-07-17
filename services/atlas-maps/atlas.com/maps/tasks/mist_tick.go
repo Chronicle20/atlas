@@ -1,21 +1,15 @@
 package tasks
 
 import (
-	"atlas-maps/kafka/message"
-	"atlas-maps/kafka/producer"
-	"atlas-maps/mist"
 	"context"
 	"sync"
 	"time"
 
+	"atlas-maps/kafka/message"
 	mistKafka "atlas-maps/kafka/message/mist"
-
 	mapchar "atlas-maps/map/character"
-
-	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
-	"go.opentelemetry.io/otel"
+	"atlas-maps/mist"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -25,6 +19,10 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
 )
 
 const MistTickTask = "mist_tick_task"

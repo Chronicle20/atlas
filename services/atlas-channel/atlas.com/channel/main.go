@@ -24,12 +24,14 @@ import (
 	"atlas-channel/kafka/consumer/gachapon"
 	"atlas-channel/kafka/consumer/guild"
 	"atlas-channel/kafka/consumer/guild/thread"
+	incubatorconsumer "atlas-channel/kafka/consumer/incubator"
 	"atlas-channel/kafka/consumer/instance_transport"
 	"atlas-channel/kafka/consumer/invite"
 	"atlas-channel/kafka/consumer/macro"
 	_map "atlas-channel/kafka/consumer/map"
 	merchantConsumer "atlas-channel/kafka/consumer/merchant"
 	"atlas-channel/kafka/consumer/message"
+	minigameConsumer "atlas-channel/kafka/consumer/minigame"
 	"atlas-channel/kafka/consumer/messenger"
 	mistConsumer "atlas-channel/kafka/consumer/mist"
 	"atlas-channel/kafka/consumer/monster"
@@ -46,6 +48,7 @@ import (
 	"atlas-channel/kafka/consumer/quest"
 	"atlas-channel/kafka/consumer/reactor"
 	"atlas-channel/kafka/consumer/route"
+	rpsConsumer "atlas-channel/kafka/consumer/rps"
 	"atlas-channel/kafka/consumer/saga"
 	session2 "atlas-channel/kafka/consumer/session"
 	"atlas-channel/kafka/consumer/skill"
@@ -54,7 +57,6 @@ import (
 	"atlas-channel/kafka/consumer/system_message"
 	walletConsumer "atlas-channel/kafka/consumer/wallet"
 	"atlas-channel/listener"
-	"atlas-channel/logger"
 	monsterDomain "atlas-channel/monster"
 	monsterinfo "atlas-channel/monster/information"
 	"atlas-channel/server"
@@ -68,11 +70,9 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"sync/atomic"
 	"time"
 
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 
 	buddy2 "github.com/Chronicle20/atlas/libs/atlas-packet/buddy"
 	cashcb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/clientbound"
@@ -96,6 +96,7 @@ import (
 	fieldsb "github.com/Chronicle20/atlas/libs/atlas-packet/field/serverbound"
 	guildcb "github.com/Chronicle20/atlas/libs/atlas-packet/guild/clientbound"
 	guildsb "github.com/Chronicle20/atlas/libs/atlas-packet/guild/serverbound"
+	incubatorcb "github.com/Chronicle20/atlas/libs/atlas-packet/incubator/clientbound"
 	interaction2 "github.com/Chronicle20/atlas/libs/atlas-packet/interaction"
 	interactioncb "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/clientbound"
 	interactionsb "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/serverbound"
@@ -124,6 +125,8 @@ import (
 	questsb "github.com/Chronicle20/atlas/libs/atlas-packet/quest/serverbound"
 	reactorcb "github.com/Chronicle20/atlas/libs/atlas-packet/reactor/clientbound"
 	reactorsb "github.com/Chronicle20/atlas/libs/atlas-packet/reactor/serverbound"
+	rpscb "github.com/Chronicle20/atlas/libs/atlas-packet/rps/clientbound"
+	rpssb "github.com/Chronicle20/atlas/libs/atlas-packet/rps/serverbound"
 	socketcb "github.com/Chronicle20/atlas/libs/atlas-packet/socket/clientbound"
 	socketsb "github.com/Chronicle20/atlas/libs/atlas-packet/socket/serverbound"
 	stat2 "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
@@ -154,26 +157,33 @@ const (
 )
 
 func main() {
-	l := logger.CreateLogger(serviceName)
-	l.Infoln("Starting main service.")
-
-	tdm := service.GetTeardownManager()
-
-	tc, err := tracing.InitTracer(serviceName)
-	if err != nil {
-		l.WithError(err).Fatal("Unable to initialize tracer.")
-	}
-
+	state := projection.NewState()
+	caughtUp := projection.NewCaughtUp()
 	serviceId := uuid.MustParse(os.Getenv("SERVICE_ID"))
 	consumerGroupId := consumergroup.Resolve(consumerGroupIdTemplate, serviceId.String())
+
+	rt := service.Bootstrap(serviceName,
+		service.WithConfigProjection(consumerGroupId, func(t service.ProjectionTopics) service.Projection {
+			sub := &projection.Subscriber{
+				State:        state,
+				CaughtUp:     caughtUp,
+				ServiceTopic: t.ServiceStatus,
+				TenantTopic:  t.TenantStatus,
+				ServiceId:    serviceId,
+			}
+			return service.ProjectionFuncs{StartFunc: sub.Start, WaitCaughtUpFunc: caughtUp.WaitCaughtUp}
+		}),
+		service.WithReadinessGate(caughtUp.CaughtUpNow),
+	)
+	l := rt.Logger()
 
 	validatorMap := produceValidators()
 	handlerMap := produceHandlers()
 	writerList := produceWriters()
 
-	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 
-	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
+	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 	monsterDomain.InitNextSkillInbox()
 
@@ -220,63 +230,22 @@ func main() {
 	note3.InitConsumers(l)(cmf)(consumerGroupId)
 	quest.InitConsumers(l)(cmf)(consumerGroupId)
 	route.InitConsumers(l)(cmf)(consumerGroupId)
+	rpsConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	instance_transport.InitConsumers(l)(cmf)(consumerGroupId)
 	saga.InitConsumers(l)(cmf)(consumerGroupId)
 	storage3.InitConsumers(l)(cmf)(consumerGroupId)
 	gachapon.InitConsumers(l)(cmf)(consumerGroupId)
+	incubatorconsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	merchantConsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	minigameConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	mountConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 
-	// Boot the configuration projection: subscribe to the two config-status
-	// topics, gate on caught-up so we don't drive the listener registry
-	// from a half-loaded state, then run the apply loop in a goroutine.
-	state := projection.NewState()
-	caughtUp := projection.NewCaughtUp()
-	serviceTopic := os.Getenv("EVENT_TOPIC_CONFIGURATION_SERVICE_STATUS")
-	tenantTopic := os.Getenv("EVENT_TOPIC_CONFIGURATION_TENANT_STATUS")
-	if serviceTopic == "" && tenantTopic == "" {
-		// Both topic env vars unset means the projection silently
-		// subscribes to nothing — the caught-up gate then trivially
-		// flips (empty snapshots) and the apply loop never gets any
-		// events. Surface the misconfiguration here rather than letting
-		// startup look successful while live config updates do nothing.
-		l.Warn("projection: neither EVENT_TOPIC_CONFIGURATION_SERVICE_STATUS nor EVENT_TOPIC_CONFIGURATION_TENANT_STATUS is set; service/tenant config updates will not propagate live")
-	}
-	sub := &projection.Subscriber{
-		State:        state,
-		CaughtUp:     caughtUp,
-		ServiceTopic: serviceTopic,
-		TenantTopic:  tenantTopic,
-		ServiceId:    serviceId,
-	}
-	// Use a per-process group ID for the projection so each container
-	// start replays the full compacted log from FirstOffset. Sharing
-	// consumerGroupId with the regular consumers would resume from the
-	// previous run's committed offset (= end of topic) on restart; the
-	// in-memory projection State would then sit empty forever because
-	// Observe never fires and CaughtUp never flips, leaving the TCP
-	// listener never started.
-	projectionGroupId := fmt.Sprintf("%s - projection - %s", consumerGroupId, uuid.New().String())
-	if err := sub.Start(tdm.Context(), l, tdm.WaitGroup(), projectionGroupId); err != nil {
-		l.WithError(err).Fatal("Unable to start configuration projection subscriber.")
-	}
-
-	// 5-minute window because in a fresh PR env atlas-pr-bootstrap takes
-	// a couple of minutes to write the initial tenant + service configs
-	// after this pod boots; the projection can't catch up until those
-	// events are emitted by atlas-configurations and drained to Kafka.
-	// Override via PROJECTION_CATCHUP_TIMEOUT_S (positive integer seconds).
-	ctxCaught, cancelCaught := context.WithTimeout(tdm.Context(), parseProjectionCatchupTimeout())
-	if err := caughtUp.WaitCaughtUp(ctxCaught); err != nil {
-		cancelCaught()
-		l.WithError(err).Fatal("Configuration projection failed to catch up.")
-	}
-	cancelCaught()
+	rt.AwaitProjectionCatchUp()
 	l.Info("Configuration projection caught up; starting listener apply loop.")
 
 	listenerRegistry := listener.NewRegistry(l, listener.Dependencies{
 		UnregisterChannel: func(ch channel2.Model) error {
-			return channel3.NewProcessor(l, tdm.Context()).Unregister(ch)
+			return channel3.NewProcessor(l, rt.Context()).Unregister(ch)
 		},
 		SessionsForKey: func(key server.Key) []listener.Session {
 			// TODO: wire session.Processor lookup-by-key once available.
@@ -307,28 +276,16 @@ func main() {
 		tenant.Unregister(tid)
 	})
 
-	// Process-level shutting-down flag; flipped on SIGTERM teardown so
-	// /readyz reports not-ready before drain begins. k8s removes the pod
-	// from service endpoints once readiness fails, giving in-flight
-	// requests a chance to land on a healthy peer.
-	var shuttingDown atomic.Bool
-	ready := func() bool { return caughtUp.CaughtUpNow() && !shuttingDown.Load() }
-
 	// Teardown order matters here:
-	//   1. Flip /readyz → 503 so k8s stops sending new traffic.
-	//   2. Drain every listener (in-flight kafka handlers stop touching state).
-	//   3. Producer close, session teardown, tracing flush.
-	tdm.TeardownFunc(func() {
-		shuttingDown.Store(true)
-		l.Info("Flipped /readyz to not-ready for graceful shutdown.")
-	})
-	tdm.TeardownFunc(func() {
+	//   1. Drain every listener (in-flight kafka handlers stop touching state).
+	//   2. Producer close, session teardown, tracing flush.
+	rt.TeardownFunc(func() {
 		l.Info("Draining all listeners.")
 		listenerRegistry.DrainAll()
 	})
 
-	build := buildListener(l, tdm, state, validatorMap, handlerMap, writerList)
-	routine.Go(l, tdm.Context(), func(_ context.Context) {
+	build := buildListener(l, rt.TeardownManager(), state, validatorMap, handlerMap, writerList)
+	routine.Go(l, rt.Context(), func(_ context.Context) {
 		(&projection.ApplyLoop{
 			State:       state,
 			CaughtUp:    caughtUp,
@@ -336,27 +293,25 @@ func main() {
 			AddBody:     build,
 			ServerModel: serverModelFn,
 			Interval:    250 * time.Millisecond,
-		}).Run(tdm.Context(), l)
+		}).Run(rt.Context(), l)
 	})
 
-	routine.Go(l, tdm.Context(), func(_ context.Context) {
-		tasks.Register(l, tdm.Context())(channel3.NewHeartbeat(l, tdm.Context(), time.Second*10))
+	routine.Go(l, rt.Context(), func(_ context.Context) {
+		tasks.Register(l, rt.Context())(channel3.NewHeartbeat(l, rt.Context(), time.Second*10))
 	})
 
-	tdm.TeardownFunc(session.Teardown(l))
-	tdm.TeardownFunc(tracing.Teardown(l)(tc))
+	rt.TeardownFunc(session.Teardown(l))
 
 	restserver.New(l).
-		WithContext(tdm.Context()).
-		WithWaitGroup(tdm.WaitGroup()).
+		WithContext(rt.Context()).
+		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath("/api/").
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(restserver.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
-		AddRouteInitializer(restserver.MountReadiness("/readyz", ready)).
+		AddRouteInitializer(restserver.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
-	tdm.Wait()
-	l.Infoln("Service shutdown.")
+	rt.Wait()
 }
 
 // serverModelFn is the ServerModelFn the apply loop hands to listener.Add.
@@ -559,6 +514,9 @@ func buildListener(
 		if err := register(route.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
+		if err := register(rpsConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
 		if err := register(instance_transport.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
@@ -571,7 +529,13 @@ func buildListener(
 		if err := register(gachapon.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
+		if err := register(incubatorconsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
 		if err := register(merchantConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(minigameConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
 		if err := register(mountConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
@@ -583,24 +547,6 @@ func buildListener(
 
 		return handles, nil
 	}
-}
-
-// parseProjectionCatchupTimeout reads PROJECTION_CATCHUP_TIMEOUT_S from
-// env (positive integer seconds) and returns the catch-up window for the
-// configuration projection at startup. Default is 5 minutes, which covers
-// the fresh-PR-env case where atlas-pr-bootstrap is still writing the
-// initial tenant + service configs when this pod boots.
-func parseProjectionCatchupTimeout() time.Duration {
-	const def = 5 * time.Minute
-	v := os.Getenv("PROJECTION_CATCHUP_TIMEOUT_S")
-	if v == "" {
-		return def
-	}
-	n, err := strconv.Atoi(v)
-	if err != nil || n <= 0 {
-		return def
-	}
-	return time.Duration(n) * time.Second
 }
 
 // parseDrainDeadline reads DRAIN_DEADLINE_MS from env (default 5000ms,
@@ -808,6 +754,11 @@ func produceWriters() []string {
 		monstercb.MonsterDamageWriter,
 		fieldcb.FieldEffectWeatherWriter,
 		merchantcb.HiredMerchantOperationWriter,
+		merchantcb.ShopScannerResultWriter,
+		merchantcb.ShopLinkResultWriter,
+		merchantcb.MerchantEmployeeSpawnWriter,
+		merchantcb.MerchantEmployeeDestroyWriter,
+		merchantcb.MerchantEmployeeUpdateWriter,
 		interactioncb.CharacterInteractionWriter,
 		interaction2.MiniRoomWriter,
 		mbcb.MonsterBookSetCardWriter,
@@ -818,6 +769,8 @@ func produceWriters() []string {
 		doorcb.SpawnPortalWriter,
 		doorcb.RemoveTownDoorWriter,
 		charcb.BridleMobCatchFailWriter,
+		rpscb.RPSGameWriter,
+		incubatorcb.IncubatorResultWriter,
 	}
 }
 
@@ -923,14 +876,19 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[invsb.CompartmentMergeRequestHandle] = handler.CompartmentMergeHandleFunc
 	handlerMap[invsb.CompartmentSortRequestHandle] = handler.CompartmentSortHandleFunc
 	handlerMap[invsb.CharacterItemUseSummonBagHandle] = handler.CharacterItemUseSummonBagHandleFunc
+	handlerMap[invsb.CharacterItemUseLotteryHandle] = handler.CharacterItemUseLotteryHandleFunc
 	handlerMap[notesb.NoteOperationHandle] = handler.NoteOperationHandleFunc
 	handlerMap[questsb.QuestActionHandle] = handler.QuestActionHandleFunc
 	handlerMap[storagesb.StorageOperationHandle] = handler.StorageOperationHandleFunc
+	handlerMap[rpssb.RPSActionHandle] = handler.RPSActionHandleFunc
 	handlerMap[reactorsb.ReactorHitHandle] = handler.ReactorHitHandleFunc
 	handlerMap[socketsb.PongHandle] = handler.PongHandleFunc
 	handlerMap[charsb.MonsterDamageFriendlyHandle] = handler.MonsterDamageFriendlyHandleFunc
 	handlerMap[interactionsb.CharacterInteractionHandle] = handler.CharacterInteractionHandleFunc
 	handlerMap[merchantsb.HiredMerchantOperationHandle] = handler.HiredMerchantOperationHandleFunc
+	handlerMap[merchantsb.OwlActionHandle] = handler.OwlActionHandleFunc
+	handlerMap[merchantsb.OwlWarpHandle] = handler.OwlWarpHandleFunc
+	handlerMap[merchantsb.ShopScannerItemUseHandle] = handler.ShopScannerItemUseHandleFunc
 	handlerMap[mbsb.MonsterBookCoverHandler] = handler.MonsterBookCoverHandleFunc
 	return handlerMap
 }

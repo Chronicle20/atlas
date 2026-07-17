@@ -3,9 +3,9 @@ package cashshop
 import (
 	consumer2 "atlas-maps/kafka/consumer"
 	cashshopKafka "atlas-maps/kafka/message/cashshop"
-	"atlas-maps/kafka/producer"
 	_map "atlas-maps/map"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"

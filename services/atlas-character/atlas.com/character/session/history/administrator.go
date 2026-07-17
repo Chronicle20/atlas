@@ -3,10 +3,11 @@ package history
 import (
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-
-	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 )
 
 // createSession creates a new session record for a character login
@@ -67,6 +68,17 @@ func getSessionsSince(db *gorm.DB, characterId uint32, since time.Time) ([]Model
 		models[i] = modelFromEntity(e)
 	}
 	return models, nil
+}
+
+// getSessionsSincePaged returns one page of sessions for a character since the
+// given time, ordered chronologically (login_time ASC) with the pk-tiebreak
+// PagedQuery appends after it. Mirrors getSessionsSince's Where clause exactly
+// so REST callers see the same filter, just windowed.
+func getSessionsSincePaged(db *gorm.DB, characterId uint32, since time.Time, page model.Page) model.Provider[model.Paged[entity]] {
+	scoped := db.Where("character_id = ? AND (login_time >= ? OR logout_time IS NULL OR logout_time >= ?)",
+		characterId, since, since).
+		Order("login_time ASC")
+	return database.PagedQuery[entity](scoped, page)
 }
 
 // getSessionsInRange returns all sessions that overlap with the given time range

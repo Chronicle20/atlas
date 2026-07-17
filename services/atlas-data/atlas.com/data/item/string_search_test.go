@@ -386,50 +386,68 @@ func TestSearchIndex_FilterClassIntersection(t *testing.T) {
 	require.Len(t, rows, 2)
 }
 
-func TestParsePagingParams_RejectsLegacyLimit(t *testing.T) {
-	q := mustParseQuery(t, "limit=10")
-	_, _, code := parsePagingParams(q)
-	assert.Equal(t, http.StatusBadRequest, code)
+func TestHandleGetItemStrings_RejectsLegacyLimit(t *testing.T) {
+	db, ctx := setupItemHandlerFixture(t, 5)
+	w := httptest.NewRecorder()
+	req := newItemStringsRequest(t, "/data/item-strings?limit=10", ctx)
+	dispatchItemStrings(t, w, req, db)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
-func TestParsePagingParams_RejectsPageSizeOver50(t *testing.T) {
-	q := mustParseQuery(t, "page[size]=51")
-	_, _, code := parsePagingParams(q)
-	assert.Equal(t, http.StatusBadRequest, code)
+func TestHandleGetItemStrings_RejectsPageSizeOver50(t *testing.T) {
+	db, ctx := setupItemHandlerFixture(t, 5)
+	w := httptest.NewRecorder()
+	req := newItemStringsRequest(t, "/data/item-strings?page[size]=51", ctx)
+	dispatchItemStrings(t, w, req, db)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
-func TestParsePagingParams_RejectsZeroPageSize(t *testing.T) {
-	q := mustParseQuery(t, "page[size]=0")
-	_, _, code := parsePagingParams(q)
-	assert.Equal(t, http.StatusBadRequest, code)
+func TestHandleGetItemStrings_RejectsZeroPageSize(t *testing.T) {
+	db, ctx := setupItemHandlerFixture(t, 5)
+	w := httptest.NewRecorder()
+	req := newItemStringsRequest(t, "/data/item-strings?page[size]=0", ctx)
+	dispatchItemStrings(t, w, req, db)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
-func TestParsePagingParams_RejectsZeroPageNumber(t *testing.T) {
-	q := mustParseQuery(t, "page[number]=0")
-	_, _, code := parsePagingParams(q)
-	assert.Equal(t, http.StatusBadRequest, code)
+func TestHandleGetItemStrings_RejectsZeroPageNumber(t *testing.T) {
+	db, ctx := setupItemHandlerFixture(t, 5)
+	w := httptest.NewRecorder()
+	req := newItemStringsRequest(t, "/data/item-strings?page[number]=0", ctx)
+	dispatchItemStrings(t, w, req, db)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
-func TestParsePagingParams_DefaultsWhenAbsent(t *testing.T) {
-	q := mustParseQuery(t, "")
-	pageNumber, pageSize, code := parsePagingParams(q)
-	require.Equal(t, 0, code)
-	assert.Equal(t, 1, pageNumber)
-	assert.Equal(t, searchindex.MaxLimit, pageSize)
+func TestHandleGetItemStrings_DefaultsWhenAbsent(t *testing.T) {
+	db, ctx := setupItemHandlerFixture(t, 5)
+	w := httptest.NewRecorder()
+	req := newItemStringsRequest(t, "/data/item-strings", ctx)
+	dispatchItemStrings(t, w, req, db)
+	require.Equal(t, http.StatusOK, w.Code)
+	doc := decodeJsonApi(t, w.Body.Bytes())
+	page := doc.Meta["page"].(map[string]interface{})
+	assert.EqualValues(t, 1, page["number"])
+	assert.EqualValues(t, searchindex.MaxLimit, page["size"])
 }
 
-func TestParsePagingParams_AcceptsValidValues(t *testing.T) {
-	q := mustParseQuery(t, "page[number]=3&page[size]=25")
-	pageNumber, pageSize, code := parsePagingParams(q)
-	require.Equal(t, 0, code)
-	assert.Equal(t, 3, pageNumber)
-	assert.Equal(t, 25, pageSize)
+func TestHandleGetItemStrings_AcceptsValidPageParams(t *testing.T) {
+	db, ctx := setupItemHandlerFixture(t, 100)
+	w := httptest.NewRecorder()
+	req := newItemStringsRequest(t, "/data/item-strings?page[number]=3&page[size]=25", ctx)
+	dispatchItemStrings(t, w, req, db)
+	require.Equal(t, http.StatusOK, w.Code)
+	doc := decodeJsonApi(t, w.Body.Bytes())
+	page := doc.Meta["page"].(map[string]interface{})
+	assert.EqualValues(t, 3, page["number"])
+	assert.EqualValues(t, 25, page["size"])
 }
 
-func TestParsePagingParams_RejectsNonInteger(t *testing.T) {
-	q := mustParseQuery(t, "page[size]=abc")
-	_, _, code := parsePagingParams(q)
-	assert.Equal(t, http.StatusBadRequest, code)
+func TestHandleGetItemStrings_RejectsNonIntegerPageSize(t *testing.T) {
+	db, ctx := setupItemHandlerFixture(t, 5)
+	w := httptest.NewRecorder()
+	req := newItemStringsRequest(t, "/data/item-strings?page[size]=abc", ctx)
+	dispatchItemStrings(t, w, req, db)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 type fakeServerInfo struct{}

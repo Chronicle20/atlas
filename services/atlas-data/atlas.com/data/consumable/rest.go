@@ -123,7 +123,10 @@ func (r *RestModel) SetID(strId string) error {
 }
 
 type RewardRestModel struct {
-	ItemId uint32 `json:"itemId"`
-	Count  uint32 `json:"count"`
-	Prob   uint32 `json:"prob"`
+	ItemId   uint32 `json:"itemId"`
+	Count    uint32 `json:"count"`
+	Prob     uint32 `json:"prob"`
+	Effect   string `json:"effect"`
+	WorldMsg string `json:"worldMsg"`
+	Period   int32  `json:"period"`
 }

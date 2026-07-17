@@ -2,21 +2,23 @@ package shop
 
 import (
 	"atlas-merchant/listing"
+	msg "atlas-merchant/message"
 	"atlas-merchant/rest"
+	"atlas-merchant/searchcount"
 	"errors"
 	"net/http"
 	"strconv"
-
-	"github.com/google/uuid"
-	"github.com/gorilla/mux"
-	"github.com/jtumidanski/api2go/jsonapi"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
+	"github.com/jtumidanski/api2go/jsonapi"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 func InitializeRoutes(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
@@ -30,6 +32,8 @@ func InitializeRoutes(si jsonapi.ServerInformation) func(db *gorm.DB) server.Rou
 			r := router.PathPrefix("/merchants/{shopId}").Subrouter()
 			r.HandleFunc("", registerHandler("get_merchant", handleGetMerchant(db))).Methods(http.MethodGet)
 			r.HandleFunc("/relationships/listings", registerHandler("get_merchant_listings", handleGetMerchantListings(db))).Methods(http.MethodGet)
+			r.HandleFunc("/blacklist", registerHandler("get_merchant_blacklist", handleGetMerchantBlacklist(db))).Methods(http.MethodGet)
+			r.HandleFunc("/visits", registerHandler("get_merchant_visits", handleGetMerchantVisits(db))).Methods(http.MethodGet)
 
 			cr := router.PathPrefix("/characters/{characterId}").Subrouter()
 			cr.HandleFunc("/merchants", registerHandler("get_character_merchants", handleGetCharacterMerchants(db))).Methods(http.MethodGet)
@@ -37,6 +41,7 @@ func InitializeRoutes(si jsonapi.ServerInformation) func(db *gorm.DB) server.Rou
 
 			wr := router.PathPrefix("/worlds/{worldId}").Subrouter()
 			wr.HandleFunc("/channels/{channelId}/maps/{mapId}/instances/{instanceId}/merchants", registerHandler("get_field_merchants", handleGetFieldMerchants(db))).Methods(http.MethodGet)
+			wr.HandleFunc("/shop-searches/top", registerHandler("get_top_shop_searches", handleGetTopShopSearches(db))).Methods(http.MethodGet)
 		}
 	}
 }
@@ -78,6 +83,14 @@ func handleGetMerchant(db *gorm.DB) rest.GetHandler {
 					return
 				}
 
+				// Persisted shop messages ride along so the channel can replay
+				// the chat log into the owner's management view (audit F10).
+				if messages, err := msg.NewProcessor(d.Logger(), d.Context(), db).GetMessages(shopId); err != nil {
+					d.Logger().WithError(err).Warnf("Retrieving messages for shop [%s].", shopId)
+				} else {
+					res.Messages = transformMessages(messages)
+				}
+
 				query := r.URL.Query()
 				queryParams := jsonapi.ParseQueryFields(&query)
 				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
@@ -90,16 +103,22 @@ func handleGetMerchantListings(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseShopId(d.Logger(), func(shopId uuid.UUID) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
+				page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+					return
+				}
+
 				p := NewProcessor(d.Logger(), d.Context(), db)
 
-				listings, err := p.GetListings(shopId)
+				pagedListings, err := p.GetListingsPaged(shopId, page)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Retrieving listings.")
 					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
-				res, err := model.SliceMap(listing.Transform)(model.FixedProvider(listings))(model.ParallelMap())()
+				paged, err := model.MapPaged(listing.Transform)(model.FixedProvider(pagedListings))(model.ParallelMap())()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST models.")
 					server.WriteErrorResponse(d.Logger())(w)(err)
@@ -108,7 +127,7 @@ func handleGetMerchantListings(db *gorm.DB) rest.GetHandler {
 
 				query := r.URL.Query()
 				queryParams := jsonapi.ParseQueryFields(&query)
-				server.MarshalResponse[[]listing.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+				server.MarshalPaginatedResponse[[]listing.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 			}
 		})
 	}
@@ -117,17 +136,23 @@ func handleGetMerchantListings(db *gorm.DB) rest.GetHandler {
 func handleGetMerchants(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
+			page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+				return
+			}
+
 			p := NewProcessor(d.Logger(), d.Context(), db)
 
-			shops, err := p.GetAllOpen()
+			pagedShops, err := p.GetAllOpenPaged(page)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Retrieving merchants.")
 				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
-			shopIds := make([]uuid.UUID, 0, len(shops))
-			for _, s := range shops {
+			shopIds := make([]uuid.UUID, 0, len(pagedShops.Items))
+			for _, s := range pagedShops.Items {
 				shopIds = append(shopIds, s.Id())
 			}
 
@@ -138,7 +163,7 @@ func handleGetMerchants(db *gorm.DB) rest.GetHandler {
 				return
 			}
 
-			res, err := model.SliceMap(TransformWithListingCount(counts))(model.FixedProvider(shops))(model.ParallelMap())()
+			paged, err := model.MapPaged(TransformWithListingCount(counts))(model.FixedProvider(pagedShops))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST models.")
 				server.WriteErrorResponse(d.Logger())(w)(err)
@@ -147,7 +172,7 @@ func handleGetMerchants(db *gorm.DB) rest.GetHandler {
 
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 		}
 	}
 }
@@ -167,15 +192,38 @@ func handleSearchListings(db *gorm.DB) rest.GetHandler {
 				return
 			}
 
+			criteria := ListingSearchCriteria{ItemId: uint32(v)}
+			if ws := r.URL.Query().Get("worldId"); ws != "" {
+				wv, err := strconv.ParseUint(ws, 10, 8)
+				if err != nil {
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+				wid := world.Id(wv)
+				criteria.WorldId = &wid
+			}
+			criteria.Descending = r.URL.Query().Get("order") == "desc"
+
+			// Default page size is the shop-scanner game cap
+			// (MaxSearchResults, task-127): a page-param-less consumer (the
+			// atlas-channel owl handler) gets exactly the capped top-N in
+			// one response. Max stays the repo-wide MaxPageSize so drain
+			// consumers (atlas-ui fetchAll at 250) are not rejected.
+			page, err := paginate.ParseParams(r.URL.Query(), MaxSearchResults, paginate.MaxPageSize)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+				return
+			}
+
 			p := NewProcessor(d.Logger(), d.Context(), db)
-			results, err := p.SearchListingsByItemId(uint32(v))
+			pagedResults, err := p.SearchListingsByItemIdPaged(criteria, page)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Searching listings by item.")
 				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
-			res, err := model.SliceMap(TransformSearchResult)(model.FixedProvider(results))(model.ParallelMap())()
+			paged, err := model.MapPaged(TransformSearchResult)(model.FixedProvider(pagedResults))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST models.")
 				server.WriteErrorResponse(d.Logger())(w)(err)
@@ -184,7 +232,7 @@ func handleSearchListings(db *gorm.DB) rest.GetHandler {
 
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]ListingSearchRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			server.MarshalPaginatedResponse[[]ListingSearchRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 		}
 	}
 }
@@ -193,15 +241,21 @@ func handleGetCharacterMerchants(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
+				page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+					return
+				}
+
 				p := NewProcessor(d.Logger(), d.Context(), db)
-				shops, err := p.GetByCharacterId(characterId)
+				pagedShops, err := p.GetByCharacterIdPaged(characterId, page)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Retrieving merchants for character.")
 					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
-				res, err := model.SliceMap(Transform)(model.FixedProvider(shops))(model.ParallelMap())()
+				paged, err := model.MapPaged(Transform)(model.FixedProvider(pagedShops))(model.ParallelMap())()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST models.")
 					server.WriteErrorResponse(d.Logger())(w)(err)
@@ -210,7 +264,7 @@ func handleGetCharacterMerchants(db *gorm.DB) rest.GetHandler {
 
 				query := r.URL.Query()
 				queryParams := jsonapi.ParseQueryFields(&query)
-				server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+				server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 			}
 		})
 	}
@@ -223,6 +277,7 @@ func handleGetCharacterVisiting(db *gorm.DB) rest.GetHandler {
 				p := NewProcessor(d.Logger(), d.Context(), db)
 				shopId, err := p.GetShopForCharacter(characterId)
 				if err != nil {
+					d.Logger().WithError(err).Debugf("Character [%d] is not occupying a shop.", characterId)
 					w.WriteHeader(http.StatusNotFound)
 					return
 				}
@@ -230,6 +285,7 @@ func handleGetCharacterVisiting(db *gorm.DB) rest.GetHandler {
 				m, err := p.GetById(shopId)
 				if err != nil {
 					if errors.Is(err, ErrNotFound) {
+						d.Logger().WithError(err).Warnf("Occupancy for character [%d] resolved shop [%s] but it no longer loads.", characterId, shopId)
 						w.WriteHeader(http.StatusNotFound)
 						return
 					}
@@ -253,6 +309,84 @@ func handleGetCharacterVisiting(db *gorm.DB) rest.GetHandler {
 	}
 }
 
+type BlacklistRestModel struct {
+	Id   string `json:"-"`
+	Name string `json:"name"`
+}
+
+func (r BlacklistRestModel) GetName() string        { return "merchant-blacklist" }
+func (r BlacklistRestModel) GetID() string          { return r.Id }
+func (r *BlacklistRestModel) SetID(id string) error { r.Id = id; return nil }
+
+type VisitRestModel struct {
+	Id    string `json:"-"`
+	Name  string `json:"name"`
+	Count uint32 `json:"count"`
+}
+
+func (r VisitRestModel) GetName() string        { return "merchant-visits" }
+func (r VisitRestModel) GetID() string          { return r.Id }
+func (r *VisitRestModel) SetID(id string) error { r.Id = id; return nil }
+
+func handleGetMerchantBlacklist(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseShopId(d.Logger(), func(shopId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				// Game-capped small (mini-room dialog blacklist), so default
+				// page size = max: page-param-less consumers (the atlas-channel
+				// dialog handler) get the whole set in one response.
+				page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+					return
+				}
+
+				paged, err := NewProcessor(d.Logger(), d.Context(), db).GetBlacklistPaged(shopId, page)
+				if err != nil {
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+				res := make([]BlacklistRestModel, 0, len(paged.Items))
+				for _, n := range paged.Items {
+					res = append(res, BlacklistRestModel{Id: n, Name: n})
+				}
+				query := r.URL.Query()
+				server.MarshalPaginatedResponse[[]BlacklistRestModel](d.Logger())(w)(c.ServerInformation())(jsonapi.ParseQueryFields(&query))(res, paginate.EnvelopeFor(paged), r)
+			}
+		})
+	}
+}
+
+func handleGetMerchantVisits(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseShopId(d.Logger(), func(shopId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				// The visit log grows with unique visitor names over the shop
+				// lifetime, so this pages at the query layer like every other
+				// DB-backed list (task-117). Default = max so the dialog
+				// consumer keeps whole-set semantics via drain.
+				page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+					return
+				}
+
+				paged, err := NewProcessor(d.Logger(), d.Context(), db).GetVisitsPaged(shopId, page)
+				if err != nil {
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+				res := make([]VisitRestModel, 0, len(paged.Items))
+				for _, v := range paged.Items {
+					res = append(res, VisitRestModel{Id: v.Name(), Name: v.Name(), Count: v.Count()})
+				}
+				query := r.URL.Query()
+				server.MarshalPaginatedResponse[[]VisitRestModel](d.Logger())(w)(c.ServerInformation())(jsonapi.ParseQueryFields(&query))(res, paginate.EnvelopeFor(paged), r)
+			}
+		})
+	}
+}
+
 func handleGetFieldMerchants(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
@@ -260,17 +394,23 @@ func handleGetFieldMerchants(db *gorm.DB) rest.GetHandler {
 				return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
 					return rest.ParseInstanceId(d.Logger(), func(instanceId uuid.UUID) http.HandlerFunc {
 						return func(w http.ResponseWriter, r *http.Request) {
+							page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+							if err != nil {
+								server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+								return
+							}
+
 							p := NewProcessor(d.Logger(), d.Context(), db)
 
-							shops, err := p.GetByField(worldId, channelId, mapId, instanceId)
+							pagedShops, err := p.GetByFieldPaged(worldId, channelId, mapId, instanceId, page)
 							if err != nil {
 								d.Logger().WithError(err).Errorf("Retrieving field merchants.")
 								server.WriteErrorResponse(d.Logger())(w)(err)
 								return
 							}
 
-							shopIds := make([]uuid.UUID, 0, len(shops))
-							for _, s := range shops {
+							shopIds := make([]uuid.UUID, 0, len(pagedShops.Items))
+							for _, s := range pagedShops.Items {
 								shopIds = append(shopIds, s.Id())
 							}
 
@@ -281,7 +421,7 @@ func handleGetFieldMerchants(db *gorm.DB) rest.GetHandler {
 								return
 							}
 
-							res, err := model.SliceMap(TransformWithListingCount(counts))(model.FixedProvider(shops))(model.ParallelMap())()
+							paged, err := model.MapPaged(TransformWithListingCount(counts))(model.FixedProvider(pagedShops))(model.ParallelMap())()
 							if err != nil {
 								d.Logger().WithError(err).Errorf("Creating REST models.")
 								server.WriteErrorResponse(d.Logger())(w)(err)
@@ -290,11 +430,48 @@ func handleGetFieldMerchants(db *gorm.DB) rest.GetHandler {
 
 							query := r.URL.Query()
 							queryParams := jsonapi.ParseQueryFields(&query)
-							server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+							server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 						}
 					})
 				})
 			})
+		})
+	}
+}
+
+func handleGetTopShopSearches(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+					return
+				}
+
+				results, err := searchcount.NewProcessor(d.Logger(), d.Context(), db).GetTop(worldId, 10)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Getting top shop searches.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				// Bounded top-N (LIMIT 10 at the query layer), already in a
+				// total order (count DESC, item_id ASC) — the envelope comes
+				// from paginate.Slice over the materialized list (task-117).
+				paged := paginate.Slice(results, page)
+
+				res, err := model.SliceMap(searchcount.Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST models.")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalPaginatedResponse[[]searchcount.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
+			}
 		})
 	}
 }

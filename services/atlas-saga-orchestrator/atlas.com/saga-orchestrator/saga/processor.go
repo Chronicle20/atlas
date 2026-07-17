@@ -8,7 +8,6 @@ import (
 	"atlas-saga-orchestrator/invite"
 	asset2 "atlas-saga-orchestrator/kafka/message/asset"
 	"atlas-saga-orchestrator/kafka/message/saga"
-	"atlas-saga-orchestrator/kafka/producer"
 	"atlas-saga-orchestrator/mts"
 	"atlas-saga-orchestrator/skill"
 	"atlas-saga-orchestrator/storage"
@@ -16,6 +15,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"sync"
 	"time"
 
@@ -1598,6 +1598,7 @@ func (p *ProcessorImpl) expandTransferToMts(st Step[any]) ([]Step[any], error) {
 				Level:         foundAsset.Level,
 				ItemExp:       foundAsset.Experience,
 				Flags:         foundAsset.Flag,
+				Owner:         foundAsset.Owner,
 
 				// Sale params copied from the seller's TransferToMts payload.
 				ListValue:      payload.ListValue,
@@ -1778,6 +1779,7 @@ func assetDataFromCompartmentAsset(a *compartment.AssetRestModel) asset2.AssetDa
 		CreatedAt:      a.CreatedAt,
 		Quantity:       a.Quantity,
 		OwnerId:        a.OwnerId,
+		Owner:          a.Owner,
 		Flag:           a.Flag,
 		Rechargeable:   a.Rechargeable,
 		Strength:       a.Strength,
@@ -1898,6 +1900,7 @@ func assetDataFromStorageProjectionAsset(a *storage.ProjectionAssetRestModel) as
 		Expiration:     a.Expiration,
 		Quantity:       a.Quantity,
 		OwnerId:        a.OwnerId,
+		Owner:          a.Owner,
 		Flag:           a.Flag,
 		Rechargeable:   a.Rechargeable,
 		Strength:       a.Strength,

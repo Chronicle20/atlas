@@ -1,7 +1,7 @@
 package test
 
 import (
-	"atlas-channel/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"sync"
 
 	"github.com/segmentio/kafka-go"

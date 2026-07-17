@@ -88,6 +88,12 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeTemplateCommand(db)))); err != nil {
 				return err
 			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSetOwnerCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleApplyLockCommand(db)))); err != nil {
+				return err
+			}
 			return nil
 		}
 	}
@@ -259,6 +265,7 @@ func handleAcceptCommand(db *gorm.DB) message.Handler[compartment2.Command[compa
 			SetExpiration(c.Body.Expiration).
 			SetQuantity(c.Body.Quantity).
 			SetOwnerId(c.Body.OwnerId).
+			SetOwner(c.Body.Owner).
 			SetFlag(c.Body.Flag).
 			SetRechargeable(c.Body.Rechargeable).
 			SetStrength(c.Body.Strength).
@@ -330,6 +337,50 @@ func handleExpireCommand(db *gorm.DB) message.Handler[compartment2.Command[compa
 		)
 		if err != nil {
 			l.WithError(err).Errorf("Failed to expire asset [%d] for character [%d].", c.Body.AssetId, c.CharacterId)
+		}
+	}
+}
+
+func handleSetOwnerCommand(db *gorm.DB) message.Handler[compartment2.Command[compartment2.SetOwnerCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c compartment2.Command[compartment2.SetOwnerCommandBody]) {
+		if c.Type != compartment2.CommandSetOwner {
+			return
+		}
+
+		l.Debugf("Received SET_OWNER command for character [%d], slot [%d], owner [%s].",
+			c.CharacterId, c.Body.Slot, c.Body.Owner)
+
+		err := compartment.NewProcessor(l, ctx, db).SetAssetOwnerAndEmit(
+			c.TransactionId,
+			c.CharacterId,
+			inventory.Type(c.InventoryType),
+			c.Body.Slot,
+			c.Body.Owner,
+		)
+		if err != nil {
+			l.WithError(err).Errorf("Failed to set owner of asset in slot [%d] for character [%d].", c.Body.Slot, c.CharacterId)
+		}
+	}
+}
+
+func handleApplyLockCommand(db *gorm.DB) message.Handler[compartment2.Command[compartment2.ApplyLockCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c compartment2.Command[compartment2.ApplyLockCommandBody]) {
+		if c.Type != compartment2.CommandApplyLock {
+			return
+		}
+
+		l.Debugf("Received APPLY_LOCK command for character [%d], slot [%d].",
+			c.CharacterId, c.Body.Slot)
+
+		err := compartment.NewProcessor(l, ctx, db).ApplyAssetLockAndEmit(
+			c.TransactionId,
+			c.CharacterId,
+			inventory.Type(c.InventoryType),
+			c.Body.Slot,
+			c.Body.Expiration,
+		)
+		if err != nil {
+			l.WithError(err).Errorf("Failed to apply lock to asset in slot [%d] for character [%d].", c.Body.Slot, c.CharacterId)
 		}
 	}
 }

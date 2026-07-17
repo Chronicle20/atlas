@@ -1,10 +1,10 @@
 package script
 
 import (
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // getByIdProvider returns a provider for retrieving a map script by ID
@@ -31,22 +31,18 @@ func getByScriptNameAndTypeProvider(scriptName string) func(scriptType string) f
 	}
 }
 
-// getByScriptNameProvider returns a provider for retrieving map scripts by name (all types)
-func getByScriptNameProvider(scriptName string) func(db *gorm.DB) model.Provider[[]Entity] {
-	return func(db *gorm.DB) model.Provider[[]Entity] {
-		return func() ([]Entity, error) {
-			var entities []Entity
-			result := db.Where("script_name = ?", scriptName).Find(&entities)
-			return entities, result.Error
-		}
+// getByScriptNamePagedProvider returns a provider for retrieving one page of
+// map scripts by name (all types)
+func getByScriptNamePagedProvider(scriptName string, page model.Page) database.EntityProvider[model.Paged[Entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[Entity]] {
+		return database.PagedQuery[Entity](db.Where("script_name = ?", scriptName), page)
 	}
 }
 
-// getAllProvider returns a provider for retrieving all map scripts for a tenant
-func getAllProvider(db *gorm.DB) model.Provider[[]Entity] {
-	return func() ([]Entity, error) {
-		var entities []Entity
-		result := db.Find(&entities)
-		return entities, result.Error
+// getAllPagedProvider returns a provider for retrieving one page of map
+// scripts for a tenant
+func getAllPagedProvider(page model.Page) database.EntityProvider[model.Paged[Entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[Entity]] {
+		return database.PagedQuery[Entity](db, page)
 	}
 }

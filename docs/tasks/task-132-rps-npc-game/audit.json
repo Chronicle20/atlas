@@ -1,0 +1,63 @@
+{
+  "service": "atlas-rps",
+  "path": "services/atlas-rps, services/atlas-channel, services/atlas-tenants, services/atlas-npc-conversations, services/atlas-saga-orchestrator, libs/atlas-packet/rps, libs/atlas-saga",
+  "date": "2026-07-17",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "diffScope": "c9490b72488bb446f15a4a44156563becab722b3..a1322a6a2a2e9a00b26f735ccea6e734f842829f",
+  "note": "Supplements docs/tasks/task-132-rps-npc-game/audit-backend.md and audit-backend-recheck.md (prior backend-guidelines passes on the same task branch, at an earlier commit). This document focuses on the round-loop/consolation/config risk areas and on commits landed after audit-backend-recheck.md's scope (7ae96ef4b..a1322a6a2).",
+  "domains": [
+    {
+      "name": "game (atlas-rps round-loop state machine)",
+      "type": "domain",
+      "checks": [
+        {"id": "PASS-1", "name": "Loss keeps StatusEnded, no double GameEnded/desync", "status": "pass", "evidence": "services/atlas-rps/atlas.com/rps/game/processor.go:390-399,278,318,428,587,593,521"},
+        {"id": "PASS-2", "name": "No double-award under Kafka at-least-once redelivery (partition key + idempotent status guards)", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/rps/producer.go:16,29,42,56,68; services/atlas-rps/atlas.com/rps/game/processor.go:521-523,582-585"},
+        {"id": "PASS-4", "name": "Rung-0 consolation guard enforced in code, not just comments", "status": "pass", "evidence": "services/atlas-rps/atlas.com/rps/game/processor.go:487-489"},
+        {"id": "PASS-5", "name": "Consolation not double-submitted within a single Retry/Collect sequence", "status": "pass", "evidence": "services/atlas-rps/atlas.com/rps/game/processor.go:531-532,593-595"},
+        {"id": "DOM-24", "name": "Kafka producer stubbed via producertest.InstallNoop in game package tests", "status": "pass", "evidence": "services/atlas-rps/atlas.com/rps/game/testmain_test.go:14-17"},
+        {"id": "DOM-26", "name": "Goroutines spawned via routine.Go, no bare go statements", "status": "pass", "evidence": "services/atlas-rps/atlas.com/rps/main.go:55; services/atlas-rps/atlas.com/rps/tasks/task.go:19; manual grep of RPS-touched packages returns zero bare-go matches"},
+        {"id": "IMP-2", "name": "Retry fee-deduction saga-submit failure is swallowed; round proceeds unpaid (asymmetric with Collect's fail-safe payout path)", "status": "fail", "evidence": "services/atlas-rps/atlas.com/rps/game/processor.go:534-539 vs 606-619"},
+        {"id": "MIN-1", "name": "Consolation never paid on TTL-sweep/abandonment path; only Retry/Exit reach submitConsolation", "status": "fail", "evidence": "services/atlas-rps/atlas.com/rps/game/task.go:41-51; game/processor.go:486-503,736-749; no Dispose call site found in services/atlas-channel"},
+        {"id": "MIN-2", "name": "Dead ReasonLost constant left after loss-handling redesign", "status": "fail", "evidence": "services/atlas-rps/atlas.com/rps/kafka/message/rps/kafka.go:37; services/atlas-channel/atlas.com/channel/kafka/message/rps/kafka.go:49"}
+      ]
+    },
+    {
+      "name": "configuration (atlas-rps + atlas-tenants rps-rewards)",
+      "type": "support",
+      "checks": [
+        {"id": "PASS-3", "name": "ConsolationMeso Transform/Extract round-trips symmetrically on both sides", "status": "pass", "evidence": "services/atlas-tenants/atlas.com/tenants/configuration/rest.go:493-496,529-532,586; services/atlas-rps/atlas.com/rps/configuration/rest.go:22-27,66-68; rest_test.go:13-54"},
+        {"id": "PASS-8", "name": "File-responsibilities split correct for atlas-rps/configuration REST-client package", "status": "pass", "evidence": "services/atlas-rps/atlas.com/rps/configuration/processor.go:20-55, rest.go:1-70, requests.go:14-25; no catch-all <pkg>.go file"},
+        {"id": "IMP-1", "name": "Unverified item ids 4031332-4031341 shipped in rps-rewards default seed, contradicting reward-ladder.md and CLAUDE.md grounding rule", "status": "fail", "evidence": "services/atlas-tenants/configurations/rps-rewards/default.json:8-17 vs docs/tasks/task-132-rps-npc-game/reward-ladder.md:5-17"},
+        {"id": "MIN-3", "name": "EXT-01: RpsRewardRestModel (rps side) still lacks SetToOneReferenceID/SetToManyReferenceIDs", "status": "fail", "evidence": "services/atlas-rps/atlas.com/rps/configuration/rest.go:22 (carried forward, unfixed, from audit-backend-recheck.md MIN-2)"}
+      ]
+    },
+    {
+      "name": "libs/atlas-packet/rps (clientbound/serverbound codecs)",
+      "type": "support",
+      "checks": [
+        {"id": "PASS-6", "name": "START_SELECT mode byte + RPS_ACTION sub-ops config-resolved (DOM-25), no literals", "status": "pass", "evidence": "libs/atlas-packet/rps/operation_body.go:42-46; services/atlas-channel/atlas.com/channel/socket/handler/rps_action.go:132-154"},
+        {"id": "DOM-25-seed", "name": "START_SELECT operations row present in all 5 supported version templates", "status": "pass", "evidence": "template_gms_83_1.json:3061, template_gms_84_1.json:3099, template_gms_87_1.json:2630, template_gms_95_1.json:2037, template_jms_185_1.json:2632"}
+      ]
+    },
+    {
+      "name": "channel/rps + kafka/consumer/rps (atlas-channel wiring)",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "PASS-7", "name": "game/mock/processor.go synchronized with Begin/Retry interface additions", "status": "pass", "evidence": "services/atlas-rps/atlas.com/rps/game/mock/processor.go:20-21,29-30,42"},
+        {"id": "PASS-9", "name": "Redis discipline - no raw keyed go-redis calls outside libs/atlas-redis", "status": "pass", "evidence": "services/atlas-rps/atlas.com/rps/game/registry.go:9,21-22; repo-wide grep for goredis./redis.NewClient in atlas-rps returns zero matches"}
+      ]
+    }
+  ],
+  "blocking": [
+    "IMP-1: services/atlas-tenants/configurations/rps-rewards/default.json:8-17 ships unverified item ids 4031332-4031341, contradicting the task's own reward-ladder.md/verification.md which document a meso-only, unverified-item-free seed as the binding decision",
+    "IMP-2: services/atlas-rps/atlas.com/rps/game/processor.go:534-539 - Retry's fee-deduction saga-submit failure is logged and discarded; the round restarts regardless, unlike the payout path (processor.go:606-619) which blocks on the identical failure class"
+  ],
+  "nonBlocking": [
+    "MIN-1: services/atlas-rps/atlas.com/rps/game/task.go:41-51 - TTL-sweep/abandonment never triggers submitConsolation; only explicit Retry/Exit do, and this behavior is untested and undocumented",
+    "MIN-2: dead ReasonLost constant in services/atlas-rps/atlas.com/rps/kafka/message/rps/kafka.go:37 and services/atlas-channel/atlas.com/channel/kafka/message/rps/kafka.go:49",
+    "MIN-3: EXT-01 - services/atlas-rps/atlas.com/rps/configuration/rest.go:22 RpsRewardRestModel missing SetToOneReferenceID/SetToManyReferenceIDs (carried forward from audit-backend-recheck.md)"
+  ]
+}

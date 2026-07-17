@@ -9,10 +9,12 @@ import (
 	"atlas-channel/merchant"
 	"atlas-channel/server"
 	"atlas-channel/session"
+	"atlas-channel/shopscanner"
 	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -26,6 +28,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	atlasmodel "github.com/Chronicle20/atlas/libs/atlas-model/model"
+	chatpkt "github.com/Chronicle20/atlas/libs/atlas-packet/chat/clientbound"
 	interactionpkt "github.com/Chronicle20/atlas/libs/atlas-packet/interaction"
 	interactioncb "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/clientbound"
 	merchantpkt "github.com/Chronicle20/atlas/libs/atlas-packet/merchant"
@@ -55,6 +58,11 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 					return nil, err
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleShopSetupEvent(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleShopClosedEvent(sc, wp))))
 				if err != nil {
 					return nil, err
@@ -66,6 +74,11 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleCapacityFullEvent(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleShopCreateFailedEvent(sc, wp))))
 				if err != nil {
 					return nil, err
 				}
@@ -86,6 +99,16 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleMaintenanceEvent(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleShopUpdatedEvent(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleEnterFailedEvent(sc, wp))))
 				if err != nil {
 					return nil, err
 				}
@@ -117,29 +140,76 @@ func handleShopOpenedEvent(sc server.Model, wp writer.Producer) func(l logrus.Fi
 
 		f := field.NewBuilder(e.Body.WorldId, e.Body.ChannelId, mapId.Id(e.Body.MapId)).SetInstance(e.Body.InstanceId).Build()
 
-		miniRoomType := interactionpkt.MerchantShopMiniRoomType
-		if e.Body.ShopType == 1 {
-			miniRoomType = interactionpkt.PersonalShopMiniRoomType
+		if e.Body.ShopType == merchant.HiredMerchantShopType {
+			// Hired merchant renders as a standalone CEmployeePool NPC that persists
+			// independent of the owner avatar (D1), so broadcast the employee spawn
+			// to everyone in the map rather than a box on the owner.
+			shop, err := merchant.NewProcessor(l, ctx).GetShop(e.Body.ShopId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to load hired-merchant shop [%s] for spawn.", e.Body.ShopId)
+			} else {
+				spawn := merchant.ToEmployeeSpawn(shop, resolveOwnerName(l, ctx, shop.CharacterId()))
+				if err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, session.Announce(l)(ctx)(wp)(merchantcb.MerchantEmployeeSpawnWriter)(spawn.Encode)); err != nil {
+					l.WithError(err).Errorf("Unable to spawn hired merchant [%s] in map [%d] instance [%s].", e.Body.ShopId, e.Body.MapId, e.Body.InstanceId)
+				}
+			}
+		} else {
+			// Personal store: the box attaches to the owner's own avatar. Fetch the
+			// shop to resolve the permit item id, which drives the store-sign skin
+			// (nSpec / PSSkin index) the client renders on the map.
+			var skinSpec byte
+			if shop, err := merchant.NewProcessor(l, ctx).GetShop(e.Body.ShopId); err != nil {
+				l.WithError(err).Warnf("Unable to load personal shop [%s] for skin; using plain sign.", e.Body.ShopId)
+			} else {
+				skinSpec = merchant.StoreSkinSpec(shop.PermitItemId())
+			}
+			mr := &interactionpkt.MiniRoomBase{
+				MiniRoomTypeVal: interactionpkt.PersonalShopMiniRoomType,
+				// Id is the balloon's dwMiniRoomSN (CUser::OnMiniRoomBalloon
+				// @0x8e8d7b reads it as Decode4). The client echoes it back as the
+				// visit request's serialNumber, and the server resolves the shop via
+				// GetByCharacterId(serialNumber) — so the SN must be the owner's
+				// character id, else the visit lookup hits characters/0/merchants
+				// and no one can enter the store (task-127).
+				Id:              e.CharacterId,
+				Title:           e.Body.Title,
+				Spec:            skinSpec,
+				CapacityVal:     4,
+				OwnerId:         e.CharacterId,
+				VisitorCount:    0,
+				VisitorList:     []interactionpkt.MiniRoomVisitor{},
+			}
+			if err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, session.Announce(l)(ctx)(wp)(interactionpkt.MiniRoomWriter)(mr.Spawn(e.CharacterId))); err != nil {
+				l.WithError(err).Errorf("Unable to spawn personal store [%s] for characters in map [%d] instance [%s].", e.Body.ShopId, e.Body.MapId, e.Body.InstanceId)
+			}
 		}
 
-		mr := &interactionpkt.MiniRoomBase{
-			MiniRoomTypeVal: miniRoomType,
-			Title:           e.Body.Title,
-			CapacityVal:     4,
-			OwnerId:         e.CharacterId,
-			VisitorCount:    0,
-			VisitorList:     []interactionpkt.MiniRoomVisitor{},
+		// No room re-send to the owner here: the owner has held the shop dialog
+		// since SHOP_SETUP (create); going live only broadcasts the map
+		// box/employee spawn. Re-sending ENTER_RESULT would re-create the
+		// owner's dialog at go-live.
+	}
+}
+
+// handleShopSetupEvent drops the owner of a freshly-created (Draft) shop into
+// the shop UI so they can stock it before the formal open. Unlike SHOP_OPENED it
+// does NOT spawn the mini-room box on the map — that happens at go-live
+// (SHOP_OPENED), avoiding a double spawn.
+func handleShopSetupEvent(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event merchant2.StatusEvent[merchant2.StatusEventShopOpenedBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e merchant2.StatusEvent[merchant2.StatusEventShopOpenedBody]) {
+		if e.Type != merchant2.StatusEventShopSetup {
+			return
 		}
 
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, session.Announce(l)(ctx)(wp)(interactionpkt.MiniRoomWriter)(mr.Spawn(e.CharacterId)))
+		if !sc.Is(tenant.MustFromContext(ctx), e.Body.WorldId, e.Body.ChannelId) {
+			return
+		}
+
+		l.Debugf("Shop [%s] created by character [%d] entering setup in map [%d] instance [%s].", e.Body.ShopId, e.CharacterId, e.Body.MapId, e.Body.InstanceId)
+
+		room, err := buildShopRoomFirstTime(l, ctx, e.Body.ShopId, e.CharacterId, true)
 		if err != nil {
-			l.WithError(err).Errorf("Unable to spawn merchant shop [%s] for characters in map [%d] instance [%s].", e.Body.ShopId, e.Body.MapId, e.Body.InstanceId)
-		}
-
-		// Send room enter packet to the owner so they enter the shop editing interface.
-		room, err := buildShopRoom(l, ctx, e.Body.ShopId, e.CharacterId)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to build room for shop [%s].", e.Body.ShopId)
+			l.WithError(err).Errorf("Unable to build setup room for shop [%s].", e.Body.ShopId)
 			return
 		}
 		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionEnterResultSuccessBody(room)))
@@ -168,9 +238,16 @@ func handleShopClosedEvent(sc server.Model, wp writer.Producer) func(l logrus.Fi
 		}
 
 		f := field.NewBuilder(shop.WorldId(), shop.ChannelId(), mapId.Id(shop.MapId())).SetInstance(shop.InstanceId()).Build()
-		mr := &interactionpkt.MiniRoomBase{}
-		if err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, session.Announce(l)(ctx)(wp)(interactionpkt.MiniRoomWriter)(mr.Despawn(e.CharacterId))); err != nil {
-			l.WithError(err).Errorf("Unable to broadcast despawn for shop [%s].", e.Body.ShopId)
+		if shop.ShopType() == merchant.HiredMerchantShopType {
+			destroy := merchantcb.NewEmployeeDestroy(e.CharacterId)
+			if err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, session.Announce(l)(ctx)(wp)(merchantcb.MerchantEmployeeDestroyWriter)(destroy.Encode)); err != nil {
+				l.WithError(err).Errorf("Unable to broadcast employee despawn for shop [%s].", e.Body.ShopId)
+			}
+		} else {
+			mr := &interactionpkt.MiniRoomBase{}
+			if err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, session.Announce(l)(ctx)(wp)(interactionpkt.MiniRoomWriter)(mr.Despawn(e.CharacterId))); err != nil {
+				l.WithError(err).Errorf("Unable to broadcast despawn for shop [%s].", e.Body.ShopId)
+			}
 		}
 	}
 }
@@ -189,6 +266,12 @@ func handleVisitorEvent(sc server.Model, wp writer.Producer) func(l logrus.Field
 		switch e.Type {
 		case merchant2.StatusEventVisitorEntered:
 			l.Debugf("Visitor [%d] entered shop [%s] at slot [%d].", e.Body.CharacterId, e.Body.ShopId, e.Body.Slot)
+
+			// A completed visit consumes any pending owl-warp entry (task-127).
+			shopscanner.GetRegistry().RemovePending(t, e.Body.CharacterId)
+
+			// Refresh the field balloon's visitor count for onlookers in the map.
+			broadcastEmployeeBalloonUpdate(l, ctx, wp, e.Body.ShopId)
 
 			// Send full shop interior to the entering visitor.
 			room, err := buildShopRoom(l, ctx, e.Body.ShopId, e.Body.CharacterId)
@@ -218,6 +301,9 @@ func handleVisitorEvent(sc server.Model, wp writer.Producer) func(l logrus.Field
 		case merchant2.StatusEventVisitorExited:
 			l.Debugf("Visitor [%d] exited shop [%s] from slot [%d].", e.Body.CharacterId, e.Body.ShopId, e.Body.Slot)
 
+			// Refresh the field balloon's visitor count for onlookers in the map.
+			broadcastEmployeeBalloonUpdate(l, ctx, wp, e.Body.ShopId)
+
 			// Send LEAVE to the exiting visitor (closes their room UI).
 			_ = sp.IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, announce(interactioncb.CharacterInteractionLeaveBody(e.Body.Slot, 0)))
 
@@ -228,10 +314,19 @@ func handleVisitorEvent(sc server.Model, wp writer.Producer) func(l logrus.Field
 				}
 			})
 		case merchant2.StatusEventVisitorEjected:
-			l.Debugf("Visitor [%d] ejected from shop [%s] from slot [%d].", e.Body.CharacterId, e.Body.ShopId, e.Body.Slot)
+			l.Debugf("Visitor [%d] ejected from shop [%s] from slot [%d] reason [%s].", e.Body.CharacterId, e.Body.ShopId, e.Body.Slot, e.Body.LeaveReason)
 
-			// Send LEAVE to the ejected visitor (closes their room UI).
-			_ = sp.IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, announce(interactioncb.CharacterInteractionLeaveBody(e.Body.Slot, 0)))
+			// Refresh the field balloon's visitor count for onlookers in the map.
+			broadcastEmployeeBalloonUpdate(l, ctx, wp, e.Body.ShopId)
+
+			// Send LEAVE to the ejected visitor with the reason so their room UI
+			// shows the correct message (e.g. "The shop is closed.") instead of an
+			// empty dialog. Fall back to a silent close if no reason was supplied.
+			leaveBody := interactioncb.CharacterInteractionLeaveBody(e.Body.Slot, 0)
+			if e.Body.LeaveReason != "" {
+				leaveBody = interactioncb.CharacterInteractionLeaveReasonBody(e.Body.Slot, e.Body.LeaveReason)
+			}
+			_ = sp.IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, announce(leaveBody))
 		}
 	}
 }
@@ -265,7 +360,7 @@ func handleMaintenanceEvent(sc server.Model, wp writer.Producer) func(l logrus.F
 			}
 
 			sp := session.NewProcessor(l, ctx)
-			if shop.ShopType() == 2 {
+			if shop.ShopType() == merchant.HiredMerchantShopType {
 				// Hired merchant: close management UI, shop continues autonomously.
 				_ = sp.IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionLeaveBody(0, 0)))
 			} else {
@@ -294,7 +389,48 @@ func handleCapacityFullEvent(sc server.Model, wp writer.Producer) func(l logrus.
 
 		l.Debugf("Shop [%s] is full, character [%d] cannot enter.", e.Body.ShopId, e.CharacterId)
 
+		reg := shopscanner.GetRegistry()
+		if _, ok := reg.GetPending(t, e.CharacterId); ok {
+			// Owl warp arrival hit a full shop: answer with the faithful
+			// SHOP_LINK code 2 instead of the mini-room error (task-127).
+			reg.RemovePending(t, e.CharacterId)
+			_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(merchantcb.ShopLinkResultWriter)(writer.ShopLinkResultBody(merchantpkt.ShopLinkResultCodeFull)))
+			return
+		}
+
 		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionEnterResultErrorBody(interactioncb.CharacterInteractionEnterErrorModeFull)))
+	}
+}
+
+func handleShopCreateFailedEvent(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event merchant2.StatusEvent[merchant2.StatusEventShopCreateFailedBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e merchant2.StatusEvent[merchant2.StatusEventShopCreateFailedBody]) {
+		if e.Type != merchant2.StatusEventShopCreateFailed {
+			return
+		}
+
+		if !sc.Is(tenant.MustFromContext(ctx), e.Body.WorldId, e.Body.ChannelId) {
+			return
+		}
+
+		l.Debugf("Store placement failed for character [%d]. reason [%s].", e.CharacterId, e.Body.Reason)
+
+		mode := shopCreateFailureMode(e.Body.Reason)
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionEnterResultErrorBody(mode)))
+	}
+}
+
+// shopCreateFailureMode maps a merchant create-failure reason to the client's
+// mini-room error mode.
+func shopCreateFailureMode(reason string) interactioncb.CharacterInteractionEnterErrorMode {
+	switch reason {
+	case merchant2.ShopCreateFailReasonTooCloseToPortal:
+		return interactioncb.CharacterInteractionEnterErrorModeCannotOpenStoreNearPortal
+	case merchant2.ShopCreateFailReasonTooCloseToShop:
+		return interactioncb.CharacterInteractionEnterErrorModeCannotOpenMiniRoomHere
+	case merchant2.ShopCreateFailReasonNotFreeMarket:
+		return interactioncb.CharacterInteractionEnterErrorModeMustBeInFreeMarket
+	default:
+		return interactioncb.CharacterInteractionEnterErrorModeUnable
 	}
 }
 
@@ -329,7 +465,18 @@ func handleFrederickNotificationEvent(sc server.Model, wp writer.Producer) func(
 		l.Debugf("Frederick notification for character [%d]. daysSinceStorage [%d].", e.CharacterId, e.Body.DaysSinceStorage)
 
 		msg := fmt.Sprintf("Your hired merchant items have been stored for %d day(s). Please retrieve them from Fredrick.", e.Body.DaysSinceStorage)
-		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(merchantcb.HiredMerchantOperationWriter)(merchantpkt.HiredMerchantOperationFreeFormNoticeBody(msg)))
+
+		// JMS185's OnEntrustedShopCheckResult has no free-form-notice arm
+		// (@0xb0ee59 — switch ends at CONFIRM_MANAGE 17; the mode-18 arm exists
+		// only on GMS clients), so a FreeFormNotice send is a silent client
+		// drop there. Deliver the reminder as a plain server notice instead.
+		body := merchantpkt.HiredMerchantOperationFreeFormNoticeBody(msg)
+		writerName := merchantcb.HiredMerchantOperationWriter
+		if t.Region() == "JMS" {
+			body = writer.WorldMessageNoticeBody(msg)
+			writerName = chatpkt.WorldMessageWriter
+		}
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(writerName)(body))
 	}
 }
 
@@ -346,13 +493,73 @@ func handleMessageSentEvent(sc server.Model, wp writer.Producer) func(l logrus.F
 
 		l.Debugf("Message sent in shop [%s] by character [%d] slot [%d].", e.Body.ShopId, e.Body.CharacterId, e.Body.Slot)
 
+		// The miniroom chat wire carries the full "name : message" string —
+		// CMiniRoomBaseDlg::OnChat (v95 @0x639AD0) reads it verbatim and splits on
+		// " : " to recolor/filter; there is no separate name lookup. Without the
+		// prefix the sender's name is missing for other viewers.
+		senderName := resolveOwnerName(l, ctx, e.Body.CharacterId)
+		chatText := e.Body.Content
+		if senderName != "" {
+			chatText = senderName + " : " + e.Body.Content
+		}
+
 		broadcastToShopViewers(l, ctx, sc, wp, e.Body.ShopId, func(characterIds []uint32) {
 			sp := session.NewProcessor(l, ctx)
-			announce := session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionChatBody(e.Body.Slot, e.Body.Content))
+			announce := session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionChatBody(e.Body.Slot, chatText))
 			for _, cid := range characterIds {
 				_ = sp.IfPresentByCharacterId(sc.Channel())(cid, announce)
 			}
 		})
+	}
+}
+
+// handleShopUpdatedEvent refreshes the merchant view (items + owner meso)
+// after a withdraw or organize — same UPDATE_MERCHANT the purchase path sends.
+func handleShopUpdatedEvent(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event merchant2.StatusEvent[merchant2.StatusEventShopUpdatedBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e merchant2.StatusEvent[merchant2.StatusEventShopUpdatedBody]) {
+		if e.Type != merchant2.StatusEventShopUpdated {
+			return
+		}
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		mp := merchant.NewProcessor(l, ctx)
+		shop, err := mp.GetShop(e.Body.ShopId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to get shop [%s] for update refresh.", e.Body.ShopId)
+			return
+		}
+		items := buildShopItems(l, shop.Listings())
+		sp := session.NewProcessor(l, ctx)
+		characterIds := append([]uint32{shop.CharacterId()}, shop.Visitors()...)
+		for _, cid := range characterIds {
+			_ = sp.IfPresentByCharacterId(sc.Channel())(cid, session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(shopRefreshBody(shop, cid, items)))
+		}
+	}
+}
+
+// handleEnterFailedEvent sends the faithful enter-error to a visitor whose
+// entry was rejected (shop under maintenance or closed) instead of a silent drop.
+func handleEnterFailedEvent(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event merchant2.StatusEvent[merchant2.StatusEventEnterFailedBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e merchant2.StatusEvent[merchant2.StatusEventEnterFailedBody]) {
+		if e.Type != merchant2.StatusEventEnterFailed {
+			return
+		}
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		mode := interactioncb.CharacterInteractionEnterErrorModeRoomClosed
+		switch e.Body.Reason {
+		case merchant2.EnterFailReasonUndergoingMaintenance:
+			mode = interactioncb.CharacterInteractionEnterErrorModeUndergoingMaintenance
+		case merchant2.EnterFailReasonBlacklisted:
+			mode = interactioncb.CharacterInteractionEnterErrorModeCannotEnterStore
+		}
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionEnterResultErrorBody(mode)))
 	}
 }
 
@@ -382,11 +589,16 @@ func handleListingPurchasedEvent(sc server.Model, wp writer.Producer) func(l log
 		characterIds := []uint32{shop.CharacterId()}
 		characterIds = append(characterIds, shop.Visitors()...)
 		for _, cid := range characterIds {
-			meso := uint32(0)
-			if cid == shop.CharacterId() {
-				meso = shop.MesoBalance()
-			}
-			_ = sp.IfPresentByCharacterId(sc.Channel())(cid, session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionUpdateMerchantBody(meso, items)))
+			_ = sp.IfPresentByCharacterId(sc.Channel())(cid, session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(shopRefreshBody(shop, cid, items)))
+		}
+
+		// Personal shops keep a per-session sold-item ledger (items sold / meso
+		// received) that the owner sees; notify them of this sale so the ledger
+		// and running totals advance. Hired merchants accrue via their own
+		// meso-balance path, not this notification.
+		if shop.ShopType() != merchant.HiredMerchantShopType {
+			buyerName := resolveOwnerName(l, ctx, e.Body.BuyerCharacterId)
+			_ = sp.IfPresentByCharacterId(sc.Channel())(shop.CharacterId(), session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionPersonalStoreItemSoldBody(byte(e.Body.ListingIndex), e.Body.BundleCount, buyerName)))
 		}
 	}
 }
@@ -404,8 +616,46 @@ func broadcastToShopViewers(l logrus.FieldLogger, ctx context.Context, sc server
 	fn(characterIds)
 }
 
+// resolveOwnerName looks up a character's name for the hired-merchant employee
+// nametag, returning "" (a valid empty nametag) if the lookup fails.
+func resolveOwnerName(l logrus.FieldLogger, ctx context.Context, characterId uint32) string {
+	c, err := character.NewProcessor(l, ctx).GetById()(characterId)
+	if err != nil {
+		l.WithError(err).Warnf("Unable to resolve owner name for character [%d].", characterId)
+		return ""
+	}
+	return c.Name()
+}
+
+// broadcastEmployeeBalloonUpdate refreshes a hired merchant's field balloon (e.g.
+// its visitor count) for everyone in the map via CEmployeePool::OnEmployeeMiniRoomBalloon.
+// No-op for personal stores (which have no employee balloon).
+func broadcastEmployeeBalloonUpdate(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, shopId string) {
+	shop, err := merchant.NewProcessor(l, ctx).GetShop(shopId)
+	if err != nil {
+		l.WithError(err).Warnf("Unable to load shop [%s] for employee balloon refresh.", shopId)
+		return
+	}
+	if shop.ShopType() != merchant.HiredMerchantShopType {
+		return
+	}
+	f := field.NewBuilder(shop.WorldId(), shop.ChannelId(), mapId.Id(shop.MapId())).SetInstance(shop.InstanceId()).Build()
+	update := merchant.ToEmployeeUpdate(shop)
+	if err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, session.Announce(l)(ctx)(wp)(merchantcb.MerchantEmployeeUpdateWriter)(update.Encode)); err != nil {
+		l.WithError(err).Warnf("Unable to broadcast employee balloon update for shop [%s].", shopId)
+	}
+}
+
 // buildShopRoom fetches shop data and resolves character info to build the appropriate room packet.
 func buildShopRoom(l logrus.FieldLogger, ctx context.Context, shopId string, viewerCharacterId uint32) (interactionpkt.Room, error) {
+	return buildShopRoomFirstTime(l, ctx, shopId, viewerCharacterId, false)
+}
+
+// buildShopRoomFirstTime builds the enter-result room for viewerCharacterId.
+// firstTime marks the hired-merchant owner's creation-time view (the client's
+// Decode1 @0x518b0a branches the owner UI on it); pass true only from the
+// SHOP_SETUP handler.
+func buildShopRoomFirstTime(l logrus.FieldLogger, ctx context.Context, shopId string, viewerCharacterId uint32, firstTime bool) (interactionpkt.Room, error) {
 	mp := merchant.NewProcessor(l, ctx)
 	shop, err := mp.GetShop(shopId)
 	if err != nil {
@@ -416,14 +666,35 @@ func buildShopRoom(l logrus.FieldLogger, ctx context.Context, shopId string, vie
 
 	items := buildShopItems(l, shop.Listings())
 
-	// CharacterShop (1) = PersonalShop, HiredMerchant (2) = MerchantShop.
-	if shop.ShopType() == 2 {
-		return buildMerchantShopRoom(l, ctx, cp, shop, viewerCharacterId, items)
+	position, err := viewerPosition(shop, viewerCharacterId)
+	if err != nil {
+		return interactionpkt.Room{}, err
 	}
-	return buildPersonalShopRoom(l, ctx, cp, shop, items)
+
+	// CharacterShop (1) = PersonalShop, HiredMerchant (2) = MerchantShop.
+	if shop.ShopType() == merchant.HiredMerchantShopType {
+		return buildMerchantShopRoom(l, ctx, cp, shop, position, firstTime, items)
+	}
+	return buildPersonalShopRoom(l, ctx, cp, shop, position, items)
 }
 
-func buildMerchantShopRoom(l logrus.FieldLogger, ctx context.Context, cp character.Processor, shop merchant.Model, viewerCharacterId uint32, items []interactionpkt.RoomShopItem) (interactionpkt.Room, error) {
+// viewerPosition resolves the recipient's position in the room: 0 for the
+// owner, the 1-indexed visitor slot otherwise (shop.Visitors() is the
+// insertion-ordered visitor registry — the same ordering the merchant service
+// uses for VISITOR_* event slots).
+func viewerPosition(shop merchant.Model, viewerCharacterId uint32) (byte, error) {
+	if viewerCharacterId == shop.CharacterId() {
+		return 0, nil
+	}
+	for i, visitorId := range shop.Visitors() {
+		if visitorId == viewerCharacterId {
+			return byte(i + 1), nil
+		}
+	}
+	return 0, fmt.Errorf("character [%d] is neither owner nor visitor of shop [%s]", viewerCharacterId, shop.Id())
+}
+
+func buildMerchantShopRoom(l logrus.FieldLogger, ctx context.Context, cp character.Processor, shop merchant.Model, position byte, firstTime bool, items []interactionpkt.RoomShopItem) (interactionpkt.Room, error) {
 	// Owner is represented as MerchantVisitor (NPC sprite with item ID).
 	ownerVisitor := interactionpkt.NewMerchantVisitor(shop.PermitItemId(), shop.Title())
 
@@ -438,10 +709,28 @@ func buildMerchantShopRoom(l logrus.FieldLogger, ctx context.Context, cp charact
 		visitors = append(visitors, interactionpkt.NewBaseVisitor(byte(i+1), avatar, c.Name()))
 	}
 
-	// Messages are only visible to the owner.
+	// Owner-only message list (position 0): replay the persisted chat log.
+	// Sender names are embedded ("Name : text") because the live room's slot
+	// assignments say nothing about who sent a message while the merchant ran
+	// unattended. The trailing byte is the message type; 0 renders as a
+	// normal chat line.
 	var messages []interactionpkt.RoomMessage
-	if viewerCharacterId == shop.CharacterId() {
-		// No stored messages currently; placeholder for future implementation.
+	if position == 0 {
+		names := map[uint32]string{}
+		for _, mm := range shop.Messages() {
+			name, ok := names[mm.CharacterId()]
+			if !ok {
+				if c, err := cp.GetById()(mm.CharacterId()); err == nil {
+					name = c.Name()
+				}
+				names[mm.CharacterId()] = name
+			}
+			content := mm.Content()
+			if name != "" {
+				content = name + " : " + content
+			}
+			messages = append(messages, interactionpkt.RoomMessage{Message: content, Slot: 0})
+		}
 	}
 
 	ownerChar, err := cp.GetById()(shop.CharacterId())
@@ -449,10 +738,40 @@ func buildMerchantShopRoom(l logrus.FieldLogger, ctx context.Context, cp charact
 		return interactionpkt.Room{}, fmt.Errorf("unable to resolve owner [%d]: %w", shop.CharacterId(), err)
 	}
 
-	return interactionpkt.NewMerchantShopRoom(visitors, messages, ownerChar.Name(), 16, shop.MesoBalance(), items), nil
+	// position 0 (owner) additionally carries the open-time/first-time/ledger
+	// block (CEntrustedShopDlg::OnEnterResult zero-branch @0x518a7e). Open time
+	// is approximated as minutes since creation (retail counts from OPEN; the
+	// Draft window is normally minutes). No per-sale ledger is tracked
+	// server-side, so the ledger is empty with the accrued balance as total.
+	// TODO(task-127): maxItemCount is hardcoded to 16. Store permits allow
+	// different capacities (per item descriptions, e.g. 5140000=16, 5140001=24);
+	// drive this from the permit rather than a constant. Needs the authoritative
+	// per-permit limit source (the WZ cash-item slotMax is 0; only the description
+	// text carries it).
+	room := interactionpkt.NewMerchantShopRoom(position, visitors, messages, ownerChar.Name(), shop.Title(), 16, shop.MesoBalance(), items)
+	if position == 0 {
+		room = room.SetOwnerLedger(minutesSince(shop.CreatedAt()), firstTime, nil, shop.MesoBalance())
+	}
+	return room, nil
 }
 
-func buildPersonalShopRoom(l logrus.FieldLogger, ctx context.Context, cp character.Processor, shop merchant.Model, items []interactionpkt.RoomShopItem) (interactionpkt.Room, error) {
+// minutesSince converts elapsed wall time to the uint16 minute count the
+// merchant owner view displays, saturating instead of wrapping.
+func minutesSince(t time.Time) uint16 {
+	if t.IsZero() {
+		return 0
+	}
+	m := int64(time.Since(t) / time.Minute)
+	if m < 0 {
+		return 0
+	}
+	if m > 65535 {
+		return 65535
+	}
+	return uint16(m)
+}
+
+func buildPersonalShopRoom(l logrus.FieldLogger, ctx context.Context, cp character.Processor, shop merchant.Model, position byte, items []interactionpkt.RoomShopItem) (interactionpkt.Room, error) {
 	// Owner is slot 0 as a regular visitor with avatar.
 	ownerChar, err := cp.GetById(cp.InventoryDecorator)(shop.CharacterId())
 	if err != nil {
@@ -471,7 +790,15 @@ func buildPersonalShopRoom(l logrus.FieldLogger, ctx context.Context, cp charact
 		visitors = append(visitors, interactionpkt.NewBaseVisitor(byte(i+1), avatar, c.Name()))
 	}
 
-	return interactionpkt.NewPersonalShopRoom(visitors, shop.Title(), 16, items), nil
+	// position is the recipient's slot in the room (0 = owner): the client
+	// branches owner/visitor view on it (CPersonalShopDlg::OnEnterResult
+	// @0x6fc528 — ZERO = owner add-item management UI).
+	// TODO(task-127): maxItemCount is hardcoded to 16. Store permits allow
+	// different capacities (per item descriptions, e.g. 5140000=16, 5140001=24);
+	// drive this from the permit rather than a constant. Needs the authoritative
+	// per-permit limit source (the WZ cash-item slotMax is 0; only the description
+	// text carries it).
+	return interactionpkt.NewPersonalShopRoom(position, visitors, shop.Title(), 16, items), nil
 }
 
 // buildShopItems converts listing models to packet RoomShopItems.
@@ -487,6 +814,22 @@ func buildShopItems(l logrus.FieldLogger, listings []merchant.ListingModel) []in
 		})
 	}
 	return items
+}
+
+// shopRefreshBody picks the correct mode-25 UPDATE refresh for the shop type: a
+// hired merchant (CEntrustedShopDlg::OnRefresh) leads with the owner's meso
+// balance, a personal shop (CPersonalShopDlg::OnRefresh) does not. Sending meso
+// to a personal shop makes the client read its first byte as the item count
+// (→ 0 items rendered), so personal shops omit it (task-127).
+func shopRefreshBody(shop merchant.Model, cid uint32, items []interactionpkt.RoomShopItem) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	if shop.ShopType() == merchant.HiredMerchantShopType {
+		meso := uint32(0)
+		if cid == shop.CharacterId() {
+			meso = shop.MesoBalance()
+		}
+		return interactioncb.CharacterInteractionUpdateMerchantBody(meso, items)
+	}
+	return interactioncb.CharacterInteractionUpdatePersonalShopBody(items)
 }
 
 // assetFromSnapshot converts a typed AssetData into a packet model Asset.

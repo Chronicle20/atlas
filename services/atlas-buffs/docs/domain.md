@@ -15,7 +15,7 @@ Immutable representation of a buff.
 | id | uuid.UUID | Unique buff identifier |
 | sourceId | int32 | Source identifier (skill/item ID) |
 | level | byte | Buff level |
-| duration | int32 | Duration in seconds |
+| duration | int32 | Duration in milliseconds |
 | changes | []stat.Model | Stat modifications |
 | createdAt | time.Time | Creation timestamp |
 | expiresAt | time.Time | Expiration timestamp |
@@ -39,7 +39,7 @@ Represents a character with active buffs.
 | worldId | world.Id | World identifier |
 | channelId | channel.Id | Channel identifier |
 | characterId | uint32 | Character identifier |
-| buffs | map[int32]buff.Model | Active buffs keyed by sourceId |
+| buffs | map[string]buff.Model | Active buffs keyed by a composite string: "<sourceId>" for a normal whole-source buff, or "<sourceId>:<statType>" for an accumulate-mode buff |
 
 ### PoisonTickEntry
 
@@ -56,16 +56,16 @@ Represents a character with an active poison buff for tick processing.
 ## Invariants
 
 - Each buff has a unique UUID generated at creation
-- Buffs are keyed by sourceId within a character's buff map
-- Applying a buff with an existing sourceId replaces the previous buff
-- Expiration time is calculated as createdAt + duration seconds
+- In default (non-accumulate) mode, a buff is keyed by sourceId within a character's buff map; applying a buff with an existing sourceId replaces the previous buff
+- In accumulate mode, each change is stored as its own buff keyed by (sourceId, statType); a re-apply of the same stat replaces only that key, other stats of the same source are left intact
+- Expiration time is calculated as createdAt + duration milliseconds
 - A buff is expired when expiresAt is before current time
 - Duration must be positive (ErrInvalidDuration)
 - Changes must not be empty (ErrEmptyChanges)
-- Disease buffs (STUN, POISON, SEAL, DARKNESS, WEAKEN, CURSE, SEDUCE, CONFUSE, UNDEAD, SLOW, STOP_PORTION) are blocked if the character has a HOLY_SHIELD buff active
+- Disease buffs (STUN, POISON, SEAL, DARKNESS, WEAKEN, CURSE, SEDUCE, CONFUSE, UNDEAD, SLOW, STOP_PORTION) are blocked on Apply if the character has a HOLY_SHIELD buff active
+- The HOLY_SHIELD immunity check applies only to Apply; Cancel, CancelAll, and CancelByStatTypes are not gated by it
 - Poison ticks enforce a minimum 1-second interval between ticks per character
 - Poison tick damage is applied as negative HP change (amount negated to int16)
-- `CancelByStatTypes` ignores `HOLY_SHIELD` (immunity gates application, not cure).
 
 ## Processors
 
@@ -76,8 +76,8 @@ Primary domain processor for buff operations.
 | Method | Description |
 |--------|-------------|
 | GetById | Retrieve character with buffs by character ID |
-| Apply | Apply buff to character with disease immunity check, emit applied event |
-| Cancel | Cancel buff by sourceId and emit expired event |
+| Apply | Apply buff to character with disease immunity check; `accumulate` selects whole-source replace (false) or per-stat accumulate (true); emits one APPLIED event per stored buff |
+| Cancel | Cancel buff(s) by sourceId and emit one EXPIRED event per removed buff |
 | CancelAll | Cancel all buffs for character and emit expired events |
 | ExpireBuffs | Process and emit events for all expired buffs |
 | ProcessPoisonTicks | Find characters with poison buffs and emit HP change commands |
@@ -89,11 +89,11 @@ Redis-backed buff storage (singleton). Per-tenant key isolation via TenantRegist
 
 | Method | Description |
 |--------|-------------|
-| Apply | Add or replace buff for character |
+| Apply | Add buff for character; `accumulate=false` replaces the whole-source buff keyed by sourceId, `accumulate=true` stores one buff per stat change keyed by (sourceId, statType); returns the buff(s) created |
 | Get | Retrieve character by ID |
 | GetTenants | Get all tenants with registered characters |
 | GetCharacters | Get all characters for a tenant |
-| Cancel | Remove buff by sourceId |
+| Cancel | Remove all buffs matching sourceId (may be more than one in accumulate mode); returns ErrNotFound if none matched |
 | CancelAll | Remove all buffs for character |
 | GetExpired | Remove and return expired buffs for character |
 | HasImmunity | Check if character has HOLY_SHIELD buff active |

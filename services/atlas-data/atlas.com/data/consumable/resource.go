@@ -3,15 +3,16 @@ package consumable
 import (
 	"atlas-data/rest"
 	"net/http"
+	"sort"
 	"strconv"
 
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteInitializer {
@@ -29,8 +30,14 @@ func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteIn
 func handleGetConsumablesRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			var filters []model.Filter[RestModel]
 			query := r.URL.Query()
+			page, err := paginate.ParseParams(query, paginate.DefaultPageSize, paginate.MaxPageSize)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, err.Error())
+				return
+			}
+
+			var filters []model.Filter[RestModel]
 			if rechargeableFilter, ok := query["filter[rechargeable]"]; ok && len(rechargeableFilter) > 0 {
 				if rechargeableFilter[0] == "true" {
 					filters = append(filters, func(rm RestModel) bool {
@@ -43,15 +50,21 @@ func handleGetConsumablesRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 				}
 			}
 
-			res, err := model.FilteredProvider(NewStorage(d.Logger(), db).AllProvider(d.Context()), filters)()
+			s := NewStorage(d.Logger(), db)
+			res, err := model.FilteredProvider(s.DrainAllProvider(d.Context()), filters)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to retrieve consumables.")
 				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
+			sort.SliceStable(res, func(i, j int) bool {
+				return res[i].Id < res[j].Id
+			})
+
+			paged := paginate.Slice(res, page)
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 		}
 	}
 }

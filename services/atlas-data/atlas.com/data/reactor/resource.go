@@ -8,13 +8,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteInitializer {
@@ -52,12 +52,18 @@ func handleGetReactorsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *re
 			query := r.URL.Query()
 			searchQuery := strings.TrimSpace(query.Get("search"))
 			if _, hasSearch := query["search"]; hasSearch {
-				handleSearchReactors(db)(d, c)(searchQuery, query.Get("limit"))(w, r)
+				handleSearchReactors(db)(d, c)(searchQuery)(w, r)
+				return
+			}
+
+			page, err := paginate.ParseParams(query, paginate.DefaultPageSize, paginate.MaxPageSize)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, err.Error())
 				return
 			}
 
 			s := NewStorage(d.Logger(), db)
-			results, err := s.GetAll(d.Context())
+			paged, err := s.AllPagedProvider(d.Context())(page)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to retrieve reactors.")
 				server.WriteErrorResponse(d.Logger())(w)(err)
@@ -65,14 +71,14 @@ func handleGetReactorsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *re
 			}
 
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(results)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 		}
 	}
 }
 
-func handleSearchReactors(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) func(q, limitRaw string) http.HandlerFunc {
-	return func(d *rest.HandlerDependency, c *rest.HandlerContext) func(q, limitRaw string) http.HandlerFunc {
-		return func(q, limitRaw string) http.HandlerFunc {
+func handleSearchReactors(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) func(q string) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) func(q string) http.HandlerFunc {
+		return func(q string) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				if q == "" {
 					w.WriteHeader(http.StatusBadRequest)
@@ -82,17 +88,11 @@ func handleSearchReactors(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 					w.WriteHeader(http.StatusBadRequest)
 					return
 				}
-				limit := searchindex.MaxLimit
-				if limitRaw != "" {
-					parsed, err := strconv.Atoi(limitRaw)
-					if err != nil || parsed <= 0 {
-						w.WriteHeader(http.StatusBadRequest)
-						return
-					}
-					if parsed > searchindex.MaxLimit {
-						parsed = searchindex.MaxLimit
-					}
-					limit = parsed
+				query := r.URL.Query()
+				page, err := paginate.ParseParams(query, searchindex.MaxLimit, searchindex.MaxLimit)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, err.Error())
+					return
 				}
 
 				spec := searchindex.QuerySpec[SearchIndexEntity]{
@@ -107,8 +107,13 @@ func handleSearchReactors(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 					return
 				}
 
+				offset := (page.Number - 1) * page.Size
 				start := time.Now()
-				rows, err := searchindex.Search(db, d.Context(), tenantId, q, 0, limit, spec)
+				rows, err := searchindex.Search(db, d.Context(), tenantId, q, offset, page.Size, spec)
+				var total int
+				if err == nil {
+					total, err = searchindex.Count(db, d.Context(), tenantId, q, spec)
+				}
 				elapsedMs := time.Since(start).Milliseconds()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Reactor search failed.")
@@ -130,9 +135,9 @@ func handleSearchReactors(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 					rms = append(rms, SearchResultRestModel{Id: row.ReactorId, Name: row.Name})
 				}
 
-				query := r.URL.Query()
+				env := paginate.Envelope{Total: total, PageNumber: page.Number, PageSize: page.Size}
 				queryParams := jsonapi.ParseQueryFields(&query)
-				server.MarshalResponse[[]SearchResultRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rms)
+				server.MarshalPaginatedResponse[[]SearchResultRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rms, env, r)
 			}
 		}
 	}

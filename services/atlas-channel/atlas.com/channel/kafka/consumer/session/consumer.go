@@ -289,7 +289,7 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 							l.WithError(err).Debugf("Unable to retrieve active buffs for character [%d].", s.CharacterId())
 							return
 						}
-						// Mounts are transient (Cosmic loads them inactive). Don't re-render a
+						// Mounts are transient across logins. Don't re-render a
 						// persisted MONSTER_RIDING buff on login — cancel it so the player isn't
 						// auto-remounted and the stale buff is cleared from atlas-buffs. The mount
 						// progression (level/exp/tiredness) lives in atlas-mounts and is unaffected.

@@ -28,6 +28,8 @@ const (
 	CommandSort               = "SORT"
 	CommandAccept             = "ACCEPT"
 	CommandRelease            = "RELEASE"
+	CommandSetOwner           = "SET_OWNER"
+	CommandApplyLock          = "APPLY_LOCK"
 	CommandTypeCreate         = "CREATE"
 	CommandTypeDelete         = "DELETE"
 	CommandTypeEquip          = "EQUIP"
@@ -146,6 +148,16 @@ type ReleaseCommandBody struct {
 	TransactionId uuid.UUID `json:"transactionId"`
 	AssetId       uint32    `json:"assetId"`
 	Quantity      uint32    `json:"quantity"` // Quantity to release (0 = all)
+}
+
+type SetOwnerCommandBody struct {
+	Slot  int16  `json:"slot"`
+	Owner string `json:"owner"`
+}
+
+type ApplyLockCommandBody struct {
+	Slot       int16     `json:"slot"`
+	Expiration time.Time `json:"expiration"`
 }
 
 const (

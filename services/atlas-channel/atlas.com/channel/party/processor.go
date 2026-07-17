@@ -2,8 +2,8 @@ package party
 
 import (
 	party2 "atlas-channel/kafka/message/party"
-	"atlas-channel/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"
 

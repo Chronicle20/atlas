@@ -3,9 +3,9 @@ package portal
 import (
 	"atlas-portals/blocked"
 	"atlas-portals/character"
-	"atlas-portals/kafka/producer"
 	"atlas-portals/portal_actions"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"math/rand"
 
 	"github.com/sirupsen/logrus"
@@ -59,8 +59,11 @@ func (p *ProcessorImpl) GetInMapById(mapId _map.Id, id uint32) (Model, error) {
 	return p.InMapByIdProvider(mapId, id)()
 }
 
+// InMapProvider fetches every portal in a map. atlas-data's GET
+// /data/maps/{id}/portals is now paginated (task-117), so this drains
+// every page rather than fetching one.
 func (p *ProcessorImpl) InMapProvider(mapId _map.Id) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestInMap(mapId), Extract, model.Filters[Model]())
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(inMapUrl(mapId), 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) Warp(f field.Model, characterId uint32, targetMapId _map.Id) {

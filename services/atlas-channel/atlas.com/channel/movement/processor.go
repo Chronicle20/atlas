@@ -4,7 +4,6 @@ import (
 	dmap "atlas-channel/data/map"
 	"atlas-channel/data/npc"
 	movement2 "atlas-channel/kafka/message/movement"
-	"atlas-channel/kafka/producer"
 	_map2 "atlas-channel/map"
 	"atlas-channel/monster"
 	monsterinfo "atlas-channel/monster/information"
@@ -12,10 +11,8 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
-
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
-
-	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	model2 "github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -24,7 +21,8 @@ import (
 	npcpkt "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
 	petpkt "github.com/Chronicle20/atlas/libs/atlas-packet/pet/clientbound"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/sirupsen/logrus"
 )
 
 type ProcessorImpl struct {
@@ -160,8 +158,8 @@ func (p *ProcessorImpl) ForMonster(f field.Model, characterId uint32, objectId u
 		// which was always nil after a successful GetById.
 		return nil
 	}
-	// Forecast the post-decrement MP for basic attacks (Cosmic compat — the
-	// v83 client gates on the ack carrying decremented MP). For melee /
+	// Forecast the post-decrement MP for basic attacks — the
+	// v83 client gates on the ack carrying decremented MP. For melee /
 	// non-basic-attack actions, ackMp passes through unchanged.
 	ackMp := uint16(entry.Mp)
 	pos0, isBasicAttack := basicAttackPos(skill)
@@ -174,8 +172,7 @@ func (p *ProcessorImpl) ForMonster(f field.Model, characterId uint32, objectId u
 		}
 	}
 	routine.Go(p.l, p.ctx, func(_ context.Context) {
-		// v83 protocol compat (per Cosmic MoveLifeHandler:144 +
-		// PacketCreator.moveMonsterResponse): the wire-level "useSkills" bool
+		// v83 protocol: the wire-level "useSkills" bool in MoveMonsterAck
 		// is actually the controller's aggro flag. The client uses it to
 		// decide whether mob AI is active — without it, the client renders
 		// the mob as idle, never sends rawActivity ∈ [24,41] (basic attack)

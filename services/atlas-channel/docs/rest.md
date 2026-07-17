@@ -238,6 +238,12 @@ Base URL: `BASE_SERVICE_URL` + DATA root
 - Response Model: `RestModel` - Cash item data (stateChangeItem, bgmPath)
 - Error Conditions: 404 if not found
 
+#### GET /data/monsters/{monsterId}
+- Parameters: monsterId (uint32)
+- Request Model: None
+- Response Model: `RestModel` - Monster template attack-pattern data; attacks array (pos, conMP, attackAfter)
+- Error Conditions: 404 if not found
+
 ---
 
 ### DOORS
@@ -272,6 +278,17 @@ Base URL: `BASE_SERVICE_URL` + DROPS root
 - Request Model: None
 - Response Model: `[]RestModel` - Drops in field instance (id, itemId, equipmentId, quantity, meso, type, x, y, ownerId, ownerPartyId, dropTime, dropperId, dropperX, dropperY, characterDrop, mod)
 - Error Conditions: None
+
+---
+
+### EFFECTIVE_STATS
+Base URL: `BASE_SERVICE_URL` + EFFECTIVE_STATS root
+
+#### GET /worlds/{worldId}/channels/{channelId}/characters/{characterId}/stats
+- Parameters: worldId, channelId, characterId (uint32)
+- Request Model: None
+- Response Model: `RestModel` - Session-effective character stats (strength, dexterity, intelligence, luck, maxHP, maxMP, weaponAttack, weaponDefense, magicAttack, magicDefense, accuracy, avoidability, speed, jump)
+- Error Conditions: 404 if not found
 
 ---
 
@@ -358,6 +375,72 @@ Base URL: `BASE_SERVICE_URL` + MAPS root
 - Response Model: `[]RestModel` - Character IDs in map (all instances)
 - Error Conditions: None
 
+#### GET /characters/{characterId}/location
+- Parameters: characterId (uint32)
+- Request Model: None
+- Response Model: `RestModel` - Character's durable current field (worldId, channelId, mapId, instance). Resource type: "character-locations".
+- Error Conditions: 404 if the character has no stored location row yet (typically first login of a freshly created character)
+
+---
+
+### MERCHANT
+Base URL: `BASE_SERVICE_URL` + MERCHANT root
+Resource Type: `merchants` (with `listings` relationship)
+
+#### GET /worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/merchants
+- Parameters: worldId, channelId, mapId, instanceId (uuid)
+- Request Model: None
+- Response Model: `[]RestModel` - Shops in the field instance (id, characterId, shopType, state, title, worldId, channelId, mapId, instanceId, x, y, permitItemId, mesoBalance, createdAt, listingCount, visitors, messages, and included listings)
+- Error Conditions: None
+
+#### GET /merchants/{shopId}?include=listings
+- Parameters: shopId (string/uuid)
+- Request Model: None
+- Response Model: `RestModel` - Shop details with included listings (each: shopId, itemId, itemType, quantity, bundleSize, bundlesRemaining, pricePerBundle, itemSnapshot, displayOrder). The `include=listings` query is required for listing data to be returned.
+- Error Conditions: 404 if shop not found
+
+#### GET /characters/{characterId}/merchants
+- Parameters: characterId (uint32)
+- Request Model: None
+- Response Model: `[]RestModel` - Shops owned by the character
+- Error Conditions: None
+
+#### GET /characters/{characterId}/visiting
+- Parameters: characterId (uint32)
+- Request Model: None
+- Response Model: `RestModel` - The shop the character is currently visiting
+- Error Conditions: 404 if the character is not visiting a shop
+
+#### GET /merchants/search/listings?itemId={itemId}&worldId={worldId}&order={order}
+- Parameters: itemId (uint32), worldId (byte), order (string - `asc` or `desc`)
+- Request Model: None
+- Response Model: `[]ListingSearchRestModel` - Owl shop-search results (shopId, shopTitle, worldId, channelId, mapId, ownerId, shopType, state, itemId, itemType, quantity, bundleSize, bundlesRemaining, pricePerBundle, itemSnapshot). Resource type: "listing-search-results".
+- Error Conditions: None
+
+#### GET /worlds/{worldId}/shop-searches/top
+- Parameters: worldId (byte)
+- Request Model: None
+- Response Model: `[]TopSearchRestModel` - Owl hot-list top item searches (itemId, count). Resource type: "shop-search-counts".
+- Error Conditions: None
+
+#### GET /characters/{characterId}/frederick
+- Parameters: characterId (uint32)
+- Request Model: None
+- Response Model: `FrederickStatusRestModel` - Whether the character has unclaimed hired-merchant items/mesos at Frederick (hasPending). Resource type: "frederick-status".
+- Error Conditions: None
+
+#### GET /merchants/{shopId}/blacklist
+- Parameters: shopId (string/uuid)
+- Request Model: None
+- Response Model: `[]BlacklistRestModel` - Blacklisted character names (name). Resource type: "merchant-blacklist".
+- Error Conditions: None
+
+#### GET /merchants/{shopId}/visits
+- Parameters: shopId (string/uuid)
+- Request Model: None
+- Response Model: `[]VisitRestModel` - Shop visit list (name, count). Resource type: "merchant-visits".
+- Error Conditions: None
+
 ---
 
 ### MESSENGERS
@@ -377,6 +460,23 @@ Base URL: `BASE_SERVICE_URL` + MESSENGERS root
 
 ---
 
+### MONSTER_BOOK
+Base URL: `BASE_SERVICE_URL` + MONSTER_BOOK root
+
+#### GET /characters/{characterId}/monster-book
+- Parameters: characterId (uint32)
+- Request Model: None
+- Response Model: `CollectionRestModel` - Monster-book collection summary (bookLevel, normalCount, specialCount, totalUniqueCards, coverCardId, coverMonsterId, expBonusPercent). Resource type: "monster-book".
+- Error Conditions: 404 if not found
+
+#### GET /characters/{characterId}/monster-book/cards
+- Parameters: characterId (uint32)
+- Request Model: None
+- Response Model: `[]CardRestModel` - Owned monster-book cards (level, isSpecial). Resource type: "monster-book-card".
+- Error Conditions: None
+
+---
+
 ### MONSTERS
 Base URL: `BASE_SERVICE_URL` + MONSTERS root
 
@@ -391,6 +491,52 @@ Base URL: `BASE_SERVICE_URL` + MONSTERS root
 - Request Model: None
 - Response Model: `RestModel` - Monster by unique ID
 - Error Conditions: 404 if not found
+
+---
+
+### MOUNTS
+Base URL: `BASE_SERVICE_URL` + MOUNTS root
+
+#### GET /characters/{characterId}/mount
+- Parameters: characterId (uint32)
+- Request Model: None
+- Response Model: `RestModel` - Mount progression (characterId, level, exp, tiredness). Resource type: "mounts".
+- Error Conditions: 404 if no mount record (a character with no mount record yields an error, treated as "no mount block")
+
+---
+
+### MTS
+Base URL: `BASE_SERVICE_URL` + MTS root
+
+#### GET /worlds/{worldId}/listings
+- Parameters: worldId (byte); optional query filters: category, subCategory, saleType, itemId, itemIds (comma-joined), serial, serials (comma-joined), sellerId, excludeSellerId, offerWishSerial, excludeOffers, sellerName, page[number], page[size]
+- Request Model: None
+- Response Model: `[]RestModel` - Marketplace listings (itcSn, sellerId, sellerName, saleType, state, templateId, quantity, full equipment-stat snapshot, listValue, buyNowPrice, category, subCategory, contractFee, currentBid, highBidderId, minIncrement, bidCount, endsAt). Resource type: "listings".
+- Error Conditions: None
+
+#### GET /characters/{characterId}/mts/holding
+- Parameters: characterId (uint32)
+- Request Model: None
+- Response Model: `[]RestModel` - Take-home holdings (worldId, itcSn, ownerId, origin, templateId, quantity). Resource type: "holdings".
+- Error Conditions: None
+
+#### GET /characters/{characterId}/mts/transactions
+- Parameters: characterId (uint32)
+- Request Model: None
+- Response Model: `[]RestModel` - Transaction history (worldId, characterId, counterpartyId, itemId, quantity, totalPrice, kind, createdAt). Resource type: "transactions".
+- Error Conditions: None
+
+#### GET /characters/{characterId}/mts/wishlist
+- Parameters: characterId (uint32); optional query: type (`cart` or `wanted`)
+- Request Model: None
+- Response Model: `[]RestModel` - Wish-list entries (worldId, serial, characterId, itemId, listingSerial, price, count, expiresAt, createdAt). Resource type: "wish-entries".
+- Error Conditions: None
+
+#### GET /worlds/{worldId}/mts/wishlist
+- Parameters: worldId (byte)
+- Request Model: None
+- Response Model: `[]RestModel` - Every want-ad (`type=wanted`) in the world, across all characters. Resource type: "wish-entries".
+- Error Conditions: None
 
 ---
 
@@ -573,6 +719,28 @@ Base URL: `BASE_SERVICE_URL` + STORAGE root
 - Request Model: None
 - Response Model: `AssetRestModel` - A single asset from a projection compartment by type and slot
 - Error Conditions: 404 if not found
+
+---
+
+### SUMMONS
+Base URL: `BASE_SERVICE_URL` + SUMMONS root
+
+#### GET /worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/summons
+- Parameters: worldId, channelId, mapId, instanceId (uuid)
+- Request Model: None
+- Response Model: `[]RestModel` - Summons in the field instance (ownerCharacterId, skillId, skillLevel, summonType, movementType, x, y). Resource type: "summons".
+- Error Conditions: None
+
+---
+
+### TENANTS
+Base URL: `BASE_SERVICE_URL` + TENANTS root
+
+#### GET /tenants/{tenantId}/configurations/mts-configs
+- Parameters: tenantId (uuid)
+- Request Model: None
+- Response Model: `RestModel` - Per-tenant MTS economic configuration (listingFee, commissionRate, commissionBase, maxActiveListings, minLevel, auctionMinHours, auctionMaxHours, fixedSaleHours, priceFloor, pageSize, minBidIncrement). Resource type: "mts-configs".
+- Error Conditions: A fetch miss or error is treated as "unconfigured"; the caller falls back to the default configuration.
 
 ---
 

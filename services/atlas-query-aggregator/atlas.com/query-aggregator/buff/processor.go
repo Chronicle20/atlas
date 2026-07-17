@@ -52,10 +52,13 @@ func (p *ProcessorImpl) HasActiveBuff(characterId uint32, sourceId int32) model.
 	}
 }
 
-// GetBuffsByCharacter returns all active buffs for a character
+// GetBuffsByCharacter returns all active buffs for a character. The
+// upstream atlas-buffs list is now paginated (task-117); HasActiveBuff
+// (the sole caller) scans every buff for a matching source, so this drains
+// every page rather than fetching just the first.
 func (p *ProcessorImpl) GetBuffsByCharacter(characterId uint32) model.Provider[[]Model] {
 	return func() ([]Model, error) {
-		buffsProvider := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByCharacter(characterId), Extract, model.Filters[Model]())
+		buffsProvider := requests.DrainProvider[RestModel, Model](p.l, p.ctx)(characterBuffsUrl(characterId), 250, Extract, model.Filters[Model]())
 		buffs, err := buffsProvider()
 		if err != nil {
 			// If not found or error, return empty slice (character may have no buffs)

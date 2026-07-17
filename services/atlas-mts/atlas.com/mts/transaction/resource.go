@@ -4,13 +4,13 @@ import (
 	"atlas-mts/rest"
 	"net/http"
 
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 // InitResource registers the transaction-history read route:
@@ -30,19 +30,28 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 	}
 }
 
+// handleGetCharacterTransactions is a growing log (settled purchase/sale
+// history accumulates over a character's lifetime) — page[size] defaults to
+// paginate.DefaultPageSize, capped at paginate.MaxPageSize (task-117).
 func handleGetCharacterTransactions(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
+			page, perr := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+			if perr != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+				return
+			}
+
 			p := NewProcessor(d.Logger(), d.Context(), d.DB())
 
-			ms, err := p.GetByCharacter(characterId)
+			paged, err := p.ByCharacterPagedProvider(characterId, page)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Retrieving transactions for character [%d].", characterId)
 				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
-			res, err := model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())()
+			res, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				server.WriteErrorResponse(d.Logger())(w)(err)
@@ -51,7 +60,7 @@ func handleGetCharacterTransactions(d *rest.HandlerDependency, c *rest.HandlerCo
 
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
 		}
 	})
 }

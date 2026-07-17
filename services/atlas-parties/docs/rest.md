@@ -4,11 +4,14 @@
 
 ### GET /parties
 
-Returns all parties for the tenant.
+Returns all parties for the tenant. Response is paginated.
 
 #### Parameters
 
-None
+| Name | Location | Type | Description |
+|------|----------|------|-------------|
+| page[number] | query | int | Page number (optional) |
+| page[size] | query | int | Page size, default 50, max 250 (optional) |
 
 #### Request Model
 
@@ -49,7 +52,22 @@ None
         "online": true
       }
     }
-  ]
+  ],
+  "links": {
+    "self": "...",
+    "first": "...",
+    "last": "...",
+    "prev": "...",
+    "next": "..."
+  },
+  "meta": {
+    "total": 1,
+    "page": {
+      "number": 1,
+      "size": 50,
+      "last": 1
+    }
+  }
 }
 ```
 
@@ -57,19 +75,22 @@ None
 
 | Status | Condition |
 |--------|-----------|
+| 400 | Invalid page[number]/page[size] |
 | 500 | Internal server error |
 
 ---
 
 ### GET /parties?filter[members.id]={memberId}
 
-Returns parties containing the specified member.
+Returns parties containing the specified member. Response is paginated.
 
 #### Parameters
 
 | Name | Location | Type | Description |
 |------|----------|------|-------------|
 | memberId | query | uint32 | Character ID to filter by |
+| page[number] | query | int | Page number (optional) |
+| page[size] | query | int | Page size, default 50, max 250 (optional) |
 
 #### Request Model
 
@@ -84,6 +105,7 @@ Same as GET /parties
 | Status | Condition |
 |--------|-----------|
 | 400 | Invalid memberId format |
+| 400 | Invalid page[number]/page[size] |
 | 500 | Internal server error |
 
 ---
@@ -225,13 +247,15 @@ None (202 Accepted)
 
 ### GET /parties/{partyId}/members
 
-Returns all members of a party.
+Returns all members of a party. Response is paginated.
 
 #### Parameters
 
 | Name | Location | Type | Description |
 |------|----------|------|-------------|
 | partyId | path | uint32 | Party identifier |
+| page[number] | query | int | Page number (optional) |
+| page[size] | query | int | Page size, default 250, max 250 (optional) |
 
 #### Request Model
 
@@ -256,7 +280,22 @@ None
         "online": true
       }
     }
-  ]
+  ],
+  "links": {
+    "self": "...",
+    "first": "...",
+    "last": "...",
+    "prev": "...",
+    "next": "..."
+  },
+  "meta": {
+    "total": 1,
+    "page": {
+      "number": 1,
+      "size": 250,
+      "last": 1
+    }
+  }
 }
 ```
 
@@ -264,6 +303,7 @@ None
 
 | Status | Condition |
 |--------|-----------|
+| 400 | Invalid page[number]/page[size] |
 | 500 | Internal server error |
 
 ---

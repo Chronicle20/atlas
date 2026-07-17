@@ -3,15 +3,11 @@ package main
 import (
 	"atlas-marriages/kafka/consumer/character"
 	"atlas-marriages/kafka/consumer/marriage"
-	"atlas-marriages/logger"
 	marriageService "atlas-marriages/marriage"
 	"atlas-marriages/scheduler"
-	"os"
-
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
-
-	service "github.com/Chronicle20/atlas/libs/atlas-service"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
+	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
@@ -44,15 +40,8 @@ func GetServer() Server {
 }
 
 func main() {
-	l := logger.CreateLogger(serviceName)
-	l.Infoln("Starting main service.")
-
-	tdm := service.GetTeardownManager()
-
-	tc, err := tracing.InitTracer(serviceName)
-	if err != nil {
-		l.WithError(err).Fatal("Unable to initialize tracer.")
-	}
+	rt := service.Bootstrap(serviceName)
+	l := rt.Logger()
 
 	db := database.Connect(l, database.SetMigrations(marriageService.Migration))
 
@@ -65,21 +54,21 @@ func main() {
 	})
 
 	// Initialize proposal expiry scheduler
-	proposalExpiryScheduler := scheduler.NewProposalExpiryScheduler(l, tdm.Context(), db)
+	proposalExpiryScheduler := scheduler.NewProposalExpiryScheduler(l, rt.Context(), db)
 	proposalExpiryScheduler.Start()
 
 	// Initialize ceremony timeout scheduler
-	ceremonyTimeoutScheduler := scheduler.NewCeremonyTimeoutScheduler(l, tdm.Context(), db)
+	ceremonyTimeoutScheduler := scheduler.NewCeremonyTimeoutScheduler(l, rt.Context(), db)
 	ceremonyTimeoutScheduler.Start()
 
 	// Register scheduler teardowns
-	tdm.TeardownFunc(func() {
+	rt.TeardownFunc(func() {
 		proposalExpiryScheduler.Stop()
 		ceremonyTimeoutScheduler.Stop()
 	})
 
 	// Initialize Kafka consumers
-	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	marriage.InitConsumers(l)(cmf)(consumerGroupId)
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := marriage.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
@@ -89,19 +78,17 @@ func main() {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 
-	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
+	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 	server.New(l).
-		WithContext(tdm.Context()).
-		WithWaitGroup(tdm.WaitGroup()).
+		WithContext(rt.Context()).
+		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		AddRouteInitializer(marriageService.InitializeRoutes(db)(GetServer())).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
+		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
-	tdm.TeardownFunc(tracing.Teardown(l)(tc))
-
-	tdm.Wait()
-	l.Infoln("Service shutdown.")
+	rt.Wait()
 }

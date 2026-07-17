@@ -3,10 +3,10 @@ package session
 import (
 	"atlas-channel/account/session"
 	session2 "atlas-channel/kafka/message/session"
-	"atlas-channel/kafka/producer"
 	"atlas-channel/socket/writer"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"net"
 
 	"github.com/google/uuid"
@@ -98,13 +98,18 @@ func (p *ProcessorImpl) AllInChannelProvider(worldId world.Id, channelId channel
 }
 
 // InFieldModelProvider returns local sessions whose field exactly matches f
-// (world, channel, map, instance) and which have an assigned character.
+// (world, channel, map, instance), which have an assigned character, and which
+// are physically present in the field — i.e. not in a cash scene (cash shop or
+// MTS). A cash-shop session is already absent because its socket closes on
+// migrate; an MTS session stays alive on the channel connection (the ITC scene
+// renders in-place) flagged CashSceneMts, so it must be excluded here or it
+// would spawn as a ghost for players entering the map after it (task-173).
 func (p *ProcessorImpl) InFieldModelProvider(f field.Model) model.Provider[[]Model] {
 	return func() ([]Model, error) {
 		all := getRegistry().GetInTenant(p.t.Id())
 		result := make([]Model, 0)
 		for _, s := range all {
-			if s.CharacterId() != 0 && s.Field().Equals(f) {
+			if s.CharacterId() != 0 && s.CashScene() == CashSceneNone && s.Field().Equals(f) {
 				result = append(result, s)
 			}
 		}
@@ -113,13 +118,18 @@ func (p *ProcessorImpl) InFieldModelProvider(f field.Model) model.Provider[[]Mod
 }
 
 // InMapAllInstancesModelProvider returns local sessions on the given
-// world/channel/map across all instances, with an assigned character.
+// world/channel/map across all instances, with an assigned character, that are
+// physically present in the field. Like InFieldModelProvider it excludes
+// cash-scene sessions (cash shop / MTS) so an MTS session — which stays alive on
+// the channel connection while the ITC scene renders in-place — is not treated
+// as in the map (e.g. it must not receive transport arrival/departure
+// broadcasts). task-173.
 func (p *ProcessorImpl) InMapAllInstancesModelProvider(worldId world.Id, channelId channel.Id, mapId _map.Id) model.Provider[[]Model] {
 	return func() ([]Model, error) {
 		all := getRegistry().GetInTenant(p.t.Id())
 		result := make([]Model, 0)
 		for _, s := range all {
-			if s.CharacterId() != 0 && s.WorldId() == worldId && s.ChannelId() == channelId && s.MapId() == mapId {
+			if s.CharacterId() != 0 && s.CashScene() == CashSceneNone && s.WorldId() == worldId && s.ChannelId() == channelId && s.MapId() == mapId {
 				result = append(result, s)
 			}
 		}

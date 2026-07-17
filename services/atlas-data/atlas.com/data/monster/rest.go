@@ -66,6 +66,16 @@ type loseItem struct {
 	X      byte   `json:"x"`
 }
 
+// GetName/GetID satisfy jsonapi.MarshalIdentifier so a []loseItem slice can
+// be marshaled via server.MarshalPaginatedResponse (GET
+// /data/monsters/{id}/loseItems). Previously missing: any non-empty
+// LoseItems slice made that endpoint 500 ("all elements within the slice
+// must implement api2go.MarshalIdentifier"), a pre-existing bug masked by
+// the resource test suite skipping the non-empty case. Discovered while
+// adding pagination coverage for this route (task-117 task 18).
+func (l loseItem) GetName() string { return "lose-items" }
+func (l loseItem) GetID() string   { return strconv.Itoa(int(l.Id)) }
+
 type skill struct {
 	Id    uint32 `json:"id"`
 	Level uint32 `json:"level"`

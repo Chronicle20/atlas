@@ -5,7 +5,7 @@
 | Topic | Environment Variable | Direction | Description |
 |-------|---------------------|-----------|-------------|
 | Saga Commands | COMMAND_TOPIC_SAGA | Command | Saga creation requests |
-| Asset Status | EVENT_TOPIC_ASSET_STATUS | Event | Asset service status events (CREATED, DELETED, MOVED, QUANTITY_CHANGED) |
+| Asset Status | EVENT_TOPIC_ASSET_STATUS | Event | Asset service status events (CREATED, DELETED, MOVED, QUANTITY_CHANGED, UPDATED) |
 | Buddy List Status | EVENT_TOPIC_BUDDY_LIST_STATUS | Event | Buddy list status events |
 | Wallet Status | EVENT_TOPIC_WALLET_STATUS | Event | Wallet status events (UPDATED) |
 | Cash Shop Compartment Status | EVENT_TOPIC_CASH_COMPARTMENT_STATUS | Event | Cash shop compartment status events (ACCEPTED, RELEASED, ERROR) |
@@ -14,6 +14,8 @@
 | Consumable Status | EVENT_TOPIC_CONSUMABLE_STATUS | Event | Consumable status events |
 | Guild Status | EVENT_TOPIC_GUILD_STATUS | Event | Guild service status events |
 | Invite Status | EVENT_TOPIC_INVITE_STATUS | Event | Invite status events (CREATED, ACCEPTED, REJECTED) |
+| Inventory Status | EVENT_TOPIC_INVENTORY_STATUS | Event | Inventory service status events (CREATED, CREATION_FAILED) |
+| MTS Custody Status | EVENT_TOPIC_MTS_CUSTODY_STATUS | Event | MTS custody status events (ACCEPTED, RELEASED, MOVED, ERROR) |
 | Pet Status | EVENT_TOPIC_PET_STATUS | Event | Pet service status events |
 | Quest Status | EVENT_TOPIC_QUEST_STATUS | Event | Quest service status events (STARTED, COMPLETED) |
 | Skill Status | EVENT_TOPIC_SKILL_STATUS | Event | Skill service status events (CREATED, UPDATED) |
@@ -45,7 +47,10 @@
 | Reactor Commands | COMMAND_TOPIC_REACTOR | Command | Reactor operations (HIT) |
 | Drop Commands | COMMAND_TOPIC_DROP | Command | Drop spawn operations (SPAWN) |
 | Map Commands | COMMAND_TOPIC_MAP | Command | Map operations (WEATHER_START) |
+| MTS Custody Commands | COMMAND_TOPIC_MTS_CUSTODY | Command | MTS listing/holding custody operations (ACCEPT_TO_MTS_LISTING, RELEASE_FROM_MTS_HOLDING, RESTORE_MTS_HOLDING, MTS_MOVE_LISTING_TO_HOLDING, REMOVE_MTS_LISTING, RESTORE_LISTING_FROM_HOLDING) |
 | Gachapon Reward Won | EVENT_TOPIC_GACHAPON_REWARD_WON | Event | Gachapon reward win announcements |
+| Incubator Result | EVENT_TOPIC_INCUBATOR_RESULT | Event | Incubator use result (item-tag/sealing-lock/incubator sagas) for the channel to announce via packet |
+| Conversation Reward Notice | EVENT_TOPIC_CONVERSATION_REWARD_NOTICE | Event | Item gain/loss notice for conversation-sourced saga steps |
 
 ## Message Types
 
@@ -95,9 +100,21 @@ StatusEvent[E]
   body: E
 ```
 
-Status types: CREATED, DELETED, MOVED, QUANTITY_CHANGED
+Status types: CREATED, DELETED, MOVED, QUANTITY_CHANGED, UPDATED
 
-The asset consumer handles `CREATED` events with special logic for `CreateAndEquipAsset` steps -- it dynamically adds an `EquipAsset` step to the saga after the current step, using the slot and template from the event to determine source slot and inventory type. For CREATED and QUANTITY_CHANGED events, the step is completed with a result containing `assetId`.
+The asset consumer handles `CREATED` events with special logic for `CreateAndEquipAsset` steps -- it dynamically adds an `EquipAsset` step to the saga after the current step, using the slot and template from the event to determine source slot and inventory type. For CREATED and QUANTITY_CHANGED events, the step is completed with a result containing `assetId`. `UPDATED` events complete `SetAssetOwner`/`ApplyAssetLock` steps (gated via `AcceptEvent`/`EventKindAssetUpdated`); the body carries no fields of its own, since the step is matched by transaction id, not by content.
+
+### Inventory Status Event (Consumed)
+
+```
+StatusEvent[E]
+  transactionId: uuid.UUID
+  characterId: uint32
+  type: string
+  body: E
+```
+
+Status types: CREATED, CREATION_FAILED
 
 ### Compartment Command
 
@@ -112,7 +129,7 @@ Command[E]
   body: E
 ```
 
-Command types: CREATE_ASSET, DESTROY, EQUIP, UNEQUIP, ACCEPT, RELEASE
+Command types: CREATE_ASSET, DESTROY, EQUIP, UNEQUIP, ACCEPT, RELEASE, SET_OWNER, APPLY_LOCK
 
 #### ACCEPT Body
 
@@ -130,6 +147,22 @@ ReleaseCommandBody
   transactionId: uuid.UUID
   assetId: uint32
   quantity: uint32
+```
+
+#### SET_OWNER Body
+
+```
+SetOwnerCommandBody
+  slot: int16
+  owner: string
+```
+
+#### APPLY_LOCK Body
+
+```
+ApplyLockCommandBody
+  slot: int16
+  expiration: time.Time
 ```
 
 ### Compartment Status Event (Consumed)
@@ -158,7 +191,7 @@ Command[E]
   body: E
 ```
 
-Command types: CREATE_CHARACTER, CHANGE_MAP, CHANGE_JOB, CHANGE_HAIR, CHANGE_FACE, CHANGE_SKIN, AWARD_EXPERIENCE, DEDUCT_EXPERIENCE, AWARD_LEVEL, REQUEST_CHANGE_MESO, REQUEST_CHANGE_FAME, SET_HP, RESET_STATS
+Command types: CREATE_CHARACTER, CHANGE_MAP, CHANGE_JOB, CHANGE_HAIR, CHANGE_FACE, CHANGE_SKIN, AWARD_EXPERIENCE, DEDUCT_EXPERIENCE, AWARD_LEVEL, REQUEST_CHANGE_MESO, REQUEST_CHANGE_FAME, SET_HP, RESET_STATS, REBALANCE_AP, TRANSFER_AP, DELETE_CHARACTER
 
 ### Character Status Event (Consumed)
 
@@ -171,7 +204,7 @@ StatusEvent[E]
   body: E
 ```
 
-Status types: CREATED, MAP_CHANGED, JOB_CHANGED, EXPERIENCE_CHANGED, LEVEL_CHANGED, MESO_CHANGED, FAME_CHANGED, STAT_CHANGED, CREATION_FAILED, ERROR
+Status types: CREATED, MAP_CHANGED, JOB_CHANGED, EXPERIENCE_CHANGED, LEVEL_CHANGED, MESO_CHANGED, STAT_CHANGED, DELETED, CREATION_FAILED, ERROR
 
 ### Storage Command
 
@@ -525,6 +558,111 @@ RewardWonEvent
   assetId: uint32
 ```
 
+### Incubator Result Event
+
+Produced when an `incubator_result` step runs (item_tag_use / sealing_lock_use / incubator_use sagas). Fire-and-forget: the channel consumer only announces a packet, so the step completes immediately after emission with no response event advancing it. On saga failure, the `FAILED` status event (emitted after the cash-item-use reverse-walk compensation) is what triggers the channel's zero-result announcement.
+
+```
+ResultEvent
+  characterId: uint32
+  worldId: byte
+  channelId: byte
+  itemId: uint32
+  count: uint32
+```
+
+### MTS Custody Command
+
+Produced to perform MTS listing/holding custody operations.
+
+```
+Command[E]
+  transactionId: uuid.UUID
+  type: string
+  body: E
+```
+
+Command types: ACCEPT_TO_MTS_LISTING, RELEASE_FROM_MTS_HOLDING, RESTORE_MTS_HOLDING, MTS_MOVE_LISTING_TO_HOLDING, REMOVE_MTS_LISTING, RESTORE_LISTING_FROM_HOLDING
+
+#### ACCEPT_TO_MTS_LISTING Body
+
+```
+AcceptToMtsListingCommandBody
+  listingId: uuid.UUID
+  worldId: byte
+  sellerId: uint32
+  sellerAccountId: uint32
+  sellerName: string
+  saleType: string
+  templateId: uint32
+  quantity: uint32
+  <equip stat block fields>
+  listValue: uint32
+  buyNowPrice: *uint32
+  commissionRate: float64
+  category: string
+  subCategory: string
+  endsAt: *time.Time
+  minIncrement: uint32
+  offerWishSerial: uint32
+  offerWishOwnerId: uint32
+```
+
+#### RELEASE_FROM_MTS_HOLDING / RESTORE_MTS_HOLDING Body
+
+```
+ReleaseFromMtsHoldingCommandBody / RestoreMtsHoldingCommandBody
+  holdingId: uuid.UUID
+```
+
+#### MTS_MOVE_LISTING_TO_HOLDING Body
+
+```
+MtsMoveListingToHoldingCommandBody
+  listingId: uuid.UUID
+  buyerId: uint32
+  worldId: byte
+  resultKind: string
+  price: uint32
+```
+
+#### REMOVE_MTS_LISTING Body
+
+```
+RemoveMtsListingCommandBody
+  listingId: uuid.UUID
+```
+
+#### RESTORE_LISTING_FROM_HOLDING Body
+
+```
+RestoreListingFromHoldingCommandBody
+  listingId: uuid.UUID
+  buyerId: uint32
+```
+
+### MTS Custody Status Event (Consumed)
+
+```
+StatusEvent[E]
+  transactionId: uuid.UUID
+  type: string
+  body: E
+```
+
+Status types consumed: ACCEPTED, RELEASED, MOVED, ERROR
+
+### Conversation Reward Notice Event
+
+Produced on successful completion of a conversation-sourced item gain/loss step where `ShowEffect` was set on the originating saga payload.
+
+```
+EventBody
+  characterId: uint32
+  kind: string (item_gain, item_loss)
+  itemId: uint32
+  quantity: uint32
+```
 ## Transaction Semantics
 
 - Each saga step produces a command with the saga's transactionId
@@ -533,8 +671,9 @@ RewardWonEvent
 - Failed status events trigger step failure and compensation
 - Synchronous actions (play_portal_sound, show_info, show_info_text, update_area_info, show_hint, show_guide_hint, show_intro, field_effect, ui_lock, block_portal, unblock_portal, emit_gachapon_win, send_message, field_effect_weather) complete immediately after command emission
 - REST-based synchronous actions (start_instance_transport, save_location, warp_to_saved_location, select_gachapon_reward, spawn_monster) complete after the REST call returns
-- Fire-and-forget actions (register_party_quest, leave_party_quest, warp_party_quest_members_to_map, update_pq_custom_data, hit_reactor, broadcast_pq_message, stage_clear_attempt_pq, enter_party_quest_bonus) produce commands and complete immediately
+- Fire-and-forget actions (register_party_quest, leave_party_quest, warp_party_quest_members_to_map, update_pq_custom_data, hit_reactor, broadcast_pq_message, stage_clear_attempt_pq, enter_party_quest_bonus, incubator_result) produce commands/events and complete immediately
 - Terminal failure actions (register_party_quest, warp_party_quest_members_to_map, enter_party_quest_bonus) remove the saga from cache and emit a FAILED event on error, with no compensation
+- Cash-item-use sagas (item_tag_use, sealing_lock_use, incubator_use) run a reverse-walk compensation on failure: consumed items (destroy_asset / destroy_asset_from_slot) are re-created and awarded results (award_asset) are destroyed, mirroring pet_evolution's reverse-walk
 - Asset CREATED and QUANTITY_CHANGED events carry `assetId` as step result data for downstream steps
 
 ## Ordering

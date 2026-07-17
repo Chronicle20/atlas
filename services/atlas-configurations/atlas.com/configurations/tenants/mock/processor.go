@@ -13,8 +13,7 @@ type ProcessorMock struct {
 	WithValidatorFunc              func(v *preset.Validator) tenants.Processor
 	ByIdProviderFunc               func(id uuid.UUID) model.Provider[tenants.RestModel]
 	ByRegionAndVersionProviderFunc func(region string, majorVersion uint16, minorVersion uint16) model.Provider[tenants.RestModel]
-	AllProviderFunc                func() model.Provider[[]tenants.RestModel]
-	GetAllFunc                     func() ([]tenants.RestModel, error)
+	AllProviderFunc                func(page model.Page) model.Provider[model.Paged[tenants.RestModel]]
 	GetByIdFunc                    func(id uuid.UUID) (tenants.RestModel, error)
 	GetByRegionAndVersionFunc      func(region string, majorVersion uint16, minorVersion uint16) (tenants.RestModel, error)
 	UpdateByIdFunc                 func(tenantId uuid.UUID, input tenants.RestModel) error
@@ -45,18 +44,11 @@ func (m *ProcessorMock) ByRegionAndVersionProvider(region string, majorVersion u
 	return model.FixedProvider(tenants.RestModel{})
 }
 
-func (m *ProcessorMock) AllProvider() model.Provider[[]tenants.RestModel] {
+func (m *ProcessorMock) AllProvider(page model.Page) model.Provider[model.Paged[tenants.RestModel]] {
 	if m.AllProviderFunc != nil {
-		return m.AllProviderFunc()
+		return m.AllProviderFunc(page)
 	}
-	return model.FixedProvider([]tenants.RestModel{})
-}
-
-func (m *ProcessorMock) GetAll() ([]tenants.RestModel, error) {
-	if m.GetAllFunc != nil {
-		return m.GetAllFunc()
-	}
-	return nil, nil
+	return model.FixedProvider(model.Paged[tenants.RestModel]{})
 }
 
 func (m *ProcessorMock) GetById(id uuid.UUID) (tenants.RestModel, error) {

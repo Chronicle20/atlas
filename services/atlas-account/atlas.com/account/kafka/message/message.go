@@ -1,7 +1,7 @@
 package message
 
 import (
-	"atlas-account/kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"sync"
 
 	"github.com/segmentio/kafka-go"

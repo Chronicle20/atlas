@@ -31,9 +31,12 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 
 var _ Processor = (*ProcessorImpl)(nil)
 
-// GetPets returns all pets owned by a character.
+// GetPets returns all pets owned by a character. The upstream atlas-pets
+// list is now paginated (task-117); this drains every page rather than
+// fetching just the first, since GetPetIdsByName below needs the complete
+// set to find every matching pet.
 func (p *ProcessorImpl) GetPets(characterId uint32) ([]Model, error) {
-	pets, err := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(characterId), Extract, model.Filters[Model]())()
+	pets, err := requests.DrainProvider[RestModel, Model](p.l, p.ctx)(byCharacterIdUrl(characterId), 250, Extract, model.Filters[Model]())()
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to get pets for character [%d].", characterId)
 		return nil, err

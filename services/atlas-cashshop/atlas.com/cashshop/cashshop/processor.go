@@ -10,12 +10,13 @@ import (
 	dataPet "atlas-cashshop/data/pet"
 	"atlas-cashshop/kafka/message"
 	"atlas-cashshop/kafka/message/cashshop"
-	"atlas-cashshop/kafka/producer"
 	cashshop2 "atlas-cashshop/kafka/producer/cashshop"
 	"atlas-cashshop/pet"
 	"atlas-cashshop/wallet"
 	"context"
 	"errors"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 

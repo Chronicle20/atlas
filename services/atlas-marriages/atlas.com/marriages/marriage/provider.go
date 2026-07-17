@@ -4,10 +4,10 @@ import (
 	"errors"
 	"time"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // GetProposalByIdProvider retrieves a proposal by ID
@@ -43,6 +43,7 @@ func GetActiveProposalProvider(db *gorm.DB, log logrus.FieldLogger) func(propose
 			err := db.Where("proposer_id = ? AND target_id = ? AND status = ?",
 				proposerId, targetId, ProposalStatusPending).
 				First(&entity).Error
+
 			if err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					return nil, nil
@@ -65,36 +66,24 @@ func GetActiveProposalProvider(db *gorm.DB, log logrus.FieldLogger) func(propose
 	}
 }
 
-// GetPendingProposalsByCharacterProvider retrieves all pending proposals for a character
-func GetPendingProposalsByCharacterProvider(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32) model.Provider[[]Proposal] {
-	return func(characterId uint32) model.Provider[[]Proposal] {
-		return func() ([]Proposal, error) {
-			log.WithField("characterId", characterId).Debug("Retrieving pending proposals for character")
-
-			var entities []ProposalEntity
-			err := db.Where("(proposer_id = ? OR target_id = ?) AND status = ?",
-				characterId, characterId, ProposalStatusPending).
-				Order("created_at DESC").
-				Find(&entities).Error
-			if err != nil {
-				return nil, err
-			}
-
-			proposals := make([]Proposal, 0, len(entities))
-			for _, entity := range entities {
-				proposal, err := MakeProposal(entity)
-				if err != nil {
-					return nil, err
-				}
-
-				// Only include non-expired proposals
-				if !proposal.IsExpired() {
-					proposals = append(proposals, proposal)
-				}
-			}
-
-			return proposals, nil
-		}
+// GetPendingProposalsByCharacterPagedProvider retrieves one page of pending
+// proposals for a character (sent or received). The original
+// GetPendingProposalsByCharacterProvider filters expired-but-still-pending
+// rows in Go after the fetch (proposal.IsExpired()); since that filter's
+// only reachable branch here is "time.Now().After(expiresAt)" (the sibling
+// "status == Expired" branch can never fire, because the WHERE clause
+// already restricts to ProposalStatusPending), it is pushed into the SQL
+// WHERE as "expires_at > ?" so COUNT/OFFSET/LIMIT stay in agreement with the
+// filtered result set — a plain database.PagedQuery over the unfiltered
+// WHERE would over-count and mis-page around already-expired rows.
+func GetPendingProposalsByCharacterPagedProvider(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, page model.Page) model.Provider[model.Paged[ProposalEntity]] {
+	return func(characterId uint32, page model.Page) model.Provider[model.Paged[ProposalEntity]] {
+		log.WithField("characterId", characterId).Debug("Retrieving pending proposals for character (paged)")
+		now := time.Now()
+		scoped := db.Where("(proposer_id = ? OR target_id = ?) AND status = ? AND expires_at > ?",
+			characterId, characterId, ProposalStatusPending, now).
+			Order("created_at DESC")
+		return database.PagedQuery[ProposalEntity](scoped, page)
 	}
 }
 
@@ -112,6 +101,7 @@ func GetProposalHistoryProvider(db *gorm.DB, log logrus.FieldLogger) func(propos
 				proposerId, targetId).
 				Order("created_at DESC").
 				Find(&entities).Error
+
 			if err != nil {
 				return nil, err
 			}
@@ -140,6 +130,7 @@ func GetLastProposalByProposerProvider(db *gorm.DB, log logrus.FieldLogger) func
 			err := db.Where("proposer_id = ?", proposerId).
 				Order("created_at DESC").
 				First(&entity).Error
+
 			if err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					return nil, nil
@@ -170,6 +161,7 @@ func GetLastProposalToTargetProvider(db *gorm.DB, log logrus.FieldLogger) func(p
 			err := db.Where("proposer_id = ? AND target_id = ?", proposerId, targetId).
 				Order("created_at DESC").
 				First(&entity).Error
+
 			if err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					return nil, nil
@@ -197,6 +189,7 @@ func GetActiveMarriageByCharacterProvider(db *gorm.DB, log logrus.FieldLogger) f
 			err := db.Where("(character_id1 = ? OR character_id2 = ?) AND status IN (?)",
 				characterId, characterId, []MarriageStatus{StatusProposed, StatusEngaged, StatusMarried}).
 				First(&entity).Error
+
 			if err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					return nil, nil
@@ -239,32 +232,15 @@ func GetMarriageByIdProvider(db *gorm.DB, log logrus.FieldLogger) func(marriageI
 	}
 }
 
-// GetMarriageHistoryByCharacterProvider retrieves marriage history for a character
-func GetMarriageHistoryByCharacterProvider(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32) model.Provider[[]Marriage] {
-	return func(characterId uint32) model.Provider[[]Marriage] {
-		return func() ([]Marriage, error) {
-			log.WithField("characterId", characterId).Debug("Retrieving marriage history for character")
-
-			var entities []Entity
-			err := db.Where("character_id1 = ? OR character_id2 = ?",
-				characterId, characterId).
-				Order("created_at DESC").
-				Find(&entities).Error
-			if err != nil {
-				return nil, err
-			}
-
-			marriages := make([]Marriage, 0, len(entities))
-			for _, entity := range entities {
-				marriage, err := Make(entity)
-				if err != nil {
-					return nil, err
-				}
-				marriages = append(marriages, marriage)
-			}
-
-			return marriages, nil
-		}
+// GetMarriageHistoryByCharacterPagedProvider retrieves one page of marriage
+// history for a character. Make(Entity) is a pure field copy (no live-state
+// or positional decoration), so a plain database.PagedQuery is safe.
+func GetMarriageHistoryByCharacterPagedProvider(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, page model.Page) model.Provider[model.Paged[Entity]] {
+	return func(characterId uint32, page model.Page) model.Provider[model.Paged[Entity]] {
+		log.WithField("characterId", characterId).Debug("Retrieving marriage history for character (paged)")
+		scoped := db.Where("character_id1 = ? OR character_id2 = ?", characterId, characterId).
+			Order("created_at DESC")
+		return database.PagedQuery[Entity](scoped, page)
 	}
 }
 
@@ -390,6 +366,7 @@ func GetUpcomingCeremoniesProvider(db *gorm.DB, log logrus.FieldLogger) model.Pr
 		err := db.Where("status = ?", CeremonyStatusScheduled).
 			Order("scheduled_at ASC").
 			Find(&entities).Error
+
 		if err != nil {
 			return nil, err
 		}
@@ -416,6 +393,7 @@ func GetActiveCeremoniesProvider(db *gorm.DB, log logrus.FieldLogger) model.Prov
 		err := db.Where("status = ?", CeremonyStatusActive).
 			Order("started_at ASC").
 			Find(&entities).Error
+
 		if err != nil {
 			return nil, err
 		}
@@ -444,6 +422,7 @@ func GetTimeoutCeremoniesProvider(db *gorm.DB, log logrus.FieldLogger) model.Pro
 			CeremonyStatusActive, timeoutThreshold).
 			Order("started_at ASC").
 			Find(&entities).Error
+
 		if err != nil {
 			return nil, err
 		}
@@ -474,6 +453,7 @@ func GetExpiredProposalsProvider(db *gorm.DB, log logrus.FieldLogger) model.Prov
 			ProposalStatusPending, now).
 			Order("expires_at ASC").
 			Find(&entities).Error
+
 		if err != nil {
 			return nil, err
 		}

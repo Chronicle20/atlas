@@ -12,6 +12,7 @@ import (
 
 type Processor interface {
 	GetByShopId(shopId uuid.UUID) ([]Model, error)
+	GetByShopIdPaged(shopId uuid.UUID, page model.Page) (model.Paged[Model], error)
 	GetByShopIdAndDisplayOrder(shopId uuid.UUID, displayOrder uint16) (Model, error)
 	CountByShopId(shopId uuid.UUID) (int64, error)
 	CountByShopIds(shopIds []uuid.UUID) (map[uuid.UUID]int64, error)
@@ -20,6 +21,7 @@ type Processor interface {
 	DeleteByShopId(shopId uuid.UUID) error
 	UpdateBundles(id uuid.UUID, bundlesRemaining uint16, quantity uint16, expectedVersion uint32) (int64, error)
 	DecrementDisplayOrderAfter(shopId uuid.UUID, afterOrder uint16) error
+	SetDisplayOrder(id uuid.UUID, displayOrder uint16) error
 	UpdateFields(id uuid.UUID, pricePerBundle uint32, bundleSize uint16, bundleCount uint16) error
 }
 
@@ -35,6 +37,11 @@ var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetByShopId(shopId uuid.UUID) ([]Model, error) {
 	return model.SliceMap(Make)(getByShopId(shopId)(p.db))(model.ParallelMap())()
+}
+
+func (p *ProcessorImpl) GetByShopIdPaged(shopId uuid.UUID, page model.Page) (model.Paged[Model], error) {
+	ep := getByShopIdPaged(shopId, page)(p.db)
+	return model.MapPaged(Make)(ep)(model.ParallelMap())()
 }
 
 func (p *ProcessorImpl) GetByShopIdAndDisplayOrder(shopId uuid.UUID, displayOrder uint16) (Model, error) {
@@ -93,6 +100,11 @@ func (p *ProcessorImpl) UpdateBundles(id uuid.UUID, bundlesRemaining uint16, qua
 
 func (p *ProcessorImpl) DecrementDisplayOrderAfter(shopId uuid.UUID, afterOrder uint16) error {
 	_, err := decrementDisplayOrderAfter(shopId, afterOrder)(p.db)()
+	return err
+}
+
+func (p *ProcessorImpl) SetDisplayOrder(id uuid.UUID, displayOrder uint16) error {
+	_, err := updateDisplayOrder(id, displayOrder)(p.db)()
 	return err
 }
 

@@ -6,6 +6,7 @@ import (
 	"atlas-channel/cashshop"
 	"atlas-channel/cashshop/wallet"
 	"atlas-channel/character"
+	"atlas-channel/minigame"
 	mtsholding "atlas-channel/mts/holding"
 	mtslisting "atlas-channel/mts/listing"
 	"atlas-channel/session"
@@ -43,6 +44,16 @@ func EnterMtsHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 		p := fieldsb.EnterMts{}
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
+
+		// Block entry while seated at a mini-game (Omok / Match Cards) room, as
+		// with cash-shop entry: a player must not migrate to the MTS mid-room.
+		// Fail open on a mini-games read error.
+		if inGame, mgErr := minigame.NewProcessor(l, ctx).InGame(s.CharacterId()); mgErr != nil {
+			l.WithError(mgErr).Warnf("Unable to determine mini-game membership for character [%d]; allowing MTS entry.", s.CharacterId())
+		} else if inGame {
+			l.Debugf("Blocking MTS entry for character [%d] currently in a mini-game room.", s.CharacterId())
+			return
+		}
 
 		// Load the character with the same decorators CashShopEntryHandleFunc uses
 		// so the SET_ITC CharacterData migrate-in block is complete (inventory,
@@ -150,8 +161,15 @@ func EnterMtsHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 // (sellerId filter) and announces them as the GET_USER_SALE_ITEM_DONE result. On
 // a REST error an empty list is announced so the client's "my sales" tab is not
 // left hanging.
+//
+// atlas-mts's browse endpoint is paginated server-side (task-117, default
+// window 16), but this "Not Yet Sold" panel must show every active listing
+// the seller holds — bounded only by the tenant-configurable
+// maxActiveListings cap, which is not guaranteed to fit one default page —
+// so this drains every page via BrowseAll (requests.DrainProvider) rather
+// than fetching one.
 func announceUserSaleItems(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model) {
-	ms, err := mtslisting.NewProcessor(l, ctx).Browse(s.WorldId(), mtslisting.BrowseFilter{SellerId: s.CharacterId()})
+	ms, err := mtslisting.NewProcessor(l, ctx).BrowseAll(s.WorldId(), mtslisting.BrowseFilter{SellerId: s.CharacterId()})
 	if err != nil {
 		l.WithError(err).Errorf("Unable to load active listings for seller [%d] on entry; announcing empty sale list.", s.CharacterId())
 		ms = nil

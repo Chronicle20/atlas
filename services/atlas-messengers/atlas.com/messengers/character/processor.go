@@ -2,9 +2,9 @@ package character
 
 import (
 	"atlas-messengers/kafka/message/character"
-	"atlas-messengers/kafka/producer"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"

@@ -32,8 +32,8 @@ type Processor interface {
 	// ByQuestIdProvider returns a provider for retrieving a quest conversation by quest ID
 	ByQuestIdProvider(questId uint32) model.Provider[Model]
 
-	// AllProvider returns a provider for retrieving all quest conversations
-	AllProvider() model.Provider[[]Model]
+	// AllProvider returns a provider for retrieving one page of quest conversations
+	AllProvider(page model.Page) model.Provider[model.Paged[Model]]
 
 	// DeleteAllForTenant deletes all quest conversations for the current tenant
 	DeleteAllForTenant() (int64, error)
@@ -78,9 +78,10 @@ func (p *ProcessorImpl) ByQuestIdProvider(questId uint32) model.Provider[Model] 
 	return model.Map[Entity, Model](Make)(getByQuestIdProvider(questId)(p.db.WithContext(p.ctx)))
 }
 
-// AllProvider returns a provider for retrieving all quest conversations
-func (p *ProcessorImpl) AllProvider() model.Provider[[]Model] {
-	return model.SliceMap[Entity, Model](Make)(getAllProvider(p.db.WithContext(p.ctx)))(model.ParallelMap())
+// AllProvider returns a provider for retrieving one page of quest conversations
+func (p *ProcessorImpl) AllProvider(page model.Page) model.Provider[model.Paged[Model]] {
+	ep := getAllPagedProvider(page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(Make)(ep)(model.ParallelMap())
 }
 
 // Create creates a new quest conversation

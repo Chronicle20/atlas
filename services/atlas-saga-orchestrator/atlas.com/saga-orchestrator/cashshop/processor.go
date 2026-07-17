@@ -4,8 +4,8 @@ import (
 	"atlas-saga-orchestrator/kafka/message"
 	"atlas-saga-orchestrator/kafka/message/cashshop"
 	cashshopCompartment "atlas-saga-orchestrator/kafka/message/cashshop/compartment"
-	"atlas-saga-orchestrator/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"

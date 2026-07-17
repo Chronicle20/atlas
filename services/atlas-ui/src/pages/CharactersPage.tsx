@@ -2,16 +2,26 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useTenant } from "@/context/tenant-context";
 import { DataTableWrapper } from "@/components/common/DataTableWrapper";
 import { getColumns, hiddenColumns } from "@/pages/characters-columns";
-import { useCharacters } from "@/lib/hooks/api/useCharacters";
+import { useCharactersPage } from "@/lib/hooks/api/useCharacters";
 import { useAccounts } from "@/lib/hooks/api/useAccounts";
 import { useTenantConfiguration } from "@/lib/hooks/api/useTenants";
 import { characterLocationKeys } from "@/lib/hooks/api/useCharacterLocation";
 import { useGridRefresh } from "@/lib/hooks/useGridRefresh";
 import { CharacterPageSkeleton } from "@/components/common/skeletons/CharacterPageSkeleton";
+import { Pager } from "@/components/common/Pager";
+import { useSearchParams } from "react-router-dom";
+
+const PAGE_SIZE = 50;
 
 export function CharactersPage() {
   const { activeTenant } = useTenant();
-  const charactersQuery = useCharacters(activeTenant!);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const pageNumber = Math.max(1, Number.parseInt(searchParams.get("page") ?? "1", 10) || 1);
+
+  const charactersQuery = useCharactersPage(activeTenant, { number: pageNumber, size: PAGE_SIZE });
+  // Accounts are fetched in full (not paged) here — every character row on
+  // the current page needs its owning account joined in, regardless of
+  // which page of accounts that account would fall on.
   const accountsQuery = useAccounts(activeTenant!);
   const tenantConfigQuery = useTenantConfiguration(activeTenant?.id ?? "");
   const queryClient = useQueryClient();
@@ -23,7 +33,8 @@ export function CharactersPage() {
     },
   );
 
-  const characters = charactersQuery.data ?? [];
+  const characters = charactersQuery.data?.data ?? [];
+  const meta = charactersQuery.data?.meta ?? null;
   const accounts = accountsQuery.data ?? [];
   const tenantConfig = tenantConfigQuery.data ?? null;
 
@@ -44,6 +55,13 @@ export function CharactersPage() {
     accountMap,
     onRefresh,
   });
+
+  const handlePageChange = (nextPage: number) => {
+    const next = new URLSearchParams(searchParams);
+    if (nextPage > 1) next.set("page", String(nextPage));
+    else next.delete("page");
+    setSearchParams(next, { replace: false });
+  };
 
   if (loading) {
     return <CharacterPageSkeleton />;
@@ -69,6 +87,15 @@ export function CharactersPage() {
             description: "There are no characters to display at this time.",
           }}
         />
+        {meta && characters.length > 0 && (
+          <Pager
+            page={meta.page.number}
+            lastPage={meta.page.last}
+            total={meta.total}
+            pageSize={meta.page.size}
+            onPageChange={handlePageChange}
+          />
+        )}
       </div>
     </div>
   );

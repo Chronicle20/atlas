@@ -4,15 +4,15 @@ import (
 	"atlas-channel/asset"
 	"context"
 
-	"github.com/sirupsen/logrus"
-
 	model "github.com/Chronicle20/atlas/libs/atlas-model/model"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	"github.com/sirupsen/logrus"
 )
 
 func NewAsset(zeroPosition bool, a asset.Model) packetmodel.Asset {
 	base := packetmodel.NewAsset(zeroPosition, a.Slot(), a.TemplateId(), a.Expiration())
+	base = base.SetOwner(a.Owner())
 
 	if a.IsEquipment() {
 		base = base.SetEquipmentStats(

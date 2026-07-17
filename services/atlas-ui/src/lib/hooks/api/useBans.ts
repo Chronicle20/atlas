@@ -2,14 +2,9 @@
  * React Query hooks for ban management.
  */
 
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-  type UseMutationResult,
-  type UseQueryResult,
-} from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, keepPreviousData, type UseMutationResult, type UseQueryResult } from "@tanstack/react-query";
 import { bansService, type BanQueryOptions } from "@/services/api/bans.service";
+import type { PagedResult } from "@/services/api/pagination";
 import type { Ban, BanType, CreateBanRequest } from "@/types/models/ban";
 import type { Tenant } from "@/types/models/tenant";
 import type { ServiceOptions } from "@/lib/api/query-params";
@@ -19,6 +14,8 @@ export const banKeys = {
   lists: () => [...banKeys.all, "list"] as const,
   list: (tenant: Tenant | null, options?: BanQueryOptions) =>
     [...banKeys.lists(), tenant?.id ?? "no-tenant", options] as const,
+  pagedList: (tenant: Tenant | null, page: number, size: number, options?: BanQueryOptions) =>
+    [...banKeys.lists(), tenant?.id ?? "no-tenant", page, size, options?.type ?? "all"] as const,
   details: () => [...banKeys.all, "detail"] as const,
   detail: (tenant: Tenant | null, id: string) =>
     [...banKeys.details(), tenant?.id ?? "no-tenant", id] as const,
@@ -30,8 +27,27 @@ export function useBans(
 ): UseQueryResult<Ban[], Error> {
   return useQuery({
     queryKey: banKeys.list(tenant, options),
-    queryFn: () => bansService.getAllBans(options),
+    queryFn: () => bansService.getAllBans( options),
     enabled: !!tenant?.id,
+    gcTime: 5 * 60 * 1000,
+  });
+}
+
+/**
+ * Hook to fetch a single page of bans (task-117). Backs the Bans list view,
+ * which pages server-side; keeps the previous page's data on screen while
+ * the next page loads.
+ */
+export function useBansPage(
+  tenant: Tenant | null,
+  page: { number: number; size: number },
+  options?: BanQueryOptions,
+): UseQueryResult<PagedResult<Ban>, Error> {
+  return useQuery({
+    queryKey: banKeys.pagedList(tenant, page.number, page.size, options),
+    queryFn: () => bansService.getBansPage(page, options),
+    enabled: !!tenant?.id,
+    placeholderData: keepPreviousData,
     gcTime: 5 * 60 * 1000,
   });
 }
@@ -43,7 +59,7 @@ export function useBan(
 ): UseQueryResult<Ban, Error> {
   return useQuery({
     queryKey: banKeys.detail(tenant, id),
-    queryFn: () => bansService.getBanById(id, options),
+    queryFn: () => bansService.getBanById( id, options),
     enabled: !!tenant?.id && !!id,
     gcTime: 5 * 60 * 1000,
   });
@@ -62,38 +78,26 @@ export function useBansByType(
   });
 }
 
-export function useCreateBan(): UseMutationResult<
-  Ban,
-  Error,
-  { tenant: Tenant; data: CreateBanRequest }
-> {
+export function useCreateBan(): UseMutationResult<Ban, Error, { tenant: Tenant; data: CreateBanRequest }> {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ data }) => bansService.createBan(data),
+    mutationFn: ({ data }) => bansService.createBan( data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: banKeys.all }),
   });
 }
 
-export function useDeleteBan(): UseMutationResult<
-  void,
-  Error,
-  { tenant: Tenant; id: string }
-> {
+export function useDeleteBan(): UseMutationResult<void, Error, { tenant: Tenant; id: string }> {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id }) => bansService.deleteBan(id),
+    mutationFn: ({ id }) => bansService.deleteBan( id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: banKeys.all }),
   });
 }
 
-export function useExpireBan(): UseMutationResult<
-  void,
-  Error,
-  { tenant: Tenant; id: string }
-> {
+export function useExpireBan(): UseMutationResult<void, Error, { tenant: Tenant; id: string }> {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id }) => bansService.expireBan(id),
+    mutationFn: ({ id }) => bansService.expireBan( id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: banKeys.all }),
   });
 }
@@ -101,9 +105,7 @@ export function useExpireBan(): UseMutationResult<
 export function useInvalidateBans() {
   const queryClient = useQueryClient();
   return {
-    invalidateAll: () =>
-      queryClient.invalidateQueries({ queryKey: banKeys.all }),
-    invalidateLists: () =>
-      queryClient.invalidateQueries({ queryKey: banKeys.lists() }),
+    invalidateAll: () => queryClient.invalidateQueries({ queryKey: banKeys.all }),
+    invalidateLists: () => queryClient.invalidateQueries({ queryKey: banKeys.lists() }),
   };
 }

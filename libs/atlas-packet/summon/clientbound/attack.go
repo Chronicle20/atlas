@@ -26,8 +26,7 @@ func NewSummonAttackTarget(monsterOid, damage uint32) SummonAttackTarget {
 func (t SummonAttackTarget) MonsterOid() uint32 { return t.monsterOid }
 func (t SummonAttackTarget) Damage() uint32     { return t.damage }
 
-// SummonAttack is the server -> client SUMMON_ATTACK packet, encoded per Cosmic
-// PacketCreator.summonAttack (PacketCreator.java:2307-2322): int cid, int
+// SummonAttack is the server -> client SUMMON_ATTACK packet: int cid, int
 // summonOid, byte 0 (char level), byte direction, byte count, then per target
 // {int monsterOid, byte 6, int damage}.
 type SummonAttack struct {
@@ -79,7 +78,7 @@ func (m SummonAttack) Encode(l logrus.FieldLogger, ctx context.Context) func(opt
 		w.WriteByte(byte(len(m.targets)))
 		for _, t := range m.targets {
 			w.WriteInt(t.monsterOid)
-			w.WriteByte(6) // per Cosmic "who knows"
+			w.WriteByte(6) // per-target flag byte; client discards it, always 6 on the wire
 			w.WriteInt(t.damage)
 		}
 		// v95+ DELTA (gated >= 95, GMS only): the v95 client summon-attack
@@ -108,7 +107,7 @@ func (m *SummonAttack) Decode(l logrus.FieldLogger, ctx context.Context) func(r 
 		m.targets = make([]SummonAttackTarget, 0, count)
 		for i := 0; i < count; i++ {
 			monsterOid := r.ReadUint32()
-			_ = r.ReadByte() // per Cosmic "who knows" = 6
+			_ = r.ReadByte() // per-target flag byte, always 6 on the wire
 			damage := r.ReadUint32()
 			m.targets = append(m.targets, SummonAttackTarget{monsterOid: monsterOid, damage: damage})
 		}

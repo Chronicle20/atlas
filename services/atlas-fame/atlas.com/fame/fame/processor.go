@@ -4,9 +4,9 @@ import (
 	"atlas-fame/character"
 	"atlas-fame/kafka/message"
 	messageFame "atlas-fame/kafka/message/fame"
-	"atlas-fame/kafka/producer"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"time"
 
 	"github.com/google/uuid"

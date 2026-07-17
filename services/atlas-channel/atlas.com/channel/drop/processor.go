@@ -2,8 +2,8 @@ package drop
 
 import (
 	drop2 "atlas-channel/kafka/message/drop"
-	"atlas-channel/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"
 
@@ -33,8 +33,14 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 
 var _ Processor = (*ProcessorImpl)(nil)
 
+// InMapModelProvider fetches every drop currently in one map instance. This
+// is a hot-path consumer (drop spawn state on every channel spawn
+// broadcast, ForEachInMap for reservation logic); the upstream atlas-drops
+// list is now paginated (task-117), so this drains every page rather than
+// fetching just the first -- a truncated list here means drops silently
+// vanish from the client's view.
 func (p *ProcessorImpl) InMapModelProvider(f field.Model) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestInMap(f), Extract, model.Filters[Model]())
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(inMapUrl(f), 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) ForEachInMap(f field.Model, o model.Operator[Model]) error {

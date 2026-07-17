@@ -110,3 +110,27 @@ func RequestReleaseAssetCommandProvider(transactionId uuid.UUID, characterId uin
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func RequestSetOwnerCommandProvider(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, owner string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &compartment.Command[compartment.SetOwnerCommandBody]{
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		InventoryType: inventoryType,
+		Type:          compartment.CommandSetOwner,
+		Body:          compartment.SetOwnerCommandBody{Slot: slot, Owner: owner},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func RequestApplyLockCommandProvider(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, expiration time.Time) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &compartment.Command[compartment.ApplyLockCommandBody]{
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		InventoryType: inventoryType,
+		Type:          compartment.CommandApplyLock,
+		Body:          compartment.ApplyLockCommandBody{Slot: slot, Expiration: expiration},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

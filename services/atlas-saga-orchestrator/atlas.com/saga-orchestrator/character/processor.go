@@ -4,8 +4,8 @@ import (
 	"atlas-saga-orchestrator/data/portal"
 	"atlas-saga-orchestrator/kafka/message"
 	character2 "atlas-saga-orchestrator/kafka/message/character"
-	"atlas-saga-orchestrator/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"

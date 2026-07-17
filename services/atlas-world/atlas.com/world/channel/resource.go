@@ -4,15 +4,16 @@ import (
 	"atlas-world/rest"
 	"errors"
 	"net/http"
-
-	"github.com/gorilla/mux"
-	"github.com/jtumidanski/api2go/jsonapi"
-	"github.com/sirupsen/logrus"
+	"sort"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
+	"github.com/gorilla/mux"
+	"github.com/jtumidanski/api2go/jsonapi"
+	"github.com/sirupsen/logrus"
 )
 
 func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
@@ -30,13 +31,29 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 func handleGetChannelServers(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
+			page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+				return
+			}
+
 			cs, err := NewProcessor(d.Logger(), d.Context()).GetByWorld(worldId)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to get all channel servers.")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-			rm, err := model.SliceMap(Transform)(model.FixedProvider(cs))(model.ParallelMap())()
+
+			// Channels materialize from a Redis hash (unordered) filtered by
+			// world - sort by the unique channel id before paging.
+			sorted := make([]Model, len(cs))
+			copy(sorted, cs)
+			sort.Slice(sorted, func(i, j int) bool {
+				return sorted[i].ChannelId() < sorted[j].ChannelId()
+			})
+			paged := paginate.Slice(sorted, page)
+
+			rm, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -45,7 +62,7 @@ func handleGetChannelServers(d *rest.HandlerDependency, c *rest.HandlerContext) 
 
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm, paginate.EnvelopeFor(paged), r)
 		}
 	})
 }

@@ -193,7 +193,7 @@ export function SetupPage() {
       },
     },
     {
-      label: "Gachapons",
+      label: "Reward Pools",
       icon: <Package className="h-5 w-5" />,
       mutation: seedGachapons,
       formatBadge: () => {

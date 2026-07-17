@@ -42,7 +42,7 @@ func handlePointResetItemUse(l logrus.FieldLogger, ctx context.Context, wp write
 		}
 
 		// FR-4: a dead character cannot use either item (enable-actions only,
-		// no pink text — Cosmic parity).
+		// no pink text).
 		if c.Hp() == 0 {
 			l.Warnf("Character [%d] attempted point reset [%d] while dead.", s.CharacterId(), itemId)
 			enableActions()

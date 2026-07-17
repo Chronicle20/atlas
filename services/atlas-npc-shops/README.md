@@ -21,17 +21,23 @@ The service maintains a Redis-backed registry of characters currently browsing s
 
 ## Runtime Configuration
 
-| Variable           | Description                                              |
-|--------------------|----------------------------------------------------------|
-| JAEGER_HOST_PORT   | Jaeger host:port for distributed tracing                 |
-| LOG_LEVEL          | Logging level (Panic/Fatal/Error/Warn/Info/Debug/Trace)  |
-| REST_PORT          | Port for REST API                                        |
-| DB_USER            | PostgreSQL database user                                 |
-| DB_PASSWORD        | PostgreSQL database password                             |
-| DB_HOST            | PostgreSQL database host                                 |
-| DB_PORT            | PostgreSQL database port                                 |
-| DB_NAME            | PostgreSQL database name                                 |
-| BOOTSTRAP_SERVERS  | Kafka bootstrap server addresses                         |
+| Variable              | Description                                                          |
+|-----------------------|-----------------------------------------------------------------------|
+| JAEGER_HOST_PORT      | Jaeger host:port for distributed tracing                              |
+| LOG_LEVEL             | Logging level (Panic/Fatal/Error/Warn/Info/Debug/Trace)               |
+| REST_PORT             | Port for REST API                                                     |
+| DB_USER               | PostgreSQL database user                                              |
+| DB_PASSWORD           | PostgreSQL database password                                          |
+| DB_HOST               | PostgreSQL database host                                              |
+| DB_PORT               | PostgreSQL database port                                              |
+| DB_NAME               | PostgreSQL database name                                              |
+| BOOTSTRAP_SERVERS     | Kafka bootstrap server addresses                                      |
+| CHARACTERS_SERVICE_URL| Base URL for the atlas-character service (falls back to BASE_SERVICE_URL) |
+| DATA_SERVICE_URL      | Base URL for the atlas-data service (falls back to BASE_SERVICE_URL)  |
+| INVENTORY_SERVICE_URL | Base URL for the atlas-inventory service (falls back to BASE_SERVICE_URL) |
+| SKILLS_SERVICE_URL    | Base URL for the atlas-skill service (falls back to BASE_SERVICE_URL) |
+| BASE_SERVICE_URL      | Fallback base URL for service-to-service REST calls                   |
+| SEED_CATALOG_ROOT     | Filesystem root for shop seed catalog files (defaults to ./deploy/seed) |
 
 ## Documentation
 

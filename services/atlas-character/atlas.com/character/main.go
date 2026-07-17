@@ -1,38 +1,33 @@
 package main
 
 import (
+	"context"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	"atlas-character/character"
+	account2 "atlas-character/kafka/consumer/account"
+	character2 "atlas-character/kafka/consumer/character"
 	"atlas-character/kafka/consumer/drop"
-	"atlas-character/logger"
+	session2 "atlas-character/kafka/consumer/session"
 	"atlas-character/saved_location"
 	"atlas-character/service"
 	"atlas-character/session"
 	"atlas-character/session/history"
 	"atlas-character/tasks"
-	"context"
-	"os"
-	"time"
-
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-
-	account2 "atlas-character/kafka/consumer/account"
-	character2 "atlas-character/kafka/consumer/character"
-
-	session2 "atlas-character/kafka/consumer/session"
-
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	lifecycle "github.com/Chronicle20/atlas/libs/atlas-service"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
+	"os"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-
-	_ "net/http/pprof"
 )
+import _ "net/http/pprof"
 
 const serviceName = "atlas-character"
 
@@ -59,19 +54,12 @@ func GetServer() Server {
 }
 
 func main() {
-	l := logger.CreateLogger(serviceName)
-	l.Infoln("Starting main service.")
-
-	tdm := lifecycle.GetTeardownManager()
+	rt := lifecycle.Bootstrap(serviceName)
+	l := rt.Logger()
 
 	rc := atlas.Connect(l)
 	session.InitRegistry(rc)
 	character.InitTemporalRegistry(rc)
-
-	tc, err := tracing.InitTracer(serviceName)
-	if err != nil {
-		l.WithError(err).Fatal("Unable to initialize tracer.")
-	}
 
 	db := database.Connect(l, database.SetMigrations(character.Migration, history.Migration, saved_location.Migration, outboxlib.Migration))
 
@@ -79,10 +67,10 @@ func main() {
 	// Leadership is gated by a postgres advisory lock — replicas are safe.
 	publisher := outboxlib.NewTopicWriterPool()
 	drainer := outboxlib.NewDrainer(l, db, publisher, outboxlib.WithDSN(database.DSN()))
-	routine.Go(l, tdm.Context(), func(_ context.Context) {
-		drainer.Run(tdm.Context())
+	routine.Go(l, rt.Context(), func(_ context.Context) {
+		drainer.Run(rt.Context())
 	})
-	tdm.TeardownFunc(func() {
+	rt.TeardownFunc(func() {
 		drainer.Stop()
 		publisher.Close()
 	})
@@ -96,7 +84,7 @@ func main() {
 	})
 
 	if service.GetMode() == service.Mixed {
-		cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+		cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 		account2.InitConsumers(l)(cmf)(consumerGroupId)
 		character2.InitConsumers(l)(cmf)(consumerGroupId)
 		session2.InitConsumers(l)(cmf)(consumerGroupId)
@@ -114,27 +102,25 @@ func main() {
 			l.WithError(err).Fatal("Unable to register kafka handlers.")
 		}
 
-		tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
+		rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 	}
 
 	server.New(l).
-		WithContext(tdm.Context()).
-		WithWaitGroup(tdm.WaitGroup()).
+		WithContext(rt.Context()).
+		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(character.InitResource(GetServer())(db)).
 		AddRouteInitializer(history.InitResource(GetServer())(db)).
 		AddRouteInitializer(saved_location.InitResource(GetServer())(db)).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
+		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
-	routine.Go(l, tdm.Context(), func(_ context.Context) {
-		tasks.Register(l, tdm.Context())(session.NewTimeout(l, db, time.Millisecond*time.Duration(5000)))
+	routine.Go(l, rt.Context(), func(_ context.Context) {
+		tasks.Register(l, rt.Context())(session.NewTimeout(l, db, time.Millisecond*time.Duration(5000)))
 	})
 
-	tdm.TeardownFunc(tracing.Teardown(l)(tc))
-
-	tdm.Wait()
-	l.Infoln("Service shutdown.")
+	rt.Wait()
 }

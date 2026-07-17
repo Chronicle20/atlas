@@ -1,19 +1,18 @@
 package portal_actions
 
 import (
-	"atlas-portals/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	producer2 "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 func EnterCommandProvider(f field.Model, portalId uint32, characterId uint32, portalName string) model.Provider[[]kafka.Message] {
-	key := producer2.CreateKey(int(characterId))
+	key := producer.CreateKey(int(characterId))
 	value := &commandEvent[enterBody]{
 		WorldId:   f.WorldId(),
 		ChannelId: f.ChannelId(),
@@ -26,7 +25,7 @@ func EnterCommandProvider(f field.Model, portalId uint32, characterId uint32, po
 			PortalName:  portalName,
 		},
 	}
-	return producer2.SingleMessageProvider(key, value)
+	return producer.SingleMessageProvider(key, value)
 }
 
 func ExecuteScript(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, portalId uint32, characterId uint32, portalName string) {

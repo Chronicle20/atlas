@@ -6,10 +6,11 @@ import (
 	"atlas-buddies/invite"
 	"atlas-buddies/kafka/message"
 	list2 "atlas-buddies/kafka/message/list"
-	"atlas-buddies/kafka/producer"
 	list3 "atlas-buddies/kafka/producer/list"
 	"context"
 	"errors"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 

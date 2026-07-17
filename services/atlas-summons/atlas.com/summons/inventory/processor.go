@@ -8,17 +8,16 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 )
 
-// weaponEquipSlot is the equip-compartment slot occupied by the main weapon.
-// Cosmic reads it as getInventory(EQUIPPED).getItem((short) -11)
-// (SummonDamageHandler.calcMaxDamage:131 / Character.calculateMaxBaseDamage:813).
+// weaponEquipSlot is the equip-compartment slot occupied by the main weapon
+// (equipped-compartment slot -11).
 const weaponEquipSlot int16 = -11
 
 // Processor resolves the owner's equipped weapon type for the summon damage
-// ceiling. The physical branch of Cosmic's calcMaxDamage is weapon-type-aware.
+// ceiling. The physical branch of the ceiling formula is weapon-type-aware.
 type Processor interface {
 	// GetEquippedWeaponType returns the weapon type of the item in the weapon
 	// equip slot. If no weapon is equipped (or the lookup fails), it returns
-	// item.WeaponTypeNone — the caller treats that as Cosmic's SWORD1H fallback.
+	// item.WeaponTypeNone — the caller treats that as the one-handed-sword fallback.
 	GetEquippedWeaponType(characterId uint32) (item.WeaponType, error)
 }
 

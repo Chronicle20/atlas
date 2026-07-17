@@ -3,6 +3,8 @@ package listing
 import (
 	"strings"
 	"testing"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 // TestBrowseFilterQuery asserts the BrowseFilter renders only its set fields into
@@ -13,11 +15,19 @@ func TestBrowseFilterQuery(t *testing.T) {
 		t.Errorf("empty filter: want no query, got %q", got)
 	}
 
+	// Page is 0-based (mirrors the game client); query() must render it onto
+	// the wire's 1-based page[number] as Page+1 (task-117's off-by-one).
 	f := BrowseFilter{SellerName: "Bob", Page: 2, PageSize: 16, ItemId: 1302000}
 	got := f.query()
-	for _, want := range []string{"sellerName=Bob", "page=2", "pageSize=16", "itemId=1302000"} {
+	for _, want := range []string{"sellerName=Bob", "page%5Bnumber%5D=3", "page%5Bsize%5D=16", "itemId=1302000"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("query %q missing %q", got, want)
+		}
+	}
+	// The old bare 0-based params must never appear.
+	for _, absent := range []string{"page=2", "pageSize=16"} {
+		if strings.Contains(got, absent) {
+			t.Errorf("query %q should not contain legacy param %q", got, absent)
 		}
 	}
 	if !strings.HasPrefix(got, "?") {
@@ -86,5 +96,19 @@ func TestBrowseFilterQueryTemplateIds(t *testing.T) {
 	}
 	if strings.Contains((BrowseFilter{TemplateIds: []uint32{}}).query(), "itemIds=") {
 		t.Errorf("empty TemplateIds slice must not contain itemIds=")
+	}
+}
+
+// TestBrowseUrlOmitsPageParams asserts browseUrl (the BrowseAll/DrainProvider
+// URL builder) never bakes in page params: requests.DrainProvider appends its
+// own page[number]/page[size] each iteration, so a baked-in value here would
+// pin every drained page to the same window instead of advancing.
+func TestBrowseUrlOmitsPageParams(t *testing.T) {
+	got := browseUrl(world.Id(1), BrowseFilter{SellerId: 100100})
+	if strings.Contains(got, "page") {
+		t.Errorf("browseUrl %q must not contain any page param", got)
+	}
+	if !strings.Contains(got, "sellerId=100100") {
+		t.Errorf("browseUrl %q missing sellerId=100100", got)
 	}
 }

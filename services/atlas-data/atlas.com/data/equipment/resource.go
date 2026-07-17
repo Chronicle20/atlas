@@ -4,14 +4,15 @@ import (
 	"atlas-data/rest"
 	"errors"
 	"net/http"
+	"sort"
 	"strconv"
 
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteInitializer {
@@ -54,6 +55,13 @@ func handleGetEquipmentSlots(db *gorm.DB) func(d *rest.HandlerDependency, c *res
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseEquipmentId(d.Logger(), func(equipmentId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
+				query := r.URL.Query()
+				page, err := paginate.ParseParams(query, paginate.DefaultPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, err.Error())
+					return
+				}
+
 				s := NewStorage(d.Logger(), db)
 				res, err := s.GetById(d.Context())(strconv.Itoa(int(equipmentId)))
 				if err != nil {
@@ -67,9 +75,14 @@ func handleGetEquipmentSlots(db *gorm.DB) func(d *rest.HandlerDependency, c *res
 					return
 				}
 
-				query := r.URL.Query()
+				slots := res.EquipSlots
+				sort.SliceStable(slots, func(i, j int) bool {
+					return slots[i].Slot < slots[j].Slot
+				})
+
+				paged := paginate.Slice(slots, page)
 				queryParams := jsonapi.ParseQueryFields(&query)
-				server.MarshalResponse[[]SlotRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res.EquipSlots)
+				server.MarshalPaginatedResponse[[]SlotRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 			}
 		})
 	}

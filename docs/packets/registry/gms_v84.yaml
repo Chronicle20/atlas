@@ -1738,6 +1738,7 @@
   direction: clientbound
   opcode: 272
   fname: CEmployeePool::OnEmployeeEnterField
+  packet: merchant/clientbound/EmployeeSpawn
   provenance: ida-discovered
   ida:
     address: 5348860
@@ -1746,6 +1747,7 @@
   direction: clientbound
   opcode: 273
   fname: CEmployeePool::OnEmployeeLeaveField
+  packet: merchant/clientbound/EmployeeDestroy
   provenance: ida-discovered
   ida:
     address: 5348849
@@ -1754,6 +1756,7 @@
   direction: clientbound
   opcode: 274
   fname: CEmployeePool::OnEmployeeMiniRoomBalloon
+  packet: merchant/clientbound/EmployeeUpdate
   provenance: ida-discovered
   ida:
     address: 5348838
@@ -2896,12 +2899,12 @@
   fname: CWvsContext::SendSkillLearnItemUseRequest
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: USE_SKILL_RESET_BOOK
+- op: USE_SHOP_SCANNER_ITEM
   direction: serverbound
   opcode: 83
-  fname: CWvsContext::SendSkillResetItemUseRequest
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  fname: CWvsContext::SendShopScannerItemUseRequest
+  provenance: manual
+  note: task-127 — inherited from the v83 IDA finding (0xa0a25e) via the established v84-serverbound≡v83 rule; UNVERIFIED against a v84 IDB (none loaded); provenance is 'manual' (not 'ida-discovered') because no v84-address evidence exists. The BUDDYLIST (CWvsContext::OnFriendResult) / CASH_PET_FOOD_RESULT rows are examples elsewhere in this file of 'manual' provenance used for rows lacking a discrete ida.address — but unlike this row, those were v84-IDB-confirmed (task-085 IDB dispatcher case labels), not carryovers. This row differs — it is a v83-carryover with NO v84 verification (v83 IDA 0xa0a25e; v84 UNVERIFIED, no IDB loaded). See gms_v83.yaml for the primary evidence.
 - op: USE_TELEPORT_ROCK
   direction: serverbound
   opcode: 84

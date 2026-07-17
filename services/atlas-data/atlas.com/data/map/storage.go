@@ -41,12 +41,8 @@ func (s *Storage) GetById(ctx context.Context) func(id string) (RestModel, error
 	return s.doc.GetById(ctx)
 }
 
-func (s *Storage) AllProvider(ctx context.Context) model.Provider[[]RestModel] {
-	return s.doc.AllProvider(ctx)
-}
-
-func (s *Storage) GetAll(ctx context.Context) ([]RestModel, error) {
-	return s.doc.GetAll(ctx)
+func (s *Storage) AllPagedProvider(ctx context.Context) func(page model.Page) model.Provider[model.Paged[RestModel]] {
+	return s.doc.AllPagedProvider(ctx)
 }
 
 func (s *Storage) Add(ctx context.Context) func(m RestModel) model.Provider[RestModel] {

@@ -6,10 +6,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	logtest "github.com/sirupsen/logrus/hooks/test"
-
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func craftState(t *testing.T, stateId, itemId string, mats, qtys []uint32, mesos uint32, stimId uint32, stimFail float64) conversation.StateModel {
@@ -89,10 +89,11 @@ func TestRebuildForConversation_HappyPath_InsertsRowPerCraftAction(t *testing.T)
 		t.Errorf("unexpected RebuildResult: %+v", res)
 	}
 
-	got, err := getByItemIdProvider(1082008)(db.WithContext(ctx))()
+	paged, err := getByItemIdPagedProvider(1082008, model.Page{Number: 1, Size: 50})(db.WithContext(ctx))()
 	if err != nil {
 		t.Fatalf("read back: %v", err)
 	}
+	got := paged.Items
 	if len(got) != 1 || got[0].StimulatorID != 4020009 {
 		t.Errorf("expected stimulator row, got %+v", got)
 	}

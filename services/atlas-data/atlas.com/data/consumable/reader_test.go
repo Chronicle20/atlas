@@ -1010,3 +1010,65 @@ func TestReader(t *testing.T) {
 		t.Fatalf("rmm.Spec[SpecTypeTime] = %d, want 180000", spec)
 	}
 }
+
+func TestReaderRewardFields(t *testing.T) {
+	l, _ := test.NewNullLogger()
+
+	const xmlData = `
+<imgdir name="0202.img">
+  <imgdir name="02022309">
+    <imgdir name="info">
+      <int name="price" value="0"/>
+    </imgdir>
+    <imgdir name="reward">
+      <imgdir name="0">
+        <int name="item" value="1132010"/>
+        <int name="count" value="1"/>
+        <int name="prob" value="100"/>
+        <string name="Effect" value="Effect/BasicEff/Event1/Good"/>
+        <string name="worldMsg" value="/name got /item"/>
+        <int name="period" value="7200"/>
+      </imgdir>
+      <imgdir name="1">
+        <int name="item" value="2000000"/>
+        <int name="count" value="5"/>
+        <int name="prob" value="900"/>
+      </imgdir>
+    </imgdir>
+  </imgdir>
+</imgdir>
+`
+	rms := Read(l)(xml.FromByteArrayProvider([]byte(xmlData)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	box, ok := rmm[strconv.Itoa(2022309)]
+	if !ok {
+		t.Fatalf("rmm[2022309] does not exist.")
+	}
+	if len(box.Rewards) != 2 {
+		t.Fatalf("len(box.Rewards) = %d, want 2", len(box.Rewards))
+	}
+	r0 := box.Rewards[0]
+	if r0.ItemId != 1132010 || r0.Count != 1 || r0.Prob != 100 {
+		t.Fatalf("r0 base = {%d,%d,%d}, want {1132010,1,100}", r0.ItemId, r0.Count, r0.Prob)
+	}
+	if r0.Effect != "Effect/BasicEff/Event1/Good" {
+		t.Errorf("r0.Effect = %q, want the WZ effect path", r0.Effect)
+	}
+	if r0.WorldMsg != "/name got /item" {
+		t.Errorf("r0.WorldMsg = %q, want the announce template", r0.WorldMsg)
+	}
+	if r0.Period != 7200 {
+		t.Errorf("r0.Period = %d, want 7200", r0.Period)
+	}
+	// Entry with no Effect/worldMsg/period must default cleanly.
+	r1 := box.Rewards[1]
+	if r1.Effect != "" || r1.WorldMsg != "" {
+		t.Errorf("r1 Effect/WorldMsg = %q/%q, want empty", r1.Effect, r1.WorldMsg)
+	}
+	if r1.Period != -1 {
+		t.Errorf("r1.Period = %d, want -1 (default)", r1.Period)
+	}
+}

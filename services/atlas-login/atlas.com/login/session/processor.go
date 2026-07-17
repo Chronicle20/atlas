@@ -3,11 +3,11 @@ package session
 import (
 	"atlas-login/account/session"
 	session2 "atlas-login/kafka/message/session"
-	"atlas-login/kafka/producer"
 	session3 "atlas-login/kafka/producer/session"
 	"atlas-login/socket/writer"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"net"
 
 	"github.com/google/uuid"

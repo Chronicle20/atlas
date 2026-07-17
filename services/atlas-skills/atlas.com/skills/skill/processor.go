@@ -3,10 +3,12 @@ package skill
 import (
 	"atlas-skills/kafka/message"
 	skill2 "atlas-skills/kafka/message/skill"
-	"atlas-skills/kafka/producer"
 	"atlas-skills/macro"
 	"context"
 	"errors"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"strconv"
 	"time"
 
@@ -27,8 +29,8 @@ import (
 
 // Processor defines the interface for skill processing operations
 type Processor interface {
-	// ByCharacterIdProvider returns a provider for all skills for a character
-	ByCharacterIdProvider(characterId uint32) model.Provider[[]Model]
+	// ByCharacterIdProvider returns a provider for one page of skills for a character
+	ByCharacterIdProvider(characterId uint32, page model.Page) model.Provider[model.Paged[Model]]
 
 	// ByIdProvider returns a provider for a skill by ID
 	ByIdProvider(characterId uint32, id uint32) model.Provider[Model]
@@ -115,10 +117,12 @@ func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 	}
 }
 
-// ByCharacterIdProvider returns a provider for all skills for a character
-func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
-	mp := model.SliceMap(Make)(getByCharacterId(characterId)(p.db.WithContext(p.ctx)))()
-	return model.SliceMap(model.Decorate(model.Decorators(p.CooldownDecorator(characterId))))(mp)(model.ParallelMap())
+// ByCharacterIdProvider returns a provider for one page of skills for a
+// character. The cooldown decoration (live state from GetRegistry(), not DB
+// data) is applied per returned item, matching the old unpaged behavior.
+func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32, page model.Page) model.Provider[model.Paged[Model]] {
+	mp := model.MapPaged(Make)(getByCharacterIdPaged(characterId, page)(p.db.WithContext(p.ctx)))(model.ParallelMap())
+	return model.MapPaged(model.Decorate(model.Decorators(p.CooldownDecorator(characterId))))(mp)(model.ParallelMap())
 }
 
 // ByIdProvider returns a provider for a skill by ID

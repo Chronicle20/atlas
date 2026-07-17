@@ -30,8 +30,12 @@ func TestOperationMemoryGameRetreatAnswerRoundTrip(t *testing.T) {
 }
 
 // TestOperationMemoryGameRetreatAnswerV72Bytes pins the GMS v72 legacy body (mode byte is
-// dispatcher-framed, not part of this sub-struct). IDA v72 COmokDlg::OnRetreatRequest (sub_5FEBF2): Encode1(0x2D)=mode @0x5fec17 then Encode1(YesNo==6) @0x5fec50. bool response. Body == v79.
-// packet-audit:verify packet=interaction/serverbound/InteractionOperationMemoryGameRetreatAnswer version=gms_v72 ida=0x5febf2
+// dispatcher-framed, not part of this sub-struct). Marker re-pinned (task-133 item 5) to the
+// true RETREAT_ANSWER send: v72 Omok ASK_RETREAT handler sub_64E953 @0x64e953 —
+// COutPacket(121)+Encode1(0x31=49)=mode then Encode1(YesNo==6). bool response. Body == v79.
+// (The old ida=0x5febf2 was the MemoryGame ASK_TIE handler; RETREAT_ANSWER serverbound
+// mode is 49 per character_interaction_handle.yaml.)
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationMemoryGameRetreatAnswer version=gms_v72 ida=0x64e953
 func TestOperationMemoryGameRetreatAnswerV72Bytes(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	input := OperationMemoryGameRetreatAnswer{response: true}

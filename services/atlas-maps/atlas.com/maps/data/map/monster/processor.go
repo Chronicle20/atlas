@@ -31,8 +31,12 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 
 var _ Processor = (*ProcessorImpl)(nil)
 
+// SpawnPointProvider fetches every monster spawn point on a map. atlas-data's
+// GET /data/maps/{id}/monsters is now paginated (task-117) and busy
+// grinding/party-quest maps commonly exceed the default page size, so this
+// drains every page rather than fetching one.
 func (p *ProcessorImpl) SpawnPointProvider(mapId _map.Id) model.Provider[[]SpawnPoint] {
-	return requests.SliceProvider[RestModel, SpawnPoint](p.l, p.ctx)(requestSpawnPoints(mapId), Extract, model.Filters[SpawnPoint]())
+	return requests.DrainProvider[RestModel, SpawnPoint](p.l, p.ctx)(spawnPointsUrl(mapId), 250, Extract, model.Filters[SpawnPoint]())
 }
 
 func (p *ProcessorImpl) SpawnableSpawnPointProvider(mapId _map.Id) model.Provider[[]SpawnPoint] {

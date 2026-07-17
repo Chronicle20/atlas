@@ -2,8 +2,8 @@ package monster
 
 import "time"
 
-// Aggro decay constants. Mirror Cosmic's MonsterAggroCoordinator
-// (handlers/MonsterAggroCoordinator.java:110-148) so behavior matches reference.
+// Aggro decay constants: idle entries decay 15% per 1.5s sweep tick after a
+// 10s idle threshold, and are pruned once they fall below the floor.
 const (
 	// AggroIdleThresholdMs is the duration in milliseconds an entry can sit without
 	// a fresh hit before the decay sweep begins reducing it.

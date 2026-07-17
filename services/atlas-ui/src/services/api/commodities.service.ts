@@ -1,4 +1,4 @@
-import { api } from "@/lib/api/client";
+import { fetchAll } from "@/services/api/pagination";
 import type { ItemCashShopCommodity } from "@/types/models/npc";
 
 interface CommodityData {
@@ -15,10 +15,12 @@ interface CommodityData {
 }
 
 export const commoditiesService = {
+  /**
+   * Get every cash shop commodity that sells the given item, draining all
+   * pages (task-117) — the widget renders the full list, not a page at a time.
+   */
   async getByItem(itemId: string | number): Promise<ItemCashShopCommodity[]> {
-    const rows = await api.getList<CommodityData>(
-      `/api/data/commodity/by-item/${itemId}`,
-    );
+    const rows = await fetchAll<CommodityData>(`/api/data/commodity/by-item/${itemId}`);
     return rows.map((row) => ({
       id: row.id,
       itemId: row.attributes.itemId,

@@ -2,8 +2,8 @@ package monster
 
 import (
 	monster2 "atlas-channel/kafka/message/monster"
-	"atlas-channel/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"
 
@@ -49,8 +49,14 @@ func (p *ProcessorImpl) GetById(uniqueId uint32) (Model, error) {
 	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(uniqueId), Extract)()
 }
 
+// InMapModelProvider fetches every monster currently in one map instance.
+// This is a hot-path consumer (monster spawn/movement/state on every
+// channel spawn broadcast and AI tick); the upstream atlas-monsters list is
+// now paginated (task-117), so this drains every page rather than fetching
+// just the first -- a truncated list here means monsters silently vanish
+// from the client's view.
 func (p *ProcessorImpl) InMapModelProvider(f field.Model) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestInMap(f), Extract, model.Filters[Model]())
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(inMapUrl(f), 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) ForEachInMap(f field.Model, o model.Operator[Model]) error {
@@ -65,7 +71,7 @@ func (p *ProcessorImpl) GetInMap(f field.Model) ([]Model, error) {
 // provider over the resulting monsters. Used by AoE skill handlers (e.g.,
 // Priest Doom) that need server-side bounding-box mob selection.
 func (p *ProcessorImpl) InMapRectModelProvider(f field.Model, x1, y1, x2, y2 int16, limit uint32) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestInMapRect(f, x1, y1, x2, y2, limit), Extract, model.Filters[Model]())
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(inMapRectUrl(f, x1, y1, x2, y2, limit), 250, Extract, model.Filters[Model]())
 }
 
 // GetInMapRect resolves the rect query into a slice of monsters.

@@ -250,7 +250,7 @@ func TestBrowseResponseCarriesTotal(t *testing.T) {
 	srv := newListingServer(t, db)
 	defer srv.Close()
 
-	resp, err := (&http.Client{}).Do(withTenant(t, http.MethodGet, fmt.Sprintf("%s/worlds/0/listings?page=0&pageSize=16", srv.URL)))
+	resp, err := (&http.Client{}).Do(withTenant(t, http.MethodGet, fmt.Sprintf("%s/worlds/0/listings?page[number]=1&page[size]=16", srv.URL)))
 	if err != nil {
 		t.Fatalf("browse: %v", err)
 	}
@@ -280,5 +280,101 @@ func TestBrowseResponseCarriesTotal(t *testing.T) {
 	}
 	if env.Meta.Page.Last != 2 {
 		t.Fatalf("meta.page.last = %d, want 2 (ceil(20/16))", env.Meta.Page.Last)
+	}
+}
+
+// TestBrowseOffsetPreservation pins the invariant this task-117 refactor must
+// not break: for a given browse request, the SAME window of rows must come
+// back before and after the wire-convention change. Pre-task-117 callers
+// windowed with 0-based page/pageSize (page=1, pageSize=16 -> offset 16..29);
+// the new 1-based page[number]/page[size] convention must produce the
+// identical offset for page[number]=2, page[size]=16 (offset
+// (2-1)*16 = 16). Seeds 30 rows so both pages are non-empty, derives the
+// "old" window directly from the processor (which still uses the 0-based
+// Page/PageSize fields internally), and asserts the new wire request returns
+// the exact same set of row ids.
+func TestBrowseOffsetPreservation(t *testing.T) {
+	p, db, cleanup := test.CreateListingProcessor(t)
+	defer cleanup()
+	if err := db.Exec("DELETE FROM listings").Error; err != nil {
+		t.Fatalf("reset: %v", err)
+	}
+	for i := 0; i < 30; i++ {
+		seedListing(t, p, 0, uint32(700+i), "1", listing.SaleTypeFixed)
+	}
+
+	// The pre-task-117 window: page=1 (0-based second page), pageSize=16 ->
+	// offset 16..29 (14 rows, since 30 total).
+	oldWindow, err := p.Browse(0, listing.StateActive, listing.BrowseFilter{Page: 1, PageSize: 16})
+	if err != nil {
+		t.Fatalf("old-window Browse: %v", err)
+	}
+	if len(oldWindow) != 14 {
+		t.Fatalf("old window returned %d rows, want 14 (30 total, 16 on page 0)", len(oldWindow))
+	}
+	oldIds := make(map[string]struct{}, len(oldWindow))
+	for _, m := range oldWindow {
+		oldIds[m.Id().String()] = struct{}{}
+	}
+
+	srv := newListingServer(t, db)
+	defer srv.Close()
+
+	// The new wire request: page[number]=2 (1-based second page), page[size]=16.
+	resp, err := (&http.Client{}).Do(withTenant(t, http.MethodGet, fmt.Sprintf("%s/worlds/0/listings?page[number]=2&page[size]=16", srv.URL)))
+	if err != nil {
+		t.Fatalf("browse page[number]=2: %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("browse page[number]=2 status = %d, want 200", resp.StatusCode)
+	}
+	var env struct {
+		Data []struct {
+			Id string `json:"id"`
+		} `json:"data"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&env); err != nil {
+		t.Fatalf("decode page[number]=2: %v", err)
+	}
+	if len(env.Data) != len(oldIds) {
+		t.Fatalf("new page[number]=2 returned %d rows, want %d (same as old page=1)", len(env.Data), len(oldIds))
+	}
+	for _, d := range env.Data {
+		if _, ok := oldIds[d.Id]; !ok {
+			t.Errorf("new page[number]=2 row id %q not present in the old page=1 window; offset drifted", d.Id)
+		}
+	}
+}
+
+// TestBrowseInvalidPageParams asserts the endpoint 400s on invalid page
+// params (page[size]=0, the legacy bare ?limit=) rather than silently
+// clamping or falling back to a default — the repo-wide paginate.ParseParams
+// contract (docs/rest-pagination.md).
+func TestBrowseInvalidPageParams(t *testing.T) {
+	p, db, cleanup := test.CreateListingProcessor(t)
+	defer cleanup()
+	if err := db.Exec("DELETE FROM listings").Error; err != nil {
+		t.Fatalf("reset: %v", err)
+	}
+	seedListing(t, p, 0, 900, "1", listing.SaleTypeFixed)
+
+	srv := newListingServer(t, db)
+	defer srv.Close()
+	client := &http.Client{}
+
+	cases := []string{
+		"page[size]=0",
+		"limit=10",
+	}
+	for _, qs := range cases {
+		resp, err := client.Do(withTenant(t, http.MethodGet, fmt.Sprintf("%s/worlds/0/listings?%s", srv.URL, qs)))
+		if err != nil {
+			t.Fatalf("browse ?%s: %v", qs, err)
+		}
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusBadRequest {
+			t.Errorf("browse ?%s status = %d, want 400", qs, resp.StatusCode)
+		}
 	}
 }

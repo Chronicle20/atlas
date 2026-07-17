@@ -9,6 +9,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 )
 
@@ -18,15 +19,26 @@ func getBaseRequest() string {
 	return requests.RootUrl(BaseUrl)
 }
 
-// requestAllRoutes fetches all instance routes from atlas-transports
-func requestAllRoutes() requests.Request[[]RouteRestModel] {
-	return requests.GetRequest[[]RouteRestModel](getBaseRequest() + "transports/instance-routes")
+// allInstanceRoutesUrl is a bare URL (not a requests.Request) because the
+// list is now paginated server-side (task-117) and consumed via
+// requests.DrainProvider, which appends its own page[number]/page[size]
+// query params per request.
+func allInstanceRoutesUrl() string {
+	return getBaseRequest() + "transports/instance-routes"
 }
 
-// GetRouteByName fetches all routes and finds the one matching the given name
+func identityTransform(r RouteRestModel) (RouteRestModel, error) {
+	return r, nil
+}
+
+// GetRouteByName fetches all routes and finds the one matching the given
+// name. atlas-transports' GET /transports/instance-routes is now paginated
+// (task-117); this scans every route in the tenant by name, a genuine
+// semantic-all consumer, so it drains every page rather than fetching just
+// the first.
 func GetRouteByName(l logrus.FieldLogger, ctx context.Context) func(name string) (RouteRestModel, error) {
 	return func(name string) (RouteRestModel, error) {
-		resp, err := requestAllRoutes()(l, ctx)
+		resp, err := requests.DrainProvider[RouteRestModel, RouteRestModel](l, ctx)(allInstanceRoutesUrl(), 250, identityTransform, model.Filters[RouteRestModel]())()
 		if err != nil {
 			return RouteRestModel{}, fmt.Errorf("failed to fetch instance routes: %w", err)
 		}

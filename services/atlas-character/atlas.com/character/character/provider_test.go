@@ -3,13 +3,13 @@ package character
 import (
 	"testing"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
-
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 )
 
 func newCharsDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID) {
@@ -69,8 +69,25 @@ func TestCharacterProvider_GetForName_FiltersByTenant(t *testing.T) {
 
 func TestCharacterProvider_GetAll_FiltersByTenant(t *testing.T) {
 	db, _, tidB := newCharsDB(t)
-	rows, err := getAll()(db.WithContext(databasetest.TenantContext(tidB)))()
+	paged, err := getAll(model.Page{Number: 1, Size: 50})(db.WithContext(databasetest.TenantContext(tidB)))()
 	require.NoError(t, err)
-	require.Len(t, rows, 1, "GetAll must not leak across tenants")
-	assert.Equal(t, byte(200), rows[0].Level)
+	require.Len(t, paged.Items, 1, "GetAll must not leak across tenants")
+	assert.Equal(t, byte(200), paged.Items[0].Level)
+	assert.Equal(t, 1, paged.Total)
+}
+
+func TestCharacterProvider_GetForAccountInWorldPaged_FiltersByTenant(t *testing.T) {
+	db, _, tidB := newCharsDB(t)
+	paged, err := getForAccountInWorldPaged(7, world.Id(0), model.Page{Number: 1, Size: 50})(db.WithContext(databasetest.TenantContext(tidB)))()
+	require.NoError(t, err)
+	require.Len(t, paged.Items, 1)
+	assert.Equal(t, byte(200), paged.Items[0].Level)
+}
+
+func TestCharacterProvider_GetForNamePaged_FiltersByTenant(t *testing.T) {
+	db, tidA, _ := newCharsDB(t)
+	paged, err := getForNamePaged("Hero", model.Page{Number: 1, Size: 50})(db.WithContext(databasetest.TenantContext(tidA)))()
+	require.NoError(t, err)
+	require.Len(t, paged.Items, 1)
+	assert.Equal(t, byte(1), paged.Items[0].Level)
 }

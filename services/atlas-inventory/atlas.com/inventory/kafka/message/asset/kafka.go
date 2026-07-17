@@ -34,6 +34,7 @@ type AssetData struct {
 	CreatedAt      time.Time  `json:"createdAt"`
 	Quantity       uint32     `json:"quantity"`
 	OwnerId        uint32     `json:"ownerId"`
+	Owner          string     `json:"owner"`
 	Flag           uint16     `json:"flag"`
 	Rechargeable   uint64     `json:"rechargeable"`
 	Strength       uint16     `json:"strength"`

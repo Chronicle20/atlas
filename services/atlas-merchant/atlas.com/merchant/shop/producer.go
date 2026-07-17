@@ -6,12 +6,12 @@ import (
 	"atlas-merchant/kafka/message/compartment"
 	merchant "atlas-merchant/kafka/message/merchant"
 
-	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
-
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
 )
 
 func StatusEventShopOpenedProvider(characterId uint32, shopId uuid.UUID, m Model) model.Provider[[]kafka.Message] {
@@ -19,6 +19,29 @@ func StatusEventShopOpenedProvider(characterId uint32, shopId uuid.UUID, m Model
 	value := &merchant.StatusEvent[merchant.StatusEventShopOpenedBody]{
 		CharacterId: characterId,
 		Type:        merchant.StatusEventShopOpened,
+		Body: merchant.StatusEventShopOpenedBody{
+			ShopId:     shopId.String(),
+			ShopType:   byte(m.ShopType()),
+			WorldId:    m.WorldId(),
+			ChannelId:  m.ChannelId(),
+			MapId:      m.MapId(),
+			InstanceId: m.InstanceId(),
+			Title:      m.Title(),
+			X:          m.X(),
+			Y:          m.Y(),
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// StatusEventShopSetupProvider signals that a newly-created shop is in its setup
+// (Draft) phase: the owner should be dropped into the shop UI to add items
+// before formally opening it. Reuses the shop-opened body shape.
+func StatusEventShopSetupProvider(characterId uint32, shopId uuid.UUID, m Model) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &merchant.StatusEvent[merchant.StatusEventShopOpenedBody]{
+		CharacterId: characterId,
+		Type:        merchant.StatusEventShopSetup,
 		Body: merchant.StatusEventShopOpenedBody{
 			ShopId:     shopId.String(),
 			ShopType:   byte(m.ShopType()),
@@ -101,7 +124,7 @@ func StatusEventVisitorExitedProvider(characterId uint32, shopId uuid.UUID, slot
 	return producer.SingleMessageProvider(key, value)
 }
 
-func StatusEventVisitorEjectedProvider(characterId uint32, shopId uuid.UUID, slot byte) model.Provider[[]kafka.Message] {
+func StatusEventVisitorEjectedProvider(characterId uint32, shopId uuid.UUID, slot byte, leaveReason string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &merchant.StatusEvent[merchant.StatusEventVisitorBody]{
 		CharacterId: characterId,
@@ -110,6 +133,7 @@ func StatusEventVisitorEjectedProvider(characterId uint32, shopId uuid.UUID, slo
 			ShopId:      shopId.String(),
 			CharacterId: characterId,
 			Slot:        slot,
+			LeaveReason: leaveReason,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
@@ -122,6 +146,20 @@ func StatusEventCapacityFullProvider(characterId uint32, shopId uuid.UUID) model
 		Type:        merchant.StatusEventCapacityFull,
 		Body: merchant.StatusEventCapacityFullBody{
 			ShopId: shopId.String(),
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func StatusEventShopCreateFailedProvider(characterId uint32, worldId world.Id, channelId channel.Id, reason string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &merchant.StatusEvent[merchant.StatusEventShopCreateFailedBody]{
+		CharacterId: characterId,
+		Type:        merchant.StatusEventShopCreateFailed,
+		Body: merchant.StatusEventShopCreateFailedBody{
+			WorldId:   worldId,
+			ChannelId: channelId,
+			Reason:    reason,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
@@ -214,6 +252,41 @@ func ChangeMesoCommandProvider(transactionId uuid.UUID, worldId world.Id, charac
 			ActorType: actorType,
 			Amount:    amount,
 		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func StatusEventShopUpdatedProvider(characterId uint32, shopId uuid.UUID) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &merchant.StatusEvent[merchant.StatusEventShopUpdatedBody]{
+		CharacterId: characterId,
+		Type:        merchant.StatusEventShopUpdated,
+		Body: merchant.StatusEventShopUpdatedBody{
+			ShopId: shopId.String(),
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func StatusEventEnterFailedProvider(characterId uint32, shopId uuid.UUID, reason string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &merchant.StatusEvent[merchant.StatusEventEnterFailedBody]{
+		CharacterId: characterId,
+		Type:        merchant.StatusEventEnterFailed,
+		Body: merchant.StatusEventEnterFailedBody{
+			ShopId: shopId.String(),
+			Reason: reason,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func StatusEventBlacklistUpdatedProvider(characterId uint32, shopId uuid.UUID) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &merchant.StatusEvent[merchant.StatusEventBlacklistUpdatedBody]{
+		CharacterId: characterId,
+		Type:        merchant.StatusEventBlacklistUpdated,
+		Body:        merchant.StatusEventBlacklistUpdatedBody{ShopId: shopId.String()},
 	}
 	return producer.SingleMessageProvider(key, value)
 }

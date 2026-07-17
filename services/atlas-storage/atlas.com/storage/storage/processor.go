@@ -7,15 +7,10 @@ import (
 	"atlas-storage/data/setup"
 	"atlas-storage/kafka/message"
 	"atlas-storage/kafka/message/compartment"
-	"atlas-storage/kafka/producer"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"sort"
-
-	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 
 	assetConstants "github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
@@ -23,8 +18,11 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	atlasProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 type Processor interface {
@@ -110,6 +108,7 @@ func (p *ProcessorImpl) Deposit(worldId world.Id, accountId uint32, body message
 		SetExpiration(body.Expiration).
 		SetQuantity(body.Quantity).
 		SetOwnerId(body.OwnerId).
+		SetOwner(body.Owner).
 		SetFlag(body.Flag).
 		SetRechargeable(body.Rechargeable).
 		SetStrength(body.Strength).
@@ -260,6 +259,7 @@ func (p *ProcessorImpl) Accept(worldId world.Id, accountId uint32, body compartm
 		SetExpiration(body.Expiration).
 		SetQuantity(body.Quantity).
 		SetOwnerId(body.OwnerId).
+		SetOwner(body.Owner).
 		SetFlag(body.Flag).
 		SetRechargeable(body.Rechargeable).
 		SetStrength(body.Strength).
@@ -448,8 +448,8 @@ func (p *ProcessorImpl) emitCompartmentErrorEvent(worldId world.Id, accountId ui
 }
 
 func createCompartmentMessageProvider[E any](accountId uint32, event *compartment.StatusEvent[E]) func() ([]kafka.Message, error) {
-	key := atlasProducer.CreateKey(int(accountId))
-	return atlasProducer.SingleMessageProvider(key, event)
+	key := producer.CreateKey(int(accountId))
+	return producer.SingleMessageProvider(key, event)
 }
 
 func (p *ProcessorImpl) emitDepositedEvent(transactionId uuid.UUID, worldId world.Id, accountId uint32, assetId uint32, body message.DepositBody) error {
@@ -501,8 +501,8 @@ func (p *ProcessorImpl) emitMesosUpdatedEvent(transactionId uuid.UUID, worldId w
 }
 
 func createMessageProvider[E any](accountId uint32, event *message.StatusEvent[E]) func() ([]kafka.Message, error) {
-	key := atlasProducer.CreateKey(int(accountId))
-	return atlasProducer.SingleMessageProvider(key, event)
+	key := producer.CreateKey(int(accountId))
+	return producer.SingleMessageProvider(key, event)
 }
 
 // mergeKey is used to group stackable assets for merging

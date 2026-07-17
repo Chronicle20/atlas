@@ -3,10 +3,10 @@ package chair
 import (
 	_map2 "atlas-chairs/data/map"
 	chair2 "atlas-chairs/kafka/message/chair"
-	"atlas-chairs/kafka/producer"
 	"atlas-chairs/validation"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"math"
 
 	"github.com/sirupsen/logrus"

@@ -3,8 +3,8 @@ package mts
 import (
 	"atlas-saga-orchestrator/kafka/message"
 	mtsCustody "atlas-saga-orchestrator/kafka/message/mts/custody"
-	"atlas-saga-orchestrator/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"time"
 
 	"github.com/google/uuid"
@@ -52,6 +52,7 @@ type AcceptToMtsListingParams struct {
 	RingId        uint32
 	ViciousCount  uint32
 	Flags         uint16
+	Owner         string
 
 	ListValue      uint32
 	BuyNowPrice    *uint32

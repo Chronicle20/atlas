@@ -2,8 +2,8 @@ package fame
 
 import (
 	fame2 "atlas-channel/kafka/message/fame"
-	"atlas-channel/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"
 

@@ -3,8 +3,8 @@ package mist
 import (
 	"atlas-maps/kafka/message"
 	mistKafka "atlas-maps/kafka/message/mist"
-	"atlas-maps/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"time"
 
 	"github.com/google/uuid"

@@ -157,7 +157,7 @@ func (Character) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc 
 // and returned so the caller logs them as warnings — none of them are fatal
 // to the Character ingest (the atlas PNG+JSON pairs were already emitted).
 func emitSmapSidecar(ctx context.Context, l logrus.FieldLogger, mc *minio.Client, p Params) error {
-	base, cleanup, err := fetchArchive(ctx, l, mc, p, "Base.wz")
+	base, cleanup, err := OpenArchive(ctx, l, mc, p, "Base.wz")
 	if err != nil {
 		return fmt.Errorf("fetch Base.wz: %w", err)
 	}
@@ -189,7 +189,7 @@ func emitSmapSidecar(ctx context.Context, l logrus.FieldLogger, mc *minio.Client
 // character-meta dir, same
 // Base.wz source vocabulary) and is emitted in the same best-effort manner.
 func emitZmapSidecar(ctx context.Context, l logrus.FieldLogger, mc *minio.Client, p Params) error {
-	base, cleanup, err := fetchArchive(ctx, l, mc, p, "Base.wz")
+	base, cleanup, err := OpenArchive(ctx, l, mc, p, "Base.wz")
 	if err != nil {
 		return fmt.Errorf("fetch Base.wz: %w", err)
 	}

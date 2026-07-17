@@ -61,10 +61,12 @@ func (p *ProcessorImpl) GetSkill(characterId uint32, skillId uint32) model.Provi
 	}
 }
 
-// GetSkillsByCharacter returns all skills for a character
+// GetSkillsByCharacter returns all skills for a character. The upstream
+// atlas-skills GET /characters/{id}/skills is now paginated (task-117), so
+// this drains every page rather than fetching just the first.
 func (p *ProcessorImpl) GetSkillsByCharacter(characterId uint32) model.Provider[[]Model] {
 	return func() ([]Model, error) {
-		skillsProvider := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByCharacter(characterId), Extract, model.Filters[Model]())
+		skillsProvider := requests.DrainProvider[RestModel, Model](p.l, p.ctx)(byCharacterUrl(characterId), 250, Extract, model.Filters[Model]())
 		skills, err := skillsProvider()
 		if err != nil {
 			p.l.WithError(err).Errorf("Failed to get skills for character %d", characterId)

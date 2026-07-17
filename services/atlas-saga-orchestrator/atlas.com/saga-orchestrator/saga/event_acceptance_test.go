@@ -43,6 +43,8 @@ var allActions = []sharedsaga.Action{
 	sharedsaga.RegisterPartyQuest, sharedsaga.WarpPartyQuestMembersToMap, sharedsaga.LeavePartyQuest,
 	sharedsaga.EnterPartyQuestBonus, sharedsaga.UpdatePqCustomData, sharedsaga.HitReactor,
 	sharedsaga.BroadcastPqMessage, sharedsaga.StageClearAttemptPq, sharedsaga.FieldEffectWeather,
+	sharedsaga.StartRPSGame,
+	sharedsaga.SetAssetOwner, sharedsaga.ApplyAssetLock, sharedsaga.IncubatorResult,
 	sharedsaga.TransferAP, sharedsaga.TransferSP,
 }
 

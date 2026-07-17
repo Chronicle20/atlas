@@ -50,8 +50,7 @@ type Processor interface {
 	WithValidator(v *preset.Validator) Processor
 	ByIdProvider(id uuid.UUID) model.Provider[RestModel]
 	ByRegionAndVersionProvider(region string, majorVersion uint16, minorVersion uint16) model.Provider[RestModel]
-	AllProvider() model.Provider[[]RestModel]
-	GetAll() ([]RestModel, error)
+	AllProvider(page model.Page) model.Provider[model.Paged[RestModel]]
 	GetById(id uuid.UUID) (RestModel, error)
 	GetByRegionAndVersion(region string, majorVersion uint16, minorVersion uint16) (RestModel, error)
 	UpdateById(tenantId uuid.UUID, input RestModel) error
@@ -90,10 +89,9 @@ func (p *ProcessorImpl) ByRegionAndVersionProvider(region string, majorVersion u
 	return model.Map(Make)(byRegionVersionEntityProvider(p.ctx)(region, majorVersion, minorVersion)(p.db))
 }
 
-func (p *ProcessorImpl) AllProvider() model.Provider[[]RestModel] {
-	return func() ([]RestModel, error) {
-		return model.SliceMap(Make)(allEntityProvider(p.ctx)(p.db))()()
-	}
+// AllProvider returns a paged provider for every configuration tenant.
+func (p *ProcessorImpl) AllProvider(page model.Page) model.Provider[model.Paged[RestModel]] {
+	return model.MapPaged(Make)(getAll(p.ctx, page)(p.db))(model.ParallelMap())
 }
 
 func Make(e Entity) (RestModel, error) {
@@ -104,10 +102,6 @@ func Make(e Entity) (RestModel, error) {
 	}
 	rm.Id = e.Id.String()
 	return rm, nil
-}
-
-func (p *ProcessorImpl) GetAll() ([]RestModel, error) {
-	return p.AllProvider()()
 }
 
 func (p *ProcessorImpl) GetById(id uuid.UUID) (RestModel, error) {

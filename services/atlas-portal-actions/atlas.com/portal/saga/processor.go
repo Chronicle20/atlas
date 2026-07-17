@@ -2,8 +2,8 @@ package saga
 
 import (
 	"atlas-portal-actions/kafka/message/saga"
-	"atlas-portal-actions/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"
 

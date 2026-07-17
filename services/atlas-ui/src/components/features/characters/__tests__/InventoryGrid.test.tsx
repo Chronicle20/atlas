@@ -56,6 +56,7 @@ const makeAsset = (overrides: Partial<Asset["attributes"]> = {}): Asset => ({
     createdAt: "0001-01-01T00:00:00Z",
     quantity: 1,
     ownerId: 0,
+    owner: "",
     flag: 0,
     rechargeable: 0,
     strength: 0,

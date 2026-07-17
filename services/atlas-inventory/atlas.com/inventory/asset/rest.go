@@ -13,6 +13,7 @@ type RestModel struct {
 	CreatedAt      time.Time  `json:"createdAt"`
 	Quantity       uint32     `json:"quantity"`
 	OwnerId        uint32     `json:"ownerId"`
+	Owner          string     `json:"owner"`
 	Flag           uint16     `json:"flag"`
 	Rechargeable   uint64     `json:"rechargeable"`
 	Strength       uint16     `json:"strength"`
@@ -68,6 +69,7 @@ func Transform(m Model) (RestModel, error) {
 		CreatedAt:      m.createdAt,
 		Quantity:       m.Quantity(),
 		OwnerId:        m.ownerId,
+		Owner:          m.owner,
 		Flag:           m.flag,
 		Rechargeable:   m.rechargeable,
 		Strength:       m.strength,
@@ -107,6 +109,7 @@ func Extract(rm RestModel) (Model, error) {
 		createdAt:      rm.CreatedAt,
 		quantity:       rm.Quantity,
 		ownerId:        rm.OwnerId,
+		owner:          rm.Owner,
 		flag:           rm.Flag,
 		rechargeable:   rm.Rechargeable,
 		strength:       rm.Strength,

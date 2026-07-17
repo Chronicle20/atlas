@@ -1,10 +1,10 @@
 package reactor
 
 import (
-	"atlas-reactors/kafka/producer"
 	"atlas-reactors/reactor/data"
 	"atlas-reactors/reactor/data/state"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"

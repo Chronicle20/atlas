@@ -21,6 +21,8 @@ To build everything locally: `docker buildx bake all-go-services` (or `tools/bui
 
 Adding a new shared lib requires appending two `COPY` lines to the repo-root `Dockerfile` (one in the mod-only block, one in the source block) and one `./libs/<name>` line to `go.work`. That's it — no per-service edits.
 
+**Adding a new service:** follow [`docs/adding-a-new-service.md`](docs/adding-a-new-service.md) in full — it enumerates every hand-maintained list a service must be registered in (CI, docker-bake, go.work, k8s base, BOTH kustomize overlays, databases, ingress) and the silent-failure traps (unpinned `:latest` image, `behavior: replace` configmap key drops, unsuffixed Kafka topic fallback). `tools/service-registration-guard.sh` machine-checks the lists (also a CI job); run it plus the doc's Verification section before opening the PR.
+
 For large refactors expect multiple fix-and-rebuild cycles. Don't shortcut the bake step.
 5. **`tools/redis-key-guard.sh` clean from the repo root.** Bans keyed Redis
    commands on the raw `go-redis` client outside `libs/atlas-redis` (FR-1.5,
@@ -29,7 +31,11 @@ For large refactors expect multiple fix-and-rebuild cycles. Don't shortcut the b
    statements outside `libs/atlas-routine` and justified
    `//goroutine-guard:allow` sites (RR-6, task-115) — every goroutine must be
    spawned via `routine.Go`. Runs alongside `go vet ./...`.
-7. **`tools/lint.sh --check` clean from the repo root.** The shared lint &
+7. **`tools/service-registration-guard.sh` clean from the repo root** whenever
+   services.json, deploy/k8s, docker-bake.hcl, go.work, or tools/db-bootstrap.sh
+   changed. Cross-checks every hand-maintained service-registration list
+   (see [`docs/adding-a-new-service.md`](docs/adding-a-new-service.md)).
+8. **`tools/lint.sh --check` clean from the repo root.** The shared lint &
    format guard (task-171): golangci-lint v2 formatters (gofumpt + goimports,
    tree-wide) and `standard` linters (rev-gated to new code) across every Go
    module, plus Prettier + ESLint for atlas-ui. Fix mode (`tools/lint.sh`,
@@ -80,11 +86,12 @@ When updating TODO.md or other tracking docs, always use `Glob` or `Grep` to fin
 
 - When producing design.md or plan.md documents, write the full document directly to the file. Do NOT walk through sections interactively or ask for per-section approval. The user will read the committed file.
 
-## Worktree Discipline
+## Worktrees & Subagents
 
 - Tasks live in git worktrees (often siblings of the main repo). Before planning/designing/executing a task, verify cwd is the correct worktree; if not, cd into it yourself rather than asking the user.
 - When searching for task PRDs/plans/designs, search across all worktrees (`git worktree list`) before concluding a file is missing.
 - Never edit files in the main repo when a task worktree exists for that work.
+- When dispatching subagents (reviewers, doc agents), ensure they operate inside the correct worktree — never write artifacts or edits into the main repo. Verify the tree is clean after subagent runs.
 
 ## Code Review Before PR
 
@@ -141,7 +148,21 @@ Every task type's leaf step — promoting one packet × version matrix cell to `
 
 - When asked to verify or fix something, confirm the exact server/tenant version the user is testing (e.g. v83 vs v87) before investigating. Do not assume — ask or check, because the wrong version sends the whole investigation down the wrong path.
 - Do a full sweep, not spot-checking, unless explicitly told otherwise. A spot-check presented as a full sweep is a false "verified" — and live PATCHes built on it get rejected at validation time.
+- Always verify hypotheses against actual live evidence (diffs, logs, live k8s state) before making claims or taking destructive action. State findings as hypotheses until confirmed — "I think it's X" is not a conclusion, it's a lead to check.
 
 ## Debugging / Kubernetes
 
 - For diagnosing wedged deploys or runtime failures, read the relevant pod logs early (e.g. `atlas-character-factory`, `atlas-world`) via `mcp__kubernetes__pods_log` rather than starting at packet-level fixes or bare pod listings. The logs usually name the real root cause directly.
+
+## Git Operations
+
+- After completing a rebase/merge/history-rewrite, always push (force-push when history was rewritten) so the PR reflects the resolved state. Do not stop at local-only completion — a rebase resolved only locally leaves the PR still showing conflicts.
+
+## Model & Cost Preferences
+
+- Do not use expensive models (e.g. Fable) for background/review workflows; default to the standard model unless explicitly told otherwise. See [[feedback_review_workflows_use_cheaper_model]] — pin code-review/verify subagents to Sonnet/Haiku.
+
+## Shell & Editing Conventions
+
+- Prefer portable POSIX shell in Bash commands; avoid zsh/direnv-specific constructs and batch patch loops that can produce garbled or unapplied output. When a multi-file edit is needed, prefer per-file Edit/Write over a shell patch loop.
+- Preserve line endings when editing (do not normalize CRLF→LF as a side effect) — it inflates diffs with spurious changes.

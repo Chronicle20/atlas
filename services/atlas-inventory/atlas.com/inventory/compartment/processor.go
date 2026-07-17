@@ -8,10 +8,11 @@ import (
 	"atlas-inventory/kafka/message/compartment"
 	dropMsg "atlas-inventory/kafka/message/drop"
 	pickupMsg "atlas-inventory/kafka/message/pickup"
-	"atlas-inventory/kafka/producer"
 	"context"
 	"errors"
 	"fmt"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"math"
 	"sort"
 	"time"
@@ -43,6 +44,7 @@ type Processor interface {
 	GetByCharacterId(characterId uint32) ([]Model, error)
 	ByCharacterAndTypeProvider(characterId uint32) func(inventoryType inventory.Type) model.Provider[Model]
 	GetByCharacterAndType(characterId uint32) func(inventoryType inventory.Type) (Model, error)
+	CanAccommodate(characterId uint32, reqs []AccommodationRequest) ([]AccommodationResult, error)
 	DecorateAsset(m Model) (Model, error)
 	Create(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, capacity uint32) (Model, error)
 	DeleteByModel(mb *message.Buffer) func(transactionId uuid.UUID, c Model) error
@@ -88,6 +90,10 @@ type Processor interface {
 	ModifyEquipment(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, assetId uint32, stats asset.Model) error
 	ChangeTemplateAndEmit(transactionId uuid.UUID, characterId uint32, petId uint32, newTemplateId uint32) error
 	ChangeTemplate(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, petId uint32, newTemplateId uint32) error
+	SetAssetOwnerAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, owner string) error
+	SetAssetOwner(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, owner string) error
+	ApplyAssetLockAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time) error
+	ApplyAssetLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time) error
 }
 
 type ProcessorImpl struct {
@@ -956,6 +962,11 @@ func (p *ProcessorImpl) ExpireAsset(mb *message.Buffer) func(transactionId uuid.
 				return err
 			}
 
+			if a.Locked() {
+				// Lock expiration passed: clear the lock and keep the asset (PRD 4.2.5).
+				return p.assetProcessor.WithTransaction(tx).ClearLock(mb)(transactionId, characterId)(a)
+			}
+
 			// Expire the asset (deletes and emits EXPIRED event)
 			err = p.assetProcessor.WithTransaction(tx).Expire(mb)(transactionId, characterId, c.Id(), isCash, replaceItemId, replaceMessage)(a)
 			if err != nil {
@@ -990,12 +1001,106 @@ func (p *ProcessorImpl) ExpireAsset(mb *message.Buffer) func(transactionId uuid.
 	}
 }
 
-func (p *ProcessorImpl) CreateAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error {
+func (p *ProcessorImpl) SetAssetOwnerAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, owner string) error {
 	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
-			return p.WithTransaction(tx).CreateAssetAndLock(buf)(transactionId, characterId, inventoryType, templateId, quantity, expiration, ownerId, flag, rechargeable, useAverageStats)
+			return p.WithTransaction(tx).SetAssetOwner(buf)(transactionId, characterId, inventoryType, slot, owner)
 		})
 	})
+}
+
+func (p *ProcessorImpl) SetAssetOwner(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, owner string) error {
+	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, owner string) error {
+		p.l.Debugf("Character [%d] attempting to set owner of asset in inventory [%d] slot [%d] to [%s].", characterId, inventoryType, slot, owner)
+		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock.Lock()
+		defer invLock.Unlock()
+
+		c, err := p.GetByCharacterAndType(characterId)(inventoryType)
+		if err != nil {
+			p.l.WithError(err).Errorf("Character [%d] unable to set owner of asset in inventory [%d] slot [%d].", characterId, inventoryType, slot)
+			return err
+		}
+		a, err := p.assetProcessor.WithTransaction(p.db).GetBySlot(c.Id(), slot)
+		if err != nil {
+			p.l.WithError(err).Errorf("Character [%d] unable to set owner of asset in inventory [%d] slot [%d].", characterId, inventoryType, slot)
+			return err
+		}
+		if err := p.assetProcessor.WithTransaction(p.db).UpdateOwner(mb)(transactionId, characterId)(a, owner); err != nil {
+			p.l.WithError(err).Errorf("Character [%d] unable to set owner of asset in inventory [%d] slot [%d].", characterId, inventoryType, slot)
+			return err
+		}
+		p.l.Debugf("Character [%d] set owner of asset [%d] in inventory [%d] slot [%d].", characterId, a.Id(), inventoryType, slot)
+		return nil
+	}
+}
+
+func (p *ProcessorImpl) ApplyAssetLockAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).ApplyAssetLock(buf)(transactionId, characterId, inventoryType, slot, expiration)
+		})
+	})
+}
+
+func (p *ProcessorImpl) ApplyAssetLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time) error {
+	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time) error {
+		p.l.Debugf("Character [%d] attempting to apply lock to asset in inventory [%d] slot [%d].", characterId, inventoryType, slot)
+		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock.Lock()
+		defer invLock.Unlock()
+
+		c, err := p.GetByCharacterAndType(characterId)(inventoryType)
+		if err != nil {
+			p.l.WithError(err).Errorf("Character [%d] unable to apply lock to asset in inventory [%d] slot [%d].", characterId, inventoryType, slot)
+			return err
+		}
+		a, err := p.assetProcessor.WithTransaction(p.db).GetBySlot(c.Id(), slot)
+		if err != nil {
+			p.l.WithError(err).Errorf("Character [%d] unable to apply lock to asset in inventory [%d] slot [%d].", characterId, inventoryType, slot)
+			return err
+		}
+		if err := p.assetProcessor.WithTransaction(p.db).ApplyLock(mb)(transactionId, characterId)(a, expiration); err != nil {
+			p.l.WithError(err).Errorf("Character [%d] unable to apply lock to asset in inventory [%d] slot [%d].", characterId, inventoryType, slot)
+			return err
+		}
+		p.l.Debugf("Character [%d] applied lock to asset [%d] in inventory [%d] slot [%d].", characterId, a.Id(), inventoryType, slot)
+		return nil
+	}
+}
+
+func (p *ProcessorImpl) CreateAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error {
+	// CreateAsset buffers a CREATION_FAILED rejection (compartment status topic)
+	// when the create fails, but the transactional emit path discards the buffer
+	// on error and the surrounding tx rolls back — so a caller waiting on that
+	// rejection (e.g. the reward-box flow's inventory-full feedback) would never
+	// hear it. Capture the rejection and re-emit it outside the rolled-back tx on
+	// a direct producer, mirroring the drop-pickup reject path below (~L1296).
+	rejection := message.NewBuffer()
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			err := p.WithTransaction(tx).CreateAssetAndLock(buf)(transactionId, characterId, inventoryType, templateId, quantity, expiration, ownerId, flag, rechargeable, useAverageStats)
+			if err != nil {
+				if msgs, ok := buf.GetAll()[compartment.EnvEventTopicStatus]; ok {
+					_ = rejection.Put(compartment.EnvEventTopicStatus, model.FixedProvider(msgs))
+				}
+			}
+			return err
+		})
+	})
+	if txErr != nil {
+		if emitErr := message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+			for t, msgs := range rejection.GetAll() {
+				if putErr := buf.Put(t, model.FixedProvider(msgs)); putErr != nil {
+					return putErr
+				}
+			}
+			return nil
+		}); emitErr != nil {
+			p.l.WithError(emitErr).Errorf("Unable to emit CREATION_FAILED rejection after failed asset create for character [%d].", characterId)
+		}
+	}
+	return txErr
 }
 
 func (p *ProcessorImpl) CreateAssetAndLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error {

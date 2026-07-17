@@ -6,14 +6,14 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 // InitResource registers the holding routes:
@@ -93,23 +93,33 @@ func handleTakeHome(d *rest.HandlerDependency, c *rest.HandlerContext, rm TakeHo
 	})
 }
 
+// handleGetCharacterHoldings is a game-capped list (take-home items are bounded
+// by however many the character has taken out of custody but not yet withdrawn
+// to inventory) — page[size] defaults to and caps at paginate.MaxPageSize
+// (task-117).
 func handleGetCharacterHoldings(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
+			page, perr := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+			if perr != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+				return
+			}
+
 			p := NewProcessor(d.Logger(), d.Context(), d.DB())
 
-			var ms []Model
+			var paged model.Paged[Model]
 			var err error
 			if v := r.URL.Query().Get("worldId"); v != "" {
-				worldId, perr := strconv.ParseUint(v, 10, 8)
-				if perr != nil {
-					d.Logger().WithError(perr).Errorf("Unable to parse worldId query for character [%d].", characterId)
+				worldId, werr := strconv.ParseUint(v, 10, 8)
+				if werr != nil {
+					d.Logger().WithError(werr).Errorf("Unable to parse worldId query for character [%d].", characterId)
 					w.WriteHeader(http.StatusBadRequest)
 					return
 				}
-				ms, err = p.GetByOwner(world.Id(byte(worldId)), characterId)
+				paged, err = p.ByOwnerPagedProvider(world.Id(byte(worldId)), characterId, page)()
 			} else {
-				ms, err = p.GetByCharacter(characterId)
+				paged, err = p.ByCharacterPagedProvider(characterId, page)()
 			}
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Retrieving holdings for character [%d].", characterId)
@@ -117,7 +127,7 @@ func handleGetCharacterHoldings(d *rest.HandlerDependency, c *rest.HandlerContex
 				return
 			}
 
-			res, err := model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())()
+			res, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				server.WriteErrorResponse(d.Logger())(w)(err)
@@ -126,7 +136,7 @@ func handleGetCharacterHoldings(d *rest.HandlerDependency, c *rest.HandlerContex
 
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
 		}
 	})
 }

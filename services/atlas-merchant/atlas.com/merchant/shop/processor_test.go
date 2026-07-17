@@ -4,11 +4,17 @@ import (
 	"atlas-merchant/frederick"
 	message "atlas-merchant/kafka/message"
 	asset2 "atlas-merchant/kafka/message/asset"
+	compartment "atlas-merchant/kafka/message/compartment"
+	merchantmsg "atlas-merchant/kafka/message/merchant"
 	"atlas-merchant/listing"
+	"atlas-merchant/visitor"
 	"context"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/alicebob/miniredis/v2"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -147,6 +153,33 @@ func TestCloseShop(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, Closed, closed.State())
 	assert.Equal(t, CloseReasonManualClose, closed.CloseReason())
+}
+
+// A personal shop closed by DISCONNECT (logout) must still return unsold items
+// to the owner's inventory — the same AcceptAsset the manual close emits.
+// Skipping it orphans the items on the closed shop (task-127 live bug: player
+// logs out and their listed items never come back; personal shops have no
+// Fredrick fallback).
+func TestCloseShop_Disconnect_ReturnsPersonalShopItems(t *testing.T) {
+	db := setupTestDB(t)
+	ctx, _ := setupTestContext(t)
+	l, _ := test.NewNullLogger()
+	p := NewProcessor(l, ctx, db)
+	mb := testBuffer()
+
+	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 5140000)
+	require.NoError(t, err)
+	// itemId 2000004 = Elixir (a USE consumable) — mirrors the live case.
+	_, err = p.AddListing(mb)(m.Id(), 1000, 2000004, 2, 1, 100, 1000, asset2.AssetData{}, 2, 0)
+	require.NoError(t, err)
+	require.NoError(t, p.OpenShop(mb)(m.Id(), 1000))
+
+	// Fresh buffer so we only observe the close's emissions.
+	cmb := testBuffer()
+	require.NoError(t, p.CloseShop(cmb)(m.Id(), 1000, CloseReasonDisconnect))
+
+	assert.NotEmpty(t, cmb.GetAll()[compartment.EnvCommandTopic],
+		"disconnect close of a personal shop must return unsold items to the owner")
 }
 
 func TestCloseShop_InvalidState(t *testing.T) {
@@ -739,4 +772,230 @@ func TestCloseShop_FromMaintenance(t *testing.T) {
 	closed, err := p.GetById(m.Id())
 	require.NoError(t, err)
 	assert.Equal(t, Closed, closed.State())
+}
+
+// setupTestRegistries wires both the shop activeShops registry and the visitor
+// registry to a per-test miniredis so occupancy resolution can be exercised.
+func setupTestRegistries(t *testing.T) {
+	t.Helper()
+	mr := miniredis.RunT(t)
+	client := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitRegistry(client)
+	visitor.InitRegistry(client)
+}
+
+// GetShopForCharacter must resolve the OWNER of an owner-attached shop —
+// otherwise every owner-side op (OPEN, PUT_ITEM, EXIT, CHAT) that the channel
+// routes through /characters/{id}/visiting 404s on a freshly created Draft
+// shop, the owner can neither stock nor open nor close it, and the stranded
+// Draft blocks re-creation.
+func TestGetShopForCharacter_OwnerOfDraftPersonalShop(t *testing.T) {
+	db := setupTestDB(t)
+	ctx, _ := setupTestContext(t)
+	l, _ := test.NewNullLogger()
+	setupTestRegistries(t)
+	p := NewProcessor(l, ctx, db)
+
+	m, err := p.CreateShop(2000, CharacterShop, "Owner Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 5140000)
+	require.NoError(t, err)
+
+	got, err := p.GetShopForCharacter(2000)
+	require.NoError(t, err)
+	assert.Equal(t, m.Id(), got)
+}
+
+func TestGetShopForCharacter_OwnerOfDraftHiredMerchant(t *testing.T) {
+	db := setupTestDB(t)
+	ctx, _ := setupTestContext(t)
+	l, _ := test.NewNullLogger()
+	setupTestRegistries(t)
+	p := NewProcessor(l, ctx, db)
+
+	m, err := p.CreateShop(2001, HiredMerchant, "Merch Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 5030000)
+	require.NoError(t, err)
+
+	got, err := p.GetShopForCharacter(2001)
+	require.NoError(t, err)
+	assert.Equal(t, m.Id(), got)
+}
+
+// A hired merchant running Open is owner-detached: the owner is NOT occupying
+// it (they may be wandering, or visiting another shop — the visitor registry
+// takes precedence then).
+func TestGetShopForCharacter_OpenHiredMerchantOwnerDetached(t *testing.T) {
+	db := setupTestDB(t)
+	ctx, _ := setupTestContext(t)
+	l, _ := test.NewNullLogger()
+	setupTestRegistries(t)
+	p := NewProcessor(l, ctx, db)
+
+	m, err := p.CreateShop(2002, HiredMerchant, "Merch Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 5030000)
+	require.NoError(t, err)
+
+	// Force the shop to Open (bypassing the listing requirement).
+	require.NoError(t, db.WithContext(ctx).Model(&Entity{}).Where("id = ?", m.Id()).Update("state", byte(Open)).Error)
+
+	_, err = p.GetShopForCharacter(2002)
+	assert.Error(t, err, "owner of an Open hired merchant is not occupying it")
+
+	// But while visiting someone else's shop, the visitor registry resolves.
+	other, err := p.CreateShop(2003, CharacterShop, "Other Shop", 0, 0, 910000001, uuid.Nil, 500, 0, 5140000)
+	require.NoError(t, err)
+	require.NoError(t, visitor.GetRegistry().AddVisitor(ctx, tenant.MustFromContext(ctx), other.Id(), 2002))
+	got, err := p.GetShopForCharacter(2002)
+	require.NoError(t, err)
+	assert.Equal(t, other.Id(), got)
+}
+
+// A hired merchant in Maintenance is owner-attached again (management view).
+func TestGetShopForCharacter_MaintenanceHiredMerchantOwnerAttached(t *testing.T) {
+	db := setupTestDB(t)
+	ctx, _ := setupTestContext(t)
+	l, _ := test.NewNullLogger()
+	setupTestRegistries(t)
+	p := NewProcessor(l, ctx, db)
+
+	m, err := p.CreateShop(2004, HiredMerchant, "Merch Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 5030000)
+	require.NoError(t, err)
+	require.NoError(t, db.WithContext(ctx).Model(&Entity{}).Where("id = ?", m.Id()).Update("state", byte(Maintenance)).Error)
+
+	got, err := p.GetShopForCharacter(2004)
+	require.NoError(t, err)
+	assert.Equal(t, m.Id(), got)
+}
+
+// A personal-shop owner must resolve their own shop even when the Redis
+// occupancy entry is unavailable at read time (eviction, an uncommitted
+// CreateShop Put, a close-desync). The DB is authoritative; otherwise every
+// owner-side op 404s on /characters/{id}/visiting and the client freezes
+// (task-127 live bug: add-item hangs, close never fires, re-create blocked).
+func TestGetShopForCharacter_PersonalShop_OccupancyEvicted_DBFallback(t *testing.T) {
+	db := setupTestDB(t)
+	ctx, ten := setupTestContext(t)
+	l, _ := test.NewNullLogger()
+	setupTestRegistries(t)
+	p := NewProcessor(l, ctx, db)
+
+	m, err := p.CreateShop(2200, CharacterShop, "Owner Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 5140000)
+	require.NoError(t, err)
+
+	// Simulate the occupancy entry being gone when the owner acts.
+	require.NoError(t, GetRegistry().activeShops.Remove(ctx, ten, 2200))
+
+	got, err := p.GetShopForCharacter(2200)
+	require.NoError(t, err)
+	assert.Equal(t, m.Id(), got)
+
+	// The DB fallback re-seeds Redis so the fast path is restored.
+	entry, err := GetRegistry().activeShops.Get(ctx, ten, 2200)
+	require.NoError(t, err)
+	assert.Equal(t, m.Id(), entry.ShopId)
+}
+
+// Occupancy eviction must not accidentally resolve an owner-detached Open
+// hired merchant — the DB fallback honors the same owner-attached rule
+// (personal: any non-Closed; hired merchant: only Draft/Maintenance).
+func TestGetShopForCharacter_OpenHiredMerchant_OccupancyEvicted_StillDetached(t *testing.T) {
+	db := setupTestDB(t)
+	ctx, ten := setupTestContext(t)
+	l, _ := test.NewNullLogger()
+	setupTestRegistries(t)
+	p := NewProcessor(l, ctx, db)
+
+	m, err := p.CreateShop(2201, HiredMerchant, "Merch", 0, 0, 910000001, uuid.Nil, 0, 0, 5030000)
+	require.NoError(t, err)
+	require.NoError(t, db.WithContext(ctx).Model(&Entity{}).Where("id = ?", m.Id()).Update("state", byte(Open)).Error)
+	require.NoError(t, GetRegistry().activeShops.Remove(ctx, ten, 2201))
+
+	_, err = p.GetShopForCharacter(2201)
+	assert.Error(t, err, "owner of an Open hired merchant is not occupying it, even without a cache entry")
+}
+
+// A stale occupancy entry pointing at a now-Closed shop must not 404 the owner
+// when they actually have a fresh active shop — the DB fallback finds the real
+// one (and a Closed shop is never returned as occupied).
+func TestGetShopForCharacter_StaleOccupancy_ResolvesActiveShop(t *testing.T) {
+	db := setupTestDB(t)
+	ctx, ten := setupTestContext(t)
+	l, _ := test.NewNullLogger()
+	setupTestRegistries(t)
+	p := NewProcessor(l, ctx, db)
+
+	old, err := p.CreateShop(2202, CharacterShop, "Old", 0, 0, 910000001, uuid.Nil, 0, 0, 5140000)
+	require.NoError(t, err)
+	require.NoError(t, db.WithContext(ctx).Model(&Entity{}).Where("id = ?", old.Id()).Update("state", byte(Closed)).Error)
+
+	fresh, err := p.CreateShop(2202, CharacterShop, "Fresh", 0, 0, 910000002, uuid.Nil, 0, 0, 5140000)
+	require.NoError(t, err)
+
+	// Force occupancy to point at the stale (Closed) shop.
+	require.NoError(t, GetRegistry().activeShops.Put(ctx, ten, 2202, ActiveShopEntry{ShopId: old.Id(), ShopType: CharacterShop}))
+
+	got, err := p.GetShopForCharacter(2202)
+	require.NoError(t, err)
+	assert.Equal(t, fresh.Id(), got)
+}
+
+// AddListing must emit SHOP_UPDATED so the channel refreshes the owner's store
+// view (UPDATE_MERCHANT). Without it the client that just dropped an item into a
+// slot gets no reply and freezes (task-127 live bug).
+func TestAddListing_EmitsShopUpdated(t *testing.T) {
+	db := setupTestDB(t)
+	ctx, _ := setupTestContext(t)
+	l, _ := test.NewNullLogger()
+	p := NewProcessor(l, ctx, db)
+	mb := testBuffer()
+
+	m, err := p.CreateShop(3000, CharacterShop, "Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 5140000)
+	require.NoError(t, err)
+
+	_, err = p.AddListing(mb)(m.Id(), 3000, 2000000, 0, 1, 10, 1000, asset2.AssetData{}, 0, 0)
+	require.NoError(t, err)
+
+	assert.NotEmpty(t, mb.GetAll()[merchantmsg.EnvStatusEventTopic], "AddListing must emit SHOP_UPDATED")
+}
+
+// RemoveListing must likewise refresh the view after pulling an item back.
+func TestRemoveListing_EmitsShopUpdated(t *testing.T) {
+	db := setupTestDB(t)
+	ctx, _ := setupTestContext(t)
+	l, _ := test.NewNullLogger()
+	p := NewProcessor(l, ctx, db)
+	mb := testBuffer()
+
+	m, err := p.CreateShop(3001, CharacterShop, "Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 5140000)
+	require.NoError(t, err)
+	_, err = p.AddListing(mb)(m.Id(), 3001, 2000000, 0, 1, 10, 1000, asset2.AssetData{}, 0, 0)
+	require.NoError(t, err)
+
+	rmb := testBuffer()
+	_, err = p.RemoveListing(rmb)(m.Id(), 3001, 0)
+	require.NoError(t, err)
+
+	assert.NotEmpty(t, rmb.GetAll()[merchantmsg.EnvStatusEventTopic], "RemoveListing must emit SHOP_UPDATED")
+}
+
+// A hired merchant abandoned in Draft (owner created the shop, closed the
+// window, never opened) must still be reaped by the expiry task — otherwise
+// it never leaves Draft and permanently blocks the character from creating
+// another shop of that type.
+func TestGetExpired_IncludesDraftHiredMerchant(t *testing.T) {
+	db := setupTestDB(t)
+	ctx, _ := setupTestContext(t)
+	l, _ := test.NewNullLogger()
+	setupTestRegistries(t)
+	p := NewProcessor(l, ctx, db)
+
+	m, err := p.CreateShop(3000, HiredMerchant, "Stale Draft", 0, 0, 910000001, uuid.Nil, 0, 0, 5030000)
+	require.NoError(t, err)
+
+	// Age the shop past its 24h expiry.
+	past := time.Now().Add(-25 * time.Hour)
+	require.NoError(t, db.WithContext(ctx).Model(&Entity{}).Where("id = ?", m.Id()).Update("expires_at", past).Error)
+
+	expired, err := p.GetExpired()
+	require.NoError(t, err)
+	require.Len(t, expired, 1)
+	assert.Equal(t, m.Id(), expired[0].Id())
+	assert.Equal(t, Draft, expired[0].State())
 }

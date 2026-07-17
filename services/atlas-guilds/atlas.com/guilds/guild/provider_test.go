@@ -1,16 +1,17 @@
 package guild
 
 import (
-	"atlas-guilds/guild/member"
 	"testing"
 
+	"atlas-guilds/guild/member"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
-
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 )
 
 func newGuildsDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID) {
@@ -65,10 +66,80 @@ func TestGuildProvider_GetForName_FiltersByTenant(t *testing.T) {
 
 func TestGuildProvider_GetAll_FiltersByTenant(t *testing.T) {
 	db, _, tidB := newGuildsDB(t)
-	all, err := getAll()(db.WithContext(databasetest.TenantContext(tidB)))()
+	page := model.Page{Number: 1, Size: 50}
+	all, err := getAll(page)(db.WithContext(databasetest.TenantContext(tidB)))()
 	require.NoError(t, err)
-	require.Len(t, all, 1, "GetAll must not leak across tenants")
-	assert.Equal(t, uint32(200), all[0].LeaderId)
+	require.Len(t, all.Items, 1, "GetAll must not leak across tenants")
+	assert.Equal(t, uint32(200), all.Items[0].LeaderId)
+	assert.Equal(t, 1, all.Total)
+}
+
+func TestGuildProvider_GetByNameLike_MatchesSubstringCaseInsensitive(t *testing.T) {
+	titlesMigration := func(db *gorm.DB) error {
+		return db.Exec(`CREATE TABLE IF NOT EXISTS titles (
+			tenant_id TEXT NOT NULL,
+			id TEXT,
+			guild_id INTEGER,
+			name TEXT,
+			"index" INTEGER
+		)`).Error
+	}
+	db := databasetest.NewInMemoryTenantDB(t, Migration, member.Migration, titlesMigration)
+	tid := uuid.New()
+	require.NoError(t, db.Create(&Entity{Id: 1, TenantId: tid, WorldId: 0, Name: "Alpha", LeaderId: 100}).Error)
+	require.NoError(t, db.Create(&Entity{Id: 2, TenantId: tid, WorldId: 0, Name: "alphabet", LeaderId: 101}).Error)
+	require.NoError(t, db.Create(&Entity{Id: 3, TenantId: tid, WorldId: 0, Name: "Beta", LeaderId: 102}).Error)
+
+	page := model.Page{Number: 1, Size: 50}
+	paged, err := getByNameLike("alpha", page)(db.WithContext(databasetest.TenantContext(tid)))()
+	require.NoError(t, err)
+	assert.Equal(t, 2, paged.Total)
+	require.Len(t, paged.Items, 2)
+}
+
+func TestGuildProvider_GetByNameLike_EscapesPercentAndUnderscore(t *testing.T) {
+	titlesMigration := func(db *gorm.DB) error {
+		return db.Exec(`CREATE TABLE IF NOT EXISTS titles (
+			tenant_id TEXT NOT NULL,
+			id TEXT,
+			guild_id INTEGER,
+			name TEXT,
+			"index" INTEGER
+		)`).Error
+	}
+	db := databasetest.NewInMemoryTenantDB(t, Migration, member.Migration, titlesMigration)
+	tid := uuid.New()
+	require.NoError(t, db.Create(&Entity{Id: 1, TenantId: tid, WorldId: 0, Name: "100%_raw", LeaderId: 100}).Error)
+	require.NoError(t, db.Create(&Entity{Id: 2, TenantId: tid, WorldId: 0, Name: "100xraw", LeaderId: 101}).Error)
+
+	page := model.Page{Number: 1, Size: 50}
+	paged, err := getByNameLike("0%_r", page)(db.WithContext(databasetest.TenantContext(tid)))()
+	require.NoError(t, err)
+	require.Len(t, paged.Items, 1, "literal %/_ must be treated as literal characters, not wildcards")
+	assert.Equal(t, uint32(100), paged.Items[0].LeaderId)
+}
+
+func TestGuildProvider_GetByNameLike_PagingComposition(t *testing.T) {
+	titlesMigration := func(db *gorm.DB) error {
+		return db.Exec(`CREATE TABLE IF NOT EXISTS titles (
+			tenant_id TEXT NOT NULL,
+			id TEXT,
+			guild_id INTEGER,
+			name TEXT,
+			"index" INTEGER
+		)`).Error
+	}
+	db := databasetest.NewInMemoryTenantDB(t, Migration, member.Migration, titlesMigration)
+	tid := uuid.New()
+	for i := 0; i < 5; i++ {
+		require.NoError(t, db.Create(&Entity{Id: uint32(i + 1), TenantId: tid, WorldId: 0, Name: "MatchGuild", LeaderId: uint32(100 + i)}).Error)
+	}
+
+	page := model.Page{Number: 2, Size: 2}
+	paged, err := getByNameLike("match", page)(db.WithContext(databasetest.TenantContext(tid)))()
+	require.NoError(t, err)
+	assert.Equal(t, 5, paged.Total)
+	require.Len(t, paged.Items, 2)
 }
 
 func TestGuildProvider_GetById_PreloadsAreTenantScoped(t *testing.T) {

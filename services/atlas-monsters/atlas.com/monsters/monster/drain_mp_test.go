@@ -165,7 +165,7 @@ func TestDrainMp_SkipsZeroMaxMp(t *testing.T) {
 // TestDrainMp_DryMonsterStillEmits verifies that DrainMp emits MP_CHANGED
 // even when the monster's current Mp is already 0 (e.g., a prior drain
 // emptied it). The channel still refunds the caster and plays the visual
-// — Cosmic does not gate the proc effect on the monster's remaining MP.
+// — the proc effect is not gated on the monster's remaining MP.
 // The registry remains at Mp=0 (no further deduct).
 func TestDrainMp_DryMonsterStillEmits(t *testing.T) {
 	r := GetMonsterRegistry()
@@ -248,8 +248,8 @@ func TestDrainMp_SkipsZeroRequest(t *testing.T) {
 // registry. Real-world cause: the monster was one-shot killed by the same
 // player attack — DAMAGE and DRAIN_MP are produced from a single
 // processAttack and partitioned by uniqueId, so DAMAGE processes (and
-// destroys) before DRAIN_MP arrives. Cosmic still plays the visual and
-// refunds the caster on kill shots.
+// destroys) before DRAIN_MP arrives. The visual still plays and the caster
+// is still refunded on kill shots.
 func TestDrainMp_MissingMonster(t *testing.T) {
 	r := GetMonsterRegistry()
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)

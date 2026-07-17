@@ -18,15 +18,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alicebob/miniredis/v2"
-	"github.com/google/uuid"
-	goredis "github.com/redis/go-redis/v9"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
-	"github.com/sirupsen/logrus/hooks/test"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
-
+	af "github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
@@ -36,6 +28,14 @@ import (
 	kafkaproducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer/producertest"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/alicebob/miniredis/v2"
+	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/test"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 // capturingWriter records every message written to it, keyed by resolved
@@ -873,6 +873,65 @@ func TestAttemptItemPickUpSplitOverflowThenFail(t *testing.T) {
 	}
 }
 
+// TestCreateAssetAndEmitInventoryFull guards the CREATE_ASSET command failure
+// path: when the create rolls back (no free slot), the CREATION_FAILED
+// rejection CreateAsset buffers must still be published — via the direct
+// producer path — so a waiting caller (the reward-box flow's inventory-full
+// feedback) actually hears it. The transactional emit path discards the buffer
+// on error and the tx rolls back, so without the re-emit the rejection is lost
+// and the client gets no feedback (the reported bug).
+func TestCreateAssetAndEmitInventoryFull(t *testing.T) {
+	characterId := uint32(411)
+
+	l := testLogger()
+	te := testTenant()
+	ctx := tenant.WithContext(context.Background(), te)
+	db := testDatabase(t, l)
+
+	mb := message.NewBuffer()
+
+	dcpi := &dcp.ProcessorImpl{}
+	dcpi.GetByIdFn = func(itemId uint32) (consumable.Model, error) {
+		return consumable.Extract(consumable.RestModel{SlotMax: 100})
+	}
+
+	ap := asset.NewProcessor(l, ctx, db).WithConsumableProcessor(dcpi)
+	cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap)
+
+	// Capacity-1 USE compartment already full with a different templateId, so
+	// the new create can neither merge nor find a free slot.
+	if _, err := cp.Create(mb)(uuid.New(), characterId, inventory.TypeValueUse, 1); err != nil {
+		t.Fatalf("Failed to create compartment: %v", err)
+	}
+	if err := cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2000000, 1, time.Time{}, 0, 0, 0, false); err != nil {
+		t.Fatalf("Failed to seed compartment with existing item: %v", err)
+	}
+
+	captured, restore := installCapturingProducer()
+	defer restore()
+
+	// CreateAssetAndEmit for a different item (2070000) fails at NextFreeSlot.
+	if err := cp.CreateAssetAndEmit(uuid.New(), characterId, inventory.TypeValueUse, 2070000, 1, time.Time{}, 0, 0, 0, false); err == nil {
+		t.Fatalf("CreateAssetAndEmit must return the no-free-slot error")
+	}
+
+	// The CREATION_FAILED rejection must be published on the direct producer
+	// path, carrying the INVENTORY_FULL error code atlas-channel renders.
+	var sawInventoryFull bool
+	for _, msg := range (*captured)[compartmentMsg.EnvEventTopicStatus] {
+		var ev compartmentMsg.StatusEvent[compartmentMsg.CreationFailedStatusEventBody]
+		if err := json.Unmarshal(msg.Value, &ev); err != nil {
+			continue
+		}
+		if ev.Type == compartmentMsg.StatusEventTypeCreationFailed && ev.Body.ErrorCode == compartmentMsg.CreateAssetInventoryFull {
+			sawInventoryFull = true
+		}
+	}
+	if !sawInventoryFull {
+		t.Fatalf("expected CREATION_FAILED(INVENTORY_FULL) on the direct producer path, got %v", (*captured)[compartmentMsg.EnvEventTopicStatus])
+	}
+}
+
 // TestAttemptItemPickUpSuccess guards the merge-on-success side of the D7
 // scratch-buffer fix: when the inner tx commits, the inner CreateAsset's
 // ASSET CREATED event (buffered on a scratch innerMb, per the fix) must
@@ -1042,6 +1101,220 @@ func TestAttemptItemPickUpConsumeOnPickup(t *testing.T) {
 		if ev.Type == compartmentMsg.StatusEventTypeCreated {
 			t.Fatalf("unexpected CREATED status event on consume-on-pickup path")
 		}
+	}
+}
+
+// TestSetAssetOwner verifies that SetAssetOwnerAndEmit stamps the owner onto
+// an equipped asset and emits an asset UPDATED event.
+func TestSetAssetOwner(t *testing.T) {
+	characterId := uint32(401)
+	templateId := uint32(1040010)
+
+	l := testLogger()
+	te := testTenant()
+	ctx := tenant.WithContext(context.Background(), te)
+	db := testDatabase(t, l)
+
+	mb := message.NewBuffer()
+
+	ap := asset.NewProcessor(l, ctx, db)
+	cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap)
+
+	c, err := cp.Create(mb)(uuid.New(), characterId, inventory.TypeValueEquip, 24)
+	if err != nil {
+		t.Fatalf("Failed to create compartment: %v", err)
+	}
+
+	slot := int16(-5)
+	m := asset.NewBuilder(c.Id(), templateId).SetSlot(slot).SetCreatedAt(time.Now()).Build()
+	if _, err := ap.CreateFromModel(mb)(uuid.New(), characterId, m); err != nil {
+		t.Fatalf("Failed to create asset: %v", err)
+	}
+
+	if err := cp.SetAssetOwner(mb)(uuid.New(), characterId, inventory.TypeValueEquip, slot, "Tumi"); err != nil {
+		t.Fatalf("SetAssetOwner returned unexpected error: %v", err)
+	}
+
+	a, err := ap.GetBySlot(c.Id(), slot)
+	if err != nil {
+		t.Fatalf("Failed to reload asset: %v", err)
+	}
+	if a.Owner() != "Tumi" {
+		t.Fatalf("expected owner %q, got %q", "Tumi", a.Owner())
+	}
+}
+
+// TestApplyAssetLock verifies that ApplyAssetLockAndEmit sets the lock flag
+// and the expiration on an asset that has no pre-existing time-limited state.
+func TestApplyAssetLock(t *testing.T) {
+	characterId := uint32(402)
+	templateId := uint32(1040010)
+
+	l := testLogger()
+	te := testTenant()
+	ctx := tenant.WithContext(context.Background(), te)
+	db := testDatabase(t, l)
+
+	mb := message.NewBuffer()
+
+	ap := asset.NewProcessor(l, ctx, db)
+	cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap)
+
+	c, err := cp.Create(mb)(uuid.New(), characterId, inventory.TypeValueEquip, 24)
+	if err != nil {
+		t.Fatalf("Failed to create compartment: %v", err)
+	}
+
+	slot := int16(-5)
+	m := asset.NewBuilder(c.Id(), templateId).SetSlot(slot).SetCreatedAt(time.Now()).Build()
+	if _, err := ap.CreateFromModel(mb)(uuid.New(), characterId, m); err != nil {
+		t.Fatalf("Failed to create asset: %v", err)
+	}
+
+	exp := time.Now().AddDate(0, 0, 7).Truncate(time.Second)
+	if err := cp.ApplyAssetLock(mb)(uuid.New(), characterId, inventory.TypeValueEquip, slot, exp); err != nil {
+		t.Fatalf("ApplyAssetLock returned unexpected error: %v", err)
+	}
+
+	a, err := ap.GetBySlot(c.Id(), slot)
+	if err != nil {
+		t.Fatalf("Failed to reload asset: %v", err)
+	}
+	if !a.Locked() {
+		t.Fatalf("expected asset to be locked after ApplyAssetLockAndEmit")
+	}
+	if !a.Expiration().Equal(exp) {
+		t.Fatalf("expected expiration %v, got %v", exp, a.Expiration())
+	}
+}
+
+// TestApplyAssetLockRejectsTimeLimitedItem is the seal-launder guard: an asset
+// that is not locked but already carries a non-zero expiration is a genuinely
+// time-limited item, and ApplyAssetLockAndEmit must reject converting it into
+// a permanent lock.
+func TestApplyAssetLockRejectsTimeLimitedItem(t *testing.T) {
+	characterId := uint32(403)
+	templateId := uint32(1040010)
+
+	l := testLogger()
+	te := testTenant()
+	ctx := tenant.WithContext(context.Background(), te)
+	db := testDatabase(t, l)
+
+	mb := message.NewBuffer()
+
+	ap := asset.NewProcessor(l, ctx, db)
+	cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap)
+
+	c, err := cp.Create(mb)(uuid.New(), characterId, inventory.TypeValueEquip, 24)
+	if err != nil {
+		t.Fatalf("Failed to create compartment: %v", err)
+	}
+
+	slot := int16(-5)
+	existingExpiration := time.Now().AddDate(0, 0, 1).Truncate(time.Second)
+	m := asset.NewBuilder(c.Id(), templateId).SetSlot(slot).SetCreatedAt(time.Now()).SetExpiration(existingExpiration).Build()
+	if _, err := ap.CreateFromModel(mb)(uuid.New(), characterId, m); err != nil {
+		t.Fatalf("Failed to create asset: %v", err)
+	}
+
+	newExp := time.Now().AddDate(0, 0, 7).Truncate(time.Second)
+	if err := cp.ApplyAssetLock(mb)(uuid.New(), characterId, inventory.TypeValueEquip, slot, newExp); err == nil {
+		t.Fatalf("expected ApplyAssetLock to reject a non-locked time-limited asset, got nil error")
+	}
+
+	a, err := ap.GetBySlot(c.Id(), slot)
+	if err != nil {
+		t.Fatalf("Failed to reload asset: %v", err)
+	}
+	if a.Locked() {
+		t.Fatalf("expected asset to remain unlocked after rejected ApplyAssetLockAndEmit")
+	}
+	if !a.Expiration().Equal(existingExpiration) {
+		t.Fatalf("expected expiration to remain %v, got %v", existingExpiration, a.Expiration())
+	}
+}
+
+// TestExpireAssetLockedClearsLock verifies that when a LOCKED asset's
+// expiration (the lock's expiration) passes, ExpireAsset unlocks it instead
+// of destroying it: the row survives, the lock flag is cleared, and the
+// expiration is zeroed.
+func TestExpireAssetLockedClearsLock(t *testing.T) {
+	characterId := uint32(404)
+	templateId := uint32(1040010)
+
+	l := testLogger()
+	te := testTenant()
+	ctx := tenant.WithContext(context.Background(), te)
+	db := testDatabase(t, l)
+
+	mb := message.NewBuffer()
+
+	ap := asset.NewProcessor(l, ctx, db)
+	cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap)
+
+	c, err := cp.Create(mb)(uuid.New(), characterId, inventory.TypeValueEquip, 24)
+	if err != nil {
+		t.Fatalf("Failed to create compartment: %v", err)
+	}
+
+	slot := int16(-5)
+	pastExpiration := time.Now().AddDate(0, 0, -1).Truncate(time.Second)
+	m := asset.NewBuilder(c.Id(), templateId).SetSlot(slot).SetCreatedAt(time.Now()).AddFlag(af.FlagLock).SetExpiration(pastExpiration).Build()
+	if _, err := ap.CreateFromModel(mb)(uuid.New(), characterId, m); err != nil {
+		t.Fatalf("Failed to create asset: %v", err)
+	}
+
+	if err := cp.ExpireAsset(mb)(uuid.New(), characterId, inventory.TypeValueEquip, slot, false, 0, ""); err != nil {
+		t.Fatalf("ExpireAsset returned unexpected error: %v", err)
+	}
+
+	a, err := ap.GetBySlot(c.Id(), slot)
+	if err != nil {
+		t.Fatalf("expected locked asset to survive expiration, but it was destroyed: %v", err)
+	}
+	if a.Locked() {
+		t.Fatalf("expected asset to be unlocked after ExpireAsset")
+	}
+	if !a.Expiration().IsZero() {
+		t.Fatalf("expected expiration to be zeroed, got %v", a.Expiration())
+	}
+}
+
+// TestExpireAssetUnlockedStillDestroys verifies that an unlocked asset whose
+// expiration passes keeps today's behavior: it is destroyed.
+func TestExpireAssetUnlockedStillDestroys(t *testing.T) {
+	characterId := uint32(405)
+	templateId := uint32(1040010)
+
+	l := testLogger()
+	te := testTenant()
+	ctx := tenant.WithContext(context.Background(), te)
+	db := testDatabase(t, l)
+
+	mb := message.NewBuffer()
+
+	ap := asset.NewProcessor(l, ctx, db)
+	cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap)
+
+	c, err := cp.Create(mb)(uuid.New(), characterId, inventory.TypeValueEquip, 24)
+	if err != nil {
+		t.Fatalf("Failed to create compartment: %v", err)
+	}
+
+	slot := int16(-5)
+	pastExpiration := time.Now().AddDate(0, 0, -1).Truncate(time.Second)
+	m := asset.NewBuilder(c.Id(), templateId).SetSlot(slot).SetCreatedAt(time.Now()).SetExpiration(pastExpiration).Build()
+	if _, err := ap.CreateFromModel(mb)(uuid.New(), characterId, m); err != nil {
+		t.Fatalf("Failed to create asset: %v", err)
+	}
+
+	if err := cp.ExpireAsset(mb)(uuid.New(), characterId, inventory.TypeValueEquip, slot, false, 0, ""); err != nil {
+		t.Fatalf("ExpireAsset returned unexpected error: %v", err)
+	}
+
+	if _, err := ap.GetBySlot(c.Id(), slot); err == nil {
+		t.Fatalf("expected unlocked expired asset to be destroyed, but it still exists")
 	}
 }
 

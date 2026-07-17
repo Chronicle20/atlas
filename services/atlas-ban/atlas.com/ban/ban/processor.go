@@ -3,8 +3,8 @@ package ban
 import (
 	"atlas-ban/kafka/message"
 	ban2 "atlas-ban/kafka/message/ban"
-	"atlas-ban/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"strconv"
 	"time"
 
@@ -23,8 +23,8 @@ type Processor interface {
 	ExpireBan(banId uint32) error
 	ExpireBanAndEmit(banId uint32) error
 	GetById(banId uint32) (Model, error)
-	GetByTenant() ([]Model, error)
-	GetByType(banType BanType) ([]Model, error)
+	AllProvider(page model.Page) model.Provider[model.Paged[Model]]
+	ByTypePagedProvider(banType BanType, page model.Page) model.Provider[model.Paged[Model]]
 	CheckBan(ip string, hwid string, accountId uint32) (*Model, error)
 	ByIdProvider(banId uint32) model.Provider[Model]
 }
@@ -132,12 +132,14 @@ func (p *ProcessorImpl) ByIdProvider(banId uint32) model.Provider[Model] {
 	return model.Map(Make)(entityById(banId)(p.db.WithContext(p.ctx)))
 }
 
-func (p *ProcessorImpl) GetByTenant() ([]Model, error) {
-	return model.SliceMap(Make)(entitiesByTenant()(p.db.WithContext(p.ctx)))(model.ParallelMap())()
+func (p *ProcessorImpl) AllProvider(page model.Page) model.Provider[model.Paged[Model]] {
+	ep := entitiesByTenant(page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(Make)(ep)(model.ParallelMap())
 }
 
-func (p *ProcessorImpl) GetByType(banType BanType) ([]Model, error) {
-	return model.SliceMap(Make)(entitiesByType(banType)(p.db.WithContext(p.ctx)))(model.ParallelMap())()
+func (p *ProcessorImpl) ByTypePagedProvider(banType BanType, page model.Page) model.Provider[model.Paged[Model]] {
+	ep := entitiesByType(banType, page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(Make)(ep)(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) CheckBan(ip string, hwid string, accountId uint32) (*Model, error) {

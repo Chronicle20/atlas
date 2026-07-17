@@ -56,11 +56,11 @@ type Processor interface {
 	// ByNpcIdProvider returns a provider for retrieving an NPC conversation by NPC ID
 	ByNpcIdProvider(npcId uint32) model.Provider[Model]
 
-	// AllByNpcIdProvider returns a provider for retrieving all NPC conversations for a specific NPC ID
-	AllByNpcIdProvider(npcId uint32) model.Provider[[]Model]
+	// AllByNpcIdProvider returns a provider for retrieving one page of NPC conversations for a specific NPC ID
+	AllByNpcIdProvider(npcId uint32, page model.Page) model.Provider[model.Paged[Model]]
 
-	// AllProvider returns a provider for retrieving all NPC conversations
-	AllProvider() model.Provider[[]Model]
+	// AllProvider returns a provider for retrieving one page of NPC conversations
+	AllProvider(page model.Page) model.Provider[model.Paged[Model]]
 
 	// DeleteAllForTenant deletes all NPC conversations for the current tenant
 	DeleteAllForTenant() (int64, error)
@@ -116,14 +116,16 @@ func (p *ProcessorImpl) ByNpcIdProvider(npcId uint32) model.Provider[Model] {
 	return model.Map[Entity, Model](Make)(getByNpcIdProvider(npcId)(p.db.WithContext(p.ctx)))
 }
 
-// AllProvider returns a provider for retrieving all NPC conversations
-func (p *ProcessorImpl) AllProvider() model.Provider[[]Model] {
-	return model.SliceMap[Entity, Model](Make)(getAllProvider(p.db.WithContext(p.ctx)))(model.ParallelMap())
+// AllProvider returns a provider for retrieving one page of NPC conversations
+func (p *ProcessorImpl) AllProvider(page model.Page) model.Provider[model.Paged[Model]] {
+	ep := getAllPagedProvider(page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(Make)(ep)(model.ParallelMap())
 }
 
-// AllByNpcIdProvider returns a provider for retrieving all NPC conversations for a specific NPC ID
-func (p *ProcessorImpl) AllByNpcIdProvider(npcId uint32) model.Provider[[]Model] {
-	return model.SliceMap[Entity, Model](Make)(getAllByNpcIdProvider(npcId)(p.db.WithContext(p.ctx)))(model.ParallelMap())
+// AllByNpcIdProvider returns a provider for retrieving one page of NPC conversations for a specific NPC ID
+func (p *ProcessorImpl) AllByNpcIdProvider(npcId uint32, page model.Page) model.Provider[model.Paged[Model]] {
+	ep := getAllByNpcIdPagedProvider(npcId, page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(Make)(ep)(model.ParallelMap())
 }
 
 // createWithSkipTracking is the seed-time variant of Create: it runs the same

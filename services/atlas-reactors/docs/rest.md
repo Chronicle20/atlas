@@ -61,6 +61,8 @@ Retrieves all reactors in a specific world/channel/map/instance.
 | mapId      | path  | uint32 | Yes      | Map identifier      |
 | instanceId | path  | uuid   | Yes      | Instance identifier |
 | name       | query | string | No       | Filter by reactor name |
+| page[number] | query | int  | No       | Page number (defaults to 1) |
+| page[size]   | query | int  | No       | Page size (default and max 250) |
 
 **Request Headers:**
 
@@ -73,13 +75,14 @@ Retrieves all reactors in a specific world/channel/map/instance.
 
 **Response Model:**
 
-JSON:API document with array of type `reactors`.
+JSON:API document with array of type `reactors`, paginated. Name filtering is applied before pagination.
 
 **Error Conditions:**
 
-| Code | Condition             |
-|------|-----------------------|
-| 500  | Internal server error |
+| Code | Condition                                  |
+|------|---------------------------------------------|
+| 400  | Invalid page[number]/page[size]              |
+| 500  | Internal server error                        |
 
 ---
 

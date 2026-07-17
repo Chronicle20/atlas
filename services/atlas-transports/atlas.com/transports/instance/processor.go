@@ -3,9 +3,9 @@ package instance
 import (
 	"atlas-transports/kafka/message"
 	it "atlas-transports/kafka/message/instance_transport"
-	"atlas-transports/kafka/producer"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"time"
 
 	"github.com/google/uuid"

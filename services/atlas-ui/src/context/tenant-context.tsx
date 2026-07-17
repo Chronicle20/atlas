@@ -24,7 +24,7 @@ type TenantContextType = {
 };
 
 // Create Context
-const TenantContext = createContext<TenantContextType | undefined>(undefined);
+export const TenantContext = createContext<TenantContextType | undefined>(undefined);
 
 // Provider Component
 export function TenantProvider({ children }: { children: ReactNode }) {

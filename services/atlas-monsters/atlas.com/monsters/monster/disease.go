@@ -14,7 +14,7 @@ import (
 )
 
 // debuffWireValue returns the nValue to ship in an APPLY command for a mob
-// debuff skill. v83 wire convention (per Cosmic's giveDebuff): magnitude-
+// debuff skill. v83 wire convention: magnitude-
 // bearing diseases carry their value in the WZ `x` attribute and pass through
 // unchanged, while stat-flag diseases (SEAL/DARKNESS/CURSE/etc.) have no `x`
 // in the WZ and need a literal 1 — the client treats nValue==0 as "stat not

@@ -11,6 +11,8 @@ Returns all worlds for the tenant.
 | Name | In | Type | Required | Description |
 |------|-----|------|----------|-------------|
 | include | query | string | No | Include related resources (channels) |
+| page[number] | query | int | No | Page number (default 1) |
+| page[size] | query | int | No | Page size (default 50, max 250) |
 
 #### Request Headers
 
@@ -47,6 +49,7 @@ Relationships:
 
 | Status | Condition |
 |--------|-----------|
+| 400 | Invalid page[number]/page[size] |
 | 500 | Internal server error |
 
 ---
@@ -111,6 +114,8 @@ Returns all channels for a world.
 | Name | In | Type | Required | Description |
 |------|-----|------|----------|-------------|
 | worldId | path | byte | Yes | World identifier |
+| page[number] | query | int | No | Page number (default 1) |
+| page[size] | query | int | No | Page size (default 50, max 250) |
 
 #### Request Headers
 
@@ -144,6 +149,7 @@ Type: `channels`
 
 | Status | Condition |
 |--------|-----------|
+| 400 | Invalid page[number]/page[size] |
 | 500 | Internal server error |
 
 ---
@@ -186,6 +192,41 @@ Type: `channels`
 | mesoRate | float64 | Meso rate multiplier |
 | itemDropRate | float64 | Item drop rate multiplier |
 | questExpRate | float64 | Quest experience rate multiplier |
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 404 | Channel not found |
+| 500 | Internal server error |
+
+---
+
+### DELETE /api/worlds/{worldId}/channels/{channelId}
+
+Unregisters a channel server.
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|-----|------|----------|-------------|
+| worldId | path | byte | Yes | World identifier |
+| channelId | path | byte | Yes | Channel identifier |
+
+#### Request Headers
+
+| Name | Required | Description |
+|------|----------|-------------|
+| TENANT_ID | Yes | Tenant identifier UUID |
+| REGION | Yes | Region code |
+| MAJOR_VERSION | Yes | Major version number |
+| MINOR_VERSION | Yes | Minor version number |
+
+#### Response
+
+| Status | Description |
+|--------|-------------|
+| 204 | No Content |
 
 #### Error Conditions
 

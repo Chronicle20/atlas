@@ -331,3 +331,71 @@ func TestAsset_TypeChecks(t *testing.T) {
 		})
 	}
 }
+
+func TestAsset_Owner_PersistsThroughCreateAndGet(t *testing.T) {
+	db := testDatabase(t)
+	ctx := testContext()
+	te := tenant.MustFromContext(ctx)
+
+	s := createTestStorage(t, db, te.Id(), 0, 12345)
+
+	m := asset.NewBuilder(s.Id(), 1302000).
+		SetSlot(1).
+		SetExpiration(time.Now().Add(time.Hour * 24 * 365)).
+		SetOwner("Tumi").
+		Build()
+
+	if m.Owner() != "Tumi" {
+		t.Fatalf("Owner() = %q, want Tumi", m.Owner())
+	}
+
+	created, err := asset.Create(testLogger(), db, te.Id())(m)
+	if err != nil {
+		t.Fatalf("Failed to create asset: %v", err)
+	}
+	if created.Owner() != "Tumi" {
+		t.Fatalf("Created asset Owner() = %q, want Tumi", created.Owner())
+	}
+
+	retrieved, err := asset.GetById(db.WithContext(ctx))(created.Id())
+	if err != nil {
+		t.Fatalf("Failed to get asset by ID: %v", err)
+	}
+	if retrieved.Owner() != "Tumi" {
+		t.Fatalf("Retrieved asset Owner() = %q, want Tumi", retrieved.Owner())
+	}
+}
+
+func TestAsset_Owner_CloneRetainsValue(t *testing.T) {
+	testStorageId := uuid.New()
+	m := asset.NewBuilder(testStorageId, 1302000).SetOwner("Tumi").Build()
+	if m.Owner() != "Tumi" {
+		t.Fatalf("Owner() = %q, want Tumi", m.Owner())
+	}
+
+	c := asset.Clone(m).Build()
+	if c.Owner() != "Tumi" {
+		t.Fatalf("Clone dropped owner: %q", c.Owner())
+	}
+}
+
+func TestAsset_Owner_RestRoundTrip(t *testing.T) {
+	testStorageId := uuid.New()
+	m := asset.NewBuilder(testStorageId, 1302000).SetOwner("Tumi").Build()
+
+	rm, err := asset.Transform(m)
+	if err != nil {
+		t.Fatalf("Failed to transform asset: %v", err)
+	}
+	if rm.Owner != "Tumi" {
+		t.Fatalf("RestModel.Owner = %q, want Tumi", rm.Owner)
+	}
+
+	back, err := asset.Extract(rm)
+	if err != nil {
+		t.Fatalf("Failed to extract asset: %v", err)
+	}
+	if back.Owner() != "Tumi" {
+		t.Fatalf("Extracted Owner() = %q, want Tumi", back.Owner())
+	}
+}

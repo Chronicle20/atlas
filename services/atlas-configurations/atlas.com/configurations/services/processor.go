@@ -73,8 +73,7 @@ func IsValidServiceType(t string) bool {
 
 type Processor interface {
 	ByIdProvider(id uuid.UUID) model.Provider[interface{}]
-	AllProvider() model.Provider[[]interface{}]
-	GetAll() ([]interface{}, error)
+	AllProvider(page model.Page) model.Provider[model.Paged[interface{}]]
 	GetById(id uuid.UUID) (interface{}, error)
 	Create(input service.InputRestModel) (uuid.UUID, error)
 	UpdateById(serviceId uuid.UUID, input service.InputRestModel) error
@@ -102,8 +101,9 @@ func (p *ProcessorImpl) ByIdProvider(id uuid.UUID) model.Provider[interface{}] {
 	return model.Map(Make)(byIdEntityProvider(p.ctx)(id)(p.db))
 }
 
-func (p *ProcessorImpl) AllProvider() model.Provider[[]interface{}] {
-	return model.SliceMap(Make)(allEntityProvider(p.ctx)(p.db))()
+// AllProvider returns a paged provider for every service configuration.
+func (p *ProcessorImpl) AllProvider(page model.Page) model.Provider[model.Paged[interface{}]] {
+	return model.MapPaged(Make)(getAll(p.ctx, page)(p.db))(model.ParallelMap())
 }
 
 func Make(e Entity) (interface{}, error) {
@@ -136,10 +136,6 @@ func Make(e Entity) (interface{}, error) {
 		return rm, nil
 	}
 	return nil, errors.New("invalid service type")
-}
-
-func (p *ProcessorImpl) GetAll() ([]interface{}, error) {
-	return p.AllProvider()()
 }
 
 func (p *ProcessorImpl) GetById(id uuid.UUID) (interface{}, error) {

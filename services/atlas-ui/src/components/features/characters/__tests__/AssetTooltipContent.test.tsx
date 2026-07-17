@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AssetTooltipContent } from "../AssetTooltipContent";
 import type { Asset } from "@/services/api/inventory.service";
+import { FLAG_LOCK } from "@/lib/utils/asset-flags";
 
 const useItemDataMock = vi.fn();
 const useEquipmentDataMock = vi.fn();
@@ -26,6 +27,7 @@ const baseAsset = (overrides: Partial<Asset["attributes"]> = {}): Asset => ({
     createdAt: "0001-01-01T00:00:00Z",
     quantity: 1,
     ownerId: 0,
+    owner: "",
     flag: 0,
     rechargeable: 0,
     strength: 0,
@@ -222,5 +224,43 @@ describe("AssetTooltipContent", () => {
       <AssetTooltipContent asset={baseAsset()} slotName="Bottom" />,
     );
     expect(screen.getByText("(Bottom)")).toBeInTheDocument();
+  });
+
+  describe("tag/seal", () => {
+    it("shows owner when tagged", () => {
+      renderTooltip(
+        <AssetTooltipContent asset={baseAsset({ templateId: 2000000, owner: "Chronicle" })} />,
+      );
+      expect(screen.getByText(/Chronicle/)).toBeInTheDocument();
+    });
+
+    it("shows 'SEALED' (no date) for a permanent seal and suppresses EXPIRES", () => {
+      renderTooltip(
+        <AssetTooltipContent
+          asset={baseAsset({ templateId: 2000000, flag: FLAG_LOCK, expiration: "0001-01-01T00:00:00Z" })}
+        />,
+      );
+      expect(screen.getByText(/SEALED/i)).toBeInTheDocument();
+      expect(screen.queryByText(/EXPIRES/i)).not.toBeInTheDocument();
+    });
+
+    it("shows 'SEALED UNTIL' for a timed seal and suppresses EXPIRES", () => {
+      renderTooltip(
+        <AssetTooltipContent
+          asset={baseAsset({ templateId: 2000000, flag: FLAG_LOCK, expiration: "2027-08-01T00:00:00Z" })}
+        />,
+      );
+      expect(screen.getByText(/SEALED UNTIL/i)).toBeInTheDocument();
+      expect(screen.queryByText(/EXPIRES/i)).not.toBeInTheDocument();
+    });
+
+    it("keeps EXPIRES for a non-sealed timed item", () => {
+      renderTooltip(
+        <AssetTooltipContent
+          asset={baseAsset({ templateId: 2000000, flag: 0, expiration: "2027-08-01T00:00:00Z" })}
+        />,
+      );
+      expect(screen.getByText(/EXPIRES/i)).toBeInTheDocument();
+    });
   });
 });

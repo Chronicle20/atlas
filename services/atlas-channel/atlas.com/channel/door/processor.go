@@ -2,8 +2,8 @@ package door
 
 import (
 	doormsg "atlas-channel/kafka/message/door"
-	"atlas-channel/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"
 
@@ -34,8 +34,14 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 
 var _ Processor = (*ProcessorImpl)(nil)
 
+// InFieldModelProvider fetches every door currently in one map instance.
+// This is a hot-path consumer (door spawn/state on every channel spawn
+// broadcast, ForEachInMap, GetByOwnerOnMap); the upstream atlas-doors list
+// is now paginated (task-117), so this drains every page rather than
+// fetching just the first -- a truncated list here means doors silently
+// vanish from the client's view.
 func (p *ProcessorImpl) InFieldModelProvider(f field.Model) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestInField(f), Extract, model.Filters[Model]())
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(inFieldUrl(f), 250, Extract, model.Filters[Model]())
 }
 
 // GetInField returns all doors in the given field.
@@ -43,8 +49,13 @@ func (p *ProcessorImpl) GetInField(f field.Model) ([]Model, error) {
 	return p.InFieldModelProvider(f)()
 }
 
+// ByOwnerModelProvider fetches every door owned by ownerCharacterId. The
+// upstream atlas-doors list is now paginated (task-117), so this drains
+// every page rather than fetching just the first (a character owns at most
+// one door pair in practice, so this is a single round trip in the common
+// case, but the drain is required for correctness at any size).
 func (p *ProcessorImpl) ByOwnerModelProvider(ownerCharacterId uint32) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByOwner(ownerCharacterId), Extract, model.Filters[Model]())
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(byOwnerUrl(ownerCharacterId), 250, Extract, model.Filters[Model]())
 }
 
 // GetByOwner returns all live doors owned by ownerCharacterId, resolved from

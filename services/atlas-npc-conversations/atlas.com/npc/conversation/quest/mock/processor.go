@@ -27,7 +27,7 @@ type ProcessorMock struct {
 	ByQuestIdProviderFunc func(questId uint32) model.Provider[quest.Model]
 
 	// AllProviderFunc is a function field for the AllProvider method
-	AllProviderFunc func() model.Provider[[]quest.Model]
+	AllProviderFunc func(page model.Page) model.Provider[model.Paged[quest.Model]]
 
 	// DeleteAllForTenantFunc is a function field for the DeleteAllForTenant method
 	DeleteAllForTenantFunc func() (int64, error)
@@ -84,12 +84,12 @@ func (m *ProcessorMock) ByQuestIdProvider(questId uint32) model.Provider[quest.M
 }
 
 // AllProvider is a mock implementation of the quest.Processor.AllProvider method
-func (m *ProcessorMock) AllProvider() model.Provider[[]quest.Model] {
+func (m *ProcessorMock) AllProvider(page model.Page) model.Provider[model.Paged[quest.Model]] {
 	if m.AllProviderFunc != nil {
-		return m.AllProviderFunc()
+		return m.AllProviderFunc(page)
 	}
-	return func() ([]quest.Model, error) {
-		return []quest.Model{}, nil
+	return func() (model.Paged[quest.Model], error) {
+		return model.Paged[quest.Model]{Page: page}, nil
 	}
 }
 

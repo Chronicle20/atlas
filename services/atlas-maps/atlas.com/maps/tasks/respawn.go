@@ -1,11 +1,11 @@
 package tasks
 
 import (
-	"atlas-maps/kafka/producer"
 	"atlas-maps/map/character"
 	"atlas-maps/map/monster"
 	"atlas-maps/reactor"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"time"
 
 	"github.com/google/uuid"

@@ -8,12 +8,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
-func getAll() database.EntityProvider[[]entity] {
-	return func(db *gorm.DB) model.Provider[[]entity] {
-		return database.SliceQuery[entity](db, &entity{})
-	}
-}
-
 // getByCharacter returns all transaction-history rows owned by a character,
 // ordered newest-first (the My Page -> History list).
 //
@@ -31,6 +25,20 @@ func getByCharacter(characterId uint32) database.EntityProvider[[]entity] {
 			return model.ErrorProvider[[]entity](err)
 		}
 		return model.FixedProvider(results)
+	}
+}
+
+// getByCharacterPaged backs the REST list handler (GET
+// /characters/{characterId}/mts/transactions, task-117), mirroring
+// getByCharacter's newest-first ordering. database.PagedQuery appends the
+// entity's primary-key ordering as a tie-break AFTER this caller-supplied
+// created_at ordering, so pages form a total order even when rows share a
+// timestamp.
+func getByCharacterPaged(characterId uint32, page model.Page) database.EntityProvider[model.Paged[entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[entity]] {
+		return database.PagedQuery[entity](db.Where(map[string]interface{}{
+			"character_id": characterId,
+		}).Order("created_at DESC"), page)
 	}
 }
 

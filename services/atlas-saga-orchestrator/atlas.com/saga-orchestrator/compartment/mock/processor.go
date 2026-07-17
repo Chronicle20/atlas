@@ -19,6 +19,8 @@ type ProcessorMock struct {
 	RequestAcceptAssetFunc         func(transactionId uuid.UUID, characterId uint32, inventoryType byte, templateId uint32, assetData asset2.AssetData) error
 	RequestReleaseAssetFunc        func(transactionId uuid.UUID, characterId uint32, inventoryType byte, assetId uint32, quantity uint32) error
 	RequestDestroyItemFromSlotFunc func(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, quantity uint32) error
+	RequestSetOwnerFunc            func(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, owner string) error
+	RequestApplyLockFunc           func(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, expiration time.Time) error
 }
 
 // RequestCreateItem is a mock implementation of the compartment.Processor.RequestCreateItem method
@@ -89,6 +91,22 @@ func (m *ProcessorMock) RequestReleaseAsset(transactionId uuid.UUID, characterId
 func (m *ProcessorMock) RequestDestroyItemFromSlot(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, quantity uint32) error {
 	if m.RequestDestroyItemFromSlotFunc != nil {
 		return m.RequestDestroyItemFromSlotFunc(transactionId, characterId, inventoryType, slot, quantity)
+	}
+	return nil
+}
+
+// RequestSetOwner is a mock implementation of the compartment.Processor.RequestSetOwner method
+func (m *ProcessorMock) RequestSetOwner(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, owner string) error {
+	if m.RequestSetOwnerFunc != nil {
+		return m.RequestSetOwnerFunc(transactionId, characterId, inventoryType, slot, owner)
+	}
+	return nil
+}
+
+// RequestApplyLock is a mock implementation of the compartment.Processor.RequestApplyLock method
+func (m *ProcessorMock) RequestApplyLock(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, expiration time.Time) error {
+	if m.RequestApplyLockFunc != nil {
+		return m.RequestApplyLockFunc(transactionId, characterId, inventoryType, slot, expiration)
 	}
 	return nil
 }

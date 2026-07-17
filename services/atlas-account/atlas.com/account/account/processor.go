@@ -6,10 +6,10 @@ import (
 	"atlas-account/kafka/message"
 	account2 "atlas-account/kafka/message/account"
 	ban2 "atlas-account/kafka/message/ban"
-	"atlas-account/kafka/producer"
 	"context"
 	"errors"
 	"fmt"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"time"
 
 	"github.com/google/uuid"
@@ -56,10 +56,9 @@ type Processor interface {
 	ProgressState(mb *message.Buffer) func(sessionId uuid.UUID, issuer string, accountId uint32, state State, params interface{}) error
 	GetById(accountId uint32) (Model, error)
 	GetByName(name string) (Model, error)
-	GetByTenant() ([]Model, error)
 	ByIdProvider(accountId uint32) model.Provider[Model]
 	ByNameProvider(name string) model.Provider[Model]
-	ByTenantProvider() ([]Model, error)
+	AllProvider(page model.Page, decorators ...model.Decorator[Model]) model.Provider[model.Paged[Model]]
 	LoggedInTenantProvider() ([]Model, error)
 	RecordPinAttemptAndEmit(accountId uint32, success bool, ipAddress string, hwid string) (int, bool, error)
 	RecordPinAttempt(mb *message.Buffer) func(accountId uint32, success bool, ipAddress string, hwid string) (int, bool, error)
@@ -105,16 +104,47 @@ func (p *ProcessorImpl) ByNameProvider(name string) model.Provider[Model] {
 	return model.Map(decorateState(p.t))(model.FirstProvider(model.SliceMap(Make)(entitiesByName(name)(p.db.WithContext(p.ctx)))(model.ParallelMap()), model.Filters[Model]()))
 }
 
-func (p *ProcessorImpl) GetByTenant() ([]Model, error) {
-	return p.ByTenantProvider()
+// AllProvider returns one page of the tenant's accounts. State is decorated
+// from the session registry (as ByIdProvider/ByNameProvider already do)
+// before any caller-supplied decorators run.
+func (p *ProcessorImpl) AllProvider(page model.Page, decorators ...model.Decorator[Model]) model.Provider[model.Paged[Model]] {
+	ep := getAll(page)(p.db.WithContext(p.ctx))
+	mp := model.MapPaged(Make)(ep)(model.ParallelMap())
+	sp := model.MapPaged(decorateState(p.t))(mp)(model.ParallelMap())
+	return model.MapPaged(model.Decorate[Model](decorators))(sp)(model.ParallelMap())
 }
 
-func (p *ProcessorImpl) ByTenantProvider() ([]Model, error) {
-	return model.SliceMap(decorateState(p.t))(model.SliceMap(Make)(allInTenant()(p.db.WithContext(p.ctx)))(model.ParallelMap()))(model.ParallelMap())()
+// tenantDrainPageSize bounds each page fetched while draining the full
+// tenant account set for internal callers that need every row (e.g.
+// teardown's logout-all). The REST list handler never drains; it calls
+// AllProvider directly with the caller-supplied page.
+const tenantDrainPageSize = 250
+
+// drainAll walks AllProvider page by page until every account in the tenant
+// has been fetched.
+func (p *ProcessorImpl) drainAll() ([]Model, error) {
+	var results []Model
+	page := model.Page{Number: 1, Size: tenantDrainPageSize}
+	for {
+		paged, err := p.AllProvider(page)()
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, paged.Items...)
+		if len(results) >= paged.Total || len(paged.Items) < page.Size {
+			break
+		}
+		page.Number++
+	}
+	return results, nil
 }
 
 func (p *ProcessorImpl) LoggedInTenantProvider() ([]Model, error) {
-	return model.FilteredProvider(p.ByTenantProvider, model.Filters[Model](LoggedIn))()
+	all, err := p.drainAll()
+	if err != nil {
+		return nil, err
+	}
+	return model.FilteredProvider(model.FixedProvider(all), model.Filters[Model](LoggedIn))()
 }
 
 // allTenants Retrieves all tenants with accounts associated.

@@ -1,0 +1,36 @@
+package gachapon
+
+import (
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+
+	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+)
+
+func getAllPagedProvider(page model.Page) database.EntityProvider[model.Paged[entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[entity]] {
+		return database.PagedQuery[entity](db, page)
+	}
+}
+
+func getById(id string) database.EntityProvider[entity] {
+	return func(db *gorm.DB) model.Provider[entity] {
+		return database.Query[entity](db, &entity{ID: id})
+	}
+}
+
+func modelFromEntity(e entity) (Model, error) {
+	npcIds := make([]uint32, len(e.NpcIds))
+	for i, id := range e.NpcIds {
+		npcIds[i] = uint32(id)
+	}
+	return NewBuilder(e.TenantId, e.ID).
+		SetName(e.Name).
+		SetNpcIds(npcIds).
+		SetCommonWeight(e.CommonWeight).
+		SetUncommonWeight(e.UncommonWeight).
+		SetRareWeight(e.RareWeight).
+		SetKind(e.Kind).
+		Build()
+}

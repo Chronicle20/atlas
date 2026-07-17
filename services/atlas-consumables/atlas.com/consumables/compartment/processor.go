@@ -2,14 +2,16 @@ package compartment
 
 import (
 	"atlas-consumables/kafka/message/compartment"
-	"atlas-consumables/kafka/producer"
 	"context"
-
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
+	"errors"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	item2 "github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 )
 
 type Reserves struct {
@@ -23,6 +25,7 @@ type Processor interface {
 	ConsumeItem(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, slot int16) error
 	DestroyItem(characterId uint32, inventoryType inventory.Type, slot int16) error
 	CancelItemReservation(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, slot int16) error
+	RequestCreateItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time) error
 }
 
 type ProcessorImpl struct {
@@ -60,4 +63,12 @@ func (p *ProcessorImpl) DestroyItem(characterId uint32, inventoryType inventory.
 
 func (p *ProcessorImpl) CancelItemReservation(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, slot int16) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(cancelReservationCommandProvider(characterId, inventoryType, transactionId, slot))
+}
+
+func (p *ProcessorImpl) RequestCreateItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time) error {
+	it, ok := inventory.TypeFromItemId(item2.Id(templateId))
+	if !ok {
+		return errors.New("invalid templateId")
+	}
+	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(requestCreateAssetCommandProvider(transactionId, characterId, it, templateId, quantity, expiration))
 }

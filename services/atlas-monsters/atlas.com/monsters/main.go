@@ -4,7 +4,6 @@ import (
 	data2 "atlas-monsters/kafka/consumer/data"
 	_map "atlas-monsters/kafka/consumer/map"
 	monster2 "atlas-monsters/kafka/consumer/monster"
-	"atlas-monsters/logger"
 	"atlas-monsters/monster"
 	"atlas-monsters/monster/information"
 	"atlas-monsters/tasks"
@@ -13,8 +12,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
@@ -22,16 +19,14 @@ import (
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-	service "github.com/Chronicle20/atlas/libs/atlas-service"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
+	"github.com/sirupsen/logrus"
 )
 
 const serviceName = "atlas-monsters"
 
-var (
-	consumerGroupId           = consumergroup.Resolve("Monster Registry Service")
-	dataEventsConsumerGroupId = consumergroup.Resolve("Monster Data Cache Invalidator")
-)
+var consumerGroupId = consumergroup.Resolve("Monster Registry Service")
+var dataEventsConsumerGroupId = consumergroup.Resolve("Monster Data Cache Invalidator")
 
 type Server struct {
 	baseUrl string
@@ -54,8 +49,8 @@ func GetServer() Server {
 }
 
 func main() {
-	l := logger.CreateLogger(serviceName)
-	l.Infoln("Starting main service.")
+	rt := service.Bootstrap(serviceName)
+	l := rt.Logger()
 
 	rc := atlas.Connect(l)
 	monster.InitIdAllocator(rc)
@@ -66,14 +61,7 @@ func main() {
 	monster.InitPuppetRegistry(rc)
 	information.InitDataCache(rc)
 
-	tdm := service.GetTeardownManager()
-
-	tc, err := tracing.InitTracer(serviceName)
-	if err != nil {
-		l.WithError(err).Fatal("Unable to initialize tracer.")
-	}
-
-	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	monster2.InitConsumers(l)(cmf)(consumerGroupId)
 	_map.InitConsumers(l)(cmf)(consumerGroupId)
 	data2.InitConsumers(l)(cmf)(dataEventsConsumerGroupId)
@@ -87,16 +75,17 @@ func main() {
 		l.WithError(err).Fatal("Unable to register data-events kafka handlers.")
 	}
 
-	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
+	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 	server.New(l).
-		WithContext(tdm.Context()).
-		WithWaitGroup(tdm.WaitGroup()).
+		WithContext(rt.Context()).
+		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(monster.InitResource(GetServer())).
 		AddRouteInitializer(world.InitResource(GetServer())).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
+		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
 	registerSweepTasks := func(l logrus.FieldLogger, ctx context.Context) {
@@ -119,8 +108,8 @@ func main() {
 		if err != nil {
 			l.WithError(err).Fatal("Unable to construct LeaderElection.")
 		}
-		routine.Go(l, tdm.Context(), func(_ context.Context) {
-			err := le.Run(tdm.Context(), func(leaderCtx context.Context) {
+		routine.Go(l, rt.Context(), func(_ context.Context) {
+			err := le.Run(rt.Context(), func(leaderCtx context.Context) {
 				registerSweepTasks(l, leaderCtx)
 				<-leaderCtx.Done()
 			})
@@ -130,13 +119,10 @@ func main() {
 		})
 	} else {
 		l.Warnf("MONSTER_LEADER_ELECTION_ENABLED=false — sweep tasks run unconditionally on this pod.")
-		registerSweepTasks(l, tdm.Context())
+		registerSweepTasks(l, rt.Context())
 	}
 
-	tdm.TeardownFunc(monster.Teardown(l))
-	tdm.TeardownFunc(tracing.Teardown(l)(tc))
+	rt.TeardownFunc(monster.Teardown(l))
 
-	tdm.Wait()
-
-	l.Infoln("Service shutdown.")
+	rt.Wait()
 }

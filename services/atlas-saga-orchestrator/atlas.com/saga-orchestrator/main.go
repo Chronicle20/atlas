@@ -1,46 +1,39 @@
 package main
 
 import (
+	"context"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	"atlas-saga-orchestrator/kafka/consumer/asset"
 	"atlas-saga-orchestrator/kafka/consumer/buddylist"
 	"atlas-saga-orchestrator/kafka/consumer/cashshop"
+	cashshopCompartment "atlas-saga-orchestrator/kafka/consumer/cashshop/compartment"
 	"atlas-saga-orchestrator/kafka/consumer/character"
 	"atlas-saga-orchestrator/kafka/consumer/compartment"
 	"atlas-saga-orchestrator/kafka/consumer/consumable"
 	"atlas-saga-orchestrator/kafka/consumer/guild"
+	inventoryConsumer "atlas-saga-orchestrator/kafka/consumer/inventory"
+	mtsCustody "atlas-saga-orchestrator/kafka/consumer/mts/custody"
 	"atlas-saga-orchestrator/kafka/consumer/pet"
 	"atlas-saga-orchestrator/kafka/consumer/quest"
+	saga2 "atlas-saga-orchestrator/kafka/consumer/saga"
 	"atlas-saga-orchestrator/kafka/consumer/skill"
 	"atlas-saga-orchestrator/kafka/consumer/storage"
-	"atlas-saga-orchestrator/logger"
+	storageCompartment "atlas-saga-orchestrator/kafka/consumer/storage/compartment"
 	"atlas-saga-orchestrator/saga"
-	"context"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"os"
 	"strconv"
 	"time"
-
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-
-	cashshopCompartment "atlas-saga-orchestrator/kafka/consumer/cashshop/compartment"
-
-	inventoryConsumer "atlas-saga-orchestrator/kafka/consumer/inventory"
-	mtsCustody "atlas-saga-orchestrator/kafka/consumer/mts/custody"
-
-	saga2 "atlas-saga-orchestrator/kafka/consumer/saga"
-
-	storageCompartment "atlas-saga-orchestrator/kafka/consumer/storage/compartment"
-
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	service "github.com/Chronicle20/atlas/libs/atlas-service"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
-
-	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/sirupsen/logrus"
 )
 
 const serviceName = "atlas-saga-orchestrator"
@@ -68,15 +61,8 @@ func GetServer() Server {
 }
 
 func main() {
-	l := logger.CreateLogger(serviceName)
-	l.Infoln("Starting main service.")
-
-	tdm := service.GetTeardownManager()
-
-	tc, err := tracing.InitTracer(serviceName)
-	if err != nil {
-		l.WithError(err).Fatal("Unable to initialize tracer.")
-	}
+	rt := service.Bootstrap(serviceName)
+	l := rt.Logger()
 
 	// Initialize database connection
 	db := database.Connect(l, database.SetMigrations(saga.Migration))
@@ -104,7 +90,7 @@ func main() {
 	}
 	saga.SetDefaultTimeout(defaultTimeout)
 
-	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	asset.InitConsumers(l)(cmf)(consumerGroupId)
 	buddylist.InitConsumers(l)(cmf)(consumerGroupId)
 	cashshop.InitConsumers(l)(cmf)(consumerGroupId)
@@ -170,28 +156,26 @@ func main() {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 
-	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
+	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 	// Recover active sagas from database
-	recoverSagas(l, store, tdm)
+	recoverSagas(l, store, rt.TeardownManager())
 
 	// Start the stale saga reaper
-	startReaper(l, store, tdm)
+	startReaper(l, store, rt.TeardownManager())
 
 	// Create the service with the router
 	server.New(l).
-		WithContext(tdm.Context()).
-		WithWaitGroup(tdm.WaitGroup()).
+		WithContext(rt.Context()).
+		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(saga.InitResource(GetServer())).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
+		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
-	tdm.TeardownFunc(tracing.Teardown(l)(tc))
-
-	tdm.Wait()
-	l.Infoln("Service shutdown.")
+	rt.Wait()
 }
 
 // recoverSagas loads all active sagas from the database and re-drives them

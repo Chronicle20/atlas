@@ -52,6 +52,7 @@ func TestInteractionArmsV79(t *testing.T) {
 	v83 := pt.CreateContext("GMS", 83, 1)
 	visitor := interaction.NewBaseVisitor(1, v79DetAvatar(), "Visitor")
 	room := interaction.NewPersonalShopRoom(
+		 0, // owner position
 		[]interaction.Visitor{interaction.NewBaseVisitor(0, v79DetAvatar(), "ShopOwner")},
 		"CoolShop", 16, []interaction.RoomShopItem{testShopItem()})
 	items := []interaction.RoomShopItem{testShopItem()}

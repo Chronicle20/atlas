@@ -5,9 +5,10 @@ import (
 	"atlas-cashshop/configuration"
 	"atlas-cashshop/kafka/message"
 	"atlas-cashshop/kafka/message/item"
-	"atlas-cashshop/kafka/producer"
 	itemProducer "atlas-cashshop/kafka/producer/item"
 	"context"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 

@@ -38,11 +38,20 @@ var (
 type Processor interface {
 	WithTransaction(*gorm.DB) Processor
 	ByIdProvider(id uint32) model.Provider[Model]
-	ByCharacterIdProvider(characterId uint32) model.Provider[[]Model]
+	// ByCharacterIdPagedProvider returns one page of a character's quests.
+	// ByCharacterIdProvider/GetByCharacterId had no internal caller besides
+	// the REST list handler (task-117), so they were converted in place
+	// rather than kept alongside a new paged sibling.
+	ByCharacterIdPagedProvider(characterId uint32, page model.Page) model.Provider[model.Paged[Model]]
 	ByCharacterIdAndQuestIdProvider(characterId uint32, questId uint32) model.Provider[Model]
 	ByCharacterIdAndStateProvider(characterId uint32, state State) model.Provider[[]Model]
+	// ByCharacterIdAndStatePagedProvider returns one page of a character's
+	// quests in a given state. Used only by the REST list handlers (GET
+	// .../quests/started|completed, task-117); the hot-path Kafka consumers
+	// that need the complete started-quest set keep using
+	// ByCharacterIdAndStateProvider/GetByCharacterIdAndState above.
+	ByCharacterIdAndStatePagedProvider(characterId uint32, state State, page model.Page) model.Provider[model.Paged[Model]]
 	GetById(id uint32) (Model, error)
-	GetByCharacterId(characterId uint32) ([]Model, error)
 	GetByCharacterIdAndQuestId(characterId uint32, questId uint32) (Model, error)
 	GetByCharacterIdAndState(characterId uint32, state State) ([]Model, error)
 	// Start starts a quest with validation and processes start actions
@@ -137,8 +146,8 @@ func (p *ProcessorImpl) ByIdProvider(id uint32) model.Provider[Model] {
 	return model.Map(Make)(byIdEntityProvider(id)(p.db.WithContext(p.ctx)))
 }
 
-func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
-	return model.SliceMap(Make)(byCharacterIdEntityProvider(characterId)(p.db.WithContext(p.ctx)))()
+func (p *ProcessorImpl) ByCharacterIdPagedProvider(characterId uint32, page model.Page) model.Provider[model.Paged[Model]] {
+	return model.MapPaged(Make)(byCharacterIdPagedEntityProvider(characterId, page)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) ByCharacterIdAndQuestIdProvider(characterId uint32, questId uint32) model.Provider[Model] {
@@ -149,12 +158,12 @@ func (p *ProcessorImpl) ByCharacterIdAndStateProvider(characterId uint32, state 
 	return model.SliceMap(Make)(byCharacterIdAndStateEntityProvider(characterId, state)(p.db.WithContext(p.ctx)))()
 }
 
-func (p *ProcessorImpl) GetById(id uint32) (Model, error) {
-	return p.ByIdProvider(id)()
+func (p *ProcessorImpl) ByCharacterIdAndStatePagedProvider(characterId uint32, state State, page model.Page) model.Provider[model.Paged[Model]] {
+	return model.MapPaged(Make)(byCharacterIdAndStatePagedEntityProvider(characterId, state, page)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }
 
-func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
-	return p.ByCharacterIdProvider(characterId)()
+func (p *ProcessorImpl) GetById(id uint32) (Model, error) {
+	return p.ByIdProvider(id)()
 }
 
 func (p *ProcessorImpl) GetByCharacterIdAndQuestId(characterId uint32, questId uint32) (Model, error) {

@@ -18,8 +18,7 @@ import (
 
 type Processor interface {
 	WithTransaction(tx *gorm.DB) Processor
-	AllProvider(guildId uint32) model.Provider[[]Model]
-	GetAll(guildId uint32) ([]Model, error)
+	AllProvider(guildId uint32, page model.Page) model.Provider[model.Paged[Model]]
 	ByIdProvider(guildId uint32, threadId uint32) model.Provider[Model]
 	GetById(guildId uint32, threadId uint32) (Model, error)
 
@@ -62,12 +61,9 @@ func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 	}
 }
 
-func (p *ProcessorImpl) AllProvider(guildId uint32) model.Provider[[]Model] {
-	return model.SliceMap(Make)(getAll(guildId)(p.db.WithContext(p.ctx)))()
-}
-
-func (p *ProcessorImpl) GetAll(guildId uint32) ([]Model, error) {
-	return p.AllProvider(guildId)()
+func (p *ProcessorImpl) AllProvider(guildId uint32, page model.Page) model.Provider[model.Paged[Model]] {
+	ep := getAll(guildId, page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(Make)(ep)(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) ByIdProvider(guildId uint32, threadId uint32) model.Provider[Model] {

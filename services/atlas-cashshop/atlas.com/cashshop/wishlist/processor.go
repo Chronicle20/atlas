@@ -17,8 +17,11 @@ import (
 )
 
 type Processor interface {
-	ByCharacterIdProvider(characterId uint32) model.Provider[[]Model]
-	GetByCharacterId(characterId uint32) ([]Model, error)
+	// ByCharacterIdPagedProvider returns one page of a character's wishlist.
+	// ByCharacterIdProvider had no internal caller besides the REST list
+	// handler (task-117), so it was converted in place rather than kept
+	// alongside a new paged sibling.
+	ByCharacterIdPagedProvider(characterId uint32, page model.Page) model.Provider[model.Paged[Model]]
 	Add(mb *message.Buffer) func(characterId uint32) func(serialNumber uint32) (Model, error)
 	AddAndEmit(characterId uint32, serialNumber uint32) (Model, error)
 	Delete(mb *message.Buffer) func(characterId uint32) func(itemId uuid.UUID) error
@@ -46,12 +49,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 
 var _ Processor = (*ProcessorImpl)(nil)
 
-func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
-	return model.SliceMap(Make)(byCharacterIdEntityProvider(characterId)(p.db.WithContext(p.ctx)))(model.ParallelMap())
-}
-
-func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
-	return p.ByCharacterIdProvider(characterId)()
+func (p *ProcessorImpl) ByCharacterIdPagedProvider(characterId uint32, page model.Page) model.Provider[model.Paged[Model]] {
+	return model.MapPaged(Make)(byCharacterIdPagedEntityProvider(characterId, page)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) Add(mb *message.Buffer) func(characterId uint32) func(serialNumber uint32) (Model, error) {

@@ -1,23 +1,25 @@
 package character
 
 import (
+	"errors"
+	"net/http"
+	"sort"
+	"strconv"
+
 	"atlas-monster-book/card"
 	"atlas-monster-book/collection"
 	"atlas-monster-book/rest"
-	"errors"
-	"net/http"
-	"strconv"
-
-	"github.com/google/uuid"
-	"github.com/gorilla/mux"
-	"github.com/jtumidanski/api2go/jsonapi"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 
 	characterconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
+	"github.com/jtumidanski/api2go/jsonapi"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 const (
@@ -106,6 +108,12 @@ func handleListCards(db *gorm.DB) rest.GetHandler {
 		return rest.ParseCharacterId(d.Logger(), func(rawId uint32) http.HandlerFunc {
 			characterId := characterconst.Id(rawId)
 			return func(w http.ResponseWriter, r *http.Request) {
+				page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+					return
+				}
+
 				cp := card.NewProcessor(d.Logger(), d.Context(), db)
 				ms, err := cp.GetByCharacterId(characterId)
 				if err != nil {
@@ -125,27 +133,29 @@ func handleListCards(db *gorm.DB) rest.GetHandler {
 						ms = filtered
 					}
 				}
-				offset := parseUintQ(r.URL.Query().Get("page[offset]"), 0)
-				limit := parseUintQ(r.URL.Query().Get("page[limit]"), 100)
-				if limit > 200 {
-					limit = 200
-				}
-				if int(offset) >= len(ms) {
-					ms = nil
-				} else {
-					end := int(offset) + int(limit)
-					if end > len(ms) {
-						end = len(ms)
-					}
-					ms = ms[offset:end]
-				}
-				res, err := model.SliceMap(card.Transform)(model.FixedProvider(ms))()()
+
+				// entity has a composite primary key (tenant_id, character_id,
+				// card_id) with no auto-increment tiebreaker, so
+				// database.PagedQuery cannot derive a stable ORDER BY (task-117
+				// composite-PK fallback, see atlas-keys precedent).
+				// GetByCharacterId's underlying SliceQuery has no explicit
+				// ORDER BY either, so sort by CardId (unique within one
+				// character's cards) before slicing for determinism.
+				cards := make([]card.Model, len(ms))
+				copy(cards, ms)
+				sort.SliceStable(cards, func(i, j int) bool {
+					return cards[i].CardId() < cards[j].CardId()
+				})
+
+				paged := paginate.Slice(cards, page)
+
+				res, err := model.SliceMap(card.Transform)(model.FixedProvider(paged.Items))()()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Failed to transform cards for character %d.", characterId)
 					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
-				server.MarshalResponse[[]card.RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
+				server.MarshalPaginatedResponse[[]card.RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res, paginate.EnvelopeFor(paged), r)
 			}
 		})
 	}
@@ -180,15 +190,4 @@ func handleGetCard(db *gorm.DB) rest.GetHandler {
 			})
 		})
 	}
-}
-
-func parseUintQ(s string, def uint32) uint32 {
-	if s == "" {
-		return def
-	}
-	v, err := strconv.ParseUint(s, 10, 32)
-	if err != nil {
-		return def
-	}
-	return uint32(v)
 }

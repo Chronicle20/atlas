@@ -5,13 +5,13 @@ import (
 	"testing"
 	"time"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func setupTestDatabase(t *testing.T) *gorm.DB {
@@ -44,6 +44,29 @@ func recordTestEntry(t *testing.T, db *gorm.DB, tm tenant.Model, accountId uint3
 		t.Fatalf("Failed to record test entry: %v", err)
 	}
 	return m
+}
+
+// allHistory drains a single page big enough to hold every seeded row in
+// these tests, standing in for the deleted unfiltered GetByTenant getter.
+func allHistory(t *testing.T, p Processor) []Model {
+	t.Helper()
+	paged, err := p.AllProvider(model.Page{Number: 1, Size: 50})()
+	if err != nil {
+		t.Fatalf("Failed to get history by tenant: %v", err)
+	}
+	return paged.Items
+}
+
+// historyByAccountId drains a single page big enough to hold every seeded
+// row in these tests, standing in for the deleted unfiltered GetByAccountId
+// getter.
+func historyByAccountId(t *testing.T, p Processor, accountId uint32) []Model {
+	t.Helper()
+	paged, err := p.ByAccountIdProvider(accountId, model.Page{Number: 1, Size: 50})()
+	if err != nil {
+		t.Fatalf("Failed to get history by account id: %v", err)
+	}
+	return paged.Items
 }
 
 func TestProcessorRecord(t *testing.T) {
@@ -106,10 +129,7 @@ func TestProcessorGetByAccountId(t *testing.T) {
 	recordTestEntry(t, db, st, 99, "otheruser", "10.0.0.3", "HWID3", true, "")
 
 	p := NewProcessor(l, ctx, db)
-	entries, err := p.GetByAccountId(42)
-	if err != nil {
-		t.Fatalf("Failed to get by account id: %v", err)
-	}
+	entries := historyByAccountId(t, p, 42)
 
 	if len(entries) != 2 {
 		t.Errorf("Expected 2 entries for account 42, got %d", len(entries))
@@ -127,13 +147,16 @@ func TestProcessorGetByIP(t *testing.T) {
 	recordTestEntry(t, db, st, 44, "user3", "10.0.0.2", "HWID3", true, "")
 
 	p := NewProcessor(l, ctx, db)
-	entries, err := p.GetByIP("10.0.0.1")
+	paged, err := p.ByIPPagedProvider("10.0.0.1", model.Page{Number: 1, Size: 50})()
 	if err != nil {
 		t.Fatalf("Failed to get by IP: %v", err)
 	}
 
-	if len(entries) != 2 {
-		t.Errorf("Expected 2 entries for IP 10.0.0.1, got %d", len(entries))
+	if len(paged.Items) != 2 {
+		t.Errorf("Expected 2 entries for IP 10.0.0.1, got %d", len(paged.Items))
+	}
+	if paged.Total != 2 {
+		t.Errorf("Expected total 2, got %d", paged.Total)
 	}
 }
 
@@ -148,13 +171,16 @@ func TestProcessorGetByHWID(t *testing.T) {
 	recordTestEntry(t, db, st, 44, "user3", "10.0.0.3", "XYZ789", true, "")
 
 	p := NewProcessor(l, ctx, db)
-	entries, err := p.GetByHWID("ABC123")
+	paged, err := p.ByHWIDPagedProvider("ABC123", model.Page{Number: 1, Size: 50})()
 	if err != nil {
 		t.Fatalf("Failed to get by HWID: %v", err)
 	}
 
-	if len(entries) != 2 {
-		t.Errorf("Expected 2 entries for HWID ABC123, got %d", len(entries))
+	if len(paged.Items) != 2 {
+		t.Errorf("Expected 2 entries for HWID ABC123, got %d", len(paged.Items))
+	}
+	if paged.Total != 2 {
+		t.Errorf("Expected total 2, got %d", paged.Total)
 	}
 }
 
@@ -169,10 +195,7 @@ func TestProcessorGetByTenant(t *testing.T) {
 	recordTestEntry(t, db, st, 44, "user3", "10.0.0.3", "HWID3", false, "banned")
 
 	p := NewProcessor(l, ctx, db)
-	entries, err := p.GetByTenant()
-	if err != nil {
-		t.Fatalf("Failed to get by tenant: %v", err)
-	}
+	entries := allHistory(t, p)
 
 	if len(entries) != 3 {
 		t.Errorf("Expected 3 entries, got %d", len(entries))
@@ -190,10 +213,7 @@ func TestProcessorGetByTenantIsolation(t *testing.T) {
 	recordTestEntry(t, db, st2, 44, "user3", "10.0.0.3", "HWID3", true, "")
 
 	p := NewProcessor(l, testContext(st1), db)
-	entries, err := p.GetByTenant()
-	if err != nil {
-		t.Fatalf("Failed to get entries: %v", err)
-	}
+	entries := allHistory(t, p)
 
 	if len(entries) != 2 {
 		t.Errorf("Tenant isolation failed. Expected 2 entries for tenant 1, got %d", len(entries))
@@ -229,10 +249,7 @@ func TestProcessorPurgeOlderThan(t *testing.T) {
 		t.Fatalf("Failed to purge: %v", err)
 	}
 
-	entries, err := p.GetByTenant()
-	if err != nil {
-		t.Fatalf("Failed to get entries after purge: %v", err)
-	}
+	entries := allHistory(t, p)
 
 	if len(entries) != 1 {
 		t.Errorf("Expected 1 entry after purge, got %d", len(entries))
@@ -283,10 +300,7 @@ func TestProcessorPurgeIsolation(t *testing.T) {
 
 	// Tenant 2 should still have its old entry
 	p2 := NewProcessor(l, testContext(st2), db)
-	entries, err := p2.GetByTenant()
-	if err != nil {
-		t.Fatalf("Failed to get tenant 2 entries: %v", err)
-	}
+	entries := allHistory(t, p2)
 
 	if len(entries) != 1 {
 		t.Errorf("Purge isolation failed. Expected 1 entry for tenant 2, got %d", len(entries))

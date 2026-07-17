@@ -19,10 +19,6 @@ func getBaseRequest() string {
 	return requests.RootUrl("ACCOUNTS")
 }
 
-func requestAccounts() requests.Request[[]RestModel] {
-	return requests.GetRequest[[]RestModel](getBaseRequest() + AccountsResource)
-}
-
 func requestAccountByName(name string) requests.Request[RestModel] {
 	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+AccountsByName, name))
 }

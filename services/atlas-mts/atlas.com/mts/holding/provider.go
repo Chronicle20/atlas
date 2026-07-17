@@ -8,6 +8,11 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
+// getAll resolves every holding row visible to the request's tenant. It backs
+// ONLY the administrator.GetAll() test-verification wrapper (full-table DB
+// assertions in test code) — the REST-facing GetAll() was removed from
+// Processor in favor of the paged ByOwnerPagedProvider/ByCharacterPagedProvider
+// (task-117); this unfiltered provider is never reachable from a handler.
 func getAll() database.EntityProvider[[]entity] {
 	return func(db *gorm.DB) model.Provider[[]entity] {
 		return database.SliceQuery[entity](db, &entity{})
@@ -80,6 +85,29 @@ func getByCharacter(ownerId uint32) database.EntityProvider[[]entity] {
 	}
 }
 
+// getByOwnerPaged backs the REST list handler's ?worldId= narrowed branch (GET
+// /characters/{characterId}/mts/holding?worldId=, task-117). Single-PK entity
+// (surrogate UUID), so this is a straight database.PagedQuery over the same
+// world_id+owner_id scope getByOwner uses.
+func getByOwnerPaged(worldId world.Id, ownerId uint32, page model.Page) database.EntityProvider[model.Paged[entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[entity]] {
+		return database.PagedQuery[entity](db.Where(map[string]interface{}{
+			"world_id": byte(worldId),
+			"owner_id": ownerId,
+		}), page)
+	}
+}
+
+// getByCharacterPaged backs the REST list handler's unscoped branch (GET
+// /characters/{characterId}/mts/holding, task-117), mirroring getByCharacter.
+func getByCharacterPaged(ownerId uint32, page model.Page) database.EntityProvider[model.Paged[entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[entity]] {
+		return database.PagedQuery[entity](db.Where(map[string]interface{}{
+			"owner_id": ownerId,
+		}), page)
+	}
+}
+
 func modelFromEntity(e entity) (Model, error) {
 	b := NewBuilder(e.TenantId, world.Id(e.WorldId), e.OwnerId).
 		SetId(e.Id).
@@ -109,6 +137,7 @@ func modelFromEntity(e entity) (Model, error) {
 		SetRingId(e.RingId).
 		SetViciousCount(e.ViciousCount).
 		SetFlags(e.Flags).
+		SetOwner(e.Owner).
 		SetCreatedAt(e.CreatedAt)
 	return b.Build()
 }

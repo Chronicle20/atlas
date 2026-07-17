@@ -12,10 +12,11 @@ import (
 	inventory2 "atlas-npc/inventory"
 	"atlas-npc/kafka/message"
 	"atlas-npc/kafka/message/shops"
-	"atlas-npc/kafka/producer"
 	"context"
 	"database/sql"
 	"errors"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"math"
 	"sort"
 	"time"
@@ -38,8 +39,8 @@ type Processor interface {
 	RechargeableConsumablesDecorator(m Model) Model
 	GetByNpcId(decorators ...model.Decorator[Model]) func(npcId uint32) (Model, error)
 	ByNpcIdProvider(decorators ...model.Decorator[Model]) func(npcId uint32) model.Provider[Model]
-	GetAllShops(decorators ...model.Decorator[Model]) ([]Model, error)
-	AllShopsProvider(decorators ...model.Decorator[Model]) model.Provider[[]Model]
+	GetAllShops(page model.Page, decorators ...model.Decorator[Model]) (model.Paged[Model], error)
+	AllShopsProvider(page model.Page, decorators ...model.Decorator[Model]) model.Provider[model.Paged[Model]]
 	CreateShop(npcId uint32, recharger bool, commodities []commodities.Model) (Model, error)
 	UpdateShop(npcId uint32, recharger bool, commodities []commodities.Model) (Model, error)
 	AddCommodity(npcId uint32, templateId uint32, mesoPrice uint32, discountRate byte, tokenTemplateId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (commodities.Model, error)
@@ -72,7 +73,7 @@ type ProcessorImpl struct {
 	db                                 *gorm.DB
 	t                                  tenant.Model
 	GetByNpcIdFn                       func(decorators ...model.Decorator[Model]) func(npcId uint32) (Model, error)
-	GetAllShopsFn                      func(decorators ...model.Decorator[Model]) ([]Model, error)
+	GetAllShopsFn                      func(page model.Page, decorators ...model.Decorator[Model]) (model.Paged[Model], error)
 	RechargeableConsumablesDecoratorFn func(m Model) Model
 	cp                                 commodities.Processor
 	charP                              character.Processor
@@ -322,50 +323,58 @@ func (p *ProcessorImpl) DeleteAllShops() error {
 	})
 }
 
-func (p *ProcessorImpl) GetAllShops(decorators ...model.Decorator[Model]) ([]Model, error) {
+func (p *ProcessorImpl) GetAllShops(page model.Page, decorators ...model.Decorator[Model]) (model.Paged[Model], error) {
 	if p.GetAllShopsFn != nil {
-		return p.GetAllShopsFn(decorators...)
+		return p.GetAllShopsFn(page, decorators...)
 	}
-	return p.AllShopsProvider(decorators...)()
+	return p.AllShopsProvider(page, decorators...)()
 }
 
-func (p *ProcessorImpl) AllShopsProvider(decorators ...model.Decorator[Model]) model.Provider[[]Model] {
-	// Get all shop entities
-	shopEntities, err := getAllShops()(p.db.WithContext(p.ctx))()
-	if err != nil {
-		// If there's an error getting shop entities, fall back to getting NPC IDs from commodities
-		npcIds, err := p.cp.GetDistinctNpcIds()
+// AllShopsProvider is content full-table: /shops has no per-request WHERE
+// filter, so database.PagedQuery (via getAllShopsPaged) is used directly.
+// RechargeableConsumablesDecorator is appended UNCONDITIONALLY (not
+// include-gated like CommodityDecorator) — it is a mandatory per-item
+// cache read (GetConsumableCache(), tenant-scoped WZ-derived reference
+// data, not itself paginated), so it is preserved as a second MapPaged
+// stage applied AFTER paging, matching the atlas-account
+// AllProvider/decorateState precedent (task-117 Task 9) rather than being
+// dropped or applied to the full unpaged set.
+func (p *ProcessorImpl) AllShopsProvider(page model.Page, decorators ...model.Decorator[Model]) model.Provider[model.Paged[Model]] {
+	return func() (model.Paged[Model], error) {
+		pe, err := getAllShopsPaged(page)(p.db.WithContext(p.ctx))()
 		if err != nil {
-			return model.FixedProvider[[]Model](make([]Model, 0))
-		}
-
-		// Create shop entities for each NPC ID if they don't exist
-		for _, npcId := range npcIds {
-			shopExists, err := existsByNpcId(npcId)(p.db.WithContext(p.ctx))()
-			if err != nil {
-				continue
+			// Self-healing fallback (rare/legacy-data path, unchanged from
+			// the pre-pagination implementation): some NPCs have
+			// commodities but no shop row yet. Backfill missing shop rows
+			// from commodities' distinct NPC IDs, then retry once.
+			npcIds, npcErr := p.cp.GetDistinctNpcIds()
+			if npcErr != nil {
+				return model.Paged[Model]{Items: []Model{}, Page: page}, nil
 			}
-			if !shopExists {
-				_, err = createShop(p.t.Id(), npcId, true)(p.db.WithContext(p.ctx))()
-				if err != nil {
+
+			for _, npcId := range npcIds {
+				shopExists, existsErr := existsByNpcId(npcId)(p.db.WithContext(p.ctx))()
+				if existsErr != nil {
 					continue
 				}
+				if !shopExists {
+					_, createErr := createShop(p.t.Id(), npcId, true)(p.db.WithContext(p.ctx))()
+					if createErr != nil {
+						continue
+					}
+				}
+			}
+
+			pe, err = getAllShopsPaged(page)(p.db.WithContext(p.ctx))()
+			if err != nil {
+				return model.Paged[Model]{Items: []Model{}, Page: page}, nil
 			}
 		}
 
-		// Try to get all shop entities again
-		shopEntities, err = getAllShops()(p.db.WithContext(p.ctx))()
-		if err != nil {
-			return model.FixedProvider[[]Model](make([]Model, 0))
-		}
+		mp := model.MapPaged(Make)(model.FixedProvider(pe))(model.ParallelMap())
+		allDecorators := append(append([]model.Decorator[Model]{}, decorators...), p.RechargeableConsumablesDecorator)
+		return model.MapPaged(model.Decorate[Model](allDecorators))(mp)(model.ParallelMap())()
 	}
-
-	// Convert entities to models
-	sbp := model.SliceMap(func(entity Entity) (Model, error) {
-		return Make(entity)
-	})(model.FixedProvider(shopEntities))(model.ParallelMap())
-
-	return model.SliceMap(model.Decorate(append(decorators, p.RechargeableConsumablesDecorator)))(sbp)(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) BuyAndEmit(characterId uint32, slot uint16, itemTemplateId uint32, quantity uint32, discountPrice uint32) error {

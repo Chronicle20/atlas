@@ -45,7 +45,7 @@ func (d *decoder) decode(cp *property.CanvasProperty) (*sprite, error) {
 	if err != nil {
 		return nil, fmt.Errorf("read canvas: %w", err)
 	}
-	nrgba, err := canvas.Decompress(data, cp.Width(), cp.Height(), cp.Format(), d.f.CanvasEncryptionKey())
+	nrgba, err := canvas.Decompress(data, cp.Width(), cp.Height(), cp.Format(), d.f.CanvasEncryptionKeyFor(cp.DataOffset()))
 	if err != nil {
 		return nil, fmt.Errorf("decompress canvas: %w", err)
 	}

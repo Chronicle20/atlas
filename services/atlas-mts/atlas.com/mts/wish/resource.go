@@ -4,16 +4,16 @@ import (
 	"atlas-mts/rest"
 	"net/http"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // InitResource registers the wish-list routes:
@@ -41,18 +41,27 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 	}
 }
 
+// handleGetCharacterWishlist is a game-capped list (a character's wishlist is
+// bounded by game rules) — page[size] defaults to and caps at
+// paginate.MaxPageSize (task-117).
 func handleGetCharacterWishlist(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
+			page, perr := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+			if perr != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+				return
+			}
+
 			p := NewProcessor(d.Logger(), d.Context(), d.DB())
 			// Optional `type` filter (cart/wanted) so the Cart and Wanted views fetch
 			// only their own entries; absent, return the full wishlist.
-			var ms []Model
+			var paged model.Paged[Model]
 			var err error
 			if wishType := r.URL.Query().Get("type"); wishType != "" {
-				ms, err = p.GetByCharacterAndType(characterId, wishType)
+				paged, err = p.ByCharacterAndTypePagedProvider(characterId, wishType, page)()
 			} else {
-				ms, err = p.GetByCharacter(characterId)
+				paged, err = p.ByCharacterPagedProvider(characterId, page)()
 			}
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Retrieving wishlist for character [%d].", characterId)
@@ -60,7 +69,7 @@ func handleGetCharacterWishlist(d *rest.HandlerDependency, c *rest.HandlerContex
 				return
 			}
 
-			res, err := model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())()
+			res, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				server.WriteErrorResponse(d.Logger())(w)(err)
@@ -69,25 +78,33 @@ func handleGetCharacterWishlist(d *rest.HandlerDependency, c *rest.HandlerContex
 
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
 		}
 	})
 }
 
 // handleGetWorldWishlist returns every want-ad (type=wanted) in a world, across
 // all characters — the channel's cross-character Wanted browse tab. The seller
-// column is rendered channel-side from each entry's CharacterId.
+// column is rendered channel-side from each entry's CharacterId. Treated as a
+// game-capped list (page[size] defaults to and caps at paginate.MaxPageSize,
+// task-117) for uniformity with the character-scoped wishlist.
 func handleGetWorldWishlist(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			ms, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetWantedByWorld(worldId)
+			page, perr := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+			if perr != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+				return
+			}
+
+			paged, err := NewProcessor(d.Logger(), d.Context(), d.DB()).WantedByWorldPagedProvider(worldId, page)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Retrieving world wishlist for world [%d].", byte(worldId))
 				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
-			res, err := model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())()
+			res, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				server.WriteErrorResponse(d.Logger())(w)(err)
@@ -96,7 +113,7 @@ func handleGetWorldWishlist(d *rest.HandlerDependency, c *rest.HandlerContext) h
 
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
 		}
 	})
 }

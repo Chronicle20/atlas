@@ -59,7 +59,7 @@ func SpResetTier(itemId item.Id) (byte, bool) {
 }
 
 // AbilityFromWireFlag maps the client stat-flag encoding of the AP Reset body
-// (Cosmic AssignAPProcessor.APResetAction) to an ability enum string.
+// (the client's stat-update bitmask values) to an ability enum string.
 func AbilityFromWireFlag(flag uint32) (string, bool) {
 	switch flag {
 	case 64:
@@ -170,7 +170,7 @@ func ValidateSpTransfer(c character.Model, fromId skill.Id, toId skill.Id, tier 
 }
 
 // abilityDisplay maps ability enum strings to the short names used in the
-// Cosmic-parity messages.
+// player-facing rejection messages.
 var abilityDisplay = map[string]string{
 	AbilityStrength:     "STR",
 	AbilityDexterity:    "DEX",

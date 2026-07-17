@@ -2,9 +2,9 @@ package pet
 
 import (
 	pet2 "atlas-channel/kafka/message/pet"
-	"atlas-channel/kafka/producer"
 	"atlas-channel/pet/exclude"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"
 
@@ -46,8 +46,13 @@ func (p *ProcessorImpl) GetById(petId uint32) (Model, error) {
 	return p.ByIdProvider(petId)()
 }
 
+// ByOwnerProvider fetches every pet owned by a character. The upstream
+// atlas-pets list is now paginated (task-117); callers here need the
+// complete set (e.g. rendering the character-info popup, sending the full
+// pet list on channel spawn), so this drains every page rather than
+// fetching just the first.
 func (p *ProcessorImpl) ByOwnerProvider(ownerId uint32) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByOwnerId(ownerId), Extract, model.Filters[Model]())
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(byOwnerUrl(ownerId), 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) GetByOwner(ownerId uint32) ([]Model, error) {

@@ -84,6 +84,28 @@ type Processor interface {
 	// AllVesselsProvider returns a provider for all vessels for a tenant
 	AllVesselsProvider(tenantId uuid.UUID) model.Provider[[]map[string]interface{}]
 
+	// RPS reward operations
+	// CreateRpsReward creates a new rps-reward configuration
+	CreateRpsReward(mb *message.Buffer) func(tenantId uuid.UUID) func(rpsReward map[string]interface{}) (Model, error)
+	// CreateRpsRewardAndEmit creates a new rps-reward configuration and emits events
+	CreateRpsRewardAndEmit(tenantId uuid.UUID, rpsReward map[string]interface{}) (Model, error)
+	// UpdateRpsReward updates an existing rps-reward configuration
+	UpdateRpsReward(mb *message.Buffer) func(tenantId uuid.UUID) func(rpsRewardID string) func(rpsReward map[string]interface{}) (Model, error)
+	// UpdateRpsRewardAndEmit updates an existing rps-reward configuration and emits events
+	UpdateRpsRewardAndEmit(tenantId uuid.UUID, rpsRewardID string, rpsReward map[string]interface{}) (Model, error)
+	// DeleteRpsReward deletes a rps-reward configuration
+	DeleteRpsReward(mb *message.Buffer) func(tenantId uuid.UUID) func(rpsRewardID string) error
+	// DeleteRpsRewardAndEmit deletes a rps-reward configuration and emits events
+	DeleteRpsRewardAndEmit(tenantId uuid.UUID, rpsRewardID string) error
+	// GetRpsRewardById gets a rps-reward by ID
+	GetRpsRewardById(tenantId uuid.UUID, rpsRewardID string) (map[string]interface{}, error)
+	// GetAllRpsRewards gets all rps-rewards for a tenant
+	GetAllRpsRewards(tenantId uuid.UUID) ([]map[string]interface{}, error)
+	// RpsRewardByIdProvider returns a provider for a rps-reward by ID
+	RpsRewardByIdProvider(tenantId uuid.UUID, rpsRewardID string) model.Provider[map[string]interface{}]
+	// AllRpsRewardsProvider returns a provider for all rps-rewards for a tenant
+	AllRpsRewardsProvider(tenantId uuid.UUID) model.Provider[[]map[string]interface{}]
+
 	// MTS config operations
 	// CreateMtsConfig creates a new mts config configuration
 	CreateMtsConfig(mb *message.Buffer) func(tenantId uuid.UUID) func(config map[string]interface{}) (Model, error)
@@ -113,6 +135,8 @@ type Processor interface {
 	SeedInstanceRoutes(tenantId uuid.UUID) (SeedResult, error)
 	// SeedVessels clears existing vessels for a tenant and loads them from seed files
 	SeedVessels(tenantId uuid.UUID) (SeedResult, error)
+	// SeedRpsRewards clears existing rps-rewards for a tenant and loads them from seed files
+	SeedRpsRewards(tenantId uuid.UUID) (SeedResult, error)
 	// SeedMtsConfigs clears existing mts configs for a tenant and loads them from seed files
 	SeedMtsConfigs(tenantId uuid.UUID) (SeedResult, error)
 }
@@ -1214,6 +1238,290 @@ func (p *ProcessorImpl) SeedVessels(tenantId uuid.UUID) (SeedResult, error) {
 	}
 
 	p.l.Infof("Vessel seed complete for tenant [%s]: deleted=%d, created=%d, failed=%d",
+		tenantId, result.DeletedCount, result.CreatedCount, result.FailedCount)
+
+	return result, nil
+}
+
+// CreateRpsReward creates a new rps-reward configuration
+func (p *ProcessorImpl) CreateRpsReward(mb *message.Buffer) func(tenantId uuid.UUID) func(rpsReward map[string]interface{}) (Model, error) {
+	return func(tenantId uuid.UUID) func(rpsReward map[string]interface{}) (Model, error) {
+		return func(rpsReward map[string]interface{}) (Model, error) {
+			// Check if configuration already exists
+			existingProvider := GetByTenantIdAndResourceNameProvider(tenantId, "rps-rewards")(p.db)
+			existing, err := existingProvider()
+
+			var resourceData json.RawMessage
+
+			if err == nil {
+				// Configuration exists, update it
+				var existingData map[string]interface{}
+				if err := json.Unmarshal(existing.ResourceData, &existingData); err != nil {
+					return Model{}, err
+				}
+
+				// Check if it's an array of resources
+				if resources, ok := existingData["data"].([]interface{}); ok {
+					// Add the new rps-reward to the array
+					resources = append(resources, rpsReward)
+					existingData["data"] = resources
+					resourceData, err = json.Marshal(existingData)
+					if err != nil {
+						return Model{}, err
+					}
+				} else {
+					// Create a new array with the existing resource and the new one
+					resourceData, err = CreateRpsRewardJsonData([]map[string]interface{}{rpsReward})
+					if err != nil {
+						return Model{}, err
+					}
+				}
+
+				existing.ResourceData = resourceData
+				if err := UpdateConfiguration(p.db, existing); err != nil {
+					return Model{}, err
+				}
+
+				m, err := Make(existing)
+				if err != nil {
+					return Model{}, err
+				}
+
+				// Add event to message buffer
+				rpsRewardID := ""
+				if id, ok := rpsReward["id"].(string); ok {
+					rpsRewardID = id
+				}
+				if err := mb.Put(EventTopicConfigurationStatus, CreateRpsRewardStatusEventProvider(tenantId, EventTypeRpsRewardCreated, rpsRewardID)); err != nil {
+					return Model{}, err
+				}
+
+				return m, nil
+			} else if errors.Is(err, gorm.ErrRecordNotFound) {
+				// Configuration doesn't exist, create it
+				resourceData, err = CreateSingleRpsRewardJsonData(rpsReward)
+				if err != nil {
+					return Model{}, err
+				}
+
+				entity := Entity{
+					ID:           uuid.New(),
+					TenantId:     tenantId,
+					ResourceName: "rps-rewards",
+					ResourceData: resourceData,
+				}
+
+				if err := CreateConfiguration(p.db, entity); err != nil {
+					return Model{}, err
+				}
+
+				m, err := Make(entity)
+				if err != nil {
+					return Model{}, err
+				}
+
+				// Add event to message buffer
+				rpsRewardID := ""
+				if id, ok := rpsReward["id"].(string); ok {
+					rpsRewardID = id
+				}
+				if err := mb.Put(EventTopicConfigurationStatus, CreateRpsRewardStatusEventProvider(tenantId, EventTypeRpsRewardCreated, rpsRewardID)); err != nil {
+					return Model{}, err
+				}
+
+				return m, nil
+			} else {
+				// Other error
+				return Model{}, err
+			}
+		}
+	}
+}
+
+// CreateRpsRewardAndEmit creates a new rps-reward configuration and emits events
+func (p *ProcessorImpl) CreateRpsRewardAndEmit(tenantId uuid.UUID, rpsReward map[string]interface{}) (Model, error) {
+	var result Model
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		var err error
+		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+			return func(tenantId uuid.UUID) (Model, error) {
+				return NewProcessor(p.l, p.ctx, tx).CreateRpsReward(mb)(tenantId)(rpsReward)
+			}
+		})(tenantId)
+		return err
+	})
+	return result, txErr
+}
+
+// UpdateRpsReward updates an existing rps-reward configuration
+func (p *ProcessorImpl) UpdateRpsReward(mb *message.Buffer) func(tenantId uuid.UUID) func(rpsRewardID string) func(rpsReward map[string]interface{}) (Model, error) {
+	return func(tenantId uuid.UUID) func(rpsRewardID string) func(rpsReward map[string]interface{}) (Model, error) {
+		return func(rpsRewardID string) func(rpsReward map[string]interface{}) (Model, error) {
+			return func(rpsReward map[string]interface{}) (Model, error) {
+				// Check if configuration exists
+				existingProvider := GetByTenantIdAndResourceNameProvider(tenantId, "rps-rewards")(p.db)
+				existing, err := existingProvider()
+				if err != nil {
+					return Model{}, err
+				}
+
+				var existingData map[string]interface{}
+				if err := json.Unmarshal(existing.ResourceData, &existingData); err != nil {
+					return Model{}, err
+				}
+
+				// Ensure the rps-reward ID matches
+				rpsReward["id"] = rpsRewardID
+
+				// Check if it's an array of resources
+				if resources, ok := existingData["data"].([]interface{}); ok {
+					found := false
+					for i, resource := range resources {
+						if resourceMap, ok := resource.(map[string]interface{}); ok {
+							if id, ok := resourceMap["id"].(string); ok && id == rpsRewardID {
+								resources[i] = rpsReward
+								found = true
+								break
+							}
+						}
+					}
+
+					if !found {
+						return Model{}, errors.New("rps-reward not found")
+					}
+
+					existingData["data"] = resources
+				} else if data, ok := existingData["data"].(map[string]interface{}); ok {
+					if id, ok := data["id"].(string); ok && id == rpsRewardID {
+						existingData["data"] = rpsReward
+					} else {
+						return Model{}, errors.New("rps-reward not found")
+					}
+				} else {
+					return Model{}, errors.New("invalid resource data format")
+				}
+
+				resourceData, err := json.Marshal(existingData)
+				if err != nil {
+					return Model{}, err
+				}
+
+				existing.ResourceData = resourceData
+				if err := UpdateConfiguration(p.db, existing); err != nil {
+					return Model{}, err
+				}
+
+				m, err := Make(existing)
+				if err != nil {
+					return Model{}, err
+				}
+
+				// Add event to message buffer
+				if err := mb.Put(EventTopicConfigurationStatus, CreateRpsRewardStatusEventProvider(tenantId, EventTypeRpsRewardUpdated, rpsRewardID)); err != nil {
+					return Model{}, err
+				}
+
+				return m, nil
+			}
+		}
+	}
+}
+
+// UpdateRpsRewardAndEmit updates an existing rps-reward configuration and emits events
+func (p *ProcessorImpl) UpdateRpsRewardAndEmit(tenantId uuid.UUID, rpsRewardID string, rpsReward map[string]interface{}) (Model, error) {
+	var result Model
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		var err error
+		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+			return func(tenantId uuid.UUID) (Model, error) {
+				return NewProcessor(p.l, p.ctx, tx).UpdateRpsReward(mb)(tenantId)(rpsRewardID)(rpsReward)
+			}
+		})(tenantId)
+		return err
+	})
+	return result, txErr
+}
+
+// DeleteRpsReward deletes a rps-reward configuration
+func (p *ProcessorImpl) DeleteRpsReward(mb *message.Buffer) func(tenantId uuid.UUID) func(rpsRewardID string) error {
+	return func(tenantId uuid.UUID) func(rpsRewardID string) error {
+		return func(rpsRewardID string) error {
+			if err := DeleteConfiguration(p.db, tenantId, "rps-rewards", rpsRewardID); err != nil {
+				return err
+			}
+
+			// Add event to message buffer
+			if err := mb.Put(EventTopicConfigurationStatus, CreateRpsRewardStatusEventProvider(tenantId, EventTypeRpsRewardDeleted, rpsRewardID)); err != nil {
+				return err
+			}
+
+			return nil
+		}
+	}
+}
+
+// DeleteRpsRewardAndEmit deletes a rps-reward configuration and emits events
+func (p *ProcessorImpl) DeleteRpsRewardAndEmit(tenantId uuid.UUID, rpsRewardID string) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return NewProcessor(p.l, p.ctx, tx).DeleteRpsReward(mb)(tenantId)(rpsRewardID)
+		})
+	})
+}
+
+// GetRpsRewardById gets a rps-reward by ID
+func (p *ProcessorImpl) GetRpsRewardById(tenantId uuid.UUID, rpsRewardID string) (map[string]interface{}, error) {
+	return p.RpsRewardByIdProvider(tenantId, rpsRewardID)()
+}
+
+// GetAllRpsRewards gets all rps-rewards for a tenant
+func (p *ProcessorImpl) GetAllRpsRewards(tenantId uuid.UUID) ([]map[string]interface{}, error) {
+	return p.AllRpsRewardsProvider(tenantId)()
+}
+
+// RpsRewardByIdProvider returns a provider for a rps-reward by ID
+func (p *ProcessorImpl) RpsRewardByIdProvider(tenantId uuid.UUID, rpsRewardID string) model.Provider[map[string]interface{}] {
+	return GetRpsRewardByIdProvider(tenantId, rpsRewardID)(p.db)
+}
+
+// AllRpsRewardsProvider returns a provider for all rps-rewards for a tenant
+func (p *ProcessorImpl) AllRpsRewardsProvider(tenantId uuid.UUID) model.Provider[[]map[string]interface{}] {
+	return GetAllRpsRewardsProvider(tenantId)(p.db)
+}
+
+// SeedRpsRewards clears existing rps-rewards for a tenant and loads them from seed files
+func (p *ProcessorImpl) SeedRpsRewards(tenantId uuid.UUID) (SeedResult, error) {
+	p.l.Infof("Seeding rps-rewards for tenant [%s]", tenantId)
+
+	result := SeedResult{}
+
+	// Delete all existing rps-rewards for this tenant
+	deletedCount, err := DeleteConfigurationByResourceName(p.db, tenantId, "rps-rewards")
+	if err != nil {
+		return result, fmt.Errorf("failed to clear existing rps-rewards: %w", err)
+	}
+	result.DeletedCount = int(deletedCount)
+
+	// Load rps-reward files from the filesystem
+	rpsRewards, loadErrors := LoadRpsRewardFiles()
+	for _, err := range loadErrors {
+		result.Errors = append(result.Errors, err.Error())
+		result.FailedCount++
+	}
+
+	// Create each rps-reward
+	for _, rpsReward := range rpsRewards {
+		id, _ := rpsReward["id"].(string)
+		_, err := p.CreateRpsRewardAndEmit(tenantId, rpsReward)
+		if err != nil {
+			result.Errors = append(result.Errors, fmt.Sprintf("%s: failed to create: %v", id, err))
+			result.FailedCount++
+			continue
+		}
+		result.CreatedCount++
+	}
+
+	p.l.Infof("RpsReward seed complete for tenant [%s]: deleted=%d, created=%d, failed=%d",
 		tenantId, result.DeletedCount, result.CreatedCount, result.FailedCount)
 
 	return result, nil

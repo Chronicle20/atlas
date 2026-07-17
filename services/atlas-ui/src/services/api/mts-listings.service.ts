@@ -7,16 +7,19 @@ import type { ApiPagedResponse } from "@/types/api/responses";
  *
  * Backed by the atlas-mts public browse endpoint:
  *   GET /api/worlds/{worldId}/listings
- *     ?category=&subCategory=&saleType=&sellerName=&itemId=&page=&pageSize=
+ *     ?category=&subCategory=&saleType=&sellerName=&itemId=&page[number]=&page[size]=
  *
  * The browse endpoint only ever surfaces active listings. The response is a
  * JSON:API list of `listings` resources with a pagination `meta` block
  * (`meta.total` = full match count, `meta.page.last` = last page), so the total
  * and last page are authoritative — never inferred from the returned length.
  *
- * Page numbering is ZERO-BASED on the wire (`page=0` is the first page: the
- * endpoint offsets by `page * pageSize`). Callers that display 1-based page
- * numbers MUST convert.
+ * The WIRE convention (task-117) is 1-based `page[number]` (page[number]=1 is
+ * the first page). `BrowseListingsFilter.page` stays the pre-task-117
+ * ZERO-BASED caller convention (page=0 is the first page) so MarketplacePage's
+ * existing 1-based-display -> 0-based-filter conversion doesn't have to
+ * change; `buildBrowseListingsQuery` does the +1 onto the wire's
+ * `page[number]` internally.
  */
 
 export interface MtsListingAttributes {
@@ -49,6 +52,7 @@ export interface MtsListingAttributes {
   ringId: number;
   viciousCount: number;
   flags: number;
+  owner: string;
   listValue: number;
   buyNowPrice?: number;
   commissionRate: number;
@@ -88,9 +92,10 @@ export interface BrowseListingsFilter {
 }
 
 /**
- * Build the flat query string the atlas-mts browse endpoint expects. The
- * endpoint reads bare query params (NOT JSON:API filter brackets), so only
- * provided, non-empty filters are emitted.
+ * Build the query string the atlas-mts browse endpoint expects: bare filter
+ * params plus the standard `page[number]`/`page[size]` paging params (task-117).
+ * `filter.page` is this module's ZERO-BASED caller convention; it is rendered
+ * onto the wire's ONE-BASED `page[number]` as `page + 1`.
  */
 export function buildBrowseListingsQuery(filter: BrowseListingsFilter): string {
   const params = new URLSearchParams();
@@ -98,11 +103,9 @@ export function buildBrowseListingsQuery(filter: BrowseListingsFilter): string {
   if (filter.subCategory) params.set("subCategory", filter.subCategory);
   if (filter.saleType) params.set("saleType", filter.saleType);
   if (filter.sellerName) params.set("sellerName", filter.sellerName);
-  if (filter.itemId !== undefined && filter.itemId > 0)
-    params.set("itemId", String(filter.itemId));
-  if (filter.page !== undefined) params.set("page", String(filter.page));
-  if (filter.pageSize !== undefined)
-    params.set("pageSize", String(filter.pageSize));
+  if (filter.itemId !== undefined && filter.itemId > 0) params.set("itemId", String(filter.itemId));
+  if (filter.page !== undefined) params.set("page[number]", String(filter.page + 1));
+  if (filter.pageSize !== undefined) params.set("page[size]", String(filter.pageSize));
   const qs = params.toString();
   return qs ? `?${qs}` : "";
 }

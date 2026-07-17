@@ -66,6 +66,7 @@ export interface Asset {
     createdAt: string;
     quantity: number;
     ownerId: number;
+    owner: string;
     flag: number;
     rechargeable: number;
     strength: number;

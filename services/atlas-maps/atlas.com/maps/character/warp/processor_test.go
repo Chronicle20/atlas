@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	characterKafka "atlas-maps/kafka/message/character"
-	mapsproducer "atlas-maps/kafka/producer"
 
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
@@ -32,7 +31,7 @@ func newCapturingProducer() *capturingProducer {
 	return &capturingProducer{messages: make(map[string][]kafka.Message)}
 }
 
-func (c *capturingProducer) Provider() mapsproducer.Provider {
+func (c *capturingProducer) Provider() kafkaproducer.Provider {
 	return func(token string) kafkaproducer.MessageProducer {
 		return func(p model.Provider[[]kafka.Message]) error {
 			ms, err := p()

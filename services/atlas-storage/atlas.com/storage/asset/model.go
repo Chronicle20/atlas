@@ -4,11 +4,10 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/google/uuid"
-
 	af "github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	"github.com/google/uuid"
 )
 
 type Model struct {
@@ -20,6 +19,7 @@ type Model struct {
 	// stackable fields
 	quantity     uint32
 	ownerId      uint32
+	owner        string
 	flag         uint16
 	rechargeable uint64
 	// equipment fields
@@ -57,6 +57,7 @@ func (m Model) Slot() int16            { return m.slot }
 func (m Model) TemplateId() uint32     { return m.templateId }
 func (m Model) Expiration() time.Time  { return m.expiration }
 func (m Model) OwnerId() uint32        { return m.ownerId }
+func (m Model) Owner() string          { return m.owner }
 func (m Model) Flag() uint16           { return m.flag }
 func (m Model) Rechargeable() uint64   { return m.rechargeable }
 func (m Model) Strength() uint16       { return m.strength }
@@ -147,6 +148,7 @@ func (m Model) MarshalJSON() ([]byte, error) {
 		Expiration     time.Time `json:"expiration"`
 		Quantity       uint32    `json:"quantity"`
 		OwnerId        uint32    `json:"ownerId"`
+		Owner          string    `json:"owner"`
 		Flag           uint16    `json:"flag"`
 		Rechargeable   uint64    `json:"rechargeable"`
 		Strength       uint16    `json:"strength"`
@@ -175,7 +177,7 @@ func (m Model) MarshalJSON() ([]byte, error) {
 		PetId          uint32    `json:"petId"`
 	}{
 		Id: m.id, StorageId: m.storageId, Slot: m.slot, TemplateId: m.templateId,
-		Expiration: m.expiration, Quantity: m.quantity, OwnerId: m.ownerId, Flag: m.flag,
+		Expiration: m.expiration, Quantity: m.quantity, OwnerId: m.ownerId, Owner: m.owner, Flag: m.flag,
 		Rechargeable: m.rechargeable, Strength: m.strength, Dexterity: m.dexterity,
 		Intelligence: m.intelligence, Luck: m.luck, Hp: m.hp, Mp: m.mp,
 		WeaponAttack: m.weaponAttack, MagicAttack: m.magicAttack, WeaponDefense: m.weaponDefense,
@@ -196,6 +198,7 @@ func (m *Model) UnmarshalJSON(data []byte) error {
 		Expiration     time.Time `json:"expiration"`
 		Quantity       uint32    `json:"quantity"`
 		OwnerId        uint32    `json:"ownerId"`
+		Owner          string    `json:"owner"`
 		Flag           uint16    `json:"flag"`
 		Rechargeable   uint64    `json:"rechargeable"`
 		Strength       uint16    `json:"strength"`
@@ -233,6 +236,7 @@ func (m *Model) UnmarshalJSON(data []byte) error {
 	m.expiration = aux.Expiration
 	m.quantity = aux.Quantity
 	m.ownerId = aux.OwnerId
+	m.owner = aux.Owner
 	m.flag = aux.Flag
 	m.rechargeable = aux.Rechargeable
 	m.strength = aux.Strength

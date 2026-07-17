@@ -28,6 +28,11 @@ type Processor interface {
 	ByAccountIdAndTypeProvider(accountId uint32, type_ CompartmentType) model.Provider[Model]
 	AllByAccountIdProvider(accountId uint32) model.Provider[[]Model]
 	GetByAccountId(accountId uint32) ([]Model, error)
+	// AllByAccountIdPagedProvider returns one page of an account's
+	// compartments. Used only by the REST list handler (task-117); internal
+	// callers needing every compartment keep using AllByAccountIdProvider/
+	// GetByAccountId above.
+	AllByAccountIdPagedProvider(accountId uint32, page model.Page) model.Provider[model.Paged[Model]]
 	Create(mb *message.Buffer) func(accountId uint32) func(type_ CompartmentType) func(capacity uint32) (Model, error)
 	CreateAndEmit(accountId uint32, type_ CompartmentType, capacity uint32) (Model, error)
 	UpdateCapacity(mb *message.Buffer) func(id uuid.UUID) func(capacity uint32) (Model, error)
@@ -105,6 +110,14 @@ func (p *ProcessorImpl) AllByAccountIdProvider(accountId uint32) model.Provider[
 
 func (p *ProcessorImpl) GetByAccountId(accountId uint32) ([]Model, error) {
 	return p.AllByAccountIdProvider(accountId)()
+}
+
+// AllByAccountIdPagedProvider returns one page of an account's
+// compartments, applying the same asset decoration as
+// AllByAccountIdProvider so REST list responses carry the same shape.
+func (p *ProcessorImpl) AllByAccountIdPagedProvider(accountId uint32, page model.Page) model.Provider[model.Paged[Model]] {
+	mp := model.MapPaged(Make)(getAllByAccountIdPagedProvider(accountId, page)(p.db.WithContext(p.ctx)))(model.ParallelMap())
+	return model.MapPaged(model.Decorate(model.Decorators(p.DecorateAssets)))(mp)(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) Create(mb *message.Buffer) func(accountId uint32) func(type_ CompartmentType) func(capacity uint32) (Model, error) {

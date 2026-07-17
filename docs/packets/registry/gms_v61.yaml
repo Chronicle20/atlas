@@ -1388,6 +1388,7 @@
   direction: clientbound
   opcode: 202
   fname: CEmployeePool::OnEmployeeEnterField
+  packet: merchant/clientbound/EmployeeSpawn
   provenance: ida-discovered
   ida:
     address: 5059664
@@ -1395,6 +1396,7 @@
   direction: clientbound
   opcode: 203
   fname: CEmployeePool::OnEmployeeLeaveField
+  packet: merchant/clientbound/EmployeeDestroy
   provenance: ida-discovered
   ida:
     address: 5059664
@@ -1402,6 +1404,7 @@
   direction: clientbound
   opcode: 204
   fname: CEmployeePool::OnEmployeeMiniRoomBalloon
+  packet: merchant/clientbound/EmployeeUpdate
   provenance: ida-discovered
   ida:
     address: 5059664
@@ -1577,12 +1580,20 @@
   note: 'CORRECTED (task-113 stage E): CField::OnPacket @0x4e9ea3 switch routes case 243->sub_6D34F1 (CUIMessenger::OnPacket messenger dispatcher; case 3->sub_6D3765 invite/auto-decline @0x6d3765). Swapped with PLAYER_INTERACTION (was 244); see that entry.'
 - op: RPS_GAME
   direction: clientbound
-  opcode: 252
+  opcode: 242
   fname: CRPSGameDlg::OnPacket
   provenance: ida-discovered
   ida:
-    address: 5152419
-  note: 'CRPSGameDlg::OnPacket = RPS_GAME (v72 278). Dialog demuxer; Stage E.'
+    address: 6536974
+  note: 'CRPSGameDlg::OnPacket @0x63BF0E (recv opcode 242/0xF2, CField::OnPacket dispatch). MODERN NPC game, structurally identical to v72/v79/v83/v95: mode 8 OPEN = Decode4 ante + StringPool(3593), mode 13 END = CWnd::Destroy, RESULT via the 6/7/9-12/14 delegate. Corrected 2026-07-16: the v61 IDB MISLABELS this dialog — the old opcode-252 function (0x607cf7, labeled CTrunkDlg::OnPacket) is the trunk dialog, NOT RPS. See ida-rps-legacy-reaudit.md.'
+- op: RPS_ACTION
+  direction: serverbound
+  opcode: 124
+  fname: CRPSGameDlg::OnBtStart
+  provenance: ida-discovered
+  ida:
+    address: 6538420
+  note: 'Dedicated RPS serverbound opcode 124 (0x7C). MODERN 6-helper send set (sub-ops 0-5); the player throw is Encode1(1)+Encode1(throw) at sub-op 1 (SendSelection @0x63C4B4). Corrected 2026-07-16 — the earlier "storage sends 124" was the same mislabel; 124 is real RPS. See ida-rps-legacy-reaudit.md.'
 - op: CASHSHOP_NOTICE_FREE_CASH_ITEM
   direction: clientbound
   opcode: 253
@@ -2640,3 +2651,11 @@
   ida:
     address: 5428881
   note: 'v61 CITC OnPacket @0x52D655 dispatch (mov eax,[esp+4]; sub eax,0x111) case 0x111 -> OnChargeParamResult (renamed from sub_52D691, opens charge web-site), bodiless. v83 IDA_0X15A=0x15A=346, v72 0x135=309, v79 0x142=322. task-113 v61 MTS port.'
+- op: OWL_WARP
+  direction: serverbound
+  opcode: 63
+  fname: CUIShopScanResult::OnButtonClicked
+  provenance: ida-discovered
+  ida:
+    address: 7441540
+  note: task-127 - legacy owl warp sender; body [int ownerId][int mapId]. USE_SHOP_SCANNER_ITEM and OWL_ACTION have no client sender in v61 (verified absent)

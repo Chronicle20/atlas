@@ -29,6 +29,11 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 
 var _ Processor = (*ProcessorImpl)(nil)
 
+// CharacterIdsInMapProvider fetches every character currently in one map
+// instance, used to identify passengers to board/notify for transport
+// departures. The upstream atlas-maps list is now paginated (task-117), so
+// this drains every page rather than fetching just the first -- a truncated
+// list here means some passengers silently miss the transport.
 func (p *ProcessorImpl) CharacterIdsInMapProvider(field field.Model) model.Provider[[]uint32] {
-	return requests.SliceProvider[RestModel, uint32](p.l, p.ctx)(requestCharactersInMap(field), Extract, model.Filters[uint32]())
+	return requests.DrainProvider[RestModel, uint32](p.l, p.ctx)(charactersInMapUrl(field), 250, Extract, model.Filters[uint32]())
 }

@@ -2,8 +2,8 @@ package expression
 
 import (
 	"atlas-expressions/kafka/message/expression"
-	"atlas-expressions/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"time"
 
 	"github.com/google/uuid"

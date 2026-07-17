@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	logtest "github.com/sirupsen/logrus/hooks/test"
-
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func countTestTenant(t *testing.T) tenant.Model {
@@ -161,10 +161,11 @@ func TestProcessor_Create_PopulatesRecipeIndex(t *testing.T) {
 	}
 
 	rp := recipe.NewProcessor(l, ctx, db)
-	rows, err := rp.ByNpcIdProvider(2040020)()
+	paged, err := rp.ByNpcIdProvider(2040020, model.Page{Number: 1, Size: 50})()
 	if err != nil {
 		t.Fatalf("recipe lookup: %v", err)
 	}
+	rows := paged.Items
 	if len(rows) != 2 {
 		t.Errorf("expected 2 recipes, got %d", len(rows))
 	}
@@ -189,7 +190,8 @@ func TestProcessor_Update_RewritesRecipeIndex(t *testing.T) {
 	}
 
 	rp := recipe.NewProcessor(l, ctx, db)
-	rows, _ := rp.ByNpcIdProvider(2040020)()
+	paged, _ := rp.ByNpcIdProvider(2040020, model.Page{Number: 1, Size: 50})()
+	rows := paged.Items
 	if len(rows) != 1 || rows[0].StateId() != "new" || rows[0].ItemId() != 2 {
 		t.Errorf("after update, expected one row stateId=new itemId=2, got %+v", rows)
 	}
@@ -213,7 +215,8 @@ func TestProcessor_Delete_RemovesRecipeRows(t *testing.T) {
 	}
 
 	rp := recipe.NewProcessor(l, ctx, db)
-	rows, _ := rp.ByNpcIdProvider(2040020)()
+	paged, _ := rp.ByNpcIdProvider(2040020, model.Page{Number: 1, Size: 50})()
+	rows := paged.Items
 	if len(rows) != 0 {
 		t.Errorf("expected 0 recipes after delete, got %d", len(rows))
 	}
@@ -244,8 +247,10 @@ func TestProcessor_DeleteAllForTenant_RemovesRecipeRowsForTenantOnly(t *testing.
 
 	rpA := recipe.NewProcessor(l, ctxA, db)
 	rpB := recipe.NewProcessor(l, ctxB, db)
-	rowsA, _ := rpA.ByNpcIdProvider(1000)()
-	rowsB, _ := rpB.ByNpcIdProvider(2000)()
+	pagedA, _ := rpA.ByNpcIdProvider(1000, model.Page{Number: 1, Size: 50})()
+	pagedB, _ := rpB.ByNpcIdProvider(2000, model.Page{Number: 1, Size: 50})()
+	rowsA := pagedA.Items
+	rowsB := pagedB.Items
 
 	if len(rowsA) != 0 {
 		t.Errorf("tenant A recipes not cleared: %d remaining", len(rowsA))
@@ -281,7 +286,8 @@ func TestProcessor_Seed_AccumulatesSkippedRecipes(t *testing.T) {
 	}
 
 	rp := recipe.NewProcessor(l, ctx, db)
-	rows, _ := rp.ByNpcIdProvider(4040)()
+	paged, _ := rp.ByNpcIdProvider(4040, model.Page{Number: 1, Size: 50})()
+	rows := paged.Items
 	if len(rows) != 1 || rows[0].StateId() != "good" {
 		t.Errorf("expected only the parseable recipe to land, got %+v", rows)
 	}

@@ -11,9 +11,12 @@ import (
 )
 
 type Processor interface {
+	// GetAll returns every monster drop for the tenant, unpaged. Kept for
+	// continent.Processor.GetAll's semantic-all aggregation (it groups every
+	// drop by continent, so it needs the complete set, not one page of it).
 	GetAll() model.Provider[[]Model]
-	GetForMonster(monsterId uint32) model.Provider[[]Model]
-	GetForItem(itemId uint32) model.Provider[[]Model]
+	GetForMonster(monsterId uint32, page model.Page) model.Provider[model.Paged[Model]]
+	GetForItem(itemId uint32, page model.Page) model.Provider[model.Paged[Model]]
 	Count() (int64, *time.Time, error)
 }
 
@@ -37,12 +40,14 @@ func (p *ProcessorImpl) GetAll() model.Provider[[]Model] {
 	return model.SliceMap(modelFromEntity)(getAll()(p.db.WithContext(p.ctx)))()
 }
 
-func (p *ProcessorImpl) GetForMonster(monsterId uint32) model.Provider[[]Model] {
-	return model.SliceMap(modelFromEntity)(getByMonsterId(monsterId)(p.db.WithContext(p.ctx)))()
+func (p *ProcessorImpl) GetForMonster(monsterId uint32, page model.Page) model.Provider[model.Paged[Model]] {
+	ep := getByMonsterIdPagedProvider(monsterId, page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(modelFromEntity)(ep)(model.ParallelMap())
 }
 
-func (p *ProcessorImpl) GetForItem(itemId uint32) model.Provider[[]Model] {
-	return model.SliceMap(modelFromEntity)(getByItemId(itemId)(p.db.WithContext(p.ctx)))()
+func (p *ProcessorImpl) GetForItem(itemId uint32, page model.Page) model.Provider[model.Paged[Model]] {
+	ep := getByItemIdPagedProvider(itemId, page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(modelFromEntity)(ep)(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) Count() (int64, *time.Time, error) {

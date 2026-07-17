@@ -5,14 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"sort"
 
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 // GetAllRoutesHandler handles GET /tenants/{tenantId}/configurations/routes
@@ -20,6 +21,12 @@ func GetAllRoutesHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
+				page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+					return
+				}
+
 				processor := NewProcessor(d.Logger(), d.Context(), db)
 
 				routes, err := processor.GetAllRoutes(tenantId)
@@ -46,9 +53,17 @@ func GetAllRoutesHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 					restModels = append(restModels, rm)
 				}
 
+				// The route list materializes from one JSONB blob's "data"
+				// array; sort by the unique id before paging so the response
+				// order does not depend on how the blob happens to store them.
+				sort.Slice(restModels, func(i, j int) bool {
+					return restModels[i].Id < restModels[j].Id
+				})
+				paged := paginate.Slice(restModels, page)
+
 				query := r.URL.Query()
 				queryParams := jsonapi.ParseQueryFields(&query)
-				server.MarshalResponse[[]RouteRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restModels)
+				server.MarshalPaginatedResponse[[]RouteRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 			}
 		})
 	}
@@ -206,6 +221,12 @@ func GetAllVesselsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
+				page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+					return
+				}
+
 				processor := NewProcessor(d.Logger(), d.Context(), db)
 
 				vessels, err := processor.GetAllVessels(tenantId)
@@ -232,9 +253,17 @@ func GetAllVesselsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 					restModels = append(restModels, rm)
 				}
 
+				// The vessel list materializes from one JSONB blob's "data"
+				// array; sort by the unique id before paging so the response
+				// order does not depend on how the blob happens to store them.
+				sort.Slice(restModels, func(i, j int) bool {
+					return restModels[i].Id < restModels[j].Id
+				})
+				paged := paginate.Slice(restModels, page)
+
 				query := r.URL.Query()
 				queryParams := jsonapi.ParseQueryFields(&query)
-				server.MarshalResponse[[]VesselRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restModels)
+				server.MarshalPaginatedResponse[[]VesselRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 			}
 		})
 	}
@@ -392,6 +421,12 @@ func GetAllInstanceRoutesHandler(db *gorm.DB) func(d *rest.HandlerDependency, c 
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
+				page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+					return
+				}
+
 				processor := NewProcessor(d.Logger(), d.Context(), db)
 
 				routes, err := processor.GetAllInstanceRoutes(tenantId)
@@ -417,9 +452,18 @@ func GetAllInstanceRoutesHandler(db *gorm.DB) func(d *rest.HandlerDependency, c 
 					restModels = append(restModels, rm)
 				}
 
+				// The instance-route list materializes from one JSONB blob's
+				// "data" array; sort by the unique id before paging so the
+				// response order does not depend on how the blob happens to
+				// store them.
+				sort.Slice(restModels, func(i, j int) bool {
+					return restModels[i].Id < restModels[j].Id
+				})
+				paged := paginate.Slice(restModels, page)
+
 				query := r.URL.Query()
 				queryParams := jsonapi.ParseQueryFields(&query)
-				server.MarshalResponse[[]InstanceRouteRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restModels)
+				server.MarshalPaginatedResponse[[]InstanceRouteRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 			}
 		})
 	}
@@ -558,6 +602,206 @@ func DeleteInstanceRouteHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *
 					err := processor.DeleteInstanceRouteAndEmit(tenantId, instanceRouteId)
 					if err != nil {
 						d.Logger().WithError(err).Error("Failed to delete instance route")
+						server.WriteErrorResponse(d.Logger())(w)(err)
+						return
+					}
+
+					w.WriteHeader(http.StatusNoContent)
+				}
+			})
+		})
+	}
+}
+
+// GetAllRpsRewardsHandler handles GET /tenants/{tenantId}/configurations/rps-rewards
+func GetAllRpsRewardsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+					return
+				}
+
+				processor := NewProcessor(d.Logger(), d.Context(), db)
+
+				rpsRewards, err := processor.GetAllRpsRewards(tenantId)
+				if err != nil {
+					if errors.Is(err, gorm.ErrRecordNotFound) {
+						// If no rps-rewards exist, return an empty array instead of an error
+						d.Logger().Info("No rps-rewards found for tenant, returning empty array")
+						rpsRewards = []map[string]interface{}{}
+					} else {
+						d.Logger().WithError(err).Error("Failed to get rps-rewards")
+						server.WriteErrorResponse(d.Logger())(w)(err)
+						return
+					}
+				}
+
+				restModels := make([]RpsRewardRestModel, 0, len(rpsRewards))
+				for _, rpsReward := range rpsRewards {
+					rm, err := TransformRpsReward(rpsReward)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to transform rps-reward")
+						server.WriteErrorResponse(d.Logger())(w)(err)
+						return
+					}
+					restModels = append(restModels, rm)
+				}
+
+				// The rps-rewards list materializes from one JSONB blob's
+				// "data" array; sort by the unique id before paging so the
+				// response order does not depend on blob storage order.
+				sort.Slice(restModels, func(i, j int) bool {
+					return restModels[i].Id < restModels[j].Id
+				})
+				paged := paginate.Slice(restModels, page)
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalPaginatedResponse[[]RpsRewardRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
+			}
+		})
+	}
+}
+
+// GetRpsRewardByIdHandler handles GET /tenants/{tenantId}/configurations/rps-rewards/{rpsRewardId}
+func GetRpsRewardByIdHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return rest.ParseRpsRewardId(d.Logger(), func(rpsRewardId string) http.HandlerFunc {
+				return func(w http.ResponseWriter, r *http.Request) {
+					processor := NewProcessor(d.Logger(), d.Context(), db)
+
+					rpsReward, err := processor.GetRpsRewardById(tenantId, rpsRewardId)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to get rps-reward")
+						w.WriteHeader(http.StatusNotFound)
+						return
+					}
+
+					rm, err := TransformRpsReward(rpsReward)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to transform rps-reward")
+						server.WriteErrorResponse(d.Logger())(w)(err)
+						return
+					}
+
+					query := r.URL.Query()
+					queryParams := jsonapi.ParseQueryFields(&query)
+					server.MarshalResponse[RpsRewardRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+				}
+			})
+		})
+	}
+}
+
+// CreateRpsRewardHandler handles POST /tenants/{tenantId}/configurations/rps-rewards
+func CreateRpsRewardHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext, model RpsRewardRestModel) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, model RpsRewardRestModel) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				rpsReward, err := ExtractRpsReward(model)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to extract rps-reward data")
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+
+				processor := NewProcessor(d.Logger(), d.Context(), db)
+				_, err = processor.CreateRpsRewardAndEmit(tenantId, rpsReward)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to create rps-reward")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				// Get the rps-reward ID from the created rps-reward
+				rpsRewardId := ""
+				if id, ok := rpsReward["id"].(string); ok {
+					rpsRewardId = id
+				}
+
+				// Get the specific rps-reward that was just created
+				createdRpsReward, err := processor.GetRpsRewardById(tenantId, rpsRewardId)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to get created rps-reward")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				rm, err := TransformRpsReward(createdRpsReward)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to transform rps-reward")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				w.WriteHeader(http.StatusCreated)
+				server.MarshalResponse[RpsRewardRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+			}
+		})
+	}
+}
+
+// UpdateRpsRewardHandler handles PATCH /tenants/{tenantId}/configurations/rps-rewards/{rpsRewardId}
+func UpdateRpsRewardHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext, model RpsRewardRestModel) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, model RpsRewardRestModel) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return rest.ParseRpsRewardId(d.Logger(), func(rpsRewardId string) http.HandlerFunc {
+				return func(w http.ResponseWriter, r *http.Request) {
+					rpsReward, err := ExtractRpsReward(model)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to extract rps-reward data")
+						w.WriteHeader(http.StatusBadRequest)
+						return
+					}
+
+					processor := NewProcessor(d.Logger(), d.Context(), db)
+					_, err = processor.UpdateRpsRewardAndEmit(tenantId, rpsRewardId, rpsReward)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to update rps-reward")
+						server.WriteErrorResponse(d.Logger())(w)(err)
+						return
+					}
+
+					// Get the specific rps-reward that was just updated
+					updatedRpsReward, err := processor.GetRpsRewardById(tenantId, rpsRewardId)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to get updated rps-reward")
+						server.WriteErrorResponse(d.Logger())(w)(err)
+						return
+					}
+
+					rm, err := TransformRpsReward(updatedRpsReward)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to transform rps-reward")
+						server.WriteErrorResponse(d.Logger())(w)(err)
+						return
+					}
+
+					query := r.URL.Query()
+					queryParams := jsonapi.ParseQueryFields(&query)
+					server.MarshalResponse[RpsRewardRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+				}
+			})
+		})
+	}
+}
+
+// DeleteRpsRewardHandler handles DELETE /tenants/{tenantId}/configurations/rps-rewards/{rpsRewardId}
+func DeleteRpsRewardHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return rest.ParseRpsRewardId(d.Logger(), func(rpsRewardId string) http.HandlerFunc {
+				return func(w http.ResponseWriter, r *http.Request) {
+					processor := NewProcessor(d.Logger(), d.Context(), db)
+					err := processor.DeleteRpsRewardAndEmit(tenantId, rpsRewardId)
+					if err != nil {
+						d.Logger().WithError(err).Error("Failed to delete rps-reward")
 						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
@@ -842,6 +1086,27 @@ func SeedMtsConfigsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.
 	}
 }
 
+// SeedRpsRewardsHandler handles POST /tenants/{tenantId}/configurations/rps-rewards/seed
+func SeedRpsRewardsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				processor := NewProcessor(d.Logger(), d.Context(), db)
+				result, err := processor.SeedRpsRewards(tenantId)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to seed rps-rewards")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				json.NewEncoder(w).Encode(result)
+			}
+		})
+	}
+}
+
 // RegisterRoutes registers the configuration routes
 func RegisterRoutes(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteInitializer {
 	return func(si jsonapi.ServerInformation) server.RouteInitializer {
@@ -850,6 +1115,7 @@ func RegisterRoutes(db *gorm.DB) func(si jsonapi.ServerInformation) server.Route
 			registerRouteInputHandler := rest.RegisterInputHandler[RouteRestModel](l)(si)
 			registerVesselInputHandler := rest.RegisterInputHandler[VesselRestModel](l)(si)
 			registerInstanceRouteInputHandler := rest.RegisterInputHandler[InstanceRouteRestModel](l)(si)
+			registerRpsRewardInputHandler := rest.RegisterInputHandler[RpsRewardRestModel](l)(si)
 			registerMtsConfigInputHandler := rest.RegisterInputHandler[MtsConfigRestModel](l)(si)
 
 			// Route endpoints
@@ -875,6 +1141,14 @@ func RegisterRoutes(db *gorm.DB) func(si jsonapi.ServerInformation) server.Route
 			r.HandleFunc("/tenants/{tenantId}/configurations/instance-routes", registerInstanceRouteInputHandler("create_instance_route", CreateInstanceRouteHandler(db))).Methods(http.MethodPost)
 			r.HandleFunc("/tenants/{tenantId}/configurations/instance-routes/{instanceRouteId}", registerInstanceRouteInputHandler("update_instance_route", UpdateInstanceRouteHandler(db))).Methods(http.MethodPatch)
 			r.HandleFunc("/tenants/{tenantId}/configurations/instance-routes/{instanceRouteId}", registerHandler("delete_instance_route", DeleteInstanceRouteHandler(db))).Methods(http.MethodDelete)
+
+			// RPS reward endpoints
+			r.HandleFunc("/tenants/{tenantId}/configurations/rps-rewards/seed", registerHandler("seed_rps_rewards", SeedRpsRewardsHandler(db))).Methods(http.MethodPost)
+			r.HandleFunc("/tenants/{tenantId}/configurations/rps-rewards", registerHandler("get_all_rps_rewards", GetAllRpsRewardsHandler(db))).Methods(http.MethodGet)
+			r.HandleFunc("/tenants/{tenantId}/configurations/rps-rewards/{rpsRewardId}", registerHandler("get_rps_reward_by_id", GetRpsRewardByIdHandler(db))).Methods(http.MethodGet)
+			r.HandleFunc("/tenants/{tenantId}/configurations/rps-rewards", registerRpsRewardInputHandler("create_rps_reward", CreateRpsRewardHandler(db))).Methods(http.MethodPost)
+			r.HandleFunc("/tenants/{tenantId}/configurations/rps-rewards/{rpsRewardId}", registerRpsRewardInputHandler("update_rps_reward", UpdateRpsRewardHandler(db))).Methods(http.MethodPatch)
+			r.HandleFunc("/tenants/{tenantId}/configurations/rps-rewards/{rpsRewardId}", registerHandler("delete_rps_reward", DeleteRpsRewardHandler(db))).Methods(http.MethodDelete)
 
 			// MTS config endpoints
 			r.HandleFunc("/tenants/{tenantId}/configurations/mts-configs/seed", registerHandler("seed_mts_configs", SeedMtsConfigsHandler(db))).Methods(http.MethodPost)

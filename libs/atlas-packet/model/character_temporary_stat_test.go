@@ -54,7 +54,7 @@ func TestCTSForeignSingleStatRoundTrip(t *testing.T) {
 // older atlas encoder wrote (Short value | Int sourceId | Int duration),
 // which sent level=0 in bytes 4-5 and crashed the client's render path on
 // MobSkill(126, 0) lookup. This test asserts the corrected per-stat 10 bytes
-// match the Cosmic v83 reference.
+// match the v83 read order.
 func TestCTSEncodeSlowDiseasePerStatLayout(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 83, 1)
 	tn, _ := tenant.Create([16]byte{}, "GMS", 83, 1)

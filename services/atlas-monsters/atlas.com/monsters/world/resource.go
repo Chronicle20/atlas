@@ -3,15 +3,12 @@ package world
 import (
 	"atlas-monsters/monster"
 	"atlas-monsters/rest"
+
 	"fmt"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
-
-	"github.com/google/uuid"
-	"github.com/gorilla/mux"
-	"github.com/jtumidanski/api2go/jsonapi"
-	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -19,6 +16,11 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
+	"github.com/jtumidanski/api2go/jsonapi"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -43,6 +45,12 @@ func handleGetMonstersInMap(d *rest.HandlerDependency, c *rest.HandlerContext) h
 			return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
 				return rest.ParseInstanceId(d.Logger(), func(instance uuid.UUID) http.HandlerFunc {
 					return func(w http.ResponseWriter, r *http.Request) {
+						page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+						if err != nil {
+							server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+							return
+						}
+
 						f := field.NewBuilder(worldId, channelId, mapId).SetInstance(instance).Build()
 						p := monster.NewProcessor(d.Logger(), d.Context())
 						ms, err := p.GetInField(f)
@@ -52,14 +60,19 @@ func handleGetMonstersInMap(d *rest.HandlerDependency, c *rest.HandlerContext) h
 							return
 						}
 
-						res, err := model.SliceMap(monster.Transform)(model.FixedProvider(ms))(model.ParallelMap())()
+						sorted := make([]monster.Model, len(ms))
+						copy(sorted, ms)
+						sort.Slice(sorted, func(i, j int) bool { return sorted[i].UniqueId() < sorted[j].UniqueId() })
+						paged := paginate.Slice(sorted, page)
+
+						res, err := model.SliceMap(monster.Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 						if err != nil {
 							d.Logger().WithError(err).Errorf("Creating REST model.")
 							w.WriteHeader(http.StatusInternalServerError)
 							return
 						}
 
-						server.MarshalResponse[[]monster.RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
+						server.MarshalPaginatedResponse[[]monster.RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res, paginate.EnvelopeFor(paged), r)
 					}
 				})
 			})
@@ -96,6 +109,12 @@ func handleGetMonstersInMapRect(d *rest.HandlerDependency, c *rest.HandlerContex
 				return rest.ParseInstanceId(d.Logger(), func(instance uuid.UUID) http.HandlerFunc {
 					return func(w http.ResponseWriter, r *http.Request) {
 						q := r.URL.Query()
+						page, err := paginate.ParseParams(q, paginate.MaxPageSize, paginate.MaxPageSize)
+						if err != nil {
+							server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+							return
+						}
+
 						x1, e1 := parseInt16Query(q, "x1")
 						y1, e2 := parseInt16Query(q, "y1")
 						x2, e3 := parseInt16Query(q, "x2")
@@ -108,19 +127,26 @@ func handleGetMonstersInMapRect(d *rest.HandlerDependency, c *rest.HandlerContex
 
 						f := field.NewBuilder(worldId, channelId, mapId).SetInstance(instance).Build()
 						p := monster.NewProcessor(d.Logger(), d.Context())
+						// GetInFieldRect's ascending-distance-from-center order is
+						// load-bearing (server-authoritative closest-first target
+						// selection for AoE skill handlers) -- unlike the bare
+						// /monsters list, this is NOT re-sorted by unique id before
+						// paginate.Slice, which would silently destroy that ordering.
 						ms, err := p.GetInFieldRect(f, x1, y1, x2, y2, limit)
 						if err != nil {
 							d.Logger().WithError(err).Errorf("Unable to retrieve monsters in field rect.")
 							w.WriteHeader(http.StatusInternalServerError)
 							return
 						}
-						res, err := model.SliceMap(monster.Transform)(model.FixedProvider(ms))(model.ParallelMap())()
+						paged := paginate.Slice(ms, page)
+
+						res, err := model.SliceMap(monster.Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 						if err != nil {
 							d.Logger().WithError(err).Errorf("Creating REST model.")
 							w.WriteHeader(http.StatusInternalServerError)
 							return
 						}
-						server.MarshalResponse[[]monster.RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
+						server.MarshalPaginatedResponse[[]monster.RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res, paginate.EnvelopeFor(paged), r)
 					}
 				})
 			})

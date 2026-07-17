@@ -4,14 +4,15 @@ import (
 	"atlas-doors/door"
 	"atlas-doors/rest"
 	"net/http"
-
-	"github.com/gorilla/mux"
-	"github.com/jtumidanski/api2go/jsonapi"
-	"github.com/sirupsen/logrus"
+	"sort"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
+	"github.com/gorilla/mux"
+	"github.com/jtumidanski/api2go/jsonapi"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -31,6 +32,12 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 func handleGetDoorsByOwner(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseCharacterId(d.Logger(), func(characterId character.Id) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
+			page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+				return
+			}
+
 			p := door.NewProcessor(d.Logger(), d.Context())
 			ms, err := p.GetByOwner(characterId)
 			if err != nil {
@@ -39,14 +46,19 @@ func handleGetDoorsByOwner(d *rest.HandlerDependency, c *rest.HandlerContext) ht
 				return
 			}
 
-			res, err := model.SliceMap(door.Transform)(model.FixedProvider(ms))()()
+			sorted := make([]door.Model, len(ms))
+			copy(sorted, ms)
+			sort.Slice(sorted, func(i, j int) bool { return sorted[i].PairId() < sorted[j].PairId() })
+			paged := paginate.Slice(sorted, page)
+
+			res, err := model.SliceMap(door.Transform)(model.FixedProvider(paged.Items))()()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 
-			server.MarshalResponse[[]door.RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
+			server.MarshalPaginatedResponse[[]door.RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res, paginate.EnvelopeFor(paged), r)
 		}
 	})
 }

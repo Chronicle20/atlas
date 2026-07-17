@@ -3,8 +3,8 @@ package skill
 import (
 	"atlas-saga-orchestrator/kafka/message"
 	skill2 "atlas-saga-orchestrator/kafka/message/skill"
-	"atlas-saga-orchestrator/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"time"
 
 	"github.com/google/uuid"

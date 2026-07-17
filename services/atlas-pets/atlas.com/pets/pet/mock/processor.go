@@ -16,6 +16,7 @@ type ProcessorMock struct {
 	GetByIdFunc                              func(petId uint32) (pet.Model, error)
 	ByOwnerProviderFunc                      func(ownerId uint32) model.Provider[[]pet.Model]
 	GetByOwnerFunc                           func(ownerId uint32) ([]pet.Model, error)
+	ByOwnerIdPagedProviderFunc               func(ownerId uint32, page model.Page) model.Provider[model.Paged[pet.Model]]
 	SpawnedByOwnerProviderFunc               func(ownerId uint32) model.Provider[[]pet.Model]
 	HungryByOwnerProviderFunc                func(ownerId uint32) model.Provider[[]pet.Model]
 	HungriestByOwnerProviderFunc             func(ownerId uint32) model.Provider[pet.Model]
@@ -85,6 +86,13 @@ func (m *ProcessorMock) GetByOwner(ownerId uint32) ([]pet.Model, error) {
 		return m.GetByOwnerFunc(ownerId)
 	}
 	return nil, nil
+}
+
+func (m *ProcessorMock) ByOwnerIdPagedProvider(ownerId uint32, page model.Page) model.Provider[model.Paged[pet.Model]] {
+	if m.ByOwnerIdPagedProviderFunc != nil {
+		return m.ByOwnerIdPagedProviderFunc(ownerId, page)
+	}
+	return model.FixedProvider(model.Paged[pet.Model]{Page: page})
 }
 
 func (m *ProcessorMock) SpawnedByOwnerProvider(ownerId uint32) model.Provider[[]pet.Model] {

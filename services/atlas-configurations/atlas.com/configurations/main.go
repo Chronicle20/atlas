@@ -1,21 +1,20 @@
 package main
 
 import (
-	"atlas-configurations/logger"
+	"context"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
 	"atlas-configurations/seeder"
 	"atlas-configurations/services"
 	"atlas-configurations/templates"
 	"atlas-configurations/tenants"
-	"context"
 	"os"
-
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	service "github.com/Chronicle20/atlas/libs/atlas-service"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 )
 
 const serviceName = "atlas-configurations"
@@ -41,15 +40,8 @@ func GetServer() Server {
 }
 
 func main() {
-	l := logger.CreateLogger(serviceName)
-	l.Infoln("Starting main service.")
-
-	tdm := service.GetTeardownManager()
-
-	tc, err := tracing.InitTracer(serviceName)
-	if err != nil {
-		l.WithError(err).Fatal("Unable to initialize tracer.")
-	}
+	rt := service.Bootstrap(serviceName)
+	l := rt.Logger()
 
 	db := database.Connect(l, database.SetMigrations(templates.Migration, tenants.Migration, services.Migration, outboxlib.Migration))
 
@@ -68,10 +60,10 @@ func main() {
 	// only the lock holder publishes.
 	publisher := outboxlib.NewTopicWriterPool()
 	drainer := outboxlib.NewDrainer(l, db, publisher, outboxlib.WithDSN(database.DSN()))
-	routine.Go(l, tdm.Context(), func(_ context.Context) {
-		drainer.Run(tdm.Context())
+	routine.Go(l, rt.Context(), func(_ context.Context) {
+		drainer.Run(rt.Context())
 	})
-	tdm.TeardownFunc(func() {
+	rt.TeardownFunc(func() {
 		drainer.Stop()
 		publisher.Close()
 	})
@@ -82,23 +74,21 @@ func main() {
 		"seedPath":    seedConfig.SeedPath,
 		"seedEnabled": seedConfig.Enabled,
 	}).Info("Seed configuration loaded")
-	s := seeder.NewSeeder(l, tdm.Context(), db, seedConfig)
+	s := seeder.NewSeeder(l, rt.Context(), db, seedConfig)
 	if err := s.Run(); err != nil {
 		l.WithError(err).Error("Seed import failed")
 	}
 
 	server.New(l).
-		WithContext(tdm.Context()).
-		WithWaitGroup(tdm.WaitGroup()).
+		WithContext(rt.Context()).
+		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(templates.InitResource(GetServer())(db)).
 		AddRouteInitializer(tenants.InitResource(GetServer())(db)).
 		AddRouteInitializer(services.InitResource(GetServer())(db)).
+		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
-	tdm.TeardownFunc(tracing.Teardown(l)(tc))
-
-	tdm.Wait()
-	l.Infoln("Service shutdown.")
+	rt.Wait()
 }

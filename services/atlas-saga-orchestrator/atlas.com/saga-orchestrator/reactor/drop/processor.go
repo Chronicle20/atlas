@@ -1,10 +1,10 @@
 package drop
 
 import (
-	"atlas-saga-orchestrator/kafka/producer"
 	queststate "atlas-saga-orchestrator/quest/state"
 	"atlas-saga-orchestrator/rates"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"math/rand"
 	"strconv"
 

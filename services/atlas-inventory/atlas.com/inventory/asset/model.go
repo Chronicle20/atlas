@@ -3,11 +3,10 @@ package asset
 import (
 	"time"
 
-	"github.com/google/uuid"
-
 	af "github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	"github.com/google/uuid"
 )
 
 type Model struct {
@@ -20,6 +19,7 @@ type Model struct {
 	// stackable fields
 	quantity     uint32
 	ownerId      uint32
+	owner        string
 	flag         uint16
 	rechargeable uint64
 	// equipment fields
@@ -59,6 +59,7 @@ func (m Model) TemplateId() uint32        { return m.templateId }
 func (m Model) Expiration() time.Time     { return m.expiration }
 func (m Model) CreatedAt() time.Time      { return m.createdAt }
 func (m Model) OwnerId() uint32           { return m.ownerId }
+func (m Model) Owner() string             { return m.owner }
 func (m Model) Flag() uint16              { return m.flag }
 func (m Model) Rechargeable() uint64      { return m.rechargeable }
 func (m Model) Strength() uint16          { return m.strength }

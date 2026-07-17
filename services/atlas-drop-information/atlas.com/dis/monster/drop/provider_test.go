@@ -3,12 +3,12 @@ package drop
 import (
 	"testing"
 
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
-
-	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 )
 
 // newDropsDB seeds two monster-drop rows in two tenants that overlap on
@@ -27,14 +27,16 @@ func newDropsDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID) {
 func TestMonsterDropProvider_GetByMonsterId_FiltersByTenant(t *testing.T) {
 	db, tidA, tidB := newDropsDB(t)
 
-	rowsA, err := getByMonsterId(100)(db.WithContext(databasetest.TenantContext(tidA)))()
+	pagedA, err := getByMonsterIdPagedProvider(100, model.Page{Number: 1, Size: 50})(db.WithContext(databasetest.TenantContext(tidA)))()
 	require.NoError(t, err)
+	rowsA := pagedA.Items
 	require.Len(t, rowsA, 1, "monster 100 has drops in both tenants — only tenant A's row should return")
 	assert.Equal(t, tidA, rowsA[0].TenantId)
 	assert.Equal(t, uint32(1000), rowsA[0].Chance)
 
-	rowsB, err := getByMonsterId(100)(db.WithContext(databasetest.TenantContext(tidB)))()
+	pagedB, err := getByMonsterIdPagedProvider(100, model.Page{Number: 1, Size: 50})(db.WithContext(databasetest.TenantContext(tidB)))()
 	require.NoError(t, err)
+	rowsB := pagedB.Items
 	require.Len(t, rowsB, 1)
 	assert.Equal(t, tidB, rowsB[0].TenantId)
 	assert.Equal(t, uint32(2000), rowsB[0].Chance)

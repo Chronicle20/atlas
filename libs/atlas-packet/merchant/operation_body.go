@@ -34,6 +34,16 @@ func HiredMerchantOperationOpenShopBody() func(logrus.FieldLogger, context.Conte
 	})
 }
 
+// HiredMerchantOperationErrorUnknownBody is the "your store is currently open
+// in channel %s FM %d" notice (CWvsContext::OnEntrustedShopCheckResult
+// ERROR_UNKNOWN arm, v83 @0xa27de3): int (client displays %100 as the FM room
+// number) + channel byte.
+func HiredMerchantOperationErrorUnknownBody(mapId uint32, channelId byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", HiredMerchantOperationModeErrorUnknown, func(mode byte) packet.Encoder {
+		return clientbound.NewEntrustedShopUnknownChannel(mode, mapId, channelId)
+	})
+}
+
 func HiredMerchantOperationErrorRetrieveFromFredrickBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", HiredMerchantOperationModeErrorRetrieveFromFredrick, func(mode byte) packet.Encoder {
 		return clientbound.NewMerchantErrorSimple(mode)

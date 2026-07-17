@@ -36,8 +36,11 @@ func (p *ProcessorImpl) ForEachInMap(mapId _map.Id, f model.Operator[Model]) err
 	return model.ForEachSlice(p.InMapModelProvider(mapId), f, model.ParallelExecute())
 }
 
+// InMapModelProvider fetches every NPC spawned on a map. atlas-data's GET
+// /data/maps/{id}/npcs is now paginated (task-117), so this drains every
+// page rather than fetching one.
 func (p *ProcessorImpl) InMapModelProvider(mapId _map.Id) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestNPCsInMap(mapId), Extract, model.Filters[Model]())
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(npcsInMapUrl(mapId), 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) InMapByObjectIdModelProvider(mapId _map.Id, objectId uint32) model.Provider[[]Model] {

@@ -33,7 +33,7 @@ func (m BuffGive) Encode(l logrus.FieldLogger, ctx context.Context) func(options
 		// apply/show-icon flag; sending 0/0 for diseases makes the client
 		// half-apply the stat (raw movement speed change goes through, but
 		// the icon and flag-gated effects like WEAKEN's jump-block do not).
-		// Cosmic's giveDebuff sends Short(900) + Byte(1).
+		// Diseases need Short(900) + Byte(1).
 		if m.cts.HasDisease() {
 			w.WriteShort(900) // delay
 			w.WriteByte(1)    // apply flag

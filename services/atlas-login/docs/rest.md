@@ -209,7 +209,6 @@ type RestModel struct {
     Face               uint32   `json:"face"`
     Ap                 uint16   `json:"ap"`
     Sp                 string   `json:"sp"`
-    MapId              _map.Id  `json:"mapId"`
     SpawnPoint         uint32   `json:"spawnPoint"`
     Gm                 int      `json:"gm"`
     X                  int16    `json:"x"`
@@ -411,8 +410,8 @@ type RestModel struct {
     Dexterity      uint16     `json:"dexterity"`
     Intelligence   uint16     `json:"intelligence"`
     Luck           uint16     `json:"luck"`
-    HP             uint16     `json:"hp"`
-    MP             uint16     `json:"mp"`
+    Hp             uint16     `json:"hp"`
+    Mp             uint16     `json:"mp"`
     WeaponAttack   uint16     `json:"weaponAttack"`
     MagicAttack    uint16     `json:"magicAttack"`
     WeaponDefense  uint16     `json:"weaponDefense"`
@@ -423,11 +422,6 @@ type RestModel struct {
     Speed          uint16     `json:"speed"`
     Jump           uint16     `json:"jump"`
     Slots          uint16     `json:"slots"`
-    Locked         bool       `json:"locked"`
-    Spikes         bool       `json:"spikes"`
-    KarmaUsed      bool       `json:"karmaUsed"`
-    Cold           bool       `json:"cold"`
-    CanBeTraded    bool       `json:"canBeTraded"`
     LevelType      byte       `json:"levelType"`
     Level          byte       `json:"level"`
     Experience     uint32     `json:"experience"`
@@ -474,26 +468,25 @@ type RestModel struct {
 }
 ```
 
-### Configuration Service
+**Member RestModel** (nested)
 
-Base URL: `CONFIGURATIONS` environment variable
+```go
+type RestModel struct {
+    CharacterId   uint32 `json:"characterId"`
+    Name          string `json:"name"`
+    JobId         uint16 `json:"jobId"`
+    Level         byte   `json:"level"`
+    Title         byte   `json:"title"`
+    Online        bool   `json:"online"`
+    AllianceTitle byte   `json:"allianceTitle"`
+}
+```
 
-#### GET /configurations/services/{serviceId}
+**Title RestModel** (nested)
 
-Retrieves service configuration by service ID.
-
-**Parameters**
-
-| Name | Type | Description |
-|------|------|-------------|
-| serviceId | uuid.UUID | Service ID |
-
-#### GET /configurations/tenants/{tenantId}
-
-Retrieves tenant-specific configuration including socket handlers and writers.
-
-**Parameters**
-
-| Name | Type | Description |
-|------|------|-------------|
-| tenantId | uuid.UUID | Tenant ID |
+```go
+type RestModel struct {
+    Name  string `json:"name"`
+    Index byte   `json:"index"`
+}
+```

@@ -25,6 +25,7 @@ import { ItemNpcShopWidget } from "@/components/features/items/ItemNpcShopWidget
 import { ItemCashShopWidget } from "@/components/features/items/ItemCashShopWidget";
 import { DroppedByWidget } from "@/components/features/items/DroppedByWidget";
 import { RecipesByItemCard } from "@/components/features/items/RecipesByItemCard";
+import { PossibleRewardsCard } from "@/components/features/items/PossibleRewardsCard";
 
 export function ItemDetailPage() {
   const { activeTenant } = useTenant();
@@ -353,6 +354,9 @@ function ConsumableSection({ data }: { data: ConsumableData }) {
             </div>
           </CardContent>
         </Card>
+      )}
+      {a.rewards && a.rewards.length > 0 && (
+        <PossibleRewardsCard rewards={a.rewards} />
       )}
     </>
   );

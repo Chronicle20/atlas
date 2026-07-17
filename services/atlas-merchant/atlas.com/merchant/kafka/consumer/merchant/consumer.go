@@ -3,10 +3,11 @@ package merchant
 import (
 	consumer2 "atlas-merchant/kafka/consumer"
 	merchant2 "atlas-merchant/kafka/message/merchant"
-	"atlas-merchant/kafka/producer"
+	"atlas-merchant/searchcount"
 	"atlas-merchant/shop"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -44,6 +45,11 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleExitShopCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSendMessageCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRetrieveFrederickCommand(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRecordItemSearchCommand(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleWithdrawMesoCommand(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleOrganizeListingsCommand(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAddBlacklistCommand(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRemoveBlacklistCommand(db))))
 		}
 	}
 }
@@ -54,7 +60,7 @@ func handlePlaceShopCommand(db *gorm.DB) message.Handler[merchant2.Command[merch
 			return
 		}
 		p := shop.NewProcessor(l, ctx, db)
-		_, err := p.CreateShop(e.CharacterId, shop.ShopType(e.Body.ShopType), e.Body.Title, e.WorldId, e.ChannelId, e.Body.MapId, e.Body.InstanceId, e.Body.X, e.Body.Y, e.Body.PermitItemId)
+		_, err := p.CreateShopAndEmit(e.CharacterId, shop.ShopType(e.Body.ShopType), e.Body.Title, e.WorldId, e.ChannelId, e.Body.MapId, e.Body.InstanceId, e.Body.X, e.Body.Y, e.Body.PermitItemId)
 		if err != nil {
 			l.WithError(err).Errorf("Error creating shop for character [%d].", e.CharacterId)
 		}
@@ -165,6 +171,70 @@ func handleRemoveListingCommand(db *gorm.DB) message.Handler[merchant2.Command[m
 	}
 }
 
+func handleWithdrawMesoCommand(db *gorm.DB) message.Handler[merchant2.Command[merchant2.CommandWithdrawMesoBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e merchant2.Command[merchant2.CommandWithdrawMesoBody]) {
+		if e.Type != merchant2.CommandWithdrawMeso {
+			return
+		}
+		shopId, err := uuid.Parse(e.Body.ShopId)
+		if err != nil {
+			l.WithError(err).Errorf("Error parsing shopId [%s].", e.Body.ShopId)
+			return
+		}
+		if err := shop.NewProcessor(l, ctx, db).WithdrawMesoAndEmit(shopId, e.CharacterId); err != nil {
+			l.WithError(err).Errorf("Error withdrawing meso for shop [%s].", shopId)
+		}
+	}
+}
+
+func handleOrganizeListingsCommand(db *gorm.DB) message.Handler[merchant2.Command[merchant2.CommandOrganizeListingsBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e merchant2.Command[merchant2.CommandOrganizeListingsBody]) {
+		if e.Type != merchant2.CommandOrganizeListings {
+			return
+		}
+		shopId, err := uuid.Parse(e.Body.ShopId)
+		if err != nil {
+			l.WithError(err).Errorf("Error parsing shopId [%s].", e.Body.ShopId)
+			return
+		}
+		if err := shop.NewProcessor(l, ctx, db).OrganizeListingsAndEmit(shopId, e.CharacterId); err != nil {
+			l.WithError(err).Errorf("Error organizing listings for shop [%s].", shopId)
+		}
+	}
+}
+
+func handleAddBlacklistCommand(db *gorm.DB) message.Handler[merchant2.Command[merchant2.CommandBlacklistBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e merchant2.Command[merchant2.CommandBlacklistBody]) {
+		if e.Type != merchant2.CommandAddBlacklist {
+			return
+		}
+		shopId, err := uuid.Parse(e.Body.ShopId)
+		if err != nil {
+			l.WithError(err).Errorf("Error parsing shopId [%s].", e.Body.ShopId)
+			return
+		}
+		if err := shop.NewProcessor(l, ctx, db).AddToBlacklistAndEmit(shopId, e.CharacterId, e.Body.Name, e.Body.BannedCharacterId); err != nil {
+			l.WithError(err).Errorf("Error adding [%s] to blacklist for shop [%s].", e.Body.Name, shopId)
+		}
+	}
+}
+
+func handleRemoveBlacklistCommand(db *gorm.DB) message.Handler[merchant2.Command[merchant2.CommandBlacklistBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e merchant2.Command[merchant2.CommandBlacklistBody]) {
+		if e.Type != merchant2.CommandRemoveBlacklist {
+			return
+		}
+		shopId, err := uuid.Parse(e.Body.ShopId)
+		if err != nil {
+			l.WithError(err).Errorf("Error parsing shopId [%s].", e.Body.ShopId)
+			return
+		}
+		if err := shop.NewProcessor(l, ctx, db).RemoveFromBlacklistAndEmit(shopId, e.CharacterId, e.Body.Name); err != nil {
+			l.WithError(err).Errorf("Error removing [%s] from blacklist for shop [%s].", e.Body.Name, shopId)
+		}
+	}
+}
+
 func handleUpdateListingCommand(db *gorm.DB) message.Handler[merchant2.Command[merchant2.CommandUpdateListingBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e merchant2.Command[merchant2.CommandUpdateListingBody]) {
 		if e.Type != merchant2.CommandUpdateListing {
@@ -219,7 +289,7 @@ func handleEnterShopCommand(db *gorm.DB) message.Handler[merchant2.Command[merch
 			return
 		}
 
-		if err := shop.NewProcessor(l, ctx, db).EnterShopAndEmit(e.CharacterId, shopId); err != nil {
+		if err := shop.NewProcessor(l, ctx, db).EnterShopAndEmit(e.CharacterId, shopId, e.Body.VisitorName); err != nil {
 			l.WithError(err).Errorf("Error entering shop [%s].", shopId)
 		}
 	}
@@ -267,6 +337,17 @@ func handleRetrieveFrederickCommand(db *gorm.DB) message.Handler[merchant2.Comma
 
 		if err := shop.NewProcessor(l, ctx, db).RetrieveFrederickAndEmit(e.CharacterId, e.WorldId); err != nil {
 			l.WithError(err).Errorf("Error retrieving Frederick items for character [%d].", e.CharacterId)
+		}
+	}
+}
+
+func handleRecordItemSearchCommand(db *gorm.DB) message.Handler[merchant2.Command[merchant2.CommandRecordItemSearchBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e merchant2.Command[merchant2.CommandRecordItemSearchBody]) {
+		if e.Type != merchant2.CommandRecordItemSearch {
+			return
+		}
+		if err := searchcount.NewProcessor(l, ctx, db).RecordSearch(e.WorldId, e.Body.ItemId); err != nil {
+			l.WithError(err).Errorf("Error recording item search for item [%d] in world [%d].", e.Body.ItemId, e.WorldId)
 		}
 	}
 }

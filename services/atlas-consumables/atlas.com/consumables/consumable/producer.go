@@ -98,3 +98,23 @@ func EffectAppliedEventProvider(characterId character.Id, itemId item.Id, transa
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func RewardEffectEventProvider(characterId character.Id, boxItemId uint32, effect string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &consumable.Event[consumable.RewardEffectBody]{
+		CharacterId: characterId,
+		Type:        consumable.EventTypeRewardEffect,
+		Body:        consumable.RewardEffectBody{BoxItemId: boxItemId, Effect: effect},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func RewardWonEventProvider(characterId character.Id, boxItemId uint32, itemId uint32, message string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &consumable.Event[consumable.RewardWonBody]{
+		CharacterId: characterId,
+		Type:        consumable.EventTypeRewardWon,
+		Body:        consumable.RewardWonBody{BoxItemId: boxItemId, ItemId: itemId, Message: message},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

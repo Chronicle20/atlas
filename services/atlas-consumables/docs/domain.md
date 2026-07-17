@@ -68,6 +68,8 @@ Fluent builder for constructing and cloning Asset models. Created via `NewBuilde
 - `IsEquipment()` is true when inventory type is Equip.
 - `IsCashEquipment()` is true when equipment and cashId is non-zero.
 - `IsConsumable()` is true when inventory type is Use.
+- `IsSetup()` is true when inventory type is Setup.
+- `IsEtc()` is true when inventory type is ETC.
 - `IsCash()` is true when inventory type is Cash.
 - `IsPet()` requires both cash inventory type and a non-zero petId.
 - `Add*` builder methods clamp results to `[0, max]` for the target type (uint16, uint32, byte).
@@ -150,22 +152,40 @@ Callback invoked after item reservation is confirmed.
 - Cash pet food applies only to matching pet templates (filtered by cash item indexes)
 - Equipment cursed by a failed scroll is destroyed
 - White scrolls prevent slot loss on scroll failure (but do not prevent curse)
+- Items not matching any classification-specific branch of `RequestItemConsume` fall through to `ConsumeBare`, which commits the reservation with no further side-effects (e.g. Magic Rock for Priest Doom, summon items for Mystic Door)
+- `RequestFeed` (taming-mob food) requires the item to be `ClassificationRevitalizer` (226); non-revitalizer items are rejected
+- `ConsumeFeed` emits a fixed tiredness heal (`foodmsg.RevitalizerTirednessHeal` = 30) regardless of item; heal → exp → level math is not performed by this service
+- A Vega's Spell (`RequestVegaScroll`) requires the target scroll's natural success rate to exactly match the vega's required rate (10% vega requires a 10%-rate scroll boosted to 30%; 60% vega requires a 60%-rate scroll boosted to 90%); non-matching scrolls or non-vega items are rejected
+- Vega scroll application never uses white scroll or legendary spirit semantics (both always false)
+- `RequestViciousHammer` requires the target item to be found at the claimed cash-compartment slot with `ClassificationViciousHammer` (557)
+- A vicious hammer target is ineligible (`NOT_UPGRADABLE`) when the equip's data-derived slot count is 0 or the equip is a cash item
+- A vicious hammer target is ineligible (`CAP_REACHED`) once `hammersApplied` reaches 2 (`maxHammersApplied`)
+- A vicious hammer target is ineligible (`HORNTAIL`) when the template ID is 1122000 (Horntail Necklace), checked before the slot/cash/cap checks
+- Vicious hammer validation is re-run at reservation-confirm time (`ConsumeViciousHammer`) against fresh state, not only at request time
 
 ### State Transitions
 
-1. `RequestItemConsume` / `RequestScroll` -> registers one-time event handler -> sends REQUEST_RESERVE
+1. `RequestItemConsume` / `RequestScroll` / `RequestFeed` / `RequestViciousHammer` -> registers one-time event handler -> sends REQUEST_RESERVE
 2. On RESERVED event -> executes item-specific logic -> sends CONSUME
-3. On error -> sends CANCEL_RESERVATION -> emits ERROR event
+3. On error -> sends CANCEL_RESERVATION -> emits ERROR event (or VICIOUS_HAMMER / VEGA_SCROLL failure event for those flows)
+4. `RequestVegaScroll` -> validates rate/slot up front -> reserves the CASH vega item first; its RESERVED confirmation (`ReserveVegaScrollStage`) reserves the USE scroll; the scroll's RESERVED confirmation (`ConsumeVegaScroll`) re-validates, applies the scroll at the boosted rate, consumes both items, and emits VEGA_SCROLL
+5. `RequestViciousHammer` -> validates target eligibility -> reserves the hammer -> on RESERVED (`ConsumeViciousHammer`) re-validates, applies `AddSlots(1)` + `AddHammersApplied(1)` via one MODIFY_EQUIPMENT, consumes the hammer, and emits VICIOUS_HAMMER
 
 ### Processors
 
 - `RequestItemConsume`: Routes to appropriate consumer based on item classification
-  - Classifications 200-202: Standard consumables (ConsumeStandard)
+  - Classifications 200-202, 205: Standard consumables (ConsumeStandard)
   - ClassificationConsumableTownWarp: Town scrolls (ConsumeTownScroll)
   - ClassificationConsumablePetFood: Pet food (ConsumePetFood)
   - ClassificationPetConsumable: Cash pet food (ConsumeCashPetFood)
   - ClassificationConsumableSummoningSack: Summoning sacks (ConsumeSummoningSack)
+  - Unmatched classifications: bare reservation commit (ConsumeBare)
 - `RequestScroll`: Processes equipment enhancement scroll usage
+- `RequestFeed`: Validates a taming-mob food (revitalizer) request, reserves the item, and on confirm (`ConsumeFeed`) commits the reservation and emits a TamingMobFed event
+- `RequestVegaScroll`: Validates and drives the chained two-reservation Vega's Spell flow (`ReserveVegaScrollStage`, `ConsumeVegaScroll`)
+- `VegaScrollError`: Cancels any reservations already made on the vega path and emits a VEGA_INVALID error event
+- `RequestViciousHammer`: Validates and reserves a vicious hammer use; on confirm (`ConsumeViciousHammer`) applies the slot/hammer-count change and consumes the hammer
+- `ViciousHammerError`: Cancels the hammer reservation and emits a VICIOUS_HAMMER failure event
 - `ApplyItemEffects`: Applies cure → HP/MP recovery → status buffs from consumable data. Cure is dispatched first via a single `CANCEL_BY_TYPES` buff command when any disease cure spec (`poison`, `darkness`, `weakness`, `seal`, `curse`) is non-zero, so a queued poison tick cannot eat part of the heal.
 - `ApplyConsumableEffect`: Applies effects without consuming an inventory item (NPC-initiated)
 - `CancelConsumableEffect`: Cancels buff effects using sourceId = -int32(itemId)
@@ -226,7 +246,7 @@ None locally. Emits MODIFY_EQUIPMENT command to compartment topic.
 ### Processors
 
 - `ChangeStat`: Clones asset, applies changes, emits MODIFY_EQUIPMENT command
-- Factory functions for changes: `AddStrength`, `AddDexterity`, `AddIntelligence`, `AddLuck`, `AddHP`, `AddMP`, `AddWeaponAttack`, `AddMagicAttack`, `AddWeaponDefense`, `AddMagicDefense`, `AddAccuracy`, `AddAvoidability`, `AddHands`, `AddSpeed`, `AddJump`, `AddSlots`, `AddLevel`, `SetSpike`, `SetCold`
+- Factory functions for changes: `AddStrength`, `AddDexterity`, `AddIntelligence`, `AddLuck`, `AddHp`, `AddMp`, `AddWeaponAttack`, `AddMagicAttack`, `AddWeaponDefense`, `AddMagicDefense`, `AddAccuracy`, `AddAvoidability`, `AddHands`, `AddSpeed`, `AddJump`, `AddSlots`, `AddLevel`, `AddHammersApplied`, `SetSpike`, `SetCold`
 
 ## character
 
@@ -244,13 +264,26 @@ Fetches character data from the character service via REST and decorates it with
 | accountId | uint32 | Account ID |
 | worldId | world.Id | World identifier |
 | name | string | Character name |
+| gender | byte | Character gender |
+| skinColor | byte | Skin color |
+| face | uint32 | Face template ID |
+| hair | uint32 | Hair template ID |
 | level | byte | Character level |
 | jobId | job.Id | Job identifier |
+| strength, dexterity, intelligence, luck | uint16 | Base stats |
 | hp, maxHp | uint16 | Current and max HP |
 | mp, maxMp | uint16 | Current and max MP |
-| strength, dexterity, intelligence, luck | uint16 | Base stats |
+| hpMpUsed | int | HP/MP AP allocation counter |
+| ap | uint16 | Unassigned AP |
+| sp | string | Comma-separated SP table (Evan skill books) |
+| experience | uint32 | Character experience |
+| fame | int16 | Fame value |
+| gachaponExperience | uint32 | Gachapon experience |
+| spawnPoint | uint32 | Stored spawn point (see Invariants) |
+| gm | int | GM flag |
+| x, y | int16 | Character position |
+| stance | byte | Character stance |
 | meso | uint32 | Meso balance |
-| mapId | map.Id | Current map |
 | pets | []pet.Model | Character's pets |
 | equipment | equipment.Model | Equipped items |
 | inventory | inventory.Model | Full inventory |
@@ -264,6 +297,9 @@ Fluent builder for character model construction. Created via `NewModelBuilder()`
 - `SetInventory` partitions equip compartment assets by slot position: positive slots remain in the compartment, negative slots are mapped to equipment slots using `asset.Clone`. Slots below -100 are cash equipment.
 - `HasSPTable` returns true only for Evan job line characters.
 - `RemainingSp` indexes into the SP table based on the Evan skill book mapping.
+- `Rank()`, `RankMove()`, `JobRank()`, `JobRankMove()` are fixed accessors that always return 0.
+- `SpawnPoint()` (the accessor) always returns 0, independent of the stored `spawnPoint` field.
+- The character's current field (world/channel/map/instance) is not part of this model; it is resolved separately via the `map/character` registry or the `location` REST lookup.
 
 ### State Transitions
 
@@ -445,8 +481,17 @@ Fetches pet data from the pet service via REST, provides filtering (spawned, hun
 | id | uint64 | Pet identifier |
 | inventoryItemId | uint32 | Inventory item ID |
 | templateId | uint32 | Pet template ID |
+| name | string | Pet name |
+| level | byte | Pet level |
+| closeness | uint16 | Pet closeness |
 | fullness | byte | Current fullness (0-100) |
+| expiration | time.Time | Expiration timestamp |
+| ownerId | uint32 | Owning character ID |
+| lead | bool | Lead pet flag |
 | slot | int8 | Pet slot (-1 = despawned, 0+ = spawned) |
+| x, y | int16 | Pet position |
+| stance | byte | Pet stance |
+| fh | int16 | Pet foothold |
 
 ### Invariants
 
@@ -593,6 +638,7 @@ Fetches equipable item template data from the data service via REST. Used for sc
 | accuracy, avoidability | uint16 | Base accuracy/evasion |
 | speed, jump | uint16 | Base movement stats |
 | slots | uint16 | Original upgrade slot count |
+| cash | bool | Cash item flag (used for vicious hammer eligibility) |
 
 ### Invariants
 

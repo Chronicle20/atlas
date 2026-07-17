@@ -1,21 +1,19 @@
 package session
 
 import (
-	"atlas-maps/kafka/producer"
 	"context"
 
 	consumer2 "atlas-maps/kafka/consumer"
 	sessionKafka "atlas-maps/kafka/message/session"
-
 	timer "atlas-maps/map/timer"
-
-	"github.com/sirupsen/logrus"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	kafkaMessage "github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/sirupsen/logrus"
 )
 
 // ForceReturner is the seam used to test the handler without standing up a

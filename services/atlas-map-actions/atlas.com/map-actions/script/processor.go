@@ -22,9 +22,9 @@ type Processor interface {
 	Delete(id uuid.UUID) error
 
 	ByIdProvider(id uuid.UUID) model.Provider[MapScript]
-	ByScriptNameProvider(scriptName string) model.Provider[[]MapScript]
+	ByScriptNameProvider(scriptName string, page model.Page) model.Provider[model.Paged[MapScript]]
 	ByScriptNameAndTypeProvider(scriptName string, scriptType string) model.Provider[MapScript]
-	AllProvider() model.Provider[[]MapScript]
+	AllProvider(page model.Page) model.Provider[model.Paged[MapScript]]
 
 	DeleteAllForTenant() (int64, error)
 
@@ -65,16 +65,18 @@ func (p *ProcessorImpl) ByIdProvider(id uuid.UUID) model.Provider[MapScript] {
 	return model.Map[Entity, MapScript](Make)(getByIdProvider(id)(p.db.WithContext(p.ctx)))
 }
 
-func (p *ProcessorImpl) ByScriptNameProvider(scriptName string) model.Provider[[]MapScript] {
-	return model.SliceMap[Entity, MapScript](Make)(getByScriptNameProvider(scriptName)(p.db.WithContext(p.ctx)))(model.ParallelMap())
+func (p *ProcessorImpl) ByScriptNameProvider(scriptName string, page model.Page) model.Provider[model.Paged[MapScript]] {
+	ep := getByScriptNamePagedProvider(scriptName, page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(Make)(ep)(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) ByScriptNameAndTypeProvider(scriptName string, scriptType string) model.Provider[MapScript] {
 	return model.Map[Entity, MapScript](Make)(getByScriptNameAndTypeProvider(scriptName)(scriptType)(p.db.WithContext(p.ctx)))
 }
 
-func (p *ProcessorImpl) AllProvider() model.Provider[[]MapScript] {
-	return model.SliceMap[Entity, MapScript](Make)(getAllProvider(p.db.WithContext(p.ctx)))(model.ParallelMap())
+func (p *ProcessorImpl) AllProvider(page model.Page) model.Provider[model.Paged[MapScript]] {
+	ep := getAllPagedProvider(page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(Make)(ep)(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) Create(m MapScript) (MapScript, error) {

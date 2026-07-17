@@ -26,8 +26,8 @@ func tenantCtx(t *testing.T, id uuid.UUID) context.Context {
 	return tenant.WithContext(context.Background(), tn)
 }
 
-func TestComputeBookLevelMatchesCosmicFormula(t *testing.T) {
-	// Cosmic loop: level=0; expToNext=1; do { level++; expToNext += level*10 }
+func TestComputeBookLevelFormula(t *testing.T) {
+	// Formula: level=0; expToNext=1; do { level++; expToNext += level*10 }
 	// while (total >= expToNext); return level when condition fails.
 	//   total=0  → level=1, expToNext=11; 0>=11? no  → 1
 	//   total=1  → level=1, expToNext=11; 1>=11? no  → 1

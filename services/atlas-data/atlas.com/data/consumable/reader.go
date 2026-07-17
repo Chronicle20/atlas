@@ -165,10 +165,18 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 			r, err := cxml.ChildByName("reward")
 			if err == nil && r != nil {
 				for _, ro := range r.ChildNodes {
-					itemId := uint32(ro.GetIntegerWithDefault("item", 0))
-					count := uint32(ro.GetIntegerWithDefault("count", 0))
-					prob := uint32(ro.GetIntegerWithDefault("prob", 0))
-					m.Rewards = append(m.Rewards, RewardRestModel{itemId, count, prob})
+					// Per-entry reward fields. Note capital "Effect" (verified WZ
+					// casing) — distinct from the item-level lowercase "effect"
+					// parsed at reader.go ~L80. period defaults to -1 (= no
+					// expiration); Effect/worldMsg default to "".
+					m.Rewards = append(m.Rewards, RewardRestModel{
+						ItemId:   uint32(ro.GetIntegerWithDefault("item", 0)),
+						Count:    uint32(ro.GetIntegerWithDefault("count", 0)),
+						Prob:     uint32(ro.GetIntegerWithDefault("prob", 0)),
+						Effect:   ro.GetString("Effect", ""),
+						WorldMsg: ro.GetString("worldMsg", ""),
+						Period:   int32(ro.GetIntegerWithDefault("period", -1)),
+					})
 				}
 			}
 			m.Rechargeable = item.IsBullet(item.Id(consumableId)) || item.IsThrowingStar(item.Id(consumableId))

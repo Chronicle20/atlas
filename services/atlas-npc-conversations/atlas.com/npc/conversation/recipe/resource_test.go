@@ -182,3 +182,117 @@ func TestGetByNpc_BadNpcIdReturns400(t *testing.T) {
 		t.Errorf("status = %d, want 400", w.Code)
 	}
 }
+
+// paginatedEnvelope mirrors listEnvelope but also captures the pagination
+// meta/links block for the pagination-focused tests below.
+type paginatedEnvelope struct {
+	Data []struct {
+		Id         string                 `json:"id"`
+		Type       string                 `json:"type"`
+		Attributes map[string]interface{} `json:"attributes"`
+	} `json:"data"`
+	Meta struct {
+		Total int `json:"total"`
+		Page  struct {
+			Number int `json:"number"`
+			Size   int `json:"size"`
+			Last   int `json:"last"`
+		} `json:"page"`
+	} `json:"meta"`
+	Links map[string]interface{} `json:"links"`
+}
+
+// TestGetByItem_Paginates drives GET /items/{itemId}/recipes with explicit
+// page[number]/page[size], verifying the paginated envelope and 400 on
+// invalid paging params.
+func TestGetByItem_Paginates(t *testing.T) {
+	db := newResourceTestDB(t)
+	router := setupRouter(t, db)
+	tenantId := uuid.New()
+	te, _ := tenant.Create(tenantId, "GMS", 83, 1)
+	ctx := tenant.WithContext(context.Background(), te)
+
+	for _, m := range []Model{
+		newRecipe(t, tenantId, uuid.New(), 1010000, "craftA", 1082007),
+		newRecipe(t, tenantId, uuid.New(), 2020000, "craftB", 1082007),
+		newRecipe(t, tenantId, uuid.New(), 3030000, "craftC", 1082007),
+	} {
+		if _, err := createRecipe(db.WithContext(ctx))(tenantId)(m); err != nil {
+			t.Fatalf("seed: %v", err)
+		}
+	}
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, reqWithTenant(http.MethodGet, "/items/1082007/recipes?page[number]=1&page[size]=2", tenantId))
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d; body=%s", w.Code, w.Body.String())
+	}
+	var env paginatedEnvelope
+	if err := json.Unmarshal(w.Body.Bytes(), &env); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if len(env.Data) != 2 {
+		t.Fatalf("expected 2 rows, got %d", len(env.Data))
+	}
+	if env.Meta.Total != 3 {
+		t.Errorf("meta.total = %d, want 3", env.Meta.Total)
+	}
+	if env.Meta.Page.Last != 2 {
+		t.Errorf("meta.page.last = %d, want 2", env.Meta.Page.Last)
+	}
+	if _, ok := env.Links["next"]; !ok {
+		t.Errorf("expected links.next to be present")
+	}
+
+	w2 := httptest.NewRecorder()
+	router.ServeHTTP(w2, reqWithTenant(http.MethodGet, "/items/1082007/recipes?page[size]=0", tenantId))
+	if w2.Code != http.StatusBadRequest {
+		t.Errorf("page[size]=0 status = %d, want 400", w2.Code)
+	}
+}
+
+// TestGetByNpc_Paginates drives GET /npcs/{npcId}/recipes with explicit
+// page[number]/page[size], verifying the paginated envelope and 400 on
+// invalid paging params.
+func TestGetByNpc_Paginates(t *testing.T) {
+	db := newResourceTestDB(t)
+	router := setupRouter(t, db)
+	tenantId := uuid.New()
+	te, _ := tenant.Create(tenantId, "GMS", 83, 1)
+	ctx := tenant.WithContext(context.Background(), te)
+
+	for _, m := range []Model{
+		newRecipe(t, tenantId, uuid.New(), 2040020, "craftA", 1),
+		newRecipe(t, tenantId, uuid.New(), 2040020, "craftB", 2),
+		newRecipe(t, tenantId, uuid.New(), 2040020, "craftC", 3),
+		newRecipe(t, tenantId, uuid.New(), 9999, "noise", 0),
+	} {
+		if _, err := createRecipe(db.WithContext(ctx))(tenantId)(m); err != nil {
+			t.Fatalf("seed: %v", err)
+		}
+	}
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, reqWithTenant(http.MethodGet, "/npcs/2040020/recipes?page[number]=1&page[size]=2", tenantId))
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d; body=%s", w.Code, w.Body.String())
+	}
+	var env paginatedEnvelope
+	if err := json.Unmarshal(w.Body.Bytes(), &env); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if len(env.Data) != 2 {
+		t.Fatalf("expected 2 rows, got %d", len(env.Data))
+	}
+	if env.Meta.Total != 3 {
+		t.Errorf("meta.total = %d, want 3 (must exclude the other npcId)", env.Meta.Total)
+	}
+
+	w2 := httptest.NewRecorder()
+	router.ServeHTTP(w2, reqWithTenant(http.MethodGet, "/npcs/2040020/recipes?page[size]=0", tenantId))
+	if w2.Code != http.StatusBadRequest {
+		t.Errorf("page[size]=0 status = %d, want 400", w2.Code)
+	}
+}

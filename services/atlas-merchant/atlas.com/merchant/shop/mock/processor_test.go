@@ -58,7 +58,7 @@ func TestProcessorMock_DefaultBehavior(t *testing.T) {
 	assert.Equal(t, listing.Model{}, li)
 
 	assert.NoError(t, m.UpdateListing(id, 0, 1000, 1, 1))
-	assert.NoError(t, m.EnterShop(mb)(1000, id))
+	assert.NoError(t, m.EnterShop(mb)(1000, id, ""))
 	assert.NoError(t, m.ExitShop(mb)(1000, id))
 
 	ejected, err := m.EjectAllVisitors(id)
@@ -84,7 +84,7 @@ func TestProcessorMock_DefaultBehavior(t *testing.T) {
 	assert.NoError(t, m.CloseShopAndEmit(id, 1000, shop.CloseReasonManualClose))
 	assert.NoError(t, m.EnterMaintenanceAndEmit(id, 1000))
 	assert.NoError(t, m.ExitMaintenanceAndEmit(id, 1000))
-	assert.NoError(t, m.EnterShopAndEmit(1000, id))
+	assert.NoError(t, m.EnterShopAndEmit(1000, id, ""))
 	assert.NoError(t, m.ExitShopAndEmit(1000, id))
 	assert.NoError(t, m.SendMessageAndEmit(id, 1000, "hello"))
 	assert.NoError(t, m.RetrieveFrederickAndEmit(1000, 0))

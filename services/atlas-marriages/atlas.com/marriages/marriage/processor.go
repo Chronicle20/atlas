@@ -1,22 +1,21 @@
 package marriage
 
 import (
-	"atlas-marriages/character"
-	"atlas-marriages/kafka/message"
-	"atlas-marriages/kafka/producer"
 	"context"
 	"errors"
 	"time"
 
+	"atlas-marriages/character"
+	"atlas-marriages/kafka/message"
 	marriageMsg "atlas-marriages/kafka/message/marriage"
-
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 // EligibilityRequirement represents minimum level requirement for marriage
@@ -55,7 +54,7 @@ type Processor interface {
 
 	// Proposal queries
 	GetActiveProposal(proposerId, targetId uint32) model.Provider[*Proposal]
-	GetPendingProposalsByCharacter(characterId uint32) model.Provider[[]Proposal]
+	GetPendingProposalsByCharacter(characterId uint32, page model.Page) model.Provider[model.Paged[Proposal]]
 	GetProposalHistory(proposerId, targetId uint32) model.Provider[[]Proposal]
 
 	// Ceremony operations
@@ -84,7 +83,7 @@ type Processor interface {
 
 	// Marriage queries
 	GetMarriageByCharacter(characterId uint32) model.Provider[*Marriage]
-	GetMarriageHistory(characterId uint32) model.Provider[[]Marriage]
+	GetMarriageHistory(characterId uint32, page model.Page) model.Provider[model.Paged[Marriage]]
 
 	// Ceremony queries
 	GetCeremonyById(ceremonyId uint32) model.Provider[*Ceremony]
@@ -615,12 +614,10 @@ func (p *ProcessorImpl) GetActiveProposal(proposerId, targetId uint32) model.Pro
 	}
 }
 
-// GetPendingProposalsByCharacter retrieves all pending proposals for a character (sent or received)
-func (p *ProcessorImpl) GetPendingProposalsByCharacter(characterId uint32) model.Provider[[]Proposal] {
-	return func() ([]Proposal, error) {
-		proposalsProvider := GetPendingProposalsByCharacterProvider(p.db.WithContext(p.ctx), p.log)(characterId)
-		return proposalsProvider()
-	}
+// GetPendingProposalsByCharacter retrieves one page of pending proposals for a character (sent or received)
+func (p *ProcessorImpl) GetPendingProposalsByCharacter(characterId uint32, page model.Page) model.Provider[model.Paged[Proposal]] {
+	ep := GetPendingProposalsByCharacterPagedProvider(p.db.WithContext(p.ctx), p.log)(characterId, page)
+	return model.MapPaged(MakeProposal)(ep)(model.ParallelMap())
 }
 
 // GetProposalHistory retrieves the history of proposals between two characters
@@ -1593,12 +1590,10 @@ func (p *ProcessorImpl) GetMarriageByCharacter(characterId uint32) model.Provide
 	}
 }
 
-// GetMarriageHistory retrieves marriage history for a character
-func (p *ProcessorImpl) GetMarriageHistory(characterId uint32) model.Provider[[]Marriage] {
-	return func() ([]Marriage, error) {
-		historyProvider := GetMarriageHistoryByCharacterProvider(p.db.WithContext(p.ctx), p.log)(characterId)
-		return historyProvider()
-	}
+// GetMarriageHistory retrieves one page of marriage history for a character
+func (p *ProcessorImpl) GetMarriageHistory(characterId uint32, page model.Page) model.Provider[model.Paged[Marriage]] {
+	ep := GetMarriageHistoryByCharacterPagedProvider(p.db.WithContext(p.ctx), p.log)(characterId, page)
+	return model.MapPaged(Make)(ep)(model.ParallelMap())
 }
 
 // ExpireProposal marks a proposal as expired
@@ -1781,6 +1776,7 @@ func (p *ProcessorImpl) HandleCharacterDeletion(characterId uint32) error {
 	}
 
 	deletedMarriage, err := builder.Build()
+
 	if err != nil {
 		p.log.WithError(err).WithField("characterId", characterId).Error("Failed to build deleted marriage")
 		return err
@@ -1842,6 +1838,7 @@ func (p *ProcessorImpl) HandleCharacterDeletionAndEmit(transactionId uuid.UUID, 
 		}
 
 		deletedMarriage, err := builder.Build()
+
 		if err != nil {
 			return err
 		}

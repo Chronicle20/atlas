@@ -3,8 +3,8 @@ package character
 import (
 	"atlas-consumables/inventory"
 	character2 "atlas-consumables/kafka/message/character"
-	"atlas-consumables/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"
 

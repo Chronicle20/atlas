@@ -75,6 +75,11 @@ func WorldMessageBlueTextBody(medal string, characterName string, message string
 	return worldMessageBody(WorldMessageBlueText, []string{actualMessage}, 0, false, "", 0, 0)
 }
 
+func WorldMessageBlueTextItemBody(medal string, characterName string, message string, itemId uint32) packet.Encode {
+	actualMessage := decorateMegaphoneMessage(medal, characterName, message)
+	return worldMessageBody(WorldMessageBlueText, []string{actualMessage}, 0, false, "", itemId, 0)
+}
+
 func WorldMessageGachaponMegaphoneBody(medal string, characterName string, channelId channel.Id, townName string, itemId uint32) packet.Encode {
 	actualMessage := decorateNameForMessage(medal, characterName)
 	return worldMessageBody(WorldMessageGachapon, []string{actualMessage}, channelId, false, townName, itemId, 0)

@@ -24,7 +24,7 @@ const SummonDamageWriter = "SummonDamage"
 //	  int  monsterIdFrom  // attacking monster template id
 //	  byte bLeft          // fixed 0
 //
-// The 12/0 constants mirror Cosmic; the only structural gate is the v95+ oid.
+// The 12/0 constants are fixed wire values; the only structural gate is the v95+ oid.
 // The clientbound damage reader stops at bLeft on ALL versions — v83
 // CSummonedPool::OnSkill@0x7a6ebe, v87 @0x7f969f, and v95 OnHit@0x74bc80 all
 // read nothing after bLeft (the dir<0 byte belongs to the SERVERBOUND

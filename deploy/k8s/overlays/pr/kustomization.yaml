@@ -73,6 +73,37 @@ patches:
             labelSelector:
               matchLabels:
                 atlas.env: "PLACEHOLDER_ATLAS_ENV"
+  # Force a fresh pull for every app container in the PR env.
+  #
+  # Why this is needed: only the services a PR actually rebuilt are
+  # tagged `pr-<N>-<sha>`; unchanged services keep `newTag: latest`
+  # (see the images: block below and pr-validation.yml update-pr-overlay).
+  # `imagePullPolicy` is never set in-repo, so it is k8s-defaulted — and
+  # the default is set ONCE at first admission and then persists. On a
+  # PR's first build every service is tagged `pr-<N>-<sha>` (a specific
+  # tag → default IfNotPresent), and later pushes flip the unchanged ones
+  # back to `:latest` without the persisted IfNotPresent ever re-defaulting
+  # to Always. The net effect is `image: :latest` + `IfNotPresent`, so the
+  # node freezes on whatever `:latest` digest it first cached and never
+  # re-pulls when the moving `:latest` tag advances on main. When a
+  # fleet-wide shared-lib fix lands on main mid-env-life (e.g. #993's
+  # paginated-GET tenant-header fix), those frozen services silently run
+  # the pre-fix image — surfaced 2026-07-15 as atlas-maps serving a stale
+  # atlas-rest and dropping the tenant header on the paged spawn-point
+  # fetch, so no monsters spawned.
+  #
+  # Pinning Always guarantees each pod resolves the current `:latest`
+  # manifest on creation. `:latest` is never pruned by the ghcr retention
+  # sweep (#985), so this is also robust against that. Ephemeral PR envs
+  # are short-lived and low-traffic, so the extra pull-on-create cost is
+  # negligible. Base atlas Deployments are single-container, so
+  # containers/0 is always the app container.
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
   # Override GITSYNC_REF so the git-sync sidecar tracks the PR's full
   # commit SHA (not main). CI sed-substitutes PLACEHOLDER_FULL_SHA at
   # apply time. Full SHA — not short — is required because
@@ -138,6 +169,7 @@ configMapGenerator:
       - COMMAND_TOPIC_MARRIAGE=COMMAND_TOPIC_MARRIAGE-PLACEHOLDER_ATLAS_ENV
       - COMMAND_TOPIC_MERCHANT=COMMAND_TOPIC_MERCHANT-PLACEHOLDER_ATLAS_ENV
       - COMMAND_TOPIC_MESSENGER=COMMAND_TOPIC_MESSENGER-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_MINI_GAME=COMMAND_TOPIC_MINI_GAME-PLACEHOLDER_ATLAS_ENV
       - COMMAND_TOPIC_MIST=COMMAND_TOPIC_MIST-PLACEHOLDER_ATLAS_ENV
       - COMMAND_TOPIC_MONSTER=COMMAND_TOPIC_MONSTER-PLACEHOLDER_ATLAS_ENV
       - COMMAND_TOPIC_MONSTER_BOOK=COMMAND_TOPIC_MONSTER_BOOK-PLACEHOLDER_ATLAS_ENV
@@ -160,6 +192,7 @@ configMapGenerator:
       - COMMAND_TOPIC_QUEST_CONVERSATION=COMMAND_TOPIC_QUEST_CONVERSATION-PLACEHOLDER_ATLAS_ENV
       - COMMAND_TOPIC_REACTOR=COMMAND_TOPIC_REACTOR-PLACEHOLDER_ATLAS_ENV
       - COMMAND_TOPIC_REACTOR_ACTIONS=COMMAND_TOPIC_REACTOR_ACTIONS-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_RPS=COMMAND_TOPIC_RPS-PLACEHOLDER_ATLAS_ENV
       - COMMAND_TOPIC_SAGA=COMMAND_TOPIC_SAGA-PLACEHOLDER_ATLAS_ENV
       - COMMAND_TOPIC_SKILL=COMMAND_TOPIC_SKILL-PLACEHOLDER_ATLAS_ENV
       - COMMAND_TOPIC_SKILL_MACRO=COMMAND_TOPIC_SKILL_MACRO-PLACEHOLDER_ATLAS_ENV
@@ -205,6 +238,7 @@ configMapGenerator:
       - EVENT_TOPIC_GACHAPON_REWARD_WON=EVENT_TOPIC_GACHAPON_REWARD_WON-PLACEHOLDER_ATLAS_ENV
       - EVENT_TOPIC_GUILD_STATUS=EVENT_TOPIC_GUILD_STATUS-PLACEHOLDER_ATLAS_ENV
       - EVENT_TOPIC_GUILD_THREAD_STATUS=EVENT_TOPIC_GUILD_THREAD_STATUS-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_INCUBATOR_RESULT=EVENT_TOPIC_INCUBATOR_RESULT-PLACEHOLDER_ATLAS_ENV
       - EVENT_TOPIC_INSTANCE_TRANSPORT=EVENT_TOPIC_INSTANCE_TRANSPORT-PLACEHOLDER_ATLAS_ENV
       - EVENT_TOPIC_INVENTORY_CHANGED=EVENT_TOPIC_INVENTORY_CHANGED-PLACEHOLDER_ATLAS_ENV
       - EVENT_TOPIC_INVENTORY_STATUS=EVENT_TOPIC_INVENTORY_STATUS-PLACEHOLDER_ATLAS_ENV
@@ -216,6 +250,7 @@ configMapGenerator:
       - EVENT_TOPIC_MERCHANT_STATUS=EVENT_TOPIC_MERCHANT_STATUS-PLACEHOLDER_ATLAS_ENV
       - EVENT_TOPIC_MESSENGER_MEMBER_STATUS=EVENT_TOPIC_MESSENGER_MEMBER_STATUS-PLACEHOLDER_ATLAS_ENV
       - EVENT_TOPIC_MESSENGER_STATUS=EVENT_TOPIC_MESSENGER_STATUS-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_MINI_GAME_STATUS=EVENT_TOPIC_MINI_GAME_STATUS-PLACEHOLDER_ATLAS_ENV
       - EVENT_TOPIC_MIST=EVENT_TOPIC_MIST-PLACEHOLDER_ATLAS_ENV
       - EVENT_TOPIC_MONSTER_BOOK_STATUS=EVENT_TOPIC_MONSTER_BOOK_STATUS-PLACEHOLDER_ATLAS_ENV
       - EVENT_TOPIC_MONSTER_MOVEMENT=EVENT_TOPIC_MONSTER_MOVEMENT-PLACEHOLDER_ATLAS_ENV
@@ -232,6 +267,7 @@ configMapGenerator:
       - EVENT_TOPIC_PET_STATUS=EVENT_TOPIC_PET_STATUS-PLACEHOLDER_ATLAS_ENV
       - EVENT_TOPIC_QUEST_STATUS=EVENT_TOPIC_QUEST_STATUS-PLACEHOLDER_ATLAS_ENV
       - EVENT_TOPIC_REACTOR_STATUS=EVENT_TOPIC_REACTOR_STATUS-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_RPS=EVENT_TOPIC_RPS-PLACEHOLDER_ATLAS_ENV
       - EVENT_TOPIC_SAGA_STATUS=EVENT_TOPIC_SAGA_STATUS-PLACEHOLDER_ATLAS_ENV
       - EVENT_TOPIC_SEED_STATUS=EVENT_TOPIC_SEED_STATUS-PLACEHOLDER_ATLAS_ENV
       - EVENT_TOPIC_SESSION_STATUS=EVENT_TOPIC_SESSION_STATUS-PLACEHOLDER_ATLAS_ENV
@@ -247,7 +283,7 @@ configMapGenerator:
       - EVENT_TOPIC_WORLD_RATE=EVENT_TOPIC_WORLD_RATE-PLACEHOLDER_ATLAS_ENV
   - name: atlas-db-names
     literals:
-      - ATLAS_DB_NAMES=atlas-accounts atlas-bans atlas-buddies atlas-cashshop atlas-characters atlas-configurations atlas-data atlas-drops atlas-fame atlas-gachapons atlas-guilds atlas-inventory atlas-keys atlas-map-actions atlas-maps atlas-merchant atlas-monster-book atlas-mounts atlas-mts atlas-notes atlas-npc-conversations atlas-npc-shops atlas-party-quests atlas-pets atlas-portal-actions atlas-quest atlas-reactor-actions atlas-saga-orchestrator atlas-skills atlas-storage atlas-tenants
+      - ATLAS_DB_NAMES=atlas-accounts atlas-bans atlas-buddies atlas-cashshop atlas-characters atlas-configurations atlas-data atlas-drops atlas-fame atlas-reward-pools atlas-guilds atlas-inventory atlas-keys atlas-map-actions atlas-maps atlas-merchant atlas-mini-games atlas-monster-book atlas-mounts atlas-mts atlas-notes atlas-npc-conversations atlas-npc-shops atlas-party-quests atlas-pets atlas-portal-actions atlas-quest atlas-reactor-actions atlas-saga-orchestrator atlas-skills atlas-storage atlas-tenants
   - name: atlas-pr-bootstrap-tenant
     literals:
       - TENANT_ID=00000000-0000-0000-0000-000000000001
@@ -271,7 +307,7 @@ configMapGenerator:
 #
 # Stateless Deployments (atlas-ingress, atlas-ui,
 # atlas-query-aggregator, atlas-configurations,
-# atlas-drop-information, atlas-gachapons) don't consume ATLAS_ENV in
+# atlas-drop-information, atlas-reward-pools) don't consume ATLAS_ENV in
 # their containers and therefore have no env entry for it — and don't
 # need one. An earlier kustomize `replacements:` block with
 # `options.create: true` was force-injecting ATLAS_ENV here. It also
@@ -322,7 +358,7 @@ images:
     newTag: latest
   - name: ghcr.io/chronicle20/atlas-families/atlas-families
     newTag: latest
-  - name: ghcr.io/chronicle20/atlas-gachapons/atlas-gachapons
+  - name: ghcr.io/chronicle20/atlas-reward-pools/atlas-reward-pools
     newTag: latest
   - name: ghcr.io/chronicle20/atlas-guilds/atlas-guilds
     newTag: latest
@@ -345,6 +381,8 @@ images:
   - name: ghcr.io/chronicle20/atlas-messages/atlas-messages
     newTag: latest
   - name: ghcr.io/chronicle20/atlas-messengers/atlas-messengers
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-mini-games/atlas-mini-games
     newTag: latest
   - name: ghcr.io/chronicle20/atlas-monster-book/atlas-monster-book
     newTag: latest
@@ -385,6 +423,8 @@ images:
   - name: ghcr.io/chronicle20/atlas-reactors/atlas-reactors
     newTag: latest
   - name: ghcr.io/chronicle20/atlas-renders/atlas-renders
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-rps/atlas-rps
     newTag: latest
   - name: ghcr.io/chronicle20/atlas-saga-orchestrator/atlas-saga-orchestrator
     newTag: latest

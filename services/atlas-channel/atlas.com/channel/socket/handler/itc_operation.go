@@ -823,18 +823,17 @@ func writeBrowsePage(l logrus.FieldLogger, ctx context.Context, wp writer.Produc
 		// Not Yet Sold). Sections that hold no sale listings (wanted/my-page) return
 		// an empty page.
 		//
-		// The browse is UNPAGED (PageSize=-1): the client builds its page
+		// The browse DRAINS every match (BrowseAll): the client builds its page
 		// selector from categoryItemCnt as ceil(total/16)
 		// (CITCWnd_List::ChangeCategorySub, v83 0x5BDD12), so the total must
 		// count EVERY match, not one page's slice — the requested 16-item
-		// window is cut below, uniformly for every view.
+		// window is cut below, uniformly for every view. (task-117: replaces the
+		// removed atlas-mts PageSize=-1 "unpaged" hatch with a page-through drain.)
 		f.ExcludeSellerId = s.CharacterId()
 		// Escrowed want-ad offers (sale_type=offer) are private to the poster's
 		// VIEW_WISH view — never surface them in the public For-Sale / Auction tabs.
 		f.ExcludeOffers = true
-		f.Page = 0
-		f.PageSize = -1
-		ms, err := mtslisting.NewProcessor(l, ctx).Browse(s.WorldId(), f)
+		ms, err := mtslisting.NewProcessor(l, ctx).BrowseAll(s.WorldId(), f)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to browse MTS listings for character [%d]; writing failed arm.", s.CharacterId())
 			loadErr = err
@@ -935,8 +934,12 @@ func wishItems(l logrus.FieldLogger, ctx context.Context, characterId uint32, wi
 // Auction tab (section 3, which excludes the viewer's own listings), this view is
 // scoped to the viewer as the seller, so it browses with SellerId set and no
 // ExcludeSellerId. A REST error yields an empty list rather than blocking the page.
+// This view's result is windowed by writeBrowsePage's own mtsPageWindow,
+// which requires the FULL matching set (categoryItemCnt = total), not a
+// server-truncated first page, so it drains every page via BrowseAll (see
+// announceUserSaleItems).
 func ownAuctionItems(l logrus.FieldLogger, ctx context.Context, s session.Model) ([]fieldcb.MtsItem, error) {
-	ms, err := mtslisting.NewProcessor(l, ctx).Browse(s.WorldId(), mtslisting.BrowseFilter{
+	ms, err := mtslisting.NewProcessor(l, ctx).BrowseAll(s.WorldId(), mtslisting.BrowseFilter{
 		SellerId: s.CharacterId(),
 		SaleType: itcSaleTypeAuction,
 	})
@@ -1053,8 +1056,10 @@ func emitRemoveWishByWishSerial(l logrus.FieldLogger, ctx context.Context, wp wr
 // offered equip's full stats) so the poster can compare offers before accepting one
 // via BUY_WISH. On a browse error an empty list is written so the client UI is not
 // left hanging.
+// Every offer made on this want-ad must render, not just the first server
+// page, so this drains every page via BrowseAll (see announceUserSaleItems).
 func writeWishOffers(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model, wishSerial uint32) {
-	ms, err := mtslisting.NewProcessor(l, ctx).Browse(s.WorldId(), mtslisting.BrowseFilter{OfferWishSerial: wishSerial})
+	ms, err := mtslisting.NewProcessor(l, ctx).BrowseAll(s.WorldId(), mtslisting.BrowseFilter{OfferWishSerial: wishSerial})
 	if err != nil {
 		// A genuine browse failure answering this client VIEW_WISH request sends the
 		// dedicated LoadWishSaleListFailed arm (mode 46) — the CITC::OnNormalItemResult

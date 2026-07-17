@@ -1,26 +1,27 @@
-import { vi, type Mocked } from "vitest";
+import { vi, type Mocked } from 'vitest';
 /**
  * @jest-environment jsdom
  */
 
-import { renderHook, waitFor } from "@testing-library/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { charactersService } from "@/services/api/characters.service";
-import {
-  useCharacters,
-  useCharacter,
+import { renderHook, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { charactersService } from '@/services/api/characters.service';
+import { 
+  useCharacters, 
+  useCharacter, 
   useUpdateCharacter,
   useInvalidateCharacters,
   usePrefetchCharacters,
   usePrefetchCharacter,
-  characterKeys,
-} from "../useCharacters";
-import type { Character, UpdateCharacterData } from "@/types/models/character";
-import type { Tenant } from "@/types/models/tenant";
-import type { ReactNode } from "react";
+  characterKeys 
+} from '../useCharacters';
+import type { Character, UpdateCharacterData } from '@/types/models/character';
+import type { Tenant } from '@/types/models/tenant';
+import type { PagedResult } from '@/services/api/pagination';
+import type { ReactNode } from 'react';
 
 // Mock the characters service
-vi.mock("@/services/api/characters.service", () => ({
+vi.mock('@/services/api/characters.service', () => ({
   charactersService: {
     getAll: vi.fn(),
     getById: vi.fn(),
@@ -28,27 +29,25 @@ vi.mock("@/services/api/characters.service", () => ({
   },
 }));
 
-const mockCharactersService = charactersService as Mocked<
-  typeof charactersService
->;
+const mockCharactersService = charactersService as Mocked<typeof charactersService>;
 
 // Test data
 const mockTenant: Tenant = {
-  id: "tenant-123",
+  id: 'tenant-123',
   attributes: {
-    name: "Test Tenant",
-    region: "GMS",
+    name: 'Test Tenant',
+    region: 'GMS',
     majorVersion: 83,
     minorVersion: 1,
   },
 };
 
 const mockCharacter: Character = {
-  id: "char-123",
+  id: 'char-123',
   attributes: {
     accountId: 1,
     worldId: 0,
-    name: "TestCharacter",
+    name: 'TestCharacter',
     level: 50,
     experience: 1000000,
     gachaponExperience: 0,
@@ -69,7 +68,7 @@ const mockCharacter: Character = {
     hair: 30000,
     face: 20000,
     ap: 0,
-    sp: "0",
+    sp: '0',
     spawnPoint: 0,
     gm: 0,
     x: 0,
@@ -82,8 +81,8 @@ const mockCharacters: Character[] = [
   mockCharacter,
   {
     ...mockCharacter,
-    id: "char-456",
-    attributes: { ...mockCharacter.attributes, name: "TestCharacter2" },
+    id: 'char-456',
+    attributes: { ...mockCharacter.attributes, name: 'TestCharacter2' },
   },
 ];
 
@@ -103,70 +102,60 @@ function createWrapper() {
   const TestWrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
-  TestWrapper.displayName = "TestWrapper";
+  TestWrapper.displayName = 'TestWrapper';
   return TestWrapper;
 }
 
-describe("useCharacters hooks", () => {
+describe('useCharacters hooks', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe("Query Keys", () => {
-    it("should generate correct query keys", () => {
-      expect(characterKeys.all).toEqual(["characters"]);
-      expect(characterKeys.lists()).toEqual(["characters", "list"]);
-      expect(characterKeys.list(mockTenant)).toEqual([
-        "characters",
-        "list",
-        "tenant-123",
-        undefined,
-      ]);
-      expect(characterKeys.details()).toEqual(["characters", "detail"]);
-      expect(characterKeys.detail(mockTenant, "char-123")).toEqual([
-        "characters",
-        "detail",
-        "tenant-123",
-        "char-123",
-      ]);
+  describe('Query Keys', () => {
+    it('should generate correct query keys', () => {
+      expect(characterKeys.all).toEqual(['characters']);
+      expect(characterKeys.lists()).toEqual(['characters', 'list']);
+      expect(characterKeys.list(mockTenant)).toEqual(['characters', 'list', 'tenant-123', undefined]);
+      expect(characterKeys.details()).toEqual(['characters', 'detail']);
+      expect(characterKeys.detail(mockTenant, 'char-123')).toEqual(['characters', 'detail', 'tenant-123', 'char-123']);
     });
   });
 
-  describe("useCharacters", () => {
-    it("should fetch characters successfully", async () => {
+  describe('useCharacters', () => {
+    it('should fetch characters successfully', async () => {
       mockCharactersService.getAll.mockResolvedValue(mockCharacters);
 
-      const { result } = renderHook(() => useCharacters(mockTenant), {
-        wrapper: createWrapper(),
-      });
+      const { result } = renderHook(
+        () => useCharacters(mockTenant),
+        { wrapper: createWrapper() }
+      );
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
       expect(result.current.data).toEqual(mockCharacters);
-      expect(mockCharactersService.getAll).toHaveBeenCalledWith({
-        useCache: false,
-      });
+      expect(mockCharactersService.getAll).toHaveBeenCalledWith({ useCache: false });
     });
 
-    it("should not fetch when tenant is not provided", () => {
+    it('should not fetch when tenant is not provided', () => {
       const { result } = renderHook(
         () => useCharacters(null as unknown as Tenant),
-        { wrapper: createWrapper() },
+        { wrapper: createWrapper() }
       );
 
-      expect(result.current.status).toBe("pending");
+      expect(result.current.status).toBe('pending');
       expect(mockCharactersService.getAll).not.toHaveBeenCalled();
     });
 
-    it("should handle errors gracefully", async () => {
-      const error = new Error("Failed to fetch characters");
+    it('should handle errors gracefully', async () => {
+      const error = new Error('Failed to fetch characters');
       mockCharactersService.getAll.mockRejectedValue(error);
 
-      const { result } = renderHook(() => useCharacters(mockTenant), {
-        wrapper: createWrapper(),
-      });
+      const { result } = renderHook(
+        () => useCharacters(mockTenant),
+        { wrapper: createWrapper() }
+      );
 
       await waitFor(() => {
         expect(result.current.isError).toBe(true);
@@ -176,13 +165,13 @@ describe("useCharacters hooks", () => {
     });
   });
 
-  describe("useCharacter", () => {
-    it("should fetch a single character successfully", async () => {
+  describe('useCharacter', () => {
+    it('should fetch a single character successfully', async () => {
       mockCharactersService.getById.mockResolvedValue(mockCharacter);
 
       const { result } = renderHook(
-        () => useCharacter(mockTenant, "char-123"),
-        { wrapper: createWrapper() },
+        () => useCharacter(mockTenant, 'char-123'),
+        { wrapper: createWrapper() }
       );
 
       await waitFor(() => {
@@ -190,23 +179,22 @@ describe("useCharacters hooks", () => {
       });
 
       expect(result.current.data).toEqual(mockCharacter);
-      expect(mockCharactersService.getById).toHaveBeenCalledWith("char-123", {
-        useCache: false,
-      });
+      expect(mockCharactersService.getById).toHaveBeenCalledWith('char-123', { useCache: false });
     });
 
-    it("should not fetch when characterId is not provided", () => {
-      const { result } = renderHook(() => useCharacter(mockTenant, ""), {
-        wrapper: createWrapper(),
-      });
+    it('should not fetch when characterId is not provided', () => {
+      const { result } = renderHook(
+        () => useCharacter(mockTenant, ''),
+        { wrapper: createWrapper() }
+      );
 
-      expect(result.current.status).toBe("pending");
+      expect(result.current.status).toBe('pending');
       expect(mockCharactersService.getById).not.toHaveBeenCalled();
     });
   });
 
-  describe("useUpdateCharacter", () => {
-    it("should update character successfully", async () => {
+  describe('useUpdateCharacter', () => {
+    it('should update character successfully', async () => {
       mockCharactersService.update.mockResolvedValue(undefined);
 
       const wrapper = createWrapper();
@@ -214,7 +202,7 @@ describe("useCharacters hooks", () => {
 
       result.current.mutate({
         tenant: mockTenant,
-        characterId: "char-123",
+        characterId: 'char-123',
         updates: mockUpdateData,
       });
 
@@ -223,13 +211,13 @@ describe("useCharacters hooks", () => {
       });
 
       expect(mockCharactersService.update).toHaveBeenCalledWith(
-        "char-123",
-        mockUpdateData,
+        'char-123',
+        mockUpdateData
       );
     });
 
-    it("should handle update errors", async () => {
-      const error = new Error("Update failed");
+    it('should handle update errors', async () => {
+      const error = new Error('Update failed');
       mockCharactersService.update.mockRejectedValue(error);
 
       const wrapper = createWrapper();
@@ -237,7 +225,7 @@ describe("useCharacters hooks", () => {
 
       result.current.mutate({
         tenant: mockTenant,
-        characterId: "char-123",
+        characterId: 'char-123',
         updates: mockUpdateData,
       });
 
@@ -247,41 +235,82 @@ describe("useCharacters hooks", () => {
 
       expect(result.current.error).toBe(error);
     });
+
+    it('invalidates the paged list view so stale rows refresh after an update (FE-INVAL-1, task-117)', async () => {
+      mockCharactersService.update.mockResolvedValue(undefined);
+
+      const queryClient = new QueryClient({
+        defaultOptions: {
+          queries: { retry: false },
+          mutations: { retry: false },
+        },
+      });
+      const TestWrapper = ({ children }: { children: ReactNode }) => (
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      );
+      TestWrapper.displayName = 'TestWrapper';
+
+      // Seed the cache the way useCharactersPage would after the Characters
+      // list view has fetched a page.
+      const pagedKey = characterKeys.pagedList(mockTenant, 1, 20);
+      const pagedData: PagedResult<Character> = {
+        data: [mockCharacter],
+        meta: { total: 1, page: { number: 1, size: 20, last: 1 } },
+      };
+      queryClient.setQueryData(pagedKey, pagedData);
+      expect(queryClient.getQueryState(pagedKey)?.isInvalidated).toBe(false);
+
+      const { result } = renderHook(() => useUpdateCharacter(), { wrapper: TestWrapper });
+
+      result.current.mutate({
+        tenant: mockTenant,
+        characterId: 'char-123',
+        updates: mockUpdateData,
+      });
+
+      await waitFor(() => {
+        expect(result.current.isSuccess).toBe(true);
+      });
+
+      // FE-INVAL-1: pagedList used to be a sibling of lists()/list(), so this
+      // invalidation never reached it and the paged view stayed stale until
+      // a manual refresh. Nesting pagedList under lists() (and scoping the
+      // mutation's invalidation to characterKeys.lists() + tenant, not the
+      // options-pinned characterKeys.list()) fixes it.
+      await waitFor(() => {
+        expect(queryClient.getQueryState(pagedKey)?.isInvalidated).toBe(true);
+      });
+    });
   });
 
-  describe("Utility hooks", () => {
-    describe("useInvalidateCharacters", () => {
-      it("should provide invalidation functions", () => {
-        const wrapper = createWrapper();
-        const { result } = renderHook(() => useInvalidateCharacters(), {
-          wrapper,
-        });
 
-        expect(typeof result.current.invalidateAll).toBe("function");
-        expect(typeof result.current.invalidateList).toBe("function");
-        expect(typeof result.current.invalidateCharacter).toBe("function");
+  describe('Utility hooks', () => {
+    describe('useInvalidateCharacters', () => {
+      it('should provide invalidation functions', () => {
+        const wrapper = createWrapper();
+        const { result } = renderHook(() => useInvalidateCharacters(), { wrapper });
+
+        expect(typeof result.current.invalidateAll).toBe('function');
+        expect(typeof result.current.invalidateList).toBe('function');
+        expect(typeof result.current.invalidateCharacter).toBe('function');
       });
     });
 
-    describe("usePrefetchCharacters", () => {
-      it("should provide prefetch function", () => {
+    describe('usePrefetchCharacters', () => {
+      it('should provide prefetch function', () => {
         const wrapper = createWrapper();
-        const { result } = renderHook(() => usePrefetchCharacters(), {
-          wrapper,
-        });
+        const { result } = renderHook(() => usePrefetchCharacters(), { wrapper });
 
-        expect(typeof result.current).toBe("function");
+        expect(typeof result.current).toBe('function');
       });
     });
 
-    describe("usePrefetchCharacter", () => {
-      it("should provide prefetch character function", () => {
+    describe('usePrefetchCharacter', () => {
+      it('should provide prefetch character function', () => {
         const wrapper = createWrapper();
-        const { result } = renderHook(() => usePrefetchCharacter(), {
-          wrapper,
-        });
+        const { result } = renderHook(() => usePrefetchCharacter(), { wrapper });
 
-        expect(typeof result.current).toBe("function");
+        expect(typeof result.current).toBe('function');
       });
     });
   });

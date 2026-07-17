@@ -1,8 +1,8 @@
 package monster
 
 import (
-	"atlas-monsters/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"time"
 
 	"github.com/sirupsen/logrus"

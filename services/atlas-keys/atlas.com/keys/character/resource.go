@@ -4,15 +4,16 @@ import (
 	"atlas-keys/key"
 	"atlas-keys/rest"
 	"net/http"
+	"sort"
 
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 const (
@@ -71,6 +72,12 @@ func handleGetKeyMap(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
+				page, err := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+				if err != nil {
+					server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+					return
+				}
+
 				processor := key.NewProcessor(d.Logger(), d.Context(), db)
 				ks, err := processor.GetByCharacterId(characterId)
 				if err != nil {
@@ -78,14 +85,29 @@ func handleGetKeyMap(db *gorm.DB) rest.GetHandler {
 					return
 				}
 
-				res, err := model.SliceMap(key.Transform)(model.FixedProvider(ks))()()
+				// The keys table has a composite primary key (character_id, key),
+				// neither column auto-incrementing, so database.PagedQuery cannot
+				// derive a single ORDER BY column (GORM's PrioritizedPrimaryField is
+				// nil for a true composite key). The keymap is bounded (~90 rows,
+				// far under the 250 cap) so it is cheap to materialize in full via
+				// the existing GetByCharacterId, sort deterministically by Key
+				// (unique within a character), then paginate.Slice in-process.
+				sorted := make([]key.Model, len(ks))
+				copy(sorted, ks)
+				sort.SliceStable(sorted, func(i, j int) bool {
+					return sorted[i].Key() < sorted[j].Key()
+				})
+
+				paged := paginate.Slice(sorted, page)
+
+				res, err := model.SliceMap(key.Transform)(model.FixedProvider(paged.Items))()()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
 					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
-				server.MarshalResponse[[]key.RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
+				server.MarshalPaginatedResponse[[]key.RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res, paginate.EnvelopeFor(paged), r)
 			}
 		})
 	}

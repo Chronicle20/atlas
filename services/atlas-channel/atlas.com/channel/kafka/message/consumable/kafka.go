@@ -16,6 +16,7 @@ const (
 
 	CommandRequestItemConsume   = "REQUEST_ITEM_CONSUME"
 	CommandRequestScroll        = "REQUEST_SCROLL"
+	CommandRequestItemReward    = "REQUEST_ITEM_REWARD"
 	CommandRequestVegaScroll    = "REQUEST_VEGA_SCROLL"
 	CommandRequestViciousHammer = "REQUEST_VICIOUS_HAMMER"
 )
@@ -34,6 +35,11 @@ type RequestItemConsumeBody struct {
 	Source   slot.Position `json:"source"`
 	ItemId   item.Id       `json:"itemId"`
 	Quantity int16         `json:"quantity"`
+}
+
+type RequestItemRewardBody struct {
+	Source slot.Position `json:"source"`
+	ItemId item.Id       `json:"itemId"`
 }
 
 type RequestScrollBody struct {
@@ -62,7 +68,11 @@ const (
 	EventTypeVegaScroll    = "VEGA_SCROLL"
 	EventTypeViciousHammer = "VICIOUS_HAMMER"
 
+	EventTypeRewardEffect = "REWARD_EFFECT"
+	EventTypeRewardWon    = "REWARD_WON"
+
 	ErrorTypePetCannotConsume = "PET_CANNOT_CONSUME"
+	ErrorTypeInventoryFull    = "INVENTORY_FULL"
 	ErrorTypeVegaInvalid      = "VEGA_INVALID"
 )
 
@@ -81,6 +91,17 @@ type ScrollBody struct {
 	Cursed          bool `json:"cursed"`
 	LegendarySpirit bool `json:"legendarySpirit"`
 	WhiteScroll     bool `json:"whiteScroll"`
+}
+
+type RewardEffectBody struct {
+	BoxItemId uint32 `json:"boxItemId"`
+	Effect    string `json:"effect"`
+}
+
+type RewardWonBody struct {
+	BoxItemId uint32 `json:"boxItemId"`
+	ItemId    uint32 `json:"itemId"`
+	Message   string `json:"message"`
 }
 
 type VegaScrollBody struct {

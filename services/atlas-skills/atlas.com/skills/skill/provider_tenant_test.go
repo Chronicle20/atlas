@@ -4,17 +4,17 @@ import (
 	"testing"
 	"time"
 
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
-
-	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 )
 
 // newSkillTenantDB seeds two skill rows in two tenants sharing the same
 // CharacterId. The PK is the skill Id itself, so the two rows must use
-// different Ids; tenant scoping is asserted via getByCharacterId scoping
+// different Ids; tenant scoping is asserted via getByCharacterIdPaged scoping
 // each tenant to only its own row.
 func newSkillTenantDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID) {
 	t.Helper()
@@ -34,18 +34,19 @@ func newSkillTenantDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID) {
 
 func TestSkillProvider_GetByCharacterId_FiltersByTenant(t *testing.T) {
 	db, tidA, tidB := newSkillTenantDB(t)
+	page := model.Page{Number: 1, Size: 250}
 
-	gotA, err := getByCharacterId(500)(db.WithContext(databasetest.TenantContext(tidA)))()
+	gotA, err := getByCharacterIdPaged(500, page)(db.WithContext(databasetest.TenantContext(tidA)))()
 	require.NoError(t, err)
-	require.Len(t, gotA, 1, "tenant A should only see its own skill row")
-	assert.Equal(t, tidA, gotA[0].TenantId)
-	assert.Equal(t, uint32(1001), gotA[0].Id)
+	require.Len(t, gotA.Items, 1, "tenant A should only see its own skill row")
+	assert.Equal(t, tidA, gotA.Items[0].TenantId)
+	assert.Equal(t, uint32(1001), gotA.Items[0].Id)
 
-	gotB, err := getByCharacterId(500)(db.WithContext(databasetest.TenantContext(tidB)))()
+	gotB, err := getByCharacterIdPaged(500, page)(db.WithContext(databasetest.TenantContext(tidB)))()
 	require.NoError(t, err)
-	require.Len(t, gotB, 1, "tenant B should only see its own skill row")
-	assert.Equal(t, tidB, gotB[0].TenantId)
-	assert.Equal(t, uint32(1002), gotB[0].Id)
+	require.Len(t, gotB.Items, 1, "tenant B should only see its own skill row")
+	assert.Equal(t, tidB, gotB.Items[0].TenantId)
+	assert.Equal(t, uint32(1002), gotB.Items[0].Id)
 }
 
 func TestSkillAdministrator_Update_ScopedToTenant(t *testing.T) {

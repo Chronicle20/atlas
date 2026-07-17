@@ -13,3 +13,5 @@ require (
 	github.com/stretchr/testify v1.11.1 // indirect
 	golang.org/x/sys v0.45.0 // indirect
 )
+
+replace github.com/Chronicle20/atlas/libs/atlas-routine => ../atlas-routine

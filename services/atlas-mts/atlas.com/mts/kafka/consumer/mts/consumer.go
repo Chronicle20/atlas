@@ -5,7 +5,6 @@ import (
 	consumer2 "atlas-mts/kafka/consumer"
 	msg "atlas-mts/kafka/message"
 	"atlas-mts/kafka/message/mts"
-	producer2 "atlas-mts/kafka/producer"
 	mtsproducer "atlas-mts/kafka/producer/mts"
 	"atlas-mts/listing"
 	sagaproc "atlas-mts/saga"
@@ -23,7 +22,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
-	kprod "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
@@ -50,25 +49,25 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 		return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 			var t string
 			t, _ = topic.EnvProvider(l)(mts.EnvCommandTopic)()
-			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCreateListing(producer2.ProviderImpl(l))(db)))); err != nil {
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCreateListing(producer.ProviderImpl(l))(db)))); err != nil {
 				return err
 			}
-			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCancelListing(producer2.ProviderImpl(l))(db)))); err != nil {
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCancelListing(producer.ProviderImpl(l))(db)))); err != nil {
 				return err
 			}
-			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleTakeHome(producer2.ProviderImpl(l))(db)))); err != nil {
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleTakeHome(producer.ProviderImpl(l))(db)))); err != nil {
 				return err
 			}
-			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleBuy(producer2.ProviderImpl(l))(db)))); err != nil {
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleBuy(producer.ProviderImpl(l))(db)))); err != nil {
 				return err
 			}
-			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handlePlaceBid(producer2.ProviderImpl(l))(db)))); err != nil {
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handlePlaceBid(producer.ProviderImpl(l))(db)))); err != nil {
 				return err
 			}
-			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRegisterWish(producer2.ProviderImpl(l))(db)))); err != nil {
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRegisterWish(producer.ProviderImpl(l))(db)))); err != nil {
 				return err
 			}
-			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRemoveWish(producer2.ProviderImpl(l))(db)))); err != nil {
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRemoveWish(producer.ProviderImpl(l))(db)))); err != nil {
 				return err
 			}
 			return nil
@@ -77,8 +76,8 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 }
 
 // providerFn is the shape of the per-context producer factory returned by
-// producer2.ProviderImpl(l): func(ctx) func(token) MessageProducer.
-type providerFn = func(ctx context.Context) func(token string) kprod.MessageProducer
+// producer.ProviderImpl(l): func(ctx) func(token) MessageProducer.
+type providerFn = func(ctx context.Context) producer.Provider
 
 // failReasonFor maps a buy/bid rejection error to the SEMANTIC failure key
 // the channel resolves against the tenant "noticeFailReasons" writer table

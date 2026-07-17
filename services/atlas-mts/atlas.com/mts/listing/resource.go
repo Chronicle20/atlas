@@ -165,6 +165,19 @@ func handleBrowseListings(d *rest.HandlerDependency, c *rest.HandlerContext) htt
 		return func(w http.ResponseWriter, r *http.Request) {
 			query := r.URL.Query()
 
+			// Repo-wide standard paging (task-117): page[number] (1-based) /
+			// page[size], parsed via paginate.ParseParams. The default page
+			// size (DefaultPageSize=16) preserves the game's existing 16-per-
+			// page browse window; MaxPageSize(250) lets a semantic-all drain
+			// consumer (requests.DrainProvider) request large pages. Invalid
+			// values (non-integer, <1, >max, or the legacy bare ?limit=) are a
+			// 400, never silently clamped.
+			page, perr := paginate.ParseParams(query, DefaultPageSize, paginate.MaxPageSize)
+			if perr != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+				return
+			}
+
 			f := BrowseFilter{
 				Category:    query.Get("category"),
 				SubCategory: query.Get("subCategory"),
@@ -226,16 +239,14 @@ func handleBrowseListings(d *rest.HandlerDependency, c *rest.HandlerContext) htt
 			if query.Get("excludeOffers") == "true" {
 				f.ExcludeOffers = true
 			}
-			if v := query.Get("page"); v != "" {
-				if page, err := strconv.Atoi(v); err == nil {
-					f.Page = page
-				}
-			}
-			if v := query.Get("pageSize"); v != "" {
-				if pageSize, err := strconv.Atoi(v); err == nil {
-					f.PageSize = pageSize
-				}
-			}
+
+			// Map the 1-based wire page onto the provider's 0-based offset
+			// field: page.Number is always >=1 (ParseParams default/floor),
+			// so f.Page is always >=0 here. A caller sending page[number]=N
+			// gets the identical window a pre-task-117 caller got from
+			// page=N-1 (same Limit/Offset math in getBrowse).
+			f.Page = page.Number - 1
+			f.PageSize = page.Size
 
 			// Public browse only ever shows active listings; sold/cancelled/
 			// expired listings are never surfaced here.
@@ -274,14 +285,10 @@ func handleBrowseListings(d *rest.HandlerDependency, c *rest.HandlerContext) htt
 				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
-			pageSize := f.PageSize
-			if pageSize <= 0 {
-				pageSize = DefaultPageSize
-			}
-			env := paginate.Envelope{Total: int(total), PageNumber: f.Page, PageSize: pageSize}
+			paged := model.Paged[RestModel]{Items: res, Total: int(total), Page: page}
 
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, env, r)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 		}
 	})
 }

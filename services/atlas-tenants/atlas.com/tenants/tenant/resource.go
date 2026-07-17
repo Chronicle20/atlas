@@ -4,23 +4,29 @@ import (
 	"atlas-tenants/rest"
 	"net/http"
 
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 // GetAllTenantsHandler handles GET /tenants
 func GetAllTenantsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
+			page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+				return
+			}
+
 			processor := NewProcessor(d.Logger(), d.Context(), db)
 
-			restModels, err := model.SliceMap(Transform)(processor.AllProvider())(model.ParallelMap())()
+			paged, err := model.MapPaged(Transform)(processor.AllProvider(page))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Error("Failed to transform tenant")
 				server.WriteErrorResponse(d.Logger())(w)(err)
@@ -29,7 +35,7 @@ func GetAllTenantsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restModels)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(paged.Items, paginate.EnvelopeFor(paged), r)
 		}
 	}
 }

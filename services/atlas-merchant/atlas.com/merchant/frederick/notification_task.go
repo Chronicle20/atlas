@@ -2,7 +2,6 @@ package frederick
 
 import (
 	merchant "atlas-merchant/kafka/message/merchant"
-	producer2 "atlas-merchant/kafka/producer"
 	"context"
 	"time"
 
@@ -65,7 +64,7 @@ func (t *NotificationTask) Run() {
 		}
 		tctx := tenant.WithContext(t.ctx, ten)
 
-		kp := producer2.ProviderImpl(t.l)(tctx)
+		kp := producer.ProviderImpl(t.l)(tctx)
 		_ = kp(merchant.EnvStatusEventTopic)(notificationProvider(n.CharacterId, n.NextDay))
 
 		next, hasNext := nextTier(n.NextDay)

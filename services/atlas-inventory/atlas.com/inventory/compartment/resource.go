@@ -24,6 +24,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r := router.PathPrefix("/characters/{characterId}/inventory/compartments").Subrouter()
 			r.HandleFunc("/{compartmentId}", registerGet("get_compartment", handleGetCompartment(db))).Methods(http.MethodGet)
 			r.HandleFunc("", registerGet("get_compartment_by_type", handleGetCompartmentByType(db))).Methods(http.MethodGet)
+			router.HandleFunc("/characters/{characterId}/inventory/accommodation", rest.RegisterInputHandler[AccommodationInputRestModel](l)(si)("check_accommodation", handleCheckAccommodation(db))).Methods(http.MethodPost)
 		}
 	}
 }

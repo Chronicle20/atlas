@@ -4,9 +4,8 @@ import (
 	"atlas-tenants/kafka/message"
 	"atlas-tenants/tenant"
 
-	"github.com/google/uuid"
-
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/google/uuid"
 )
 
 // Compile-time interface compliance check
@@ -14,16 +13,15 @@ var _ tenant.Processor = (*ProcessorMock)(nil)
 
 // ProcessorMock is a mock implementation of the tenant.Processor interface
 type ProcessorMock struct {
-	CreateFunc        func(mb *message.Buffer) func(name string, region string, majorVersion uint16, minorVersion uint16) (tenant.Model, error)
+	CreateFunc       func(mb *message.Buffer) func(name string, region string, majorVersion uint16, minorVersion uint16) (tenant.Model, error)
 	CreateAndEmitFunc func(name string, region string, majorVersion uint16, minorVersion uint16) (tenant.Model, error)
-	UpdateFunc        func(mb *message.Buffer) func(id uuid.UUID, name string, region string, majorVersion uint16, minorVersion uint16) (tenant.Model, error)
+	UpdateFunc       func(mb *message.Buffer) func(id uuid.UUID, name string, region string, majorVersion uint16, minorVersion uint16) (tenant.Model, error)
 	UpdateAndEmitFunc func(id uuid.UUID, name string, region string, majorVersion uint16, minorVersion uint16) (tenant.Model, error)
-	DeleteFunc        func(mb *message.Buffer) func(id uuid.UUID) error
+	DeleteFunc       func(mb *message.Buffer) func(id uuid.UUID) error
 	DeleteAndEmitFunc func(id uuid.UUID) error
-	GetByIdFunc       func(id uuid.UUID) (tenant.Model, error)
-	GetAllFunc        func() ([]tenant.Model, error)
-	ByIdProviderFunc  func(id uuid.UUID) model.Provider[tenant.Model]
-	AllProviderFunc   func() model.Provider[[]tenant.Model]
+	GetByIdFunc      func(id uuid.UUID) (tenant.Model, error)
+	ByIdProviderFunc func(id uuid.UUID) model.Provider[tenant.Model]
+	AllProviderFunc  func(page model.Page) model.Provider[model.Paged[tenant.Model]]
 }
 
 // Create is a mock implementation
@@ -88,14 +86,6 @@ func (m *ProcessorMock) GetById(id uuid.UUID) (tenant.Model, error) {
 	return tenant.Model{}, nil
 }
 
-// GetAll is a mock implementation
-func (m *ProcessorMock) GetAll() ([]tenant.Model, error) {
-	if m.GetAllFunc != nil {
-		return m.GetAllFunc()
-	}
-	return []tenant.Model{}, nil
-}
-
 // ByIdProvider is a mock implementation
 func (m *ProcessorMock) ByIdProvider(id uuid.UUID) model.Provider[tenant.Model] {
 	if m.ByIdProviderFunc != nil {
@@ -107,11 +97,11 @@ func (m *ProcessorMock) ByIdProvider(id uuid.UUID) model.Provider[tenant.Model] 
 }
 
 // AllProvider is a mock implementation
-func (m *ProcessorMock) AllProvider() model.Provider[[]tenant.Model] {
+func (m *ProcessorMock) AllProvider(page model.Page) model.Provider[model.Paged[tenant.Model]] {
 	if m.AllProviderFunc != nil {
-		return m.AllProviderFunc()
+		return m.AllProviderFunc(page)
 	}
-	return func() ([]tenant.Model, error) {
-		return []tenant.Model{}, nil
+	return func() (model.Paged[tenant.Model], error) {
+		return model.Paged[tenant.Model]{Page: page}, nil
 	}
 }

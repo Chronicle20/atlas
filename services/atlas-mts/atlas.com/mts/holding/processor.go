@@ -43,7 +43,6 @@ const (
 // Processor exposes the REST-facing operations over take-home holdings plus the
 // take-home initiation flow (TakeHome).
 type Processor interface {
-	GetAll() model.Provider[[]Model]
 	GetById(id string) (Model, error)
 	// GetBySerial resolves a holding by its per-(tenant, world) ITC serial (the
 	// client's nITCSN). It is the resolver the channel take-home ITC_OPERATION arm
@@ -52,6 +51,12 @@ type Processor interface {
 	Create(m Model) (Model, error)
 	GetByOwner(worldId world.Id, ownerId uint32) ([]Model, error)
 	GetByCharacter(ownerId uint32) ([]Model, error)
+	// ByOwnerPagedProvider returns one page of a character's holdings in a world
+	// (the REST list handler's ?worldId= branch, task-117).
+	ByOwnerPagedProvider(worldId world.Id, ownerId uint32, page model.Page) model.Provider[model.Paged[Model]]
+	// ByCharacterPagedProvider returns one page of a character's holdings across
+	// worlds (the REST list handler's unscoped branch, task-117).
+	ByCharacterPagedProvider(ownerId uint32, page model.Page) model.Provider[model.Paged[Model]]
 	// TakeHome initiates the owner's withdrawal of a holding into inventory by
 	// emitting a WithdrawFromMts saga keyed by a fresh transaction id. It returns
 	// that transaction id. It does NOT soft-delete the holding row directly — the
@@ -94,10 +99,6 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, opts .
 	return p
 }
 
-func (p *ProcessorImpl) GetAll() model.Provider[[]Model] {
-	return model.SliceMap(modelFromEntity)(getAll()(p.db.WithContext(p.ctx)))()
-}
-
 func (p *ProcessorImpl) GetById(id string) (Model, error) {
 	return GetById(id)(p.db.WithContext(p.ctx))()
 }
@@ -123,6 +124,16 @@ func (p *ProcessorImpl) GetByOwner(worldId world.Id, ownerId uint32) ([]Model, e
 // signature mirrors the getByCharacter provider exactly.
 func (p *ProcessorImpl) GetByCharacter(ownerId uint32) ([]Model, error) {
 	return model.SliceMap(modelFromEntity)(getByCharacter(ownerId)(p.db.WithContext(p.ctx)))()()
+}
+
+// ByOwnerPagedProvider returns one page of a character's holdings in a world.
+func (p *ProcessorImpl) ByOwnerPagedProvider(worldId world.Id, ownerId uint32, page model.Page) model.Provider[model.Paged[Model]] {
+	return model.MapPaged(modelFromEntity)(getByOwnerPaged(worldId, ownerId, page)(p.db.WithContext(p.ctx)))(model.ParallelMap())
+}
+
+// ByCharacterPagedProvider returns one page of a character's holdings across worlds.
+func (p *ProcessorImpl) ByCharacterPagedProvider(ownerId uint32, page model.Page) model.Provider[model.Paged[Model]] {
+	return model.MapPaged(modelFromEntity)(getByCharacterPaged(ownerId, page)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }
 
 // TakeHome is the server-authoritative take-home initiation flow. It builds and

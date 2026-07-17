@@ -22,8 +22,6 @@ import (
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"

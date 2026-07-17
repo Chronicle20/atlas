@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type DefaultValues } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -26,7 +26,10 @@ export function PoolItemDialog({ open, onOpenChange, kind, poolId, item }: PoolI
   const weighted = kind === "incubator";
   const schema = weighted ? weightItemSchema : tierItemSchema;
 
-  const defaultValues: TierItemFormData | WeightItemFormData = item
+  // Create mode leaves the numeric fields blank (keys omitted, so RHF starts
+  // them as undefined); DefaultValues<T> makes that representable under
+  // exactOptionalPropertyTypes, where the exact z.infer type would force 0s.
+  const defaultValues: DefaultValues<TierItemFormData | WeightItemFormData> = item
     ? {
         itemId: item.attributes.itemId,
         quantity: item.attributes.quantity,
@@ -35,8 +38,8 @@ export function PoolItemDialog({ open, onOpenChange, kind, poolId, item }: PoolI
           : { tier: (item.attributes.tier || "common") as "common" | "uncommon" | "rare" }),
       }
     : weighted
-      ? { itemId: 0, quantity: 0, weight: 0 }
-      : { itemId: 0, quantity: 0, tier: "common" as const };
+      ? {}
+      : { tier: "common" as const };
 
   const form = useForm<TierItemFormData | WeightItemFormData>({
     resolver: zodResolver(schema),

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type DefaultValues } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -49,10 +49,13 @@ export function PoolFormDialog({ open, onOpenChange, mode, pool }: PoolFormDialo
         }
       : { name: "", npcIds: [], commonWeight: 70, uncommonWeight: 25, rareWeight: 5 };
 
-  const incubatorDefaults: IncubatorPoolFormData =
+  // Create mode leaves eggItemId/successNpcId blank (keys omitted, so RHF
+  // starts them as undefined); DefaultValues<T> makes that representable under
+  // exactOptionalPropertyTypes, where the exact z.infer type would force 0s.
+  const incubatorDefaults: DefaultValues<IncubatorPoolFormData> =
     pool && pool.attributes.kind === "incubator"
       ? { eggItemId: Number(pool.id), name: pool.attributes.name, successNpcId: pool.attributes.npcIds[0] ?? 0 }
-      : { eggItemId: 0, name: "", successNpcId: 0 };
+      : { name: "" };
 
   const gachaponForm = useForm<GachaponPoolFormData>({
     resolver: zodResolver(gachaponPoolSchema),

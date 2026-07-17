@@ -474,6 +474,11 @@ location ~ ^/api/notes(/.*)?$ {
   proxy_pass http://$u$request_uri;
 }
 
+location ~ ^/api/rankings(/.*)?$ {
+  set $u "atlas-rankings.${POD_NAMESPACE}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
 location ~ ^/api/shops(/.*)?$ {
   set $u "atlas-npc-shops.${POD_NAMESPACE}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;

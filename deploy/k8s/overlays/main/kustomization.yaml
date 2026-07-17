@@ -288,6 +288,8 @@ images:
     newTag: main-fdbd4c4
   - name: ghcr.io/chronicle20/atlas-quest/atlas-quest
     newTag: main-fdbd4c4
+  - name: ghcr.io/chronicle20/atlas-rankings/atlas-rankings
+    newTag: main-fdbd4c4
   - name: ghcr.io/chronicle20/atlas-rates/atlas-rates
     newTag: main-43ad7c8
   - name: ghcr.io/chronicle20/atlas-reactor-actions/atlas-reactor-actions

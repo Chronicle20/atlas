@@ -81,6 +81,7 @@ go_services = [
   "atlas-portals",
   "atlas-query-aggregator",
   "atlas-quest",
+  "atlas-rankings",
   "atlas-rates",
   "atlas-reactor-actions",
   "atlas-reactors",

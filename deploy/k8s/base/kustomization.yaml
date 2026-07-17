@@ -52,6 +52,7 @@ resources:
   - atlas-portals.yaml
   - atlas-query-aggregator.yaml
   - atlas-quest.yaml
+  - atlas-rankings.yaml
   - atlas-rates.yaml
   - atlas-renders.yaml
   - atlas-reactor-actions.yaml

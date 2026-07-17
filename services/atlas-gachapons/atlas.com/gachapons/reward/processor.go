@@ -49,7 +49,7 @@ func (p *ProcessorImpl) SelectReward(gachaponId string) (Model, error) {
 	var tier string
 	var pool []poolItem
 
-	if g.Kind() == "incubator" {
+	if g.Kind() == gachapon.KindIncubator {
 		// Incubator machines draw from the whole machine's item set,
 		// across every tier, weighted by item.Weight — never the tiered
 		// selectTier roll, and never the shared global pool.

@@ -2,15 +2,25 @@ package gachapon
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/google/uuid"
+)
+
+// KindGachapon and KindIncubator are the closed union of valid Kind values
+// for a gachapon machine: the classic tiered reward pool, and the Pigmy Egg
+// incubator pool. Every comparison against a machine's Kind must reference
+// one of these constants rather than a bare string literal.
+const (
+	KindGachapon  = "gachapon"
+	KindIncubator = "incubator"
 )
 
 // DefaultKind is the Kind a gachapon machine reports when the builder's
 // SetKind is never called — the classic tiered reward pool. Existing rows
 // (seeded before Kind existed) and existing callers that never mention Kind
 // must continue to read this value.
-const DefaultKind = "gachapon"
+const DefaultKind = KindGachapon
 
 type Builder struct {
 	tenantId       uuid.UUID
@@ -63,6 +73,9 @@ func (b *Builder) Build() (Model, error) {
 	}
 	if b.id == "" {
 		return Model{}, errors.New("id cannot be empty")
+	}
+	if b.kind != KindGachapon && b.kind != KindIncubator {
+		return Model{}, fmt.Errorf("gachapon: invalid kind %q", b.kind)
 	}
 	return Model{
 		tenantId:       b.tenantId,

@@ -9,98 +9,76 @@ import (
 func TestBuilderValidation(t *testing.T) {
 	tenantId := test.TestTenantId
 
-	t.Run("valid tier common", func(t *testing.T) {
-		_, err := item.NewBuilder(tenantId, 0).
-			SetGachaponId("gachapon-1").
-			SetItemId(1000).
-			SetQuantity(1).
-			SetTier("common").
-			Build()
-		if err != nil {
-			t.Errorf("Expected no error for valid tier 'common', got: %v", err)
-		}
-	})
+	tests := []struct {
+		name    string
+		tier    string
+		wantErr bool
+	}{
+		{name: "valid tier common", tier: "common", wantErr: false},
+		{name: "valid tier uncommon", tier: "uncommon", wantErr: false},
+		{name: "valid tier rare", tier: "rare", wantErr: false},
+		{name: "invalid tier", tier: "invalid", wantErr: true},
+		{name: "empty tier", tier: "", wantErr: true},
+	}
 
-	t.Run("valid tier uncommon", func(t *testing.T) {
-		_, err := item.NewBuilder(tenantId, 0).
-			SetGachaponId("gachapon-1").
-			SetItemId(1000).
-			SetQuantity(1).
-			SetTier("uncommon").
-			Build()
-		if err != nil {
-			t.Errorf("Expected no error for valid tier 'uncommon', got: %v", err)
-		}
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := item.NewBuilder(tenantId, 0).
+				SetGachaponId("gachapon-1").
+				SetItemId(1000).
+				SetQuantity(1).
+				SetTier(tt.tier).
+				Build()
 
-	t.Run("valid tier rare", func(t *testing.T) {
-		_, err := item.NewBuilder(tenantId, 0).
-			SetGachaponId("gachapon-1").
-			SetItemId(1000).
-			SetQuantity(1).
-			SetTier("rare").
-			Build()
-		if err != nil {
-			t.Errorf("Expected no error for valid tier 'rare', got: %v", err)
-		}
-	})
-
-	t.Run("invalid tier", func(t *testing.T) {
-		_, err := item.NewBuilder(tenantId, 0).
-			SetGachaponId("gachapon-1").
-			SetItemId(1000).
-			SetQuantity(1).
-			SetTier("invalid").
-			Build()
-		if err == nil {
-			t.Error("Expected error for invalid tier, got nil")
-		}
-	})
-
-	t.Run("empty tier", func(t *testing.T) {
-		_, err := item.NewBuilder(tenantId, 0).
-			SetGachaponId("gachapon-1").
-			SetItemId(1000).
-			SetQuantity(1).
-			SetTier("").
-			Build()
-		if err == nil {
-			t.Error("Expected error for empty tier, got nil")
-		}
-	})
+			if tt.wantErr && err == nil {
+				t.Errorf("Expected error for tier %q, got nil", tt.tier)
+			}
+			if !tt.wantErr && err != nil {
+				t.Errorf("Expected no error for tier %q, got: %v", tt.tier, err)
+			}
+		})
+	}
 }
 
 func TestBuilderWeight(t *testing.T) {
 	tenantId := test.TestTenantId
 
-	t.Run("defaults to 0 when SetWeight is never called", func(t *testing.T) {
-		m, err := item.NewBuilder(tenantId, 0).
-			SetGachaponId("gachapon-1").
-			SetItemId(1000).
-			SetQuantity(1).
-			SetTier("common").
-			Build()
-		if err != nil {
-			t.Fatalf("Build() returned error: %v", err)
-		}
-		if m.Weight() != 0 {
-			t.Errorf("Expected default Weight() = 0, got %d", m.Weight())
-		}
-	})
+	tests := []struct {
+		name       string
+		setWeight  bool
+		weight     uint32
+		wantWeight uint32
+	}{
+		{
+			name:       "defaults to 0 when SetWeight is never called",
+			setWeight:  false,
+			wantWeight: 0,
+		},
+		{
+			name:       "SetWeight overrides the default",
+			setWeight:  true,
+			weight:     50,
+			wantWeight: 50,
+		},
+	}
 
-	t.Run("SetWeight overrides the default", func(t *testing.T) {
-		m, err := item.NewBuilder(tenantId, 0).
-			SetGachaponId("gachapon-1").
-			SetItemId(1000).
-			SetQuantity(1).
-			SetTier("common").
-			SetWeight(50).
-			Build()
-		if err != nil {
-			t.Fatalf("Build() returned error: %v", err)
-		}
-		if m.Weight() != 50 {
-			t.Errorf("Expected Weight() = 50, got %d", m.Weight())
-		}
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b := item.NewBuilder(tenantId, 0).
+				SetGachaponId("gachapon-1").
+				SetItemId(1000).
+				SetQuantity(1).
+				SetTier("common")
+			if tt.setWeight {
+				b = b.SetWeight(tt.weight)
+			}
+			m, err := b.Build()
+			if err != nil {
+				t.Fatalf("Build() returned error: %v", err)
+			}
+			if m.Weight() != tt.wantWeight {
+				t.Errorf("Expected Weight() = %d, got %d", tt.wantWeight, m.Weight())
+			}
+		})
+	}
 }

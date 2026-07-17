@@ -120,6 +120,10 @@ func restoreInner(db *gorm.DB, mc *minio.Client, _ logrus.FieldLogger) func(d *r
 					http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 					return
 				}
+				if errors.Is(err, ErrRestoreInProgress) {
+					http.Error(w, err.Error(), http.StatusConflict)
+					return
+				}
 				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}

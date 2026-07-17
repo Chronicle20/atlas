@@ -13,7 +13,6 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 	"math"
-	"math/rand"
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
@@ -269,17 +268,9 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 				announceFailure(0)
 				return
 			}
-			rewards, err := incubator.NewProcessor(l, ctx).GetRewardsForEgg(eggId)
-			if err != nil || len(rewards) == 0 {
-				l.Warnf("Character [%d] used incubator on egg [%d] with no reward pool.", s.CharacterId(), eggId)
-				announceFailure(eggId)
-				return
-			}
-			reward, ok := incubator.PickWeighted(rewards, func(total uint32) uint32 {
-				return uint32(rand.Intn(int(total)))
-			})
-			if !ok {
-				l.Warnf("Character [%d] used incubator but reward pool has zero weight.", s.CharacterId())
+			reward, err := incubator.NewProcessor(l, ctx).SelectReward(eggId)
+			if err != nil {
+				l.WithError(err).Warnf("Character [%d] used incubator on egg [%d]; no reward selected.", s.CharacterId(), eggId)
 				announceFailure(eggId)
 				return
 			}

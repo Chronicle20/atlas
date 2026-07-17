@@ -20,54 +20,65 @@ func newTestTenant(t *testing.T) tenant.Model {
 	return tm
 }
 
-// TestGetRewards_RoundTrip stands up an httptest server returning a canned
-// incubator-rewards JSON:API document and asserts NewProcessor.GetRewards
-// decodes it via requestRewards + Extract into a populated []Reward. It also
-// guards the documented quantity 0->1 default: the second reward entry omits
-// quantity and must come back as 1, not 0.
-func TestGetRewards_RoundTrip(t *testing.T) {
-	tm := newTestTenant(t)
+// TestSelectReward_RoundTrip stands up an httptest server standing in for
+// atlas-gachapons, asserts NewProcessor.SelectReward POSTs to
+// gachapons/{eggId}/rewards/select (eggId as a path segment, not a query
+// param) and decodes the returned gachapon-rewards resource into a
+// populated Reward.
+func TestSelectReward_RoundTrip(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.True(t, strings.HasSuffix(r.URL.Path, "/tenants/"+tm.Id().String()+"/configurations/incubator-rewards"), "path: %s", r.URL.Path)
+		require.Equal(t, http.MethodPost, r.Method)
+		require.True(t, strings.HasSuffix(r.URL.Path, "/gachapons/4170000/rewards/select"), "path: %s", r.URL.Path)
 		w.Header().Set("Content-Type", "application/vnd.api+json")
 		_, _ = w.Write([]byte(`{
-			"data": [
-				{"type":"incubator-rewards","id":"1","attributes":{"itemId":2000000,"quantity":5,"weight":10,"eggId":4170000}},
-				{"type":"incubator-rewards","id":"2","attributes":{"itemId":2000001,"quantity":0,"weight":20,"eggId":4170001}}
-			]
+			"data": {"type":"gachapon-rewards","id":"2000000","attributes":{"itemId":2000000,"quantity":5,"tier":"common","gachaponId":"4170000"}}
 		}`))
 	}))
 	defer srv.Close()
-	t.Setenv("TENANTS_SERVICE_URL", srv.URL+"/api/")
+	t.Setenv("GACHAPONS_SERVICE_URL", srv.URL+"/api/")
 
+	tm := newTestTenant(t)
 	ctx := tenant.WithContext(context.Background(), tm)
-	rewards, err := NewProcessor(logrus.New(), ctx).GetRewards()
+	reward, err := NewProcessor(logrus.New(), ctx).SelectReward(4170000)
 	require.NoError(t, err)
-	require.Len(t, rewards, 2)
 
-	require.Equal(t, uint32(2000000), rewards[0].ItemId())
-	require.Equal(t, uint32(5), rewards[0].Quantity())
-	require.Equal(t, uint32(10), rewards[0].Weight())
-	require.Equal(t, uint32(4170000), rewards[0].EggId(), "eggId must round-trip through requestRewards + Extract")
-
-	require.Equal(t, uint32(2000001), rewards[1].ItemId())
-	require.Equal(t, uint32(1), rewards[1].Quantity(), "quantity 0 must default to 1")
-	require.Equal(t, uint32(20), rewards[1].Weight())
-	require.Equal(t, uint32(4170001), rewards[1].EggId(), "eggId must round-trip through requestRewards + Extract")
+	require.Equal(t, uint32(2000000), reward.ItemId())
+	require.Equal(t, uint32(5), reward.Quantity())
 }
 
-// TestGetRewards_InfrastructureError verifies a 5xx from atlas-tenants
-// surfaces as a non-nil error rather than being silently swallowed into an
-// empty reward pool.
-func TestGetRewards_InfrastructureError(t *testing.T) {
+// TestSelectReward_QuantityDefaultsToOne guards the documented quantity
+// 0->1 default when atlas-gachapons omits quantity.
+func TestSelectReward_QuantityDefaultsToOne(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/vnd.api+json")
+		_, _ = w.Write([]byte(`{
+			"data": {"type":"gachapon-rewards","id":"2000001","attributes":{"itemId":2000001,"tier":"rare","gachaponId":"4170000"}}
+		}`))
+	}))
+	defer srv.Close()
+	t.Setenv("GACHAPONS_SERVICE_URL", srv.URL+"/api/")
+
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	reward, err := NewProcessor(logrus.New(), ctx).SelectReward(4170000)
+	require.NoError(t, err)
+
+	require.Equal(t, uint32(2000001), reward.ItemId())
+	require.Equal(t, uint32(1), reward.Quantity(), "quantity 0 must default to 1")
+}
+
+// TestSelectReward_InfrastructureError verifies a 5xx from atlas-gachapons
+// surfaces as a non-nil error rather than being silently swallowed into a
+// zero-value reward.
+func TestSelectReward_InfrastructureError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}))
 	defer srv.Close()
-	t.Setenv("TENANTS_SERVICE_URL", srv.URL+"/api/")
+	t.Setenv("GACHAPONS_SERVICE_URL", srv.URL+"/api/")
 
 	tm := newTestTenant(t)
 	ctx := tenant.WithContext(context.Background(), tm)
-	_, err := NewProcessor(logrus.New(), ctx).GetRewards()
+	_, err := NewProcessor(logrus.New(), ctx).SelectReward(4170000)
 	require.Error(t, err)
 }

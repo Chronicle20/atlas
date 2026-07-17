@@ -5,7 +5,7 @@
     "gms_v61": "b1111abee79b6b10cf1a05305e3c4a7707819f6862a80314c0b2ebce424852f7",
     "gms_v72": "ad7f0800d7560bca21baba98f5116103094c20f991781829ffa65b37db9d963b",
     "gms_v79": "ccb6069530dad5014ec311b23540f79cfb1e9dd46fc3c681a34948edbe21e790",
-    "gms_v83": "3397a66fafdd738100c4dc54715180bae3eb4ce1a68490d812e3b57bf29eb772",
+    "gms_v83": "916a27b17b8a722af2095816143fd8020141eefb17240ef0052635918afa168f",
     "gms_v84": "16aa06642a2e9175bffbf157617fec25d6e7f0e213b8e296be83227c31f95cba",
     "gms_v87": "3889fe313c39c73d945937bb0b823bdc3100788dfdbdafcdadc615a3665b2de8",
     "gms_v95": "d33bdcf3b527f1a8d726dd0113a241737cef5a221e21bfdafda410cad567bd5b",
@@ -4652,8 +4652,9 @@
     {
       "kind": "op",
       "op": "MAP_TRANSFER_RESULT",
+      "packet": "teleportrock/clientbound/MapTransferError",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CWvsContext::OnMapTransferResult"
       ],
@@ -4679,8 +4680,7 @@
           "opcode": 39
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 42
         },
         "gms_v84": {
@@ -11956,8 +11956,9 @@
     {
       "kind": "op",
       "op": "USE_TELEPORT_ROCK",
+      "packet": "teleportrock/serverbound/Use",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CWvsContext::SendMapTransferItemUseRequest"
       ],
@@ -11979,8 +11980,7 @@
           "opcode": -1
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 84
         },
         "gms_v84": {
@@ -14449,6 +14449,7 @@
     {
       "kind": "op",
       "op": "TROCK_ADD_MAP",
+      "packet": "teleportrock/serverbound/AddMap",
       "direction": "serverbound",
       "tier1": false,
       "fnames": [
@@ -14474,8 +14475,7 @@
           "opcode": -1
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 102
         },
         "gms_v84": {
@@ -40537,6 +40537,57 @@
     {
       "kind": "sub-struct",
       "packet": "cash/serverbound/CashItemUsePointReset",
+      "tier1": true,
+      "cells": {
+        "gms_v48": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v84": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v87": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v95": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "sub-struct",
+      "packet": "cash/serverbound/CashItemUseTeleportRock",
       "tier1": true,
       "cells": {
         "gms_v48": {

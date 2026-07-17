@@ -10,9 +10,15 @@ export interface ChanceRow {
   excluded: boolean;
 }
 
+/**
+ * Incubator pools: weight / Σweight. When no item declares a weight
+ * (Σweight = 0), the server's selectItem falls back to a uniform pick,
+ * so a non-empty zero-total pool yields 1/N per item. Empty pool → empty map.
+ */
 export function incubatorChances(items: { id: string; weight: number }[]): Map<string, number> {
+  if (items.length === 0) return new Map();
   const total = items.reduce((s, i) => s + i.weight, 0);
-  return new Map(items.map((i) => [i.id, total > 0 ? i.weight / total : 0]));
+  return new Map(items.map((i) => [i.id, total > 0 ? i.weight / total : 1 / items.length]));
 }
 
 export function gachaponChances(

@@ -7,9 +7,18 @@ describe("incubatorChances", () => {
     expect(m.get("a")).toBeCloseTo(0.75);
     expect(m.get("b")).toBeCloseTo(0.25);
   });
-  it("zero-total pool yields all zeros", () => {
-    const m = incubatorChances([{ id: "a", weight: 0 }]);
-    expect(m.get("a")).toBe(0);
+  it("zero-total pool falls back to uniform 1/N (mirrors server selectItem)", () => {
+    const m = incubatorChances([{ id: "a", weight: 0 }, { id: "b", weight: 0 }]);
+    expect(m.get("a")).toBeCloseTo(0.5);
+    expect(m.get("b")).toBeCloseTo(0.5);
+  });
+  it("empty pool yields empty map", () => {
+    expect(incubatorChances([]).size).toBe(0);
+  });
+  it("weighted pool gives a zero-weight item exactly 0", () => {
+    const m = incubatorChances([{ id: "a", weight: 10 }, { id: "b", weight: 0 }]);
+    expect(m.get("a")).toBeCloseTo(1);
+    expect(m.get("b")).toBe(0);
   });
 });
 

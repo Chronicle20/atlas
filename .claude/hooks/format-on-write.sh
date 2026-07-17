@@ -16,6 +16,11 @@ fp="$(printf '%s' "$input" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
 [ -z "$fp" ] && exit 0
 [ -f "$fp" ] || exit 0
 
+# Fail-open on a non-absolute path: the hook resolves nothing relative to the
+# repo, and dirname-walk on a relative path can spin. First-party Write/Edit
+# always pass an absolute file_path.
+case "$fp" in /*) ;; *) exit 0 ;; esac
+
 ROOT="${CLAUDE_PROJECT_DIR:-$(pwd)}"
 
 case "$fp" in

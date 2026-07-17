@@ -120,6 +120,7 @@ func main() {
 		AddRouteInitializer(character.InitResource(GetServer())(db)).
 		AddRouteInitializer(history.InitResource(GetServer())(db)).
 		AddRouteInitializer(saved_location.InitResource(GetServer())(db)).
+		AddRouteInitializer(teleport_rock.InitResource(GetServer())(db)).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()

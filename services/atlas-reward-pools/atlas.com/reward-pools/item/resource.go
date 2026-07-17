@@ -23,6 +23,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r := router.PathPrefix("/gachapons/{gachaponId}/items").Subrouter()
 			r.HandleFunc("", registerGet("get_gachapon_items", handleGetItems)).Methods(http.MethodGet)
 			r.HandleFunc("", registerInput("create_gachapon_item", handleCreateItem)).Methods(http.MethodPost)
+			r.HandleFunc("/{itemId}", registerInput("update_gachapon_item", handleUpdateItem)).Methods(http.MethodPatch)
 			r.HandleFunc("/{itemId}", registerGet("delete_gachapon_item", handleDeleteItem)).Methods(http.MethodDelete)
 		}
 	}
@@ -92,6 +93,22 @@ func handleCreateItem(d *rest.HandlerDependency, c *rest.HandlerContext, rm Rest
 
 			w.WriteHeader(http.StatusCreated)
 		}
+	})
+}
+
+func handleUpdateItem(d *rest.HandlerDependency, c *rest.HandlerContext, rm RestModel) http.HandlerFunc {
+	return rest.ParseGachaponId(d.Logger(), func(gachaponId string) http.HandlerFunc {
+		return rest.ParseItemId(d.Logger(), func(itemId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				err := NewProcessor(d.Logger(), d.Context(), d.DB()).Update(itemId, rm.ItemId, rm.Quantity, rm.Tier, rm.Weight)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Updating item [%d] for gachapon [%s].", itemId, gachaponId)
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+				w.WriteHeader(http.StatusNoContent)
+			}
+		})
 	})
 }
 

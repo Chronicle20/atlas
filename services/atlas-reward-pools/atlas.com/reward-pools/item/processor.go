@@ -26,6 +26,9 @@ type Processor interface {
 	// sibling of GetByGachaponIdAndTier.
 	GetByGachaponIdAndTierPaged(gachaponId string, tier string, page model.Page) model.Provider[model.Paged[Model]]
 	Create(m Model) error
+	// Update rewrites an item's itemId/quantity/tier/weight in place. The
+	// owning gachapon is never re-parented.
+	Update(id uint32, itemId uint32, quantity uint32, tier string, weight uint32) error
 	Delete(id uint32) error
 	Count() (int64, *time.Time, error)
 }
@@ -62,6 +65,10 @@ func (p *ProcessorImpl) GetByGachaponIdAndTierPaged(gachaponId string, tier stri
 
 func (p *ProcessorImpl) Create(m Model) error {
 	return CreateItem(p.db.WithContext(p.ctx), m)
+}
+
+func (p *ProcessorImpl) Update(id uint32, itemId uint32, quantity uint32, tier string, weight uint32) error {
+	return UpdateItem(p.db.WithContext(p.ctx), id, itemId, quantity, tier, weight)
 }
 
 func (p *ProcessorImpl) Delete(id uint32) error {

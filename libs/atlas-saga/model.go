@@ -26,6 +26,7 @@ const (
 	QuestRestoreItem     Type = "quest_restore_item"
 	PetEvolution         Type = "pet_evolution"
 	PointReset           Type = "point_reset"
+	MegaphoneUse         Type = "megaphone_use"
 )
 
 // Status represents the status of a saga step
@@ -171,6 +172,10 @@ const (
 
 	// Field effect actions
 	FieldEffectWeather Action = "field_effect_weather"
+
+	// Megaphone / world broadcast actions
+	EmitMegaphone         Action = "emit_megaphone"
+	EnqueueWorldBroadcast Action = "enqueue_world_broadcast"
 )
 
 // Saga represents the entire saga transaction.

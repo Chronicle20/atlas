@@ -26,6 +26,12 @@ type (
 	ApplyConsumableEffectPayload = sharedsaga.ApplyConsumableEffectPayload
 	FieldEffectWeatherPayload    = sharedsaga.FieldEffectWeatherPayload
 
+	// Megaphone / world broadcast payload types
+	EmitMegaphonePayload         = sharedsaga.EmitMegaphonePayload
+	EnqueueWorldBroadcastPayload = sharedsaga.EnqueueWorldBroadcastPayload
+	AssetSnapshot                = sharedsaga.AssetSnapshot
+	AvatarSnapshot               = sharedsaga.AvatarSnapshot
+
 	// Storage payload types
 	DepositToStoragePayload     = sharedsaga.DepositToStoragePayload
 	UpdateStorageMesosPayload   = sharedsaga.UpdateStorageMesosPayload
@@ -47,6 +53,7 @@ const (
 	CharacterRespawn     = sharedsaga.CharacterRespawn
 	FieldEffectUse       = sharedsaga.FieldEffectUse
 	PointReset           = sharedsaga.PointReset
+	MegaphoneUse         = sharedsaga.MegaphoneUse
 
 	// Status constants
 	Pending   = sharedsaga.Pending
@@ -75,6 +82,8 @@ const (
 	ApplyConsumableEffect = sharedsaga.ApplyConsumableEffect
 	TransferAP            = sharedsaga.TransferAP
 	TransferSP            = sharedsaga.TransferSP
+	EmitMegaphone         = sharedsaga.EmitMegaphone
+	EnqueueWorldBroadcast = sharedsaga.EnqueueWorldBroadcast
 )
 
 // TransferToCashShopPayload is kept local because CashId is uint64 here

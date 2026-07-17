@@ -15,7 +15,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
@@ -49,7 +48,7 @@ func WeatherCommandProducer(_ logrus.FieldLogger) func(_ context.Context) func(f
 }
 
 func weatherStartCommandProvider(f field.Model, itemId uint32, message string) model.Provider[[]kafka.Message] {
-	key := kafkaProducer.CreateKey(int(f.MapId()))
+	key := producer.CreateKey(int(f.MapId()))
 	value := &mapKafka.Command[mapKafka.WeatherStartCommandBody]{
 		TransactionId: uuid.New(),
 		WorldId:       f.WorldId(),
@@ -63,5 +62,5 @@ func weatherStartCommandProvider(f field.Model, itemId uint32, message string) m
 			DurationMs: 30000,
 		},
 	}
-	return kafkaProducer.SingleMessageProvider(key, value)
+	return producer.SingleMessageProvider(key, value)
 }

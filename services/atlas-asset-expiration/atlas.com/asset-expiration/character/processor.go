@@ -17,7 +17,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 )
 
 type Processor interface {
@@ -142,7 +141,7 @@ func emitStorageExpireCommand(l logrus.FieldLogger, pp producer.Provider, accoun
 			ReplaceMessage: replaceMessage,
 		},
 	}
-	err := pp(asset.EnvCommandTopicStorage)(kafkaProducer.SingleMessageProvider(kafkaProducer.CreateKey(int(assetId)), cmd))
+	err := pp(asset.EnvCommandTopicStorage)(producer.SingleMessageProvider(producer.CreateKey(int(assetId)), cmd))
 	if err != nil {
 		l.WithError(err).Errorf("Failed to emit storage expire command for asset [%d] (template [%d]).", assetId, templateId)
 	} else {
@@ -165,7 +164,7 @@ func emitCashShopExpireCommand(l logrus.FieldLogger, pp producer.Provider, accou
 			ReplaceMessage: replaceMessage,
 		},
 	}
-	err := pp(asset.EnvCommandTopicCashShop)(kafkaProducer.SingleMessageProvider(kafkaProducer.CreateKey(int(assetId)), cmd))
+	err := pp(asset.EnvCommandTopicCashShop)(producer.SingleMessageProvider(producer.CreateKey(int(assetId)), cmd))
 	if err != nil {
 		l.WithError(err).Errorf("Failed to emit cashshop expire command for asset [%d] (template [%d]).", assetId, templateId)
 	} else {
@@ -187,7 +186,7 @@ func emitCompartmentExpireCommand(l logrus.FieldLogger, pp producer.Provider, ch
 			ReplaceMessage: replaceMessage,
 		},
 	}
-	err := pp(asset.EnvCommandTopicCompartment)(kafkaProducer.SingleMessageProvider(kafkaProducer.CreateKey(int(assetId)), cmd))
+	err := pp(asset.EnvCommandTopicCompartment)(producer.SingleMessageProvider(producer.CreateKey(int(assetId)), cmd))
 	if err != nil {
 		l.WithError(err).Errorf("Failed to emit compartment expire command for asset [%d] (template [%d]).", assetId, templateId)
 	} else {

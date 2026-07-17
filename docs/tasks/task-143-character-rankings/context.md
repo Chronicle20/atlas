@@ -25,7 +25,7 @@ Companion to `plan.md`. Key files, decisions, and gotchas an implementer needs; 
 
 ## Load-bearing decisions (from design.md — do not relitigate)
 
-- **REST scan, not Kafka projection.** One `GET /characters` per tenant per cycle (endpoint registered at `character/resource.go:28`, unpaginated — fine at current volumes; task-117 NOT a prerequisite).
+- **REST scan, not Kafka projection.** One logical `GET /characters` per tenant per cycle. **Correction (found during implementation, task-143):** this endpoint is in fact **paginated** (`handleGetCharacters` → `paginate.ParseParams(..., DefaultPageSize=50, ...)`), not unpaginated as originally written here. The rankings character client therefore drains all pages via `requests.DrainProvider` (page size 250) rather than issuing a single unpaged GET — otherwise only the first 50 characters per tenant would be ranked. `PagedGetRequest` propagates the tenant/span headers, so the historical task-117 header-drop bug does not apply.
 - **Config re-read every tick**, tenants re-enumerated every tick — never boot-time snapshots (avoids the atlas-transports staleness class). 404/error/zero → default 60 min.
 - **Leader election via libs/atlas-lock** (`lock.New(rc, "rankings-recompute", …)`), 2 replicas. Single writer matters for correctness: concurrent recomputes would compute `move = prev − new` against each other's half-written rows. Crash mid-cycle is fine — the cycle is idempotent/convergent; do NOT rely on `ExecuteTransaction` (it is a no-op, task-119).
 - **GM rule is `gm > 0`** (storage-level, `services/atlas-character/atlas.com/character/character/entity.go` `GM int`), NOT login's `gm == 1`.

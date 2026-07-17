@@ -3,6 +3,7 @@ package serverbound
 import (
 	"testing"
 
+	"github.com/Chronicle20/atlas/libs/atlas-packet/teleportrock"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	testlog "github.com/sirupsen/logrus/hooks/test"
@@ -59,5 +60,34 @@ func TestItemUseTeleportRockAbsentTarget(t *testing.T) {
 	p.Decode(l, ctx)(&r, nil)
 	if p.Target().Valid() {
 		t.Fatalf("absent target payload must be invalid")
+	}
+}
+
+// TestItemUseTeleportRockRoundTrip exercises the Encode path (previously
+// untested — review finding, task-124) across pt.Variants for both target
+// shapes, matching the sibling round-trip idiom in
+// teleportrock/serverbound/use_test.go (TestUseRoundTrip) and
+// item_use_pet_consumable_test.go.
+func TestItemUseTeleportRockRoundTrip(t *testing.T) {
+	for _, v := range pt.Variants {
+		t.Run(v.Name+"/byMap", func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			input := ItemUseTeleportRock{target: teleportrock.NewTargetByMap(220000000), updateTime: 7}
+			output := ItemUseTeleportRock{}
+			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+			if !output.Target().Valid() || output.Target().ByName() || output.Target().TargetMap() != 220000000 || output.UpdateTime() != 7 {
+				t.Fatalf("round trip: target=%+v updateTime=%d", output.Target(), output.UpdateTime())
+			}
+		})
+
+		t.Run(v.Name+"/byName", func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			input := ItemUseTeleportRock{target: teleportrock.NewTargetByName("Adele"), updateTime: 42}
+			output := ItemUseTeleportRock{}
+			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+			if !output.Target().Valid() || !output.Target().ByName() || output.Target().TargetName() != "Adele" || output.UpdateTime() != 42 {
+				t.Fatalf("round trip: target=%+v updateTime=%d", output.Target(), output.UpdateTime())
+			}
+		})
 	}
 }

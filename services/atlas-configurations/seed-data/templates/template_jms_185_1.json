@@ -2647,6 +2647,40 @@
             "FM_ONLY": 23
           }
         }
+      },
+      {
+        "opCode": "0x5A",
+        "writer": "SetAvatarMegaphone"
+      },
+      {
+        "opCode": "0x5B",
+        "writer": "ClearAvatarMegaphone"
+      },
+      {
+        "opCode": "0x17A",
+        "writer": "TvSetMessage",
+        "options": {
+          "messageTypes": {
+            "NORMAL": 0,
+            "STAR": 1,
+            "HEART": 2
+          }
+        }
+      },
+      {
+        "opCode": "0x17B",
+        "writer": "TvClearMessage"
+      },
+      {
+        "opCode": "0x17C",
+        "writer": "TvSendMessageResult",
+        "options": {
+          "errorCodes": {
+            "GM_MESSAGE": 1,
+            "QUEUE_TOO_LONG": 2,
+            "WRONG_USER": 3
+          }
+        }
       }
     ]
   },

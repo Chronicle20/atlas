@@ -3076,6 +3076,50 @@
             "FM_ONLY": 23
           }
         }
+      },
+      {
+        "opCode": "0x6F",
+        "writer": "SetAvatarMegaphone"
+      },
+      {
+        "opCode": "0x70",
+        "writer": "ClearAvatarMegaphone"
+      },
+      {
+        "opCode": "0x6E",
+        "writer": "AvatarMegaphoneResult",
+        "options": {
+          "errorCodes": {
+            "WAITING_LINE": 83,
+            "LEVEL_GATE": 84
+          }
+        }
+      },
+      {
+        "opCode": "0x155",
+        "writer": "TvSetMessage",
+        "options": {
+          "messageTypes": {
+            "NORMAL": 0,
+            "STAR": 1,
+            "HEART": 2
+          }
+        }
+      },
+      {
+        "opCode": "0x156",
+        "writer": "TvClearMessage"
+      },
+      {
+        "opCode": "0x157",
+        "writer": "TvSendMessageResult",
+        "options": {
+          "errorCodes": {
+            "GM_MESSAGE": 1,
+            "QUEUE_TOO_LONG": 2,
+            "WRONG_USER": 3
+          }
+        }
       }
     ]
   },

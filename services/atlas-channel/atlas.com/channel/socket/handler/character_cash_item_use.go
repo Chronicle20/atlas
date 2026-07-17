@@ -279,6 +279,10 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			if available, npcErr := incubator.NewProcessor(l, ctx).SuccessNpcAvailable(); npcErr != nil || !available {
 				l.WithError(npcErr).Warnf("Character [%d] used incubator on egg [%d] but result NPC [%d] is absent from game data; blocking to avoid a client crash.", s.CharacterId(), eggId, incubator.SuccessNpcId)
 				_ = session.Announce(l)(ctx)(wp)(chatpkt.WorldMessageWriter)(writer.WorldMessagePopUpBody("The incubator is currently unavailable."))(s)
+				// The cash-item-use is an exclusive request; without a result the
+				// client stays input-locked. Re-enable actions (empty StatChanged
+				// with ExclRequestSent) as the Vega-scroll rejection arm does.
+				_ = session.Announce(l)(ctx)(wp)(statpkt.StatChangedWriter)(statpkt.NewStatChanged(make([]statpkt.Update, 0), true).Encode)(s)
 				return
 			}
 			reward, err := incubator.NewProcessor(l, ctx).SelectReward(eggId)

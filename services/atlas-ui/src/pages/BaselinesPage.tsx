@@ -21,7 +21,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Copy, FileArchive, FileText, Loader2, Send, Upload } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
-import { SetupRow, formatCount, pluralize } from '@/components/features/setup/SetupRow';
+import { SetupRow } from '@/components/features/setup/SetupRow';
+import { formatCount, pluralize } from '@/components/features/setup/setup-format';
 import { BaselineTargetPicker } from '@/components/features/baselines/BaselineTargetPicker';
 import {
   useBaselines,

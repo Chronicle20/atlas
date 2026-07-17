@@ -66,6 +66,7 @@ export function AccountsPage() {
 
   useEffect(() => {
     if (accounts.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- fetchBanStatuses is the async data-fetching side effect itself (network fan-out with its own loading/result state)
       fetchBanStatuses(accounts);
     }
   }, [accounts, fetchBanStatuses]);

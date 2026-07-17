@@ -94,7 +94,7 @@ export function transformApiError(
     context 
   } = config;
 
-  let message = '';
+  let message: string;
 
   // First try to get a message based on the error code
   if (error.code && DEFAULT_ERROR_MESSAGES[error.code]) {
@@ -331,7 +331,7 @@ const SENSITIVE_PATTERNS = [
   /[Pp]assword[:\s=]+[^\s\n]+/g,
   /[Pp]wd[:\s=]+[^\s\n]+/g,
   // Email addresses (partial sanitization to protect privacy)
-  /[\w\.-]+@[\w\.-]+\.\w+/g,
+  /[\w.-]+@[\w.-]+\.\w+/g,
   // Credit card patterns
   /\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b/g,
   // SSN patterns

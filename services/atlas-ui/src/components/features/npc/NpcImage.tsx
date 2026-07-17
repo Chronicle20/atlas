@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { User, AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -46,15 +46,19 @@ export function NpcImage({
     rootMargin: lazyRootMargin,
   });
 
-  // Reset states when iconUrl changes
-  useEffect(() => {
+  // Reset states when iconUrl changes. Adjusted during render (React's
+  // documented pattern for resetting state when a prop changes) instead of
+  // in an effect.
+  const [prevIconUrl, setPrevIconUrl] = useState(iconUrl);
+  if (iconUrl !== prevIconUrl) {
+    setPrevIconUrl(iconUrl);
     if (iconUrl && typeof iconUrl === 'string') {
       setImageError(false);
       setIsLoading(true);
       setRetryCount(0);
       setIsRetrying(false);
     }
-  }, [iconUrl]);
+  }
 
   // Determine if we should attempt to load the image
   const shouldAttemptLoad = !lazy || shouldLoad;

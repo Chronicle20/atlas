@@ -131,7 +131,6 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
 
   // State management
   const [resolutionStates, setResolutionStates] = useState<Map<string, BreadcrumbResolutionState>>(new Map());
-  const [globalError, setGlobalError] = useState<Error | null>(null);
 
   // Memoized route analysis
   const routeConfig = useMemo(() => findRouteConfig(pathname), [pathname]);
@@ -173,14 +172,8 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
     }
   }, [pathname]);
 
-  // Effect to handle parsing errors
-  useEffect(() => {
-    if (initialBreadcrumbs.error) {
-      setGlobalError(initialBreadcrumbs.error);
-    } else {
-      setGlobalError(null);
-    }
-  }, [initialBreadcrumbs.error]);
+  // globalError is a pure mirror of initialBreadcrumbs.error — derive it
+  // directly instead of syncing via an effect (see the `error:` field below).
 
   // Process breadcrumbs with dynamic label resolution
   const [processedBreadcrumbs, setProcessedBreadcrumbs] = useState<BreadcrumbSegment[]>(initialBreadcrumbs.breadcrumbs);
@@ -203,6 +196,7 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
     prevBreadcrumbsKeyRef.current = breadcrumbsKey;
 
     if (!activeTenant || !autoResolve) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- part of the async label-resolution effect below; this is the no-resolution-needed early exit from the same effect
       setProcessedBreadcrumbs(initialBreadcrumbs.breadcrumbs);
       return;
     }
@@ -382,7 +376,7 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
   return {
     breadcrumbs: finalBreadcrumbs,
     loading,
-    error: globalError,
+    error: initialBreadcrumbs.error,
     routeConfig,
     navigation,
     resolution,

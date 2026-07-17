@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
   AlertTriangle,
   ChevronDown,
@@ -255,7 +255,13 @@ function IdRow({
   readOnly: boolean;
 }) {
   const [value, setValue] = useState(stateId);
-  useEffect(() => setValue(stateId), [stateId]);
+  // Sync the editable value when the selected state changes. Adjusted
+  // during render instead of in an effect.
+  const [prevStateId, setPrevStateId] = useState(stateId);
+  if (stateId !== prevStateId) {
+    setPrevStateId(stateId);
+    setValue(stateId);
+  }
 
   const trimmed = value.trim();
   const isEmpty = trimmed === "";

@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeAll } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { AppSidebar, sidebarItems } from '@/components/app-sidebar';
+import { AppSidebar } from '@/components/app-sidebar';
+import { sidebarItems } from '@/components/app-sidebar-items';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { isDeploymentRoute } from '@/lib/deployment-routes';
 

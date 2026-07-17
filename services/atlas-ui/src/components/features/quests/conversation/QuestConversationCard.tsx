@@ -1,7 +1,6 @@
 import {
   createContext,
   useContext,
-  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -93,9 +92,13 @@ export function QuestConversationProvider({
   const [isDirty, setIsDirty] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
+  // Sync draft to the latest conversation prop unless the user has local
+  // (unsaved) edits. Adjusted during render instead of in an effect.
+  const [prevSync, setPrevSync] = useState({ conversation, isDirty });
+  if (conversation !== prevSync.conversation || isDirty !== prevSync.isDirty) {
+    setPrevSync({ conversation, isDirty });
     if (!isDirty) setDraft(conversation);
-  }, [conversation, isDirty]);
+  }
 
   const hasEnd = !!draft.attributes.endStateMachine;
 

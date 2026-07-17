@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -49,9 +49,13 @@ export function NpcShopCommodityDialog({
   const [form, setForm] = useState<CommodityAttributes>(initial ?? EMPTY);
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
+  // Reset the form when the dialog opens (or the target commodity changes
+  // while open). Adjusted during render instead of in an effect.
+  const [prevSync, setPrevSync] = useState({ open, initial });
+  if (open !== prevSync.open || initial !== prevSync.initial) {
+    setPrevSync({ open, initial });
     if (open) setForm(initial ?? EMPTY);
-  }, [open, initial]);
+  }
 
   const handleSubmit = async () => {
     setSubmitting(true);

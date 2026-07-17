@@ -184,6 +184,7 @@ function CanvasInner({
 
   useEffect(() => {
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- marks the in-flight async ELK layout this effect is about to kick off; the layout computation itself must stay in the effect
     setLaying(true);
     const ids = conversation.attributes.states.map(s => s.id);
     const forwardEdges = transitions

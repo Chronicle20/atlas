@@ -1,11 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { BaselineTargetPicker } from '@/components/features/baselines/BaselineTargetPicker';
 import {
-  BaselineTargetPicker,
   dedupeSelections,
   parseCustomSelection,
   selectionKey,
-} from '@/components/features/baselines/BaselineTargetPicker';
+} from '@/components/features/baselines/BaselineTargetPicker.utils';
 
 vi.mock('@/lib/hooks/api/useTemplates', () => ({
   useTemplates: () => ({

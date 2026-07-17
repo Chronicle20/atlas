@@ -14,6 +14,7 @@ export function MapCell({ mapId, tenant }: { mapId: string; tenant: Tenant | nul
     useEffect(() => {
         if (!tenant || !mapId || mapNameCache.has(mapId)) return
 
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- marks the in-flight fetch this effect is about to kick off; the fetch itself must stay in the effect
         setIsLoading(true)
         mapsService.getMapById(mapId)
             .then((map) => {

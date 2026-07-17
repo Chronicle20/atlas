@@ -243,7 +243,7 @@ class InventoryService {
       return inventoryResponse.included?.some(
         item => item.type === 'assets' && item.id === assetId
       ) || false;
-    } catch (error) {
+    } catch {
       // If inventory fetch fails, assume asset doesn't exist
       return false;
     }

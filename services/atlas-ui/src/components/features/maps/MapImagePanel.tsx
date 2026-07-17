@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Download, Map as MapIcon, Maximize2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -55,10 +55,16 @@ export function MapImagePanel({
   const [state, setState] = useState<ImageState>(initialKind);
   const [expanded, setExpanded] = useState(false);
 
-  useEffect(() => {
+  // Reset image/expanded state when the map identity changes. Adjusted
+  // during render (React's documented pattern for resetting state when a
+  // prop changes) rather than in an effect, so there's no stale-state frame.
+  const resetKey = `${mapId}:${initialKind}`;
+  const [prevResetKey, setPrevResetKey] = useState(resetKey);
+  if (resetKey !== prevResetKey) {
+    setPrevResetKey(resetKey);
     setState(initialKind);
     setExpanded(false);
-  }, [mapId, initialKind]);
+  }
 
   if (!activeTenant) {
     return (

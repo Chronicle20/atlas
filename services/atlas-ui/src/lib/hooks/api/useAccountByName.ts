@@ -43,6 +43,7 @@ export function useAccountByName(
 
   useEffect(() => {
     if (!options.pollUntilFound) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resets the timeout-armed effect's own flag before (re)arming the timer below; the timer itself must stay in the effect
     setTimedOut(false);
     const t = setTimeout(() => setTimedOut(true), timeout);
     return () => clearTimeout(t);

@@ -95,7 +95,7 @@ export function useDebouncedCallback<T extends (...args: unknown[]) => unknown>(
         callback(...args);
       }, delay);
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/use-memo -- deps is a variadic DependencyList; a static array literal isn't structurally possible for this generic API
     [callback, delay, ...deps]
   );
 }
@@ -144,7 +144,7 @@ export function useDebouncedAsyncCallback<T extends (...args: unknown[]) => Prom
         }, delay);
       });
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/use-memo -- deps is a variadic DependencyList; a static array literal isn't structurally possible for this generic API
     [callback, delay, ...deps]
   );
 }
@@ -185,7 +185,7 @@ export function useThrottledCallback<T extends (...args: unknown[]) => unknown>(
         callback(...args);
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/use-memo -- deps is a variadic DependencyList; a static array literal isn't structurally possible for this generic API
     [callback, interval, ...deps]
   );
 }

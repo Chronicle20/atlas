@@ -21,12 +21,27 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" },
+      ],
+    },
   },
   {
     files: [
       "src/components/providers/**/*.{ts,tsx}",
       "src/components/ui/**/*.{ts,tsx}",
       "src/context/**/*.{ts,tsx}",
+      // Column-definition modules colocate a row-action component alongside
+      // the exported column config (accounts-columns.tsx, characters-columns.tsx).
+      "src/pages/**/*-columns.tsx",
+      // Error-boundary modules colocate a fallback component, a context,
+      // and/or a wrapping HOC alongside the boundary component itself.
+      "src/components/**/*ErrorBoundary.tsx",
+      // React context modules colocate the Provider component and its
+      // consumer hook, same pattern as src/context/**.
+      "src/components/**/*Context.tsx",
     ],
     rules: {
       "react-refresh/only-export-components": "off",

@@ -40,7 +40,8 @@ import {
   useReactorScriptsSeedStatus,
   useMapActionScriptsSeedStatus,
 } from "@/lib/hooks/api/useSeed";
-import { SetupRow, formatCount, pluralize } from "@/components/features/setup/SetupRow";
+import { SetupRow } from "@/components/features/setup/SetupRow";
+import { formatCount, pluralize } from "@/components/features/setup/setup-format";
 import { useRestoreBaseline } from "@/lib/hooks/api/useBaseline";
 import { useTenant } from "@/context/tenant-context";
 import { formatBytes } from "@/lib/format";

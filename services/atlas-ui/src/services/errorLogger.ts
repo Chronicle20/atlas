@@ -55,7 +55,7 @@ function sanitizeError(error: Error): { name: string; message: string; stack?: s
     /[Pp]assword[:\s=]+[^\s\n]+/g,
     /[Pp]wd[:\s=]+[^\s\n]+/g,
     // Email addresses (partial sanitization)
-    /[\w\.-]+@[\w\.-]+\.\w+/g,
+    /[\w.-]+@[\w.-]+\.\w+/g,
     // Credit card patterns
     /\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b/g,
     // SSN patterns

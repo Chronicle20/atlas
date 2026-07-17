@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ChevronDown,
@@ -81,9 +81,15 @@ export function NpcShopCard({ npcId, hasShop }: NpcShopCardProps) {
   const commodities: Commodity[] = useMemo(() => shop?.included ?? [], [shop]);
   const [recharger, setRecharger] = useState<boolean>(false);
 
-  useEffect(() => {
+  // Sync recharger to the latest shop query result. `recharger` is still
+  // real local state (not a pure derived value) because handleRechargerToggle
+  // below optimistically mutates it ahead of the mutation settling. Adjusted
+  // during render instead of in an effect.
+  const [prevShop, setPrevShop] = useState(shop);
+  if (shop !== prevShop) {
+    setPrevShop(shop);
     setRecharger(shop?.data.attributes.recharger ?? false);
-  }, [shop]);
+  }
 
   const templateIds = useMemo(
     () => commodities.map(c => c.attributes.templateId),

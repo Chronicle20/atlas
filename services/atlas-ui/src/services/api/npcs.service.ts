@@ -91,7 +91,7 @@ export const npcsService = {
       }
     } catch (error) {
       console.error("Failed to fetch NPCs:", error);
-      throw new Error("Unable to retrieve NPC data. Please try again later.");
+      throw new Error("Unable to retrieve NPC data. Please try again later.", { cause: error });
     }
   },
 

@@ -14,6 +14,7 @@ export function ItemNameCell({ itemId, tenant }: { itemId: string; tenant: Tenan
     useEffect(() => {
         if (!tenant || !itemId || itemNameCache.has(itemId)) return
 
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- marks the in-flight fetch this effect is about to kick off; the fetch itself must stay in the effect
         setIsLoading(true)
         itemsService.getItemName(itemId)
             .then((itemName) => {

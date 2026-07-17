@@ -2657,8 +2657,8 @@
         "writer": "AvatarMegaphoneResult",
         "options": {
           "errorCodes": {
-            "WAITING_LINE": 83,
-            "LEVEL_GATE": 84
+            "WAITING_LINE": 88,
+            "LEVEL_GATE": 89
           }
         }
       },
@@ -2683,8 +2683,8 @@
         "options": {
           "errorCodes": {
             "GM_MESSAGE": 1,
-            "QUEUE_TOO_LONG": 2,
-            "WRONG_USER": 3
+            "WRONG_USER": 2,
+            "QUEUE_TOO_LONG": 3
           }
         }
       }

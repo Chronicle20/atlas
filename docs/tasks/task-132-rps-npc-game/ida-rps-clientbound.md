@@ -32,8 +32,18 @@ IDA instances used (confirmed by binary NAME before reading, per
    `operations`-table shift bug `bug_operations_mode_tables_missing_v87_v95_jms`):
    **RPS mode bytes do NOT shift across versions.**
 
+> **⚠️ Correction (2026-07-17, live-crash-confirmed):** the OPEN `Decode4` int is
+> the **NPC template id**, NOT the ante/participation fee. The client stores it and
+> loads `Npc/{id:07d}.img` for the dealer's face in the fee-confirm dialog
+> (`CUtilDlgEx::SetNPC` → `IWzResMan::GetObjectA`); a value that isn't a real NPC id
+> throws `STG_E_FILENOTFOUND (0x80030002)` and crashes the client. The participation
+> fee is a **static** StringPool string with no amount; the fee is deducted
+> server-side. The "ante" labels below and in the RpsOpen evidence are the original
+> (wrong) reading — the field is the npc id. Server must send `NpcId` in the OPEN
+> frame (fixed in `handleGameOpenedEvent` / `libs/atlas-packet/rps/clientbound`).
+
 2. **Only two clientbound modes read a body beyond the mode byte:**
-   - **mode 8 (OPEN):** `Decode1`(mode) + `Decode4`(int = participation fee/ante).
+   - **mode 8 (OPEN):** `Decode1`(mode) + `Decode4`(int = **NPC template id**, see correction above; originally read as participation fee/ante).
    - **mode 11 (RESULT):** `Decode1`(mode) + `Decode1`(NPC throw) + `Decode1`(signed straight-victory count).
    - **All other modes (6, 7, 9, 10, 12, 13, 14) carry only the 1-byte mode** — no
      further packet fields. Their behavior is purely client-state (notices, timers,

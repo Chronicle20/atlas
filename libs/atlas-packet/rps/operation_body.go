@@ -22,12 +22,14 @@ const (
 	RPSGameModeEnd    RPSGameMode = "END"
 )
 
-// RPSGameOpenBody constructs the OPEN arm body function. ante is the
-// participation fee; the mode byte is resolved per-tenant from the
-// operations table (rps_game.yaml OPEN row), never hard-coded.
-func RPSGameOpenBody(ante uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+// RPSGameOpenBody constructs the OPEN arm body function. npcId is the RPS
+// dealer's NPC template id — the client loads Npc/{npcId:07d}.img for its face
+// in the fee-confirm dialog (an invalid id crashes the client). The mode byte
+// is resolved per-tenant from the operations table (rps_game.yaml OPEN row),
+// never hard-coded.
+func RPSGameOpenBody(npcId uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", RPSGameModeOpen, func(mode byte) packet.Encoder {
-		return clientbound.NewRPSGameOpen(mode, ante)
+		return clientbound.NewRPSGameOpen(mode, npcId)
 	})
 }
 

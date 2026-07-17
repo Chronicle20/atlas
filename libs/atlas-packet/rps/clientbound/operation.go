@@ -21,34 +21,38 @@ import (
 // mode shift; only the RPS_GAME *opcode* shifts. See the IDA note §0/§6.
 const RPSGameWriter = "RPSGame"
 
-// Open — the OPEN arm (mode 8). Body: Decode4 int (ante / participation fee).
+// Open — the OPEN arm (mode 8). Body: Decode4 int = the NPC template id.
 // IDA: v83 0x7400ec, v84 0x761e10, v87 0x78acb0, v95 0x6d9e82, jms185 0x7ae4d7
-// (docs/tasks/task-132-rps-npc-game/ida-rps-clientbound.md §1-§5). The
-// StringPool notice string that follows in the client is a static resource,
-// NOT a packet field.
+// (docs/tasks/task-132-rps-npc-game/ida-rps-clientbound.md §1-§5). The client
+// stores this int and uses it as an NPC template id to load Npc/{id:07d}.img
+// for the dealer's face in the participation-fee confirm dialog
+// (CUtilDlgEx::SetNPC → IWzResMan::GetObjectA); a value that is not a real NPC
+// id in Npc.wz throws STG_E_FILENOTFOUND (0x80030002) and crashes the client.
+// This is NOT the ante — the fee message is a static StringPool string with no
+// amount; the fee is deducted server-side on confirm.
 //
 // packet-audit:fname CRPSGameDlg::OnPacket#OPEN
 type Open struct {
-	mode byte
-	ante uint32
+	mode  byte
+	npcId uint32
 }
 
-func NewRPSGameOpen(mode byte, ante uint32) Open {
-	return Open{mode: mode, ante: ante}
+func NewRPSGameOpen(mode byte, npcId uint32) Open {
+	return Open{mode: mode, npcId: npcId}
 }
 
 func (m Open) Mode() byte        { return m.mode }
-func (m Open) Ante() uint32      { return m.ante }
+func (m Open) NpcId() uint32     { return m.npcId }
 func (m Open) Operation() string { return RPSGameWriter }
 func (m Open) String() string {
-	return fmt.Sprintf("rps game open [ante=%d]", m.ante)
+	return fmt.Sprintf("rps game open [npcId=%d]", m.npcId)
 }
 
 func (m Open) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
-		w.WriteInt(m.ante)
+		w.WriteInt(m.npcId)
 		return w.Bytes()
 	}
 }
@@ -56,7 +60,7 @@ func (m Open) Encode(l logrus.FieldLogger, _ context.Context) func(options map[s
 func (m *Open) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
-		m.ante = r.ReadUint32()
+		m.npcId = r.ReadUint32()
 	}
 }
 

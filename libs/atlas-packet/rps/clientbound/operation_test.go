@@ -34,9 +34,10 @@ var rpsVariants = append(append([]pt.TenantVariant{}, pt.Variants...),
 )
 
 // TestRPSGameOpen exercises the OPEN arm (mode 8) of the CRPSGameDlg::OnPacket
-// dispatcher. Body = Decode4 int (ante). Mode byte is IDENTICAL across all
-// seven versions (docs/tasks/task-132-rps-npc-game/ida-rps-clientbound.md §0/§6
-// — no per-version shift, unlike storage's jms -1 shift).
+// dispatcher. Body = Decode4 int = the NPC template id (the client loads
+// Npc/{id}.img for the dealer's face; NOT the ante). Mode byte is IDENTICAL
+// across all seven versions (docs/tasks/task-132-rps-npc-game/ida-rps-clientbound.md
+// §0/§6 — no per-version shift, unlike storage's jms -1 shift).
 //
 // packet-audit:verify packet=rps/clientbound/RpsOpen version=gms_v48 ida=0x5adc8f
 // packet-audit:verify packet=rps/clientbound/RpsOpen version=gms_v61 ida=0x63c009
@@ -52,18 +53,18 @@ func TestRPSGameOpen(t *testing.T) {
 	for _, v := range rpsVariants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-			input := NewRPSGameOpen(8, 3000)
+			input := NewRPSGameOpen(8, 9000019)
 			b := input.Encode(l, ctx)(nil)
-			// mode(1) + ante(4) = 5 bytes, no more.
+			// mode(1) + npcId(4) = 5 bytes, no more.
 			if len(b) != 5 {
 				t.Fatalf("encoded length: got %d, want 5", len(b))
 			}
 			if b[0] != 8 {
 				t.Errorf("mode: got %d, want 8", b[0])
 			}
-			ante := uint32(b[1]) | uint32(b[2])<<8 | uint32(b[3])<<16 | uint32(b[4])<<24
-			if ante != 3000 {
-				t.Errorf("ante: got %d, want 3000", ante)
+			npcId := uint32(b[1]) | uint32(b[2])<<8 | uint32(b[3])<<16 | uint32(b[4])<<24
+			if npcId != 9000019 {
+				t.Errorf("npcId: got %d, want 9000019", npcId)
 			}
 
 			output := Open{}
@@ -71,8 +72,8 @@ func TestRPSGameOpen(t *testing.T) {
 			if output.Mode() != input.Mode() {
 				t.Errorf("mode: got %v, want %v", output.Mode(), input.Mode())
 			}
-			if output.Ante() != input.Ante() {
-				t.Errorf("ante: got %v, want %v", output.Ante(), input.Ante())
+			if output.NpcId() != input.NpcId() {
+				t.Errorf("npcId: got %v, want %v", output.NpcId(), input.NpcId())
 			}
 		})
 	}

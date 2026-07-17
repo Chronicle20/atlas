@@ -78,7 +78,10 @@ var rpsAnnouncer = func(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 }
 
 // handleGameOpenedEvent translates a GAME_OPENED event into the OPEN frame.
-// Body: the ante (participation fee) - Decode4 on the client.
+// Body: the NPC template id - Decode4 on the client, which loads the dealer's
+// face (Npc/{id}.img) for the fee-confirm dialog. NOT the ante (a static string
+// with no amount); sending the ante here makes the client look up a
+// non-existent Npc.img and crash (STG_E_FILENOTFOUND).
 func handleGameOpenedEvent(sc server.Model, wp writer.Producer) message.Handler[rpsmsg.Event[rpsmsg.GameOpenedEventBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e rpsmsg.Event[rpsmsg.GameOpenedEventBody]) {
 		if e.Type != rpsmsg.EventTypeGameOpened {
@@ -91,7 +94,7 @@ func handleGameOpenedEvent(sc server.Model, wp writer.Producer) message.Handler[
 
 		l.Debugf("Received RPS GAME_OPENED event for character [%d], NPC [%d], ante [%d].", e.CharacterId, e.Body.NpcId, e.Body.Ante)
 
-		rpsAnnouncer(l, ctx, wp, sc, e.CharacterId, rpspkt.RPSGameOpenBody(e.Body.Ante))
+		rpsAnnouncer(l, ctx, wp, sc, e.CharacterId, rpspkt.RPSGameOpenBody(e.Body.NpcId))
 	}
 }
 

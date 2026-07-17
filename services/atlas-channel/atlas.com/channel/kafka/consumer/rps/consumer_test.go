@@ -99,10 +99,10 @@ func decodeEnd(t *testing.T, b []byte) rpscb.End {
 	return end
 }
 
-// TestGameOpenedEvent_AnnouncesOpenWithAnte asserts a GAME_OPENED event
-// selects the OPEN body func with the event's Ante and targets the
-// character's session.
-func TestGameOpenedEvent_AnnouncesOpenWithAnte(t *testing.T) {
+// TestGameOpenedEvent_AnnouncesOpenWithNpcId asserts a GAME_OPENED event
+// selects the OPEN body func with the event's NpcId (the client loads the
+// dealer's Npc.img from it — NOT the ante) and targets the character's session.
+func TestGameOpenedEvent_AnnouncesOpenWithNpcId(t *testing.T) {
 	tm := newTestTenant(t)
 	ctx := tenant.WithContext(context.Background(), tm)
 	sc := newTestServer(t, tm)
@@ -130,8 +130,8 @@ func TestGameOpenedEvent_AnnouncesOpenWithAnte(t *testing.T) {
 	if open.Mode() != 8 {
 		t.Fatalf("want resolved OPEN mode byte 8, got %d", open.Mode())
 	}
-	if open.Ante() != 1000 {
-		t.Fatalf("want ante 1000, got %d", open.Ante())
+	if open.NpcId() != 9010000 {
+		t.Fatalf("want npcId 9010000, got %d", open.NpcId())
 	}
 }
 

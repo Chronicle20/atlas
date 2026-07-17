@@ -190,6 +190,11 @@ func (b *Builder) SetTieCooldownUntil(t time.Time) *Builder {
 	return b
 }
 
+func (b *Builder) SetSkipCooldownUntil(t time.Time) *Builder {
+	b.room.skipCooldownUntil = t
+	return b
+}
+
 func (b *Builder) SetGameType(gameType record.GameType) *Builder {
 	b.room.gameType = gameType
 	return b

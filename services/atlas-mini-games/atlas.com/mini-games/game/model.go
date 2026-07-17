@@ -27,33 +27,34 @@ type Move struct {
 // so a character can own at most one room at a time. Rooms are never
 // mutated in place — Registry.Update swaps a Room built from Clone(cur).
 type Room struct {
-	roomType         byte
-	ownerId          uint32
-	field            field.Model
-	title            string
-	private          bool
-	password         string
-	pieceType        byte
-	visitorId        uint32
-	visitorReady     bool
-	inProgress       bool
-	deniedTie        [2]bool
-	exitAfter        [2]bool
-	firstMover       byte
-	currentTurn      byte
-	board            [omok.Cells]byte
-	moves            []Move
-	deck             []uint32
-	firstSlot        int16
-	ownerPairs       byte
-	visitorPairs     byte
-	ownerScore       int32
-	visitorScore     int32
-	ownerForfeits    byte
-	visitorForfeits  byte
-	lastVisitorId    uint32
-	tieCooldownUntil time.Time
-	gameType         record.GameType
+	roomType          byte
+	ownerId           uint32
+	field             field.Model
+	title             string
+	private           bool
+	password          string
+	pieceType         byte
+	visitorId         uint32
+	visitorReady      bool
+	inProgress        bool
+	deniedTie         [2]bool
+	exitAfter         [2]bool
+	firstMover        byte
+	currentTurn       byte
+	board             [omok.Cells]byte
+	moves             []Move
+	deck              []uint32
+	firstSlot         int16
+	ownerPairs        byte
+	visitorPairs      byte
+	ownerScore        int32
+	visitorScore      int32
+	ownerForfeits     byte
+	visitorForfeits   byte
+	lastVisitorId     uint32
+	tieCooldownUntil  time.Time
+	skipCooldownUntil time.Time
+	gameType          record.GameType
 }
 
 // RoomType returns 1 for Omok, 2 for MatchCards.
@@ -203,6 +204,17 @@ func (r Room) LastVisitorId() uint32 {
 // eligible for the tie-score bonus (5-minute cooldown, design).
 func (r Room) TieCooldownUntil() time.Time {
 	return r.tieCooldownUntil
+}
+
+// SkipCooldownUntil is the point in time before which a further SKIP is ignored.
+// A turn timeout makes BOTH clients fire the mode-63 time-over packet (IDA
+// COmokDlg::Update @0x6e4f68 gates the send on game-active, not whose-turn), so
+// the opponent's duplicate arrives ~milliseconds after the current player's and
+// would otherwise swap the turn a second time (ping-pong). The first skip stamps
+// this deadline; the echo within the window is dropped. The window is far below
+// the 30s client turn timer, so a genuine consecutive timeout is never debounced.
+func (r Room) SkipCooldownUntil() time.Time {
+	return r.skipCooldownUntil
 }
 
 func (r Room) GameType() record.GameType {

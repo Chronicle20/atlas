@@ -1030,12 +1030,11 @@ func TestSkip_TurnAndWho(t *testing.T) {
 		assert.Equal(t, byte(0), evs[0].Body.Who, "next mover = owner")
 	})
 
-	t.Run("out-of-turn skip is dropped (dual time-over)", func(t *testing.T) {
+	t.Run("out-of-turn skip is dropped (dual time-over, echo first)", func(t *testing.T) {
 		// Both clients count the same 30s turn timer and BOTH fire the mode-63
 		// time-over SKIP on expiry (IDA COmokDlg::Update @0x6e4f68 gates the send
-		// on game-active, not whose-turn). Only the current-turn player's skip may
-		// advance the turn; the opponent's duplicate must be ignored, otherwise the
-		// turn ping-pongs (owner->visitor->owner).
+		// on game-active, not whose-turn). When the opponent's echo arrives BEFORE
+		// the current player's skip, the current-turn gate drops it.
 		h := newHarness(t)
 		seedRoom(t, h, runningOmokBuilder(h, owner, visitor, 1).SetCurrentTurn(0))
 		buf := message.NewBuffer()
@@ -1044,6 +1043,41 @@ func TestSkip_TurnAndWho(t *testing.T) {
 		require.Empty(t, evs, "opponent's duplicate time-over skip must be ignored")
 		r, _ := h.p.reg.Get(h.t, owner)
 		assert.Equal(t, byte(0), r.CurrentTurn(), "current turn unchanged by out-of-turn skip")
+	})
+
+	t.Run("dual time-over: echo after current player's skip is debounced", func(t *testing.T) {
+		// Owner is current turn and times out; owner's client SKIP advances the
+		// turn to the visitor. The visitor's client fired the same time-over SKIP
+		// ~ms later — by now it matches CurrentTurn, so the current-turn gate alone
+		// would let it toggle the turn back (the reported ping-pong). The debounce
+		// (same clock => within skipDebounce) drops it.
+		h := newHarness(t)
+		seedRoom(t, h, runningOmokBuilder(h, owner, visitor, 1).SetCurrentTurn(0))
+		buf := message.NewBuffer()
+		require.NoError(t, h.p.skip(buf, uuid.New(), owner))   // current player, 0 -> 1
+		require.NoError(t, h.p.skip(buf, uuid.New(), visitor)) // echo, same clock -> debounced
+		evs := decodeEvents[minigame.SkippedEventBody](t, buf, minigame.EventTypeSkipped)
+		require.Len(t, evs, 1, "only the first skip of a timeout advances the turn")
+		assert.Equal(t, byte(1), evs[0].Body.Who)
+		r, _ := h.p.reg.Get(h.t, owner)
+		assert.Equal(t, byte(1), r.CurrentTurn(), "turn stays with visitor; no ping-pong")
+	})
+
+	t.Run("genuine consecutive timeout past the window advances", func(t *testing.T) {
+		// A real second timeout is >=30s later (the client resets its timer on the
+		// broadcast). Past skipDebounce the now-current player's timeout advances.
+		h := newHarness(t)
+		seedRoom(t, h, runningOmokBuilder(h, owner, visitor, 1).SetCurrentTurn(0))
+		buf := message.NewBuffer()
+		require.NoError(t, h.p.skip(buf, uuid.New(), owner))   // 0 -> 1, cooldown = now+skipDebounce
+		h.clock = h.clock.Add(skipDebounce + time.Second)      // advance past the window
+		require.NoError(t, h.p.skip(buf, uuid.New(), visitor)) // visitor now current, times out -> 0
+		evs := decodeEvents[minigame.SkippedEventBody](t, buf, minigame.EventTypeSkipped)
+		require.Len(t, evs, 2)
+		assert.Equal(t, byte(1), evs[0].Body.Who)
+		assert.Equal(t, byte(0), evs[1].Body.Who)
+		r, _ := h.p.reg.Get(h.t, owner)
+		assert.Equal(t, byte(0), r.CurrentTurn())
 	})
 }
 

@@ -34,6 +34,13 @@ const tieCooldown = 5 * time.Minute
 // already has this many forfeits this session (anti-farm, design §3.3).
 const forfeitFarmThreshold byte = 4
 
+// skipDebounce is the window during which a second SKIP is ignored after one is
+// applied. A single turn timeout makes both clients fire the mode-63 time-over
+// packet a few ms apart; only the first may advance the turn. The window is far
+// below the 30s client turn timer, so genuine consecutive timeouts (>=30s apart)
+// are never debounced. See Room.SkipCooldownUntil.
+const skipDebounce = 3 * time.Second
+
 // Session score deltas (per-room, never persisted — design §3.3 / FR-9.2).
 const (
 	scoreWin         int32 = 50
@@ -935,11 +942,18 @@ func (p *ProcessorImpl) Skip(txId uuid.UUID, f field.Model, characterId uint32) 
 //
 // The mode-63 packet is the client turn-timer's OnTimeOver auto-send (IDA
 // COmokDlg::Update @0x6e4f68), and BOTH clients count the same 30s timer and
-// fire it — the send is gated on game-active, not whose-turn. So the opponent's
-// duplicate time-over skip arrives too; it is dropped by the current-turn gate
-// below (mirroring moveStone/flipCard), leaving skip idempotent. Without the
-// gate each of the two packets toggles CurrentTurn and the turn ping-pongs
-// (owner->visitor->owner).
+// fire it — the send is gated on game-active, not whose-turn — so a single
+// timeout produces TWO skip packets a few ms apart. Two guards make the pair
+// resolve to one advance regardless of arrival order:
+//   - the current-turn gate drops the opponent's echo when it arrives BEFORE the
+//     current player's (the echo's slot != CurrentTurn), mirroring
+//     moveStone/flipCard; and
+//   - the skip-debounce drops the opponent's echo when it arrives AFTER (by then
+//     the first skip has advanced CurrentTurn to the echo's slot, so the gate
+//     alone would let it toggle the turn back — the ping-pong reported in play).
+//
+// Genuine consecutive timeouts are >=30s apart (the client resets its timer on
+// receiving the broadcast), well outside skipDebounce.
 func (p *ProcessorImpl) skip(mb *message.Buffer, txId uuid.UUID, characterId uint32) error {
 	room, ok := p.reg.GetByMember(p.t, characterId)
 	if !ok || !room.InProgress() {
@@ -949,9 +963,13 @@ func (p *ProcessorImpl) skip(mb *message.Buffer, txId uuid.UUID, characterId uin
 	if !ok || slot != room.CurrentTurn() {
 		return nil
 	}
+	now := p.clock()
+	if now.Before(room.SkipCooldownUntil()) {
+		return nil
+	}
 	next := byte(1) - slot
 	updated, err := p.reg.Update(p.t, room.Id(), func(cur Room) (Room, error) {
-		return Clone(cur).SetCurrentTurn(next).Build(), nil
+		return Clone(cur).SetCurrentTurn(next).SetSkipCooldownUntil(now.Add(skipDebounce)).Build(), nil
 	})
 	if err != nil {
 		return err

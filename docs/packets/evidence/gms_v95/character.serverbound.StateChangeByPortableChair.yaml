@@ -1,0 +1,10 @@
+packet: character/serverbound/StateChangeByPortableChair
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::TryRecovery
+    address: "0x9d4020"
+    decompile_sha256: db7711672c6a2357e7d90a1d85eeb14bf2600a6b9afd8bdd95441bd4a81a29e7
+verifies:
+    - libs/atlas-packet/character/serverbound/state_change_by_portable_chair_test.go#TestStateChangeByPortableChairRoundTrip

@@ -2877,6 +2877,11 @@
         }
       ]
     },
+    "CWvsContext::TryRecovery": {
+      "address": "0xa97e50",
+      "direction": "serverbound",
+      "calls": null
+    },
     "CWvsContext::SendSitOnPortableChairRequest": {
       "address": "0xa9ef5b",
       "direction": "serverbound",

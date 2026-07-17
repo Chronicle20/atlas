@@ -18,7 +18,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -35,7 +34,7 @@ func newRecordingProducer() *recordingProducer {
 }
 
 func (m *recordingProducer) Provider() producer.Provider {
-	return func(token string) kafkaProducer.MessageProducer {
+	return func(token string) producer.MessageProducer {
 		return func(prov model.Provider[[]kafka.Message]) error {
 			msgs, err := prov()
 			if err != nil {

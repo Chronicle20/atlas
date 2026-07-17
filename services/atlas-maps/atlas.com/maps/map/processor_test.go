@@ -24,7 +24,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -127,7 +126,7 @@ func newMockProducerProvider() *mockProducerProvider {
 }
 
 func (m *mockProducerProvider) Provider() producer.Provider {
-	return func(token string) kafkaProducer.MessageProducer {
+	return func(token string) producer.MessageProducer {
 		return func(provider model.Provider[[]kafka.Message]) error {
 			msgs, err := provider()
 			if err != nil {

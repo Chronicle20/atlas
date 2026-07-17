@@ -21,10 +21,6 @@ import (
 	"time"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
-
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-
 	service "github.com/Chronicle20/atlas/libs/atlas-service"
 
 	"github.com/sirupsen/logrus"

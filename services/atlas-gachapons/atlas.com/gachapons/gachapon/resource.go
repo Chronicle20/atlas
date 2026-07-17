@@ -90,13 +90,18 @@ func handleGetGachapon(d *rest.HandlerDependency, c *rest.HandlerContext) http.H
 func handleCreateGachapon(d *rest.HandlerDependency, c *rest.HandlerContext, rm RestModel) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		t := tenant.MustFromContext(d.Context())
-		m, err := NewBuilder(t.Id(), rm.Id).
+		b := NewBuilder(t.Id(), rm.Id).
 			SetName(rm.Name).
 			SetNpcIds(rm.NpcIds).
 			SetCommonWeight(rm.CommonWeight).
 			SetUncommonWeight(rm.UncommonWeight).
-			SetRareWeight(rm.RareWeight).
-			Build()
+			SetRareWeight(rm.RareWeight)
+		// Kind is optional on the wire: an absent/empty "kind" attribute must
+		// preserve the builder's "gachapon" default rather than blank it out.
+		if rm.Kind != "" {
+			b = b.SetKind(rm.Kind)
+		}
+		m, err := b.Build()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Building gachapon model.")
 			w.WriteHeader(http.StatusBadRequest)

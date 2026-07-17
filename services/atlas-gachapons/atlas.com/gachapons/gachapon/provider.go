@@ -30,5 +30,6 @@ func modelFromEntity(e entity) (Model, error) {
 		SetCommonWeight(e.CommonWeight).
 		SetUncommonWeight(e.UncommonWeight).
 		SetRareWeight(e.RareWeight).
+		SetKind(e.Kind).
 		Build()
 }

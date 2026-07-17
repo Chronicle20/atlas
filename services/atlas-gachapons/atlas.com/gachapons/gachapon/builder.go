@@ -6,6 +6,12 @@ import (
 	"github.com/google/uuid"
 )
 
+// DefaultKind is the Kind a gachapon machine reports when the builder's
+// SetKind is never called — the classic tiered reward pool. Existing rows
+// (seeded before Kind existed) and existing callers that never mention Kind
+// must continue to read this value.
+const DefaultKind = "gachapon"
+
 type Builder struct {
 	tenantId       uuid.UUID
 	id             string
@@ -14,10 +20,11 @@ type Builder struct {
 	commonWeight   uint32
 	uncommonWeight uint32
 	rareWeight     uint32
+	kind           string
 }
 
 func NewBuilder(tenantId uuid.UUID, id string) *Builder {
-	return &Builder{tenantId: tenantId, id: id}
+	return &Builder{tenantId: tenantId, id: id, kind: DefaultKind}
 }
 
 func (b *Builder) SetName(name string) *Builder {
@@ -45,6 +52,11 @@ func (b *Builder) SetRareWeight(w uint32) *Builder {
 	return b
 }
 
+func (b *Builder) SetKind(kind string) *Builder {
+	b.kind = kind
+	return b
+}
+
 func (b *Builder) Build() (Model, error) {
 	if b.tenantId == uuid.Nil {
 		return Model{}, errors.New("tenantId cannot be nil")
@@ -60,5 +72,6 @@ func (b *Builder) Build() (Model, error) {
 		commonWeight:   b.commonWeight,
 		uncommonWeight: b.uncommonWeight,
 		rareWeight:     b.rareWeight,
+		kind:           b.kind,
 	}, nil
 }

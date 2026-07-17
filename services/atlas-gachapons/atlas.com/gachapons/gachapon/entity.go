@@ -135,6 +135,11 @@ type entity struct {
 	CommonWeight   uint32     `gorm:"not null"`
 	UncommonWeight uint32     `gorm:"not null"`
 	RareWeight     uint32     `gorm:"not null"`
+	// Kind discriminates the reward pool this machine draws from: "gachapon"
+	// (classic tiered pool) or "incubator" (Pigmy Egg pool). The
+	// `default:gachapon` backfills pre-existing rows when AutoMigrate adds
+	// this column.
+	Kind string `gorm:"not null;default:gachapon"`
 }
 
 func (e entity) TableName() string {

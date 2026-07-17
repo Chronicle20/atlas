@@ -22,6 +22,7 @@ func CreateGachapon(db *gorm.DB, m Model) error {
 		CommonWeight:   m.CommonWeight(),
 		UncommonWeight: m.UncommonWeight(),
 		RareWeight:     m.RareWeight(),
+		Kind:           m.Kind(),
 	}
 	return db.Create(e).Error
 }

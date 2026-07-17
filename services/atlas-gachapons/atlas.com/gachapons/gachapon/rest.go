@@ -7,6 +7,7 @@ type RestModel struct {
 	CommonWeight   uint32   `json:"commonWeight"`
 	UncommonWeight uint32   `json:"uncommonWeight"`
 	RareWeight     uint32   `json:"rareWeight"`
+	Kind           string   `json:"kind"`
 }
 
 func (r RestModel) GetName() string {
@@ -30,6 +31,7 @@ func Transform(m Model) (RestModel, error) {
 		CommonWeight:   m.CommonWeight(),
 		UncommonWeight: m.UncommonWeight(),
 		RareWeight:     m.RareWeight(),
+		Kind:           m.Kind(),
 	}, nil
 }
 
@@ -40,4 +42,5 @@ type JSONModel struct {
 	CommonWeight   uint32   `json:"commonWeight"`
 	UncommonWeight uint32   `json:"uncommonWeight"`
 	RareWeight     uint32   `json:"rareWeight"`
+	Kind           string   `json:"kind"`
 }

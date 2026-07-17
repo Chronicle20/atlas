@@ -2,23 +2,23 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: atlas-gachapons
+  name: atlas-reward-pools
   labels:
     atlas.seed-catalog: "true"
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: atlas-gachapons
+      app: atlas-reward-pools
   template:
     metadata:
       labels:
-        app: atlas-gachapons
+        app: atlas-reward-pools
     spec:
       volumes: []
       containers:
       - name: gachapons
-        image: ghcr.io/chronicle20/atlas-gachapons/atlas-gachapons:latest
+        image: ghcr.io/chronicle20/atlas-reward-pools/atlas-reward-pools:latest
         volumeMounts: []
         ports:
         - containerPort: 8080
@@ -29,7 +29,7 @@ spec:
         - name: LOG_LEVEL
           value: "debug"
         - name: DB_NAME
-          value: "atlas-gachapons"
+          value: "atlas-reward-pools"
         - name: DB_USER
           valueFrom:
             secretKeyRef:
@@ -44,10 +44,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: atlas-gachapons
+  name: atlas-reward-pools
 spec:
   selector:
-    app: atlas-gachapons
+    app: atlas-reward-pools
   ports:
   - protocol: TCP
     port: 8080

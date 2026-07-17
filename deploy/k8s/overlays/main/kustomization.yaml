@@ -233,7 +233,7 @@ images:
     newTag: main-fdbd4c4
   - name: ghcr.io/chronicle20/atlas-families/atlas-families
     newTag: main-fdbd4c4
-  - name: ghcr.io/chronicle20/atlas-gachapons/atlas-gachapons
+  - name: ghcr.io/chronicle20/atlas-reward-pools/atlas-reward-pools
     newTag: main-fdbd4c4
   - name: ghcr.io/chronicle20/atlas-guilds/atlas-guilds
     newTag: main-fdbd4c4

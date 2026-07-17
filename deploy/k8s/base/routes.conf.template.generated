@@ -375,12 +375,12 @@ location ~ ^/api/data(/.*)?$ {
 }
 
 location ~ ^/api/gachapons(/.*)?$ {
-  set $u "atlas-gachapons.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-reward-pools.${POD_NAMESPACE}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/global-items(/.*)?$ {
-  set $u "atlas-gachapons.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-reward-pools.${POD_NAMESPACE}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 

@@ -4,11 +4,11 @@ import (
 	"atlas-messages/character"
 	"atlas-messages/command"
 	"atlas-messages/saga"
+	"context"
 	"regexp"
 	"testing"
 
 	"github.com/sirupsen/logrus/hooks/test"
-	"golang.org/x/net/context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"

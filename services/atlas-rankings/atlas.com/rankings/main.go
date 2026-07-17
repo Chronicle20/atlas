@@ -2,14 +2,23 @@ package main
 
 import (
 	"atlas-rankings/ranking"
+	"atlas-rankings/tasks"
+	"context"
 	"os"
+	"time"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	lock "github.com/Chronicle20/atlas/libs/atlas-lock"
+	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
+	"github.com/sirupsen/logrus"
 )
 
 const serviceName = "atlas-rankings"
+
+const baseTick = time.Minute
 
 type Server struct {
 	baseUrl string
@@ -33,6 +42,7 @@ func main() {
 	l := rt.Logger()
 
 	db := database.Connect(l, database.SetMigrations(ranking.Migration))
+	rc := atlas.Connect(l)
 
 	server.New(l).
 		WithContext(rt.Context()).
@@ -42,6 +52,35 @@ func main() {
 		AddRouteInitializer(ranking.InitResource(GetServer())(db)).
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
+
+	registerRecompute := func(l logrus.FieldLogger, ctx context.Context) {
+		tasks.Register(l, ctx)(tasks.NewRecomputeTask(l, ctx, db, baseTick))
+	}
+
+	if leaderEnabled(l) {
+		ttl := leaderTTL(l)
+		le, err := lock.New(rc, "rankings-recompute",
+			lock.WithTTL(ttl),
+			lock.WithRefreshInterval(leaderRefresh(l, ttl)),
+			lock.WithBackoff(leaderBackoff(l)),
+			lock.WithLogger(l),
+		)
+		if err != nil {
+			l.WithError(err).Fatal("Unable to construct LeaderElection.")
+		}
+		routine.Go(l, rt.Context(), func(_ context.Context) {
+			err := le.Run(rt.Context(), func(leaderCtx context.Context) {
+				registerRecompute(l, leaderCtx)
+				<-leaderCtx.Done()
+			})
+			if err != nil {
+				l.WithError(err).Errorf("LeaderElection.Run exited with error.")
+			}
+		})
+	} else {
+		l.Warnf("RANKINGS_LEADER_ELECTION_ENABLED=false — recompute runs unconditionally on this pod.")
+		registerRecompute(l, rt.Context())
+	}
 
 	rt.Wait()
 }

@@ -7,7 +7,6 @@ import (
 
 	"github.com/segmentio/kafka-go"
 
-	kafkaproducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
@@ -34,7 +33,7 @@ func NewMockProducer() *MockProducer {
 
 // Provider returns a producer.Provider that captures messages instead of sending them
 func (m *MockProducer) Provider() producer.Provider {
-	return func(token string) kafkaproducer.MessageProducer {
+	return func(token string) producer.MessageProducer {
 		return func(provider model.Provider[[]kafka.Message]) error {
 			if m.Error != nil {
 				return m.Error

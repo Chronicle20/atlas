@@ -82,3 +82,40 @@ func TestSelectReward_InfrastructureError(t *testing.T) {
 	_, err := NewProcessor(logrus.New(), ctx).SelectReward(4170000)
 	require.Error(t, err)
 }
+
+// TestSuccessNpcAvailable_Present verifies a 200 from atlas-data's
+// /data/npcs/{SuccessNpcId} yields (true, nil) — the client can render the
+// result dialog, so incubation may proceed.
+func TestSuccessNpcAvailable_Present(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, http.MethodGet, r.Method)
+		require.True(t, strings.HasSuffix(r.URL.Path, "/data/npcs/9050008"), "path: %s", r.URL.Path)
+		w.Header().Set("Content-Type", "application/vnd.api+json")
+		_, _ = w.Write([]byte(`{"data":{"type":"npcs","id":"9050008","attributes":{"name":"Pigmy"}}}`))
+	}))
+	defer srv.Close()
+	t.Setenv("DATA_SERVICE_URL", srv.URL+"/api/")
+
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	ok, err := NewProcessor(logrus.New(), ctx).SuccessNpcAvailable()
+	require.NoError(t, err)
+	require.True(t, ok)
+}
+
+// TestSuccessNpcAvailable_Missing verifies a 404 yields (false, nil) — the GMS
+// case where the fixed incubator NPC (SuccessNpcId) was never shipped, so the
+// handler must block instead of letting the client crash.
+func TestSuccessNpcAvailable_Missing(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+	t.Setenv("DATA_SERVICE_URL", srv.URL+"/api/")
+
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	ok, err := NewProcessor(logrus.New(), ctx).SuccessNpcAvailable()
+	require.NoError(t, err)
+	require.False(t, ok)
+}

@@ -19,6 +19,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	cashsb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/serverbound"
+	chatpkt "github.com/Chronicle20/atlas/libs/atlas-packet/chat/clientbound"
 	fieldpkt "github.com/Chronicle20/atlas/libs/atlas-packet/field"
 	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
 	incubatorcb "github.com/Chronicle20/atlas/libs/atlas-packet/incubator/clientbound"
@@ -265,6 +266,19 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			if !isPigmyEgg(item.Id(eggId)) {
 				l.Warnf("Character [%d] attempted to incubate non-egg item [%d].", s.CharacterId(), eggId)
 				announceFailure(0)
+				return
+			}
+			// Gate before rolling/consuming: the client renders the incubation
+			// result via a fixed NPC (incubator.SuccessNpcId) hard-coded in
+			// OnIncubatorResult. GMS never shipped that NPC, so a successful
+			// result would crash the client (CUtilDlgEx::SetNPC ->
+			// STG_E_FILENOTFOUND). If the NPC is absent from the tenant's game
+			// data, block gracefully — consume nothing, and tell the player with
+			// an accurate popup rather than the client's misleading
+			// "inventory is full" INCUBATOR_RESULT(0) message.
+			if available, npcErr := incubator.NewProcessor(l, ctx).SuccessNpcAvailable(); npcErr != nil || !available {
+				l.WithError(npcErr).Warnf("Character [%d] used incubator on egg [%d] but result NPC [%d] is absent from game data; blocking to avoid a client crash.", s.CharacterId(), eggId, incubator.SuccessNpcId)
+				_ = session.Announce(l)(ctx)(wp)(chatpkt.WorldMessageWriter)(writer.WorldMessagePopUpBody("The incubator is currently unavailable."))(s)
 				return
 			}
 			reward, err := incubator.NewProcessor(l, ctx).SelectReward(eggId)

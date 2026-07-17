@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DataTableWrapper } from "@/components/common/DataTableWrapper";
+import { ErrorDisplay } from "@/components/common/ErrorDisplay";
 import { PageLoader } from "@/components/common/PageLoader";
 import { useGridRefresh } from "@/lib/hooks/useGridRefresh";
 import { useTenant } from "@/context/tenant-context";
@@ -80,6 +81,11 @@ export function RewardPoolsPage() {
           <div className="flex justify-end">
             <Button onClick={() => setGlobalDialog({ open: true })}>Add Item</Button>
           </div>
+          {globalQuery.isLoading ? (
+            <PageLoader />
+          ) : globalQuery.error ? (
+            <ErrorDisplay error={globalQuery.error} retry={() => void globalQuery.refetch()} />
+          ) : (
           <Table>
             <TableHeader>
               <TableRow>
@@ -106,6 +112,7 @@ export function RewardPoolsPage() {
               )}
             </TableBody>
           </Table>
+          )}
         </TabsContent>
       </Tabs>
 

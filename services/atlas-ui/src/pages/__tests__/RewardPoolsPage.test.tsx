@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { rewardPoolsService } from "@/services/api/reward-pools.service";
 import { RewardPoolsPage } from "../RewardPoolsPage";
 
 // vi.mock factories are hoisted above top-level const declarations, so the
@@ -69,5 +70,19 @@ describe("RewardPoolsPage", () => {
     await waitFor(() => expect(screen.getByText("Henesys")).toBeInTheDocument());
     await user.click(screen.getByRole("tab", { name: /global pool/i }));
     await waitFor(() => expect(screen.getByText("item-2000000")).toBeInTheDocument());
+  });
+
+  it("Global Pool tab surfaces a fetch error instead of a false empty state", async () => {
+    // The global-items query fires at mount (tenant present), so the rejection
+    // must be queued before renderPage(); Once keeps the other tests' default
+    // resolved mock intact.
+    vi.mocked(rewardPoolsService.getGlobalItems).mockRejectedValueOnce(new Error("global items unavailable"));
+    const user = userEvent.setup();
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Henesys")).toBeInTheDocument());
+    await user.click(screen.getByRole("tab", { name: /global pool/i }));
+    await waitFor(() => expect(screen.getByTestId("error-display")).toBeInTheDocument());
+    expect(screen.getByText("global items unavailable")).toBeInTheDocument();
+    expect(screen.queryByText("No global items.")).not.toBeInTheDocument();
   });
 });

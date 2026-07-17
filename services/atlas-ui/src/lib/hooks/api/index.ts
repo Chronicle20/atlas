@@ -40,9 +40,6 @@ export * from './useReactors';
 // Drop hooks
 export * from './useDrops';
 
-// Gachapon hooks
-export * from './useGachapons';
-
 // Portal script hooks
 export * from './usePortalScripts';
 
@@ -54,3 +51,6 @@ export * from './useMapEntities';
 
 // Seed hooks
 export * from './useSeed';
+
+// Reward pool hooks
+export * from './useRewardPools';

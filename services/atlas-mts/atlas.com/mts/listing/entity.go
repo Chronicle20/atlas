@@ -75,6 +75,7 @@ type entity struct {
 	RingId        uint32 `gorm:"column:ring_id;not null"`
 	ViciousCount  uint32 `gorm:"column:vicious_count;not null"`
 	Flags         uint16 `gorm:"column:flags;not null"`
+	Owner         string `gorm:"column:owner;not null;default:''"`
 
 	ListValue      uint32  `gorm:"column:list_value;not null"`
 	BuyNowPrice    *uint32 `gorm:"column:buy_now_price"`

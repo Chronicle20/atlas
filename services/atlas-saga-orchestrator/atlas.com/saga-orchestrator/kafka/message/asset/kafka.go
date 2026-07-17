@@ -12,6 +12,7 @@ const (
 	StatusEventTypeDeleted         = "DELETED"
 	StatusEventTypeMoved           = "MOVED"
 	StatusEventTypeQuantityChanged = "QUANTITY_CHANGED"
+	StatusEventTypeUpdated         = "UPDATED"
 )
 
 type StatusEvent[E any] struct {
@@ -30,6 +31,7 @@ type AssetData struct {
 	CreatedAt      time.Time  `json:"createdAt"`
 	Quantity       uint32     `json:"quantity"`
 	OwnerId        uint32     `json:"ownerId"`
+	Owner          string     `json:"owner"`
 	Flag           uint16     `json:"flag"`
 	Rechargeable   uint64     `json:"rechargeable"`
 	Strength       uint16     `json:"strength"`
@@ -77,4 +79,10 @@ type MovedStatusEventBody struct {
 
 type QuantityChangedEventBody struct {
 	Quantity uint32 `json:"quantity"`
+}
+
+// UpdatedStatusEventBody carries no fields of its own; the saga step it
+// completes (SetAssetOwner / ApplyAssetLock) is matched via the envelope's
+// TransactionId and AcceptEvent gating, not via body content.
+type UpdatedStatusEventBody struct {
 }

@@ -1,6 +1,7 @@
 package model
 
 import (
+	"bytes"
 	"testing"
 	"time"
 
@@ -13,8 +14,8 @@ import (
 func TestAssetEquipable(t *testing.T) {
 	exp := time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)
 	a := NewAsset(false, -5, 1302000, exp). // equip slot -5, templateId in equip range (1xxxxxx)
-							SetEquipmentStats(10, 11, 12, 13, 100, 50, 80, 70, 30, 25, 15, 20, 10, 5, 3).
-							SetEquipmentMeta(7, 1, 2, 500, 3, 0x0001)
+						SetEquipmentStats(10, 11, 12, 13, 100, 50, 80, 70, 30, 25, 15, 20, 10, 5, 3).
+						SetEquipmentMeta(7, 1, 2, 500, 3, 0x0001)
 
 	for _, v := range test.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -242,6 +243,44 @@ func assertEqual[T comparable](t *testing.T, name string, expected, actual T) {
 	t.Helper()
 	if expected != actual {
 		t.Errorf("%s: expected %v, got %v", name, expected, actual)
+	}
+}
+
+func TestAssetOwnerEncoded(t *testing.T) {
+	exp := time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)
+	base := NewAsset(false, -5, 1302000, exp).
+		SetEquipmentStats(10, 11, 12, 13, 100, 50, 80, 70, 30, 25, 15, 20, 10, 5, 3).
+		SetEquipmentMeta(7, 1, 2, 500, 3, 0x0001)
+	named := base.SetOwner("Tumi")
+	l, _ := testlog.NewNullLogger()
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			plain := base.Encode(l, ctx)(nil)
+			withOwner := named.Encode(l, ctx)(nil)
+			if len(withOwner) != len(plain)+len("Tumi") {
+				t.Fatalf("owner bytes not encoded: len(withOwner)=%d len(plain)=%d", len(withOwner), len(plain))
+			}
+			// empty owner must be byte-identical to the pre-change encoding
+			baseEmptyOwner := base.SetOwner("")
+			empty := baseEmptyOwner.Encode(l, ctx)(nil)
+			if !bytes.Equal(empty, plain) {
+				t.Fatal("empty owner changed the wire bytes")
+			}
+		})
+	}
+}
+
+func TestAssetOwnerEncodedStackable(t *testing.T) {
+	exp := time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)
+	base := NewAsset(false, 3, 2000000, exp).SetStackableInfo(50, 0, 0)
+	named := base.SetOwner("Tumi")
+	l, _ := testlog.NewNullLogger()
+	ctx := test.CreateContext("GMS", 83, 1)
+	plain := base.Encode(l, ctx)(nil)
+	withOwner := named.Encode(l, ctx)(nil)
+	if len(withOwner) != len(plain)+len("Tumi") {
+		t.Fatalf("owner bytes not encoded on stackable: %d vs %d", len(withOwner), len(plain))
 	}
 }
 

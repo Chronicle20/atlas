@@ -262,7 +262,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: atlas-gachapons
+  name: atlas-reward-pools
 spec:
   template:
     spec:

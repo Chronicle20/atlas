@@ -2041,6 +2041,10 @@
         }
       },
       {
+        "opCode": "0x48",
+        "writer": "IncubatorResult"
+      },
+      {
         "opCode": "0x1AD",
         "writer": "VegaScroll",
         "options": {

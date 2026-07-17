@@ -1,8 +1,8 @@
 package configuration
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"encoding/json"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"

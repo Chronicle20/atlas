@@ -27048,6 +27048,21 @@
         }
       ]
     },
+    "CWvsContext::OnIncubatorResult": {
+      "address": "0xa73a5b",
+      "direction": "clientbound",
+      "note": "task-19: itemId<=0 renders the failure dialog (no further reads); read order confirmed unchanged from v83.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "itemId (v1)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "count (v32)"
+        }
+      ]
+    },
     "CField::OnItemUpgrade#Open": {
       "address": "0x5443af",
       "direction": "clientbound",

@@ -1598,6 +1598,7 @@ func (p *ProcessorImpl) expandTransferToMts(st Step[any]) ([]Step[any], error) {
 				Level:         foundAsset.Level,
 				ItemExp:       foundAsset.Experience,
 				Flags:         foundAsset.Flag,
+				Owner:         foundAsset.Owner,
 
 				// Sale params copied from the seller's TransferToMts payload.
 				ListValue:      payload.ListValue,
@@ -1778,6 +1779,7 @@ func assetDataFromCompartmentAsset(a *compartment.AssetRestModel) asset2.AssetDa
 		CreatedAt:      a.CreatedAt,
 		Quantity:       a.Quantity,
 		OwnerId:        a.OwnerId,
+		Owner:          a.Owner,
 		Flag:           a.Flag,
 		Rechargeable:   a.Rechargeable,
 		Strength:       a.Strength,
@@ -1898,6 +1900,7 @@ func assetDataFromStorageProjectionAsset(a *storage.ProjectionAssetRestModel) as
 		Expiration:     a.Expiration,
 		Quantity:       a.Quantity,
 		OwnerId:        a.OwnerId,
+		Owner:          a.Owner,
 		Flag:           a.Flag,
 		Rechargeable:   a.Rechargeable,
 		Strength:       a.Strength,

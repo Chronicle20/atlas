@@ -8043,6 +8043,21 @@
         }
       ]
     },
+    "CWvsContext::OnIncubatorResult": {
+      "address": "0xa28298",
+      "direction": "clientbound",
+      "note": "task-19: itemId<=0 renders the failure dialog (no further reads); read order confirmed unchanged from v84.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "itemId (v2)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "count (a2a)"
+        }
+      ]
+    },
     "CWvsContext::OnInventoryOperation#Add": {
       "address": "0xa1ead9",
       "direction": "clientbound",

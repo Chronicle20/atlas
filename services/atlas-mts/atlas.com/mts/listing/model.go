@@ -78,6 +78,7 @@ type Model struct {
 	ringId        uint32
 	viciousCount  uint32
 	flags         uint16
+	owner         string
 
 	// sale fields
 	listValue      uint32
@@ -135,6 +136,7 @@ func (m Model) ItemExp() uint32         { return m.itemExp }
 func (m Model) RingId() uint32          { return m.ringId }
 func (m Model) ViciousCount() uint32    { return m.viciousCount }
 func (m Model) Flags() uint16           { return m.flags }
+func (m Model) Owner() string           { return m.owner }
 
 func (m Model) ListValue() uint32       { return m.listValue }
 func (m Model) BuyNowPrice() *uint32    { return m.buyNowPrice }

@@ -4,6 +4,8 @@ import (
 	"atlas-channel/chalkboard"
 	character2 "atlas-channel/character"
 	"atlas-channel/consumable"
+	cashData "atlas-channel/data/cash"
+	"atlas-channel/incubator"
 	"atlas-channel/saga"
 	"atlas-channel/session"
 	"atlas-channel/shopscanner"
@@ -17,8 +19,10 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	cashsb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/serverbound"
+	chatpkt "github.com/Chronicle20/atlas/libs/atlas-packet/chat/clientbound"
 	fieldpkt "github.com/Chronicle20/atlas/libs/atlas-packet/field"
 	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
+	incubatorcb "github.com/Chronicle20/atlas/libs/atlas-packet/incubator/clientbound"
 	statpkt "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -114,6 +118,265 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			})
 			return
 		}
+		if it == CashSlotItemTypeItemTag {
+			sp := cashsb.NewItemUseItemTag(updateTimeFirst)
+			sp.Decode(l, ctx)(r, readerOptions)
+			targetSlot := sp.Slot()
+			if targetSlot >= 0 {
+				l.Warnf("Character [%d] attempted to use item tag [%d] on non-equipped slot [%d].", s.CharacterId(), itemId, targetSlot)
+				return
+			}
+			target, err := character2.NewProcessor(l, ctx).GetItemInSlot(s.CharacterId(), inventory.TypeValueEquip, targetSlot)()
+			if err != nil {
+				l.Warnf("Character [%d] attempted to use item tag [%d] on empty slot [%d].", s.CharacterId(), itemId, targetSlot)
+				return
+			}
+			if tt, ok := inventory.TypeFromItemId(item.Id(target.TemplateId())); !ok || tt != inventory.TypeValueEquip {
+				l.Warnf("Character [%d] attempted to use item tag [%d] on non-equip item [%d].", s.CharacterId(), itemId, target.TemplateId())
+				return
+			}
+			c, err := character2.NewProcessor(l, ctx).GetById()(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Warnf("Unable to resolve character [%d] name for item tag.", s.CharacterId())
+				return
+			}
+			transactionId := uuid.New()
+			now := time.Now()
+			_ = saga.NewProcessor(l, ctx).Create(saga.Saga{
+				TransactionId: transactionId,
+				SagaType:      saga.ItemTagUse,
+				InitiatedBy:   "CASH_ITEM_USE",
+				Steps: []saga.Step{
+					{
+						StepId: "consume_item_tag",
+						Status: saga.Pending,
+						Action: saga.DestroyAsset,
+						Payload: saga.DestroyAssetPayload{
+							CharacterId: s.CharacterId(),
+							TemplateId:  uint32(itemId),
+							Quantity:    1,
+						},
+						CreatedAt: now,
+						UpdatedAt: now,
+					},
+					{
+						StepId: "set_asset_owner",
+						Status: saga.Pending,
+						Action: saga.SetAssetOwner,
+						Payload: saga.SetAssetOwnerPayload{
+							CharacterId:   s.CharacterId(),
+							InventoryType: byte(inventory.TypeValueEquip),
+							Slot:          targetSlot,
+							Owner:         c.Name(),
+						},
+						CreatedAt: now,
+						UpdatedAt: now,
+					},
+				},
+			})
+			return
+		}
+		sealTimed := CashSlotItemTypeSealTimed
+		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+			sealTimed = CashSlotItemTypeSealTimedV95
+		}
+		if it == CashSlotItemTypeSeal || it == sealTimed {
+			sp := cashsb.NewItemUseSeal(updateTimeFirst)
+			sp.Decode(l, ctx)(r, readerOptions)
+			invType := inventory.Type(sp.InventoryType())
+			targetSlot := int16(sp.Slot())
+			if invType != inventory.TypeValueEquip {
+				l.Warnf("Character [%d] attempted to use sealing lock [%d] on non-equip inventory [%d].", s.CharacterId(), itemId, invType)
+				return
+			}
+			target, err := character2.NewProcessor(l, ctx).GetItemInSlot(s.CharacterId(), invType, targetSlot)()
+			if err != nil {
+				l.Warnf("Character [%d] attempted to use sealing lock [%d] on empty slot [%d].", s.CharacterId(), itemId, targetSlot)
+				return
+			}
+			if !target.Expiration().IsZero() && !target.Locked() {
+				// A genuinely time-limited item must not be laundered into a permanent one.
+				l.Warnf("Character [%d] attempted to seal time-limited item [%d] in slot [%d].", s.CharacterId(), target.TemplateId(), targetSlot)
+				return
+			}
+			expiration := time.Time{}
+			cd, err := cashData.NewProcessor(l, ctx).GetById(uint32(itemId))
+			if err != nil {
+				l.WithError(err).Warnf("Unable to resolve cash item data for sealing lock [%d].", itemId)
+				return
+			}
+			if cd.ProtectTime > 0 {
+				base := time.Now()
+				if target.Locked() && !target.Expiration().IsZero() {
+					base = target.Expiration()
+				}
+				expiration = base.AddDate(0, 0, int(cd.ProtectTime))
+			}
+			transactionId := uuid.New()
+			now := time.Now()
+			_ = saga.NewProcessor(l, ctx).Create(saga.Saga{
+				TransactionId: transactionId,
+				SagaType:      saga.SealingLockUse,
+				InitiatedBy:   "CASH_ITEM_USE",
+				Steps: []saga.Step{
+					{
+						StepId: "consume_sealing_lock",
+						Status: saga.Pending,
+						Action: saga.DestroyAsset,
+						Payload: saga.DestroyAssetPayload{
+							CharacterId: s.CharacterId(),
+							TemplateId:  uint32(itemId),
+							Quantity:    1,
+						},
+						CreatedAt: now,
+						UpdatedAt: now,
+					},
+					{
+						StepId: "apply_asset_lock",
+						Status: saga.Pending,
+						Action: saga.ApplyAssetLock,
+						Payload: saga.ApplyAssetLockPayload{
+							CharacterId:   s.CharacterId(),
+							InventoryType: byte(invType),
+							Slot:          targetSlot,
+							Expiration:    expiration,
+						},
+						CreatedAt: now,
+						UpdatedAt: now,
+					},
+				},
+			})
+			return
+		}
+		if it == CashSlotItemTypeIncubator {
+			sp := cashsb.NewItemUseIncubator(updateTimeFirst)
+			sp.Decode(l, ctx)(r, readerOptions)
+			invType := inventory.Type(sp.InventoryType())
+			targetSlot := int16(sp.Slot())
+			announceFailure := func(egg uint32) {
+				_ = session.Announce(l)(ctx)(wp)(incubatorcb.IncubatorResultWriter)(incubatorcb.NewIncubatorResult(0, 0, egg).Encode)(s)
+			}
+			target, err := character2.NewProcessor(l, ctx).GetItemInSlot(s.CharacterId(), invType, targetSlot)()
+			if err != nil {
+				l.Warnf("Character [%d] attempted to incubate empty slot [%d] of inventory [%d].", s.CharacterId(), targetSlot, invType)
+				announceFailure(0)
+				return
+			}
+			eggId := target.TemplateId()
+			if !isPigmyEgg(item.Id(eggId)) {
+				l.Warnf("Character [%d] attempted to incubate non-egg item [%d].", s.CharacterId(), eggId)
+				announceFailure(0)
+				return
+			}
+			// Gate before rolling/consuming: the client renders the incubation
+			// result via a fixed NPC (incubator.SuccessNpcId) hard-coded in
+			// OnIncubatorResult. GMS never shipped that NPC, so a successful
+			// result would crash the client (CUtilDlgEx::SetNPC ->
+			// STG_E_FILENOTFOUND). If the NPC is absent from the tenant's game
+			// data, block gracefully — consume nothing, and tell the player with
+			// an accurate popup rather than the client's misleading
+			// "inventory is full" INCUBATOR_RESULT(0) message.
+			if available, npcErr := incubator.NewProcessor(l, ctx).SuccessNpcAvailable(); npcErr != nil || !available {
+				l.WithError(npcErr).Warnf("Character [%d] used incubator on egg [%d] but result NPC [%d] is absent from game data; blocking to avoid a client crash.", s.CharacterId(), eggId, incubator.SuccessNpcId)
+				_ = session.Announce(l)(ctx)(wp)(chatpkt.WorldMessageWriter)(writer.WorldMessagePopUpBody("The incubator is currently unavailable."))(s)
+				// The cash-item-use is an exclusive request; without a result the
+				// client stays input-locked. Re-enable actions (empty StatChanged
+				// with ExclRequestSent) as the Vega-scroll rejection arm does.
+				_ = session.Announce(l)(ctx)(wp)(statpkt.StatChangedWriter)(statpkt.NewStatChanged(make([]statpkt.Update, 0), true).Encode)(s)
+				return
+			}
+			reward, err := incubator.NewProcessor(l, ctx).SelectReward(eggId)
+			if err != nil {
+				l.WithError(err).Warnf("Character [%d] used incubator on egg [%d]; no reward selected.", s.CharacterId(), eggId)
+				announceFailure(eggId)
+				return
+			}
+			if _, ok := inventory.TypeFromItemId(item.Id(reward.ItemId())); !ok {
+				l.Warnf("Incubator reward [%d] has no inventory type.", reward.ItemId())
+				announceFailure(eggId)
+				return
+			}
+			// Inventory capacity is enforced by the saga's award_reward (AwardAsset)
+			// step: if the target inventory is full the award fails and the saga
+			// compensates, re-creating the consumed egg + incubator (compensator
+			// reverse-walk DestroyAsset*/->CreateItem). This mirrors the gachapon
+			// reward flow, which likewise has no channel-side capacity pre-check.
+			// The former pre-check here was broken — it fetched the compartment
+			// without its assets (so len(Assets) was always 0 and it never detected
+			// fullness) and reported any GetByType REST error as "inventory full".
+			f := s.Field()
+			transactionId := uuid.New()
+			now := time.Now()
+			_ = saga.NewProcessor(l, ctx).Create(saga.Saga{
+				TransactionId: transactionId,
+				SagaType:      saga.IncubatorUse,
+				InitiatedBy:   "CASH_ITEM_USE",
+				Steps: []saga.Step{
+					{
+						StepId: "consume_sacrifice",
+						Status: saga.Pending,
+						Action: saga.DestroyAssetFromSlot,
+						Payload: saga.DestroyAssetFromSlotPayload{
+							CharacterId:   s.CharacterId(),
+							InventoryType: byte(invType),
+							Slot:          targetSlot,
+							Quantity:      1,
+							TemplateId:    eggId,
+						},
+						CreatedAt: now,
+						UpdatedAt: now,
+					},
+					{
+						StepId: "consume_incubator",
+						Status: saga.Pending,
+						Action: saga.DestroyAsset,
+						Payload: saga.DestroyAssetPayload{
+							CharacterId: s.CharacterId(),
+							TemplateId:  uint32(itemId),
+							Quantity:    1,
+						},
+						CreatedAt: now,
+						UpdatedAt: now,
+					},
+					{
+						StepId: "award_reward",
+						Status: saga.Pending,
+						Action: saga.AwardAsset,
+						Payload: saga.AwardAssetPayload{
+							CharacterId: s.CharacterId(),
+							Item: saga.ItemPayload{
+								TemplateId: reward.ItemId(),
+								Quantity:   reward.Quantity(),
+							},
+						},
+						CreatedAt: now,
+						UpdatedAt: now,
+					},
+					{
+						StepId: "announce_result",
+						Status: saga.Pending,
+						Action: saga.IncubatorResult,
+						Payload: saga.IncubatorResultPayload{
+							CharacterId: s.CharacterId(),
+							WorldId:     f.WorldId(),
+							ChannelId:   f.ChannelId(),
+							ItemId:      reward.ItemId(),
+							Count:       reward.Quantity(),
+							EggId:       eggId,
+						},
+						CreatedAt: now,
+						UpdatedAt: now,
+					},
+				},
+			})
+			return
+		}
+		if it == CashSlotItemTypeCube {
+			// 5062xxx (GMS >= 95) is the Miracle Cube / potential re-roll family — a
+			// separate feature, deliberately not part of task-128 (design.md §11).
+			l.Warnf("Character [%d] attempted to use cube-family item [%d]; not implemented.", s.CharacterId(), itemId)
+			return
+		}
 		if it == CashSlotItemTypeVegasSpellPre95 || it == CashSlotItemTypeVegasSpell95 {
 			sp := cashsb.ItemUseVegaScroll{}
 			sp.Decode(l, ctx)(r, readerOptions)
@@ -167,6 +430,13 @@ const (
 	CashSlotItemTypeStoreSearch   = CashSlotItemType(29)
 	CashSlotItemTypePetConsumable = CashSlotItemType(30)
 	CashSlotItemTypeChalkboard    = CashSlotItemType(32)
+	CashSlotItemTypeItemTag       = CashSlotItemType(25)
+	CashSlotItemTypeSeal          = CashSlotItemType(26)
+	CashSlotItemTypeIncubator     = CashSlotItemType(27)
+	CashSlotItemTypeSealTimed     = CashSlotItemType(64)
+	CashSlotItemTypeSealTimedV95  = CashSlotItemType(65)
+	CashSlotItemTypeCube          = CashSlotItemType(74)
+
 	// GetCashSlotItemType's ClassificationPointReset branch (above) routes by
 	// itemId%10==1: AP Reset (5050000) and SP Reset tiers 2-4 (5050002-5050004)
 	// collapse onto type 23, while SP Reset tier 1 (5050001) alone lands on
@@ -180,6 +450,18 @@ const (
 	CashSlotItemTypeViciousHammer    = CashSlotItemType(66) // GMS < 95
 	CashSlotItemTypeViciousHammerV95 = CashSlotItemType(67) // GMS >= 95
 )
+
+const (
+	pigmyEggMinId item.Id = 4170000
+	pigmyEggMaxId item.Id = 4170009
+)
+
+// isPigmyEgg reports whether templateId is an incubatable Pigmy Egg (the client
+// enforces this; the server re-checks so a crafted request can't sacrifice
+// arbitrary items).
+func isPigmyEgg(templateId item.Id) bool {
+	return templateId >= pigmyEggMinId && templateId <= pigmyEggMaxId
+}
 
 // viciousHammerCashSlotItemType returns the version-scoped CashSlotItemType
 // for the Vicious Hammer item. Plain 66 also denotes CharacterCreation on

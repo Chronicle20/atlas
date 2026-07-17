@@ -2636,6 +2636,10 @@
         }
       },
       {
+        "opCode": "0x3F",
+        "writer": "IncubatorResult"
+      },
+      {
         "opCode": "0x183",
         "writer": "VegaScroll",
         "options": {

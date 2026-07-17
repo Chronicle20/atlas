@@ -7,7 +7,7 @@ const fakeTenant = { id: "t1", attributes: { region: "GMS", majorVersion: 83, mi
 
 const equipped = (slot: number, templateId: number): Asset => ({
   type: "assets", id: String(templateId),
-  attributes: { id: templateId, slot, templateId, quantity: 1 } as Asset["attributes"],
+  attributes: { id: templateId, slot, templateId, quantity: 1, flag: 0, owner: "" } as Asset["attributes"],
 });
 
 // SLOT_LAYOUT pinned by the user from the v83 in-game window. These tests

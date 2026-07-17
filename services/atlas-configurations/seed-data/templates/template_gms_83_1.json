@@ -3065,6 +3065,10 @@
         }
       },
       {
+        "opCode": "0x45",
+        "writer": "IncubatorResult"
+      },
+      {
         "opCode": "0x166",
         "writer": "VegaScroll",
         "options": {

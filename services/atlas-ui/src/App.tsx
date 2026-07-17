@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { TenantProvider } from "@/context/tenant-context";
@@ -20,8 +20,8 @@ const BanDetailPage = lazy(() => import("@/pages/BanDetailPage").then(m => ({ de
 const BaselinesPage = lazy(() => import("@/pages/BaselinesPage").then(m => ({ default: m.BaselinesPage })));
 const CharactersPage = lazy(() => import("@/pages/CharactersPage").then(m => ({ default: m.CharactersPage })));
 const CharacterDetailPage = lazy(() => import("@/pages/CharacterDetailPage").then(m => ({ default: m.CharacterDetailPage })));
-const GachaponsPage = lazy(() => import("@/pages/GachaponsPage").then(m => ({ default: m.GachaponsPage })));
-const GachaponDetailPage = lazy(() => import("@/pages/GachaponDetailPage").then(m => ({ default: m.GachaponDetailPage })));
+const RewardPoolsPage = lazy(() => import("@/pages/RewardPoolsPage").then(m => ({ default: m.RewardPoolsPage })));
+const RewardPoolDetailPage = lazy(() => import("@/pages/RewardPoolDetailPage").then(m => ({ default: m.RewardPoolDetailPage })));
 const GuildsPage = lazy(() => import("@/pages/GuildsPage").then(m => ({ default: m.GuildsPage })));
 const GuildDetailPage = lazy(() => import("@/pages/GuildDetailPage").then(m => ({ default: m.GuildDetailPage })));
 const ItemsPage = lazy(() => import("@/pages/ItemsPage").then(m => ({ default: m.ItemsPage })));
@@ -64,6 +64,11 @@ const TenantsCharacterTemplatesPage = lazy(() => import("@/pages/TenantsCharacte
 const TenantsCharacterPresetsPage = lazy(() => import("@/pages/TenantsCharacterPresetsPage").then(m => ({ default: m.TenantsCharacterPresetsPage })));
 const TenantsMtsConfigPage = lazy(() => import("@/pages/TenantsMtsConfigPage").then(m => ({ default: m.TenantsMtsConfigPage })));
 
+function GachaponRedirect() {
+  const { id } = useParams();
+  return <Navigate to={`/reward-pools/${id}`} replace />;
+}
+
 export function App() {
   return (
     <BrowserRouter>
@@ -83,8 +88,10 @@ export function App() {
                     <Route path="/baselines" element={<BaselinesPage />} />
                     <Route path="/characters" element={<CharactersPage />} />
                     <Route path="/characters/:id" element={<CharacterDetailPage />} />
-                    <Route path="/gachapons" element={<GachaponsPage />} />
-                    <Route path="/gachapons/:id" element={<GachaponDetailPage />} />
+                    <Route path="/reward-pools" element={<RewardPoolsPage />} />
+                    <Route path="/reward-pools/:id" element={<RewardPoolDetailPage />} />
+                    <Route path="/gachapons" element={<Navigate to="/reward-pools" replace />} />
+                    <Route path="/gachapons/:id" element={<GachaponRedirect />} />
                     <Route path="/guilds" element={<GuildsPage />} />
                     <Route path="/guilds/:id" element={<GuildDetailPage />} />
                     <Route path="/items" element={<ItemsPage />} />

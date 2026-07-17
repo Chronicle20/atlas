@@ -783,6 +783,10 @@
     ],
     "writers": [
       {
+        "opCode": "0x42",
+        "writer": "IncubatorResult"
+      },
+      {
         "opCode": "0x00",
         "writer": "AuthSuccess"
       },

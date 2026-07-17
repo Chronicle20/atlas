@@ -237,6 +237,7 @@ configMapGenerator:
       - EVENT_TOPIC_GACHAPON_REWARD_WON=EVENT_TOPIC_GACHAPON_REWARD_WON-PLACEHOLDER_ATLAS_ENV
       - EVENT_TOPIC_GUILD_STATUS=EVENT_TOPIC_GUILD_STATUS-PLACEHOLDER_ATLAS_ENV
       - EVENT_TOPIC_GUILD_THREAD_STATUS=EVENT_TOPIC_GUILD_THREAD_STATUS-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_INCUBATOR_RESULT=EVENT_TOPIC_INCUBATOR_RESULT-PLACEHOLDER_ATLAS_ENV
       - EVENT_TOPIC_INSTANCE_TRANSPORT=EVENT_TOPIC_INSTANCE_TRANSPORT-PLACEHOLDER_ATLAS_ENV
       - EVENT_TOPIC_INVENTORY_CHANGED=EVENT_TOPIC_INVENTORY_CHANGED-PLACEHOLDER_ATLAS_ENV
       - EVENT_TOPIC_INVENTORY_STATUS=EVENT_TOPIC_INVENTORY_STATUS-PLACEHOLDER_ATLAS_ENV
@@ -280,7 +281,7 @@ configMapGenerator:
       - EVENT_TOPIC_WORLD_RATE=EVENT_TOPIC_WORLD_RATE-PLACEHOLDER_ATLAS_ENV
   - name: atlas-db-names
     literals:
-      - ATLAS_DB_NAMES=atlas-accounts atlas-bans atlas-buddies atlas-cashshop atlas-characters atlas-configurations atlas-data atlas-drops atlas-fame atlas-gachapons atlas-guilds atlas-inventory atlas-keys atlas-map-actions atlas-maps atlas-merchant atlas-monster-book atlas-mounts atlas-mts atlas-notes atlas-npc-conversations atlas-npc-shops atlas-party-quests atlas-pets atlas-portal-actions atlas-quest atlas-reactor-actions atlas-saga-orchestrator atlas-skills atlas-storage atlas-tenants
+      - ATLAS_DB_NAMES=atlas-accounts atlas-bans atlas-buddies atlas-cashshop atlas-characters atlas-configurations atlas-data atlas-drops atlas-fame atlas-reward-pools atlas-guilds atlas-inventory atlas-keys atlas-map-actions atlas-maps atlas-merchant atlas-monster-book atlas-mounts atlas-mts atlas-notes atlas-npc-conversations atlas-npc-shops atlas-party-quests atlas-pets atlas-portal-actions atlas-quest atlas-reactor-actions atlas-saga-orchestrator atlas-skills atlas-storage atlas-tenants
   - name: atlas-pr-bootstrap-tenant
     literals:
       - TENANT_ID=00000000-0000-0000-0000-000000000001
@@ -304,7 +305,7 @@ configMapGenerator:
 #
 # Stateless Deployments (atlas-ingress, atlas-ui,
 # atlas-query-aggregator, atlas-configurations,
-# atlas-drop-information, atlas-gachapons) don't consume ATLAS_ENV in
+# atlas-drop-information, atlas-reward-pools) don't consume ATLAS_ENV in
 # their containers and therefore have no env entry for it — and don't
 # need one. An earlier kustomize `replacements:` block with
 # `options.create: true` was force-injecting ATLAS_ENV here. It also
@@ -355,7 +356,7 @@ images:
     newTag: latest
   - name: ghcr.io/chronicle20/atlas-families/atlas-families
     newTag: latest
-  - name: ghcr.io/chronicle20/atlas-gachapons/atlas-gachapons
+  - name: ghcr.io/chronicle20/atlas-reward-pools/atlas-reward-pools
     newTag: latest
   - name: ghcr.io/chronicle20/atlas-guilds/atlas-guilds
     newTag: latest

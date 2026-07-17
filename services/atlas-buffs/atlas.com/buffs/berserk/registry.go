@@ -206,7 +206,7 @@ func (r *Registry) ClaimBroadcast(ctx context.Context, characterId uint32, now t
 
 // StoreEvaluation writes the outcome of a re-evaluation: captured active
 // state, refreshed character level, and a fresh initial-delay schedule
-// (Cosmic parity: every re-evaluation replaces the schedule, design D2).
+// (every re-evaluation replaces the schedule, design D2).
 func (r *Registry) StoreEvaluation(ctx context.Context, characterId uint32, active bool, characterLevel byte, nextBroadcastAt time.Time) error {
 	t := tenant.MustFromContext(ctx)
 	_, err := r.updateWithRetry(ctx, t, characterId, func(m Model) Model {

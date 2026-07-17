@@ -159,8 +159,8 @@ func TestProcessTicksReevalDoesNotBroadcastSamePass(t *testing.T) {
 	p := testProcessor(t, ctx, now)
 
 	// Dirty AND broadcast-due: the re-evaluation succeeds and replaces
-	// the schedule (Cosmic cancel-and-replace semantics); the broadcast claim
-	// must decline because the fresh schedule is no longer due.
+	// the schedule (design D2 cancel-and-replace semantics); the broadcast
+	// claim must decline because the fresh schedule is no longer due.
 	m := NewBuilder(world.Id(0), 42, 10).SetChannel(channel.Id(1)).SetDirtyAt(now).Build().
 		evaluated(false, 120, now)
 	assert.NoError(t, GetRegistry().Track(ctx, m))

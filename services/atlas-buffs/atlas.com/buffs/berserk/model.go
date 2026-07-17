@@ -8,9 +8,9 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
-// Broadcast cadence (Cosmic parity: Character.java:1867 — 5000ms delay, 3000ms
-// period) plus service-local pacing knobs. Exported so the character package's
-// buff hook and tests reference the same values.
+// Broadcast cadence (PRD FR-3: 5000ms initial delay, 3000ms period) plus
+// service-local pacing knobs. Exported so the character package's buff hook
+// and tests reference the same values.
 const (
 	InitialBroadcastDelay = 5 * time.Second
 	BroadcastPeriod       = 3 * time.Second

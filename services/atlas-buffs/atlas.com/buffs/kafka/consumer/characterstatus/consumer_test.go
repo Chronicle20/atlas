@@ -103,7 +103,7 @@ func TestHandleMapChangedRefreshesChannelAndMarksDirty(t *testing.T) {
 	m, err := berserk.GetRegistry().Get(ctx, 42)
 	assert.NoError(t, err)
 	assert.Equal(t, channel.Id(3), m.ChannelId())
-	assert.False(t, m.DirtyAt().IsZero(), "Cosmic re-checks on transfer")
+	assert.False(t, m.DirtyAt().IsZero(), "PRD FR-2: transfer re-checks berserk state")
 }
 
 func TestHandleChannelChangedRefreshesChannel(t *testing.T) {

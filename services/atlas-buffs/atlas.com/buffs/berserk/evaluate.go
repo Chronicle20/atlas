@@ -4,8 +4,8 @@ package berserk
 //
 //	active := skillLevel > 0 && hp > 0 && hp*100/effectiveMaxHp < x
 //
-// Strict less-than is Cosmic parity (Character.java:1852): at exactly x% the
-// aura is OFF. hp > 0 folds death handling into the formula — the
+// Strict less-than is required by PRD FR-1: at exactly x% the aura is OFF.
+// hp > 0 folds death handling into the formula — the
 // death-accompanying STAT_CHANGED(HP=0) evaluates to inactive with no DIED
 // consumer. effectiveMaxHp is buff-inclusive (atlas-effective-stats), so
 // Hyper Body apply/expire can flip the state with hp constant. Integer math:

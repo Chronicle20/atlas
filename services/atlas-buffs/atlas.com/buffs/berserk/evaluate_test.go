@@ -15,7 +15,7 @@ func TestEvaluate(t *testing.T) {
 		want       bool
 	}{
 		{name: "below threshold is active", skillLevel: 30, hp: 499, maxHp: 1000, x: 50, want: true},
-		{name: "equality is inactive (strict less-than, Character.java:1852)", skillLevel: 30, hp: 500, maxHp: 1000, x: 50, want: false},
+		{name: "equality is inactive (strict less-than, PRD FR-1)", skillLevel: 30, hp: 500, maxHp: 1000, x: 50, want: false},
 		{name: "above threshold is inactive", skillLevel: 30, hp: 501, maxHp: 1000, x: 50, want: false},
 		{name: "integer division truncates toward inactive edge", skillLevel: 30, hp: 509, maxHp: 1020, x: 49, want: false}, // 509*100/1020 = 49
 		{name: "integer division one below", skillLevel: 30, hp: 499, maxHp: 1020, x: 49, want: true},                       // 499*100/1020 = 48

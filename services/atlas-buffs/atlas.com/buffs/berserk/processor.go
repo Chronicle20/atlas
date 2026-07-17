@@ -125,8 +125,8 @@ func (p *ProcessorImpl) HandleStatChanged(worldId world.Id, channelId channel.Id
 	return GetRegistry().MarkDirty(p.ctx, characterId, dirtyAt)
 }
 
-// HandleTransfer covers MAP_CHANGED and CHANNEL_CHANGED (Cosmic re-checks on
-// transfer).
+// HandleTransfer covers MAP_CHANGED and CHANNEL_CHANGED (PRD FR-2: channel/map
+// transfer re-checks berserk state).
 func (p *ProcessorImpl) HandleTransfer(worldId world.Id, channelId channel.Id, characterId uint32) error {
 	if err := GetRegistry().UpdateChannel(p.ctx, characterId, worldId, channelId); err != nil {
 		return err

@@ -13,9 +13,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
-
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"

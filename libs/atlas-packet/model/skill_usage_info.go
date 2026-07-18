@@ -59,6 +59,10 @@ func (m *SkillUsageInfo) SkillLevel() byte {
 	return m.skillLevel
 }
 
+func (m *SkillUsageInfo) SpiritJavelinItemId() uint32 {
+	return m.spiritJavelinItemId
+}
+
 func (m *SkillUsageInfo) AffectedPartyMemberBitmap() byte {
 	return m.affectedPartyMemberBitmap
 }

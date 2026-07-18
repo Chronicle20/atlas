@@ -3174,6 +3174,54 @@ func TestReader_FreezeDoublesDuration(t *testing.T) {
 	}
 }
 
+// TestReader_ShadowStars_EmitsNonzeroShadowClawPlaceholder pins the
+// zero-guard fix (task-158): produceBuffStatAmount drops a statup whose
+// value == 0, so skill 4121006 (Night Lord Shadow Stars) MUST emit a nonzero
+// SHADOW_CLAW placeholder to survive the guard. atlas-channel overwrites this
+// placeholder with the client-chosen throwing-star item id at cast time.
+func TestReader_ShadowStars_EmitsNonzeroShadowClawPlaceholder(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	tn, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	const xmlData = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="412.img">
+  <imgdir name="skill">
+    <imgdir name="4121006">
+      <imgdir name="level">
+        <imgdir name="1">
+          <int name="time" value="30"/>
+          <int name="mpCon" value="10"/>
+        </imgdir>
+      </imgdir>
+    </imgdir>
+  </imgdir>
+</imgdir>`
+
+	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rm, ok := rmm["4121006"]
+	if !ok {
+		t.Fatal("rmm[4121006] does not exist.")
+	}
+	if len(rm.Effects) != 1 {
+		t.Fatalf("len(rm.Effects) = %d, want 1", len(rm.Effects))
+	}
+	su, ok := findStatup(rm.Effects[0].Statups, string(character.TemporaryStatTypeShadowClaw))
+	if !ok {
+		t.Fatalf("expected a SHADOW_CLAW statup to be emitted for skill 4121006 (zero-guard fix), got none in %+v", rm.Effects[0].Statups)
+	}
+	if su.Amount == 0 {
+		t.Fatalf("SHADOW_CLAW statup Amount = 0, want nonzero (produceBuffStatAmount drops zero-value statups)")
+	}
+}
+
 func TestSkillReaderBroomstickVehicleId(t *testing.T) {
 	statups := mountStatupsForSkill(skill.BeginnerBroomstickId, 1)
 	got, ok := findStatup(statups, string(character.TemporaryStatTypeMonsterRiding))

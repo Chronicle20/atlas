@@ -27,10 +27,12 @@ func (f *fakeStore) ListTenantIDs(_ context.Context, bucket string) ([]string, e
 	sort.Strings(ids) // deterministic order for tests that assert partial progress
 	return ids, nil
 }
+
 func (f *fakeStore) PrefixInfo(_ context.Context, bucket, prefix string) (PrefixInfo, error) {
 	id := prefix[len("tenants/") : len(prefix)-1] // strip "tenants/" and trailing "/"
 	return f.prefixes[bucket][id], nil
 }
+
 func (f *fakeStore) RemovePrefix(_ context.Context, bucket, prefix string) error {
 	id := prefix[len("tenants/") : len(prefix)-1] // strip "tenants/" and trailing "/"
 	if err, ok := f.removeErrs[id]; ok {

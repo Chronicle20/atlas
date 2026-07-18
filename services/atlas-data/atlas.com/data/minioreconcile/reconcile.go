@@ -1,11 +1,10 @@
 package minioreconcile
 
 import (
+	"atlas-data/canonical"
 	"context"
 	"errors"
 	"time"
-
-	"atlas-data/canonical"
 
 	"github.com/sirupsen/logrus"
 )

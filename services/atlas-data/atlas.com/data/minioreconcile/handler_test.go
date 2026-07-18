@@ -1,17 +1,17 @@
 package minioreconcile
 
 import (
+	"atlas-data/rest"
 	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
-	"atlas-data/rest"
-
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 // newTestHandler builds the same route InitResource wires up — POST

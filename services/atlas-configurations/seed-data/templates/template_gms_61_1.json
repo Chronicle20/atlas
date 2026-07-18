@@ -3050,19 +3050,11 @@
               "useAverageStats": true
             },
             {
-              "templateId": 1052160,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1002357,
               "useAverageStats": true
             },
             {
               "templateId": 1102041,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1122059,
               "useAverageStats": true
             },
             {
@@ -3203,7 +3195,7 @@
             },
             {
               "skillId": 1121000,
-              "level": 30
+              "level": 20
             },
             {
               "skillId": 1121001,
@@ -3227,7 +3219,7 @@
             },
             {
               "skillId": 1121011,
-              "level": 5
+              "level": 1
             }
           ]
         }
@@ -3271,19 +3263,11 @@
               "useAverageStats": true
             },
             {
-              "templateId": 1052160,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1002357,
               "useAverageStats": true
             },
             {
               "templateId": 1102041,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1122059,
               "useAverageStats": true
             },
             {
@@ -3428,7 +3412,7 @@
             },
             {
               "skillId": 1221000,
-              "level": 30
+              "level": 20
             },
             {
               "skillId": 1221001,
@@ -3460,7 +3444,7 @@
             },
             {
               "skillId": 1221012,
-              "level": 5
+              "level": 1
             }
           ]
         }
@@ -3500,19 +3484,11 @@
               "useAverageStats": true
             },
             {
-              "templateId": 1052160,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1002357,
               "useAverageStats": true
             },
             {
               "templateId": 1102041,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1122059,
               "useAverageStats": true
             },
             {
@@ -3657,7 +3633,7 @@
             },
             {
               "skillId": 1321000,
-              "level": 30
+              "level": 20
             },
             {
               "skillId": 1321001,
@@ -3677,7 +3653,7 @@
             },
             {
               "skillId": 1321010,
-              "level": 5
+              "level": 1
             }
           ]
         }
@@ -3721,19 +3697,11 @@
               "useAverageStats": true
             },
             {
-              "templateId": 1052161,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1002357,
               "useAverageStats": true
             },
             {
               "templateId": 1102041,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1122059,
               "useAverageStats": true
             },
             {
@@ -3846,7 +3814,7 @@
             },
             {
               "skillId": 2121000,
-              "level": 30
+              "level": 20
             },
             {
               "skillId": 2121001,
@@ -3878,7 +3846,7 @@
             },
             {
               "skillId": 2121008,
-              "level": 5
+              "level": 1
             }
           ]
         }
@@ -3922,19 +3890,11 @@
               "useAverageStats": true
             },
             {
-              "templateId": 1052161,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1002357,
               "useAverageStats": true
             },
             {
               "templateId": 1102041,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1122059,
               "useAverageStats": true
             },
             {
@@ -4047,7 +4007,7 @@
             },
             {
               "skillId": 2221000,
-              "level": 30
+              "level": 20
             },
             {
               "skillId": 2221001,
@@ -4079,7 +4039,7 @@
             },
             {
               "skillId": 2221008,
-              "level": 5
+              "level": 1
             }
           ]
         }
@@ -4123,19 +4083,11 @@
               "useAverageStats": true
             },
             {
-              "templateId": 1052161,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1002357,
               "useAverageStats": true
             },
             {
               "templateId": 1102041,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1122059,
               "useAverageStats": true
             },
             {
@@ -4248,7 +4200,7 @@
             },
             {
               "skillId": 2321000,
-              "level": 30
+              "level": 20
             },
             {
               "skillId": 2321001,
@@ -4284,7 +4236,7 @@
             },
             {
               "skillId": 2321009,
-              "level": 5
+              "level": 1
             }
           ]
         }
@@ -4320,23 +4272,11 @@
           "defaultName": "AdminBowmaster",
           "equipment": [
             {
-              "templateId": 1452059,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1052162,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1002357,
               "useAverageStats": true
             },
             {
               "templateId": 1102041,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1122059,
               "useAverageStats": true
             },
             {
@@ -4457,7 +4397,7 @@
             },
             {
               "skillId": 3121000,
-              "level": 30
+              "level": 20
             },
             {
               "skillId": 3121002,
@@ -4485,7 +4425,7 @@
             },
             {
               "skillId": 3121009,
-              "level": 5
+              "level": 1
             }
           ]
         }
@@ -4521,23 +4461,11 @@
           "defaultName": "AdminMarksman",
           "equipment": [
             {
-              "templateId": 1462051,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1052162,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1002357,
               "useAverageStats": true
             },
             {
               "templateId": 1102041,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1122059,
               "useAverageStats": true
             },
             {
@@ -4658,7 +4586,7 @@
             },
             {
               "skillId": 3221000,
-              "level": 30
+              "level": 20
             },
             {
               "skillId": 3221001,
@@ -4686,7 +4614,7 @@
             },
             {
               "skillId": 3221008,
-              "level": 5
+              "level": 1
             }
           ]
         }
@@ -4726,19 +4654,11 @@
               "useAverageStats": true
             },
             {
-              "templateId": 1052163,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1002357,
               "useAverageStats": true
             },
             {
               "templateId": 1102041,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1122059,
               "useAverageStats": true
             },
             {
@@ -4863,7 +4783,7 @@
             },
             {
               "skillId": 4121000,
-              "level": 30
+              "level": 20
             },
             {
               "skillId": 4121003,
@@ -4887,7 +4807,7 @@
             },
             {
               "skillId": 4121009,
-              "level": 5
+              "level": 1
             }
           ]
         }
@@ -4931,19 +4851,11 @@
               "useAverageStats": true
             },
             {
-              "templateId": 1052163,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1002357,
               "useAverageStats": true
             },
             {
               "templateId": 1102041,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1122059,
               "useAverageStats": true
             },
             {
@@ -5064,7 +4976,7 @@
             },
             {
               "skillId": 4221000,
-              "level": 30
+              "level": 20
             },
             {
               "skillId": 4221001,
@@ -5088,7 +5000,7 @@
             },
             {
               "skillId": 4221008,
-              "level": 5
+              "level": 1
             }
           ]
         }

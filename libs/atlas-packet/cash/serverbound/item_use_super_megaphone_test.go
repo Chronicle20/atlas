@@ -86,10 +86,13 @@ func TestItemUseSuperMegaphoneRoundTrip(t *testing.T) {
 			t.Run(v.Name+"/"+tc.name, func(t *testing.T) {
 				ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 				updateTimeFirst := v.Region == "GMS" && v.MajorVersion >= 95
+				// Legacy GMS (<83) carries NO update_time at all (task-123
+				// legacy phase 1, megaphoneHasUpdateTime).
+				hasUpdateTime := !(v.Region == "GMS" && v.MajorVersion < 83)
 				input := NewItemUseSuperMegaphone(updateTimeFirst)
 				input.message = "Super hello!"
 				input.whisper = tc.whisper
-				if !updateTimeFirst {
+				if !updateTimeFirst && hasUpdateTime {
 					input.updateTime = 54321
 				}
 				output := NewItemUseSuperMegaphone(updateTimeFirst)
@@ -100,7 +103,7 @@ func TestItemUseSuperMegaphoneRoundTrip(t *testing.T) {
 				if output.Whisper() != input.Whisper() {
 					t.Errorf("whisper: got %v, want %v", output.Whisper(), input.Whisper())
 				}
-				if output.UpdateTime() != input.UpdateTime() {
+				if hasUpdateTime && output.UpdateTime() != input.UpdateTime() {
 					t.Errorf("updateTime: got %v, want %v", output.UpdateTime(), input.UpdateTime())
 				}
 			})

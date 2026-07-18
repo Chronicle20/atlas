@@ -94,9 +94,13 @@ func TestItemUseMegaphoneRoundTrip(t *testing.T) {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 			updateTimeFirst := v.Region == "GMS" && v.MajorVersion >= 95
+			// Legacy GMS (<83) carries NO update_time at all (task-123 legacy
+			// phase 1, megaphoneHasUpdateTime) — only set/check it when the
+			// sub-body actually carries a trailing copy.
+			hasUpdateTime := !(v.Region == "GMS" && v.MajorVersion < 83)
 			input := NewItemUseMegaphone(updateTimeFirst)
 			input.message = "Hello world!"
-			if !updateTimeFirst {
+			if !updateTimeFirst && hasUpdateTime {
 				input.updateTime = 12345
 			}
 			output := NewItemUseMegaphone(updateTimeFirst)
@@ -104,7 +108,7 @@ func TestItemUseMegaphoneRoundTrip(t *testing.T) {
 			if output.Message() != input.Message() {
 				t.Errorf("message: got %q, want %q", output.Message(), input.Message())
 			}
-			if output.UpdateTime() != input.UpdateTime() {
+			if hasUpdateTime && output.UpdateTime() != input.UpdateTime() {
 				t.Errorf("updateTime: got %v, want %v", output.UpdateTime(), input.UpdateTime())
 			}
 		})

@@ -1,15 +1,18 @@
 package handler
 
 import (
-	"context"
-	"sort"
-
 	"atlas-channel/asset"
 	"atlas-channel/character"
 	"atlas-channel/compartment"
 	"atlas-channel/data/skill/effect/statup"
+	"context"
+	"sort"
+
 	compartmentMsg "atlas-channel/kafka/message/compartment"
 	once "atlas-channel/kafka/once/compartment"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
@@ -17,8 +20,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 // StarDraw is one slot-level consume of a chosen throwing star for the

@@ -1,13 +1,13 @@
 package handler
 
 import (
-	"testing"
-
 	"atlas-channel/asset"
 	"atlas-channel/data/skill/effect/statup"
+	"testing"
+
+	"github.com/google/uuid"
 
 	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
-	"github.com/google/uuid"
 )
 
 const (

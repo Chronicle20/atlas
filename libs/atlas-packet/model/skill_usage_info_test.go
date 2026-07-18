@@ -5,9 +5,10 @@ import (
 	"encoding/binary"
 	"testing"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 func TestIsMobAffectingBuff_PriestDoom(t *testing.T) {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useReducer } from "react";
+import { useEffect, useReducer } from "react";
 import { useSearchParams } from "react-router-dom";
 import type { CharacterTemplate } from "@/types/models/template";
 import { EmptyState, ErrorDisplay, FormSkeleton } from "@/components/common";
@@ -69,12 +69,20 @@ export function CharacterTemplatesEditor({
     }
   }, [adapter.templates, state.loaded]);
 
-  // URL -> selection on load and whenever the template count changes. Reads
-  // ?tpl=, clamps invalid / out-of-range values to 0, and writes the clamped
-  // value back with { replace: true }. Both mutations are guarded so the
-  // effect settles after one pass (no render loop): the dispatch only fires
-  // when the clamped index actually differs from the selection, and the URL
-  // write only fires when the serialized value actually differs.
+  // Deep-link: apply ?tpl= to the selection ONCE, when the adapter first
+  // seeds the reducer. Reads ?tpl=, clamps invalid / out-of-range values to 0
+  // (design D7 — a manually-typed bad param lands on the first template), and
+  // writes the clamped value back with { replace: true }. Both mutations are
+  // guarded so the effect settles after one pass (no render loop).
+  //
+  // Runs on load only (deps: [state.loaded]) and NOT on template-count
+  // changes: every internal length mutation (add/duplicate/remove/discard)
+  // already calls syncSelection() with the reducer's own post-mutation index,
+  // so it owns URL/selection agreement. Re-running this effect on a shrink
+  // would race the router: setSearchParams (router state) and dispatch
+  // (reducer state) can commit in separate renders, so a reducer-first render
+  // would read a stale, now-out-of-range ?tpl and wrongly clamp it to 0,
+  // overriding the nearest-valid tab the handler and reducer just chose.
   useEffect(() => {
     if (!state.loaded) return;
     const raw = searchParams.get("tpl") ?? "0";
@@ -97,8 +105,8 @@ export function CharacterTemplatesEditor({
         { replace: true },
       );
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- run on load + template-count changes only
-  }, [state.loaded, state.templates.length]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deep-link apply on load only; internal mutations own URL sync via syncSelection
+  }, [state.loaded]);
 
   const syncSelection = (index: number) => {
     setSearchParams(
@@ -129,8 +137,20 @@ export function CharacterTemplatesEditor({
       Math.min(state.selectedIndex, Math.max(state.templates.length - 2, 0)),
     );
   };
+  const discardChanges = () => {
+    dispatch({ type: "discard" });
+    // Mirror the reducer's own post-discard selection (clampIndex against the
+    // baseline length) so the URL param agrees with the nearest-valid tab the
+    // reducer picks. Without this the template-count-change effect would read a
+    // now-out-of-range ?tpl and apply the blanket invalid->0 policy, landing on
+    // tab 0 instead of the tab the reducer restored.
+    const length = state.baseline.length;
+    const index =
+      length <= 0 ? 0 : Math.min(Math.max(state.selectedIndex, 0), length - 1);
+    syncSelection(index);
+  };
 
-  const dirty = useMemo(() => isDirty(state), [state]);
+  const dirty = isDirty(state);
 
   // Seed-once gate: only the pre-load window shows skeleton/error, so a
   // transient refetch or save error never blanks an in-progress working copy.
@@ -266,7 +286,7 @@ export function CharacterTemplatesEditor({
         onSave={() =>
           adapter.save(state.templates, () => dispatch({ type: "savedOk" }))
         }
-        onDiscard={() => dispatch({ type: "discard" })}
+        onDiscard={discardChanges}
       />
     </div>
   );

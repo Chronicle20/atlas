@@ -155,4 +155,28 @@ describe("CharacterTemplatesEditor", () => {
     );
     expect(screen.getAllByRole("tab")).toHaveLength(2);
   });
+
+  it("discard restores the nearest valid tab (reducer selection), not tab 0", async () => {
+    renderEditor();
+    // Select the last baseline template, then + New (selection -> new last
+    // index, dirty). The added template's URL param is the pre-discard index.
+    await userEvent.click(screen.getByRole("tab", { name: "Adventurer · F" }));
+    await userEvent.click(screen.getByRole("button", { name: /new/i }));
+    expect(screen.getAllByRole("tab")).toHaveLength(3);
+    await userEvent.click(screen.getByRole("button", { name: /discard/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /discard changes/i }),
+    );
+    const tabs = screen.getAllByRole("tab");
+    expect(tabs).toHaveLength(2);
+    // Reducer clamps to baseline.length-1 (the last real tab), NOT tab 0, and
+    // the URL param must agree with that selection.
+    expect(screen.getByRole("tab", { name: "Adventurer · F" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("tpl-param")).toHaveTextContent("1"),
+    );
+  });
 });

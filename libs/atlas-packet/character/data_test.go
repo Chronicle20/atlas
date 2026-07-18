@@ -10,7 +10,32 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
+
+// TestEncodeSkillsExpirationVersionGate guards the v79 field-enter regression:
+// the per-skill Int64 expiration is v83+ only. pt.Variants has no version in
+// [29,82], so this pins the boundary directly. A legacy (<83) skill entry is
+// id(4)+level(4); v83+ adds the 8-byte expiration. Both write the cooldown
+// count short (GMS>28).
+func TestEncodeSkillsExpirationVersionGate(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	cd := CharacterData{Skills: []SkillEntry{{Id: 2101001, Level: 20, Expiration: -1}}}
+
+	// v79 (legacy): count(2) + id(4) + level(4) + cooldownCount(2) = 12, no expiration.
+	w79 := response.NewWriter(l)
+	cd.encodeSkills(w79, tenant.MustFromContext(pt.CreateContext("GMS", 79, 1)))
+	if got := len(w79.Bytes()); got != 12 {
+		t.Errorf("v79 encodeSkills = %d bytes, want 12 (id+level, no Int64 expiration)", got)
+	}
+
+	// v83+: adds the 8-byte Int64 expiration = 20.
+	w83 := response.NewWriter(l)
+	cd.encodeSkills(w83, tenant.MustFromContext(pt.CreateContext("GMS", 83, 1)))
+	if got := len(w83.Bytes()); got != 20 {
+		t.Errorf("v83 encodeSkills = %d bytes, want 20 (id+level+expiration)", got)
+	}
+}
 
 func TestCharacterDataMinimalRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {

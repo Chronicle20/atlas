@@ -400,7 +400,9 @@ func (m *CharacterData) encodeInventory(l logrus.FieldLogger, ctx context.Contex
 	for i := range m.Inventory.RegularEquip {
 		w.WriteByteArray(m.Inventory.RegularEquip[i].Encode(l, ctx)(options))
 	}
-	if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+	// Equip-section terminator width tracks the equip slot width: short for
+	// GMS>=83/JMS, byte for legacy GMS (<83). See model.Asset.encodeSlot.
+	if (t.Region() == "GMS" && t.MajorAtLeast(83)) || t.Region() == "JMS" {
 		w.WriteShort(0)
 	} else {
 		w.WriteByte(0)
@@ -410,7 +412,7 @@ func (m *CharacterData) encodeInventory(l logrus.FieldLogger, ctx context.Contex
 	for i := range m.Inventory.CashEquip {
 		w.WriteByteArray(m.Inventory.CashEquip[i].Encode(l, ctx)(options))
 	}
-	if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+	if (t.Region() == "GMS" && t.MajorAtLeast(83)) || t.Region() == "JMS" {
 		w.WriteShort(0)
 	} else {
 		w.WriteByte(0)
@@ -423,7 +425,10 @@ func (m *CharacterData) encodeInventory(l logrus.FieldLogger, ctx context.Contex
 	for i := range m.Inventory.EquipInv {
 		w.WriteByteArray(m.Inventory.EquipInv[i].Encode(l, ctx)(options))
 	}
-	if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+	// GMS>=83/JMS fold the empty 4th (dragon/mechanic) equip loop terminator
+	// into this Int(0) (two short terminators). Legacy GMS (<83) has no such
+	// loop and terminates the equipable inventory with a single byte.
+	if (t.Region() == "GMS" && t.MajorAtLeast(83)) || t.Region() == "JMS" {
 		w.WriteInt(0)
 	} else {
 		w.WriteByte(0)
@@ -522,7 +527,7 @@ func decodeEquipmentSection(l logrus.FieldLogger, ctx context.Context, r *reques
 	var assets []model.Asset
 	for {
 		var wireSlot uint16
-		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+		if (t.Region() == "GMS" && t.MajorAtLeast(83)) || t.Region() == "JMS" {
 			wireSlot = r.ReadUint16()
 		} else {
 			wireSlot = uint16(r.ReadByte())
@@ -546,7 +551,7 @@ func decodeEquipmentSection(l logrus.FieldLogger, ctx context.Context, r *reques
 func decodeEquipableInventorySection(l logrus.FieldLogger, ctx context.Context, r *request.Reader, options map[string]interface{}, t tenant.Model) []model.Asset {
 	var assets []model.Asset
 	for {
-		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+		if (t.Region() == "GMS" && t.MajorAtLeast(83)) || t.Region() == "JMS" {
 			wireSlot := r.ReadUint16()
 			if wireSlot == 0 {
 				_ = r.ReadUint16() // consume remaining 2 bytes of WriteInt(0) terminator
@@ -589,7 +594,14 @@ func (m *CharacterData) encodeSkills(w *response.Writer, t tenant.Model) {
 	for _, s := range m.Skills {
 		w.WriteInt(s.Id)
 		w.WriteInt(s.Level)
-		w.WriteInt64(s.Expiration)
+		// Per-skill expiration (Int64) was introduced between v79 and v83.
+		// v79 client GW skill decode reads id+level(+mastery) only (verified
+		// CharacterData::Decode v79 @0x4da2ca); v83 adds DecodeBuffer(8)
+		// (verified @0x4e592d). Writing it ungated shifts every later section
+		// for v79 and over-reads at GW_CoupleRecord::Decode (error 38).
+		if (t.Region() == "GMS" && t.MajorAtLeast(83)) || t.Region() == "JMS" {
+			w.WriteInt64(s.Expiration)
+		}
 		if s.FourthJob {
 			w.WriteInt(s.MasterLevel)
 		}
@@ -610,7 +622,10 @@ func (m *CharacterData) decodeSkills(r *request.Reader, t tenant.Model) {
 	for i := uint16(0); i < skillCount; i++ {
 		m.Skills[i].Id = r.ReadUint32()
 		m.Skills[i].Level = r.ReadUint32()
-		m.Skills[i].Expiration = r.ReadInt64()
+		// Mirror of encodeSkills: expiration present only for GMS >= 83 / JMS.
+		if (t.Region() == "GMS" && t.MajorAtLeast(83)) || t.Region() == "JMS" {
+			m.Skills[i].Expiration = r.ReadInt64()
+		}
 		jobId := job.IdFromSkillId(skill.Id(m.Skills[i].Id))
 		m.Skills[i].FourthJob = job.IsFourthJob(jobId)
 		if m.Skills[i].FourthJob {

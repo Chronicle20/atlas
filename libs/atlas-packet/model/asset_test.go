@@ -12,6 +12,31 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// TestEncodeSlotVersionGate guards the equip inventory slot width: byte for
+// legacy GMS (<83), short for v83+. The only wire difference between a v79 and a
+// v83 regular-equip encode is that widened slot, so v83 must be exactly 1 byte
+// longer, and the 0x01 type discriminator lands right after a 1-byte (v79) or
+// 2-byte (v83) slot. pt.Variants has no version in [29,82], so this pins it.
+func TestEncodeSlotVersionGate(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	a := NewAsset(false, -5, 1302000, time.Time{}). // equipped slot -5, equip template
+							SetEquipmentStats(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0).
+							SetEquipmentMeta(0, 0, 0, 0, 0, 0)
+
+	v79 := a.Encode(l, test.CreateContext("GMS", 79, 1))(nil)
+	v83 := a.Encode(l, test.CreateContext("GMS", 83, 1))(nil)
+
+	if len(v83) != len(v79)+1 {
+		t.Errorf("equip encode lengths: v79=%d v83=%d, want v83 == v79+1 (byte vs short slot)", len(v79), len(v83))
+	}
+	if v79[0] != 5 || v79[1] != 1 {
+		t.Errorf("v79 equip prefix = %v, want [5 1] (byte slot then 0x01 type)", v79[:2])
+	}
+	if v83[0] != 5 || v83[1] != 0 || v83[2] != 1 {
+		t.Errorf("v83 equip prefix = %v, want [5 0 1] (short slot then 0x01 type)", v83[:3])
+	}
+}
+
 func TestAssetEquipable(t *testing.T) {
 	exp := time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)
 	a := NewAsset(false, -5, 1302000, exp). // equip slot -5, templateId in equip range (1xxxxxx)

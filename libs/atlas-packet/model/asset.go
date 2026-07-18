@@ -355,7 +355,10 @@ func (m *Asset) encodeSlot(w *response.Writer, t tenant.Model, _ bool) {
 	if slot > 100 {
 		slot -= 100
 	}
-	if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+	// Equip inventory position widened from byte to short between v79 and v83.
+	// v79/v72 GW inventory decode read the equip slot with Decode1 (byte); v83
+	// reads Decode2 (short). IDA-verified. Legacy GMS (<83) uses a byte.
+	if (t.Region() == "GMS" && t.MajorAtLeast(83)) || t.Region() == "JMS" {
 		w.WriteShort(uint16(slot))
 	} else {
 		w.WriteByte(byte(slot))

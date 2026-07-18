@@ -22,6 +22,7 @@ import (
 	map2 "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -436,7 +437,11 @@ func (p *ProcessorImpl) RelinquishControlOnHide(characterId uint32) error {
 
 	f, err := p.locationFn(characterId)
 	if err != nil {
-		p.l.WithError(err).Debugf("GM-hide: unable to locate character [%d]; skipping monster relinquish (set mutation applied).", characterId)
+		if errors.Is(err, requests.ErrNotFound) {
+			p.l.WithError(err).Debugf("GM-hide: character [%d] offline/absent (not found); skipping monster relinquish (set mutation applied).", characterId)
+		} else {
+			p.l.WithError(err).Warnf("GM-hide: unable to locate character [%d] (non-404); skipping monster relinquish (set mutation applied).", characterId)
+		}
 		return nil
 	}
 
@@ -472,7 +477,11 @@ func (p *ProcessorImpl) RestoreCandidacyOnReveal(characterId uint32) error {
 
 	f, err := p.locationFn(characterId)
 	if err != nil {
-		p.l.WithError(err).Debugf("GM-reveal: unable to locate character [%d]; skipping re-election (set mutation applied).", characterId)
+		if errors.Is(err, requests.ErrNotFound) {
+			p.l.WithError(err).Debugf("GM-reveal: character [%d] offline/absent (not found); skipping re-election (set mutation applied).", characterId)
+		} else {
+			p.l.WithError(err).Warnf("GM-reveal: unable to locate character [%d] (non-404); skipping re-election (set mutation applied).", characterId)
+		}
 		return nil
 	}
 

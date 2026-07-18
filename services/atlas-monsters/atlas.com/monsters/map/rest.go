@@ -63,6 +63,16 @@ func (r *LocationRestModel) SetID(s string) error {
 	return nil
 }
 
+// SetToOneReferenceID is a no-op required by api2go's interface.
+func (r *LocationRestModel) SetToOneReferenceID(_, _ string) error {
+	return nil
+}
+
+// SetToManyReferenceIDs is a no-op required by api2go's interface.
+func (r *LocationRestModel) SetToManyReferenceIDs(_ string, _ []string) error {
+	return nil
+}
+
 // ExtractLocation converts the REST projection to a field.Model.
 func ExtractLocation(rm LocationRestModel) (field.Model, error) {
 	return field.NewBuilder(rm.WorldId, rm.ChannelId, rm.MapId).SetInstance(rm.Instance).Build(), nil

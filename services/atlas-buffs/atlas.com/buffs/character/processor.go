@@ -50,7 +50,7 @@ func (p *ProcessorImpl) Apply(worldId world.Id, channelId channel.Id, characterI
 		return nil
 	}
 
-	return message.Emit(p.l, p.ctx)(func(buf *message.Buffer) error {
+	err := message.Emit(p.l, p.ctx)(func(buf *message.Buffer) error {
 		applied, err := GetRegistry().Apply(p.ctx, worldId, channelId, characterId, sourceId, level, duration, changes, accumulate)
 		if err != nil {
 			return err
@@ -66,6 +66,11 @@ func (p *ProcessorImpl) Apply(worldId world.Id, channelId channel.Id, characterI
 		}
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+	markBerserkDirtyOnMaxHpChange(p.l, p.ctx, characterId, changes)
+	return nil
 }
 
 func (p *ProcessorImpl) Cancel(worldId world.Id, characterId uint32, sourceId int32) error {
@@ -79,7 +84,7 @@ func (p *ProcessorImpl) Cancel(worldId world.Id, characterId uint32, sourceId in
 	// One EXPIRED per removed buff: a sourceId can map to several per-stat buffs
 	// in accumulate mode (Beholder Hex), and each needs its own cancel so the
 	// client clears every icon rather than leaving the others stuck.
-	return message.Emit(p.l, p.ctx)(func(buf *message.Buffer) error {
+	err = message.Emit(p.l, p.ctx)(func(buf *message.Buffer) error {
 		for _, b := range cancelled {
 			if err := buf.Put(character2.EnvEventStatusTopic, expiredStatusEventProvider(worldId, characterId, b.SourceId(), b.Level(), b.Duration(), b.Changes(), b.CreatedAt(), b.ExpiresAt())); err != nil {
 				return err
@@ -87,6 +92,15 @@ func (p *ProcessorImpl) Cancel(worldId world.Id, characterId uint32, sourceId in
 		}
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+	sets := make([][]stat.Model, 0, len(cancelled))
+	for _, b := range cancelled {
+		sets = append(sets, b.Changes())
+	}
+	markBerserkDirtyOnMaxHpChange(p.l, p.ctx, characterId, sets...)
+	return nil
 }
 
 func (p *ProcessorImpl) CancelAll(worldId world.Id, characterId uint32) error {
@@ -94,7 +108,7 @@ func (p *ProcessorImpl) CancelAll(worldId world.Id, characterId uint32) error {
 	if len(buffs) == 0 {
 		return nil
 	}
-	return message.Emit(p.l, p.ctx)(func(buf *message.Buffer) error {
+	err := message.Emit(p.l, p.ctx)(func(buf *message.Buffer) error {
 		for _, b := range buffs {
 			if err := buf.Put(character2.EnvEventStatusTopic, expiredStatusEventProvider(worldId, characterId, b.SourceId(), b.Level(), b.Duration(), b.Changes(), b.CreatedAt(), b.ExpiresAt())); err != nil {
 				return err
@@ -102,6 +116,15 @@ func (p *ProcessorImpl) CancelAll(worldId world.Id, characterId uint32) error {
 		}
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+	sets := make([][]stat.Model, 0, len(buffs))
+	for _, b := range buffs {
+		sets = append(sets, b.Changes())
+	}
+	markBerserkDirtyOnMaxHpChange(p.l, p.ctx, characterId, sets...)
+	return nil
 }
 
 func (p *ProcessorImpl) CancelByStatTypes(worldId world.Id, characterId uint32, types []string) error {
@@ -121,7 +144,7 @@ func (p *ProcessorImpl) CancelByStatTypes(worldId world.Id, characterId uint32, 
 		return nil
 	}
 
-	return message.Emit(p.l, p.ctx)(func(buf *message.Buffer) error {
+	err = message.Emit(p.l, p.ctx)(func(buf *message.Buffer) error {
 		for _, b := range cancelled {
 			if err := buf.Put(character2.EnvEventStatusTopic, expiredStatusEventProvider(worldId, characterId, b.SourceId(), b.Level(), b.Duration(), b.Changes(), b.CreatedAt(), b.ExpiresAt())); err != nil {
 				return err
@@ -129,6 +152,15 @@ func (p *ProcessorImpl) CancelByStatTypes(worldId world.Id, characterId uint32, 
 		}
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+	sets := make([][]stat.Model, 0, len(cancelled))
+	for _, b := range cancelled {
+		sets = append(sets, b.Changes())
+	}
+	markBerserkDirtyOnMaxHpChange(p.l, p.ctx, characterId, sets...)
+	return nil
 }
 
 func (p *ProcessorImpl) ExpireBuffs() error {
@@ -140,6 +172,13 @@ func (p *ProcessorImpl) ExpireBuffs() error {
 				if err := buf.Put(character2.EnvEventStatusTopic, expiredStatusEventProvider(c.WorldId(), c.Id(), eb.SourceId(), eb.Level(), eb.Duration(), eb.Changes(), eb.CreatedAt(), eb.ExpiresAt())); err != nil {
 					return err
 				}
+			}
+			if len(ebs) > 0 {
+				sets := make([][]stat.Model, 0, len(ebs))
+				for _, eb := range ebs {
+					sets = append(sets, eb.Changes())
+				}
+				markBerserkDirtyOnMaxHpChange(p.l, p.ctx, c.Id(), sets...)
 			}
 		}
 		return nil

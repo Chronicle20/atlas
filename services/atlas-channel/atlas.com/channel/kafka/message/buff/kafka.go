@@ -79,3 +79,20 @@ type ExpiredStatusEventBody struct {
 	CreatedAt time.Time    `json:"createdAt"`
 	ExpiresAt time.Time    `json:"expiresAt"`
 }
+
+const (
+	EventStatusTypeBerserk = "BERSERK"
+)
+
+// BerserkStatusEventBody mirrors atlas-buffs' berserk broadcast tick
+// (task-154). One event per 3s tick per tracked Dark Knight; Active=false
+// ticks clear the aura and keep late-joining observers consistent. ChannelId
+// enables the precise sc.Is(tenant, world, channel) guard.
+type BerserkStatusEventBody struct {
+	TransactionId  uuid.UUID  `json:"transactionId"`
+	ChannelId      channel.Id `json:"channelId"`
+	SkillId        uint32     `json:"skillId"`
+	CharacterLevel byte       `json:"characterLevel"`
+	SkillLevel     byte       `json:"skillLevel"`
+	Active         bool       `json:"active"`
+}

@@ -51,14 +51,21 @@ export function filterEquipment(
 }
 
 /**
+ * v83 id convention shared by faces and hairs: (id/1000)%10 === 1 ⇒ female.
+ * Same rule the Go service's ResolveGender applies to faces.
+ */
+export function isFemaleCosmeticId(id: number): boolean {
+  return id > 0 && Math.floor(id / 1000) % 10 === 1;
+}
+
+/**
  * Mirror of the Go service's ResolveGender. An explicit 0/1 wins; otherwise
  * infer from the face id via the v83 convention (face/1000)%10 === 1 ⇒ female.
  * A non-positive / unknown face resolves to male (0).
  */
 export function resolveGender(gender: number | undefined, face: number): 0 | 1 {
   if (gender === 0 || gender === 1) return gender;
-  if (face > 0 && Math.floor(face / 1000) % 10 === 1) return 1;
-  return 0;
+  return isFemaleCosmeticId(face) ? 1 : 0;
 }
 
 export function canonicalLoadoutString(

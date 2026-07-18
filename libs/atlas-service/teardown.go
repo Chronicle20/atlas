@@ -18,6 +18,7 @@ type Manager struct {
 	waitGroup *sync.WaitGroup
 	context   context.Context
 	cancel    context.CancelFunc
+	closeOnce sync.Once
 }
 
 var (
@@ -53,7 +54,12 @@ func (m *Manager) TeardownFunc(f func()) {
 
 func (m *Manager) Wait() {
 	<-m.termChan
-	close(m.doneChan)
+	// Idempotent: the teardown singleton cannot be re-armed, so guard the
+	// close so a repeated Wait (e.g. go test -count>1) does not panic with
+	// "close of closed channel".
+	m.closeOnce.Do(func() {
+		close(m.doneChan)
+	})
 	m.cancel()
 	m.waitGroup.Wait()
 }

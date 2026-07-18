@@ -2331,16 +2331,6 @@
       {
         "opCode": "0x68",
         "writer": "ClearAvatarMegaphone"
-      },
-      {
-        "opCode": "0x66",
-        "writer": "AvatarMegaphoneResult",
-        "options": {
-          "errorCodes": {
-            "WAITING_LINE": 63,
-            "LEVEL_GATE": 64
-          }
-        }
       }
     ]
   },

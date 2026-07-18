@@ -24,6 +24,15 @@ func (r RestModel) GetID() string {
 	return r.Id
 }
 
+// SetID implements the jsonapi.UnmarshalIdentifier interface. This resource
+// is GET-only (Transform is the only constructor; there is no Extract), so
+// SetID is never invoked on the marshal path - it exists for interface
+// consistency with this service's sibling RestModels.
+func (r *RestModel) SetID(id string) error {
+	r.Id = id
+	return nil
+}
+
 // Transform maps a domain QueueModel snapshot to its REST representation at
 // instant now. ActiveRemainingSeconds is the time left on the Active entry
 // (rounded up to the next whole second, floored at 0 for an already-expired

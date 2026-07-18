@@ -41,27 +41,23 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 }
 
 func handleEnqueueCommand(l logrus.FieldLogger, ctx context.Context, cmd broadcast2.EnqueueCommand) {
-	if cmd.Family != broadcast.FamilyTV && cmd.Family != broadcast.FamilyAvatar {
-		l.Errorf("Unhandled broadcast family [%s].", cmd.Family)
-		return
+	payload := broadcast.Payload{
+		ChannelId:     cmd.ChannelId,
+		SenderName:    cmd.SenderName,
+		SenderMedal:   cmd.SenderMedal,
+		Messages:      cmd.Messages,
+		WhispersOn:    cmd.WhispersOn,
+		ItemId:        cmd.ItemId,
+		TvMessageType: cmd.TvMessageType,
+		SenderLook:    cmd.SenderLook,
+		ReceiverName:  cmd.ReceiverName,
+		ReceiverLook:  cmd.ReceiverLook,
 	}
 
-	e := broadcast.Entry{
-		Id:              uuid.New(),
-		CharacterId:     cmd.CharacterId,
-		DurationSeconds: cmd.DurationSeconds,
-		Payload: broadcast.Payload{
-			ChannelId:     cmd.ChannelId,
-			SenderName:    cmd.SenderName,
-			SenderMedal:   cmd.SenderMedal,
-			Messages:      cmd.Messages,
-			WhispersOn:    cmd.WhispersOn,
-			ItemId:        cmd.ItemId,
-			TvMessageType: cmd.TvMessageType,
-			SenderLook:    cmd.SenderLook,
-			ReceiverName:  cmd.ReceiverName,
-			ReceiverLook:  cmd.ReceiverLook,
-		},
+	e, err := broadcast.NewEntry(cmd.Family, uuid.New(), cmd.CharacterId, payload, cmd.DurationSeconds)
+	if err != nil {
+		l.WithError(err).Errorf("Unhandled broadcast family [%s].", cmd.Family)
+		return
 	}
 
 	if err := broadcast.NewProcessor(l, ctx).Enqueue(world.Id(cmd.WorldId), cmd.Family, e); err != nil {

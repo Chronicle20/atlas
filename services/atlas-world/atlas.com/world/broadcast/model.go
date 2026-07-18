@@ -1,6 +1,7 @@
 package broadcast
 
 import (
+	"fmt"
 	"math"
 	"time"
 
@@ -37,6 +38,25 @@ type Entry struct {
 	DurationSeconds uint32    `json:"durationSeconds"`
 	ActivatedAt     time.Time `json:"activatedAt,omitempty"`
 	ExpiresAt       time.Time `json:"expiresAt,omitempty"`
+}
+
+// NewEntry constructs a validated Entry for enqueueing into the given
+// broadcast family. family is not stored on Entry itself (it selects which
+// (worldId, family) queue the entry is appended to - see
+// Processor.Enqueue) but is validated here so that no caller can build an
+// Entry destined for an unrecognized family via a raw struct literal.
+// ActivatedAt/ExpiresAt are intentionally not accepted here: they are only
+// ever stamped by QueueModel.ActivateNext, never at construction time.
+func NewEntry(family string, id uuid.UUID, characterId uint32, payload Payload, durationSeconds uint32) (Entry, error) {
+	if family != FamilyTV && family != FamilyAvatar {
+		return Entry{}, fmt.Errorf("unhandled broadcast family [%s]", family)
+	}
+	return Entry{
+		Id:              id,
+		CharacterId:     characterId,
+		Payload:         payload,
+		DurationSeconds: durationSeconds,
+	}, nil
 }
 
 // QueueModel is the per (tenant, world, family) queue stored as one Redis

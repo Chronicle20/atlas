@@ -357,11 +357,15 @@ func TestAsyncRaceConditionThreadSafety(t *testing.T) {
 
 		cancellableProvider := func(m uint32) (Provider[uint32], error) {
 			return func(ctx context.Context, rchan chan uint32, echan chan error) {
-				// Wait for cancellation or send result
+				// Wait for cancellation or send result. The send delay is far
+				// longer than the 5ms cancel (and the 1s AwaitSlice timeout)
+				// below, so cancellation/timeout is guaranteed to win — a short,
+				// comparable delay made this test flaky under -race scheduling
+				// (providers could finish before cancel fired -> no error).
 				select {
 				case <-ctx.Done():
 					return
-				case <-time.After(time.Millisecond * time.Duration(m%10+1)):
+				case <-time.After(10 * time.Second):
 					select {
 					case <-ctx.Done():
 						return

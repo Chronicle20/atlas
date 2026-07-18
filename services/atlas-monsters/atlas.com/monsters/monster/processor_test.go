@@ -2181,3 +2181,164 @@ func TestUseSkill_ZeroMpCon_NoMpChanged(t *testing.T) {
 		t.Fatalf("MpCon=0 must not emit MP_CHANGED, got %d", len(emitted))
 	}
 }
+
+// testProcessorWithHidden builds a ProcessorImpl with hiddenFn stubbed to
+// return the given hidden set / error, matching the file's established
+// direct-struct-literal construction convention (see newRecordingProcessor,
+// puppet_test.go) rather than routing through NewProcessor.
+func testProcessorWithHidden(t *testing.T, ten tenant.Model, hidden map[uint32]struct{}, hiddenErr error) *ProcessorImpl {
+	t.Helper()
+	return &ProcessorImpl{
+		l:   logrus.New(),
+		ctx: context.Background(),
+		t:   ten,
+		hiddenFn: func() (map[uint32]struct{}, error) {
+			return hidden, hiddenErr
+		},
+	}
+}
+
+// TestGetControllerCandidateExcludesHidden verifies a hidden character is
+// dropped from the candidate pool (FR-4.1), leaving the visible character.
+func TestGetControllerCandidateExcludesHidden(t *testing.T) {
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	GetMonsterRegistry().Clear(context.Background())
+	GetPuppetRegistry().Clear(context.Background())
+	f := testField()
+
+	p := testProcessorWithHidden(t, ten, map[uint32]struct{}{1: {}}, nil)
+	cid, err := p.getControllerCandidate(f, 0, 0, idsProvider(1, 2))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cid != 2 {
+		t.Fatalf("expected visible character 2, got %d", cid)
+	}
+}
+
+// TestGetControllerCandidateOnlyHiddenIsSentinel verifies an all-hidden pool
+// yields ErrNoControllerCandidate (FR-4.3).
+func TestGetControllerCandidateOnlyHiddenIsSentinel(t *testing.T) {
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	GetMonsterRegistry().Clear(context.Background())
+	GetPuppetRegistry().Clear(context.Background())
+	f := testField()
+
+	p := testProcessorWithHidden(t, ten, map[uint32]struct{}{1: {}}, nil)
+	_, err := p.getControllerCandidate(f, 0, 0, idsProvider(1))
+	if !errors.Is(err, ErrNoControllerCandidate) {
+		t.Fatalf("expected ErrNoControllerCandidate, got %v", err)
+	}
+}
+
+// TestGetControllerCandidateEmptyPoolIsSentinel verifies an empty candidate
+// pool (no characters in field at all) also yields the sentinel.
+func TestGetControllerCandidateEmptyPoolIsSentinel(t *testing.T) {
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	GetMonsterRegistry().Clear(context.Background())
+	GetPuppetRegistry().Clear(context.Background())
+	f := testField()
+
+	p := testProcessorWithHidden(t, ten, map[uint32]struct{}{}, nil)
+	_, err := p.getControllerCandidate(f, 0, 0, idsProvider())
+	if !errors.Is(err, ErrNoControllerCandidate) {
+		t.Fatalf("expected ErrNoControllerCandidate, got %v", err)
+	}
+}
+
+// TestGetControllerCandidateRedisFailureFailsOpen verifies a hiddenFn error
+// degrades to unfiltered election rather than blocking control assignment
+// (design §4.5 fail-open).
+func TestGetControllerCandidateRedisFailureFailsOpen(t *testing.T) {
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	GetMonsterRegistry().Clear(context.Background())
+	GetPuppetRegistry().Clear(context.Background())
+	f := testField()
+
+	p := testProcessorWithHidden(t, ten, nil, errors.New("redis down"))
+	cid, err := p.getControllerCandidate(f, 0, 0, idsProvider(1))
+	if err != nil || cid != 1 {
+		t.Fatalf("fail-open expected candidate 1, got %d err %v", cid, err)
+	}
+}
+
+// TestControlCountsDoNotResurrectNonPoolControllers guards the pool-leak fix:
+// a monster controlled by character 9 (not in the field's candidate pool)
+// must never make 9 eligible, even though the old
+// `controlCounts[m.ControlCharacterId()] += 1` insert-on-increment pattern
+// would have inserted it into the map.
+func TestControlCountsDoNotResurrectNonPoolControllers(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+	GetPuppetRegistry().Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50)
+	if _, err := r.ControlMonster(ten, m.UniqueId(), 9); err != nil {
+		t.Fatalf("ControlMonster: %v", err)
+	}
+
+	p := testProcessorWithHidden(t, ten, map[uint32]struct{}{}, nil)
+	cid, err := p.getControllerCandidate(f, 0, 0, idsProvider(2))
+	if err != nil || cid != 2 {
+		t.Fatalf("expected 2, got %d err %v", cid, err)
+	}
+}
+
+// TestFindNextControllerNoCandidateIsNoop verifies FindNextController treats
+// ErrNoControllerCandidate as a logged no-op success, leaving the monster
+// uncontrolled instead of surfacing an error to the caller (enter/exit/
+// hide/reveal call sites all inherit this via the one choke point).
+func TestFindNextControllerNoCandidateIsNoop(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+	GetPuppetRegistry().Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50)
+
+	p := testProcessorWithHidden(t, ten, map[uint32]struct{}{1: {}}, nil)
+	if err := p.FindNextController(idsProvider(1))(m); err != nil {
+		t.Fatalf("no-candidate must be a no-op success, got %v", err)
+	}
+
+	got, err := p.GetById(m.UniqueId())
+	if err != nil {
+		t.Fatalf("GetById: %v", err)
+	}
+	if got.ControlCharacterId() != 0 {
+		t.Fatalf("mob must stay uncontrolled, controller=%d", got.ControlCharacterId())
+	}
+}
+
+// TestPuppetBiasSkipsHiddenOwner verifies the puppet-vicinity owner bias
+// (FR-4.2) skips a hidden owner, falling back to the least-loaded visible
+// candidate — mirrors puppet_test.go's TestAddPuppetBiasesController.
+func TestPuppetBiasSkipsHiddenOwner(t *testing.T) {
+	r := GetMonsterRegistry()
+	pr := GetPuppetRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+	pr.Clear(ctx)
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 9300018, 100, 100, 0, 5, 0, 100, 50)
+
+	// Puppet owner (char 1) is GM-hidden; in vicinity at (110,110): distanceSq=200 < 177777.
+	hiddenOwner := uint32(1)
+	pr.Add(ctx, ten, f, hiddenOwner, 110, 110)
+
+	p := testProcessorWithHidden(t, ten, map[uint32]struct{}{1: {}}, nil)
+	cid, err := p.getControllerCandidate(f, m.X(), m.Y(), idsProvider(1, 2))
+	if err != nil {
+		t.Fatalf("getControllerCandidate: %v", err)
+	}
+	if cid != 2 {
+		t.Fatalf("expected hidden puppet owner bias skipped, candidate 2, got %d", cid)
+	}
+}

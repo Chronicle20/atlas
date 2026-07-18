@@ -1,25 +1,27 @@
 package hide
 
 import (
-	"context"
-	"math"
-
 	"atlas-channel/character"
 	"atlas-channel/character/buff"
 	"atlas-channel/data/skill/effect"
 	"atlas-channel/data/skill/effect/statup"
-	_mapconsumer "atlas-channel/kafka/consumer/map"
 	"atlas-channel/session"
+	"atlas-channel/socket/writer"
+	"context"
+	"math"
+
+	_mapconsumer "atlas-channel/kafka/consumer/map"
+
 	channelhandler "atlas-channel/skill/handler"
 	socketHandler "atlas-channel/socket/handler"
-	"atlas-channel/socket/writer"
+
+	"github.com/sirupsen/logrus"
 
 	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
-	"github.com/sirupsen/logrus"
 )
 
 // HideBuffDuration is the effectively-permanent duration for the GM-hide buff.

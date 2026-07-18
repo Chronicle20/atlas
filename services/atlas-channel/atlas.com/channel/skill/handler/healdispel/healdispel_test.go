@@ -1,16 +1,17 @@
 package healdispel
 
 import (
+	"atlas-channel/character"
 	"errors"
 	"io"
 	"testing"
 
-	"atlas-channel/character"
 	channelhandler "atlas-channel/skill/handler"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
-	"github.com/sirupsen/logrus"
 )
 
 func tl() logrus.FieldLogger {

@@ -1,15 +1,15 @@
 package hide
 
 import (
+	"atlas-channel/character"
 	"io"
 	"testing"
 
-	"atlas-channel/character"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
-	"github.com/sirupsen/logrus"
 )
 
 func tl() logrus.FieldLogger {

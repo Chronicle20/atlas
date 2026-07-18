@@ -1,14 +1,14 @@
 package handler
 
 import (
+	"atlas-channel/character"
 	"context"
+	"io"
 	"testing"
 
-	"atlas-channel/character"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	"github.com/sirupsen/logrus"
-	"io"
 )
 
 func mapTestLogger() logrus.FieldLogger {

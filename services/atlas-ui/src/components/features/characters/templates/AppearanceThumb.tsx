@@ -2,16 +2,17 @@ import { useState } from "react";
 import { ImageOff, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Head-region crop of the live stand1 render (design D6). The compositor uses a
-// fixed canvas (feet at 119/128 = 0.93 of image height; see CharacterRenderer),
-// so the head sits in the top ~40% and is horizontally centered — a fixed-pixel
-// crop of an aspect-distorted box does NOT work across renders. Instead we scale
-// the render by HEIGHT (width auto → no distortion), center it horizontally, and
-// nudge it up so the face lands in the window. THUMB_ZOOM sets how large the head
-// appears; THUMB_OFFSET_Y trims the transparent padding above the hair.
+// Head-region crop of the live stand1 render (design D6). The compositor emits a
+// FIXED 192×256 canvas (resize=2 of a 96×128 frame): measured against real v84
+// renders the body occupies y≈112..239 (feet at 119/128; top ~44% is transparent
+// headroom) and the head sits at x≈88, y≈112..172 — stable across gender and
+// equipment because the canvas is fixed. So a fixed-pixel crop of the 192×256
+// image is correct; we position a 76px window over the head (center x≈88, y≈145).
 export const THUMB_SIZE = 76; // px window (square)
-export const THUMB_ZOOM = 200; // px displayed render height
-export const THUMB_OFFSET_Y = -6; // px vertical nudge (negative = shift render up)
+export const RENDER_W = 192; // px fixed render width
+export const RENDER_H = 256; // px fixed render height
+export const THUMB_OFFSET_X = -50; // window shows img x 50..126 (head center ~88)
+export const THUMB_OFFSET_Y = -106; // window shows img y 106..182 (head ~112..172)
 
 interface AppearanceThumbProps {
   url: string;
@@ -59,10 +60,12 @@ export function AppearanceThumb({
           <img
             src={url}
             alt=""
+            width={RENDER_W}
+            height={RENDER_H}
             loading="lazy"
             onError={() => setFailed(true)}
-            className="pointer-events-none absolute left-1/2 max-w-none -translate-x-1/2 [image-rendering:pixelated]"
-            style={{ height: THUMB_ZOOM, top: THUMB_OFFSET_Y }}
+            className="pointer-events-none absolute max-w-none [image-rendering:pixelated]"
+            style={{ left: THUMB_OFFSET_X, top: THUMB_OFFSET_Y }}
           />
         )}
         <span className="absolute inset-x-0 bottom-0 bg-background/80 text-center font-mono text-[10px] leading-4">

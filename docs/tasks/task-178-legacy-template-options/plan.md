@@ -65,15 +65,22 @@ byte-identical to v83; Note DISCARD/REQUEST match (SEND=0 UI-gated, parity);
   evidence, no dup modes, movement types, clean diff) — PASS.
 - **Live v72 `48d415ca` + v79 `92adbe47`**: PATCH 200, atlas-channel restarted
   clean (750 opcodes configured, zero "not configured for use"). DONE + verified.
-- **Live v48 `e1f06ae2` + v61 `0d250dc9`: BLOCKED** — full-replace PATCH re-validates
-  the whole tenant and rejects pre-existing invalid character presets: the
-  "Corsair — 4th job" (Pirate jobId 522) preset references skills 5221xxx that are
-  absent from v48 atlas-data ("skill not found") and exceed maxLevel on v61
-  ("must be in [1,maxLevel]"). This is a SEPARATE legacy-preset data bug (newer-job
-  presets seeded into old clients). Only one tenant-update endpoint exists
-  (`PATCH /configurations/tenants/{id}`, full-replace) — no socket-scoped partial —
-  so the socket fix can't land on v48/v61 until the preset data is valid. Not fixed
-  here (would mean deleting/altering character presets — out of scope, needs a call).
+- **Live v48 `e1f06ae2` + v61 `0d250dc9`: RESOLVED** (full-replace PATCH validates the
+  whole tenant, so pre-existing invalid presets had to be fixed first). The legacy
+  bring-up seeded modern-content presets into pre-modern clients; corrected per
+  version and re-PATCHed (200):
+  - Pirate presets (Buccaneer 512 / Corsair 522) removed from both (Pirates shipped v62).
+  - v48 (4th job shipped v49; v48 predates it): 10 explorer 4th-job presets downgraded
+    to 3rd job (jobId x12/x22/x32 → x11/x21/x31, skills/name/tags/description updated).
+  - v61: over-level 4th-job skills clamped to atlas-data maxLevel (30→20, 5→1).
+  - both: equipment templateIds absent from that version's atlas-data stripped.
+  - **v48 is a parked tenant** atlas-channel does not currently serve (like v92), so
+    its handlers aren't instantiated at runtime — but its config is now correct.
+    v61 IS served and verified working.
+
+## Final live state (atlas-channel restarted clean, 0 "not configured for use")
+- Served + verified: **v61, v72, v79** (+ v83/84/87/95/jms unaffected).
+- Config-correct but parked (not served): **v48** (pre-existing).
 
 ## Open decisions (resolve at population)
 - v79 CashShop `ENABLE_EQUIP_SLOT` sends 6 OR 7 (7 for 9110xxx items) — one atlas

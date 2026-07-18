@@ -72,8 +72,7 @@ type UpdatedStatusEventBody struct {
 	AssetData
 }
 
-type DeletedStatusEventBody struct {
-}
+type DeletedStatusEventBody struct{}
 
 type MovedStatusEventBody struct {
 	OldSlot   int16     `json:"oldSlot"`

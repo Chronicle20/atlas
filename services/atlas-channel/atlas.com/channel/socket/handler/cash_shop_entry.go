@@ -14,11 +14,12 @@ import (
 	"atlas-channel/storage"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	cashcb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/clientbound"
 	cashsb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/serverbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {

@@ -3,9 +3,10 @@ package rps
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {

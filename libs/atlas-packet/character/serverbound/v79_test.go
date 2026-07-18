@@ -12,7 +12,8 @@ import (
 // CheckName v79 byte-fixture.
 //
 // Client send — CLogin::SendCheckDuplicateIDPacket sub_5CD111 @0x5cd111:
-//   COutPacket(21) then EncodeStr(name) /*0x5cd15a,0x5cd177*/. Single name string.
+//
+//	COutPacket(21) then EncodeStr(name) /*0x5cd15a,0x5cd177*/. Single name string.
 //
 // packet-audit:verify packet=character/serverbound/CheckName version=gms_v79 ida=0x5cd111
 func TestCheckNameByteOutputV79(t *testing.T) {
@@ -30,11 +31,12 @@ func TestCheckNameByteOutputV79(t *testing.T) {
 // CreateCharacter v79 byte-fixture.
 //
 // Client send — CLogin::SendNewCharPacket sub_5CCFA4 @0x5ccfa4:
-//   COutPacket(22)                                                  /*0x5cd010*/
-//   EncodeStr(name)                                                 /*0x5cd029*/
-//   Encode4(jobIndex)                                               /*0x5cd037*/
-//   loop 8x Encode4 (face, hair, hairColor, skinColor, top, bottom, shoes, weapon) /*0x5cd03f..0x5cd051*/
-//   Encode1(gender)                                                 /*0x5cd05f*/
+//
+//	COutPacket(22)                                                  /*0x5cd010*/
+//	EncodeStr(name)                                                 /*0x5cd029*/
+//	Encode4(jobIndex)                                               /*0x5cd037*/
+//	loop 8x Encode4 (face, hair, hairColor, skinColor, top, bottom, shoes, weapon) /*0x5cd03f..0x5cd051*/
+//	Encode1(gender)                                                 /*0x5cd05f*/
 //
 // v79 gates (GMS 79): >=73 writes jobIndex; <87 writes no subJob short; >28
 // writes gender byte. The 9 ints (jobIndex + 8-int loop) and gender match the
@@ -80,9 +82,10 @@ func TestCreateCharacterByteOutputV79(t *testing.T) {
 // DeleteCharacter v79 byte-fixture.
 //
 // Client send — CLogin::SendDeleteCharPacket sub_5CCE4B @0x5cce4b:
-//   COutPacket(23)                                                  /*0x5ccf1a*/
-//   Encode4(dob)   // date-of-birth security value                  /*0x5ccf28*/
-//   Encode4(characterId)                                            /*0x5ccf45*/
+//
+//	COutPacket(23)                                                  /*0x5ccf1a*/
+//	Encode4(dob)   // date-of-birth security value                  /*0x5ccf28*/
+//	Encode4(characterId)                                            /*0x5ccf45*/
 //
 // v79 (<=82) uses the DOB path (no PIC string). Matches DeleteCharacter.Encode
 // GMS<=82 branch ([int dob][int characterId]).

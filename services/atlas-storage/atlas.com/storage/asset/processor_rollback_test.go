@@ -4,12 +4,13 @@ import (
 	"errors"
 	"testing"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	"github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 )
 
 func storagesMigration(db *gorm.DB) error { return db.AutoMigrate(&StorageEntity{}) }

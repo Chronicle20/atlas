@@ -7,8 +7,11 @@ import (
 	"atlas-npc/seed"
 	"atlas-npc/shops"
 	"context"
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"os"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
+	"gorm.io/gorm"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -19,7 +22,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	seeder "github.com/Chronicle20/atlas/libs/atlas-seeder"
 	service "github.com/Chronicle20/atlas/libs/atlas-service"
-	"gorm.io/gorm"
 )
 
 const serviceName = "atlas-npc-shops"

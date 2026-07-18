@@ -1,14 +1,24 @@
 import { describe, it, expect } from "vitest";
-import { incubatorChances, gachaponChances, tierHasMixedWeights } from "../reward-pool-chance";
+import {
+  incubatorChances,
+  gachaponChances,
+  tierHasMixedWeights,
+} from "../reward-pool-chance";
 
 describe("incubatorChances", () => {
   it("divides weight by total", () => {
-    const m = incubatorChances([{ id: "a", weight: 75 }, { id: "b", weight: 25 }]);
+    const m = incubatorChances([
+      { id: "a", weight: 75 },
+      { id: "b", weight: 25 },
+    ]);
     expect(m.get("a")).toBeCloseTo(0.75);
     expect(m.get("b")).toBeCloseTo(0.25);
   });
   it("zero-total pool falls back to uniform 1/N (mirrors server selectItem)", () => {
-    const m = incubatorChances([{ id: "a", weight: 0 }, { id: "b", weight: 0 }]);
+    const m = incubatorChances([
+      { id: "a", weight: 0 },
+      { id: "b", weight: 0 },
+    ]);
     expect(m.get("a")).toBeCloseTo(0.5);
     expect(m.get("b")).toBeCloseTo(0.5);
   });
@@ -16,7 +26,10 @@ describe("incubatorChances", () => {
     expect(incubatorChances([]).size).toBe(0);
   });
   it("weighted pool gives a zero-weight item exactly 0", () => {
-    const m = incubatorChances([{ id: "a", weight: 10 }, { id: "b", weight: 0 }]);
+    const m = incubatorChances([
+      { id: "a", weight: 10 },
+      { id: "b", weight: 0 },
+    ]);
     expect(m.get("a")).toBeCloseTo(1);
     expect(m.get("b")).toBe(0);
   });
@@ -45,7 +58,9 @@ describe("gachaponChances", () => {
   });
 
   it("zero tier-weight sum yields zeros", () => {
-    const m = gachaponChances({ common: 0, uncommon: 0, rare: 0 }, [{ key: "a", tier: "common", weight: 0 }]);
+    const m = gachaponChances({ common: 0, uncommon: 0, rare: 0 }, [
+      { key: "a", tier: "common", weight: 0 },
+    ]);
     expect(m.get("a")!.chance).toBe(0);
   });
 });

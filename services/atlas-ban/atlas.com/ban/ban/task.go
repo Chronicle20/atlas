@@ -4,9 +4,10 @@ import (
 	"context"
 	"time"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 )
 
 type ExpiredBanCleanup struct {

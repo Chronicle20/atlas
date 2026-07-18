@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
 // storedConversation is a lightweight StateContainer used after deserialization from Redis.
@@ -15,8 +16,8 @@ type storedConversation struct {
 	states     []StateModel
 }
 
-func (s storedConversation) StartState() string            { return s.startState }
-func (s storedConversation) States() []StateModel          { return s.states }
+func (s storedConversation) StartState() string   { return s.startState }
+func (s storedConversation) States() []StateModel { return s.states }
 func (s storedConversation) FindState(stateId string) (StateModel, error) {
 	for _, state := range s.states {
 		if state.Id() == stateId {
@@ -201,29 +202,29 @@ func (g *GenericActionModel) UnmarshalJSON(data []byte) error {
 
 func (c CraftActionModel) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		ItemId                string  `json:"itemId"`
+		ItemId                string   `json:"itemId"`
 		Materials             []uint32 `json:"materials"`
 		Quantities            []uint32 `json:"quantities"`
-		MesoCost              uint32  `json:"mesoCost,omitempty"`
-		StimulatorId          uint32  `json:"stimulatorId,omitempty"`
-		StimulatorFailChance  float64 `json:"stimulatorFailChance,omitempty"`
-		SuccessState          string  `json:"successState"`
-		FailureState          string  `json:"failureState"`
-		MissingMaterialsState string  `json:"missingMaterialsState"`
+		MesoCost              uint32   `json:"mesoCost,omitempty"`
+		StimulatorId          uint32   `json:"stimulatorId,omitempty"`
+		StimulatorFailChance  float64  `json:"stimulatorFailChance,omitempty"`
+		SuccessState          string   `json:"successState"`
+		FailureState          string   `json:"failureState"`
+		MissingMaterialsState string   `json:"missingMaterialsState"`
 	}{c.itemId, c.materials, c.quantities, c.mesoCost, c.stimulatorId, c.stimulatorFailChance, c.successState, c.failureState, c.missingMaterialsState})
 }
 
 func (c *CraftActionModel) UnmarshalJSON(data []byte) error {
 	var aux struct {
-		ItemId                string  `json:"itemId"`
+		ItemId                string   `json:"itemId"`
 		Materials             []uint32 `json:"materials"`
 		Quantities            []uint32 `json:"quantities"`
-		MesoCost              uint32  `json:"mesoCost,omitempty"`
-		StimulatorId          uint32  `json:"stimulatorId,omitempty"`
-		StimulatorFailChance  float64 `json:"stimulatorFailChance,omitempty"`
-		SuccessState          string  `json:"successState"`
-		FailureState          string  `json:"failureState"`
-		MissingMaterialsState string  `json:"missingMaterialsState"`
+		MesoCost              uint32   `json:"mesoCost,omitempty"`
+		StimulatorId          uint32   `json:"stimulatorId,omitempty"`
+		StimulatorFailChance  float64  `json:"stimulatorFailChance,omitempty"`
+		SuccessState          string   `json:"successState"`
+		FailureState          string   `json:"failureState"`
+		MissingMaterialsState string   `json:"missingMaterialsState"`
 	}
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
@@ -443,9 +444,9 @@ func (a *AskSlideMenuModel) UnmarshalJSON(data []byte) error {
 
 func (s StateModel) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Id              string               `json:"id"`
-		StateType       StateType            `json:"stateType"`
-		Dialogue        *DialogueModel       `json:"dialogue,omitempty"`
+		Id              string                `json:"id"`
+		StateType       StateType             `json:"stateType"`
+		Dialogue        *DialogueModel        `json:"dialogue,omitempty"`
 		GenericAction   *GenericActionModel   `json:"genericAction,omitempty"`
 		CraftAction     *CraftActionModel     `json:"craftAction,omitempty"`
 		TransportAction *TransportActionModel `json:"transportAction,omitempty"`
@@ -460,9 +461,9 @@ func (s StateModel) MarshalJSON() ([]byte, error) {
 
 func (s *StateModel) UnmarshalJSON(data []byte) error {
 	var aux struct {
-		Id              string               `json:"id"`
-		StateType       StateType            `json:"stateType"`
-		Dialogue        *DialogueModel       `json:"dialogue,omitempty"`
+		Id              string                `json:"id"`
+		StateType       StateType             `json:"stateType"`
+		Dialogue        *DialogueModel        `json:"dialogue,omitempty"`
 		GenericAction   *GenericActionModel   `json:"genericAction,omitempty"`
 		CraftAction     *CraftActionModel     `json:"craftAction,omitempty"`
 		TransportAction *TransportActionModel `json:"transportAction,omitempty"`

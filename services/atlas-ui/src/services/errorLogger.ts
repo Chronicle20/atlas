@@ -1,6 +1,6 @@
 /**
  * Error logging service for production error tracking and monitoring
- * 
+ *
  * This service handles:
  * - Sanitization of sensitive data from error reports
  * - Structured error logging with context
@@ -8,7 +8,7 @@
  * - Error rate limiting to prevent spam
  */
 
-import type { ErrorInfo } from 'react';
+import type { ErrorInfo } from "react";
 
 interface ErrorContext {
   userId?: string;
@@ -30,7 +30,7 @@ interface ErrorReport {
     componentStack?: string;
   };
   context: ErrorContext;
-  severity: 'low' | 'medium' | 'high' | 'critical';
+  severity: "low" | "medium" | "high" | "critical";
   fingerprint: string;
 }
 
@@ -45,7 +45,11 @@ interface LoggerOptions {
 /**
  * Sanitizes sensitive data from error messages and stack traces
  */
-function sanitizeError(error: Error): { name: string; message: string; stack?: string } {
+function sanitizeError(error: Error): {
+  name: string;
+  message: string;
+  stack?: string;
+} {
   const sensitivePatterns = [
     // API keys and tokens
     /[Aa]pi[_-]?[Kk]ey[:\s=]+[^\s\n]+/g,
@@ -55,7 +59,7 @@ function sanitizeError(error: Error): { name: string; message: string; stack?: s
     /[Pp]assword[:\s=]+[^\s\n]+/g,
     /[Pp]wd[:\s=]+[^\s\n]+/g,
     // Email addresses (partial sanitization)
-    /[\w\.-]+@[\w\.-]+\.\w+/g,
+    /[\w.-]+@[\w.-]+\.\w+/g,
     // Credit card patterns
     /\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b/g,
     // SSN patterns
@@ -66,10 +70,10 @@ function sanitizeError(error: Error): { name: string; message: string; stack?: s
   let sanitizedStack = error.stack;
 
   // Apply sanitization patterns
-  sensitivePatterns.forEach(pattern => {
-    sanitizedMessage = sanitizedMessage.replace(pattern, '[REDACTED]');
+  sensitivePatterns.forEach((pattern) => {
+    sanitizedMessage = sanitizedMessage.replace(pattern, "[REDACTED]");
     if (sanitizedStack) {
-      sanitizedStack = sanitizedStack.replace(pattern, '[REDACTED]');
+      sanitizedStack = sanitizedStack.replace(pattern, "[REDACTED]");
     }
   });
 
@@ -86,11 +90,11 @@ function sanitizeError(error: Error): { name: string; message: string; stack?: s
 function generateErrorFingerprint(error: Error, errorInfo?: ErrorInfo): string {
   const components = [
     error.name,
-    error.message.split('\n')[0], // First line only
-    errorInfo?.componentStack?.split('\n')[0], // First component
+    error.message.split("\n")[0], // First line only
+    errorInfo?.componentStack?.split("\n")[0], // First component
   ].filter(Boolean);
 
-  return btoa(components.join('|')).slice(0, 16);
+  return btoa(components.join("|")).slice(0, 16);
 }
 
 /**
@@ -99,23 +103,24 @@ function generateErrorFingerprint(error: Error, errorInfo?: ErrorInfo): string {
 function gatherContext(): ErrorContext {
   const context: ErrorContext = {
     timestamp: new Date().toISOString(),
-    buildVersion: import.meta.env.VITE_BUILD_VERSION || 'unknown',
+    buildVersion: import.meta.env.VITE_BUILD_VERSION || "unknown",
   };
 
   // Add optional properties only if they exist
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     context.url = window.location.href;
   }
 
-  if (typeof navigator !== 'undefined') {
+  if (typeof navigator !== "undefined") {
     context.userAgent = navigator.userAgent;
   }
 
   // Add session ID if available (from localStorage, sessionStorage, or cookie)
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     try {
-      const sessionId = window.sessionStorage.getItem('sessionId') || 
-                       window.localStorage.getItem('sessionId');
+      const sessionId =
+        window.sessionStorage.getItem("sessionId") ||
+        window.localStorage.getItem("sessionId");
       if (sessionId) {
         context.sessionId = sessionId;
       }
@@ -129,15 +134,18 @@ function gatherContext(): ErrorContext {
 
 class ErrorLogger {
   private options: Required<LoggerOptions>;
-  private reportCounts = new Map<string, { count: number; lastReset: number }>();
+  private reportCounts = new Map<
+    string,
+    { count: number; lastReset: number }
+  >();
 
   constructor(options: LoggerOptions = {}) {
     this.options = {
       maxReportsPerMinute: 10,
       enableConsoleLogging: import.meta.env.DEV,
       enableRemoteLogging: import.meta.env.PROD,
-      remoteEndpoint: import.meta.env.VITE_ERROR_ENDPOINT || '',
-      apiKey: import.meta.env.VITE_ERROR_API_KEY || '',
+      remoteEndpoint: import.meta.env.VITE_ERROR_ENDPOINT || "",
+      apiKey: import.meta.env.VITE_ERROR_API_KEY || "",
       ...options,
     };
   }
@@ -148,18 +156,18 @@ class ErrorLogger {
   private shouldRateLimit(fingerprint: string): boolean {
     const now = Date.now();
     const minute = Math.floor(now / 60000);
-    
+
     const existing = this.reportCounts.get(fingerprint);
-    
+
     if (!existing || existing.lastReset !== minute) {
       this.reportCounts.set(fingerprint, { count: 1, lastReset: minute });
       return false;
     }
-    
+
     if (existing.count >= this.options.maxReportsPerMinute) {
       return true;
     }
-    
+
     existing.count++;
     return false;
   }
@@ -171,16 +179,16 @@ class ErrorLogger {
     if (!this.options.enableConsoleLogging) return;
 
     const { error, context, severity } = report;
-    
+
     console.group(`🚨 Error Report [${severity.toUpperCase()}]`);
-    console.error('Error:', error);
-    console.log('Context:', context);
-    console.log('Fingerprint:', report.fingerprint);
-    
+    console.error("Error:", error);
+    console.log("Context:", context);
+    console.log("Fingerprint:", report.fingerprint);
+
     if (report.errorInfo?.componentStack) {
-      console.log('Component Stack:', report.errorInfo.componentStack);
+      console.log("Component Stack:", report.errorInfo.componentStack);
     }
-    
+
     console.groupEnd();
   }
 
@@ -194,10 +202,12 @@ class ErrorLogger {
 
     try {
       const response = await fetch(this.options.remoteEndpoint, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          ...(this.options.apiKey ? { 'Authorization': `Bearer ${this.options.apiKey}` } : {}),
+          "Content-Type": "application/json",
+          ...(this.options.apiKey
+            ? { Authorization: `Bearer ${this.options.apiKey}` }
+            : {}),
         },
         body: JSON.stringify(report),
       });
@@ -207,42 +217,53 @@ class ErrorLogger {
       }
     } catch (remoteError) {
       // Avoid infinite loops - just log to console
-      console.warn('Failed to send error report to remote service:', remoteError);
+      console.warn(
+        "Failed to send error report to remote service:",
+        remoteError,
+      );
     }
   }
 
   /**
    * Determines error severity based on error type and context
    */
-  private determineSeverity(error: Error, errorInfo?: ErrorInfo): ErrorReport['severity'] {
+  private determineSeverity(
+    error: Error,
+    errorInfo?: ErrorInfo,
+  ): ErrorReport["severity"] {
     // Critical errors
-    if (error.name === 'ChunkLoadError' || 
-        error.message.includes('Loading chunk') ||
-        error.message.includes('Loading CSS chunk')) {
-      return 'critical';
+    if (
+      error.name === "ChunkLoadError" ||
+      error.message.includes("Loading chunk") ||
+      error.message.includes("Loading CSS chunk")
+    ) {
+      return "critical";
     }
 
     // High severity errors
-    if (error.name === 'TypeError' && error.message.includes('Cannot read prop')) {
-      return 'high';
+    if (
+      error.name === "TypeError" &&
+      error.message.includes("Cannot read prop")
+    ) {
+      return "high";
     }
 
     // Medium severity for component errors
     if (errorInfo?.componentStack) {
-      return 'medium';
+      return "medium";
     }
 
     // Default to low
-    return 'low';
+    return "low";
   }
 
   /**
    * Main method to log an error with full context and sanitization
    */
   async logError(
-    error: Error, 
+    error: Error,
     errorInfo?: ErrorInfo,
-    additionalContext?: Partial<ErrorContext>
+    additionalContext?: Partial<ErrorContext>,
   ): Promise<void> {
     try {
       const sanitizedError = sanitizeError(error);
@@ -260,8 +281,8 @@ class ErrorLogger {
         context,
         severity,
         fingerprint,
-        ...(errorInfo && errorInfo.componentStack 
-          ? { errorInfo: { componentStack: errorInfo.componentStack } } 
+        ...(errorInfo && errorInfo.componentStack
+          ? { errorInfo: { componentStack: errorInfo.componentStack } }
           : {}),
       };
 
@@ -270,10 +291,9 @@ class ErrorLogger {
 
       // Log to remote service (production)
       await this.logToRemote(report);
-
     } catch (loggingError) {
       // Prevent infinite loops
-      console.warn('Error while logging error:', loggingError);
+      console.warn("Error while logging error:", loggingError);
     }
   }
 
@@ -282,22 +302,27 @@ class ErrorLogger {
    */
   logUserAction(action: string, details?: Record<string, unknown>): void {
     if (this.options.enableConsoleLogging) {
-      console.log('User Action:', action, details);
+      console.log("User Action:", action, details);
     }
-    
+
     // Store recent actions for context in error reports
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       try {
-        const actions = JSON.parse(window.sessionStorage.getItem('recentActions') || '[]');
+        const actions = JSON.parse(
+          window.sessionStorage.getItem("recentActions") || "[]",
+        );
         actions.push({
           action,
           details,
           timestamp: new Date().toISOString(),
         });
-        
+
         // Keep only last 10 actions
         const recentActions = actions.slice(-10);
-        window.sessionStorage.setItem('recentActions', JSON.stringify(recentActions));
+        window.sessionStorage.setItem(
+          "recentActions",
+          JSON.stringify(recentActions),
+        );
       } catch {
         // Ignore storage errors
       }
@@ -309,8 +334,10 @@ class ErrorLogger {
    */
   logPerformanceIssue(metric: string, value: number, threshold: number): void {
     if (value > threshold) {
-      console.warn(`Performance issue detected: ${metric} = ${value} (threshold: ${threshold})`);
-      
+      console.warn(
+        `Performance issue detected: ${metric} = ${value} (threshold: ${threshold})`,
+      );
+
       // Could send to monitoring service
       if (this.options.enableRemoteLogging) {
         // This could be expanded to send performance data

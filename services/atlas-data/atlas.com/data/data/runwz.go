@@ -1,6 +1,7 @@
 package data
 
 import (
+	"atlas-data/data/workers"
 	"context"
 	"errors"
 	"fmt"
@@ -13,7 +14,6 @@ import (
 	"golang.org/x/sync/semaphore"
 	"gorm.io/gorm"
 
-	"atlas-data/data/workers"
 	minio "atlas-data/storage/minio"
 )
 

@@ -1,23 +1,23 @@
 package marriage
 
 import (
+	"atlas-marriages/character"
 	"context"
 	"errors"
 	"testing"
 	"time"
 
-	"atlas-marriages/character"
-
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // setupTestDB creates an in-memory SQLite database for testing

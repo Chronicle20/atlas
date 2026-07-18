@@ -4,8 +4,9 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
 // StateContainer is an interface for state machine containers
@@ -33,29 +34,29 @@ type NpcConversationProvider interface {
 type StateType string
 
 const (
-	DialogueStateType      StateType = "dialogue"
-	GenericActionType      StateType = "genericAction"
-	CraftActionType        StateType = "craftAction"
-	TransportActionType    StateType = "transportAction"
-	GachaponActionType     StateType = "gachaponAction"
-	RPSActionType          StateType = "rpsAction"
+	DialogueStateType         StateType = "dialogue"
+	GenericActionType         StateType = "genericAction"
+	CraftActionType           StateType = "craftAction"
+	TransportActionType       StateType = "transportAction"
+	GachaponActionType        StateType = "gachaponAction"
+	RPSActionType             StateType = "rpsAction"
 	PartyQuestActionType      StateType = "partyQuestAction"
 	PartyQuestBonusActionType StateType = "partyQuestBonusAction"
-	ListSelectionType StateType = "listSelection"
-	AskNumberType     StateType = "askNumber"
-	AskStyleType                     StateType = "askStyle"
-	AskSlideMenuType                 StateType = "askSlideMenu"
+	ListSelectionType         StateType = "listSelection"
+	AskNumberType             StateType = "askNumber"
+	AskStyleType              StateType = "askStyle"
+	AskSlideMenuType          StateType = "askSlideMenu"
 )
 
 // StateModel represents a state in a conversation
 type StateModel struct {
-	id               string
-	stateType        StateType
-	dialogue         *DialogueModel
-	genericAction    *GenericActionModel
-	craftAction      *CraftActionModel
-	transportAction  *TransportActionModel
-	gachaponAction   *GachaponActionModel
+	id                    string
+	stateType             StateType
+	dialogue              *DialogueModel
+	genericAction         *GenericActionModel
+	craftAction           *CraftActionModel
+	transportAction       *TransportActionModel
+	gachaponAction        *GachaponActionModel
 	rpsAction             *RPSActionModel
 	partyQuestAction      *PartyQuestActionModel
 	partyQuestBonusAction *PartyQuestBonusActionModel
@@ -439,20 +440,20 @@ func (b *StateBuilder) Build() (StateModel, error) {
 	}
 
 	return StateModel{
-		id:               b.id,
-		stateType:        b.stateType,
-		dialogue:         b.dialogue,
-		genericAction:    b.genericAction,
-		craftAction:      b.craftAction,
-		transportAction:  b.transportAction,
-		gachaponAction:   b.gachaponAction,
+		id:                    b.id,
+		stateType:             b.stateType,
+		dialogue:              b.dialogue,
+		genericAction:         b.genericAction,
+		craftAction:           b.craftAction,
+		transportAction:       b.transportAction,
+		gachaponAction:        b.gachaponAction,
 		rpsAction:             b.rpsAction,
 		partyQuestAction:      b.partyQuestAction,
 		partyQuestBonusAction: b.partyQuestBonusAction,
 		listSelection:         b.listSelection,
-		askNumber:        b.askNumber,
-		askStyle:         b.askStyle,
-		askSlideMenu:     b.askSlideMenu,
+		askNumber:             b.askNumber,
+		askStyle:              b.askStyle,
+		askSlideMenu:          b.askSlideMenu,
 	}, nil
 }
 

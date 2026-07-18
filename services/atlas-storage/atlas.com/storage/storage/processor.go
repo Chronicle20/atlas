@@ -9,8 +9,14 @@ import (
 	"atlas-storage/kafka/message/compartment"
 	"context"
 	"errors"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"sort"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
 	assetConstants "github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
@@ -18,11 +24,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Processor interface {

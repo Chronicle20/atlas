@@ -1,17 +1,17 @@
 package skill
 
 import (
+	"atlas-doors/data/skill/effect"
 	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
-	"atlas-doors/data/skill/effect"
-
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func newTestTenant(t *testing.T) tenant.Model {

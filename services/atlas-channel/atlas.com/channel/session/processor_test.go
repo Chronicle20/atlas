@@ -8,11 +8,6 @@ import (
 	"errors"
 	"testing"
 
-	channel2 "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
-	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
-	socketwriter "github.com/Chronicle20/atlas/libs/atlas-socket/writer"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
@@ -20,6 +15,12 @@ import (
 	otelattribute "go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	oteltrace "go.opentelemetry.io/otel/trace"
+
+	channel2 "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
+	socketwriter "github.com/Chronicle20/atlas/libs/atlas-socket/writer"
 )
 
 // testSetup creates common test fixtures
@@ -77,7 +78,6 @@ func TestByIdModelProvider_Found(t *testing.T) {
 	// Create processor and look up the session
 	p := session.NewProcessor(logger, ctx)
 	result, err := p.ByIdModelProvider(sessionId)()
-
 	if err != nil {
 		t.Fatalf("ByIdModelProvider() unexpected error: %v", err)
 	}
@@ -312,7 +312,6 @@ func TestAllInTenantProvider(t *testing.T) {
 
 	p := session.NewProcessor(logger, ctx)
 	sessions, err := p.AllInTenantProvider()
-
 	if err != nil {
 		t.Fatalf("AllInTenantProvider() unexpected error: %v", err)
 	}
@@ -397,7 +396,6 @@ func TestByCharacterIdModelProvider_Found(t *testing.T) {
 	// Look up by character ID
 	ch := channel2.NewModel(0, 0)
 	result, err := p.ByCharacterIdModelProvider(ch)(12345)()
-
 	if err != nil {
 		t.Fatalf("ByCharacterIdModelProvider() unexpected error: %v", err)
 	}
@@ -441,7 +439,6 @@ func TestIfPresentByCharacterId_Executes(t *testing.T) {
 		called = true
 		return nil
 	})
-
 	if err != nil {
 		t.Fatalf("IfPresentByCharacterId() unexpected error: %v", err)
 	}
@@ -464,7 +461,6 @@ func TestIfPresentByCharacterId_NoOp(t *testing.T) {
 		called = true
 		return nil
 	})
-
 	if err != nil {
 		t.Fatalf("IfPresentByCharacterId() unexpected error: %v", err)
 	}
@@ -489,7 +485,6 @@ func TestByAccountIdModelProvider_Found(t *testing.T) {
 
 	ch := channel2.NewModel(0, 0)
 	result, err := p.ByAccountIdModelProvider(ch)(54321)()
-
 	if err != nil {
 		t.Fatalf("ByAccountIdModelProvider() unexpected error: %v", err)
 	}
@@ -518,7 +513,6 @@ func TestIfPresentByAccountId_Executes(t *testing.T) {
 		called = true
 		return nil
 	})
-
 	if err != nil {
 		t.Fatalf("IfPresentByAccountId() unexpected error: %v", err)
 	}
@@ -543,7 +537,6 @@ func TestGetByCharacterId(t *testing.T) {
 
 	ch := channel2.NewModel(0, 0)
 	result, err := p.GetByCharacterId(ch)(11111)
-
 	if err != nil {
 		t.Fatalf("GetByCharacterId() unexpected error: %v", err)
 	}
@@ -631,12 +624,14 @@ type announceMockSpan struct {
 	ended      bool
 }
 
-func (s *announceMockSpan) SetAttributes(kv ...otelattribute.KeyValue)      { s.attributes = append(s.attributes, kv...) }
+func (s *announceMockSpan) SetAttributes(kv ...otelattribute.KeyValue) {
+	s.attributes = append(s.attributes, kv...)
+}
 func (s *announceMockSpan) End(_ ...oteltrace.SpanEndOption)                { s.ended = true }
 func (s *announceMockSpan) RecordError(_ error, _ ...oteltrace.EventOption) {}
-func (s *announceMockSpan) SetStatus(_ codes.Code, _ string)               {}
+func (s *announceMockSpan) SetStatus(_ codes.Code, _ string)                {}
 func (s *announceMockSpan) IsRecording() bool                               { return true }
-func (s *announceMockSpan) SpanContext() oteltrace.SpanContext               { return oteltrace.SpanContext{} }
+func (s *announceMockSpan) SpanContext() oteltrace.SpanContext              { return oteltrace.SpanContext{} }
 
 type announceMockTracer struct {
 	oteltrace.Tracer

@@ -3,9 +3,10 @@ package serverbound
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const LeftKnockbackHandle = "LeftKnockback"
@@ -13,8 +14,7 @@ const LeftKnockbackHandle = "LeftKnockback"
 // LeftKnockback - CField_SnowBall::Update
 // Sent when the snowball crosses the knockback boundary. Empty body (header only).
 // packet-audit:fname CField_SnowBall::Update#LeftKnockback
-type LeftKnockback struct {
-}
+type LeftKnockback struct{}
 
 func NewLeftKnockback() LeftKnockback {
 	return LeftKnockback{}

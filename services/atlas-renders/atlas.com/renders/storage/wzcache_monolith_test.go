@@ -5,10 +5,11 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-wz/crypto"
 	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
 	"github.com/Chronicle20/atlas/libs/atlas-wz/wztest"
-	"github.com/sirupsen/logrus"
 )
 
 // openMonolithFixture builds a v12-style monolithic Data.wz (category

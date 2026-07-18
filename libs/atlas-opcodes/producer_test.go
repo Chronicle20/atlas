@@ -4,10 +4,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 )
 
 type stubOpWriter struct{}

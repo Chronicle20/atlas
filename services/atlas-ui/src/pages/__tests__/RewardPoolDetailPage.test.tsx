@@ -4,17 +4,46 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RewardPoolDetailPage } from "../RewardPoolDetailPage";
 
-const henesys = { id: "henesys", type: "gachapons", attributes: { name: "Henesys", kind: "gachapon", npcIds: [9100100], commonWeight: 70, uncommonWeight: 25, rareWeight: 5 } };
-const egg = { id: "4170001", type: "gachapons", attributes: { name: "Pigmy Egg (Victoria)", kind: "incubator", npcIds: [1012004], commonWeight: 0, uncommonWeight: 0, rareWeight: 0 } };
+const henesys = {
+  id: "henesys",
+  type: "gachapons",
+  attributes: {
+    name: "Henesys",
+    kind: "gachapon",
+    npcIds: [9100100],
+    commonWeight: 70,
+    uncommonWeight: 25,
+    rareWeight: 5,
+  },
+};
+const egg = {
+  id: "4170001",
+  type: "gachapons",
+  attributes: {
+    name: "Pigmy Egg (Victoria)",
+    kind: "incubator",
+    npcIds: [1012004],
+    commonWeight: 0,
+    uncommonWeight: 0,
+    rareWeight: 0,
+  },
+};
 
 const mocks = vi.hoisted(() => ({
   getPoolById: vi.fn(),
   getItems: vi.fn(),
   getGlobalItems: vi.fn().mockResolvedValue([]),
 }));
-vi.mock("@/services/api/reward-pools.service", () => ({ rewardPoolsService: mocks }));
+vi.mock("@/services/api/reward-pools.service", () => ({
+  rewardPoolsService: mocks,
+}));
 vi.mock("@/context/tenant-context", () => ({
-  useTenant: () => ({ activeTenant: { id: "t1", attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 } } }),
+  useTenant: () => ({
+    activeTenant: {
+      id: "t1",
+      attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 },
+    },
+  }),
 }));
 vi.mock("@/components/item-name-cell", () => ({
   ItemNameCell: ({ itemId }: { itemId: string }) => <span>item-{itemId}</span>,
@@ -48,13 +77,29 @@ describe("RewardPoolDetailPage", () => {
   it("gachapon: shows tier weights card and a flat item grid with global rows badged", async () => {
     mocks.getPoolById.mockResolvedValue(henesys);
     mocks.getItems.mockResolvedValue([
-      { id: "1", type: "gachapon-items", attributes: { gachaponId: "henesys", itemId: 2000000, quantity: 1, tier: "common", weight: 0 } },
+      {
+        id: "1",
+        type: "gachapon-items",
+        attributes: {
+          gachaponId: "henesys",
+          itemId: 2000000,
+          quantity: 1,
+          tier: "common",
+          weight: 0,
+        },
+      },
     ]);
     mocks.getGlobalItems.mockResolvedValue([
-      { id: "9", type: "global-gachapon-items", attributes: { itemId: 2000001, quantity: 1, tier: "common" } },
+      {
+        id: "9",
+        type: "global-gachapon-items",
+        attributes: { itemId: 2000001, quantity: 1, tier: "common" },
+      },
     ]);
     renderAt("henesys");
-    await waitFor(() => expect(screen.getByText("Henesys")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText("Henesys")).toBeInTheDocument(),
+    );
     expect(screen.getByText(/tier weights/i)).toBeInTheDocument();
     expect(screen.getByText("item-2000001")).toBeInTheDocument();
     expect(screen.getByText(/global/i)).toBeInTheDocument();
@@ -65,14 +110,36 @@ describe("RewardPoolDetailPage", () => {
   it("incubator: shows region-formatted header name, weight column, weight-based chance; no tier weights card", async () => {
     mocks.getPoolById.mockResolvedValue(egg);
     mocks.getItems.mockResolvedValue([
-      { id: "1", type: "gachapon-items", attributes: { gachaponId: "4170001", itemId: 2000000, quantity: 1, tier: "common", weight: 75 } },
-      { id: "2", type: "gachapon-items", attributes: { gachaponId: "4170001", itemId: 1302000, quantity: 1, tier: "common", weight: 25 } },
+      {
+        id: "1",
+        type: "gachapon-items",
+        attributes: {
+          gachaponId: "4170001",
+          itemId: 2000000,
+          quantity: 1,
+          tier: "common",
+          weight: 75,
+        },
+      },
+      {
+        id: "2",
+        type: "gachapon-items",
+        attributes: {
+          gachaponId: "4170001",
+          itemId: 1302000,
+          quantity: 1,
+          tier: "common",
+          weight: 25,
+        },
+      },
     ]);
     mocks.getGlobalItems.mockResolvedValue([]);
     renderAt("4170001");
     // useItemName is mocked to "Pigmy Egg"; formatIncubatorName appends the
     // region for id 4170001 (Ellinia), regardless of the pool's own attrs.name.
-    await waitFor(() => expect(screen.getByText("Pigmy Egg (Ellinia)")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText("Pigmy Egg (Ellinia)")).toBeInTheDocument(),
+    );
     expect(screen.queryByText(/tier weights/i)).not.toBeInTheDocument();
     expect(screen.getByText("75.00%")).toBeInTheDocument();
     expect(screen.getByText("25.00%")).toBeInTheDocument();
@@ -81,12 +148,34 @@ describe("RewardPoolDetailPage", () => {
   it("warns when a gachapon tier mixes weighted and zero-weight rows", async () => {
     mocks.getPoolById.mockResolvedValue(henesys);
     mocks.getItems.mockResolvedValue([
-      { id: "1", type: "gachapon-items", attributes: { gachaponId: "henesys", itemId: 2000000, quantity: 1, tier: "rare", weight: 10 } },
-      { id: "2", type: "gachapon-items", attributes: { gachaponId: "henesys", itemId: 2000001, quantity: 1, tier: "rare", weight: 0 } },
+      {
+        id: "1",
+        type: "gachapon-items",
+        attributes: {
+          gachaponId: "henesys",
+          itemId: 2000000,
+          quantity: 1,
+          tier: "rare",
+          weight: 10,
+        },
+      },
+      {
+        id: "2",
+        type: "gachapon-items",
+        attributes: {
+          gachaponId: "henesys",
+          itemId: 2000001,
+          quantity: 1,
+          tier: "rare",
+          weight: 0,
+        },
+      },
     ]);
     mocks.getGlobalItems.mockResolvedValue([]);
     renderAt("henesys");
-    await waitFor(() => expect(screen.getByText("Henesys")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText("Henesys")).toBeInTheDocument(),
+    );
     expect(screen.getByText(/exclude/i)).toBeInTheDocument();
   });
 });

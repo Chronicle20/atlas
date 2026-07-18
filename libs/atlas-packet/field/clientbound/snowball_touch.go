@@ -3,9 +3,10 @@ package clientbound
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const SnowballTouchWriter = "SnowballTouch"
@@ -19,8 +20,7 @@ const SnowballTouchWriter = "SnowballTouch"
 // call SetImpact; retn — v84 @0x584ceb, v87 @0x5a35f7). All five versions
 // share the empty body; only the opcode shifts.
 // packet-audit:fname CField_SnowBall::OnSnowBallTouch
-type SnowballTouch struct {
-}
+type SnowballTouch struct{}
 
 func NewSnowballTouch() SnowballTouch {
 	return SnowballTouch{}

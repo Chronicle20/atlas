@@ -6,12 +6,14 @@ import (
 	character2 "atlas-transports/kafka/message/character"
 	"context"
 	"errors"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {

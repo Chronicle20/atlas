@@ -1,18 +1,18 @@
 package shop
 
 import (
+	"atlas-merchant/kafka/message/asset"
+	"atlas-merchant/listing"
 	"testing"
 	"time"
 
-	"atlas-merchant/kafka/message/asset"
-	"atlas-merchant/listing"
-
-	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
+
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // seedSearchFixture creates one open shop and n listings for itemId on it,

@@ -41,10 +41,10 @@ func TestHandleGeneral_CommandDetection(t *testing.T) {
 	// 5. If no command found, relay the message to Kafka
 
 	testCases := []struct {
-		name          string
-		message       string
-		isCommand     bool
-		description   string
+		name        string
+		message     string
+		isCommand   bool
+		description string
 	}{
 		{
 			name:        "GM command - award experience",
@@ -91,25 +91,25 @@ func TestHandleWhisper_CrossWorldValidation(t *testing.T) {
 	// 5. If same world, relays the whisper to Kafka
 
 	testCases := []struct {
-		name          string
-		senderWorld   byte
+		name           string
+		senderWorld    byte
 		recipientWorld byte
-		expectError   bool
-		description   string
+		expectError    bool
+		description    string
 	}{
 		{
-			name:          "Same world whisper",
-			senderWorld:   1,
+			name:           "Same world whisper",
+			senderWorld:    1,
 			recipientWorld: 1,
-			expectError:   false,
-			description:   "Should successfully relay whisper",
+			expectError:    false,
+			description:    "Should successfully relay whisper",
 		},
 		{
-			name:          "Cross world whisper",
-			senderWorld:   1,
+			name:           "Cross world whisper",
+			senderWorld:    1,
 			recipientWorld: 2,
-			expectError:   true,
-			description:   "Should return 'not in world' error",
+			expectError:    true,
+			description:    "Should return 'not in world' error",
 		},
 	}
 

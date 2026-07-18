@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const CharacterMoveHandle = "CharacterMoveHandle"
@@ -25,15 +26,15 @@ type Move struct {
 	movement model.Movement
 }
 
-func (m Move) Dr0() uint32                    { return m.dr0 }
-func (m Move) Dr1() uint32                    { return m.dr1 }
-func (m Move) FieldKey() byte                 { return m.fieldKey }
-func (m Move) Dr2() uint32                    { return m.dr2 }
-func (m Move) Dr3() uint32                    { return m.dr3 }
-func (m Move) Crc() uint32                    { return m.crc }
-func (m Move) DwKey() uint32                  { return m.dwKey }
-func (m Move) Crc32() uint32                  { return m.crc32 }
-func (m Move) MovementData() model.Movement   { return m.movement }
+func (m Move) Dr0() uint32                  { return m.dr0 }
+func (m Move) Dr1() uint32                  { return m.dr1 }
+func (m Move) FieldKey() byte               { return m.fieldKey }
+func (m Move) Dr2() uint32                  { return m.dr2 }
+func (m Move) Dr3() uint32                  { return m.dr3 }
+func (m Move) Crc() uint32                  { return m.crc }
+func (m Move) DwKey() uint32                { return m.dwKey }
+func (m Move) Crc32() uint32                { return m.crc32 }
+func (m Move) MovementData() model.Movement { return m.movement }
 
 func (m Move) Operation() string {
 	return CharacterMoveHandle

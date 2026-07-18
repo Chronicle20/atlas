@@ -3,9 +3,10 @@ package shopscanner
 import (
 	"sync"
 
+	"github.com/google/uuid"
+
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
 )
 
 type Key struct {
@@ -34,8 +35,10 @@ type Registry struct {
 	pending    map[Key]PendingEntry
 }
 
-var registry *Registry
-var once sync.Once
+var (
+	registry *Registry
+	once     sync.Once
+)
 
 func GetRegistry() *Registry {
 	once.Do(func() {

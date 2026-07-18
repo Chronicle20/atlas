@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestCommandSelectRoundTrip(t *testing.T) {

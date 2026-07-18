@@ -5,12 +5,14 @@ import (
 	"atlas-channel/kafka/message/cashshop"
 	"atlas-channel/saga"
 	"context"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
 // Processor interface defines the operations for cashshop processing

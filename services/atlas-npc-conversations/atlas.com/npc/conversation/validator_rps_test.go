@@ -17,6 +17,7 @@ func (t testNpcConversation) StartState() string { return t.start }
 func (t testNpcConversation) States() []StateModel {
 	return t.states
 }
+
 func (t testNpcConversation) FindState(id string) (StateModel, error) {
 	for _, s := range t.states {
 		if s.Id() == id {

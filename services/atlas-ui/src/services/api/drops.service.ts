@@ -1,5 +1,5 @@
-import { fetchAll } from '@/services/api/pagination';
-import type { DropData, ReactorDropData } from '@/types/models/drop';
+import { fetchAll } from "@/services/api/pagination";
+import type { DropData, ReactorDropData } from "@/types/models/drop";
 
 // Each *DetailPage widget renders the full drop table for one monster/reactor/
 // item, not a page at a time — drain every page (task-117).

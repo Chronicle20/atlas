@@ -1,18 +1,18 @@
 package mysticdoor
 
 import (
+	"atlas-channel/data/skill/effect"
 	"context"
 	"errors"
 	"testing"
 
-	"atlas-channel/data/skill/effect"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
-	"github.com/sirupsen/logrus"
 )
 
 const (

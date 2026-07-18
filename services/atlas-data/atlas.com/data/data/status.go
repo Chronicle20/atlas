@@ -9,17 +9,18 @@ import (
 	"net/http"
 	"time"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"gorm.io/gorm"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type StatusRestModel struct {
-	Id             string  `json:"-"`
-	DocumentCount  int64   `json:"documentCount"`
-	UpdatedAt      *string `json:"updatedAt"`
+	Id            string  `json:"-"`
+	DocumentCount int64   `json:"documentCount"`
+	UpdatedAt     *string `json:"updatedAt"`
 }
 
 func (r StatusRestModel) GetName() string {
@@ -167,4 +168,3 @@ func handleGetStatus(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Handle
 		}
 	}
 }
-

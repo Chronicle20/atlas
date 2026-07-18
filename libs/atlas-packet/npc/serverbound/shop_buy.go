@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 // packet-audit:fname CShopDlg::SendBuyRequest
@@ -18,9 +19,9 @@ type ShopBuy struct {
 	discountPrice uint32
 }
 
-func (m ShopBuy) Slot() uint16         { return m.slot }
-func (m ShopBuy) ItemId() uint32       { return m.itemId }
-func (m ShopBuy) Quantity() uint16     { return m.quantity }
+func (m ShopBuy) Slot() uint16          { return m.slot }
+func (m ShopBuy) ItemId() uint32        { return m.itemId }
+func (m ShopBuy) Quantity() uint16      { return m.quantity }
 func (m ShopBuy) DiscountPrice() uint32 { return m.discountPrice }
 
 func (m ShopBuy) Operation() string { return "ShopBuy" }

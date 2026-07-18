@@ -1,6 +1,7 @@
 package character_test
 
 import (
+	"atlas-login/character"
 	"context"
 	"fmt"
 	"net/http"
@@ -9,12 +10,11 @@ import (
 	"strings"
 	"testing"
 
-	"atlas-login/character"
-
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // characterDoc renders a JSON:API document for characters [from, to]

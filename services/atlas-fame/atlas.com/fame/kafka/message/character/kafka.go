@@ -1,8 +1,9 @@
 package character
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 const (
@@ -37,5 +38,4 @@ type StatusEvent[E any] struct {
 	Body          E         `json:"body"`
 }
 
-type StatusEventDeletedBody struct {
-}
+type StatusEventDeletedBody struct{}

@@ -1,33 +1,36 @@
 package main
 
 import (
-	"context"
-
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-
 	"atlas-character/character"
-	account2 "atlas-character/kafka/consumer/account"
-	character2 "atlas-character/kafka/consumer/character"
 	"atlas-character/kafka/consumer/drop"
-	session2 "atlas-character/kafka/consumer/session"
 	"atlas-character/saved_location"
 	"atlas-character/service"
 	"atlas-character/session"
 	"atlas-character/session/history"
 	"atlas-character/tasks"
+	"context"
+	"os"
+	"time"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
+	account2 "atlas-character/kafka/consumer/account"
+	character2 "atlas-character/kafka/consumer/character"
+
+	session2 "atlas-character/kafka/consumer/session"
+
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	lifecycle "github.com/Chronicle20/atlas/libs/atlas-service"
-	"os"
-	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+
+	_ "net/http/pprof"
 )
-import _ "net/http/pprof"
 
 const serviceName = "atlas-character"
 

@@ -3,10 +3,11 @@ package guild
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	atlas_packet "github.com/Chronicle20/atlas/libs/atlas-packet"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/guild/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
-	"github.com/sirupsen/logrus"
 )
 
 // Guild-BBS result-mode keys (CUIGuildBBS::OnGuildBBSPacket). Like the

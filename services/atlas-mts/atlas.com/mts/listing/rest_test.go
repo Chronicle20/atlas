@@ -9,7 +9,7 @@ import (
 
 // TestTransformOwner asserts the item-tag owner name set on the listing model
 // survives Transform into the REST DTO, mirroring the existing Flags field. The
-// empty case covers an untagged item (the column's default-'' state).
+// empty case covers an untagged item (the column's default-” state).
 func TestTransformOwner(t *testing.T) {
 	tests := []struct {
 		name  string

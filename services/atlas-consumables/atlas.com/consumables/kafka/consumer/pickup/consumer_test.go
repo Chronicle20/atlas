@@ -9,11 +9,12 @@ import (
 	mbmsg "atlas-consumables/kafka/message/monsterbook"
 	pickupmsg "atlas-consumables/kafka/message/pickup"
 
-	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
+
+	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // capturingWriter records every WriteMessages call so tests can verify

@@ -3,8 +3,9 @@ package message
 import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/segmentio/kafka-go"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 type Buffer struct {
@@ -50,7 +51,7 @@ func Emit(p producer.Provider) func(f func(buf *Buffer) error) error {
 func EmitWithResult[M any, B any](p producer.Provider) func(func(*Buffer) func(B) (M, error)) func(B) (M, error) {
 	return func(f func(*Buffer) func(B) (M, error)) func(B) (M, error) {
 		return func(input B) (M, error) {
-			var buf = NewBuffer()
+			buf := NewBuffer()
 			result, err := f(buf)(input)
 			if err != nil {
 				return result, err
@@ -70,7 +71,7 @@ func EmitWithResult[M any, B any](p producer.Provider) func(func(*Buffer) func(B
 func EmitAlways[M any, B any](p producer.Provider) func(func(*Buffer) func(B) (M, error)) func(B) (M, error) {
 	return func(f func(*Buffer) func(B) (M, error)) func(B) (M, error) {
 		return func(input B) (M, error) {
-			var buf = NewBuffer()
+			buf := NewBuffer()
 			result, fnErr := f(buf)(input)
 			// Always emit buffered events, even on error
 			for t, ms := range buf.GetAll() {
@@ -88,7 +89,7 @@ func EmitAlways[M any, B any](p producer.Provider) func(func(*Buffer) func(B) (M
 func EmitAlwaysNoResult[B any](p producer.Provider) func(func(*Buffer) func(B) error) func(B) error {
 	return func(f func(*Buffer) func(B) error) func(B) error {
 		return func(input B) error {
-			var buf = NewBuffer()
+			buf := NewBuffer()
 			fnErr := f(buf)(input)
 			// Always emit buffered events, even on error
 			for t, ms := range buf.GetAll() {

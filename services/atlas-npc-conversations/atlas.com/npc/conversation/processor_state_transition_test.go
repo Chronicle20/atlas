@@ -5,15 +5,16 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/alicebob/miniredis/v2"
+	goredis "github.com/redis/go-redis/v9"
+	"github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/test"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/alicebob/miniredis/v2"
-	goredis "github.com/redis/go-redis/v9"
-	"github.com/sirupsen/logrus"
-	"github.com/sirupsen/logrus/hooks/test"
 )
 
 // testStateContainer is a minimal StateContainer implementation for tests
@@ -23,8 +24,8 @@ type testStateContainer struct {
 	states []StateModel
 }
 
-func (t testStateContainer) StartState() string     { return t.start }
-func (t testStateContainer) States() []StateModel   { return t.states }
+func (t testStateContainer) StartState() string   { return t.start }
+func (t testStateContainer) States() []StateModel { return t.states }
 func (t testStateContainer) FindState(id string) (StateModel, error) {
 	for _, s := range t.states {
 		if s.Id() == id {

@@ -8,13 +8,14 @@ import (
 
 	character2 "atlas-character/kafka/message/character"
 
+	"github.com/segmentio/kafka-go"
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/segmentio/kafka-go"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 )
 
 // Rollback in a migrated flow should leave zero outbox rows.

@@ -10,7 +10,7 @@ import (
 // gms_v61: REGISTER_PIN send built in CLogin::OnCheckPinCodeResult @0x5688ce
 // (register arm @0x568b31): Encode1(pinInput flag)@0x568b59 + EncodeStr(pin)
 // @0x568b9a when set. Matches atlas RegisterPin.Encode. pinInput=true,pin="1234"
-// → 01 04 00 '1''2''3''4'.
+// → 01 04 00 '1”2”3”4'.
 //
 // packet-audit:verify packet=account/serverbound/RegisterPin version=gms_v61 ida=0x5688ce
 func TestRegisterPinV61Body(t *testing.T) {

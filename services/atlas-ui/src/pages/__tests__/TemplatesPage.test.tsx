@@ -51,8 +51,18 @@ const sampleTemplate: Template = {
 
 const mockTemplatesList: Template[] = [sampleTemplate];
 
-function pagedResult(data: Template[], total = data.length, last = 1, number = 1, size = 50) {
-  return { data: { data, meta: { total, page: { number, size, last } } }, isLoading: false, error: null };
+function pagedResult(
+  data: Template[],
+  total = data.length,
+  last = 1,
+  number = 1,
+  size = 50,
+) {
+  return {
+    data: { data, meta: { total, page: { number, size, last } } },
+    isLoading: false,
+    error: null,
+  };
 }
 
 import { TemplatesPage } from "@/pages/TemplatesPage";
@@ -123,7 +133,10 @@ describe("TemplatesPage create-tenant-from-template dialog", () => {
     await user.click(createButton);
 
     await waitFor(() => {
-      expect(onboardTenantMock).toHaveBeenCalledWith("My Tenant", sampleTemplate);
+      expect(onboardTenantMock).toHaveBeenCalledWith(
+        "My Tenant",
+        sampleTemplate,
+      );
     });
   });
 });
@@ -140,7 +153,9 @@ describe("TemplatesPage server-side paging (task-117)", () => {
   });
 
   it("renders the pager off meta.total / meta.page.last and requests the next page on click", async () => {
-    useTemplatesPageMock.mockReturnValue(pagedResult(mockTemplatesList, 120, 3, 1, 50));
+    useTemplatesPageMock.mockReturnValue(
+      pagedResult(mockTemplatesList, 120, 3, 1, 50),
+    );
     renderPage();
 
     await screen.findByText(/Page 1 of 3/i);
@@ -150,12 +165,17 @@ describe("TemplatesPage server-side paging (task-117)", () => {
     await user.click(screen.getByRole("button", { name: /next page/i }));
 
     await waitFor(() => {
-      expect(useTemplatesPageMock).toHaveBeenLastCalledWith({ number: 2, size: 50 });
+      expect(useTemplatesPageMock).toHaveBeenLastCalledWith({
+        number: 2,
+        size: 50,
+      });
     });
   });
 
   it("hydrates the page number from ?page= in the URL", () => {
-    useTemplatesPageMock.mockReturnValue(pagedResult(mockTemplatesList, 120, 3, 3, 50));
+    useTemplatesPageMock.mockReturnValue(
+      pagedResult(mockTemplatesList, 120, 3, 3, 50),
+    );
     renderPage("/templates?page=3");
     expect(useTemplatesPageMock).toHaveBeenCalledWith({ number: 3, size: 50 });
   });

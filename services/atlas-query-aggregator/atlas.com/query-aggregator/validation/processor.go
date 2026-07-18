@@ -11,8 +11,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 type Processor interface {

@@ -3,8 +3,9 @@ package asset
 import (
 	"time"
 
-	af "github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/google/uuid"
+
+	af "github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 )
 
 func Clone(m Model) *ModelBuilder {
@@ -128,6 +129,7 @@ func (b *ModelBuilder) SetLocked(v bool) *ModelBuilder {
 	}
 	return b
 }
+
 func (b *ModelBuilder) SetSpikes(v bool) *ModelBuilder {
 	if v {
 		b.flag = af.SetFlag(b.flag, af.FlagSpikes)
@@ -136,6 +138,7 @@ func (b *ModelBuilder) SetSpikes(v bool) *ModelBuilder {
 	}
 	return b
 }
+
 func (b *ModelBuilder) SetKarmaUsed(v bool) *ModelBuilder {
 	if v {
 		b.flag = af.SetFlag(b.flag, af.FlagKarmaEquip)
@@ -144,6 +147,7 @@ func (b *ModelBuilder) SetKarmaUsed(v bool) *ModelBuilder {
 	}
 	return b
 }
+
 func (b *ModelBuilder) SetCold(v bool) *ModelBuilder {
 	if v {
 		b.flag = af.SetFlag(b.flag, af.FlagCold)
@@ -152,6 +156,7 @@ func (b *ModelBuilder) SetCold(v bool) *ModelBuilder {
 	}
 	return b
 }
+
 func (b *ModelBuilder) SetCanBeTraded(v bool) *ModelBuilder {
 	if v {
 		b.flag = af.ClearFlag(b.flag, af.FlagUntradeable)
@@ -160,10 +165,12 @@ func (b *ModelBuilder) SetCanBeTraded(v bool) *ModelBuilder {
 	}
 	return b
 }
+
 func (b *ModelBuilder) AddFlag(f af.Flag) *ModelBuilder {
 	b.flag = af.SetFlag(b.flag, f)
 	return b
 }
+
 func (b *ModelBuilder) RemoveFlag(f af.Flag) *ModelBuilder {
 	b.flag = af.ClearFlag(b.flag, f)
 	return b

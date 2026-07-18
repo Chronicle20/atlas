@@ -5,8 +5,9 @@ import (
 	dropMsg "atlas-inventory/kafka/message/drop"
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
 type Processor interface {

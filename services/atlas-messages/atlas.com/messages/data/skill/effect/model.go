@@ -51,8 +51,8 @@ type Model struct {
 	damage        uint32
 	attackCount   uint32
 	fixDamage     int32
-	//LT Point
-	//RB Point
+	// LT Point
+	// RB Point
 	bulletCount          uint16
 	bulletConsume        uint16
 	mapProtection        byte

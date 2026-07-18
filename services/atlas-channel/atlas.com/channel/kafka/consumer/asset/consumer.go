@@ -17,6 +17,9 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -33,8 +36,6 @@ import (
 	messengercb "github.com/Chronicle20/atlas/libs/atlas-packet/messenger/clientbound"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {

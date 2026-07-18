@@ -89,7 +89,9 @@ export const skillsService = {
       action: skill.attributes.action,
       element: skill.attributes.element,
       animationTime: skill.attributes.animationTime,
-      ...(skill.attributes.maxLevel !== undefined && { maxLevel: skill.attributes.maxLevel }),
+      ...(skill.attributes.maxLevel !== undefined && {
+        maxLevel: skill.attributes.maxLevel,
+      }),
       effects: skill.attributes.effects ?? [],
     };
   },

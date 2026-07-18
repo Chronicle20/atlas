@@ -9,7 +9,9 @@ export const npcSpawnMapsKeys = {
     ["data", "npcs", "maps", tenantId ?? "no-tenant", npcId] as const,
 };
 
-export function useNpcSpawnMaps(npcId: number): UseQueryResult<NpcSpawnMap[], Error> {
+export function useNpcSpawnMaps(
+  npcId: number,
+): UseQueryResult<NpcSpawnMap[], Error> {
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: npcSpawnMapsKeys.byNpc(activeTenant?.id, npcId),

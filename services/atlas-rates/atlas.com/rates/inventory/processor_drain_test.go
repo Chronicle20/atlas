@@ -1,6 +1,7 @@
 package inventory_test
 
 import (
+	"atlas-rates/inventory"
 	"context"
 	"fmt"
 	"net/http"
@@ -8,8 +9,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-
-	"atlas-rates/inventory"
 
 	"github.com/sirupsen/logrus/hooks/test"
 )

@@ -38,11 +38,12 @@ func TestCheckNameByteOutputV61(t *testing.T) {
 // CreateCharacter v61 byte-fixture — CREATE_CHAR, op 22 (0x16).
 //
 // Client send — sub_5653E9 @0x5653e9:
-//   COutPacket(22)                                                   /*0x56542f*/
-//   EncodeStr(name)                                                  /*0x56544c*/
-//   loop 8x Encode4 (face,hair,hairColor,skinColor,top,bottom,shoes,weapon) /*0x565463*/
-//   Encode1(gender)                                                  /*0x565482*/
-//   do 4x Encode1(a3[i*4])  // str,dex,int,luk low bytes             /*0x565495*/
+//
+//	COutPacket(22)                                                   /*0x56542f*/
+//	EncodeStr(name)                                                  /*0x56544c*/
+//	loop 8x Encode4 (face,hair,hairColor,skinColor,top,bottom,shoes,weapon) /*0x565463*/
+//	Encode1(gender)                                                  /*0x565482*/
+//	do 4x Encode1(a3[i*4])  // str,dex,int,luk low bytes             /*0x565495*/
 //
 // LEGACY DIVERGENCE vs v72: v61 (<=61) trails the four manually-rolled base
 // stats (str/dex/int/luk) after gender; v72 SendNewCharPacket sub_5B219A ends at
@@ -54,10 +55,10 @@ func TestCreateCharacterByteOutputV61(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 61, 1)
 	input := CreateCharacter{
 		name:             "TestChar",
-		jobIndex:         1, // NOT written for v61 (<73)
-		subJobIndex:      0, // NOT written for v61 (<87)
-		face:             20000,   // 0x4E20
-		hair:             30000,   // 0x7530
+		jobIndex:         1,     // NOT written for v61 (<73)
+		subJobIndex:      0,     // NOT written for v61 (<87)
+		face:             20000, // 0x4E20
+		hair:             30000, // 0x7530
 		hairColor:        0,
 		skinColor:        0,
 		topTemplateId:    1040002, // 0x0FDE82
@@ -96,9 +97,10 @@ func TestCreateCharacterByteOutputV61(t *testing.T) {
 // DeleteCharacter v61 byte-fixture — DELETE_CHAR, op 23 (0x17).
 //
 // Client send — sub_5652E3 @0x5652e3:
-//   COutPacket(23)                                                   /*0x56535f*/
-//   Encode4(dob)   // date-of-birth security value                  /*0x56536d*/
-//   Encode4(characterId)                                            /*0x56538a*/
+//
+//	COutPacket(23)                                                   /*0x56535f*/
+//	Encode4(dob)   // date-of-birth security value                  /*0x56536d*/
+//	Encode4(characterId)                                            /*0x56538a*/
 //
 // Body = [int dob][int characterId] == v72 body (GMS<83 → dob, not PIC). v61 uses
 // op 23 (the v83-style DELETE_CHAR), one below v72's op 24.
@@ -185,11 +187,12 @@ func TestInfoRequestByteOutputV61(t *testing.T) {
 // HealOverTime v61 byte-fixture — HEAL_OVER_TIME, op 81 (0x51).
 //
 // Client send — CWvsContext::SendStatChangeRequest @0x8421f0:
-//   COutPacket(81)                                                   /*0x842204*/
-//   Encode4(0x1400)  // constant HP|MP mask                         /*0x842215*/
-//   Encode2(hp)                                                     /*0x842220*/
-//   Encode2(mp)                                                     /*0x84222b*/
-//   Encode1(option)                                                 /*0x842236*/
+//
+//	COutPacket(81)                                                   /*0x842204*/
+//	Encode4(0x1400)  // constant HP|MP mask                         /*0x842215*/
+//	Encode2(hp)                                                     /*0x842220*/
+//	Encode2(mp)                                                     /*0x84222b*/
+//	Encode1(option)                                                 /*0x842236*/
 //
 // No get_update_time → no leading updateTime dword (legacy GMS<83,
 // heal_over_time.go). Body = val(4) + hp(2) + mp(2) + option(1) = 9 bytes. == v72.
@@ -213,8 +216,9 @@ func TestHealOverTimeByteOutputV61(t *testing.T) {
 // ChairFixed v61 byte-fixture — CANCEL_CHAIR serverbound, op 39.
 //
 // Client send — CWvsContext::SendGetUpFromChairRequest @0x8374FE:
-//   COutPacket(39)                                                  /*0x837523*/
-//   Encode2(0xFFFF)   // seat index; 0xFFFF (-1) = get-up-from-chair /*0x837534*/
+//
+//	COutPacket(39)                                                  /*0x837523*/
+//	Encode2(0xFFFF)   // seat index; 0xFFFF (-1) = get-up-from-chair /*0x837534*/
 //
 // Single int16 body == v72 ChairFixed.Encode ([int16 chairId]); the get-up path
 // always sends 0xFFFF. v61 op 39 (v72 CANCEL_CHAIR=41, Δ-2).
@@ -232,12 +236,13 @@ func TestChairFixedByteOutputV61(t *testing.T) {
 // KeyMapChange v61 byte-fixture — CHANGE_KEYMAP, op 123 (0x7B).
 //
 // Client send — CFuncKeyMappedMan::SaveFuncKeyMap @0x51AC0D:
-//   COutPacket(123)                                                 /*0x51ac27*/
-//   Encode4(0)                             // mode (always 0)        /*0x51ac33*/
-//   Encode4(count)                         // # changed keys         /*0x51ac80*/
-//   per changed key:
-//       Encode4(keyIdx)                    // key index              /*0x51ac94*/
-//       FUNCKEY_MAPPED::Encode             // nType[1]+nID[4]        /*0x51acaa*/
+//
+//	COutPacket(123)                                                 /*0x51ac27*/
+//	Encode4(0)                             // mode (always 0)        /*0x51ac33*/
+//	Encode4(count)                         // # changed keys         /*0x51ac80*/
+//	per changed key:
+//	    Encode4(keyIdx)                    // key index              /*0x51ac94*/
+//	    FUNCKEY_MAPPED::Encode             // nType[1]+nID[4]        /*0x51acaa*/
 //
 // mode int32 + count int32 + per-entry [keyId int32 + theType int8 + action int32].
 // No version gate; byte-identical to v72.
@@ -271,8 +276,9 @@ func TestKeyMapChangeByteOutputV61(t *testing.T) {
 // ExpressionRequest v61 byte-fixture — FACE_EXPRESSION serverbound, op 48.
 //
 // Client send — CWvsContext::SendEmotionChange @0x845E8F:
-//   COutPacket(48)                                                  /*0x845f27*/
-//   Encode4(emotion)   // SecureFuse(avatar emotion); validated <= 0x17 /*0x845f4b*/
+//
+//	COutPacket(48)                                                  /*0x845f27*/
+//	Encode4(emotion)   // SecureFuse(avatar emotion); validated <= 0x17 /*0x845f4b*/
 //
 // v61 (GMS < 87) sends NO Encode4(duration) and NO Encode1(byItemOption) — both
 // are GMS>87 additions. expression.go gates them on GMS>87. Body = emote(4).
@@ -290,9 +296,10 @@ func TestExpressionRequestByteOutputV61(t *testing.T) {
 // DropMeso v61 byte-fixture — MESO_DROP, op 86 (0x56).
 //
 // Client send — CWvsContext::SendDropMoneyRequest (sub_8459DD) @0x8459DD:
-//   COutPacket(86)                                                  /*0x845a04*/
-//   Encode4(updateTime)                                             /*0x845a16*/
-//   Encode4(amount)                                                 /*0x845a21*/
+//
+//	COutPacket(86)                                                  /*0x845a04*/
+//	Encode4(updateTime)                                             /*0x845a16*/
+//	Encode4(amount)                                                 /*0x845a21*/
 //
 // Body = updateTime(4) + amount(4) == v72 MESO_DROP. task-113 scramble fix: real
 // v61 MESO_DROP is op 86 (was mislabeled DISTRIBUTE_AP). Caller = drop-meso spinner.
@@ -313,8 +320,9 @@ func TestDropMesoByteOutputV61(t *testing.T) {
 // ChalkboardClose v61 byte-fixture — CLOSE_CHALKBOARD, op 47 (0x2F).
 //
 // Client send — sub_7A3981 @0x7A3981 (CUserLocal close-chalkboard on cursor):
-//   COutPacket(47)                                                  /*0x7a39bc*/
-//   SendPacket                             // NO body               /*0x7a39cf*/
+//
+//	COutPacket(47)                                                  /*0x7a39bc*/
+//	SendPacket                             // NO body               /*0x7a39cf*/
 //
 // Empty body == v72. v61 op 47 (v72 CLOSE_CHALKBOARD=49, Δ-2).
 //

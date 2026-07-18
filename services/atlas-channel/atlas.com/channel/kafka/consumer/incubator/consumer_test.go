@@ -7,10 +7,11 @@ import (
 	"io"
 	"testing"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // TestToIncubatorResult_EggIdSurvives proves the sacrificed Pigmy Egg id on a

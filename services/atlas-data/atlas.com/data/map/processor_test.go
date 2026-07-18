@@ -22,12 +22,15 @@ func snapTestTree() FootholdTreeRestModel {
 func groundLookup(template uint32) (monstertpl.RestModel, error) {
 	return monstertpl.RestModel{Id: template, Flying: false, Swimming: false}, nil
 }
+
 func flyingLookup(template uint32) (monstertpl.RestModel, error) {
 	return monstertpl.RestModel{Id: template, Flying: true}, nil
 }
+
 func swimmingLookup(template uint32) (monstertpl.RestModel, error) {
 	return monstertpl.RestModel{Id: template, Swimming: true}, nil
 }
+
 func errLookup(template uint32) (monstertpl.RestModel, error) {
 	return monstertpl.RestModel{}, errTestMissing
 }

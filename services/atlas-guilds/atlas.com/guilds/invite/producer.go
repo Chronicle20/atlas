@@ -1,12 +1,13 @@
 package invite
 
 import (
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/invite"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 )
 
 func createInviteCommandProvider(actorId uint32, referenceId uint32, worldId world.Id, targetId uint32) model.Provider[[]kafka.Message] {

@@ -1,13 +1,13 @@
 package game_test
 
 import (
+	"atlas-rps/game"
 	"encoding/json"
 	"testing"
 
-	"atlas-rps/game"
-
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func TestModelBuilderRoundTripsThroughJSON(t *testing.T) {

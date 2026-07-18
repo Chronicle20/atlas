@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 )
 
 // Processor defines the interface for incubator reward selection.

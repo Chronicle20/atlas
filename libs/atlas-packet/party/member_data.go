@@ -35,10 +35,11 @@ type PartyMember struct {
 // extended portals to 5 fields (+skillId = 24 bytes) and added PQ reward
 // arrays (56 bytes), bringing the total to 378 bytes. These additions are
 // gated on GMS MajorVersion >= 95 only (confirmed via IDA):
-//   v83 OnPartyResult@0xa3e31c: memset(3732,0,0x12A=298)
-//   v95 OnPartyResult: memset(3732,0,0x17A=378)
-//   JMS v185 OnPartyResult@0xb297e7: qmemcpy(v120,...,0x12Au=298) — JMS uses the
-//   small PARTYDATA (same as v83), so JMS is explicitly excluded from v95plus.
+//
+//	v83 OnPartyResult@0xa3e31c: memset(3732,0,0x12A=298)
+//	v95 OnPartyResult: memset(3732,0,0x17A=378)
+//	JMS v185 OnPartyResult@0xb297e7: qmemcpy(v120,...,0x12Au=298) — JMS uses the
+//	small PARTYDATA (same as v83), so JMS is explicitly excluded from v95plus.
 func WritePartyData(ctx context.Context, w *response.Writer, members []PartyMember, leaderId uint32) {
 	t := tenant.MustFromContext(ctx)
 	// GMS legacy (< v61): PARTYDATA has NO leaderId field between channels and

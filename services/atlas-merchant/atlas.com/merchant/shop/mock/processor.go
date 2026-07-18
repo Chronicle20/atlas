@@ -4,70 +4,71 @@ import (
 	message "atlas-merchant/kafka/message"
 	"atlas-merchant/kafka/message/asset"
 	"atlas-merchant/listing"
-	"atlas-merchant/visit"
 	"atlas-merchant/shop"
+	"atlas-merchant/visit"
+
+	"github.com/google/uuid"
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 var _ shop.Processor = (*ProcessorMock)(nil)
 
 type ProcessorMock struct {
-	WithTransactionFunc        func(tx *gorm.DB) shop.Processor
-	GetByIdFunc                func(id uuid.UUID) (shop.Model, error)
-	ByIdProviderFunc           func(id uuid.UUID) model.Provider[shop.Model]
-	GetByCharacterIdFunc       func(characterId uint32) ([]shop.Model, error)
-	GetByCharacterIdPagedFunc  func(characterId uint32, page model.Page) (model.Paged[shop.Model], error)
-	GetByFieldFunc             func(worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID) ([]shop.Model, error)
-	GetByFieldPagedFunc        func(worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, page model.Page) (model.Paged[shop.Model], error)
-	GetAllOpenPagedFunc        func(page model.Page) (model.Paged[shop.Model], error)
-	GetListingCountsFunc       func(shopIds []uuid.UUID) (map[uuid.UUID]int64, error)
+	WithTransactionFunc             func(tx *gorm.DB) shop.Processor
+	GetByIdFunc                     func(id uuid.UUID) (shop.Model, error)
+	ByIdProviderFunc                func(id uuid.UUID) model.Provider[shop.Model]
+	GetByCharacterIdFunc            func(characterId uint32) ([]shop.Model, error)
+	GetByCharacterIdPagedFunc       func(characterId uint32, page model.Page) (model.Paged[shop.Model], error)
+	GetByFieldFunc                  func(worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID) ([]shop.Model, error)
+	GetByFieldPagedFunc             func(worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, page model.Page) (model.Paged[shop.Model], error)
+	GetAllOpenPagedFunc             func(page model.Page) (model.Paged[shop.Model], error)
+	GetListingCountsFunc            func(shopIds []uuid.UUID) (map[uuid.UUID]int64, error)
 	SearchListingsByItemIdPagedFunc func(criteria shop.ListingSearchCriteria, page model.Page) (model.Paged[shop.ListingSearchResult], error)
-	GetListingsFunc            func(shopId uuid.UUID) ([]listing.Model, error)
-	GetListingsPagedFunc       func(shopId uuid.UUID, page model.Page) (model.Paged[listing.Model], error)
-	CreateShopFunc             func(characterId uint32, shopType shop.ShopType, title string, worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, x int16, y int16, permitItemId uint32) (shop.Model, error)
-	CreateShopAndEmitFunc      func(characterId uint32, shopType shop.ShopType, title string, worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, x int16, y int16, permitItemId uint32) (shop.Model, error)
-	OpenShopFunc               func(shopId uuid.UUID, characterId uint32) error
-	EnterMaintenanceFunc       func(shopId uuid.UUID, characterId uint32) error
-	ExitMaintenanceFunc        func(shopId uuid.UUID, characterId uint32) error
-	CloseShopFunc              func(shopId uuid.UUID, characterId uint32, reason shop.CloseReason) error
-	GetExpiredFunc             func() ([]shop.Model, error)
-	AddListingFunc             func(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot asset.AssetData, inventoryType byte, assetId uint32) (listing.Model, error)
-	RemoveListingFunc          func(shopId uuid.UUID, characterId uint32, listingIndex uint16) (listing.Model, error)
-	UpdateListingFunc          func(shopId uuid.UUID, listingIndex uint16, pricePerBundle uint32, bundleSize uint16, bundleCount uint16) error
-	WithdrawMesoFunc           func(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error
-	OrganizeListingsFunc       func(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error
-	WithdrawMesoAndEmitFunc    func(shopId uuid.UUID, characterId uint32) error
-	OrganizeListingsAndEmitFunc func(shopId uuid.UUID, characterId uint32) error
-	EnterShopFunc              func(characterId uint32, shopId uuid.UUID, visitorName string) error
-	ExitShopFunc               func(characterId uint32, shopId uuid.UUID) error
-	EjectAllVisitorsFunc       func(shopId uuid.UUID) ([]uint32, error)
-	GetVisitorsFunc            func(shopId uuid.UUID) ([]uint32, error)
-	GetShopForCharacterFunc    func(characterId uint32) (uuid.UUID, error)
-	PurchaseBundleFunc         func(buyerCharacterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16, worldId world.Id) (shop.PurchaseResult, error)
-	SendMessageFunc            func(shopId uuid.UUID, characterId uint32, content string) error
-	RetrieveFrederickFunc      func(characterId uint32, worldId world.Id) error
-	OpenShopAndEmitFunc        func(shopId uuid.UUID, characterId uint32) error
-	CloseShopAndEmitFunc       func(shopId uuid.UUID, characterId uint32, reason shop.CloseReason) error
-	EnterMaintenanceAndEmitFunc func(shopId uuid.UUID, characterId uint32) error
-	ExitMaintenanceAndEmitFunc  func(shopId uuid.UUID, characterId uint32) error
-	EnterShopAndEmitFunc       func(characterId uint32, shopId uuid.UUID, visitorName string) error
-	AddToBlacklistFunc         func(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, name string, bannedCharacterId uint32) error
-	RemoveFromBlacklistFunc    func(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, name string) error
-	GetBlacklistPagedFunc      func(shopId uuid.UUID, page model.Page) (model.Paged[string], error)
-	GetVisitsPagedFunc         func(shopId uuid.UUID, page model.Page) (model.Paged[visit.Model], error)
-	AddToBlacklistAndEmitFunc  func(shopId uuid.UUID, characterId uint32, name string, bannedCharacterId uint32) error
-	RemoveFromBlacklistAndEmitFunc func(shopId uuid.UUID, characterId uint32, name string) error
-	ExitShopAndEmitFunc        func(characterId uint32, shopId uuid.UUID) error
-	AddListingAndEmitFunc      func(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot asset.AssetData, inventoryType byte, assetId uint32) (listing.Model, error)
-	RemoveListingAndEmitFunc   func(shopId uuid.UUID, characterId uint32, listingIndex uint16) (listing.Model, error)
-	PurchaseBundleAndEmitFunc  func(buyerCharacterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16, worldId world.Id) (shop.PurchaseResult, error)
-	SendMessageAndEmitFunc     func(shopId uuid.UUID, characterId uint32, content string) error
-	RetrieveFrederickAndEmitFunc func(characterId uint32, worldId world.Id) error
+	GetListingsFunc                 func(shopId uuid.UUID) ([]listing.Model, error)
+	GetListingsPagedFunc            func(shopId uuid.UUID, page model.Page) (model.Paged[listing.Model], error)
+	CreateShopFunc                  func(characterId uint32, shopType shop.ShopType, title string, worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, x int16, y int16, permitItemId uint32) (shop.Model, error)
+	CreateShopAndEmitFunc           func(characterId uint32, shopType shop.ShopType, title string, worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, x int16, y int16, permitItemId uint32) (shop.Model, error)
+	OpenShopFunc                    func(shopId uuid.UUID, characterId uint32) error
+	EnterMaintenanceFunc            func(shopId uuid.UUID, characterId uint32) error
+	ExitMaintenanceFunc             func(shopId uuid.UUID, characterId uint32) error
+	CloseShopFunc                   func(shopId uuid.UUID, characterId uint32, reason shop.CloseReason) error
+	GetExpiredFunc                  func() ([]shop.Model, error)
+	AddListingFunc                  func(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot asset.AssetData, inventoryType byte, assetId uint32) (listing.Model, error)
+	RemoveListingFunc               func(shopId uuid.UUID, characterId uint32, listingIndex uint16) (listing.Model, error)
+	UpdateListingFunc               func(shopId uuid.UUID, listingIndex uint16, pricePerBundle uint32, bundleSize uint16, bundleCount uint16) error
+	WithdrawMesoFunc                func(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error
+	OrganizeListingsFunc            func(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error
+	WithdrawMesoAndEmitFunc         func(shopId uuid.UUID, characterId uint32) error
+	OrganizeListingsAndEmitFunc     func(shopId uuid.UUID, characterId uint32) error
+	EnterShopFunc                   func(characterId uint32, shopId uuid.UUID, visitorName string) error
+	ExitShopFunc                    func(characterId uint32, shopId uuid.UUID) error
+	EjectAllVisitorsFunc            func(shopId uuid.UUID) ([]uint32, error)
+	GetVisitorsFunc                 func(shopId uuid.UUID) ([]uint32, error)
+	GetShopForCharacterFunc         func(characterId uint32) (uuid.UUID, error)
+	PurchaseBundleFunc              func(buyerCharacterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16, worldId world.Id) (shop.PurchaseResult, error)
+	SendMessageFunc                 func(shopId uuid.UUID, characterId uint32, content string) error
+	RetrieveFrederickFunc           func(characterId uint32, worldId world.Id) error
+	OpenShopAndEmitFunc             func(shopId uuid.UUID, characterId uint32) error
+	CloseShopAndEmitFunc            func(shopId uuid.UUID, characterId uint32, reason shop.CloseReason) error
+	EnterMaintenanceAndEmitFunc     func(shopId uuid.UUID, characterId uint32) error
+	ExitMaintenanceAndEmitFunc      func(shopId uuid.UUID, characterId uint32) error
+	EnterShopAndEmitFunc            func(characterId uint32, shopId uuid.UUID, visitorName string) error
+	AddToBlacklistFunc              func(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, name string, bannedCharacterId uint32) error
+	RemoveFromBlacklistFunc         func(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, name string) error
+	GetBlacklistPagedFunc           func(shopId uuid.UUID, page model.Page) (model.Paged[string], error)
+	GetVisitsPagedFunc              func(shopId uuid.UUID, page model.Page) (model.Paged[visit.Model], error)
+	AddToBlacklistAndEmitFunc       func(shopId uuid.UUID, characterId uint32, name string, bannedCharacterId uint32) error
+	RemoveFromBlacklistAndEmitFunc  func(shopId uuid.UUID, characterId uint32, name string) error
+	ExitShopAndEmitFunc             func(characterId uint32, shopId uuid.UUID) error
+	AddListingAndEmitFunc           func(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot asset.AssetData, inventoryType byte, assetId uint32) (listing.Model, error)
+	RemoveListingAndEmitFunc        func(shopId uuid.UUID, characterId uint32, listingIndex uint16) (listing.Model, error)
+	PurchaseBundleAndEmitFunc       func(buyerCharacterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16, worldId world.Id) (shop.PurchaseResult, error)
+	SendMessageAndEmitFunc          func(shopId uuid.UUID, characterId uint32, content string) error
+	RetrieveFrederickAndEmitFunc    func(characterId uint32, worldId world.Id) error
 }
 
 func (m *ProcessorMock) WithTransaction(tx *gorm.DB) shop.Processor {

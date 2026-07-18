@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const PartyOperationWriter = "PartyOperation"
@@ -44,12 +45,12 @@ func (m Created) WithDoor(townMapId _map.Id, targetMapId _map.Id, x int16, y int
 	return m
 }
 
-func (m Created) Mode() byte             { return m.mode }
-func (m Created) PartyId() uint32        { return m.partyId }
-func (m Created) DoorTownMapId() _map.Id { return m.doorTownMapId }
+func (m Created) Mode() byte               { return m.mode }
+func (m Created) PartyId() uint32          { return m.partyId }
+func (m Created) DoorTownMapId() _map.Id   { return m.doorTownMapId }
 func (m Created) DoorTargetMapId() _map.Id { return m.doorTargetMapId }
-func (m Created) DoorX() int16           { return m.doorX }
-func (m Created) DoorY() int16           { return m.doorY }
+func (m Created) DoorX() int16             { return m.doorX }
+func (m Created) DoorY() int16             { return m.doorY }
 
 func (m Created) Operation() string {
 	return PartyOperationWriter

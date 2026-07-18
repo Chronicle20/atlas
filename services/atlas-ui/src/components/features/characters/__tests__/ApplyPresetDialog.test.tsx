@@ -16,9 +16,7 @@ vi.mock("@/components/features/characters/CharacterRenderer", () => ({
     character,
   }: {
     character: { id: string; attributes: { name: string } };
-  }) => (
-    <div data-testid="renderer" data-name={character.attributes.name} />
-  ),
+  }) => <div data-testid="renderer" data-name={character.attributes.name} />,
 }));
 
 const useTenantConfigurationMock = vi.fn();
@@ -70,7 +68,10 @@ const presetAttrs = {
 };
 
 const twoPresets = [
-  { id: "preset-1", attributes: { ...presetAttrs, name: "Warrior", jobId: 100 } },
+  {
+    id: "preset-1",
+    attributes: { ...presetAttrs, name: "Warrior", jobId: 100 },
+  },
   { id: "preset-2", attributes: { ...presetAttrs, name: "Mage", jobId: 200 } },
 ];
 
@@ -157,7 +158,9 @@ describe("ApplyPresetDialog", () => {
 
   it("does not render when closed", () => {
     render(<ApplyPresetDialog {...defaultProps({ open: false })} />);
-    expect(screen.queryByText("Add character from preset")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Add character from preset"),
+    ).not.toBeInTheDocument();
   });
 
   it("renders one preset tile per configured preset", () => {
@@ -299,7 +302,10 @@ describe("ApplyPresetDialog — world filtering", () => {
       isLoading: false,
     });
     useNameValidityMock.mockReturnValue({ data: undefined, isLoading: false });
-    useCreateCharacterFromPresetMock.mockReturnValue({ mutate, isPending: false });
+    useCreateCharacterFromPresetMock.mockReturnValue({
+      mutate,
+      isPending: false,
+    });
   });
 
   it("only lists worlds the tenant's channel-service configs cover", () => {

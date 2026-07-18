@@ -1,8 +1,7 @@
 package mapr
 
 import (
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-
+	"atlas-renders/storage"
 	"bytes"
 	"context"
 	"fmt"
@@ -12,11 +11,12 @@ import (
 	"strconv"
 	"time"
 
-	"atlas-renders/storage"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // Handler serves the two map render paths:

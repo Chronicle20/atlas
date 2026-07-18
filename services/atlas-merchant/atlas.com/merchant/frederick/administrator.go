@@ -3,11 +3,12 @@ package frederick
 import (
 	"time"
 
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 func storeItems(tenantId uuid.UUID, characterId uint32, items []StoredItem) database.EntityProvider[bool] {

@@ -6,12 +6,13 @@ import (
 	"math/rand"
 	"time"
 
-	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // packet-audit:fname CStage::OnSetField

@@ -8,8 +8,10 @@ import (
 )
 
 func makeUint128(a []uint32) Uint128 {
-	return Uint128{uint64(a[0])<<32 | uint64(a[1]),
-		uint64(a[2])<<32 | uint64(a[3])}
+	return Uint128{
+		uint64(a[0])<<32 | uint64(a[1]),
+		uint64(a[2])<<32 | uint64(a[3]),
+	}
 }
 
 func makeBigInt(a []uint32) *big.Int {

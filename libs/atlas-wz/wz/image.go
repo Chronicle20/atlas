@@ -3,11 +3,12 @@ package wz
 import (
 	"bytes"
 	"errors"
-	"github.com/Chronicle20/atlas/libs/atlas-wz/crypto"
-	"github.com/Chronicle20/atlas/libs/atlas-wz/wz/property"
 	"fmt"
 	"io"
 	"sync/atomic"
+
+	"github.com/Chronicle20/atlas/libs/atlas-wz/crypto"
+	"github.com/Chronicle20/atlas/libs/atlas-wz/wz/property"
 )
 
 // errBadImageTag marks the tag-validation failure that triggers the

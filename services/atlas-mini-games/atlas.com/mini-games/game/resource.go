@@ -5,6 +5,12 @@ import (
 	"net/http"
 	"sort"
 
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
+	"github.com/jtumidanski/api2go/jsonapi"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
@@ -12,11 +18,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
-	"github.com/google/uuid"
-	"github.com/gorilla/mux"
-	"github.com/jtumidanski/api2go/jsonapi"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 const (

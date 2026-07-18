@@ -14,11 +14,23 @@ import { cn } from "@/lib/utils";
  * pure and testable; callers resolve it from their own tenant prop or the active
  * tenant. `data-testid="seal-icon"` is preserved across both render branches.
  */
-export function SealIcon({ tenant, className }: { tenant?: Tenant | null; className?: string }) {
+export function SealIcon({
+  tenant,
+  className,
+}: {
+  tenant?: Tenant | null;
+  className?: string;
+}) {
   const [failed, setFailed] = useState(false);
 
   if (!tenant || failed) {
-    return <Lock data-testid="seal-icon" className={className} aria-label="Sealed item" />;
+    return (
+      <Lock
+        data-testid="seal-icon"
+        className={className}
+        aria-label="Sealed item"
+      />
+    );
   }
 
   return (

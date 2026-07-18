@@ -3,9 +3,10 @@ package serverbound
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 // ItemUseIncubator is the sub-body of the cash ItemUse packet for the Incubator.

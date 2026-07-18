@@ -1,9 +1,8 @@
 package writer
 
 import (
-	"testing"
-
 	"atlas-channel/merchant"
+	"testing"
 
 	"github.com/stretchr/testify/require"
 )

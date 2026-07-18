@@ -1,20 +1,20 @@
 package _map
 
 import (
+	"atlas-data/canonical"
 	"context"
 	"strconv"
 	"testing"
 	"time"
 
-	"atlas-data/canonical"
-
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func seedIndex(t *testing.T, db *gorm.DB, ctx context.Context, tenantId uuid.UUID, id uint32, name, street string) {

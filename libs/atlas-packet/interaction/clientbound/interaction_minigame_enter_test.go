@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-packet/interaction"
 	testlog "github.com/sirupsen/logrus/hooks/test"
+
+	"github.com/Chronicle20/atlas/libs/atlas-packet/interaction"
 
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )

@@ -67,14 +67,11 @@ type StatusEvent[E any] struct {
 	Body     E        `json:"body"`
 }
 
-type CreatedStatusEventBody struct {
-}
+type CreatedStatusEventBody struct{}
 
-type UpdatedStatusEventBody struct {
-}
+type UpdatedStatusEventBody struct{}
 
-type DeletedStatusEventBody struct {
-}
+type DeletedStatusEventBody struct{}
 
 type ReplyAddedStatusEventBody struct {
 	ReplyId uint32 `json:"replyId"`

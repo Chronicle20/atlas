@@ -1,6 +1,7 @@
 package skill_test
 
 import (
+	"atlas-query-aggregator/skill"
 	"context"
 	"fmt"
 	"net/http"
@@ -9,11 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"atlas-query-aggregator/skill"
-
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // skillDoc renders a JSON:API document for skills with id [from, to]

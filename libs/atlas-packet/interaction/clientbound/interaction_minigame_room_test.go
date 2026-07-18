@@ -5,10 +5,11 @@ import (
 	"encoding/binary"
 	"testing"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/interaction"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
-	testlog "github.com/sirupsen/logrus/hooks/test"
 
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
@@ -27,6 +28,7 @@ func le16(v uint16) []byte {
 	binary.LittleEndian.PutUint16(b, v)
 	return b
 }
+
 func le32(v uint32) []byte {
 	b := make([]byte, 4)
 	binary.LittleEndian.PutUint32(b, v)
@@ -89,19 +91,19 @@ func miniGameRoomWant(avatarBytes []byte, withJobCode bool) []byte {
 	}
 	want = append(want, 0xFF) // end avatar list
 	// record list (separate)
-	want = append(want, 0)            // slot 0
-	want = append(want, le32(1)...)   // Unknown
-	want = append(want, le32(10)...)  // Wins
-	want = append(want, le32(2)...)   // Ties
-	want = append(want, le32(3)...)   // Losses
-	want = append(want, le32(500)...) // Points
-	want = append(want, 1)            // slot 1
-	want = append(want, le32(1)...)   // Unknown
-	want = append(want, le32(4)...)   // Wins
-	want = append(want, le32(1)...)   // Ties
-	want = append(want, le32(6)...)   // Losses
-	want = append(want, le32(250)...) // Points
-	want = append(want, 0xFF)         // end record list
+	want = append(want, 0)                   // slot 0
+	want = append(want, le32(1)...)          // Unknown
+	want = append(want, le32(10)...)         // Wins
+	want = append(want, le32(2)...)          // Ties
+	want = append(want, le32(3)...)          // Losses
+	want = append(want, le32(500)...)        // Points
+	want = append(want, 1)                   // slot 1
+	want = append(want, le32(1)...)          // Unknown
+	want = append(want, le32(4)...)          // Wins
+	want = append(want, le32(1)...)          // Ties
+	want = append(want, le32(6)...)          // Losses
+	want = append(want, le32(250)...)        // Points
+	want = append(want, 0xFF)                // end record list
 	want = append(want, ascii("FunRoom")...) // title
 	want = append(want, 0)                   // gameKind
 	want = append(want, 0)                   // tournament = false

@@ -3,10 +3,11 @@ package interaction
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 type VisitorType byte
@@ -47,11 +48,11 @@ func NewMerchantVisitor(itemId uint32, merchantName string) Visitor {
 }
 
 func (v Visitor) VisitorType() VisitorType { return v.visitorType }
-func (v Visitor) Slot() byte              { return v.slot }
-func (v Visitor) Avatar() model.Avatar    { return v.avatar }
-func (v Visitor) Name() string            { return v.name }
-func (v Visitor) ItemId() uint32          { return v.itemId }
-func (v Visitor) MerchantName() string    { return v.merchantName }
+func (v Visitor) Slot() byte               { return v.slot }
+func (v Visitor) Avatar() model.Avatar     { return v.avatar }
+func (v Visitor) Name() string             { return v.name }
+func (v Visitor) ItemId() uint32           { return v.itemId }
+func (v Visitor) MerchantName() string     { return v.merchantName }
 
 func (v Visitor) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)

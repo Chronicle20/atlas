@@ -1,8 +1,9 @@
 package test
 
 import (
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // TestTenantId is a fixed UUID used for all tests

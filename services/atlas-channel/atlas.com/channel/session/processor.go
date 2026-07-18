@@ -6,8 +6,15 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 	"errors"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"net"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -17,12 +24,7 @@ import (
 	socketpkt "github.com/Chronicle20/atlas/libs/atlas-packet/socket/clientbound"
 	socket "github.com/Chronicle20/atlas/libs/atlas-socket"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type ProcessorImpl struct {

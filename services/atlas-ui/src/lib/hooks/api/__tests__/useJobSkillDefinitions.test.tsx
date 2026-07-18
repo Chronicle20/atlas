@@ -25,19 +25,35 @@ describe("useJobSkillDefinitions", () => {
 
   it("fetches every skill id in parallel and exposes an icon url", async () => {
     getSkillByIdMock.mockImplementation((id: string) =>
-      Promise.resolve({ id: Number(id), name: `Skill ${id}`, description: "", action: true, element: "", animationTime: 0, effects: [] }),
+      Promise.resolve({
+        id: Number(id),
+        name: `Skill ${id}`,
+        description: "",
+        action: true,
+        element: "",
+        animationTime: 0,
+        effects: [],
+      }),
     );
 
-    const { result } = renderHook(() => useJobSkillDefinitions(fakeTenant, [1101000, 1101001]), { wrapper });
+    const { result } = renderHook(
+      () => useJobSkillDefinitions(fakeTenant, [1101000, 1101001]),
+      { wrapper },
+    );
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.definitions).toHaveLength(2);
-    expect(result.current.definitions.map((d) => d.id).sort()).toEqual([1101000, 1101001]);
+    expect(result.current.definitions.map((d) => d.id).sort()).toEqual([
+      1101000, 1101001,
+    ]);
     expect(result.current.definitions[0]?.iconUrl).toContain("/skill/");
   });
 
   it("returns an empty result for no skill ids and fires no requests", async () => {
-    const { result } = renderHook(() => useJobSkillDefinitions(fakeTenant, []), { wrapper });
+    const { result } = renderHook(
+      () => useJobSkillDefinitions(fakeTenant, []),
+      { wrapper },
+    );
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.definitions).toEqual([]);
     expect(getSkillByIdMock).not.toHaveBeenCalled();

@@ -3,12 +3,12 @@ package writer
 import (
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 
 	loginpkt "github.com/Chronicle20/atlas/libs/atlas-packet/login/clientbound"
 )
-
 
 type PinUpdateMode string
 

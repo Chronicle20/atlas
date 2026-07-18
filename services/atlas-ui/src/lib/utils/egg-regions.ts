@@ -20,7 +20,10 @@ export function eggRegionLabel(eggId: number | string): string | null {
 }
 
 /** Append " (Region)" to an incubator pool's display name when the region is known. */
-export function formatIncubatorName(baseName: string, eggId: number | string): string {
+export function formatIncubatorName(
+  baseName: string,
+  eggId: number | string,
+): string {
   const region = eggRegionLabel(eggId);
   return region ? `${baseName} (${region})` : baseName;
 }

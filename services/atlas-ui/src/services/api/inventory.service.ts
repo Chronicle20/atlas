@@ -2,8 +2,8 @@
  * Inventory management service
  * Handles all inventory-related API operations with tenant support
  */
-import type { ServiceOptions } from '@/lib/api/query-params';
-import { api } from '@/lib/api/client';
+import type { ServiceOptions } from "@/lib/api/query-params";
+import { api } from "@/lib/api/client";
 
 /**
  * Inventory data structure representing a character's inventory
@@ -116,10 +116,11 @@ export const CompartmentType = {
   ETC: 4,
   CASH: 5,
 } as const;
-export type CompartmentType = typeof CompartmentType[keyof typeof CompartmentType];
+export type CompartmentType =
+  (typeof CompartmentType)[keyof typeof CompartmentType];
 
 class InventoryService {
-  private basePath = '/api/characters';
+  private basePath = "/api/characters";
 
   /**
    * Helper function to get compartment type name
@@ -144,16 +145,23 @@ class InventoryService {
   /**
    * Helper function to get assets for a compartment
    */
-  getAssetsForCompartment(compartment: Compartment, included: Array<Compartment | Asset> = []): Asset[] {
+  getAssetsForCompartment(
+    compartment: Compartment,
+    included: Array<Compartment | Asset> = [],
+  ): Asset[] {
     // Handle cases where compartment relationships might be malformed
     const assetRefs = compartment.relationships?.assets?.data || [];
-    
+
     return assetRefs
-      .map(assetRef => included.find(item => item.type === assetRef.type && item.id === assetRef.id))
+      .map((assetRef) =>
+        included.find(
+          (item) => item.type === assetRef.type && item.id === assetRef.id,
+        ),
+      )
       .filter((asset): asset is Asset => {
         return (
           asset !== undefined &&
-          asset.type === 'assets' &&
+          asset.type === "assets" &&
           (asset as Asset).attributes?.slot !== undefined &&
           (asset as Asset).attributes.slot >= 0
         );
@@ -164,10 +172,16 @@ class InventoryService {
   /**
    * Fetch inventory data for a character
    */
-  async getInventory(characterId: string, options?: ServiceOptions): Promise<InventoryResponse> {
+  async getInventory(
+    characterId: string,
+    options?: ServiceOptions,
+  ): Promise<InventoryResponse> {
     // Set tenant for this request
     // Use the API client to fetch inventory - use get() instead of getOne() to preserve included array
-    return api.get<InventoryResponse>(`${this.basePath}/${characterId}/inventory`, options);
+    return api.get<InventoryResponse>(
+      `${this.basePath}/${characterId}/inventory`,
+      options,
+    );
   }
 
   /**
@@ -177,28 +191,33 @@ class InventoryService {
     characterId: string,
     compartmentId: string,
     assetId: string,
-    options?: ServiceOptions
+    options?: ServiceOptions,
   ): Promise<void> {
     // Set tenant for this request
     // Use the API client to delete the asset
     return api.delete(
       `${this.basePath}/${characterId}/inventory/compartments/${compartmentId}/assets/${assetId}`,
-      options
+      options,
     );
   }
 
   /**
    * Get inventory compartments for a character
    */
-  async getCompartments(characterId: string, options?: ServiceOptions): Promise<Compartment[]> {
+  async getCompartments(
+    characterId: string,
+    options?: ServiceOptions,
+  ): Promise<Compartment[]> {
     // Set tenant for this request
     // Fetch full inventory and extract compartments
     const inventoryResponse = await this.getInventory(characterId, options);
-    
+
     // Filter included items to get only compartments
-    return inventoryResponse.included?.filter((item): item is Compartment => 
-      item.type === 'compartments'
-    ) || [];
+    return (
+      inventoryResponse.included?.filter(
+        (item): item is Compartment => item.type === "compartments",
+      ) || []
+    );
   }
 
   /**
@@ -207,24 +226,27 @@ class InventoryService {
   async getCompartmentAssets(
     characterId: string,
     compartmentId: string,
-    options?: ServiceOptions
+    options?: ServiceOptions,
   ): Promise<Asset[]> {
     // Set tenant for this request
     // Fetch full inventory
     const inventoryResponse = await this.getInventory(characterId, options);
-    
+
     // Find the specific compartment
     const compartment = inventoryResponse.included.find(
-      (item): item is Compartment => 
-        item.type === 'compartments' && item.id === compartmentId
+      (item): item is Compartment =>
+        item.type === "compartments" && item.id === compartmentId,
     );
-    
+
     if (!compartment) {
       throw new Error(`Compartment ${compartmentId} not found`);
     }
-    
+
     // Get assets for this compartment
-    return this.getAssetsForCompartment(compartment, inventoryResponse.included);
+    return this.getAssetsForCompartment(
+      compartment,
+      inventoryResponse.included,
+    );
   }
 
   /**
@@ -233,18 +255,20 @@ class InventoryService {
   async hasAsset(
     characterId: string,
     assetId: string,
-    options?: ServiceOptions
+    options?: ServiceOptions,
   ): Promise<boolean> {
     try {
       // Set tenant for this request
       // Fetch full inventory
       const inventoryResponse = await this.getInventory(characterId, options);
-      
+
       // Check if asset exists in included items
-      return inventoryResponse.included?.some(
-        item => item.type === 'assets' && item.id === assetId
-      ) || false;
-    } catch (error) {
+      return (
+        inventoryResponse.included?.some(
+          (item) => item.type === "assets" && item.id === assetId,
+        ) || false
+      );
+    } catch {
       // If inventory fetch fails, assume asset doesn't exist
       return false;
     }
@@ -253,7 +277,10 @@ class InventoryService {
   /**
    * Get inventory summary with compartment counts
    */
-  async getInventorySummary(characterId: string, options?: ServiceOptions): Promise<{
+  async getInventorySummary(
+    characterId: string,
+    options?: ServiceOptions,
+  ): Promise<{
     totalCompartments: number;
     totalAssets: number;
     compartmentSummary: Array<{
@@ -266,21 +293,26 @@ class InventoryService {
     // Set tenant for this request
     // Fetch full inventory
     const inventoryResponse = await this.getInventory(characterId, options);
-    
+
     // Get compartments
-    const compartments = inventoryResponse.included?.filter((item): item is Compartment => 
-      item.type === 'compartments'
-    ) || [];
-    
+    const compartments =
+      inventoryResponse.included?.filter(
+        (item): item is Compartment => item.type === "compartments",
+      ) || [];
+
     // Get assets
-    const assets = inventoryResponse.included?.filter((item): item is Asset => 
-      item.type === 'assets'
-    ) || [];
-    
+    const assets =
+      inventoryResponse.included?.filter(
+        (item): item is Asset => item.type === "assets",
+      ) || [];
+
     // Create compartment summary
-    const compartmentSummary = compartments.map(compartment => {
-      const compartmentAssets = this.getAssetsForCompartment(compartment, inventoryResponse.included || []);
-      
+    const compartmentSummary = compartments.map((compartment) => {
+      const compartmentAssets = this.getAssetsForCompartment(
+        compartment,
+        inventoryResponse.included || [],
+      );
+
       return {
         type: compartment.attributes.type,
         name: this.getCompartmentTypeName(compartment.attributes.type),
@@ -288,14 +320,13 @@ class InventoryService {
         capacity: compartment.attributes.capacity,
       };
     });
-    
+
     return {
       totalCompartments: compartments.length,
       totalAssets: assets.length,
       compartmentSummary,
     };
   }
-
 }
 
 export const inventoryService = new InventoryService();

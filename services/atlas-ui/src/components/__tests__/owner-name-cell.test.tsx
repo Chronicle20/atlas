@@ -11,7 +11,10 @@ vi.mock("@/services/api/characters.service", () => ({
 
 import { OwnerNameCell } from "../owner-name-cell";
 
-const tenant = { id: "t1", attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 } } as never;
+const tenant = {
+  id: "t1",
+  attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 },
+} as never;
 
 const character = (id: string, name: string): Character =>
   ({ id, attributes: { name } }) as unknown as Character;

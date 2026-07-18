@@ -67,3 +67,4 @@ deploy/k8s/secrets.yaml
 
 # Stray Node/vitest artifacts (atlas-ui has its own; the repo root should never have node_modules)
 node_modules/
+/.cache/

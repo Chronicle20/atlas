@@ -10,12 +10,13 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func seedCommodityForPaging(t *testing.T, db *gorm.DB, tenantId uuid.UUID, templateId uint32, npcId uint32) {

@@ -15,18 +15,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"sync"
 	"time"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 )
 
 // Processor is the interface for saga processing
@@ -1208,7 +1210,6 @@ func (p *ProcessorImpl) expandAndProcessStep(s Saga, st Step[any]) error {
 		*saga = updated
 		return nil
 	})
-
 	if err != nil {
 		return err
 	}

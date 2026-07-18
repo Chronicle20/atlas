@@ -9,7 +9,9 @@ export const itemRecipesKeys = {
     ["recipes", "byItem", itemId, tenantId ?? "no-tenant"] as const,
 };
 
-export function useItemRecipes(itemId: string): UseQueryResult<Recipe[], Error> {
+export function useItemRecipes(
+  itemId: string,
+): UseQueryResult<Recipe[], Error> {
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: itemRecipesKeys.byItem(itemId, activeTenant?.id),

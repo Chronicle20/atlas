@@ -3,8 +3,9 @@ package mock
 import (
 	"atlas-mini-games/game"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
 type ProcessorMock struct {

@@ -1,19 +1,20 @@
 package resurrection
 
 import (
+	"atlas-channel/data/skill/effect"
 	"context"
 	"io"
 	"testing"
 
-	"atlas-channel/data/skill/effect"
 	channelhandler "atlas-channel/skill/handler"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/sirupsen/logrus"
 )
 
 func testLogger() logrus.FieldLogger {

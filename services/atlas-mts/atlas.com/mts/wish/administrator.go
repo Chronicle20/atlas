@@ -1,17 +1,17 @@
 package wish
 
 import (
+	"atlas-mts/serial"
 	"errors"
 	"fmt"
 	"time"
 
-	"atlas-mts/serial"
+	"github.com/google/uuid"
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 // parseId converts a string id into a uuid, returning uuid.Nil on a malformed
@@ -92,10 +92,10 @@ func CreateWish(db *gorm.DB, m Model) (Model, error) {
 	}
 
 	e := entity{
-		Id:          id,
-		TenantId:    m.TenantId(),
-		WorldId:     byte(m.WorldId()),
-		Serial:      sn,
+		Id:            id,
+		TenantId:      m.TenantId(),
+		WorldId:       byte(m.WorldId()),
+		Serial:        sn,
 		CharacterId:   m.CharacterId(),
 		ItemId:        m.ItemId(),
 		ListingSerial: m.ListingSerial(),

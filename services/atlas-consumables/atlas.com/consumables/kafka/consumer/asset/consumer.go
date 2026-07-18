@@ -4,10 +4,11 @@ import (
 	consumer2 "atlas-consumables/kafka/consumer"
 	"atlas-consumables/kafka/message/asset"
 
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // InitConsumers subscribes the service to the asset status topic. The reward

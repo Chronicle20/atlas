@@ -16,11 +16,12 @@ import (
 
 	minio "atlas-data/storage/minio"
 
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 )
 
 // ErrSchemaMismatch indicates the dump header schemaVersion does not match the

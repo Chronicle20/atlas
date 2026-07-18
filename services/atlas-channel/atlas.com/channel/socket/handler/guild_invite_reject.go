@@ -7,10 +7,11 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	invite2 "github.com/Chronicle20/atlas/libs/atlas-constants/invite"
 	guildsb "github.com/Chronicle20/atlas/libs/atlas-packet/guild/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 func GuildInviteRejectHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {

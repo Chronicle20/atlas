@@ -8,9 +8,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 )
 
 type fakeEvent struct {
@@ -64,7 +65,6 @@ func TestAdaptHandler_MalformedJSON_LogsErrorAndCommits(t *testing.T) {
 	}
 
 	persistent, err := h(l, context.Background(), msg)
-
 	if err != nil {
 		t.Fatalf("expected nil error, got %v", err)
 	}

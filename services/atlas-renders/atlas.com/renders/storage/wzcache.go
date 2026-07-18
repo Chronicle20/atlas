@@ -8,8 +8,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
 )
 
 // monolithArchive is the single archive that legacy monolithic scopes (GMS
@@ -32,12 +33,12 @@ const monolithArchive = "Data.wz"
 // Concurrent calls for the same key are serialized by a per-key sync.Once;
 // the loser of the race waits for the winner and reads the same *wz.File.
 type WZCache struct {
-	mc           *MC
-	bucket       string
-	scratchDir   string
-	mu           sync.Mutex
-	entries      map[string]*wzEntry
-	l            logrus.FieldLogger
+	mc         *MC
+	bucket     string
+	scratchDir string
+	mu         sync.Mutex
+	entries    map[string]*wzEntry
+	l          logrus.FieldLogger
 }
 
 // wzEntry holds the cached *wz.File for one (scope, region, version,

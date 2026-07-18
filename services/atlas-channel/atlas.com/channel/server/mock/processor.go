@@ -4,7 +4,7 @@ import (
 	"atlas-channel/server"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type ProcessorMock struct {

@@ -6,12 +6,13 @@ import (
 	"context"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const TimeoutTask = "timeout"
@@ -59,7 +60,6 @@ func (t *Timeout) Run() {
 			}
 		}
 	}
-
 }
 
 func (t *Timeout) SleepTime() time.Duration {

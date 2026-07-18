@@ -5,9 +5,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const ExpirationTaskName = "drop_expiration_task"

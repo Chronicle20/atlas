@@ -7,10 +7,11 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 // buildTakeHomeSaga builds a completed WithdrawFromMts saga in its post-expansion

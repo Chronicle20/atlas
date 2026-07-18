@@ -9,16 +9,18 @@ import (
 	"atlas-storage/projection"
 	"atlas-storage/service"
 	"atlas-storage/storage"
+	"os"
+
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	lifecycle "github.com/Chronicle20/atlas/libs/atlas-service"
-	"os"
+
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	"gorm.io/gorm"
 )
 
 const serviceName = "atlas-storage"

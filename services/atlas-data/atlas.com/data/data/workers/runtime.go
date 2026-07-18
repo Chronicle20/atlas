@@ -10,6 +10,8 @@
 package workers
 
 import (
+	"atlas-data/canonical"
+	"atlas-data/data/wztoxml"
 	"bytes"
 	"context"
 	"errors"
@@ -21,14 +23,13 @@ import (
 	"strings"
 	"sync"
 
-	"atlas-data/canonical"
-	"atlas-data/data/wztoxml"
 	minio "atlas-data/storage/minio"
 
-	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
 )
 
 // tenantFromParams derives a tenant.Model from the worker Params. For
@@ -231,16 +232,16 @@ func OpenArchive(ctx context.Context, l logrus.FieldLogger, mc *minio.Client, p 
 // String.wz, Etc.wz, or UI.wz, and each calling fetchAndSerializeArchive
 // independently races on:
 //
-//	1. The shared download path $scratch/<archive> — os.Create truncates and
-//	   defer os.Remove leaves a window where peers see a missing file
-//	   (observed: Skill worker logged "String.wz unavailable" on PR-544).
-//	2. The XML output dir $scratch/xml/<region>/<ver>/<archive>/*.img.xml —
-//	   wztoxml.SerializeToDirectory calls os.Create on every file; concurrent
-//	   re-serializations briefly truncate, and a reader that happens to grab
-//	   the file during that window parses an empty <imgdir/> with zero
-//	   ChildNodes. Silent: no error returned, the consuming InitString just
-//	   adds nothing to its registry, and downstream document Name fields stay
-//	   blank. PR-544 evidence: all 1568 MONSTER + 1620 NPC docs had name=''.
+//  1. The shared download path $scratch/<archive> — os.Create truncates and
+//     defer os.Remove leaves a window where peers see a missing file
+//     (observed: Skill worker logged "String.wz unavailable" on PR-544).
+//  2. The XML output dir $scratch/xml/<region>/<ver>/<archive>/*.img.xml —
+//     wztoxml.SerializeToDirectory calls os.Create on every file; concurrent
+//     re-serializations briefly truncate, and a reader that happens to grab
+//     the file during that window parses an empty <imgdir/> with zero
+//     ChildNodes. Silent: no error returned, the consuming InitString just
+//     adds nothing to its registry, and downstream document Name fields stay
+//     blank. PR-544 evidence: all 1568 MONSTER + 1620 NPC docs had name=”.
 //
 // The map is keyed by archive name only because Params (ScopeKey/Region/
 // Version) are constant for the lifetime of one ingest job. sync.Once

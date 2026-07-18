@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 // extractKeyAsUint32 extracts the characterId from a binary-encoded key
@@ -31,7 +32,6 @@ func TestEnableActionsProvider_MessageStructure(t *testing.T) {
 
 	provider := enableActionsProvider(f, characterId)
 	messages, err := provider()
-
 	if err != nil {
 		t.Fatalf("enableActionsProvider() returned unexpected error: %v", err)
 	}
@@ -88,7 +88,6 @@ func TestChangeMapProvider_MessageStructure(t *testing.T) {
 
 	provider := ChangeMapProvider(f, characterId, targetMapId, portalId)
 	messages, err := provider()
-
 	if err != nil {
 		t.Fatalf("ChangeMapProvider() returned unexpected error: %v", err)
 	}
@@ -154,7 +153,6 @@ func TestEnableActionsProvider_DifferentParameters(t *testing.T) {
 			f := field.NewBuilder(tt.worldId, tt.channelId, tt.mapId).SetInstance(uuid.New()).Build()
 			provider := enableActionsProvider(f, tt.characterId)
 			messages, err := provider()
-
 			if err != nil {
 				t.Fatalf("enableActionsProvider() returned unexpected error: %v", err)
 			}
@@ -203,7 +201,6 @@ func TestChangeMapProvider_DifferentParameters(t *testing.T) {
 			f := field.NewBuilder(tt.worldId, tt.channelId, tt.mapId).SetInstance(uuid.New()).Build()
 			provider := ChangeMapProvider(f, tt.characterId, tt.targetMapId, tt.portalId)
 			messages, err := provider()
-
 			if err != nil {
 				t.Fatalf("ChangeMapProvider() returned unexpected error: %v", err)
 			}

@@ -4,8 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 )
 
 // TestFoodDecode pins the v83 wire format that the taming-mob food handler

@@ -12,10 +12,17 @@ vi.mock("@/services/api/reward-pools.service", () => ({
   },
 }));
 vi.mock("@/context/tenant-context", () => ({
-  useTenant: () => ({ activeTenant: { id: "t1", attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 } } }),
+  useTenant: () => ({
+    activeTenant: {
+      id: "t1",
+      attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 },
+    },
+  }),
 }));
 
-function renderDialog(props: Partial<Parameters<typeof PoolFormDialog>[0]> = {}) {
+function renderDialog(
+  props: Partial<Parameters<typeof PoolFormDialog>[0]> = {},
+) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
@@ -48,7 +55,9 @@ describe("PoolFormDialog", () => {
         name: "Pigmy Egg (Victoria)",
         kind: "incubator",
         npcIds: [1012004],
-        commonWeight: 0, uncommonWeight: 0, rareWeight: 0,
+        commonWeight: 0,
+        uncommonWeight: 0,
+        rareWeight: 0,
       }),
     );
   });
@@ -56,7 +65,18 @@ describe("PoolFormDialog", () => {
   it("edit mode locks kind and prefills", () => {
     renderDialog({
       mode: "edit",
-      pool: { id: "henesys", type: "gachapons", attributes: { name: "Henesys", kind: "gachapon", npcIds: [9100100], commonWeight: 70, uncommonWeight: 25, rareWeight: 5 } },
+      pool: {
+        id: "henesys",
+        type: "gachapons",
+        attributes: {
+          name: "Henesys",
+          kind: "gachapon",
+          npcIds: [9100100],
+          commonWeight: 70,
+          uncommonWeight: 25,
+          rareWeight: 5,
+        },
+      },
     });
     expect(screen.queryByRole("radio")).not.toBeInTheDocument();
     expect(screen.getByLabelText(/name/i)).toHaveValue("Henesys");

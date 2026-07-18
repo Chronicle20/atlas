@@ -1,11 +1,11 @@
-import * as React from 'react';
-import { AlertTriangle, RefreshCw, Home, Bug, Send } from 'lucide-react';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
-import { errorLogger } from '@/services/errorLogger';
-import type { ErrorContext } from '@/services/errorLogger';
+import * as React from "react";
+import { AlertTriangle, RefreshCw, Home, Bug, Send } from "lucide-react";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import { errorLogger } from "@/services/errorLogger";
+import type { ErrorContext } from "@/services/errorLogger";
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -41,40 +41,45 @@ interface ErrorFallbackProps {
  * Default error fallback component that displays error information
  * and provides options to retry or go home
  */
-function DefaultErrorFallback({ 
-  error, 
-  errorInfo, 
-  resetError, 
+function DefaultErrorFallback({
+  error,
+  errorInfo,
+  resetError,
   showDetails = false,
   className,
   enableErrorReporting = true,
-  onReportError
+  onReportError,
 }: ErrorFallbackProps) {
   const [detailsExpanded, setDetailsExpanded] = React.useState(false);
   const [reportSent, setReportSent] = React.useState(false);
   const [reportLoading, setReportLoading] = React.useState(false);
 
   const handleGoHome = () => {
-    window.location.href = '/';
+    window.location.href = "/";
   };
 
   const handleReportError = async () => {
     if (reportSent || reportLoading) return;
-    
+
     setReportLoading(true);
     try {
       await errorLogger.logError(error, errorInfo || undefined);
       setReportSent(true);
       onReportError?.();
     } catch (reportError) {
-      console.error('Failed to send error report:', reportError);
+      console.error("Failed to send error report:", reportError);
     } finally {
       setReportLoading(false);
     }
   };
 
   return (
-    <div className={cn('flex items-center justify-center min-h-[50vh] p-4', className)}>
+    <div
+      className={cn(
+        "flex items-center justify-center min-h-[50vh] p-4",
+        className,
+      )}
+    >
       <Card className="w-full max-w-lg">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
@@ -87,7 +92,8 @@ function DefaultErrorFallback({
             <AlertTriangle />
             <AlertTitle>Application Error</AlertTitle>
             <AlertDescription>
-              {error.message || 'An unexpected error occurred while rendering this component.'}
+              {error.message ||
+                "An unexpected error occurred while rendering this component."}
             </AlertDescription>
           </Alert>
 
@@ -99,18 +105,20 @@ function DefaultErrorFallback({
                 onClick={() => setDetailsExpanded(!detailsExpanded)}
                 className="w-full"
               >
-                {detailsExpanded ? 'Hide' : 'Show'} Technical Details
+                {detailsExpanded ? "Hide" : "Show"} Technical Details
               </Button>
-              
+
               {detailsExpanded && (
                 <div className="rounded-md bg-muted p-3 text-sm">
                   <div className="font-medium mb-2">Error Details:</div>
                   <div className="font-mono text-xs break-all">
                     <div className="mb-2">
-                      <span className="text-muted-foreground">Name:</span> {error.name}
+                      <span className="text-muted-foreground">Name:</span>{" "}
+                      {error.name}
                     </div>
                     <div className="mb-2">
-                      <span className="text-muted-foreground">Message:</span> {error.message}
+                      <span className="text-muted-foreground">Message:</span>{" "}
+                      {error.message}
                     </div>
                     {error.stack && (
                       <div className="mb-2">
@@ -122,7 +130,9 @@ function DefaultErrorFallback({
                     )}
                     {errorInfo?.componentStack && (
                       <div>
-                        <span className="text-muted-foreground">Component Stack:</span>
+                        <span className="text-muted-foreground">
+                          Component Stack:
+                        </span>
                         <pre className="mt-1 whitespace-pre-wrap text-xs">
                           {errorInfo.componentStack}
                         </pre>
@@ -161,13 +171,9 @@ function DefaultErrorFallback({
                 )}
               </Button>
             )}
-            
+
             <div className="flex gap-2">
-              <Button
-                onClick={resetError}
-                className="flex-1"
-                variant="default"
-              >
+              <Button onClick={resetError} className="flex-1" variant="default">
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Try Again
               </Button>
@@ -190,17 +196,17 @@ function DefaultErrorFallback({
 /**
  * React Error Boundary component that catches JavaScript errors anywhere in the child component tree,
  * logs those errors, and displays a fallback UI instead of the component tree that crashed.
- * 
+ *
  * @example
  * ```tsx
  * <ErrorBoundary>
  *   <MyComponent />
  * </ErrorBoundary>
  * ```
- * 
+ *
  * @example
  * ```tsx
- * <ErrorBoundary 
+ * <ErrorBoundary
  *   fallback={CustomErrorFallback}
  *   onError={(error, errorInfo) => console.error('Error caught:', error)}
  *   showDetails={true}
@@ -209,7 +215,10 @@ function DefaultErrorFallback({
  * </ErrorBoundary>
  * ```
  */
-export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+export class ErrorBoundary extends React.Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = {
@@ -239,15 +248,17 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
     // Log error to console in development
     if (import.meta.env.DEV) {
-      console.error('ErrorBoundary caught an error:', error);
-      console.error('Error Info:', errorInfo);
+      console.error("ErrorBoundary caught an error:", error);
+      console.error("Error Info:", errorInfo);
     }
 
     // Log error to error reporting service (if enabled)
     if (this.props.enableErrorReporting !== false) {
-      errorLogger.logError(error, errorInfo, this.props.context).catch((logError) => {
-        console.warn('Failed to log error:', logError);
-      });
+      errorLogger
+        .logError(error, errorInfo, this.props.context)
+        .catch((logError) => {
+          console.warn("Failed to log error:", logError);
+        });
     }
   }
 
@@ -262,7 +273,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   override render() {
     if (this.state.hasError && this.state.error) {
       const FallbackComponent = this.props.fallback || DefaultErrorFallback;
-      
+
       const fallbackProps: ErrorFallbackProps = {
         error: this.state.error,
         errorInfo: this.state.errorInfo,
@@ -288,7 +299,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
  */
 export function withErrorBoundary<T extends Record<string, unknown>>(
   Component: React.ComponentType<T>,
-  errorBoundaryProps?: Omit<ErrorBoundaryProps, 'children'>
+  errorBoundaryProps?: Omit<ErrorBoundaryProps, "children">,
 ) {
   const WrappedComponent = (props: T) => (
     <ErrorBoundary enableErrorReporting={true} {...errorBoundaryProps}>
@@ -297,7 +308,7 @@ export function withErrorBoundary<T extends Record<string, unknown>>(
   );
 
   WrappedComponent.displayName = `withErrorBoundary(${Component.displayName || Component.name})`;
-  
+
   return WrappedComponent;
 }
 
@@ -313,20 +324,23 @@ export const ErrorBoundaryContext = React.createContext<{
  */
 export function useErrorBoundary() {
   const context = React.useContext(ErrorBoundaryContext);
-  
+
   if (!context) {
-    throw new Error('useErrorBoundary must be used within an ErrorBoundary');
+    throw new Error("useErrorBoundary must be used within an ErrorBoundary");
   }
-  
+
   return context;
 }
 
 /**
  * Provider version of ErrorBoundary that exposes reset functionality through context
  */
-export function ErrorBoundaryProvider({ children, ...props }: ErrorBoundaryProps) {
+export function ErrorBoundaryProvider({
+  children,
+  ...props
+}: ErrorBoundaryProps) {
   const boundaryRef = React.useRef<ErrorBoundary>(null);
-  
+
   const resetError = React.useCallback(() => {
     boundaryRef.current?.resetError();
   }, []);

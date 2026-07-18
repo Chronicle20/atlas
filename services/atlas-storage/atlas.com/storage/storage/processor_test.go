@@ -8,16 +8,17 @@ import (
 	"testing"
 	"time"
 
-	assetConstants "github.com/Chronicle20/atlas/libs/atlas-constants/asset"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	assetConstants "github.com/Chronicle20/atlas/libs/atlas-constants/asset"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func testLogger() logrus.FieldLogger {

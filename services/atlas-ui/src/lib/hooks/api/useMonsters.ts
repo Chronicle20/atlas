@@ -1,41 +1,50 @@
-import { useQuery, type UseQueryResult } from '@tanstack/react-query';
-import { monstersService } from '@/services/api/monsters.service';
-import { useTenant } from '@/context/tenant-context';
-import type { MonsterData, MonsterSpawnMapData } from '@/types/models/monster';
-import type { ServiceOptions, QueryOptions } from '@/lib/api/query-params';
+import { useQuery, type UseQueryResult } from "@tanstack/react-query";
+import { monstersService } from "@/services/api/monsters.service";
+import { useTenant } from "@/context/tenant-context";
+import type { MonsterData, MonsterSpawnMapData } from "@/types/models/monster";
+import type { ServiceOptions, QueryOptions } from "@/lib/api/query-params";
 
 export const monsterKeys = {
-  all: ['monsters'] as const,
-  lists: () => [...monsterKeys.all, 'list'] as const,
+  all: ["monsters"] as const,
+  lists: () => [...monsterKeys.all, "list"] as const,
   list: (options?: QueryOptions) => [...monsterKeys.lists(), options] as const,
-  details: () => [...monsterKeys.all, 'detail'] as const,
+  details: () => [...monsterKeys.all, "detail"] as const,
   detail: (id: string) => [...monsterKeys.details(), id] as const,
-  maps: (id: string) => [...monsterKeys.all, id, 'maps'] as const,
+  maps: (id: string) => [...monsterKeys.all, id, "maps"] as const,
 };
 
-export function useMonsters(options?: QueryOptions): UseQueryResult<MonsterData[], Error> {
+export function useMonsters(
+  options?: QueryOptions,
+): UseQueryResult<MonsterData[], Error> {
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: monsterKeys.list(options),
-    queryFn: () => monstersService.getAllMonsters({ ...options, useCache: false }),
+    queryFn: () =>
+      monstersService.getAllMonsters({ ...options, useCache: false }),
     enabled: !!activeTenant,
     staleTime: 10 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }
 
-export function useMonster(id: string, options?: ServiceOptions): UseQueryResult<MonsterData, Error> {
+export function useMonster(
+  id: string,
+  options?: ServiceOptions,
+): UseQueryResult<MonsterData, Error> {
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: monsterKeys.detail(id),
-    queryFn: () => monstersService.getMonsterById(id, { ...options, useCache: false }),
+    queryFn: () =>
+      monstersService.getMonsterById(id, { ...options, useCache: false }),
     enabled: !!id && !!activeTenant,
     staleTime: 10 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }
 
-export function useMonsterMaps(id: string): UseQueryResult<MonsterSpawnMapData[], Error> {
+export function useMonsterMaps(
+  id: string,
+): UseQueryResult<MonsterSpawnMapData[], Error> {
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: monsterKeys.maps(id),

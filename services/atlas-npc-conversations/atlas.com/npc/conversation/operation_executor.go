@@ -17,12 +17,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	scriptctx "github.com/Chronicle20/atlas/libs/atlas-script-core/context"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // OperationExecutor is the interface for executing operations in conversations
@@ -1211,7 +1212,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		}
 
 		// Actor ID is optional
-		var actorIdInt = 0
+		actorIdInt := 0
 		actorIdValue, exists := operation.Params()["actorId"]
 		if exists {
 			actorIdInt, err = e.evaluateContextValueAsInt(characterId, "actorId", actorIdValue)
@@ -1272,7 +1273,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		}
 
 		// Attr1 is optional with default 0
-		var attr1Int = 0
+		attr1Int := 0
 		attr1Value, exists := operation.Params()["attr1"]
 		if exists {
 			attr1Int, err = e.evaluateContextValueAsInt(characterId, "attr1", attr1Value)
@@ -1328,7 +1329,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 	case "warp_to_map":
 		// Format: warp_to_map
 		// Context: mapId (uint32), portalId (uint32) OR portalName (string)
-		var mapIdInt = 0
+		mapIdInt := 0
 		mapIdValue, exists := operation.Params()["mapId"]
 		if exists {
 			var err error
@@ -1338,7 +1339,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 			}
 		}
 
-		var portalIdInt = 0
+		portalIdInt := 0
 		portalIdValue, exists := operation.Params()["portalId"]
 		if exists {
 			var err error
@@ -1372,7 +1373,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 	case "warp_to_random_portal":
 		// Format: warp_to_random_portal
 		// Context: mapId (uint32)
-		var mapIdInt = 0
+		mapIdInt := 0
 		mapIdValue, exists := operation.Params()["mapId"]
 		if exists {
 			var err error
@@ -1450,7 +1451,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		}
 
 		// Level is optional with default 1
-		var levelInt = 1
+		levelInt := 1
 		levelValue, exists := operation.Params()["level"]
 		if exists {
 			levelInt, err = e.evaluateContextValueAsInt(characterId, "level", levelValue)
@@ -1460,7 +1461,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		}
 
 		// Master level is optional with default 1
-		var masterLevelInt = 1
+		masterLevelInt := 1
 		masterLevelValue, exists := operation.Params()["masterLevel"]
 		if exists {
 			masterLevelInt, err = e.evaluateContextValueAsInt(characterId, "masterLevel", masterLevelValue)
@@ -1494,7 +1495,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		}
 
 		// Level is optional with default 1
-		var levelInt = 1
+		levelInt := 1
 		levelValue, exists := operation.Params()["level"]
 		if exists {
 			levelInt, err = e.evaluateContextValueAsInt(characterId, "level", levelValue)
@@ -1504,7 +1505,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		}
 
 		// Master level is optional with default 1
-		var masterLevelInt = 1
+		masterLevelInt := 1
 		masterLevelValue, exists := operation.Params()["masterLevel"]
 		if exists {
 			masterLevelInt, err = e.evaluateContextValueAsInt(characterId, "masterLevel", masterLevelValue)
@@ -2241,7 +2242,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		}
 
 		// Width is optional, defaults to 0 (auto-calculated by channel)
-		var widthInt = 0
+		widthInt := 0
 		if widthValue, exists := operation.Params()["width"]; exists {
 			widthInt, err = e.evaluateContextValueAsInt(characterId, "width", widthValue)
 			if err != nil {
@@ -2250,7 +2251,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		}
 
 		// Height is optional, defaults to 0 (auto-calculated by channel)
-		var heightInt = 0
+		heightInt := 0
 		if heightValue, exists := operation.Params()["height"]; exists {
 			heightInt, err = e.evaluateContextValueAsInt(characterId, "height", heightValue)
 			if err != nil {
@@ -2285,7 +2286,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		}
 
 		// Duration is optional, defaults to 0 (7000ms will be used by channel)
-		var durationInt = 0
+		durationInt := 0
 		if durationValue, exists := operation.Params()["duration"]; exists {
 			durationInt, err = e.evaluateContextValueAsInt(characterId, "duration", durationValue)
 			if err != nil {
@@ -2500,7 +2501,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		// Format: warp_party_quest_members_to_map
 		// Params: mapId (uint32, required), portalId (uint32, optional, default 0)
 		// Resolves the party for the character and warps all party members to the destination map.
-		var mapIdInt = 0
+		mapIdInt := 0
 		mapIdValue, exists := operation.Params()["mapId"]
 		if exists {
 			var err error
@@ -2510,7 +2511,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 			}
 		}
 
-		var portalIdInt = 0
+		portalIdInt := 0
 		portalIdValue, exists := operation.Params()["portalId"]
 		if exists {
 			var err error

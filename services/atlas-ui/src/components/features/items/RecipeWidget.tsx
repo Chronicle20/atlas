@@ -23,12 +23,18 @@ export function RecipeWidget({ recipe }: RecipeWidgetProps) {
   const { activeTenant } = useTenant();
 
   const stimulatorNameQuery = useQuery({
-    queryKey: ["items", "name", activeTenant?.id ?? "no-tenant", String(recipe.stimulatorId)],
+    queryKey: [
+      "items",
+      "name",
+      activeTenant?.id ?? "no-tenant",
+      String(recipe.stimulatorId),
+    ],
     queryFn: () => itemsService.getItemName(String(recipe.stimulatorId)),
     enabled: !!activeTenant && recipe.stimulatorId > 0,
     staleTime: 10 * 60 * 1000,
   });
-  const stimulatorName = stimulatorNameQuery.data ?? `Item #${recipe.stimulatorId}`;
+  const stimulatorName =
+    stimulatorNameQuery.data ?? `Item #${recipe.stimulatorId}`;
   const failPercent = Math.round(recipe.stimulatorFailChance * 100);
 
   return (
@@ -54,7 +60,9 @@ export function RecipeWidget({ recipe }: RecipeWidgetProps) {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate">
-              {isLoading && !name ? `NPC #${recipe.npcId}` : name || `NPC #${recipe.npcId}`}
+              {isLoading && !name
+                ? `NPC #${recipe.npcId}`
+                : name || `NPC #${recipe.npcId}`}
             </p>
             <p className="text-xs text-muted-foreground truncate">
               Cost: {recipe.mesoCost.toLocaleString()} mesos

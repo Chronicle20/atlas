@@ -19,8 +19,7 @@ type CommandShopEnterBody struct {
 	NpcTemplateId uint32 `json:"npcTemplateId"`
 }
 
-type CommandShopExitBody struct {
-}
+type CommandShopExitBody struct{}
 
 type CommandShopBuyBody struct {
 	Slot           uint16 `json:"slot"`
@@ -70,8 +69,7 @@ type StatusEventEnteredBody struct {
 	NpcTemplateId uint32 `json:"npcTemplateId"`
 }
 
-type StatusEventExitedBody struct {
-}
+type StatusEventExitedBody struct{}
 
 type StatusEventErrorBody struct {
 	Error      string `json:"error"`

@@ -7,11 +7,12 @@ import (
 	"errors"
 	"testing"
 
-	characterconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
+
+	characterconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 const monsterRiding = string(characterconst.TemporaryStatTypeMonsterRiding)

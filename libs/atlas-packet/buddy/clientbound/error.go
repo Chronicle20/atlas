@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 // BuddyOperationWriter mirrors the parent-package buddy.BuddyOperationWriter
@@ -51,6 +52,7 @@ func (m ListFull) Encode(l logrus.FieldLogger, _ context.Context) func(map[strin
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
+
 func (m *ListFull) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }
@@ -66,6 +68,7 @@ func (m OtherListFull) Encode(l logrus.FieldLogger, _ context.Context) func(map[
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
+
 func (m *OtherListFull) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }
@@ -81,6 +84,7 @@ func (m AlreadyBuddy) Encode(l logrus.FieldLogger, _ context.Context) func(map[s
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
+
 func (m *AlreadyBuddy) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }
@@ -96,6 +100,7 @@ func (m CannotBuddyGm) Encode(l logrus.FieldLogger, _ context.Context) func(map[
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
+
 func (m *CannotBuddyGm) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }
@@ -111,6 +116,7 @@ func (m CharacterNotFound) Encode(l logrus.FieldLogger, _ context.Context) func(
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
+
 func (m *CharacterNotFound) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }
@@ -146,6 +152,7 @@ func (m UnknownError) Encode(l logrus.FieldLogger, ctx context.Context) func(map
 		return w.Bytes()
 	}
 }
+
 func (m *UnknownError) Decode(_ logrus.FieldLogger, ctx context.Context) func(*request.Reader, map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	gms := t.IsRegion("GMS")
@@ -177,6 +184,7 @@ func (m UnknownError2) Encode(l logrus.FieldLogger, ctx context.Context) func(ma
 		return w.Bytes()
 	}
 }
+
 func (m *UnknownError2) Decode(_ logrus.FieldLogger, ctx context.Context) func(*request.Reader, map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	gms := t.IsRegion("GMS")
@@ -208,6 +216,7 @@ func (m UnknownError3) Encode(l logrus.FieldLogger, ctx context.Context) func(ma
 		return w.Bytes()
 	}
 }
+
 func (m *UnknownError3) Decode(_ logrus.FieldLogger, ctx context.Context) func(*request.Reader, map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	gms := t.IsRegion("GMS")
@@ -239,6 +248,7 @@ func (m UnknownError4) Encode(l logrus.FieldLogger, ctx context.Context) func(ma
 		return w.Bytes()
 	}
 }
+
 func (m *UnknownError4) Decode(_ logrus.FieldLogger, ctx context.Context) func(*request.Reader, map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	gms := t.IsRegion("GMS")

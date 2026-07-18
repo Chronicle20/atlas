@@ -3,9 +3,10 @@ package clientbound
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const TournamentMatchTableWriter = "TournamentMatchTable"
@@ -14,8 +15,7 @@ const TournamentMatchTableWriter = "TournamentMatchTable"
 // client handler has an empty body in every audited version (no Decode calls);
 // the packet carries no payload beyond its opcode.
 // packet-audit:fname CField_Tournament::OnTournamentMatchTable
-type TournamentMatchTable struct {
-}
+type TournamentMatchTable struct{}
 
 func NewTournamentMatchTable() TournamentMatchTable {
 	return TournamentMatchTable{}

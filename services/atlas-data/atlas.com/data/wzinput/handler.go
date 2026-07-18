@@ -2,13 +2,13 @@ package wzinput
 
 import (
 	"archive/zip"
+	"atlas-data/rest"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 
-	"atlas-data/rest"
 	minio "atlas-data/storage/minio"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"

@@ -3,9 +3,10 @@ package handler
 import (
 	"testing"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
 )
 
 func mustTenant(t *testing.T, region string, major uint16, minor uint16) tenant.Model {

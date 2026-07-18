@@ -5,7 +5,6 @@ import (
 	data2 "atlas-pets/data/pet"
 	"atlas-pets/data/position"
 	inv "atlas-pets/inventory"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-pets/kafka/message"
 	"atlas-pets/kafka/message/pet"
 	"atlas-pets/location"
@@ -17,14 +16,17 @@ import (
 	"sort"
 	"time"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 var petExpTable = []uint16{1, 1, 3, 6, 14, 31, 60, 108, 181, 287, 434, 632, 891, 1224, 1642, 2161, 2793, 3557, 4467, 5542, 6801, 8263, 9950, 11882, 14084, 16578, 19391, 22547, 26074, 30000}
@@ -81,16 +83,16 @@ type Processor interface {
 }
 
 type ProcessorImpl struct {
-	l         logrus.FieldLogger
-	ctx       context.Context
-	db        *gorm.DB
-	t         tenant.Model
-	tr        TemporalRegistry
-	cp        character.Processor
-	pp        position.Processor
-	dp        data2.Processor
-	sp        skill.Processor
-	ip        inv.Processor
+	l   logrus.FieldLogger
+	ctx context.Context
+	db  *gorm.DB
+	t   tenant.Model
+	tr  TemporalRegistry
+	cp  character.Processor
+	pp  position.Processor
+	dp  data2.Processor
+	sp  skill.Processor
+	ip  inv.Processor
 	// Despawner is an optional test-mock override for Despawn, left nil in
 	// production (see NewProcessor). It must NOT be bound at construction
 	// time: With(...) shallow-copies the struct without rebinding method
@@ -409,8 +411,10 @@ func (p *ProcessorImpl) SpawnAndEmit(petId uint32, actorId uint32, lead bool) er
 	})
 }
 
-var ErrTooManySpawnedPets = errors.New("too many pets spawned")
-var ErrNeedMultiPetSkill = errors.New("need multi pet skill")
+var (
+	ErrTooManySpawnedPets = errors.New("too many pets spawned")
+	ErrNeedMultiPetSkill  = errors.New("need multi pet skill")
+)
 
 func (p *ProcessorImpl) Spawn(mb *message.Buffer) func(petId uint32) func(actorId uint32) func(lead bool) error {
 	return func(petId uint32) func(actorId uint32) func(lead bool) error {

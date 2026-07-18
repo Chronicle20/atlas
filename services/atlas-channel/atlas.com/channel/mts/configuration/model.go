@@ -67,16 +67,16 @@ func (m Model) MinBidIncrement() uint32 {
 // configuration resource.
 func DefaultConfig() Model {
 	return Model{
-		listingFee:        5000,  // flat meso seller fee to list
-		commissionRate:    0.07,  // buyer-markup rate (client m_nCommissionRate, IDA-verified)
-		commissionBase:    500,   // flat NX added to buyer payment (client m_nCommissionBase, IDA-verified)
-		maxActiveListings: 10,    //
-		minLevel:          10,    //
-		auctionMinHours:   24,    // hours
-		auctionMaxHours:   168,   // hours (1-week cap, 1-hour step)
-		fixedSaleHours:    168,   // hours — era-faithful 7-day fixed-sale term (knob, no IDA reference)
-		priceFloor:        110,   // NX, IDA-verified
-		pageSize:          16,    //
-		minBidIncrement:   1,     // chosen default (no IDA reference)
+		listingFee:        5000, // flat meso seller fee to list
+		commissionRate:    0.07, // buyer-markup rate (client m_nCommissionRate, IDA-verified)
+		commissionBase:    500,  // flat NX added to buyer payment (client m_nCommissionBase, IDA-verified)
+		maxActiveListings: 10,   //
+		minLevel:          10,   //
+		auctionMinHours:   24,   // hours
+		auctionMaxHours:   168,  // hours (1-week cap, 1-hour step)
+		fixedSaleHours:    168,  // hours — era-faithful 7-day fixed-sale term (knob, no IDA reference)
+		priceFloor:        110,  // NX, IDA-verified
+		pageSize:          16,   //
+		minBidIncrement:   1,    // chosen default (no IDA reference)
 	}
 }

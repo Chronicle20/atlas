@@ -8,11 +8,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func newTestTenant(t *testing.T) tenant.Model {

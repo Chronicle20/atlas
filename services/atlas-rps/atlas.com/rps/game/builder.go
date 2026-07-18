@@ -4,10 +4,11 @@ import (
 	"errors"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // ModelBuilder provides a fluent API for constructing game.Model instances.

@@ -4,11 +4,12 @@ import (
 	"context"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/miniroom"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 type RoomType byte
@@ -129,20 +130,20 @@ func (r Room) SetOwnerLedger(openTime uint16, firstTime bool, soldItems []RoomSo
 	return r
 }
 
-func (r Room) RoomType() RoomType         { return r.roomType }
-func (r Room) Capacity() byte             { return r.capacity }
-func (r Room) Position() byte             { return r.position }
-func (r Room) OpenTime() uint16           { return r.openTime }
-func (r Room) FirstTime() bool            { return r.firstTime }
-func (r Room) Visitors() []Visitor        { return r.visitors }
-func (r Room) Title() string              { return r.title }
-func (r Room) MaxItemCount() byte         { return r.maxItemCount }
-func (r Room) Items() []RoomShopItem      { return r.items }
-func (r Room) Messages() []RoomMessage    { return r.messages }
-func (r Room) OwnerName() string          { return r.ownerName }
-func (r Room) Meso() uint32               { return r.meso }
-func (r Room) SoldItems() []RoomSoldItem  { return r.soldItems }
-func (r Room) SoldTotal() uint32          { return r.soldTotal }
+func (r Room) RoomType() RoomType        { return r.roomType }
+func (r Room) Capacity() byte            { return r.capacity }
+func (r Room) Position() byte            { return r.position }
+func (r Room) OpenTime() uint16          { return r.openTime }
+func (r Room) FirstTime() bool           { return r.firstTime }
+func (r Room) Visitors() []Visitor       { return r.visitors }
+func (r Room) Title() string             { return r.title }
+func (r Room) MaxItemCount() byte        { return r.maxItemCount }
+func (r Room) Items() []RoomShopItem     { return r.items }
+func (r Room) Messages() []RoomMessage   { return r.messages }
+func (r Room) OwnerName() string         { return r.ownerName }
+func (r Room) Meso() uint32              { return r.meso }
+func (r Room) SoldItems() []RoomSoldItem { return r.soldItems }
+func (r Room) SoldTotal() uint32         { return r.soldTotal }
 
 func (rm Room) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)

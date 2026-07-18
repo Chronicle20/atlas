@@ -1,10 +1,11 @@
 package fame
 
 import (
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
@@ -21,11 +22,11 @@ const (
 )
 
 type StatusEvent[E any] struct {
-	TransactionId uuid.UUID  `json:"transactionId"`
-	WorldId       world.Id   `json:"worldId"`
-	CharacterId   uint32     `json:"characterId"`
-	Type          string     `json:"type"`
-	Body          E          `json:"body"`
+	TransactionId uuid.UUID `json:"transactionId"`
+	WorldId       world.Id  `json:"worldId"`
+	CharacterId   uint32    `json:"characterId"`
+	Type          string    `json:"type"`
+	Body          E         `json:"body"`
 }
 
 type StatusEventErrorBody struct {

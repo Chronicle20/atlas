@@ -1,18 +1,18 @@
 package consumable
 
 import (
-	"testing"
-
 	"atlas-consumables/asset"
 	"atlas-consumables/character"
 	"atlas-consumables/compartment"
 	"atlas-consumables/equipment"
 	"atlas-consumables/inventory"
+	"testing"
+
+	"github.com/google/uuid"
 
 	inventory2 "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	item2 "github.com/Chronicle20/atlas/libs/atlas-constants/item"
-	"github.com/google/uuid"
 )
 
 func TestVegaRates(t *testing.T) {

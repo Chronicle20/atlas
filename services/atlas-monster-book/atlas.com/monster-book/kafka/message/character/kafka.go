@@ -1,8 +1,9 @@
 package character
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 const (
@@ -26,5 +27,4 @@ type CreatedStatusBody struct {
 }
 
 // DeletedStatusEventBody represents the body of a character deleted event
-type DeletedStatusEventBody struct {
-}
+type DeletedStatusEventBody struct{}

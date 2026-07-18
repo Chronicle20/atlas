@@ -5,8 +5,9 @@ import (
 	character2 "atlas-chalkboards/character"
 	chalkboard2 "atlas-chalkboards/kafka/consumer/chalkboard"
 	"atlas-chalkboards/kafka/consumer/character"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"os"
+
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"

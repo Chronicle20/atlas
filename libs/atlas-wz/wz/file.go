@@ -1,13 +1,14 @@
 package wz
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-wz/crypto"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
+
+	"github.com/Chronicle20/atlas/libs/atlas-wz/crypto"
 
 	"github.com/sirupsen/logrus"
 )

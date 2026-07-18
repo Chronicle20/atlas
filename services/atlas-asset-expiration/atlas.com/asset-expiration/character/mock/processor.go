@@ -2,6 +2,7 @@ package mock
 
 import (
 	"atlas-asset-expiration/character"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"

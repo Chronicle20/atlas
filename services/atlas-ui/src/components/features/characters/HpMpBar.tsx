@@ -20,11 +20,17 @@ export function HpMpBar({ label, cur, max, colorClass, bonus }: Props) {
       <span className="text-xs">
         <strong>{label}:</strong> {cur} / {max}
         {bonus != null && bonus > 0 && (
-          <span className="text-emerald-600 dark:text-emerald-400"> +{bonus}</span>
+          <span className="text-emerald-600 dark:text-emerald-400">
+            {" "}
+            +{bonus}
+          </span>
         )}
       </span>
       <div className="h-2 rounded bg-muted overflow-hidden">
-        <div className={cn("h-full rounded", colorClass)} style={{ width: `${pct}%` }} />
+        <div
+          className={cn("h-full rounded", colorClass)}
+          style={{ width: `${pct}%` }}
+        />
       </div>
     </div>
   );

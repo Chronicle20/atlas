@@ -1,19 +1,19 @@
 package location
 
 import (
+	"atlas-maps/data/map/info"
 	"context"
 	"errors"
 	"testing"
 
-	"atlas-maps/data/map/info"
-
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // stubInfoProcessor lets us inject map data without atlas-data round-trips.

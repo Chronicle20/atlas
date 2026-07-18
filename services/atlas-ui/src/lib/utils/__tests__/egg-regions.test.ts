@@ -21,7 +21,9 @@ describe("eggRegionLabel", () => {
 
 describe("formatIncubatorName", () => {
   it("appends the region when known", () => {
-    expect(formatIncubatorName("Pigmy Egg", 4170001)).toBe("Pigmy Egg (Ellinia)");
+    expect(formatIncubatorName("Pigmy Egg", 4170001)).toBe(
+      "Pigmy Egg (Ellinia)",
+    );
   });
 
   it("leaves the name unchanged when the region is unknown", () => {

@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/interaction"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 // InteractionMiniGameReady - visitor readied up
@@ -26,6 +27,7 @@ func (m InteractionMiniGameReady) Encode(l logrus.FieldLogger, _ context.Context
 		return w.Bytes()
 	}
 }
+
 func (m *InteractionMiniGameReady) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) { m.mode = r.ReadByte() }
 }
@@ -46,6 +48,7 @@ func (m InteractionMiniGameUnready) Encode(l logrus.FieldLogger, _ context.Conte
 		return w.Bytes()
 	}
 }
+
 func (m *InteractionMiniGameUnready) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) { m.mode = r.ReadByte() }
 }
@@ -66,6 +69,7 @@ func (m InteractionMiniGameRequestTie) Encode(l logrus.FieldLogger, _ context.Co
 		return w.Bytes()
 	}
 }
+
 func (m *InteractionMiniGameRequestTie) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) { m.mode = r.ReadByte() }
 }
@@ -87,6 +91,7 @@ func (m InteractionMiniGameAnswerTie) Encode(l logrus.FieldLogger, _ context.Con
 		return w.Bytes()
 	}
 }
+
 func (m *InteractionMiniGameAnswerTie) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) { m.mode = r.ReadByte() }
 }
@@ -110,6 +115,7 @@ func (m InteractionMiniGameRetreatRequest) Encode(l logrus.FieldLogger, _ contex
 		return w.Bytes()
 	}
 }
+
 func (m *InteractionMiniGameRetreatRequest) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) { m.mode = r.ReadByte() }
 }
@@ -136,6 +142,7 @@ func (m InteractionMiniGameRetreatAnswer) Operation() string { return CharacterI
 func (m InteractionMiniGameRetreatAnswer) String() string {
 	return fmt.Sprintf("minigame retreat answer accept [%t] stoneCount [%d] turnSlot [%d]", m.accept, m.stoneCount, m.turnSlot)
 }
+
 func (m InteractionMiniGameRetreatAnswer) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
@@ -152,6 +159,7 @@ func (m InteractionMiniGameRetreatAnswer) Encode(l logrus.FieldLogger, _ context
 		return w.Bytes()
 	}
 }
+
 func (m *InteractionMiniGameRetreatAnswer) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
@@ -185,6 +193,7 @@ func (m InteractionMiniGameSkip) Encode(l logrus.FieldLogger, _ context.Context)
 		return w.Bytes()
 	}
 }
+
 func (m *InteractionMiniGameSkip) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
@@ -215,6 +224,7 @@ func (m InteractionMiniGamePutStoneError) Operation() string { return CharacterI
 func (m InteractionMiniGamePutStoneError) String() string {
 	return fmt.Sprintf("minigame put-stone error code [%d]", m.errorCode)
 }
+
 func (m InteractionMiniGamePutStoneError) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
@@ -223,6 +233,7 @@ func (m InteractionMiniGamePutStoneError) Encode(l logrus.FieldLogger, _ context
 		return w.Bytes()
 	}
 }
+
 func (m *InteractionMiniGamePutStoneError) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
@@ -246,6 +257,7 @@ func (m InteractionMiniGameStartOmok) Operation() string { return CharacterInter
 func (m InteractionMiniGameStartOmok) String() string {
 	return fmt.Sprintf("minigame start omok firstMover [%d]", m.firstMover)
 }
+
 func (m InteractionMiniGameStartOmok) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
@@ -254,6 +266,7 @@ func (m InteractionMiniGameStartOmok) Encode(l logrus.FieldLogger, _ context.Con
 		return w.Bytes()
 	}
 }
+
 func (m *InteractionMiniGameStartOmok) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
@@ -279,6 +292,7 @@ func (m InteractionMiniGameStartMatchCards) Operation() string { return Characte
 func (m InteractionMiniGameStartMatchCards) String() string {
 	return fmt.Sprintf("minigame start match cards firstMover [%d] deck %v", m.firstMover, m.deck)
 }
+
 func (m InteractionMiniGameStartMatchCards) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
@@ -291,6 +305,7 @@ func (m InteractionMiniGameStartMatchCards) Encode(l logrus.FieldLogger, _ conte
 		return w.Bytes()
 	}
 }
+
 func (m *InteractionMiniGameStartMatchCards) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
@@ -321,6 +336,7 @@ func (m InteractionMiniGameMoveStone) Operation() string { return CharacterInter
 func (m InteractionMiniGameMoveStone) String() string {
 	return fmt.Sprintf("minigame move stone x [%d] y [%d] type [%d]", m.x, m.y, m.stoneType)
 }
+
 func (m InteractionMiniGameMoveStone) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
@@ -331,6 +347,7 @@ func (m InteractionMiniGameMoveStone) Encode(l logrus.FieldLogger, _ context.Con
 		return w.Bytes()
 	}
 }
+
 func (m *InteractionMiniGameMoveStone) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
@@ -357,6 +374,7 @@ func (m InteractionMiniGameCardSelectFirst) Operation() string { return Characte
 func (m InteractionMiniGameCardSelectFirst) String() string {
 	return fmt.Sprintf("minigame card select first slot [%d]", m.slot)
 }
+
 func (m InteractionMiniGameCardSelectFirst) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
@@ -366,6 +384,7 @@ func (m InteractionMiniGameCardSelectFirst) Encode(l logrus.FieldLogger, _ conte
 		return w.Bytes()
 	}
 }
+
 func (m *InteractionMiniGameCardSelectFirst) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
@@ -394,6 +413,7 @@ func (m InteractionMiniGameCardSelectSecond) Operation() string { return Charact
 func (m InteractionMiniGameCardSelectSecond) String() string {
 	return fmt.Sprintf("minigame card select second slot [%d] firstSlot [%d] resultType [%d]", m.slot, m.firstSlot, m.resultType)
 }
+
 func (m InteractionMiniGameCardSelectSecond) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
@@ -405,6 +425,7 @@ func (m InteractionMiniGameCardSelectSecond) Encode(l logrus.FieldLogger, _ cont
 		return w.Bytes()
 	}
 }
+
 func (m *InteractionMiniGameCardSelectSecond) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
@@ -446,6 +467,7 @@ func (m InteractionMiniGameResult) Operation() string { return CharacterInteract
 func (m InteractionMiniGameResult) String() string {
 	return fmt.Sprintf("minigame result resultType [%d] visitorWon [%t]", m.resultType, m.visitorWon)
 }
+
 func (m InteractionMiniGameResult) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
@@ -463,6 +485,7 @@ func (m InteractionMiniGameResult) Encode(l logrus.FieldLogger, _ context.Contex
 		return w.Bytes()
 	}
 }
+
 func (m *InteractionMiniGameResult) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()

@@ -3,8 +3,9 @@ package requests
 import (
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 //goland:noinspection GoUnusedExportedFunction

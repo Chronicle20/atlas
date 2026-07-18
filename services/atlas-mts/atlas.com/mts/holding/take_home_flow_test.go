@@ -7,11 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 )
 
 // captureEmitter records the saga handed to it instead of producing to Kafka, so

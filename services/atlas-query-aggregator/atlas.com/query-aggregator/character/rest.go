@@ -4,9 +4,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/jtumidanski/api2go/jsonapi"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 type RestModel struct {

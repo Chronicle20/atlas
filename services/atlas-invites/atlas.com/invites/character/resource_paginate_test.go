@@ -1,6 +1,7 @@
 package character
 
 import (
+	"atlas-invites/invite"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -8,9 +9,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"atlas-invites/invite"
-
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -19,12 +17,14 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type testServerInformation struct{}
 
 func (t *testServerInformation) GetBaseURL() string { return "http://localhost:8080" }
-func (t *testServerInformation) GetPrefix() string   { return "/api/" }
+func (t *testServerInformation) GetPrefix() string  { return "/api/" }
 
 var _ jsonapi.ServerInformation = &testServerInformation{}
 

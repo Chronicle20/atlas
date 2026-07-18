@@ -5,13 +5,15 @@ import (
 	"atlas-saga-orchestrator/kafka/message/compartment"
 	"context"
 	"errors"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"time"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 // ItemPayload represents an individual item in a transaction

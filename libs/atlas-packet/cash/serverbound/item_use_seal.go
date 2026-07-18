@@ -3,9 +3,10 @@ package serverbound
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 // ItemUseSeal is the type-26/64/65 sub-body of the cash ItemUse packet (Sealing Locks).

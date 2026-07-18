@@ -1,6 +1,7 @@
 package quest_test
 
 import (
+	"atlas-channel/data/quest"
 	"context"
 	"fmt"
 	"net/http"
@@ -9,11 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"atlas-channel/data/quest"
-
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // questDoc renders a JSON:API document for quests [from, to]. meta

@@ -1,12 +1,13 @@
 package test
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"sync"
 
-	kafkaproducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
 	"github.com/segmentio/kafka-go"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // MockMessage represents a captured Kafka message with its topic
@@ -32,7 +33,7 @@ func NewMockProducer() *MockProducer {
 
 // Provider returns a producer.Provider that captures messages instead of sending them
 func (m *MockProducer) Provider() producer.Provider {
-	return func(token string) kafkaproducer.MessageProducer {
+	return func(token string) producer.MessageProducer {
 		return func(provider model.Provider[[]kafka.Message]) error {
 			if m.Error != nil {
 				return m.Error

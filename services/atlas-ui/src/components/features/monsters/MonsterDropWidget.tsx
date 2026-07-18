@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Package } from "lucide-react";
 import {
@@ -19,9 +19,13 @@ export function MonsterDropWidget({ drop }: MonsterDropWidgetProps) {
   const { name, iconUrl } = useItemData(itemId);
   const [imgFailed, setImgFailed] = useState(false);
 
-  useEffect(() => {
+  // Reset the failed-image flag when the icon changes. Adjusted during
+  // render (React's documented pattern) instead of in an effect.
+  const [prevIconUrl, setPrevIconUrl] = useState(iconUrl);
+  if (iconUrl !== prevIconUrl) {
+    setPrevIconUrl(iconUrl);
     setImgFailed(false);
-  }, [iconUrl]);
+  }
 
   return (
     <TooltipProvider>
@@ -60,7 +64,9 @@ export function MonsterDropWidget({ drop }: MonsterDropWidgetProps) {
           <div className="space-y-0.5">
             <div className="flex gap-4">
               <span className="text-muted-foreground">Chance</span>
-              <span className="ml-auto">{drop.attributes.chance.toLocaleString()}</span>
+              <span className="ml-auto">
+                {drop.attributes.chance.toLocaleString()}
+              </span>
             </div>
             <div className="flex gap-4">
               <span className="text-muted-foreground">Min Qty</span>
@@ -73,7 +79,9 @@ export function MonsterDropWidget({ drop }: MonsterDropWidgetProps) {
             {drop.attributes.questId > 0 && (
               <div className="flex gap-4">
                 <span className="text-muted-foreground">Quest</span>
-                <span className="ml-auto font-mono">{drop.attributes.questId}</span>
+                <span className="ml-auto font-mono">
+                  {drop.attributes.questId}
+                </span>
               </div>
             )}
           </div>

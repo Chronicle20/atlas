@@ -146,10 +146,7 @@ export function QuestDetailPage() {
         </CardHeader>
         <CardContent className="flex flex-col gap-6">
           <Section title="Requirements">
-            <RequirementGrid
-              requirements={attrs.endRequirements}
-              phase="end"
-            />
+            <RequirementGrid requirements={attrs.endRequirements} phase="end" />
           </Section>
           <Divider />
           <Section title="Actions">

@@ -8,10 +8,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/bsm/redislock"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 )
 
 // Defaults exposed for documentation; consumers should pass options explicitly.

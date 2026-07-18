@@ -3,9 +3,10 @@ package mock
 import (
 	"atlas-messengers/character"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	"github.com/google/uuid"
 )
 
 type ProcessorMock struct {

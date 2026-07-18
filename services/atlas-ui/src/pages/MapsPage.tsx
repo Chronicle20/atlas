@@ -4,7 +4,13 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { mapsService, type MapData } from "@/services/api/maps.service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { DataTableWrapper } from "@/components/common/DataTableWrapper";
 import { columns, hiddenColumns } from "./maps-columns";
 import { Map, Loader2 } from "lucide-react";
@@ -71,7 +77,8 @@ function MapsPageContent() {
         <CardHeader>
           <CardTitle>Search Maps</CardTitle>
           <CardDescription>
-            Search for maps by ID, name, or street name. Results are limited to 50 entries.
+            Search for maps by ID, name, or street name. Results are limited to
+            50 entries.
           </CardDescription>
         </CardHeader>
         <CardContent>

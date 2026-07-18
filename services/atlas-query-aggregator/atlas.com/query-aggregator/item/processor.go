@@ -5,9 +5,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	atlasItem "github.com/Chronicle20/atlas/libs/atlas-constants/item"
-	"github.com/sirupsen/logrus"
 )
 
 // Processor provides operations for querying item data
@@ -33,8 +34,10 @@ type ItemCache struct {
 	data map[uint32]cacheEntry
 }
 
-var itemCache ItemCacheInterface
-var cacheOnce sync.Once
+var (
+	itemCache ItemCacheInterface
+	cacheOnce sync.Once
+)
 
 // GetItemCache returns the singleton instance of the item cache
 func GetItemCache() ItemCacheInterface {

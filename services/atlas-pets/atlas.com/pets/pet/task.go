@@ -5,11 +5,12 @@ import (
 	"context"
 	"time"
 
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const HungerTask = "hunger"

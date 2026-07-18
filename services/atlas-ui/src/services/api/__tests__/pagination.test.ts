@@ -21,10 +21,16 @@ describe("fetchPaged", () => {
       meta: { total: 1, page: { number: 1, size: 250, last: 1 } },
     });
 
-    const result = await fetchPaged<Widget>("/api/data/widgets", { number: 1, size: 250 });
+    const result = await fetchPaged<Widget>("/api/data/widgets", {
+      number: 1,
+      size: 250,
+    });
 
     expect(result.data).toEqual([{ id: "1", name: "a" }]);
-    expect(result.meta).toEqual({ total: 1, page: { number: 1, size: 250, last: 1 } });
+    expect(result.meta).toEqual({
+      total: 1,
+      page: { number: 1, size: 250, last: 1 },
+    });
 
     expect(getMock).toHaveBeenCalledTimes(1);
     const [calledUrl] = getMock.mock.calls[0] as [string];
@@ -34,9 +40,15 @@ describe("fetchPaged", () => {
   });
 
   it("preserves existing query params on the url", async () => {
-    getMock.mockResolvedValue({ data: [], meta: { total: 0, page: { number: 1, size: 50, last: 1 } } });
+    getMock.mockResolvedValue({
+      data: [],
+      meta: { total: 0, page: { number: 1, size: 50, last: 1 } },
+    });
 
-    await fetchPaged<Widget>("/api/data/widgets?filter[name]=x", { number: 2, size: 50 });
+    await fetchPaged<Widget>("/api/data/widgets?filter[name]=x", {
+      number: 2,
+      size: 50,
+    });
 
     const [calledUrl] = getMock.mock.calls[0] as [string];
     const url = new URL(calledUrl, "http://example.test");
@@ -50,7 +62,11 @@ describe("fetchPaged", () => {
     getMock.mockResolvedValue({ data: [{ id: "1", name: "a" }] });
 
     const options = { maxRetries: 0 };
-    const result = await fetchPaged<Widget>("/api/data/widgets", { number: 1, size: 10 }, options);
+    const result = await fetchPaged<Widget>(
+      "/api/data/widgets",
+      { number: 1, size: 10 },
+      options,
+    );
 
     expect(result.meta).toBeNull();
     expect(result.data).toEqual([{ id: "1", name: "a" }]);
@@ -88,11 +104,19 @@ describe("fetchAll", () => {
   });
 
   it("treats a no-envelope (meta null) response as the whole collection and stops after page 1", async () => {
-    getMock.mockResolvedValue({ data: [{ id: "1", name: "a" }, { id: "2", name: "b" }] });
+    getMock.mockResolvedValue({
+      data: [
+        { id: "1", name: "a" },
+        { id: "2", name: "b" },
+      ],
+    });
 
     const all = await fetchAll<Widget>("/api/data/widgets");
 
-    expect(all).toEqual([{ id: "1", name: "a" }, { id: "2", name: "b" }]);
+    expect(all).toEqual([
+      { id: "1", name: "a" },
+      { id: "2", name: "b" },
+    ]);
     expect(getMock).toHaveBeenCalledTimes(1);
   });
 

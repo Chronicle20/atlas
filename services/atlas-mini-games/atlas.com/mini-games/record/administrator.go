@@ -3,9 +3,10 @@ package record
 import (
 	"errors"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 )
 
 // getOrCreate returns the existing game_records row for (characterId,

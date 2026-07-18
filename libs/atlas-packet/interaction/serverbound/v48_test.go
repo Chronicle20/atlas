@@ -4,8 +4,9 @@ import (
 	"encoding/hex"
 	"testing"
 
-	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	testlog "github.com/sirupsen/logrus/hooks/test"
+
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 // GMS v48 PlayerInteraction serverbound bodies. All send-sites body-verified in

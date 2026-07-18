@@ -14,11 +14,11 @@ type Command[E any] struct {
 }
 
 type CreateCommandBody struct {
-	BanType    byte   `json:"banType"`
-	Value      string `json:"value"`
-	Reason     string `json:"reason"`
-	ReasonCode byte   `json:"reasonCode"`
-	Permanent  bool   `json:"permanent"`
+	BanType    byte      `json:"banType"`
+	Value      string    `json:"value"`
+	Reason     string    `json:"reason"`
+	ReasonCode byte      `json:"reasonCode"`
+	Permanent  bool      `json:"permanent"`
 	ExpiresAt  time.Time `json:"expiresAt"`
 	IssuedBy   string    `json:"issuedBy"`
 }

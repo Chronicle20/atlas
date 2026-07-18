@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"gorm.io/gorm"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // GetOrZero returns the game_records row for (characterId, gameType) in the

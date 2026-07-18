@@ -11,6 +11,9 @@ import (
 	"context"
 	"sort"
 
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+
 	ts "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
@@ -19,8 +22,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 type ProjectileSlotDraw struct {
@@ -46,10 +47,10 @@ type ProjectileProcessor interface {
 }
 
 type ProjectileProcessorImpl struct {
-	l    logrus.FieldLogger
-	ctx  context.Context
-	bp   buff.Processor
-	cpp  compartment.Processor
+	l   logrus.FieldLogger
+	ctx context.Context
+	bp  buff.Processor
+	cpp compartment.Processor
 }
 
 func NewProjectileProcessor(l logrus.FieldLogger, ctx context.Context) ProjectileProcessor {

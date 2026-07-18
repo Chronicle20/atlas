@@ -1,17 +1,17 @@
 package item
 
 import (
+	"atlas-data/document"
+	"atlas-data/searchindex"
 	"context"
 	"strconv"
 	"time"
 
-	"atlas-data/document"
-	"atlas-data/searchindex"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 type StringStorage struct {

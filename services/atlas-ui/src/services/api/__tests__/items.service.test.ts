@@ -9,9 +9,9 @@ describe("buildItemSearchQuery", () => {
   });
 
   it("emits ?search= when q is set", () => {
-    expect(buildItemSearchQuery({ q: "scroll", pageNumber: 1, pageSize: 50 })).toBe(
-      "?search=scroll&page%5Bnumber%5D=1&page%5Bsize%5D=50",
-    );
+    expect(
+      buildItemSearchQuery({ q: "scroll", pageNumber: 1, pageSize: 50 }),
+    ).toBe("?search=scroll&page%5Bnumber%5D=1&page%5Bsize%5D=50");
   });
 
   it("emits filter[compartment]= and filter[subcategory]=", () => {
@@ -61,7 +61,9 @@ describe("buildItemSearchQuery", () => {
         pageNumber: 1,
         pageSize: 50,
       }),
-    ).toBe("?filter%5Bcompartment%5D=equipment&page%5Bnumber%5D=1&page%5Bsize%5D=50");
+    ).toBe(
+      "?filter%5Bcompartment%5D=equipment&page%5Bnumber%5D=1&page%5Bsize%5D=50",
+    );
   });
 
   it("combines search + compartment + subcategory + classes", () => {
@@ -86,8 +88,8 @@ describe("buildItemSearchQuery", () => {
   });
 
   it("combines search with non-default pagination", () => {
-    expect(buildItemSearchQuery({ q: "bow", pageNumber: 2, pageSize: 50 })).toBe(
-      "?search=bow&page%5Bnumber%5D=2&page%5Bsize%5D=50",
-    );
+    expect(
+      buildItemSearchQuery({ q: "bow", pageNumber: 2, pageSize: 50 }),
+    ).toBe("?search=bow&page%5Bnumber%5D=2&page%5Bsize%5D=50");
   });
 });

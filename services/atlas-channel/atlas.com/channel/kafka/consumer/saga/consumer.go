@@ -10,6 +10,9 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -26,8 +29,6 @@ import (
 	storagecb "github.com/Chronicle20/atlas/libs/atlas-packet/storage/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
 )
 
 // InitConsumers initializes saga status event consumers

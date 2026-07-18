@@ -3,9 +3,10 @@ package serverbound
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 // ItemUseItemTag is the type-25 sub-body of the cash ItemUse packet (Item Tag 5060000).

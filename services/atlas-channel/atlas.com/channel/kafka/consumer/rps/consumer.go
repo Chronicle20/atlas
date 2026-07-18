@@ -7,14 +7,17 @@
 package rps
 
 import (
-	rpsmsg "atlas-channel/kafka/message/rps"
 	consumer2 "atlas-channel/kafka/consumer"
+	rpsmsg "atlas-channel/kafka/message/rps"
 	"atlas-channel/listener"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
 	"math"
+
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
@@ -25,8 +28,6 @@ import (
 	rpscb "github.com/Chronicle20/atlas/libs/atlas-packet/rps/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {

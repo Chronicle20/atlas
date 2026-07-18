@@ -6,9 +6,10 @@ import (
 	"context"
 	"math/rand"
 
+	"github.com/sirupsen/logrus"
+
 	loginpkt "github.com/Chronicle20/atlas/libs/atlas-packet/login/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 const CreateSecurityHandle = "CreateSecurityHandle"

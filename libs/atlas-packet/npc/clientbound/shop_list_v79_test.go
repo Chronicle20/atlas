@@ -5,8 +5,9 @@ import (
 	"encoding/binary"
 	"testing"
 
-	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	testlog "github.com/sirupsen/logrus/hooks/test"
+
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 // v79 NPC shop list. CShopDlg::SetShopDlg@0x6d3459 (GMS_v79_1_DEVM.exe, port
@@ -27,12 +28,12 @@ func TestNPCShopListV79(t *testing.T) {
 	le16 := func(v uint16) []byte { b := make([]byte, 2); binary.LittleEndian.PutUint16(b, v); return b }
 	le32 := func(v uint32) []byte { b := make([]byte, 4); binary.LittleEndian.PutUint32(b, v); return b }
 	var want []byte
-	want = append(want, le32(9010000)...)   // npcTemplateId
-	want = append(want, le16(1)...)          // count
-	want = append(want, le32(2000000)...)    // itemId
-	want = append(want, le32(50)...)         // mesoPrice
-	want = append(want, le16(100)...)        // quantity (not rechargeable)
-	want = append(want, le16(200)...)        // maxPerSlot
+	want = append(want, le32(9010000)...) // npcTemplateId
+	want = append(want, le16(1)...)       // count
+	want = append(want, le32(2000000)...) // itemId
+	want = append(want, le32(50)...)      // mesoPrice
+	want = append(want, le16(100)...)     // quantity (not rechargeable)
+	want = append(want, le16(200)...)     // maxPerSlot
 	if !bytes.Equal(got, want) {
 		t.Fatalf("v79 ShopList: got % x, want % x", got, want)
 	}

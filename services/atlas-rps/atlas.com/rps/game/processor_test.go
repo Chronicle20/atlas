@@ -1,22 +1,22 @@
 package game_test
 
 import (
+	"atlas-rps/game"
+	"atlas-rps/kafka/message"
+	"atlas-rps/kafka/message/rps"
 	"encoding/json"
 	"errors"
 	"testing"
 
-	"atlas-rps/game"
-	"atlas-rps/kafka/message"
-	"atlas-rps/kafka/message/rps"
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // fixedThrows returns a game.ThrowSource that plays back seq in order,

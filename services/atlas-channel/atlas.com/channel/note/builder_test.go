@@ -24,7 +24,6 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 		SetTimestamp(timestamp).
 		SetFlag(1).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -83,7 +82,6 @@ func TestCloneModel(t *testing.T) {
 	cloned, err := note.CloneModel(original).
 		SetMessage("Cloned").
 		Build()
-
 	if err != nil {
 		t.Fatalf("CloneModel().Build() unexpected error: %v", err)
 	}

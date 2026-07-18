@@ -3,12 +3,14 @@ package game
 import (
 	"atlas-rps/kafka/message/rps"
 	"context"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"time"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // SweepTaskName identifies the sweep task's trace span.

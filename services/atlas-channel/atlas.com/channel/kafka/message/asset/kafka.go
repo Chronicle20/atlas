@@ -98,8 +98,7 @@ type UpdatedStatusEventBody struct {
 	PetId          uint32     `json:"petId"`
 }
 
-type DeletedStatusEventBody struct {
-}
+type DeletedStatusEventBody struct{}
 
 type MovedStatusEventBody struct {
 	OldSlot int16 `json:"oldSlot"`

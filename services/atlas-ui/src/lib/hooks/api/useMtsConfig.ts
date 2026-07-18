@@ -55,23 +55,35 @@ export function useUpdateMtsConfig(): UseMutationResult<
     mutationFn: ({ tenantId, config, updates }) =>
       mtsConfigService.updateConfig(tenantId, config, updates),
     onMutate: async ({ tenantId, config, updates }) => {
-      await queryClient.cancelQueries({ queryKey: mtsConfigKeys.detail(tenantId) });
-      const previousConfig = queryClient.getQueryData<MtsConfig>(mtsConfigKeys.detail(tenantId));
+      await queryClient.cancelQueries({
+        queryKey: mtsConfigKeys.detail(tenantId),
+      });
+      const previousConfig = queryClient.getQueryData<MtsConfig>(
+        mtsConfigKeys.detail(tenantId),
+      );
       const optimisticConfig: MtsConfig = {
         ...config,
         attributes: { ...config.attributes, ...updates },
       };
-      queryClient.setQueryData(mtsConfigKeys.detail(tenantId), optimisticConfig);
+      queryClient.setQueryData(
+        mtsConfigKeys.detail(tenantId),
+        optimisticConfig,
+      );
       return { previousConfig };
     },
     onError: (error, variables, context) => {
       if (context?.previousConfig) {
-        queryClient.setQueryData(mtsConfigKeys.detail(variables.tenantId), context.previousConfig);
+        queryClient.setQueryData(
+          mtsConfigKeys.detail(variables.tenantId),
+          context.previousConfig,
+        );
       }
       console.error("Failed to update MTS configuration:", error);
     },
     onSettled: (_data, _error, variables) => {
-      queryClient.invalidateQueries({ queryKey: mtsConfigKeys.detail(variables.tenantId) });
+      queryClient.invalidateQueries({
+        queryKey: mtsConfigKeys.detail(variables.tenantId),
+      });
     },
   });
 }

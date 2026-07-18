@@ -1,9 +1,8 @@
 package listing
 
 import (
-	"time"
-
 	"atlas-mts/serial"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"

@@ -1,10 +1,10 @@
 package outbox
 
 import (
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-
 	"context"
 	"time"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"

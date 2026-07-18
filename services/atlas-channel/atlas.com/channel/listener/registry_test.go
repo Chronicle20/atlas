@@ -1,21 +1,21 @@
 package listener_test
 
 import (
+	"atlas-channel/listener"
+	"atlas-channel/server"
 	"context"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
-	"atlas-channel/listener"
-	"atlas-channel/server"
-
-	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // nopDeps is a Dependencies where every callback succeeds and returns

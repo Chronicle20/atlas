@@ -30,22 +30,22 @@ func ToMtsItem(m Model) fieldcb.MtsItem {
 	item := packetmodel.NewAsset(true, 0, m.TemplateId(), time.Time{}).SetStackableInfo(m.Quantity(), 0, 0)
 	dateExpired := packetmodel.MsTimeBytes(mtsHoldingExpiry)
 	return fieldpkt.MtsOperationNewItem(
-		item,        // GW_ItemSlotBase blob
-		m.ItcSn(),   // nITCSN = the holding serial (addresses take-home)
-		0,           // nPrice
-		0,           // nContractFee
-		"",          // sContractFeeTxId
-		"",          // sRollbackUsageID
-		dateExpired, // ftITCDateExpired
-		"",          // sUserID
-		"",          // sGameID
-		"",          // sComment
-		0,           // nBidCount
-		0,           // nBidRange
-		0,           // nBidPrice
-		0,           // nMinPrice
-		0,           // nMaxPrice
-		0,           // nUnitPrice
+		item,                         // GW_ItemSlotBase blob
+		m.ItcSn(),                    // nITCSN = the holding serial (addresses take-home)
+		0,                            // nPrice
+		0,                            // nContractFee
+		"",                           // sContractFeeTxId
+		"",                           // sRollbackUsageID
+		dateExpired,                  // ftITCDateExpired
+		"",                           // sUserID
+		"",                           // sGameID
+		"",                           // sComment
+		0,                            // nBidCount
+		0,                            // nBidRange
+		0,                            // nBidPrice
+		0,                            // nMinPrice
+		0,                            // nMaxPrice
+		0,                            // nUnitPrice
 		fieldcb.MtsProcessStatusNone, // nProcessStatus (holdings have no history/auction status)
 	)
 }

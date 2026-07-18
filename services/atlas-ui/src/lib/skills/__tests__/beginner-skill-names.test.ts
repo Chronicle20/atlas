@@ -1,9 +1,14 @@
 import { describe, it, expect } from "vitest";
-import { BEGINNER_SKILL_NAMES, resolveSkillName } from "@/lib/skills/beginner-skill-names";
+import {
+  BEGINNER_SKILL_NAMES,
+  resolveSkillName,
+} from "@/lib/skills/beginner-skill-names";
 
 describe("resolveSkillName", () => {
   it("prefers a non-blank server name", () => {
-    expect(resolveSkillName(1000, "Improved HP Recovery")).toBe("Improved HP Recovery");
+    expect(resolveSkillName(1000, "Improved HP Recovery")).toBe(
+      "Improved HP Recovery",
+    );
   });
 
   it("falls back to the curated name when the server name is blank", () => {

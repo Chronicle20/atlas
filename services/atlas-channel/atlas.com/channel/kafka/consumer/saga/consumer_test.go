@@ -1,10 +1,9 @@
 package saga
 
 import (
+	"atlas-channel/kafka/message/saga"
 	"encoding/json"
 	"testing"
-
-	"atlas-channel/kafka/message/saga"
 )
 
 // TestResultDecoders_TolerateJSONFloat64 proves the COMPLETED Results decoders

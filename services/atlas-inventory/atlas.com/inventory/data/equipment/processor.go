@@ -5,8 +5,9 @@ import (
 	"atlas-inventory/data/equipment/statistics"
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 type Processor interface {

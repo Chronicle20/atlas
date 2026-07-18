@@ -11,24 +11,27 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"math"
 	"sort"
 	"time"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
-	"github.com/google/uuid"
+
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 type Processor interface {
@@ -183,7 +186,6 @@ func (p *ProcessorImpl) GetByCharacterAndType(characterId uint32) func(inventory
 	return func(inventoryType inventory.Type) (Model, error) {
 		return p.ByCharacterAndTypeProvider(characterId)(inventoryType)()
 	}
-
 }
 
 func (p *ProcessorImpl) DecorateAsset(m Model) (Model, error) {
@@ -510,7 +512,6 @@ func (p *ProcessorImpl) swapAssets(mb *message.Buffer) func(transactionId uuid.U
 // mergeAssets handles merging two assets with the same template ID
 func (p *ProcessorImpl) mergeAssets(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, c Model, a1 asset.Model, a2 asset.Model, source int16, destination int16) error {
 	return func(transactionId uuid.UUID, characterId uint32, c Model, a1 asset.Model, a2 asset.Model, source int16, destination int16) error {
-
 		// Get slot max for the item
 		slotMax, err := p.assetProcessor.GetSlotMax(a1.TemplateId())
 		if err != nil {
@@ -1207,7 +1208,6 @@ func (p *ProcessorImpl) AttemptEquipmentPickUpAndEmit(transactionId uuid.UUID, f
 
 func (p *ProcessorImpl) AttemptEquipmentPickUp(mb *message.Buffer) func(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, templateId uint32, ed dropMsg.EquipmentData) error {
 	return func(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, templateId uint32, ed dropMsg.EquipmentData) error {
-
 		inventoryType, ok := inventory.TypeFromItemId(item.Id(templateId))
 		if !ok {
 			return errors.New("invalid inventory item")

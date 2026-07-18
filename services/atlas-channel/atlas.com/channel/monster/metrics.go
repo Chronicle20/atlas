@@ -1,9 +1,10 @@
 package monster
 
 import (
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 var (

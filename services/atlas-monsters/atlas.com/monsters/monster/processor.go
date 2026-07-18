@@ -44,6 +44,8 @@ type Processor interface {
 	Create(f field.Model, input RestModel) (Model, error)
 	StartControl(uniqueId uint32, controllerId uint32) (Model, error)
 	StopControl(m Model) error
+	RelinquishControlOnHide(characterId uint32) error
+	RestoreCandidacyOnReveal(characterId uint32) error
 	FindNextController(idp model.Provider[[]uint32]) model.Operator[Model]
 	Damage(id uint32, characterId uint32, damages []uint32, attackType byte)
 	DamageFriendly(uniqueId uint32, attackerUniqueId uint32, observerUniqueId uint32)
@@ -83,12 +85,13 @@ var ErrNoControllerCandidate = errors.New("no controller candidate")
 
 // ProcessorImpl implements the Processor interface
 type ProcessorImpl struct {
-	l         logrus.FieldLogger
-	ctx       context.Context
-	t         tenant.Model
-	emit      emitter
-	inFieldFn func(f field.Model) ([]uint32, error)
-	hiddenFn  func() (map[uint32]struct{}, error)
+	l          logrus.FieldLogger
+	ctx        context.Context
+	t          tenant.Model
+	emit       emitter
+	inFieldFn  func(f field.Model) ([]uint32, error)
+	hiddenFn   func() (map[uint32]struct{}, error)
+	locationFn func(characterId uint32) (field.Model, error)
 }
 
 // NewProcessor creates a new Processor
@@ -109,6 +112,9 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 			return r.MemberSet(p.ctx, p.t)
 		}
 		return map[uint32]struct{}{}, nil
+	}
+	p.locationFn = func(characterId uint32) (field.Model, error) {
+		return _map.NewProcessor(p.l, p.ctx).GetCharacterField(characterId)
 	}
 	return p
 }
@@ -414,6 +420,66 @@ func (p *ProcessorImpl) StopControl(m Model) error {
 		_ = p.emit(EnvEventTopicMonsterStatus, stopControlStatusEventProvider(m, oldControllerId))
 	}
 	return err
+}
+
+// RelinquishControlOnHide handles a SuperGmHide APPLIED event (FR-2): mark
+// the character hidden (ALWAYS first — FR-7.2), resolve their live field,
+// then release and reassign every monster they control there. Location
+// failure (offline / in transition) skips the release; candidacy exclusion
+// still holds via the set, and the next election trigger converges.
+func (p *ProcessorImpl) RelinquishControlOnHide(characterId uint32) error {
+	if r := hidden.GetRegistry(); r != nil {
+		if err := r.Add(p.ctx, p.t, characterId); err != nil {
+			p.l.WithError(err).Warnf("Unable to mark character [%d] hidden; election exclusion degraded until reconciliation.", characterId)
+		}
+	}
+
+	f, err := p.locationFn(characterId)
+	if err != nil {
+		p.l.WithError(err).Debugf("GM-hide: unable to locate character [%d]; skipping monster relinquish (set mutation applied).", characterId)
+		return nil
+	}
+
+	// Snapshot ONCE before StopControl mutates registry state — same
+	// provider-re-evaluation race as handleStatusEventCharacterExit.
+	mobs, err := p.ControlledByCharacterInFieldProvider(f, characterId)()
+	if err != nil {
+		p.l.WithError(err).Warnf("GM-hide: unable to fetch mobs controlled by [%d] in field [%s]; skipping relinquish.", characterId, f.Id())
+		return nil
+	}
+	if len(mobs) == 0 {
+		p.l.Debugf("GM-hide: character [%d] controls no monsters in field [%s].", characterId, f.Id())
+		return nil
+	}
+	snapshot := model.FixedProvider(mobs)
+	_ = model.ForEachSlice(snapshot, p.StopControl, model.ParallelExecute())
+	idp := func() ([]uint32, error) { return p.inFieldFn(f) }
+	_ = model.ForEachSlice(snapshot, p.FindNextController(idp), model.ParallelExecute())
+	p.l.Debugf("GM-hide: character [%d] relinquished [%d] monsters in field [%s].", characterId, len(mobs), f.Id())
+	return nil
+}
+
+// RestoreCandidacyOnReveal handles the SuperGmHide EXPIRED event (FR-3):
+// unmark hidden (ALWAYS first), then re-run election for uncontrolled
+// monsters in the character's live field so the revealed character is
+// eligible again. No forced transfer (FR-3.2).
+func (p *ProcessorImpl) RestoreCandidacyOnReveal(characterId uint32) error {
+	if r := hidden.GetRegistry(); r != nil {
+		if err := r.Remove(p.ctx, p.t, characterId); err != nil {
+			p.l.WithError(err).Warnf("Unable to unmark character [%d] hidden; reconciliation will repair.", characterId)
+		}
+	}
+
+	f, err := p.locationFn(characterId)
+	if err != nil {
+		p.l.WithError(err).Debugf("GM-reveal: unable to locate character [%d]; skipping re-election (set mutation applied).", characterId)
+		return nil
+	}
+
+	idp := func() ([]uint32, error) { return p.inFieldFn(f) }
+	_ = model.ForEachSlice(p.NotControlledInFieldProvider(f), p.FindNextController(idp), model.ParallelExecute())
+	p.l.Debugf("GM-reveal: re-ran election for uncontrolled monsters in field [%s] after character [%d] revealed.", f.Id(), characterId)
+	return nil
 }
 
 // Damage applies a sequence of damage lines from a single attack to a monster.

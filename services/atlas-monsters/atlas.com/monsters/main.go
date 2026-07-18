@@ -2,6 +2,7 @@ package main
 
 import (
 	"atlas-monsters/character/hidden"
+	buffconsumer "atlas-monsters/kafka/consumer/buff"
 	data2 "atlas-monsters/kafka/consumer/data"
 	_map "atlas-monsters/kafka/consumer/map"
 	monster2 "atlas-monsters/kafka/consumer/monster"
@@ -69,11 +70,15 @@ func main() {
 	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	monster2.InitConsumers(l)(cmf)(consumerGroupId)
 	_map.InitConsumers(l)(cmf)(consumerGroupId)
+	buffconsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	data2.InitConsumers(l)(cmf)(dataEventsConsumerGroupId)
 	if err := monster2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 	if err := _map.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := buffconsumer.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 	if err := data2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {

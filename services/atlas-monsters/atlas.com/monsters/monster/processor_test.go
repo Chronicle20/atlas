@@ -1,6 +1,7 @@
 package monster
 
 import (
+	"atlas-monsters/character/hidden"
 	mistKafka "atlas-monsters/kafka/message/mist"
 	"atlas-monsters/monster/information"
 	"atlas-monsters/monster/mobskill"
@@ -2386,5 +2387,156 @@ func TestPuppetBiasSkipsHiddenOwner(t *testing.T) {
 	}
 	if cid != 2 {
 		t.Fatalf("expected hidden puppet owner bias skipped, candidate 2, got %d", cid)
+	}
+}
+
+// TestRelinquishOnHideMutatesSetBeforeLocationFailure verifies the hidden-set
+// mutation applies even when the character's live field cannot be resolved
+// (FR-7.2): the set write must never be gated on a successful location
+// lookup, so election exclusion still holds while the location is retried by
+// reconciliation.
+func TestRelinquishOnHideMutatesSetBeforeLocationFailure(t *testing.T) {
+	ten := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), ten)
+	hidden.GetRegistry().Clear(ctx)
+	t.Cleanup(func() { hidden.GetRegistry().Clear(context.Background()) })
+
+	p := NewProcessor(newPickerLogger(), ctx).(*ProcessorImpl)
+	p.locationFn = func(uint32) (field.Model, error) {
+		return field.Model{}, errors.New("maps unavailable")
+	}
+
+	if err := p.RelinquishControlOnHide(77); err != nil {
+		t.Fatalf("location failure must not propagate: %v", err)
+	}
+
+	ms, err := hidden.GetRegistry().MemberSet(context.Background(), ten)
+	if err != nil {
+		t.Fatalf("MemberSet: %v", err)
+	}
+	if _, ok := ms[77]; !ok {
+		t.Fatalf("hidden-set mutation must apply even when location fails (FR-7.2)")
+	}
+}
+
+// TestRelinquishOnHideReassignsControlledMobs verifies that hiding a
+// controlling character releases and reassigns every monster it controls in
+// its field to the remaining eligible (non-hidden) candidate.
+func TestRelinquishOnHideReassignsControlledMobs(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), ten)
+	r.Clear(ctx)
+	GetPuppetRegistry().Clear(ctx)
+	hidden.GetRegistry().Clear(ctx)
+	t.Cleanup(func() { hidden.GetRegistry().Clear(context.Background()) })
+
+	f := testField()
+	mob1 := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50)
+	mob2 := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50)
+	if _, err := r.ControlMonster(ten, mob1.UniqueId(), 1); err != nil {
+		t.Fatalf("ControlMonster mob1: %v", err)
+	}
+	if _, err := r.ControlMonster(ten, mob2.UniqueId(), 1); err != nil {
+		t.Fatalf("ControlMonster mob2: %v", err)
+	}
+
+	p := NewProcessor(newPickerLogger(), ctx).(*ProcessorImpl)
+	p.locationFn = func(uint32) (field.Model, error) { return f, nil }
+	p.inFieldFn = func(field.Model) ([]uint32, error) { return []uint32{1, 2}, nil }
+
+	if err := p.RelinquishControlOnHide(1); err != nil {
+		t.Fatalf("RelinquishControlOnHide: %v", err)
+	}
+
+	for _, id := range []uint32{mob1.UniqueId(), mob2.UniqueId()} {
+		m, err := p.GetById(id)
+		if err != nil {
+			t.Fatalf("GetById(%d): %v", id, err)
+		}
+		if m.ControlCharacterId() != 2 {
+			t.Fatalf("mob [%d] expected controller 2, got %d", id, m.ControlCharacterId())
+		}
+	}
+}
+
+// TestRelinquishOnHideOnlyHiddenLeftLeavesUncontrolled verifies that when the
+// hiding character is the sole occupant of the field, released monsters are
+// left uncontrolled (FR-4.3) rather than erroring.
+func TestRelinquishOnHideOnlyHiddenLeftLeavesUncontrolled(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), ten)
+	r.Clear(ctx)
+	GetPuppetRegistry().Clear(ctx)
+	hidden.GetRegistry().Clear(ctx)
+	t.Cleanup(func() { hidden.GetRegistry().Clear(context.Background()) })
+
+	f := testField()
+	mob := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50)
+	if _, err := r.ControlMonster(ten, mob.UniqueId(), 1); err != nil {
+		t.Fatalf("ControlMonster: %v", err)
+	}
+
+	p := NewProcessor(newPickerLogger(), ctx).(*ProcessorImpl)
+	p.locationFn = func(uint32) (field.Model, error) { return f, nil }
+	p.inFieldFn = func(field.Model) ([]uint32, error) { return []uint32{1}, nil }
+
+	if err := p.RelinquishControlOnHide(1); err != nil {
+		t.Fatalf("RelinquishControlOnHide: %v", err)
+	}
+
+	m, err := p.GetById(mob.UniqueId())
+	if err != nil {
+		t.Fatalf("GetById: %v", err)
+	}
+	if m.ControlCharacterId() != 0 {
+		t.Fatalf("expected uncontrolled, got %d", m.ControlCharacterId())
+	}
+}
+
+// TestRestoreCandidacyOnRevealRemovesFromSetAndSweeps verifies that revealing
+// a character removes it from the hidden set and re-runs election over
+// uncontrolled monsters in its field, electing the now-visible character
+// (FR-3). The Remove-before-sweep ordering closes the SREM-vs-concurrent-
+// election race (design D5).
+func TestRestoreCandidacyOnRevealRemovesFromSetAndSweeps(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), ten)
+	r.Clear(ctx)
+	GetPuppetRegistry().Clear(ctx)
+	hidden.GetRegistry().Clear(ctx)
+	t.Cleanup(func() { hidden.GetRegistry().Clear(context.Background()) })
+
+	if err := hidden.GetRegistry().Add(ctx, ten, 1); err != nil {
+		t.Fatalf("Add: %v", err)
+	}
+
+	f := testField()
+	mob := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50)
+
+	p := NewProcessor(newPickerLogger(), ctx).(*ProcessorImpl)
+	p.locationFn = func(uint32) (field.Model, error) { return f, nil }
+	p.inFieldFn = func(field.Model) ([]uint32, error) { return []uint32{1}, nil }
+
+	if err := p.RestoreCandidacyOnReveal(1); err != nil {
+		t.Fatalf("RestoreCandidacyOnReveal: %v", err)
+	}
+
+	ms, err := hidden.GetRegistry().MemberSet(context.Background(), ten)
+	if err != nil {
+		t.Fatalf("MemberSet: %v", err)
+	}
+	if len(ms) != 0 {
+		t.Fatalf("set entry must be removed on reveal, got %v", ms)
+	}
+
+	m, err := p.GetById(mob.UniqueId())
+	if err != nil {
+		t.Fatalf("GetById: %v", err)
+	}
+	if m.ControlCharacterId() != 1 {
+		t.Fatalf("reveal sweep must elect the revealed character, got %d", m.ControlCharacterId())
 	}
 }

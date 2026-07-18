@@ -16,6 +16,7 @@ import (
 	"atlas-data/job"
 	data2 "atlas-data/kafka/consumer/data"
 	_map "atlas-data/map"
+	"atlas-data/minioreconcile"
 	"atlas-data/mobskill"
 	"atlas-data/monster"
 	"atlas-data/npc"
@@ -174,6 +175,7 @@ func main() {
 		AddRouteInitializer(restruntime.InitResource(jc)(GetServer())).
 		AddRouteInitializer(baseline.InitResource(db, mc)(GetServer())).
 		AddRouteInitializer(tenantpurge.InitResource(db, mc)(GetServer())).
+		AddRouteInitializer(minioreconcile.InitResource(mc)(GetServer())).
 		AddRouteInitializer(_map.InitResource(db)(GetServer())).
 		AddRouteInitializer(monster.InitResource(db)(GetServer())).
 		AddRouteInitializer(equipment.InitResource(db)(GetServer())).

@@ -34,6 +34,7 @@ resources:
   - atlas-map-actions.yaml
   - atlas-maps.yaml
   - atlas-minio-init.yaml
+  - atlas-minio-reconcile.yaml
   - atlas-merchant.yaml
   - atlas-messages.yaml
   - atlas-messengers.yaml

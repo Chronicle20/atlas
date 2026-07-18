@@ -206,13 +206,23 @@ func handleStatusEventGmHideExpired(sc server.Model, wp writer.Producer) message
 		}
 		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
 			f := s.Field()
-			npcIds := make([]uint32, 0)
-			if err := npc2.NewProcessor(l, ctx).ForEachInMap(f.MapId(), func(n npc2.Model) error {
-				npcIds = append(npcIds, n.Id())
-				return nil
-			}); err != nil {
+			// Use InMapModelProvider + a sequential range rather than
+			// ForEachInMap: the latter runs its callback via
+			// model.ForEachSlice(..., model.ParallelExecute()) — one
+			// goroutine per NPC — so accumulating into npcIds from inside
+			// that callback would race on the shared slice header
+			// (task-176 review; same bug class as the Task 9 hiddenCache
+			// race fixed in e6c75ed42). InMapModelProvider(...)() fetches
+			// the slice synchronously; the append loop below runs on this
+			// goroutine only.
+			npcs, err := npc2.NewProcessor(l, ctx).InMapModelProvider(f.MapId())()
+			if err != nil {
 				l.WithError(err).Warnf("GM-reveal: unable to enumerate NPCs in map [%d].", f.MapId())
 				return nil
+			}
+			npcIds := make([]uint32, 0, len(npcs))
+			for _, n := range npcs {
+				npcIds = append(npcIds, n.Id())
 			}
 			cp := controllernpc.NewProcessor(l, ctx)
 			unc, err := cp.UncontrolledIn(f, npcIds)

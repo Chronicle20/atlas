@@ -99,7 +99,7 @@ client ──USE_TELEPORT_ROCK / CASH_ITEM_USE(rock)──▶ atlas-channel hand
                                                         │ list membership via REST, continent, same-map,
                                                         │ player lookup)
                                                         ├─ fail → MapTransferResult error (inline write)
-                                                        └─ ok  → saga: WarpToRandomPortal → DestroyAsset(232xxxx only)
+                                                        └─ ok  → saga: WarpToRandomPortal → DestroyAsset(all rocks: 2320000 + 504xxxx)
 
 client ──TROCK_ADD_MAP──▶ atlas-channel handler ──Kafka COMMAND_TOPIC_TELEPORT_ROCK──▶ atlas-character
                                                         (register: mapId = session field, server-derived)
@@ -179,7 +179,7 @@ New `teleportrock` channel package owning `UseRock(l, ctx, wp)(s, rock, target)`
 4. **Failure**: write `MapTransferResult` error inline from the handler (the `BlockedMapWriter` announce pattern, `socket/handler/mystic_door_enter.go:47-49`). Nothing is consumed (FR-1).
 5. **Success**: one saga, new `SagaType` `teleport_rock_use` (constant added to `libs/atlas-saga`; the orchestrator dispatches by step *action*, `services/atlas-saga-orchestrator/.../saga/handler.go:77-84`, so no orchestrator logic changes):
    - Step 1 `WarpToRandomPortal` (existing action, `libs/atlas-saga/model.go:57`) to the target field. Random spawn portal is the faithful era behavior for rock warps and avoids inventing a new action (PRD §7 constraint satisfied).
-   - Step 2 (regular rock 2320000 only) `DestroyAsset{Quantity:1}` (`model.go:50`). Warp-before-destroy ordering guarantees a failed warp never consumes (FR-2); a destroy failure after warp is benign in the fail-open direction (item survives).
+   - Step 2 (**all teleport rocks** — 2320000 and cash 5040000/5040001/5041000; see PRD correction) `DestroyAsset{Quantity:1}`. Warp-before-destroy ordering guarantees a failed warp never consumes (FR-2); a destroy failure after warp is benign in the fail-open direction (item survives).
    - Cash rocks: step 1 only. No `MAP_TRANSFER_RESULT` is sent on success — the warp's SetField is the success signal (client sets no pending state that needs clearing; verified: `m_sMapTransferTargetUserName` is cleared on any result *or* overwritten next use).
 6. **Cash entry point**: `character_cash_item_use.go` type-12 branch — decode the rock payload and delegate to `UseRock`. Two wrinkles: the handler currently discards its `writer.Producer` (`:25`) — un-discard it; and `GetCashSlotItemType` also maps some megaphones to enum 12 (`:181`) — branch on `item.GetClassification(itemId) == item.ClassificationTeleportRock`, keeping the warn-and-drop fallthrough for the megaphone alias.
 

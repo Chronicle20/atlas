@@ -105,21 +105,42 @@ func TestUseRockSuccessRegularConsumes(t *testing.T) {
 	}
 }
 
-func TestUseRockSuccessCashDoesNotConsume(t *testing.T) {
+// Every teleport rock consumes one per use — the non-cash rock (2320000) and
+// all cash rocks (5040000/5040001/5041000). Cash rocks ride the "consume"
+// cash-item-use op and behave like every sibling cash-item-use item.
+func TestUseRockSuccessCashConsumes(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
-	var announced string
-	var sagaCreated *saga.Saga
-	var enabled int
-	installFixture(t, 100000000, &announced, &sagaCreated, &enabled)
-
-	// 5041000 uses the VIP list and skips the continent check.
-	UseRock(l, context.Background(), nil)(testSession(t, 42, 100000000), 5041000, trpkt.NewTargetByMap(220000000))
-
-	if sagaCreated == nil {
-		t.Fatalf("expected a saga")
+	// Regular cash rocks (5040000/5040001) run the continent check, so they need
+	// a same-continent target in the regular list (102000000). The VIP rock
+	// (5041000) skips the continent check and uses the VIP list (220000000).
+	cases := []struct {
+		name   string
+		itemId item.Id
+		target _map.Id
+	}{
+		{"the-teleport-rock-5040000", 5040000, 102000000},
+		{"teleport-coke-5040001", 5040001, 102000000},
+		{"vip-teleport-rock-5041000", 5041000, 220000000},
 	}
-	if len(sagaCreated.Steps) != 1 {
-		t.Fatalf("cash rock: warp only, got %d steps", len(sagaCreated.Steps))
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			var announced string
+			var sagaCreated *saga.Saga
+			var enabled int
+			installFixture(t, 100000000, &announced, &sagaCreated, &enabled)
+
+			UseRock(l, context.Background(), nil)(testSession(t, 42, 100000000), c.itemId, trpkt.NewTargetByMap(uint32(c.target)))
+
+			if sagaCreated == nil {
+				t.Fatalf("expected a saga (announced=%q)", announced)
+			}
+			if len(sagaCreated.Steps) != 2 {
+				t.Fatalf("cash rock %d: warp + destroy, got %d steps", c.itemId, len(sagaCreated.Steps))
+			}
+			if sagaCreated.Steps[1].Action != saga.DestroyAsset {
+				t.Errorf("cash rock %d: step 2 must be DestroyAsset, got %v", c.itemId, sagaCreated.Steps[1].Action)
+			}
+		})
 	}
 }
 

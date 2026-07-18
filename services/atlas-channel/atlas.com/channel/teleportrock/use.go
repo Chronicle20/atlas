@@ -160,8 +160,16 @@ func UseRock(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func
 			return
 		}
 
-		// Success: warp via random spawn portal; consume only the regular rock,
-		// and only after the warp (FR-2).
+		// Success: warp via random spawn portal, then consume one rock (FR-2:
+		// warp-before-destroy — a failed warp never consumes). Every teleport rock
+		// is consumed one per use: the non-cash rock (2320000) and all cash rocks
+		// (5040000/5040001/5041000). The cash rocks ride CWvsContext::
+		// SendConsumeCashItemUseRequest and behave like every sibling cash-item-use
+		// item (item tag, sealing lock, incubator), which all DestroyAsset. Item.wz
+		// carries no charge/duration node for any of them, so consumption is the
+		// server contract. Every itemId reaching UseRock is already validated as a
+		// teleport rock by the caller (USE_TELEPORT_ROCK → 2320000; the cash branch
+		// gates on item.ClassificationTeleportRock), so consume unconditionally.
 		targetField := field.NewBuilder(s.Field().WorldId(), s.Field().ChannelId(), targetMapId).Build()
 		now := time.Now()
 		steps := []saga.Step{
@@ -176,9 +184,7 @@ func UseRock(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func
 				CreatedAt: now,
 				UpdatedAt: now,
 			},
-		}
-		if uint32(itemId)/10000 == 232 {
-			steps = append(steps, saga.Step{
+			{
 				StepId: "consume_rock",
 				Status: saga.Pending,
 				Action: saga.DestroyAsset,
@@ -190,7 +196,7 @@ func UseRock(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func
 				},
 				CreatedAt: now,
 				UpdatedAt: now,
-			})
+			},
 		}
 		err = createSagaFunc(l, ctx, saga.Saga{
 			TransactionId: uuid.New(),

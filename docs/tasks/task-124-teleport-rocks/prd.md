@@ -45,12 +45,21 @@ Non-goals:
 | Item | Name | Source | Kind | List used | Consumption |
 |---|---|---|---|---|---|
 | 2320000 | Teleport Rock | `Item.wz/Consume/0232.img.xml` | USE item, `slotMax=1`, `timeLimited=1`, `only=1`, `tradeBlock=1`, `notSale=1` | regular (5 slots) | consume 1 on **successful** warp |
-| 5040000 | The Teleport Rock | `Item.wz/Cash/0504.img.xml` | cash item | regular (5 slots) | not consumed per use; item expiry governs |
-| 5040001 | Teleport Coke | `Item.wz/Cash/0504.img.xml` | cash item | regular (5 slots) | not consumed per use; item expiry governs |
-| 5041000 | VIP Teleport Rock | `Item.wz/Cash/0504.img.xml` | cash item | VIP (10 slots) | not consumed per use; item expiry governs |
+| 5040000 | The Teleport Rock | `Item.wz/Cash/0504.img.xml` | cash item | regular (5 slots) | consume 1 on **successful** warp |
+| 5040001 | Teleport Coke | `Item.wz/Cash/0504.img.xml` | cash item | regular (5 slots) | consume 1 on **successful** warp |
+| 5041000 | VIP Teleport Rock | `Item.wz/Cash/0504.img.xml` | cash item | VIP (10 slots) | consume 1 on **successful** warp |
 
-- FR-1: A failed warp (any validation error) MUST NOT consume the regular rock and MUST emit the appropriate `MAP_TRANSFER_RESULT` error.
-- FR-2: Cash rocks (504x) MUST NOT be destroyed on use; the regular rock (2320000) MUST be decremented by exactly 1 only after the warp step succeeds (saga ordering: validate → warp → consume).
+> **Correction (post-implementation):** the original PRD claimed the cash rocks
+> were "not consumed per use; item expiry governs." That was unverified and is
+> wrong. `Item.wz/Cash/0504.img` carries **only** `cash=1` for all three ids —
+> no `timeLimited`, no charge count, no `slotMax`. The cash rocks ride
+> `CWvsContext::SendConsumeCashItemUseRequest` (the *consume* cash-item op) and
+> every sibling arm on it (item tag, sealing lock, incubator) destroys its cash
+> item. So **all** teleport rocks — `2320000` and every cash rock incl. VIP
+> `5041000` — consume exactly 1 on a successful warp.
+
+- FR-1: A failed warp (any validation error) MUST NOT consume the rock and MUST emit the appropriate `MAP_TRANSFER_RESULT` error.
+- FR-2: Every teleport rock (`2320000` and the cash rocks `5040000`/`5040001`/`5041000`) MUST be decremented by exactly 1 only after the warp step succeeds (saga ordering: validate → warp → consume).
 
 ### 4.2 Saved-map lists
 

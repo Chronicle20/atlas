@@ -68,19 +68,53 @@ UI_RC=0
 FAILED=()
 
 ensure_golangci() {
-    if ! command -v go >/dev/null 2>&1; then
-        echo "lint.sh: ERROR — go toolchain not found (required for Go checks)" >&2
-        exit 1
-    fi
-    if [ ! -x "$GOLANGCI" ]; then
-        echo "lint.sh: installing golangci-lint $GOLANGCI_LINT_VERSION into $TOOLS_BIN ..."
-        mkdir -p "$TOOLS_BIN"
-        local tmp
+    [ -x "$GOLANGCI" ] && return 0
+    mkdir -p "$TOOLS_BIN"
+
+    # Fast path: download the pinned prebuilt release binary and verify it
+    # against the release's published SHA256 checksums. This is ~10s vs the
+    # multi-minute `go install` source build — it dominates cold-cache CI time
+    # (task-171). Falls back to `go install` when the download path is
+    # unavailable (no curl/sha256sum, unknown platform, or offline).
+    local ver="${GOLANGCI_LINT_VERSION#v}" os="" arch="" asset url tmp
+    case "$(uname -s)" in
+        Linux) os=linux ;;
+        Darwin) os=darwin ;;
+    esac
+    case "$(uname -m)" in
+        x86_64 | amd64) arch=amd64 ;;
+        arm64 | aarch64) arch=arm64 ;;
+    esac
+
+    if [ -n "$os" ] && [ -n "$arch" ] \
+        && command -v curl >/dev/null 2>&1 && command -v sha256sum >/dev/null 2>&1; then
+        asset="golangci-lint-${ver}-${os}-${arch}.tar.gz"
+        url="https://github.com/golangci/golangci-lint/releases/download/${GOLANGCI_LINT_VERSION}"
+        echo "lint.sh: downloading golangci-lint $GOLANGCI_LINT_VERSION prebuilt ($os-$arch) into $TOOLS_BIN ..."
         tmp="$(mktemp -d)"
-        GOBIN="$tmp" go install "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$GOLANGCI_LINT_VERSION"
-        mv "$tmp/golangci-lint" "$GOLANGCI"
+        if curl -sSfL "$url/$asset" -o "$tmp/$asset" \
+            && curl -sSfL "$url/golangci-lint-${ver}-checksums.txt" -o "$tmp/checksums.txt" \
+            && (cd "$tmp" && grep " ${asset}\$" checksums.txt | sha256sum -c - >/dev/null 2>&1) \
+            && tar -xzf "$tmp/$asset" -C "$tmp" \
+            && mv "$tmp/golangci-lint-${ver}-${os}-${arch}/golangci-lint" "$GOLANGCI"; then
+            chmod +x "$GOLANGCI"
+            rm -rf "$tmp"
+            return 0
+        fi
+        echo "lint.sh: WARNING — prebuilt download/verify failed; falling back to 'go install' (slower)." >&2
         rm -rf "$tmp"
     fi
+
+    # Fallback: build from source (requires the Go toolchain).
+    if ! command -v go >/dev/null 2>&1; then
+        echo "lint.sh: ERROR — cannot fetch prebuilt golangci-lint and no go toolchain for the source fallback" >&2
+        exit 1
+    fi
+    echo "lint.sh: installing golangci-lint $GOLANGCI_LINT_VERSION from source into $TOOLS_BIN ..."
+    tmp="$(mktemp -d)"
+    GOBIN="$tmp" go install "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$GOLANGCI_LINT_VERSION"
+    mv "$tmp/golangci-lint" "$GOLANGCI"
+    rm -rf "$tmp"
 }
 
 resolve_base() {

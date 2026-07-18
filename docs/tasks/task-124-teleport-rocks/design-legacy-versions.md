@@ -111,7 +111,44 @@ warp itself (select saved map or type a name → GO) is the one op still to pin
 is bare and is sent from `CDraggableItem::OnDoubleClicked` to *open* the flow),
 and NOT `TROCK_ADD_MAP` (register/delete only).
 
-## Central open question (drives the use flow) — narrowed
+## RESOLVED — legacy USE is NOT bare; the feature = v83 with different opcodes
+
+The v61 real USE sender is `sub_8327DB` (regular rock, `a3/10000 == 232`):
+```
+COutPacket(77)                      // opcode 0x4D
+Encode2(nPOS)
+Encode4(nItemID)
+if (sub_8328C9(pkt, 0))             // RunMapTransferItem: opens the modal dialog,
+                                    //   appends the target — Encode1(1)+EncodeStr(name)
+                                    //   for warp-by-player, else Encode1(0)+Encode4(mapId)
+                                    //   for a saved map; returns 0 if cancelled → not sent
+    Encode4(updateTime)             // trailing
+SendPacket()
+```
+This is **byte-for-byte the v83 `USE_TELEPORT_ROCK` layout** (`Decode2 + Decode4 +
+RunMapTransferItem target + trailing updateTime`) — only the opcode differs (77 vs
+v83's 0x54). `sub_8328C9` is the legacy `RunMapTransferItem`; the map-transfer
+dialog (register 2000 / delete 2001 / GO / name-input) is modal and returns the
+target to the USE sender. Cash rocks ride `SendConsumeCashItemUseRequest`
+(@0x832a5d in v61) which also calls `RunMapTransferItem` — same as v83.
+
+**Consequence:** the entire teleport-rock feature (USE-with-target, ADD_MAP
+register/delete, MAP_TRANSFER_RESULT, RunMapTransferItem target payload) is
+**structurally identical across v48/v61/v72/v79 and v83+**. The existing atlas
+codecs apply unchanged — legacy support is **per-version opcodes + template wiring
++ byte-fixture verification**, NOT new codecs. The atlas-ui saved-map card also
+applies. Much smaller than the "divergent pre-v83 codec" fear.
+
+**v61 opcodes:** USE=77 (0x4D), TROCK_ADD_MAP=94 (0x5E), MAP_TRANSFER_RESULT=39.
+
+**Discrepancy to settle during opcode verification:** v72/v79 have a *named*
+`SendMapTransferItemUseRequest` (0x917221/0x968c52) that looked bare
+(Encode4+Encode2+Encode4, op 0x54/0x53) with NO RunMapTransferItem call — yet v61's
+real sender does call it. Likely the named v72/v79 symbol is an older/other variant
+and the real RunMapTransferItem-based USE sender in v72/v79 is unnamed (as v61's
+was). Resolve per version when pinning opcodes.
+
+## (superseded) Central open question — narrowed
 
 v83's use packet carries the destination; the pre-v83 use packet does not. So in
 legacy the flow must be: double-click rock → `SendMapTransferItemUseRequest`

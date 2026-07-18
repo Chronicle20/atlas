@@ -22,7 +22,10 @@ import (
 // cannot import the character package directly (character already imports
 // teleport_rock, which would create an import cycle), so InitResource takes
 // this as an injected dependency; main.go wires it via character.NewProcessor.
-type WorldIdOf func(ctx context.Context, characterId uint32) (world.Id, error)
+// It takes the request-scoped logger (not a captured bootstrap logger) so the
+// resolver's downstream processor call carries the same originator/tenant/span
+// fields as the rest of the request.
+type WorldIdOf func(l logrus.FieldLogger, ctx context.Context, characterId uint32) (world.Id, error)
 
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) func(worldIdOf WorldIdOf) server.RouteInitializer {
 	return func(db *gorm.DB) func(worldIdOf WorldIdOf) server.RouteInitializer {
@@ -70,7 +73,7 @@ func handleAddTeleportRockMap(worldIdOf WorldIdOf) rest.InputHandler[AddMapInput
 					w.WriteHeader(http.StatusBadRequest)
 					return
 				}
-				worldId, err := worldIdOf(d.Context(), characterId)
+				worldId, err := worldIdOf(d.Logger(), d.Context(), characterId)
 				if err != nil {
 					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
@@ -105,7 +108,7 @@ func handleRemoveTeleportRockMap(worldIdOf WorldIdOf) rest.GetHandler {
 					w.WriteHeader(http.StatusBadRequest)
 					return
 				}
-				worldId, err := worldIdOf(d.Context(), characterId)
+				worldId, err := worldIdOf(d.Logger(), d.Context(), characterId)
 				if err != nil {
 					server.WriteErrorResponse(d.Logger())(w)(err)
 					return

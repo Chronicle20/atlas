@@ -26,6 +26,8 @@ import (
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	lifecycle "github.com/Chronicle20/atlas/libs/atlas-service"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
@@ -124,7 +126,7 @@ func main() {
 		AddRouteInitializer(character.InitResource(GetServer())(db)).
 		AddRouteInitializer(history.InitResource(GetServer())(db)).
 		AddRouteInitializer(saved_location.InitResource(GetServer())(db)).
-		AddRouteInitializer(teleport_rock.InitResource(GetServer())(db)(func(ctx context.Context, characterId uint32) (world.Id, error) {
+		AddRouteInitializer(teleport_rock.InitResource(GetServer())(db)(func(l logrus.FieldLogger, ctx context.Context, characterId uint32) (world.Id, error) {
 			m, err := character.NewProcessor(l, ctx, db).GetById()(characterId)
 			if err != nil {
 				return 0, err

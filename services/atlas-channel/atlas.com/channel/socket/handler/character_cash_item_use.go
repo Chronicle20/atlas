@@ -196,10 +196,51 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			//     known 4-line+whisper body on any of the four builds); consuming
 			//     the item would destroy it with no verified broadcast to render.
 			//     BLOCKED on legacy regardless of tier.
-			//   - Maple TV (tier 5) / item megaphone (tier 6) / triple megaphone
-			//     (tier 7): no legacy send case identified either (spec §5b for TV;
-			//     item/triple dialogs are corroborated v83+-only, absent from the
-			//     legacy SendConsumeCashItemUseRequest dispatcher). BLOCKED.
+			//   - Item megaphone (tier 6) / triple megaphone (tier 7): legacy
+			//     TV/item/triple gap-fill pass (task-123) IDA-verified the wire
+			//     shape by SHAPE-MATCHING inside each legacy build's
+			//     SendConsumeCashItemUseRequest (byte-fixtures in
+			//     libs/atlas-packet/cash/serverbound/v{61,72,79}_test.go):
+			//       - v61: Item megaphone (case 14 @0x832e37, dedicated dialog
+			//         send fn sub_55DC01) ALLOWED. Triple megaphone (5077000)
+			//         does not exist as an item on v61
+			//         (megaphone-item-availability.md: v72+) — no case found
+			//         either; BLOCKED (tier absent, not merely unverified).
+			//       - v72/v79: Item megaphone (v72 case 14 @0x905609 send fn
+			//         sub_5A7C42 @0x5a7c42; v79 case 14 @0x956975 send fn
+			//         sub_5C2336 @0x5c2336) ALLOWED. Triple megaphone (case 60
+			//         @0x905090/0x9563f8, self-contained: count+lines+whisper)
+			//         ALLOWED.
+			//     Both arms funnel into the SAME shared rate-check-and-send tail
+			//     as basic/super Megaphone (a `call SetExclRequestSent; Encode4;
+			//     SendPacket` epilogue) — update_time IS present (trailing
+			//     uint32) on every arm, matching each codec's existing
+			//     `if !updateTimeFirst { WriteInt(updateTime) }` unconditional
+			//     write (no extra gate needed; this pass also found and fixed a
+			//     bug where Megaphone/SuperMegaphone WRONGLY omitted this same
+			//     trailing field on legacy — see item_use_megaphone.go). Both
+			//     tiers broadcast through the WorldMessage writer, which already
+			//     carries ITEM_MEGAPHONE(8)/MULTI_MEGAPHONE(10) operations
+			//     entries on every legacy template — no new writer wiring
+			//     needed.
+			//   - Maple TV (tier 5): SERVERBOUND wire IS verified on v61/72/79
+			//     (case 45/46 @0x834d1c/0x907702/0x958b2a, first of 6
+			//     consecutive tvType cases, self-contained:
+			//     pad+receiverName+5 lines, same shared send-tail as above) —
+			//     but STAYS BLOCKED anyway: handleMapleTVUse's CLIENTBOUND acks
+			//     (TvSendMessageResult/TvSetMessage/TvClearMessage) have ZERO
+			//     writer entries in ANY of the four legacy templates (confirmed:
+			//     `grep '"writer": "Tv'` template_gms_{48,61,72,79}_1.json is
+			//     empty, vs v83+ which all carry them). Enabling tier 5 would
+			//     still DESTROY the item (the saga's consume step runs before
+			//     any ack) while every TV response packet fails to resolve an
+			//     opcode — a real item-loss-equivalent regression the
+			//     serverbound-only verification bar doesn't catch. Wiring the
+			//     TV writer family into the legacy templates (its own IDA pass
+			//     on the clientbound side) is a separate follow-up; NOT done
+			//     this pass.
+			//     v48: NOT reverified this pass (out of scope) — v48 keeps the
+			//     tier>4 block below regardless.
 			//
 			// jms185 verification (task-123 cheap-heart-skull finalize pass): unlike
 			// v83/v95, JMS's get_cashslot_item_type@0x49a1ee genuinely sends
@@ -222,12 +263,25 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 					l.Warnf("Character [%d] attempted avatar megaphone item [%d] on unsupported legacy version [major %d]; ignoring without consuming.", s.CharacterId(), itemId, t.MajorVersion())
 					return
 				}
-				// ClassificationMegaphones per-tier legacy allow-list:
-				// 0 (Cheap/channel), 1 (basic/channel), 2 (super/world),
-				// 3 (Heart/world), 4 (Skull/world, super-shaped — see above).
-				// 5 (TV) / 6 (item) / 7 (triple) remain BLOCKED.
+				// ClassificationMegaphones per-(version,tier) legacy allow-list.
+				// Verified matrix (task-123 legacy TV/item/triple gap-fill):
+				//   v72/v79: tiers 0-4,6,7 (item+triple verified+wired; tier 5/TV
+				//            serverbound-verified but blocked — see the TV
+				//            writer-wiring gap documented above).
+				//   v61:     tiers 0-4,6 (item verified+wired; triple item
+				//            absent; tier 5/TV blocked for the same reason).
+				//   v48/others: tiers 0-4 only (6/7 never reverified; 5 blocked).
 				tier := (uint32(itemId) / 1000) % 10
-				if tier > 4 {
+				allowed := tier <= 4
+				if t.Region() == "GMS" {
+					switch t.MajorVersion() {
+					case 72, 79:
+						allowed = allowed || tier == 6 || tier == 7
+					case 61:
+						allowed = allowed || tier == 6
+					}
+				}
+				if !allowed {
 					l.Warnf("Character [%d] attempted megaphone item [%d] tier [%d] unsupported on legacy version [major %d]; ignoring without consuming.", s.CharacterId(), itemId, tier, t.MajorVersion())
 					return
 				}

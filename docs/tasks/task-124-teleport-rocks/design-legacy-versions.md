@@ -60,8 +60,25 @@ still to be located (RE TODO).
 | Op | dir | v48 | v61 | v72 | v79 | note |
 |---|---|---|---|---|---|---|
 | MAP_TRANSFER_RESULT | CB | 35 | 39 | 39 | 39 | `OnMapTransferResult` named in all; structure ≈ v83 |
-| USE_TELEPORT_ROCK | SB | unnamed | unnamed | named (0x?) | **0x53** | payload has NO inline destination |
+| USE_TELEPORT_ROCK | SB | unnamed | unnamed | **0x54** | **0x53** | uniform pre-v83 payload; opcode per version |
 | TROCK_ADD_MAP | SB | ? | **94** | ? | unnamed | v61 payload documented |
+
+**v72 confirmed** (`SendMapTransferItemUseRequest` @0x917221, byte-identical
+function size to v79): `COutPacket(0x54) + Encode4(updateTime) + Encode2(nPOS) +
+Encode4(nItemID)` — identical layout to v79, only the opcode differs (0x54 vs
+0x53). **The pre-v83 USE payload is uniform across legacy versions; only the
+opcode changes.** This means one pre-v83 `USE_TELEPORT_ROCK` codec, opcode-gated
+per version — not four different codecs. The same uniformity very likely holds
+for the RESULT (structure already ≈ v83) and ADD_MAP (v61 documented) sides,
+pending confirmation of the unnamed functions in v48/v61.
+
+### v61 (port 13338) — confirmed named/unnamed state
+
+`OnMapTransferResult` @0x846a0f (named, opcode 39). `SendMapTransferItemUseRequest`
+(USE) is **unnamed**; the ADD_MAP sender is `sub_8478EA` (op 94, per the prior
+registry pass). So v61 needs the USE function located + opcode pinned. v48 is
+the same shape (USE unnamed). Given the uniform payload, this is opcode discovery,
+not layout discovery.
 
 ## Central open question (drives the use flow)
 

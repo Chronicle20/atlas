@@ -170,12 +170,31 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			//     verified (spec §2/§3) — legacy-phase-2 wired the writer/handler
 			//     opcodes into template_gms_{48,61,72,79}_1.json, so these two
 			//     tiers now render on legacy clients. ALLOWED.
+			//   - Cheap (tier 0) / Heart (tier 3): task-123 cheap-heart-skull-report
+			//     found NEITHER v83 nor v95's get_cashslot_item_type has an arm for
+			//     these tiers (both fall to the default -> the client's
+			//     SendConsumeCashItemUseRequest dispatcher sends NO sub-body at all
+			//     for them — verified with addresses on v83/v95, not independently
+			//     re-verified per-build on v48/61/72/79). There is therefore no wire
+			//     evidence a legacy client ever emits this op for these item ids.
+			//     ALLOWED anyway per explicit user-confirmed scope (reuses the
+			//     basic(0)/super(3) codec+scope exactly like v83+), since the
+			//     alternative — dropping the item silently — is worse and the
+			//     decode path is a no-op if no packet ever arrives.
+			//   - Skull (tier 4): v83 also has no get_cashslot_item_type arm
+			//     (falls to the same default as 0/3) — genuinely no send path <v95,
+			//     consistent with the pre-existing GMS>=95 gate in
+			//     handleMegaphoneUse. ALLOWED here as the super-megaphone shape
+			//     (same "no confirmed wire event on legacy" caveat as 0/3 above);
+			//     NOT allowed as Maple TV — handleMegaphoneUse's case 4 only takes
+			//     the TV path when GMS>=95, so a legacy MajorVersion<83 tenant can
+			//     never reach TV through this gate.
 			//   - avatar megaphone: no legacy build's serverbound send case could be
 			//     reliably located (spec §5a — cash-slot type 42 does not match the
 			//     known 4-line+whisper body on any of the four builds); consuming
 			//     the item would destroy it with no verified broadcast to render.
 			//     BLOCKED on legacy regardless of tier.
-			//   - Maple TV (tier 4/5) / item megaphone (tier 6) / triple megaphone
+			//   - Maple TV (tier 5) / item megaphone (tier 6) / triple megaphone
 			//     (tier 7): no legacy send case identified either (spec §5b for TV;
 			//     item/triple dialogs are corroborated v83+-only, absent from the
 			//     legacy SendConsumeCashItemUseRequest dispatcher). BLOCKED.
@@ -187,10 +206,12 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 					l.Warnf("Character [%d] attempted avatar megaphone item [%d] on unsupported legacy version [major %d]; ignoring without consuming.", s.CharacterId(), itemId, t.MajorVersion())
 					return
 				}
-				// ClassificationMegaphones: only basic(1)/super(2) tiers have a
-				// verified legacy serverbound codec + seeded writer table.
+				// ClassificationMegaphones per-tier legacy allow-list:
+				// 0 (Cheap/channel), 1 (basic/channel), 2 (super/world),
+				// 3 (Heart/world), 4 (Skull/world, super-shaped — see above).
+				// 5 (TV) / 6 (item) / 7 (triple) remain BLOCKED.
 				tier := (uint32(itemId) / 1000) % 10
-				if tier != 1 && tier != 2 {
+				if tier > 4 {
 					l.Warnf("Character [%d] attempted megaphone item [%d] tier [%d] unsupported on legacy version [major %d]; ignoring without consuming.", s.CharacterId(), itemId, tier, t.MajorVersion())
 					return
 				}

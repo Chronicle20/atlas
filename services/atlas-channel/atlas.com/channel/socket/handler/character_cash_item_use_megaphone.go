@@ -87,6 +87,27 @@ func handleMegaphoneUse(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 
 		// classification 507 sub-family, Cosmic UseCashItemHandler: (itemId / 1000) % 10
 		switch (uint32(itemId) / 1000) % 10 {
+		case 0: // 5070000 Cheap Megaphone — channel scope, same wire shape as basic (tier 1).
+			// IDA (task-123 cheap-heart-skull recon, GMS v95 port 13341 + v83 port
+			// 13342): get_cashslot_item_type's 507-family switch has NO arm for
+			// tier 0 on EITHER build (v95 @0x488d08 falls to default; v83
+			// @0x4864c2 falls to default) — get_consume_cash_item_type therefore
+			// returns 0, and SendConsumeCashItemUseRequest's dispatch
+			// (`lea eax,[type-0Ch]; ja def_9EB50A` @0x9eb4fa) sends type 0 straight
+			// to the default arm, which RemoveAll()s the packet buffer and returns
+			// WITHOUT any Encode call (@0x9eb65c-9eb66c) — the stock client never
+			// emits a sub-body for this item id. No wire evidence exists to derive
+			// a distinct codec from, so this reuses ItemUseMegaphone (message-only,
+			// same as tier 1) per the confirmed CHANNEL-scope routing — mirrors
+			// case 1 exactly.
+			sp := cashsb.NewItemUseMegaphone(updateTimeFirst)
+			sp.Decode(l, ctx)(r, readerOptions)
+			createMegaphoneSaga(l, ctx)(s, itemId, saga.EmitMegaphonePayload{
+				Tier: tierMegaphone, Scope: scopeChannel,
+				WorldId: f.WorldId(), ChannelId: f.ChannelId(), CharacterId: s.CharacterId(),
+				SenderName: c.Name(), SenderMedal: "",
+				Messages: []string{sp.Message()},
+			})
 		case 1: // basic megaphone — channel scope
 			sp := cashsb.NewItemUseMegaphone(updateTimeFirst)
 			sp.Decode(l, ctx)(r, readerOptions)
@@ -105,11 +126,54 @@ func handleMegaphoneUse(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 				SenderName: c.Name(), SenderMedal: "",
 				Messages: []string{sp.Message()}, WhispersOn: sp.Whisper(),
 			})
-		case 4: // 5074000 Skull Megaphone — TV family ONLY on GMS>=95 (classifier: type 0 → no send path on <95, design §1.1)
+		case 3: // 5073000 Heart Megaphone — world scope, same wire shape as super (tier 2).
+			// Same "no client send path" finding as tier 0 above (v95
+			// get_cashslot_item_type has no tier-3 arm either @0x488d08, falls to
+			// default -> type 0 -> the same no-Encode default arm). Reuses
+			// ItemUseSuperMegaphone (message+whisper) per the confirmed WORLD-scope
+			// routing — mirrors case 2 exactly.
+			sp := cashsb.NewItemUseSuperMegaphone(updateTimeFirst)
+			sp.Decode(l, ctx)(r, readerOptions)
+			createMegaphoneSaga(l, ctx)(s, itemId, saga.EmitMegaphonePayload{
+				Tier: tierSuper, Scope: scopeWorld,
+				WorldId: f.WorldId(), ChannelId: f.ChannelId(), CharacterId: s.CharacterId(),
+				SenderName: c.Name(), SenderMedal: "",
+				Messages: []string{sp.Message()}, WhispersOn: sp.Whisper(),
+			})
+		case 4: // 5074000 Skull Megaphone.
+			// IDA v83 (port 13342, get_cashslot_item_type@0x48645b): tier 4 has no
+			// arm either (falls through the 507-family if-chain to `return 0`), so
+			// <v95 genuinely has no client send path — matches the pre-existing
+			// GMS>=95 gate below.
+			// IDA v95 (port 13341, get_cashslot_item_type@0x488d08): tier 4 DOES
+			// have an arm — `case 4: result = 45;` — and
+			// SendConsumeCashItemUseRequest's dispatch (@0x9eb4fa jumptable
+			// 009EB50A) routes type 45 to the SAME arm as type 12 (basic) and 13
+			// (super) at label $LN217_18 (0x9eb811, annotated "cases 12,13,15,45").
+			// Inside that arm, type 45 takes the CSpeakerWorldDlg(bIsPowerful=1)
+			// path (@0x9eb83d, hardcoded bIsPowerful=1 unlike 12/13's
+			// type==13-conditional flag @0x9eba1b-9eba25) and the final Encode
+			// sequence (@0x9ebc44-9ebc79) is EncodeStr(message) unconditionally,
+			// then Encode1(whisper) gated on `type==13 || type==45`
+			// (@0x9ebc62-9ebc75) — i.e. Skull's v95 wire body is BYTE-IDENTICAL to
+			// Super Megaphone's (message+whisper), built via the CSpeakerWorldDlg
+			// dialog, NOT CUIMapleTV. This directly contradicts the pre-existing
+			// GMS>=95 handleMapleTVUse routing below, which this task's brief
+			// scoped OUT of (explicitly told to leave the >=95 arm unchanged) —
+			// see the task-123 cheap-heart-skull-report.md for the full escalation.
+			// Left as-is per that scope boundary; only the else (<v95) arm changes
+			// here, from a no-op warn to the verified super-megaphone routing.
 			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 				handleMapleTVUse(l, ctx, wp)(s, r, readerOptions, itemId, c, updateTimeFirst)
 			} else {
-				l.Warnf("Character [%d] used megaphone item [%d] with no send path on this version.", s.CharacterId(), itemId)
+				sp := cashsb.NewItemUseSuperMegaphone(updateTimeFirst)
+				sp.Decode(l, ctx)(r, readerOptions)
+				createMegaphoneSaga(l, ctx)(s, itemId, saga.EmitMegaphonePayload{
+					Tier: tierSuper, Scope: scopeWorld,
+					WorldId: f.WorldId(), ChannelId: f.ChannelId(), CharacterId: s.CharacterId(),
+					SenderName: c.Name(), SenderMedal: "",
+					Messages: []string{sp.Message()}, WhispersOn: sp.Whisper(),
+				})
 			}
 		case 5: // Maple TV / messenger group (5075xxx)
 			handleMapleTVUse(l, ctx, wp)(s, r, readerOptions, itemId, c, updateTimeFirst)
@@ -147,8 +211,10 @@ func handleMegaphoneUse(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 				Messages: sp.Lines(), WhispersOn: sp.Whisper(),
 			})
 		default:
-			// 5070000 Cheap / 5073000 Heart have no client send path (classifier type 0);
-			// type-8 (507x8xxx) has no item in v83 WZ (design D11).
+			// tier 8 (507x8xxx / cash slot type 15) has no item in v83 WZ (design
+			// D11); tier 9 is unassigned in the 507 family on every checked
+			// version. Cheap(0)/basic(1)/super(2)/Heart(3)/Skull(4) are all
+			// handled above; item(6)/TV(5)/triple(7) are handled elsewhere in this switch.
 			l.Warnf("Character [%d] used unsupported megaphone item [%d].", s.CharacterId(), itemId)
 		}
 	}

@@ -1,0 +1,31 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Monster Carnival - Exit - Warp back to saved MONSTER_CARNIVAL location",
+      "mapId": 980000010,
+      "portalId": "mc_out",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "return_to_saved_location",
+          "onMatch": {
+            "allow": true,
+            "operations": [
+              {
+                "type": "play_portal_sound"
+              },
+              {
+                "params": {
+                  "locationType": "MONSTER_CARNIVAL"
+                },
+                "type": "warp_to_saved_location"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "id": "mc_out",
+    "type": "portal-action"
+  }
+}

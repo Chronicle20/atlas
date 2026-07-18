@@ -1,0 +1,89 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "start",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "completeQuest",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Oh, a letter for the #rempress#k? From the #bheroes#k?!"
+            },
+            "id": "start",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "force": "true"
+                  },
+                  "type": "complete_quest"
+                },
+                {
+                  "params": {
+                    "amount": "1000"
+                  },
+                  "type": "award_exp"
+                },
+                {
+                  "params": {
+                    "itemId": "4032330",
+                    "quantity": "1"
+                  },
+                  "type": "destroy_item"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "completeQuest",
+            "type": "genericAction"
+          }
+        ]
+      },
+      "questId": 21757,
+      "questName": "Aran Letter to Empress Quest",
+      "startStateMachine": {
+        "startState": "startQuest",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "startQuest",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "21757",
+    "type": "quest-conversation"
+  }
+}

@@ -1,0 +1,169 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1052005,
+      "startState": "start",
+      "states": [
+        {
+          "id": "start",
+          "listSelection": {
+            "choices": [
+              {
+                "nextState": "generateFaceStyles",
+                "text": "Plastic Surgery: #i5152000##t5152000#"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "Hi, I pretty much shouldn't be doing this, but with a #b#t5152000##k, I will do it anyways for you. But don't forget, it will be random!"
+          },
+          "type": "listSelection"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "baseStyles": "20000,20005,20008,20012,20016,20022,20032,21000,21002,21008,21014,21020,21024,21029",
+                  "excludeEquipped": "true",
+                  "genderFilter": "true",
+                  "outputContextKey": "availableFaces",
+                  "validateExists": "true"
+                },
+                "type": "local:generate_face_styles"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "confirmSurgery"
+              }
+            ]
+          },
+          "id": "generateFaceStyles",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "checkCoupon",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "If you use the regular coupon, your face may transform into a random new look...do you still want to do it using #b#t5152000##k?"
+          },
+          "id": "confirmSurgery",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "5152000",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "performSurgery"
+              },
+              {
+                "conditions": [],
+                "nextState": "noCoupon"
+              }
+            ]
+          },
+          "id": "checkCoupon",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "outputContextKey": "selectedFace",
+                  "stylesContextKey": "availableFaces"
+                },
+                "type": "local:select_random_cosmetic"
+              },
+              {
+                "params": {
+                  "itemId": "5152000",
+                  "quantity": "1"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "styleId": "{context.selectedFace}"
+                },
+                "type": "change_face"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "surgerySuccess"
+              }
+            ]
+          },
+          "id": "performSurgery",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Enjoy your new and improved face!"
+          },
+          "id": "surgerySuccess",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Hmm ... it looks like you don't have the coupon specifically for this place. Sorry to say this, but without the coupon, there's no plastic surgery for you..."
+          },
+          "id": "noCoupon",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "1052005",
+    "type": "npc-conversation"
+  }
+}

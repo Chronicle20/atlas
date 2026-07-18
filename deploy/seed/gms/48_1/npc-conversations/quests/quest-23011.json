@@ -1,0 +1,151 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "askConfirm",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "processJobChange",
+                  "text": "Yes"
+                },
+                {
+                  "nextState": "thinkCarefully",
+                  "text": "No"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendYesNo",
+              "text": "So you've finally decided to become a Battle Mage, eh? Well, you can still change your mind. Just stop our conversation, forfeit this quest, and talk to another class trainer. So, you sure you want to become a Battle Mage? I'm not interested in teaching you unless you're a hundred percent sure..."
+            },
+            "id": "askConfirm",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Think carefully before you make your decision."
+            },
+            "id": "thinkCarefully",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "1382100",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {
+                    "itemId": "1142242",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                },
+                {
+                  "params": {
+                    "jobId": "3200"
+                  },
+                  "type": "change_job"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "welcomeMessage"
+                }
+              ]
+            },
+            "id": "processJobChange",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "secretWarning",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Okay, okay. Welcome to the Resistance, kid. From now on, you will play the role of a Battle Mage, a fierce Magician always ready to lead your party into battle."
+            },
+            "id": "welcomeMessage",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "welcomeMessage",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "But don't go spreading it around that you're a Battle Mage, hm? No need to tempt the Black Wings to come after you. From now on, I'll be your teacher. If anyone asks, you're visiting me just as a regular student, not as a member of the Resistance. I'll give you special lessons now and then. You better not fall asleep in class, hear? "
+            },
+            "id": "secretWarning",
+            "type": "dialogue"
+          }
+        ]
+      },
+      "questId": 23011,
+      "questName": "Battle Mage Job Advancement",
+      "startStateMachine": {
+        "startState": "noDialogue",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "noDialogue",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "23011",
+    "type": "quest-conversation"
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Ariant Castle - Tigun morph check portal that kicks out non-morphed players",
+      "mapId": 260000300,
+      "portalId": "ariant_queens",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "operator": "=",
+              "referenceId": "2210005",
+              "type": "buff",
+              "value": "1"
+            }
+          ],
+          "id": "tigun_morph_deny",
+          "onMatch": {
+            "allow": false,
+            "operations": []
+          }
+        },
+        {
+          "conditions": [],
+          "id": "default_allow",
+          "onMatch": {
+            "allow": true,
+            "operations": [
+              {
+                "type": "play_portal_sound"
+              },
+              {
+                "params": {
+                  "mapId": "260000300",
+                  "portalId": "7"
+                },
+                "type": "warp"
+              },
+              {
+                "params": {
+                  "message": "You, intruder! You don't have permission to roam the palace! Get out!!"
+                },
+                "type": "drop_message"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "id": "ariant_queens",
+    "type": "portal-action"
+  }
+}

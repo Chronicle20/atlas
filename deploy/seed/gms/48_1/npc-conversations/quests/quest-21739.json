@@ -1,0 +1,79 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "completeMessage",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "completeQuest",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "So, have you defeated the giant? Oh, a Black Wing agent undercover? And he GOT THE SEAL STONE OF ORBIS?! Oh, no. That's horrible! We need to develop countermeasures as soon as possible! Tell the informant on Lith about the situation."
+            },
+            "id": "completeMessage",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                },
+                {
+                  "params": {
+                    "amount": "29500"
+                  },
+                  "type": "award_exp"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "completeQuest",
+            "type": "genericAction"
+          }
+        ]
+      },
+      "questId": 21739,
+      "startStateMachine": {
+        "startState": "noStartDialogue",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "This quest has no start dialogue."
+            },
+            "id": "noStartDialogue",
+            "type": "dialogue"
+          }
+        ]
+      }
+    },
+    "id": "21739",
+    "type": "quest-conversation"
+  }
+}

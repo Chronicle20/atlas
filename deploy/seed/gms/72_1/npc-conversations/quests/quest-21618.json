@@ -1,0 +1,194 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "checkWolfInInventory",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": "<",
+                      "referenceId": "1902017",
+                      "type": "item",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "needUnequip"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "mahaAwaken"
+                }
+              ]
+            },
+            "id": "checkWolfInInventory",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "You will have to unequip the wolf first before going for the evolution."
+            },
+            "id": "needUnequip",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "completeQuest",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Step aside, behold the mighty prowess of Maha!!"
+            },
+            "id": "mahaAwaken",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                },
+                {
+                  "params": {
+                    "itemId": "1902017",
+                    "quantity": "1"
+                  },
+                  "type": "destroy_item"
+                },
+                {
+                  "params": {
+                    "itemId": "1902018",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "completeQuest",
+            "type": "genericAction"
+          }
+        ]
+      },
+      "questId": 21618,
+      "questName": "Aran lv 200 mount quest",
+      "startStateMachine": {
+        "startState": "mahaIntro",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "playerReaction",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Oh, this befriended wolf of yours... I sense some hidden powers hidden behind his furs, you see. Wat'cha say, master, if I awaken it's hidden power?"
+            },
+            "id": "mahaIntro",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "mahaIntro",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "mahaOffer",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "endChat": false,
+              "speaker": "CHARACTER",
+              "text": "Wait, can you do that?"
+            },
+            "id": "playerReaction",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "startQuest",
+                  "text": "Accept"
+                },
+                {
+                  "nextState": null,
+                  "text": "Decline"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendAcceptDecline",
+              "text": "Astonished, huh? Does all that time frozen in the glacier hindered your senses as well? Why, of course! Tell me when you're ready!"
+            },
+            "id": "mahaOffer",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "startQuest",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "21618",
+    "type": "quest-conversation"
+  }
+}

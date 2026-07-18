@@ -1,0 +1,111 @@
+{
+  "data": {
+    "attributes": {
+      "commodities": [
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 900,
+          "period": 0,
+          "templateId": 1002610,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 4000,
+          "period": 0,
+          "templateId": 1002613,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 12000,
+          "period": 0,
+          "templateId": 1002616,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 20000,
+          "period": 0,
+          "templateId": 1002619,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 4000,
+          "period": 0,
+          "templateId": 1052095,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 8000,
+          "period": 0,
+          "templateId": 1052098,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 16000,
+          "period": 0,
+          "templateId": 1052101,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 30000,
+          "period": 0,
+          "templateId": 1052104,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 60000,
+          "period": 0,
+          "templateId": 1052107,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 5000,
+          "period": 0,
+          "templateId": 1072285,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 8000,
+          "period": 0,
+          "templateId": 1072288,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        }
+      ],
+      "npcId": 1091001,
+      "recharger": false
+    },
+    "id": "1091001",
+    "type": "npc-shop"
+  }
+}

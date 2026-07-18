@@ -1,0 +1,285 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "checkMorphEnd",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": "=",
+                      "referenceId": "2210005",
+                      "type": "buff",
+                      "value": "0"
+                    }
+                  ],
+                  "nextState": "notMorphedEnd"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "checkInventorySpace"
+                }
+              ]
+            },
+            "id": "checkMorphEnd",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "What's this? I can't simply give the Queen's silk to anyone, claiming they will hand it at once to the queen. Get out of my sights."
+            },
+            "id": "notMorphedEnd",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "4031571",
+                      "type": "inventorySpace",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "giveItem"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "noSpace"
+                }
+              ]
+            },
+            "id": "checkInventorySpace",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Hey, you're lacking space to hold this, man. I will stay with it while you arrange your backpack..."
+            },
+            "id": "noSpace",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "4031571",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "successDialogue"
+                }
+              ]
+            },
+            "id": "giveItem",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "There you go. Please deliver to the queen as soon as possible, Tigun, she gets really mad if things get delayed."
+            },
+            "id": "successDialogue",
+            "type": "dialogue"
+          }
+        ]
+      },
+      "questId": 3941,
+      "questName": "Steal Queen's Silk",
+      "startStateMachine": {
+        "startState": "checkMorph",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": "=",
+                      "referenceId": "2210005",
+                      "type": "buff",
+                      "value": "0"
+                    }
+                  ],
+                  "nextState": "notMorphed"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "morphedGreeting"
+                }
+              ]
+            },
+            "id": "checkMorph",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "What's this? I can't simply give the Queen's silk to anyone, claiming they will hand it at once to the queen. Get out of my sights."
+            },
+            "id": "notMorphed",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "checkMorphAgain",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Tigun, what are you doing here?"
+            },
+            "id": "morphedGreeting",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": "=",
+                      "referenceId": "2210005",
+                      "type": "buff",
+                      "value": "0"
+                    }
+                  ],
+                  "nextState": "notMorphedSecond"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "giveSilkDialogue"
+                }
+              ]
+            },
+            "id": "checkMorphAgain",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "What's this? I can't simply give the Queen's silk to anyone, claiming they will hand it at once to the queen. Get out of my sights."
+            },
+            "id": "notMorphedSecond",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "startQuest",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "The Queen wants her silk right now? Alright, I have them here. Hold on a moment."
+            },
+            "id": "giveSilkDialogue",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "startQuest",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "3941",
+    "type": "quest-conversation"
+  }
+}

@@ -27,7 +27,7 @@ describe("load", () => {
   it("normalizes missing arrays, snapshots baseline, sets loaded", () => {
     const s = loaded([{ jobIndex: 1 }]);
     expect(s.loaded).toBe(true);
-    expect(s.templates[0].faces).toEqual([]);
+    expect(s.templates[0]!.faces).toEqual([]);
     expect(s.baseline).toEqual(s.templates);
     expect(isDirty(s)).toBe(false);
   });
@@ -38,7 +38,7 @@ describe("template lifecycle", () => {
     const s = editorReducer(loaded([tpl()]), { type: "addTemplate" });
     expect(s.templates).toHaveLength(2);
     expect(s.selectedIndex).toBe(1);
-    expect(s.templates[1]).toEqual(blankTemplate());
+    expect(s.templates[1]!).toEqual(blankTemplate());
   });
 
   it("duplicateTemplate deep-copies the selected template and selects the copy", () => {
@@ -46,10 +46,10 @@ describe("template lifecycle", () => {
     const s = editorReducer(s0, { type: "duplicateTemplate" });
     expect(s.templates).toHaveLength(2);
     expect(s.selectedIndex).toBe(1);
-    expect(s.templates[1]).toEqual(s.templates[0]);
+    expect(s.templates[1]!).toEqual(s.templates[0]);
     // deep copy: mutating the copy's array must not touch the original
-    s.templates[1].faces.push(21000);
-    expect(s.templates[0].faces).toEqual([20000]);
+    s.templates[1]!.faces.push(21000);
+    expect(s.templates[0]!.faces).toEqual([20000]);
   });
 
   it("removeTemplate selects the nearest remaining index and remaps picks", () => {
@@ -78,7 +78,7 @@ describe("edits", () => {
       field: "mapId",
       value: 100000000,
     });
-    expect(s.templates[0].mapId).toBe(100000000);
+    expect(s.templates[0]!.mapId).toBe(100000000);
     expect(isDirty(s)).toBe(true);
   });
 
@@ -89,7 +89,7 @@ describe("edits", () => {
       id: 20000,
     });
     s = editorReducer(s, { type: "addPoolEntry", pool: "faces", id: 20000 });
-    expect(s.templates[0].faces).toEqual([20000]);
+    expect(s.templates[0]!.faces).toEqual([20000]);
   });
 
   it("removePoolEntry clamps the matching preview pick", () => {
@@ -100,7 +100,7 @@ describe("edits", () => {
       pool: "faces",
       entryIndex: 1,
     });
-    expect(s.templates[0].faces).toEqual([20000]);
+    expect(s.templates[0]!.faces).toEqual([20000]);
     expect(picksFor(s, 0).faceIdx).toBe(0);
   });
 
@@ -108,7 +108,7 @@ describe("edits", () => {
     let s = loaded([tpl(), tpl()]);
     s = editorReducer(s, { type: "addPoolEntry", pool: "hairs", id: 30030 });
     s = editorReducer(s, { type: "select", index: 1 });
-    expect(s.templates[0].hairs).toEqual([30030]);
+    expect(s.templates[0]!.hairs).toEqual([30030]);
     expect(isDirty(s)).toBe(true);
   });
 });
@@ -120,7 +120,7 @@ describe("discard / savedOk", () => {
     s = editorReducer(s, { type: "addPoolEntry", pool: "faces", id: 20000 });
     s = editorReducer(s, { type: "discard" });
     expect(isDirty(s)).toBe(false);
-    expect(s.templates[0].faces).toEqual([]);
+    expect(s.templates[0]!.faces).toEqual([]);
     expect(picksFor(s, 0)).toEqual(DEFAULT_PICKS);
   });
 
@@ -129,7 +129,7 @@ describe("discard / savedOk", () => {
     s = editorReducer(s, { type: "addPoolEntry", pool: "faces", id: 20000 });
     s = editorReducer(s, { type: "savedOk" });
     expect(isDirty(s)).toBe(false);
-    expect(s.baseline[0].faces).toEqual([20000]);
+    expect(s.baseline[0]!.faces).toEqual([20000]);
   });
 });
 

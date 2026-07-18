@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"testing"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 func TestSummonSkill(t *testing.T) {
@@ -73,6 +74,7 @@ func TestSummonSkillBytes(t *testing.T) {
 //   - sub_71D5DF reads exactly ONE byte: Decode1@0x71d62e → sub_71C784(b & 0x7F)
 //     — a single stance byte masked 0x7F, and nothing else. There is NO summonSkillId
 //     int on the wire.
+//
 // Wire: int cid (upstream) + int oid + byte stance.
 // packet-audit:verify packet=summon/clientbound/SummonSkill version=gms_v79 ida=0x71d5df
 func TestSummonSkillBytesV79(t *testing.T) {
@@ -99,6 +101,7 @@ func TestSummonSkillBytesV79(t *testing.T) {
 //     (Decode4@0x848062) then case 164 calls the skill leaf sub_6E97D5@0x6e97d5.
 //   - sub_6E97D5 reads exactly ONE byte: Decode1@0x6e9824 → sub_6E8A41(b & 0x7F) —
 //     a single stance byte masked 0x7F. There is NO summonSkillId int on the wire.
+//
 // packet-audit:verify packet=summon/clientbound/SummonSkill version=gms_v72 ida=0x6e97d5
 func TestSummonSkillBytesV72(t *testing.T) {
 	in := NewSummonSkill(42, 1000001, 6)
@@ -126,6 +129,7 @@ func TestSummonSkillBytesV72(t *testing.T) {
 //     matters). It reads exactly ONE byte: Decode1@0x7a6ea9 → sub_7A601D(this,
 //     b & 0x7F) — a single stance byte masked 0x7F, and nothing else. There is NO
 //     summonSkillId int on the wire in any version.
+//
 // Wire: int cid (upstream) + int oid + byte stance.
 // packet-audit:verify packet=summon/clientbound/SummonSkill version=gms_v83 ida=0x7a6e5a
 func TestSummonSkillBytesV83(t *testing.T) {
@@ -155,6 +159,7 @@ func TestSummonSkillBytesV83(t *testing.T) {
 //   - sub_7CC920@0x7cc920 reads exactly ONE byte: Decode1@0x7cc96f → sub_7CBAD3(b &
 //     0x7F) — a single stance byte masked 0x7F, and nothing else. There is NO
 //     summonSkillId int on the wire in any version.
+//
 // Wire: int cid (upstream) + int oid + byte stance. Skill has no version gate, so the
 // v84 path is byte-identical to v83 (off-by-one confirmed clear).
 // packet-audit:verify packet=summon/clientbound/SummonSkill version=gms_v84 ida=0x7cc920
@@ -186,6 +191,7 @@ func TestSummonSkillBytesV84(t *testing.T) {
 //     It reads exactly ONE byte: Decode1@0x7f968a → SetAttackAction(this, v4 & 0x7F)
 //     — a single stance byte masked 0x7F, and nothing else. There is NO summonSkillId
 //     int on the wire in any version.
+//
 // Wire: int cid (upstream) + int oid + byte stance. Skill has no version gate, so the
 // v87 path is byte-identical to v83 (off-by-one confirmed clear).
 // packet-audit:verify packet=summon/clientbound/SummonSkill version=gms_v87 ida=0x7f963b
@@ -235,6 +241,7 @@ func TestSummonSkillBytesV95(t *testing.T) {
 //     It reads exactly ONE byte: Decode1@0x828d01 → CSummoned::SetAttackAction(this,
 //     v4 & 0x7F) — a single stance byte masked 0x7F, and nothing else. There is NO
 //     summonSkillId int on the wire in any version.
+//
 // Wire: int cid (upstream) + int oid + byte stance. Skill has no version gate, so the
 // jms185 path is byte-identical to v83.
 // packet-audit:verify packet=summon/clientbound/SummonSkill version=jms_v185 ida=0x828cb2

@@ -1,12 +1,11 @@
 package writer
 
 import (
-	"testing"
-
 	"atlas-channel/buddylist"
 	"atlas-channel/character"
 	"atlas-channel/character/teleportrock"
 	"atlas-channel/monsterbook"
+	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"

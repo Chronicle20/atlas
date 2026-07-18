@@ -3,9 +3,10 @@ package teleportrock
 import (
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 // Target models the CWvsContext::RunMapTransferItem request payload shared by

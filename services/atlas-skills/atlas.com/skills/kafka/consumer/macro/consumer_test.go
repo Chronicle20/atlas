@@ -7,10 +7,11 @@ import (
 	"atlas-skills/test"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
 	logtest "github.com/sirupsen/logrus/hooks/test"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 // buildMacro is a test helper that builds a macro and fails the test on error

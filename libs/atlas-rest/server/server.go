@@ -11,10 +11,11 @@ import (
 	"sync"
 	"time"
 
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 )
 
 type RouteInitializer func(*mux.Router, logrus.FieldLogger)
@@ -77,21 +78,23 @@ func produceRoutes(basePath string, initializers ...RouteInitializer) func(l log
 	}
 }
 
-type RouteProducer func(l logrus.FieldLogger) http.Handler
-type Builder struct {
-	l                 logrus.FieldLogger
-	ctx               context.Context
-	wg                *sync.WaitGroup
-	w                 *io.PipeWriter
-	readTimeout       time.Duration
-	writeTimeout      time.Duration
-	idleTimeout       time.Duration
-	host              string
-	port              string
-	basePath          string
-	routeInitializers []RouteInitializer
-	routerProducer    RouteProducer
-}
+type (
+	RouteProducer func(l logrus.FieldLogger) http.Handler
+	Builder       struct {
+		l                 logrus.FieldLogger
+		ctx               context.Context
+		wg                *sync.WaitGroup
+		w                 *io.PipeWriter
+		readTimeout       time.Duration
+		writeTimeout      time.Duration
+		idleTimeout       time.Duration
+		host              string
+		port              string
+		basePath          string
+		routeInitializers []RouteInitializer
+		routerProducer    RouteProducer
+	}
+)
 
 func New(l *logrus.Logger) *Builder {
 	sb := &Builder{}

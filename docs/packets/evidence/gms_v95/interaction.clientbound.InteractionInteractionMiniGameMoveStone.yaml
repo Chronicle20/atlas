@@ -1,0 +1,10 @@
+packet: interaction/clientbound/InteractionInteractionMiniGameMoveStone
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CMiniRoomBaseDlg::OnPacketBase#MemoryGameMoveStone
+    address: "0x6866a0"
+    decompile_sha256: b234024134eb674b86a5d1a1a273b12b293ba9abb66390097cc1242239228bd4
+verifies:
+    - libs/atlas-packet/interaction/clientbound/interaction_minigame_test.go#TestInteractionMiniGameMoveStoneRoundTrip

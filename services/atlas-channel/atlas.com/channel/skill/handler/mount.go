@@ -8,11 +8,12 @@ import (
 	"context"
 	"math"
 
+	"github.com/sirupsen/logrus"
+
 	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
-	"github.com/sirupsen/logrus"
 )
 
 // MountBuffDuration is the duration applied to the MONSTER_RIDING buff. Mounts

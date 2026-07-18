@@ -1,6 +1,7 @@
 package tenant_test
 
 import (
+	"atlas-party-quests/tenant"
 	"context"
 	"fmt"
 	"net/http"
@@ -9,11 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"atlas-party-quests/tenant"
-
-	atlastenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	atlastenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // tenantDoc renders a JSON:API document for tenants [from, to]. Each tenant

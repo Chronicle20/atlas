@@ -10,10 +10,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	inventory2 "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	inventory2 "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // TestPetAssetEnrichmentDecorator_PreservesEquipmentLook is a regression guard

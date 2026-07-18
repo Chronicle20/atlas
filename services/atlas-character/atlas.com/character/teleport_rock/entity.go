@@ -1,9 +1,10 @@
 package teleport_rock
 
 import (
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 func Migration(db *gorm.DB) error {

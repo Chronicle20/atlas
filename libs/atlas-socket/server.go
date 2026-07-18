@@ -11,12 +11,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/crypto"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 type OpReader interface {
@@ -32,8 +33,7 @@ type OpReadWriter interface {
 	OpWriter
 }
 
-type ByteReadWriter struct {
-}
+type ByteReadWriter struct{}
 
 func (b ByteReadWriter) Read(r *request.Reader) uint16 {
 	return uint16(r.ReadByte())
@@ -45,8 +45,7 @@ func (b ByteReadWriter) Write(op uint16) func(w *response.Writer) {
 	}
 }
 
-type ShortReadWriter struct {
-}
+type ShortReadWriter struct{}
 
 func (s ShortReadWriter) Read(r *request.Reader) uint16 {
 	return r.ReadUint16()

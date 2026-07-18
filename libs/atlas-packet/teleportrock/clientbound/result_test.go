@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"testing"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
+
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
-	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 // Wire (design §1 Q4, identical v83 0xA25268 / v95 0x9F9F90): byte mode, byte

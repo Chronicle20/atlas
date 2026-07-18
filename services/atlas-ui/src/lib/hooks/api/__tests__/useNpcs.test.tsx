@@ -1,85 +1,89 @@
-import { vi, type Mocked } from 'vitest';
+import { vi, type Mocked } from "vitest";
 /**
  * Tests for useNpcs React Query hooks
  */
 
-import { renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
-import { 
-  useNPCs, 
-  useNPC, 
-  useNPCsWithShops, 
-  useNPCsWithConversations, 
+import { renderHook, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { ReactNode } from "react";
+import {
+  useNPCs,
+  useNPC,
+  useNPCsWithShops,
+  useNPCsWithConversations,
   useNPCShop,
   useCreateShop,
   useUpdateShop,
   useCreateCommodity,
   useUpdateCommodity,
   useDeleteCommodity,
-  npcKeys 
-} from '../useNpcs';
-import { npcsService } from '@/services/api/npcs.service';
-import type { NPC, Shop, Commodity, CommodityAttributes, ShopResponse } from '@/services/api/npcs.service';
-import type { Tenant } from '@/types/models/tenant';
+  npcKeys,
+} from "../useNpcs";
+import { npcsService } from "@/services/api/npcs.service";
+import type {
+  NPC,
+  Shop,
+  Commodity,
+  CommodityAttributes,
+  ShopResponse,
+} from "@/services/api/npcs.service";
+import type { Tenant } from "@/types/models/tenant";
 
 // Mock the npcsService
-vi.mock('@/services/api/npcs.service');
+vi.mock("@/services/api/npcs.service");
 const mockNpcsService = npcsService as Mocked<typeof npcsService>;
 
 // Mock data
 const mockTenant: Tenant = {
-  id: 'tenant-1',
+  id: "tenant-1",
   attributes: {
-    name: 'Test Tenant',
-    region: 'GMS',
+    name: "Test Tenant",
+    region: "GMS",
     majorVersion: 83,
     minorVersion: 1,
-  }
+  },
 };
 
 const mockNPCs: NPC[] = [
   {
     id: 1,
     hasShop: true,
-    hasConversation: false
+    hasConversation: false,
   },
   {
     id: 2,
     hasShop: false,
-    hasConversation: true
+    hasConversation: true,
   },
   {
     id: 3,
     hasShop: true,
-    hasConversation: true
-  }
+    hasConversation: true,
+  },
 ];
 
 const mockShop: Shop = {
-  id: 'shop-1',
-  type: 'shops',
+  id: "shop-1",
+  type: "shops",
   attributes: {
     npcId: 1,
-    recharger: false
+    recharger: false,
   },
   relationships: {
     commodities: {
-      data: [
-        { type: 'commodities', id: 'commodity-1' }
-      ]
-    }
-  }
+      data: [{ type: "commodities", id: "commodity-1" }],
+    },
+  },
 };
 
 const mockShopResponse: ShopResponse = {
   data: mockShop,
-  included: []
+  included: [],
 };
 
 const mockCommodity: Commodity = {
-  id: 'commodity-1',
-  type: 'commodities',
+  id: "commodity-1",
+  type: "commodities",
   attributes: {
     templateId: 1000,
     mesoPrice: 100,
@@ -87,8 +91,8 @@ const mockCommodity: Commodity = {
     tokenTemplateId: 0,
     tokenPrice: 0,
     period: 0,
-    levelLimit: 0
-  }
+    levelLimit: 0,
+  },
 };
 
 const mockCommodityAttributes: CommodityAttributes = {
@@ -98,7 +102,7 @@ const mockCommodityAttributes: CommodityAttributes = {
   tokenTemplateId: 0,
   tokenPrice: 0,
   period: 0,
-  levelLimit: 0
+  levelLimit: 0,
 };
 
 // Test wrapper component
@@ -112,15 +116,13 @@ function createWrapper() {
   });
 
   const TestWrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
-  TestWrapper.displayName = 'TestWrapper';
+  TestWrapper.displayName = "TestWrapper";
   return TestWrapper;
 }
 
-describe('useNpcs hooks', () => {
+describe("useNpcs hooks", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -133,8 +135,8 @@ describe('useNpcs hooks', () => {
   // QUERY HOOKS TESTS
   // ============================================================================
 
-  describe('useNPCs', () => {
-    it('should fetch all NPCs successfully', async () => {
+  describe("useNPCs", () => {
+    it("should fetch all NPCs successfully", async () => {
       mockNpcsService.getAllNPCs.mockResolvedValue(mockNPCs);
 
       const { result } = renderHook(() => useNPCs(mockTenant), {
@@ -146,22 +148,24 @@ describe('useNpcs hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockNPCs);
-      expect(mockNpcsService.getAllNPCs).toHaveBeenCalledWith({ useCache: false });
+      expect(mockNpcsService.getAllNPCs).toHaveBeenCalledWith({
+        useCache: false,
+      });
     });
 
-    it('should not fetch when tenant is not provided', () => {
+    it("should not fetch when tenant is not provided", () => {
       mockNpcsService.getAllNPCs.mockResolvedValue(mockNPCs);
 
       const { result } = renderHook(() => useNPCs(null as unknown as Tenant), {
         wrapper: createWrapper(),
       });
 
-      expect(result.current.fetchStatus).toBe('idle');
+      expect(result.current.fetchStatus).toBe("idle");
       expect(mockNpcsService.getAllNPCs).not.toHaveBeenCalled();
     });
 
-    it('should handle errors gracefully', async () => {
-      const error = new Error('Failed to fetch NPCs');
+    it("should handle errors gracefully", async () => {
+      const error = new Error("Failed to fetch NPCs");
       mockNpcsService.getAllNPCs.mockRejectedValue(error);
 
       const { result } = renderHook(() => useNPCs(mockTenant), {
@@ -176,8 +180,8 @@ describe('useNpcs hooks', () => {
     });
   });
 
-  describe('useNPC', () => {
-    it('should fetch specific NPC successfully', async () => {
+  describe("useNPC", () => {
+    it("should fetch specific NPC successfully", async () => {
       mockNpcsService.getNPCById.mockResolvedValue(mockNPCs[0]!);
 
       const { result } = renderHook(() => useNPC(mockTenant, 1), {
@@ -189,10 +193,12 @@ describe('useNpcs hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockNPCs[0]);
-      expect(mockNpcsService.getNPCById).toHaveBeenCalledWith(1, { useCache: false });
+      expect(mockNpcsService.getNPCById).toHaveBeenCalledWith(1, {
+        useCache: false,
+      });
     });
 
-    it('should return null when NPC is not found', async () => {
+    it("should return null when NPC is not found", async () => {
       mockNpcsService.getNPCById.mockResolvedValue(null);
 
       const { result } = renderHook(() => useNPC(mockTenant, 999), {
@@ -207,9 +213,9 @@ describe('useNpcs hooks', () => {
     });
   });
 
-  describe('useNPCsWithShops', () => {
-    it('should fetch NPCs with shops successfully', async () => {
-      const npcsWithShops = mockNPCs.filter(npc => npc.hasShop);
+  describe("useNPCsWithShops", () => {
+    it("should fetch NPCs with shops successfully", async () => {
+      const npcsWithShops = mockNPCs.filter((npc) => npc.hasShop);
       mockNpcsService.getNPCsWithShops.mockResolvedValue(npcsWithShops);
 
       const { result } = renderHook(() => useNPCsWithShops(mockTenant), {
@@ -221,30 +227,41 @@ describe('useNpcs hooks', () => {
       });
 
       expect(result.current.data).toEqual(npcsWithShops);
-      expect(mockNpcsService.getNPCsWithShops).toHaveBeenCalledWith({ useCache: false });
+      expect(mockNpcsService.getNPCsWithShops).toHaveBeenCalledWith({
+        useCache: false,
+      });
     });
   });
 
-  describe('useNPCsWithConversations', () => {
-    it('should fetch NPCs with conversations successfully', async () => {
-      const npcsWithConversations = mockNPCs.filter(npc => npc.hasConversation);
-      mockNpcsService.getNPCsWithConversations.mockResolvedValue(npcsWithConversations);
+  describe("useNPCsWithConversations", () => {
+    it("should fetch NPCs with conversations successfully", async () => {
+      const npcsWithConversations = mockNPCs.filter(
+        (npc) => npc.hasConversation,
+      );
+      mockNpcsService.getNPCsWithConversations.mockResolvedValue(
+        npcsWithConversations,
+      );
 
-      const { result } = renderHook(() => useNPCsWithConversations(mockTenant), {
-        wrapper: createWrapper(),
-      });
+      const { result } = renderHook(
+        () => useNPCsWithConversations(mockTenant),
+        {
+          wrapper: createWrapper(),
+        },
+      );
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
       expect(result.current.data).toEqual(npcsWithConversations);
-      expect(mockNpcsService.getNPCsWithConversations).toHaveBeenCalledWith({ useCache: false });
+      expect(mockNpcsService.getNPCsWithConversations).toHaveBeenCalledWith({
+        useCache: false,
+      });
     });
   });
 
-  describe('useNPCShop', () => {
-    it('should fetch NPC shop successfully', async () => {
+  describe("useNPCShop", () => {
+    it("should fetch NPC shop successfully", async () => {
       mockNpcsService.getNPCShop.mockResolvedValue(mockShopResponse);
 
       const { result } = renderHook(() => useNPCShop(mockTenant, 1), {
@@ -256,7 +273,9 @@ describe('useNpcs hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockShopResponse);
-      expect(mockNpcsService.getNPCShop).toHaveBeenCalledWith(1, { useCache: false });
+      expect(mockNpcsService.getNPCShop).toHaveBeenCalledWith(1, {
+        useCache: false,
+      });
     });
   });
 
@@ -264,8 +283,8 @@ describe('useNpcs hooks', () => {
   // MUTATION HOOKS TESTS
   // ============================================================================
 
-  describe('useCreateShop', () => {
-    it('should create shop successfully', async () => {
+  describe("useCreateShop", () => {
+    it("should create shop successfully", async () => {
       mockNpcsService.createShop.mockResolvedValue(mockShop);
 
       const { result } = renderHook(() => useCreateShop(), {
@@ -273,12 +292,12 @@ describe('useNpcs hooks', () => {
       });
 
       const commodities = [mockCommodityAttributes];
-      
+
       result.current.mutate({
         npcId: 1,
         commodities,
         tenant: mockTenant,
-        recharger: false
+        recharger: false,
       });
 
       await waitFor(() => {
@@ -286,11 +305,16 @@ describe('useNpcs hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockShop);
-      expect(mockNpcsService.createShop).toHaveBeenCalledWith(1, commodities, false, undefined);
+      expect(mockNpcsService.createShop).toHaveBeenCalledWith(
+        1,
+        commodities,
+        false,
+        undefined,
+      );
     });
 
-    it('should handle create shop errors', async () => {
-      const error = new Error('Failed to create shop');
+    it("should handle create shop errors", async () => {
+      const error = new Error("Failed to create shop");
       mockNpcsService.createShop.mockRejectedValue(error);
 
       const { result } = renderHook(() => useCreateShop(), {
@@ -300,7 +324,7 @@ describe('useNpcs hooks', () => {
       result.current.mutate({
         npcId: 1,
         commodities: [mockCommodityAttributes],
-        tenant: mockTenant
+        tenant: mockTenant,
       });
 
       await waitFor(() => {
@@ -311,8 +335,8 @@ describe('useNpcs hooks', () => {
     });
   });
 
-  describe('useUpdateShop', () => {
-    it('should update shop successfully', async () => {
+  describe("useUpdateShop", () => {
+    it("should update shop successfully", async () => {
       mockNpcsService.updateShop.mockResolvedValue(mockShop);
 
       const { result } = renderHook(() => useUpdateShop(), {
@@ -320,12 +344,12 @@ describe('useNpcs hooks', () => {
       });
 
       const commodities = [mockCommodity];
-      
+
       result.current.mutate({
         npcId: 1,
         commodities,
         tenant: mockTenant,
-        recharger: true
+        recharger: true,
       });
 
       await waitFor(() => {
@@ -333,12 +357,17 @@ describe('useNpcs hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockShop);
-      expect(mockNpcsService.updateShop).toHaveBeenCalledWith(1, commodities, true, undefined);
+      expect(mockNpcsService.updateShop).toHaveBeenCalledWith(
+        1,
+        commodities,
+        true,
+        undefined,
+      );
     });
   });
 
-  describe('useCreateCommodity', () => {
-    it('should create commodity successfully', async () => {
+  describe("useCreateCommodity", () => {
+    it("should create commodity successfully", async () => {
       mockNpcsService.createCommodity.mockResolvedValue(mockCommodity);
 
       const { result } = renderHook(() => useCreateCommodity(), {
@@ -348,7 +377,7 @@ describe('useNpcs hooks', () => {
       result.current.mutate({
         npcId: 1,
         commodityAttributes: mockCommodityAttributes,
-        tenant: mockTenant
+        tenant: mockTenant,
       });
 
       await waitFor(() => {
@@ -356,12 +385,16 @@ describe('useNpcs hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockCommodity);
-      expect(mockNpcsService.createCommodity).toHaveBeenCalledWith(1, mockCommodityAttributes, undefined);
+      expect(mockNpcsService.createCommodity).toHaveBeenCalledWith(
+        1,
+        mockCommodityAttributes,
+        undefined,
+      );
     });
   });
 
-  describe('useUpdateCommodity', () => {
-    it('should update commodity successfully', async () => {
+  describe("useUpdateCommodity", () => {
+    it("should update commodity successfully", async () => {
       mockNpcsService.updateCommodity.mockResolvedValue(mockCommodity);
 
       const { result } = renderHook(() => useUpdateCommodity(), {
@@ -369,12 +402,12 @@ describe('useNpcs hooks', () => {
       });
 
       const updates = { mesoPrice: 150 };
-      
+
       result.current.mutate({
         npcId: 1,
-        commodityId: 'commodity-1',
+        commodityId: "commodity-1",
         commodityAttributes: updates,
-        tenant: mockTenant
+        tenant: mockTenant,
       });
 
       await waitFor(() => {
@@ -382,12 +415,17 @@ describe('useNpcs hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockCommodity);
-      expect(mockNpcsService.updateCommodity).toHaveBeenCalledWith(1, 'commodity-1', updates, undefined);
+      expect(mockNpcsService.updateCommodity).toHaveBeenCalledWith(
+        1,
+        "commodity-1",
+        updates,
+        undefined,
+      );
     });
   });
 
-  describe('useDeleteCommodity', () => {
-    it('should delete commodity successfully', async () => {
+  describe("useDeleteCommodity", () => {
+    it("should delete commodity successfully", async () => {
       mockNpcsService.deleteCommodity.mockResolvedValue(undefined);
 
       const { result } = renderHook(() => useDeleteCommodity(), {
@@ -396,15 +434,19 @@ describe('useNpcs hooks', () => {
 
       result.current.mutate({
         npcId: 1,
-        commodityId: 'commodity-1',
-        tenant: mockTenant
+        commodityId: "commodity-1",
+        tenant: mockTenant,
       });
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(mockNpcsService.deleteCommodity).toHaveBeenCalledWith(1, 'commodity-1', undefined);
+      expect(mockNpcsService.deleteCommodity).toHaveBeenCalledWith(
+        1,
+        "commodity-1",
+        undefined,
+      );
     });
   });
 
@@ -412,23 +454,56 @@ describe('useNpcs hooks', () => {
   // QUERY KEY TESTS
   // ============================================================================
 
-  describe('npcKeys', () => {
-    it('should generate correct query keys', () => {
-      expect(npcKeys.all).toEqual(['npcs']);
-      expect(npcKeys.lists()).toEqual(['npcs', 'list']);
-      expect(npcKeys.list(mockTenant)).toEqual(['npcs', 'list', 'tenant-1', undefined]);
-      expect(npcKeys.details()).toEqual(['npcs', 'detail']);
-      expect(npcKeys.detail(mockTenant, 1)).toEqual(['npcs', 'detail', 'tenant-1', 1]);
-      expect(npcKeys.shops()).toEqual(['npcs', 'shops']);
-      expect(npcKeys.shop(mockTenant, 1)).toEqual(['npcs', 'shops', 'tenant-1', 1]);
-      expect(npcKeys.withShops(mockTenant)).toEqual(['npcs', 'withShops', 'tenant-1']);
-      expect(npcKeys.withConversations(mockTenant)).toEqual(['npcs', 'withConversations', 'tenant-1']);
+  describe("npcKeys", () => {
+    it("should generate correct query keys", () => {
+      expect(npcKeys.all).toEqual(["npcs"]);
+      expect(npcKeys.lists()).toEqual(["npcs", "list"]);
+      expect(npcKeys.list(mockTenant)).toEqual([
+        "npcs",
+        "list",
+        "tenant-1",
+        undefined,
+      ]);
+      expect(npcKeys.details()).toEqual(["npcs", "detail"]);
+      expect(npcKeys.detail(mockTenant, 1)).toEqual([
+        "npcs",
+        "detail",
+        "tenant-1",
+        1,
+      ]);
+      expect(npcKeys.shops()).toEqual(["npcs", "shops"]);
+      expect(npcKeys.shop(mockTenant, 1)).toEqual([
+        "npcs",
+        "shops",
+        "tenant-1",
+        1,
+      ]);
+      expect(npcKeys.withShops(mockTenant)).toEqual([
+        "npcs",
+        "withShops",
+        "tenant-1",
+      ]);
+      expect(npcKeys.withConversations(mockTenant)).toEqual([
+        "npcs",
+        "withConversations",
+        "tenant-1",
+      ]);
     });
 
-    it('should handle null tenant in query keys', () => {
-      expect(npcKeys.list(null)).toEqual(['npcs', 'list', 'no-tenant', undefined]);
-      expect(npcKeys.detail(null, 1)).toEqual(['npcs', 'detail', 'no-tenant', 1]);
-      expect(npcKeys.shop(null, 1)).toEqual(['npcs', 'shops', 'no-tenant', 1]);
+    it("should handle null tenant in query keys", () => {
+      expect(npcKeys.list(null)).toEqual([
+        "npcs",
+        "list",
+        "no-tenant",
+        undefined,
+      ]);
+      expect(npcKeys.detail(null, 1)).toEqual([
+        "npcs",
+        "detail",
+        "no-tenant",
+        1,
+      ]);
+      expect(npcKeys.shop(null, 1)).toEqual(["npcs", "shops", "no-tenant", 1]);
     });
   });
 });

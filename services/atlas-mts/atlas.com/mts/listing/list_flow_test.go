@@ -8,10 +8,11 @@ import (
 	"testing"
 	"time"
 
-	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 )
 
 // captureEmitter records the saga handed to it instead of producing to Kafka, so
@@ -66,7 +67,7 @@ func validFixedListRequest() listing.ListRequest {
 		WorldId:             0,
 		SellerId:            100,
 		SellerName:          "Seller",
-		SellerLevel:         30, // over the level-10 sell floor
+		SellerLevel:         30,      // over the level-10 sell floor
 		ItemId:              1302000, // a sword — not a rechargeable
 		SaleType:            listing.SaleTypeFixed,
 		SourceInventoryType: 1,

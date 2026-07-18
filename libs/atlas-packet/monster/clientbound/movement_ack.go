@@ -4,20 +4,21 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const MonsterMovementAckWriter = "MoveMonsterAck"
 
 // packet-audit:fname CMob::OnCtrlAck
 type MovementAck struct {
-	uniqueId  uint32
-	moveId    int16
-	mp        uint16
-	useSkills bool
-	skillId   byte
+	uniqueId   uint32
+	moveId     int16
+	mp         uint16
+	useSkills  bool
+	skillId    byte
 	skillLevel byte
 }
 
@@ -25,13 +26,13 @@ func NewMonsterMovementAck(uniqueId uint32, moveId int16, mp uint16, useSkills b
 	return MovementAck{uniqueId: uniqueId, moveId: moveId, mp: mp, useSkills: useSkills, skillId: skillId, skillLevel: skillLevel}
 }
 
-func (m MovementAck) UniqueId() uint32   { return m.uniqueId }
-func (m MovementAck) MoveId() int16      { return m.moveId }
-func (m MovementAck) Mp() uint16         { return m.mp }
-func (m MovementAck) UseSkills() bool    { return m.useSkills }
-func (m MovementAck) SkillId() byte      { return m.skillId }
-func (m MovementAck) SkillLevel() byte   { return m.skillLevel }
-func (m MovementAck) Operation() string  { return MonsterMovementAckWriter }
+func (m MovementAck) UniqueId() uint32  { return m.uniqueId }
+func (m MovementAck) MoveId() int16     { return m.moveId }
+func (m MovementAck) Mp() uint16        { return m.mp }
+func (m MovementAck) UseSkills() bool   { return m.useSkills }
+func (m MovementAck) SkillId() byte     { return m.skillId }
+func (m MovementAck) SkillLevel() byte  { return m.skillLevel }
+func (m MovementAck) Operation() string { return MonsterMovementAckWriter }
 func (m MovementAck) String() string {
 	return fmt.Sprintf("uniqueId [%d], moveId [%d], useSkills [%t]", m.uniqueId, m.moveId, m.useSkills)
 }

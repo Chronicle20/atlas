@@ -1,13 +1,17 @@
 package monsterbook
 
 import (
-	"context"
-
 	"atlas-monster-book/card"
 	"atlas-monster-book/collection"
-	consumer2 "atlas-monster-book/kafka/consumer"
 	"atlas-monster-book/kafka/message"
+	"context"
+
+	consumer2 "atlas-monster-book/kafka/consumer"
+
 	mbmsg "atlas-monster-book/kafka/message/monsterbook"
+
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
@@ -18,8 +22,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {

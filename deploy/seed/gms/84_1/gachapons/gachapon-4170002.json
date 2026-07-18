@@ -1,0 +1,52 @@
+{
+  "data": {
+    "type": "gachapon",
+    "id": "4170002",
+    "attributes": {
+      "name": "Pigmy Egg (placeholder)",
+      "kind": "incubator",
+      "npcIds": [],
+      "commonWeight": 0,
+      "uncommonWeight": 0,
+      "rareWeight": 0,
+      "items": [
+        {
+          "itemId": 1002000,
+          "quantity": 1,
+          "tier": "common",
+          "weight": 4
+        },
+        {
+          "itemId": 1302000,
+          "quantity": 1,
+          "tier": "common",
+          "weight": 1
+        },
+        {
+          "itemId": 2000000,
+          "quantity": 50,
+          "tier": "common",
+          "weight": 40
+        },
+        {
+          "itemId": 2000001,
+          "quantity": 50,
+          "tier": "common",
+          "weight": 30
+        },
+        {
+          "itemId": 2000003,
+          "quantity": 50,
+          "tier": "common",
+          "weight": 15
+        },
+        {
+          "itemId": 2040000,
+          "quantity": 1,
+          "tier": "common",
+          "weight": 10
+        }
+      ]
+    }
+  }
+}

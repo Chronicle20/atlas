@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const GeneralChatWriter = "CharacterChatGeneral"
@@ -25,8 +26,8 @@ func NewGeneralChat(characterId uint32, gm bool, message string, show bool) Gene
 
 func (m GeneralChat) CharacterId() uint32 { return m.characterId }
 func (m GeneralChat) Gm() bool            { return m.gm }
-func (m GeneralChat) Message() string      { return m.message }
-func (m GeneralChat) Show() bool           { return m.show }
+func (m GeneralChat) Message() string     { return m.message }
+func (m GeneralChat) Show() bool          { return m.show }
 
 func (m GeneralChat) Operation() string { return GeneralChatWriter }
 func (m GeneralChat) String() string {

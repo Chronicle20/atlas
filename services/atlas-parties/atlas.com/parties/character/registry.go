@@ -5,11 +5,12 @@ import (
 	"errors"
 	"strconv"
 
+	goredis "github.com/redis/go-redis/v9"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	goredis "github.com/redis/go-redis/v9"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 var ErrNotFound = errors.New("not found")

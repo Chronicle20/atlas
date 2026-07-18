@@ -5,8 +5,9 @@ import (
 	"encoding/binary"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	testlog "github.com/sirupsen/logrus/hooks/test"
+
+	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 // asciiBytes returns the on-wire encoding of an ASCII string: a 2-byte

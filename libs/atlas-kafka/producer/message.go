@@ -3,8 +3,9 @@ package producer
 import (
 	"encoding/json"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/segmentio/kafka-go"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 func emptyHeaders() ([]kafka.Header, error) {
@@ -47,7 +48,7 @@ func transformer(rm RawMessage) (kafka.Message, error) {
 	}
 
 	m := kafka.Message{Key: rm.Key, Value: value}
-	//m.Headers, err = produceHeaders(decorators...)
+	// m.Headers, err = produceHeaders(decorators...)
 	return m, nil
 }
 

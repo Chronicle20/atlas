@@ -18,11 +18,11 @@ import (
 // consumer dispatches commands to the right method without exercising the
 // real registry/producer plumbing.
 type fakeProcessor struct {
-	mu          sync.Mutex
-	createCalls []mistKafka.CreateCommandBody
+	mu           sync.Mutex
+	createCalls  []mistKafka.CreateCommandBody
 	destroyCalls []destroyCall
-	createErr   error
-	destroyErr  error
+	createErr    error
+	destroyErr   error
 }
 
 type destroyCall struct {

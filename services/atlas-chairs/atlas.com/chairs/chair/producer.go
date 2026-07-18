@@ -3,10 +3,11 @@ package chair
 import (
 	chair2 "atlas-chairs/kafka/message/chair"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 )
 
 func statusEventUsedProvider(field field.Model, chairType string, chairId uint32, characterId uint32) model.Provider[[]kafka.Message] {

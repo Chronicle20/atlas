@@ -45,7 +45,9 @@ function RewardRowWidget({ reward }: { reward: RewardRow }) {
   // and nothing rounds down to a false 0.000%.
   const pct = (reward.chance * 100).toFixed(3);
   const displayName =
-    isLoading && !name ? `Item #${reward.itemId}` : name || `Item #${reward.itemId}`;
+    isLoading && !name
+      ? `Item #${reward.itemId}`
+      : name || `Item #${reward.itemId}`;
 
   return (
     <Link

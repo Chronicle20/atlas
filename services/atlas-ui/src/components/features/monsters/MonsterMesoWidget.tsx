@@ -31,7 +31,9 @@ export function MonsterMesoWidget({ drop }: MonsterMesoWidgetProps) {
         <TooltipContent>
           <div className="flex gap-4">
             <span className="text-muted-foreground">Chance</span>
-            <span className="ml-auto">{drop.attributes.chance.toLocaleString()}</span>
+            <span className="ml-auto">
+              {drop.attributes.chance.toLocaleString()}
+            </span>
           </div>
         </TooltipContent>
       </Tooltip>

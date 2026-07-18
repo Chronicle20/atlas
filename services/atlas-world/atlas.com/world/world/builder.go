@@ -7,9 +7,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
-var (
-	ErrMissingName = errors.New("world name is required")
-)
+var ErrMissingName = errors.New("world name is required")
 
 type modelBuilder struct {
 	id                 world.Id

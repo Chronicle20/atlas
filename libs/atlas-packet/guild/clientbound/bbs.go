@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const GuildBBSWriter = "GuildBBS"
@@ -239,11 +240,15 @@ type BBSEntryNotFound struct {
 
 func NewBBSEntryNotFound(mode byte) BBSEntryNotFound { return BBSEntryNotFound{mode: mode} }
 func (m BBSEntryNotFound) Operation() string         { return GuildBBSWriter }
-func (m BBSEntryNotFound) String() string            { return fmt.Sprintf("bbs entry not found mode [%d]", m.mode) }
+func (m BBSEntryNotFound) String() string {
+	return fmt.Sprintf("bbs entry not found mode [%d]", m.mode)
+}
+
 func (m BBSEntryNotFound) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
+
 func (m *BBSEntryNotFound) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }

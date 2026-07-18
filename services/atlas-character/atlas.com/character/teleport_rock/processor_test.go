@@ -1,17 +1,18 @@
 package teleport_rock
 
 import (
+	"atlas-character/kafka/message"
 	"context"
 	"encoding/json"
 	"testing"
 
-	"atlas-character/kafka/message"
 	teleportrock2 "atlas-character/kafka/message/teleportrock"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus/hooks/test"
 
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus/hooks/test"
 )
 
 func testContext(t *testing.T) context.Context {

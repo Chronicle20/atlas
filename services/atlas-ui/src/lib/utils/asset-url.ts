@@ -7,10 +7,10 @@ export function getAssetIconUrl(
   region: string,
   majorVersion: number,
   minorVersion: number,
-  category: 'npc' | 'mob' | 'item' | 'skill' | 'reactor' | 'map',
+  category: "npc" | "mob" | "item" | "skill" | "reactor" | "map",
   entityId: number,
 ): string {
-  const baseUrl = import.meta.env.VITE_ASSET_BASE_URL || '/api/assets';
+  const baseUrl = import.meta.env.VITE_ASSET_BASE_URL || "/api/assets";
   const version = `${majorVersion}.${minorVersion}`;
   return `${baseUrl}/${tenantId}/${region}/${version}/${category}/${entityId}/icon.png`;
 }
@@ -26,9 +26,25 @@ export function getWorldIconUrl(
   minorVersion: number,
   worldId: number,
 ): string {
-  const baseUrl = import.meta.env.VITE_ASSET_BASE_URL || '/api/assets';
+  const baseUrl = import.meta.env.VITE_ASSET_BASE_URL || "/api/assets";
   const version = `${majorVersion}.${minorVersion}`;
   return `${baseUrl}/${tenantId}/${region}/${version}/world-icon/${worldId}/icon.png`;
+}
+
+/**
+ * Constructs a URL for the sealed-item padlock overlay extracted from
+ * UI.wz/UIWindow.img/ItemProtector/Icon. The UI worker writes it under the
+ * `ui/item-protector` category; one icon serves every lock duration.
+ */
+export function getItemProtectorIconUrl(
+  tenantId: string,
+  region: string,
+  majorVersion: number,
+  minorVersion: number,
+): string {
+  const baseUrl = import.meta.env.VITE_ASSET_BASE_URL || "/api/assets";
+  const version = `${majorVersion}.${minorVersion}`;
+  return `${baseUrl}/${tenantId}/${region}/${version}/ui/item-protector/icon.png`;
 }
 
 /**
@@ -41,9 +57,9 @@ export function getMapImageUrl(
   majorVersion: number,
   minorVersion: number,
   mapId: number | string,
-  kind: 'render' | 'minimap',
+  kind: "render" | "minimap",
 ): string {
-  const baseUrl = import.meta.env.VITE_ASSET_BASE_URL || '/api/assets';
+  const baseUrl = import.meta.env.VITE_ASSET_BASE_URL || "/api/assets";
   const version = `${majorVersion}.${minorVersion}`;
   return `${baseUrl}/${tenantId}/${region}/${version}/map/${mapId}/${kind}.png`;
 }

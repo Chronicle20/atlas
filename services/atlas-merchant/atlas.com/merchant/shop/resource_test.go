@@ -1,6 +1,10 @@
 package shop_test
 
 import (
+	"atlas-merchant/frederick"
+	"atlas-merchant/kafka/message/asset"
+	"atlas-merchant/listing"
+	"atlas-merchant/shop"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -9,16 +13,13 @@ import (
 	"testing"
 
 	blacklistpkg "atlas-merchant/blacklist"
-	"atlas-merchant/frederick"
+
 	message "atlas-merchant/kafka/message"
-	"atlas-merchant/kafka/message/asset"
-	"atlas-merchant/listing"
+
 	searchcountpkg "atlas-merchant/searchcount"
-	"atlas-merchant/shop"
+
 	visitpkg "atlas-merchant/visit"
 
-	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -27,6 +28,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
+
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type testServerInformation struct{}

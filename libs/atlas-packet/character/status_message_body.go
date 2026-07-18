@@ -4,12 +4,13 @@ import (
 	"context"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	atlas_packet "github.com/Chronicle20/atlas/libs/atlas-packet"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
-	"github.com/sirupsen/logrus"
 )
 
 func CharacterStatusMessageDropPickUpItemUnavailableBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
@@ -92,7 +93,8 @@ func CharacterStatusMessageOperationCashItemExpireBody(itemId uint32) func(logru
 func CharacterStatusMessageOperationIncreaseExperienceBody(white bool, amount int32, inChat bool, monsterBookBonus int32,
 	mobEventBonusPercentage byte, partyBonusPercentage byte, weddingBonusEXP int32, playTimeHour byte,
 	questBonusRate byte, questBonusRemainCount byte, partyBonusEventRate byte, partyBonusExp int32,
-	itemBonusEXP int32, premiumIPExp int32, rainbowWeekEventEXP int32, partyEXPRingEXP int32, cakePieEventBonus int32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	itemBonusEXP int32, premiumIPExp int32, rainbowWeekEventEXP int32, partyEXPRingEXP int32, cakePieEventBonus int32,
+) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", "INCREASE_EXPERIENCE", func(mode byte) packet.Encoder {
 		return clientbound.NewStatusMessageIncreaseExperience(mode,
 			white, amount, inChat, monsterBookBonus,

@@ -42,11 +42,20 @@ describe("accountsService.getAccountsPage", () => {
       meta: { total: 5, page: { number: 2, size: 2, last: 3 } },
     });
 
-    const result = await accountsService.getAccountsPage({ number: 2, size: 2 }, { loggedIn: true });
+    const result = await accountsService.getAccountsPage(
+      { number: 2, size: 2 },
+      { loggedIn: true },
+    );
 
-    expect(result.meta).toEqual({ total: 5, page: { number: 2, size: 2, last: 3 } });
+    expect(result.meta).toEqual({
+      total: 5,
+      page: { number: 2, size: 2, last: 3 },
+    });
     // Sorted by name within the page, as the pre-pagination behavior did for the whole collection.
-    expect(result.data.map((a) => a.attributes.name)).toEqual(["alpha", "bravo"]);
+    expect(result.data.map((a) => a.attributes.name)).toEqual([
+      "alpha",
+      "bravo",
+    ]);
 
     const [calledUrl] = getMock.mock.calls[0] as [string];
     const params = new URL(calledUrl, "http://example.test").searchParams;

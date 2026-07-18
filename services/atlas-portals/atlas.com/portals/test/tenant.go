@@ -1,8 +1,9 @@
 package test
 
 import (
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // CreateDefaultMockTenant creates a new mock tenant with a default ID

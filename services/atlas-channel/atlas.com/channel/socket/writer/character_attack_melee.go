@@ -4,13 +4,13 @@ import (
 	"atlas-channel/character"
 	"context"
 
-	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
+	"github.com/sirupsen/logrus"
+
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
-	"github.com/sirupsen/logrus"
 )
-
 
 func CharacterAttackMeleeBody(c character.Model, ai packetmodel.AttackInfo) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {

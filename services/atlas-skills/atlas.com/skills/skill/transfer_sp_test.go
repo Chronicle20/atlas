@@ -1,23 +1,24 @@
 package skill_test
 
 import (
+	"atlas-skills/kafka/message"
+	"atlas-skills/macro"
+	"atlas-skills/skill"
+	"atlas-skills/test"
 	"encoding/json"
 	"testing"
 	"time"
 
-	"atlas-skills/kafka/message"
 	macro2 "atlas-skills/kafka/message/macro"
 	skill2 "atlas-skills/kafka/message/skill"
-	"atlas-skills/macro"
-	"atlas-skills/skill"
-	"atlas-skills/test"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+	logtest "github.com/sirupsen/logrus/hooks/test"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	constskill "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
-	logtest "github.com/sirupsen/logrus/hooks/test"
 )
 
 // --- Fixture skill ids (verified against libs/atlas-constants/skill/constants.go

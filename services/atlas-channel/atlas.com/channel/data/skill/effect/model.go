@@ -7,52 +7,52 @@ import (
 )
 
 type Model struct {
-	weaponAttack  int16
-	magicAttack   int16
-	weaponDefense int16
-	magicDefense  int16
-	accuracy      int16
-	avoidability  int16
-	speed         int16
-	jump          int16
-	hp            uint16
-	mp            uint16
-	hpr           float64
-	mpr           float64
-	mhprRate      uint16
-	mmprRate      uint16
-	mobSkill      uint16
-	mobSkillLevel uint16
-	mhpR          byte
-	mmpR          byte
-	hpCon         uint16
-	mpCon         uint16
-	duration      int32
-	target        uint32
-	barrier       int32
-	mob           uint32
-	overtime      bool
-	repeatEffect  bool
-	moveTo        int32
-	cp            uint32
-	nuffSkill     uint32
-	skill         bool
-	x             int16
-	y             int16
-	mobCount      uint32
-	moneyCon      uint32
-	cooldown      uint32
-	morphId       uint32
-	ghost         uint32
-	fatigue       uint32
-	berserk       uint32
-	booster       uint32
-	prop          float64
-	itemCon       uint32
-	itemConNo     uint32
-	damage        uint32
-	attackCount   uint32
-	fixDamage     int32
+	weaponAttack         int16
+	magicAttack          int16
+	weaponDefense        int16
+	magicDefense         int16
+	accuracy             int16
+	avoidability         int16
+	speed                int16
+	jump                 int16
+	hp                   uint16
+	mp                   uint16
+	hpr                  float64
+	mpr                  float64
+	mhprRate             uint16
+	mmprRate             uint16
+	mobSkill             uint16
+	mobSkillLevel        uint16
+	mhpR                 byte
+	mmpR                 byte
+	hpCon                uint16
+	mpCon                uint16
+	duration             int32
+	target               uint32
+	barrier              int32
+	mob                  uint32
+	overtime             bool
+	repeatEffect         bool
+	moveTo               int32
+	cp                   uint32
+	nuffSkill            uint32
+	skill                bool
+	x                    int16
+	y                    int16
+	mobCount             uint32
+	moneyCon             uint32
+	cooldown             uint32
+	morphId              uint32
+	ghost                uint32
+	fatigue              uint32
+	berserk              uint32
+	booster              uint32
+	prop                 float64
+	itemCon              uint32
+	itemConNo            uint32
+	damage               uint32
+	attackCount          uint32
+	fixDamage            int32
 	lt                   point.Model
 	rb                   point.Model
 	bulletCount          uint16
@@ -102,8 +102,18 @@ func (m Model) CureAbnormalStatuses() []string {
 	return m.cureAbnormalStatuses
 }
 
+// BulletConsume returns the WZ `bulletConsume` attribute — the one-time star
+// batch charged when casting Shadow Stars (200 in reference data). Distinct from
+// BulletCount (per-attack projectile count).
 func (m Model) BulletConsume() uint16 {
 	return m.bulletConsume
+}
+
+// BulletCount returns the WZ `bulletCount` attribute — the number of projectiles
+// spent per attack (e.g. Lucky Seven 2, Triple Throw 3). Distinct from
+// BulletConsume (the one-time Shadow Stars activation cost).
+func (m Model) BulletCount() uint16 {
+	return m.bulletCount
 }
 
 // HP exposes the skill's `hp` percentage attribute (used by Heal's

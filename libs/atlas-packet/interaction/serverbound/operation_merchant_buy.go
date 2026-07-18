@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 // packet-audit:fname CPersonalShopDlg::BuyItem#Merchant
@@ -17,9 +18,9 @@ type OperationMerchantBuy struct {
 	itemCRC  uint32
 }
 
-func (m OperationMerchantBuy) Index() byte       { return m.index }
-func (m OperationMerchantBuy) Quantity() uint16   { return m.quantity }
-func (m OperationMerchantBuy) ItemCRC() uint32    { return m.itemCRC }
+func (m OperationMerchantBuy) Index() byte      { return m.index }
+func (m OperationMerchantBuy) Quantity() uint16 { return m.quantity }
+func (m OperationMerchantBuy) ItemCRC() uint32  { return m.itemCRC }
 
 func (m OperationMerchantBuy) Operation() string { return "OperationMerchantBuy" }
 

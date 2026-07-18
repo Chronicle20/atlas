@@ -1,17 +1,17 @@
 package movement
 
 import (
+	"atlas-channel/monster"
+	"atlas-channel/monster/information"
 	"context"
 	"errors"
 	"testing"
 
-	"atlas-channel/monster"
-	"atlas-channel/monster/information"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 func TestNarrowSkill_HappyPath(t *testing.T) {

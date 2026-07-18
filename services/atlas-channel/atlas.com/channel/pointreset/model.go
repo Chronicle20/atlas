@@ -6,9 +6,8 @@
 package pointreset
 
 import (
-	"fmt"
-
 	"atlas-channel/character"
+	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"

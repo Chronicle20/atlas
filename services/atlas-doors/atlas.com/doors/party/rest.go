@@ -3,8 +3,9 @@ package party
 import (
 	"strconv"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/jtumidanski/api2go/jsonapi"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 )
 
 // RestModel is the JSON:API representation of a party as returned by

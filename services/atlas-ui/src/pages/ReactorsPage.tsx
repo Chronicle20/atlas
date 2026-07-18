@@ -5,7 +5,13 @@ import { reactorsService } from "@/services/api/reactors.service";
 import type { ReactorData } from "@/types/models/reactor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -77,7 +83,8 @@ function ReactorsPageContent() {
         <CardHeader>
           <CardTitle>Search Reactors</CardTitle>
           <CardDescription>
-            Search for reactors by ID or name. Results are limited to 50 entries.
+            Search for reactors by ID or name. Results are limited to 50
+            entries.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -106,7 +113,8 @@ function ReactorsPageContent() {
               Results
               {reactors.length > 0 && (
                 <span className="ml-2 text-muted-foreground font-normal">
-                  ({reactors.length} {reactors.length === 1 ? "reactor" : "reactors"})
+                  ({reactors.length}{" "}
+                  {reactors.length === 1 ? "reactor" : "reactors"})
                 </span>
               )}
             </CardTitle>
@@ -128,14 +136,16 @@ function ReactorsPageContent() {
                   </TableHeader>
                   <TableBody>
                     {reactors.map((reactor) => {
-                      const iconUrl = activeTenant ? getAssetIconUrl(
-                        activeTenant.id,
-                        activeTenant.attributes.region,
-                        activeTenant.attributes.majorVersion,
-                        activeTenant.attributes.minorVersion,
-                        'reactor',
-                        parseInt(reactor.id),
-                      ) : undefined;
+                      const iconUrl = activeTenant
+                        ? getAssetIconUrl(
+                            activeTenant.id,
+                            activeTenant.attributes.region,
+                            activeTenant.attributes.majorVersion,
+                            activeTenant.attributes.minorVersion,
+                            "reactor",
+                            parseInt(reactor.id),
+                          )
+                        : undefined;
                       return (
                         <TableRow key={reactor.id}>
                           <TableCell>
@@ -149,13 +159,20 @@ function ReactorsPageContent() {
                             />
                           </TableCell>
                           <TableCell>
-                            <Link to={`/reactors/${reactor.id}`} className="font-mono text-primary hover:underline">
+                            <Link
+                              to={`/reactors/${reactor.id}`}
+                              className="font-mono text-primary hover:underline"
+                            >
                               {reactor.id}
                             </Link>
                           </TableCell>
                           <TableCell>
-                            <Link to={`/reactors/${reactor.id}`} className="font-medium hover:underline">
-                              {reactor.attributes.name || `Reactor ${reactor.id}`}
+                            <Link
+                              to={`/reactors/${reactor.id}`}
+                              className="font-medium hover:underline"
+                            >
+                              {reactor.attributes.name ||
+                                `Reactor ${reactor.id}`}
                             </Link>
                           </TableCell>
                         </TableRow>

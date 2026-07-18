@@ -8,15 +8,16 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func testDatabase(t *testing.T) *gorm.DB {
@@ -178,7 +179,6 @@ func TestCreateAndEmitWithDuplicateName(t *testing.T) {
 
 	processor := character.NewProcessor(testLogger(), tctx, db)
 	_, err := processor.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
-
 	if err != nil {
 		t.Fatalf("Failed to create first character: %v", err)
 	}
@@ -745,7 +745,6 @@ func TestMapIdValidationWithNonExistentCharacter(t *testing.T) {
 		t.Error("Error should be about character not found, not map validation")
 	}
 }
-
 
 // TestDeleteForSagaCompensation_Existing covers the happy path: an existing
 // character row is deleted and a saga-correlated DELETED event is buffered

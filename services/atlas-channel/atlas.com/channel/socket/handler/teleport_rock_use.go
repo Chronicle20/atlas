@@ -7,12 +7,13 @@ import (
 	"atlas-channel/teleportrock"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	trpkt "github.com/Chronicle20/atlas/libs/atlas-packet/teleportrock"
 	trsb "github.com/Chronicle20/atlas/libs/atlas-packet/teleportrock/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 // itemInSlotFunc is a test seam for the inventory ownership check (package-var

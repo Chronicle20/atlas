@@ -1,0 +1,21 @@
+{
+  "WriterName": "RpsEnd",
+  "IDAName": "CRPSGameDlg::OnPacket#END",
+  "Address": "0x63bfbb",
+  "Variant": "GMS/v61",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/rps/clientbound/operation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode byte only (case 13 = CLOSE; CWnd::Destroy @0x63bfbb, no further wire reads)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

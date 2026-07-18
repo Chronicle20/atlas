@@ -3,9 +3,10 @@ package model
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 type SkillUsageInfo struct {
@@ -56,6 +57,10 @@ func (m *SkillUsageInfo) SkillId() uint32 {
 
 func (m *SkillUsageInfo) SkillLevel() byte {
 	return m.skillLevel
+}
+
+func (m *SkillUsageInfo) SpiritJavelinItemId() uint32 {
+	return m.spiritJavelinItemId
 }
 
 func (m *SkillUsageInfo) AffectedPartyMemberBitmap() byte {
@@ -235,7 +240,7 @@ func isPartyBuff(skillId skill.Id) bool {
 		skill.AranStage4ComboBarrierId,
 		skill.EvanStage5MagicShieldId,
 		skill.EvanStage7MagicResistanceId,
-		//skill.EvanStage8RecoveryAuraId,
+		// skill.EvanStage8RecoveryAuraId,
 		skill.EvanStage9MapleWarriorId,
 	)
 }

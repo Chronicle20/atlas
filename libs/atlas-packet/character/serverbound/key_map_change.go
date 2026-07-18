@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const CharacterKeyMapChangeHandle = "CharacterKeyMapChangeHandle"
@@ -24,9 +25,9 @@ type KeyMapChange struct {
 	itemId  uint32
 }
 
-func (m KeyMapChange) Mode() uint32            { return m.mode }
-func (m KeyMapChange) Entries() []KeyMapEntry   { return m.entries }
-func (m KeyMapChange) ItemId() uint32           { return m.itemId }
+func (m KeyMapChange) Mode() uint32           { return m.mode }
+func (m KeyMapChange) Entries() []KeyMapEntry { return m.entries }
+func (m KeyMapChange) ItemId() uint32         { return m.itemId }
 
 func (m KeyMapChange) Operation() string {
 	return CharacterKeyMapChangeHandle

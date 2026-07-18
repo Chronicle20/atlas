@@ -10,7 +10,11 @@ import (
 	once "atlas-consumables/kafka/once/compartment"
 	"context"
 	"errors"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	ts "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	inventory2 "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
@@ -19,8 +23,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 // vegaRates returns the natural scroll success rate a Vega's Spell requires

@@ -8,9 +8,10 @@ import (
 	mtslisting "atlas-channel/mts/listing"
 	mtswish "atlas-channel/mts/wish"
 
+	"github.com/sirupsen/logrus"
+
 	fieldsb "github.com/Chronicle20/atlas/libs/atlas-packet/field/serverbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
-	"github.com/sirupsen/logrus"
 )
 
 // itcOperationsTable mirrors the tenant template ITC_OPERATION

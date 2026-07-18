@@ -1,10 +1,20 @@
 package wz
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-wz/wz/property"
+	"bytes"
+	"errors"
 	"fmt"
 	"io"
+	"sync/atomic"
+
+	"github.com/Chronicle20/atlas/libs/atlas-wz/crypto"
+	"github.com/Chronicle20/atlas/libs/atlas-wz/wz/property"
 )
+
+// errBadImageTag marks the tag-validation failure that triggers the
+// per-image key fallback (task-172 C-2). Any other parse error (I/O,
+// truncation, unknown property type) must NOT trigger a retry.
+var errBadImageTag = errors.New("unexpected image tag")
 
 // Image represents a WZ image (a group of properties, corresponding to a .img entry).
 type Image struct {
@@ -13,19 +23,30 @@ type Image struct {
 	dataOffset int64
 	dataSize   int32
 	properties []property.Property
-	parsed     bool
-	parseErr   error
+	// parsed is read on Properties()'s lock-free fast path and written
+	// under File.parseMu on the slow path; atomic.Bool makes that
+	// cross-goroutine publish race-free (task-172 C-2 — the per-image key
+	// fallback's own concurrency test was the first to call Properties()
+	// from multiple goroutines against the *same* *Image, which exposed a
+	// pre-existing unsynchronized read here under `go test -race`).
+	parsed   atomic.Bool
+	parseErr error
+	// keyOverride is the fallback key this image parsed under, nil when the
+	// file-level key worked. Set under File.parseMu (task-172 C-2, mixed
+	// per-image encryption — JMS List.wz-listed images).
+	keyOverride []byte
 }
 
 // NewParsedImage constructs an Image whose properties are already populated
 // (parsed == true). Intended for constructing in-memory WZ trees in tests and
 // tooling without requiring a real WZ file on disk.
 func NewParsedImage(name string, props []property.Property) *Image {
-	return &Image{
+	img := &Image{
 		name:       name,
 		properties: props,
-		parsed:     true,
 	}
+	img.parsed.Store(true)
+	return img
 }
 
 // Name returns the image name.
@@ -58,50 +79,75 @@ func (i *Image) File() *File {
 // wzFile=nil, so they short-circuit without lock acquisition and always
 // return a nil error.
 func (i *Image) Properties() ([]property.Property, error) {
-	if i.parsed {
+	if i.parsed.Load() {
 		return i.properties, i.parseErr
 	}
 	if i.wzFile == nil {
-		i.parsed = true
+		i.parsed.Store(true)
 		return i.properties, nil
 	}
 	unlock := i.wzFile.LockParse()
 	defer unlock()
-	if i.parsed {
+	if i.parsed.Load() {
 		return i.properties, i.parseErr
 	}
 	if err := i.parse(); err != nil {
 		i.wzFile.l.WithError(err).Warnf("Unable to parse image [%s].", i.name)
-		i.parsed = true
 		i.parseErr = err
+		i.parsed.Store(true)
 		return i.properties, err
 	}
-	i.parsed = true
+	i.parsed.Store(true)
 	return i.properties, nil
 }
 
+// parse decodes the image with the file-level key; when the image tag fails
+// validation it retries under each other known key (task-172 C-2 — JMS
+// archives mix unencrypted and KMS-encrypted images in one file). On a
+// fallback hit the winning key is cached for this image's strings and
+// registered for canvas-block decryption. Caller holds File.parseMu.
 func (i *Image) parse() error {
+	fileKey := i.wzFile.reader.Key()
+	err := i.parseWithKey(fileKey)
+	if err == nil || !errors.Is(err, errBadImageTag) {
+		return err
+	}
+	for _, enc := range crypto.AllEncryptionTypes() {
+		kb := crypto.GetKeyForRegion(enc).Bytes(0x10000)
+		if bytes.Equal(kb, fileKey) {
+			continue
+		}
+		if retryErr := i.parseWithKey(kb); retryErr == nil {
+			i.keyOverride = kb
+			i.wzFile.registerImageKey(i.dataOffset, i.dataSize, kb)
+			i.wzFile.l.Debugf("image [%s]: parsed with fallback key (%v)", i.name, enc)
+			return nil
+		}
+	}
+	return err
+}
+
+// parseWithKey runs one parse attempt with the reader temporarily switched
+// to key, restoring the file-level key afterwards. Caller holds parseMu.
+func (i *Image) parseWithKey(key []byte) error {
 	r := i.wzFile.reader
+	savedKey := r.Key()
+	r.SetKey(key)
+	defer r.SetKey(savedKey)
 
 	if _, err := r.Seek(i.dataOffset, io.SeekStart); err != nil {
 		return err
 	}
-
-	// Read the object tag using the image's data offset as the base for string references
 	tag, err := r.ReadWzStringBlock(i.dataOffset)
 	if err != nil {
 		return fmt.Errorf("unable to read image tag: %w", err)
 	}
-
 	if tag != "Property" {
-		return fmt.Errorf("unexpected image tag: %s (expected Property)", tag)
+		return fmt.Errorf("%w: %s (expected Property)", errBadImageTag, tag)
 	}
-
-	// Skip 2 bytes (always 0)
 	if err := r.Skip(2); err != nil {
 		return err
 	}
-
 	props, err := i.wzFile.parsePropertyList(i.dataOffset)
 	if err != nil {
 		return err

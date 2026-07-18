@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 const CharacterSpawnWriter = "CharacterSpawn"
@@ -46,7 +47,8 @@ type CharacterSpawn struct {
 
 func NewCharacterSpawn(characterId uint32, level byte, name string, guild GuildEmblem,
 	cts *model.CharacterTemporaryStat, jobId uint16, avatar model.Avatar,
-	pets []SpawnPet, enteringField bool, x int16, y int16, stance byte, fh int16) CharacterSpawn {
+	pets []SpawnPet, enteringField bool, x int16, y int16, stance byte, fh int16,
+) CharacterSpawn {
 	return CharacterSpawn{
 		characterId: characterId, level: level, name: name, guild: guild,
 		cts: cts, jobId: jobId, avatar: avatar, pets: pets,
@@ -203,18 +205,18 @@ func (m CharacterSpawn) Encode(l logrus.FieldLogger, ctx context.Context) func(o
 	}
 }
 
-func (m CharacterSpawn) CharacterId() uint32              { return m.characterId }
-func (m CharacterSpawn) Level() byte                      { return m.level }
-func (m CharacterSpawn) Name() string                     { return m.name }
-func (m CharacterSpawn) Guild() GuildEmblem               { return m.guild }
+func (m CharacterSpawn) CharacterId() uint32                { return m.characterId }
+func (m CharacterSpawn) Level() byte                        { return m.level }
+func (m CharacterSpawn) Name() string                       { return m.name }
+func (m CharacterSpawn) Guild() GuildEmblem                 { return m.guild }
 func (m CharacterSpawn) Cts() *model.CharacterTemporaryStat { return m.cts }
-func (m CharacterSpawn) JobId() uint16                    { return m.jobId }
-func (m CharacterSpawn) Avatar() model.Avatar             { return m.avatar }
-func (m CharacterSpawn) Pets() []SpawnPet                 { return m.pets }
-func (m CharacterSpawn) X() int16                         { return m.x }
-func (m CharacterSpawn) Y() int16                         { return m.y }
-func (m CharacterSpawn) Stance() byte                     { return m.stance }
-func (m CharacterSpawn) Fh() int16                        { return m.fh }
+func (m CharacterSpawn) JobId() uint16                      { return m.jobId }
+func (m CharacterSpawn) Avatar() model.Avatar               { return m.avatar }
+func (m CharacterSpawn) Pets() []SpawnPet                   { return m.pets }
+func (m CharacterSpawn) X() int16                           { return m.x }
+func (m CharacterSpawn) Y() int16                           { return m.y }
+func (m CharacterSpawn) Stance() byte                       { return m.stance }
+func (m CharacterSpawn) Fh() int16                          { return m.fh }
 
 func (m *CharacterSpawn) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {

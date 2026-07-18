@@ -5,8 +5,9 @@ import (
 	"context"
 	"testing"
 
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	testlog "github.com/sirupsen/logrus/hooks/test"
+
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 func testOperations() map[string]interface{} {

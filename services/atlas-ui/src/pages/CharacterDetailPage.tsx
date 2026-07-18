@@ -3,11 +3,26 @@ import { useState } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { useTenant } from "@/context/tenant-context";
 import { Card, CardContent } from "@/components/ui/card";
-import { useCharacter, useInvalidateCharacters } from "@/lib/hooks/api/useCharacters";
-import { useInventory, useDeleteAsset, useInvalidateInventory } from "@/lib/hooks/api/useInventory";
+import {
+  useCharacter,
+  useInvalidateCharacters,
+} from "@/lib/hooks/api/useCharacters";
+import {
+  useInventory,
+  useDeleteAsset,
+  useInvalidateInventory,
+} from "@/lib/hooks/api/useInventory";
 import { useTenantConfiguration } from "@/lib/hooks/api/useTenants";
-import { inventoryService, type Compartment, type Asset } from "@/services/api/inventory.service";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  inventoryService,
+  type Compartment,
+  type Asset,
+} from "@/services/api/inventory.service";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { ChangeMapDialog } from "@/components/features/characters/ChangeMapDialog";
 import { ChangeGmDialog } from "@/components/features/characters/ChangeGmDialog";
 import { CharacterRenderer } from "@/components/features/characters/CharacterRenderer";
@@ -45,11 +60,18 @@ export function CharacterDetailPage() {
   const character = characterQuery.data ?? null;
   const inventory = inventoryQuery.data ?? null;
   const tenantConfig = tenantConfigQuery.data ?? null;
-  const loading = characterQuery.isLoading || inventoryQuery.isLoading || tenantConfigQuery.isLoading;
-  const error = characterQuery.error?.message ?? tenantConfigQuery.error?.message ?? null;
+  const loading =
+    characterQuery.isLoading ||
+    inventoryQuery.isLoading ||
+    tenantConfigQuery.isLoading;
+  const error =
+    characterQuery.error?.message ?? tenantConfigQuery.error?.message ?? null;
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [assetToDelete, setAssetToDelete] = useState<{ compartmentId: string; assetId: string } | null>(null);
+  const [assetToDelete, setAssetToDelete] = useState<{
+    compartmentId: string;
+    assetId: string;
+  } | null>(null);
   const [changeMapDialogOpen, setChangeMapDialogOpen] = useState(false);
   const [changeGmDialogOpen, setChangeGmDialogOpen] = useState(false);
 
@@ -82,17 +104,28 @@ export function CharacterDetailPage() {
 
   if (loading) return <CharacterDetailSkeleton />;
   if (error || !character || !tenantConfig || !activeTenant) {
-    return <ErrorDisplay error={error || "Character or tenant configuration not found"} className="p-4" />;
+    return (
+      <ErrorDisplay
+        error={error || "Character or tenant configuration not found"}
+        className="p-4"
+      />
+    );
   }
 
-  const compartments = inventory?.included?.filter(
-    (item): item is Compartment => item.type === "compartments",
-  ) || [];
-  const equippedAssets = inventory?.included?.filter(
-    (item): item is Asset =>
-      item.type === "assets" && "slot" in item.attributes && item.attributes.slot < 0,
-  ) || [];
-  const sortedCompartments = [...compartments].sort((a, b) => a.attributes.type - b.attributes.type);
+  const compartments =
+    inventory?.included?.filter(
+      (item): item is Compartment => item.type === "compartments",
+    ) || [];
+  const equippedAssets =
+    inventory?.included?.filter(
+      (item): item is Asset =>
+        item.type === "assets" &&
+        "slot" in item.attributes &&
+        item.attributes.slot < 0,
+    ) || [];
+  const sortedCompartments = [...compartments].sort(
+    (a, b) => a.attributes.type - b.attributes.type,
+  );
 
   return (
     <div className="flex flex-col flex-1 space-y-6 p-10 pb-16 h-screen overflow-auto">
@@ -110,13 +143,21 @@ export function CharacterDetailPage() {
               inventory={equippedAssets}
               size="large"
               scale={2}
-              {...(activeTenant.attributes.region && { region: activeTenant.attributes.region })}
-              {...(activeTenant.attributes.majorVersion && { majorVersion: activeTenant.attributes.majorVersion })}
+              {...(activeTenant.attributes.region && {
+                region: activeTenant.attributes.region,
+              })}
+              {...(activeTenant.attributes.majorVersion && {
+                majorVersion: activeTenant.attributes.majorVersion,
+              })}
               className="character-renderer"
             />
           </CardContent>
         </Card>
-        <AttributesPanel character={character} tenantConfig={tenantConfig} tenant={activeTenant} />
+        <AttributesPanel
+          character={character}
+          tenantConfig={tenantConfig}
+          tenant={activeTenant}
+        />
       </div>
 
       <EquipmentPanel equipped={equippedAssets} tenant={activeTenant} />
@@ -140,12 +181,22 @@ export function CharacterDetailPage() {
           <div className="grid grid-cols-1 gap-4">
             {sortedCompartments.map((compartment) => {
               try {
-                const assets = inventoryService.getAssetsForCompartment(compartment, inventory.included || []);
+                const assets = inventoryService.getAssetsForCompartment(
+                  compartment,
+                  inventory.included || [],
+                );
                 return (
-                  <Collapsible key={compartment.id} className="border rounded-md">
+                  <Collapsible
+                    key={compartment.id}
+                    className="border rounded-md"
+                  >
                     <CollapsibleTrigger className="flex justify-between items-center w-full p-4 hover:bg-muted/50">
                       <div className="flex items-center gap-2">
-                        <h4 className="text-lg font-semibold">{inventoryService.getCompartmentTypeName(compartment.attributes.type)}</h4>
+                        <h4 className="text-lg font-semibold">
+                          {inventoryService.getCompartmentTypeName(
+                            compartment.attributes.type,
+                          )}
+                        </h4>
                       </div>
                       <span className="text-sm text-muted-foreground">
                         {assets.length} / {compartment.attributes.capacity}
@@ -157,12 +208,16 @@ export function CharacterDetailPage() {
                           compartment={compartment}
                           assets={assets}
                           onDeleteAsset={(assetId) => {
-                            const asset = assets.find(a => a.id === assetId);
+                            const asset = assets.find((a) => a.id === assetId);
                             if (asset) {
                               openDeleteDialog(compartment.id, asset.id);
                             }
                           }}
-                          deletingAssetId={deleteAsset.isPending ? assetToDelete?.assetId ?? null : null}
+                          deletingAssetId={
+                            deleteAsset.isPending
+                              ? (assetToDelete?.assetId ?? null)
+                              : null
+                          }
                           isLoading={loading}
                         />
                       </div>
@@ -170,10 +225,22 @@ export function CharacterDetailPage() {
                   </Collapsible>
                 );
               } catch (e) {
-                console.error("Error rendering compartment:", compartment.id, e);
+                console.error(
+                  "Error rendering compartment:",
+                  compartment.id,
+                  e,
+                );
                 return (
-                  <div key={compartment.id} className="border rounded-md p-4 bg-red-50">
-                    <p className="text-red-600">Error loading compartment: {inventoryService.getCompartmentTypeName(compartment.attributes?.type || 0)}</p>
+                  <div
+                    key={compartment.id}
+                    className="border rounded-md p-4 bg-red-50"
+                  >
+                    <p className="text-red-600">
+                      Error loading compartment:{" "}
+                      {inventoryService.getCompartmentTypeName(
+                        compartment.attributes?.type || 0,
+                      )}
+                    </p>
                   </div>
                 );
               }
@@ -199,7 +266,8 @@ export function CharacterDetailPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the item from your inventory.
+              This action cannot be undone. This will permanently delete the
+              item from your inventory.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

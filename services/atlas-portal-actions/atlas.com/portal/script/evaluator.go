@@ -1,15 +1,15 @@
 package script
 
 import (
+	"atlas-portal-actions/validation"
 	"context"
 	"fmt"
 	"strconv"
 
-	"atlas-portal-actions/validation"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-script-core/condition"
 	scriptctx "github.com/Chronicle20/atlas/libs/atlas-script-core/context"
-	"github.com/sirupsen/logrus"
 )
 
 // ConditionEvaluator evaluates conditions for portal scripts

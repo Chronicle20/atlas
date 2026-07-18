@@ -7,9 +7,10 @@ import (
 	summoncmd "atlas-channel/summon"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/summon/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 // SummonAttackHandleFunc decodes an inbound SUMMON_ATTACK packet and emits a

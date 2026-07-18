@@ -1,14 +1,18 @@
 package teleportrock
 
 import (
+	"atlas-channel/saga"
+	"atlas-channel/session"
+	"atlas-channel/socket/writer"
 	"context"
 	"errors"
 	"testing"
 
 	chartrock "atlas-channel/character/teleportrock"
-	"atlas-channel/saga"
-	"atlas-channel/session"
-	"atlas-channel/socket/writer"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+	testlog "github.com/sirupsen/logrus/hooks/test"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -17,9 +21,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	trpkt "github.com/Chronicle20/atlas/libs/atlas-packet/teleportrock"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
-	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 var errNotFound = errors.New("not found")

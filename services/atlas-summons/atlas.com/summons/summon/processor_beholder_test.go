@@ -1,17 +1,17 @@
 package summon
 
 import (
+	"atlas-summons/data/skill/effect"
 	"testing"
 	"time"
 
-	"atlas-summons/data/skill/effect"
+	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	skillconst "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 // perSkillEffectSource returns a distinct effect per skill id, so a Beholder

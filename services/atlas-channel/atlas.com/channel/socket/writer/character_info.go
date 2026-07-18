@@ -6,10 +6,11 @@ import (
 	"atlas-channel/guild"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
-	"github.com/sirupsen/logrus"
 )
 
 func CharacterInfoBody(c character.Model, g guild.Model, wl []wishlist.Model, mount charpkt.MountInfo) packet.Encode {

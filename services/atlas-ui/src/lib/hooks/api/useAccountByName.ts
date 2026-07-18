@@ -36,13 +36,15 @@ export function useAccountByName(
     enabled: !!tenant?.id && !!name && !timedOut,
     refetchInterval: ({ state }) => {
       if (timedOut || !options.pollUntilFound) return false;
-      const found = Array.isArray(state.data) && (state.data as Account[]).length > 0;
+      const found =
+        Array.isArray(state.data) && (state.data as Account[]).length > 0;
       return found ? false : interval;
     },
   });
 
   useEffect(() => {
     if (!options.pollUntilFound) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resets the timeout-armed effect's own flag before (re)arming the timer below; the timer itself must stay in the effect
     setTimedOut(false);
     const t = setTimeout(() => setTimedOut(true), timeout);
     return () => clearTimeout(t);

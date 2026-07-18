@@ -4,11 +4,13 @@ import (
 	portalData "atlas-channel/data/portal"
 	"atlas-channel/kafka/message/portal"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
-	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {

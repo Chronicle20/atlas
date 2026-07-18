@@ -6,7 +6,10 @@ import { useTenant } from "@/context/tenant-context";
 import { getAssetIconUrl } from "@/lib/utils/asset-url";
 import { cn } from "@/lib/utils";
 import { useMobData } from "@/lib/hooks/useMobData";
-import type { MapMonsterData, MapNpcData } from "@/services/api/map-entities.service";
+import type {
+  MapMonsterData,
+  MapNpcData,
+} from "@/services/api/map-entities.service";
 import { useHoverHighlight } from "./HoverHighlightContext";
 
 interface MapEntitySummaryProps {
@@ -16,7 +19,12 @@ interface MapEntitySummaryProps {
   monstersError?: unknown;
 }
 
-export function MapEntitySummary({ npcs, npcsError, monsters, monstersError }: MapEntitySummaryProps) {
+export function MapEntitySummary({
+  npcs,
+  npcsError,
+  monsters,
+  monstersError,
+}: MapEntitySummaryProps) {
   return (
     <Card className="h-full">
       <CardContent className="pt-6 space-y-6">
@@ -27,7 +35,13 @@ export function MapEntitySummary({ npcs, npcsError, monsters, monstersError }: M
   );
 }
 
-function NpcsSection({ npcs, error }: { npcs: MapNpcData[] | undefined; error?: unknown }) {
+function NpcsSection({
+  npcs,
+  error,
+}: {
+  npcs: MapNpcData[] | undefined;
+  error?: unknown;
+}) {
   const { activeTenant } = useTenant();
 
   if (error) {
@@ -89,7 +103,13 @@ function NpcsSection({ npcs, error }: { npcs: MapNpcData[] | undefined; error?: 
   );
 }
 
-function MonstersSection({ monsters, error }: { monsters: MapMonsterData[] | undefined; error?: unknown }) {
+function MonstersSection({
+  monsters,
+  error,
+}: {
+  monsters: MapMonsterData[] | undefined;
+  error?: unknown;
+}) {
   if (error) {
     return (
       <section>
@@ -132,7 +152,11 @@ function MonstersSection({ monsters, error }: { monsters: MapMonsterData[] | und
       ) : (
         <ul className="max-h-[400px] overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1 pr-2">
           {order.map((template) => (
-            <MonsterRow key={template} template={template} count={counts.get(template) ?? 1} />
+            <MonsterRow
+              key={template}
+              template={template}
+              count={counts.get(template) ?? 1}
+            />
           ))}
         </ul>
       )}

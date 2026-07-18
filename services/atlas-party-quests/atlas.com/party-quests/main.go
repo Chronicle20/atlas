@@ -1,20 +1,23 @@
 package main
 
 import (
+	"atlas-party-quests/definition"
+	"atlas-party-quests/instance"
 	"context"
+	"os"
+	"time"
 
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 
-	"atlas-party-quests/definition"
-	"atlas-party-quests/instance"
 	characterConsumer "atlas-party-quests/kafka/consumer/character"
 	monsterConsumer "atlas-party-quests/kafka/consumer/monster"
 	pqConsumer "atlas-party-quests/kafka/consumer/party_quest"
 	tenant2 "atlas-party-quests/tenant"
+
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
-	"os"
-	"time"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
+
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
@@ -22,7 +25,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	seeder "github.com/Chronicle20/atlas/libs/atlas-seeder"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"gorm.io/gorm"
 )
 
 const serviceName = "atlas-party-quests"

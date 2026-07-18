@@ -1,6 +1,7 @@
 package consumable_test
 
 import (
+	"atlas-inventory/data/consumable"
 	"context"
 	"fmt"
 	"net/http"
@@ -9,11 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"atlas-inventory/data/consumable"
-
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // consumableDoc renders a JSON:API document for rechargeable consumables

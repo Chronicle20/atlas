@@ -34,11 +34,13 @@ func TestSetTamingMobInfoFieldOrder(t *testing.T) {
 // SetTamingMobInfo v48 byte-fixture — SET_TAMING_MOB_INFO, op 40 (0x28).
 //
 // Client read — CWvsContext::OnSetTamingMobInfo (sub_72032B @0x72032b):
-//   Decode4  charId    (GetUser)                    /*0x720343*/
-//   Decode4  level     (v6[1244])                   /*0x72038a*/
-//   Decode4  exp       (v7[1245])                   /*0x72039a*/
-//   Decode4  tiredness (v8[1246])                   /*0x7203aa*/
-//   Decode1  levelUp   (v10 -> level-up effect)     /*0x7203df*/
+//
+//	Decode4  charId    (GetUser)                    /*0x720343*/
+//	Decode4  level     (v6[1244])                   /*0x72038a*/
+//	Decode4  exp       (v7[1245])                   /*0x72039a*/
+//	Decode4  tiredness (v8[1246])                   /*0x7203aa*/
+//	Decode1  levelUp   (v10 -> level-up effect)     /*0x7203df*/
+//
 // Byte-identical to v61/v83 (no version gate). v48 op 40.
 //
 // packet-audit:verify packet=character/clientbound/CharacterSetTamingMobInfo version=gms_v48 ida=0x72032b

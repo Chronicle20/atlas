@@ -9,13 +9,14 @@ import (
 	"atlas-messages/command/consumable"
 	"atlas-messages/command/disease"
 	"atlas-messages/command/help"
-	"atlas-messages/command/map"
+	_map "atlas-messages/command/map"
 	"atlas-messages/command/monster"
 	party_quest "atlas-messages/command/party_quest"
 	commandpet "atlas-messages/command/pet"
 	message2 "atlas-messages/kafka/consumer/message"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"os"
+
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"

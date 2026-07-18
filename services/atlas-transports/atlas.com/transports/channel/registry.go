@@ -6,11 +6,12 @@ import (
 	"strconv"
 	"strings"
 
+	goredis "github.com/redis/go-redis/v9"
+
 	channelConstant "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	goredis "github.com/redis/go-redis/v9"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Registry struct {

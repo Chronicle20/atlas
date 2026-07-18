@@ -13,13 +13,14 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	channelConstant "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-	worldConstant "github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	goredis "github.com/redis/go-redis/v9"
 	logtest "github.com/sirupsen/logrus/hooks/test"
+
+	channelConstant "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	worldConstant "github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 // setupWorldsPaginateFixture registers channels for 3 worlds (ids 2, 0, 1, in

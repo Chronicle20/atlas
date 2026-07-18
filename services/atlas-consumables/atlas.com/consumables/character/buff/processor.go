@@ -4,11 +4,13 @@ import (
 	"atlas-consumables/character/buff/stat"
 	buff2 "atlas-consumables/kafka/message/character/buff"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {

@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 )
 
 const MonsterBookSetCardWriter = "MonsterBookSetCard"

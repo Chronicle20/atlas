@@ -59,22 +59,22 @@ func toMtsItem(m Model, sellerName string) fieldcb.MtsItem {
 	}
 	dateExpired := packetmodel.MsTimeBytes(expiry)
 	return fieldpkt.MtsOperationNewItem(
-		item,        // GW_ItemSlotBase blob
-		m.Serial(),  // nITCSN = the wish entry's per-(tenant, world) ITC serial
-		m.Price(),   // nPrice
-		0,           // nContractFee
-		"",          // sContractFeeTxId
-		"",          // sRollbackUsageID
-		dateExpired, // ftITCDateExpired
-		"",          // sUserID
-		sellerName,  // sGameID = the want-ad owner's name (empty for the viewer's own entries)
-		"",          // sComment
-		0,           // nBidCount
-		0,           // nBidRange
-		0,           // nBidPrice
-		m.Price(),   // nMinPrice
-		0,           // nMaxPrice
-		m.Price(),   // nUnitPrice
+		item,                         // GW_ItemSlotBase blob
+		m.Serial(),                   // nITCSN = the wish entry's per-(tenant, world) ITC serial
+		m.Price(),                    // nPrice
+		0,                            // nContractFee
+		"",                           // sContractFeeTxId
+		"",                           // sRollbackUsageID
+		dateExpired,                  // ftITCDateExpired
+		"",                           // sUserID
+		sellerName,                   // sGameID = the want-ad owner's name (empty for the viewer's own entries)
+		"",                           // sComment
+		0,                            // nBidCount
+		0,                            // nBidRange
+		0,                            // nBidPrice
+		m.Price(),                    // nMinPrice
+		0,                            // nMaxPrice
+		m.Price(),                    // nUnitPrice
 		fieldcb.MtsProcessStatusNone, // nProcessStatus (want-ads have no history/auction status)
 	)
 }

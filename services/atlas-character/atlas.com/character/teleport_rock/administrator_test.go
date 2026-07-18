@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"testing"
 
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 )
 
 func testDatabase(t *testing.T) *gorm.DB {

@@ -1,7 +1,15 @@
 import { api } from "@/lib/api/client";
 import { buildQueryString, type QueryOptions } from "@/lib/api/query-params";
-import { fetchAll, fetchPaged, type PagedResult } from "@/services/api/pagination";
-import type { MerchantShop, MerchantListing, ListingSearchResult } from "@/types/models/merchant";
+import {
+  fetchAll,
+  fetchPaged,
+  type PagedResult,
+} from "@/services/api/pagination";
+import type {
+  MerchantShop,
+  MerchantListing,
+  ListingSearchResult,
+} from "@/types/models/merchant";
 
 const BASE_PATH = "/api/merchants";
 
@@ -11,7 +19,11 @@ export const merchantsService = {
    * (task-117).
    */
   async getAllShops(options?: QueryOptions): Promise<MerchantShop[]> {
-    return fetchAll<MerchantShop>(`${BASE_PATH}${buildQueryString(options)}`, undefined, options);
+    return fetchAll<MerchantShop>(
+      `${BASE_PATH}${buildQueryString(options)}`,
+      undefined,
+      options,
+    );
   },
 
   /**
@@ -23,7 +35,11 @@ export const merchantsService = {
     page: { number: number; size: number },
     options?: QueryOptions,
   ): Promise<PagedResult<MerchantShop>> {
-    return fetchPaged<MerchantShop>(`${BASE_PATH}${buildQueryString(options)}`, page, options);
+    return fetchPaged<MerchantShop>(
+      `${BASE_PATH}${buildQueryString(options)}`,
+      page,
+      options,
+    );
   },
 
   async getShopById(shopId: string): Promise<MerchantShop> {
@@ -36,7 +52,9 @@ export const merchantsService = {
    * practice by `shop.MaxListings`).
    */
   async getShopListings(shopId: string): Promise<MerchantListing[]> {
-    return fetchAll<MerchantListing>(`${BASE_PATH}/${shopId}/relationships/listings`);
+    return fetchAll<MerchantListing>(
+      `${BASE_PATH}/${shopId}/relationships/listings`,
+    );
   },
 
   /**
@@ -45,6 +63,8 @@ export const merchantsService = {
    * match set for a given item before it paginates the combined results.
    */
   async searchListings(itemId: number): Promise<ListingSearchResult[]> {
-    return fetchAll<ListingSearchResult>(`${BASE_PATH}/search/listings?itemId=${itemId}`);
+    return fetchAll<ListingSearchResult>(
+      `${BASE_PATH}/search/listings?itemId=${itemId}`,
+    );
   },
 };

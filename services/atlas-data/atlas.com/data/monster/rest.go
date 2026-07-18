@@ -99,7 +99,7 @@ type coolDamage struct {
 }
 
 type AttackInfo struct {
-	Pos         uint8 `json:"pos"`         // 1, 2, or 3 (matches WZ attackN naming)
+	Pos         uint8 `json:"pos"` // 1, 2, or 3 (matches WZ attackN naming)
 	ConMP       int32 `json:"conMP"`
 	AttackAfter int32 `json:"attackAfter"` // milliseconds
 }

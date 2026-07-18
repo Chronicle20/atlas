@@ -34,6 +34,8 @@ Compartment operation commands.
 | RELEASE | Releases an asset from compartment |
 | EXPIRE | Expires an asset with optional replacement |
 | MODIFY_EQUIPMENT | Updates equipment stats on an asset |
+| SET_OWNER | Stamps the owner field onto an asset in a given slot |
+| APPLY_LOCK | Applies a permanent or timed lock (FlagLock + expiration) to an asset in a given slot; rejects a non-locked asset that already has a non-zero expiration |
 | CHANGE_TEMPLATE | Swaps a pet asset's templateId in place, resolved by petId within the Cash compartment |
 
 ### EVENT_TOPIC_DROP_STATUS
@@ -138,7 +140,7 @@ Body types:
 - `ReleasedStatusEventBody` - embeds `AssetData` (all asset fields)
 - `ExpiredStatusEventBody` - isCash (bool), replaceItemId (uint32), replaceMessage (string)
 
-`AssetData` contains: expiration, createdAt, quantity, ownerId, flag, rechargeable, strength, dexterity, intelligence, luck, hp, mp, weaponAttack, magicAttack, weaponDefense, magicDefense, accuracy, avoidability, hands, speed, jump, slots, levelType, level, experience, hammersApplied, equippedSince, cashId, commodityId, purchaseBy, petId.
+`AssetData` contains: expiration, createdAt, quantity, ownerId, owner, flag, rechargeable, strength, dexterity, intelligence, luck, hp, mp, weaponAttack, magicAttack, weaponDefense, magicDefense, accuracy, avoidability, hands, speed, jump, slots, levelType, level, experience, hammersApplied, equippedSince, cashId, commodityId, purchaseBy, petId.
 
 ### Compartment Command
 

@@ -1,19 +1,21 @@
 package workers
 
 import (
+	"atlas-data/npc"
 	"context"
 	"errors"
 	"fmt"
 	"path/filepath"
 
-	"github.com/Chronicle20/atlas/libs/atlas-wz/mapimage"
-	"github.com/Chronicle20/atlas/libs/atlas-wz/maplayout"
-	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
+	"github.com/Chronicle20/atlas/libs/atlas-wz/mapimage"
+	"github.com/Chronicle20/atlas/libs/atlas-wz/maplayout"
+	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
+
 	_map "atlas-data/map"
-	"atlas-data/npc"
+
 	minio "atlas-data/storage/minio"
 )
 

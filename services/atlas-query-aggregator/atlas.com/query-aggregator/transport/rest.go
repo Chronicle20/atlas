@@ -1,9 +1,10 @@
 package transport
 
 import (
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
+
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 // RestModel is the JSON:API resource for transport routes

@@ -4,10 +4,11 @@ import (
 	"atlas-saga-orchestrator/kafka/message/cashshop"
 	cashshopCompartment "atlas-saga-orchestrator/kafka/message/cashshop/compartment"
 
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 func AdjustCurrencyProvider(transactionId uuid.UUID, accountId uint32, currencyType uint32, amount int32) model.Provider[[]kafka.Message] {

@@ -1,25 +1,27 @@
 package main
 
 import (
-	"context"
-
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-
 	"atlas-guilds/coordinator"
 	"atlas-guilds/guild"
 	"atlas-guilds/guild/character"
 	"atlas-guilds/guild/member"
 	"atlas-guilds/guild/title"
-	character2 "atlas-guilds/kafka/consumer/character"
-	guild2 "atlas-guilds/kafka/consumer/guild"
 	"atlas-guilds/kafka/consumer/invite"
-	thread2 "atlas-guilds/kafka/consumer/thread"
 	"atlas-guilds/tasks"
 	"atlas-guilds/thread"
 	"atlas-guilds/thread/reply"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
+	"context"
 	"os"
 	"time"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
+	character2 "atlas-guilds/kafka/consumer/character"
+	guild2 "atlas-guilds/kafka/consumer/guild"
+
+	thread2 "atlas-guilds/kafka/consumer/thread"
+
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"

@@ -5,8 +5,9 @@ import (
 	"testing"
 	"time"
 
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/google/uuid"
+
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 func TestNewModelBuilder(t *testing.T) {
@@ -28,7 +29,6 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 		SetTravelDuration(10 * time.Minute).
 		SetCycleInterval(30 * time.Minute).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -61,7 +61,6 @@ func TestCloneModel(t *testing.T) {
 	cloned, err := route.CloneModel(original).
 		SetStartMapId(_map.Id(200000000)).
 		Build()
-
 	if err != nil {
 		t.Fatalf("CloneModel().Build() unexpected error: %v", err)
 	}
@@ -83,7 +82,6 @@ func TestTripScheduleBuilder(t *testing.T) {
 		SetDeparture(now.Add(6 * time.Minute)).
 		SetArrival(now.Add(16 * time.Minute)).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}

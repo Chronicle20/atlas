@@ -1,10 +1,11 @@
 package pet
 
 import (
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
@@ -31,8 +32,7 @@ type SpawnCommandBody struct {
 	Lead bool `json:"lead"`
 }
 
-type DespawnCommandBody struct {
-}
+type DespawnCommandBody struct{}
 
 type AttemptCommandCommandBody struct {
 	CommandId byte `json:"commandId"`
@@ -55,8 +55,7 @@ type SetExcludeCommandBody struct {
 	Items []uint32 `json:"items"`
 }
 
-type EvolveCommandBody struct {
-}
+type EvolveCommandBody struct{}
 
 const (
 	EnvCommandTopicMovement = "COMMAND_TOPIC_PET_MOVEMENT"
@@ -100,11 +99,9 @@ type StatusEvent[E any] struct {
 	Body    E      `json:"body"`
 }
 
-type CreatedStatusEventBody struct {
-}
+type CreatedStatusEventBody struct{}
 
-type DeletedStatusEventBody struct {
-}
+type DeletedStatusEventBody struct{}
 
 type SpawnedStatusEventBody struct {
 	TemplateId uint32 `json:"templateId"`

@@ -10,13 +10,14 @@ import (
 	"context"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	trpkt "github.com/Chronicle20/atlas/libs/atlas-packet/teleportrock"
 	trcb "github.com/Chronicle20/atlas/libs/atlas-packet/teleportrock/clientbound"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 // rockUseBarMask are the fieldLimit bits that bar teleport-rock use on a map

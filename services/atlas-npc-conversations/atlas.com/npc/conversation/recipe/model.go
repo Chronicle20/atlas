@@ -32,15 +32,15 @@ type Model struct {
 	stimulatorFailChance float64
 }
 
-func (m Model) Id() uuid.UUID               { return m.id }
-func (m Model) TenantId() uuid.UUID         { return m.tenantId }
-func (m Model) ConversationId() uuid.UUID   { return m.conversationId }
-func (m Model) NpcId() uint32               { return m.npcId }
-func (m Model) StateId() string             { return m.stateId }
-func (m Model) ItemId() uint32              { return m.itemId }
-func (m Model) Materials() []Material       { return m.materials }
-func (m Model) MesoCost() uint32            { return m.mesoCost }
-func (m Model) StimulatorId() uint32        { return m.stimulatorId }
+func (m Model) Id() uuid.UUID                 { return m.id }
+func (m Model) TenantId() uuid.UUID           { return m.tenantId }
+func (m Model) ConversationId() uuid.UUID     { return m.conversationId }
+func (m Model) NpcId() uint32                 { return m.npcId }
+func (m Model) StateId() string               { return m.stateId }
+func (m Model) ItemId() uint32                { return m.itemId }
+func (m Model) Materials() []Material         { return m.materials }
+func (m Model) MesoCost() uint32              { return m.mesoCost }
+func (m Model) StimulatorId() uint32          { return m.stimulatorId }
 func (m Model) StimulatorFailChance() float64 { return m.stimulatorFailChance }
 
 // ComputeRecipeId returns the deterministic UUID v5 used as the recipes.id

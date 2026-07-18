@@ -8,16 +8,16 @@ import (
 // Entity is the GORM entity for the commodities Model
 type Entity struct {
 	gorm.Model
-	Id           uuid.UUID `gorm:"type:uuid;primaryKey"`
-	TenantId     uuid.UUID `gorm:"type:uuid;not null"`
-	NpcId        uint32    `gorm:"not null"`
-	TemplateId   uint32    `gorm:"not null"`
-	MesoPrice    uint32    `gorm:"not null"`
-	DiscountRate byte      `gorm:"not null;default:0"`
-	TokenTemplateId  uint32    `gorm:"not null;default:0"`
-	TokenPrice   uint32    `gorm:"not null;default:0"`
-	Period       uint32    `gorm:"not null;default:0"`
-	LevelLimit   uint32    `gorm:"not null;default:0"`
+	Id              uuid.UUID `gorm:"type:uuid;primaryKey"`
+	TenantId        uuid.UUID `gorm:"type:uuid;not null"`
+	NpcId           uint32    `gorm:"not null"`
+	TemplateId      uint32    `gorm:"not null"`
+	MesoPrice       uint32    `gorm:"not null"`
+	DiscountRate    byte      `gorm:"not null;default:0"`
+	TokenTemplateId uint32    `gorm:"not null;default:0"`
+	TokenPrice      uint32    `gorm:"not null;default:0"`
+	Period          uint32    `gorm:"not null;default:0"`
+	LevelLimit      uint32    `gorm:"not null;default:0"`
 }
 
 func (e *Entity) TableName() string {

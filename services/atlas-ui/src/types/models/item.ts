@@ -1,44 +1,64 @@
 import type { Compartment } from "@/lib/items/taxonomy";
 
-export type ItemType = "Equipment" | "Consumable" | "Setup" | "Etc" | "Cash" | "Pet" | "Unknown";
+export type ItemType =
+  "Equipment" | "Consumable" | "Setup" | "Etc" | "Cash" | "Pet" | "Unknown";
 
 export function getItemType(itemId: string): ItemType {
   const id = parseInt(itemId, 10);
   if (isNaN(id)) return "Unknown";
   const prefix = Math.floor(id / 1000000);
   switch (prefix) {
-    case 1: return "Equipment";
-    case 2: return "Consumable";
-    case 3: return "Setup";
-    case 4: return "Etc";
+    case 1:
+      return "Equipment";
+    case 2:
+      return "Consumable";
+    case 3:
+      return "Setup";
+    case 4:
+      return "Etc";
     // Prefix 5 splits between pets and cash. Pets are classification 500
     // (floor(id / 10000) === 500, i.e. 5000000-5009999) and are served by a
     // dedicated /api/data/pets endpoint; everything else (501+) is cash.
-    case 5: return Math.floor(id / 10000) === 500 ? "Pet" : "Cash";
-    default: return "Unknown";
+    case 5:
+      return Math.floor(id / 10000) === 500 ? "Pet" : "Cash";
+    default:
+      return "Unknown";
   }
 }
 
 export function getItemTypeBadgeVariant(type: ItemType): string {
   switch (type) {
-    case "Equipment": return "bg-blue-100 text-blue-800";
-    case "Consumable": return "bg-green-100 text-green-800";
-    case "Setup": return "bg-purple-100 text-purple-800";
-    case "Etc": return "bg-gray-100 text-gray-800";
-    case "Cash": return "bg-yellow-100 text-yellow-800";
-    case "Pet": return "bg-pink-100 text-pink-800";
-    default: return "bg-gray-100 text-gray-800";
+    case "Equipment":
+      return "bg-blue-100 text-blue-800";
+    case "Consumable":
+      return "bg-green-100 text-green-800";
+    case "Setup":
+      return "bg-purple-100 text-purple-800";
+    case "Etc":
+      return "bg-gray-100 text-gray-800";
+    case "Cash":
+      return "bg-yellow-100 text-yellow-800";
+    case "Pet":
+      return "bg-pink-100 text-pink-800";
+    default:
+      return "bg-gray-100 text-gray-800";
   }
 }
 
 export function getCompartmentBadgeVariant(compartment: Compartment): string {
   switch (compartment) {
-    case "equipment": return "bg-blue-100 text-blue-800";
-    case "use": return "bg-green-100 text-green-800";
-    case "setup": return "bg-purple-100 text-purple-800";
-    case "etc": return "bg-gray-100 text-gray-800";
-    case "cash": return "bg-yellow-100 text-yellow-800";
-    default: return "bg-gray-100 text-gray-800";
+    case "equipment":
+      return "bg-blue-100 text-blue-800";
+    case "use":
+      return "bg-green-100 text-green-800";
+    case "setup":
+      return "bg-purple-100 text-purple-800";
+    case "etc":
+      return "bg-gray-100 text-gray-800";
+    case "cash":
+      return "bg-yellow-100 text-yellow-800";
+    default:
+      return "bg-gray-100 text-gray-800";
   }
 }
 
@@ -171,9 +191,4 @@ export interface PetData {
 }
 
 export type ItemDetailData =
-  | EquipmentData
-  | ConsumableData
-  | SetupData
-  | EtcData
-  | CashItemData
-  | PetData;
+  EquipmentData | ConsumableData | SetupData | EtcData | CashItemData | PetData;

@@ -1,15 +1,17 @@
 package handler
 
 import (
+	"atlas-channel/character"
+	"atlas-channel/data/skill/effect"
+	"atlas-channel/monster"
 	"context"
 	"errors"
 	"io"
 	"testing"
 	"time"
 
-	"atlas-channel/character"
-	"atlas-channel/data/skill/effect"
-	"atlas-channel/monster"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -20,8 +22,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 // applyCall captures one ApplyStatus invocation so tests can assert on it.

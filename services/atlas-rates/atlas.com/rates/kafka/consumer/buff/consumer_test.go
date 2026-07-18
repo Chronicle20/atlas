@@ -1,18 +1,19 @@
 package buff
 
 import (
+	"atlas-rates/kafka/message/buff"
+	"atlas-rates/rate"
 	"io"
 	"testing"
 	"time"
 
-	"atlas-rates/kafka/message/buff"
 	charmock "atlas-rates/character/mock"
-	"atlas-rates/rate"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/sirupsen/logrus"
 )
 
 func discardLogger() logrus.FieldLogger {

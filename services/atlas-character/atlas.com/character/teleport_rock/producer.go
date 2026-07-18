@@ -3,12 +3,13 @@ package teleport_rock
 import (
 	teleportrock2 "atlas-character/kafka/message/teleportrock"
 
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
 )
 
 func listUpdatedEventProvider(transactionId uuid.UUID, worldId world.Id, characterId uint32, vip bool, registered bool, maps []_map.Id) model.Provider[[]kafka.Message] {

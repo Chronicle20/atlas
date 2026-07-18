@@ -3,10 +3,11 @@ package opcodes
 import (
 	"strconv"
 
+	"github.com/sirupsen/logrus"
+
 	socket "github.com/Chronicle20/atlas/libs/atlas-socket"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	sw "github.com/Chronicle20/atlas/libs/atlas-socket/writer"
-	"github.com/sirupsen/logrus"
 )
 
 // BuildWriterProducer builds a writer.Producer from configuration, filtering to only the writers

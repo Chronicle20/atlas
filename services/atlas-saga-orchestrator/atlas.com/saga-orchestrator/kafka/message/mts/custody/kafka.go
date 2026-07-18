@@ -74,6 +74,7 @@ type AcceptToMtsListingCommandBody struct {
 	RingId        uint32 `json:"ringId"`
 	ViciousCount  uint32 `json:"viciousCount"`
 	Flags         uint16 `json:"flags"`
+	Owner         string `json:"owner"`
 
 	// sale params
 	ListValue      uint32     `json:"listValue"`

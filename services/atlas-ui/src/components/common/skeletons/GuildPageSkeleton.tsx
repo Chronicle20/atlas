@@ -1,5 +1,5 @@
-import { Skeleton } from '@/components/ui/skeleton';
-import { TableSkeleton } from '../TableSkeleton';
+import { Skeleton } from "@/components/ui/skeleton";
+import { TableSkeleton } from "../TableSkeleton";
 
 /**
  * GuildPageSkeleton provides a loading state specifically for the Guilds page.
@@ -14,13 +14,13 @@ export function GuildPageSkeleton() {
           <Skeleton className="h-8 w-20" /> {/* "Guilds" title */}
         </div>
       </div>
-      
+
       {/* Table content */}
       <div className="mt-4">
-        <TableSkeleton 
-          rows={8} 
-          columns={5} 
-          showHeader={true} 
+        <TableSkeleton
+          rows={8}
+          columns={5}
+          showHeader={true}
           showActions={true}
         />
       </div>

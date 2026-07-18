@@ -6,10 +6,11 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	trsb "github.com/Chronicle20/atlas/libs/atlas-packet/teleportrock/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 // teleportRockRequestsFunc allows tests to capture the emitted commands.

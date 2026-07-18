@@ -10,11 +10,12 @@ import (
 	"context"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 // SetItcBody builds the SET_ITC (MTS / ITC) scene-transition body. It mirrors

@@ -4,7 +4,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // Evictor is called once per tenant when the last listener for that

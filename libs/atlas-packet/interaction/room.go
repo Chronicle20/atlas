@@ -4,21 +4,27 @@ import (
 	"context"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/miniroom"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 type RoomType byte
 
+// The room-type discriminator bytes are single-sourced in
+// libs/atlas-constants/miniroom; RoomType keeps its own packet-domain type but
+// derives its values from those shared constants (CLAUDE.md: straightforward
+// move over type-alias re-export).
 const (
-	OmokRoomType         RoomType = 1
-	MatchCardRoomType    RoomType = 2
-	TradeRoomType        RoomType = 3
-	PersonalShopRoomType RoomType = 4
-	MerchantShopRoomType RoomType = 5
-	CashTradeRoomType    RoomType = 6
+	OmokRoomType         RoomType = RoomType(miniroom.Omok)
+	MatchCardRoomType    RoomType = RoomType(miniroom.MatchCards)
+	TradeRoomType        RoomType = RoomType(miniroom.Trade)
+	PersonalShopRoomType RoomType = RoomType(miniroom.PersonalShop)
+	MerchantShopRoomType RoomType = RoomType(miniroom.MerchantShop)
+	CashTradeRoomType    RoomType = RoomType(miniroom.CashTrade)
 )
 
 type RoomMessage struct {
@@ -43,15 +49,18 @@ type RoomSoldItem struct {
 	BuyerName string
 }
 
+// Room models the shop-family EnterResultSuccess bodies (personal shop /
+// hired merchant). Game rooms (Omok / Match Cards) are NOT modelled here:
+// their room-enter blob has a different layout (yourSlot byte after capacity;
+// avatars and 20-byte records in two SEPARATE 0xFF-terminated lists) and
+// lives in clientbound.InteractionMiniGameRoom (IDA-derived; ida-notes.md §G5
+// "Room-enter blob — FULL RESOLUTION").
 type Room struct {
 	roomType     RoomType
 	capacity     byte
 	position     byte
 	visitors     []Visitor
 	title        string
-	gameKind     byte
-	tournament   bool
-	round        byte
 	maxItemCount byte
 	items        []RoomShopItem
 	messages     []RoomMessage
@@ -61,18 +70,6 @@ type Room struct {
 	firstTime    bool
 	soldItems    []RoomSoldItem
 	soldTotal    uint32
-}
-
-func NewGameRoom(roomType RoomType, capacity byte, visitors []Visitor, title string, gameKind byte, tournament bool, round byte) Room {
-	return Room{
-		roomType:   roomType,
-		capacity:   capacity,
-		visitors:   visitors,
-		title:      title,
-		gameKind:   gameKind,
-		tournament: tournament,
-		round:      round,
-	}
 }
 
 // NewPersonalShopRoom builds a personal-store (roomType 4) enter-result room.
@@ -133,23 +130,20 @@ func (r Room) SetOwnerLedger(openTime uint16, firstTime bool, soldItems []RoomSo
 	return r
 }
 
-func (r Room) RoomType() RoomType         { return r.roomType }
-func (r Room) Capacity() byte             { return r.capacity }
-func (r Room) Position() byte             { return r.position }
-func (r Room) OpenTime() uint16           { return r.openTime }
-func (r Room) FirstTime() bool            { return r.firstTime }
-func (r Room) Visitors() []Visitor        { return r.visitors }
-func (r Room) Title() string              { return r.title }
-func (r Room) GameKind() byte             { return r.gameKind }
-func (r Room) Tournament() bool           { return r.tournament }
-func (r Room) Round() byte                { return r.round }
-func (r Room) MaxItemCount() byte         { return r.maxItemCount }
-func (r Room) Items() []RoomShopItem      { return r.items }
-func (r Room) Messages() []RoomMessage    { return r.messages }
-func (r Room) OwnerName() string          { return r.ownerName }
-func (r Room) Meso() uint32               { return r.meso }
-func (r Room) SoldItems() []RoomSoldItem  { return r.soldItems }
-func (r Room) SoldTotal() uint32          { return r.soldTotal }
+func (r Room) RoomType() RoomType        { return r.roomType }
+func (r Room) Capacity() byte            { return r.capacity }
+func (r Room) Position() byte            { return r.position }
+func (r Room) OpenTime() uint16          { return r.openTime }
+func (r Room) FirstTime() bool           { return r.firstTime }
+func (r Room) Visitors() []Visitor       { return r.visitors }
+func (r Room) Title() string             { return r.title }
+func (r Room) MaxItemCount() byte        { return r.maxItemCount }
+func (r Room) Items() []RoomShopItem     { return r.items }
+func (r Room) Messages() []RoomMessage   { return r.messages }
+func (r Room) OwnerName() string         { return r.ownerName }
+func (r Room) Meso() uint32              { return r.meso }
+func (r Room) SoldItems() []RoomSoldItem { return r.soldItems }
+func (r Room) SoldTotal() uint32         { return r.soldTotal }
 
 func (rm Room) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
@@ -169,13 +163,6 @@ func (rm Room) Encode(l logrus.FieldLogger, ctx context.Context) func(options ma
 		w.WriteByte(0xFF)
 
 		switch rm.roomType {
-		case OmokRoomType, MatchCardRoomType:
-			w.WriteAsciiString(rm.title)
-			w.WriteByte(rm.gameKind)
-			w.WriteBool(rm.tournament)
-			if rm.tournament {
-				w.WriteByte(rm.round)
-			}
 		case PersonalShopRoomType:
 			w.WriteAsciiString(rm.title)
 			w.WriteByte(rm.maxItemCount)
@@ -255,13 +242,6 @@ func (rm *Room) Decode(l logrus.FieldLogger, ctx context.Context) func(r *reques
 		}
 
 		switch rm.roomType {
-		case OmokRoomType, MatchCardRoomType:
-			rm.title = r.ReadAsciiString()
-			rm.gameKind = r.ReadByte()
-			rm.tournament = r.ReadBool()
-			if rm.tournament {
-				rm.round = r.ReadByte()
-			}
 		case PersonalShopRoomType:
 			rm.title = r.ReadAsciiString()
 			rm.maxItemCount = r.ReadByte()

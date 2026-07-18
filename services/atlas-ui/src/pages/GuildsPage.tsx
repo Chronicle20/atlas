@@ -19,7 +19,10 @@ const DEBOUNCE_MS = 250;
 export function GuildsPage() {
   const { activeTenant } = useTenant();
   const [searchParams, setSearchParams] = useSearchParams();
-  const pageNumber = Math.max(1, Number.parseInt(searchParams.get("page") ?? "1", 10) || 1);
+  const pageNumber = Math.max(
+    1,
+    Number.parseInt(searchParams.get("page") ?? "1", 10) || 1,
+  );
   const urlQ = searchParams.get("q") ?? "";
   const isSearching = urlQ.trim().length > 0;
 
@@ -42,8 +45,19 @@ export function GuildsPage() {
   // Only one of these two is enabled at a time based on whether a search
   // term is active (task-117: server-side filter[name] via guildsService.search,
   // plain server-side paging via guildsService.getPage).
-  const browseQuery = useGuildsPage(activeTenant, page, undefined, !isSearching);
-  const searchQuery = useGuildSearch(activeTenant, urlQ, page, undefined, isSearching);
+  const browseQuery = useGuildsPage(
+    activeTenant,
+    page,
+    undefined,
+    !isSearching,
+  );
+  const searchQuery = useGuildSearch(
+    activeTenant,
+    urlQ,
+    page,
+    undefined,
+    isSearching,
+  );
   const guildsQuery = isSearching ? searchQuery : browseQuery;
 
   const charactersQuery = useCharacters(activeTenant!);
@@ -59,10 +73,17 @@ export function GuildsPage() {
   const characters = charactersQuery.data ?? [];
   const tenantConfig = tenantConfigQuery.data ?? null;
 
-  const loading = guildsQuery.isLoading || charactersQuery.isLoading || tenantConfigQuery.isLoading;
-  const error = guildsQuery.error?.message ?? charactersQuery.error?.message ?? tenantConfigQuery.error?.message ?? null;
+  const loading =
+    guildsQuery.isLoading ||
+    charactersQuery.isLoading ||
+    tenantConfigQuery.isLoading;
+  const error =
+    guildsQuery.error?.message ??
+    charactersQuery.error?.message ??
+    tenantConfigQuery.error?.message ??
+    null;
 
-  const characterMap = new Map(characters.map(c => [c.id, c]));
+  const characterMap = new Map(characters.map((c) => [c.id, c]));
   const columns = getColumns({ tenant: tenantConfig, characterMap });
 
   const handlePageChange = (nextPage: number) => {

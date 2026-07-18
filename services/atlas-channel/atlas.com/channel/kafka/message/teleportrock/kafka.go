@@ -1,9 +1,10 @@
 package teleportrock
 
 import (
+	"github.com/google/uuid"
+
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (

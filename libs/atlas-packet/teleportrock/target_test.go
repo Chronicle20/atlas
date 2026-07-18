@@ -3,9 +3,10 @@ package teleportrock
 import (
 	"testing"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 func decodeTarget(t *testing.T, b []byte, hasTrailingUpdateTime bool) Target {

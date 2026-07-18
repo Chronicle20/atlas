@@ -26,6 +26,10 @@ type (
 	WarpToRandomPortalPayload    = sharedsaga.WarpToRandomPortalPayload
 	ApplyConsumableEffectPayload = sharedsaga.ApplyConsumableEffectPayload
 	FieldEffectWeatherPayload    = sharedsaga.FieldEffectWeatherPayload
+	SetAssetOwnerPayload         = sharedsaga.SetAssetOwnerPayload
+	ApplyAssetLockPayload        = sharedsaga.ApplyAssetLockPayload
+	IncubatorResultPayload       = sharedsaga.IncubatorResultPayload
+	DestroyAssetFromSlotPayload  = sharedsaga.DestroyAssetFromSlotPayload
 
 	// Storage payload types
 	DepositToStoragePayload     = sharedsaga.DepositToStoragePayload
@@ -48,6 +52,9 @@ const (
 	CharacterRespawn     = sharedsaga.CharacterRespawn
 	FieldEffectUse       = sharedsaga.FieldEffectUse
 	TeleportRockUse      = sharedsaga.TeleportRockUse
+	ItemTagUse           = sharedsaga.ItemTagUse
+	SealingLockUse       = sharedsaga.SealingLockUse
+	IncubatorUse         = sharedsaga.IncubatorUse
 	PointReset           = sharedsaga.PointReset
 
 	// Status constants
@@ -76,6 +83,10 @@ const (
 	WarpToRandomPortal    = sharedsaga.WarpToRandomPortal
 	FieldEffectWeather    = sharedsaga.FieldEffectWeather
 	ApplyConsumableEffect = sharedsaga.ApplyConsumableEffect
+	SetAssetOwner         = sharedsaga.SetAssetOwner
+	ApplyAssetLock        = sharedsaga.ApplyAssetLock
+	IncubatorResult       = sharedsaga.IncubatorResult
+	DestroyAssetFromSlot  = sharedsaga.DestroyAssetFromSlot
 	TransferAP            = sharedsaga.TransferAP
 	TransferSP            = sharedsaga.TransferSP
 )

@@ -1,18 +1,19 @@
 package main
 
 import (
+	"atlas-invites/character"
+	"atlas-invites/invite"
+	"atlas-invites/tasks"
 	"context"
+	"os"
+	"time"
 
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 
-	"atlas-invites/character"
-	"atlas-invites/invite"
 	character2 "atlas-invites/kafka/consumer/character"
 	invite2 "atlas-invites/kafka/consumer/invite"
-	"atlas-invites/tasks"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
-	"os"
-	"time"
+
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"

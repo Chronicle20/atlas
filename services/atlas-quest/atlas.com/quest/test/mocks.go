@@ -9,9 +9,10 @@ import (
 	"errors"
 	"time"
 
+	"github.com/google/uuid"
+
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 // MockDataProcessor implements dataquest.Processor for testing
@@ -100,8 +101,10 @@ func (m *MockValidationProcessor) ValidateEndRequirements(_ uint32, _ dataquest.
 }
 
 // Ensure mocks implement interfaces
-var _ dataquest.Processor = (*MockDataProcessor)(nil)
-var _ validation.Processor = (*MockValidationProcessor)(nil)
+var (
+	_ dataquest.Processor  = (*MockDataProcessor)(nil)
+	_ validation.Processor = (*MockValidationProcessor)(nil)
+)
 
 // CreateSimpleQuestDefinition creates a basic quest definition for testing
 func CreateSimpleQuestDefinition(questId uint32) dataquest.RestModel {

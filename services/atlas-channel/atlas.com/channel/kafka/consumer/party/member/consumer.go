@@ -12,6 +12,9 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
@@ -21,9 +24,7 @@ import (
 	partypkt "github.com/Chronicle20/atlas/libs/atlas-packet/party"
 	partycb "github.com/Chronicle20/atlas/libs/atlas-packet/party/clientbound"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func toPartyMembers(l logrus.FieldLogger, ctx context.Context, p party.Model, forChannel channel.Id) []partypkt.PartyMember {

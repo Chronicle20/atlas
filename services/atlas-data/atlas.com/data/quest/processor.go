@@ -4,8 +4,9 @@ import (
 	"atlas-data/document"
 	"atlas-data/xml"
 	"context"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"path/filepath"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"

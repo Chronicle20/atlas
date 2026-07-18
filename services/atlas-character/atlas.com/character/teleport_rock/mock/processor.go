@@ -4,9 +4,10 @@ import (
 	"atlas-character/kafka/message"
 	"atlas-character/teleport_rock"
 
+	"github.com/google/uuid"
+
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 // ProcessorMock is the func-field mock for teleport_rock.Processor (fame/notes

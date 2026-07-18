@@ -55,13 +55,23 @@ export function BansPage() {
   const [expireDialogOpen, setExpireDialogOpen] = useState(false);
   const [selectedBan, setSelectedBan] = useState<Ban | null>(null);
 
-  const pageNumber = Math.max(1, Number.parseInt(searchParams.get("page") ?? "1", 10) || 1);
+  const pageNumber = Math.max(
+    1,
+    Number.parseInt(searchParams.get("page") ?? "1", 10) || 1,
+  );
 
   const bansQueryOptions = useMemo(
-    () => (typeFilter !== "all" ? { type: Number(typeFilter) as BanType } : undefined),
-    [typeFilter]
+    () =>
+      typeFilter !== "all"
+        ? { type: Number(typeFilter) as BanType }
+        : undefined,
+    [typeFilter],
   );
-  const bansQuery = useBansPage(activeTenant, { number: pageNumber, size: PAGE_SIZE }, bansQueryOptions);
+  const bansQuery = useBansPage(
+    activeTenant,
+    { number: pageNumber, size: PAGE_SIZE },
+    bansQueryOptions,
+  );
   const { invalidateAll } = useInvalidateBans();
   const { isRefreshing, onRefresh } = useGridRefresh([bansQuery]);
 
@@ -83,8 +93,14 @@ export function BansPage() {
   };
 
   const handleView = (ban: Ban) => navigate(`/bans/${ban.id}`);
-  const handleDelete = (ban: Ban) => { setSelectedBan(ban); setDeleteDialogOpen(true); };
-  const handleExpire = (ban: Ban) => { setSelectedBan(ban); setExpireDialogOpen(true); };
+  const handleDelete = (ban: Ban) => {
+    setSelectedBan(ban);
+    setDeleteDialogOpen(true);
+  };
+  const handleExpire = (ban: Ban) => {
+    setSelectedBan(ban);
+    setExpireDialogOpen(true);
+  };
   const handleDeleteSuccess = () => setSelectedBan(null);
   const handleExpireSuccess = () => setSelectedBan(null);
 
@@ -136,9 +152,10 @@ export function BansPage() {
           initialVisibilityState={hiddenColumns}
           emptyState={{
             title: "No bans found",
-            description: typeFilter !== "all"
-              ? "No bans match the selected filter. Try selecting a different type or create a new ban."
-              : "There are no bans to display. Create a new ban to get started.",
+            description:
+              typeFilter !== "all"
+                ? "No bans match the selected filter. Try selecting a different type or create a new ban."
+                : "There are no bans to display. Create a new ban to get started.",
             action: {
               label: "Create Ban",
               onClick: () => setCreateDialogOpen(true),

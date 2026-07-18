@@ -1,20 +1,20 @@
 package projection_test
 
 import (
+	"atlas-channel/configuration"
+	"atlas-channel/configuration/projection"
+	"atlas-channel/configuration/tenant"
+	"atlas-channel/server"
 	"context"
 	"encoding/json"
 	"testing"
 	"time"
 
-	"atlas-channel/configuration"
-	"atlas-channel/configuration/projection"
-	"atlas-channel/configuration/tenant"
-	"atlas-channel/server"
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
 )
 
 func TestDecodeServiceEnvelope_ParsesShape(t *testing.T) {

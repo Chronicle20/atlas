@@ -6,8 +6,9 @@ import (
 	"errors"
 	"testing"
 
-	inv "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/google/uuid"
+
+	inv "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 )
 
 func TestNewModelBuilder(t *testing.T) {
@@ -31,7 +32,6 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 	model, err := inventory.NewModelBuilder(100).
 		SetEquipable(equip).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -58,7 +58,6 @@ func TestSetCompartment(t *testing.T) {
 	model, err := inventory.NewModelBuilder(100).
 		SetCompartment(comp).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -87,7 +86,6 @@ func TestAllCompartments(t *testing.T) {
 		SetEtc(etc).
 		SetCash(cash).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}

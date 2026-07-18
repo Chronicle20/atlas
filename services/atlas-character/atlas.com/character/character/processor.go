@@ -12,12 +12,17 @@ import (
 	"atlas-character/teleport_rock"
 	"context"
 	"errors"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"math"
 	"math/rand"
 	"regexp"
 	"time"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -28,14 +33,13 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
-var blockedNameErr = errors.New("blocked name")
-var invalidLevelErr = errors.New("invalid level")
+var (
+	errBlockedName  = errors.New("blocked name")
+	errInvalidLevel = errors.New("invalid level")
+)
 
 // ErrNotEnoughMeso signals a rejected meso change: no state was written and
 // the rejection status event is emitted outside the transaction.
@@ -249,7 +253,6 @@ func (p *ProcessorImpl) IsValidName(name string) (bool, error) {
 	//}
 
 	return true, nil
-
 }
 
 func (p *ProcessorImpl) CheckNameValidity(name string, worldId world.Id) (NameValidityResult, error) {
@@ -300,11 +303,11 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(transactionId uuid.UUID,
 		}
 		if !ok {
 			p.l.Infof("Attempting to create a character with an invalid name [%s].", input.Name())
-			return Model{}, blockedNameErr
+			return Model{}, errBlockedName
 		}
 		if input.Level() < 1 || input.Level() > 200 {
 			p.l.Infof("Attempting to create character with an invalid level [%d].", input.Level())
-			return Model{}, invalidLevelErr
+			return Model{}, errInvalidLevel
 		}
 
 		var res Model
@@ -946,9 +949,9 @@ func (p *ProcessorImpl) RequestDistributeAp(transactionId uuid.UUID, characterId
 			return errors.New("not enough ap")
 		}
 
-		var eufs = make([]EntityUpdateFunction, 0)
-		var stats = make([]stat.Type, 0)
-		var values = make(map[string]interface{})
+		eufs := make([]EntityUpdateFunction, 0)
+		stats := make([]stat.Type, 0)
+		values := make(map[string]interface{})
 
 		spent := uint16(0)
 		for _, d := range distributions {
@@ -1118,7 +1121,7 @@ func (p *ProcessorImpl) getMaxHpGrowth(c Model) (uint16, error) {
 	}
 
 	if improvingHPSkillId > 0 {
-		var improvingHPSkillLevel = c.GetSkillLevel(uint32(improvingHPSkillId))
+		improvingHPSkillLevel := c.GetSkillLevel(uint32(improvingHPSkillId))
 		se, err := p.sdp.GetEffect(uint32(improvingHPSkillId), improvingHPSkillLevel)
 		if err == nil {
 			resMax = uint16(int16(resMax) + se.Y())
@@ -1190,7 +1193,7 @@ func (p *ProcessorImpl) getMaxMpGrowth(c Model) (uint16, error) {
 	resMax += uint16(math.Ceil(float64(intelligence) / 10))
 
 	if improvingMPSkillId > 0 {
-		var improvingMPSkillLevel = c.GetSkillLevel(uint32(improvingMPSkillId))
+		improvingMPSkillLevel := c.GetSkillLevel(uint32(improvingMPSkillId))
 		se, err := p.sdp.GetEffect(uint32(improvingMPSkillId), improvingMPSkillLevel)
 		if err == nil {
 			resMax = uint16(int16(resMax) + se.X())
@@ -1461,7 +1464,7 @@ func (p *ProcessorImpl) ProcessLevelChange(mb *message.Buffer) func(transactionI
 		var addedMP uint16
 		var addedStr uint16
 		var addedDex uint16
-		var sus = []stat.Type{stat.TypeAvailableAP, stat.TypeAvailableSP, stat.TypeHp, stat.TypeMaxHp, stat.TypeMp, stat.TypeMaxMp}
+		sus := []stat.Type{stat.TypeAvailableAP, stat.TypeAvailableSP, stat.TypeHp, stat.TypeMaxHp, stat.TypeMp, stat.TypeMaxMp}
 
 		var newMaxHP, newMaxMP uint16
 		var newStr, newDex uint16
@@ -1507,7 +1510,7 @@ func (p *ProcessorImpl) ProcessLevelChange(mb *message.Buffer) func(transactionI
 			newMaxMP = c.MaxMp() + addedMP
 			newInt = c.Intelligence()
 
-			var eufs = []EntityUpdateFunction{
+			eufs := []EntityUpdateFunction{
 				SetAP(c.AP() + addedAP),
 				SetSP(c.SP(sb)+addedSP, uint32(sb)),
 				SetHealth(newMaxHP),
@@ -1654,14 +1657,14 @@ func (p *ProcessorImpl) resolveHPMPGainParams(c Model) hpMPGainParams {
 	}
 
 	if improvingHPSkillId > 0 {
-		var improvingHPSkillLevel = c.GetSkillLevel(uint32(improvingHPSkillId))
+		improvingHPSkillLevel := c.GetSkillLevel(uint32(improvingHPSkillId))
 		se, err := p.sdp.GetEffect(uint32(improvingHPSkillId), improvingHPSkillLevel)
 		if err == nil {
 			params.hpBonus = se.X()
 		}
 	}
 	if improvingMPSkillId > 0 {
-		var improvingMPSkillLevel = c.GetSkillLevel(uint32(improvingMPSkillId))
+		improvingMPSkillLevel := c.GetSkillLevel(uint32(improvingMPSkillId))
 		se, err := p.sdp.GetEffect(uint32(improvingMPSkillId), improvingMPSkillLevel)
 		if err == nil {
 			params.mpBonus = se.X()

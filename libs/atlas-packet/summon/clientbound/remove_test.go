@@ -48,6 +48,7 @@ func TestSummonRemoveBytes(t *testing.T) {
 //     OnRemoved leaf sub_71CC52@0x71cc52.
 //   - sub_71CC52 reads ONE byte: Decode1@0x71cc67 (leave/animated flag, branched
 //     0/2/3/4) and nothing else from the packet.
+//
 // Wire = int ownerId(=cid, consumed upstream) + int oid + byte flag. Atlas writes
 // flag = 4 when animated, else 1 (matches the branch).
 // packet-audit:verify packet=summon/clientbound/SummonRemove version=gms_v79 ida=0x71cc52
@@ -75,6 +76,7 @@ func TestSummonRemoveBytesV79(t *testing.T) {
 //     (REMOVE_SPECIAL_MAPOBJECT) calls the OnRemoved leaf sub_6E8F0F@0x6e8f0f.
 //   - sub_6E8F0F reads ONE byte: Decode1@0x6e8f24 (leave/animated flag, branched
 //     0/2/3/4) and nothing else from the packet.
+//
 // Wire = int ownerId(=cid, consumed upstream) + int oid + byte flag.
 // packet-audit:verify packet=summon/clientbound/SummonRemove version=gms_v72 ida=0x6e8f0f
 func TestSummonRemoveBytesV72(t *testing.T) {
@@ -100,6 +102,7 @@ func TestSummonRemoveBytesV72(t *testing.T) {
 //     summon, then for op 0xB0 calls sub_7A64EB(v9,v5)@0x938e43 (the OnRemoved leaf).
 //   - sub_7A64EB@0x7a64eb reads ONE byte: Decode1@0x7a6500 (leave/animated flag,
 //     branched 0/2/3/4) and nothing else from the packet.
+//
 // So the wire is: int ownerId(=cid, consumed upstream) + int oid + byte flag.
 // Atlas writes flag = 4 when animated, else 1 (matches the branch).
 // packet-audit:verify packet=summon/clientbound/SummonRemove version=gms_v83 ida=0x7a64eb
@@ -128,6 +131,7 @@ func TestSummonRemoveBytesV83(t *testing.T) {
 //     summon via sub_97B9D1, then for op 180 calls the OnRemoved leaf sub_7CBFA1@0x7cbfa1.
 //   - sub_7CBFA1@0x7cbfa1 reads ONE byte: Decode1@0x7cbfb6 (leave/animated flag,
 //     branched 0/2/3/4) and nothing else from the packet.
+//
 // Wire = int ownerId(=cid, consumed upstream) + int oid + byte flag. Atlas writes
 // flag = 4 when animated, else 1 (matches the branch). No off-by-one: Remove has no
 // version gate, so the v84 path is byte-identical to v83.
@@ -159,6 +163,7 @@ func TestSummonRemoveBytesV84(t *testing.T) {
 //   - sub_7F8CB0@0x7f8cb0 reads ONE byte: Decode1@0x7f8cc5 (leave/animated flag,
 //     branched 0/2/3/4) and nothing else from the packet (the rest is local
 //     chat/UI logic).
+//
 // Wire = int ownerId(=cid, consumed upstream) + int oid + byte flag. Atlas writes
 // flag = 4 when animated, else 1 (matches the branch). No off-by-one: Remove has no
 // version gate, so the v87 path is byte-identical to v83.
@@ -206,6 +211,7 @@ func TestSummonRemoveBytesV95(t *testing.T) {
 //   - sub_828502@0x828502 reads ONE byte: Decode1@0x828517 (v3, the leave/animated
 //     flag, branched 0/2/3/4) and nothing else from the packet (the rest is local
 //     skill-message / action-layer logic).
+//
 // Wire = int ownerId(=cid, consumed upstream) + int oid + byte flag. Atlas writes
 // flag = 4 when animated, else 1 (matches the branch). Remove has no version gate,
 // so the jms185 path is byte-identical to v83.

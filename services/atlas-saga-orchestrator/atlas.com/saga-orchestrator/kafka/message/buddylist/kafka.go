@@ -1,14 +1,15 @@
 package buddylist
 
 import (
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
 	// EnvCommandTopic defines the environment variable for the buddy list command topic
-	EnvCommandTopic             = "COMMAND_TOPIC_BUDDY_LIST"
+	EnvCommandTopic = "COMMAND_TOPIC_BUDDY_LIST"
 	// CommandTypeIncreaseCapacity is the command type for increasing buddy list capacity
 	CommandTypeIncreaseCapacity = "INCREASE_CAPACITY"
 

@@ -1,16 +1,17 @@
 package main
 
 import (
+	"atlas-reactors/reactor"
+	"atlas-reactors/tasks"
 	"context"
+	"os"
 
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 
 	drop2 "atlas-reactors/kafka/consumer/drop"
 	reactor2 "atlas-reactors/kafka/consumer/reactor"
-	"atlas-reactors/reactor"
-	"atlas-reactors/tasks"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
-	"os"
+
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"

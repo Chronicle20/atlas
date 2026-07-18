@@ -1,6 +1,7 @@
 package buffs_test
 
 import (
+	"atlas-effective-stats/external/buffs"
 	"context"
 	"fmt"
 	"net/http"
@@ -9,11 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"atlas-effective-stats/external/buffs"
-
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // buffDoc renders a JSON:API document for buffs with SourceId [from, to]

@@ -1,5 +1,9 @@
 import { api } from "@/lib/api/client";
-import { buildQueryString, type ServiceOptions, type QueryOptions } from "@/lib/api/query-params";
+import {
+  buildQueryString,
+  type ServiceOptions,
+  type QueryOptions,
+} from "@/lib/api/query-params";
 import { fetchAll, fetchPaged } from "@/services/api/pagination";
 
 const BASE_PATH = "/api/data/maps";
@@ -38,7 +42,9 @@ interface UpdateMapInput {
 }
 
 function sortMaps(maps: MapData[]): MapData[] {
-  return maps.sort((a, b) => a.attributes.name.localeCompare(b.attributes.name));
+  return maps.sort((a, b) =>
+    a.attributes.name.localeCompare(b.attributes.name),
+  );
 }
 
 function withSparseFields(options?: QueryOptions): QueryOptions {
@@ -89,12 +95,19 @@ export const mapsService = {
     return api.getOne<MapData>(`${BASE_PATH}/${id}`, options);
   },
 
-  async createMap(attributes: MapAttributes, options?: ServiceOptions): Promise<MapData> {
+  async createMap(
+    attributes: MapAttributes,
+    options?: ServiceOptions,
+  ): Promise<MapData> {
     const input: CreateMapInput = { data: { type: "maps", attributes } };
     return api.post<MapData>(BASE_PATH, input, options);
   },
 
-  async updateMap(map: MapData, updatedAttributes: Partial<MapAttributes>, options?: ServiceOptions): Promise<MapData> {
+  async updateMap(
+    map: MapData,
+    updatedAttributes: Partial<MapAttributes>,
+    options?: ServiceOptions,
+  ): Promise<MapData> {
     const input: UpdateMapInput = {
       data: {
         id: map.id,
@@ -114,14 +127,20 @@ export const mapsService = {
     return fetchSearchPage({ ...options, search: query });
   },
 
-  async searchMapsByName(name: string, options?: ServiceOptions): Promise<MapData[]> {
+  async searchMapsByName(
+    name: string,
+    options?: ServiceOptions,
+  ): Promise<MapData[]> {
     return fetchSearchPage({ ...options, search: name, filters: { name } });
   },
 
   /**
    * Get every map on the given street, draining all pages (task-117).
    */
-  async getMapsByStreetName(streetName: string, options?: ServiceOptions): Promise<MapData[]> {
+  async getMapsByStreetName(
+    streetName: string,
+    options?: ServiceOptions,
+  ): Promise<MapData[]> {
     return fetchAllMaps({ ...options, filters: { streetName } });
   },
 };

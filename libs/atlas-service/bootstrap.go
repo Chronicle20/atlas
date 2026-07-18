@@ -5,8 +5,9 @@ import (
 	"sync"
 	"sync/atomic"
 
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"github.com/sirupsen/logrus"
+
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 )
 
 // projectionConfig and Projection are defined in projection.go (Task 5).

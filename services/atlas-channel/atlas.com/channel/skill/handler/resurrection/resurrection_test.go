@@ -1,19 +1,20 @@
 package resurrection
 
 import (
+	"atlas-channel/data/skill/effect"
+	"atlas-channel/socket/writer"
 	"context"
 	"errors"
 	"fmt"
 	"testing"
 
-	"atlas-channel/data/skill/effect"
 	channelhandler "atlas-channel/skill/handler"
-	"atlas-channel/socket/writer"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
-	"github.com/sirupsen/logrus"
 )
 
 const (

@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"testing"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
-	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 // TestCharacterMoveByteV79 pins the gms_v79 MOVE_PLAYER (op 0x27) serverbound wire.
@@ -67,7 +68,7 @@ func TestCharacterMoveByteV61(t *testing.T) {
 	p := Move{fieldKey: 0x2A, crc: 500, movement: model.Movement{StartX: 10, StartY: 20}}
 	got := p.Encode(l, ctx)(nil)
 	want := []byte{
-		0x2A,       // fieldKey        @0x8012c3
+		0x2A, // fieldKey        @0x8012c3
 		// NO crc (v61 < 72)
 		0x0A, 0x00, // movement StartX=10  (opaque, CMovePath::Flush @0x8012d1)
 		0x14, 0x00, // movement StartY=20  (opaque)

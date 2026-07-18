@@ -3,9 +3,10 @@ package serverbound
 import (
 	"testing"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
+
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 // Layout is version-invariant (design §1 Q1): byte nType, byte

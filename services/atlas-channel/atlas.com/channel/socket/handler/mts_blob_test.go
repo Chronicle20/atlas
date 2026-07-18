@@ -7,8 +7,9 @@ import (
 	"context"
 	"testing"
 
-	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
 	"github.com/sirupsen/logrus"
+
+	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
 )
 
 // stackableTypeByte is the GW_ItemSlotBase type discriminator for a bundle/

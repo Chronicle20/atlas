@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/party"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 // packet-audit:fname CWvsContext::OnPartyResult#Update
@@ -22,10 +23,10 @@ func NewUpdate(mode byte, partyId uint32, members []party.PartyMember, leaderId 
 	return Update{mode: mode, partyId: partyId, members: members, leaderId: leaderId}
 }
 
-func (m Update) Mode() byte             { return m.mode }
-func (m Update) PartyId() uint32        { return m.partyId }
+func (m Update) Mode() byte                   { return m.mode }
+func (m Update) PartyId() uint32              { return m.partyId }
 func (m Update) Members() []party.PartyMember { return m.members }
-func (m Update) LeaderId() uint32       { return m.leaderId }
+func (m Update) LeaderId() uint32             { return m.leaderId }
 
 func (m Update) Operation() string {
 	return PartyOperationWriter

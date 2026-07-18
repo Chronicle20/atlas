@@ -1,8 +1,7 @@
 package character
 
 import (
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-
+	"atlas-renders/storage"
 	"bytes"
 	"context"
 	"errors"
@@ -13,11 +12,12 @@ import (
 	"strconv"
 	"time"
 
-	"atlas-renders/storage"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // Handler is the character composite render endpoint. The route

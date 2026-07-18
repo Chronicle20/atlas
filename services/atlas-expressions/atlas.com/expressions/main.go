@@ -1,17 +1,18 @@
 package main
 
 import (
+	"atlas-expressions/expression"
+	"atlas-expressions/tasks"
 	"context"
+	"os"
+	"time"
 
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 
-	"atlas-expressions/expression"
 	expression2 "atlas-expressions/kafka/consumer/expression"
 	_map "atlas-expressions/kafka/consumer/map"
-	"atlas-expressions/tasks"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
-	"os"
-	"time"
+
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"

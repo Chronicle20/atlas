@@ -1,11 +1,11 @@
 package asset_test
 
 import (
+	"atlas-inventory/asset"
 	"encoding/json"
 	"testing"
 	"time"
 
-	"atlas-inventory/asset"
 	assetmsg "atlas-inventory/kafka/message/asset"
 
 	"github.com/google/uuid"
@@ -91,5 +91,38 @@ func TestMovedEventStatusProvider(t *testing.T) {
 				t.Errorf("Body.OldSlot (OLD): got %d, want %d", event.Body.OldSlot, tc.oldSlot)
 			}
 		})
+	}
+}
+
+// TestCreatedEventStatusProviderOwner asserts that makeAssetData populates
+// AssetData.Owner from the asset Model, mirroring the existing OwnerId/Flag
+// coverage, so the owner name tag survives the CREATED status event.
+func TestCreatedEventStatusProviderOwner(t *testing.T) {
+	transactionId := uuid.New()
+	compartmentId := uuid.New()
+	const characterId = uint32(1000042)
+	const templateId = uint32(1302000)
+
+	a := asset.NewBuilder(compartmentId, templateId).
+		SetId(177).
+		SetOwner("Tumi").
+		Build()
+
+	provider := asset.CreatedEventStatusProvider(transactionId, characterId, a)
+	msgs, err := provider()
+	if err != nil {
+		t.Fatalf("provider returned error: %v", err)
+	}
+	if len(msgs) != 1 {
+		t.Fatalf("expected 1 message, got %d", len(msgs))
+	}
+
+	var event assetmsg.StatusEvent[assetmsg.CreatedStatusEventBody]
+	if err := json.Unmarshal(msgs[0].Value, &event); err != nil {
+		t.Fatalf("failed to decode message value: %v", err)
+	}
+
+	if event.Body.Owner != "Tumi" {
+		t.Errorf("Body.Owner: got %q, want %q", event.Body.Owner, "Tumi")
 	}
 }

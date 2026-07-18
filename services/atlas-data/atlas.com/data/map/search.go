@@ -1,15 +1,15 @@
 package _map
 
 import (
+	"atlas-data/searchindex"
 	"context"
 	"strconv"
 
-	"atlas-data/searchindex"
-
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 const (

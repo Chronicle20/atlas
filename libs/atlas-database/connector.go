@@ -5,8 +5,9 @@ import (
 	"database/sql/driver"
 	"time"
 
-	retry "github.com/Chronicle20/atlas/libs/atlas-retry"
 	"github.com/sirupsen/logrus"
+
+	retry "github.com/Chronicle20/atlas/libs/atlas-retry"
 )
 
 type retryConnector struct {

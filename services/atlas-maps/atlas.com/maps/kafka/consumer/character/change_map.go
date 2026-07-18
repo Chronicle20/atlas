@@ -5,9 +5,10 @@ import (
 	characterKafka "atlas-maps/kafka/message/character"
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
 // changeMapFromCommand builds the destination field from a CHANGE_MAP command

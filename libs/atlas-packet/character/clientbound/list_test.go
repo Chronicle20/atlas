@@ -26,6 +26,7 @@ import (
 //	// GMS major>87 reads an extra nBuyCharCount int; v83 does not.
 //
 // GW_CharacterStat::Decode (v83 @0x4e2a84, list path a3=0):
+//
 //	id=Decode4, name=DecodeBuffer(13), gender=Decode1, skin=Decode1,
 //	face=Decode4, hair=Decode4, petLockerSN=DecodeBuffer(24)=3x long,
 //	level=Decode1, then 10x Decode2 (job,str,dex,int,luk,hp,maxHp,mp,maxMp,ap),
@@ -44,25 +45,25 @@ func TestCharacterListByteOutput(t *testing.T) {
 	ctx := pt.CreateContext(v83.Region, v83.MajorVersion, v83.MinorVersion)
 
 	stats := model.NewCharacterStatistics(
-		0x01020304,        // id
-		"Hero",            // name (padded to 13)
-		0,                 // gender
-		0,                 // skinColor
-		0x4D2,             // face
-		0x7B,              // hair
+		0x01020304,         // id
+		"Hero",             // name (padded to 13)
+		0,                  // gender
+		0,                  // skinColor
+		0x4D2,              // face
+		0x7B,               // hair
 		[3]uint64{0, 0, 0}, // petIds
-		0x0A,              // level
-		0x64,              // jobId
-		4, 5, 6, 7,        // str, dex, int, luck
+		0x0A,               // level
+		0x64,               // jobId
+		4, 5, 6, 7,         // str, dex, int, luck
 		0x64, 0x64, 0x32, 0x32, // hp, maxHp, mp, maxMp
-		3,                 // ap
-		false,             // hasSPTable (write sp short)
-		2,                 // sp
-		0,                 // experience
-		8,                 // fame
-		0,                 // gachaponExperience
-		0x0BB8,            // mapId
-		0,                 // spawnPoint
+		3,      // ap
+		false,  // hasSPTable (write sp short)
+		2,      // sp
+		0,      // experience
+		8,      // fame
+		0,      // gachaponExperience
+		0x0BB8, // mapId
+		0,      // spawnPoint
 	)
 	// Empty equipment/masked maps + nil pets -> deterministic avatar block.
 	avatar := model.NewAvatar(0, 0, 0x4D2, false, 0x7B, nil, nil, nil)
@@ -85,20 +86,20 @@ func TestCharacterListByteOutput(t *testing.T) {
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // pet long 0 (DecodeBuffer 24) /*0x4e2b19*/
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // pet long 1
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // pet long 2
-		0x0a,                   // level (Decode1)                 /*0x4e2b20*/
-		0x64, 0x00,             // jobId (Decode2)                 /*0x4e2b34*/
-		0x04, 0x00,             // str (Decode2)                   /*0x4e2b4a*/
-		0x05, 0x00,             // dex                             /*0x4e2b5e*/
-		0x06, 0x00,             // int                             /*0x4e2b72*/
-		0x07, 0x00,             // luck                            /*0x4e2b86*/
-		0x64, 0x00,             // hp                              /*0x4e2b9a*/
-		0x64, 0x00,             // maxHp                           /*0x4e2bae*/
-		0x32, 0x00,             // mp                              /*0x4e2bc2*/
-		0x32, 0x00,             // maxMp                           /*0x4e2bd6*/
-		0x03, 0x00,             // ap (Decode2)                    /*0x4e2bea*/
-		0x02, 0x00,             // sp (Decode2, !hasSPTable)       /*0x4e2c49*/
+		0x0a,       // level (Decode1)                 /*0x4e2b20*/
+		0x64, 0x00, // jobId (Decode2)                 /*0x4e2b34*/
+		0x04, 0x00, // str (Decode2)                   /*0x4e2b4a*/
+		0x05, 0x00, // dex                             /*0x4e2b5e*/
+		0x06, 0x00, // int                             /*0x4e2b72*/
+		0x07, 0x00, // luck                            /*0x4e2b86*/
+		0x64, 0x00, // hp                              /*0x4e2b9a*/
+		0x64, 0x00, // maxHp                           /*0x4e2bae*/
+		0x32, 0x00, // mp                              /*0x4e2bc2*/
+		0x32, 0x00, // maxMp                           /*0x4e2bd6*/
+		0x03, 0x00, // ap (Decode2)                    /*0x4e2bea*/
+		0x02, 0x00, // sp (Decode2, !hasSPTable)       /*0x4e2c49*/
 		0x00, 0x00, 0x00, 0x00, // experience (Decode4)            /*0x4e2c6e*/
-		0x08, 0x00,             // fame (Decode2)                  /*0x4e2c88*/
+		0x08, 0x00, // fame (Decode2)                  /*0x4e2c88*/
 		0x00, 0x00, 0x00, 0x00, // gachaExp (Decode4, GMS>28)      /*0x4e2ca2*/
 		0xb8, 0x0b, 0x00, 0x00, // mapId (Decode4)                 /*0x4e2cbc*/
 		0x00,                   // spawnPoint (Decode1)            /*0x4e2cdd*/
@@ -221,7 +222,7 @@ func TestCharacterListByteOutputV84(t *testing.T) {
 		0x03, 0x00, // ap (Decode2)                    /*0x4e9f0a*/
 		0x02, 0x00, // sp (Decode2, non-22xx job path) /*0x4e9f69*/
 		0x00, 0x00, 0x00, 0x00, // experience (Decode4)            /*0x4e9f8e*/
-		0x08, 0x00,             // fame (Decode2)                  /*0x4e9fa8*/
+		0x08, 0x00, // fame (Decode2)                  /*0x4e9fa8*/
 		0x00, 0x00, 0x00, 0x00, // gachaExp (Decode4)              /*0x4e9fc2*/
 		0xb8, 0x0b, 0x00, 0x00, // mapId (Decode4)                 /*0x4e9fdc*/
 		0x00,                   // spawnPoint (Decode1)            /*0x4e9ffd*/
@@ -346,12 +347,12 @@ func TestCharacterListByteOutputV87(t *testing.T) {
 		0x03, 0x00, // ap (Decode2)                    /*0x501e74*/
 		0x02, 0x00, // sp (Decode2, non-22xx job path) /*0x501ed3*/
 		0x00, 0x00, 0x00, 0x00, // experience (Decode4)            /*0x501ef8*/
-		0x08, 0x00,             // fame (Decode2)                  /*0x501f12*/
+		0x08, 0x00, // fame (Decode2)                  /*0x501f12*/
 		0x00, 0x00, 0x00, 0x00, // gachaExp (Decode4)              /*0x501f2c*/
 		0xb8, 0x0b, 0x00, 0x00, // mapId (Decode4)                 /*0x501f46*/
 		0x00,                   // spawnPoint (Decode1)            /*0x501f67*/
 		0x00, 0x00, 0x00, 0x00, // trailing int (Decode4)          /*0x501f74*/
-		0x00, 0x00,             // nSubJob (Decode2, GMS>=87)       /*0x501f80*/
+		0x00, 0x00, // nSubJob (Decode2, GMS>=87)       /*0x501f80*/
 
 		// --- AvatarLook block (entry 0) --- @0x508277
 		0x00,                   // gender                          /*0x50828a*/
@@ -401,12 +402,13 @@ func TestCharacterListByteOutputV87(t *testing.T) {
 //	nBuyCharCount = Decode4 (m_nBuyCharCount) // read UNCONDITIONALLY in v95     /*0x5dde4c*/
 //
 // Two structural deltas vs v87:
-//   (1) GW_CharacterStat reads HP/MaxHP/MP/MaxMP as Decode4 (int), not Decode2
-//       (short) — IDA @0x4f9e56/0x4f9e6a/0x4f9e7e/0x4f9e95. The codec widens
-//       these at MajorVersion()>=95 (character_statistics.go), adding 8 bytes.
-//   (2) OnSelectWorldResult reads the trailing nBuyCharCount int unconditionally
-//       (@0x5dde4c). The codec emits it at MajorVersion()>87 (list.go), adding 4
-//       bytes. The nSubJob short (Decode2 @0x4f9fe2, GMS>=87) is also present.
+//
+//	(1) GW_CharacterStat reads HP/MaxHP/MP/MaxMP as Decode4 (int), not Decode2
+//	    (short) — IDA @0x4f9e56/0x4f9e6a/0x4f9e7e/0x4f9e95. The codec widens
+//	    these at MajorVersion()>=95 (character_statistics.go), adding 8 bytes.
+//	(2) OnSelectWorldResult reads the trailing nBuyCharCount int unconditionally
+//	    (@0x5dde4c). The codec emits it at MajorVersion()>87 (list.go), adding 4
+//	    bytes. The nSubJob short (Decode2 @0x4f9fe2, GMS>=87) is also present.
 //
 // GW_CharacterStat::Decode (v95 @0x4f9d40, list path bBackwardUpdate=0):
 // id=Decode4, name=DecodeBuffer(13), gender=Decode1, skin=Decode1, face=Decode4,
@@ -462,25 +464,25 @@ func TestCharacterListByteOutputV95(t *testing.T) {
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // pet long 0 (DecodeBuffer 24) /*0x4f9dd0*/
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // pet long 1
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // pet long 2
-		0x0a,                   // level (Decode1)                 /*0x4f9dd7*/
-		0x64, 0x00,             // jobId (Decode2)                 /*0x4f9deb*/
-		0x04, 0x00,             // str (Decode2)                   /*0x4f9e02*/
-		0x05, 0x00,             // dex                             /*0x4f9e17*/
-		0x06, 0x00,             // int                             /*0x4f9e2c*/
-		0x07, 0x00,             // luck                            /*0x4f9e41*/
+		0x0a,       // level (Decode1)                 /*0x4f9dd7*/
+		0x64, 0x00, // jobId (Decode2)                 /*0x4f9deb*/
+		0x04, 0x00, // str (Decode2)                   /*0x4f9e02*/
+		0x05, 0x00, // dex                             /*0x4f9e17*/
+		0x06, 0x00, // int                             /*0x4f9e2c*/
+		0x07, 0x00, // luck                            /*0x4f9e41*/
 		0x64, 0x00, 0x00, 0x00, // hp (Decode4, v95-widened)       /*0x4f9e56*/
 		0x64, 0x00, 0x00, 0x00, // maxHp (Decode4)                 /*0x4f9e6a*/
 		0x32, 0x00, 0x00, 0x00, // mp (Decode4)                    /*0x4f9e7e*/
 		0x32, 0x00, 0x00, 0x00, // maxMp (Decode4)                 /*0x4f9e95*/
-		0x03, 0x00,             // ap (Decode2)                    /*0x4f9eaf*/
-		0x02, 0x00,             // sp (Decode2, non-3xxx/22xx job) /*0x4f9f2f*/
+		0x03, 0x00, // ap (Decode2)                    /*0x4f9eaf*/
+		0x02, 0x00, // sp (Decode2, non-3xxx/22xx job) /*0x4f9f2f*/
 		0x00, 0x00, 0x00, 0x00, // experience (Decode4)            /*0x4f9f55*/
-		0x08, 0x00,             // fame (Decode2)                  /*0x4f9f6f*/
+		0x08, 0x00, // fame (Decode2)                  /*0x4f9f6f*/
 		0x00, 0x00, 0x00, 0x00, // gachaExp (Decode4)              /*0x4f9f8a*/
 		0xb8, 0x0b, 0x00, 0x00, // mapId (Decode4)                 /*0x4f9fa4*/
 		0x00,                   // spawnPoint (Decode1)            /*0x4f9fc5*/
 		0x00, 0x00, 0x00, 0x00, // nPlaytime trailing int (Decode4)/*0x4f9fd2*/
-		0x00, 0x00,             // nSubJob (Decode2, GMS>=87)      /*0x4f9fe2*/
+		0x00, 0x00, // nSubJob (Decode2, GMS>=87)      /*0x4f9fe2*/
 
 		// --- AvatarLook block (entry 0) --- @0x4f2c00
 		0x00,                   // gender                          /*0x4f2c13*/
@@ -534,12 +536,13 @@ func TestCharacterListByteOutputV95(t *testing.T) {
 //
 // JMS structural deltas vs GMS (all IDA-confirmed against the Atlas codec
 // list.go JMS branch and character_statistics.go JMS branch):
-//   (1) A leading empty ASCII string is read after the status byte (DecodeStr
-//       @0x66f72e). list.go writes WriteAsciiString("") for JMS.
-//   (2) An extra byte (m_bQuerySSNOnCreateNewCharacter) sits between hasPic and
-//       slots (Decode1 @0x66f822). list.go writes WriteByte(0) for JMS.
-//   (3) nBuyCharCount is read unconditionally (Decode4 @0x66f83f). list.go writes
-//       WriteInt(0) for JMS.
+//
+//	(1) A leading empty ASCII string is read after the status byte (DecodeStr
+//	    @0x66f72e). list.go writes WriteAsciiString("") for JMS.
+//	(2) An extra byte (m_bQuerySSNOnCreateNewCharacter) sits between hasPic and
+//	    slots (Decode1 @0x66f822). list.go writes WriteByte(0) for JMS.
+//	(3) nBuyCharCount is read unconditionally (Decode4 @0x66f83f). list.go writes
+//	    WriteInt(0) for JMS.
 //
 // GW_CharacterStat::Decode (jms @0x50ec17, list path bBackwardUpdate=0):
 // id=Decode4 /*0x50ec35*/, name=DecodeBuffer(13) /*0x50ec4b*/, gender=Decode1
@@ -598,7 +601,7 @@ func TestCharacterListByteOutputJMS(t *testing.T) {
 	want := []byte{
 		0x00,       // status (Decode1)                                  /*0x66f411*/
 		0x00, 0x00, // JMS leading ASCII string len = 0 (DecodeStr)      /*0x66f72e*/
-		0x01,       // count = 1 (Decode1)                               /*0x66f73d*/
+		0x01, // count = 1 (Decode1)                               /*0x66f73d*/
 
 		// --- GW_CharacterStat block (entry 0) --- @0x50ec17
 		0x04, 0x03, 0x02, 0x01, // id = 0x01020304 (Decode4)       /*0x50ec35*/
@@ -623,11 +626,11 @@ func TestCharacterListByteOutputJMS(t *testing.T) {
 		0x03, 0x00, // ap (Decode2)                    /*0x50ed7d*/
 		0x02, 0x00, // sp (Decode2, non-extendSP job)  /*0x50edd2*/
 		0x00, 0x00, 0x00, 0x00, // experience (Decode4)            /*0x50edf7*/
-		0x08, 0x00,             // fame (Decode2)                  /*0x50ee11*/
+		0x08, 0x00, // fame (Decode2)                  /*0x50ee11*/
 		0x00, 0x00, 0x00, 0x00, // gachaExp (Decode4)              /*0x50ee2b*/
 		0xb8, 0x0b, 0x00, 0x00, // mapId (Decode4)                 /*0x50ee45*/
-		0x00,                   // spawnPoint (Decode1)            /*0x50ee58*/
-		0x00, 0x00,             // jms tail short (Decode2)        /*0x50ee65*/
+		0x00,       // spawnPoint (Decode1)            /*0x50ee58*/
+		0x00, 0x00, // jms tail short (Decode2)        /*0x50ee65*/
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // jms tail buf8 (DecodeBuffer 8) /*0x50ee7c*/
 		0x00, 0x00, 0x00, 0x00, // jms nPlaytime (Decode4)         /*0x50ee83*/
 		0x00, 0x00, 0x00, 0x00, // jms extra int (Decode4)         /*0x50ee90*/
@@ -751,9 +754,9 @@ func TestCharacterListByteOutputV48(t *testing.T) {
 		0x03, 0x00, // ap (Decode2)                    /*0x49b78b*/
 		0x02, 0x00, // sp (Decode2, !hasSPTable)       /*0x49b79f*/
 		0x00, 0x00, 0x00, 0x00, // experience (Decode4)            /*0x49b7b3*/
-		0x08, 0x00,             // fame (Decode2)                  /*0x49b7cd*/
+		0x08, 0x00, // fame (Decode2)                  /*0x49b7cd*/
 		0xb8, 0x0b, 0x00, 0x00, // mapId (Decode4)                 /*0x49b7e7*/
-		0x00,                   // spawnPoint (Decode1)            /*0x49b801*/
+		0x00, // spawnPoint (Decode1)            /*0x49b801*/
 
 		// --- AvatarLook block (entry 0) --- sub_49E1E0 @0x49e1e0
 		0x00,                   // gender                          /*0x49e1f3*/

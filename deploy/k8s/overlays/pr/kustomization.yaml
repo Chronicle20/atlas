@@ -113,6 +113,43 @@ patches:
     target:
       kind: ConfigMap
       name: seed-catalog-config
+  # atlas-minio-reconcile (task-174) is a main-only CronJob: it enumerates
+  # tenants across every atlas-main + atlas-pr-* namespace and reconciles
+  # MinIO storage cluster-wide, so it must run exactly once, not once per PR
+  # env. Its ClusterRole/ClusterRoleBinding are cluster-scoped (not
+  # namespaced), so leaving them in would also collide by name across
+  # concurrently-running PR overlays. Delete the whole resource set here;
+  # it applies only via deploy/k8s/overlays/main.
+  - patch: |-
+      $patch: delete
+      apiVersion: v1
+      kind: ServiceAccount
+      metadata:
+        name: atlas-minio-reconcile
+  - patch: |-
+      $patch: delete
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRole
+      metadata:
+        name: atlas-minio-reconcile
+  - patch: |-
+      $patch: delete
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRoleBinding
+      metadata:
+        name: atlas-minio-reconcile
+  - patch: |-
+      $patch: delete
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: atlas-minio-reconcile-config
+  - patch: |-
+      $patch: delete
+      apiVersion: batch/v1
+      kind: CronJob
+      metadata:
+        name: atlas-minio-reconcile
 
 # Per-env atlas-env ConfigMap with topic suffixing.
 configMapGenerator:

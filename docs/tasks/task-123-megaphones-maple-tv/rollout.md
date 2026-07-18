@@ -343,6 +343,79 @@ restart atlas-channel (Step 3).
 
 ---
 
+## Step 5: Legacy GMS (v48/61/72/79) — task-123 legacy-phase-2 delta
+
+Legacy-phase-1 (`.superpowers/sdd/legacy-megaphone-protocol.md`) IDA-verified
+the serverbound basic/super megaphone codecs and the clientbound
+WorldMessage/SetAvatarMegaphone shapes for gms_v48/61/72/79 but made no
+template or handler-gate changes. Legacy-phase-2 (this phase) wires those
+findings into the seed templates and opens the channel handler gate. Unlike
+§1.1's five versions, `CharacterCashItemUseHandle` and the `WorldMessage`
+writer (with its full `operations` mode table) were **already present** in
+all four legacy templates from an earlier version-bring-up pass — verified
+unchanged, no delta to record for those two. The delta is the three
+avatar-megaphone writers, newly added:
+
+| Writer | gms_48 | gms_61 | gms_72 | gms_79 |
+|---|---|---|---|---|
+| `SetAvatarMegaphone` | `0x42` | `0x54` | `0x67` | `0x69` |
+| `ClearAvatarMegaphone` | `0x43` | `0x55` | `0x68` | `0x6A` |
+| `AvatarMegaphoneResult` | `0x41` | `0x53` | `0x66` | `0x68` |
+
+`AvatarMegaphoneResult.options.errorCodes` (IDA-verified per version —
+`CWvsContext::OnAvatarMegaphoneRes`, `Decode1() - <base>`; `v3==0` →
+WAITING_LINE, `v3==1` → LEVEL_GATE, matching the gms_83 audit's semantic
+mapping):
+
+| version | WAITING_LINE | LEVEL_GATE | IDA address |
+|---|---|---|---|
+| gms_48 | 48 | 49 | `0x7211cd` |
+| gms_61 | 55 | 56 | `0x84aa30` |
+| gms_72 | 63 | 64 | `0x9220de` |
+| gms_79 | 75 | 76 | `0x974213` |
+
+`SetAvatarMegaphone` opcodes confirmed against
+`CWvsContext::OnSetAvatarMegaphone` (addresses in legacy-megaphone-protocol.md
+§4). `ClearAvatarMegaphone` for v61/72/79 confirmed against
+`CWvsContext::OnClearAvatarMegaphone` (`0x84accd` / `0x92237d` / `0x9744b2`);
+v48's counterpart was unnamed in the IDB (`sub_721465`) — decompiled and
+confirmed via its `CAvatarMegaphone::ByeAvatarMegaphone` call (the `Bye`
+counterpart to `OnSetAvatarMegaphone`'s `HelloAvatarMegaphone`), then renamed
+to `CWvsContext::OnClearAvatarMegaphone` in the v48 IDB (port 13337) so the
+opcode (67 / `0x43`, immediately following `SET_AVATAR_MEGAPHONE`=66) is not
+a guess.
+
+These three writers exist for **clientbound render only** — a legacy client
+in the same map/world as a v83+ sender can now render an avatar-megaphone
+broadcast. Legacy clients still cannot *send* one (see below).
+
+### Handler gate change
+
+`character_cash_item_use.go`'s `MajorVersion() < 83` item-loss guard was
+refined from an all-or-nothing block to a per-tier check (see the code
+comment at the gate for the full citation):
+
+- **Basic (tier 1) / Super (tier 2) megaphone** — now **ALLOWED** on
+  gms_48/61/72/79: serverbound codec + clientbound WorldMessage arms were
+  IDA-verified (protocol spec §2/§3) and the writer/handler opcodes already
+  existed in the templates (verified this phase).
+- **Avatar megaphone** (any tier) — still **BLOCKED** on all four legacy
+  versions: no legacy build's serverbound send case could be reliably
+  located (protocol spec §5a); consuming the item would destroy it with
+  nothing verified to decode. The new writers above only enable *receiving*
+  a v83+ sender's avatar-megaphone broadcast, not sending one.
+- **Maple TV (tier 4/5) / item megaphone (tier 6) / triple megaphone (tier
+  7)** — still **BLOCKED**: no legacy send case identified (protocol spec
+  §5b for TV; item/triple confirmed absent from the legacy dispatcher).
+- v83+/JMS: unchanged — the `MajorVersion() < 83` branch is never entered,
+  so every tier keeps dispatching exactly as before this phase.
+
+No live-tenant PATCH runbook changes beyond the table above — this section
+applies the same get→modify→PATCH→restart procedure (§2) and deploy-order
+note (§4) to gms_48/61/72/79 tenants once this phase merges and is deployed.
+
+---
+
 ## Rollback
 
 - Config: re-PATCH the affected tenants with the pre-change `attributes`

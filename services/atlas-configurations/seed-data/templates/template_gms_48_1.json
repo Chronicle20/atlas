@@ -1063,6 +1063,24 @@
             "BANNED_TIME_LIMIT": 11
           }
         }
+      },
+      {
+        "opCode": "0x42",
+        "writer": "SetAvatarMegaphone"
+      },
+      {
+        "opCode": "0x43",
+        "writer": "ClearAvatarMegaphone"
+      },
+      {
+        "opCode": "0x41",
+        "writer": "AvatarMegaphoneResult",
+        "options": {
+          "errorCodes": {
+            "WAITING_LINE": 48,
+            "LEVEL_GATE": 49
+          }
+        }
       }
     ]
   },

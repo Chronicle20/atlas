@@ -162,16 +162,38 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		// before any cash-slot-type sub-switch, never the other way around.
 		category := item.GetClassification(itemId)
 		if category == item.ClassificationMegaphones || category == item.ClassificationAvatarMegaphone {
-			// Megaphones / Maple TV / avatar megaphones are a v83+ feature
-			// (design D9: scoped to GMS 83/84/87/95 + JMS 185). Legacy pre-v83
-			// versions (gms_48/61/72/79) DO carry this USE_CASH_ITEM handler but
-			// have no megaphone writer tables seeded; firing the consume saga
-			// there would destroy the cash item with no broadcast ever rendered
-			// (silent item loss). Gate to v83+ so unsupported versions ignore
-			// the use WITHOUT consuming, preserving the pre-feature no-op.
+			// Legacy GMS (v48/61/72/79, MajorVersion < 83) item-loss guard.
+			// task-123 legacy-phase-1 (.superpowers/sdd/legacy-megaphone-protocol.md)
+			// IDA-verified the following per-tier matrix for these four builds:
+			//   - basic (tier 1) / super (tier 2) megaphone: serverbound codec AND
+			//     clientbound WorldMessage MEGAPHONE(2)/SUPER_MEGAPHONE(3) arms
+			//     verified (spec §2/§3) — legacy-phase-2 wired the writer/handler
+			//     opcodes into template_gms_{48,61,72,79}_1.json, so these two
+			//     tiers now render on legacy clients. ALLOWED.
+			//   - avatar megaphone: no legacy build's serverbound send case could be
+			//     reliably located (spec §5a — cash-slot type 42 does not match the
+			//     known 4-line+whisper body on any of the four builds); consuming
+			//     the item would destroy it with no verified broadcast to render.
+			//     BLOCKED on legacy regardless of tier.
+			//   - Maple TV (tier 4/5) / item megaphone (tier 6) / triple megaphone
+			//     (tier 7): no legacy send case identified either (spec §5b for TV;
+			//     item/triple dialogs are corroborated v83+-only, absent from the
+			//     legacy SendConsumeCashItemUseRequest dispatcher). BLOCKED.
+			// v83+/JMS behavior is unchanged: the MajorVersion < 83 branch below
+			// is never entered for them, so every tier keeps dispatching exactly
+			// as it did before this gate was refined.
 			if t.MajorVersion() < 83 {
-				l.Warnf("Character [%d] attempted megaphone item [%d] on unsupported version [major %d]; ignoring without consuming.", s.CharacterId(), itemId, t.MajorVersion())
-				return
+				if category == item.ClassificationAvatarMegaphone {
+					l.Warnf("Character [%d] attempted avatar megaphone item [%d] on unsupported legacy version [major %d]; ignoring without consuming.", s.CharacterId(), itemId, t.MajorVersion())
+					return
+				}
+				// ClassificationMegaphones: only basic(1)/super(2) tiers have a
+				// verified legacy serverbound codec + seeded writer table.
+				tier := (uint32(itemId) / 1000) % 10
+				if tier != 1 && tier != 2 {
+					l.Warnf("Character [%d] attempted megaphone item [%d] tier [%d] unsupported on legacy version [major %d]; ignoring without consuming.", s.CharacterId(), itemId, tier, t.MajorVersion())
+					return
+				}
 			}
 			if category == item.ClassificationMegaphones {
 				handleMegaphoneUse(l, ctx, wp)(s, r, readerOptions, t, itemId, source, updateTimeFirst)

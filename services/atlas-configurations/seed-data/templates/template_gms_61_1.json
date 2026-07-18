@@ -2237,6 +2237,24 @@
             "FM_ONLY": 21
           }
         }
+      },
+      {
+        "opCode": "0x54",
+        "writer": "SetAvatarMegaphone"
+      },
+      {
+        "opCode": "0x55",
+        "writer": "ClearAvatarMegaphone"
+      },
+      {
+        "opCode": "0x53",
+        "writer": "AvatarMegaphoneResult",
+        "options": {
+          "errorCodes": {
+            "WAITING_LINE": 55,
+            "LEVEL_GATE": 56
+          }
+        }
       }
     ]
   },

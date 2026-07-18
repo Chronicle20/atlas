@@ -230,7 +230,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-drops/atlas-drops
     newTag: main-e0321f3
   - name: ghcr.io/chronicle20/atlas-effective-stats/atlas-effective-stats
-    newTag: main-e0321f3
+    newTag: main-5ae14ed
   - name: ghcr.io/chronicle20/atlas-expressions/atlas-expressions
     newTag: main-e0321f3
   - name: ghcr.io/chronicle20/atlas-fame/atlas-fame

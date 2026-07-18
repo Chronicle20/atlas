@@ -6,13 +6,17 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
 // ItemUseSuperMegaphone is the USE_CASH_ITEM sub-body for the Super Megaphone
 // (5072xxx). Cosmic-derived (UseCashItemHandler case 2); per-version IDA
-// verification in task-123 phases 19-20, legacy phase 1 (see megaphoneHasUpdateTime).
+// verification in task-123 phases 19-20, legacy phase 1, legacy TV/item/
+// triple gap-fill pass. See ItemUseMegaphone's doc comment for the
+// CORRECTION: update_time is a trailing Encode4 whenever updateTimeFirst is
+// false on EVERY GMS build (v48/61/72/79 included) — the earlier
+// GMS<83-omits-update_time gate was disproven by tracing case 12/13's shared
+// rate-check-and-send tail on all four legacy builds.
 // packet-audit:fname CWvsContext::SendConsumeCashItemUseRequest
 type ItemUseSuperMegaphone struct {
 	message         string
@@ -35,25 +39,23 @@ func (m ItemUseSuperMegaphone) String() string {
 	return fmt.Sprintf("message [%s] whisper [%t] updateTime [%d]", m.message, m.whisper, m.updateTime)
 }
 
-func (m ItemUseSuperMegaphone) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-	t := tenant.MustFromContext(ctx)
+func (m ItemUseSuperMegaphone) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteAsciiString(m.message)
 		w.WriteBool(m.whisper)
-		if !m.updateTimeFirst && megaphoneHasUpdateTime(t) {
+		if !m.updateTimeFirst {
 			w.WriteInt(m.updateTime)
 		}
 		return w.Bytes()
 	}
 }
 
-func (m *ItemUseSuperMegaphone) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
-	t := tenant.MustFromContext(ctx)
+func (m *ItemUseSuperMegaphone) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.message = r.ReadAsciiString()
 		m.whisper = r.ReadBool()
-		if !m.updateTimeFirst && megaphoneHasUpdateTime(t) {
+		if !m.updateTimeFirst {
 			m.updateTime = r.ReadUint32()
 		}
 	}

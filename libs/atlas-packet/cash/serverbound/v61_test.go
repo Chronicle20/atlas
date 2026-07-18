@@ -127,3 +127,56 @@ func TestShopOperationSetWishlistBytesV61(t *testing.T) {
 		t.Errorf("v61 bytes: got %s, want %s", got, want)
 	}
 }
+
+// TestItemUseMegaphoneBytesV61 pins the v61 basic-Megaphone USE_CASH_ITEM
+// sub-body. IDA v61 CWvsContext::SendConsumeCashItemUseRequest @0x832a5d:
+// outer header (COutPacket opcode 0x49, Encode2(slot), Encode4(itemId)
+// @0x832abe-0x832ae4) carries NO update_time. Jumptable case label
+// loc_832B08 covers types 12,13 (Megaphone/SuperMegaphone). `cmp Str2,0Dh;
+// jnz loc_832BA9` — type 12 (this test) takes the jnz path. Message tail
+// @0x832ddc-0x832e06:
+//
+//	EncodeStr(message)          @0x832df0
+//	cmp Str2,0Dh; jnz skip      @0x832df9 (type 12 SKIPS whisper)
+//	[shared cleanup — NO Encode4]
+//
+// Wire (v61): message(str) ONLY. NO update_time.
+// packet-audit:verify packet=cash/serverbound/CashItemUseMegaphone version=gms_v61 ida=0x832a5d
+func TestItemUseMegaphoneBytesV61(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 61, 1)
+	input := NewItemUseMegaphone(false)
+	input.message = "Hello world!"
+	input.updateTime = 12345 // must NOT appear on the wire for v61
+	got := hex.EncodeToString(input.Encode(l, ctx)(nil))
+	want := "0c00" + hex.EncodeToString([]byte("Hello world!"))
+	if got != want {
+		t.Errorf("v61 item use megaphone bytes: got %s, want %s", got, want)
+	}
+}
+
+// TestItemUseSuperMegaphoneBytesV61 pins the v61 SuperMegaphone USE_CASH_ITEM
+// sub-body. Same case label loc_832B08 (types 12,13); type 13 (this test)
+// falls through the `cmp Str2,0Dh; jnz` at @0x832b0b into the larger dialog
+// path, then the SAME message tail:
+//
+//	EncodeStr(message)          @0x832df0
+//	cmp Str2,0Dh; jnz skip      @0x832df9 (type 13 MATCHES -> whisper emitted)
+//	Encode1(whisper)            @0x832e01
+//	[shared cleanup — NO Encode4]
+//
+// Wire (v61): message(str) + whisper(bool). NO update_time.
+// packet-audit:verify packet=cash/serverbound/CashItemUseSuperMegaphone version=gms_v61 ida=0x832a5d
+func TestItemUseSuperMegaphoneBytesV61(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 61, 1)
+	input := NewItemUseSuperMegaphone(false)
+	input.message = "Super hello!"
+	input.whisper = true
+	input.updateTime = 54321 // must NOT appear on the wire for v61
+	got := hex.EncodeToString(input.Encode(l, ctx)(nil))
+	want := "0c00" + hex.EncodeToString([]byte("Super hello!")) + "01"
+	if got != want {
+		t.Errorf("v61 item use super megaphone bytes: got %s, want %s", got, want)
+	}
+}

@@ -118,3 +118,60 @@ func TestShopOperationBuyFriendshipBytesV48(t *testing.T) {
 		t.Errorf("v48 friendship bytes: got %s, want 010108070605", got)
 	}
 }
+
+// TestItemUseMegaphoneBytesV48 pins the v48 basic-Megaphone USE_CASH_ITEM
+// sub-body. IDA v48 CWvsContext::SendConsumeCashItemUseRequest @0x70e495:
+// the outer header (COutPacket ctor opcode 0x3E, Encode2(slot), Encode4
+// (itemId) @0x70e4f9-0x70e517) carries NO update_time anywhere. The
+// cash-slot-type switch (@0x70e51f sub_47742E, jumptable @0x70e53c) maps
+// BOTH type 12 (Megaphone) and type 13 (SuperMegaphone) to the shared case
+// label loc_70E543. Inside, `cmp type,0Dh; jnz loc_70E5E4` — type 12 (this
+// test) takes the jnz branch to the message-input dialog; after trim/length
+// validation the send tail @loc_70E800-0x70E830 does:
+//
+//	EncodeStr(message)              @0x70e814
+//	cmp type,0Dh; jnz skip whisper  @0x70e819 (type 12 SKIPS the whisper byte)
+//	[shared cleanup — NO Encode4 anywhere: no trailing update_time]
+//
+// Wire (v48): message(str) ONLY. Confirms megaphoneHasUpdateTime(GMS<83)=false
+// — update_time is entirely absent, not merely reordered.
+// packet-audit:verify packet=cash/serverbound/CashItemUseMegaphone version=gms_v48 ida=0x70e495
+func TestItemUseMegaphoneBytesV48(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 48, 1)
+	input := NewItemUseMegaphone(false)
+	input.message = "Hello world!"
+	input.updateTime = 12345 // must NOT appear on the wire for v48
+	got := hex.EncodeToString(input.Encode(l, ctx)(nil))
+	want := "0c00" + hex.EncodeToString([]byte("Hello world!"))
+	if got != want {
+		t.Errorf("v48 item use megaphone bytes: got %s, want %s", got, want)
+	}
+}
+
+// TestItemUseSuperMegaphoneBytesV48 pins the v48 SuperMegaphone USE_CASH_ITEM
+// sub-body. Same case label loc_70E543 as basic Megaphone (jumptable cases
+// 12,13); type 13 (this test) FALLS THROUGH the `cmp type,0Dh; jnz` at
+// @0x70e546 into a distinct (larger) dialog allocation, then the SAME
+// message tail @0x70e800-0x70e830:
+//
+//	EncodeStr(message)          @0x70e814
+//	cmp type,0Dh; jnz skip      @0x70e819 (type 13 MATCHES -> whisper emitted)
+//	Encode1(whisper)            @0x70e825
+//	[shared cleanup — NO Encode4: no trailing update_time]
+//
+// Wire (v48): message(str) + whisper(bool). NO update_time.
+// packet-audit:verify packet=cash/serverbound/CashItemUseSuperMegaphone version=gms_v48 ida=0x70e495
+func TestItemUseSuperMegaphoneBytesV48(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 48, 1)
+	input := NewItemUseSuperMegaphone(false)
+	input.message = "Super hello!"
+	input.whisper = true
+	input.updateTime = 54321 // must NOT appear on the wire for v48
+	got := hex.EncodeToString(input.Encode(l, ctx)(nil))
+	want := "0c00" + hex.EncodeToString([]byte("Super hello!")) + "01"
+	if got != want {
+		t.Errorf("v48 item use super megaphone bytes: got %s, want %s", got, want)
+	}
+}

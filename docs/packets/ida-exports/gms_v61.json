@@ -3,6 +3,42 @@
  "md5": "",
  "generated_at": "2026-07-02T05:12:39Z",
  "functions": {
+  "CWvsContext::OnBroadcastMsg#Megaphone": {
+   "address": "0x844d49",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "mode (=2, MEGAPHONE)"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "message - mode 2 has no header-extras arm (only mode 3/8 read extras); case 2 does chatlog display only (task-123 legacy phase 1, IDA-verified)"
+    }
+   ]
+  },
+  "CWvsContext::OnBroadcastMsg#SuperMegaphone": {
+   "address": "0x844d49",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "mode (=3, SUPER_MEGAPHONE)"
+    },
+    {
+     "op": "DecodeStr",
+     "comment": "message"
+    },
+    {
+     "op": "Decode1",
+     "comment": "channelId (task-123 legacy phase 1, IDA-verified)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "whispersOn"
+    }
+   ]
+  },
   "CITC::OnChargeParamResult": {
    "address": "0x52d691",
    "direction": "clientbound",

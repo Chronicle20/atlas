@@ -11,6 +11,7 @@
 ## Global Constraints
 
 - Operator gate on the executor: `X-Atlas-Operator: 1` header required, else 403 (matches `tenantpurge`/`baseline`).
+- **Tenant-header requirement (verified live):** every atlas-data REST route is wrapped by `ParseTenant` (libs/atlas-rest/server/handler.go), which returns **400** unless all four headers `TENANT_ID`, `REGION`, `MAJOR_VERSION`, `MINOR_VERSION` are present and well-formed — even for operator-scoped, cross-tenant endpoints that never read the tenant. The reconcile endpoint is cross-tenant and ignores the tenant, but callers MUST still send a valid synthetic set. Confirmed against the live cluster: no headers → 400; `TENANT_ID=00000000-0000-0000-0000-000000000000, REGION=GMS, MAJOR_VERSION=83, MINOR_VERSION=1` → 200. The orchestrator (Task 4) and the predelete purge hook (Task 6) must both send these headers.
 - Object key scheme is fixed: per-tenant objects live at `tenants/<uuid>/...` in buckets `atlas-wz`, `atlas-assets`, `atlas-renders`. Do not change it.
 - Three non-negotiable safety gates in the executor: **(1)** empty keep-list ⇒ refuse (422), **(2)** skip the canonical sentinel `canonical.TenantUUID` (`00000000-0000-0000-0000-000000000000`), **(3)** age guard — only prefixes whose newest object is `>= minAgeHours` old (default 48).
 - Reconcile is **MinIO-only** — no DB access (orphan Postgres rows died with their PR namespaces).
@@ -720,7 +721,7 @@ Enumerate the cross-namespace tenant union (fail-closed) and POST it to the exec
 - Test: `services/atlas-pr-bootstrap/test/reconcile_minio_test.bats`
 
 **Interfaces:**
-- Consumes: `lib.sh` (`log`, `record_error`, `run_phase`, `summarize_phases`). Env: `KUBECTL` (default `kubectl`), `CURL` (default `curl`), `ATLAS_DATA_BASE` (default `http://atlas-data.atlas-main.svc.cluster.local:8080`), `RECONCILE_DRY_RUN` (default `true`), `RECONCILE_MIN_AGE_HOURS` (default `48`).
+- Consumes: `lib.sh` (`log`, `record_error`, `run_phase`, `summarize_phases`). Env: `KUBECTL` (default `kubectl`), `CURL` (default `curl`), `ATLAS_DATA_BASE` (default `http://atlas-data.atlas-main.svc.cluster.local:8080`), `RECONCILE_DRY_RUN` (default `true`), `RECONCILE_MIN_AGE_HOURS` (default `48`), and the synthetic tenant headers `RECONCILE_TENANT_ID`/`RECONCILE_REGION`/`RECONCILE_MAJOR_VERSION`/`RECONCILE_MINOR_VERSION` (defaults `00000000-0000-0000-0000-000000000000`/`GMS`/`83`/`1`) required by atlas-data's `ParseTenant`.
 - Produces: exit 0 on success; non-zero on any enumeration failure (fail-closed) or executor non-2xx.
 
 - [ ] **Step 1: Write the failing bats**
@@ -757,6 +758,9 @@ EOF
   [ "$status" -eq 0 ]
   grep -q '"aaaa"' "$TMP/posted"
   grep -q '"bbbb"' "$TMP/posted"
+  # ParseTenant requires the tenant headers on the POST (else atlas-data 400s)
+  grep -q 'TENANT_ID' "$TMP/posted"
+  grep -q 'MAJOR_VERSION' "$TMP/posted"
 }
 
 @test "fail-closed: unreachable namespace aborts without POST" {
@@ -863,9 +867,20 @@ do_reconcile() {
       '{data:{type:"minioReconciles",attributes:{keepTenantIds:$keep,minAgeHours:$age,dryRun:$dry}}}')
 
   ATLAS_STEP=reconcile log info "posting keep-list ($(printf '%s\n' "$union" | wc -l | tr -d ' ') tenants, dryRun=${RECONCILE_DRY_RUN}, minAgeHours=${RECONCILE_MIN_AGE_HOURS})"
+  # ParseTenant gates EVERY atlas-data route (400 without these four headers),
+  # even this cross-tenant sweep. Send a synthetic tenant it accepts but ignores
+  # (verified live: nil-UUID + GMS/83/1 → 200). Overridable for tests/other envs.
+  : "${RECONCILE_TENANT_ID:=00000000-0000-0000-0000-000000000000}"
+  : "${RECONCILE_REGION:=GMS}"
+  : "${RECONCILE_MAJOR_VERSION:=83}"
+  : "${RECONCILE_MINOR_VERSION:=1}"
   local status
   status=$("$CURL" -s -o /tmp/reconcile-resp -w '%{http_code}' -X POST \
       -H 'X-Atlas-Operator: 1' \
+      -H "TENANT_ID: ${RECONCILE_TENANT_ID}" \
+      -H "REGION: ${RECONCILE_REGION}" \
+      -H "MAJOR_VERSION: ${RECONCILE_MAJOR_VERSION}" \
+      -H "MINOR_VERSION: ${RECONCILE_MINOR_VERSION}" \
       -H 'Content-Type: application/vnd.api+json' \
       -d "$body" \
       "${ATLAS_DATA_BASE}/api/data/minio/reconcile" 2>/dev/null || echo 000)
@@ -1004,9 +1019,15 @@ git branch --show-current
 
 ---
 
-## Task 6: Harden the PreDelete purge hook (B)
+## Task 6: Fix + harden the PreDelete purge hook (B)
 
-Add bounded retry to the per-tenant DELETE, with a visible alert on final failure.
+Two changes to the same hook: **(6a, bugfix)** the per-tenant `DELETE` currently
+sends only `X-Atlas-Operator: 1` and no tenant headers, so atlas-data's
+`ParseTenant` returns **400** and the purge never actually deletes — the likely
+root cause of the leaked prefixes this task exists to prevent (verified live: an
+operator atlas-data call without tenant headers → 400). Add the four synthetic
+tenant headers to the DELETE. **(6b, hardening)** wrap the DELETE in a bounded
+retry with a visible alert on final failure.
 
 **Files:**
 - Modify: `services/atlas-pr-bootstrap/scripts/predelete-purge.sh`
@@ -1016,30 +1037,50 @@ Add bounded retry to the per-tenant DELETE, with a visible alert on final failur
 
 Read `services/atlas-pr-bootstrap/scripts/predelete-purge.sh` and `test/predelete_test.bats` to match the existing stub/harness conventions before editing.
 
-- [ ] **Step 2: Write a failing test for DELETE retry**
+- [ ] **Step 2: Write failing tests for (6a) tenant headers and (6b) retry**
 
-Add to `test/predelete_test.bats` a case where the tenant `DELETE` returns `503` on the first attempt and `202` on the second; assert the hook succeeds (exit 0) and the tenant is reported purged. Model the curl stub on the existing predelete tests (a counter file in `$BATS_TEST_TMPDIR` that flips the status on the 2nd call).
+Add two cases to `test/predelete_test.bats`, both modeling their curl stub on the existing predelete tests (record the DELETE's args to a file in `$BATS_TEST_TMPDIR`):
+- **6a header test:** stub the DELETE to succeed (202) and record its full arg string; assert the recorded args contain `TENANT_ID`, `REGION`, `MAJOR_VERSION`, and `MINOR_VERSION`. This FAILS today because the hook sends none.
+- **6b retry test:** stub the DELETE to return `503` on the first attempt and `202` on the second (a counter file that flips on the 2nd call); assert the hook exits 0 and reports the tenant purged. This FAILS today because the hook treats the first 503 as permanent.
 
-- [ ] **Step 3: Run to verify it fails**
+- [ ] **Step 3: Run to verify both fail**
 
 Run: `cd services/atlas-pr-bootstrap && bats test/predelete_test.bats`
-Expected: FAIL — current hook treats the first 503 as a permanent failure.
+Expected: both new cases FAIL (no tenant headers sent; no retry).
 
-- [ ] **Step 4: Add retry/backoff to `predelete-purge.sh`**
+- [ ] **Step 4a: Add the synthetic tenant headers to the DELETE**
 
-Wrap the per-tenant DELETE in a bounded retry (reuse `retry` from `lib.sh` if its signature fits, else a small inline loop of 3 attempts with a short `sleep`), treating only a final non-2xx as `rc=1`, and emit `log error` (alert-level) on exhaustion. Preserve: the empty-list refusal, the GET enumeration `-f` behavior, and the non-zero exit on any final failure. Keep the change minimal — do not restructure `do_purge_tenants` beyond the retry wrap.
+In `do_purge_tenants`, add to the `curl ... -X DELETE` invocation the four headers atlas-data's `ParseTenant` requires (values overridable via env, defaults matching the verified-working synthetic tenant):
+
+```bash
+: "${PURGE_TENANT_ID:=00000000-0000-0000-0000-000000000000}"
+: "${PURGE_REGION:=GMS}"
+: "${PURGE_MAJOR_VERSION:=83}"
+: "${PURGE_MINOR_VERSION:=1}"
+# ...within the DELETE curl:
+    -H "TENANT_ID: ${PURGE_TENANT_ID}" \
+    -H "REGION: ${PURGE_REGION}" \
+    -H "MAJOR_VERSION: ${PURGE_MAJOR_VERSION}" \
+    -H "MINOR_VERSION: ${PURGE_MINOR_VERSION}" \
+```
+
+The purge is cross-tenant (the target id is in the URL path; `tenantpurge` reads it from `mux.Vars`, not the tenant context), so the synthetic tenant is accepted and ignored — matching the reconcile endpoint's contract.
+
+- [ ] **Step 4b: Add retry/backoff to the DELETE**
+
+Wrap the per-tenant DELETE in a bounded retry (reuse `retry` from `lib.sh` if its signature fits, else a small inline loop of 3 attempts with a short `sleep`), treating only a final non-2xx as `rc=1`, and emit `log error` (alert-level) on exhaustion. Preserve: the empty-list refusal, the GET enumeration `-f` behavior, and the non-zero exit on any final failure. Keep the change minimal — do not restructure `do_purge_tenants` beyond the header addition and the retry wrap.
 
 - [ ] **Step 5: Run predelete bats + verify pass**
 
 Run: `cd services/atlas-pr-bootstrap && bats test/predelete_test.bats`
-Expected: PASS (existing cases + the new retry case).
+Expected: PASS (existing cases + the new header case + the new retry case).
 
 - [ ] **Step 6: Commit**
 
 ```bash
 cd <worktree-root>
 git add services/atlas-pr-bootstrap/scripts/predelete-purge.sh services/atlas-pr-bootstrap/test/predelete_test.bats
-git commit -m "feat(task-174): harden predelete purge hook with bounded DELETE retry"
+git commit -m "fix(task-174): send tenant headers on predelete purge DELETE; harden with retry"
 git branch --show-current
 ```
 

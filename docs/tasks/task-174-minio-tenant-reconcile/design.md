@@ -23,6 +23,22 @@ objects leak **permanently** — there is **no reconciliation sweep** that later
 compares MinIO `tenants/*` prefixes against the live tenant set. This is the same
 class as the known "Ephemeral env DBs leak on teardown" pattern.
 
+### Additional root cause found during implementation (2026-07-17)
+
+Every atlas-data REST route is wrapped by `ParseTenant`
+(libs/atlas-rest/server/handler.go), which returns **400** unless all four
+headers `TENANT_ID`/`REGION`/`MAJOR_VERSION`/`MINOR_VERSION` are present — even
+for operator/cross-tenant routes. The predelete hook's per-tenant
+`DELETE /api/data/tenants/{id}` sends **only** `X-Atlas-Operator: 1` and no
+tenant headers, so `ParseTenant` 400s it and the purge **never deletes**. This
+is very likely *the* reason the incident tenants leaked (not merely an
+occasional hook miss). Verified live: an operator atlas-data GET with no tenant
+headers → 400; with a synthetic tenant (`00000000-…-000`, `GMS`, `83`, `1`) →
+200. Fix: send the synthetic tenant headers on the DELETE (Task 6) and on the
+new reconcile POST (Task 4). The reconcile endpoint keeps the standard
+`ParseTenant`-wrapped routing (service convention) and its callers supply the
+synthetic tenant it accepts-and-ignores.
+
 ### Incident that motivated this
 
 - Tenant `1cccd449-6751-4cdd-9b1a-2c33f4b6834d` (not among the 6 live

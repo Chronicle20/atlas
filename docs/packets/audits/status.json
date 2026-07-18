@@ -1,10 +1,10 @@
 {
   "toolSha": "823c734457141625c3a6dd7ad4528ad782c9d4d06be9baca7573a4c297d454c4",
   "exportHashes": {
-    "gms_v48": "054d404fcb6f0feed776b8c1453f2ab48a35f479463e82ea00d6d28ebca512dc",
-    "gms_v61": "b1111abee79b6b10cf1a05305e3c4a7707819f6862a80314c0b2ebce424852f7",
-    "gms_v72": "ad7f0800d7560bca21baba98f5116103094c20f991781829ffa65b37db9d963b",
-    "gms_v79": "ccb6069530dad5014ec311b23540f79cfb1e9dd46fc3c681a34948edbe21e790",
+    "gms_v48": "0ae88b8fd6a9c27c650d5bacfe6f200d783db3838366501e1e8da9af562ae7a2",
+    "gms_v61": "a22cf4bdd9acad27cddafc7c595e807634362b4c25f56dde66c88e2e0ebecc93",
+    "gms_v72": "cc39afb1e4bb9e3edb1d841d5e6f1fdca6abd904e627bb3cceeb9e228117c566",
+    "gms_v79": "d3f406bedd301bc4f68df509acb4e00200521656d3270e28961f9cc45ecdec32",
     "gms_v83": "fbae9f57d49feee16a7cefaee842bf1d7506350c7fa598b383df641adb51619c",
     "gms_v84": "0fe8b54e4bbdfdd289c0a0f38b713e216586dbad55c0777cb58cebb81d5caa7c",
     "gms_v87": "09eb4251ac986daddd8b313d28f58c9a9a2825039f89f7132dec4c0e5b951634",
@@ -7279,9 +7279,9 @@
     {
       "kind": "op",
       "op": "SERVERMESSAGE",
-      "packet": "chat/clientbound/ChatWorldMessageSimple",
+      "packet": "chat/clientbound/ChatWorldMessageMegaphone",
       "direction": "clientbound",
-      "tier1": true,
+      "tier1": false,
       "fnames": [
         "CWvsContext::OnBroadcastMsg"
       ],
@@ -8072,7 +8072,7 @@
     {
       "kind": "op",
       "op": "USE_CASH_ITEM",
-      "packet": "cash/serverbound/CashItemUseItemMegaphone",
+      "packet": "cash/serverbound/CashItemUseMegaphone",
       "direction": "serverbound",
       "tier1": true,
       "fnames": [
@@ -8085,23 +8085,19 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 62
         },
         "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 73
         },
         "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 78
         },
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 77
         },
         "gms_v83": {
@@ -8711,23 +8707,19 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 66
         },
         "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 84
         },
         "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 103
         },
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 105
         },
         "gms_v83": {

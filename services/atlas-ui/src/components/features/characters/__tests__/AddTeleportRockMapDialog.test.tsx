@@ -3,23 +3,18 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AddTeleportRockMapDialog } from "@/components/features/characters/AddTeleportRockMapDialog";
 
-vi.mock("@/context/tenant-context", () => ({
-  useTenant: () => ({ activeTenant: { id: "t" } }),
-}));
 vi.mock("@/lib/hooks/api/useMaps", () => ({
   useMapsByName: () => ({
     data: [{ id: "100000000", attributes: { name: "Henesys" } }],
     isLoading: false,
   }),
 }));
-const addMap = vi
-  .fn()
-  .mockResolvedValue({
-    regular: [100000000],
-    vip: [],
-    regularCapacity: 5,
-    vipCapacity: 10,
-  });
+const addMap = vi.fn().mockResolvedValue({
+  regular: [100000000],
+  vip: [],
+  regularCapacity: 5,
+  vipCapacity: 10,
+});
 vi.mock("@/lib/hooks/api/useTeleportRocks", () => ({
   useAddTeleportRockMap: () => ({ mutateAsync: addMap, isPending: false }),
 }));

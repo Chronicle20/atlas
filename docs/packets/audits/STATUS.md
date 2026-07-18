@@ -7,9 +7,9 @@
 Tool: `823c734457141625c3a6dd7ad4528ad782c9d4d06be9baca7573a4c297d454c4`
 
 - export gms_v48: `0ae88b8fd6a9c27c650d5bacfe6f200d783db3838366501e1e8da9af562ae7a2`
-- export gms_v61: `a22cf4bdd9acad27cddafc7c595e807634362b4c25f56dde66c88e2e0ebecc93`
-- export gms_v72: `cc39afb1e4bb9e3edb1d841d5e6f1fdca6abd904e627bb3cceeb9e228117c566`
-- export gms_v79: `d3f406bedd301bc4f68df509acb4e00200521656d3270e28961f9cc45ecdec32`
+- export gms_v61: `87d5822dce0ed29b1faf82badb31aed8cc37252f01b9916be3b1e2aa2d3a223a`
+- export gms_v72: `c1fd0fbbdd75be85b2ad94ba66b93bcff2504b9ff9c4e33f60a9a96a97f012c1`
+- export gms_v79: `d10a0963d49540be50872fd61139cf5b6e850010c70df4f867a282afbf8f36fb`
 - export gms_v83: `fbae9f57d49feee16a7cefaee842bf1d7506350c7fa598b383df641adb51619c`
 - export gms_v84: `7254a6fb504335aac45bc0db1d24ce7a9bd2c50428bf33074db6560966ccc8f4`
 - export gms_v87: `42d8d1c223d7661eb3ed9772fa7d247c24990288f43437bcec47bf670b687971`
@@ -833,6 +833,7 @@ Tool: `823c734457141625c3a6dd7ad4528ad782c9d4d06be9baca7573a4c297d454c4`
 | buddy/serverbound/BuddyOperationAdd (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | buddy/serverbound/BuddyOperationDelete (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | cash/serverbound/CashItemUseAvatarMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
+| cash/serverbound/CashItemUseItemMegaphone (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | cash/serverbound/CashItemUseMapleTV (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
 | cash/serverbound/CashItemUseMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashItemUsePointReset (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
@@ -998,15 +999,15 @@ Tool: `823c734457141625c3a6dd7ad4528ad782c9d4d06be9baca7573a4c297d454c4`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 168 | 0 | 2 | 159 | 634 | 0 | 51.1% |
-| v61 | 240 | 0 | 60 | 199 | 464 | 0 | 48.1% |
-| v72 | 250 | 0 | 73 | 217 | 423 | 0 | 46.3% |
-| v79 | 264 | 0 | 72 | 213 | 414 | 0 | 48.1% |
-| v83 | 414 | 0 | 0 | 325 | 224 | 0 | 56.0% |
-| v84 | 387 | 0 | 0 | 332 | 244 | 0 | 53.8% |
-| v87 | 422 | 0 | 0 | 354 | 187 | 0 | 54.4% |
-| v95 | 447 | 0 | 0 | 413 | 103 | 0 | 52.0% |
-| JMS185 | 399 | 0 | 0 | 370 | 194 | 0 | 51.9% |
+| v48 | 168 | 0 | 2 | 160 | 634 | 0 | 50.9% |
+| v61 | 241 | 0 | 60 | 199 | 464 | 0 | 48.2% |
+| v72 | 251 | 0 | 73 | 217 | 423 | 0 | 46.4% |
+| v79 | 265 | 0 | 72 | 213 | 414 | 0 | 48.2% |
+| v83 | 414 | 0 | 0 | 326 | 224 | 0 | 55.9% |
+| v84 | 387 | 0 | 0 | 333 | 244 | 0 | 53.8% |
+| v87 | 422 | 0 | 0 | 355 | 187 | 0 | 54.3% |
+| v95 | 447 | 0 | 0 | 414 | 103 | 0 | 51.9% |
+| JMS185 | 399 | 0 | 0 | 371 | 194 | 0 | 51.8% |
 
 ## Conflicts
 

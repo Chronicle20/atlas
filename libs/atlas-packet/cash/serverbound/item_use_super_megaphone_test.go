@@ -204,13 +204,15 @@ func TestItemUseSuperMegaphoneRoundTrip(t *testing.T) {
 				// task-123 phase 3: matches the production gate exactly (see
 				// item_use_megaphone_test.go for the IDA citation).
 				updateTimeFirst := v.MajorVersion >= 87
-				// Legacy GMS (<83) carries NO update_time at all (task-123
-				// legacy phase 1, megaphoneHasUpdateTime).
-				hasUpdateTime := !(v.Region == "GMS" && v.MajorVersion < 83)
+				// legacy TV/item/triple gap-fill pass: update_time is a
+				// trailing Encode4 whenever updateTimeFirst is false on
+				// EVERY GMS build (v48/61/72/79 included) — see
+				// item_use_megaphone.go's doc comment for the IDA evidence
+				// that disproved the earlier GMS<83-omits-update_time gate.
 				input := NewItemUseSuperMegaphone(updateTimeFirst)
 				input.message = "Super hello!"
 				input.whisper = tc.whisper
-				if !updateTimeFirst && hasUpdateTime {
+				if !updateTimeFirst {
 					input.updateTime = 54321
 				}
 				output := NewItemUseSuperMegaphone(updateTimeFirst)
@@ -221,7 +223,7 @@ func TestItemUseSuperMegaphoneRoundTrip(t *testing.T) {
 				if output.Whisper() != input.Whisper() {
 					t.Errorf("whisper: got %v, want %v", output.Whisper(), input.Whisper())
 				}
-				if hasUpdateTime && output.UpdateTime() != input.UpdateTime() {
+				if !updateTimeFirst && output.UpdateTime() != input.UpdateTime() {
 					t.Errorf("updateTime: got %v, want %v", output.UpdateTime(), input.UpdateTime())
 				}
 			})

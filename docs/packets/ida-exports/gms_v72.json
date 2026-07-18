@@ -3,6 +3,46 @@
  "md5": "",
  "generated_at": "2026-07-01T15:41:36Z",
  "functions": {
+  "CItemSpeakerDlg::_SendConsumeCashItemUseRequest": {
+   "address": "0x5a7c42",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Encode2",
+     "comment": "slot (*(WORD*)(this+120)) @0x5a7d35"
+    },
+    {
+     "op": "Encode4",
+     "comment": "itemId (*(DWORD*)(this+124)) @0x5a7d40"
+    },
+    {
+     "op": "EncodeStr",
+     "comment": "message (CCtrlEdit::GetText()) @0x5a7d61"
+    },
+    {
+     "op": "Encode1",
+     "comment": "whisper (*(DWORD*)(*(DWORD*)(this+1444)+72)) @0x5a7d72"
+    },
+    {
+     "op": "Encode1",
+     "comment": "hasItem (*(DWORD*)(this+140)!=0) @0x5a7d84"
+    },
+    {
+     "op": "Encode4",
+     "comment": "invType (*(DWORD*)(this+128)) @0x5a7d9a",
+     "guard": "hasItem"
+    },
+    {
+     "op": "Encode4",
+     "comment": "slot (*(DWORD*)(this+132)) @0x5a7da8",
+     "guard": "hasItem"
+    },
+    {
+     "op": "Encode4",
+     "comment": "updateTime (SetExclRequestSent() return, GetTickCount-style read of g_CWvsApp+0x18) @0x5a7db6"
+    }
+   ]
+  },
   "CWvsContext::OnBroadcastMsg#Megaphone": {
    "address": "0x91aaac",
    "direction": "clientbound",

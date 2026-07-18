@@ -210,13 +210,14 @@ func TestItemUseMegaphoneRoundTrip(t *testing.T) {
 			// @0x623728 gms_v87, CWvsContext::SendConsumeCashItemUseRequest
 			// @0xa9fef9 gms_v87), so the old >=95 threshold under-tested v87.
 			updateTimeFirst := v.MajorVersion >= 87
-			// Legacy GMS (<83) carries NO update_time at all (task-123 legacy
-			// phase 1, megaphoneHasUpdateTime) — only set/check it when the
-			// sub-body actually carries a trailing copy.
-			hasUpdateTime := !(v.Region == "GMS" && v.MajorVersion < 83)
+			// legacy TV/item/triple gap-fill pass: update_time is a trailing
+			// Encode4 whenever updateTimeFirst is false on EVERY GMS build
+			// (v48/61/72/79 included) — see this file's type doc comment for
+			// the IDA evidence that disproved the earlier
+			// GMS<83-omits-update_time gate.
 			input := NewItemUseMegaphone(updateTimeFirst)
 			input.message = "Hello world!"
-			if !updateTimeFirst && hasUpdateTime {
+			if !updateTimeFirst {
 				input.updateTime = 12345
 			}
 			output := NewItemUseMegaphone(updateTimeFirst)
@@ -224,7 +225,7 @@ func TestItemUseMegaphoneRoundTrip(t *testing.T) {
 			if output.Message() != input.Message() {
 				t.Errorf("message: got %q, want %q", output.Message(), input.Message())
 			}
-			if hasUpdateTime && output.UpdateTime() != input.UpdateTime() {
+			if !updateTimeFirst && output.UpdateTime() != input.UpdateTime() {
 				t.Errorf("updateTime: got %v, want %v", output.UpdateTime(), input.UpdateTime())
 			}
 		})

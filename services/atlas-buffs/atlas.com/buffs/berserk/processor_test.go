@@ -8,11 +8,12 @@ import (
 
 	extchar "atlas-buffs/external/character"
 
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/stat"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
 )
 
 // testProcessor builds a ProcessorImpl with deterministic time and stubbed

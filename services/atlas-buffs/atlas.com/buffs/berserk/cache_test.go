@@ -1,16 +1,16 @@
 package berserk
 
 import (
+	"atlas-buffs/external/dataskill"
 	"context"
 	"errors"
 	"testing"
 
-	"atlas-buffs/external/dataskill"
-
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func fixedSkill(xs ...int16) dataskill.RestModel {

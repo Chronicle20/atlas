@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
 )
 
 // berserkEventJSON is a golden fixture of what atlas-buffs'

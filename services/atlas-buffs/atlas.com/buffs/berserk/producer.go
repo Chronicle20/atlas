@@ -3,11 +3,12 @@ package berserk
 import (
 	character2 "atlas-buffs/kafka/message/character"
 
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
 )
 
 func berserkStatusEventProvider(transactionId uuid.UUID, m Model) model.Provider[[]kafka.Message] {

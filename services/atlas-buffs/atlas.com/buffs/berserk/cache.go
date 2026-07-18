@@ -1,16 +1,16 @@
 package berserk
 
 import (
+	"atlas-buffs/external/dataskill"
 	"context"
 	"fmt"
 	"sync"
 
-	"atlas-buffs/external/dataskill"
-
-	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // EffectXCache caches Berserk's per-level effect x values per tenant. Effect
@@ -29,8 +29,10 @@ func NewEffectXCache(fetch func(l logrus.FieldLogger, ctx context.Context) (data
 	}
 }
 
-var effectXCache *EffectXCache
-var effectXCacheOnce sync.Once
+var (
+	effectXCache     *EffectXCache
+	effectXCacheOnce sync.Once
+)
 
 func GetEffectXCache() *EffectXCache {
 	effectXCacheOnce.Do(func() {

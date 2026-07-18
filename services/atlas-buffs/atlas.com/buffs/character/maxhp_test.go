@@ -1,19 +1,19 @@
 package character
 
 import (
+	"atlas-buffs/berserk"
+	"atlas-buffs/buff/stat"
 	"testing"
 	"time"
 
-	"atlas-buffs/berserk"
-	"atlas-buffs/buff/stat"
-
-	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-	constants "github.com/Chronicle20/atlas/libs/atlas-constants/character"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/alicebob/miniredis/v2"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	constants "github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 func setupBothRegistries(t *testing.T) {

@@ -1,6 +1,7 @@
 package berserk
 
 import (
+	"atlas-buffs/kafka/message"
 	"context"
 	"errors"
 	"time"
@@ -8,8 +9,11 @@ import (
 	extchar "atlas-buffs/external/character"
 	exteffstats "atlas-buffs/external/effectivestats"
 	extskills "atlas-buffs/external/skills"
-	"atlas-buffs/kafka/message"
+
 	character2 "atlas-buffs/kafka/message/character"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
@@ -17,9 +21,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Processor interface {

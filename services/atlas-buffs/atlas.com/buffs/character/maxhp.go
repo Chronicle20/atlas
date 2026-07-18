@@ -5,8 +5,9 @@ import (
 	"atlas-buffs/buff/stat"
 	"context"
 
-	constants "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/sirupsen/logrus"
+
+	constants "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 )
 
 // maxHpBuffStatTypes mirrors the MapBuffStatType cases in atlas-effective-stats

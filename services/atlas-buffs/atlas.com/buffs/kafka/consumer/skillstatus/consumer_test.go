@@ -1,21 +1,22 @@
 package skillstatus
 
 import (
+	"atlas-buffs/berserk"
 	"context"
 	"testing"
 
-	"atlas-buffs/berserk"
 	skillstatus2 "atlas-buffs/kafka/message/skillstatus"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func setup(t *testing.T) context.Context {

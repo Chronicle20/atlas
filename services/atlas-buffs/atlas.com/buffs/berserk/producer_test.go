@@ -7,11 +7,12 @@ import (
 
 	character2 "atlas-buffs/kafka/message/character"
 
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
 )
 
 // Providers are pure message builders, so the on-the-wire JSON contract is

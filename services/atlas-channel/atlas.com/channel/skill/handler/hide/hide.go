@@ -26,7 +26,10 @@ import (
 
 // HideBuffDuration is the effectively-permanent duration for the GM-hide buff.
 // atlas-buffs rejects duration <= 0, so the toggle uses the largest int32
-// (~24.8 days); the canonical reveal is a re-cast, exactly like mounts.
+// (~24.8 days). The client toggles hide OFF by cancelling the buff (CANCEL_BUFF),
+// NOT by re-casting the skill, so the reveal spawn is driven from
+// socket/handler/character_buff_cancel.go on cancel; the OFF branch below is a
+// defensive fallback for a re-cast that the live client does not actually send.
 const HideBuffDuration = int32(math.MaxInt32)
 
 func init() {

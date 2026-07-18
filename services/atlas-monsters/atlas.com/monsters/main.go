@@ -105,6 +105,7 @@ func main() {
 		tasks.Register(l, ctx)(monster.NewMonsterAggroDecayTask(l, ctx, monster.AggroSweepInterval))
 		tasks.Register(l, ctx)(monster.NewMonsterSkillPickerSweepTask(l, ctx, monster.MonsterSkillPickerSweepInterval))
 		tasks.Register(l, ctx)(monster.NewMonsterRecoveryTask(l, ctx, monster.MonsterRecoveryInterval))
+		tasks.Register(l, ctx)(hidden.NewReconciliationTask(l, ctx, hidden.ReconcileInterval))
 	}
 
 	if leaderEnabled(l) {

@@ -274,6 +274,59 @@ func TestMapTransferErrorGoldenJms(t *testing.T) {
 	}
 }
 
+// task-124 v61 verify pass (live GMS_v61.1_U_DEVM.exe, port 13338): already
+// named in the v61 IDB. CWvsContext::OnMapTransferResult @0x846a0f —
+// byte-identical read order to v83/v84/v87/v95/jms_v185:
+// mode(Decode1)+targetList(Decode1) @0x846a2f/0x846a32, then for mode in
+// {2,3} exactly 5 (targetList==0) or 10 (targetList==1) x Decode4 mapId
+// @0x846a82 loop. Confirms the "identical v83 0xA25268 / v95 0x9F9F90" claim
+// in the file-level comment above for v61 too.
+//
+// packet-audit:verify packet=teleportrock/clientbound/MapTransferList version=gms_v61 ida=0x846a0f
+func TestMapTransferListRegularGoldenV61(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 61, 1)
+	m := NewMapTransferList(3, false, []_map.Id{100000000, 220000000})
+	got := m.Encode(l, ctx)(nil)
+	want := []byte{
+		0x03,                   // mode = REGISTER_LIST
+		0x00,                   // targetList = regular
+		0x00, 0xE1, 0xF5, 0x05, // 100000000
+		0x00, 0xEF, 0x1C, 0x0D, // 220000000
+		0xFF, 0xC9, 0x9A, 0x3B, // EmptyMapId
+		0xFF, 0xC9, 0x9A, 0x3B,
+		0xFF, 0xC9, 0x9A, 0x3B,
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("golden mismatch\n got: % x\nwant: % x", got, want)
+	}
+}
+
+// IDA (live GMS_v61.1_U_DEVM.exe v61, port 13338, task-124 verify pass):
+// CWvsContext::OnMapTransferResult @0x846a0f, same function as the list form
+// above — modes 5-11 (error/notice form, string ids resolved via
+// sub_678022 with StringPool ids 499/2876/2911/2882/2879/2883 — a small
+// offset from v83's ids that does not affect wire bytes) read only
+// mode(Decode1)+targetList(Decode1) and never reach the Decode4 mapId loop
+// (guarded on `case 2/3` in the v61 switch, byte-identical branch structure
+// to v83's `v3 == 3 && !v4` guard). Same class of runtime/mode-guard
+// tooling gap as v83/v84/v87/v95/jms (analyzer grades this candidate
+// FlatInvalid even though the 2-byte body is exactly what v61 sends for the
+// error modes). Evidence pinned to carry this cell via the linked-fixture
+// path, mirroring the v83/v84/v87/v95/jms convention above.
+//
+// packet-audit:verify packet=teleportrock/clientbound/MapTransferError version=gms_v61 ida=0x846a0f
+func TestMapTransferErrorGoldenV61(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 61, 1)
+	m := NewMapTransferError(5, false)
+	got := m.Encode(l, ctx)(nil)
+	want := []byte{0x05, 0x00}
+	if !bytes.Equal(got, want) {
+		t.Errorf("golden mismatch\n got: % x\nwant: % x", got, want)
+	}
+}
+
 func TestMapTransferResultCrossVersionStable(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	m := NewMapTransferList(3, false, []_map.Id{100000000})

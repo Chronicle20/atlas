@@ -183,6 +183,47 @@ func TestUseByMapDecodeJms(t *testing.T) {
 	}
 }
 
+// task-124 v61 verify pass (live GMS_v61.1_U_DEVM.exe, port 13338):
+// sub_8327DB @0x8327db — unnamed in the v61 IDB (sub_8327DB) until this pass;
+// renamed live to CWvsContext::SendMapTransferItemUseRequest (the registry
+// fname). Byte-identical read order to v83/v84/v87/v95/jms_v185: guard
+// nItemID/10000==232 && CanSendExclRequest(this,200,0) @0x8327f5-832813,
+// COutPacket::COutPacket(&v10,77) @0x83281f (opcode 77 = 0x4D, matches
+// registry USE_TELEPORT_ROCK), Encode2(nPOS) @0x83282d, Encode4(nItemID)
+// @0x832838, then CWvsContext::RunMapTransferItem(this,&v10,0) @0x832844
+// (the shared target-payload helper, renamed live this pass from sub_8328C9 —
+// disasm-confirmed at 0x83283d-832844 that the caller passes this=CWvsContext
+// in ecx and &packet as the explicit stack arg, resolving the decompiler's
+// ambiguous this/a2 pseudocode labeling); on success Encode4(get_update_time())
+// @0x832856 then SendPacket @0x832865 — a genuine trailing updateTime.
+// Confirms the "version-invariant" claim above for v61.
+//
+// packet-audit:verify packet=teleportrock/serverbound/Use version=gms_v61 ida=0x8327db
+func TestUseByMapDecodeV61(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 61, 1)
+	b := []byte{
+		0x02, 0x00, // slot = 2
+		0x80, 0x66, 0x23, 0x00, // itemId = 2320000
+		0x00,                   // byName = 0
+		0x00, 0xE1, 0xF5, 0x05, // mapId = 100000000
+		0x2A, 0x00, 0x00, 0x00, // updateTime = 42
+	}
+	req := request.Request(b)
+	r := request.NewRequestReader(&req, 0)
+	p := Use{}
+	p.Decode(l, ctx)(&r, nil)
+	if !p.Valid() {
+		t.Fatalf("expected valid decode")
+	}
+	if p.Slot() != 2 || p.ItemId() != 2320000 || p.UpdateTime() != 42 {
+		t.Fatalf("fields: %+v", p)
+	}
+	if p.Target().ByName() || p.Target().TargetMap() != 100000000 {
+		t.Fatalf("target: %+v", p.Target())
+	}
+}
+
 // Client sent the packet with no target payload (dialog closed without a
 // selection) — must decode as invalid, never panic.
 func TestUseAbsentTargetIsInvalid(t *testing.T) {

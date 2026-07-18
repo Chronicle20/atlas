@@ -126,6 +126,32 @@ func TestAddMapDeleteDecodeJms(t *testing.T) {
 	}
 }
 
+// task-124 v61 verify pass (live GMS_v61.1_U_DEVM.exe, port 13338):
+// sub_8478EA @0x8478ea — unnamed in the v61 IDB (sub_8478EA) until this pass;
+// renamed live to CWvsContext::SendMapTransferRequest (the registry fname).
+// Byte-identical read order to v83/v84/v87/jms_v185: COutPacket::COutPacket(
+// &v4,94) @0x8478fe (opcode 94 = 0x5E, matches registry TROCK_ADD_MAP);
+// Encode1(a1=nType) @0x84790d; Encode1(a3=bCanTransferContinent) @0x847918;
+// if(!a1) Encode4(a2=dwTargetField) @0x847929; SendPacket @0x847938.
+// Confirms the "version-invariant" claim above for v61.
+//
+// packet-audit:verify packet=teleportrock/serverbound/AddMap version=gms_v61 ida=0x8478ea
+func TestAddMapDeleteDecodeV61(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 61, 1)
+	b := []byte{
+		0x00, 0x00, // delete, regular list
+		0x00, 0xE1, 0xF5, 0x05, // mapId = 100000000
+	}
+	req := request.Request(b)
+	r := request.NewRequestReader(&req, 0)
+	p := AddMap{}
+	p.Decode(l, ctx)(&r, nil)
+	if p.Register() || p.Vip() || p.MapId() != 100000000 {
+		t.Fatalf("decode: %+v", p)
+	}
+}
+
 func TestAddMapRoundTrip(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	for _, v := range pt.Variants {

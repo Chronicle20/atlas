@@ -327,6 +327,60 @@ func TestMapTransferErrorGoldenV61(t *testing.T) {
 	}
 }
 
+// task-124 v72 verify pass (live GMS_v72.1_U_DEVM.exe, port 13339): already
+// named in the v72 IDB. CWvsContext::OnMapTransferResult @0x91d41a —
+// byte-identical read order to v83/v84/v87/v95/jms_v185/v61:
+// mode(Decode1)+targetList(Decode1) @0x91d43a/0x91d43d, then for mode in
+// {2,3} exactly 5 (targetList==0) or 10 (targetList==1) x Decode4 mapId into
+// this+1279 (regular) / this+1299 (VIP). Corrected ida.address in the
+// registry from a shared batch-import placeholder to this confirmed
+// function entry as part of this pass. Confirms the "identical v83 0xA25268
+// / v95 0x9F9F90" claim in the file-level comment above for v72 too.
+//
+// packet-audit:verify packet=teleportrock/clientbound/MapTransferList version=gms_v72 ida=0x91d41a
+func TestMapTransferListRegularGoldenV72(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 72, 1)
+	m := NewMapTransferList(3, false, []_map.Id{100000000, 220000000})
+	got := m.Encode(l, ctx)(nil)
+	want := []byte{
+		0x03,                   // mode = REGISTER_LIST
+		0x00,                   // targetList = regular
+		0x00, 0xE1, 0xF5, 0x05, // 100000000
+		0x00, 0xEF, 0x1C, 0x0D, // 220000000
+		0xFF, 0xC9, 0x9A, 0x3B, // EmptyMapId
+		0xFF, 0xC9, 0x9A, 0x3B,
+		0xFF, 0xC9, 0x9A, 0x3B,
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("golden mismatch\n got: % x\nwant: % x", got, want)
+	}
+}
+
+// IDA (live GMS_v72.1_U_DEVM.exe v72, port 13339, task-124 verify pass):
+// CWvsContext::OnMapTransferResult @0x91d41a, same function as the list form
+// above — modes 5-11 (error/notice form, StringPool ids
+// 2960/2925/2960/2931/2928/2932) read only mode(Decode1)+targetList(Decode1)
+// and never reach the Decode4 mapId loop (guarded on `case 2/3` in the v72
+// switch, byte-identical branch structure to v83's `v3 == 3 && !v4` guard).
+// Same class of runtime/mode-guard tooling gap as v83/v84/v87/v95/jms/v61
+// (analyzer grades this candidate FlatInvalid even though the 2-byte body is
+// exactly what v72 sends for the error modes). Evidence pinned to carry this
+// cell via the linked-fixture path, mirroring the v83/v84/v87/v95/jms/v61
+// convention above.
+//
+// packet-audit:verify packet=teleportrock/clientbound/MapTransferError version=gms_v72 ida=0x91d41a
+func TestMapTransferErrorGoldenV72(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 72, 1)
+	m := NewMapTransferError(5, false)
+	got := m.Encode(l, ctx)(nil)
+	want := []byte{0x05, 0x00}
+	if !bytes.Equal(got, want) {
+		t.Errorf("golden mismatch\n got: % x\nwant: % x", got, want)
+	}
+}
+
 func TestMapTransferResultCrossVersionStable(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	m := NewMapTransferList(3, false, []_map.Id{100000000})

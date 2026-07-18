@@ -13242,7 +13242,7 @@
   },
   "CWvsContext::OnMapTransferResult": {
    "address": "0x91d41a",
-   "direction": "",
+   "direction": "clientbound",
    "calls": [
     {
      "op": "Decode1",
@@ -14976,9 +14976,44 @@
    ]
   },
   "CWvsContext::SendMapTransferItemUseRequest": {
-   "address": "0x917221",
-   "direction": "",
-   "calls": null
+   "address": "0x904d5e",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Decode2",
+     "comment": "nPOS (inventory slot)",
+     "guard": "a3 / 10000 == 232 && CWvsContext::CanSendExclRequest(this, 200, 0)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "nItemID",
+     "guard": "a3 / 10000 == 232 && CWvsContext::CanSendExclRequest(this, 200, 0)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "updateTime (trailing, only if the target dialog was confirmed)",
+     "guard": "a3 / 10000 == 232 && CWvsContext::CanSendExclRequest(this, 200, 0) && CWvsContext::RunMapTransferItem(pkt, 0)"
+    }
+   ]
+  },
+  "CWvsContext::SendMapTransferRequest": {
+   "address": "0x91e33e",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "nType (1=register current map, 0=delete selected map)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "flag (VIP saved-map slot set)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "mapId (delete only)",
+     "guard": "!nType"
+    }
+   ]
   },
   "CWvsContext::SendMigrateToShopRequest": {
    "address": "0x9001d8",

@@ -152,6 +152,36 @@ func TestAddMapDeleteDecodeV61(t *testing.T) {
 	}
 }
 
+// task-124 v72 verify pass (live GMS_v72.1_U_DEVM.exe, port 13339): unnamed
+// sub_91E33E @0x91e33e — renamed live to CWvsContext::SendMapTransferRequest
+// (the registry fname). Byte-identical read order to v83/v84/v87/v95/
+// jms_v185/v61: COutPacket::COutPacket(&v4,101) @0x91e350 (opcode 101 =
+// 0x65, matches registry TROCK_ADD_MAP); Encode1(a1=nType) @0x91e35f;
+// Encode1(a3=flag/vip) @0x91e36a; if(!a1) Encode4(a2=mapId) @0x91e37b;
+// SendPacket @0x91e38a. Callers traced via the teleport-rock saved-map-list
+// dialog: constructor CWvsContext::RunMapTransferItem -> sub_76CC2B; button
+// dispatcher sub_76D8CA switches button id 2000 -> sub_76DBC9 (register,
+// calls SendMapTransferRequest(1,0,vip)), 2001 -> sub_76DDE5 (delete, calls
+// SendMapTransferRequest(0,selectedMapId,vip)). Confirms the
+// "version-invariant" claim above for v72.
+//
+// packet-audit:verify packet=teleportrock/serverbound/AddMap version=gms_v72 ida=0x91e33e
+func TestAddMapDeleteDecodeV72(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 72, 1)
+	b := []byte{
+		0x00, 0x00, // delete, regular list
+		0x00, 0xE1, 0xF5, 0x05, // mapId = 100000000
+	}
+	req := request.Request(b)
+	r := request.NewRequestReader(&req, 0)
+	p := AddMap{}
+	p.Decode(l, ctx)(&r, nil)
+	if p.Register() || p.Vip() || p.MapId() != 100000000 {
+		t.Fatalf("decode: %+v", p)
+	}
+}
+
 func TestAddMapRoundTrip(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	for _, v := range pt.Variants {

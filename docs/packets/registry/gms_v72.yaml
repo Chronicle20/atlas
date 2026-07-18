@@ -267,7 +267,8 @@
   fname: CWvsContext::OnMapTransferResult
   provenance: ida-discovered
   ida:
-    address: 9446856
+    address: 9557018
+  note: 'task-124 v72 verify pass: corrected ida.address from the shared batch-import placeholder (9446856, shared with many unrelated ops in this file) to the confirmed function entry 9557018 / 0x91d41a. Decompiled: mode=Decode1, flag=Decode1; modes 2/3 (DELETE_LIST/REGISTER_LIST) read (flag?10:5) x Decode4 into the saved-map list (this+1299 VIP / this+1279 regular); modes 5-11 are notice/error StringPool lookups (2960/2925/2960/2931/2928/2932). Structure byte-for-byte identical to v83/v61 — only the opcode is version-stable at 39 across v61/v72/v79/v83.'
 - op: WEDDING_PHOTO
   direction: clientbound
   opcode: 40
@@ -2309,14 +2310,24 @@
   ida:
     address: 9457634
   note: 'v72 COutPacket(78) verified via global COutPacket-ctor harvest @0x904fe2; Δ+1 vs v79 op 77 (mid/field/social Δ+1).'
+- op: USE_TELEPORT_ROCK
+  direction: serverbound
+  opcode: 83
+  fname: CWvsContext::SendMapTransferItemUseRequest
+  fname_alts:
+  - sub_904D5E
+  provenance: ida-discovered
+  ida:
+    address: 9456990
+  note: 'task-124 v72 verify pass (live GMS_v72.1_U_DEVM.exe, port 13339): the pre-existing IDB symbol CWvsContext::SendMapTransferItemUseRequest @0x917221 is MISLABELED — it builds a bare 3-field packet (COutPacket(84)+Encode4(updateTime)+Encode2+Encode4, no RunMapTransferItem call) and reads WZ Return-Scroll props (StringPool ids 2291/2292/2294); it is actually the Return Scroll sender (renamed live this pass to CWvsContext::SendReturnScrollUseRequest, see USE_RETURN_SCROLL below). The REAL teleport-rock USE sender was unnamed: sub_904D5E @0x904d5e (renamed live to CWvsContext::SendMapTransferItemUseRequest this pass) — guard a3/10000==232 @0x904d77-904d7e && sub_4DBE16(200,0) @0x904d8d-904d94; COutPacket::COutPacket(&v12,83) @0x904d9f (opcode 83, decimal 0x53); Encode2(a2=nPOS) @0x904dae; Encode4(a3=nItemID) @0x904db9; CWvsContext::RunMapTransferItem(v12,0) @0x904dc6 (renamed live from sub_904E4D this pass — mirrors v61''s sub_8328C9: Alloc(236)+dialog DoModal-equivalent, then on success appends Encode1(1)+EncodeStr(name) OR Encode1(0)+Encode4(mapId), confirmed via decompile at 0x904f82/0x904fb1-904fbc); on success Encode4(updateTime) @0x904dd8 then SendPacket @0x904de7 — a genuine trailing updateTime. Byte-for-byte identical read order to v83/v61/v84/v87/v95/jms_v185 (only the opcode differs: 83 here vs 77 on v61). CWvsContext::RunMapTransferItem is also called by CWvsContext::SendConsumeCashItemUseRequest (cash rocks), confirming it is the shared target-payload helper, not teleport-rock-specific.'
 - op: USE_RETURN_SCROLL
   direction: serverbound
   opcode: 84
-  fname: 'CWvsContext::SendMapTransferItemUseRequest'
+  fname: CWvsContext::SendReturnScrollUseRequest
   provenance: ida-discovered
   ida:
     address: 9531937
-  note: 'v72 COutPacket(84) verified via global COutPacket-ctor harvest @0x917221; Δ+1 vs v79 op 83 (mid/field/social Δ+1).'
+  note: 'task-124 v72 verify pass CORRECTION: this fname previously read CWvsContext::SendMapTransferItemUseRequest — that name was a mislabel inherited from the raw IDB symbol; the function @0x917221 is a bare packet (COutPacket(84)+Encode4(updateTime)+Encode2+Encode4) reading WZ Return-Scroll props (StringPool ids 2291/2292/2294 via IWzProperty::Getitem) with NO RunMapTransferItem call and NO byName/target-name branch — it is genuinely distinct from teleport-rock USE. Renamed live in the IDB this pass to CWvsContext::SendReturnScrollUseRequest; the real teleport-rock USE_TELEPORT_ROCK sender (opcode 83, unnamed sub_904D5E) is documented separately above. v72 COutPacket(84) original harvest note retained: verified via global COutPacket-ctor harvest @0x917221; Δ+1 vs v79 op 83 (mid/field/social Δ+1).'
 - op: USE_UPGRADE_SCROLL
   direction: serverbound
   opcode: 85
@@ -2423,6 +2434,16 @@
   ida:
     address: 8763824
   note: 'v72 COutPacket(99) verified via global COutPacket-ctor harvest @0x85b9b0; Δ+1 vs v79 op 98 (mid/field/social Δ+1).'
+- op: TROCK_ADD_MAP
+  direction: serverbound
+  opcode: 101
+  fname: CWvsContext::SendMapTransferRequest
+  fname_alts:
+  - sub_91E33E
+  provenance: ida-discovered
+  ida:
+    address: 9560894
+  note: 'task-124 v72 verify pass (live GMS_v72.1_U_DEVM.exe, port 13339): unnamed sub_91E33E @0x91e33e (renamed live to CWvsContext::SendMapTransferRequest this pass) — COutPacket::COutPacket(&v4,101) @0x91e350 (opcode 101, decimal 0x65); Encode1(a1=nType) @0x91e35f; Encode1(a3=flag/vip) @0x91e36a; guarded Encode4(a2=mapId) @0x91e37b when a1==0 (register sends no map id, delete sends nType=0+mapId) — matches v83/v61''s AddMap layout exactly (only the opcode differs: 101 here vs 94 on v61, 102 on v83). Callers traced via the teleport-rock saved-map-list dialog (constructor CWvsContext::RunMapTransferItem -> sub_76CC2B; button-click dispatcher sub_76D8CA switches on button id: 2000 -> sub_76DBC9 (register, calls SendMapTransferRequest(1,0,vip)), 2001 -> sub_76DDE5 (delete, calls SendMapTransferRequest(0,selectedMapId,vip)), 1/2 -> sub_76DEF6 (GO/close, sets the dialog''s modal result consumed by CWvsContext::RunMapTransferItem). Dialog constructor sub_76CE15 creates buttons 2000/2001/1/2 + CCtrlEdit(1000) + CCtrlScrollBar(3000), confirming this is the same unified map-transfer dialog (register/delete/name-input/saved-map list) as v61/v83.'
 - op: QUEST_ACTION
   direction: serverbound
   opcode: 106

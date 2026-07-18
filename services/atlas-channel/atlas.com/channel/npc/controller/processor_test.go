@@ -2,7 +2,9 @@ package controller
 
 import (
 	"context"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
@@ -167,5 +169,64 @@ func TestIsControllerFailOpen(t *testing.T) {
 	}
 	if IsController(context.Background(), ten2, f2, 8, 1000) {
 		t.Fatalf("non-controller must not pass")
+	}
+}
+
+// TestTryClaimConcurrentSameCharacterId is the task-176 code-review tripwire:
+// spawnNPCForSession (kafka/consumer/map/consumer.go) builds ONE
+// controller.Processor per session sweep and shares it across
+// data/npc.ForEachInMap's per-NPC goroutines (model.ParallelExecute()),
+// each calling TryClaim(f, npcId, characterId) for the SAME entering
+// character but DIFFERENT npcObjectIds. Before the hiddenCache mutex, this
+// raced concurrent reads/writes of the same map key from N goroutines —
+// `go test -race` flags it, and on unsynchronized Go maps the runtime can
+// also throw `fatal error: concurrent map writes`, which is NOT a
+// recoverable panic (routine.Go's recover() does not catch it), so an
+// unpatched pod crashes outright. This test seeds several unclaimed NPCs
+// and fires TryClaim for all of them concurrently for one characterId,
+// asserting every call sees a consistent, correct result under -race.
+func TestTryClaimConcurrentSameCharacterId(t *testing.T) {
+	r, ten, f := setupRegistry(t)
+	const characterId = uint32(7)
+	p := testProcessor(t, r, ten, []uint32{characterId}, nil)
+	// Widen the isHidden check-then-store race window (processor.go
+	// isHidden: read hiddenCache, miss, call hiddenFn, write hiddenCache)
+	// so concurrent goroutines reliably overlap on the write instead of
+	// happening to interleave serially — same overridable hiddenFn the
+	// spawn path exercises for real via atlas-buffs' network round trip.
+	p.hiddenFn = func(uint32) bool {
+		time.Sleep(time.Millisecond)
+		return false
+	}
+
+	npcIds := []uint32{1000, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009}
+	var wg sync.WaitGroup
+	results := make([]bool, len(npcIds))
+	errs := make([]error, len(npcIds))
+	start := make(chan struct{})
+	for i, npcId := range npcIds {
+		wg.Add(1)
+		go func(idx int, id uint32) {
+			defer wg.Done()
+			<-start
+			won, err := p.TryClaim(f, id, characterId)
+			results[idx] = won
+			errs[idx] = err
+		}(i, npcId)
+	}
+	close(start)
+	wg.Wait()
+
+	for i, npcId := range npcIds {
+		if errs[i] != nil {
+			t.Fatalf("npc %d: unexpected error: %v", npcId, errs[i])
+		}
+		if !results[i] {
+			t.Fatalf("npc %d: expected claim to succeed (sole live, non-hidden candidate), got false", npcId)
+		}
+		cur, ok, err := r.ControllerOf(context.Background(), ten, f, npcId)
+		if err != nil || !ok || cur != characterId {
+			t.Fatalf("npc %d: expected controller %d recorded, got cur=%d ok=%v err=%v", npcId, characterId, cur, ok, err)
+		}
 	}
 }

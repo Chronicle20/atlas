@@ -4,6 +4,7 @@ import (
 	"atlas-channel/character/buff"
 	_map "atlas-channel/map"
 	"context"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 
@@ -18,16 +19,23 @@ type Processor interface {
 	UncontrolledIn(f field.Model, npcObjectIds []uint32) ([]uint32, error)
 }
 
-// ProcessorImpl decides NPC-controller assignments. NOT goroutine-safe
-// (hiddenCache is unsynchronized) — construct one per handler invocation,
-// matching the codebase's per-invocation processor idiom.
+// ProcessorImpl decides NPC-controller assignments. Constructed one per
+// handler/sweep invocation, matching the codebase's per-invocation
+// processor idiom — but a single instance IS safe to share across
+// goroutines that call TryClaim/isHidden concurrently (task-176:
+// data/npc.ForEachInMap fans the per-map NPC sweep out across one
+// goroutine per NPC via model.ParallelExecute(), and spawnNPCForSession
+// intentionally builds one Processor per session sweep so the hidden
+// winner-check is memoized across all of them). hiddenCacheMu guards
+// hiddenCache against the resulting concurrent reads/writes.
 type ProcessorImpl struct {
-	l           logrus.FieldLogger
-	ctx         context.Context
-	t           tenant.Model
-	fieldIdsFn  func(f field.Model) ([]uint32, error)
-	hiddenFn    func(characterId uint32) bool
-	hiddenCache map[uint32]bool
+	l             logrus.FieldLogger
+	ctx           context.Context
+	t             tenant.Model
+	fieldIdsFn    func(f field.Model) ([]uint32, error)
+	hiddenFn      func(characterId uint32) bool
+	hiddenCacheMu sync.Mutex
+	hiddenCache   map[uint32]bool
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
@@ -56,7 +64,15 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 
 var _ Processor = (*ProcessorImpl)(nil)
 
+// isHidden memoizes the hidden winner-check per characterId. Locked for the
+// full check-then-fetch-then-store: the spawn-path sweep always calls this
+// with the SAME characterId (the entering session's own character) across
+// its parallel per-NPC goroutines, so serializing on that single key still
+// yields exactly one atlas-buffs fetch — the lock adds no extra round trips,
+// it just makes the memoization race-free (task-176 code review).
 func (p *ProcessorImpl) isHidden(characterId uint32) bool {
+	p.hiddenCacheMu.Lock()
+	defer p.hiddenCacheMu.Unlock()
 	if v, ok := p.hiddenCache[characterId]; ok {
 		return v
 	}

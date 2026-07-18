@@ -16,6 +16,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	statpkt "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
 	trpkt "github.com/Chronicle20/atlas/libs/atlas-packet/teleportrock"
 	trcb "github.com/Chronicle20/atlas/libs/atlas-packet/teleportrock/clientbound"
 )
@@ -66,6 +67,20 @@ var announceErrorFunc = func(l logrus.FieldLogger, ctx context.Context, wp write
 	}
 }
 
+// enableActionsFunc re-enables the client's action lock. A teleport-rock use is
+// an exclusive item-use request (the client sets m_bExclRequestSent when it
+// sends USE_TELEPORT_ROCK / the cash-item-use op), so a rejection that only
+// announces the MAP_TRANSFER_RESULT error leaves the client input-frozen — the
+// success path is unfrozen by the field transfer, but a failure changes no map.
+// An empty StatChanged with the exclusive flag clears the lock, matching every
+// cash-item-use rejection arm (character_cash_item_use.go enableActions()).
+var enableActionsFunc = func(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model) {
+	err := session.Announce(l)(ctx)(wp)(statpkt.StatChangedWriter)(statpkt.NewStatChanged(make([]statpkt.Update, 0), true).Encode)(s)
+	if err != nil {
+		l.WithError(err).Errorf("Unable to re-enable actions for character [%d] after teleport-rock rejection.", s.CharacterId())
+	}
+}
+
 func continent(mapId _map.Id) uint32 {
 	return uint32(mapId) / 100000000
 }
@@ -84,6 +99,10 @@ func UseRock(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func
 
 		fail := func(key string) {
 			announceErrorFunc(l, ctx, wp, s, key, useVipList)
+			// The client sent this as an exclusive item-use request and stays
+			// input-locked on rejection (no map change to unfreeze it), so re-enable
+			// actions the way the cash-item-use rejection arms do.
+			enableActionsFunc(l, ctx, wp, s)
 		}
 
 		// 1. Source field bar.

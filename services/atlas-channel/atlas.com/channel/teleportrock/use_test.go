@@ -56,7 +56,8 @@ func TestUseRockRejections(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			var announced string
 			var sagaCreated *saga.Saga
-			installFixture(t, c.srcMap, &announced, &sagaCreated)
+			var enabled int
+			installFixture(t, c.srcMap, &announced, &sagaCreated, &enabled)
 
 			UseRock(l, context.Background(), nil)(testSession(t, 42, c.srcMap), c.itemId, c.target)
 
@@ -66,6 +67,11 @@ func TestUseRockRejections(t *testing.T) {
 			if sagaCreated != nil {
 				t.Errorf("failed validation must not create a saga (FR-1)")
 			}
+			// Every rejection must re-enable the client's exclusive-action lock,
+			// or the client freezes after the error (the observed bug).
+			if enabled != 1 {
+				t.Errorf("rejection must re-enable actions once, got %d", enabled)
+			}
 		})
 	}
 }
@@ -74,12 +80,16 @@ func TestUseRockSuccessRegularConsumes(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	var announced string
 	var sagaCreated *saga.Saga
-	installFixture(t, 100000000, &announced, &sagaCreated)
+	var enabled int
+	installFixture(t, 100000000, &announced, &sagaCreated, &enabled)
 
 	UseRock(l, context.Background(), nil)(testSession(t, 42, 100000000), 2320000, trpkt.NewTargetByMap(102000000))
 
 	if announced != "" {
 		t.Fatalf("success must not announce an error, got %q", announced)
+	}
+	if enabled != 0 {
+		t.Errorf("success must not re-enable actions (the warp/map change unfreezes the client), got %d", enabled)
 	}
 	if sagaCreated == nil {
 		t.Fatalf("expected a saga")
@@ -99,7 +109,8 @@ func TestUseRockSuccessCashDoesNotConsume(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	var announced string
 	var sagaCreated *saga.Saga
-	installFixture(t, 100000000, &announced, &sagaCreated)
+	var enabled int
+	installFixture(t, 100000000, &announced, &sagaCreated, &enabled)
 
 	// 5041000 uses the VIP list and skips the continent check.
 	UseRock(l, context.Background(), nil)(testSession(t, 42, 100000000), 5041000, trpkt.NewTargetByMap(220000000))
@@ -116,7 +127,8 @@ func TestUseRockByNameSuccess(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	var announced string
 	var sagaCreated *saga.Saga
-	installFixture(t, 100000000, &announced, &sagaCreated)
+	var enabled int
+	installFixture(t, 100000000, &announced, &sagaCreated, &enabled)
 
 	// "Buddy" resolves to a session on map 102000000 (fixture).
 	UseRock(l, context.Background(), nil)(testSession(t, 42, 100000000), 2320000, trpkt.NewTargetByName("Buddy"))
@@ -132,7 +144,7 @@ func TestUseRockByNameSuccess(t *testing.T) {
 // socket/handler/mystic_door_enter.go / mystic_door_enter_test.go). srcMap
 // is accepted for call-site symmetry with testSession but the fixture
 // itself does not need to vary by it.
-func installFixture(t *testing.T, _ _map.Id, announced *string, sagaCreated **saga.Saga) {
+func installFixture(t *testing.T, _ _map.Id, announced *string, sagaCreated **saga.Saga, enabled *int) {
 	t.Helper()
 
 	origLists := listsFunc
@@ -141,6 +153,7 @@ func installFixture(t *testing.T, _ _map.Id, announced *string, sagaCreated **sa
 	origSessionByCharacterId := sessionByCharacterIdFunc
 	origCreateSaga := createSagaFunc
 	origAnnounceError := announceErrorFunc
+	origEnableActions := enableActionsFunc
 
 	// The regular list also carries 220000000 (in addition to 102000000) so
 	// the "continent mismatch" case can reach the continent check (design
@@ -188,6 +201,10 @@ func installFixture(t *testing.T, _ _map.Id, announced *string, sagaCreated **sa
 		*announced = key
 	}
 
+	enableActionsFunc = func(_ logrus.FieldLogger, _ context.Context, _ writer.Producer, _ session.Model) {
+		*enabled++
+	}
+
 	t.Cleanup(func() {
 		listsFunc = origLists
 		mapLimitFunc = origMapLimit
@@ -195,6 +212,7 @@ func installFixture(t *testing.T, _ _map.Id, announced *string, sagaCreated **sa
 		sessionByCharacterIdFunc = origSessionByCharacterId
 		createSagaFunc = origCreateSaga
 		announceErrorFunc = origAnnounceError
+		enableActionsFunc = origEnableActions
 	})
 }
 

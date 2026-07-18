@@ -21,6 +21,7 @@ import (
 	session2 "atlas-character/kafka/consumer/session"
 	teleportrock2 "atlas-character/kafka/consumer/teleportrock"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	lifecycle "github.com/Chronicle20/atlas/libs/atlas-service"
@@ -123,7 +124,13 @@ func main() {
 		AddRouteInitializer(character.InitResource(GetServer())(db)).
 		AddRouteInitializer(history.InitResource(GetServer())(db)).
 		AddRouteInitializer(saved_location.InitResource(GetServer())(db)).
-		AddRouteInitializer(teleport_rock.InitResource(GetServer())(db)).
+		AddRouteInitializer(teleport_rock.InitResource(GetServer())(db)(func(ctx context.Context, characterId uint32) (world.Id, error) {
+			m, err := character.NewProcessor(l, ctx, db).GetById()(characterId)
+			if err != nil {
+				return 0, err
+			}
+			return m.WorldId(), nil
+		})).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()

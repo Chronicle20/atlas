@@ -15,6 +15,9 @@ interface FormValues {
     validator: string;
     handler: string;
     options: unknown;
+    // Preserved (not edited here) so saving the form doesn't strip the
+    // per-service scope tag and silently widen the entry to all services.
+    services?: string[];
   }[];
 }
 
@@ -37,6 +40,7 @@ export function HandlersForm() {
           validator: handler.validator,
           handler: handler.handler,
           options: handler.options,
+          services: handler.services ?? [],
         })),
       });
     }
@@ -114,7 +118,13 @@ export function HandlersForm() {
           <Button
             type="button"
             onClick={() =>
-              append({ opCode: "", validator: "", handler: "", options: null })
+              append({
+                opCode: "",
+                validator: "",
+                handler: "",
+                options: null,
+                services: [],
+              })
             }
           >
             Add

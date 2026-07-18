@@ -244,6 +244,20 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /*
+   * Tailwind v4 dropped the browser default `cursor: pointer` on buttons.
+   * Restore it for interactive elements so clickable controls (including the
+   * raw <button>/role="tab"/role="option" widgets used by the character
+   * templates editor) show the pointer cursor on hover. Disabled controls keep
+   * the default arrow.
+   */
+  button:not(:disabled):not([aria-disabled="true"]),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="tab"]:not([aria-disabled="true"]),
+  [role="option"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
 }
 
 @keyframes shimmer {

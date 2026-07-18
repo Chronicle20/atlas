@@ -11,11 +11,12 @@ import (
 // Broadcast cadence and service-local pacing knobs. Exported so the character
 // package's buff hook and tests reference the same values.
 //
-// BroadcastPeriod is the steady re-broadcast interval once a schedule is
-// running. There is intentionally no "initial delay": Model.evaluated (re)starts
-// the schedule at `now` on a state transition so the aura flips on the threshold
-// crossing rather than seconds later. The former 5s initial delay was reset on
-// every HP re-evaluation, so a stream of HP STAT_CHANGED events (sustained
+// BroadcastPeriod is the steady re-broadcast interval (refreshing late-joining
+// map observers) once a schedule is running. There is intentionally no "initial
+// delay": a state transition is emitted inline the moment the re-evaluation
+// detects it (processor.go reevaluate), so the aura flips on the threshold
+// crossing rather than a scan pass later. The former 5s initial delay was reset
+// on every HP re-evaluation, so a stream of HP STAT_CHANGED events (sustained
 // combat) pushed the deadline out indefinitely and the aura only appeared once
 // HP stopped changing (task-154 live-test finding).
 const (
@@ -87,24 +88,15 @@ func (m Model) dirtyCleared() Model {
 	return m
 }
 
-// evaluated records a re-evaluation outcome: the captured active state and the
-// refreshed character level. The broadcast schedule is (re)started at `now`
-// ONLY on a state transition or the first evaluation; an unchanged state leaves
-// nextBroadcastAt untouched so the steady re-broadcast keeps its running cadence.
-//
-// This is the aura-starvation fix (task-154 live-test finding): every HP
-// STAT_CHANGED triggers a re-evaluation, and resetting the schedule on every one
-// pushed the broadcast deadline out indefinitely during sustained combat, so the
-// aura only appeared once HP stopped changing. Broadcasting promptly (now) on a
-// transition makes the aura flip on the threshold crossing instead of seconds
-// later.
-func (m Model) evaluated(active bool, characterLevel byte, now time.Time) Model {
-	transition := active != m.active || m.nextBroadcastAt.IsZero()
+// evaluated records a re-evaluation outcome: the captured active state, the
+// refreshed character level, and the next broadcast deadline. The scheduling
+// policy (reset-on-transition vs preserve-running-cadence) and the inline
+// emission of state transitions live in the ticker's reevaluate (processor.go),
+// which computes nextBroadcastAt; this method is a plain immutable setter.
+func (m Model) evaluated(active bool, characterLevel byte, nextBroadcastAt time.Time) Model {
 	m.active = active
 	m.characterLevel = characterLevel
-	if transition {
-		m.nextBroadcastAt = now
-	}
+	m.nextBroadcastAt = nextBroadcastAt
 	return m
 }
 

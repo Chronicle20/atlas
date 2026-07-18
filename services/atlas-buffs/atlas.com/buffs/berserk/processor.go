@@ -174,7 +174,9 @@ func (p *ProcessorImpl) ProcessTicks() error {
 		for _, e := range entries {
 			if e.DirtyDue(now) {
 				if m, ok := GetRegistry().ClaimReeval(p.ctx, e.CharacterId(), now); ok {
-					p.reevaluate(m, now)
+					if err := p.reevaluate(m, now, buf); err != nil {
+						return err
+					}
 				}
 			}
 			if e.BroadcastDue(now) {
@@ -189,10 +191,19 @@ func (p *ProcessorImpl) ProcessTicks() error {
 	})
 }
 
-// reevaluate runs the FR-1 computation for a claimed entry. Any lookup
-// failure warns and re-arms dirtyAt so a later pass retries; the existing
-// schedule keeps broadcasting the last-known state meanwhile (FR-5).
-func (p *ProcessorImpl) reevaluate(m Model, now time.Time) {
+// reevaluate runs the FR-1 computation for a claimed entry. On a state
+// transition (or the first evaluation) it emits the new state INLINE — in the
+// same pass the flip is detected — and resets the broadcast schedule one period
+// out, so the aura flips on the threshold crossing instead of waiting for the
+// next scan pass's broadcast tick (task-154 aura-latency fix: a pot above the
+// threshold otherwise left the aura up for ~1 extra broadcast pass). An
+// unchanged state preserves the running cadence (anti-starvation) and emits
+// nothing here; the periodic re-broadcast (ProcessTicks broadcast branch)
+// refreshes late-joining map observers.
+//
+// Any lookup failure warns and re-arms dirtyAt so a later pass retries; the
+// existing schedule keeps broadcasting the last-known state meanwhile (FR-5).
+func (p *ProcessorImpl) reevaluate(m Model, now time.Time, buf *message.Buffer) error {
 	rearm := func(reason string, err error) {
 		p.l.WithError(err).Warnf("Berserk re-evaluation for character [%d] failed (%s); retrying.", m.CharacterId(), reason)
 		if err := GetRegistry().MarkDirty(p.ctx, m.CharacterId(), now.Add(ReevalRetryDelay)); err != nil {
@@ -203,30 +214,54 @@ func (p *ProcessorImpl) reevaluate(m Model, now time.Time) {
 	x, err := p.getEffectX(m.SkillLevel())
 	if err != nil {
 		rearm("effect data", err)
-		return
+		return nil
 	}
 	c, err := p.getCharacter(m.CharacterId())
 	if err != nil {
 		rearm("character", err)
-		return
+		return nil
 	}
 	maxHp, err := p.getMaxHp(m.WorldId(), m.ChannelId(), m.CharacterId())
 	if err != nil {
 		rearm("effective stats", err)
-		return
+		return nil
 	}
 	if maxHp == 0 {
 		rearm("effective stats", errors.New("effective max HP is zero"))
-		return
+		return nil
 	}
 
 	active := Evaluate(m.SkillLevel(), c.Hp, maxHp, x)
+	// The first evaluation (no schedule yet) and every state flip broadcast
+	// promptly; an unchanged state preserves the running cadence so a stream of
+	// HP changes can't starve the periodic re-broadcast (task-154).
+	transition := active != m.Active() || m.NextBroadcastAt().IsZero()
+
+	next := m.NextBroadcastAt()
+	if transition {
+		// The inline emit below is this tick's broadcast; the next periodic
+		// re-broadcast is one period out.
+		next = now.Add(BroadcastPeriod)
+	}
+
 	if active != m.Active() {
 		p.l.Debugf("Berserk state for character [%d] now [%v] (hp [%d] maxHp [%d] x [%d]).", m.CharacterId(), active, c.Hp, maxHp, x)
 	}
-	if err := GetRegistry().StoreEvaluation(p.ctx, m.CharacterId(), active, c.Level, now); err != nil {
+
+	if err := GetRegistry().StoreEvaluation(p.ctx, m.CharacterId(), active, c.Level, next); err != nil {
 		p.l.WithError(err).Warnf("Unable to store berserk evaluation for character [%d].", m.CharacterId())
+		return nil
 	}
+
+	if !transition {
+		return nil
+	}
+	// Emit the transition immediately so the aura flips on the crossing instead
+	// of waiting for the next scan pass. Routes via the claimed entry's
+	// world/channel with the freshly computed state; a concurrently-untracked
+	// character resolves to no session channel-side (harmless graceful drop).
+	updated := m.evaluated(active, c.Level, next)
+	return buf.Put(character2.EnvEventStatusTopic, berserkStatusEventProvider(uuid.New(), updated))
 }
 
 // ProcessBerserkTicks fans out one ProcessTicks per tenant (ticker entry

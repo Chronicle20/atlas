@@ -132,7 +132,8 @@ func TestProcessTicksReevaluates(t *testing.T) {
 	assert.True(t, m.Active())
 	assert.Equal(t, byte(120), m.CharacterLevel(), "character level refreshed from REST")
 	assert.True(t, m.DirtyAt().IsZero(), "claim cleared")
-	assert.True(t, m.NextBroadcastAt().Equal(now), "first evaluation broadcasts promptly (no initial delay)")
+	assert.True(t, m.NextBroadcastAt().Equal(now.Add(BroadcastPeriod)),
+		"first evaluation emits inline; next periodic re-broadcast is one period out")
 }
 
 // TestProcessTicksReevalUnchangedStatePreservesSchedule is the core regression
@@ -166,11 +167,13 @@ func TestProcessTicksReevalUnchangedStatePreservesSchedule(t *testing.T) {
 		"unchanged state must NOT reset the broadcast schedule (anti-starvation)")
 }
 
-// TestProcessTicksReevalTransitionBroadcastsPromptly pins that a state change
-// makes the aura flip promptly: the re-evaluation sets nextBroadcastAt to `now`
-// so the next scan pass broadcasts the new state, instead of parking it behind a
-// fresh delay. Here the last-known state is inactive with the schedule parked a
-// minute out; the re-eval finds active=true.
+// TestProcessTicksReevalTransitionBroadcastsPromptly pins that a state change is
+// emitted INLINE in the same pass the flip is detected (task-154 aura-latency
+// fix), rather than waiting for the next scan pass's broadcast tick. Because the
+// inline emit is this tick's broadcast, the schedule advances one period out
+// (now+BroadcastPeriod) — the tell that the transition path ran, since the
+// pre-pass broadcast was parked a minute out and could not have fired. Here the
+// last-known state is inactive; the re-eval finds active=true.
 func TestProcessTicksReevalTransitionBroadcastsPromptly(t *testing.T) {
 	setupTestRegistry(t)
 	ctx := setupTestContext(t, setupTestTenant(t))
@@ -187,8 +190,8 @@ func TestProcessTicksReevalTransitionBroadcastsPromptly(t *testing.T) {
 
 	got, _ := GetRegistry().Get(ctx, 42)
 	assert.True(t, got.Active(), "flipped to active")
-	assert.True(t, got.NextBroadcastAt().Equal(now),
-		"a transition resets the schedule to now so the aura broadcasts on the next pass")
+	assert.True(t, got.NextBroadcastAt().Equal(now.Add(BroadcastPeriod)),
+		"transition emitted inline; schedule advanced one period for the next re-broadcast")
 }
 
 func TestProcessTicksBroadcastAdvancesSchedule(t *testing.T) {

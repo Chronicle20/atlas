@@ -1,6 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { isFemaleCosmeticId } from "@/services/api/characterRender.service";
-import { blankTemplate, normalizeTemplate, DEFAULT_PICKS } from "../editorState";
+import {
+  blankTemplate,
+  normalizeTemplate,
+  DEFAULT_PICKS,
+} from "../editorState";
 import {
   buildPreviewLoadout,
   buildVariantLoadout,
@@ -78,12 +82,12 @@ describe("buildVariantLoadout", () => {
       32000,
     );
     // hairColor candidate applies to the picked base hair
-    expect(
-      buildVariantLoadout(tpl, DEFAULT_PICKS, "hairColors", 5).hair,
-    ).toBe(31000 + 5);
-    expect(
-      buildVariantLoadout(tpl, DEFAULT_PICKS, "skinColors", 2).skin,
-    ).toBe(2);
+    expect(buildVariantLoadout(tpl, DEFAULT_PICKS, "hairColors", 5).hair).toBe(
+      31000 + 5,
+    );
+    expect(buildVariantLoadout(tpl, DEFAULT_PICKS, "skinColors", 2).skin).toBe(
+      2,
+    );
   });
 });
 

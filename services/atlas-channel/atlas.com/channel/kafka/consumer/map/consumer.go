@@ -18,6 +18,7 @@ import (
 	"atlas-channel/merchant"
 	"atlas-channel/minigame"
 	"atlas-channel/monster"
+	controllernpc "atlas-channel/npc/controller"
 	"atlas-channel/party"
 	"atlas-channel/party/hpsync"
 	"atlas-channel/party_quest"
@@ -585,10 +586,22 @@ func spawnNPCForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[npc2.Model] {
 		return func(wp writer.Producer) func(s session.Model) model.Operator[npc2.Model] {
 			return func(s session.Model) model.Operator[npc2.Model] {
+				cp := controllernpc.NewProcessor(l, ctx)
 				return func(n npc2.Model) error {
 					err := session.Announce(l)(ctx)(wp)(npcpkt.NpcSpawnWriter)(npcpkt.NewNpcSpawn(n.Id(), n.Template(), n.X(), n.CY(), int32(n.F()), n.Fh(), n.RX0(), n.RX1()).Encode)(s)
 					if err != nil {
 						return err
+					}
+					// Single-controller election (task-176, FR-5.2/FR-5.4):
+					// claim synchronously so NpcSpawn -> grant land on the
+					// same session in order; non-controllers get spawn only.
+					claimed, cerr := cp.TryClaim(s.Field(), n.Id(), s.CharacterId())
+					if cerr != nil {
+						l.WithError(cerr).Warnf("NPC-controller claim failed for NPC [%d]; session [%d] gets spawn only.", n.Id(), s.CharacterId())
+						return nil
+					}
+					if !claimed {
+						return nil
 					}
 					return session.Announce(l)(ctx)(wp)(npcpkt.NpcSpawnRequestControllerWriter)(npcpkt.NewNpcSpawnRequestController(n.Id(), n.Template(), n.X(), n.CY(), int32(n.F()), n.Fh(), n.RX0(), n.RX1(), true).Encode)(s)
 				}

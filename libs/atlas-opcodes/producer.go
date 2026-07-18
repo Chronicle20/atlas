@@ -42,18 +42,36 @@ type HandlerAdapter func(name string, validator interface{}, handler interface{}
 // BuildHandlerMap builds a map of opcode to request.Handler from configuration.
 // The validatorMap and handlerMap use interface{} values because the concrete types
 // are service-specific (parameterized on session type).
+//
+// A tenant's socket config carries a single handler list shared by every service
+// that speaks the tenant's protocol — login and channel read the same list — so it
+// necessarily references handlers this service does not implement (e.g. channel
+// item-use/movement handlers appear in the list read by login). Handler entries
+// whose name is not in handlerMap therefore belong to another service and are
+// skipped silently, rather than logged as a warning per foreign entry on every
+// startup.
+//
+// The inverse case — a handler this service registers but that the config routes no
+// opcode to — is NOT surfaced as a warning either: it is common and legitimate.
+// Older/partial client versions route only a subset of the service's features, and
+// utility handlers (NoOp, Debug) are registered to be wired ad hoc, so warning here
+// would just reintroduce version-dependent noise. It is logged at debug for
+// diagnosis. Only genuine config errors (missing validator for a routed handler, or
+// an unparseable opcode) warn.
 func BuildHandlerMap(l logrus.FieldLogger, handlers []HandlerConfig, validatorMap map[string]interface{}, handlerMap map[string]interface{}, adapt HandlerAdapter) map[uint16]request.Handler {
 	result := make(map[uint16]request.Handler)
+	configured := make(map[string]bool, len(handlerMap))
 	for _, hc := range handlers {
+		h, ok := handlerMap[hc.Handler]
+		if !ok {
+			// Handler belongs to another service sharing this tenant socket config.
+			continue
+		}
+		configured[hc.Handler] = true
+
 		v, ok := validatorMap[hc.Validator]
 		if !ok {
 			l.Warnf("Unable to locate validator [%s] for handler [%s].", hc.Validator, hc.Handler)
-			continue
-		}
-
-		h, ok := handlerMap[hc.Handler]
-		if !ok {
-			l.Warnf("Tenant config references handler [%s] for opcode [%s], but no handler is registered.", hc.Handler, hc.OpCode)
 			continue
 		}
 
@@ -65,6 +83,12 @@ func BuildHandlerMap(l logrus.FieldLogger, handlers []HandlerConfig, validatorMa
 
 		l.Debugf("Configuring opcode [%s] with validator [%s] and handler [%s].", hc.OpCode, hc.Validator, hc.Handler)
 		result[uint16(op)] = adapt(hc.Handler, v, h, hc.Options)
+	}
+
+	for name := range handlerMap {
+		if !configured[name] {
+			l.Debugf("Service registers handler [%s] but tenant config routes no opcode to it.", name)
+		}
 	}
 	return result
 }

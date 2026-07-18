@@ -35,42 +35,39 @@ export function ItemSearchCombobox({
   const { activeTenant } = useTenant();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [debouncedFromTimer, setDebouncedFromTimer] = useState("");
-  const [page, setPage] = useState(1);
+  // The settled query term and its page are held TOGETHER so they can only
+  // ever change atomically — the page must never move independently of the
+  // term it belongs to. `term` updates only from the debounce timer's
+  // callback (async — not a synchronous setState-in-effect, so this stays
+  // clean under react-hooks/set-state-in-effect); "Load more" advances
+  // `page` via a functional update that leaves `term` untouched. Raw
+  // keystrokes update only `search` (below), never `settled` directly —
+  // that decoupling is exactly what caused the prior regression: a
+  // synchronous page reset on every keystroke could pair the OLD settled
+  // term with a NEW page number and fire an un-debounced query.
+  const [settled, setSettled] = useState({ term: "", page: 1 });
 
-  // debounceMs === 0 (test hook) skips the timer entirely and uses `search`
-  // directly below — avoids calling setState synchronously from an effect
-  // body (react-hooks/set-state-in-effect). The timer path only calls
-  // setState from its async callback, which the rule allows.
   useEffect(() => {
-    if (debounceMs === 0) return;
     const handle = setTimeout(() => {
-      setDebouncedFromTimer(search);
+      setSettled({ term: search, page: 1 });
     }, debounceMs);
     return () => clearTimeout(handle);
   }, [search, debounceMs]);
 
-  const debounced = debounceMs === 0 ? search : debouncedFromTimer;
-
-  const handleSearchChange = (value: string) => {
-    setSearch(value);
-    setPage(1);
-  };
-
   const cfg = POOL_SEARCH_CONFIGS[poolKey];
 
   const filters: ItemSearchFilters = {
-    pageNumber: page,
+    pageNumber: settled.page,
     pageSize: PAGE_SIZE,
-    ...(debounced ? { q: debounced } : {}),
+    ...(settled.term ? { q: settled.term } : {}),
     ...(cfg.compartment ? { compartment: cfg.compartment } : {}),
     ...(cfg.subcategory ? { subcategory: cfg.subcategory } : {}),
   };
 
   const query = useQuery({
-    queryKey: ["item-search", poolKey, debounced, page],
+    queryKey: ["item-search", poolKey, settled.term, settled.page],
     queryFn: () => itemsService.searchItems(filters),
-    enabled: open && !!activeTenant && debounced.trim().length > 0,
+    enabled: open && !!activeTenant && settled.term.trim().length > 0,
     placeholderData: keepPreviousData,
     staleTime: 10 * 60 * 1000,
   });
@@ -85,7 +82,7 @@ export function ItemSearchCombobox({
   const manualId = /^\d+$/.test(search.trim())
     ? Number(search.trim())
     : undefined;
-  const hasMore = (query.data?.lastPage ?? 1) > page;
+  const hasMore = (query.data?.lastPage ?? 1) > settled.page;
 
   const handleAdd = (id: number) => {
     if (existingIds.includes(id)) return;
@@ -105,7 +102,7 @@ export function ItemSearchCombobox({
         <Input
           autoFocus
           value={search}
-          onChange={(e) => handleSearchChange(e.target.value)}
+          onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by name or enter an id…"
         />
         <ul
@@ -183,13 +180,13 @@ export function ItemSearchCombobox({
               Use id {manualId}
             </li>
           )}
-          {query.isLoading && debounced && (
+          {query.isLoading && settled.term && (
             <li className="px-2 py-1 text-sm text-muted-foreground">
               Searching…
             </li>
           )}
           {!query.isLoading &&
-            debounced &&
+            settled.term &&
             rows.length === 0 &&
             manualId === undefined && (
               <li className="px-2 py-1 text-sm text-muted-foreground">
@@ -203,7 +200,7 @@ export function ItemSearchCombobox({
             variant="ghost"
             size="sm"
             className="mt-1 w-full"
-            onClick={() => setPage((p) => p + 1)}
+            onClick={() => setSettled((s) => ({ ...s, page: s.page + 1 }))}
           >
             Load more
           </Button>

@@ -97,7 +97,7 @@ func TestRankingsHandlerWireRoundTrip(t *testing.T) {
 	}
 
 	postResp := doRankingsRequest(t, http.MethodPost, rankingsURL, postBody)
-	defer postResp.Body.Close()
+	defer func() { _ = postResp.Body.Close() }()
 	if postResp.StatusCode != http.StatusCreated {
 		t.Fatalf("create status = %d, want 201", postResp.StatusCode)
 	}
@@ -137,7 +137,7 @@ func TestRankingsHandlerWireRoundTrip(t *testing.T) {
 	// body is the single-object {"data":{"type":"rankings","attributes":
 	// {"recomputeIntervalMinutes":17}}} shape.
 	getResp := doRankingsRequest(t, http.MethodGet, rankingsURL, nil)
-	defer getResp.Body.Close()
+	defer func() { _ = getResp.Body.Close() }()
 	if getResp.StatusCode != http.StatusOK {
 		t.Fatalf("get status = %d, want 200", getResp.StatusCode)
 	}

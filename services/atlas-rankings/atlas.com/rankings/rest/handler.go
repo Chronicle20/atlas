@@ -53,7 +53,7 @@ func ParseInput[M any](d *HandlerDependency, c *HandlerContext, next InputHandle
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		defer r.Body.Close()
+		defer func() { _ = r.Body.Close() }()
 
 		err = jsonapi.Unmarshal(body, &model)
 		if err != nil {

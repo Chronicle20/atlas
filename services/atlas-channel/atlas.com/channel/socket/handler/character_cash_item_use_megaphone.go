@@ -140,41 +140,46 @@ func handleMegaphoneUse(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 				SenderName: c.Name(), SenderMedal: "",
 				Messages: []string{sp.Message()}, WhispersOn: sp.Whisper(),
 			})
-		case 4: // 5074000 Skull Megaphone.
+		case 4: // 5074000 Skull Megaphone — world scope, SUPER-shaped on every
+			// version that sends it. Skull is NEVER Maple TV; only 5075xxx (case 5
+			// below) is CUIMapleTV.
+			//
 			// IDA v83 (port 13342, get_cashslot_item_type@0x48645b): tier 4 has no
-			// arm either (falls through the 507-family if-chain to `return 0`), so
-			// <v95 genuinely has no client send path — matches the pre-existing
-			// GMS>=95 gate below.
+			// arm (falls through the 507-family if-chain to `return 0`) — no
+			// client send path <v95.
 			// IDA v95 (port 13341, get_cashslot_item_type@0x488d08): tier 4 DOES
 			// have an arm — `case 4: result = 45;` — and
 			// SendConsumeCashItemUseRequest's dispatch (@0x9eb4fa jumptable
 			// 009EB50A) routes type 45 to the SAME arm as type 12 (basic) and 13
 			// (super) at label $LN217_18 (0x9eb811, annotated "cases 12,13,15,45").
-			// Inside that arm, type 45 takes the CSpeakerWorldDlg(bIsPowerful=1)
-			// path (@0x9eb83d, hardcoded bIsPowerful=1 unlike 12/13's
-			// type==13-conditional flag @0x9eba1b-9eba25) and the final Encode
-			// sequence (@0x9ebc44-9ebc79) is EncodeStr(message) unconditionally,
-			// then Encode1(whisper) gated on `type==13 || type==45`
-			// (@0x9ebc62-9ebc75) — i.e. Skull's v95 wire body is BYTE-IDENTICAL to
-			// Super Megaphone's (message+whisper), built via the CSpeakerWorldDlg
-			// dialog, NOT CUIMapleTV. This directly contradicts the pre-existing
-			// GMS>=95 handleMapleTVUse routing below, which this task's brief
-			// scoped OUT of (explicitly told to leave the >=95 arm unchanged) —
-			// see the task-123 cheap-heart-skull-report.md for the full escalation.
-			// Left as-is per that scope boundary; only the else (<v95) arm changes
-			// here, from a no-op warn to the verified super-megaphone routing.
-			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
-				handleMapleTVUse(l, ctx, wp)(s, r, readerOptions, itemId, c, updateTimeFirst)
-			} else {
-				sp := cashsb.NewItemUseSuperMegaphone(updateTimeFirst)
-				sp.Decode(l, ctx)(r, readerOptions)
-				createMegaphoneSaga(l, ctx)(s, itemId, saga.EmitMegaphonePayload{
-					Tier: tierSuper, Scope: scopeWorld,
-					WorldId: f.WorldId(), ChannelId: f.ChannelId(), CharacterId: s.CharacterId(),
-					SenderName: c.Name(), SenderMedal: "",
-					Messages: []string{sp.Message()}, WhispersOn: sp.Whisper(),
-				})
-			}
+			// The final Encode sequence (@0x9ebc44-9ebc79) is EncodeStr(message)
+			// unconditionally, then Encode1(whisper) gated on `type==13 ||
+			// type==45` (@0x9ebc62-9ebc75) — Skull's v95 wire body is
+			// BYTE-IDENTICAL to Super Megaphone's (message+whisper), built via
+			// CSpeakerWorldDlg, NOT CUIMapleTV.
+			// IDA jms185 (port 13344, MapleStory_dump_SCY.exe,
+			// get_cashslot_item_type@0x49a1ee): tier 4 -> type 48, and
+			// SendConsumeCashItemUseRequest's jump table (jpt_AEF3A8, base
+			// 0xaf2b6a) routes type 48 to the SAME shared arm as types 12/13/15/47
+			// (@0xaef5b9, comment "cases 12,13,15,47,48"). The arm's tail
+			// (@0xaef98a EncodeStr(message); @0xaef98f-0xaef9a7: whisper Encode1
+			// emitted when type==13(0x0D) OR type==47(0x2F) OR type==48(0x30))
+			// confirms type 48 is message+whisper — SUPER shape, same conclusion
+			// as v95.
+			//
+			// This task fixes the previously-mismatched >=95 routing (which sent
+			// Skull to handleMapleTVUse — see task-123 cheap-heart-skull-report.md
+			// for the original escalation): Skull is now routed as super/world
+			// unconditionally, on every version, mirroring case 2/3 exactly —
+			// Skull is never Maple TV.
+			sp := cashsb.NewItemUseSuperMegaphone(updateTimeFirst)
+			sp.Decode(l, ctx)(r, readerOptions)
+			createMegaphoneSaga(l, ctx)(s, itemId, saga.EmitMegaphonePayload{
+				Tier: tierSuper, Scope: scopeWorld,
+				WorldId: f.WorldId(), ChannelId: f.ChannelId(), CharacterId: s.CharacterId(),
+				SenderName: c.Name(), SenderMedal: "",
+				Messages: []string{sp.Message()}, WhispersOn: sp.Whisper(),
+			})
 		case 5: // Maple TV / messenger group (5075xxx)
 			handleMapleTVUse(l, ctx, wp)(s, r, readerOptions, itemId, c, updateTimeFirst)
 		case 6: // item megaphone

@@ -182,13 +182,15 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			//     alternative — dropping the item silently — is worse and the
 			//     decode path is a no-op if no packet ever arrives.
 			//   - Skull (tier 4): v83 also has no get_cashslot_item_type arm
-			//     (falls to the same default as 0/3) — genuinely no send path <v95,
-			//     consistent with the pre-existing GMS>=95 gate in
-			//     handleMegaphoneUse. ALLOWED here as the super-megaphone shape
-			//     (same "no confirmed wire event on legacy" caveat as 0/3 above);
-			//     NOT allowed as Maple TV — handleMegaphoneUse's case 4 only takes
-			//     the TV path when GMS>=95, so a legacy MajorVersion<83 tenant can
-			//     never reach TV through this gate.
+			//     (falls to the same default as 0/3) — genuinely no send path <v95
+			//     (GMS). ALLOWED here as the super-megaphone shape (same "no
+			//     confirmed wire event on legacy" caveat as 0/3 above). Skull is
+			//     NEVER Maple TV on any version — the cheap-heart-skull finalize
+			//     pass (task-123, see character_cash_item_use_megaphone.go case 4)
+			//     removed the earlier (incorrect) GMS>=95 -> handleMapleTVUse
+			//     routing entirely; handleMegaphoneUse's case 4 now always decodes
+			//     the super shape, so this legacy branch inherits that
+			//     unconditionally.
 			//   - avatar megaphone: no legacy build's serverbound send case could be
 			//     reliably located (spec §5a — cash-slot type 42 does not match the
 			//     known 4-line+whisper body on any of the four builds); consuming
@@ -198,9 +200,23 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			//     (tier 7): no legacy send case identified either (spec §5b for TV;
 			//     item/triple dialogs are corroborated v83+-only, absent from the
 			//     legacy SendConsumeCashItemUseRequest dispatcher). BLOCKED.
-			// v83+/JMS behavior is unchanged: the MajorVersion < 83 branch below
-			// is never entered for them, so every tier keeps dispatching exactly
-			// as it did before this gate was refined.
+			//
+			// jms185 verification (task-123 cheap-heart-skull finalize pass): unlike
+			// v83/v95, JMS's get_cashslot_item_type@0x49a1ee genuinely sends
+			// Cheap(tier0->type12)/Heart(tier3->type47)/Skull(tier4->type48) —
+			// confirmed via CWvsContext::SendConsumeCashItemUseRequest@0xaef2f5,
+			// shared arm @0xaef5b9. Cheap encodes message-only (matches case 0's
+			// basic/channel routing); Heart/Skull encode message+whisper (matches
+			// case 3/4's super/world routing). Byte-fixtures pinned in
+			// libs/atlas-packet/cash/serverbound/{item_use_megaphone,
+			// item_use_super_megaphone}_test.go. jms185 is MajorVersion 185 (>=83)
+			// so it never enters this legacy branch; noted here because it means the
+			// "no confirmed send on GMS<95" reasoning above does NOT generalize to
+			// JMS, where these tiers are real, verified sends.
+			//
+			// v83+/JMS behavior is otherwise unchanged: the MajorVersion < 83 branch
+			// below is never entered for them, so every tier keeps dispatching
+			// exactly as it did before this gate was refined.
 			if t.MajorVersion() < 83 {
 				if category == item.ClassificationAvatarMegaphone {
 					l.Warnf("Character [%d] attempted avatar megaphone item [%d] on unsupported legacy version [major %d]; ignoring without consuming.", s.CharacterId(), itemId, t.MajorVersion())

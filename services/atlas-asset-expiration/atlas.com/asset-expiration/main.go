@@ -3,10 +3,11 @@ package main
 import (
 	session2 "atlas-asset-expiration/kafka/consumer/session"
 	"atlas-asset-expiration/task"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"os"
 	"strconv"
 	"time"
+
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"

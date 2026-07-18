@@ -58,13 +58,14 @@ func TestAddCharacterEntryRoundTrip(t *testing.T) {
 // AddCharacterEntry v48 byte-fixture (GMS_v48_1_DEVM.exe, port 13337).
 //
 // Client read order — CLogin::OnCreateNewCharacterResult sub_501973 @0x501973:
-//   Decode1(code) /*0x501987*/ → on success GW_CharacterStat::Decode (sub_49B627)
-//   → AvatarLook::Decode (sub_49E1E0) into a free slot, then the family byte and
-//   16-byte rank buffer are zeroed LOCALLY (not read from the wire). So the legacy
-//   v29..v82 wire is [code][GW_CharacterStat][AvatarLook] with NO list-entry trailer
-//   (legacyAddEntry gate in add_entry.go). GW_CharacterStat / AvatarLook use the v48
-//   single-pet legacy shape (single 8-byte pet in stat, single 4-byte pet in avatar);
-//   see TestCharacterListByteOutputV48 for the byte-by-byte field trace.
+//
+//	Decode1(code) /*0x501987*/ → on success GW_CharacterStat::Decode (sub_49B627)
+//	→ AvatarLook::Decode (sub_49E1E0) into a free slot, then the family byte and
+//	16-byte rank buffer are zeroed LOCALLY (not read from the wire). So the legacy
+//	v29..v82 wire is [code][GW_CharacterStat][AvatarLook] with NO list-entry trailer
+//	(legacyAddEntry gate in add_entry.go). GW_CharacterStat / AvatarLook use the v48
+//	single-pet legacy shape (single 8-byte pet in stat, single 4-byte pet in avatar);
+//	see TestCharacterListByteOutputV48 for the byte-by-byte field trace.
 //
 // packet-audit:verify packet=character/clientbound/AddCharacterEntry version=gms_v48 ida=0x501973
 func TestAddCharacterEntryByteOutputV48(t *testing.T) {
@@ -103,9 +104,9 @@ func TestAddCharacterEntryByteOutputV48(t *testing.T) {
 		0x03, 0x00, // ap
 		0x02, 0x00, // sp
 		0x00, 0x00, 0x00, 0x00, // exp
-		0x08, 0x00,             // fame
+		0x08, 0x00, // fame
 		0xb8, 0x0b, 0x00, 0x00, // mapId
-		0x00,                   // spawnPoint
+		0x00, // spawnPoint
 
 		// --- AvatarLook block --- sub_49E1E0 @0x49e1e0
 		0x00,                   // gender
@@ -127,7 +128,9 @@ func TestAddCharacterEntryByteOutputV48(t *testing.T) {
 
 // TestAddCharacterEntryJMSGolden pins the full jms_v185 wire for a ranked (non-GM)
 // AddCharacterEntry. jms read order is CLogin::OnCreateNewCharacterResult @0x66ffa8:
-//   Decode1(code) → GW_CharacterStat::Decode @0x50ec17 → AvatarLook::Decode @0x51517e,
+//
+//	Decode1(code) → GW_CharacterStat::Decode @0x50ec17 → AvatarLook::Decode @0x51517e,
+//
 // then the list-entry trailer (rankEnabled byte + 4 rank ints; viewAll=false adds a
 // leading 0 byte). The jms GW_CharacterStat block is 18 bytes wider than v83's (extra
 // stat fields), which is exactly the jms version delta and why the body is 159 bytes

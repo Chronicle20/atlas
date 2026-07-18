@@ -46,6 +46,7 @@ type RestModel struct {
 	RingId        uint32 `json:"ringId"`
 	ViciousCount  uint32 `json:"viciousCount"`
 	Flags         uint16 `json:"flags"`
+	Owner         string `json:"owner"`
 
 	ListValue   uint32 `json:"listValue"`
 	BuyNowPrice uint32 `json:"buyNowPrice"`
@@ -107,6 +108,7 @@ func Extract(r RestModel) (Model, error) {
 		ringId:        r.RingId,
 		viciousCount:  r.ViciousCount,
 		flags:         r.Flags,
+		owner:         r.Owner,
 		listValue:     r.ListValue,
 		buyNowPrice:   r.BuyNowPrice,
 		contractFee:   r.ContractFee,

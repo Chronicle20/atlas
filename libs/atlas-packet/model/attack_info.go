@@ -3,11 +3,12 @@ package model
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type AttackType byte
@@ -137,12 +138,12 @@ func (m *AttackInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 			if m.attackType == AttackTypeMagic {
 				// Secondary dr-block for magic attacks (v95+; absent in v84 magic).
-				w.WriteInt(0) //2dr0
-				w.WriteInt(0) //2dr1
-				w.WriteInt(0) //2dr2
-				w.WriteInt(0) //2dr3
-				w.WriteInt(0) //2rnd
-				w.WriteInt(0) //2crc
+				w.WriteInt(0) // 2dr0
+				w.WriteInt(0) // 2dr1
+				w.WriteInt(0) // 2dr2
+				w.WriteInt(0) // 2dr3
+				w.WriteInt(0) // 2rnd
+				w.WriteInt(0) // 2crc
 			}
 		}
 		// The head skill-data CRC block. The very-legacy pre-72 GMS client (v61)
@@ -275,12 +276,12 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, ctx context.Context) func(r *r
 				// Secondary dr-block for magic attacks. v95+ only: the v84 magic
 				// sender (30 Encode tokens) is shorter than v84 melee and carries
 				// no second dr-block, so this must NOT read for v84..94.
-				_ = r.ReadUint32() //2dr0
-				_ = r.ReadUint32() //2dr1
-				_ = r.ReadUint32() //2dr2
-				_ = r.ReadUint32() //2dr3
-				_ = r.ReadUint32() //2rnd
-				_ = r.ReadUint32() //2crc
+				_ = r.ReadUint32() // 2dr0
+				_ = r.ReadUint32() // 2dr1
+				_ = r.ReadUint32() // 2dr2
+				_ = r.ReadUint32() // 2dr3
+				_ = r.ReadUint32() // 2rnd
+				_ = r.ReadUint32() // 2crc
 			}
 		}
 

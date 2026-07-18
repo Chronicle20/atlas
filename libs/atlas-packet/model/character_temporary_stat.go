@@ -6,13 +6,14 @@ import (
 	"sort"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/tool"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type CharacterTemporaryStatType struct {
@@ -177,9 +178,9 @@ func buildCharacterTemporaryStatRegistry(t tenant.Model) characterTemporaryStatR
 	extended := gmsV95Plus || jms                                // clients with the SuddenDeath..Sneak block
 
 	if post87 {
-		newAndIncNonDiseased(character.TemporaryStatTypeFlying)(NoOpForeignValueWriter, NoOpForeignValueReader)        // 82
-		newAndIncNonDiseased(character.TemporaryStatTypeFrozen)(ValueAsIntForeignValueWriter, IntForeignValueReader)   // 83
-		newAndIncNonDiseased(character.TemporaryStatTypeAssistCharge)(NoOpForeignValueWriter, NoOpForeignValueReader)  // 84
+		newAndIncNonDiseased(character.TemporaryStatTypeFlying)(NoOpForeignValueWriter, NoOpForeignValueReader)       // 82
+		newAndIncNonDiseased(character.TemporaryStatTypeFrozen)(ValueAsIntForeignValueWriter, IntForeignValueReader)  // 83
+		newAndIncNonDiseased(character.TemporaryStatTypeAssistCharge)(NoOpForeignValueWriter, NoOpForeignValueReader) // 84
 	}
 	// bit 85 diverges: GMS v95 has Enrage where v87/JMS have MirrorImage.
 	if gmsV95Plus {
@@ -562,6 +563,7 @@ func (m *CharacterTemporaryStat) AddStat(l logrus.FieldLogger) func(t tenant.Mod
 //   - local  CWvsContext::OnTemporaryStatSet   @0x71af4b → sub_5CA524 DecodeBuffer(8) @0x5ca539
 //   - reset  CWvsContext::OnTemporaryStatReset  @0x71b054 → DecodeBuffer(8) @0x71b06e
 //   - foreign CUserRemote::Init CTS decode       sub_5CBA1F  DecodeBuffer(8) @0x5cba33
+//
 // All three test bits 0-46, and the foreign per-bit value shapes match this
 // registry's shift order stat-for-stat (bit7=Speed byte, bit21=Combo byte,
 // bit33=Morph short, bit17/19/20/22=int, bit10/16/26=flag), so bits 0-46 map
@@ -672,7 +674,7 @@ func (m *CharacterTemporaryStat) Encode(l logrus.FieldLogger, ctx context.Contex
 		w.WriteByte(0) // nDefenseAtt
 		w.WriteByte(0) // nDefenseState
 
-		var baseTemporaryStats = m.getBaseTemporaryStats(t)
+		baseTemporaryStats := m.getBaseTemporaryStats(t)
 		for _, bts := range baseTemporaryStats {
 			w.WriteByteArray(bts.Encode(l, ctx)(options))
 		}
@@ -729,7 +731,7 @@ func (m *CharacterTemporaryStat) EncodeForeign(l logrus.FieldLogger, ctx context
 		w.WriteByte(0) // nDefenseAtt
 		w.WriteByte(0) // nDefenseState
 
-		var baseTemporaryStats = m.getBaseTemporaryStats(t)
+		baseTemporaryStats := m.getBaseTemporaryStats(t)
 		for _, bts := range baseTemporaryStats {
 			w.WriteByteArray(bts.Encode(l, ctx)(options))
 		}
@@ -919,7 +921,7 @@ func (m *CharacterTemporaryStat) decodeBaseTemporaryStats(l logrus.FieldLogger, 
 }
 
 func (m *CharacterTemporaryStat) getBaseTemporaryStats(t tenant.Model) []packet.Encoder {
-	var list = make([]packet.Encoder, 0)
+	list := make([]packet.Encoder, 0)
 	for _, bs := range twoStateBaseStats(t) {
 		switch bs.kind {
 		case twoStateMonsterRiding:

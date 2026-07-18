@@ -22,8 +22,8 @@ const (
 )
 
 type Model struct {
-	id          string
-	worldId     byte
+	id            string
+	worldId       byte
 	serial        uint32
 	characterId   uint32
 	itemId        uint32

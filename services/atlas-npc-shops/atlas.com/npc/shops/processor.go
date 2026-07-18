@@ -15,20 +15,22 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"math"
 	"sort"
 	"time"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 type Processor interface {
@@ -318,7 +320,6 @@ func (p *ProcessorImpl) DeleteAllShops() error {
 		}
 		return p.cp.WithTransaction(tx).DeleteAllCommodities()
 	})
-
 }
 
 func (p *ProcessorImpl) GetAllShops(page model.Page, decorators ...model.Decorator[Model]) (model.Paged[Model], error) {

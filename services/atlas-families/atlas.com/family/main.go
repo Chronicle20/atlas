@@ -5,9 +5,10 @@ import (
 	"atlas-family/kafka/consumer/character"
 	family2 "atlas-family/kafka/consumer/family"
 	"atlas-family/scheduler"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"os"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"

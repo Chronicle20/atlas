@@ -1,9 +1,8 @@
 package factory
 
 import (
-	"testing"
-
 	"atlas-character-factory/configuration/tenant/characters/template"
+	"testing"
 )
 
 // TestFindCreationTemplate pins the graceful-failure behavior: a job with no

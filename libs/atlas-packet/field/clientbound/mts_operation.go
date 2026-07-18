@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 // Discrete per-mode body codecs for the CITC::OnNormalItemResult dispatcher
@@ -298,22 +299,22 @@ func NewMtsItem(item model.Asset, itcSn uint32, price uint32, contractFee uint32
 	}
 }
 
-func (m MtsItem) Item() model.Asset     { return m.item }
-func (m MtsItem) ItcSn() uint32         { return m.itcSn }
-func (m MtsItem) Price() uint32         { return m.price }
-func (m MtsItem) ContractFee() uint32   { return m.contractFee }
-func (m MtsItem) ContractFeeTx() string { return m.contractFeeTx }
-func (m MtsItem) RollbackUsage() string { return m.rollbackUsage }
-func (m MtsItem) DateExpired() [8]byte  { return m.dateExpired }
-func (m MtsItem) UserId() string        { return m.userId }
-func (m MtsItem) GameId() string        { return m.gameId }
-func (m MtsItem) Comment() string       { return m.comment }
-func (m MtsItem) BidCount() uint32      { return m.bidCount }
-func (m MtsItem) BidRange() uint32      { return m.bidRange }
-func (m MtsItem) BidPrice() uint32      { return m.bidPrice }
-func (m MtsItem) MinPrice() uint32      { return m.minPrice }
-func (m MtsItem) MaxPrice() uint32      { return m.maxPrice }
-func (m MtsItem) UnitPrice() uint32     { return m.unitPrice }
+func (m MtsItem) Item() model.Asset        { return m.item }
+func (m MtsItem) ItcSn() uint32            { return m.itcSn }
+func (m MtsItem) Price() uint32            { return m.price }
+func (m MtsItem) ContractFee() uint32      { return m.contractFee }
+func (m MtsItem) ContractFeeTx() string    { return m.contractFeeTx }
+func (m MtsItem) RollbackUsage() string    { return m.rollbackUsage }
+func (m MtsItem) DateExpired() [8]byte     { return m.dateExpired }
+func (m MtsItem) UserId() string           { return m.userId }
+func (m MtsItem) GameId() string           { return m.gameId }
+func (m MtsItem) Comment() string          { return m.comment }
+func (m MtsItem) BidCount() uint32         { return m.bidCount }
+func (m MtsItem) BidRange() uint32         { return m.bidRange }
+func (m MtsItem) BidPrice() uint32         { return m.bidPrice }
+func (m MtsItem) MinPrice() uint32         { return m.minPrice }
+func (m MtsItem) MaxPrice() uint32         { return m.maxPrice }
+func (m MtsItem) UnitPrice() uint32        { return m.unitPrice }
 func (m MtsItem) ProcessStatus() uint16    { return m.processStatus }
 func (m MtsItem) ProcessStatusKey() string { return m.processStatusKey }
 
@@ -325,22 +326,22 @@ func (m MtsItem) Encode(l logrus.FieldLogger, ctx context.Context) func(options 
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		itemCopy := m.item
-		w.WriteByteArray(itemCopy.Encode(l, ctx)(options)) // GW_ItemSlotBase::Decode (model.Asset codec)
-		w.WriteInt(m.itcSn)                                // Decode4 nITCSN
-		w.WriteInt(m.price)                                // Decode4 nPrice
-		w.WriteInt(m.contractFee)                          // Decode4 nContractFee
-		w.WriteAsciiString(m.contractFeeTx)                // DecodeStr sContractFeeTxId
-		w.WriteAsciiString(m.rollbackUsage)                // DecodeStr sRollbackUsageID
-		w.WriteByteArray(m.dateExpired[:])                 // DecodeBuffer(8) ftITCDateExpired
-		w.WriteAsciiString(m.userId)                       // DecodeStr sUserID
-		w.WriteAsciiString(m.gameId)                       // DecodeStr sGameID
-		w.WriteAsciiString(m.comment)                      // DecodeStr sComment
-		w.WriteInt(m.bidCount)                             // Decode4 nBidCount
-		w.WriteInt(m.bidRange)                             // Decode4 nBidRange
-		w.WriteInt(m.bidPrice)                             // Decode4 nBidPrice
-		w.WriteInt(m.minPrice)                             // Decode4 nMinPrice
-		w.WriteInt(m.maxPrice)                             // Decode4 nMaxPrice
-		w.WriteInt(m.unitPrice)                                          // Decode4 nUnitPrice
+		w.WriteByteArray(itemCopy.Encode(l, ctx)(options))                  // GW_ItemSlotBase::Decode (model.Asset codec)
+		w.WriteInt(m.itcSn)                                                 // Decode4 nITCSN
+		w.WriteInt(m.price)                                                 // Decode4 nPrice
+		w.WriteInt(m.contractFee)                                           // Decode4 nContractFee
+		w.WriteAsciiString(m.contractFeeTx)                                 // DecodeStr sContractFeeTxId
+		w.WriteAsciiString(m.rollbackUsage)                                 // DecodeStr sRollbackUsageID
+		w.WriteByteArray(m.dateExpired[:])                                  // DecodeBuffer(8) ftITCDateExpired
+		w.WriteAsciiString(m.userId)                                        // DecodeStr sUserID
+		w.WriteAsciiString(m.gameId)                                        // DecodeStr sGameID
+		w.WriteAsciiString(m.comment)                                       // DecodeStr sComment
+		w.WriteInt(m.bidCount)                                              // Decode4 nBidCount
+		w.WriteInt(m.bidRange)                                              // Decode4 nBidRange
+		w.WriteInt(m.bidPrice)                                              // Decode4 nBidPrice
+		w.WriteInt(m.minPrice)                                              // Decode4 nMinPrice
+		w.WriteInt(m.maxPrice)                                              // Decode4 nMaxPrice
+		w.WriteInt(m.unitPrice)                                             // Decode4 nUnitPrice
 		w.WriteShort(resolveProcessStatusCode(options, m.processStatusKey)) // Decode2 nProcessStatus (config-resolved)
 		return w.Bytes()
 	}

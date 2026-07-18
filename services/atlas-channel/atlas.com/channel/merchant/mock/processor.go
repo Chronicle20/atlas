@@ -3,10 +3,11 @@ package mock
 import (
 	"atlas-channel/merchant"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
 )
 
 type ProcessorMock struct {

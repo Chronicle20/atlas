@@ -6,8 +6,9 @@ import (
 	"atlas-parties/kafka/consumer/invite"
 	party2 "atlas-parties/kafka/consumer/party"
 	"atlas-parties/party"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"os"
+
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"

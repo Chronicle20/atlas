@@ -4,8 +4,9 @@ import (
 	"context"
 	"time"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // ExpiryTask periodically despawns summons whose duration has elapsed. It runs

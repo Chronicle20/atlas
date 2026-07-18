@@ -4,18 +4,21 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
-type HandlerDependency = server.HandlerDependency
-type HandlerContext = server.HandlerContext
-type GetHandler = server.GetHandler
-type InputHandler[M any] = server.InputHandler[M]
+type (
+	HandlerDependency   = server.HandlerDependency
+	HandlerContext      = server.HandlerContext
+	GetHandler          = server.GetHandler
+	InputHandler[M any] = server.InputHandler[M]
+)
 
 func ParseInput[M any](d *HandlerDependency, c *HandlerContext, next InputHandler[M]) http.HandlerFunc {
 	return server.ParseInput[M](d, c, next)

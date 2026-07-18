@@ -77,7 +77,6 @@ func TestDamageDistributionBuilder_WithValues(t *testing.T) {
 		SetExperiencePerDamage(2.5).
 		SetStandardDeviationRatio(0.3).
 		Build()
-
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	}

@@ -5,11 +5,12 @@ import (
 	mtswish "atlas-channel/mts/wish"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
-	"github.com/sirupsen/logrus"
 )
 
 // WorldItems renders the cross-character Wanted tab (ITC section 2): every want-ad

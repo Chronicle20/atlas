@@ -5,11 +5,21 @@ import type { CharacterLocation, ChangeMapData } from "@/types/models/location";
 const BASE_PATH = "/api/characters";
 
 export const locationsService = {
-  async getByCharacterId(characterId: string, options?: ServiceOptions): Promise<CharacterLocation> {
-    return api.getOne<CharacterLocation>(`${BASE_PATH}/${characterId}/location`, options);
+  async getByCharacterId(
+    characterId: string,
+    options?: ServiceOptions,
+  ): Promise<CharacterLocation> {
+    return api.getOne<CharacterLocation>(
+      `${BASE_PATH}/${characterId}/location`,
+      options,
+    );
   },
 
-  async changeMap(characterId: string, data: ChangeMapData, options?: ServiceOptions): Promise<void> {
+  async changeMap(
+    characterId: string,
+    data: ChangeMapData,
+    options?: ServiceOptions,
+  ): Promise<void> {
     const requestBody = {
       data: {
         type: "character-locations",
@@ -17,6 +27,10 @@ export const locationsService = {
         attributes: data,
       },
     };
-    return api.patch<void>(`${BASE_PATH}/${characterId}/location`, requestBody, options);
+    return api.patch<void>(
+      `${BASE_PATH}/${characterId}/location`,
+      requestBody,
+      options,
+    );
   },
 };

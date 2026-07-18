@@ -6,8 +6,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/jtumidanski/api2go/jsonapi"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 // StorageRestModel represents the storage REST response from atlas-storage
@@ -114,8 +115,8 @@ type AssetRestModel struct {
 	Hands          uint16    `json:"hands"`
 	Speed          uint16    `json:"speed"`
 	Jump           uint16    `json:"jump"`
-	Slots     uint16 `json:"slots"`
-	LevelType byte   `json:"levelType"`
+	Slots          uint16    `json:"slots"`
+	LevelType      byte      `json:"levelType"`
 	Level          byte      `json:"level"`
 	Experience     uint32    `json:"experience"`
 	HammersApplied uint32    `json:"hammersApplied"`

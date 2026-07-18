@@ -5,13 +5,13 @@ import (
 	"atlas-login/world"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	world2 "github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	loginpkt "github.com/Chronicle20/atlas/libs/atlas-packet/login/clientbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
-	"github.com/sirupsen/logrus"
 )
-
 
 func ServerListEntryBody(worldId world2.Id, worldName string, state world.State, eventMessage string, channelLoad []model.Load) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {

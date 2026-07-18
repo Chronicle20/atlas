@@ -4,11 +4,13 @@ import (
 	"atlas-channel/asset"
 	"atlas-channel/kafka/message/storage"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 // DefaultStorageCapacity is the default number of slots for new storage

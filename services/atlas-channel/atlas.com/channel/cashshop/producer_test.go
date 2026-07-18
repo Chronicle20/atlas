@@ -1,18 +1,18 @@
 package cashshop
 
 import (
+	"atlas-channel/kafka/message/cashshop"
 	"context"
 	"encoding/binary"
 	"encoding/json"
 	"testing"
 
-	"atlas-channel/kafka/message/cashshop"
+	"github.com/google/uuid"
+	testlog "github.com/sirupsen/logrus/hooks/test"
 
 	cashsb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 // jmsContext builds a context carrying a JMS185 tenant so region-dispatched

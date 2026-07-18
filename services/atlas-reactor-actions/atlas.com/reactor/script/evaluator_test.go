@@ -4,9 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-script-core/condition"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	"github.com/Chronicle20/atlas/libs/atlas-script-core/condition"
 )
 
 func TestEvaluateReactorStateCondition(t *testing.T) {

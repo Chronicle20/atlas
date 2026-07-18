@@ -1,19 +1,20 @@
 package compartment_test
 
 import (
+	"atlas-inventory/asset"
+	"atlas-inventory/compartment"
+	"atlas-inventory/data/consumable"
+	"atlas-inventory/kafka/message"
 	"context"
 	"testing"
 	"time"
 
-	"atlas-inventory/asset"
-	"atlas-inventory/compartment"
-	"atlas-inventory/data/consumable"
 	dcp "atlas-inventory/data/consumable/mock"
-	"atlas-inventory/kafka/message"
+
+	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
 )
 
 // CanAccommodate mirrors CreateAsset's success condition, and — crucially — is

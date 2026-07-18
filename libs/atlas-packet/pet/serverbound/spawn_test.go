@@ -59,7 +59,7 @@ func TestSpawnBytesV79(t *testing.T) {
 	want := []byte{
 		0x04, 0x03, 0x02, 0x01, // updateTime Encode4@0x96e56a (LE)
 		0x06, 0x05, // slot Encode2@0x96e575 (LE)
-		0x01,       // lead Encode1@0x96e580
+		0x01, // lead Encode1@0x96e580
 	}
 	if !bytes.Equal(got, want) {
 		t.Fatalf("v79 = % X, want % X", got, want)

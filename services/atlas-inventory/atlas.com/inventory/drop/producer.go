@@ -3,10 +3,11 @@ package drop
 import (
 	"atlas-inventory/kafka/message/drop"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 )
 
 func EquipmentProvider(f field.Model, itemId uint32, ed drop.EquipmentData, dropType byte, x int16, y int16, ownerId uint32) model.Provider[[]kafka.Message] {

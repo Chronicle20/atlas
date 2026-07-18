@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 // skillChangeHasExpiration reports whether the per-skill 8-byte expiration field
@@ -46,11 +47,11 @@ func NewCharacterSkillChange(exclRequestSent bool, skillId uint32, level byte, m
 }
 
 func (m CharacterSkillChange) ExclRequestSent() bool { return m.exclRequestSent }
-func (m CharacterSkillChange) SkillId() uint32        { return m.skillId }
-func (m CharacterSkillChange) Level() uint32           { return m.level }
-func (m CharacterSkillChange) MasterLevel() uint32     { return m.masterLevel }
-func (m CharacterSkillChange) Sn() bool                { return m.sn }
-func (m CharacterSkillChange) Operation() string       { return CharacterSkillChangeWriter }
+func (m CharacterSkillChange) SkillId() uint32       { return m.skillId }
+func (m CharacterSkillChange) Level() uint32         { return m.level }
+func (m CharacterSkillChange) MasterLevel() uint32   { return m.masterLevel }
+func (m CharacterSkillChange) Sn() bool              { return m.sn }
+func (m CharacterSkillChange) Operation() string     { return CharacterSkillChangeWriter }
 func (m CharacterSkillChange) String() string {
 	return fmt.Sprintf("skillId [%d], level [%d]", m.skillId, m.level)
 }

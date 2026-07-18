@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const BuddyChannelChangeWriter = "BuddyChannelChange"
@@ -22,10 +23,10 @@ func NewBuddyChannelChange(mode byte, characterId uint32, channelId int8) Channe
 	return ChannelChange{mode: mode, characterId: characterId, channelId: channelId}
 }
 
-func (m ChannelChange) Mode() byte        { return m.mode }
+func (m ChannelChange) Mode() byte          { return m.mode }
 func (m ChannelChange) CharacterId() uint32 { return m.characterId }
-func (m ChannelChange) ChannelId() int8    { return m.channelId }
-func (m ChannelChange) Operation() string  { return BuddyChannelChangeWriter }
+func (m ChannelChange) ChannelId() int8     { return m.channelId }
+func (m ChannelChange) Operation() string   { return BuddyChannelChangeWriter }
 
 func (m ChannelChange) String() string {
 	return fmt.Sprintf("channel change characterId [%d] channelId [%d]", m.characterId, m.channelId)

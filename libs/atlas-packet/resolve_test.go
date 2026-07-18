@@ -11,7 +11,7 @@ func TestResolveCodeValid(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	options := map[string]interface{}{
 		"operations": map[string]interface{}{
-			"LEVEL_UP": float64(0),
+			"LEVEL_UP":  float64(0),
 			"SKILL_USE": float64(1),
 		},
 	}

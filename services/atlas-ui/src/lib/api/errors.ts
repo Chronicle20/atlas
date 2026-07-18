@@ -1,16 +1,16 @@
 /**
  * Error transformation utilities for Atlas UI
- * 
+ *
  * This module provides utilities to transform API errors into user-friendly messages
  * and handle different error scenarios consistently across the application.
  */
 
-import type { 
-  ApiError, 
-  ApiErrorType, 
-  NetworkError, 
-  ValidationError
-} from '@/types/api/errors';
+import type {
+  ApiError,
+  ApiErrorType,
+  NetworkError,
+  ValidationError,
+} from "@/types/api/errors";
 import {
   isApiError,
   isNetworkError,
@@ -19,8 +19,8 @@ import {
   isAuthorizationError,
   isNotFoundError,
   isServerError,
-  createErrorFromUnknown
-} from '@/types/api/errors';
+  createErrorFromUnknown,
+} from "@/types/api/errors";
 
 /**
  * Configuration for error message transformation
@@ -39,21 +39,22 @@ export interface ErrorTransformConfig {
  */
 const DEFAULT_ERROR_MESSAGES: Record<string, string> = {
   // Network and connectivity errors
-  NETWORK_ERROR: 'Unable to connect to the server. Please check your internet connection and try again.',
-  
+  NETWORK_ERROR:
+    "Unable to connect to the server. Please check your internet connection and try again.",
+
   // Authentication and authorization errors
-  AUTHENTICATION_ERROR: 'Please sign in to continue.',
-  AUTHORIZATION_ERROR: 'You don\'t have permission to perform this action.',
-  
+  AUTHENTICATION_ERROR: "Please sign in to continue.",
+  AUTHORIZATION_ERROR: "You don't have permission to perform this action.",
+
   // Data and validation errors
-  VALIDATION_ERROR: 'Please check your input and try again.',
-  NOT_FOUND: 'The requested resource was not found.',
-  
+  VALIDATION_ERROR: "Please check your input and try again.",
+  NOT_FOUND: "The requested resource was not found.",
+
   // Server errors
-  SERVER_ERROR: 'An unexpected error occurred. Please try again later.',
-  
+  SERVER_ERROR: "An unexpected error occurred. Please try again later.",
+
   // Unknown errors
-  UNKNOWN_ERROR: 'An unexpected error occurred. Please try again.',
+  UNKNOWN_ERROR: "An unexpected error occurred. Please try again.",
 };
 
 /**
@@ -61,24 +62,24 @@ const DEFAULT_ERROR_MESSAGES: Record<string, string> = {
  */
 const HTTP_STATUS_MESSAGES: Record<number, string> = {
   // Client errors (4xx)
-  400: 'Invalid request. Please check your input and try again.',
-  401: 'Please sign in to continue.',
-  403: 'You don\'t have permission to perform this action.',
-  404: 'The requested resource was not found.',
-  405: 'This action is not allowed.',
-  408: 'Request timeout. Please try again.',
-  409: 'This action conflicts with the current state. Please refresh and try again.',
-  410: 'This resource is no longer available.',
-  422: 'Unable to process your request. Please check your input.',
-  429: 'Too many requests. Please wait a moment and try again.',
-  
+  400: "Invalid request. Please check your input and try again.",
+  401: "Please sign in to continue.",
+  403: "You don't have permission to perform this action.",
+  404: "The requested resource was not found.",
+  405: "This action is not allowed.",
+  408: "Request timeout. Please try again.",
+  409: "This action conflicts with the current state. Please refresh and try again.",
+  410: "This resource is no longer available.",
+  422: "Unable to process your request. Please check your input.",
+  429: "Too many requests. Please wait a moment and try again.",
+
   // Server errors (5xx)
-  500: 'An internal server error occurred. Please try again later.',
-  501: 'This feature is not currently supported.',
-  502: 'Server is temporarily unavailable. Please try again later.',
-  503: 'Service is temporarily unavailable. Please try again later.',
-  504: 'Request timeout. Please try again later.',
-  505: 'HTTP version not supported.',
+  500: "An internal server error occurred. Please try again later.",
+  501: "This feature is not currently supported.",
+  502: "Server is temporarily unavailable. Please try again later.",
+  503: "Service is temporarily unavailable. Please try again later.",
+  504: "Request timeout. Please try again later.",
+  505: "HTTP version not supported.",
 };
 
 /**
@@ -86,15 +87,15 @@ const HTTP_STATUS_MESSAGES: Record<number, string> = {
  */
 export function transformApiError(
   error: ApiError | ApiErrorType,
-  config: ErrorTransformConfig = {}
+  config: ErrorTransformConfig = {},
 ): string {
-  const { 
-    includeTechnicalDetails = false, 
+  const {
+    includeTechnicalDetails = false,
     defaultMessage = DEFAULT_ERROR_MESSAGES.UNKNOWN_ERROR,
-    context 
+    context,
   } = config;
 
-  let message = '';
+  let message: string;
 
   // First try to get a message based on the error code
   if (error.code && DEFAULT_ERROR_MESSAGES[error.code]) {
@@ -127,16 +128,16 @@ export function transformApiError(
  */
 export function transformValidationError(
   error: ValidationError,
-  config: ErrorTransformConfig = {}
+  config: ErrorTransformConfig = {},
 ): string {
   let message = transformApiError(error, config);
 
   // If we have field errors, create a more specific message
   if (error.fieldErrors && Object.keys(error.fieldErrors).length > 0) {
     const fieldMessages = Object.entries(error.fieldErrors)
-      .map(([field, errors]) => `${field}: ${errors.join(', ')}`)
-      .join('; ');
-    
+      .map(([field, errors]) => `${field}: ${errors.join(", ")}`)
+      .join("; ");
+
     message = `Validation failed: ${fieldMessages}`;
   }
 
@@ -148,17 +149,17 @@ export function transformValidationError(
  */
 export function transformNetworkError(
   error: NetworkError,
-  config: ErrorTransformConfig = {}
+  config: ErrorTransformConfig = {},
 ): string {
   const baseMessage = transformApiError(error, config);
 
   // Handle specific network scenarios
   if (error.statusCode === 0) {
-    return 'Unable to connect to the server. Please check your internet connection.';
+    return "Unable to connect to the server. Please check your internet connection.";
   }
-  
+
   if (error.statusCode === 408) {
-    return 'Request timed out. Please try again.';
+    return "Request timed out. Please try again.";
   }
 
   return baseMessage;
@@ -169,7 +170,7 @@ export function transformNetworkError(
  */
 export function transformError(
   error: unknown,
-  config: ErrorTransformConfig = {}
+  config: ErrorTransformConfig = {},
 ): string {
   // Handle known API errors
   if (isApiError(error)) {
@@ -192,9 +193,11 @@ export function transformError(
  */
 export function getMessageFromStatusCode(
   statusCode: number,
-  fallbackMessage?: string
+  fallbackMessage?: string,
 ): string {
-  return HTTP_STATUS_MESSAGES[statusCode] || fallbackMessage || 'An error occurred';
+  return (
+    HTTP_STATUS_MESSAGES[statusCode] || fallbackMessage || "An error occurred"
+  );
 }
 
 /**
@@ -236,20 +239,20 @@ export function getErrorActions(error: unknown): string[] {
   const actions: string[] = [];
 
   if (requiresAuthentication(error)) {
-    actions.push('Sign in to your account');
+    actions.push("Sign in to your account");
   } else if (requiresAuthorization(error)) {
-    actions.push('Contact an administrator for access');
+    actions.push("Contact an administrator for access");
   } else if (isNotFoundError(error)) {
-    actions.push('Check the URL and try again');
-    actions.push('Return to the previous page');
+    actions.push("Check the URL and try again");
+    actions.push("Return to the previous page");
   } else if (isValidationError(error)) {
-    actions.push('Review your input and try again');
+    actions.push("Review your input and try again");
   } else if (isRetryableError(error)) {
-    actions.push('Try again in a few moments');
-    actions.push('Check your internet connection');
+    actions.push("Try again in a few moments");
+    actions.push("Check your internet connection");
   } else if (isServerError(error)) {
-    actions.push('Try again later');
-    actions.push('Contact support if the problem persists');
+    actions.push("Try again later");
+    actions.push("Contact support if the problem persists");
   }
 
   return actions;
@@ -272,46 +275,46 @@ export interface ErrorContext {
  */
 export function createErrorConfig(
   context: ErrorContext,
-  options: Partial<ErrorTransformConfig> = {}
+  options: Partial<ErrorTransformConfig> = {},
 ): ErrorTransformConfig {
   const contextString = [
     context.component && `in ${context.component}`,
-    context.action && `while ${context.action}`
-  ].filter(Boolean).join(' ');
+    context.action && `while ${context.action}`,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   const result: ErrorTransformConfig = {
     includeTechnicalDetails: import.meta.env.DEV,
-    defaultMessage: 'An unexpected error occurred',
-    ...options
+    defaultMessage: "An unexpected error occurred",
+    ...options,
   };
-  
+
   if (contextString) {
     result.context = contextString;
   }
-  
+
   return result;
 }
 
 /**
  * Utility for logging errors with context and sanitization
  */
-export function logError(
-  error: unknown,
-  context: ErrorContext = {}
-): void {
+export function logError(error: unknown, context: ErrorContext = {}): void {
   if (import.meta.env.DEV) {
     // Sanitize error and context data before logging
-    const sanitizedError = error instanceof Error ? sanitizeError(error) : error;
+    const sanitizedError =
+      error instanceof Error ? sanitizeError(error) : error;
     const sanitizedContext = sanitizeErrorData(context.data || {});
-    
-    console.error('Error occurred:', {
+
+    console.error("Error occurred:", {
       error: sanitizedError,
       context: {
         ...context,
-        data: sanitizedContext
+        data: sanitizedContext,
       },
       message: transformError(error),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 
@@ -331,7 +334,7 @@ const SENSITIVE_PATTERNS = [
   /[Pp]assword[:\s=]+[^\s\n]+/g,
   /[Pp]wd[:\s=]+[^\s\n]+/g,
   // Email addresses (partial sanitization to protect privacy)
-  /[\w\.-]+@[\w\.-]+\.\w+/g,
+  /[\w.-]+@[\w.-]+\.\w+/g,
   // Credit card patterns
   /\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b/g,
   // SSN patterns
@@ -351,74 +354,76 @@ const SENSITIVE_PATTERNS = [
  */
 function sanitizeString(input: string): string {
   let sanitized = input;
-  
-  SENSITIVE_PATTERNS.forEach(pattern => {
-    sanitized = sanitized.replace(pattern, '[REDACTED]');
+
+  SENSITIVE_PATTERNS.forEach((pattern) => {
+    sanitized = sanitized.replace(pattern, "[REDACTED]");
   });
-  
+
   return sanitized;
 }
 
 /**
  * Sanitize error data to remove sensitive information before logging
  */
-export function sanitizeErrorData(data: Record<string, unknown>): Record<string, unknown> {
+export function sanitizeErrorData(
+  data: Record<string, unknown>,
+): Record<string, unknown> {
   const sanitized = { ...data };
-  
+
   // Remove common sensitive fields by name
   const sensitiveFields = [
-    'password', 
-    'token', 
-    'secret', 
-    'key', 
-    'authorization',
-    'cookie',
-    'session',
-    'apiKey',
-    'api_key',
-    'accessToken',
-    'access_token',
-    'refreshToken',
-    'refresh_token',
-    'clientSecret',
-    'client_secret',
-    'privateKey',
-    'private_key',
-    'x-api-key',
-    'x-auth-token'
+    "password",
+    "token",
+    "secret",
+    "key",
+    "authorization",
+    "cookie",
+    "session",
+    "apiKey",
+    "api_key",
+    "accessToken",
+    "access_token",
+    "refreshToken",
+    "refresh_token",
+    "clientSecret",
+    "client_secret",
+    "privateKey",
+    "private_key",
+    "x-api-key",
+    "x-auth-token",
   ];
 
   // Recursively sanitize object properties
   function sanitizeValue(value: unknown): unknown {
-    if (typeof value === 'string') {
+    if (typeof value === "string") {
       return sanitizeString(value);
     }
-    
+
     if (Array.isArray(value)) {
       return value.map(sanitizeValue);
     }
-    
-    if (value && typeof value === 'object' && value.constructor === Object) {
+
+    if (value && typeof value === "object" && value.constructor === Object) {
       const obj = value as Record<string, unknown>;
       const sanitizedObject: Record<string, unknown> = {};
-      
+
       for (const [key, val] of Object.entries(obj)) {
         // Check if field name indicates sensitive data
         const lowerKey = key.toLowerCase();
-        const isSensitiveField = sensitiveFields.some(field => 
-          lowerKey.includes(field.toLowerCase())
+        const isSensitiveField = sensitiveFields.some((field) =>
+          lowerKey.includes(field.toLowerCase()),
         );
-        
+
         if (isSensitiveField) {
-          sanitizedObject[key] = '[REDACTED]';
+          sanitizedObject[key] = "[REDACTED]";
         } else {
           sanitizedObject[key] = sanitizeValue(val);
         }
       }
-      
+
       return sanitizedObject;
     }
-    
+
     return value;
   }
 
@@ -433,7 +438,11 @@ export function sanitizeErrorData(data: Record<string, unknown>): Record<string,
 /**
  * Sanitize error message and stack trace to prevent sensitive data leaks
  */
-export function sanitizeError(error: Error): { name: string; message: string; stack?: string } {
+export function sanitizeError(error: Error): {
+  name: string;
+  message: string;
+  stack?: string;
+} {
   return {
     name: error.name,
     message: sanitizeString(error.message),

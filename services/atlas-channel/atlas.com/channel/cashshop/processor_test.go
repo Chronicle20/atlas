@@ -1,10 +1,9 @@
 package cashshop
 
 import (
+	"atlas-channel/kafka/message/cashshop"
 	"encoding/json"
 	"testing"
-
-	"atlas-channel/kafka/message/cashshop"
 )
 
 // TestResolvePurchaseCurrency verifies the isPoints->currency mapping applied by

@@ -8,8 +8,9 @@ import (
 	"atlas-consumables/kafka/consumer/food"
 	pickupconsumer "atlas-consumables/kafka/consumer/pickup"
 	mapCharacter "atlas-consumables/map/character"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"os"
+
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"

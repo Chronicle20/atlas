@@ -39,10 +39,16 @@ describe("bansService.getBansPage", () => {
       meta: { total: 2, page: { number: 1, size: 50, last: 1 } },
     });
 
-    const result = await bansService.getBansPage({ number: 1, size: 50 }, { type: BanType.Account });
+    const result = await bansService.getBansPage(
+      { number: 1, size: 50 },
+      { type: BanType.Account },
+    );
 
     expect(result.data.map((b) => b.id)).toEqual(["2", "1"]);
-    expect(result.meta).toEqual({ total: 2, page: { number: 1, size: 50, last: 1 } });
+    expect(result.meta).toEqual({
+      total: 2,
+      page: { number: 1, size: 50, last: 1 },
+    });
 
     const [calledUrl] = getMock.mock.calls[0] as [string];
     const url = new URL(calledUrl, "http://example.test");

@@ -1,13 +1,14 @@
 package document
 
 import (
+	"atlas-data/canonical"
 	"context"
 
-	"atlas-data/canonical"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Storage[I string, M Identifier[I]] struct {

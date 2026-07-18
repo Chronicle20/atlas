@@ -429,7 +429,7 @@ func decodeCanvas(f *wz.File, cp *property.CanvasProperty) (image.Image, error) 
 	if err != nil {
 		return nil, fmt.Errorf("read canvas data: %w", err)
 	}
-	img, err := canvas.Decompress(data, cp.Width(), cp.Height(), cp.Format(), f.CanvasEncryptionKey())
+	img, err := canvas.Decompress(data, cp.Width(), cp.Height(), cp.Format(), f.CanvasEncryptionKeyFor(cp.DataOffset()))
 	if err != nil {
 		return nil, fmt.Errorf("decompress canvas: %w", err)
 	}

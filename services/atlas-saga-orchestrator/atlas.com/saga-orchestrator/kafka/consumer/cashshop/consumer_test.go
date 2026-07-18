@@ -1,6 +1,7 @@
 package cashshop
 
 import (
+	"atlas-saga-orchestrator/saga"
 	"context"
 	"testing"
 
@@ -13,7 +14,6 @@ import (
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 
 	cashshop2 "atlas-saga-orchestrator/kafka/message/cashshop"
-	"atlas-saga-orchestrator/saga"
 )
 
 func mustTenantCtx(t *testing.T) context.Context {

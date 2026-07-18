@@ -6,12 +6,13 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // backgroundSeeds tracks outstanding postSeed goroutines.  Tests call

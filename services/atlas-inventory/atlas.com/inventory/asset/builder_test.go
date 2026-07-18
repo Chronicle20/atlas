@@ -262,6 +262,17 @@ func TestInventoryTypeDerivation(t *testing.T) {
 	}
 }
 
+func TestBuilderOwnerCarriedByClone(t *testing.T) {
+	m := asset.NewBuilder(uuid.New(), 1302000).SetOwner("Tumi").Build()
+	if m.Owner() != "Tumi" {
+		t.Fatalf("Owner() = %q, want Tumi", m.Owner())
+	}
+	c := asset.Clone(m).Build()
+	if c.Owner() != "Tumi" {
+		t.Fatalf("Clone dropped owner: %q", c.Owner())
+	}
+}
+
 func TestNegativeSlot(t *testing.T) {
 	compartmentId := uuid.New()
 	m := asset.NewBuilder(compartmentId, 1040010).

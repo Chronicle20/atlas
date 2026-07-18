@@ -6,9 +6,10 @@ import (
 	"sync"
 	"time"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"golang.org/x/sync/errgroup"
 	"gorm.io/gorm"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func ReadStatus(ctx context.Context, db *gorm.DB, src CatalogSource, g Group) (Status, error) {

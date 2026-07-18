@@ -4,14 +4,16 @@ import (
 	queststate "atlas-saga-orchestrator/quest/state"
 	"atlas-saga-orchestrator/rates"
 	"context"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"math/rand"
 	"strconv"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 // DropType constants for drop behavior

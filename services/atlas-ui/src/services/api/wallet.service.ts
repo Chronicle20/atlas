@@ -5,7 +5,10 @@ import type { Wallet, WalletAttributes } from "@/types/models/wallet";
 const BASE_PATH = "/api/accounts";
 
 export const walletService = {
-  async getWallet(accountId: string, options?: ServiceOptions): Promise<Wallet> {
+  async getWallet(
+    accountId: string,
+    options?: ServiceOptions,
+  ): Promise<Wallet> {
     return api.getOne<Wallet>(`${BASE_PATH}/${accountId}/wallet`, options);
   },
 

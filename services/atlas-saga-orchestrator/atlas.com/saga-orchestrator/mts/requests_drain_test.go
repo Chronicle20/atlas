@@ -1,6 +1,7 @@
 package mts_test
 
 import (
+	"atlas-saga-orchestrator/mts"
 	"context"
 	"fmt"
 	"net/http"
@@ -9,11 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"atlas-saga-orchestrator/mts"
-
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // holdingsDoc renders a JSON:API "holdings" list response for holdings

@@ -12,6 +12,9 @@ import (
 	"atlas-mts/wish"
 	"context"
 
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -21,8 +24,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 // InitConsumers registers the MTS custody command consumer (the saga custody
@@ -124,6 +125,7 @@ func handleAcceptToMtsListing(pf providerFn) func(db *gorm.DB) message.Handler[c
 					RingId:           b.RingId,
 					ViciousCount:     b.ViciousCount,
 					Flags:            b.Flags,
+					Owner:            b.Owner,
 					ListValue:        b.ListValue,
 					BuyNowPrice:      b.BuyNowPrice,
 					CommissionRate:   b.CommissionRate,

@@ -3,9 +3,10 @@ package skill
 import (
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
@@ -104,8 +105,7 @@ type StatusEventCooldownAppliedBody struct {
 	CooldownExpiresAt time.Time `json:"cooldownExpiresAt"`
 }
 
-type StatusEventCooldownExpiredBody struct {
-}
+type StatusEventCooldownExpiredBody struct{}
 
 // StatusEventDeletedBody is the empty body emitted alongside StatusEventTypeDeleted.
 type StatusEventDeletedBody struct{}

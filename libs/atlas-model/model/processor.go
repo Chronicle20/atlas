@@ -37,12 +37,15 @@ import (
 	"math/rand"
 	"sync"
 
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/sirupsen/logrus"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 )
 
-var ErrEmptySlice = errors.New("empty slice")
-var ErrNoResultFound = errors.New("no result found")
+var (
+	ErrEmptySlice    = errors.New("empty slice")
+	ErrNoResultFound = errors.New("no result found")
+)
 
 type Operator[M any] func(M) error
 
@@ -168,7 +171,7 @@ func ExecuteForEachSlice[M any](f Operator[M], configurators ...ExecuteFuncConfi
 			wg := &sync.WaitGroup{}
 			errChannels := make(chan error, len(models))
 			for _, m := range models {
-				var model = m
+				model := m
 				wg.Add(1)
 				routine.Go(logrus.StandardLogger(), ctx, func(_ context.Context) {
 					defer wg.Done()
@@ -221,7 +224,7 @@ func ExecuteForEachMap[K comparable, V any](f KeyValueOperator[K, V], configurat
 			wg := &sync.WaitGroup{}
 			errChannels := make(chan error, len(m))
 			for k, v := range m {
-				var key, value = k, v
+				key, value := k, v
 				wg.Add(1)
 				routine.Go(logrus.StandardLogger(), ctx, func(_ context.Context) {
 					defer wg.Done()
@@ -447,7 +450,7 @@ func SliceMap[M any, N any](transformer Transformer[M, N]) func(provider Provide
 				if err != nil {
 					return nil, err
 				}
-				var results = make([]N, len(models))
+				results := make([]N, len(models))
 
 				if c.parallel {
 					var wg sync.WaitGroup
@@ -527,7 +530,7 @@ func Fold[M any, N any](provider Provider[[]M], supplier Provider[N], folder Fol
 //goland:noinspection GoUnusedExportedFunction
 func Decorate[M any](decorators []Decorator[M]) func(m M) (M, error) {
 	return func(m M) (M, error) {
-		var n = m
+		n := m
 		for _, d := range decorators {
 			n = d(n)
 		}
@@ -591,7 +594,7 @@ func CollectToMap[M any, K comparable, V any](mp Provider[[]M], kp KeyProvider[M
 		if err != nil {
 			return nil, err
 		}
-		var result = make(map[K]V)
+		result := make(map[K]V)
 		for _, m := range ms {
 			result[kp(m)] = vp(m)
 		}

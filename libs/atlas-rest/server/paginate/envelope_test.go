@@ -4,8 +4,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 )
 
 func TestLastPage_NormalCases(t *testing.T) {

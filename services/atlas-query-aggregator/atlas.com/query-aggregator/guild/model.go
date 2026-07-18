@@ -53,7 +53,6 @@ func (m Model) Titles() []title.Model {
 
 func (m Model) Members() []member.Model {
 	return m.members
-
 }
 
 func (m Model) Capacity() uint32 {

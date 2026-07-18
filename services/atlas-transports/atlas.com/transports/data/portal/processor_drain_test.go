@@ -1,6 +1,7 @@
 package portal_test
 
 import (
+	"atlas-transports/data/portal"
 	"context"
 	"fmt"
 	"net/http"
@@ -9,12 +10,11 @@ import (
 	"strings"
 	"testing"
 
-	"atlas-transports/data/portal"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus/hooks/test"
 
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus/hooks/test"
 )
 
 // portalDoc renders a JSON:API document for portals [from, to] on a single

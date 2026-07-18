@@ -8,8 +8,9 @@ import (
 
 	mtsmsg "atlas-channel/kafka/message/mts"
 
-	fieldpkt "github.com/Chronicle20/atlas/libs/atlas-packet/field"
 	"github.com/sirupsen/logrus"
+
+	fieldpkt "github.com/Chronicle20/atlas/libs/atlas-packet/field"
 )
 
 // TestReasonFieldNoDecodeCollision guards the EVENT_TOPIC_MTS_STATUS reason-tag

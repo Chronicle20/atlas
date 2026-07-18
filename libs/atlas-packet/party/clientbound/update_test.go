@@ -11,13 +11,16 @@ import (
 // variants. IDA CWvsContext::OnPartyResult reads Decode4(partyId)+PARTYDATA.
 //
 // v83/JMS (GMS < 95 or JMS): mode(1)+partyId(4)+WritePartyData(298) = 303 bytes.
-//   PARTYDATA = 298 bytes: portals use 4 ints each (no m_nSKillID); no PQ fields.
-//   Confirmed: v83 OnPartyResult@0xa3e31c memset(3732,0,0x12A=298).
-//   JMS v185 OnPartyResult@0xb297e7: qmemcpy(v120,...,0x12Au=298) — JMS is small.
+//
+//	PARTYDATA = 298 bytes: portals use 4 ints each (no m_nSKillID); no PQ fields.
+//	Confirmed: v83 OnPartyResult@0xa3e31c memset(3732,0,0x12A=298).
+//	JMS v185 OnPartyResult@0xb297e7: qmemcpy(v120,...,0x12Au=298) — JMS is small.
 //
 // v95+ (GMS >= 95 only): mode(1)+partyId(4)+WritePartyData(378) = 383 bytes.
-//   PARTYDATA = 378 bytes: portals add m_nSKillID (5th int); PQ fields (+56 bytes).
-//   Confirmed: v95 IDA memset(3732,0,0x17A=378).
+//
+//	PARTYDATA = 378 bytes: portals add m_nSKillID (5th int); PQ fields (+56 bytes).
+//	Confirmed: v95 IDA memset(3732,0,0x17A=378).
+//
 // packet-audit:verify packet=party/clientbound/PartyUpdate version=gms_v83 ida=0xa3e31c
 // packet-audit:verify packet=party/clientbound/PartyUpdate version=jms_v185 ida=0xb297e7
 // packet-audit:verify packet=party/clientbound/PartyUpdate version=gms_v87 ida=0xad697a

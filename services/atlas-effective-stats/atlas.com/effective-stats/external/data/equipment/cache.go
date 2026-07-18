@@ -4,9 +4,10 @@ import (
 	"context"
 	"sync"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // EquipmentRequirements holds the six gating fields read from atlas-data.

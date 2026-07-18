@@ -1,11 +1,11 @@
-import React from 'react';
-import { AlertTriangle, RefreshCw, Database, Wifi } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { ErrorBoundary } from '@/components/common/ErrorBoundary';
-import { cn } from '@/lib/utils';
-import { errorLogger } from '@/services/errorLogger';
+import React from "react";
+import { AlertTriangle, RefreshCw, Database, Wifi } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
+import { cn } from "@/lib/utils";
+import { errorLogger } from "@/services/errorLogger";
 
 interface NpcErrorFallbackProps {
   error: Error;
@@ -23,21 +23,23 @@ function NpcErrorFallback({
   errorInfo: _errorInfo,
   resetError,
   npcId,
-  className
+  className,
 }: NpcErrorFallbackProps) {
-  const isNetworkError = error.message.includes('fetch') || 
-                        error.message.includes('network') ||
-                        error.message.includes('Failed to fetch');
-  
-  const isApiError = error.message.includes('404') || 
-                    error.message.includes('API') ||
-                    error.message.includes('not found');
+  const isNetworkError =
+    error.message.includes("fetch") ||
+    error.message.includes("network") ||
+    error.message.includes("Failed to fetch");
+
+  const isApiError =
+    error.message.includes("404") ||
+    error.message.includes("API") ||
+    error.message.includes("not found");
 
   const handleRetryWithLog = () => {
-    errorLogger.logUserAction('npc_error_retry', { 
-      npcId, 
+    errorLogger.logUserAction("npc_error_retry", {
+      npcId,
       errorType: error.name,
-      errorMessage: error.message 
+      errorMessage: error.message,
     });
     resetError();
   };
@@ -59,7 +61,7 @@ function NpcErrorFallback({
       return "Unable to connect to MapleStory.io API. Please check your internet connection.";
     }
     if (isApiError) {
-      return npcId 
+      return npcId
         ? `NPC data for ID ${npcId} is not available in the MapleStory.io database.`
         : "The requested NPC data is not available.";
     }
@@ -109,12 +111,18 @@ function NpcErrorFallback({
               Technical Details
             </summary>
             <div className="mt-2 p-2 bg-muted rounded font-mono text-xs break-all">
-              <div><strong>Error:</strong> {error.name}</div>
-              <div><strong>Message:</strong> {error.message}</div>
+              <div>
+                <strong>Error:</strong> {error.name}
+              </div>
+              <div>
+                <strong>Message:</strong> {error.message}
+              </div>
               {error.stack && (
                 <div className="mt-1">
                   <strong>Stack:</strong>
-                  <pre className="whitespace-pre-wrap text-xs">{error.stack}</pre>
+                  <pre className="whitespace-pre-wrap text-xs">
+                    {error.stack}
+                  </pre>
                 </div>
               )}
             </div>
@@ -135,17 +143,17 @@ interface NpcErrorBoundaryProps {
 /**
  * Specialized error boundary for NPC components with NPC-specific error handling
  */
-export function NpcErrorBoundary({ 
-  children, 
-  npcId, 
+export function NpcErrorBoundary({
+  children,
+  npcId,
   className,
-  onError 
+  onError,
 }: NpcErrorBoundaryProps) {
   const handleError = (error: Error, errorInfo: React.ErrorInfo) => {
     // Log NPC-specific error context
     errorLogger.logError(error, errorInfo, {
       ...(npcId && { userId: npcId.toString() }), // Use userId field for NPC ID since it's the closest match
-      url: `npc_card_${npcId || 'unknown'}`,
+      url: `npc_card_${npcId || "unknown"}`,
     });
 
     // Call optional error handler
@@ -167,7 +175,7 @@ export function NpcErrorBoundary({
       enableErrorReporting={true}
       context={{
         ...(npcId && { userId: npcId.toString() }), // Use userId field for NPC ID
-        url: `npc_card_${npcId || 'unknown'}`,
+        url: `npc_card_${npcId || "unknown"}`,
       }}
     >
       {children}
@@ -179,15 +187,17 @@ export function NpcErrorBoundary({
  * HOC to wrap components with NPC-specific error boundary
  */
 export function withNpcErrorBoundary<T extends { npcId?: number }>(
-  Component: React.ComponentType<T>
+  Component: React.ComponentType<T>,
 ) {
   const WrappedComponent = (props: T) => (
-    <NpcErrorBoundary {...(props.npcId !== undefined && { npcId: props.npcId })}>
+    <NpcErrorBoundary
+      {...(props.npcId !== undefined && { npcId: props.npcId })}
+    >
       <Component {...props} />
     </NpcErrorBoundary>
   );
 
   WrappedComponent.displayName = `withNpcErrorBoundary(${Component.displayName || Component.name})`;
-  
+
   return WrappedComponent;
 }

@@ -39,7 +39,7 @@ func TestGuideTalkIdxByteOutputV79(t *testing.T) {
 	// message arm: bByMessage(0x00) + Str("hi") + width + duration.
 	msg := NewGuideTalkMessage("hi", 200, 4000)
 	wantMsg := []byte{
-		0x00,             // bByMessage == 0 (message arm)
+		0x00,                 // bByMessage == 0 (message arm)
 		0x02, 0x00, 'h', 'i', // message "hi"
 		0xC8, 0x00, 0x00, 0x00, // width = 200
 		0xA0, 0x0F, 0x00, 0x00, // duration = 4000

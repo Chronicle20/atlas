@@ -9,17 +9,19 @@ import (
 	"atlas-npc-conversations/kafka/consumer/npc"
 	questConsumer "atlas-npc-conversations/kafka/consumer/quest"
 	"atlas-npc-conversations/kafka/consumer/saga"
+	"os"
+
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	seeder "github.com/Chronicle20/atlas/libs/atlas-seeder"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
-	"os"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
+
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	"gorm.io/gorm"
 )
 
 const serviceName = "atlas-npc-conversations"

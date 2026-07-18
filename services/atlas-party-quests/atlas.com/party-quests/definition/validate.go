@@ -70,9 +70,9 @@ func LoadDefinitionFiles() ([]RestModel, []error) {
 
 type ValidationResult struct {
 	Valid    bool     `json:"valid"`
-	QuestId string   `json:"questId"`
-	Name    string   `json:"name"`
-	Errors  []string `json:"errors,omitempty"`
+	QuestId  string   `json:"questId"`
+	Name     string   `json:"name"`
+	Errors   []string `json:"errors,omitempty"`
 	Warnings []string `json:"warnings,omitempty"`
 }
 

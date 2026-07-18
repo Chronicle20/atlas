@@ -9,10 +9,11 @@ import (
 	"strings"
 	"time"
 
-	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
+
+	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type AccountKey struct {
@@ -118,7 +119,7 @@ func (r *Registry) MaximalState(ctx context.Context, key AccountKey) State {
 		return StateNotLoggedIn
 	}
 
-	var maximalState = uint8(99)
+	maximalState := uint8(99)
 	for _, entry := range sm {
 		if uint8(entry.State) < maximalState {
 			maximalState = uint8(entry.State)

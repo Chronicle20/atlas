@@ -6,22 +6,26 @@ import (
 	"atlas-parties/kafka/message"
 	"context"
 	"errors"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const StartPartyId = uint32(1000000000)
 
-var ErrNotFound = errors.New("not found")
-var ErrAtCapacity = errors.New("at capacity")
-var ErrAlreadyIn = errors.New("already in party")
-var ErrNotIn = errors.New("not in party")
-var ErrNotAsBeginner = errors.New("not as beginner")
-var ErrNotAsGm = errors.New("not as gm")
+var (
+	ErrNotFound      = errors.New("not found")
+	ErrAtCapacity    = errors.New("at capacity")
+	ErrAlreadyIn     = errors.New("already in party")
+	ErrNotIn         = errors.New("not in party")
+	ErrNotAsBeginner = errors.New("not as beginner")
+	ErrNotAsGm       = errors.New("not as gm")
+)
 
 type Processor interface {
 	AllProvider() ([]Model, error)
@@ -426,7 +430,7 @@ func (p *ProcessorImpl) Leave(mb *message.Buffer) func(partyId uint32, character
 			return Model{}, err
 		}
 
-		var disbandParty = party.LeaderId() == characterId
+		disbandParty := party.LeaderId() == characterId
 
 		// Capture the full member list BEFORE removing the leaver so the DISBAND
 		// event can include the departing leader (or any member being expelled).

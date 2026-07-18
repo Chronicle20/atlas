@@ -6,12 +6,13 @@ import (
 	"testing"
 	"time"
 
-	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 )
 
 type fakePublisher struct {

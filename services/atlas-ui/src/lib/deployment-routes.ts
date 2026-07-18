@@ -4,14 +4,14 @@
  * banner both consume this predicate; they can never disagree.
  */
 export const DEPLOYMENT_ROUTE_PREFIXES = [
-  '/templates',
-  '/tenants',
-  '/services',
-  '/baselines',
+  "/templates",
+  "/tenants",
+  "/services",
+  "/baselines",
 ] as const;
 
 export function isDeploymentRoute(pathname: string): boolean {
   return DEPLOYMENT_ROUTE_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(prefix + '/'),
+    (prefix) => pathname === prefix || pathname.startsWith(prefix + "/"),
   );
 }

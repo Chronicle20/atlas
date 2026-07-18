@@ -5,10 +5,11 @@ import (
 	"testing"
 	"time"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
+
 	pktmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	testlog "github.com/sirupsen/logrus/hooks/test"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // packet-audit:verify packet=merchant/clientbound/ShopScannerResult version=gms_v83 ida=0xa28c29

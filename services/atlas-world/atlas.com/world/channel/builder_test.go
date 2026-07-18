@@ -30,7 +30,6 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 		SetMaxCapacity(100).
 		SetCreatedAt(createdAt).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -156,7 +155,6 @@ func TestBuild_PortBoundaryLow(t *testing.T) {
 		SetPort(1).
 		SetMaxCapacity(100).
 		Build()
-
 	if err != nil {
 		t.Errorf("Build() with port=1 should succeed, got error: %v", err)
 	}
@@ -169,7 +167,6 @@ func TestBuild_PortBoundaryHigh(t *testing.T) {
 		SetPort(65535).
 		SetMaxCapacity(100).
 		Build()
-
 	if err != nil {
 		t.Errorf("Build() with port=65535 should succeed, got error: %v", err)
 	}
@@ -195,7 +192,6 @@ func TestBuild_MaxCapacityOne(t *testing.T) {
 		SetPort(8080).
 		SetMaxCapacity(1).
 		Build()
-
 	if err != nil {
 		t.Errorf("Build() with maxCapacity=1 should succeed, got error: %v", err)
 	}
@@ -300,7 +296,6 @@ func TestBuilderFluentChaining(t *testing.T) {
 		SetCurrentCapacity(25).
 		SetMaxCapacity(50).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -346,7 +341,6 @@ func TestBuild_WorldIdZero(t *testing.T) {
 		SetPort(8080).
 		SetMaxCapacity(100).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() with worldId=0 should succeed, got error: %v", err)
 	}
@@ -364,7 +358,6 @@ func TestBuild_ChannelIdZero(t *testing.T) {
 		SetPort(8080).
 		SetMaxCapacity(100).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() with channelId=0 should succeed, got error: %v", err)
 	}
@@ -382,7 +375,6 @@ func TestBuild_CurrentCapacityZero(t *testing.T) {
 		SetCurrentCapacity(0).
 		SetMaxCapacity(100).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() with currentCapacity=0 should succeed, got error: %v", err)
 	}

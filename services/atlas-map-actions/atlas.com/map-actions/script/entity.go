@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-script-core/condition"
-	"github.com/Chronicle20/atlas/libs/atlas-script-core/operation"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-script-core/condition"
+	"github.com/Chronicle20/atlas/libs/atlas-script-core/operation"
 )
 
 // Entity represents a map script stored in the database

@@ -7,11 +7,20 @@ interface EquipmentRequirementsCardProps {
   attributes: EquipmentAttributes;
 }
 
-export function EquipmentRequirementsCard({ attributes }: EquipmentRequirementsCardProps) {
-  const { reqLevel, reqJob, reqStr, reqDex, reqInt, reqLuk, reqPop, reqFame } = attributes;
+export function EquipmentRequirementsCard({
+  attributes,
+}: EquipmentRequirementsCardProps) {
+  const { reqLevel, reqJob, reqStr, reqDex, reqInt, reqLuk, reqPop, reqFame } =
+    attributes;
 
   const hasStatReq =
-    reqLevel > 0 || reqStr > 0 || reqDex > 0 || reqInt > 0 || reqLuk > 0 || reqPop > 0 || reqFame > 0;
+    reqLevel > 0 ||
+    reqStr > 0 ||
+    reqDex > 0 ||
+    reqInt > 0 ||
+    reqLuk > 0 ||
+    reqPop > 0 ||
+    reqFame > 0;
   const hasJobReq = reqJob > 0;
 
   if (!hasStatReq && !hasJobReq) return null;

@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const BuddyUpdateWriter = "BuddyUpdate"
@@ -27,13 +28,13 @@ func NewBuddyUpdate(mode byte, characterId uint32, characterName string, group s
 	return Update{mode: mode, characterId: characterId, characterName: characterName, group: group, channelId: channelId, inShop: inShop}
 }
 
-func (m Update) Mode() byte              { return m.mode }
-func (m Update) CharacterId() uint32      { return m.characterId }
-func (m Update) CharacterName() string    { return m.characterName }
-func (m Update) Group() string            { return m.group }
-func (m Update) ChannelId() channel.Id    { return m.channelId }
-func (m Update) InShop() bool             { return m.inShop }
-func (m Update) Operation() string        { return BuddyUpdateWriter }
+func (m Update) Mode() byte            { return m.mode }
+func (m Update) CharacterId() uint32   { return m.characterId }
+func (m Update) CharacterName() string { return m.characterName }
+func (m Update) Group() string         { return m.group }
+func (m Update) ChannelId() channel.Id { return m.channelId }
+func (m Update) InShop() bool          { return m.inShop }
+func (m Update) Operation() string     { return BuddyUpdateWriter }
 
 func (m Update) String() string {
 	return fmt.Sprintf("buddy update characterId [%d]", m.characterId)

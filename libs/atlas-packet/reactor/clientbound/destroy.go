@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const ReactorDestroyWriter = "ReactorDestroy"
@@ -23,10 +24,10 @@ func NewReactorDestroy(id uint32, state int8, x int16, y int16) Destroy {
 	return Destroy{id: id, state: state, x: x, y: y}
 }
 
-func (m Destroy) Id() uint32      { return m.id }
-func (m Destroy) State() int8     { return m.state }
-func (m Destroy) X() int16        { return m.x }
-func (m Destroy) Y() int16        { return m.y }
+func (m Destroy) Id() uint32        { return m.id }
+func (m Destroy) State() int8       { return m.state }
+func (m Destroy) X() int16          { return m.x }
+func (m Destroy) Y() int16          { return m.y }
 func (m Destroy) Operation() string { return ReactorDestroyWriter }
 func (m Destroy) String() string {
 	return fmt.Sprintf("id [%d], state [%d]", m.id, m.state)

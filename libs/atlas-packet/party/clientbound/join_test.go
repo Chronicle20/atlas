@@ -10,8 +10,10 @@ import (
 // TestJoinByteOutput verifies the byte output of Join across all tenant variants.
 // Wire layout: mode(1)+partyId(4)+targetName(2+len)+WritePartyData(?).
 // targetName="Player2" → 2+7=9 bytes. Total with PARTYDATA:
-//   v83/JMS: 1+4+9+298 = 312 bytes (JMS uses small PARTYDATA; IDA @0xb297e7 qmemcpy 0x12A)
-//   v95 (GMS only): 1+4+9+378 = 392 bytes
+//
+//	v83/JMS: 1+4+9+298 = 312 bytes (JMS uses small PARTYDATA; IDA @0xb297e7 qmemcpy 0x12A)
+//	v95 (GMS only): 1+4+9+378 = 392 bytes
+//
 // packet-audit:verify packet=party/clientbound/PartyJoin version=jms_v185 ida=0xb297e7
 // packet-audit:verify packet=party/clientbound/PartyJoin version=gms_v83 ida=0xa3e31c
 // packet-audit:verify packet=party/clientbound/PartyJoin version=gms_v87 ida=0xad697a

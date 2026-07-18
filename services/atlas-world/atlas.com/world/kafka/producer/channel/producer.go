@@ -3,11 +3,12 @@ package channel
 import (
 	channel2 "atlas-world/kafka/message/channel"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/segmentio/kafka-go"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func StartedEventProvider(tenant tenant.Model, ch channel.Model, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) model.Provider[[]kafka.Message] {

@@ -3,11 +3,12 @@ package monster
 import (
 	"math"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 // nextSkillDecision is the picker's decision for the next skill (if any) the
@@ -31,27 +32,27 @@ type DamageSummary struct {
 }
 
 type Model struct {
-	uniqueId             uint32
-	worldId              world.Id
-	channelId            channel.Id
-	mapId                _map.Id
-	instance             uuid.UUID
-	maxHp                uint32
-	hp                   uint32
-	maxMp                uint32
-	mp                   uint32
-	monsterId            uint32
-	controlCharacterId   uint32
-	controllerHasAggro   bool
-	x                    int16
-	y                    int16
-	fh                   int16
-	stance               byte
-	team                 int8
-	damageEntries        []entry
-	statusEffects        []StatusEffect
-	nextSkillDecision    nextSkillDecision
-	lastDamageTakenMs    int64
+	uniqueId           uint32
+	worldId            world.Id
+	channelId          channel.Id
+	mapId              _map.Id
+	instance           uuid.UUID
+	maxHp              uint32
+	hp                 uint32
+	maxMp              uint32
+	mp                 uint32
+	monsterId          uint32
+	controlCharacterId uint32
+	controllerHasAggro bool
+	x                  int16
+	y                  int16
+	fh                 int16
+	stance             byte
+	team               int8
+	damageEntries      []entry
+	statusEffects      []StatusEffect
+	nextSkillDecision  nextSkillDecision
+	lastDamageTakenMs  int64
 }
 
 type entry struct {
@@ -184,7 +185,7 @@ func (m Model) Damage(characterId uint32, damage uint32) Model {
 	actualDamage := m.Hp() - uint32(math.Max(float64(m.Hp())-float64(damage), 0))
 
 	return Clone(m).
-		SetHp(m.Hp() - actualDamage).
+		SetHp(m.Hp()-actualDamage).
 		AddDamageEntry(characterId, actualDamage).
 		Build()
 }

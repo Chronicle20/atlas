@@ -193,7 +193,6 @@ func TestExtract(t *testing.T) {
 	}
 
 	model, err := Extract(rm)
-
 	if err != nil {
 		t.Fatalf("Extract returned error: %v", err)
 	}
@@ -236,7 +235,6 @@ func TestExtract_ZeroValues(t *testing.T) {
 	rm := RestModel{}
 
 	model, err := Extract(rm)
-
 	if err != nil {
 		t.Fatalf("Extract returned error: %v", err)
 	}
@@ -292,7 +290,6 @@ func TestExtract_GmValues(t *testing.T) {
 func TestRestModel_SetToOneReferenceID(t *testing.T) {
 	rm := &RestModel{}
 	err := rm.SetToOneReferenceID("test", "123")
-
 	// Currently returns nil (no-op implementation)
 	if err != nil {
 		t.Errorf("Expected nil error, got %v", err)
@@ -303,7 +300,6 @@ func TestRestModel_SetToOneReferenceID(t *testing.T) {
 func TestRestModel_SetToManyReferenceIDs(t *testing.T) {
 	rm := &RestModel{}
 	err := rm.SetToManyReferenceIDs("test", []string{"1", "2", "3"})
-
 	// Currently returns nil (no-op implementation)
 	if err != nil {
 		t.Errorf("Expected nil error, got %v", err)
@@ -314,7 +310,6 @@ func TestRestModel_SetToManyReferenceIDs(t *testing.T) {
 func TestRestModel_SetReferencedStructs(t *testing.T) {
 	rm := &RestModel{}
 	err := rm.SetReferencedStructs(nil)
-
 	// Currently returns nil (no-op implementation)
 	if err != nil {
 		t.Errorf("Expected nil error, got %v", err)

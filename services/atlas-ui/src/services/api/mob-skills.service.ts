@@ -38,12 +38,20 @@ const BASE_PATH = "/api/data/mob-skills";
 
 export const mobSkillsService = {
   async getMobSkillName(skillId: number): Promise<string> {
-    const result = await fetchPaged<MobSkillSummary>(`${BASE_PATH}/${skillId}`, { number: 1, size: 1 });
+    const result = await fetchPaged<MobSkillSummary>(
+      `${BASE_PATH}/${skillId}`,
+      { number: 1, size: 1 },
+    );
     return result.data[0]?.attributes.name ?? "";
   },
 
-  async getMobSkillDetail(skillId: number, level: number): Promise<MobSkillDetailAttributes> {
-    const data = await api.getOne<MobSkillDetailData>(`${BASE_PATH}/${skillId}/${level}`);
+  async getMobSkillDetail(
+    skillId: number,
+    level: number,
+  ): Promise<MobSkillDetailAttributes> {
+    const data = await api.getOne<MobSkillDetailData>(
+      `${BASE_PATH}/${skillId}/${level}`,
+    );
     return data.attributes;
   },
 };

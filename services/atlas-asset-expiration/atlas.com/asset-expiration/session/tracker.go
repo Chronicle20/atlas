@@ -3,8 +3,9 @@ package session
 import (
 	"sync"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 )
 
 // Session represents an online session
@@ -24,8 +25,10 @@ type Tracker struct {
 	sessions map[uint32]Session // keyed by characterId
 }
 
-var tracker *Tracker
-var once sync.Once
+var (
+	tracker *Tracker
+	once    sync.Once
+)
 
 // GetTracker returns the singleton session tracker
 func GetTracker() *Tracker {

@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 // skillPrepareForeignActionIsByte reports whether the action/direction field rides
@@ -47,7 +48,7 @@ func NewSkillPrepareForeign(characterId uint32, skillId uint32, level byte, acti
 	}
 }
 
-func (m SkillPrepareForeign) CharacterId() uint32  { return m.characterId }
+func (m SkillPrepareForeign) CharacterId() uint32 { return m.characterId }
 func (m SkillPrepareForeign) SkillId() uint32     { return m.skillId }
 func (m SkillPrepareForeign) Level() byte         { return m.level }
 func (m SkillPrepareForeign) Action() uint16      { return m.action }

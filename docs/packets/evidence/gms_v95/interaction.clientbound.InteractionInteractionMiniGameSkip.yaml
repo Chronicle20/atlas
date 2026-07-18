@@ -1,0 +1,10 @@
+packet: interaction/clientbound/InteractionInteractionMiniGameSkip
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CMiniRoomBaseDlg::OnPacketBase#MemoryGameSkip
+    address: "0x67fac0"
+    decompile_sha256: 04354c4a7467334df79bf4b836bcaf38f0b3411aba1accc878e5546f59b59839
+verifies:
+    - libs/atlas-packet/interaction/clientbound/interaction_minigame_test.go#TestInteractionMiniGameSkipRoundTrip

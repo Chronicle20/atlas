@@ -8,7 +8,9 @@ import (
 
 // Byte layout (IDA v83 CUIItemUpgrade::Update 0x82ae28 / v95 0x7bef50 / v84
 // CUIItemUpgrade::Update sub_8562D1 0x8562d1):
-//   Encode4(m_nReturnResult) + Encode4(m_nResult) = 8 bytes. No version gate.
+//
+//	Encode4(m_nReturnResult) + Encode4(m_nResult) = 8 bytes. No version gate.
+//
 // m_nReturnResult echoes the open-arm mode byte; m_nResult echoes the
 // server-chosen round-trip token.
 // NOTE (task-129): v84 COutPacket ctor opcode = 267/0x10B (verified live at

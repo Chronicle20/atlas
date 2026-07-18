@@ -10,8 +10,9 @@ import (
 	"atlas-saga-orchestrator/skill"
 	"atlas-saga-orchestrator/validation"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // ProcessorMock is a mock implementation of the saga.Processor interface
@@ -24,21 +25,21 @@ type ProcessorMock struct {
 	WithInviteProcessorFunc      func(invite.Processor) saga.Processor
 	WithCashshopProcessorFunc    func(cashshop.Processor) saga.Processor
 
-	GetAllFunc      func() ([]saga.Saga, error)
-	AllProviderFunc func() model.Provider[[]saga.Saga]
-	GetByIdFunc     func(transactionId uuid.UUID) (saga.Saga, error)
+	GetAllFunc       func() ([]saga.Saga, error)
+	AllProviderFunc  func() model.Provider[[]saga.Saga]
+	GetByIdFunc      func(transactionId uuid.UUID) (saga.Saga, error)
 	ByIdProviderFunc func(transactionId uuid.UUID) model.Provider[saga.Saga]
 
-	PutFunc                             func(s saga.Saga) error
-	MarkFurthestCompletedStepFailedFunc func(transactionId uuid.UUID) error
-	MarkEarliestPendingStepFunc         func(transactionId uuid.UUID, status saga.Status) error
+	PutFunc                              func(s saga.Saga) error
+	MarkFurthestCompletedStepFailedFunc  func(transactionId uuid.UUID) error
+	MarkEarliestPendingStepFunc          func(transactionId uuid.UUID, status saga.Status) error
 	MarkEarliestPendingStepCompletedFunc func(transactionId uuid.UUID) error
-	StepCompletedFunc                   func(transactionId uuid.UUID, success bool) error
-	StepCompletedWithResultFunc         func(transactionId uuid.UUID, success bool, result map[string]any) error
-	AddStepFunc                         func(transactionId uuid.UUID, step saga.Step[any]) error
-	AddStepAfterCurrentFunc             func(transactionId uuid.UUID, step saga.Step[any]) error
-	StepFunc                            func(transactionId uuid.UUID) error
-	AcceptEventFunc                     func(transactionId uuid.UUID, kind saga.EventKind) (saga.AcceptDecision, bool)
+	StepCompletedFunc                    func(transactionId uuid.UUID, success bool) error
+	StepCompletedWithResultFunc          func(transactionId uuid.UUID, success bool, result map[string]any) error
+	AddStepFunc                          func(transactionId uuid.UUID, step saga.Step[any]) error
+	AddStepAfterCurrentFunc              func(transactionId uuid.UUID, step saga.Step[any]) error
+	StepFunc                             func(transactionId uuid.UUID) error
+	AcceptEventFunc                      func(transactionId uuid.UUID, kind saga.EventKind) (saga.AcceptDecision, bool)
 }
 
 // WithCharacterProcessor is a mock implementation

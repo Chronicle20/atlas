@@ -31,11 +31,15 @@ function toRecipe(row: RecipeResource): Recipe {
 
 export const recipesService = {
   async getByItem(itemId: string | number): Promise<Recipe[]> {
-    const rows = await api.getList<RecipeResource>(`/api/items/${itemId}/recipes`);
+    const rows = await api.getList<RecipeResource>(
+      `/api/items/${itemId}/recipes`,
+    );
     return rows.map(toRecipe);
   },
   async getByNpc(npcId: string | number): Promise<Recipe[]> {
-    const rows = await api.getList<RecipeResource>(`/api/npcs/${npcId}/recipes`);
+    const rows = await api.getList<RecipeResource>(
+      `/api/npcs/${npcId}/recipes`,
+    );
     return rows.map(toRecipe);
   },
 };

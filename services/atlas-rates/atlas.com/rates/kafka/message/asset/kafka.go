@@ -53,12 +53,10 @@ func (b AcceptedStatusEventBody) GetCreatedAt() time.Time {
 }
 
 // DeletedStatusEventBody is empty for deleted assets
-type DeletedStatusEventBody struct {
-}
+type DeletedStatusEventBody struct{}
 
 // ReleasedStatusEventBody is empty for released assets
-type ReleasedStatusEventBody struct {
-}
+type ReleasedStatusEventBody struct{}
 
 // MovedStatusEventBody contains the previous slot for moved assets
 type MovedStatusEventBody struct {

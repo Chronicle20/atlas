@@ -2,108 +2,108 @@
 // Re-exported from lib/npcs.tsx to centralize type definitions
 
 export interface NPC {
-    id: number;
-    name?: string;
-    iconUrl?: string;
-    hasShop: boolean;
-    hasConversation: boolean;
+  id: number;
+  name?: string;
+  iconUrl?: string;
+  hasShop: boolean;
+  hasConversation: boolean;
 }
 
 export interface NpcSearchResult {
-    id: number;
-    name: string;
+  id: number;
+  name: string;
 }
 
 // API response data type is defined in @/types/models/maplestory.ts as NpcApiData
 
 // Shop-related types
 export interface Shop {
-    type: string;
-    id: string;
-    attributes: ShopAttributes;
-    relationships?: {
-        commodities: {
-            data: CommodityReference[];
-        };
+  type: string;
+  id: string;
+  attributes: ShopAttributes;
+  relationships?: {
+    commodities: {
+      data: CommodityReference[];
     };
-    included?: Commodity[];
+  };
+  included?: Commodity[];
 }
 
 export interface ShopAttributes {
-    npcId: number;
-    recharger?: boolean;
+  npcId: number;
+  recharger?: boolean;
 }
 
 export interface Commodity {
-    id: string;
-    type: string;
-    attributes: CommodityAttributes;
+  id: string;
+  type: string;
+  attributes: CommodityAttributes;
 }
 
 export interface CommodityAttributes {
-    templateId: number;
-    mesoPrice: number;
-    discountRate: number;
-    tokenTemplateId: number;
-    tokenPrice: number;
-    period: number;
-    levelLimit: number;
-    unitPrice?: number;
-    slotMax?: number;
+  templateId: number;
+  mesoPrice: number;
+  discountRate: number;
+  tokenTemplateId: number;
+  tokenPrice: number;
+  period: number;
+  levelLimit: number;
+  unitPrice?: number;
+  slotMax?: number;
 }
 
 export interface CommodityReference {
-    type: string;
-    id: string;
+  type: string;
+  id: string;
 }
 
 export interface ShopResponse {
-    data: Shop;
-    included?: Commodity[];
+  data: Shop;
+  included?: Commodity[];
 }
 
 export interface NpcSpawnMap {
-    npcId: number;
-    mapId: number;
-    name: string;
-    streetName: string;
-    spawnCount: number;
+  npcId: number;
+  mapId: number;
+  name: string;
+  streetName: string;
+  spawnCount: number;
 }
 
 export interface NpcSpawnMapAttributes {
-    mapId: number;
-    name: string;
-    streetName: string;
-    spawnCount: number;
+  mapId: number;
+  name: string;
+  streetName: string;
+  spawnCount: number;
 }
 
 export interface NpcSpawnMapData {
-    id: string;
-    type: string;
-    attributes: NpcSpawnMapAttributes;
+  id: string;
+  type: string;
+  attributes: NpcSpawnMapAttributes;
 }
 
 export type NpcQuestRole = "initiator" | "completer" | "both";
 
 export interface ItemSellerCommodity {
-    id: string;
-    npcId: number;
-    templateId: number;
-    mesoPrice: number;
-    discountRate: number;
-    tokenTemplateId: number;
-    tokenPrice: number;
-    period: number;
-    levelLimit: number;
+  id: string;
+  npcId: number;
+  templateId: number;
+  mesoPrice: number;
+  discountRate: number;
+  tokenTemplateId: number;
+  tokenPrice: number;
+  period: number;
+  levelLimit: number;
 }
 
 export interface ItemCashShopCommodity {
-    id: string;
-    itemId: number;
-    count: number;
-    price: number;
-    period: number;
-    priority: number;
-    gender: number;
-    onSale: boolean;
+  id: string;
+  itemId: number;
+  count: number;
+  price: number;
+  period: number;
+  priority: number;
+  gender: number;
+  onSale: boolean;
 }

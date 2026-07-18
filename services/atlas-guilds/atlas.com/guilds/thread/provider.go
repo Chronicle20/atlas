@@ -1,9 +1,10 @@
 package thread
 
 import (
+	"gorm.io/gorm"
+
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"gorm.io/gorm"
 )
 
 // getAll returns a paged provider of threads for a guild, preserving the

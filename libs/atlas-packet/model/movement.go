@@ -3,11 +3,12 @@ package model
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const (
@@ -35,10 +36,10 @@ func (m *Movement) Decode(l logrus.FieldLogger, ctx context.Context) func(r *req
 		m.StartY = r.ReadInt16()
 
 		numElems := r.ReadByte()
-		var elems = make([]MovementCodec, numElems)
+		elems := make([]MovementCodec, numElems)
 		for i := byte(0); i < numElems; i++ {
 			var elem MovementCodec
-			var elemType = r.ReadByte()
+			elemType := r.ReadByte()
 
 			if isMovementType(l)(elemType, options, TypeNormal) {
 				elem = &NormalElement{Element{ElemType: elemType, StartX: m.StartX, StartY: m.StartY}}

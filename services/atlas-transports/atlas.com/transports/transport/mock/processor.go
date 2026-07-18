@@ -4,10 +4,11 @@ import (
 	"atlas-transports/kafka/message"
 	"atlas-transports/transport"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	map2 "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
 )
 
 // Compile-time interface compliance check

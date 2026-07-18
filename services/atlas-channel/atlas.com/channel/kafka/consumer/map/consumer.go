@@ -16,6 +16,7 @@ import (
 	"atlas-channel/listener"
 	_map "atlas-channel/map"
 	"atlas-channel/merchant"
+	"atlas-channel/minigame"
 	"atlas-channel/monster"
 	"atlas-channel/party"
 	"atlas-channel/party/hpsync"
@@ -32,6 +33,10 @@ import (
 	"errors"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
@@ -44,6 +49,7 @@ import (
 	fieldpkt "github.com/Chronicle20/atlas/libs/atlas-packet/field"
 	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
 	interactionpkt "github.com/Chronicle20/atlas/libs/atlas-packet/interaction"
+	interactioncb "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/clientbound"
 	merchantcb "github.com/Chronicle20/atlas/libs/atlas-packet/merchant/clientbound"
 	monsterpkt "github.com/Chronicle20/atlas/libs/atlas-packet/monster/clientbound"
 	npcpkt "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
@@ -53,10 +59,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -271,6 +274,12 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 		routine.Go(l, ctx, func(_ context.Context) {
 			if err := merchant.NewProcessor(l, ctx).ForEachInField(f, spawnMerchantsForSession(l)(ctx)(wp)(s)); err != nil {
 				l.WithError(err).Debugf("SpawnForSelf: unable to spawn merchants for character [%d].", s.CharacterId())
+			}
+		})
+
+		routine.Go(l, ctx, func(_ context.Context) {
+			if err := minigame.NewProcessor(l, ctx).ForEachInField(f, spawnMiniGamesForSession(l)(ctx)(wp)(s)); err != nil {
+				l.WithError(err).Debugf("SpawnForSelf: unable to spawn mini-games for character [%d].", s.CharacterId())
 			}
 		})
 
@@ -689,15 +698,32 @@ func spawnMerchantsForSession(l logrus.FieldLogger) func(ctx context.Context) fu
 						// serialNumber and the server resolves via
 						// GetByCharacterId(serialNumber), so it must be the owner's
 						// character id (task-127; see merchant consumer note).
-						Id:              m.CharacterId(),
-						Title:           m.Title(),
-						Spec:            merchant.StoreSkinSpec(m.PermitItemId()),
-						CapacityVal:     4,
-						OwnerId:         m.CharacterId(),
-						VisitorCount:    byte(len(m.Visitors())),
-						VisitorList:     []interactionpkt.MiniRoomVisitor{},
+						Id:           m.CharacterId(),
+						Title:        m.Title(),
+						Spec:         merchant.StoreSkinSpec(m.PermitItemId()),
+						CapacityVal:  4,
+						OwnerId:      m.CharacterId(),
+						VisitorCount: byte(len(m.Visitors())),
+						VisitorList:  []interactionpkt.MiniRoomVisitor{},
 					}
 					return session.Announce(l)(ctx)(wp)(interactionpkt.MiniRoomWriter)(mr.Spawn(m.CharacterId()))(s)
+				}
+			}
+		}
+	}
+}
+
+// spawnMiniGamesForSession announces the UPDATE_CHAR_BOX balloon for every
+// mini-game room (Omok/Match Cards) currently registered in the field to the
+// entering session, mirroring the merchant/shop balloon spawn above. Capacity
+// is fixed at 2 for both game dialogs (design §5; matches gameRoomCapacity in
+// kafka/consumer/minigame/consumer.go).
+func spawnMiniGamesForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[minigame.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[minigame.Model] {
+		return func(wp writer.Producer) func(s session.Model) model.Operator[minigame.Model] {
+			return func(s session.Model) model.Operator[minigame.Model] {
+				return func(m minigame.Model) error {
+					return session.Announce(l)(ctx)(wp)(interactionpkt.MiniRoomWriter)(interactioncb.MiniRoomBalloonBody(m.OwnerId(), m.RoomType(), m.Id(), m.Title(), m.HasPassword(), m.PieceType(), m.Occupancy(), 2, m.InProgress()))(s)
 				}
 			}
 		}

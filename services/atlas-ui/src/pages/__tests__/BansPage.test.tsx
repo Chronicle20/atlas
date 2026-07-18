@@ -17,7 +17,10 @@ vi.mock("@/services/api/bans.service", () => ({
 
 vi.mock("@/context/tenant-context", () => ({
   useTenant: () => ({
-    activeTenant: { id: "test-tenant", attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 } },
+    activeTenant: {
+      id: "test-tenant",
+      attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 },
+    },
   }),
 }));
 
@@ -63,7 +66,10 @@ describe("BansPage", () => {
     renderAt("/bans");
 
     await waitFor(() => {
-      expect(bansService.getBansPage).toHaveBeenCalledWith({ number: 1, size: 50 }, undefined);
+      expect(bansService.getBansPage).toHaveBeenCalledWith(
+        { number: 1, size: 50 },
+        undefined,
+      );
     });
   });
 
@@ -95,7 +101,10 @@ describe("BansPage", () => {
     renderAt("/bans?page=2");
 
     await waitFor(() => {
-      expect(bansService.getBansPage).toHaveBeenCalledWith({ number: 2, size: 50 }, undefined);
+      expect(bansService.getBansPage).toHaveBeenCalledWith(
+        { number: 2, size: 50 },
+        undefined,
+      );
     });
   });
 });

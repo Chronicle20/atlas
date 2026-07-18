@@ -71,7 +71,7 @@ func TestSkillPrepareInfoByteFixture(t *testing.T) {
 		0x6C, 0x9F, 0x2F, 0x00, // skillId=3121004 LE
 		0x0A,       // level=10
 		0x42, 0x01, // action=0x0142 LE
-		0x04,       // actionSpeed=4
+		0x04, // actionSpeed=4
 	}
 
 	// Fields for the swallow case (skillId=33101005, swallowMobId=9876543):
@@ -85,7 +85,7 @@ func TestSkillPrepareInfoByteFixture(t *testing.T) {
 		0xCD, 0x14, 0xF9, 0x01, // skillId=33101005 LE
 		0x01,       // level=1
 		0x20, 0x00, // action=0x0020 LE
-		0x06,       // actionSpeed=6
+		0x06, // actionSpeed=6
 	}
 	var swallowMobIdBytes [4]byte
 	binary.LittleEndian.PutUint32(swallowMobIdBytes[:], 9876543)
@@ -166,4 +166,3 @@ func TestSkillPrepareInfoByteFixture(t *testing.T) {
 		})
 	}
 }
-

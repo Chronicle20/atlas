@@ -1,6 +1,7 @@
 package quest_test
 
 import (
+	"atlas-query-aggregator/quest"
 	"context"
 	"fmt"
 	"net/http"
@@ -9,11 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"atlas-query-aggregator/quest"
-
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // questDoc renders a JSON:API document for quests with QuestId [from, to]

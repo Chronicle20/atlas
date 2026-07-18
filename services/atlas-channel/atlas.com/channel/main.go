@@ -24,13 +24,15 @@ import (
 	"atlas-channel/kafka/consumer/gachapon"
 	"atlas-channel/kafka/consumer/guild"
 	"atlas-channel/kafka/consumer/guild/thread"
+	incubatorconsumer "atlas-channel/kafka/consumer/incubator"
 	"atlas-channel/kafka/consumer/instance_transport"
 	"atlas-channel/kafka/consumer/invite"
 	"atlas-channel/kafka/consumer/macro"
-	"atlas-channel/kafka/consumer/map"
+	_map "atlas-channel/kafka/consumer/map"
 	merchantConsumer "atlas-channel/kafka/consumer/merchant"
 	"atlas-channel/kafka/consumer/message"
 	"atlas-channel/kafka/consumer/messenger"
+	minigameConsumer "atlas-channel/kafka/consumer/minigame"
 	mistConsumer "atlas-channel/kafka/consumer/mist"
 	"atlas-channel/kafka/consumer/monster"
 	mbconsumer "atlas-channel/kafka/consumer/monsterbook"
@@ -46,6 +48,7 @@ import (
 	"atlas-channel/kafka/consumer/quest"
 	"atlas-channel/kafka/consumer/reactor"
 	"atlas-channel/kafka/consumer/route"
+	rpsConsumer "atlas-channel/kafka/consumer/rps"
 	"atlas-channel/kafka/consumer/saga"
 	session2 "atlas-channel/kafka/consumer/session"
 	"atlas-channel/kafka/consumer/skill"
@@ -93,6 +96,7 @@ import (
 	fieldsb "github.com/Chronicle20/atlas/libs/atlas-packet/field/serverbound"
 	guildcb "github.com/Chronicle20/atlas/libs/atlas-packet/guild/clientbound"
 	guildsb "github.com/Chronicle20/atlas/libs/atlas-packet/guild/serverbound"
+	incubatorcb "github.com/Chronicle20/atlas/libs/atlas-packet/incubator/clientbound"
 	interaction2 "github.com/Chronicle20/atlas/libs/atlas-packet/interaction"
 	interactioncb "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/clientbound"
 	interactionsb "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/serverbound"
@@ -121,6 +125,8 @@ import (
 	questsb "github.com/Chronicle20/atlas/libs/atlas-packet/quest/serverbound"
 	reactorcb "github.com/Chronicle20/atlas/libs/atlas-packet/reactor/clientbound"
 	reactorsb "github.com/Chronicle20/atlas/libs/atlas-packet/reactor/serverbound"
+	rpscb "github.com/Chronicle20/atlas/libs/atlas-packet/rps/clientbound"
+	rpssb "github.com/Chronicle20/atlas/libs/atlas-packet/rps/serverbound"
 	socketcb "github.com/Chronicle20/atlas/libs/atlas-packet/socket/clientbound"
 	socketsb "github.com/Chronicle20/atlas/libs/atlas-packet/socket/serverbound"
 	stat2 "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
@@ -129,29 +135,32 @@ import (
 	summoncb "github.com/Chronicle20/atlas/libs/atlas-packet/summon/clientbound"
 	summonsb "github.com/Chronicle20/atlas/libs/atlas-packet/summon/serverbound"
 	ui2 "github.com/Chronicle20/atlas/libs/atlas-packet/ui/clientbound"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	channel2 "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
-	"github.com/Chronicle20/atlas/libs/atlas-opcodes"
+	opcodes "github.com/Chronicle20/atlas/libs/atlas-opcodes"
 	restserver "github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	socket2 "github.com/Chronicle20/atlas/libs/atlas-socket"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
-const serviceName = "atlas-channel"
-const consumerGroupIdTemplate = "Channel Service - %s"
+const (
+	serviceName             = "atlas-channel"
+	consumerGroupIdTemplate = "Channel Service - %s"
+)
 
 func main() {
 	state := projection.NewState()
 	caughtUp := projection.NewCaughtUp()
 	serviceId := uuid.MustParse(os.Getenv("SERVICE_ID"))
-	var consumerGroupId = consumergroup.Resolve(consumerGroupIdTemplate, serviceId.String())
+	consumerGroupId := consumergroup.Resolve(consumerGroupIdTemplate, serviceId.String())
 
 	rt := service.Bootstrap(serviceName,
 		service.WithConfigProjection(consumerGroupId, func(t service.ProjectionTopics) service.Projection {
@@ -221,11 +230,14 @@ func main() {
 	note3.InitConsumers(l)(cmf)(consumerGroupId)
 	quest.InitConsumers(l)(cmf)(consumerGroupId)
 	route.InitConsumers(l)(cmf)(consumerGroupId)
+	rpsConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	instance_transport.InitConsumers(l)(cmf)(consumerGroupId)
 	saga.InitConsumers(l)(cmf)(consumerGroupId)
 	storage3.InitConsumers(l)(cmf)(consumerGroupId)
 	gachapon.InitConsumers(l)(cmf)(consumerGroupId)
+	incubatorconsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	merchantConsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	minigameConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	mountConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 
 	rt.AwaitProjectionCatchUp()
@@ -502,6 +514,9 @@ func buildListener(
 		if err := register(route.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
+		if err := register(rpsConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
 		if err := register(instance_transport.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
@@ -514,7 +529,13 @@ func buildListener(
 		if err := register(gachapon.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
+		if err := register(incubatorconsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
 		if err := register(merchantConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(minigameConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
 		if err := register(mountConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
@@ -748,6 +769,8 @@ func produceWriters() []string {
 		doorcb.SpawnPortalWriter,
 		doorcb.RemoveTownDoorWriter,
 		charcb.BridleMobCatchFailWriter,
+		rpscb.RPSGameWriter,
+		incubatorcb.IncubatorResultWriter,
 	}
 }
 
@@ -857,6 +880,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[notesb.NoteOperationHandle] = handler.NoteOperationHandleFunc
 	handlerMap[questsb.QuestActionHandle] = handler.QuestActionHandleFunc
 	handlerMap[storagesb.StorageOperationHandle] = handler.StorageOperationHandleFunc
+	handlerMap[rpssb.RPSActionHandle] = handler.RPSActionHandleFunc
 	handlerMap[reactorsb.ReactorHitHandle] = handler.ReactorHitHandleFunc
 	handlerMap[socketsb.PongHandle] = handler.PongHandleFunc
 	handlerMap[charsb.MonsterDamageFriendlyHandle] = handler.MonsterDamageFriendlyHandleFunc

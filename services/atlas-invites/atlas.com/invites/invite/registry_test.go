@@ -5,8 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 func TestRegistry_Create(t *testing.T) {
@@ -289,9 +290,9 @@ func TestRegistry_ConcurrentCreate(t *testing.T) {
 		go func(goroutineId int) {
 			defer wg.Done()
 			for j := 0; j < invitesPerGoroutine; j++ {
-				originatorId := uint32(goroutineId*1000 + j + 1)  // +1 to avoid zero
-				targetId := uint32(2000 + j + 1)                  // +1 to avoid zero
-				referenceId := uint32(goroutineId*10000 + j + 1)  // +1 to avoid zero
+				originatorId := uint32(goroutineId*1000 + j + 1) // +1 to avoid zero
+				targetId := uint32(2000 + j + 1)                 // +1 to avoid zero
+				referenceId := uint32(goroutineId*10000 + j + 1) // +1 to avoid zero
 				m := GetRegistry().Create(ctx, originatorId, 1, targetId, "BUDDY", referenceId)
 				results <- m
 			}

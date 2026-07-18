@@ -1,6 +1,7 @@
 package drop_test
 
 import (
+	"atlas-monster-death/monster/drop"
 	"context"
 	"fmt"
 	"net/http"
@@ -9,11 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"atlas-monster-death/monster/drop"
-
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // dropDoc renders a JSON:API document for monster drops [from, to]. meta

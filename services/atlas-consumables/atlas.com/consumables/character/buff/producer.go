@@ -4,10 +4,11 @@ import (
 	"atlas-consumables/character/buff/stat"
 	buff2 "atlas-consumables/kafka/message/character/buff"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 )
 
 func applyCommandProvider(f field.Model, characterId uint32, fromId uint32, sourceId int32, level byte, duration int32, statups []stat.Model) model.Provider[[]kafka.Message] {

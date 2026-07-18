@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 // packet-audit:fname CField::SendSetGuildMarkMsg
@@ -17,10 +18,10 @@ type SetEmblem struct {
 	logoColor           byte
 }
 
-func (m SetEmblem) LogoBackground() uint16      { return m.logoBackground }
-func (m SetEmblem) LogoBackgroundColor() byte    { return m.logoBackgroundColor }
-func (m SetEmblem) Logo() uint16                 { return m.logo }
-func (m SetEmblem) LogoColor() byte              { return m.logoColor }
+func (m SetEmblem) LogoBackground() uint16    { return m.logoBackground }
+func (m SetEmblem) LogoBackgroundColor() byte { return m.logoBackgroundColor }
+func (m SetEmblem) Logo() uint16              { return m.logo }
+func (m SetEmblem) LogoColor() byte           { return m.logoColor }
 
 func (m SetEmblem) Operation() string { return "SetEmblem" }
 

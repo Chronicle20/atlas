@@ -1,16 +1,16 @@
 package serial_test
 
 import (
+	"atlas-mts/serial"
+	"atlas-mts/test"
 	"context"
 	"testing"
 
-	"atlas-mts/serial"
-	"atlas-mts/test"
+	"github.com/google/uuid"
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 func serialTestDB(t *testing.T) *gorm.DB {

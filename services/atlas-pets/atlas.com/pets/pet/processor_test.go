@@ -22,6 +22,16 @@ import (
 	"os"
 	"testing"
 
+	"github.com/alicebob/miniredis/v2"
+	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/test"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	inventory2 "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
@@ -33,15 +43,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/alicebob/miniredis/v2"
-	"github.com/google/uuid"
-	goredis "github.com/redis/go-redis/v9"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
-	"github.com/sirupsen/logrus/hooks/test"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 func TestMain(m *testing.M) {
@@ -367,7 +368,6 @@ func TestProcessor_Move(t *testing.T) {
 	if td.FH() != int16(mfh.Id()) {
 		t.Fatalf("Failed to move pet. FH mismatch")
 	}
-
 }
 
 func TestProcessor_SpawnSingleLead(t *testing.T) {
@@ -1225,11 +1225,11 @@ func TestProcessor_SetExclude(t *testing.T) {
 // fakeInventoryProcessor captures ChangeTemplate cascade calls so evolution
 // tests can assert the in-place inventory asset swap was buffered.
 type fakeInventoryProcessor struct {
-	called          bool
-	transactionId   uuid.UUID
-	characterId     uint32
-	petId           uint32
-	newTemplateId   uint32
+	called        bool
+	transactionId uuid.UUID
+	characterId   uint32
+	petId         uint32
+	newTemplateId uint32
 }
 
 func (f *fakeInventoryProcessor) ByCharacterIdProvider(characterId uint32) model.Provider[inventory.Model] {

@@ -1,25 +1,25 @@
 package character
 
 import (
+	"atlas-monster-book/card"
+	"atlas-monster-book/collection"
+	"atlas-monster-book/rest"
 	"errors"
 	"net/http"
 	"sort"
 	"strconv"
 
-	"atlas-monster-book/card"
-	"atlas-monster-book/collection"
-	"atlas-monster-book/rest"
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
+	"github.com/jtumidanski/api2go/jsonapi"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
 	characterconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
-	"github.com/google/uuid"
-	"github.com/gorilla/mux"
-	"github.com/jtumidanski/api2go/jsonapi"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 const (

@@ -3,6 +3,364 @@
   "md5": "80ff438ced539b831f0d2ed95099275d",
   "generated_at": "2026-05-14T00:00:00Z",
   "functions": {
+    "CMiniRoomBaseDlg::OnPacketBase#MemoryGamePutStoneError": {
+      "address": "0x6e4065",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (dispatcher byte; PUT_STONE_ERROR)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (==double-3 code -> \"you have double 3s\", else \"cant put it there\")"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#EnterMiniGame": {
+      "address": "0x65ed1c",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (4; OnPacketBase dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "slot (m_apAvatar index; OnEnterBase @0x65ed1c)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "avatar look (DecodeAvatar AvatarLook blob)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "name (m_asUserID)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "record: Unknown (COmokDlg::OnEnter sub_6E3BCC @0x6e3bcc -> sub_4E42FC 20-byte = 5 x int32)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "record: Wins"
+        },
+        {
+          "op": "Decode4",
+          "comment": "record: Ties"
+        },
+        {
+          "op": "Decode4",
+          "comment": "record: Losses"
+        },
+        {
+          "op": "Decode4",
+          "comment": "record: Points"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#MemoryGameReady": {
+      "address": "0x6e4608",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (58 READY; dispatch byte; OnUserReady reads no body)"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#MemoryGameUnready": {
+      "address": "0x6e466e",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (59 UNREADY; dispatch byte; OnUserCancelReady reads no body)"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#MemoryGameRequestTie": {
+      "address": "0x6e37eb",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (50 ASK_TIE; dispatch byte; COmokDlg::OnPacket)"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#MemoryGameAnswerTie": {
+      "address": "0x6e37eb",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (51 TIE_ANSWER deny; dispatch byte)"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#MemoryGameRetreatRequest": {
+      "address": "0x6e416b",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (54 ASK_RETREAT; dispatch byte; COmokDlg::OnRetreatRequest bodyless \u00a7G2)"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#MemoryGameRetreatAnswer": {
+      "address": "0x6e41f9",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (55 RETREAT_ANSWER; OnPacketBase dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "accept (1 = accepted; COmokDlg::OnRetreatResult \u00a7G2)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "N stones to pop from move-history tail (accept only)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "turnSlot (slot whose turn follows; my-turn = turnSlot==mySlot)"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#MemoryGameSkip": {
+      "address": "0x6e472e",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (63 SKIP; dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "who (next-mover slot; COmokDlg::OnTimeOver \u00a7G5)"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#MemoryGameStartOmok": {
+      "address": "0x6e469c",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (61 START; dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "firstMover slot (first mover = slot != this byte; COmokDlg::OnUserStart \u00a7G1)"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#MemoryGameMoveStone": {
+      "address": "0x6e3f5b",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (64 MOVE_STONE; dispatch byte)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "x (int32; DecodeBuffer(8) first half; COmokDlg::OnPutStoneChecker \u00a7G5)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "y (int32; DecodeBuffer(8) second half)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "stoneType (placing player's color 1/2)"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#MemoryGameCardSelectFirst": {
+      "address": "0x64e1c1",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (68 FLIP_CARD; dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "turn (1 = first flip; CMemoryGameDlg::OnTurnUpCard \u00a7G5)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "slot (index of the card turned up)"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#MemoryGameCardSelectSecond": {
+      "address": "0x64e1c1",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (68 FLIP_CARD; dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "turn (0 = second flip; CMemoryGameDlg::OnTurnUpCard \u00a7G5)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "slot (index of the card turned up)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "firstSlot (first flip's slot; second flip only)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "type (0 owner-mismatch,1 visitor-mismatch,2 owner-match,3 visitor-match)"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#MemoryGameStartMatchCards": {
+      "address": "0x64e632",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (61 START; dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "firstMover slot (first mover = slot != this byte; CMemoryGameDlg::OnUserStart \u00a7G1)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "count (card count; m_nCount)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "deck (count x int32 cardId; DecodeBuffer(4*count) \u00a7G1)"
+        }
+      ]
+    },
+    "CMiniRoomBaseDlg::OnPacketBase#MemoryGameResult": {
+      "address": "0x6e4463",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (62 RESULT; dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "resultType (1 = tie -> no winner byte; else win/forfeit; \u00a7G5 RESULT)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "winnerSlot (present for resultType != 1; win if == mySlot)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "owner record: Unknown (sub_4E42FC DecodeBuffer(0x14) = 5 x int32)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "owner record: Wins"
+        },
+        {
+          "op": "Decode4",
+          "comment": "owner record: Ties"
+        },
+        {
+          "op": "Decode4",
+          "comment": "owner record: Losses"
+        },
+        {
+          "op": "Decode4",
+          "comment": "owner record: Points"
+        },
+        {
+          "op": "Decode4",
+          "comment": "visitor record: Unknown (sub_4E42FC DecodeBuffer(0x14) = 5 x int32)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "visitor record: Wins"
+        },
+        {
+          "op": "Decode4",
+          "comment": "visitor record: Ties"
+        },
+        {
+          "op": "Decode4",
+          "comment": "visitor record: Losses"
+        },
+        {
+          "op": "Decode4",
+          "comment": "visitor record: Points"
+        }
+      ]
+    },
+    "CUser::OnMiniRoomBalloon": {
+      "address": "0x938ba5",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId (consumed by CUserPool::OnUserCommonPacket GetUser, not OnMiniRoomBalloon; \u00a7G3)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "roomType (0 = remove balloon)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "roomId (m_dwMiniRoomSN; roomType != 0)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "title (m_sMiniRoomTitle)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "hasPassword (m_bPrivate)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "pieceType (m_nGameKind)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "occupancy (m_nCurUsers)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "capacity (m_nMaxUsers)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "inProgress (m_bGameOn)"
+        }
+      ]
+    },
+    "CUser::OnMiniRoomBalloon#Remove": {
+      "address": "0x938ba5",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId (consumed by CUserPool::OnUserCommonPacket GetUser; \u00a7G3)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "roomType (0 -> CChatBalloon::DestroyMiniRoomBalloon; no trailing fields)"
+        }
+      ]
+    },
     "CWvsContext::SendLotteryItemUseRequest": {
       "address": "0xa1249f",
       "direction": "serverbound",
@@ -8043,6 +8401,21 @@
         }
       ]
     },
+    "CWvsContext::OnIncubatorResult": {
+      "address": "0xa28298",
+      "direction": "clientbound",
+      "note": "task-19: itemId<=0 renders the failure dialog (no further reads); read order confirmed unchanged from v84.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "itemId (v2)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "count (a2a)"
+        }
+      ]
+    },
     "CWvsContext::OnInventoryOperation#Add": {
       "address": "0xa1ead9",
       "direction": "clientbound",
@@ -13532,6 +13905,88 @@
         }
       ]
     },
+    "CMiniRoomBaseDlg::OnPacketBase#EnterResultSuccessMiniGame": {
+      "address": "0x65ec3d",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (5; OnPacketBase dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "roomType (nonzero => success; OnEnterResultStatic)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "capacity (m_nMaxUsers; OnEnterResultBase @0x65ec3d)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "yourSlot (m_nMyPosition; OnEnterResultBase)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "avatar slot (<0/0xFF terminates avatar list)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "avatar look (DecodeAvatar AvatarLook blob)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "name (m_asUserID). IsEntrusted()=0 for games => avatar path, no int32 branch"
+        },
+        {
+          "op": "Decode1",
+          "comment": "avatar list terminator (0xFF)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "record slot (0xFF terminates record list; COmokDlg::OnEnterResult @0x6e388e)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "record: Unknown (sub_4E42FC 20-byte = 5 x int32)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "record: Wins"
+        },
+        {
+          "op": "Decode4",
+          "comment": "record: Ties"
+        },
+        {
+          "op": "Decode4",
+          "comment": "record: Losses"
+        },
+        {
+          "op": "Decode4",
+          "comment": "record: Points"
+        },
+        {
+          "op": "Decode1",
+          "comment": "record list terminator (0xFF)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "title"
+        },
+        {
+          "op": "Decode1",
+          "comment": "gameKind (piece/sub-type)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "tournament (bool)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "round (tournament only)"
+        }
+      ]
+    },
     "CWvsContext::SendConsumeCashItemUseRequest": {
       "address": "0xa0a63f",
       "direction": "serverbound",
@@ -13665,15 +14120,15 @@
         },
         {
           "op": "Encode4",
-          "comment": "searchItemId (nItemID arg) \u2014 appended by CUIShopScanner::SendScanPacket"
+          "comment": "searchItemId (nItemID arg) — appended by CUIShopScanner::SendScanPacket"
         },
         {
           "op": "Encode1",
-          "comment": "descending (bDescendingOrder) \u2014 SendScanPacket"
+          "comment": "descending (bDescendingOrder) — SendScanPacket"
         },
         {
           "op": "Encode4",
-          "comment": "updateTime (get_update_time; trailing, NO leading updateTime any version) \u2014 SendScanPacket"
+          "comment": "updateTime (get_update_time; trailing, NO leading updateTime any version) — SendScanPacket"
         }
       ]
     },
@@ -13787,6 +14242,78 @@
         {
           "op": "Decode1",
           "comment": "code (switch: 0 success/1 closed/2 full/3 busy/4 dead/7 no-trade/17 denied/18 maintenance/23 fm-only/default unable). IDB fn CUIShopScanResult::OnShopLinkResult"
+        }
+      ]
+    },
+    "CRPSGameDlg::OnBtStart": {
+      "address": "0x7403d0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "sub-op byte (0=OnBtStart/2=Update-timeout/3=OnBtContinue/4=OnBtExit/5=OnBtRetry; bodyless arm, no further fields — docs/tasks/task-132-rps-npc-game/ida-rps-serverbound.md §0/§1-§5)"
+        }
+      ]
+    },
+    "CRPSGameDlg::SendSelection": {
+      "address": "0x7405a0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "throw (0=Rock/1=Paper/2=Scissors, RAW passthrough; sub-op mode byte 1 written earlier by the same sender, excluded here per the storage OperationMeso/StoreAsset/RetrieveAsset convention)"
+        }
+      ]
+    },
+    "CRPSGameDlg::OnPacket#OPEN": {
+      "address": "0x7400ec",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (OnPacket entry Decode1 @0x740003; case 8 = OPEN)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "ante — participation fee (CInPacket::Decode4 @0x7400ec; the StringPool notice string that follows is a static resource, not a packet field)"
+        }
+      ]
+    },
+    "CRPSGameDlg::OnPacket#RESULT": {
+      "address": "0x740298",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (dispatcher sub_74024B (0x74024b) case 11 = RESULT)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "npcThrow (CInPacket::Decode1 @0x740298)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "straightVictoryCount, SIGNED int8 (CInPacket::Decode1 @0x7402a3; client treats as signed __int8, branches on <0)"
+        }
+      ]
+    },
+    "CRPSGameDlg::OnPacket#START_SELECT": {
+      "address": "0x7402e9",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte only (case 9 = START_SELECT; enable R/P/S buttons + arm selection timer, no further wire reads)"
+        }
+      ]
+    },
+    "CRPSGameDlg::OnPacket#END": {
+      "address": "0x74009e",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte only (case 13 = CLOSE; CWnd::Destroy @0x74009e, no further wire reads)"
         }
       ]
     }

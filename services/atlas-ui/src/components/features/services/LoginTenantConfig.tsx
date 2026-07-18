@@ -32,7 +32,11 @@ export function LoginTenantConfig({
   onChange,
   disabled = false,
 }: LoginTenantConfigProps) {
-  const { data: availableTenants, isLoading, error } = useTenantConfigurations();
+  const {
+    data: availableTenants,
+    isLoading,
+    error,
+  } = useTenantConfigurations();
 
   // Get tenant info by ID
   const getTenantInfo = (tenantId: string) => {
@@ -47,7 +51,9 @@ export function LoginTenantConfig({
   // Get tenants not yet selected
   const getAvailableTenantOptions = (excludeId?: string) => {
     if (!availableTenants) return [];
-    const selectedIds = new Set(tenants.map((t) => t.id).filter((id) => id !== excludeId));
+    const selectedIds = new Set(
+      tenants.map((t) => t.id).filter((id) => id !== excludeId),
+    );
     return availableTenants.filter((t) => !selectedIds.has(t.id));
   };
 
@@ -71,7 +77,7 @@ export function LoginTenantConfig({
   const handleTenantChange = (
     index: number,
     field: keyof LoginTenant,
-    value: string | number
+    value: string | number,
   ) => {
     const updated = tenants.map((tenant, i) => {
       if (i !== index) return tenant;
@@ -160,8 +166,8 @@ export function LoginTenantConfig({
                           {/* Show all available options including currently selected */}
                           {getAvailableTenantOptions(tenant.id).map((t) => (
                             <SelectItem key={t.id} value={t.id}>
-                              {t.attributes.region} v{t.attributes.majorVersion}.
-                              {t.attributes.minorVersion}
+                              {t.attributes.region} v{t.attributes.majorVersion}
+                              .{t.attributes.minorVersion}
                             </SelectItem>
                           ))}
                         </SelectContent>

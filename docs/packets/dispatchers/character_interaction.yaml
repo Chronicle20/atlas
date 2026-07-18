@@ -29,23 +29,71 @@ op: PLAYER_INTERACTION
 direction: clientbound
 opcodes: { gms_v87: "0x14B", jms_v185: "0x153" }
 operations:
-  - { key: INVITE,          modes: { gms_v83: 2,  gms_v84: 2,  gms_v87: 2,  gms_v95: 2,  jms_v185: 2  } }
-  - { key: INVITE_RESULT,   modes: { gms_v83: 3,  gms_v84: 3,  gms_v87: 3,  gms_v95: 3,  jms_v185: 3  } }
-  - { key: ENTER,           modes: { gms_v83: 4,  gms_v84: 4,  gms_v87: 4,  gms_v95: 4,  jms_v185: 4  } }
-  - { key: ENTER_RESULT,    modes: { gms_v83: 5,  gms_v84: 5,  gms_v87: 5,  gms_v95: 5,  jms_v185: 5  } }
+  - { key: INVITE,          modes: { gms_v48: 2,  gms_v61: 2,  gms_v72: 2,  gms_v79: 2,  gms_v83: 2,  gms_v84: 2,  gms_v87: 2,  gms_v95: 2,  jms_v185: 2  } }
+  - { key: INVITE_RESULT,   modes: { gms_v48: 3,  gms_v61: 3,  gms_v72: 3,  gms_v79: 3,  gms_v83: 3,  gms_v84: 3,  gms_v87: 3,  gms_v95: 3,  jms_v185: 3  } }
+  - { key: ENTER,           modes: { gms_v48: 4,  gms_v61: 4,  gms_v72: 4,  gms_v79: 4,  gms_v83: 4,  gms_v84: 4,  gms_v87: 4,  gms_v95: 4,  jms_v185: 4  } }
+  - { key: ENTER_RESULT,    modes: { gms_v48: 5,  gms_v61: 5,  gms_v72: 5,  gms_v79: 5,  gms_v83: 5,  gms_v84: 5,  gms_v87: 5,  gms_v95: 5,  jms_v185: 5  } }
   # CHAT is the OnPacketBase dispatcher mode for a room chat line; CHAT_THING is
   # the config-resolved chatType byte inside the chat body (CMiniRoomBaseDlg::OnChat
   # reads mode + chatType). Both are base-protocol modes and version-stable
   # (byte-identical gms_v83/v95/jms — the mini-room protocol predates v83).
-  - { key: CHAT,            modes: { gms_v83: 6,  gms_v84: 6,  gms_v87: 6,  gms_v95: 6,  jms_v185: 6  } }
-  - { key: CHAT_THING,      modes: { gms_v83: 8,  gms_v84: 8,  gms_v87: 8,  gms_v95: 8,  jms_v185: 8  } }
-  - { key: LEAVE,           modes: { gms_v83: 10, gms_v84: 10, gms_v87: 10, gms_v95: 10, jms_v185: 10 } }
-  - { key: UPDATE_MERCHANT, modes: { gms_v83: 25, gms_v84: 25, gms_v87: 25, gms_v95: 25, jms_v185: 22 } }
+  - { key: CHAT,            modes: { gms_v48: 6,  gms_v61: 6,  gms_v72: 6,  gms_v79: 6,  gms_v83: 6,  gms_v84: 6,  gms_v87: 6,  gms_v95: 6,  jms_v185: 6  } }
+  - { key: CHAT_THING,      modes: { gms_v48: 8,  gms_v61: 8,  gms_v72: 8,  gms_v79: 8,  gms_v83: 8,  gms_v84: 8,  gms_v87: 8,  gms_v95: 8,  jms_v185: 8  } }
+  - { key: LEAVE,           modes: { gms_v48: 10, gms_v61: 10, gms_v72: 10, gms_v79: 10, gms_v83: 10, gms_v84: 10, gms_v87: 10, gms_v95: 10, jms_v185: 10 } }
+  # UPDATE_MERCHANT / PERSONAL_STORE_ITEM_SOLD legacy sub-mode values are taken
+  # from each legacy seed template's existing CharacterInteraction writer table
+  # (v48 22/23, v61 23/24, v72 23/24, v79 24/25) — the hired-merchant sub-mode
+  # shifts down in older clients (v83 25/26).
+  - { key: UPDATE_MERCHANT, modes: { gms_v48: 22, gms_v61: 23, gms_v72: 23, gms_v79: 24, gms_v83: 25, gms_v84: 25, gms_v87: 25, gms_v95: 25, jms_v185: 22 } }
+  # Match Cards / Omok mini-game clientbound arms (CharacterInteractionWriter).
+  # Mode enum IDA-verified byte-for-byte on the dialog OnPacket switches:
+  #   gms_v83  COmokDlg::OnPacket 0x6e37eb / CMemoryGameDlg::OnPacket 0x64db30 (ida-notes §G5)
+  #   gms_v84  COmokDlg::SendTurnUpCard 0x664afc (0x44) + OnRetreatRequest reply 0x6fb416 (0x37) + base 0x673db5 => = v83
+  #   gms_v87  COmokDlg::OnPacket 0x721300 / CMemoryGameDlg::OnPacket 0x687a37 => = v83
+  #   gms_v95  ida-notes §G5 => = v83
+  #   jms_v185 COmokDlg::OnPacket 0x72ad22 / CMemoryGameDlg::OnPacket 0x6c792b => uniform -3 shift
+  # (gms_v92 has no IDB and is outside matrix.VersionKeys; its writer rows are
+  # hand-set in template_gms_92_1.json from the v83 GMS values — see
+  # docs/tasks/task-133-miniroom-minigames/seed-unverified-notes.md.)
+  #
+  # Legacy (gms_v48/61/72/79) modes IDA-derived per-version from the dialog
+  # OnPacket switches (task-133 do-mode pass; no named dialog symbols in
+  # v48/61/72 — reached via the type factory + vtable+64 game-dispatch slot):
+  #   gms_v48 Omok switch @0x5731a9 / MemoryGame switch @0x5374c8
+  #   gms_v61 Omok switch sub_5F72F8 / MemoryGame switch sub_5AFE65
+  #   gms_v72 Omok switch sub_64DFD3 / MemoryGame switch sub_5FE397
+  #   gms_v79 Omok switch sub_671DA8 / MemoryGame switch sub_61CE73
+  # The legacy tie/retreat layout is INTERLEAVED and differs from v83's
+  # paired-adjacent layout: the shared TIE flow (present in both dialogs) sits at
+  # the LOWER mode (ASK_TIE) and Omok-only RETREAT sits HIGHER (ASK_RETREAT),
+  # confirmed by (a) the dialog-structure invariant vs the v83 named functions
+  # COmokDlg::OnTieRequest@case50 / OnRetreatRequest@case54, (b) the ASK send
+  # sites' StringPool ids (tie=460 < retreat=464 on v72/v79, matching v83's
+  # SP_458 tie < SP_462 retreat), and (c) the MemoryGame dialog carrying only the
+  # tie ask (no retreat case). v48=v61-1, v61=v72, v79=v83-1 (non-uniform jumps).
+  - { key: MEMORY_GAME_ASK_TIE,        modes: { gms_v48: 43, gms_v61: 44, gms_v72: 44, gms_v79: 49, gms_v83: 50, gms_v84: 50, gms_v87: 50, gms_v95: 50, jms_v185: 47 } }
+  - { key: MEMORY_GAME_TIE_ANSWER,     modes: { gms_v48: 44, gms_v61: 45, gms_v72: 45, gms_v79: 50, gms_v83: 51, gms_v84: 51, gms_v87: 51, gms_v95: 51, jms_v185: 48 } }
+  - { key: MEMORY_GAME_ASK_RETREAT,    modes: { gms_v48: 47, gms_v61: 48, gms_v72: 48, gms_v79: 53, gms_v83: 54, gms_v84: 54, gms_v87: 54, gms_v95: 54, jms_v185: 51 } }
+  - { key: MEMORY_GAME_RETREAT_ANSWER, modes: { gms_v48: 48, gms_v61: 49, gms_v72: 49, gms_v79: 54, gms_v83: 55, gms_v84: 55, gms_v87: 55, gms_v95: 55, jms_v185: 52 } }
+  - { key: MEMORY_GAME_READY,          modes: { gms_v48: 51, gms_v61: 52, gms_v72: 52, gms_v79: 57, gms_v83: 58, gms_v84: 58, gms_v87: 58, gms_v95: 58, jms_v185: 55 } }
+  - { key: MEMORY_GAME_UNREADY,        modes: { gms_v48: 52, gms_v61: 53, gms_v72: 53, gms_v79: 58, gms_v83: 59, gms_v84: 59, gms_v87: 59, gms_v95: 59, jms_v185: 56 } }
+  - { key: MEMORY_GAME_START,          modes: { gms_v48: 54, gms_v61: 55, gms_v72: 55, gms_v79: 60, gms_v83: 61, gms_v84: 61, gms_v87: 61, gms_v95: 61, jms_v185: 58 } }
+  - { key: MEMORY_GAME_RESULT,         modes: { gms_v48: 55, gms_v61: 56, gms_v72: 56, gms_v79: 61, gms_v83: 62, gms_v84: 62, gms_v87: 62, gms_v95: 62, jms_v185: 59 } }
+  - { key: MEMORY_GAME_SKIP,           modes: { gms_v48: 56, gms_v61: 57, gms_v72: 57, gms_v79: 62, gms_v83: 63, gms_v84: 63, gms_v87: 63, gms_v95: 63, jms_v185: 60 } }
+  - { key: MEMORY_GAME_MOVE_STONE,     modes: { gms_v48: 57, gms_v61: 58, gms_v72: 58, gms_v79: 63, gms_v83: 64, gms_v84: 64, gms_v87: 64, gms_v95: 64, jms_v185: 61 } }
+  - { key: MEMORY_GAME_FIP_CARD,       modes: { gms_v48: 61, gms_v61: 62, gms_v72: 62, gms_v79: 67, gms_v83: 68, gms_v84: 68, gms_v87: 68, gms_v95: 68, jms_v185: 65 } }
+  # MEMORY_GAME_PUT_STONE_ERROR — Omok invalid-move rejection (COmokDlg::OnPutStoneCheckerErr;
+  # Omok-only, MemoryGame has no stone placement). Reads mode + errorCode byte; shows the
+  # "double 3s" (renju) or "can't put there" message. IDA-derived per version (task-133 item 1):
+  #   v48 sub_573A10 @0x573a10 (58) · v61 sub_5F7B5F @0x5f7b5f (59) · v72 sub_64E84D @0x64e84d (59)
+  #   v79 sub_672622 @0x672622 (64) · v83 @0x6e4065 (65) · v84 =v83 (base sub_673DB5 @0x673db5)
+  #   v87 @0x721b74 (65) · v95 @0x680360 (65) · jms @0x72b593 (62, uniform -3)
+  - { key: MEMORY_GAME_PUT_STONE_ERROR, modes: { gms_v48: 58, gms_v61: 59, gms_v72: 59, gms_v79: 64, gms_v83: 65, gms_v84: 65, gms_v87: 65, gms_v95: 65, jms_v185: 62 } }
   # PERSONAL_STORE_ITEM_SOLD is the per-sale sold-item notification to the owner
   # (CPersonalShopDlg::OnSoldItemResult) — UPDATE_MERCHANT+1 in every version
   # (gms 25->26; jms 22->23), matching the same subclass sub-mode shift as
   # UPDATE_MERCHANT.
-  - { key: PERSONAL_STORE_ITEM_SOLD, modes: { gms_v83: 26, gms_v84: 26, gms_v87: 26, gms_v95: 26, jms_v185: 23 } }
+  - { key: PERSONAL_STORE_ITEM_SOLD, modes: { gms_v48: 23, gms_v61: 24, gms_v72: 24, gms_v79: 25, gms_v83: 26, gms_v84: 26, gms_v87: 26, gms_v95: 26, jms_v185: 23 } }
   # Hired-merchant view responses echo the request mode byte (CEntrustedShopDlg::OnPacket
   # sub_51870D: visit-list sub_519505 @0x2E, blacklist-view sub_5193D8 @0x2F on gms_v83).
   # jms shifts the merchant sub-modes down by 3 (OnVisitList sends 0x2B, OnBlackList 0x2C

@@ -3,10 +3,11 @@ package outbox_test
 import (
 	"testing"
 
-	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 )
 
 func TestBackfill_Idempotent(t *testing.T) {

@@ -3,8 +3,9 @@ package family
 import (
 	"testing"
 
-	world2 "github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
+
+	world2 "github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 func TestFamilyMember_Accessors(t *testing.T) {
@@ -24,7 +25,6 @@ func TestFamilyMember_Accessors(t *testing.T) {
 		SetRep(rep).
 		SetDailyRep(dailyRep).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Failed to build family member: %v", err)
 	}

@@ -4,8 +4,9 @@ import (
 	"atlas-tenants/configuration"
 	"atlas-tenants/kafka/message"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // Compile-time interface compliance check
@@ -53,6 +54,7 @@ type ProcessorMock struct {
 	SeedRoutesFunc         func(tenantID uuid.UUID) (configuration.SeedResult, error)
 	SeedInstanceRoutesFunc func(tenantID uuid.UUID) (configuration.SeedResult, error)
 	SeedVesselsFunc        func(tenantID uuid.UUID) (configuration.SeedResult, error)
+	SeedRpsRewardsFunc     func(tenantID uuid.UUID) (configuration.SeedResult, error)
 	SeedMtsConfigsFunc     func(tenantID uuid.UUID) (configuration.SeedResult, error)
 
 	// Vessel operations
@@ -66,6 +68,18 @@ type ProcessorMock struct {
 	GetAllVesselsFunc       func(tenantID uuid.UUID) ([]map[string]interface{}, error)
 	VesselByIdProviderFunc  func(tenantID uuid.UUID, vesselID string) model.Provider[map[string]interface{}]
 	AllVesselsProviderFunc  func(tenantID uuid.UUID) model.Provider[[]map[string]interface{}]
+
+	// RPS reward operations
+	CreateRpsRewardFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(rpsReward map[string]interface{}) (configuration.Model, error)
+	CreateRpsRewardAndEmitFunc func(tenantID uuid.UUID, rpsReward map[string]interface{}) (configuration.Model, error)
+	UpdateRpsRewardFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(rpsRewardID string) func(rpsReward map[string]interface{}) (configuration.Model, error)
+	UpdateRpsRewardAndEmitFunc func(tenantID uuid.UUID, rpsRewardID string, rpsReward map[string]interface{}) (configuration.Model, error)
+	DeleteRpsRewardFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(rpsRewardID string) error
+	DeleteRpsRewardAndEmitFunc func(tenantID uuid.UUID, rpsRewardID string) error
+	GetRpsRewardByIdFunc       func(tenantID uuid.UUID, rpsRewardID string) (map[string]interface{}, error)
+	GetAllRpsRewardsFunc       func(tenantID uuid.UUID) ([]map[string]interface{}, error)
+	RpsRewardByIdProviderFunc  func(tenantID uuid.UUID, rpsRewardID string) model.Provider[map[string]interface{}]
+	AllRpsRewardsProviderFunc  func(tenantID uuid.UUID) model.Provider[[]map[string]interface{}]
 }
 
 // CreateRoute is a mock implementation
@@ -482,6 +496,112 @@ func (m *ProcessorMock) SeedVessels(tenantID uuid.UUID) (configuration.SeedResul
 		return m.SeedVesselsFunc(tenantID)
 	}
 	return configuration.SeedResult{}, nil
+}
+
+// SeedRpsRewards is a mock implementation
+func (m *ProcessorMock) SeedRpsRewards(tenantID uuid.UUID) (configuration.SeedResult, error) {
+	if m.SeedRpsRewardsFunc != nil {
+		return m.SeedRpsRewardsFunc(tenantID)
+	}
+	return configuration.SeedResult{}, nil
+}
+
+// CreateRpsReward is a mock implementation
+func (m *ProcessorMock) CreateRpsReward(mb *message.Buffer) func(tenantID uuid.UUID) func(rpsReward map[string]interface{}) (configuration.Model, error) {
+	if m.CreateRpsRewardFunc != nil {
+		return m.CreateRpsRewardFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(rpsReward map[string]interface{}) (configuration.Model, error) {
+		return func(rpsReward map[string]interface{}) (configuration.Model, error) {
+			return configuration.Model{}, nil
+		}
+	}
+}
+
+// CreateRpsRewardAndEmit is a mock implementation
+func (m *ProcessorMock) CreateRpsRewardAndEmit(tenantID uuid.UUID, rpsReward map[string]interface{}) (configuration.Model, error) {
+	if m.CreateRpsRewardAndEmitFunc != nil {
+		return m.CreateRpsRewardAndEmitFunc(tenantID, rpsReward)
+	}
+	return configuration.Model{}, nil
+}
+
+// UpdateRpsReward is a mock implementation
+func (m *ProcessorMock) UpdateRpsReward(mb *message.Buffer) func(tenantID uuid.UUID) func(rpsRewardID string) func(rpsReward map[string]interface{}) (configuration.Model, error) {
+	if m.UpdateRpsRewardFunc != nil {
+		return m.UpdateRpsRewardFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(rpsRewardID string) func(rpsReward map[string]interface{}) (configuration.Model, error) {
+		return func(rpsRewardID string) func(rpsReward map[string]interface{}) (configuration.Model, error) {
+			return func(rpsReward map[string]interface{}) (configuration.Model, error) {
+				return configuration.Model{}, nil
+			}
+		}
+	}
+}
+
+// UpdateRpsRewardAndEmit is a mock implementation
+func (m *ProcessorMock) UpdateRpsRewardAndEmit(tenantID uuid.UUID, rpsRewardID string, rpsReward map[string]interface{}) (configuration.Model, error) {
+	if m.UpdateRpsRewardAndEmitFunc != nil {
+		return m.UpdateRpsRewardAndEmitFunc(tenantID, rpsRewardID, rpsReward)
+	}
+	return configuration.Model{}, nil
+}
+
+// DeleteRpsReward is a mock implementation
+func (m *ProcessorMock) DeleteRpsReward(mb *message.Buffer) func(tenantID uuid.UUID) func(rpsRewardID string) error {
+	if m.DeleteRpsRewardFunc != nil {
+		return m.DeleteRpsRewardFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(rpsRewardID string) error {
+		return func(rpsRewardID string) error {
+			return nil
+		}
+	}
+}
+
+// DeleteRpsRewardAndEmit is a mock implementation
+func (m *ProcessorMock) DeleteRpsRewardAndEmit(tenantID uuid.UUID, rpsRewardID string) error {
+	if m.DeleteRpsRewardAndEmitFunc != nil {
+		return m.DeleteRpsRewardAndEmitFunc(tenantID, rpsRewardID)
+	}
+	return nil
+}
+
+// GetRpsRewardById is a mock implementation
+func (m *ProcessorMock) GetRpsRewardById(tenantID uuid.UUID, rpsRewardID string) (map[string]interface{}, error) {
+	if m.GetRpsRewardByIdFunc != nil {
+		return m.GetRpsRewardByIdFunc(tenantID, rpsRewardID)
+	}
+	return map[string]interface{}{}, nil
+}
+
+// GetAllRpsRewards is a mock implementation
+func (m *ProcessorMock) GetAllRpsRewards(tenantID uuid.UUID) ([]map[string]interface{}, error) {
+	if m.GetAllRpsRewardsFunc != nil {
+		return m.GetAllRpsRewardsFunc(tenantID)
+	}
+	return []map[string]interface{}{}, nil
+}
+
+// RpsRewardByIdProvider is a mock implementation
+func (m *ProcessorMock) RpsRewardByIdProvider(tenantID uuid.UUID, rpsRewardID string) model.Provider[map[string]interface{}] {
+	if m.RpsRewardByIdProviderFunc != nil {
+		return m.RpsRewardByIdProviderFunc(tenantID, rpsRewardID)
+	}
+	return func() (map[string]interface{}, error) {
+		return map[string]interface{}{}, nil
+	}
+}
+
+// AllRpsRewardsProvider is a mock implementation
+func (m *ProcessorMock) AllRpsRewardsProvider(tenantID uuid.UUID) model.Provider[[]map[string]interface{}] {
+	if m.AllRpsRewardsProviderFunc != nil {
+		return m.AllRpsRewardsProviderFunc(tenantID)
+	}
+	return func() ([]map[string]interface{}, error) {
+		return []map[string]interface{}{}, nil
+	}
 }
 
 // SeedMtsConfigs is a mock implementation

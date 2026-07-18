@@ -3,9 +3,10 @@ package serverbound
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const MobCrcKeyChangedReplyHandle = "MobCrcKeyChangedReply"
@@ -18,8 +19,7 @@ const MobCrcKeyChangedReplyHandle = "MobCrcKeyChangedReply"
 // the reply COutPacket (v83 opcode 0xA4, v87 0xAE, v95 0xBE) and immediately
 // SendPacket()s it with no Encode* calls — there are zero wire fields.
 // packet-audit:fname CMobPool::OnMobCrcKeyChanged
-type MobCrcKeyChangedReply struct {
-}
+type MobCrcKeyChangedReply struct{}
 
 func (m MobCrcKeyChangedReply) Operation() string { return MobCrcKeyChangedReplyHandle }
 func (m MobCrcKeyChangedReply) String() string    { return "" }

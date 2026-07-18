@@ -8,8 +8,9 @@ import (
 	"atlas-data/point"
 	"strconv"
 
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/jtumidanski/api2go/jsonapi"
+
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 type RestModel struct {

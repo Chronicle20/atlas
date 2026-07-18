@@ -8,13 +8,14 @@ import (
 	"testing"
 	"time"
 
-	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	tcpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 )
 
 func TestDrainer_AdvisoryLock_OnlyOneLeader(t *testing.T) {

@@ -2,9 +2,9 @@ import { TemplateDetailLayout } from "@/components/features/templates/TemplateDe
 import { WritersForm } from "@/pages/templates-writers-form";
 
 export function TemplatesWritersPage() {
-    return (
-        <TemplateDetailLayout>
-            <WritersForm />
-        </TemplateDetailLayout>
-    );
+  return (
+    <TemplateDetailLayout>
+      <WritersForm />
+    </TemplateDetailLayout>
+  );
 }

@@ -3,8 +3,8 @@ direction: serverbound
 version: gms_v48
 category: TIER1-FIXTURE
 ida:
-    function: sub_573B11
-    address: "0x573b11"
-    decompile_sha256: 408230314140200d8707755cdf18eba7899ff0e63fd0bbc69740682f06964fcc
+    function: sub_573A54
+    address: "0x573a54"
+    decompile_sha256: dc33d64432388ab247dabe7aabb15a49b3d281d12fb62aaae55c0fca0d4ada6a
 verifies:
-    - libs/atlas-packet/interaction/serverbound/v48_test.go#TestOperationMemoryGameTieAnswerV48Bytes
+  - libs/atlas-packet/interaction/serverbound/v48_test.go#TestOperationMemoryGameTieAnswerV48Bytes

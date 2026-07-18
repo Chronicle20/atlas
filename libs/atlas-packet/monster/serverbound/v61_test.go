@@ -48,8 +48,8 @@ func TestMonsterMovementBytesV61(t *testing.T) {
 	want := []byte{
 		0xE9, 0x03, 0x00, 0x00, // uniqueId 1001 (Encode4)
 		0x37, 0x00, // moveId 55 (Encode2)
-		0x01, // dwFlag 1 (Encode1)
-		0xFD, // nActionAndDir -3 (Encode1)
+		0x01,                   // dwFlag 1 (Encode1)
+		0xFD,                   // nActionAndDir -3 (Encode1)
 		0x05, 0x03, 0x00, 0x00, // skillData 0x0305 (Encode4)
 		0x00,                   // moveFlags 0 (Encode1)
 		0x00, 0x00, 0x00, 0x00, // hackedCode 0 (Encode4)

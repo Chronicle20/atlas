@@ -131,7 +131,7 @@ func TestSkillPrepareForeignByteFixture(t *testing.T) {
 		0x6C, 0x9F, 0x2F, 0x00, // skillId=3121004 LE
 		0x0A,       // level=10
 		0x42, 0x01, // action=0x0142 LE
-		0x04,       // actionSpeed=4
+		0x04, // actionSpeed=4
 	}
 
 	versions := []struct {

@@ -126,7 +126,7 @@ RUN MOD_DIR=$(ls -d services/${SERVICE}/atlas.com/*/ | head -1) \
 # image; the shared Dockerfile must reproduce that. Mapping:
 #   seed-data      → /seed-data      (atlas-configurations)
 #   drops          → /drops          (atlas-drop-information)
-#   data           → /gachapons/data (atlas-gachapons)
+#   data           → /gachapons/data (atlas-reward-pools)
 #   scripts        → /scripts        (atlas-map-actions, atlas-portal-actions, atlas-reactor-actions)
 #   conversations  → /conversations  (atlas-npc-conversations)
 #   shops          → /shops          (atlas-npc-shops)

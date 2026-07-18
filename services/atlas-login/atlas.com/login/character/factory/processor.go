@@ -3,8 +3,9 @@ package factory
 import (
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 type Processor interface {
@@ -29,7 +30,8 @@ var _ Processor = (*ProcessorImpl)(nil)
 func (p *ProcessorImpl) SeedCharacter(accountId uint32, worldId world.Id, name string, jobIndex uint32, subJobIndex uint16,
 	face uint32, hair uint32, color uint32, skinColor uint32, gender byte,
 	top uint32, bottom uint32, shoes uint32, weapon uint32,
-	strength byte, dexterity byte, intelligence byte, luck byte) error {
+	strength byte, dexterity byte, intelligence byte, luck byte,
+) error {
 	p.l.Debugf("Create character [%s] with job [%d:%d] and gender [%d].", name, jobIndex, subJobIndex, gender)
 	p.l.Debugf("Face [%d], Hair [%d], HairColor [%d] SkinColor [%d].", face, hair, color, skinColor)
 	p.l.Debugf("Top [%d], Bottom [%d], Shoes [%d], Weapon [%d].", top, bottom, shoes, weapon)

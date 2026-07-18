@@ -44,14 +44,18 @@ export interface ListCardsOptions extends ServiceOptions {
 function buildCardQuery(opts?: ListCardsOptions): string {
   if (!opts) return "";
   const params = new URLSearchParams();
-  if (opts.offset !== undefined) params.set("page[offset]", String(opts.offset));
+  if (opts.offset !== undefined)
+    params.set("page[offset]", String(opts.offset));
   if (opts.limit !== undefined) params.set("page[limit]", String(opts.limit));
-  if (opts.isSpecial !== undefined) params.set("filter[isSpecial]", String(opts.isSpecial));
+  if (opts.isSpecial !== undefined)
+    params.set("filter[isSpecial]", String(opts.isSpecial));
   const qs = params.toString();
   return qs ? `?${qs}` : "";
 }
 
-function flattenCollection(resource: CollectionResource): MonsterBookCollection {
+function flattenCollection(
+  resource: CollectionResource,
+): MonsterBookCollection {
   return {
     characterId: parseInt(resource.id, 10),
     bookLevel: resource.attributes.bookLevel,
@@ -127,4 +131,7 @@ export const monsterBookService = {
   },
 };
 
-export type { MonsterBookCard, MonsterBookCollection } from "@/types/monster-book";
+export type {
+  MonsterBookCard,
+  MonsterBookCollection,
+} from "@/types/monster-book";

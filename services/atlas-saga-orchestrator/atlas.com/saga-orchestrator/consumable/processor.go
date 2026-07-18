@@ -1,16 +1,17 @@
 package consumable
 
 import (
+	"atlas-saga-orchestrator/kafka/message/consumable"
 	"context"
 
-	"atlas-saga-orchestrator/kafka/message/consumable"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 // Processor is the interface for consumable operations

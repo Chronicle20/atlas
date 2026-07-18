@@ -3,10 +3,11 @@ package quest
 import (
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
@@ -16,11 +17,11 @@ const (
 
 // Quest service command topic and types (for atlas-quest)
 const (
-	EnvQuestCommandTopic         = "COMMAND_TOPIC_QUEST"
-	QuestCommandTypeStart        = "START"
-	QuestCommandTypeComplete     = "COMPLETE"
-	QuestCommandTypeForfeit      = "FORFEIT"
-	QuestCommandTypeRestoreItem  = "RESTORE_ITEM"
+	EnvQuestCommandTopic        = "COMMAND_TOPIC_QUEST"
+	QuestCommandTypeStart       = "START"
+	QuestCommandTypeComplete    = "COMPLETE"
+	QuestCommandTypeForfeit     = "FORFEIT"
+	QuestCommandTypeRestoreItem = "RESTORE_ITEM"
 )
 
 type Command[E any] struct {
@@ -77,11 +78,11 @@ type RestoreItemCommandBody struct {
 
 // Status event types for quest status changes from atlas-quest service
 const (
-	EnvStatusEventTopic              = "EVENT_TOPIC_QUEST_STATUS"
-	StatusEventTypeStarted           = "STARTED"
-	StatusEventTypeCompleted         = "COMPLETED"
-	StatusEventTypeForfeited         = "FORFEITED"
-	StatusEventTypeProgressUpdated   = "PROGRESS_UPDATED"
+	EnvStatusEventTopic            = "EVENT_TOPIC_QUEST_STATUS"
+	StatusEventTypeStarted         = "STARTED"
+	StatusEventTypeCompleted       = "COMPLETED"
+	StatusEventTypeForfeited       = "FORFEITED"
+	StatusEventTypeProgressUpdated = "PROGRESS_UPDATED"
 )
 
 type StatusEvent[E any] struct {

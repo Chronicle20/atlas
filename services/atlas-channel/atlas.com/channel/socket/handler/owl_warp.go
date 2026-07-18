@@ -9,14 +9,15 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	merchantpkt "github.com/Chronicle20/atlas/libs/atlas-packet/merchant"
 	merchantcb "github.com/Chronicle20/atlas/libs/atlas-packet/merchant/clientbound"
 	merchantsb "github.com/Chronicle20/atlas/libs/atlas-packet/merchant/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // OwlWarpHandleFunc handles CUIShopScanResult::OnButtonClicked: re-validates

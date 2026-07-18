@@ -3,11 +3,13 @@ package food
 import (
 	"atlas-channel/kafka/message/food"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {

@@ -4,9 +4,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 func TestNewBuilder(t *testing.T) {
@@ -180,7 +181,6 @@ func TestBuilder_AddStep_MultipleSteps(t *testing.T) {
 		AddStep("step_2", Pending, AwardLevel, AwardLevelPayload{CharacterId: 2, Amount: 5}).
 		AddStep("step_3", Pending, AwardMesos, AwardMesosPayload{CharacterId: 3, Amount: 1000}).
 		Build()
-
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -288,7 +288,6 @@ func TestBuilder_AddStep_DifferentPayloadTypes(t *testing.T) {
 				SetInitiatedBy("test").
 				AddStep("test_step", Pending, tc.action, tc.payload).
 				Build()
-
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -323,7 +322,6 @@ func TestBuilder_Build(t *testing.T) {
 			},
 		}).
 		Build()
-
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

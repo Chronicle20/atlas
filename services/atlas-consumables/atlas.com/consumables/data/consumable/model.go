@@ -240,6 +240,7 @@ func (b *RewardModelBuilderType) SetEffect(v string) *RewardModelBuilderType {
 	b.m.effect = v
 	return b
 }
+
 func (b *RewardModelBuilderType) SetWorldMsg(v string) *RewardModelBuilderType {
 	b.m.worldMsg = v
 	return b

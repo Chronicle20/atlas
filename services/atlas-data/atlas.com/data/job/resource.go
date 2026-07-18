@@ -1,14 +1,14 @@
 package job
 
 import (
+	"atlas-data/rest"
 	"net/http"
 
-	"atlas-data/rest"
-
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {

@@ -7,9 +7,10 @@ import (
 
 	consumable3 "atlas-consumables/data/consumable"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 )
 
 func TestIsNotSlotConsumingScroll_SpikeScroll(t *testing.T) {

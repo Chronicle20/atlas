@@ -5,8 +5,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func mockTenant(t *testing.T) tenant.Model {

@@ -52,6 +52,7 @@ export interface MtsListingAttributes {
   ringId: number;
   viciousCount: number;
   flags: number;
+  owner: string;
   listValue: number;
   buyNowPrice?: number;
   commissionRate: number;
@@ -102,9 +103,12 @@ export function buildBrowseListingsQuery(filter: BrowseListingsFilter): string {
   if (filter.subCategory) params.set("subCategory", filter.subCategory);
   if (filter.saleType) params.set("saleType", filter.saleType);
   if (filter.sellerName) params.set("sellerName", filter.sellerName);
-  if (filter.itemId !== undefined && filter.itemId > 0) params.set("itemId", String(filter.itemId));
-  if (filter.page !== undefined) params.set("page[number]", String(filter.page + 1));
-  if (filter.pageSize !== undefined) params.set("page[size]", String(filter.pageSize));
+  if (filter.itemId !== undefined && filter.itemId > 0)
+    params.set("itemId", String(filter.itemId));
+  if (filter.page !== undefined)
+    params.set("page[number]", String(filter.page + 1));
+  if (filter.pageSize !== undefined)
+    params.set("page[size]", String(filter.pageSize));
   const qs = params.toString();
   return qs ? `?${qs}` : "";
 }

@@ -6,11 +6,12 @@ import (
 	"atlas-channel/test"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	mapid "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	mapid "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 func mapTestSetup() (*logrus.Logger, func()) {

@@ -2,10 +2,12 @@ package character
 
 import (
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 )
 
 type Processor interface {

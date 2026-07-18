@@ -7,14 +7,15 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	seeder "github.com/Chronicle20/atlas/libs/atlas-seeder"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus/hooks/test"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	seeder "github.com/Chronicle20/atlas/libs/atlas-seeder"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type testGroupsSrvInfo struct{}

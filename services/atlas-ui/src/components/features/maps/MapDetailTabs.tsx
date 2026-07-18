@@ -63,7 +63,8 @@ export function MapDetailTabs({
       if (a.attributes.template !== b.attributes.template) {
         return a.attributes.template - b.attributes.template;
       }
-      if (a.attributes.x !== b.attributes.x) return a.attributes.x - b.attributes.x;
+      if (a.attributes.x !== b.attributes.x)
+        return a.attributes.x - b.attributes.x;
       return a.attributes.y - b.attributes.y;
     });
   }, [monsters]);
@@ -98,9 +99,13 @@ export function MapDetailTabs({
         <Card>
           <CardContent className="pt-6">
             {portalsError ? (
-              <p className="text-sm text-destructive">Failed to load portals.</p>
+              <p className="text-sm text-destructive">
+                Failed to load portals.
+              </p>
             ) : sortedPortals === undefined ? (
-              <p className="text-sm text-muted-foreground">Loading portals...</p>
+              <p className="text-sm text-muted-foreground">
+                Loading portals...
+              </p>
             ) : sortedPortals.length > 0 ? (
               <Table>
                 <TableHeader>
@@ -119,7 +124,9 @@ export function MapDetailTabs({
                 </TableBody>
               </Table>
             ) : (
-              <p className="text-sm text-muted-foreground">No portals on this map.</p>
+              <p className="text-sm text-muted-foreground">
+                No portals on this map.
+              </p>
             )}
           </CardContent>
         </Card>
@@ -129,9 +136,13 @@ export function MapDetailTabs({
         <Card>
           <CardContent className="pt-6">
             {monstersError ? (
-              <p className="text-sm text-destructive">Failed to load monsters.</p>
+              <p className="text-sm text-destructive">
+                Failed to load monsters.
+              </p>
             ) : sortedMonsters === undefined ? (
-              <p className="text-sm text-muted-foreground">Loading monsters...</p>
+              <p className="text-sm text-muted-foreground">
+                Loading monsters...
+              </p>
             ) : sortedMonsters.length > 0 ? (
               <Table>
                 <TableHeader>
@@ -145,15 +156,14 @@ export function MapDetailTabs({
                 </TableHeader>
                 <TableBody>
                   {sortedMonsters.map((monster) => (
-                    <MonsterTableRow
-                      key={monster.id}
-                      monster={monster}
-                    />
+                    <MonsterTableRow key={monster.id} monster={monster} />
                   ))}
                 </TableBody>
               </Table>
             ) : (
-              <p className="text-sm text-muted-foreground">No monsters on this map.</p>
+              <p className="text-sm text-muted-foreground">
+                No monsters on this map.
+              </p>
             )}
           </CardContent>
         </Card>
@@ -163,9 +173,13 @@ export function MapDetailTabs({
         <Card>
           <CardContent className="pt-6">
             {reactorsError ? (
-              <p className="text-sm text-destructive">Failed to load reactors.</p>
+              <p className="text-sm text-destructive">
+                Failed to load reactors.
+              </p>
             ) : sortedReactors === undefined ? (
-              <p className="text-sm text-muted-foreground">Loading reactors...</p>
+              <p className="text-sm text-muted-foreground">
+                Loading reactors...
+              </p>
             ) : sortedReactors.length > 0 ? (
               <Table>
                 <TableHeader>
@@ -184,7 +198,9 @@ export function MapDetailTabs({
                 </TableBody>
               </Table>
             ) : (
-              <p className="text-sm text-muted-foreground">No reactors on this map.</p>
+              <p className="text-sm text-muted-foreground">
+                No reactors on this map.
+              </p>
             )}
           </CardContent>
         </Card>
@@ -193,7 +209,13 @@ export function MapDetailTabs({
   );
 }
 
-function PortalRow({ mapId, portal }: { mapId: string; portal: MapPortalData }) {
+function PortalRow({
+  mapId,
+  portal,
+}: {
+  mapId: string;
+  portal: MapPortalData;
+}) {
   const { activeTenant } = useTenant();
   const { setHovered, isHovered } = useHoverHighlight();
   const highlighted = isHovered({ kind: "portal", portalId: portal.id });
@@ -251,7 +273,9 @@ function ReactorRow({ reactor }: { reactor: MapReactorData }) {
   const highlighted = isHovered({ kind: "reactor", reactorId: reactor.id });
   return (
     <TableRow
-      onPointerEnter={() => setHovered({ kind: "reactor", reactorId: reactor.id })}
+      onPointerEnter={() =>
+        setHovered({ kind: "reactor", reactorId: reactor.id })
+      }
       onPointerLeave={() => setHovered(null)}
       className={cn(
         "!border-l-2 border-l-transparent",

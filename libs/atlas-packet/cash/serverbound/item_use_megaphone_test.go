@@ -89,11 +89,84 @@ func TestItemUseMegaphoneByteOutputV95(t *testing.T) {
 	}
 }
 
+// IDA evidence (gms_v87 GMSv87_4GB.exe, port 13343, symbol-named) —
+// CWvsContext::SendConsumeCashItemUseRequest@0xa9fef9:
+//
+// Function header (0xa9ff62-0xa9ff98): COutPacket ctor (opcode 0x52) ->
+// get_update_time() -> Encode4(update_time) -> Encode2(slot) ->
+// Encode4(itemId) -> get_consume_cash_item_type -> switch(type-12). update_time
+// is LEADING, confirming updateTimeFirst=TRUE for gms_v87 (matches the
+// production gate in character_cash_item_use.go: t.MajorVersion()>=87).
+// Jumptable label "cases 12,13,15" @0xaa01ff: for type 12 (Megaphone), a
+// small confirm dialog (CUtilDlgEx, no whisper checkbox) is shown; on OK the
+// shared tail @0xaa0390-0xaa04f1 does TrimRight/TrimLeft + curse-filter, then
+//
+//	EncodeStr(message) @0xaa04f1
+//	cmp type,0xD(13); jnz skip_whisper   @0xaa04f6-0xaa04fa (type 12 != 13, SKIPPED)
+//	[shared cleanup, falls to loc_AA01C0 -> CanSendExclRequest -> 0xaa43a8 SendPacketThunk, NO trailing update_time]
+//
+// Wire (v87): message(str) ONLY — identical shape to gms_v95.
+//
+// packet-audit:verify packet=cash/serverbound/CashItemUseMegaphone version=gms_v87 ida=0xa9fef9
+func TestItemUseMegaphoneByteOutputV87(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 87, 1)
+	input := NewItemUseMegaphone(true)
+	input.message = "Hello world!"
+	expected := []byte{
+		0x0C, 0x00, 'H', 'e', 'l', 'l', 'o', ' ', 'w', 'o', 'r', 'l', 'd', '!', // message
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v87 item use megaphone golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// IDA evidence (gms_v84 GMS_v84.1_U_DEVM.exe, port 13345, partially-symbol-named
+// — COutPacket helpers named, dialog/cleanup helpers are sub_XXXXXX) —
+// CWvsContext::SendConsumeCashItemUseRequest@0xa54a2f:
+//
+// Function header (0xa54a98-0xa54ac1): COutPacket ctor (opcode 0x4F) ->
+// Encode2(slot) -> Encode4(itemId) -> get_consume_cash_item_type -> switch
+// (type-12). NO Encode4(update_time) call anywhere in the header — matches
+// megaphoneHasUpdateTime's v83 finding exactly (v84 is the OTHER
+// updateTimeFirst=false GMS build). Jumptable label "cases 12,13,15"
+// @0xa54d27 (byte-identical case-numbering to gms_v87/v95): for type 12, a
+// small confirm dialog is shown; on OK, the shared tail does
+// TrimRight/TrimLeft, then:
+//
+//	EncodeStr(message) @0xa55019
+//	cmp type,0xD(13); jnz skip_whisper   @0xa5501e-0xa55022 (type 12 != 13, SKIPPED)
+//	[falls to loc_A54CE8 "cases 33,71,72" -> CanSendExclRequest -> loc_A58E47:
+//	 get_update_time() -> Encode4(result) -> SendPacket]  (TRAILING update_time)
+//
+// Wire (v84): message(str) + updateTime(uint32 trailing) — same shape as gms_v83.
+//
+// packet-audit:verify packet=cash/serverbound/CashItemUseMegaphone version=gms_v84 ida=0xa54a2f
+func TestItemUseMegaphoneByteOutputV84(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 84, 1)
+	input := NewItemUseMegaphone(false)
+	input.message = "Hello world!"
+	input.updateTime = 12345
+	expected := []byte{
+		0x0C, 0x00, 'H', 'e', 'l', 'l', 'o', ' ', 'w', 'o', 'r', 'l', 'd', '!', // message
+		0x39, 0x30, 0x00, 0x00, // updateTime=12345 LE (trailing)
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v84 item use megaphone golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
 func TestItemUseMegaphoneRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-			updateTimeFirst := v.Region == "GMS" && v.MajorVersion >= 95
+			// task-123 phase 3: matches the production gate exactly
+			// (character_cash_item_use.go: t.MajorVersion() >= 87, no region
+			// check) — GMS v87 IDA-confirmed leading update_time (CItemSpeakerDlg
+			// @0x623728 gms_v87, CWvsContext::SendConsumeCashItemUseRequest
+			// @0xa9fef9 gms_v87), so the old >=95 threshold under-tested v87.
+			updateTimeFirst := v.MajorVersion >= 87
 			// Legacy GMS (<83) carries NO update_time at all (task-123 legacy
 			// phase 1, megaphoneHasUpdateTime) — only set/check it when the
 			// sub-body actually carries a trailing copy.

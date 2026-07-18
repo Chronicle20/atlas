@@ -1,0 +1,57 @@
+{
+  "WriterName": "CashItemUseMegaphone",
+  "IDAName": "CWvsContext::SendConsumeCashItemUseRequest",
+  "Address": "0xa54a2f",
+  "Variant": "GMS/v84",
+  "BranchDepth": 1,
+  "AtlasFile": "libs/atlas-packet/cash/serverbound/item_use_megaphone.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "slot - Encode2 @0xa54aaf; NO leading update_time in the header (opcode 0x4F straight to Encode2) - confirms updateTimeFirst=FALSE for gms_v84",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "itemId - Encode4 @0xa54abb, then sub_489828(itemId) [get_consume_cash_item_type] drives the type switch",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "message - jumptable label 'cases 12,13,15' @0xa54d27 (type 12); shared tail EncodeStr @0xa55019",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "whisper - Encode1 @0xa5502a, ONLY emitted when type==13 (SuperMegaphone); type==12 (Megaphone) skips this write",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "updateTime(trailing) - falls to loc_A54CE8 'cases 33,71,72' -> CanSendExclRequest -> loc_A58E47: get_update_time() -> Encode4(result) @0xa58e4d-0xa58e50 -> SendPacket. TRAILING, matching gms_v83.",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    }
+  ],
+  "Verdict": 3,
+  "FlatInvalid": true
+}

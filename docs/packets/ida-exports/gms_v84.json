@@ -27368,6 +27368,11 @@
           "guard": "hasError"
         }
       ]
+    },
+    "CWvsContext::SendConsumeCashItemUseRequest": {
+      "address": "0xa54a2f",
+      "direction": "serverbound",
+      "calls": null
     }
   }
 }

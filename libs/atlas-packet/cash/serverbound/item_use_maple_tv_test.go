@@ -137,7 +137,9 @@ func TestItemUseMapleTVRoundTrip(t *testing.T) {
 		for _, tc := range cases {
 			t.Run(v.Name+"/"+tc.name, func(t *testing.T) {
 				ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-				updateTimeFirst := v.Region == "GMS" && v.MajorVersion >= 95
+				// task-123 phase 3: matches the production gate exactly (see
+				// item_use_megaphone_test.go for the IDA citation).
+				updateTimeFirst := v.MajorVersion >= 87
 				input := NewItemUseMapleTV(updateTimeFirst, tc.tvType)
 				input.ear = tc.ear
 				input.receiverName = tc.recv

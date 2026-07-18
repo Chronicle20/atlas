@@ -11,10 +11,10 @@ Tool: `823c734457141625c3a6dd7ad4528ad782c9d4d06be9baca7573a4c297d454c4`
 - export gms_v72: `cc39afb1e4bb9e3edb1d841d5e6f1fdca6abd904e627bb3cceeb9e228117c566`
 - export gms_v79: `d3f406bedd301bc4f68df509acb4e00200521656d3270e28961f9cc45ecdec32`
 - export gms_v83: `fbae9f57d49feee16a7cefaee842bf1d7506350c7fa598b383df641adb51619c`
-- export gms_v84: `0fe8b54e4bbdfdd289c0a0f38b713e216586dbad55c0777cb58cebb81d5caa7c`
-- export gms_v87: `09eb4251ac986daddd8b313d28f58c9a9a2825039f89f7132dec4c0e5b951634`
+- export gms_v84: `7254a6fb504335aac45bc0db1d24ce7a9bd2c50428bf33074db6560966ccc8f4`
+- export gms_v87: `42d8d1c223d7661eb3ed9772fa7d247c24990288f43437bcec47bf670b687971`
 - export gms_v95: `b08d604e43c3676be0b4a6923ec593fcc0456e57b765771b7dfc5ed67988c434`
-- export jms_v185: `c30dec2eb4458ff684a77488aa7b69cc30de6434e22352faf5d4dd5dabe5ba9a`
+- export jms_v185: `7a1a8b31c8ec08b54fd0f1755aac0ca1aabc4285f33c594420cc192c23b87e8b`
 
 ## Clientbound
 
@@ -579,7 +579,7 @@ Tool: `823c734457141625c3a6dd7ad4528ad782c9d4d06be9baca7573a4c297d454c4`
 | CANCEL_ITEM_EFFECT | CWvsContext::SendStatChangeItemCancelRequest; sub_70DD49 | character/serverbound/ItemCancel (T1) | 0x039 | ✅ | 0x044 | ✅ | 0x048 | ✅ | 0x047 | ✅ | 0x049 | ✅ | 0x049 | ✅ | 0x04C | ✅ | 0x04F | ✅ | 0x041 | ✅ |
 | REMOTE_STORE | CWvsContext::SendRemoteShopOpenRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x03B | ❌ | 0x03B | ❌ | 0x03E | ❌ | 0x040 | ❌ | 0x033 | ❌ |
 | HIRED_MERCHANT_REQUEST | CWvsContext::SendEntrustedShopCheckRequest; sub_715A7B; sub_971BE0 |  |  | ⬜ | 0x03E | ❌ | 0x03E | ❌ | 0x03D | ❌ | 0x03F | ❌ | 0x03F | ❌ | 0x042 | ❌ | 0x044 | ❌ | 0x037 | ❌ |
-| USE_CASH_ITEM | CItemSpeakerDlg::_SendConsumeCashItemUseRequest; CUICharacterSaleDlg::SendCreateNewCharacter; CUIIncubator::OnButtonClicked; CUIKarmaDlg::_SendConsumeCashItemUseRequest; CUIUnreleaseDlg::UnreleaseEquipItem; CWvsContext::SendConsumeCashItemUseRequest | cash/serverbound/CashItemUseMegaphone (T1) | 0x03E | ✅ | 0x049 | ✅ | 0x04E | ✅ | 0x04D | ✅ | 0x04F | ❌ | 0x04F | ❌ | 0x052 | ❌ | 0x055 | ✅ | 0x047 | ❌ |
+| USE_CASH_ITEM | CItemSpeakerDlg::_SendConsumeCashItemUseRequest; CUICharacterSaleDlg::SendCreateNewCharacter; CUIIncubator::OnButtonClicked; CUIKarmaDlg::_SendConsumeCashItemUseRequest; CUIUnreleaseDlg::UnreleaseEquipItem; CWvsContext::SendConsumeCashItemUseRequest | cash/serverbound/CashItemUseMegaphone (T1) | 0x03E | ✅ | 0x049 | ✅ | 0x04E | ✅ | 0x04D | ✅ | 0x04F | ❌ | 0x04F | ❌ | 0x052 | ✅ | 0x055 | ✅ | 0x047 | ✅ |
 | OWL_WARP | CUIShopScanResult::OnButtonClicked | merchant/serverbound/OwlWarp (T1) |  | ⬜ | 0x03F | ✅ | 0x042 | ✅ | 0x041 | ✅ | 0x043 | ✅ | 0x043 | ❌ | 0x046 | ❌ | 0x049 | ✅ | 0x03B | ❌ |
 | FREDRICK_ACTION | CStoreBankDlg::SendCalculateFeeRequest; CStoreBankDlg::SendGetAllRequest; CStoreBankDlg::SetRet |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x040 | ❌ | 0x040 | ❌ | 0x043 | ❌ | 0x045 | ❌ | 0x038 | ❌ |
 | ITEM_SORT | CWvsContext::SendGatherItemRequest; sub_954C6B | inventory/serverbound/InventoryCompartmentMergeRequest (T1) |  | ⬜ | 0x040 | ✅ | 0x044 | ✅ | 0x043 | ✅ | 0x045 | ✅ | 0x045 | ✅ | 0x048 | ✅ | 0x04B | ✅ | 0x03D | ✅ |
@@ -832,11 +832,11 @@ Tool: `823c734457141625c3a6dd7ad4528ad782c9d4d06be9baca7573a4c297d454c4`
 | buddy/serverbound/BuddyOperationAccept (T1) |  |  | ❌ |  | ❌ |  | 🟡ᶠ |  | 🟡ᶠ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | buddy/serverbound/BuddyOperationAdd (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | buddy/serverbound/BuddyOperationDelete (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| cash/serverbound/CashItemUseAvatarMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |
+| cash/serverbound/CashItemUseAvatarMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
 | cash/serverbound/CashItemUseMapleTV (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |
-| cash/serverbound/CashItemUseMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |
+| cash/serverbound/CashItemUseMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
 | cash/serverbound/CashItemUsePointReset (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| cash/serverbound/CashItemUseSuperMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |
+| cash/serverbound/CashItemUseSuperMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
 | cash/serverbound/CashItemUseTripleMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |
 | cash/serverbound/CashShopOperationBuy (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashShopOperationBuyCouple (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -1003,10 +1003,10 @@ Tool: `823c734457141625c3a6dd7ad4528ad782c9d4d06be9baca7573a4c297d454c4`
 | v72 | 250 | 0 | 73 | 217 | 423 | 0 | 46.3% |
 | v79 | 264 | 0 | 72 | 213 | 414 | 0 | 48.1% |
 | v83 | 413 | 0 | 0 | 326 | 224 | 0 | 55.9% |
-| v84 | 382 | 0 | 0 | 337 | 244 | 0 | 53.1% |
-| v87 | 416 | 0 | 0 | 360 | 187 | 0 | 53.6% |
+| v84 | 385 | 0 | 0 | 334 | 244 | 0 | 53.5% |
+| v87 | 420 | 0 | 0 | 356 | 187 | 0 | 54.1% |
 | v95 | 447 | 0 | 0 | 413 | 103 | 0 | 52.0% |
-| JMS185 | 395 | 0 | 0 | 374 | 194 | 0 | 51.4% |
+| JMS185 | 396 | 0 | 0 | 373 | 194 | 0 | 51.5% |
 
 ## Conflicts
 

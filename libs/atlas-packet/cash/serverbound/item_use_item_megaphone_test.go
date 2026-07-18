@@ -79,6 +79,136 @@ func TestItemUseItemMegaphoneByteOutputV95NoItem(t *testing.T) {
 	}
 }
 
+// IDA evidence (gms_v87 GMSv87_4GB.exe, port 13343, symbol-named) —
+// CItemSpeakerDlg::_SendConsumeCashItemUseRequest@0x623728 (full decompile,
+// own dedicated send function, NOT the main dispatcher — same architecture
+// as gms_v95's CItemSpeakerDlg::_SendConsumeCashItemUseRequest@0x5c9e70):
+//
+//	COutPacket(&a3, 0x52)                                     // opcode 0x52 = USE_CASH_ITEM on v87
+//	update_time = get_update_time(); Encode4(&a3, update_time) // header, FIRST
+//	Encode2(&a3, *(this+144))                                  // slot
+//	Encode4(&a3, *(this+148))                                  // itemId
+//	EncodeStr(&a3, message)                                    // CCtrlEdit::GetText
+//	Encode1(&a3, *(*(this+1504)+72))                           // whisper checkbox
+//	Encode1(&a3, *(this+164) != 0)                             // hasItem
+//	if (*(this+164)) {
+//	  Encode4(&a3, *(this+152))                                // invType
+//	  Encode4(&a3, *(this+156))                                // slot
+//	}
+//	SendPacket(...)
+//
+// update_time is written in THIS function's own header, before
+// message/whisper/hasItem — confirming updateTimeFirst=TRUE for gms_v87 (same
+// leading position as the main dispatcher's own header, and matching gms_v95).
+//
+// Wire (v87): message(str) + whisper(bool) + hasItem(bool) +
+// [invType(int32) + slot(int32) iff hasItem]. Identical shape to gms_v95.
+//
+// packet-audit:verify packet=cash/serverbound/CashItemUseItemMegaphone version=gms_v87 ida=0x623728
+func TestItemUseItemMegaphoneByteOutputV87HasItem(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 87, 1)
+	input := NewItemUseItemMegaphone(true)
+	input.message = "Item hello!"
+	input.whisper = true
+	input.hasItem = true
+	input.invType = 2
+	input.slot = 5
+	expected := []byte{
+		0x0B, 0x00, 'I', 't', 'e', 'm', ' ', 'h', 'e', 'l', 'l', 'o', '!', // message
+		0x01,                   // whisper=true
+		0x01,                   // hasItem=true
+		0x02, 0x00, 0x00, 0x00, // invType=2 LE
+		0x05, 0x00, 0x00, 0x00, // slot=5 LE
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v87 item use item megaphone (hasItem) golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+func TestItemUseItemMegaphoneByteOutputV87NoItem(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 87, 1)
+	input := NewItemUseItemMegaphone(true)
+	input.message = "no item"
+	input.whisper = false
+	input.hasItem = false
+	expected := []byte{
+		0x07, 0x00, 'n', 'o', ' ', 'i', 't', 'e', 'm', // message
+		0x00, // whisper=false
+		0x00, // hasItem=false
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v87 item use item megaphone (no item) golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// IDA evidence (jms_v185 MapleStory_dump_SCY.exe, port 13344, symbol-named) —
+// CItemSpeakerDlg::_SendConsumeCashItemUseRequest@0x660672 (full decompile,
+// own dedicated send function, NOT the main dispatcher — same architecture
+// as gms_v87/v95's CItemSpeakerDlg::_SendConsumeCashItemUseRequest):
+//
+//	COutPacket::COutPacket(v22, 0x47)                          // opcode 0x47 = USE_CASH_ITEM on jms_v185
+//	update_time = get_update_time(); Encode4(v22, update_time)  // header, FIRST
+//	Encode2(v22, *(this+72))                                    // slot
+//	Encode4(v22, *(this+37))                                    // itemId
+//	EncodeStr(v22, CCtrlEdit::GetText(...))                     // message
+//	Encode1(v22, *(*(this+617)+72))                             // whisper checkbox
+//	Encode1(v22, *(this+41) != 0)                               // hasItem
+//	if (*(this+41)) {
+//	  Encode4(v22, *(this+38))                                  // invType
+//	  Encode4(v22, *(this+39))                                  // slot
+//	}
+//	SendPacket(...)
+//
+// update_time is written in THIS function's own header, before
+// message/whisper/hasItem — confirming updateTimeFirst=TRUE for jms_v185
+// (matches the production gate: t.MajorVersion()>=87, jms185>=87, and the
+// task-126 IDA citation for the main dispatcher @0xaef2f5 also showing
+// leading update_time).
+//
+// Wire (jms_v185): message(str) + whisper(bool) + hasItem(bool) +
+// [invType(int32) + slot(int32) iff hasItem]. Identical shape to gms_v87/v95.
+//
+// packet-audit:verify packet=cash/serverbound/CashItemUseItemMegaphone version=jms_v185 ida=0x660672
+func TestItemUseItemMegaphoneByteOutputJMS185HasItem(t *testing.T) {
+	ctx := pt.CreateContext("JMS", 185, 1)
+	input := NewItemUseItemMegaphone(true)
+	input.message = "Item hello!"
+	input.whisper = true
+	input.hasItem = true
+	input.invType = 2
+	input.slot = 5
+	expected := []byte{
+		0x0B, 0x00, 'I', 't', 'e', 'm', ' ', 'h', 'e', 'l', 'l', 'o', '!', // message
+		0x01,                   // whisper=true
+		0x01,                   // hasItem=true
+		0x02, 0x00, 0x00, 0x00, // invType=2 LE
+		0x05, 0x00, 0x00, 0x00, // slot=5 LE
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("jms185 item use item megaphone (hasItem) golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+func TestItemUseItemMegaphoneByteOutputJMS185NoItem(t *testing.T) {
+	ctx := pt.CreateContext("JMS", 185, 1)
+	input := NewItemUseItemMegaphone(true)
+	input.message = "no item"
+	input.whisper = false
+	input.hasItem = false
+	expected := []byte{
+		0x07, 0x00, 'n', 'o', ' ', 'i', 't', 'e', 'm', // message
+		0x00, // whisper=false
+		0x00, // hasItem=false
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("jms185 item use item megaphone (no item) golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
 func TestItemUseItemMegaphoneRoundTrip(t *testing.T) {
 	cases := []struct {
 		name    string
@@ -94,7 +224,9 @@ func TestItemUseItemMegaphoneRoundTrip(t *testing.T) {
 		for _, tc := range cases {
 			t.Run(v.Name+"/"+tc.name, func(t *testing.T) {
 				ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-				updateTimeFirst := v.Region == "GMS" && v.MajorVersion >= 95
+				// task-123 phase 3: matches the production gate exactly (see
+				// item_use_megaphone_test.go for the IDA citation).
+				updateTimeFirst := v.MajorVersion >= 87
 				input := NewItemUseItemMegaphone(updateTimeFirst)
 				input.message = "Item hello!"
 				input.whisper = tc.whisper

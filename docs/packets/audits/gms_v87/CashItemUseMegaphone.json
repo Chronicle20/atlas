@@ -1,0 +1,57 @@
+{
+  "WriterName": "CashItemUseMegaphone",
+  "IDAName": "CWvsContext::SendConsumeCashItemUseRequest",
+  "Address": "0xa9fef9",
+  "Variant": "GMS/v87",
+  "BranchDepth": 1,
+  "AtlasFile": "libs/atlas-packet/cash/serverbound/item_use_megaphone.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "update_time = get_update_time(); Encode4 in the SHARED HEADER, written FIRST (before slot/itemId) - confirms updateTimeFirst=TRUE for gms_v87 @0xa9ff73-0xa9ff7c",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "slot - Encode2 @0xa9ff84-0xa9ff87",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "itemId - Encode4 @0xa9ff90-0xa9ff93, then get_consume_cash_item_type(itemId) drives the type switch",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "message - jumptable label 'cases 12,13,15' @0xaa01ff (type 12); shared tail EncodeStr @0xaa04f1",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "whisper - Encode1 @0xaa0502, ONLY emitted when type==13 (SuperMegaphone); type==12 (Megaphone) skips this write",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    }
+  ],
+  "Verdict": 3,
+  "FlatInvalid": true
+}

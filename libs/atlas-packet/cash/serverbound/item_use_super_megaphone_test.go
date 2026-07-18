@@ -73,6 +73,69 @@ func TestItemUseSuperMegaphoneByteOutputV95(t *testing.T) {
 	}
 }
 
+// IDA evidence (gms_v87 GMSv87_4GB.exe, port 13343, symbol-named) —
+// CWvsContext::SendConsumeCashItemUseRequest@0xa9fef9, jumptable label
+// "cases 12,13,15" @0xaa01ff: for type 13 (SuperMegaphone), a bigger
+// CUtilDlgEx confirm dialog (StringPool string 0x119, "will be seen by the
+// whole world") is shown; on OK the shared tail does TrimRight/TrimLeft +
+// curse-filter, then:
+//
+//	EncodeStr(message) @0xaa04f1
+//	cmp type,0xD(13); jnz skip_whisper   @0xaa04f6-0xaa04fa (type==13, TAKEN)
+//	Encode1(whisper) @0xaa0502   (pushes [var_3C], the checkbox state)
+//	[shared cleanup, falls to loc_AA01C0 -> CanSendExclRequest -> 0xaa43a8 SendPacketThunk, NO trailing update_time]
+//
+// Wire (v87): message(str) + whisper(bool) — identical shape to gms_v95.
+//
+// packet-audit:verify packet=cash/serverbound/CashItemUseSuperMegaphone version=gms_v87 ida=0xa9fef9
+func TestItemUseSuperMegaphoneByteOutputV87(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 87, 1)
+	input := NewItemUseSuperMegaphone(true)
+	input.message = "Super hello!"
+	input.whisper = true
+	expected := []byte{
+		0x0C, 0x00, 'S', 'u', 'p', 'e', 'r', ' ', 'h', 'e', 'l', 'l', 'o', '!', // message
+		0x01, // whisper=true
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v87 item use super megaphone golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// IDA evidence (gms_v84 GMS_v84.1_U_DEVM.exe, port 13345) —
+// CWvsContext::SendConsumeCashItemUseRequest@0xa54a2f, jumptable label
+// "cases 12,13,15" @0xa54d27: for type 13 (SuperMegaphone), a bigger
+// confirm dialog (StringPool 0x112) is shown; on OK the shared tail does
+// TrimRight/TrimLeft, then:
+//
+//	EncodeStr(message) @0xa55019
+//	cmp type,0xD(13); jnz skip_whisper   @0xa5501e-0xa55022 (type==13, TAKEN)
+//	Encode1(whisper) @0xa5502a
+//	[falls to loc_A54CE8 "cases 33,71,72" -> CanSendExclRequest -> loc_A58E47:
+//	 get_update_time() -> Encode4(result) -> SendPacket]  (TRAILING update_time)
+//
+// Wire (v84): message(str) + whisper(bool) + updateTime(uint32 trailing) —
+// same shape as gms_v83.
+//
+// packet-audit:verify packet=cash/serverbound/CashItemUseSuperMegaphone version=gms_v84 ida=0xa54a2f
+func TestItemUseSuperMegaphoneByteOutputV84(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 84, 1)
+	input := NewItemUseSuperMegaphone(false)
+	input.message = "Super hello!"
+	input.whisper = true
+	input.updateTime = 12345
+	expected := []byte{
+		0x0C, 0x00, 'S', 'u', 'p', 'e', 'r', ' ', 'h', 'e', 'l', 'l', 'o', '!', // message
+		0x01,                   // whisper=true
+		0x39, 0x30, 0x00, 0x00, // updateTime=12345 LE (trailing)
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v84 item use super megaphone golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
 func TestItemUseSuperMegaphoneRoundTrip(t *testing.T) {
 	cases := []struct {
 		name    string
@@ -85,7 +148,9 @@ func TestItemUseSuperMegaphoneRoundTrip(t *testing.T) {
 		for _, tc := range cases {
 			t.Run(v.Name+"/"+tc.name, func(t *testing.T) {
 				ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-				updateTimeFirst := v.Region == "GMS" && v.MajorVersion >= 95
+				// task-123 phase 3: matches the production gate exactly (see
+				// item_use_megaphone_test.go for the IDA citation).
+				updateTimeFirst := v.MajorVersion >= 87
 				// Legacy GMS (<83) carries NO update_time at all (task-123
 				// legacy phase 1, megaphoneHasUpdateTime).
 				hasUpdateTime := !(v.Region == "GMS" && v.MajorVersion < 83)

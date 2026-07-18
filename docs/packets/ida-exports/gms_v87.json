@@ -14162,6 +14162,49 @@
           "guard": "hasError"
         }
       ]
+    },
+    "CItemSpeakerDlg::_SendConsumeCashItemUseRequest": {
+      "address": "0x623728",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CWvsContext::SendConsumeCashItemUseRequest": {
+      "address": "0xa9fef9",
+      "direction": "serverbound",
+      "calls": null
     }
   }
 }

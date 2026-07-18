@@ -52,3 +52,19 @@ func TestHandler_EmptyKeepListIs422(t *testing.T) {
 		t.Fatalf("want 422, got %d", rr.Code)
 	}
 }
+
+// TestHandler_NilStoreIs503 exercises the mcStoreOrNil(nil) path used by
+// InitResource when the minio client failed to initialize — reconcileInner
+// must 503 rather than dereference a nil Store. newTestHandler accepts nil
+// cleanly because store is typed as the Store interface, so a literal nil
+// is a genuinely nil interface (not a nil-pointer-in-interface) and the
+// `store == nil` check in reconcileInner is true.
+func TestHandler_NilStoreIs503(t *testing.T) {
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/data/minio/reconcile", strings.NewReader(`{"data":{"type":"minioReconciles","attributes":{"keepTenantIds":["x"]}}}`))
+	req.Header.Set("X-Atlas-Operator", "1")
+	newTestHandler(t, nil).ServeHTTP(rr, req)
+	if rr.Code != http.StatusServiceUnavailable {
+		t.Fatalf("want 503, got %d", rr.Code)
+	}
+}

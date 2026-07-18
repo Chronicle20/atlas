@@ -14,8 +14,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const defaultMinAgeHours = 48
-
 // InitResource installs POST /data/minio/reconcile.
 func InitResource(mc *minio.Client) func(si jsonapi.ServerInformation) server.RouteInitializer {
 	return func(si jsonapi.ServerInformation) server.RouteInitializer {
@@ -47,15 +45,7 @@ func reconcileInner(store Store, clock func() time.Time) func(d *rest.HandlerDep
 				http.Error(w, "operator required", http.StatusForbidden)
 				return
 			}
-			minAge := input.MinAgeHours
-			if minAge <= 0 {
-				minAge = defaultMinAgeHours
-			}
-			rep, err := Reconcile(r.Context(), d.Logger(), store, Request{
-				KeepTenantIDs: input.KeepTenantIDs,
-				MinAgeHours:   minAge,
-				DryRun:        input.DryRun,
-			}, clock())
+			rep, err := Reconcile(r.Context(), d.Logger(), store, input.ToRequest(), clock())
 			if err != nil {
 				if errors.Is(err, ErrEmptyKeepList) {
 					http.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -72,15 +62,4 @@ func reconcileInner(store Store, clock func() time.Time) func(d *rest.HandlerDep
 			server.MarshalResponse[ReconcileOutputModel](d.Logger())(w)(c.ServerInformation())(queryParams)(out)
 		}
 	}
-}
-
-func toOutput(rep Report) ReconcileOutputModel {
-	rows := make([]OutputRow, 0, len(rep.Rows))
-	for _, row := range rep.Rows {
-		rows = append(rows, OutputRow{
-			Bucket: row.Bucket, TenantID: row.TenantID, Action: row.Action,
-			Count: row.Count, Bytes: row.Bytes, Newest: row.Newest.UTC().Format(time.RFC3339),
-		})
-	}
-	return ReconcileOutputModel{Id: "current", DryRun: rep.DryRun, MinAgeHours: rep.MinAgeHours, TotalPrefixes: rep.TotalPrefixes, TotalBytes: rep.TotalBytes, Rows: rows}
 }

@@ -1,5 +1,9 @@
 package minioreconcile
 
+import "time"
+
+const defaultMinAgeHours = 48
+
 // ReconcileInputModel is the JSON:API input for POST /api/data/minio/reconcile.
 type ReconcileInputModel struct {
 	Id            string   `json:"-"`
@@ -13,6 +17,20 @@ func (m ReconcileInputModel) GetID() string                                     
 func (m *ReconcileInputModel) SetID(id string) error                            { m.Id = id; return nil }
 func (m *ReconcileInputModel) SetToOneReferenceID(_, _ string) error            { return nil }
 func (m *ReconcileInputModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
+
+// ToRequest maps the JSON:API input to a domain Request, defaulting
+// MinAgeHours to defaultMinAgeHours when the input omits it (<= 0).
+func (m ReconcileInputModel) ToRequest() Request {
+	minAge := m.MinAgeHours
+	if minAge <= 0 {
+		minAge = defaultMinAgeHours
+	}
+	return Request{
+		KeepTenantIDs: m.KeepTenantIDs,
+		MinAgeHours:   minAge,
+		DryRun:        m.DryRun,
+	}
+}
 
 // ReconcileOutputModel is the JSON:API report.
 type ReconcileOutputModel struct {
@@ -38,3 +56,15 @@ func (m ReconcileOutputModel) GetID() string                                    
 func (m *ReconcileOutputModel) SetID(id string) error                            { m.Id = id; return nil }
 func (m *ReconcileOutputModel) SetToOneReferenceID(_, _ string) error            { return nil }
 func (m *ReconcileOutputModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
+
+// toOutput maps a domain Report to the JSON:API ReconcileOutputModel.
+func toOutput(rep Report) ReconcileOutputModel {
+	rows := make([]OutputRow, 0, len(rep.Rows))
+	for _, row := range rep.Rows {
+		rows = append(rows, OutputRow{
+			Bucket: row.Bucket, TenantID: row.TenantID, Action: row.Action,
+			Count: row.Count, Bytes: row.Bytes, Newest: row.Newest.UTC().Format(time.RFC3339),
+		})
+	}
+	return ReconcileOutputModel{Id: "current", DryRun: rep.DryRun, MinAgeHours: rep.MinAgeHours, TotalPrefixes: rep.TotalPrefixes, TotalBytes: rep.TotalBytes, Rows: rows}
+}

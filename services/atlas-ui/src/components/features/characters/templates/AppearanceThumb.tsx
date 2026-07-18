@@ -2,12 +2,16 @@ import { useState } from "react";
 import { ImageOff, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Crop of the 192×256 stand1 render at resize=2 down to the head region.
-// Starting values from prototype.html; tune against real renders at the end
-// (Task 17, design D6).
-export const THUMB_SIZE = 76;
-export const THUMB_OFFSET_X = -74;
-export const THUMB_OFFSET_Y = -70;
+// Head-region crop of the live stand1 render (design D6). The compositor uses a
+// fixed canvas (feet at 119/128 = 0.93 of image height; see CharacterRenderer),
+// so the head sits in the top ~40% and is horizontally centered — a fixed-pixel
+// crop of an aspect-distorted box does NOT work across renders. Instead we scale
+// the render by HEIGHT (width auto → no distortion), center it horizontally, and
+// nudge it up so the face lands in the window. THUMB_ZOOM sets how large the head
+// appears; THUMB_OFFSET_Y trims the transparent padding above the hair.
+export const THUMB_SIZE = 76; // px window (square)
+export const THUMB_ZOOM = 200; // px displayed render height
+export const THUMB_OFFSET_Y = -6; // px vertical nudge (negative = shift render up)
 
 interface AppearanceThumbProps {
   url: string;
@@ -55,12 +59,10 @@ export function AppearanceThumb({
           <img
             src={url}
             alt=""
-            width={192}
-            height={256}
             loading="lazy"
             onError={() => setFailed(true)}
-            className="absolute max-w-none [image-rendering:pixelated]"
-            style={{ left: THUMB_OFFSET_X, top: THUMB_OFFSET_Y }}
+            className="pointer-events-none absolute left-1/2 max-w-none -translate-x-1/2 [image-rendering:pixelated]"
+            style={{ height: THUMB_ZOOM, top: THUMB_OFFSET_Y }}
           />
         )}
         <span className="absolute inset-x-0 bottom-0 bg-background/80 text-center font-mono text-[10px] leading-4">

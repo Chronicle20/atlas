@@ -59,6 +59,7 @@ import (
 	"atlas-channel/listener"
 	monsterDomain "atlas-channel/monster"
 	monsterinfo "atlas-channel/monster/information"
+	controllernpc "atlas-channel/npc/controller"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	_ "atlas-channel/skill/handler/registrations"
@@ -145,6 +146,7 @@ import (
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	opcodes "github.com/Chronicle20/atlas/libs/atlas-opcodes"
+	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	restserver "github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	socket2 "github.com/Chronicle20/atlas/libs/atlas-socket"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
@@ -176,6 +178,9 @@ func main() {
 		service.WithReadinessGate(caughtUp.CaughtUpNow),
 	)
 	l := rt.Logger()
+
+	rc := atlas.Connect(l)
+	controllernpc.InitRegistry(rc)
 
 	validatorMap := produceValidators()
 	handlerMap := produceHandlers()

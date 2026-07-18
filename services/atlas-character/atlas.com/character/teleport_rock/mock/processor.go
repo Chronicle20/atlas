@@ -16,8 +16,10 @@ type ProcessorMock struct {
 	GetByCharacterIdFunc func(characterId uint32) (teleport_rock.Model, error)
 	AddMapFunc           func(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, mapId _map.Id, vip bool) error
 	AddMapAndEmitFunc    func(transactionId uuid.UUID, worldId world.Id, characterId uint32, mapId _map.Id, vip bool) error
+	AddFunc              func(transactionId uuid.UUID, worldId world.Id, characterId uint32, mapId _map.Id, vip bool) (teleport_rock.Model, error)
 	RemoveMapFunc        func(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, mapId _map.Id, vip bool) error
 	RemoveMapAndEmitFunc func(transactionId uuid.UUID, worldId world.Id, characterId uint32, mapId _map.Id, vip bool) error
+	RemoveFunc           func(transactionId uuid.UUID, worldId world.Id, characterId uint32, mapId _map.Id, vip bool) (teleport_rock.Model, error)
 }
 
 func (m *ProcessorMock) GetByCharacterId(characterId uint32) (teleport_rock.Model, error) {
@@ -41,6 +43,13 @@ func (m *ProcessorMock) AddMapAndEmit(transactionId uuid.UUID, worldId world.Id,
 	return nil
 }
 
+func (m *ProcessorMock) Add(transactionId uuid.UUID, worldId world.Id, characterId uint32, mapId _map.Id, vip bool) (teleport_rock.Model, error) {
+	if m.AddFunc != nil {
+		return m.AddFunc(transactionId, worldId, characterId, mapId, vip)
+	}
+	return teleport_rock.Model{}, nil
+}
+
 func (m *ProcessorMock) RemoveMap(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, mapId _map.Id, vip bool) error {
 	if m.RemoveMapFunc != nil {
 		return m.RemoveMapFunc(mb)
@@ -53,6 +62,13 @@ func (m *ProcessorMock) RemoveMapAndEmit(transactionId uuid.UUID, worldId world.
 		return m.RemoveMapAndEmitFunc(transactionId, worldId, characterId, mapId, vip)
 	}
 	return nil
+}
+
+func (m *ProcessorMock) Remove(transactionId uuid.UUID, worldId world.Id, characterId uint32, mapId _map.Id, vip bool) (teleport_rock.Model, error) {
+	if m.RemoveFunc != nil {
+		return m.RemoveFunc(transactionId, worldId, characterId, mapId, vip)
+	}
+	return teleport_rock.Model{}, nil
 }
 
 var _ teleport_rock.Processor = (*ProcessorMock)(nil)

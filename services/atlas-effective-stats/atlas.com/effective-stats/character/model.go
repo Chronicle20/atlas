@@ -286,15 +286,22 @@ func (m Model) ComputeEffectiveStats(qualified map[uint32]bool) stat.Computed {
 
 	flatBonuses := make(map[stat.Type]int32)
 	multipliers := make(map[stat.Type]float64)
+	basePercentFlat := make(map[stat.Type]int32)
 	for _, statType := range stat.AllTypes() {
 		flatBonuses[statType] = 0
 		multipliers[statType] = 0.0
+		basePercentFlat[statType] = 0
 	}
 
-	// Non-equipment bonuses contribute both flat and multiplier values.
+	// Non-equipment bonuses contribute flat, multiplier, and base-percent values.
+	// Base-percent truncates per bonus (Go integer division) against the base
+	// stat only — equipment and other flat bonuses never enter the basis.
 	for _, b := range m.bonuses {
 		flatBonuses[b.StatType()] += b.Amount()
 		multipliers[b.StatType()] += b.Multiplier()
+		if b.BasePercent() != 0 {
+			basePercentFlat[b.StatType()] += baseValues[b.StatType()] * b.BasePercent() / 100
+		}
 	}
 
 	// Equipment bonuses contribute only flat values (existing semantics) and
@@ -313,7 +320,7 @@ func (m Model) ComputeEffectiveStats(qualified map[uint32]bool) stat.Computed {
 		flat := flatBonuses[statType]
 		mult := multipliers[statType]
 
-		effective := float64(base+flat) * (1.0 + mult)
+		effective := float64(base+flat+basePercentFlat[statType]) * (1.0 + mult)
 		if effective < 0 {
 			return 0
 		}

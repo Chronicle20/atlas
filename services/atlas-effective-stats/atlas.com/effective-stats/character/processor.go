@@ -205,7 +205,7 @@ func (p *ProcessorImpl) AddBuffBonuses(ch channel.Model, characterId uint32, buf
 	source := fmt.Sprintf("buff:%d", buffSourceId)
 	sourcedBonuses := make([]stat.Bonus, 0, len(bonuses))
 	for _, b := range bonuses {
-		sourcedBonuses = append(sourcedBonuses, stat.NewFullBonus(source, b.StatType(), b.Amount(), b.Multiplier()))
+		sourcedBonuses = append(sourcedBonuses, b.WithSource(source))
 	}
 	m := GetRegistry().AddBonuses(p.ctx, ch, characterId, sourcedBonuses)
 	p.l.Debugf("Added buff [%d] bonuses for character [%d]: %d stats", buffSourceId, characterId, len(bonuses))
@@ -224,7 +224,7 @@ func (p *ProcessorImpl) AddPassiveBonuses(ch channel.Model, characterId uint32, 
 	source := fmt.Sprintf("passive:%d", skillId)
 	sourcedBonuses := make([]stat.Bonus, 0, len(bonuses))
 	for _, b := range bonuses {
-		sourcedBonuses = append(sourcedBonuses, stat.NewFullBonus(source, b.StatType(), b.Amount(), b.Multiplier()))
+		sourcedBonuses = append(sourcedBonuses, b.WithSource(source))
 	}
 	m := GetRegistry().AddBonuses(p.ctx, ch, characterId, sourcedBonuses)
 	p.l.Debugf("Added passive skill [%d] bonuses for character [%d]: %d stats", skillId, characterId, len(bonuses))

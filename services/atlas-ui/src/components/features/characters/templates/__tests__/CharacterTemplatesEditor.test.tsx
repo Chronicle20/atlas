@@ -41,6 +41,10 @@ import {
   CharacterTemplatesEditor,
   type TemplatesEditorAdapter,
 } from "../CharacterTemplatesEditor";
+import {
+  DetailActionBar,
+  DetailActionBarProvider,
+} from "@/components/DetailActionBarContext";
 
 function TplProbe() {
   const [params] = useSearchParams();
@@ -68,10 +72,11 @@ function renderEditor(
         <Route
           path="/edit"
           element={
-            <>
+            <DetailActionBarProvider>
               <CharacterTemplatesEditor adapter={full} />
+              <DetailActionBar />
               <TplProbe />
-            </>
+            </DetailActionBarProvider>
           }
         />
       </Routes>

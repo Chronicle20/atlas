@@ -19,7 +19,7 @@ import { AppearanceBrowserDialog } from "./AppearanceBrowserDialog";
 import { EquipmentPoolSection } from "./EquipmentPoolSection";
 import { StartingKitSection } from "./StartingKitSection";
 import { PreviewCard } from "./PreviewCard";
-import { SaveBar } from "./SaveBar";
+import { useRegisterDetailActionBar } from "@/components/DetailActionBarContext";
 import type { EquipmentPoolKey } from "./previewLoadout";
 
 export interface TemplatesEditorAdapter {
@@ -153,6 +153,21 @@ export function CharacterTemplatesEditor({
 
   const dirty = isDirty(state);
 
+  // Drive the shared detail-page action bar (rendered by the detail layout)
+  // instead of a local Save/Discard bar. Registers null while loading/empty so
+  // the bar stays hidden until there is a template to save.
+  useRegisterDetailActionBar(
+    state.loaded && state.templates.length > 0
+      ? {
+          dirty,
+          isSaving: adapter.isSaving,
+          onSave: () =>
+            adapter.save(state.templates, () => dispatch({ type: "savedOk" })),
+          onDiscard: discardChanges,
+        }
+      : null,
+  );
+
   // Seed-once gate: only the pre-load window shows skeleton/error, so a
   // transient refetch or save error never blanks an in-progress working copy.
   if (!state.loaded) {
@@ -281,14 +296,6 @@ export function CharacterTemplatesEditor({
           {template && <PreviewCard template={template} picks={picks} />}
         </div>
       </div>
-      <SaveBar
-        dirty={dirty}
-        isSaving={adapter.isSaving}
-        onSave={() =>
-          adapter.save(state.templates, () => dispatch({ type: "savedOk" }))
-        }
-        onDiscard={discardChanges}
-      />
     </div>
   );
 }

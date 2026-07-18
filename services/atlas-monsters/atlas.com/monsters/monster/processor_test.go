@@ -313,6 +313,52 @@ func TestDamageControllerSwitchOnDpsLead(t *testing.T) {
 	}
 }
 
+// TestDamageDPSLeadSwitchSkippedWhenLeaderHidden verifies the DPS-leader
+// controller-switch guard added in processor.go's Damage (~line 531): when
+// the character who just became damage leader is GM-hidden, the switch must
+// be skipped entirely — no STOP_CONTROL/START_CONTROL, and the monster's
+// controller stays unchanged. This is the acceptance-critical assertion
+// ("a hidden GM must NEVER be selected as controller") for the Damage path;
+// every other Damage test leaves hiddenFn nil and only exercises the
+// fail-open branch, so none of them exercise this guard. Mirrors
+// TestDamageControllerSwitchOnDpsLead but with hiddenFn reporting the new
+// leader (character 2) as hidden.
+func TestDamageDPSLeadSwitchSkippedWhenLeaderHidden(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	uniqueId := m.UniqueId()
+	// Pre-populate: character 1 controls and leads damage.
+	if _, err := r.ControlMonster(ten, uniqueId, 1); err != nil {
+		t.Fatalf("ControlMonster: %v", err)
+	}
+	if _, err := r.ApplyDamage(ten, 1, 50, uniqueId, time.Now().UnixMilli()); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	p, events := newRecordingProcessorWithBodies(t, ten)
+	// Character 2 is about to become damage leader — mark it GM-hidden.
+	p.hiddenFn = func() (map[uint32]struct{}, error) { return map[uint32]struct{}{2: {}}, nil }
+	p.Damage(uniqueId, 2, []uint32{500}, 0)
+
+	for _, e := range *events {
+		if e.Type == EventMonsterStatusStopControl || e.Type == EventMonsterStatusStartControl {
+			t.Fatalf("hidden damage leader must not trigger a controller switch, got event %q", e.Type)
+		}
+	}
+
+	got, err := r.GetMonster(ten, uniqueId)
+	if err != nil {
+		t.Fatalf("GetMonster: %v", err)
+	}
+	if got.ControlCharacterId() != 1 {
+		t.Fatalf("expected controller to remain 1 (hidden leader must not gain control), got %d", got.ControlCharacterId())
+	}
+}
+
 // TestDamageNoSwitchWhenLeaderUnchanged — current controller takes more damage
 // and stays leader. No STOP/START, but AGGRO_CHANGED should fire (first hit
 // flips the flag).

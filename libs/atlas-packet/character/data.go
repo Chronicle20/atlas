@@ -400,7 +400,9 @@ func (m *CharacterData) encodeInventory(l logrus.FieldLogger, ctx context.Contex
 	for i := range m.Inventory.RegularEquip {
 		w.WriteByteArray(m.Inventory.RegularEquip[i].Encode(l, ctx)(options))
 	}
-	if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+	// Equip-section terminator width tracks the equip slot width: short for
+	// GMS>=83/JMS, byte for legacy GMS (<83). See model.Asset.encodeSlot.
+	if (t.Region() == "GMS" && t.MajorAtLeast(83)) || t.Region() == "JMS" {
 		w.WriteShort(0)
 	} else {
 		w.WriteByte(0)
@@ -410,7 +412,7 @@ func (m *CharacterData) encodeInventory(l logrus.FieldLogger, ctx context.Contex
 	for i := range m.Inventory.CashEquip {
 		w.WriteByteArray(m.Inventory.CashEquip[i].Encode(l, ctx)(options))
 	}
-	if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+	if (t.Region() == "GMS" && t.MajorAtLeast(83)) || t.Region() == "JMS" {
 		w.WriteShort(0)
 	} else {
 		w.WriteByte(0)
@@ -423,7 +425,10 @@ func (m *CharacterData) encodeInventory(l logrus.FieldLogger, ctx context.Contex
 	for i := range m.Inventory.EquipInv {
 		w.WriteByteArray(m.Inventory.EquipInv[i].Encode(l, ctx)(options))
 	}
-	if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+	// GMS>=83/JMS fold the empty 4th (dragon/mechanic) equip loop terminator
+	// into this Int(0) (two short terminators). Legacy GMS (<83) has no such
+	// loop and terminates the equipable inventory with a single byte.
+	if (t.Region() == "GMS" && t.MajorAtLeast(83)) || t.Region() == "JMS" {
 		w.WriteInt(0)
 	} else {
 		w.WriteByte(0)
@@ -522,7 +527,7 @@ func decodeEquipmentSection(l logrus.FieldLogger, ctx context.Context, r *reques
 	var assets []model.Asset
 	for {
 		var wireSlot uint16
-		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+		if (t.Region() == "GMS" && t.MajorAtLeast(83)) || t.Region() == "JMS" {
 			wireSlot = r.ReadUint16()
 		} else {
 			wireSlot = uint16(r.ReadByte())
@@ -546,7 +551,7 @@ func decodeEquipmentSection(l logrus.FieldLogger, ctx context.Context, r *reques
 func decodeEquipableInventorySection(l logrus.FieldLogger, ctx context.Context, r *request.Reader, options map[string]interface{}, t tenant.Model) []model.Asset {
 	var assets []model.Asset
 	for {
-		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+		if (t.Region() == "GMS" && t.MajorAtLeast(83)) || t.Region() == "JMS" {
 			wireSlot := r.ReadUint16()
 			if wireSlot == 0 {
 				_ = r.ReadUint16() // consume remaining 2 bytes of WriteInt(0) terminator

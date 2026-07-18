@@ -3,10 +3,11 @@ package key
 import (
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 )
 
 // Reset is delete-all + loop-create on the keys table (class B). A failure on

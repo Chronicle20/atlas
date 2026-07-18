@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const CharacterKeyMapAutoMpWriter = "CharacterKeyMapAutoMp"
@@ -19,7 +20,7 @@ func NewCharacterKeyMapAutoMp(action int32) CharacterKeyMapAutoMp {
 	return CharacterKeyMapAutoMp{action: action}
 }
 
-func (m CharacterKeyMapAutoMp) Action() int32    { return m.action }
+func (m CharacterKeyMapAutoMp) Action() int32     { return m.action }
 func (m CharacterKeyMapAutoMp) Operation() string { return CharacterKeyMapAutoMpWriter }
 func (m CharacterKeyMapAutoMp) String() string    { return fmt.Sprintf("action [%d]", m.action) }
 

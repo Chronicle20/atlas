@@ -4,15 +4,16 @@ import (
 	"errors"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 // Builder constructs an immutable wish Model. The id and serial are assigned at
 // create time in the administrator, so they are not required here.
 type Builder struct {
-	id          uuid.UUID
-	tenantId    uuid.UUID
+	id            uuid.UUID
+	tenantId      uuid.UUID
 	worldId       world.Id
 	serial        uint32
 	characterId   uint32

@@ -3,10 +3,11 @@ package compartment
 import (
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
@@ -96,11 +97,9 @@ type CreateAssetCommandBody struct {
 	Rechargeable uint64    `json:"rechargeable"`
 }
 
-type MergeCommandBody struct {
-}
+type MergeCommandBody struct{}
 
-type SortCommandBody struct {
-}
+type SortCommandBody struct{}
 
 type MoveToCommandBody struct {
 	Slot           int16  `json:"slot"`
@@ -136,8 +135,7 @@ type CreatedStatusEventBody struct {
 	Capacity uint32 `json:"capacity"`
 }
 
-type DeletedStatusEventBody struct {
-}
+type DeletedStatusEventBody struct{}
 
 type CapacityChangedEventBody struct {
 	Type     byte   `json:"type"`

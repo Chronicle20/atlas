@@ -4,9 +4,10 @@ import (
 	"atlas-notes/kafka/message/note"
 	"time"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 )
 
 // CreateNoteStatusEventProvider creates a status event for note creation

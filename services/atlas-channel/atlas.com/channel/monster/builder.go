@@ -6,9 +6,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
-var (
-	ErrInvalidUniqueId = errors.New("monster unique id must be greater than 0")
-)
+var ErrInvalidUniqueId = errors.New("monster unique id must be greater than 0")
 
 type modelBuilder struct {
 	field              field.Model

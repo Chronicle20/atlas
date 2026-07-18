@@ -6,8 +6,9 @@ import (
 	buff2 "atlas-rates/kafka/consumer/buff"
 	character2 "atlas-rates/kafka/consumer/character"
 	rate2 "atlas-rates/kafka/consumer/rate"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"os"
+
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"

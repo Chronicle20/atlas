@@ -2,7 +2,7 @@
  * Intersection Observer hook for lazy loading and visibility detection
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from "react";
 
 interface UseIntersectionObserverOptions {
   threshold?: number | number[];
@@ -19,12 +19,12 @@ interface IntersectionObserverResult<T extends Element = Element> {
 }
 
 export function useIntersectionObserver<T extends Element = Element>(
-  options: UseIntersectionObserverOptions = {}
+  options: UseIntersectionObserverOptions = {},
 ): IntersectionObserverResult<T> {
   const {
     threshold = 0.1,
     root = null,
-    rootMargin = '50px',
+    rootMargin = "50px",
     triggerOnce = true,
     enabled = true,
   } = options;
@@ -56,7 +56,7 @@ export function useIntersectionObserver<T extends Element = Element>(
         threshold,
         root,
         rootMargin,
-      }
+      },
     );
 
     observer.observe(elementRef.current);
@@ -67,7 +67,9 @@ export function useIntersectionObserver<T extends Element = Element>(
   }, [threshold, root, rootMargin, triggerOnce, enabled, hasTriggered]);
 
   return {
-    isIntersecting: triggerOnce ? (hasTriggered || isIntersecting) : isIntersecting,
+    isIntersecting: triggerOnce
+      ? hasTriggered || isIntersecting
+      : isIntersecting,
     entry,
     ref: elementRef as React.RefObject<T>,
   };
@@ -76,11 +78,13 @@ export function useIntersectionObserver<T extends Element = Element>(
 /**
  * Hook for lazy loading that only enables queries when element is visible
  */
-export function useLazyLoad<T extends Element = HTMLDivElement>(options?: UseIntersectionObserverOptions) {
+export function useLazyLoad<T extends Element = HTMLDivElement>(
+  options?: UseIntersectionObserverOptions,
+) {
   const { isIntersecting, ref } = useIntersectionObserver<T>({
     triggerOnce: true,
     threshold: 0.1,
-    rootMargin: '100px', // Load slightly before entering viewport
+    rootMargin: "100px", // Load slightly before entering viewport
     ...options,
   });
 

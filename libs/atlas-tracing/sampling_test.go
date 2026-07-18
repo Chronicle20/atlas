@@ -12,11 +12,11 @@ import (
 
 func TestParseSamplingRatio(t *testing.T) {
 	tests := []struct {
-		name      string
-		envValue  string
-		envSet    bool
-		want      float64
-		wantWarn  bool
+		name     string
+		envValue string
+		envSet   bool
+		want     float64
+		wantWarn bool
 	}{
 		{name: "unset defaults to 1.0", envSet: false, want: 1.0, wantWarn: false},
 		{name: "valid 1.0", envSet: true, envValue: "1.0", want: 1.0, wantWarn: false},

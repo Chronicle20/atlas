@@ -2,12 +2,16 @@ package saga
 
 import (
 	asset2 "atlas-saga-orchestrator/kafka/message/asset"
+	incubator2 "atlas-saga-orchestrator/kafka/message/incubator"
 	"atlas-saga-orchestrator/kafka/message/saga"
 	"encoding/json"
 	"testing"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 // buildTakeHomeSaga builds a completed WithdrawFromMts saga in its post-expansion
@@ -103,4 +107,39 @@ func TestCompletedStatusEventProvider_TakeHomeBodyRoundTrips(t *testing.T) {
 	cid, ok := ev.Body.Results["characterId"].(float64)
 	require.True(t, ok, "characterId should round-trip as float64")
 	require.Equal(t, characterId, uint32(cid))
+}
+
+// TestIncubatorResultEventProvider_EggIdSurvives proves the sacrificed Pigmy
+// Egg id set on IncubatorResultPayload survives into the emitted
+// EVENT_TOPIC_INCUBATOR_RESULT message body untouched. A struct-tag typo or
+// field swap on ResultEvent (or a dropped assignment in the provider) must
+// make this test fail — it decodes the actual produced kafka message bytes,
+// not just checks err == nil.
+func TestIncubatorResultEventProvider_EggIdSurvives(t *testing.T) {
+	const characterId = uint32(12345)
+	const itemId = uint32(5000000)
+	const count = uint32(1)
+	const eggId = uint32(4170003)
+
+	payload := IncubatorResultPayload{
+		CharacterId: characterId,
+		WorldId:     world.Id(0),
+		ChannelId:   channel.Id(1),
+		ItemId:      itemId,
+		Count:       count,
+		EggId:       eggId,
+	}
+
+	msgs, err := IncubatorResultEventProvider(payload)()
+	require.NoError(t, err)
+	require.Len(t, msgs, 1)
+
+	var ev incubator2.ResultEvent
+	require.NoError(t, json.Unmarshal(msgs[0].Value, &ev))
+	require.Equal(t, characterId, ev.CharacterId)
+	require.Equal(t, byte(0), ev.WorldId)
+	require.Equal(t, byte(1), ev.ChannelId)
+	require.Equal(t, itemId, ev.ItemId)
+	require.Equal(t, count, ev.Count)
+	require.Equal(t, eggId, ev.EggId, "EggId must survive from payload into the emitted event body")
 }

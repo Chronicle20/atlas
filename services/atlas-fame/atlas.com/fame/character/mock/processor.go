@@ -4,9 +4,10 @@ import (
 	"atlas-fame/character"
 	"atlas-fame/kafka/message"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
 )
 
 type ProcessorMock struct {

@@ -111,3 +111,20 @@ func (c *Client) List(ctx context.Context, bucket, prefix string) ([]ObjectInfo,
 	}
 	return out, nil
 }
+
+// ListTenantPrefixes returns the immediate child prefixes under "tenants/"
+// (one per tenant uuid) using a delimiter listing, so it does not walk every
+// object. Each returned key has the form "tenants/<uuid>/".
+func (c *Client) ListTenantPrefixes(ctx context.Context, bucket string) ([]string, error) {
+	ch := c.mc.ListObjects(ctx, bucket, miniogo.ListObjectsOptions{Prefix: "tenants/", Recursive: false})
+	out := make([]string, 0)
+	for obj := range ch {
+		if obj.Err != nil {
+			return nil, obj.Err
+		}
+		if obj.Key != "tenants/" { // skip the self entry if returned
+			out = append(out, obj.Key)
+		}
+	}
+	return out, nil
+}

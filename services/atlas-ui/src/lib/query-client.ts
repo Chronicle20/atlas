@@ -1,4 +1,4 @@
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient } from "@tanstack/react-query";
 
 /**
  * Default configuration for React Query client
@@ -15,7 +15,8 @@ const queryClientConfig = {
       // Retry failed requests up to 3 times
       retry: 3,
       // Retry with exponential backoff
-      retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      retryDelay: (attemptIndex: number) =>
+        Math.min(1000 * 2 ** attemptIndex, 30000),
       // Don't refetch on window focus by default
       refetchOnWindowFocus: false,
       // Don't refetch on reconnect by default

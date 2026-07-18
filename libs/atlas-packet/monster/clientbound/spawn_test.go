@@ -68,7 +68,7 @@ func TestMonsterSpawnBytesV79(t *testing.T) {
 		0x05,       // moveAction 5 — model.go:502
 		0x00, 0x00, // foothold 0 — model.go:503
 		0x2C, 0x01, // homeFoothold 300 — model.go:504
-		0xFE,       // appearType -2 (Regen) — model.go:505
+		0xFE, // appearType -2 (Regen) — model.go:505
 		// appearTypeOption omitted (-2 is neither -3 nor >=0) — model.go:506
 		0x00,                   // team 0 — model.go:510
 		0x00, 0x00, 0x00, 0x00, // effectItemId 0 — model.go:511
@@ -112,7 +112,7 @@ func TestMonsterSpawnBytesV72(t *testing.T) {
 		0x05,       // moveAction 5
 		0x00, 0x00, // foothold 0
 		0x2C, 0x01, // homeFoothold 300
-		0xFE,       // appearType -2 (Regen)
+		0xFE,                   // appearType -2 (Regen)
 		0x00,                   // team 0
 		0x00, 0x00, 0x00, 0x00, // effectItemId 0
 		// phase omitted (<87)

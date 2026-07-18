@@ -31,7 +31,7 @@ func ExtractMinimap(img *wz.Image) (image.Image, error) {
 	if err != nil {
 		return nil, fmt.Errorf("read canvas data: %w", err)
 	}
-	out, err := canvas.Decompress(data, cp.Width(), cp.Height(), cp.Format(), f.CanvasEncryptionKey())
+	out, err := canvas.Decompress(data, cp.Width(), cp.Height(), cp.Format(), f.CanvasEncryptionKeyFor(cp.DataOffset()))
 	if err != nil {
 		return nil, fmt.Errorf("decompress canvas: %w", err)
 	}

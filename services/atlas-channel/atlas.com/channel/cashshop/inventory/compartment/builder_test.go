@@ -26,7 +26,6 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 	model, err := compartment.NewModelBuilder(id, 100, compartment.TypeExplorer, 50).
 		AddAsset(testAsset).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -136,7 +135,6 @@ func TestAddAsset(t *testing.T) {
 		AddAsset(testAsset1).
 		AddAsset(testAsset2).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -153,7 +151,6 @@ func TestSetAssets(t *testing.T) {
 	model, err := compartment.NewModelBuilder(id, 100, compartment.TypeExplorer, 50).
 		SetAssets([]asset.Model{testAsset}).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}

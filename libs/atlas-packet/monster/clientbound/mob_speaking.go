@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const MobSpeakingWriter = "MobSpeaking"
@@ -32,9 +33,9 @@ func NewMobSpeaking(speechType int32, action int32) MobSpeaking {
 	return MobSpeaking{speechType: speechType, action: action}
 }
 
-func (m MobSpeaking) SpeechType() int32  { return m.speechType }
-func (m MobSpeaking) Action() int32      { return m.action }
-func (m MobSpeaking) Operation() string  { return MobSpeakingWriter }
+func (m MobSpeaking) SpeechType() int32 { return m.speechType }
+func (m MobSpeaking) Action() int32     { return m.action }
+func (m MobSpeaking) Operation() string { return MobSpeakingWriter }
 func (m MobSpeaking) String() string {
 	return fmt.Sprintf("speechType [%d], action [%d]", m.speechType, m.action)
 }

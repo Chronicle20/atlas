@@ -1,13 +1,13 @@
 package drop_test
 
 import (
+	"atlas-drops-information/reactor/drop"
 	"strings"
 	"testing"
 
-	"atlas-drops-information/reactor/drop"
+	"github.com/google/uuid"
 
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
 )
 
 // The reactor-drop catalog files use a JSON:API envelope where the

@@ -1,6 +1,7 @@
 package storage_test
 
 import (
+	"atlas-asset-expiration/storage"
 	"context"
 	"fmt"
 	"net/http"
@@ -9,10 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"atlas-asset-expiration/storage"
+	"github.com/sirupsen/logrus/hooks/test"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/sirupsen/logrus/hooks/test"
 )
 
 // storageAssetDoc renders a JSON:API document for storage assets [from, to].

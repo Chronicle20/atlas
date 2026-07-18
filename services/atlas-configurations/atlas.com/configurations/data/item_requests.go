@@ -41,8 +41,8 @@ func (i *ItemRestModel) SetID(id string) error {
 // the caller surfaces as "item not found in atlas-data". The relationship
 // payload is irrelevant to existence-check semantics, so the methods are
 // intentionally no-ops.
-func (i *ItemRestModel) SetToOneReferenceID(_, _ string) error              { return nil }
-func (i *ItemRestModel) SetToManyReferenceIDs(_ string, _ []string) error  { return nil }
+func (i *ItemRestModel) SetToOneReferenceID(_, _ string) error            { return nil }
+func (i *ItemRestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
 
 // requestEquipmentById hits GET /data/equipment/{id} which returns equip statistics.
 // A 404 from atlas-data means the template does not exist as equip data.

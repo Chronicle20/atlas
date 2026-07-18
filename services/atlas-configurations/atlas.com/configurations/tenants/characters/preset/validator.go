@@ -6,9 +6,10 @@ import (
 	"errors"
 	"strconv"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
 )
 
 // ValidationError describes a single rule violation in a preset.

@@ -3,10 +3,11 @@ package buff
 import (
 	buffMsg "atlas-saga-orchestrator/kafka/message/buff"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 )
 
 // CancelAllCommandProvider creates a Kafka message for canceling all buffs on a character

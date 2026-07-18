@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 const ReactorHitHandle = "ReactorHitHandle"
@@ -15,11 +16,11 @@ const ReactorHitHandle = "ReactorHitHandle"
 // HitRequest - CReactorPool::OnHitReactor
 // packet-audit:fname CReactorPool::FindHitReactor
 type HitRequest struct {
-	oid          uint32
-	isSkill      bool
-	dwHitOption  uint32
-	delay        uint16
-	skillId      uint32
+	oid         uint32
+	isSkill     bool
+	dwHitOption uint32
+	delay       uint16
+	skillId     uint32
 }
 
 func (m HitRequest) Oid() uint32         { return m.oid }

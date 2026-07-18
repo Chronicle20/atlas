@@ -9,7 +9,14 @@ const data: Row[] = [{ id: "1", name: "Alpha" }];
 
 describe("DataTable refresh button", () => {
   it("spins and disables the button while refreshing", () => {
-    render(<DataTable columns={columns} data={data} onRefresh={vi.fn()} isRefreshing />);
+    render(
+      <DataTable
+        columns={columns}
+        data={data}
+        onRefresh={vi.fn()}
+        isRefreshing
+      />,
+    );
     const button = screen.getByTitle("Refresh");
     expect(button).toBeDisabled();
     expect(button.querySelector("svg")).toHaveClass("animate-spin");
@@ -17,7 +24,14 @@ describe("DataTable refresh button", () => {
 
   it("is enabled and not spinning when not refreshing, and clicking calls onRefresh", () => {
     const onRefresh = vi.fn();
-    render(<DataTable columns={columns} data={data} onRefresh={onRefresh} isRefreshing={false} />);
+    render(
+      <DataTable
+        columns={columns}
+        data={data}
+        onRefresh={onRefresh}
+        isRefreshing={false}
+      />,
+    );
     const button = screen.getByTitle("Refresh");
     expect(button).not.toBeDisabled();
     expect(button.querySelector("svg")).not.toHaveClass("animate-spin");
@@ -27,7 +41,14 @@ describe("DataTable refresh button", () => {
 
   it("does not call onRefresh when disabled (refreshing) — no overlapping refetch", () => {
     const onRefresh = vi.fn();
-    render(<DataTable columns={columns} data={data} onRefresh={onRefresh} isRefreshing />);
+    render(
+      <DataTable
+        columns={columns}
+        data={data}
+        onRefresh={onRefresh}
+        isRefreshing
+      />,
+    );
     fireEvent.click(screen.getByTitle("Refresh"));
     expect(onRefresh).not.toHaveBeenCalled();
   });

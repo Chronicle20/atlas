@@ -8,8 +8,9 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 )
 
 const nameValidityPath = "characters/name-validity"

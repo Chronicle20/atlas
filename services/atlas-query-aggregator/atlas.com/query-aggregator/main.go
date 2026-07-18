@@ -2,8 +2,9 @@ package main
 
 import (
 	"atlas-query-aggregator/validation"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"os"
+
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )

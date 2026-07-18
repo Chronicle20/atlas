@@ -6,13 +6,14 @@ import (
 	wishlist2 "atlas-cashshop/kafka/producer/wishlist"
 	"context"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Processor interface {
@@ -63,7 +64,6 @@ func (p *ProcessorImpl) Add(mb *message.Buffer) func(characterId uint32) func(se
 
 			_ = mb.Put(wishlist.EnvEventTopicStatus, wishlist2.AddStatusEventProvider(characterId, serialNumber, m.Id()))
 			return m, nil
-
 		}
 	}
 }

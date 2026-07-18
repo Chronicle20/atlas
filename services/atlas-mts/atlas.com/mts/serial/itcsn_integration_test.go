@@ -1,15 +1,15 @@
 package serial_test
 
 import (
-	"testing"
-
 	"atlas-mts/holding"
 	"atlas-mts/listing"
 	"atlas-mts/test"
+	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 // combinedDB migrates the listing + holding (and, transitively, the shared serial

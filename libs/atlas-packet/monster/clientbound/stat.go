@@ -4,15 +4,18 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
-const MonsterStatSetWriter = "MonsterStatSet"
-const MonsterStatResetWriter = "MonsterStatReset"
+const (
+	MonsterStatSetWriter   = "MonsterStatSet"
+	MonsterStatResetWriter = "MonsterStatReset"
+)
 
 // packet-audit:fname CMob::OnStatSet
 type StatSet struct {
@@ -24,9 +27,9 @@ func NewMonsterStatSet(uniqueId uint32, stat *model.MonsterTemporaryStat) StatSe
 	return StatSet{uniqueId: uniqueId, stat: stat}
 }
 
-func (m StatSet) UniqueId() uint32                       { return m.uniqueId }
-func (m StatSet) Stat() *model.MonsterTemporaryStat      { return m.stat }
-func (m StatSet) Operation() string                      { return MonsterStatSetWriter }
+func (m StatSet) UniqueId() uint32                  { return m.uniqueId }
+func (m StatSet) Stat() *model.MonsterTemporaryStat { return m.stat }
+func (m StatSet) Operation() string                 { return MonsterStatSetWriter }
 func (m StatSet) String() string {
 	return fmt.Sprintf("uniqueId [%d]", m.uniqueId)
 }
@@ -70,9 +73,9 @@ func NewMonsterStatReset(uniqueId uint32, stat *model.MonsterTemporaryStat) Stat
 	return StatReset{uniqueId: uniqueId, stat: stat}
 }
 
-func (m StatReset) UniqueId() uint32                       { return m.uniqueId }
-func (m StatReset) Stat() *model.MonsterTemporaryStat      { return m.stat }
-func (m StatReset) Operation() string                      { return MonsterStatResetWriter }
+func (m StatReset) UniqueId() uint32                  { return m.uniqueId }
+func (m StatReset) Stat() *model.MonsterTemporaryStat { return m.stat }
+func (m StatReset) Operation() string                 { return MonsterStatResetWriter }
 func (m StatReset) String() string {
 	return fmt.Sprintf("uniqueId [%d]", m.uniqueId)
 }

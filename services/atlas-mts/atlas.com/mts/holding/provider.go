@@ -1,10 +1,11 @@
 package holding
 
 import (
+	"gorm.io/gorm"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"gorm.io/gorm"
 )
 
 // getAll resolves every holding row visible to the request's tenant. It backs
@@ -136,6 +137,7 @@ func modelFromEntity(e entity) (Model, error) {
 		SetRingId(e.RingId).
 		SetViciousCount(e.ViciousCount).
 		SetFlags(e.Flags).
+		SetOwner(e.Owner).
 		SetCreatedAt(e.CreatedAt)
 	return b.Build()
 }

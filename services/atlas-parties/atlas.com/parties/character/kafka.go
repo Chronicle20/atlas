@@ -21,11 +21,9 @@ type memberStatusEvent[E any] struct {
 	Body        E        `json:"body"`
 }
 
-type memberLoginEventBody struct {
-}
+type memberLoginEventBody struct{}
 
-type memberLogoutEventBody struct {
-}
+type memberLogoutEventBody struct{}
 
 type memberLevelChangedEventBody struct {
 	OldLevel byte   `json:"oldLevel"`

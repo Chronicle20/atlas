@@ -3,11 +3,11 @@
  * Provides name and icon URL data for items using atlas-data API and atlas-assets
  */
 
-import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useMemo, useEffect } from 'react';
-import { useTenant } from '@/context/tenant-context';
-import { itemsService } from '@/services/api/items.service';
-import { getAssetIconUrl } from '@/lib/utils/asset-url';
+import { useQuery, useQueries, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useMemo, useEffect } from "react";
+import { useTenant } from "@/context/tenant-context";
+import { itemsService } from "@/services/api/items.service";
+import { getAssetIconUrl } from "@/lib/utils/asset-url";
 
 interface ItemDataResult {
   id: number;
@@ -26,7 +26,10 @@ interface UseItemDataOptions {
   onError?: (error: Error) => void;
 }
 
-interface UseItemBatchDataOptions extends Omit<UseItemDataOptions, 'onSuccess' | 'onError'> {
+interface UseItemBatchDataOptions extends Omit<
+  UseItemDataOptions,
+  "onSuccess" | "onError"
+> {
   onSuccess?: (data: ItemDataResult[]) => void;
   onError?: (error: Error) => void;
 }
@@ -39,7 +42,7 @@ const DEFAULT_OPTIONS = {
 };
 
 function generateItemDataQueryKey(itemId: number, tenantId?: string): string[] {
-  return ['item-data', tenantId || '', itemId.toString()];
+  return ["item-data", tenantId || "", itemId.toString()];
 }
 
 /**
@@ -47,7 +50,7 @@ function generateItemDataQueryKey(itemId: number, tenantId?: string): string[] {
  */
 export function useItemData(
   itemId: number,
-  hookOptions: UseItemDataOptions = {}
+  hookOptions: UseItemDataOptions = {},
 ) {
   const {
     enabled = DEFAULT_OPTIONS.enabled,
@@ -58,9 +61,17 @@ export function useItemData(
     onError,
   } = hookOptions;
 
-  const options = useMemo(() => ({
-    enabled, staleTime, gcTime, retry, onSuccess, onError,
-  }), [enabled, staleTime, gcTime, retry, onSuccess, onError]);
+  const options = useMemo(
+    () => ({
+      enabled,
+      staleTime,
+      gcTime,
+      retry,
+      onSuccess,
+      onError,
+    }),
+    [enabled, staleTime, gcTime, retry, onSuccess, onError],
+  );
 
   const { activeTenant } = useTenant();
   const queryClient = useQueryClient();
@@ -71,7 +82,7 @@ export function useItemData(
     queryKey,
     queryFn: async (): Promise<ItemDataResult> => {
       if (!activeTenant) {
-        return { id: itemId, cached: false, error: 'No active tenant' };
+        return { id: itemId, cached: false, error: "No active tenant" };
       }
 
       const iconUrl = getAssetIconUrl(
@@ -79,13 +90,18 @@ export function useItemData(
         activeTenant.attributes.region,
         activeTenant.attributes.majorVersion,
         activeTenant.attributes.minorVersion,
-        'item',
+        "item",
         itemId,
       );
 
       try {
         const name = await itemsService.getItemName(itemId.toString());
-        const result: ItemDataResult = { id: itemId, name, iconUrl, cached: false };
+        const result: ItemDataResult = {
+          id: itemId,
+          name,
+          iconUrl,
+          cached: false,
+        };
         if (options.onSuccess) options.onSuccess(result);
         return result;
       } catch (error) {
@@ -94,7 +110,8 @@ export function useItemData(
           id: itemId,
           iconUrl,
           cached: false,
-          error: error instanceof Error ? error.message : 'Unknown error occurred',
+          error:
+            error instanceof Error ? error.message : "Unknown error occurred",
         };
       }
     },
@@ -102,9 +119,13 @@ export function useItemData(
     staleTime: options.staleTime,
     gcTime: options.gcTime,
     retry: (failureCount, error) => {
-      const errorMessage = error?.message?.toLowerCase() || '';
-      if (errorMessage.includes('404') || errorMessage.includes('not found') ||
-          errorMessage.includes('400') || errorMessage.includes('bad request')) {
+      const errorMessage = error?.message?.toLowerCase() || "";
+      if (
+        errorMessage.includes("404") ||
+        errorMessage.includes("not found") ||
+        errorMessage.includes("400") ||
+        errorMessage.includes("bad request")
+      ) {
         return false;
       }
       return failureCount < options.retry;
@@ -112,7 +133,10 @@ export function useItemData(
     retryDelay: (attemptIndex) => {
       const baseDelay = 1000;
       const maxDelay = 10000;
-      return Math.min(baseDelay * Math.pow(2, attemptIndex), maxDelay) + Math.random() * 1000;
+      return (
+        Math.min(baseDelay * Math.pow(2, attemptIndex), maxDelay) +
+        Math.random() * 1000
+      );
     },
     refetchOnWindowFocus: false,
     refetchOnReconnect: true,
@@ -127,30 +151,43 @@ export function useItemData(
   }, [query.isError, query.error]);
 
   const invalidate = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['item-data', itemId.toString()] });
+    queryClient.invalidateQueries({
+      queryKey: ["item-data", itemId.toString()],
+    });
   }, [queryClient, itemId]);
 
-  const prefetchItem = useCallback((prefetchItemId: number) => {
-    if (!activeTenant) return;
-    const prefetchKey = generateItemDataQueryKey(prefetchItemId, activeTenant.id);
-    queryClient.prefetchQuery({
-      queryKey: prefetchKey,
-      queryFn: async () => {
-        const iconUrl = getAssetIconUrl(
-          activeTenant.id, activeTenant.attributes.region,
-          activeTenant.attributes.majorVersion, activeTenant.attributes.minorVersion,
-          'item', prefetchItemId,
-        );
-        try {
-          const name = await itemsService.getItemName(prefetchItemId.toString());
-          return { id: prefetchItemId, name, iconUrl, cached: false };
-        } catch {
-          return { id: prefetchItemId, iconUrl, cached: false };
-        }
-      },
-      staleTime: options.staleTime,
-    });
-  }, [queryClient, activeTenant, options.staleTime]);
+  const prefetchItem = useCallback(
+    (prefetchItemId: number) => {
+      if (!activeTenant) return;
+      const prefetchKey = generateItemDataQueryKey(
+        prefetchItemId,
+        activeTenant.id,
+      );
+      queryClient.prefetchQuery({
+        queryKey: prefetchKey,
+        queryFn: async () => {
+          const iconUrl = getAssetIconUrl(
+            activeTenant.id,
+            activeTenant.attributes.region,
+            activeTenant.attributes.majorVersion,
+            activeTenant.attributes.minorVersion,
+            "item",
+            prefetchItemId,
+          );
+          try {
+            const name = await itemsService.getItemName(
+              prefetchItemId.toString(),
+            );
+            return { id: prefetchItemId, name, iconUrl, cached: false };
+          } catch {
+            return { id: prefetchItemId, iconUrl, cached: false };
+          }
+        },
+        staleTime: options.staleTime,
+      });
+    },
+    [queryClient, activeTenant, options.staleTime],
+  );
 
   return {
     ...query,
@@ -170,7 +207,7 @@ export function useItemData(
  */
 export function useItemBatchData(
   itemIds: number[],
-  hookOptions: UseItemBatchDataOptions = {}
+  hookOptions: UseItemBatchDataOptions = {},
 ) {
   const {
     enabled = DEFAULT_OPTIONS.enabled,
@@ -181,9 +218,17 @@ export function useItemBatchData(
     onError,
   } = hookOptions;
 
-  const options = useMemo(() => ({
-    enabled, staleTime, gcTime, retry, onSuccess, onError,
-  }), [enabled, staleTime, gcTime, retry, onSuccess, onError]);
+  const options = useMemo(
+    () => ({
+      enabled,
+      staleTime,
+      gcTime,
+      retry,
+      onSuccess,
+      onError,
+    }),
+    [enabled, staleTime, gcTime, retry, onSuccess, onError],
+  );
 
   const { activeTenant } = useTenant();
   const queryClient = useQueryClient();
@@ -193,20 +238,25 @@ export function useItemBatchData(
       queryKey: generateItemDataQueryKey(itemId, activeTenant?.id),
       queryFn: async (): Promise<ItemDataResult> => {
         if (!activeTenant) {
-          return { id: itemId, cached: false, error: 'No active tenant' };
+          return { id: itemId, cached: false, error: "No active tenant" };
         }
         const iconUrl = getAssetIconUrl(
-          activeTenant.id, activeTenant.attributes.region,
-          activeTenant.attributes.majorVersion, activeTenant.attributes.minorVersion,
-          'item', itemId,
+          activeTenant.id,
+          activeTenant.attributes.region,
+          activeTenant.attributes.majorVersion,
+          activeTenant.attributes.minorVersion,
+          "item",
+          itemId,
         );
         try {
           const name = await itemsService.getItemName(itemId.toString());
           return { id: itemId, name, iconUrl, cached: false };
         } catch (error) {
           return {
-            id: itemId, iconUrl, cached: false,
-            error: error instanceof Error ? error.message : 'Unknown error',
+            id: itemId,
+            iconUrl,
+            cached: false,
+            error: error instanceof Error ? error.message : "Unknown error",
           };
         }
       },
@@ -214,21 +264,29 @@ export function useItemBatchData(
       staleTime: options.staleTime,
       gcTime: options.gcTime,
       retry: (failureCount: number, error: Error) => {
-        if (error?.message?.includes('404') || error?.message?.includes('not found')) {
+        if (
+          error?.message?.includes("404") ||
+          error?.message?.includes("not found")
+        ) {
           return false;
         }
         return failureCount < options.retry;
       },
       refetchOnWindowFocus: false,
-      placeholderData: (previousData: ItemDataResult | undefined) => previousData,
+      placeholderData: (previousData: ItemDataResult | undefined) =>
+        previousData,
     })),
   });
 
-  const allData = queries.map(query => query.data).filter(Boolean) as ItemDataResult[];
-  const isLoading = queries.some(query => query.isLoading);
-  const isError = queries.some(query => query.isError);
-  const isSuccess = queries.every(query => query.isSuccess);
-  const errors = queries.filter(query => query.error).map(query => query.error);
+  const allData = queries
+    .map((query) => query.data)
+    .filter(Boolean) as ItemDataResult[];
+  const isLoading = queries.some((query) => query.isLoading);
+  const isError = queries.some((query) => query.isError);
+  const isSuccess = queries.every((query) => query.isSuccess);
+  const errors = queries
+    .filter((query) => query.error)
+    .map((query) => query.error);
 
   useEffect(() => {
     if (isSuccess && allData.length === itemIds.length && options.onSuccess) {
@@ -245,8 +303,10 @@ export function useItemBatchData(
   }, [isError, errors.length]);
 
   const invalidateAll = useCallback(() => {
-    itemIds.forEach(itemId => {
-      queryClient.invalidateQueries({ queryKey: ['item-data', itemId.toString()] });
+    itemIds.forEach((itemId) => {
+      queryClient.invalidateQueries({
+        queryKey: ["item-data", itemId.toString()],
+      });
     });
   }, [queryClient, itemIds]);
 
@@ -270,48 +330,63 @@ export function useItemDataCache() {
 
   const getCacheStats = useCallback(() => {
     const cache = queryClient.getQueryCache();
-    const itemDataQueries = cache.findAll({ queryKey: ['item-data'] });
+    const itemDataQueries = cache.findAll({ queryKey: ["item-data"] });
     return {
       totalQueries: itemDataQueries.length,
-      activeQueries: itemDataQueries.filter(q => q.state.status === 'success').length,
-      errorQueries: itemDataQueries.filter(q => q.state.status === 'error').length,
-      loadingQueries: itemDataQueries.filter(q => q.state.status === 'pending').length,
+      activeQueries: itemDataQueries.filter((q) => q.state.status === "success")
+        .length,
+      errorQueries: itemDataQueries.filter((q) => q.state.status === "error")
+        .length,
+      loadingQueries: itemDataQueries.filter(
+        (q) => q.state.status === "pending",
+      ).length,
     };
   }, [queryClient]);
 
-  const clearCache = useCallback((itemId?: number) => {
-    if (itemId) {
-      queryClient.removeQueries({ queryKey: ['item-data', itemId.toString()] });
-    } else {
-      queryClient.removeQueries({ queryKey: ['item-data'] });
-    }
-  }, [queryClient]);
-
-  const warmCache = useCallback(async (itemIds: number[]) => {
-    if (!activeTenant) return [];
-    return Promise.allSettled(
-      itemIds.map((itemId) => {
-        const queryKey = generateItemDataQueryKey(itemId, activeTenant.id);
-        return queryClient.prefetchQuery({
-          queryKey,
-          queryFn: async (): Promise<ItemDataResult> => {
-            const iconUrl = getAssetIconUrl(
-              activeTenant.id, activeTenant.attributes.region,
-              activeTenant.attributes.majorVersion, activeTenant.attributes.minorVersion,
-              'item', itemId,
-            );
-            try {
-              const name = await itemsService.getItemName(itemId.toString());
-              return { id: itemId, name, iconUrl, cached: false };
-            } catch {
-              return { id: itemId, iconUrl, cached: false };
-            }
-          },
-          staleTime: DEFAULT_OPTIONS.staleTime,
+  const clearCache = useCallback(
+    (itemId?: number) => {
+      if (itemId) {
+        queryClient.removeQueries({
+          queryKey: ["item-data", itemId.toString()],
         });
-      }),
-    );
-  }, [queryClient, activeTenant]);
+      } else {
+        queryClient.removeQueries({ queryKey: ["item-data"] });
+      }
+    },
+    [queryClient],
+  );
+
+  const warmCache = useCallback(
+    async (itemIds: number[]) => {
+      if (!activeTenant) return [];
+      return Promise.allSettled(
+        itemIds.map((itemId) => {
+          const queryKey = generateItemDataQueryKey(itemId, activeTenant.id);
+          return queryClient.prefetchQuery({
+            queryKey,
+            queryFn: async (): Promise<ItemDataResult> => {
+              const iconUrl = getAssetIconUrl(
+                activeTenant.id,
+                activeTenant.attributes.region,
+                activeTenant.attributes.majorVersion,
+                activeTenant.attributes.minorVersion,
+                "item",
+                itemId,
+              );
+              try {
+                const name = await itemsService.getItemName(itemId.toString());
+                return { id: itemId, name, iconUrl, cached: false };
+              } catch {
+                return { id: itemId, iconUrl, cached: false };
+              }
+            },
+            staleTime: DEFAULT_OPTIONS.staleTime,
+          });
+        }),
+      );
+    },
+    [queryClient, activeTenant],
+  );
 
   return { getCacheStats, clearCache, warmCache };
 }

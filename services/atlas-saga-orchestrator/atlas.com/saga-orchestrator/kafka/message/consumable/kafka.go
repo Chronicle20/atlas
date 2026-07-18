@@ -1,11 +1,12 @@
 package consumable
 
 import (
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
@@ -15,8 +16,8 @@ const (
 	CommandCancelConsumableEffect = "CANCEL_CONSUMABLE_EFFECT"
 
 	// Consumable status event constants
-	EnvEventTopicStatus             = "EVENT_TOPIC_CONSUMABLE_STATUS"
-	StatusEventTypeEffectApplied    = "EFFECT_APPLIED"
+	EnvEventTopicStatus          = "EVENT_TOPIC_CONSUMABLE_STATUS"
+	StatusEventTypeEffectApplied = "EFFECT_APPLIED"
 )
 
 // Command represents a Kafka command for consumable operations

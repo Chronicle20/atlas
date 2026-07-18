@@ -8,12 +8,13 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+
 	channelconst "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	mbcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound/monsterbook"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 // withRecordingSeams swaps every package-level seam for a recorder so
@@ -21,14 +22,14 @@ import (
 // up the session registry, the map processor, or a real socket writer.
 // Returns counters/captures and a restore func.
 type recorder struct {
-	sessionLookups       int
-	sessionPresent       bool
-	setCardCalls         int
-	lastSetCard          mbcb.SetCard
-	cardGetEffectCalls   int
-	foreignBroadcasts    int
-	setCoverCalls        int
-	lastSetCover         mbcb.SetCover
+	sessionLookups     int
+	sessionPresent     bool
+	setCardCalls       int
+	lastSetCard        mbcb.SetCard
+	cardGetEffectCalls int
+	foreignBroadcasts  int
+	setCoverCalls      int
+	lastSetCover       mbcb.SetCover
 }
 
 func withRecordingSeams(t *testing.T, sessionPresent bool) (*recorder, func()) {

@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 const CashShopOperationIncreaseCharacterSlotHandle = "CashShopOperationIncreaseCharacterSlotHandle"
@@ -21,8 +22,8 @@ type ShopOperationIncreaseCharacterSlot struct {
 }
 
 func (m ShopOperationIncreaseCharacterSlot) IsPoints() bool       { return m.isPoints }
-func (m ShopOperationIncreaseCharacterSlot) Currency() uint32      { return m.currency }
-func (m ShopOperationIncreaseCharacterSlot) SerialNumber() uint32  { return m.serialNumber }
+func (m ShopOperationIncreaseCharacterSlot) Currency() uint32     { return m.currency }
+func (m ShopOperationIncreaseCharacterSlot) SerialNumber() uint32 { return m.serialNumber }
 
 func (m ShopOperationIncreaseCharacterSlot) Operation() string {
 	return CashShopOperationIncreaseCharacterSlotHandle

@@ -12,8 +12,9 @@ import (
 // CheckName v72 byte-fixture.
 //
 // Client send — CLogin::SendCheckDuplicateIDPacket sub_46BB81 @0x46BB81:
-//   COutPacket(21) @0x46bbe7 then EncodeStr(name) @0x46bc04. Single name string.
-//   == v79.
+//
+//	COutPacket(21) @0x46bbe7 then EncodeStr(name) @0x46bc04. Single name string.
+//	== v79.
 //
 // packet-audit:verify packet=character/serverbound/CheckName version=gms_v72 ida=0x46bb81
 func TestCheckNameByteOutputV72(t *testing.T) {
@@ -31,10 +32,11 @@ func TestCheckNameByteOutputV72(t *testing.T) {
 // CreateCharacter v72 byte-fixture.
 //
 // Client send — CLogin::SendNewCharPacket sub_5B219A @0x5B219A:
-//   COutPacket(22)                                                  /*0x5b2206*/
-//   EncodeStr(name)                                                 /*0x5b221f*/
-//   loop 8x Encode4 (face, hair, hairColor, skinColor, top, bottom, shoes, weapon) /*0x5b2230*/
-//   Encode1(gender)                                                 /*0x5b2247*/
+//
+//	COutPacket(22)                                                  /*0x5b2206*/
+//	EncodeStr(name)                                                 /*0x5b221f*/
+//	loop 8x Encode4 (face, hair, hairColor, skinColor, top, bottom, shoes, weapon) /*0x5b2230*/
+//	Encode1(gender)                                                 /*0x5b2247*/
 //
 // LEGACY DIVERGENCE vs v79: v72 (< 73) writes NO jobIndex int (the do/while loop
 // runs exactly 8 times; there is no separate Encode4 before it). create.go already
@@ -84,9 +86,10 @@ func TestCreateCharacterByteOutputV72(t *testing.T) {
 // delete-character sender; the registry's stale 0x7169BE points at an unrelated
 // dialog sender. Verified by body: prompts DOB via sub_5C728E, sends [dob][charId]
 // and deselects the slot):
-//   COutPacket(24)                                                  /*0x5b2110*/
-//   Encode4(dob)   // date-of-birth security value                  /*0x5b211e*/
-//   Encode4(characterId)                                            /*0x5b213b*/
+//
+//	COutPacket(24)                                                  /*0x5b2110*/
+//	Encode4(dob)   // date-of-birth security value                  /*0x5b211e*/
+//	Encode4(characterId)                                            /*0x5b213b*/
 //
 // GROUND-TRUTH OPCODE: COutPacket(24), NOT 23. The CSV has no v72 column; the
 // registry seeded op 23 from the v83 column, but the v72 client sends opcode 24
@@ -110,9 +113,10 @@ func TestDeleteCharacterByteOutputV72(t *testing.T) {
 // DistributeAp v72 byte-fixture — DISTRIBUTE_AP, op 86 (0x56).
 //
 // Client send — CWvsContext::SendAbilityUpRequest(DWORD) sub_91BBAD @0x91BBAD:
-//   COutPacket(86)                                                  /*0x91bc86*/
-//   Encode4(update_time)                                            /*0x91bc97*/
-//   Encode4(dwFlag)  // ability-up bitmask (a2)                     /*0x91bca2*/
+//
+//	COutPacket(86)                                                  /*0x91bc86*/
+//	Encode4(update_time)                                            /*0x91bc97*/
+//	Encode4(dwFlag)  // ability-up bitmask (a2)                     /*0x91bca2*/
 //
 // Body = updateTime(4) + dwFlag(4). Version-invariant vs v79.
 //
@@ -133,10 +137,11 @@ func TestDistributeApByteOutputV72(t *testing.T) {
 // AutoDistributeAp v72 byte-fixture — AUTO_DISTRIBUTE_AP, op 87 (0x57).
 //
 // Client send — CWvsContext::SendAbilityUpRequest(ZArray<StatPair>*) sub_91BCE8 @0x91BCE8:
-//   COutPacket(87)                                                  /*0x91be17*/
-//   Encode4(update_time)                                            /*0x91be29*/
-//   Encode4(count)  // *(a2-4) array length                         /*0x91be3b*/
-//   loop i: Encode4(flag[i]) /*0x91be53*/, Encode4(value[i]) /*0x91be61*/
+//
+//	COutPacket(87)                                                  /*0x91be17*/
+//	Encode4(update_time)                                            /*0x91be29*/
+//	Encode4(count)  // *(a2-4) array length                         /*0x91be3b*/
+//	loop i: Encode4(flag[i]) /*0x91be53*/, Encode4(value[i]) /*0x91be61*/
 //
 // Body = updateTime(4) + count(4) + count×(flag(4)+value(4)). == v79.
 //
@@ -168,9 +173,10 @@ func TestAutoDistributeApByteOutputV72(t *testing.T) {
 // DistributeSp v72 byte-fixture — DISTRIBUTE_SP, op 89 (0x59).
 //
 // Client send — CWvsContext::SendSkillUpRequest sub_91BEAD @0x91BEAD:
-//   COutPacket(89)                                                  /*0x91bed2*/
-//   Encode4(update_time)                                            /*0x91bee4*/
-//   Encode4(skillId)  // a2                                         /*0x91beef*/
+//
+//	COutPacket(89)                                                  /*0x91bed2*/
+//	Encode4(update_time)                                            /*0x91bee4*/
+//	Encode4(skillId)  // a2                                         /*0x91beef*/
 //
 // Body = updateTime(4) + skillId(4). == v79.
 //
@@ -191,10 +197,11 @@ func TestDistributeSpByteOutputV72(t *testing.T) {
 // InfoRequest v72 byte-fixture — CHAR_INFO_REQUEST, op 96 (0x60).
 //
 // Client send — CWvsContext::SendCharacterInfoRequest sub_91C174 @0x91C174:
-//   COutPacket(96)                                                  /*0x91c1d1*/
-//   Encode4(update_time)                                            /*0x91c1e8*/
-//   Encode4(characterId)  // v6                                     /*0x91c1f1*/
-//   Encode1(petInfo)  // a4                                         /*0x91c1fc*/
+//
+//	COutPacket(96)                                                  /*0x91c1d1*/
+//	Encode4(update_time)                                            /*0x91c1e8*/
+//	Encode4(characterId)  // v6                                     /*0x91c1f1*/
+//	Encode1(petInfo)  // a4                                         /*0x91c1fc*/
 //
 // Body = updateTime(4) + characterId(4) + petInfo(1). == v79.
 //
@@ -216,11 +223,12 @@ func TestInfoRequestByteOutputV72(t *testing.T) {
 // HealOverTime v72 byte-fixture — HEAL_OVER_TIME, op 88 (0x58).
 //
 // Client send — CWvsContext::SendStatChangeRequest @0x9179C6:
-//   COutPacket(88)                                                  /*0x9179d8*/
-//   Encode4(0x1400)  // val = constant HP|MP mask                   /*0x9179e9*/
-//   Encode2(hp)                                                     /*0x9179f4*/
-//   Encode2(mp)                                                     /*0x9179ff*/
-//   Encode1(option)                                                 /*0x917a0a*/
+//
+//	COutPacket(88)                                                  /*0x9179d8*/
+//	Encode4(0x1400)  // val = constant HP|MP mask                   /*0x9179e9*/
+//	Encode2(hp)                                                     /*0x9179f4*/
+//	Encode2(mp)                                                     /*0x9179ff*/
+//	Encode1(option)                                                 /*0x917a0a*/
 //
 // There is NO get_update_time call → no leading updateTime dword (legacy GMS <83,
 // heal_over_time.go). Body = val(4) + hp(2) + mp(2) + option(1) = 9 bytes. == v79.

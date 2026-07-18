@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/monster"
@@ -19,7 +21,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 func parseJobId(filePath string) (uint32, error) {
@@ -33,7 +34,6 @@ func parseJobId(filePath string) (uint32, error) {
 		return 0, err
 	}
 	return uint32(id), nil
-
 }
 
 func Read(l logrus.FieldLogger) func(ctx context.Context) func(np model.Provider[xml.Node]) model.Provider[[]RestModel] {
@@ -137,6 +137,7 @@ func getEffects(skillId skill.Id, buff bool, nodes []xml.Node) []effect.RestMode
 	}
 	return results
 }
+
 func getEffect(skillId skill.Id, overTime bool, node xml.Node) effect.RestModel {
 	e := effect.NewModelBuilder().
 		SetDuration(node.GetIntegerWithDefault("time", -1)).
@@ -268,7 +269,7 @@ func getEffect(skillId skill.Id, overTime bool, node xml.Node) effect.RestModel 
 	} else if skill.Is(skillId, skill.EvanStage6SlowId) {
 		statups = produceBuffStatAmount(statups, character.TemporaryStatTypeMagicResist, int32(e.X()))
 	} else if skill.Is(skillId, skill.PriestMysticDoorId, skill.HunterSoulArrowBowId, skill.CrossbowmanSoulArrowCrossbowId, skill.WindArcherStage2SoulArrowId) {
-		//TODO this is weird right?
+		// TODO this is weird right?
 		statups = produceBuffStatAmount(statups, character.TemporaryStatTypeSoulArrow, int32(e.X()))
 	} else if skill.Is(skillId, skill.RangerPuppetId, skill.SniperPuppetId, skill.WindArcherStage3PuppetId, skill.OutlawOctopusId, skill.CorsairWrathOfTheOctopiId) {
 		statups = produceBuffStatAmount(statups, character.TemporaryStatTypePuppet, 1)
@@ -316,7 +317,7 @@ func getEffect(skillId skill.Id, overTime bool, node xml.Node) effect.RestModel 
 		skill.SpearmanSpearBoosterId, skill.SpearmanPolearmBoosterId, skill.HunterBowBoosterId, skill.CrossbowmanCrossbowBoosterId, skill.AssassinClawBoosterId, skill.BanditDaggerBoosterId,
 		skill.FirePoisonMagicianSpellBoosterId, skill.IceLightningMagicianSpellBoosterId, skill.BrawlerKnucklerBoosterId, skill.GunslingerGunBoosterId, skill.DawnWarriorStage2SwordBoosterId,
 		skill.BlazeWizardStage2SpellBoosterId, skill.WindArcherStage2BowBoosterId, skill.NightWalkerStage2ClawBoosterId, skill.ThunderBreakerStage2KnuckleBoosterId, skill.EvanStage6MagicBoosterId) {
-		//TODO power explosion
+		// TODO power explosion
 		statups = produceBuffStatAmount(statups, character.TemporaryStatTypeBooster, int32(e.X()))
 	} else if skill.Is(skillId, skill.HeroMapleWarriorId, skill.PaladinMapleWarriorId, skill.DarkKnightMapleWarriorId, skill.FirePoisonArchMagicianMapleWarriorId, skill.IceLightningArchMagicianMapleWarriorId,
 		skill.BishopMapleWarriorId, skill.BowmasterMapleWarriorId, skill.MarksmanMapleWarriorId, skill.NightLordMapleWarriorId, skill.ShadowerMapleWarriorId, skill.CorsairMapleWarriorId, skill.BuccaneerMapleWarriorId,
@@ -435,9 +436,9 @@ func getAbnormalStatuses(node xml.Node) []string {
 
 func getMapProtection(sourceId item.Id) byte {
 	if item.Is(sourceId, item.UseRedBeanPorridge, item.UseSoftWhiteBun) {
-		return 1 //elnath cold
+		return 1 // elnath cold
 	} else if sourceId == item.UseAirBubble {
-		return 2 //aqua road underwater
+		return 2 // aqua road underwater
 	} else {
 		return 0
 	}

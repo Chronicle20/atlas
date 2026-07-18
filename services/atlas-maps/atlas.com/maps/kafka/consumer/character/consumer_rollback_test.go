@@ -1,17 +1,18 @@
 package character
 
 import (
+	"atlas-maps/character/location"
+	"atlas-maps/visit"
 	"testing"
 	"time"
 
-	"atlas-maps/character/location"
 	characterKafka "atlas-maps/kafka/message/character"
-	"atlas-maps/visit"
 
-	"github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 )
 
 // Character-deleted deletes character_map_visits then character_locations

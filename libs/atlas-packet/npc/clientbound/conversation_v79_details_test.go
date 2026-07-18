@@ -5,8 +5,9 @@ import (
 	"encoding/binary"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	testlog "github.com/sirupsen/logrus/hooks/test"
+
+	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 // v79 NPC conversation detail byte fixtures. The v79 conversation dispatcher is

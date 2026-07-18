@@ -1,10 +1,9 @@
 package asset
 
 import (
+	"atlas-consumables/kafka/message/asset"
 	"context"
 	"testing"
-
-	"atlas-consumables/kafka/message/asset"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"

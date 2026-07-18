@@ -1,6 +1,7 @@
 package monster_test
 
 import (
+	"atlas-maps/monster"
 	"context"
 	"fmt"
 	"net/http"
@@ -9,15 +10,14 @@ import (
 	"strings"
 	"testing"
 
-	"atlas-maps/monster"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus/hooks/test"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	mapconst "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus/hooks/test"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // monstersDoc renders a JSON:API "monsters" document for unique ids

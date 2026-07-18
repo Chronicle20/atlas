@@ -7,9 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 )
 
 // In-process, tenant-scoped TTL cache fronting GetById. Semantics ported

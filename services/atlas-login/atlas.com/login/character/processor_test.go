@@ -1,6 +1,7 @@
 package character
 
 import (
+	"atlas-login/inventory"
 	"context"
 	"net/http"
 	"net/http/httptest"
@@ -9,14 +10,13 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"atlas-login/inventory"
-
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // counterValue reads a labeled counter from the default gatherer (0 when the

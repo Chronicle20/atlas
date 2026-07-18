@@ -3,10 +3,11 @@ package bid
 import (
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // Processor exposes the REST-facing operations over auction bids. Kafka

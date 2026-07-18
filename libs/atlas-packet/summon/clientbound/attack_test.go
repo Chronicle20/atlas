@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"testing"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 func TestSummonAttackRoundTrip(t *testing.T) {
@@ -132,6 +133,7 @@ var summonAttackV79Body = []byte{
 //     byte (v83+ read charLevel first); Decode1@0x71d08b → count (loop guard
 //     `if (v6 > 0)`); per target: Decode4@0x71d0bf monsterOid; if(oid){ Decode1@
 //     0x71d0cd byte(6); Decode4@0x71d0e0 damage } and NOTHING after the loop.
+//
 // The missing char-level byte is the v79 delta vs v83+ (t.MajorAtLeast(83)=false).
 // packet-audit:verify packet=summon/clientbound/SummonAttack version=gms_v79 ida=0x71cfe9
 func TestSummonAttackBytesV79(t *testing.T) {
@@ -160,6 +162,7 @@ func TestSummonAttackBytesV79(t *testing.T) {
 //     v73=b&0x7F direction) — NO leading charLevel byte; Decode1@0x6e9351 → count;
 //     per target: Decode4@0x6e937a monsterOid; if(oid){ Decode1@0x6e9388 byte(6);
 //     Decode4@0x6e939b damage } and NOTHING after the loop.
+//
 // packet-audit:verify packet=summon/clientbound/SummonAttack version=gms_v72 ida=0x6e92a6
 func TestSummonAttackBytesV72(t *testing.T) {
 	targets := []SummonAttackTarget{
@@ -184,15 +187,17 @@ func TestSummonAttackBytesV72(t *testing.T) {
 //   - CSummonedPool::OnPacket@0x938dd7 reads oid (Decode4@0x938e16), looks up the
 //     summon, then case 0xB2 calls CSummonedPool::OnAttack(v9,v5,..)@0x938e9c.
 //   - CSummonedPool::OnAttack@0x7a6882 reads, after the GetSkill guard:
-//       Decode1@0x7a6908 → charLevel (stored *(this+184))
-//       Decode1@0x7a6916 → action byte (v71=(b>>7)&1 left flag, v67=b&0x7F)
-//       Decode1@0x7a6937 → count (loop guard `if (v9 > 0)`)
-//       per target: Decode4@0x7a6966 monsterOid; if(oid){ Decode1@0x7a6974 byte(6);
-//         Decode4@0x7a6987 damage }
+//     Decode1@0x7a6908 → charLevel (stored *(this+184))
+//     Decode1@0x7a6916 → action byte (v71=(b>>7)&1 left flag, v67=b&0x7F)
+//     Decode1@0x7a6937 → count (loop guard `if (v9 > 0)`)
+//     per target: Decode4@0x7a6966 monsterOid; if(oid){ Decode1@0x7a6974 byte(6);
+//     Decode4@0x7a6987 damage }
 //     and NOTHING after the loop — there is NO trailing byte on v83 (the trailing
 //     flag is a v95-only addition, gated >=95 in the codec).
+//
 // Wire: int cid (upstream) + int oid + byte charLevel + byte direction + byte count
-//       + per target {int monsterOid, byte 6, int damage}.
+//   - per target {int monsterOid, byte 6, int damage}.
+//
 // packet-audit:verify packet=summon/clientbound/SummonAttack version=gms_v83 ida=0x7a6882
 func TestSummonAttackBytesV83(t *testing.T) {
 	targets := []SummonAttackTarget{
@@ -214,14 +219,15 @@ func TestSummonAttackBytesV83(t *testing.T) {
 //   - sub_970201@0x970201 reads oid (Decode4@0x970240), looks up the summon, then
 //     case 182 calls the OnAttack leaf sub_7CC338@0x7cc338.
 //   - sub_7CC338@0x7cc338 reads, after the GetSkill guard (sub_77EAC3):
-//       Decode1@0x7cc3be → charLevel (stored *(a1+184))
-//       Decode1@0x7cc3cc → action byte (v75=(b>>7)&1 left flag, v74=b&0x7F direction)
-//       Decode1@0x7cc3ed → count (loop guard `if (v9 > 0)`)
-//       per target: Decode4@0x7cc41c monsterOid; if(oid){ Decode1@0x7cc42a byte(6);
-//         Decode4@0x7cc43d damage }
+//     Decode1@0x7cc3be → charLevel (stored *(a1+184))
+//     Decode1@0x7cc3cc → action byte (v75=(b>>7)&1 left flag, v74=b&0x7F direction)
+//     Decode1@0x7cc3ed → count (loop guard `if (v9 > 0)`)
+//     per target: Decode4@0x7cc41c monsterOid; if(oid){ Decode1@0x7cc42a byte(6);
+//     Decode4@0x7cc43d damage }
 //     and NOTHING after the loop — NO trailing byte on v84. The trailing flag is a
 //     v95-only addition (gated GMS && >=95 in the codec → false at v84, so this is
 //     the v83 path; off-by-one confirmed clear).
+//
 // packet-audit:verify packet=summon/clientbound/SummonAttack version=gms_v84 ida=0x7cc338
 func TestSummonAttackBytesV84(t *testing.T) {
 	targets := []SummonAttackTarget{
@@ -243,14 +249,15 @@ func TestSummonAttackBytesV84(t *testing.T) {
 //   - CSummonedPool::OnPacket@0x9b35bf reads oid (Decode4@0x9b35fe), looks up the
 //     summon, then case 0xBF calls the OnAttack leaf CSummonedPool::OnAttack@0x7f904c.
 //   - CSummonedPool::OnAttack@0x7f904c reads, after the GetSkill guard:
-//       Decode1@0x7f90d2 → charLevel (stored *(this+184))
-//       Decode1@0x7f90e0 → action byte (v73=(b>>7)&1 left flag, v71=b&0x7F direction)
-//       Decode1@0x7f9101 → count (loop guard `if (v8 > 0)`)
-//       per target: Decode4@0x7f9130 monsterOid; if(oid){ Decode1@0x7f913e byte(6);
-//         Decode4@0x7f9151 damage }
+//     Decode1@0x7f90d2 → charLevel (stored *(this+184))
+//     Decode1@0x7f90e0 → action byte (v73=(b>>7)&1 left flag, v71=b&0x7F direction)
+//     Decode1@0x7f9101 → count (loop guard `if (v8 > 0)`)
+//     per target: Decode4@0x7f9130 monsterOid; if(oid){ Decode1@0x7f913e byte(6);
+//     Decode4@0x7f9151 damage }
 //     and NOTHING after the loop — NO trailing byte on v87. The trailing flag is a
 //     v95-only addition (gated GMS && >=95 in the codec → false at v87, so this is
 //     the v83 path; off-by-one confirmed clear).
+//
 // packet-audit:verify packet=summon/clientbound/SummonAttack version=gms_v87 ida=0x7f904c
 func TestSummonAttackBytesV87(t *testing.T) {
 	targets := []SummonAttackTarget{
@@ -294,15 +301,16 @@ func TestSummonAttackBytesV95(t *testing.T) {
 //     the summon, then case 0xB8 calls the OnAttack leaf
 //     CSummonedPool::OnAttack@0x828707.
 //   - CSummonedPool::OnAttack@0x828707 reads, after the GetSkill guard:
-//       Decode1@0x82878d → charLevel/first byte (v6, stored *(this+188))
-//       Decode1@0x82879b → action byte (v9=b>>7 bLeft, v10=b&0x7F direction)
-//       Decode1@0x8287db → count (v11; loop guard `if (v11 > 0)`)
-//       per target: Decode4@0x82880c monsterOid; if(oid){ Decode1@0x82881a byte(6);
-//         Decode4@0x82882d damage }
+//     Decode1@0x82878d → charLevel/first byte (v6, stored *(this+188))
+//     Decode1@0x82879b → action byte (v9=b>>7 bLeft, v10=b&0x7F direction)
+//     Decode1@0x8287db → count (v11; loop guard `if (v11 > 0)`)
+//     per target: Decode4@0x82880c monsterOid; if(oid){ Decode1@0x82881a byte(6);
+//     Decode4@0x82882d damage }
 //     and NOTHING after the loop — NO trailing byte on jms185. The trailing flag is
 //     a GMS>=95-only addition (codec gate `IsRegion("GMS") && MajorAtLeast(95)` →
 //     false for JMS, so jms gets no trailing byte). The jms185 path is byte-identical
 //     to v83.
+//
 // packet-audit:verify packet=summon/clientbound/SummonAttack version=jms_v185 ida=0x828707
 func TestSummonAttackBytesJMS185(t *testing.T) {
 	targets := []SummonAttackTarget{

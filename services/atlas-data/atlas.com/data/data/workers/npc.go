@@ -1,16 +1,17 @@
 package workers
 
 import (
+	"atlas-data/npc"
 	"context"
 	"fmt"
 	"path/filepath"
 
-	"github.com/Chronicle20/atlas/libs/atlas-wz/icons"
-	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
-	"atlas-data/npc"
+	"github.com/Chronicle20/atlas/libs/atlas-wz/icons"
+	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
+
 	minio "atlas-data/storage/minio"
 )
 

@@ -34,7 +34,10 @@ export const questConversationsService = {
     return fetchAll<QuestConversation>(BASE_PATH, undefined, options);
   },
 
-  async getById(id: string, options?: ServiceOptions): Promise<QuestConversation> {
+  async getById(
+    id: string,
+    options?: ServiceOptions,
+  ): Promise<QuestConversation> {
     return api.getOne<QuestConversation>(`${BASE_PATH}/${id}`, options);
   },
 

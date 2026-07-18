@@ -6,9 +6,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const ChannelChangeWriter = "ChannelChange"
@@ -31,7 +32,7 @@ func (m ChannelChange) String() string {
 }
 
 func channelIpAsByteArray(ipAddress string) []byte {
-	var ob = make([]byte, 0)
+	ob := make([]byte, 0)
 	os := strings.Split(ipAddress, ".")
 	for _, x := range os {
 		o, err := strconv.ParseUint(x, 10, 8)

@@ -53,8 +53,7 @@ interface ApplyPresetDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-type CharacterPreset =
-  TenantConfigAttributes["characters"]["presets"][number];
+type CharacterPreset = TenantConfigAttributes["characters"]["presets"][number];
 
 type PresetWithId = CharacterPreset & { id: string };
 
@@ -167,21 +166,26 @@ export function ApplyPresetDialog({
   const isFormValid = form.formState.isValid;
 
   const submitDisabled =
-    mutation.isPending ||
-    !validity ||
-    !validity.valid ||
-    !isFormValid;
+    mutation.isPending || !validity || !validity.valid || !isFormValid;
 
   const onSubmit = form.handleSubmit((values) => {
     mutation.mutate(
-      { presetId: values.presetId, accountId, worldId: values.worldId, name: values.name },
+      {
+        presetId: values.presetId,
+        accountId,
+        worldId: values.worldId,
+        name: values.name,
+      },
       {
         onSuccess: () => {
           toast.success("Character creation started.");
           onOpenChange(false);
         },
         onError: (err: unknown) => {
-          const error = err as { status?: number; response?: { status?: number } };
+          const error = err as {
+            status?: number;
+            response?: { status?: number };
+          };
           const status = error?.status ?? error?.response?.status;
           if (status === 409) {
             form.setError("name", { message: "Name already taken." });
@@ -216,9 +220,10 @@ export function ApplyPresetDialog({
                       {presets.map((p) => {
                         const selected = field.value === p.id;
                         const character = presetToCharacter(p);
-                        const inventory = synthesizeEquippedAssetsFromTemplateIds(
-                          p.attributes.equipment.map((e) => e.templateId),
-                        );
+                        const inventory =
+                          synthesizeEquippedAssetsFromTemplateIds(
+                            p.attributes.equipment.map((e) => e.templateId),
+                          );
                         return (
                           <button
                             key={p.id}
@@ -228,7 +233,8 @@ export function ApplyPresetDialog({
                             onClick={() => field.onChange(p.id)}
                             className={cn(
                               "flex cursor-pointer flex-col items-center gap-1 rounded-md border p-2 transition-colors hover:bg-accent/50 hover:border-accent-foreground/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                              selected && "ring-2 ring-primary border-primary hover:bg-primary/10",
+                              selected &&
+                                "ring-2 ring-primary border-primary hover:bg-primary/10",
                             )}
                           >
                             <div className="aspect-square w-full flex items-end justify-center bg-muted/30 rounded overflow-hidden">
@@ -256,7 +262,8 @@ export function ApplyPresetDialog({
                   </FormControl>
                   {presets.length === 0 && (
                     <FormDescription className="text-muted-foreground">
-                      No presets configured. Configure them under Tenant Details &rarr; Character Presets.
+                      No presets configured. Configure them under Tenant Details
+                      &rarr; Character Presets.
                     </FormDescription>
                   )}
                   <FormMessage />
@@ -290,8 +297,9 @@ export function ApplyPresetDialog({
                   </Select>
                   {worlds.length === 0 && (
                     <FormDescription className="text-muted-foreground">
-                      No worlds are serviced for this tenant. Configure a channel
-                      service for this tenant under Services to enable a world.
+                      No worlds are serviced for this tenant. Configure a
+                      channel service for this tenant under Services to enable a
+                      world.
                     </FormDescription>
                   )}
                   <FormMessage />
@@ -322,7 +330,11 @@ export function ApplyPresetDialog({
             />
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={submitDisabled}>
@@ -335,4 +347,3 @@ export function ApplyPresetDialog({
     </Dialog>
   );
 }
-

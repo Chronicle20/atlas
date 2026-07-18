@@ -11,12 +11,7 @@ import { useNpcQuests, type NpcQuestEntry } from "@/lib/hooks/api/useNpcQuests";
 import { useNpcConversation } from "@/lib/hooks/api/useNpcConversation";
 import type { NpcQuestRole } from "@/types/models/npc";
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Collapsible,
   CollapsibleContent,
@@ -54,10 +49,7 @@ export function NpcDetailPage() {
   const params = useParams();
   const npcId = Number(params.id);
 
-  const {
-    name: npcName,
-    iconUrl: npcIconUrl,
-  } = useNpcData(npcId, {
+  const { name: npcName, iconUrl: npcIconUrl } = useNpcData(npcId, {
     enabled: npcId > 0,
   });
 
@@ -91,12 +83,15 @@ export function NpcDetailPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-sm font-medium">
-            Spawn Locations{spawnMaps.length > 0 ? ` (${spawnMaps.length})` : ""}
+            Spawn Locations
+            {spawnMaps.length > 0 ? ` (${spawnMaps.length})` : ""}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {spawnMapsQuery.isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading spawn locations...</p>
+            <p className="text-sm text-muted-foreground">
+              Loading spawn locations...
+            </p>
           ) : spawnMapsQuery.error ? (
             <ErrorDisplay
               error={spawnMapsQuery.error}
@@ -104,7 +99,7 @@ export function NpcDetailPage() {
             />
           ) : spawnMaps.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              {spawnMaps.map(entry => (
+              {spawnMaps.map((entry) => (
                 <NpcSpawnMapWidget
                   key={`${npcId}-${entry.mapId}`}
                   entry={entry}
@@ -122,7 +117,10 @@ export function NpcDetailPage() {
       <NpcShopCard npcId={npcId} hasShop={hasShop} />
 
       <Card>
-        <Collapsible defaultOpen={hasConversation} className="flex flex-col gap-6">
+        <Collapsible
+          defaultOpen={hasConversation}
+          className="flex flex-col gap-6"
+        >
           <CardHeader>
             <CollapsibleTrigger className="group flex items-center gap-2 cursor-pointer text-left">
               <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=closed]:-rotate-90" />
@@ -166,19 +164,25 @@ export function NpcDetailPage() {
       </Card>
 
       <Card>
-        <Collapsible defaultOpen={sortedQuests.length > 0} className="flex flex-col gap-6">
+        <Collapsible
+          defaultOpen={sortedQuests.length > 0}
+          className="flex flex-col gap-6"
+        >
           <CardHeader>
             <CollapsibleTrigger className="group flex items-center gap-2 cursor-pointer text-left">
               <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=closed]:-rotate-90" />
               <CardTitle className="text-sm font-medium">
-                Quests{sortedQuests.length > 0 ? ` (${sortedQuests.length})` : ""}
+                Quests
+                {sortedQuests.length > 0 ? ` (${sortedQuests.length})` : ""}
               </CardTitle>
             </CollapsibleTrigger>
           </CardHeader>
           <CollapsibleContent>
             <CardContent>
               {questsQuery.isLoading ? (
-                <p className="text-sm text-muted-foreground">Loading quests...</p>
+                <p className="text-sm text-muted-foreground">
+                  Loading quests...
+                </p>
               ) : questsQuery.error ? (
                 <ErrorDisplay
                   error={questsQuery.error}
@@ -186,7 +190,7 @@ export function NpcDetailPage() {
                 />
               ) : sortedQuests.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                  {sortedQuests.map(entry => (
+                  {sortedQuests.map((entry) => (
                     <NpcQuestWidget
                       key={entry.quest.id}
                       quest={entry.quest}

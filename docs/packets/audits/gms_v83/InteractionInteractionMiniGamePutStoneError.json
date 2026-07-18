@@ -1,0 +1,30 @@
+{
+  "WriterName": "InteractionInteractionMiniGamePutStoneError",
+  "IDAName": "CMiniRoomBaseDlg::OnPacketBase#MemoryGamePutStoneError",
+  "Address": "0x6e4065",
+  "Variant": "GMS/v83",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/interaction/clientbound/interaction_minigame.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (dispatcher byte; PUT_STONE_ERROR)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "errorCode (==double-3 code -\u003e \"you have double 3s\", else \"cant put it there\")",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

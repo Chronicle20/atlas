@@ -1,6 +1,7 @@
 package item
 
 import (
+	"atlas-data/searchindex"
 	"context"
 	"encoding/json"
 	"errors"
@@ -11,12 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"atlas-data/searchindex"
-
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -26,6 +21,11 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type testDocumentEntity struct {

@@ -4,8 +4,9 @@ import (
 	"sync"
 	"testing"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func newTestTenant(t *testing.T) tenant.Model {

@@ -5,9 +5,7 @@ import (
 	"time"
 )
 
-var (
-	ErrInvalidId = errors.New("drop id must be greater than 0")
-)
+var ErrInvalidId = errors.New("drop id must be greater than 0")
 
 type modelBuilder struct {
 	id           uint32

@@ -4,12 +4,12 @@ import (
 	"atlas-login/socket/model"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	loginpkt "github.com/Chronicle20/atlas/libs/atlas-packet/login/clientbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
-	"github.com/sirupsen/logrus"
 )
-
 
 func ServerListRecommendationsBody(wrs []model.Recommendation) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {

@@ -1,0 +1,30 @@
+{
+  "WriterName": "IncubatorResult",
+  "IDAName": "CWvsContext::OnIncubatorResult",
+  "Address": "0xa73a5b",
+  "Variant": "GMS/v84",
+  "BranchDepth": 2,
+  "AtlasFile": "libs/atlas-packet/incubator/clientbound/result.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "itemId (v1)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "count (v32)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

@@ -26,11 +26,11 @@ func TestIsMobAffectingBuff_PriestDoom(t *testing.T) {
 // (SendSkillUseRequest: `if skillId == 2321006 && bitmap == 0 return 1`).
 func TestDecodeBishopResurrectionReadsPartyBitmap(t *testing.T) {
 	buf := make([]byte, 0, 12)
-	buf = binary.LittleEndian.AppendUint32(buf, 12345)                          // updateTime
+	buf = binary.LittleEndian.AppendUint32(buf, 12345)                              // updateTime
 	buf = binary.LittleEndian.AppendUint32(buf, uint32(skill.BishopResurrectionId)) // skillId
-	buf = append(buf, 10)                                                       // skill level
-	buf = append(buf, 0b010000)                                                 // bitmap: slot-1 member (bit 5-1=4)
-	buf = binary.LittleEndian.AppendUint16(buf, 0)                              // trailing delay (unread)
+	buf = append(buf, 10)                                                           // skill level
+	buf = append(buf, 0b010000)                                                     // bitmap: slot-1 member (bit 5-1=4)
+	buf = binary.LittleEndian.AppendUint16(buf, 0)                                  // trailing delay (unread)
 
 	req := request.Request(buf)
 	reader := request.NewRequestReader(&req, 0)

@@ -1,6 +1,6 @@
 # InteractionOperationMemoryGameRetreatAnswer (← `COmokDlg::OnRetreatRequest`)
 
-- **IDA:** 0x5febf2
+- **IDA:** 0x64e953
 - **Atlas file:** `libs/atlas-packet/interaction/serverbound/operation_memory_game_retreat_answer.go`
 - **Variant:** GMS/v72
 - **Branch depth:** 0

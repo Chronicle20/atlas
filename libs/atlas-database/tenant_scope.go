@@ -4,12 +4,13 @@ import (
 	"context"
 	"reflect"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/schema"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type contextKey string

@@ -3,9 +3,10 @@ package model
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 type SkillUsageInfo struct {
@@ -239,7 +240,7 @@ func isPartyBuff(skillId skill.Id) bool {
 		skill.AranStage4ComboBarrierId,
 		skill.EvanStage5MagicShieldId,
 		skill.EvanStage7MagicResistanceId,
-		//skill.EvanStage8RecoveryAuraId,
+		// skill.EvanStage8RecoveryAuraId,
 		skill.EvanStage9MapleWarriorId,
 	)
 }

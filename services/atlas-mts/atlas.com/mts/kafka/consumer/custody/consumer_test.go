@@ -12,13 +12,14 @@ import (
 	"sync"
 	"testing"
 
-	kprod "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	kprod "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 )
 
 // recordedEvent is a decoded custody status ack captured by the test producer.
@@ -128,6 +129,7 @@ func newAcceptCommand(transactionId uuid.UUID, listingId uuid.UUID) custody.Comm
 			WeaponAttack:   17,
 			Slots:          7,
 			Level:          1,
+			Owner:          "Chronicle",
 			ListValue:      1000,
 			CommissionRate: 0.10,
 			Category:       "equip",
@@ -162,6 +164,9 @@ func TestAcceptToMtsListing_CreatesListingAndAcks(t *testing.T) {
 	}
 	if stored.TemplateId() != 1302000 || stored.Quantity() != 1 || stored.WeaponAttack() != 17 {
 		t.Fatalf("snapshot not persisted: tmpl=%d qty=%d watk=%d", stored.TemplateId(), stored.Quantity(), stored.WeaponAttack())
+	}
+	if stored.Owner() != "Chronicle" {
+		t.Fatalf("expected owner %q carried through the wire command into the listing row, got %q", "Chronicle", stored.Owner())
 	}
 	// Category is derived server-side from the templateId's inventory type
 	// (1302000 -> equip -> "1"), overriding the payload's "equip" string so the

@@ -7,8 +7,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -18,6 +16,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 )
 
 type resourceTestServerInfo struct{}

@@ -3,9 +3,10 @@ package merchant
 import (
 	"atlas-channel/kafka/message/asset"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
@@ -66,7 +67,7 @@ type CommandBlacklistBody struct {
 
 type CommandEnterShopBody struct {
 	VisitorName string `json:"visitorName"`
-	ShopId string `json:"shopId"`
+	ShopId      string `json:"shopId"`
 }
 
 type CommandExitShopBody struct {
@@ -133,13 +134,13 @@ type CommandRecordItemSearchBody struct {
 const (
 	EnvStatusEventTopic = "EVENT_TOPIC_MERCHANT_STATUS"
 
-	StatusEventShopOpened         = "SHOP_OPENED"
-	StatusEventShopSetup          = "SHOP_SETUP"
-	StatusEventShopClosed         = "SHOP_CLOSED"
-	StatusEventMaintenanceEntered = "MAINTENANCE_ENTERED"
-	StatusEventMaintenanceExited  = "MAINTENANCE_EXITED"
-	StatusEventVisitorEntered     = "VISITOR_ENTERED"
-	StatusEventVisitorExited      = "VISITOR_EXITED"
+	StatusEventShopOpened            = "SHOP_OPENED"
+	StatusEventShopSetup             = "SHOP_SETUP"
+	StatusEventShopClosed            = "SHOP_CLOSED"
+	StatusEventMaintenanceEntered    = "MAINTENANCE_ENTERED"
+	StatusEventMaintenanceExited     = "MAINTENANCE_EXITED"
+	StatusEventVisitorEntered        = "VISITOR_ENTERED"
+	StatusEventVisitorExited         = "VISITOR_EXITED"
 	StatusEventVisitorEjected        = "VISITOR_EJECTED"
 	StatusEventCapacityFull          = "CAPACITY_FULL"
 	StatusEventPurchaseFailed        = "PURCHASE_FAILED"

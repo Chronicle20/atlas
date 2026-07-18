@@ -1,25 +1,78 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useParams } from "react-router-dom";
 import { useMtsConfig, useUpdateMtsConfig } from "@/lib/hooks/api/useMtsConfig";
-import { mtsConfigSchema, type MtsConfigFormData } from "@/lib/schemas/mts-config.schema";
+import {
+  mtsConfigSchema,
+  type MtsConfigFormData,
+} from "@/lib/schemas/mts-config.schema";
 import { createErrorFromUnknown } from "@/types/api/errors";
 import { toast } from "sonner";
 
-const FIELDS: { name: keyof MtsConfigFormData; label: string; description: string; step?: string }[] = [
-  { name: "listingFee", label: "Listing Fee", description: "Flat NX fee charged when a listing is created." },
-  { name: "commissionRate", label: "Commission Rate", description: "Fractional cut taken on a sale (0 – 1).", step: "0.01" },
-  { name: "maxActiveListings", label: "Max Active Listings", description: "Per-character cap on simultaneously active listings." },
-  { name: "minLevel", label: "Minimum Level", description: "Minimum character level required to use the marketplace." },
-  { name: "auctionMinHours", label: "Auction Minimum Hours", description: "Shortest allowed auction duration, in hours." },
-  { name: "auctionMaxHours", label: "Auction Maximum Hours", description: "Longest allowed auction duration, in hours." },
-  { name: "priceFloor", label: "Price Floor", description: "Minimum NX list value allowed for any listing." },
-  { name: "pageSize", label: "Page Size", description: "Number of listings returned per browse page." },
-  { name: "minBidIncrement", label: "Minimum Bid Increment", description: "Smallest allowed increase over the current bid." },
+const FIELDS: {
+  name: keyof MtsConfigFormData;
+  label: string;
+  description: string;
+  step?: string;
+}[] = [
+  {
+    name: "listingFee",
+    label: "Listing Fee",
+    description: "Flat NX fee charged when a listing is created.",
+  },
+  {
+    name: "commissionRate",
+    label: "Commission Rate",
+    description: "Fractional cut taken on a sale (0 – 1).",
+    step: "0.01",
+  },
+  {
+    name: "maxActiveListings",
+    label: "Max Active Listings",
+    description: "Per-character cap on simultaneously active listings.",
+  },
+  {
+    name: "minLevel",
+    label: "Minimum Level",
+    description: "Minimum character level required to use the marketplace.",
+  },
+  {
+    name: "auctionMinHours",
+    label: "Auction Minimum Hours",
+    description: "Shortest allowed auction duration, in hours.",
+  },
+  {
+    name: "auctionMaxHours",
+    label: "Auction Maximum Hours",
+    description: "Longest allowed auction duration, in hours.",
+  },
+  {
+    name: "priceFloor",
+    label: "Price Floor",
+    description: "Minimum NX list value allowed for any listing.",
+  },
+  {
+    name: "pageSize",
+    label: "Page Size",
+    description: "Number of listings returned per browse page.",
+  },
+  {
+    name: "minBidIncrement",
+    label: "Minimum Bid Increment",
+    description: "Smallest allowed increase over the current bid.",
+  },
 ];
 
 const EMPTY_DEFAULTS: MtsConfigFormData = {
@@ -61,13 +114,20 @@ export function MtsConfigForm() {
       {
         onSuccess: () => toast.success("Successfully saved MTS configuration."),
         onError: (error) =>
-          toast.error(createErrorFromUnknown(error, "Failed to update MTS configuration").message),
+          toast.error(
+            createErrorFromUnknown(error, "Failed to update MTS configuration")
+              .message,
+          ),
       },
     );
   };
 
   if (loading) {
-    return <div className="flex justify-center items-center p-8">Loading MTS configuration...</div>;
+    return (
+      <div className="flex justify-center items-center p-8">
+        Loading MTS configuration...
+      </div>
+    );
   }
 
   if (!config) {
@@ -96,7 +156,9 @@ export function MtsConfigForm() {
                       step={f.step ?? "1"}
                       {...field}
                       onChange={(e) =>
-                        field.onChange(e.target.value === "" ? "" : e.target.valueAsNumber)
+                        field.onChange(
+                          e.target.value === "" ? "" : e.target.valueAsNumber,
+                        )
                       }
                     />
                   </FormControl>

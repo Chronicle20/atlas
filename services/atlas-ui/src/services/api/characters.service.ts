@@ -2,21 +2,25 @@
  * Character management service
  * Handles all character-related API operations with tenant support
  */
-import type { ServiceOptions } from '@/lib/api/query-params';
-import type { Character, UpdateCharacterData } from '@/types/models/character';
-import { api } from '@/lib/api/client';
-import { fetchAll, fetchPaged, type PagedResult } from '@/services/api/pagination';
-import { tenantHeaders } from '@/lib/headers';
-import type { Tenant } from '@/types/models/tenant';
+import type { ServiceOptions } from "@/lib/api/query-params";
+import type { Character, UpdateCharacterData } from "@/types/models/character";
+import { api } from "@/lib/api/client";
+import {
+  fetchAll,
+  fetchPaged,
+  type PagedResult,
+} from "@/services/api/pagination";
+import { tenantHeaders } from "@/lib/headers";
+import type { Tenant } from "@/types/models/tenant";
 
 export interface NameValidityResponse {
   valid: boolean;
-  reason?: 'regex' | 'length' | 'blocked' | 'duplicate';
+  reason?: "regex" | "length" | "blocked" | "duplicate";
   detail?: string;
 }
 
 class CharactersService {
-  private basePath = '/api/characters';
+  private basePath = "/api/characters";
 
   /**
    * Get every character for a tenant, draining all pages (task-117).
@@ -31,14 +35,20 @@ class CharactersService {
    * Get a single page of characters for a tenant. Used by the Characters
    * list view (task-117), which pages server-side.
    */
-  async getPage(page: { number: number; size: number }, options?: ServiceOptions): Promise<PagedResult<Character>> {
+  async getPage(
+    page: { number: number; size: number },
+    options?: ServiceOptions,
+  ): Promise<PagedResult<Character>> {
     return fetchPaged<Character>(this.basePath, page, options);
   }
 
   /**
    * Get character by ID for a tenant
    */
-  async getById(characterId: string, options?: ServiceOptions): Promise<Character> {
+  async getById(
+    characterId: string,
+    options?: ServiceOptions,
+  ): Promise<Character> {
     // Set tenant for this request
     // Use the API client to fetch a single character
     return api.getOne<Character>(`${this.basePath}/${characterId}`, options);
@@ -47,14 +57,21 @@ class CharactersService {
   /**
    * Delete a character permanently
    */
-  async deleteCharacter(characterId: string, options?: ServiceOptions): Promise<void> {
+  async deleteCharacter(
+    characterId: string,
+    options?: ServiceOptions,
+  ): Promise<void> {
     return api.delete(`${this.basePath}/${characterId}`, options);
   }
 
   /**
    * Update existing character with JSON:API format
    */
-  async update(characterId: string, data: UpdateCharacterData, options?: ServiceOptions): Promise<void> {
+  async update(
+    characterId: string,
+    data: UpdateCharacterData,
+    options?: ServiceOptions,
+  ): Promise<void> {
     // Set tenant for this request
     // Prepare the JSON:API formatted request body
     const requestBody = {
@@ -64,10 +81,14 @@ class CharactersService {
         attributes: data,
       },
     };
-    
+
     // Use the centralized API client to update the character
     // The API client handles all error cases and status codes automatically
-    return api.patch<void>(`/api/characters/${characterId}`, requestBody, options);
+    return api.patch<void>(
+      `/api/characters/${characterId}`,
+      requestBody,
+      options,
+    );
   }
 
   /**
@@ -88,7 +109,6 @@ class CharactersService {
       { headers: tenantHeaders(tenant) },
     );
   }
-
 }
 
 export const charactersService = new CharactersService();

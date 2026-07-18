@@ -3,9 +3,10 @@ package key
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/sirupsen/logrus"
 )
 
 // Processor interface defines the operations for key processing
@@ -29,7 +30,6 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 }
 
 var _ Processor = (*ProcessorImpl)(nil)
-
 
 // ByCharacterIdProvider fetches every key binding for a character. The
 // upstream atlas-keys list is now paginated (task-117); callers here need

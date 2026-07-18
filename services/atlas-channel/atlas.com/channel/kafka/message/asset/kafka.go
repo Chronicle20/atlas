@@ -33,6 +33,7 @@ type CreatedStatusEventBody struct {
 	CreatedAt      time.Time  `json:"createdAt"`
 	Quantity       uint32     `json:"quantity"`
 	OwnerId        uint32     `json:"ownerId"`
+	Owner          string     `json:"owner"`
 	Flag           uint16     `json:"flag"`
 	Rechargeable   uint64     `json:"rechargeable"`
 	Strength       uint16     `json:"strength"`
@@ -50,8 +51,8 @@ type CreatedStatusEventBody struct {
 	Hands          uint16     `json:"hands"`
 	Speed          uint16     `json:"speed"`
 	Jump           uint16     `json:"jump"`
-	Slots     uint16 `json:"slots"`
-	LevelType byte   `json:"levelType"`
+	Slots          uint16     `json:"slots"`
+	LevelType      byte       `json:"levelType"`
 	Level          byte       `json:"level"`
 	Experience     uint32     `json:"experience"`
 	HammersApplied uint32     `json:"hammersApplied"`
@@ -67,6 +68,7 @@ type UpdatedStatusEventBody struct {
 	CreatedAt      time.Time  `json:"createdAt"`
 	Quantity       uint32     `json:"quantity"`
 	OwnerId        uint32     `json:"ownerId"`
+	Owner          string     `json:"owner"`
 	Flag           uint16     `json:"flag"`
 	Rechargeable   uint64     `json:"rechargeable"`
 	Strength       uint16     `json:"strength"`
@@ -84,8 +86,8 @@ type UpdatedStatusEventBody struct {
 	Hands          uint16     `json:"hands"`
 	Speed          uint16     `json:"speed"`
 	Jump           uint16     `json:"jump"`
-	Slots     uint16 `json:"slots"`
-	LevelType byte   `json:"levelType"`
+	Slots          uint16     `json:"slots"`
+	LevelType      byte       `json:"levelType"`
 	Level          byte       `json:"level"`
 	Experience     uint32     `json:"experience"`
 	HammersApplied uint32     `json:"hammersApplied"`
@@ -96,8 +98,7 @@ type UpdatedStatusEventBody struct {
 	PetId          uint32     `json:"petId"`
 }
 
-type DeletedStatusEventBody struct {
-}
+type DeletedStatusEventBody struct{}
 
 type MovedStatusEventBody struct {
 	OldSlot int16 `json:"oldSlot"`
@@ -113,6 +114,7 @@ type AcceptedStatusEventBody struct {
 	CreatedAt      time.Time  `json:"createdAt"`
 	Quantity       uint32     `json:"quantity"`
 	OwnerId        uint32     `json:"ownerId"`
+	Owner          string     `json:"owner"`
 	Flag           uint16     `json:"flag"`
 	Rechargeable   uint64     `json:"rechargeable"`
 	Strength       uint16     `json:"strength"`
@@ -130,8 +132,8 @@ type AcceptedStatusEventBody struct {
 	Hands          uint16     `json:"hands"`
 	Speed          uint16     `json:"speed"`
 	Jump           uint16     `json:"jump"`
-	Slots     uint16 `json:"slots"`
-	LevelType byte   `json:"levelType"`
+	Slots          uint16     `json:"slots"`
+	LevelType      byte       `json:"levelType"`
 	Level          byte       `json:"level"`
 	Experience     uint32     `json:"experience"`
 	HammersApplied uint32     `json:"hammersApplied"`

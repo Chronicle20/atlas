@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const RequestFootholdInfoHandle = "RequestFootholdInfo"
@@ -42,11 +43,11 @@ func NewFootholdInfoEntry(state uint32, x uint32, y uint32, reverseVertical byte
 	}
 }
 
-func (e FootholdInfoEntry) State() uint32            { return e.state }
-func (e FootholdInfoEntry) X() uint32                { return e.x }
-func (e FootholdInfoEntry) Y() uint32                { return e.y }
-func (e FootholdInfoEntry) ReverseVertical() byte    { return e.reverseVertical }
-func (e FootholdInfoEntry) ReverseHorizontal() byte  { return e.reverseHorizontal }
+func (e FootholdInfoEntry) State() uint32           { return e.state }
+func (e FootholdInfoEntry) X() uint32               { return e.x }
+func (e FootholdInfoEntry) Y() uint32               { return e.y }
+func (e FootholdInfoEntry) ReverseVertical() byte   { return e.reverseVertical }
+func (e FootholdInfoEntry) ReverseHorizontal() byte { return e.reverseHorizontal }
 
 // RequestFootholdInfo models the FOOTHOLD_INFO serverbound packet
 // (CField::OnRequestFootHoldInfo). Despite the "On…" name it is the client's

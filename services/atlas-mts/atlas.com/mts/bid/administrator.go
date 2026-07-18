@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"time"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // parseId converts a string id into a uuid, returning uuid.Nil on a malformed

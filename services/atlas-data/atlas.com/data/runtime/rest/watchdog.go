@@ -4,10 +4,11 @@ import (
 	"context"
 	"time"
 
-	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/sirupsen/logrus"
 	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
 )
 
 // Watchdog periodically sweeps the set of active ingest Jobs and deletes any

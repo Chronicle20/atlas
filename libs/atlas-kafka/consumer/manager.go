@@ -8,14 +8,15 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 )
 
 // errFetchWedged is returned from runFetchLoop when FetchMessage has hit
@@ -87,8 +88,10 @@ type Manager struct {
 	rp        ReaderProducer
 }
 
-var manager *Manager
-var once sync.Once
+var (
+	manager *Manager
+	once    sync.Once
+)
 
 func ResetInstance() {
 	manager = nil
@@ -699,8 +702,8 @@ func (c *Consumer) processMessage(l logrus.FieldLogger, ctx context.Context, msg
 	var handlerWg sync.WaitGroup
 	var hadError atomic.Bool
 	for id, h := range handlersCopy {
-		var handle = h
-		var handleId = id
+		handle := h
+		handleId := id
 		handlerWg.Add(1)
 		routine.Go(handlerLogger, wctx, func(_ context.Context) {
 			defer handlerWg.Done()

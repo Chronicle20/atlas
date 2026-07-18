@@ -1,17 +1,18 @@
 package thread
 
 import (
+	"atlas-guilds/kafka/message"
 	"errors"
 	"testing"
 
-	"atlas-guilds/kafka/message"
 	thread2 "atlas-guilds/kafka/message/thread"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/segmentio/kafka-go"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 )
 
 func outboxTestDb(t *testing.T) *gorm.DB {

@@ -6,7 +6,8 @@ import (
 	"sync"
 
 	"github.com/sirupsen/logrus"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type MonsterString struct {
@@ -22,8 +23,10 @@ func (m MonsterString) Name() string {
 	return m.name
 }
 
-var msReg *document.Registry[string, MonsterString]
-var msOnce sync.Once
+var (
+	msReg  *document.Registry[string, MonsterString]
+	msOnce sync.Once
+)
 
 func GetMonsterStringRegistry() *document.Registry[string, MonsterString] {
 	msOnce.Do(func() {

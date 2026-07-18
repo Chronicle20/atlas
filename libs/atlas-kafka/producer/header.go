@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/binary"
 
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type HeaderDecorator func() (map[string]string, error)

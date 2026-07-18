@@ -28,9 +28,9 @@ func TestAuthSuccessV48Body(t *testing.T) {
 		0x00,                   // Decode1 regStatus @0x500962
 		0x00, 0x00, 0x00, 0x00, // Decode4 GMS int @0x500970
 		0xE9, 0x03, 0x00, 0x00, // Decode4 accountId=1001 @0x500ef9
-		0x01, // Decode1 gender=1 @0x500f01
-		0x00, // Decode1 GM(false) @0x500f10
-		0x00, // Decode1 admin @0x500f18
+		0x01,                                               // Decode1 gender=1 @0x500f01
+		0x00,                                               // Decode1 GM(false) @0x500f10
+		0x00,                                               // Decode1 admin @0x500f18
 		0x08, 0x00, 'T', 'e', 's', 't', 'U', 's', 'e', 'r', // DecodeStr name @0x500f21
 		0x00,                                           // Decode1 banReason @0x500f36
 		0x00,                                           // Decode1 ban @0x500f3e

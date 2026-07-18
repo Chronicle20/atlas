@@ -1,79 +1,82 @@
-
-import { type ColumnDef } from "@tanstack/react-table"
+import { type ColumnDef } from "@tanstack/react-table";
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {Button} from "@/components/ui/button";
-import {MoreHorizontal} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { MoreHorizontal } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Tenant } from "@/types/models/tenant";
 
 interface ColumnProps {
-    onDelete?: (id: string) => void;
-    onRename?: (id: string) => void;
+  onDelete?: (id: string) => void;
+  onRename?: (id: string) => void;
 }
 
-export const getColumns = ({ onDelete, onRename }: ColumnProps): ColumnDef<Tenant>[] => [
-    {
-        accessorKey: "id",
-        header: "Id",
-    },
-    {
-        accessorKey: "attributes.name",
-        header: "Name",
-        cell: ({ row }) => (
-            <Link to={"/tenants/" + row.original.id + "/properties"} className="font-medium text-primary hover:underline">
-                {row.original.attributes.name}
-            </Link>
-        ),
-    },
-    {
-        accessorKey: "attributes.region",
-        header: "Region",
-    },
-    {
-        accessorKey: "attributes.majorVersion",
-        header: "Major",
-    },
-    {
-        accessorKey: "attributes.minorVersion",
-        header: "Minor",
-    },
-    {
-        id: "actions",
-        cell: ({ row }) => {
-            const id = row.getValue("id") as string;
+export const getColumns = ({
+  onDelete,
+  onRename,
+}: ColumnProps): ColumnDef<Tenant>[] => [
+  {
+    accessorKey: "id",
+    header: "Id",
+  },
+  {
+    accessorKey: "attributes.name",
+    header: "Name",
+    cell: ({ row }) => (
+      <Link
+        to={"/tenants/" + row.original.id + "/properties"}
+        className="font-medium text-primary hover:underline"
+      >
+        {row.original.attributes.name}
+      </Link>
+    ),
+  },
+  {
+    accessorKey: "attributes.region",
+    header: "Region",
+  },
+  {
+    accessorKey: "attributes.majorVersion",
+    header: "Major",
+  },
+  {
+    accessorKey: "attributes.minorVersion",
+    header: "Minor",
+  },
+  {
+    id: "actions",
+    cell: ({ row }) => {
+      const id = row.getValue("id") as string;
 
-            return (
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        {onRename && (
-                            <DropdownMenuItem
-                                onClick={() => onRename(id)}
-                            >
-                                Rename
-                            </DropdownMenuItem>
-                        )}
-                        {onDelete && (
-                            <DropdownMenuItem
-                                className="text-destructive focus:text-destructive"
-                                onClick={() => onDelete(id)}
-                            >
-                                Delete
-                            </DropdownMenuItem>
-                        )}
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            )
-        },
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <span className="sr-only">Open menu</span>
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {onRename && (
+              <DropdownMenuItem onClick={() => onRename(id)}>
+                Rename
+              </DropdownMenuItem>
+            )}
+            {onDelete && (
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={() => onDelete(id)}
+              >
+                Delete
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
     },
-]
+  },
+];

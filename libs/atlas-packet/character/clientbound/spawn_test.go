@@ -5,10 +5,11 @@ import (
 	"encoding/hex"
 	"testing"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
-	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 // packet-audit:verify packet=character/clientbound/CharacterSpawn version=gms_v83 ida=0x972100
@@ -36,11 +37,13 @@ func TestCharacterSpawnEncode(t *testing.T) {
 // TestCharacterSpawnJMSGolden pins the jms_v185 wire for CharacterSpawn against
 // CUserPool::OnUserEnterField @0xa43ddd → CUserRemote::Init @0xa52876. The jms
 // read order (IDA-verified, jms export CUserRemote::Init calls):
-//   level, name, guildName, guild logo (2/1/2/1), SecondaryStat::DecodeForRemote,
-//   jobId, AvatarLook::Decode, driver(int)+passenger(int) [jms], choco(int),
-//   itemEffect(int), chair(int), x, y, stance, foothold(short) → pet while-loop
-//   (NO bShowAdminEffect byte), mount(3 ints), miniRoom/adBoard/couple/friend/
-//   marriage flags, dragon-effect flag (call 46), final-effect flag (call 47).
+//
+//	level, name, guildName, guild logo (2/1/2/1), SecondaryStat::DecodeForRemote,
+//	jobId, AvatarLook::Decode, driver(int)+passenger(int) [jms], choco(int),
+//	itemEffect(int), chair(int), x, y, stance, foothold(short) → pet while-loop
+//	(NO bShowAdminEffect byte), mount(3 ints), miniRoom/adBoard/couple/friend/
+//	marriage flags, dragon-effect flag (call 46), final-effect flag (call 47).
+//
 // The jms client has NO admin byte after the foothold and NO trailing team byte —
 // both are GMS-only. Those two bytes were the jms wire delta fixed in this commit's
 // codec change; here the body is 238 bytes (was 240 with the spurious bytes).
@@ -82,13 +85,14 @@ func TestCharacterSpawnJMSGolden(t *testing.T) {
 // TestCharacterSpawnV48Golden pins the very-legacy GMS v48 SPAWN_PLAYER wire against
 // CUserRemote::Init sub_6BBC17 @0x6bbc17 (GMS_v48_1_DEVM.exe, port 13337). The v48 read
 // order diverges from the v79 legacy path in four IDA-verified ways:
-//   1. CTS-foreign (sub_5CBA1F @0x6bbcde) is an 8-byte mask; empty CTS = 8 zero bytes,
-//      no base-stat blocks.
-//   2. NO Decode2(jobId) — the CTS foreign goes straight to AvatarLook::Decode @0x6bbcea.
-//   3. Single-pet flag (Decode1 → sub_58C7CC @0x6bbe5e), not the 3-slot bool loop.
-//   4. Six tail flags (miniroom @0x6bbed5 / adboard @0x6bc045 / couple @0x6bc174 /
-//      friend @0x6bc1bf / marriage @0x6bc20a / final-effect @0x6bc25c) — NO new-year-card
-//      byte, NO trailing team byte.
+//  1. CTS-foreign (sub_5CBA1F @0x6bbcde) is an 8-byte mask; empty CTS = 8 zero bytes,
+//     no base-stat blocks.
+//  2. NO Decode2(jobId) — the CTS foreign goes straight to AvatarLook::Decode @0x6bbcea.
+//  3. Single-pet flag (Decode1 → sub_58C7CC @0x6bbe5e), not the 3-slot bool loop.
+//  4. Six tail flags (miniroom @0x6bbed5 / adboard @0x6bc045 / couple @0x6bc174 /
+//     friend @0x6bc1bf / marriage @0x6bc20a / final-effect @0x6bc25c) — NO new-year-card
+//     byte, NO trailing team byte.
+//
 // Empty CTS + empty avatar make the whole wire deterministic (no base-stat time block).
 // packet-audit:verify packet=character/clientbound/CharacterSpawn version=gms_v48 ida=0x6bbc17
 func TestCharacterSpawnV48Golden(t *testing.T) {

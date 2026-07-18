@@ -9,11 +9,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"go.opentelemetry.io/otel"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 )
 
 type debugDoc struct {
@@ -178,4 +179,3 @@ func TestDebugHandler_PopulatedConsumer(t *testing.T) {
 		t.Fatalf("expected lastTimeoutAt zero on a consumer that has never timed out, got %v", a.LastTimeoutAt)
 	}
 }
-

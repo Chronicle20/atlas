@@ -6,9 +6,10 @@ import (
 	"testing"
 	"time"
 
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 )
 
 type ctxKey string

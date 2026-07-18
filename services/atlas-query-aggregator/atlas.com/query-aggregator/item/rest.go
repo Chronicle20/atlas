@@ -2,9 +2,9 @@ package item
 
 // ConsumableRestModel represents a consumable item from the atlas-data service
 type ConsumableRestModel struct {
-	Id      uint32  `json:"-"`
-	SlotMax uint32  `json:"slotMax"`
-	Price   uint32  `json:"price"`
+	Id      uint32 `json:"-"`
+	SlotMax uint32 `json:"slotMax"`
+	Price   uint32 `json:"price"`
 }
 
 // GetName returns the resource name
@@ -19,9 +19,9 @@ func (r ConsumableRestModel) GetID() string {
 
 // SetupRestModel represents a setup item from the atlas-data service
 type SetupRestModel struct {
-	Id      uint32  `json:"-"`
-	SlotMax uint32  `json:"slotMax"`
-	Price   uint32  `json:"price"`
+	Id      uint32 `json:"-"`
+	SlotMax uint32 `json:"slotMax"`
+	Price   uint32 `json:"price"`
 }
 
 // GetName returns the resource name
@@ -36,9 +36,9 @@ func (r SetupRestModel) GetID() string {
 
 // EtcRestModel represents an etc item from the atlas-data service
 type EtcRestModel struct {
-	Id      uint32  `json:"-"`
-	SlotMax uint32  `json:"slotMax"`
-	Price   uint32  `json:"price"`
+	Id      uint32 `json:"-"`
+	SlotMax uint32 `json:"slotMax"`
+	Price   uint32 `json:"price"`
 }
 
 // GetName returns the resource name

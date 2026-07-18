@@ -1,6 +1,10 @@
-import { api } from '@/lib/api/client';
-import { tenantHeaders, canonicalHeaders, type CanonicalSelection } from '@/lib/headers';
-import type { Tenant } from '@/types/models/tenant';
+import { api } from "@/lib/api/client";
+import {
+  tenantHeaders,
+  canonicalHeaders,
+  type CanonicalSelection,
+} from "@/lib/headers";
+import type { Tenant } from "@/types/models/tenant";
 
 export interface SeedResult {
   deletedCount?: number;
@@ -95,20 +99,30 @@ interface JsonApiEnvelope<A> {
 }
 
 async function fetchJsonApi<A>(url: string, headers: Headers): Promise<A> {
-  headers.set('Accept', 'application/vnd.api+json');
-  const response = await fetch(url, { method: 'GET', headers });
+  headers.set("Accept", "application/vnd.api+json");
+  const response = await fetch(url, { method: "GET", headers });
   if (!response.ok) {
-    throw new Error(`GET ${url} failed: ${response.status} ${response.statusText}`);
+    throw new Error(
+      `GET ${url} failed: ${response.status} ${response.statusText}`,
+    );
   }
   const body = (await response.json()) as JsonApiEnvelope<A>;
   return body.data.attributes;
 }
 
-async function patchWzZip(url: string, headers: Headers, file: File): Promise<void> {
+async function patchWzZip(
+  url: string,
+  headers: Headers,
+  file: File,
+): Promise<void> {
   const formData = new FormData();
-  formData.append('zip_file', file);
+  formData.append("zip_file", file);
 
-  const response = await fetch(url, { method: 'PATCH', headers, body: formData });
+  const response = await fetch(url, {
+    method: "PATCH",
+    headers,
+    body: formData,
+  });
 
   if (!response.ok) {
     let message = `Upload failed: ${response.status} ${response.statusText}`;
@@ -127,17 +141,24 @@ async function patchWzZip(url: string, headers: Headers, file: File): Promise<vo
 }
 
 async function postProcess(url: string, headers: Headers): Promise<void> {
-  const response = await fetch(url, { method: 'POST', headers });
+  const response = await fetch(url, { method: "POST", headers });
   if (!response.ok) {
-    throw new Error(`Data processing failed: ${response.status} ${response.statusText}`);
+    throw new Error(
+      `Data processing failed: ${response.status} ${response.statusText}`,
+    );
   }
 }
 
-async function fetchSeedStatus(url: string, tenant: Tenant): Promise<SeedStatus> {
+async function fetchSeedStatus(
+  url: string,
+  tenant: Tenant,
+): Promise<SeedStatus> {
   const headers = tenantHeaders(tenant);
-  const response = await fetch(url, { method: 'GET', headers });
+  const response = await fetch(url, { method: "GET", headers });
   if (!response.ok) {
-    throw new Error(`GET ${url} failed: ${response.status} ${response.statusText}`);
+    throw new Error(
+      `GET ${url} failed: ${response.status} ${response.statusText}`,
+    );
   }
   return (await response.json()) as SeedStatus;
 }
@@ -150,142 +171,180 @@ function subdomainCount(s: SeedStatus, key: string): number {
 
 class SeedService {
   async seedDrops(): Promise<void> {
-    await api.post('/api/drops/seed', {});
+    await api.post("/api/drops/seed", {});
   }
 
   async seedGachapons(): Promise<void> {
-    await api.post('/api/gachapons/seed', {});
+    await api.post("/api/gachapons/seed", {});
   }
 
   async seedNpcConversations(): Promise<SeedResult> {
-    return api.post<SeedResult>('/api/npcs/conversations/seed', {});
+    return api.post<SeedResult>("/api/npcs/conversations/seed", {});
   }
 
   async seedQuestConversations(): Promise<SeedResult> {
-    return api.post<SeedResult>('/api/quests/conversations/seed', {});
+    return api.post<SeedResult>("/api/quests/conversations/seed", {});
   }
 
   async seedNpcShops(): Promise<SeedResult> {
-    return api.post<SeedResult>('/api/shops/seed', {});
+    return api.post<SeedResult>("/api/shops/seed", {});
   }
 
   async seedPortalScripts(): Promise<SeedResult> {
-    return api.post<SeedResult>('/api/portals/scripts/seed', {});
+    return api.post<SeedResult>("/api/portals/scripts/seed", {});
   }
 
   async seedReactorScripts(): Promise<SeedResult> {
-    return api.post<SeedResult>('/api/reactors/actions/seed', {});
+    return api.post<SeedResult>("/api/reactors/actions/seed", {});
   }
 
   async seedMapActionScripts(): Promise<SeedResult> {
-    return api.post<SeedResult>('/api/maps/actions/seed', {});
+    return api.post<SeedResult>("/api/maps/actions/seed", {});
   }
 
   async uploadWzFiles(tenant: Tenant, file: File): Promise<void> {
-    return patchWzZip('/api/data/wz?scope=tenant', tenantHeaders(tenant), file);
+    return patchWzZip("/api/data/wz?scope=tenant", tenantHeaders(tenant), file);
   }
 
   async runDataProcessing(tenant: Tenant): Promise<void> {
-    return postProcess('/api/data/process?scope=tenant', tenantHeaders(tenant));
+    return postProcess("/api/data/process?scope=tenant", tenantHeaders(tenant));
   }
 
   async getWzInputStatus(tenant: Tenant): Promise<WzInputStatus> {
-    return fetchJsonApi<WzInputStatus>('/api/data/wz?scope=tenant', tenantHeaders(tenant));
+    return fetchJsonApi<WzInputStatus>(
+      "/api/data/wz?scope=tenant",
+      tenantHeaders(tenant),
+    );
   }
 
   async getDataStatus(tenant: Tenant): Promise<DataStatus> {
-    return fetchJsonApi<DataStatus>('/api/data/status?scope=tenant', tenantHeaders(tenant));
+    return fetchJsonApi<DataStatus>(
+      "/api/data/status?scope=tenant",
+      tenantHeaders(tenant),
+    );
   }
 
   // Canonical (deployment-wide) variants: no Tenant anywhere — headers are
   // synthesized from the explicit region/version selection. This is what lets
   // an operator publish canonical data for a version with no live tenant.
-  async uploadCanonicalWzFiles(sel: CanonicalSelection, file: File): Promise<void> {
-    return patchWzZip('/api/data/wz?scope=shared', canonicalHeaders(sel), file);
+  async uploadCanonicalWzFiles(
+    sel: CanonicalSelection,
+    file: File,
+  ): Promise<void> {
+    return patchWzZip("/api/data/wz?scope=shared", canonicalHeaders(sel), file);
   }
 
   async runCanonicalDataProcessing(sel: CanonicalSelection): Promise<void> {
-    return postProcess('/api/data/process?scope=shared', canonicalHeaders(sel));
+    return postProcess("/api/data/process?scope=shared", canonicalHeaders(sel));
   }
 
-  async getCanonicalWzInputStatus(sel: CanonicalSelection): Promise<WzInputStatus> {
-    return fetchJsonApi<WzInputStatus>('/api/data/wz?scope=shared', canonicalHeaders(sel));
+  async getCanonicalWzInputStatus(
+    sel: CanonicalSelection,
+  ): Promise<WzInputStatus> {
+    return fetchJsonApi<WzInputStatus>(
+      "/api/data/wz?scope=shared",
+      canonicalHeaders(sel),
+    );
   }
 
   async getCanonicalDataStatus(sel: CanonicalSelection): Promise<DataStatus> {
-    return fetchJsonApi<DataStatus>('/api/data/status?scope=shared', canonicalHeaders(sel));
+    return fetchJsonApi<DataStatus>(
+      "/api/data/status?scope=shared",
+      canonicalHeaders(sel),
+    );
   }
 
   async getDropsSeedStatus(tenant: Tenant): Promise<DropsSeedStatus> {
-    const s = await fetchSeedStatus('/api/drops/seed/status', tenant);
+    const s = await fetchSeedStatus("/api/drops/seed/status", tenant);
     return {
-      monsterDropCount: subdomainCount(s, 'monster-drop'),
-      continentDropCount: subdomainCount(s, 'continent-drop'),
-      reactorDropCount: subdomainCount(s, 'reactor-drop'),
+      monsterDropCount: subdomainCount(s, "monster-drop"),
+      continentDropCount: subdomainCount(s, "continent-drop"),
+      reactorDropCount: subdomainCount(s, "reactor-drop"),
       updatedAt: s.tenantSeededAt ?? s.updatedAt,
     };
   }
 
   async getGachaponsSeedStatus(tenant: Tenant): Promise<GachaponsSeedStatus> {
-    const s = await fetchSeedStatus('/api/gachapons/seed/status', tenant);
+    const s = await fetchSeedStatus("/api/gachapons/seed/status", tenant);
     return {
-      gachaponCount: subdomainCount(s, 'gachapons'),
-      itemCount: subdomainCount(s, 'items'),
-      globalItemCount: subdomainCount(s, 'globalItems'),
+      gachaponCount: subdomainCount(s, "gachapons"),
+      itemCount: subdomainCount(s, "items"),
+      globalItemCount: subdomainCount(s, "globalItems"),
       updatedAt: s.tenantSeededAt ?? s.updatedAt,
     };
   }
 
-  async getNpcConversationsSeedStatus(tenant: Tenant): Promise<NpcConversationsSeedStatus> {
-    const s = await fetchSeedStatus('/api/npcs/conversations/seed/status', tenant);
+  async getNpcConversationsSeedStatus(
+    tenant: Tenant,
+  ): Promise<NpcConversationsSeedStatus> {
+    const s = await fetchSeedStatus(
+      "/api/npcs/conversations/seed/status",
+      tenant,
+    );
     return {
-      conversationCount: subdomainCount(s, 'npc.conversation'),
+      conversationCount: subdomainCount(s, "npc.conversation"),
       updatedAt: s.tenantSeededAt ?? s.updatedAt,
     };
   }
 
-  async getQuestConversationsSeedStatus(tenant: Tenant): Promise<QuestConversationsSeedStatus> {
-    const s = await fetchSeedStatus('/api/quests/conversations/seed/status', tenant);
+  async getQuestConversationsSeedStatus(
+    tenant: Tenant,
+  ): Promise<QuestConversationsSeedStatus> {
+    const s = await fetchSeedStatus(
+      "/api/quests/conversations/seed/status",
+      tenant,
+    );
     return {
-      conversationCount: subdomainCount(s, 'quest.conversation'),
+      conversationCount: subdomainCount(s, "quest.conversation"),
       updatedAt: s.tenantSeededAt ?? s.updatedAt,
     };
   }
 
   async getNpcShopsSeedStatus(tenant: Tenant): Promise<NpcShopsSeedStatus> {
-    const s = await fetchSeedStatus('/api/shops/seed/status', tenant);
+    const s = await fetchSeedStatus("/api/shops/seed/status", tenant);
     // commodities arrives via SubdomainAuxiliary on ShopSubdomain — it
     // shares the response shape but is not its own primary subdomain.
     return {
-      shopCount: subdomainCount(s, 'npc-shops'),
-      commodityCount: subdomainCount(s, 'commodities'),
+      shopCount: subdomainCount(s, "npc-shops"),
+      commodityCount: subdomainCount(s, "commodities"),
       updatedAt: s.tenantSeededAt ?? s.updatedAt,
     };
   }
 
-  async getPortalScriptsSeedStatus(tenant: Tenant): Promise<PortalScriptsSeedStatus> {
-    const s = await fetchSeedStatus('/api/portals/scripts/seed/status', tenant);
+  async getPortalScriptsSeedStatus(
+    tenant: Tenant,
+  ): Promise<PortalScriptsSeedStatus> {
+    const s = await fetchSeedStatus("/api/portals/scripts/seed/status", tenant);
     return {
-      scriptCount: subdomainCount(s, 'portal-actions'),
+      scriptCount: subdomainCount(s, "portal-actions"),
       updatedAt: s.tenantSeededAt ?? s.updatedAt,
     };
   }
 
-  async getReactorScriptsSeedStatus(tenant: Tenant): Promise<ReactorScriptsSeedStatus> {
-    const s = await fetchSeedStatus('/api/reactors/actions/seed/status', tenant);
+  async getReactorScriptsSeedStatus(
+    tenant: Tenant,
+  ): Promise<ReactorScriptsSeedStatus> {
+    const s = await fetchSeedStatus(
+      "/api/reactors/actions/seed/status",
+      tenant,
+    );
     return {
-      scriptCount: subdomainCount(s, 'reactor-actions'),
+      scriptCount: subdomainCount(s, "reactor-actions"),
       updatedAt: s.tenantSeededAt ?? s.updatedAt,
     };
   }
 
-  async getMapActionScriptsSeedStatus(tenant: Tenant): Promise<MapActionScriptsSeedStatus> {
-    const s = await fetchSeedStatus('/api/maps/actions/seed/status', tenant);
+  async getMapActionScriptsSeedStatus(
+    tenant: Tenant,
+  ): Promise<MapActionScriptsSeedStatus> {
+    const s = await fetchSeedStatus("/api/maps/actions/seed/status", tenant);
     // map-actions exposes two subdomains in the seeder lib
     // (onUserEnter + onFirstUserEnter); sum them for the single
     // scriptCount the UI displays.
     return {
-      scriptCount: subdomainCount(s, 'onUserEnter') + subdomainCount(s, 'onFirstUserEnter'),
+      scriptCount:
+        subdomainCount(s, "onUserEnter") +
+        subdomainCount(s, "onFirstUserEnter"),
       updatedAt: s.tenantSeededAt ?? s.updatedAt,
     };
   }

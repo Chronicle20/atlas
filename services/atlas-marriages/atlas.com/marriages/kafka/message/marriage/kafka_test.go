@@ -79,7 +79,7 @@ func TestCommandSerialization(t *testing.T) {
 			var result map[string]interface{}
 			err = json.Unmarshal(data, &result)
 			require.NoError(t, err)
-			
+
 			assert.Contains(t, result, "characterId")
 			assert.Contains(t, result, "type")
 			assert.Contains(t, result, "body")
@@ -189,7 +189,7 @@ func TestEventSerialization(t *testing.T) {
 			var result map[string]interface{}
 			err = json.Unmarshal(data, &result)
 			require.NoError(t, err)
-			
+
 			assert.Contains(t, result, "characterId")
 			assert.Contains(t, result, "type")
 			assert.Contains(t, result, "body")

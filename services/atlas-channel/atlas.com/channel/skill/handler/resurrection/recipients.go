@@ -1,20 +1,23 @@
 package resurrection
 
 import (
+	"atlas-channel/data/skill/effect"
 	"context"
 
-	"atlas-channel/data/skill/effect"
 	channelhandler "atlas-channel/skill/handler"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
-	"github.com/sirupsen/logrus"
 )
 
 // selectDeadParty / selectDeadMap are seams (aliases to the shared dead-target
 // selectors) so the variant dispatch is unit-testable without the live stack.
-var selectDeadParty = channelhandler.SelectDeadInRangePartyMembers
-var selectDeadMap = channelhandler.SelectDeadInRangeMapPlayers
+var (
+	selectDeadParty = channelhandler.SelectDeadInRangePartyMembers
+	selectDeadMap   = channelhandler.SelectDeadInRangeMapPlayers
+)
 
 // selectByVariant routes each Resurrection variant to its recipient selector:
 // Bishop -> dead party members in range; GM / SuperGM -> all dead players in

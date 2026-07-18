@@ -4,19 +4,20 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 // packet-audit:fname CWvsContext::OnPartyResult#Invite
 type Invite struct {
-	mode              byte
-	partyId           uint32
-	originatorName    string
-	originatorJobId   uint32
-	originatorLevel   uint32
+	mode            byte
+	partyId         uint32
+	originatorName  string
+	originatorJobId uint32
+	originatorLevel uint32
 }
 
 func NewInvite(mode byte, partyId uint32, originatorName string, originatorJobId uint32, originatorLevel uint32) Invite {

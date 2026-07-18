@@ -4,8 +4,9 @@ import (
 	"atlas-npc-conversations/conversation/quest"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // ProcessorMock is a mock implementation of the quest.Processor interface

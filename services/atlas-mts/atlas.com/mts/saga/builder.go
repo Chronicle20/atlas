@@ -3,8 +3,9 @@ package saga
 import (
 	"time"
 
-	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	"github.com/google/uuid"
+
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 )
 
 // Builder wraps the shared saga builder. The list flow constructs its saga

@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const AuthSuccessWriter = "AuthSuccess"
@@ -66,10 +67,10 @@ func (m AuthSuccess) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 			w.WriteAsciiString(m.name)
 
 			if t.MajorVersion() > 12 {
-				w.WriteByte(0)  // quiet ban reason
-				w.WriteByte(0)  // quiet ban
-				w.WriteLong(0)  // quiet ban timestamp
-				w.WriteLong(0)  // creation timestamp
+				w.WriteByte(0) // quiet ban reason
+				w.WriteByte(0) // quiet ban
+				w.WriteLong(0) // quiet ban timestamp
+				w.WriteLong(0) // creation timestamp
 				// nNumOfCharacter is present from v61 up. IDA v48
 				// CLogin::OnCheckPasswordResult (sub_500931) @0x500931 success path
 				// reads only through the second DecodeBuffer(8) @0x500f67 — there is NO
@@ -84,7 +85,7 @@ func (m AuthSuccess) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 				// follow (v79 usesPin=false). Introduced at v83.
 				if t.MajorVersion() >= 83 {
 					w.WriteBool(!m.usesPin)
-					var needsPic = byte(0)
+					needsPic := byte(0)
 					if m.pic != "" {
 						needsPic = byte(1)
 					}
@@ -143,8 +144,8 @@ func (m *AuthSuccess) Decode(l logrus.FieldLogger, ctx context.Context) func(r *
 			m.name = r.ReadAsciiString()
 
 			if t.MajorVersion() > 12 {
-				_ = r.ReadByte()  // quiet ban reason
-				_ = r.ReadByte()  // quiet ban
+				_ = r.ReadByte()   // quiet ban reason
+				_ = r.ReadByte()   // quiet ban
 				_ = r.ReadUint64() // quiet ban timestamp
 				_ = r.ReadUint64() // creation timestamp
 				// nNumOfCharacter present from v61 up (mirror of Encode gate); v48

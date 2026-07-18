@@ -7,13 +7,16 @@ import (
 	"strconv"
 	"sync"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 )
 
-var isReg *document.Registry[string, StringRestModel]
-var isOnce sync.Once
+var (
+	isReg  *document.Registry[string, StringRestModel]
+	isOnce sync.Once
+)
 
 func GetStringModelRegistry() *document.Registry[string, StringRestModel] {
 	isOnce.Do(func() {

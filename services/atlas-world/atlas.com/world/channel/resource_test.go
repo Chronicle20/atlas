@@ -7,9 +7,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	channelConstant "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/gorilla/mux"
 	logtest "github.com/sirupsen/logrus/hooks/test"
+
+	channelConstant "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 )
 
 type testServerInformation struct{}

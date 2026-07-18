@@ -24,21 +24,32 @@ function buildWindow(page: number, lastPage: number): number[] {
   return out;
 }
 
-export function Pager({ page, lastPage, total, pageSize: _pageSize, onPageChange }: PagerProps) {
+export function Pager({
+  page,
+  lastPage,
+  total,
+  pageSize: _pageSize,
+  onPageChange,
+}: PagerProps) {
   const onFirst = page <= 1;
   const onLast = page >= lastPage;
   const window = buildWindow(page, lastPage);
 
-  const status = total === 0
-    ? "No results"
-    : `Page ${page} of ${lastPage} • ${total} results`;
+  const status =
+    total === 0
+      ? "No results"
+      : `Page ${page} of ${lastPage} • ${total} results`;
 
   return (
     <div className="flex items-center justify-between gap-4 py-2">
       <div className="text-sm text-muted-foreground" aria-live="polite">
         {status}
       </div>
-      <div className="flex items-center gap-1" role="navigation" aria-label="Pagination">
+      <div
+        className="flex items-center gap-1"
+        role="navigation"
+        aria-label="Pagination"
+      >
         <Button
           variant="outline"
           size="icon"

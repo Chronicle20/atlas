@@ -7,10 +7,11 @@ import (
 	"context"
 	"errors"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 var errWorldNotFound = errors.New("world not found")
@@ -67,7 +68,7 @@ func (p *ProcessorImpl) GetWorlds(decorators ...model.Decorator[Model]) ([]Model
 func (p *ProcessorImpl) ByWorldIdProvider(decorators ...model.Decorator[Model]) func(worldId world.Id) model.Provider[Model] {
 	return func(worldId world.Id) model.Provider[Model] {
 		worldIds := mapDistinctWorldId(channel.GetChannelRegistry().ChannelServers(p.ctx))
-		var exists = false
+		exists := false
 		for _, wid := range worldIds {
 			if wid == worldId {
 				exists = true

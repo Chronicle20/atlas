@@ -1,11 +1,10 @@
 package configuration_test
 
 import (
-	"testing"
-	"time"
-
 	"atlas-world/configuration"
 	"atlas-world/configuration/tenant"
+	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"

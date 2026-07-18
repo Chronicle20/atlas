@@ -8,8 +8,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 func parseReactorId(filePath string) (uint32, error) {
@@ -23,7 +24,6 @@ func parseReactorId(filePath string) (uint32, error) {
 		return 0, err
 	}
 	return uint32(id), nil
-
 }
 
 func Read(l logrus.FieldLogger) func(path string, id uint32, np xml.IdProvider) model.Provider[RestModel] {

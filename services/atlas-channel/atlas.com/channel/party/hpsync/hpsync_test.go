@@ -1,23 +1,23 @@
 package hpsync
 
 import (
+	"atlas-channel/character"
+	"atlas-channel/party"
+	"atlas-channel/socket/writer"
 	"context"
 	"io"
 	"sort"
 	"sync"
 	"testing"
 
-	"atlas-channel/character"
-	"atlas-channel/party"
-	"atlas-channel/socket/writer"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 func testLogger() logrus.FieldLogger {

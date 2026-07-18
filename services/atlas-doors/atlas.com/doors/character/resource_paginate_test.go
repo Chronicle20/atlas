@@ -1,6 +1,7 @@
 package character
 
 import (
+	"atlas-doors/door"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -9,11 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"atlas-doors/door"
-
-	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -22,6 +18,10 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func setupDoorsCharRegistry(t *testing.T) {

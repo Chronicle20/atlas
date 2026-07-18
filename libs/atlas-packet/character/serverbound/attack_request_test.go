@@ -145,10 +145,10 @@ func TestAttackMeleeRequestBytesV72(t *testing.T) {
 		0x00, 0x00, 0x00, 0x00, // attackTime                      @0x85f9e9
 		// --- DamageInfo[0] (per-mob loop @0x85f9ee) ---
 		0x29, 0x23, 0x00, 0x00, // monsterId=9001                  @0x85fa1c
-		0x07,                   // hitAction                       @0x85fa2a
-		0x00,                   // forceAction                     @0x85fa45
-		0x00,                   // frameIdx                        @0x85fa53
-		0x00,                   // calcDamageStatIndex             @0x85fab0
+		0x07,       // hitAction                       @0x85fa2a
+		0x00,       // forceAction                     @0x85fa45
+		0x00,       // frameIdx                        @0x85fa53
+		0x00,       // calcDamageStatIndex             @0x85fab0
 		0x00, 0x00, // hitPositionX                                @0x85fac6
 		0x00, 0x00, // hitPositionY                                @0x85fadd
 		0x00, 0x00, // previousPositionX                           @0x85faf3
@@ -196,14 +196,14 @@ func TestAttackRangedRequestBytesV72(t *testing.T) {
 		0x00, 0x00, 0x00, 0x00, // attackTime
 		0x00, 0x00, // properBulletPosition   @0x86216a
 		0x00, 0x00, // cashBulletPosition     @0x862178
-		0x00,       // nShootRange            @0x862183
+		0x00, // nShootRange            @0x862183
 		// --- DamageInfo[0] ---
 		0x29, 0x23, 0x00, 0x00, // monsterId=9001
-		0x07,                   // hitAction
-		0x00, 0x00, 0x00,       // forceAction, frameIdx, calcDamageStatIndex
+		0x07,             // hitAction
+		0x00, 0x00, 0x00, // forceAction, frameIdx, calcDamageStatIndex
 		0x00, 0x00, 0x00, 0x00, // hitPositionX, hitPositionY
 		0x00, 0x00, 0x00, 0x00, // previousPositionX, previousPositionY
-		0x00, 0x00,             // delay
+		0x00, 0x00, // delay
 		0xE8, 0x03, 0x00, 0x00, // damage[0]=1000
 		0xD0, 0x07, 0x00, 0x00, // damage[1]=2000
 		0x00, 0x00, 0x00, 0x00, // per-mob CRC
@@ -247,11 +247,11 @@ func TestAttackMagicRequestBytesV72(t *testing.T) {
 		0x00, 0x00, 0x00, 0x00, // attackTime
 		// --- DamageInfo[0] ---
 		0x29, 0x23, 0x00, 0x00, // monsterId=9001
-		0x07,                   // hitAction
-		0x00, 0x00, 0x00,       // forceAction, frameIdx, calcDamageStatIndex
+		0x07,             // hitAction
+		0x00, 0x00, 0x00, // forceAction, frameIdx, calcDamageStatIndex
 		0x00, 0x00, 0x00, 0x00, // hitPositionX, hitPositionY
 		0x00, 0x00, 0x00, 0x00, // previousPositionX, previousPositionY
-		0x00, 0x00,             // delay
+		0x00, 0x00, // delay
 		0xE8, 0x03, 0x00, 0x00, // damage[0]=1000
 		0xD0, 0x07, 0x00, 0x00, // damage[1]=2000
 		0x00, 0x00, 0x00, 0x00, // per-mob CRC
@@ -291,11 +291,11 @@ func TestAttackTouchRequestBytesV72(t *testing.T) {
 		0x00, 0x00, 0x00, 0x00, // attackTime
 		// --- DamageInfo[0] ---
 		0x29, 0x23, 0x00, 0x00, // monsterId=9001
-		0x07,                   // hitAction
-		0x00, 0x00, 0x00,       // forceAction, frameIdx, calcDamageStatIndex
+		0x07,             // hitAction
+		0x00, 0x00, 0x00, // forceAction, frameIdx, calcDamageStatIndex
 		0x00, 0x00, 0x00, 0x00, // hitPositionX, hitPositionY
 		0x00, 0x00, 0x00, 0x00, // previousPositionX, previousPositionY
-		0x00, 0x00,             // delay
+		0x00, 0x00, // delay
 		0xE8, 0x03, 0x00, 0x00, // damage[0]=1000
 		0xD0, 0x07, 0x00, 0x00, // damage[1]=2000
 		0x00, 0x00, 0x00, 0x00, // per-mob CRC
@@ -353,10 +353,10 @@ func TestAttackMeleeRequestBytesV61(t *testing.T) {
 		0x00, 0x00, 0x00, 0x00, // attackTime                      @0x7a5d89
 		// --- DamageInfo[0] (per-mob loop @0x7a5da3) ---
 		0x29, 0x23, 0x00, 0x00, // monsterId=9001                  @0x7a5dbf
-		0x07,                   // hitAction                       @0x7a5dd0
-		0x00,                   // forceAction                     @0x7a5dee
-		0x00,                   // frameIdx                        @0x7a5dff
-		0x00,                   // calcDamageStatIndex             @0x7a5e5f
+		0x07,       // hitAction                       @0x7a5dd0
+		0x00,       // forceAction                     @0x7a5dee
+		0x00,       // frameIdx                        @0x7a5dff
+		0x00,       // calcDamageStatIndex             @0x7a5e5f
 		0x00, 0x00, // hitPositionX                                @0x7a5e78
 		0x00, 0x00, // hitPositionY                                @0x7a5e92
 		0x00, 0x00, // previousPositionX                           @0x7a5eab
@@ -519,10 +519,10 @@ func TestAttackMeleeRequestBytesV48(t *testing.T) {
 		0x00, 0x00, 0x00, 0x00, // attackTime                      @0x6a17ad
 		// --- DamageInfo[0] (per-mob loop @0x6a17b5) ---
 		0x29, 0x23, 0x00, 0x00, // monsterId=9001                  @0x6a17e0
-		0x07,                   // hitAction                       @0x6a17ee
-		0x00,                   // forceAction                     @0x6a1809
-		0x00,                   // frameIdx                        @0x6a1817
-		0x00,                   // calcDamageStatIndex             @0x6a188b
+		0x07,       // hitAction                       @0x6a17ee
+		0x00,       // forceAction                     @0x6a1809
+		0x00,       // frameIdx                        @0x6a1817
+		0x00,       // calcDamageStatIndex             @0x6a188b
 		0x00, 0x00, // hitPositionX                                @0x6a18a2
 		0x00, 0x00, // hitPositionY                                @0x6a18ba
 		0x00, 0x00, // previousPositionX                           @0x6a18d1

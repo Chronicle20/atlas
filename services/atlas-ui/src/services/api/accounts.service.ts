@@ -1,6 +1,14 @@
 import { api } from "@/lib/api/client";
-import { buildQueryString, type ServiceOptions, type QueryOptions } from "@/lib/api/query-params";
-import { fetchAll, fetchPaged, type PagedResult } from "@/services/api/pagination";
+import {
+  buildQueryString,
+  type ServiceOptions,
+  type QueryOptions,
+} from "@/lib/api/query-params";
+import {
+  fetchAll,
+  fetchPaged,
+  type PagedResult,
+} from "@/services/api/pagination";
 import { tenantHeaders } from "@/lib/headers";
 import type { Account, AccountAttributes } from "@/types/models/account";
 import type { Tenant } from "@/types/models/tenant";
@@ -32,7 +40,9 @@ function transformAccount(data: Account): Account {
 
 function sortAccounts(accounts: Account[]): Account[] {
   return accounts.sort((a, b) =>
-    a.attributes.name.toLowerCase().localeCompare(b.attributes.name.toLowerCase()),
+    a.attributes.name
+      .toLowerCase()
+      .localeCompare(b.attributes.name.toLowerCase()),
   );
 }
 
@@ -80,7 +90,10 @@ export const accountsService = {
       page,
       queryOptions,
     );
-    return { data: sortAccounts(result.data.map(transformAccount)), meta: result.meta };
+    return {
+      data: sortAccounts(result.data.map(transformAccount)),
+      meta: result.meta,
+    };
   },
 
   async getAccountById(id: string, options?: ServiceOptions): Promise<Account> {
@@ -90,17 +103,25 @@ export const accountsService = {
 
   async accountExists(id: string, options?: ServiceOptions): Promise<boolean> {
     try {
-      await accountsService.getAccountById( id, options);
+      await accountsService.getAccountById(id, options);
       return true;
     } catch (error) {
-      if (error && typeof error === "object" && "status" in error && (error as { status: number }).status === 404) {
+      if (
+        error &&
+        typeof error === "object" &&
+        "status" in error &&
+        (error as { status: number }).status === 404
+      ) {
         return false;
       }
       throw error;
     }
   },
 
-  async searchAccountsByName(namePattern: string, options?: ServiceOptions): Promise<Account[]> {
+  async searchAccountsByName(
+    namePattern: string,
+    options?: ServiceOptions,
+  ): Promise<Account[]> {
     return accountsService.getAllAccounts({
       ...options,
       search: namePattern,
@@ -112,11 +133,17 @@ export const accountsService = {
     return accountsService.getAllAccounts({ ...options, loggedIn: true });
   },
 
-  async terminateAccountSession(accountId: string, options?: ServiceOptions): Promise<void> {
+  async terminateAccountSession(
+    accountId: string,
+    options?: ServiceOptions,
+  ): Promise<void> {
     return api.delete(`${BASE_PATH}/${accountId}/session`, options);
   },
 
-  async deleteAccount(accountId: string, options?: ServiceOptions): Promise<void> {
+  async deleteAccount(
+    accountId: string,
+    options?: ServiceOptions,
+  ): Promise<void> {
     return api.delete(`${BASE_PATH}/${accountId}`, options);
   },
 
@@ -126,10 +153,15 @@ export const accountsService = {
     totalCharacterSlots: number;
     averageCharacterSlots: number;
   }> {
-    const accounts = await accountsService.getAllAccounts( options);
+    const accounts = await accountsService.getAllAccounts(options);
     const total = accounts.length;
-    const loggedIn = accounts.filter(acc => acc.attributes.loggedIn > 0).length;
-    const totalCharacterSlots = accounts.reduce((sum, acc) => sum + acc.attributes.characterSlots, 0);
+    const loggedIn = accounts.filter(
+      (acc) => acc.attributes.loggedIn > 0,
+    ).length;
+    const totalCharacterSlots = accounts.reduce(
+      (sum, acc) => sum + acc.attributes.characterSlots,
+      0,
+    );
     return {
       total,
       loggedIn,
@@ -164,7 +196,10 @@ export const accountsService = {
     if (!response.ok) {
       let message = `createAccount failed with status ${response.status}`;
       try {
-        const errBody = (await response.json()) as { error?: string; message?: string };
+        const errBody = (await response.json()) as {
+          error?: string;
+          message?: string;
+        };
         if (errBody.error) message = errBody.error;
         else if (errBody.message) message = errBody.message;
       } catch {
@@ -179,7 +214,10 @@ export const accountsService = {
   async terminateMultipleSessions(
     accountIds: string[],
     options?: ServiceOptions,
-  ): Promise<{ successful: string[]; failed: Array<{ id: string; error: string }> }> {
+  ): Promise<{
+    successful: string[];
+    failed: Array<{ id: string; error: string }>;
+  }> {
     const successful: string[] = [];
     const failed: Array<{ id: string; error: string }> = [];
     const concurrency = 3;
@@ -189,7 +227,7 @@ export const accountsService = {
       const results = await Promise.all(
         batch.map(async (accountId) => {
           try {
-            await accountsService.terminateAccountSession( accountId, options);
+            await accountsService.terminateAccountSession(accountId, options);
             return { success: true as const, accountId };
           } catch (error) {
             return {

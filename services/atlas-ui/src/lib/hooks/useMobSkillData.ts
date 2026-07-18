@@ -1,7 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
-import { useMemo } from 'react';
-import { useTenant } from '@/context/tenant-context';
-import { mobSkillsService } from '@/services/api/mob-skills.service';
+import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
+import { useTenant } from "@/context/tenant-context";
+import { mobSkillsService } from "@/services/api/mob-skills.service";
 
 interface MobSkillDataResult {
   id: number;
@@ -27,11 +27,14 @@ export function useMobSkillData(
   skillId: number,
   hookOptions: UseMobSkillDataOptions = {},
 ) {
-  const options = useMemo(() => ({ ...DEFAULT_OPTIONS, ...hookOptions }), [hookOptions]);
+  const options = useMemo(
+    () => ({ ...DEFAULT_OPTIONS, ...hookOptions }),
+    [hookOptions],
+  );
   const { activeTenant } = useTenant();
 
   const query = useQuery({
-    queryKey: ['mob-skill-data', activeTenant?.id || '', skillId.toString()],
+    queryKey: ["mob-skill-data", activeTenant?.id || "", skillId.toString()],
     queryFn: async (): Promise<MobSkillDataResult> => {
       try {
         const name = await mobSkillsService.getMobSkillName(skillId);
@@ -39,7 +42,7 @@ export function useMobSkillData(
       } catch (error) {
         return {
           id: skillId,
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: error instanceof Error ? error.message : "Unknown error",
         };
       }
     },
@@ -47,8 +50,8 @@ export function useMobSkillData(
     staleTime: options.staleTime,
     gcTime: options.gcTime,
     retry: (failureCount, error) => {
-      const errorMessage = error?.message?.toLowerCase() || '';
-      if (errorMessage.includes('404') || errorMessage.includes('not found')) {
+      const errorMessage = error?.message?.toLowerCase() || "";
+      if (errorMessage.includes("404") || errorMessage.includes("not found")) {
         return false;
       }
       return failureCount < options.retry;

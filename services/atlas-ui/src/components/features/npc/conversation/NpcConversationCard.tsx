@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Save, Undo2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -27,13 +27,17 @@ export function NpcConversationCard({
   const [isDirty, setIsDirty] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
+  // Sync draft to the latest conversation prop unless the user has local
+  // (unsaved) edits. Adjusted during render instead of in an effect.
+  const [prevSync, setPrevSync] = useState({ conversation, isDirty });
+  if (conversation !== prevSync.conversation || isDirty !== prevSync.isDirty) {
+    setPrevSync({ conversation, isDirty });
     if (!isDirty) setDraft(conversation);
-  }, [conversation, isDirty]);
+  }
 
   const [selectedStateId, setSelectedStateId] = useState<string | null>(() => {
     const start = draft.attributes.startState;
-    return draft.attributes.states.some(s => s.id === start) ? start : null;
+    return draft.attributes.states.some((s) => s.id === start) ? start : null;
   });
 
   const handleDraftChange = (next: Conversation) => {

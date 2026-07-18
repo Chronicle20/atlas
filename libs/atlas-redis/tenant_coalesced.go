@@ -1,9 +1,6 @@
 package redis
 
 import (
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-	"github.com/sirupsen/logrus"
-
 	"context"
 	"encoding/json"
 	"errors"
@@ -12,7 +9,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/sirupsen/logrus"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+
 	goredis "github.com/redis/go-redis/v9"
 )
 

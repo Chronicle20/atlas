@@ -4,12 +4,14 @@ import (
 	"atlas-channel/data/skill/effect/statup"
 	buff2 "atlas-channel/kafka/message/buff"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/sirupsen/logrus"
 )
 
 // Processor interface defines the operations for buff processing
@@ -35,7 +37,6 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 }
 
 var _ Processor = (*ProcessorImpl)(nil)
-
 
 // ByCharacterIdProvider fetches every buff for a character. The upstream
 // atlas-buffs list is now paginated (task-117); callers here need the

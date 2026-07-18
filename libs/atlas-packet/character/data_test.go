@@ -5,10 +5,11 @@ import (
 	"testing"
 	"time"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 func TestCharacterDataMinimalRoundTrip(t *testing.T) {

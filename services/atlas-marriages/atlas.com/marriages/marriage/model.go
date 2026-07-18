@@ -244,25 +244,25 @@ func (s ProposalStatus) String() string {
 
 // Proposal represents an immutable proposal domain object
 type Proposal struct {
-	id               uint32
-	proposerId       uint32
-	targetId         uint32
-	status           ProposalStatus
-	proposedAt       time.Time
-	respondedAt      *time.Time
-	expiresAt        time.Time
-	rejectionCount   uint32
-	cooldownUntil    *time.Time
-	tenantId         uuid.UUID
-	createdAt        time.Time
-	updatedAt        time.Time
+	id             uint32
+	proposerId     uint32
+	targetId       uint32
+	status         ProposalStatus
+	proposedAt     time.Time
+	respondedAt    *time.Time
+	expiresAt      time.Time
+	rejectionCount uint32
+	cooldownUntil  *time.Time
+	tenantId       uuid.UUID
+	createdAt      time.Time
+	updatedAt      time.Time
 }
 
 // Constants for proposal rules
 const (
-	ProposalExpiryDuration    = 24 * time.Hour  // 24 hours
-	GlobalCooldownDuration    = 4 * time.Hour   // 4 hours between any proposals
-	InitialPerTargetCooldown  = 24 * time.Hour  // 24 hours initial cooldown
+	ProposalExpiryDuration   = 24 * time.Hour // 24 hours
+	GlobalCooldownDuration   = 4 * time.Hour  // 4 hours between any proposals
+	InitialPerTargetCooldown = 24 * time.Hour // 24 hours initial cooldown
 )
 
 // Id returns the proposal ID
@@ -365,13 +365,13 @@ func (p Proposal) CalculateNextCooldown() time.Duration {
 	if p.rejectionCount == 0 {
 		return InitialPerTargetCooldown
 	}
-	
+
 	// Exponential backoff: 24h, 48h, 96h, 192h, etc.
 	multiplier := uint32(1)
 	for i := uint32(0); i < p.rejectionCount; i++ {
 		multiplier *= 2
 	}
-	
+
 	return time.Duration(multiplier) * InitialPerTargetCooldown
 }
 
@@ -380,7 +380,7 @@ func (p Proposal) Accept() (Proposal, error) {
 	if !p.CanRespond() {
 		return Proposal{}, errors.New("proposal cannot be accepted")
 	}
-	
+
 	now := time.Now()
 	return p.Builder().
 		SetStatus(ProposalStatusAccepted).
@@ -394,11 +394,11 @@ func (p Proposal) Reject() (Proposal, error) {
 	if !p.CanRespond() {
 		return Proposal{}, errors.New("proposal cannot be rejected")
 	}
-	
+
 	now := time.Now()
 	nextCooldown := p.CalculateNextCooldown()
 	cooldownUntil := now.Add(nextCooldown)
-	
+
 	return p.Builder().
 		SetStatus(ProposalStatusRejected).
 		SetRespondedAt(&now).
@@ -413,7 +413,7 @@ func (p Proposal) Cancel() (Proposal, error) {
 	if !p.CanCancel() {
 		return Proposal{}, errors.New("proposal cannot be cancelled")
 	}
-	
+
 	now := time.Now()
 	return p.Builder().
 		SetStatus(ProposalStatusCancelled).
@@ -426,7 +426,7 @@ func (p Proposal) Expire() (Proposal, error) {
 	if p.status != ProposalStatusPending {
 		return Proposal{}, errors.New("only pending proposals can expire")
 	}
-	
+
 	now := time.Now()
 	return p.Builder().
 		SetStatus(ProposalStatusExpired).
@@ -501,9 +501,9 @@ type Ceremony struct {
 
 // Constants for ceremony rules
 const (
-	MaxInvitees              = 15             // Maximum number of invitees
-	DisconnectionTimeout     = 5 * time.Minute // Timeout for disconnection before postponement
-	CeremonyDurationUnlimited = true          // Ceremony duration is unlimited by default
+	MaxInvitees               = 15              // Maximum number of invitees
+	DisconnectionTimeout      = 5 * time.Minute // Timeout for disconnection before postponement
+	CeremonyDurationUnlimited = true            // Ceremony duration is unlimited by default
 )
 
 // Id returns the ceremony ID
@@ -681,7 +681,7 @@ func (c Ceremony) Start() (Ceremony, error) {
 	if !c.CanStart() {
 		return Ceremony{}, errors.New("ceremony cannot be started")
 	}
-	
+
 	now := time.Now()
 	return c.Builder().
 		SetStatus(CeremonyStatusActive).
@@ -695,7 +695,7 @@ func (c Ceremony) Complete() (Ceremony, error) {
 	if !c.CanComplete() {
 		return Ceremony{}, errors.New("ceremony cannot be completed")
 	}
-	
+
 	now := time.Now()
 	return c.Builder().
 		SetStatus(CeremonyStatusCompleted).
@@ -709,7 +709,7 @@ func (c Ceremony) Cancel() (Ceremony, error) {
 	if !c.CanCancel() {
 		return Ceremony{}, errors.New("ceremony cannot be cancelled")
 	}
-	
+
 	now := time.Now()
 	return c.Builder().
 		SetStatus(CeremonyStatusCancelled).
@@ -723,7 +723,7 @@ func (c Ceremony) Postpone() (Ceremony, error) {
 	if !c.CanPostpone() {
 		return Ceremony{}, errors.New("ceremony cannot be postponed")
 	}
-	
+
 	now := time.Now()
 	return c.Builder().
 		SetStatus(CeremonyStatusPostponed).
@@ -737,7 +737,7 @@ func (c Ceremony) Reschedule(newScheduledAt time.Time) (Ceremony, error) {
 	if !c.CanReschedule() {
 		return Ceremony{}, errors.New("ceremony cannot be rescheduled")
 	}
-	
+
 	now := time.Now()
 	return c.Builder().
 		SetStatus(CeremonyStatusScheduled).
@@ -753,11 +753,11 @@ func (c Ceremony) AddInvitee(characterId uint32) (Ceremony, error) {
 	if !c.CanAddInvitee(characterId) {
 		return Ceremony{}, errors.New("invitee cannot be added")
 	}
-	
+
 	newInvitees := make([]uint32, len(c.invitees)+1)
 	copy(newInvitees, c.invitees)
 	newInvitees[len(c.invitees)] = characterId
-	
+
 	now := time.Now()
 	return c.Builder().
 		SetInvitees(newInvitees).
@@ -770,14 +770,14 @@ func (c Ceremony) RemoveInvitee(characterId uint32) (Ceremony, error) {
 	if !c.CanRemoveInvitee(characterId) {
 		return Ceremony{}, errors.New("invitee cannot be removed")
 	}
-	
+
 	newInvitees := make([]uint32, 0, len(c.invitees)-1)
 	for _, invitee := range c.invitees {
 		if invitee != characterId {
 			newInvitees = append(newInvitees, invitee)
 		}
 	}
-	
+
 	now := time.Now()
 	return c.Builder().
 		SetInvitees(newInvitees).
@@ -790,7 +790,7 @@ func (c Ceremony) Builder() *CeremonyBuilder {
 	// Copy invitees to maintain immutability
 	invitees := make([]uint32, len(c.invitees))
 	copy(invitees, c.invitees)
-	
+
 	return &CeremonyBuilder{
 		id:           c.id,
 		marriageId:   c.marriageId,

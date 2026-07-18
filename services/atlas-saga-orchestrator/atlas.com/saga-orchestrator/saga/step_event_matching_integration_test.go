@@ -3,6 +3,9 @@
 package saga_test
 
 import (
+	"atlas-saga-orchestrator/kafka/consumer/asset"
+	"atlas-saga-orchestrator/kafka/consumer/character"
+	"atlas-saga-orchestrator/saga"
 	"context"
 	"strings"
 	"sync"
@@ -18,11 +21,9 @@ import (
 
 	characterMock "atlas-saga-orchestrator/character/mock"
 	compartmentMock "atlas-saga-orchestrator/compartment/mock"
-	"atlas-saga-orchestrator/kafka/consumer/asset"
-	"atlas-saga-orchestrator/kafka/consumer/character"
+
 	asset2 "atlas-saga-orchestrator/kafka/message/asset"
 	character2 "atlas-saga-orchestrator/kafka/message/character"
-	"atlas-saga-orchestrator/saga"
 )
 
 // TestThiefAdvancementScenario replays the event sequence from PRD §9.1 and

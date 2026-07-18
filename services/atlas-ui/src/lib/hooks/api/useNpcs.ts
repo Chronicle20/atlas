@@ -1,6 +1,6 @@
 /**
  * React Query hooks for NPC management
- * 
+ *
  * Provides optimized data fetching, caching, and mutation capabilities for:
  * - NPC discovery and listing (combines shop and conversation data)
  * - Shop management (create, update, delete shops)
@@ -10,26 +10,50 @@
  * - Proper error handling and loading states
  */
 
-import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
-import { npcsService, type NPC, type Shop, type Commodity, type CommodityAttributes, type ShopResponse } from '@/services/api/npcs.service';
-import type { Tenant } from '@/types/models/tenant';
-import type { ServiceOptions, QueryOptions } from '@/lib/api/query-params';
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type UseMutationResult,
+  type UseQueryResult,
+} from "@tanstack/react-query";
+import {
+  npcsService,
+  type NPC,
+  type Shop,
+  type Commodity,
+  type CommodityAttributes,
+  type ShopResponse,
+} from "@/services/api/npcs.service";
+import type { Tenant } from "@/types/models/tenant";
+import type { ServiceOptions, QueryOptions } from "@/lib/api/query-params";
 
 // Query keys for consistent cache management
 export const npcKeys = {
-  all: ['npcs'] as const,
-  lists: () => [...npcKeys.all, 'list'] as const,
-  list: (tenant: Tenant | null, options?: QueryOptions) => [...npcKeys.lists(), tenant?.id || 'no-tenant', options] as const,
-  details: () => [...npcKeys.all, 'detail'] as const,
-  detail: (tenant: Tenant | null, npcId: number) => [...npcKeys.details(), tenant?.id || 'no-tenant', npcId] as const,
-  
+  all: ["npcs"] as const,
+  lists: () => [...npcKeys.all, "list"] as const,
+  list: (tenant: Tenant | null, options?: QueryOptions) =>
+    [...npcKeys.lists(), tenant?.id || "no-tenant", options] as const,
+  details: () => [...npcKeys.all, "detail"] as const,
+  detail: (tenant: Tenant | null, npcId: number) =>
+    [...npcKeys.details(), tenant?.id || "no-tenant", npcId] as const,
+
   // Specialized queries
-  shops: () => [...npcKeys.all, 'shops'] as const,
-  shop: (tenant: Tenant | null, npcId: number) => [...npcKeys.shops(), tenant?.id || 'no-tenant', npcId] as const,
-  withShops: (tenant: Tenant | null) => [...npcKeys.all, 'withShops', tenant?.id || 'no-tenant'] as const,
-  withConversations: (tenant: Tenant | null) => [...npcKeys.all, 'withConversations', tenant?.id || 'no-tenant'] as const,
-  commodities: () => [...npcKeys.all, 'commodities'] as const,
-  commodity: (tenant: Tenant | null, npcId: number, commodityId: string) => [...npcKeys.commodities(), tenant?.id || 'no-tenant', npcId, commodityId] as const,
+  shops: () => [...npcKeys.all, "shops"] as const,
+  shop: (tenant: Tenant | null, npcId: number) =>
+    [...npcKeys.shops(), tenant?.id || "no-tenant", npcId] as const,
+  withShops: (tenant: Tenant | null) =>
+    [...npcKeys.all, "withShops", tenant?.id || "no-tenant"] as const,
+  withConversations: (tenant: Tenant | null) =>
+    [...npcKeys.all, "withConversations", tenant?.id || "no-tenant"] as const,
+  commodities: () => [...npcKeys.all, "commodities"] as const,
+  commodity: (tenant: Tenant | null, npcId: number, commodityId: string) =>
+    [
+      ...npcKeys.commodities(),
+      tenant?.id || "no-tenant",
+      npcId,
+      commodityId,
+    ] as const,
 };
 
 // ============================================================================
@@ -41,7 +65,7 @@ export const npcKeys = {
  */
 export function useNPCs(
   tenant: Tenant,
-  options?: QueryOptions
+  options?: QueryOptions,
 ): UseQueryResult<NPC[], Error> {
   return useQuery({
     queryKey: npcKeys.list(tenant, options),
@@ -57,11 +81,12 @@ export function useNPCs(
 export function useNPC(
   tenant: Tenant,
   npcId: number,
-  options?: ServiceOptions
+  options?: ServiceOptions,
 ): UseQueryResult<NPC | null, Error> {
   return useQuery({
     queryKey: npcKeys.detail(tenant, npcId),
-    queryFn: () => npcsService.getNPCById(npcId, { ...options, useCache: false }),
+    queryFn: () =>
+      npcsService.getNPCById(npcId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!npcId,
     gcTime: 5 * 60 * 1000,
   });
@@ -72,11 +97,12 @@ export function useNPC(
  */
 export function useNPCsWithShops(
   tenant: Tenant,
-  options?: QueryOptions
+  options?: QueryOptions,
 ): UseQueryResult<NPC[], Error> {
   return useQuery({
     queryKey: npcKeys.withShops(tenant),
-    queryFn: () => npcsService.getNPCsWithShops({ ...options, useCache: false }),
+    queryFn: () =>
+      npcsService.getNPCsWithShops({ ...options, useCache: false }),
     enabled: !!tenant?.id,
     gcTime: 5 * 60 * 1000,
   });
@@ -87,11 +113,12 @@ export function useNPCsWithShops(
  */
 export function useNPCsWithConversations(
   tenant: Tenant,
-  options?: QueryOptions
+  options?: QueryOptions,
 ): UseQueryResult<NPC[], Error> {
   return useQuery({
     queryKey: npcKeys.withConversations(tenant),
-    queryFn: () => npcsService.getNPCsWithConversations({ ...options, useCache: false }),
+    queryFn: () =>
+      npcsService.getNPCsWithConversations({ ...options, useCache: false }),
     enabled: !!tenant?.id,
     gcTime: 5 * 60 * 1000,
   });
@@ -103,11 +130,12 @@ export function useNPCsWithConversations(
 export function useNPCShop(
   tenant: Tenant,
   npcId: number,
-  options?: ServiceOptions
+  options?: ServiceOptions,
 ): UseQueryResult<ShopResponse, Error> {
   return useQuery({
     queryKey: npcKeys.shop(tenant, npcId),
-    queryFn: () => npcsService.getNPCShop(npcId, { ...options, useCache: false }),
+    queryFn: () =>
+      npcsService.getNPCShop(npcId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!npcId,
     gcTime: 3 * 60 * 1000,
   });
@@ -123,12 +151,12 @@ export function useNPCShop(
 export function useCreateShop(): UseMutationResult<
   Shop,
   Error,
-  { 
-    npcId: number; 
-    commodities: Omit<CommodityAttributes, 'id'>[]; 
-    tenant: Tenant; 
-    recharger?: boolean; 
-    options?: ServiceOptions 
+  {
+    npcId: number;
+    commodities: Omit<CommodityAttributes, "id">[];
+    tenant: Tenant;
+    recharger?: boolean;
+    options?: ServiceOptions;
   }
 > {
   const queryClient = useQueryClient();
@@ -141,10 +169,12 @@ export function useCreateShop(): UseMutationResult<
       queryClient.invalidateQueries({ queryKey: npcKeys.all });
       queryClient.invalidateQueries({ queryKey: npcKeys.shop(tenant, npcId) });
       queryClient.invalidateQueries({ queryKey: npcKeys.withShops(tenant) });
-      queryClient.invalidateQueries({ queryKey: npcKeys.detail(tenant, npcId) });
+      queryClient.invalidateQueries({
+        queryKey: npcKeys.detail(tenant, npcId),
+      });
     },
     onError: (error) => {
-      console.error('Failed to create shop:', error);
+      console.error("Failed to create shop:", error);
     },
   });
 }
@@ -155,40 +185,49 @@ export function useCreateShop(): UseMutationResult<
 export function useUpdateShop(): UseMutationResult<
   Shop,
   Error,
-  { 
-    npcId: number; 
-    commodities: Commodity[]; 
-    tenant: Tenant; 
-    recharger?: boolean; 
-    options?: ServiceOptions 
+  {
+    npcId: number;
+    commodities: Commodity[];
+    tenant: Tenant;
+    recharger?: boolean;
+    options?: ServiceOptions;
   }
 > {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ npcId, commodities, recharger, options }) => 
+    mutationFn: ({ npcId, commodities, recharger, options }) =>
       npcsService.updateShop(npcId, commodities, recharger, options),
     onMutate: async ({ tenant, npcId }) => {
       // Cancel any outgoing refetches for this shop
-      await queryClient.cancelQueries({ queryKey: npcKeys.shop(tenant, npcId) });
-      
+      await queryClient.cancelQueries({
+        queryKey: npcKeys.shop(tenant, npcId),
+      });
+
       // Snapshot the previous shop data
-      const previousShop = queryClient.getQueryData<ShopResponse>(npcKeys.shop(tenant, npcId));
-      
+      const previousShop = queryClient.getQueryData<ShopResponse>(
+        npcKeys.shop(tenant, npcId),
+      );
+
       return { previousShop };
     },
     onError: (error, { tenant, npcId }, context) => {
       // Revert optimistic update on error
       if (context?.previousShop) {
-        queryClient.setQueryData(npcKeys.shop(tenant, npcId), context.previousShop);
+        queryClient.setQueryData(
+          npcKeys.shop(tenant, npcId),
+          context.previousShop,
+        );
       }
-      console.error('Failed to update shop:', error);
+      console.error("Failed to update shop:", error);
     },
     onSettled: (_data, _error, { tenant, npcId }) => {
       // Invalidate and refetch relevant queries
       queryClient.invalidateQueries({ queryKey: npcKeys.shop(tenant, npcId) });
       queryClient.invalidateQueries({ queryKey: npcKeys.all });
-      queryClient.invalidateQueries({ queryKey: npcKeys.detail(tenant, npcId) });
+      queryClient.invalidateQueries({
+        queryKey: npcKeys.detail(tenant, npcId),
+      });
     },
   });
 }
@@ -203,17 +242,17 @@ export function useUpdateShop(): UseMutationResult<
 export function useCreateCommodity(): UseMutationResult<
   Commodity,
   Error,
-  { 
-    npcId: number; 
-    commodityAttributes: CommodityAttributes; 
-    tenant: Tenant; 
-    options?: ServiceOptions 
+  {
+    npcId: number;
+    commodityAttributes: CommodityAttributes;
+    tenant: Tenant;
+    options?: ServiceOptions;
   }
 > {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ npcId, commodityAttributes, options }) => 
+    mutationFn: ({ npcId, commodityAttributes, options }) =>
       npcsService.createCommodity(npcId, commodityAttributes, options),
     onSuccess: (_data, { tenant, npcId }) => {
       // Invalidate shop data to refresh commodities list
@@ -221,7 +260,7 @@ export function useCreateCommodity(): UseMutationResult<
       queryClient.invalidateQueries({ queryKey: npcKeys.all });
     },
     onError: (error) => {
-      console.error('Failed to create commodity:', error);
+      console.error("Failed to create commodity:", error);
     },
   });
 }
@@ -232,34 +271,46 @@ export function useCreateCommodity(): UseMutationResult<
 export function useUpdateCommodity(): UseMutationResult<
   Commodity,
   Error,
-  { 
-    npcId: number; 
-    commodityId: string; 
-    commodityAttributes: Partial<CommodityAttributes>; 
-    tenant: Tenant; 
-    options?: ServiceOptions 
+  {
+    npcId: number;
+    commodityId: string;
+    commodityAttributes: Partial<CommodityAttributes>;
+    tenant: Tenant;
+    options?: ServiceOptions;
   }
 > {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ npcId, commodityId, commodityAttributes, options }) =>
-      npcsService.updateCommodity(npcId, commodityId, commodityAttributes, options),
+      npcsService.updateCommodity(
+        npcId,
+        commodityId,
+        commodityAttributes,
+        options,
+      ),
     onMutate: async ({ tenant, npcId }) => {
       // Cancel any outgoing refetches for this shop
-      await queryClient.cancelQueries({ queryKey: npcKeys.shop(tenant, npcId) });
-      
+      await queryClient.cancelQueries({
+        queryKey: npcKeys.shop(tenant, npcId),
+      });
+
       // Snapshot the previous shop data
-      const previousShop = queryClient.getQueryData<ShopResponse>(npcKeys.shop(tenant, npcId));
-      
+      const previousShop = queryClient.getQueryData<ShopResponse>(
+        npcKeys.shop(tenant, npcId),
+      );
+
       return { previousShop };
     },
     onError: (error, { tenant, npcId }, context) => {
       // Revert optimistic update on error
       if (context?.previousShop) {
-        queryClient.setQueryData(npcKeys.shop(tenant, npcId), context.previousShop);
+        queryClient.setQueryData(
+          npcKeys.shop(tenant, npcId),
+          context.previousShop,
+        );
       }
-      console.error('Failed to update commodity:', error);
+      console.error("Failed to update commodity:", error);
     },
     onSettled: (_data, _error, { tenant, npcId }) => {
       // Invalidate and refetch relevant queries
@@ -275,25 +326,29 @@ export function useUpdateCommodity(): UseMutationResult<
 export function useDeleteCommodity(): UseMutationResult<
   void,
   Error,
-  { 
-    npcId: number; 
-    commodityId: string; 
-    tenant: Tenant; 
-    options?: ServiceOptions 
+  {
+    npcId: number;
+    commodityId: string;
+    tenant: Tenant;
+    options?: ServiceOptions;
   }
 > {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ npcId, commodityId, options }) => 
+    mutationFn: ({ npcId, commodityId, options }) =>
       npcsService.deleteCommodity(npcId, commodityId, options),
     onMutate: async ({ tenant, npcId, commodityId }) => {
       // Cancel any outgoing refetches for this shop
-      await queryClient.cancelQueries({ queryKey: npcKeys.shop(tenant, npcId) });
-      
+      await queryClient.cancelQueries({
+        queryKey: npcKeys.shop(tenant, npcId),
+      });
+
       // Snapshot the previous shop data
-      const previousShop = queryClient.getQueryData<ShopResponse>(npcKeys.shop(tenant, npcId));
-      
+      const previousShop = queryClient.getQueryData<ShopResponse>(
+        npcKeys.shop(tenant, npcId),
+      );
+
       // Optimistically remove the commodity
       if (previousShop?.data?.relationships?.commodities?.data) {
         const optimisticShop = {
@@ -305,29 +360,33 @@ export function useDeleteCommodity(): UseMutationResult<
               commodities: {
                 ...previousShop.data.relationships.commodities,
                 data: previousShop.data.relationships.commodities.data.filter(
-                  commodity => commodity.id !== commodityId
-                )
-              }
-            }
+                  (commodity) => commodity.id !== commodityId,
+                ),
+              },
+            },
           },
           // Also filter included commodities if present
           ...(previousShop.included && {
-            included: previousShop.included.filter(item => 
-              !(item.type === 'commodities' && item.id === commodityId)
-            )
-          })
+            included: previousShop.included.filter(
+              (item) =>
+                !(item.type === "commodities" && item.id === commodityId),
+            ),
+          }),
         };
         queryClient.setQueryData(npcKeys.shop(tenant, npcId), optimisticShop);
       }
-      
+
       return { previousShop };
     },
     onError: (error, { tenant, npcId }, context) => {
       // Revert optimistic update on error
       if (context?.previousShop) {
-        queryClient.setQueryData(npcKeys.shop(tenant, npcId), context.previousShop);
+        queryClient.setQueryData(
+          npcKeys.shop(tenant, npcId),
+          context.previousShop,
+        );
       }
-      console.error('Failed to delete commodity:', error);
+      console.error("Failed to delete commodity:", error);
     },
     onSettled: (_data, _error, { tenant, npcId }) => {
       // Invalidate and refetch relevant queries
@@ -343,16 +402,16 @@ export function useDeleteCommodity(): UseMutationResult<
 export function useDeleteAllCommoditiesForNPC(): UseMutationResult<
   void,
   Error,
-  { 
-    npcId: number; 
-    tenant: Tenant; 
-    options?: ServiceOptions 
+  {
+    npcId: number;
+    tenant: Tenant;
+    options?: ServiceOptions;
   }
 > {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ npcId, options }) => 
+    mutationFn: ({ npcId, options }) =>
       npcsService.deleteAllCommoditiesForNPC(npcId, options),
     onSuccess: (_data, { tenant, npcId }) => {
       // Invalidate and refetch relevant queries
@@ -360,7 +419,7 @@ export function useDeleteAllCommoditiesForNPC(): UseMutationResult<
       queryClient.invalidateQueries({ queryKey: npcKeys.all });
     },
     onError: (error) => {
-      console.error('Failed to delete all commodities for NPC:', error);
+      console.error("Failed to delete all commodities for NPC:", error);
     },
   });
 }
@@ -371,23 +430,22 @@ export function useDeleteAllCommoditiesForNPC(): UseMutationResult<
 export function useDeleteAllShops(): UseMutationResult<
   void,
   Error,
-  { 
-    tenant: Tenant; 
-    options?: ServiceOptions 
+  {
+    tenant: Tenant;
+    options?: ServiceOptions;
   }
 > {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ options }) => 
-      npcsService.deleteAllShops( options),
+    mutationFn: ({ options }) => npcsService.deleteAllShops(options),
     onSuccess: (_data, { tenant }) => {
       // Invalidate all NPC-related queries
       queryClient.invalidateQueries({ queryKey: npcKeys.all });
       queryClient.invalidateQueries({ queryKey: npcKeys.withShops(tenant) });
     },
     onError: (error) => {
-      console.error('Failed to delete all shops:', error);
+      console.error("Failed to delete all shops:", error);
     },
   });
 }
@@ -398,11 +456,11 @@ export function useDeleteAllShops(): UseMutationResult<
 export function useCreateCommoditiesBatch(): UseMutationResult<
   Commodity[],
   Error,
-  { 
-    npcId: number; 
-    commodities: CommodityAttributes[]; 
-    tenant: Tenant; 
-    options?: ServiceOptions 
+  {
+    npcId: number;
+    commodities: CommodityAttributes[];
+    tenant: Tenant;
+    options?: ServiceOptions;
   }
 > {
   const queryClient = useQueryClient();
@@ -416,7 +474,7 @@ export function useCreateCommoditiesBatch(): UseMutationResult<
       queryClient.invalidateQueries({ queryKey: npcKeys.all });
     },
     onError: (error) => {
-      console.error('Failed to create commodities batch:', error);
+      console.error("Failed to create commodities batch:", error);
     },
   });
 }
@@ -430,49 +488,56 @@ export function useCreateCommoditiesBatch(): UseMutationResult<
  */
 export function useInvalidateNPCs() {
   const queryClient = useQueryClient();
-  
+
   return {
     /**
      * Invalidate all NPC queries
      */
-    invalidateAll: () => queryClient.invalidateQueries({ queryKey: npcKeys.all }),
-    
+    invalidateAll: () =>
+      queryClient.invalidateQueries({ queryKey: npcKeys.all }),
+
     /**
      * Invalidate all NPC lists for a tenant
      */
-    invalidateLists: () => 
+    invalidateLists: () =>
       queryClient.invalidateQueries({ queryKey: npcKeys.lists() }),
-    
+
     /**
      * Invalidate specific NPC list for a tenant
      */
     invalidateList: (tenant: Tenant, options?: QueryOptions) =>
-      queryClient.invalidateQueries({ queryKey: npcKeys.list(tenant, options) }),
-    
+      queryClient.invalidateQueries({
+        queryKey: npcKeys.list(tenant, options),
+      }),
+
     /**
      * Invalidate specific NPC details
      */
     invalidateNPC: (tenant: Tenant, npcId: number) =>
-      queryClient.invalidateQueries({ queryKey: npcKeys.detail(tenant, npcId) }),
-    
+      queryClient.invalidateQueries({
+        queryKey: npcKeys.detail(tenant, npcId),
+      }),
+
     /**
      * Invalidate NPC shop data
      */
     invalidateShop: (tenant: Tenant, npcId: number) =>
       queryClient.invalidateQueries({ queryKey: npcKeys.shop(tenant, npcId) }),
-    
+
     /**
      * Invalidate NPCs with shops for a tenant
      */
     invalidateWithShops: (tenant: Tenant) =>
       queryClient.invalidateQueries({ queryKey: npcKeys.withShops(tenant) }),
-    
+
     /**
      * Invalidate NPCs with conversations for a tenant
      */
     invalidateWithConversations: (tenant: Tenant) =>
-      queryClient.invalidateQueries({ queryKey: npcKeys.withConversations(tenant) }),
-    
+      queryClient.invalidateQueries({
+        queryKey: npcKeys.withConversations(tenant),
+      }),
+
     /**
      * Invalidate all NPC-related queries for a specific tenant
      */
@@ -487,7 +552,7 @@ export function useInvalidateNPCs() {
  */
 export function usePrefetchNPCs() {
   const queryClient = useQueryClient();
-  
+
   return {
     /**
      * Prefetch all NPCs for a tenant
@@ -495,9 +560,9 @@ export function usePrefetchNPCs() {
     prefetchNPCs: (tenant: Tenant, options?: QueryOptions) =>
       queryClient.prefetchQuery({
         queryKey: npcKeys.list(tenant, options),
-        queryFn: () => npcsService.getAllNPCs( options),
-          }),
-    
+        queryFn: () => npcsService.getAllNPCs(options),
+      }),
+
     /**
      * Prefetch specific NPC
      */
@@ -505,8 +570,8 @@ export function usePrefetchNPCs() {
       queryClient.prefetchQuery({
         queryKey: npcKeys.detail(tenant, npcId),
         queryFn: () => npcsService.getNPCById(npcId, options),
-          }),
-    
+      }),
+
     /**
      * Prefetch NPC shop data
      */
@@ -515,7 +580,7 @@ export function usePrefetchNPCs() {
         queryKey: npcKeys.shop(tenant, npcId),
         queryFn: () => npcsService.getNPCShop(npcId, options),
       }),
-    
+
     /**
      * Prefetch NPCs with shops
      */
@@ -523,8 +588,8 @@ export function usePrefetchNPCs() {
       queryClient.prefetchQuery({
         queryKey: npcKeys.withShops(tenant),
         queryFn: () => npcsService.getNPCsWithShops(options),
-          }),
-    
+      }),
+
     /**
      * Prefetch NPCs with conversations
      */
@@ -532,7 +597,7 @@ export function usePrefetchNPCs() {
       queryClient.prefetchQuery({
         queryKey: npcKeys.withConversations(tenant),
         queryFn: () => npcsService.getNPCsWithConversations(options),
-          }),
+      }),
   };
 }
 

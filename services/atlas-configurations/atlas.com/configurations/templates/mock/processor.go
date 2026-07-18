@@ -4,8 +4,9 @@ import (
 	"atlas-configurations/templates"
 	"atlas-configurations/templates/characters/preset"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 type ProcessorMock struct {

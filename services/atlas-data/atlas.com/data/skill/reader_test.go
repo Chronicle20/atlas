@@ -7,12 +7,13 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus/hooks/test"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus/hooks/test"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const testXML = `

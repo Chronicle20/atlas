@@ -1,0 +1,10 @@
+packet: interaction/clientbound/InteractionInteractionMiniGameResult
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CMiniRoomBaseDlg::OnPacketBase#MemoryGameResult
+    address: "0x573e1d"
+    decompile_sha256: 7063ff9179c839169705c754630fbd002e6aff132b138a3c710a9a096ae561c4
+verifies:
+    - libs/atlas-packet/interaction/clientbound/interaction_minigame_test.go#TestInteractionMiniGameResultOwnerWinRoundTrip

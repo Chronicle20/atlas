@@ -25,13 +25,7 @@ import { useTenant } from "@/context/tenant-context";
 import { JobName } from "./EntityName";
 
 export type EntityKind =
-  | "npc"
-  | "item"
-  | "mob"
-  | "map"
-  | "skill"
-  | "quest"
-  | "pet";
+  "npc" | "item" | "mob" | "map" | "skill" | "quest" | "pet";
 
 export interface EntityWidgetProps {
   kind: EntityKind;
@@ -118,11 +112,7 @@ function SkillWidget(props: EntityWidgetProps) {
 function MapWidget(props: EntityWidgetProps) {
   const q = useMap(String(props.id));
   return (
-    <Shell
-      {...props}
-      name={q.data?.attributes.name}
-      isLoading={q.isLoading}
-    />
+    <Shell {...props} name={q.data?.attributes.name} isLoading={q.isLoading} />
   );
 }
 
@@ -130,11 +120,7 @@ function QuestWidget(props: EntityWidgetProps) {
   const { activeTenant } = useTenant();
   const q = useQuest(activeTenant, String(props.id));
   return (
-    <Shell
-      {...props}
-      name={q.data?.attributes.name}
-      isLoading={q.isLoading}
-    />
+    <Shell {...props} name={q.data?.attributes.name} isLoading={q.isLoading} />
   );
 }
 

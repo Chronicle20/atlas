@@ -42,9 +42,9 @@ func TestEffectQuestByteOutput(t *testing.T) {
 		input := NewEffectQuest(3, "Hello", 0x10, nil)
 		got := input.Encode(nil, ctx)(nil)
 		want := []byte{
-			0x03,                   // mode (Decode1, switch discriminator) /*0x9377ec*/
-			0x00,                   // count (Decode1 v36)                  /*0x937bf6*/
-			0x05, 0x00,             // message len = 5 (DecodeStr short)    /*0x937dbe*/
+			0x03,       // mode (Decode1, switch discriminator) /*0x9377ec*/
+			0x00,       // count (Decode1 v36)                  /*0x937bf6*/
+			0x05, 0x00, // message len = 5 (DecodeStr short)    /*0x937dbe*/
 			0x48, 0x65, 0x6c, 0x6c, 0x6f, // "Hello"                       /*0x937dbe*/
 			0x10, 0x00, 0x00, 0x00, // nEffect = 0x10 (Decode4)             /*0x937dfe*/
 		}
@@ -79,10 +79,10 @@ func TestEffectQuestByteOutput(t *testing.T) {
 		got := input.Encode(nil, ctx)(nil)
 		want := []byte{
 			0x78, 0x56, 0x34, 0x12, // characterId (foreign-path prefix)    /*OnUserRemotePacket*/
-			0x03,                   // mode                                /*0x9377ec*/
-			0x00,                   // count = 0                           /*0x937bf6*/
-			0x02, 0x00,             // message len = 2                     /*0x937dbe*/
-			0x48, 0x69,             // "Hi"                                /*0x937dbe*/
+			0x03,       // mode                                /*0x9377ec*/
+			0x00,       // count = 0                           /*0x937bf6*/
+			0x02, 0x00, // message len = 2                     /*0x937dbe*/
+			0x48, 0x69, // "Hi"                                /*0x937dbe*/
 			0x07, 0x00, 0x00, 0x00, // nEffect = 7 (Decode4)               /*0x937dfe*/
 		}
 		if !bytes.Equal(got, want) {
@@ -122,11 +122,11 @@ func TestEffectQuestByteOutputV84(t *testing.T) {
 		input := NewEffectQuest(3, "Hello", 0x10, nil)
 		got := input.Encode(nil, ctx)(nil)
 		want := []byte{
-			0x03,                         // mode (Decode1, switch discriminator) /*0x96eaa5*/
-			0x00,                         // count (Decode1 v41)                  /*0x96ef6c*/
-			0x05, 0x00,                   // message len = 5 (DecodeStr short)    /*0x96f134*/
+			0x03,       // mode (Decode1, switch discriminator) /*0x96eaa5*/
+			0x00,       // count (Decode1 v41)                  /*0x96ef6c*/
+			0x05, 0x00, // message len = 5 (DecodeStr short)    /*0x96f134*/
 			0x48, 0x65, 0x6c, 0x6c, 0x6f, // "Hello"                              /*0x96f134*/
-			0x10, 0x00, 0x00, 0x00,       // nEffect = 0x10 (Decode4)             /*0x96f174*/
+			0x10, 0x00, 0x00, 0x00, // nEffect = 0x10 (Decode4)             /*0x96f174*/
 		}
 		if !bytes.Equal(got, want) {
 			t.Errorf("self/no-rewards v84 bytes:\n got %x\nwant %x", got, want)
@@ -159,10 +159,10 @@ func TestEffectQuestByteOutputV84(t *testing.T) {
 		got := input.Encode(nil, ctx)(nil)
 		want := []byte{
 			0x78, 0x56, 0x34, 0x12, // characterId (foreign-path prefix)    /*OnUserRemotePacket*/
-			0x03,                   // mode                                /*0x96eaa5*/
-			0x00,                   // count = 0                           /*0x96ef6c*/
-			0x02, 0x00,             // message len = 2                     /*0x96f134*/
-			0x48, 0x69,             // "Hi"                                /*0x96f134*/
+			0x03,       // mode                                /*0x96eaa5*/
+			0x00,       // count = 0                           /*0x96ef6c*/
+			0x02, 0x00, // message len = 2                     /*0x96f134*/
+			0x48, 0x69, // "Hi"                                /*0x96f134*/
 			0x07, 0x00, 0x00, 0x00, // nEffect = 7 (Decode4)               /*0x96f174*/
 		}
 		if !bytes.Equal(got, want) {
@@ -202,11 +202,11 @@ func TestEffectQuestByteOutputV87(t *testing.T) {
 		input := NewEffectQuest(3, "Hello", 0x10, nil)
 		got := input.Encode(nil, ctx)(nil)
 		want := []byte{
-			0x03,                         // mode (Decode1, switch discriminator) /*0x9b1f03*/
-			0x00,                         // count (Decode1 v41)                  /*0x9b23c8*/
-			0x05, 0x00,                   // message len = 5 (DecodeStr short)    /*0x9b2557*/
+			0x03,       // mode (Decode1, switch discriminator) /*0x9b1f03*/
+			0x00,       // count (Decode1 v41)                  /*0x9b23c8*/
+			0x05, 0x00, // message len = 5 (DecodeStr short)    /*0x9b2557*/
 			0x48, 0x65, 0x6c, 0x6c, 0x6f, // "Hello"                              /*0x9b2557*/
-			0x10, 0x00, 0x00, 0x00,       // nEffect = 0x10 (Decode4)             /*0x9b258e*/
+			0x10, 0x00, 0x00, 0x00, // nEffect = 0x10 (Decode4)             /*0x9b258e*/
 		}
 		if !bytes.Equal(got, want) {
 			t.Errorf("self/no-rewards v87 bytes:\n got %x\nwant %x", got, want)
@@ -239,10 +239,10 @@ func TestEffectQuestByteOutputV87(t *testing.T) {
 		got := input.Encode(nil, ctx)(nil)
 		want := []byte{
 			0x78, 0x56, 0x34, 0x12, // characterId (foreign-path prefix)    /*OnUserRemotePacket*/
-			0x03,                   // mode                                /*0x9b1f03*/
-			0x00,                   // count = 0                           /*0x9b23c8*/
-			0x02, 0x00,             // message len = 2                     /*0x9b2557*/
-			0x48, 0x69,             // "Hi"                                /*0x9b2557*/
+			0x03,       // mode                                /*0x9b1f03*/
+			0x00,       // count = 0                           /*0x9b23c8*/
+			0x02, 0x00, // message len = 2                     /*0x9b2557*/
+			0x48, 0x69, // "Hi"                                /*0x9b2557*/
 			0x07, 0x00, 0x00, 0x00, // nEffect = 7 (Decode4)               /*0x9b258e*/
 		}
 		if !bytes.Equal(got, want) {
@@ -287,11 +287,11 @@ func TestEffectQuestByteOutputV95(t *testing.T) {
 		input := NewEffectQuest(5, "Hello", 0x10, nil)
 		got := input.Encode(nil, ctx)(nil)
 		want := []byte{
-			0x05,                         // mode (Decode1, switch discriminator) /*0x8f9ab4*/
-			0x00,                         // count (Decode1 v66)                  /*0x8faa01*/
-			0x05, 0x00,                   // message len = 5 (DecodeStr short)    /*0x8faaf1*/
+			0x05,       // mode (Decode1, switch discriminator) /*0x8f9ab4*/
+			0x00,       // count (Decode1 v66)                  /*0x8faa01*/
+			0x05, 0x00, // message len = 5 (DecodeStr short)    /*0x8faaf1*/
 			0x48, 0x65, 0x6c, 0x6c, 0x6f, // "Hello"                              /*0x8faaf1*/
-			0x10, 0x00, 0x00, 0x00,       // nEffect = 0x10 (Decode4)             /*0x8fab9d*/
+			0x10, 0x00, 0x00, 0x00, // nEffect = 0x10 (Decode4)             /*0x8fab9d*/
 		}
 		if !bytes.Equal(got, want) {
 			t.Errorf("self/no-rewards v95 bytes:\n got %x\nwant %x", got, want)
@@ -324,10 +324,10 @@ func TestEffectQuestByteOutputV95(t *testing.T) {
 		got := input.Encode(nil, ctx)(nil)
 		want := []byte{
 			0x78, 0x56, 0x34, 0x12, // characterId (foreign-path prefix)    /*OnUserRemotePacket*/
-			0x05,                   // mode                                /*0x8f9ab4*/
-			0x00,                   // count = 0                           /*0x8faa01*/
-			0x02, 0x00,             // message len = 2                     /*0x8faaf1*/
-			0x48, 0x69,             // "Hi"                                /*0x8faaf1*/
+			0x05,       // mode                                /*0x8f9ab4*/
+			0x00,       // count = 0                           /*0x8faa01*/
+			0x02, 0x00, // message len = 2                     /*0x8faaf1*/
+			0x48, 0x69, // "Hi"                                /*0x8faaf1*/
 			0x07, 0x00, 0x00, 0x00, // nEffect = 7 (Decode4)               /*0x8fab9d*/
 		}
 		if !bytes.Equal(got, want) {
@@ -372,11 +372,11 @@ func TestEffectQuestByteOutputJMS(t *testing.T) {
 		input := NewEffectQuest(3, "Hello", 0x10, nil)
 		got := input.Encode(nil, ctx)(nil)
 		want := []byte{
-			0x03,                         // mode (Decode1, switch discriminator) /*0x9f63c0*/
-			0x00,                         // count (Decode1 v48)                  /*0x9f698d*/
-			0x05, 0x00,                   // message len = 5 (DecodeStr short)    /*0x9f6b1d*/
+			0x03,       // mode (Decode1, switch discriminator) /*0x9f63c0*/
+			0x00,       // count (Decode1 v48)                  /*0x9f698d*/
+			0x05, 0x00, // message len = 5 (DecodeStr short)    /*0x9f6b1d*/
 			0x48, 0x65, 0x6c, 0x6c, 0x6f, // "Hello"                              /*0x9f6b1d*/
-			0x10, 0x00, 0x00, 0x00,       // nEffect = 0x10 (Decode4)             /*0x9f6b4f*/
+			0x10, 0x00, 0x00, 0x00, // nEffect = 0x10 (Decode4)             /*0x9f6b4f*/
 		}
 		if !bytes.Equal(got, want) {
 			t.Errorf("self/no-rewards jms bytes:\n got %x\nwant %x", got, want)
@@ -409,10 +409,10 @@ func TestEffectQuestByteOutputJMS(t *testing.T) {
 		got := input.Encode(nil, ctx)(nil)
 		want := []byte{
 			0x78, 0x56, 0x34, 0x12, // characterId (foreign-path prefix)    /*OnUserRemotePacket*/
-			0x03,                   // mode                                /*0x9f63c0*/
-			0x00,                   // count = 0                           /*0x9f698d*/
-			0x02, 0x00,             // message len = 2                     /*0x9f6b1d*/
-			0x48, 0x69,             // "Hi"                                /*0x9f6b1d*/
+			0x03,       // mode                                /*0x9f63c0*/
+			0x00,       // count = 0                           /*0x9f698d*/
+			0x02, 0x00, // message len = 2                     /*0x9f6b1d*/
+			0x48, 0x69, // "Hi"                                /*0x9f6b1d*/
 			0x07, 0x00, 0x00, 0x00, // nEffect = 7 (Decode4)               /*0x9f6b4f*/
 		}
 		if !bytes.Equal(got, want) {
@@ -449,11 +449,11 @@ func TestEffectQuestByteOutputV79(t *testing.T) {
 		// mode=3, count=0, message="Hello", nEffect=0x10
 		got := NewEffectQuest(3, "Hello", 0x10, nil).Encode(nil, ctx)(nil)
 		want := []byte{
-			0x03,                         // mode (Decode1, switch discriminator) /*0x89113f*/
-			0x00,                         // count (Decode1 v30)                  /*0x8914ed*/
-			0x05, 0x00,                   // message len = 5 (DecodeStr short)    /*0x89166d*/
+			0x03,       // mode (Decode1, switch discriminator) /*0x89113f*/
+			0x00,       // count (Decode1 v30)                  /*0x8914ed*/
+			0x05, 0x00, // message len = 5 (DecodeStr short)    /*0x89166d*/
 			0x48, 0x65, 0x6c, 0x6c, 0x6f, // "Hello"                              /*0x89166d*/
-			0x10, 0x00, 0x00, 0x00,       // nEffect = 0x10 (Decode4)             /*0x8916ad*/
+			0x10, 0x00, 0x00, 0x00, // nEffect = 0x10 (Decode4)             /*0x8916ad*/
 		}
 		if !bytes.Equal(got, want) {
 			t.Errorf("self/no-rewards v79 bytes:\n got %x\nwant %x", got, want)
@@ -484,10 +484,10 @@ func TestEffectQuestByteOutputV79(t *testing.T) {
 		got := NewEffectQuestForeign(0x12345678, 3, "Hi", 7, nil).Encode(nil, ctx)(nil)
 		want := []byte{
 			0x78, 0x56, 0x34, 0x12, // characterId (foreign-path prefix)    /*OnUserRemotePacket*/
-			0x03,                   // mode                                /*0x89113f*/
-			0x00,                   // count = 0                           /*0x8914ed*/
-			0x02, 0x00,             // message len = 2                     /*0x89166d*/
-			0x48, 0x69,             // "Hi"                                /*0x89166d*/
+			0x03,       // mode                                /*0x89113f*/
+			0x00,       // count = 0                           /*0x8914ed*/
+			0x02, 0x00, // message len = 2                     /*0x89166d*/
+			0x48, 0x69, // "Hi"                                /*0x89166d*/
 			0x07, 0x00, 0x00, 0x00, // nEffect = 7 (Decode4)               /*0x8916ad*/
 		}
 		if !bytes.Equal(got, want) {

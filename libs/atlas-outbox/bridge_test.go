@@ -5,15 +5,16 @@ import (
 	"testing"
 	"time"
 
-	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
-	kafkaproducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+
+	kafkaproducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func bridgeDb(t *testing.T) *gorm.DB {

@@ -8,16 +8,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // TestPetEvolutionCompensationRefundsResources verifies that when a PetEvolution
@@ -43,11 +44,11 @@ func TestPetEvolutionCompensationRefundsResources(t *testing.T) {
 	tctx := tenant.WithContext(ctx, te)
 
 	const (
-		testCharId   = uint32(77001)
-		rockId       = uint32(5380000)
-		mesosCost    = int32(50000)
-		testWorldId  = world.Id(0)
-		testChannel  = channel.Id(1)
+		testCharId  = uint32(77001)
+		rockId      = uint32(5380000)
+		mesosCost   = int32(50000)
+		testWorldId = world.Id(0)
+		testChannel = channel.Id(1)
 	)
 
 	// Spy compartment processor capturing Rock re-creation.
@@ -206,6 +207,158 @@ func TestPetEvolutionCompensationDefaultsDestroyQuantity(t *testing.T) {
 		assert.Equal(t, rockId, createItemCalls[0].TemplateId, "refunded item must be the Rock of Evolution")
 		assert.Equal(t, uint32(1), createItemCalls[0].Quantity, "zero payload quantity must default to 1")
 	}
+}
+
+// TestCashItemUseCompensationRefundsConsumedItems verifies that when a
+// cash-item-use saga (ItemTagUse/SealingLockUse/IncubatorUse) fails, the
+// reverse-walk re-creates every consumed item (DestroyAsset/
+// DestroyAssetFromSlot → RequestCreateItem) and destroys every awarded result
+// (AwardAsset → RequestDestroyItem), mirroring
+// TestPetEvolutionCompensationRefundsResources / DispatchPetEvolutionRollbacks
+// (Task 10).
+//
+// DispatchCashItemUseRollbacks is exercised directly (mirroring
+// TestPetEvolutionCompensationRefundsResources) to avoid the EmitSagaFailed
+// Kafka path.
+func TestCashItemUseCompensationRefundsConsumedItems(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+
+	ctx := context.Background()
+	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	tctx := tenant.WithContext(ctx, te)
+
+	const (
+		testCharId   = uint32(88001)
+		sealItemId   = uint32(5390000)
+		resultItemId = uint32(5390001)
+	)
+
+	type createCall struct {
+		CharacterId uint32
+		TemplateId  uint32
+		Quantity    uint32
+	}
+	var createItemCalls []createCall
+	type destroyCall struct {
+		CharacterId uint32
+		TemplateId  uint32
+		Quantity    uint32
+		RemoveAll   bool
+	}
+	var destroyItemCalls []destroyCall
+	compP := &compmock.ProcessorMock{
+		RequestCreateItemFunc: func(_ uuid.UUID, characterId uint32, templateId uint32, quantity uint32, _ time.Time) error {
+			createItemCalls = append(createItemCalls, createCall{
+				CharacterId: characterId,
+				TemplateId:  templateId,
+				Quantity:    quantity,
+			})
+			return nil
+		},
+		RequestDestroyItemFunc: func(_ uuid.UUID, characterId uint32, templateId uint32, quantity uint32, removeAll bool) error {
+			destroyItemCalls = append(destroyItemCalls, destroyCall{
+				CharacterId: characterId,
+				TemplateId:  templateId,
+				Quantity:    quantity,
+				RemoveAll:   removeAll,
+			})
+			return nil
+		},
+	}
+
+	transactionId := uuid.New()
+	s, err := NewBuilder().
+		SetTransactionId(transactionId).
+		SetSagaType(IncubatorUse).
+		SetInitiatedBy("cash-item-use-compensation-test").
+		AddStep("destroy_seal_item", Completed, DestroyAssetFromSlot, DestroyAssetFromSlotPayload{
+			CharacterId:   testCharId,
+			InventoryType: 4,
+			Slot:          3,
+			Quantity:      1,
+			TemplateId:    sealItemId,
+		}).
+		AddStep("award_result_item", Completed, AwardAsset, AwardItemActionPayload{
+			CharacterId: testCharId,
+			Item: ItemPayload{
+				TemplateId: resultItemId,
+				Quantity:   1,
+			},
+		}).
+		AddStep("incubator_result", Failed, IncubatorResult, IncubatorResultPayload{
+			CharacterId: testCharId,
+			ItemId:      resultItemId,
+			Count:       1,
+		}).
+		Build()
+	assert.NoError(t, err, "saga build should not fail")
+
+	compensator := NewCompensator(logger, tctx).
+		WithCompartmentProcessor(compP)
+
+	compensator.DispatchCashItemUseRollbacks(s)
+
+	assert.Equal(t, 1, len(createItemCalls), "the consumed seal item should be re-created exactly once")
+	if len(createItemCalls) == 1 {
+		assert.Equal(t, testCharId, createItemCalls[0].CharacterId)
+		assert.Equal(t, sealItemId, createItemCalls[0].TemplateId, "re-created item must be the consumed seal, not the result")
+		assert.Equal(t, uint32(1), createItemCalls[0].Quantity)
+	}
+
+	assert.Equal(t, 1, len(destroyItemCalls), "the awarded result item should be destroyed exactly once")
+	if len(destroyItemCalls) == 1 {
+		assert.Equal(t, testCharId, destroyItemCalls[0].CharacterId)
+		assert.Equal(t, resultItemId, destroyItemCalls[0].TemplateId)
+		assert.Equal(t, uint32(1), destroyItemCalls[0].Quantity)
+	}
+}
+
+// TestCashItemUseCompensationSkipsSlotDestroyWithoutTemplateId verifies that a
+// DestroyAssetFromSlot step whose payload has no TemplateId (an older/degraded
+// record) is skipped rather than issuing a zero-templateId RequestCreateItem.
+func TestCashItemUseCompensationSkipsSlotDestroyWithoutTemplateId(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+
+	ctx := context.Background()
+	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	tctx := tenant.WithContext(ctx, te)
+
+	const testCharId = uint32(88002)
+
+	var createItemCalls int
+	compP := &compmock.ProcessorMock{
+		RequestCreateItemFunc: func(_ uuid.UUID, _ uint32, _ uint32, _ uint32, _ time.Time) error {
+			createItemCalls++
+			return nil
+		},
+	}
+
+	transactionId := uuid.New()
+	s, err := NewBuilder().
+		SetTransactionId(transactionId).
+		SetSagaType(ItemTagUse).
+		SetInitiatedBy("cash-item-use-compensation-test").
+		AddStep("destroy_tag_item", Completed, DestroyAssetFromSlot, DestroyAssetFromSlotPayload{
+			CharacterId:   testCharId,
+			InventoryType: 4,
+			Slot:          3,
+			Quantity:      1,
+			// TemplateId intentionally omitted (zero value)
+		}).
+		AddStep("incubator_result", Failed, IncubatorResult, IncubatorResultPayload{
+			CharacterId: testCharId,
+		}).
+		Build()
+	assert.NoError(t, err, "saga build should not fail")
+
+	compensator := NewCompensator(logger, tctx).
+		WithCompartmentProcessor(compP)
+
+	compensator.DispatchCashItemUseRollbacks(s)
+
+	assert.Equal(t, 0, createItemCalls, "a slot-destroy without a templateId must not be re-created")
 }
 
 // TestCompensateCreateCharacter tests the compensateCreateCharacter function

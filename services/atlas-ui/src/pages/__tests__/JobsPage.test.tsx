@@ -4,12 +4,17 @@ import { MemoryRouter } from "react-router-dom";
 import type { Tenant } from "@/services/api/tenants.service";
 
 const useTenantMock = vi.fn();
-vi.mock("@/context/tenant-context", () => ({ useTenant: () => useTenantMock() }));
+vi.mock("@/context/tenant-context", () => ({
+  useTenant: () => useTenantMock(),
+}));
 
 import { JobsPage } from "@/pages/JobsPage";
 
 const tenant = (major: number) =>
-  ({ id: "t1", attributes: { region: "GMS", majorVersion: major, minorVersion: 1 } } as unknown as Tenant);
+  ({
+    id: "t1",
+    attributes: { region: "GMS", majorVersion: major, minorVersion: 1 },
+  }) as unknown as Tenant;
 
 function renderPage() {
   return render(
@@ -35,7 +40,7 @@ describe("JobsPage", () => {
     expect(screen.getByText("Beginner")).toBeInTheDocument();
     expect(screen.getByText("Warrior")).toBeInTheDocument();
     expect(screen.getByText("Noblesse")).toBeInTheDocument(); // Cygnus root visible on v83
-    expect(screen.getByText("Legend")).toBeInTheDocument();   // Aran root visible on v83
+    expect(screen.getByText("Legend")).toBeInTheDocument(); // Aran root visible on v83
     expect(screen.queryByText("Evan")).not.toBeInTheDocument();
   });
 
@@ -49,7 +54,10 @@ describe("JobsPage", () => {
     useTenantMock.mockReturnValue({ activeTenant: tenant(83) });
     renderPage();
     expect(screen.getByLabelText(/toggle beginner/i)).toBeInTheDocument();
-    expect(screen.getByText("Warrior").closest("a")).toHaveAttribute("href", "/jobs/100");
+    expect(screen.getByText("Warrior").closest("a")).toHaveAttribute(
+      "href",
+      "/jobs/100",
+    );
   });
 
   it("scrolls in-page via a local overflow container (no app-shell change)", () => {

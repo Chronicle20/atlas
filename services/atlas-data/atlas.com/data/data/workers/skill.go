@@ -1,19 +1,20 @@
 package workers
 
 import (
+	"atlas-data/mobskill"
+	"atlas-data/skill"
 	"context"
 	"fmt"
 	"path/filepath"
 	"strconv"
 
-	"github.com/Chronicle20/atlas/libs/atlas-wz/icons"
-	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
-	"github.com/Chronicle20/atlas/libs/atlas-wz/wz/property"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
-	"atlas-data/mobskill"
-	"atlas-data/skill"
+	"github.com/Chronicle20/atlas/libs/atlas-wz/icons"
+	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
+	"github.com/Chronicle20/atlas/libs/atlas-wz/wz/property"
+
 	minio "atlas-data/storage/minio"
 )
 

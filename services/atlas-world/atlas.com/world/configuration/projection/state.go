@@ -1,10 +1,9 @@
 package projection
 
 import (
+	"atlas-world/configuration/tenant"
 	"encoding/json"
 	"sync"
-
-	"atlas-world/configuration/tenant"
 
 	"github.com/google/uuid"
 )

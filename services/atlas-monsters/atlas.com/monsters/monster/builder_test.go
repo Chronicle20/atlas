@@ -44,7 +44,7 @@ func hasEffectWithExpiry(effs []StatusEffect, at time.Time) bool {
 func TestAddStatusEffect_VenomOverflow_EvictsByEarliestExpiresAt(t *testing.T) {
 	b := emptyBuilder()
 
-	first := mkVenomEffect(30 * time.Second)   // earliest expiry
+	first := mkVenomEffect(30 * time.Second) // earliest expiry
 	second := mkVenomEffect(60 * time.Second)
 	third := mkVenomEffect(90 * time.Second)
 	fourth := mkVenomEffect(120 * time.Second)

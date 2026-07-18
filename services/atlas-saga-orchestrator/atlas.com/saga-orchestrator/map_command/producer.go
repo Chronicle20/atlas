@@ -3,11 +3,12 @@ package map_command
 import (
 	mapKafka "atlas-saga-orchestrator/kafka/message/map"
 
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
 )
 
 func WeatherStartCommandProvider(transactionId uuid.UUID, f field.Model, itemId uint32, message string, durationMs uint32) model.Provider[[]kafka.Message] {

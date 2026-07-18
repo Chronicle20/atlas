@@ -6,10 +6,10 @@ import (
 )
 
 type modelJSON struct {
-	TheType      int32        `json:"type"`
-	ReactorItem  *item.Model  `json:"reactorItem,omitempty"`
-	ActiveSkills []uint32     `json:"activeSkills"`
-	NextState    int8         `json:"nextState"`
+	TheType      int32       `json:"type"`
+	ReactorItem  *item.Model `json:"reactorItem,omitempty"`
+	ActiveSkills []uint32    `json:"activeSkills"`
+	NextState    int8        `json:"nextState"`
 }
 
 func (m Model) MarshalJSON() ([]byte, error) {

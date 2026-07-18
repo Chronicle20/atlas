@@ -11,12 +11,13 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type pagedDoc struct {

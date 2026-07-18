@@ -1,6 +1,7 @@
 package main
 
 import (
+	"atlas-monsters/character/hidden"
 	data2 "atlas-monsters/kafka/consumer/data"
 	_map "atlas-monsters/kafka/consumer/map"
 	monster2 "atlas-monsters/kafka/consumer/monster"
@@ -62,6 +63,7 @@ func main() {
 	monster.InitMonsterRegistry(rc)
 	monster.InitDropTimerRegistry(rc)
 	monster.InitPuppetRegistry(rc)
+	hidden.InitRegistry(rc)
 	information.InitDataCache(rc)
 
 	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())

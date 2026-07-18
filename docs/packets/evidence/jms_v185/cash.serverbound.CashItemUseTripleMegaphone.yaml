@@ -1,0 +1,22 @@
+packet: cash/serverbound/CashItemUseTripleMegaphone
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendConsumeCashItemUseRequest
+    address: "0xaef2f5"
+    decompile_sha256: d14d6dec378bee38dfc4b5f829ed2ac8085934ef4d4ad03264eaa9284baff362
+verifies:
+    - libs/atlas-packet/cash/serverbound/item_use_triple_megaphone_test.go#TestItemUseTripleMegaphoneByteOutputJMS185
+notes: >
+    jms's get_consume_cash_item_type case-numbering diverges entirely from
+    GMS: Triple Megaphone lives at jumptable case 38 (@0xaef3af, alloc 0xD8h
+    — same allocation size as gms_v87's case 60), not case 60/12/13/15.
+    Confirmed by structural match: DoModal + a GetResult-equivalent
+    (sub_866935@0xaef44d) taking the same 4-out-param shape (3 line
+    pointers + whisper) as the already-verified gms_v83/v84/v87/v95 cells,
+    followed by identical TrimRight/TrimLeft validation. The raw switch
+    case value routed to this body is a codec-external dispatch fact, not
+    part of the struct — only the wire shape (count+lines+whisper, no
+    trailing updateTime given updateTimeFirst=TRUE for MajorVersion>=87)
+    is modeled in Go, and it matches exactly.

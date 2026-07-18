@@ -14,7 +14,7 @@ Tool: `823c734457141625c3a6dd7ad4528ad782c9d4d06be9baca7573a4c297d454c4`
 - export gms_v84: `7254a6fb504335aac45bc0db1d24ce7a9bd2c50428bf33074db6560966ccc8f4`
 - export gms_v87: `42d8d1c223d7661eb3ed9772fa7d247c24990288f43437bcec47bf670b687971`
 - export gms_v95: `b08d604e43c3676be0b4a6923ec593fcc0456e57b765771b7dfc5ed67988c434`
-- export jms_v185: `7a1a8b31c8ec08b54fd0f1755aac0ca1aabc4285f33c594420cc192c23b87e8b`
+- export jms_v185: `a8d25e8630b84e10d45b87f71c5eca11ac0659c626f3b5bd297c30872075a9c7`
 
 ## Clientbound
 
@@ -833,11 +833,11 @@ Tool: `823c734457141625c3a6dd7ad4528ad782c9d4d06be9baca7573a4c297d454c4`
 | buddy/serverbound/BuddyOperationAdd (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | buddy/serverbound/BuddyOperationDelete (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | cash/serverbound/CashItemUseAvatarMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
-| cash/serverbound/CashItemUseMapleTV (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |
+| cash/serverbound/CashItemUseMapleTV (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
 | cash/serverbound/CashItemUseMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
 | cash/serverbound/CashItemUsePointReset (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | cash/serverbound/CashItemUseSuperMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
-| cash/serverbound/CashItemUseTripleMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |
+| cash/serverbound/CashItemUseTripleMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashShopOperationBuy (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashShopOperationBuyCouple (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashShopOperationBuyFriendship (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -1002,11 +1002,11 @@ Tool: `823c734457141625c3a6dd7ad4528ad782c9d4d06be9baca7573a4c297d454c4`
 | v61 | 240 | 0 | 60 | 199 | 464 | 0 | 48.1% |
 | v72 | 250 | 0 | 73 | 217 | 423 | 0 | 46.3% |
 | v79 | 264 | 0 | 72 | 213 | 414 | 0 | 48.1% |
-| v83 | 413 | 0 | 0 | 326 | 224 | 0 | 55.9% |
-| v84 | 385 | 0 | 0 | 334 | 244 | 0 | 53.5% |
-| v87 | 420 | 0 | 0 | 356 | 187 | 0 | 54.1% |
+| v83 | 414 | 0 | 0 | 325 | 224 | 0 | 56.0% |
+| v84 | 387 | 0 | 0 | 332 | 244 | 0 | 53.8% |
+| v87 | 422 | 0 | 0 | 354 | 187 | 0 | 54.4% |
 | v95 | 447 | 0 | 0 | 413 | 103 | 0 | 52.0% |
-| JMS185 | 396 | 0 | 0 | 373 | 194 | 0 | 51.5% |
+| JMS185 | 397 | 0 | 0 | 372 | 194 | 0 | 51.6% |
 
 ## Conflicts
 

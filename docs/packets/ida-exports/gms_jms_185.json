@@ -13439,6 +13439,11 @@
           "comment": ""
         }
       ]
+    },
+    "CWvsContext::SendConsumeCashItemUseRequest": {
+      "address": "0xaef2f5",
+      "direction": "serverbound",
+      "calls": null
     }
   }
 }

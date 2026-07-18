@@ -124,6 +124,138 @@ func TestItemUseTripleMegaphoneByteOutputV83(t *testing.T) {
 	}
 }
 
+// IDA evidence (gms_v84 GMS_v84.1_U_DEVM.exe, port 13345, symbol-named) —
+// CWvsContext::SendConsumeCashItemUseRequest@0xa54a2f. jumptable case 60
+// (@0xa54ae4, alloc 0xC8h dialog, identical case NUMBER to gms_v87/gms_v83
+// — the Triple Megaphone case is NOT part of the shared megaphone-case-33/
+// 71/72 group). GetResult-equivalent call takes the same 4-out-param shape
+// (3 line pointers + whisper) as the already-verified v83/v87/v95 cells;
+// TrimRight/TrimLeft validation on all 3 lines matches. The encode sequence
+// past validation:
+//
+//	count = 3 if !IsEmpty(line3), else 2 if !IsEmpty(line2), else 1  @0xa54c5e-0xa54c82
+//	Encode1(count)                                          @0xa54c88
+//	loop count times: EncodeStr(line[i])                            @0xa54cae (loop body)
+//	Encode1(whisper)                                                @0xa54cc5
+//	[falls into the shared cases-33/71/72 cleanup tail @0xa54ce8 ->
+//	 CanSendExclRequest -> on failure shows a Notice + jmp default; on
+//	 success falls through to the shared send tail with a TRAILING
+//	 Encode4(get_update_time) — confirming updateTimeFirst=FALSE for v84,
+//	 matching the already-established gms_v84 megaphone-family gate]
+//
+// Wire (v84): count(byte) + count×line(str) + whisper(bool) +
+// updateTime(uint32 trailing). Matches ItemUseTripleMegaphone.Encode(
+// updateTimeFirst=false) EXACTLY — no struct fix needed.
+//
+// packet-audit:verify packet=cash/serverbound/CashItemUseTripleMegaphone version=gms_v84 ida=0xa54a2f
+func TestItemUseTripleMegaphoneByteOutputV84(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 84, 1)
+	input := NewItemUseTripleMegaphone(false)
+	input.lines = []string{"L1", "L2"}
+	input.whisper = true
+	input.updateTime = 24680
+	expected := []byte{
+		0x02,                  // count=2
+		0x02, 0x00, 'L', '1',  // line[0]
+		0x02, 0x00, 'L', '2',  // line[1]
+		0x01,                  // whisper=true
+		0x68, 0x60, 0x00, 0x00, // updateTime=24680 LE (trailing)
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v84 item use triple megaphone golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// IDA evidence (gms_v87 GMSv87_4GB.exe, port 13343, symbol-named) —
+// CWvsContext::SendConsumeCashItemUseRequest@0xa9fef9. jumptable case 60
+// (@0xa9ffbc, alloc 0xD8h dialog). GetResult-equivalent call sub_8378B0
+// @0xaa0048 takes the same 4-out-param shape (3 line pointers + whisper)
+// established for v83/v84/v95; TrimRight/TrimLeft validation on all 3
+// lines (>60 chars -> Notice SP idx 0x11B, no send) matches. The encode
+// sequence past validation:
+//
+//	count = 3 if !IsEmpty(line3), else 2 if !IsEmpty(line2), else 1  @0xaa0136-0xaa0157
+//	Encode1(count)                                          @0xaa0160
+//	loop count times: EncodeStr(line[i])                            @0xaa0189 (loop body)
+//	Encode1(whisper)                                                @0xaa019d
+//	[falls into the shared cases-33/71/72 cleanup tail @0xaa01c0 ->
+//	 CanSendExclRequest -> NO trailing update_time write, confirming
+//	 updateTimeFirst=TRUE for v87, matching the outer function-header
+//	 proof (get_update_time encoded FIRST, before Encode2/Encode4(itemId))
+//	 and the already-established gms_v87 megaphone-family gate]
+//
+// Wire (v87): count(byte) + count×line(str) + whisper(bool), no trailing
+// updateTime. Matches ItemUseTripleMegaphone.Encode(updateTimeFirst=true)
+// EXACTLY — no struct fix needed.
+//
+// packet-audit:verify packet=cash/serverbound/CashItemUseTripleMegaphone version=gms_v87 ida=0xa9fef9
+func TestItemUseTripleMegaphoneByteOutputV87(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 87, 1)
+	input := NewItemUseTripleMegaphone(true)
+	input.lines = []string{"L1", "L2"}
+	input.whisper = true
+	expected := []byte{
+		0x02,                 // count=2
+		0x02, 0x00, 'L', '1', // line[0]
+		0x02, 0x00, 'L', '2', // line[1]
+		0x01,                 // whisper=true
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v87 item use triple megaphone golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// IDA evidence (jms_v185 MapleStory_dump_SCY.exe, port 13344, symbol-named) —
+// CWvsContext::SendConsumeCashItemUseRequest@0xaef2f5. JMS's
+// get_consume_cash_item_type case-numbering DIVERGES entirely from GMS:
+// this function's jumptable (jpt_AEF3A8) places Triple Megaphone at case
+// 38 (@0xaef3af, alloc 0xD8h — the SAME allocation size as gms_v87's case
+// 60), NOT case 60/12/13/15. Confirmed by structural match (not just size):
+// the case-38 body allocates the dialog, calls DoModal, then a
+// GetResult-equivalent (sub_866935 @0xaef44d) taking the same 4-out-param
+// shape (3 line pointers + whisper via nType/var_1C/var_20/s), followed by
+// TrimRight/TrimLeft validation on all 3 lines (>60 chars -> Notice SP idx
+// 0x10A, no send) — byte-identical control flow to the already-verified
+// gms_v83/v84/v87/v95 Triple Megaphone cases. The encode sequence past
+// validation:
+//
+//	count = 3 if !IsEmpty(line3), else 2 if !IsEmpty(line2), else 1  @0xaef52e-0xaef54b
+//	Encode1(count)                                          @0xaef558
+//	loop count times: EncodeStr(line[i])                            @0xaef57c (loop body)
+//	Encode1(whisper)                                                @0xaef592
+//	[falls into the shared cases-43/44/50 cleanup tail @0xaef5b4 -> no
+//	 trailing update_time write, confirming updateTimeFirst=TRUE for jms,
+//	 matching the outer function-header proof (get_update_time encoded
+//	 FIRST @0xaef36c, before Encode2/Encode4(itemId))]
+//
+// Wire (jms185): count(byte) + count×line(str) + whisper(bool), no
+// trailing updateTime. Matches ItemUseTripleMegaphone.Encode(
+// updateTimeFirst=true) EXACTLY — no struct fix needed. The jms case-38
+// dispatch target is a codec-external fact (which raw switch value routes
+// to this body); it is NOT modeled in the struct, so no version-gate is
+// required in Go — only the wire SHAPE (already TRUE for MajorVersion>=87)
+// matters to the codec.
+//
+// packet-audit:verify packet=cash/serverbound/CashItemUseTripleMegaphone version=jms_v185 ida=0xaef2f5
+func TestItemUseTripleMegaphoneByteOutputJMS185(t *testing.T) {
+	ctx := pt.CreateContext("JMS", 185, 1)
+	input := NewItemUseTripleMegaphone(true)
+	input.lines = []string{"L1", "L2"}
+	input.whisper = true
+	expected := []byte{
+		0x02,                 // count=2
+		0x02, 0x00, 'L', '1', // line[0]
+		0x02, 0x00, 'L', '2', // line[1]
+		0x01,                 // whisper=true
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("jms185 item use triple megaphone golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
 func TestItemUseTripleMegaphoneRoundTrip(t *testing.T) {
 	cases := []struct {
 		name    string

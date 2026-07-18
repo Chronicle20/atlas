@@ -3,6 +3,7 @@ package character_test
 import (
 	"atlas-character/character"
 	"atlas-character/kafka/message"
+	"atlas-character/teleport_rock"
 	"context"
 	"fmt"
 	"testing"
@@ -42,6 +43,7 @@ func testDatabase(t *testing.T) *gorm.DB {
 
 	var migrators []func(db *gorm.DB) error
 	migrators = append(migrators, character.Migration)
+	migrators = append(migrators, teleport_rock.Migration)
 
 	for _, migrator := range migrators {
 		if err := migrator(db); err != nil {

@@ -7,6 +7,8 @@ import (
 
 	testlog "github.com/sirupsen/logrus/hooks/test"
 
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
@@ -235,6 +237,44 @@ func TestCharacterDataMonsterBookRoundTrip(t *testing.T) {
 					t.Errorf("expected empty monster book for %s, got cover=%d cards=%d",
 						v.Name, output.MonsterBook.CoverCardId, len(output.MonsterBook.Cards))
 				}
+			}
+		})
+	}
+}
+
+// FR-15: the teleport region carries real lists; empty slots still encode
+// EmptyMapId; the VIP block keeps its (GMS>28)||JMS gate. Decode strips
+// padding so round-trip is stable on the canonical (unpadded) form.
+func TestCharacterDataTeleportRoundTrip(t *testing.T) {
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			input := CharacterData{
+				Stats: CharacterStats{
+					Id: 1000, Name: "TestChar", SkinColor: 1,
+					Face: 20000, Hair: 30000, Level: 50, JobId: 312,
+					MapId: 100000000,
+				},
+				Inventory: InventoryData{
+					EquipCapacity: 24, UseCapacity: 24, SetupCapacity: 24,
+					EtcCapacity: 24, CashCapacity: 24,
+					Timestamp: 94354848000000000,
+				},
+				TeleportMaps:    []_map.Id{100000000, 220000000},
+				VipTeleportMaps: []_map.Id{104040000},
+			}
+			output := CharacterData{}
+			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+			if len(output.TeleportMaps) != 2 || output.TeleportMaps[0] != 100000000 || output.TeleportMaps[1] != 220000000 {
+				t.Errorf("teleportMaps: got %v", output.TeleportMaps)
+			}
+			vipExpected := (v.Region == "GMS" && v.MajorVersion > 28) || v.Region == "JMS"
+			if vipExpected {
+				if len(output.VipTeleportMaps) != 1 || output.VipTeleportMaps[0] != 104040000 {
+					t.Errorf("vipTeleportMaps: got %v", output.VipTeleportMaps)
+				}
+			} else if len(output.VipTeleportMaps) != 0 {
+				t.Errorf("vip block must be absent for %s: got %v", v.Name, output.VipTeleportMaps)
 			}
 		})
 	}

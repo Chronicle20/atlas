@@ -87,7 +87,13 @@ The single most important fact this agent exists to enforce:
    validator is silently dropped by `BuildHandlerMap` and the handler never
    registers. A version where the op is genuinely absent gets no route and no
    `packet-audit:verify` marker — it is recorded `VERSION-ABSENT` with IDB
-   evidence, never a silent skip.
+   evidence, never a silent skip. A negative existence claim (`n-a`/absent)
+   requires positive proof to the same standard as a positive verification — a
+   failed name/region search is not proof. Anchor on invariants (opcode
+   construction, itemId/class gates, the family's receive handler + data
+   structures), cross-check the family's other cells, and record any
+   family-inconsistent `n-a` in docs/packets/feature-na-evidence.yaml. See
+   VERIFYING_A_PACKET.md "Is this cell n-a?".
 
 6. **Config-resolved mode/message BYTES per tenant — DOM-25.** Any mode byte,
    message-type byte, or operation sub-code is resolved at emit time from the

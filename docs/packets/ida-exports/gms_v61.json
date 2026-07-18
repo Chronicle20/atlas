@@ -13712,13 +13712,41 @@
    ]
   },
   "CWvsContext::SendMapTransferItemUseRequest": {
-   "address": "",
-   "direction": "",
-   "unresolved": true,
+   "address": "0x8327db",
+   "direction": "serverbound",
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode2",
+     "comment": "",
+     "guard": "a3 / 10000 == 232 && result"
+    },
+    {
+     "op": "Decode4",
+     "comment": "",
+     "guard": "a3 / 10000 == 232 && result"
+    },
+    {
+     "op": "Decode4",
+     "comment": "",
+     "guard": "a3 / 10000 == 232 && result && sub_8328C9(v10, 0)"
+    }
+   ]
+  },
+  "CWvsContext::SendMapTransferRequest": {
+   "address": "0x8478ea",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode4",
+     "comment": ""
     }
    ]
   },

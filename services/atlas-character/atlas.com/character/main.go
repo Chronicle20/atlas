@@ -8,6 +8,7 @@ import (
 	"atlas-character/session"
 	"atlas-character/session/history"
 	"atlas-character/tasks"
+	"atlas-character/teleport_rock"
 	"context"
 	"os"
 	"time"
@@ -18,10 +19,14 @@ import (
 	character2 "atlas-character/kafka/consumer/character"
 
 	session2 "atlas-character/kafka/consumer/session"
+	teleportrock2 "atlas-character/kafka/consumer/teleportrock"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	lifecycle "github.com/Chronicle20/atlas/libs/atlas-service"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
@@ -64,7 +69,7 @@ func main() {
 	session.InitRegistry(rc)
 	character.InitTemporalRegistry(rc)
 
-	db := database.Connect(l, database.SetMigrations(character.Migration, history.Migration, saved_location.Migration, outboxlib.Migration))
+	db := database.Connect(l, database.SetMigrations(character.Migration, history.Migration, saved_location.Migration, teleport_rock.Migration, outboxlib.Migration))
 
 	// Boot the outbox drainer: publishes the transactional outbox to Kafka.
 	// Leadership is gated by a postgres advisory lock — replicas are safe.
@@ -92,6 +97,7 @@ func main() {
 		character2.InitConsumers(l)(cmf)(consumerGroupId)
 		session2.InitConsumers(l)(cmf)(consumerGroupId)
 		drop.InitConsumers(l)(cmf)(consumerGroupId)
+		teleportrock2.InitConsumers(l)(cmf)(consumerGroupId)
 		if err := account2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
 			l.WithError(err).Fatal("Unable to register kafka handlers.")
 		}
@@ -102,6 +108,9 @@ func main() {
 			l.WithError(err).Fatal("Unable to register kafka handlers.")
 		}
 		if err := drop.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+			l.WithError(err).Fatal("Unable to register kafka handlers.")
+		}
+		if err := teleportrock2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
 			l.WithError(err).Fatal("Unable to register kafka handlers.")
 		}
 
@@ -117,6 +126,13 @@ func main() {
 		AddRouteInitializer(character.InitResource(GetServer())(db)).
 		AddRouteInitializer(history.InitResource(GetServer())(db)).
 		AddRouteInitializer(saved_location.InitResource(GetServer())(db)).
+		AddRouteInitializer(teleport_rock.InitResource(GetServer())(db)(func(l logrus.FieldLogger, ctx context.Context, characterId uint32) (world.Id, error) {
+			m, err := character.NewProcessor(l, ctx, db).GetById()(characterId)
+			if err != nil {
+				return 0, err
+			}
+			return m.WorldId(), nil
+		})).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()

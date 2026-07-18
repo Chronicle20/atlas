@@ -106,6 +106,17 @@ Write `docs/tasks/<task>/family-audit-<name>.md` with:
   op-row aggregate — surface them per-arm; that is the whole point of this agent.
 - **Do not run any `--apply`, `pin`, `export`, or matrix regeneration.** You read
   the committed artifacts; you do not regenerate them.
+- **An `n-a` arm is a claim, not a default.** A negative existence claim requires
+  positive proof to the same standard as a positive verification — a failed
+  name/region search is not proof. When an arm is `n-a` while a same-family
+  sibling (per `docs/packets/feature-families.yaml`) is verified on the same
+  version, flag it explicitly as a finding: report whether
+  `docs/packets/feature-na-evidence.yaml` carries a matching positive-absence
+  entry, and if not, recommend either verifying the cell or producing that
+  evidence (cross-check the family's receive handler + invariants) — see
+  VERIFYING_A_PACKET.md "Is this cell n-a?". You do not write the evidence
+  entry yourself; that is a `packet-verifier`/`dispatcher-family-implementer`
+  follow-up.
 
 ## Report format
 

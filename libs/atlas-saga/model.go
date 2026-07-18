@@ -21,6 +21,7 @@ const (
 	GachaponTransaction  Type = "gachapon_transaction"
 	MtsOperation         Type = "mts_operation"
 	FieldEffectUse       Type = "field_effect_use"
+	TeleportRockUse      Type = "teleport_rock_use"
 	QuestStart           Type = "quest_start"
 	QuestComplete        Type = "quest_complete"
 	QuestRestoreItem     Type = "quest_restore_item"

@@ -567,3 +567,131 @@ None
 | 400 | Invalid characterId or missing type |
 | 404 | Location not found |
 | 500 | Database error |
+
+---
+
+### GET /characters/{characterId}/teleport-rock-maps
+
+Retrieves a character's saved teleport-rock map lists (regular and VIP), unpadded, plus each list's capacity.
+
+#### Parameters
+
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| characterId | path | uint32 | yes | Character ID |
+
+#### Request Model
+None
+
+#### Response Model
+```json
+{
+  "data": {
+    "type": "teleport-rock-maps",
+    "id": "string",
+    "attributes": {
+      "regular": [0],
+      "vip": [0],
+      "regularCapacity": 0,
+      "vipCapacity": 0
+    }
+  }
+}
+```
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 400 | Invalid characterId |
+| 500 | Database error |
+
+---
+
+### POST /characters/{characterId}/teleport-rock-maps
+
+Registers the character's current map on the given list (`regular` or `vip`). Returns the updated lists.
+
+#### Parameters
+
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| characterId | path | uint32 | yes | Character ID |
+
+#### Request Model
+```json
+{
+  "data": {
+    "type": "teleport-rock-maps",
+    "attributes": {
+      "list": "string",
+      "mapId": 0
+    }
+  }
+}
+```
+
+#### Response Model
+```json
+{
+  "data": {
+    "type": "teleport-rock-maps",
+    "id": "string",
+    "attributes": {
+      "regular": [0],
+      "vip": [0],
+      "regularCapacity": 0,
+      "vipCapacity": 0
+    }
+  }
+}
+```
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 400 | Invalid characterId, unknown `list`, or map ineligible for registration |
+| 409 | List is full, or map already present on the list |
+| 500 | Database error |
+
+---
+
+### DELETE /characters/{characterId}/teleport-rock-maps/{list}/{mapId}
+
+Removes a map from the given list (`regular` or `vip`) and compacts the remaining entries. Returns the updated lists.
+
+#### Parameters
+
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| characterId | path | uint32 | yes | Character ID |
+| list | path | string | yes | `regular` or `vip` |
+| mapId | path | uint32 | yes | Map ID to remove |
+
+#### Request Model
+None
+
+#### Response Model
+```json
+{
+  "data": {
+    "type": "teleport-rock-maps",
+    "id": "string",
+    "attributes": {
+      "regular": [0],
+      "vip": [0],
+      "regularCapacity": 0,
+      "vipCapacity": 0
+    }
+  }
+}
+```
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 400 | Invalid characterId, unknown `list`, or invalid mapId |
+| 404 | Map not present on the list |
+| 500 | Database error |

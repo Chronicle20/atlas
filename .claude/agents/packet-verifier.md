@@ -39,5 +39,12 @@ verification commit, the single commit grouping test+evidence+STATUS.md, and the
 `matrix --check` hard gate (must exit 0 — no new orphan/dangling/stale/drift, no
 conflict-count increase).
 
+A negative existence claim (`n-a`/absent) requires positive proof to the same
+standard as a positive verification — a failed name/region search is not proof.
+Anchor on invariants (opcode construction, itemId/class gates, the family's
+receive handler + data structures), cross-check the family's other cells, and
+record any family-inconsistent `n-a` in docs/packets/feature-na-evidence.yaml.
+See VERIFYING_A_PACKET.md "Is this cell n-a?".
+
 Report format: `<packet> × <version>: <old state> → <new state>, commit <sha>`
 or `BLOCKED at §<n>: <reason>`.

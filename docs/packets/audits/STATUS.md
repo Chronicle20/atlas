@@ -4,17 +4,17 @@
 > ✅ verified · 🧩 family (mode-prefix dispatcher; sub-arms unverified) · 🟡 partial · ❌ incomplete · ⬜ n-a · 🟥 conflict
 > Partial (🟡) sub-glyphs: 🟡ᶠ tier-1 needs byte-fixture · 🟡ᵈ tool-pass diff-only (no byte-test) · 🟡ᵖ evidence-pinned deferral
 
-Tool: `aafe52293aa7d281d57743c027833416a49c2640d8ec4f009010c855e55820b8`
+Tool: `a030faa7284aa48f0894ee0172a84096c5a5ecb6864795dcca4d250b7d90516b`
 
-- export gms_v48: `a7f7dd20743f55f26646c1a912e4ba0e33dcb0b86f56183cd889c3bd2fd04021`
-- export gms_v61: `860627887e4c61add45e05bde16b247787ff5831eabbb1525aec000d83eea9db`
-- export gms_v72: `c5a50df5bf65eef32963aeb560428adfbefa431e58615252814bc57aebb6c9a7`
-- export gms_v79: `9b64f8fc1da43f8d7cfa4ae375ef91c23deb11c6e8ad216d0ea38e00ab267a6d`
-- export gms_v83: `4e917fcb4860f63c4462ac4876bc90fc06f22efb39b0989f485637969074a2b1`
-- export gms_v84: `3ad4771e83bbba138ebd0e534076a6553f92ef2cbc7f546e8b8eca22459d6f9f`
-- export gms_v87: `ff192ac103c071da22f1db22f138cad6f66637d2183c507a996188eaecc046fa`
-- export gms_v95: `8f76aa42e0d1035d365407d5798c6eeb237b5c58043580665b10d0d1dbc42982`
-- export jms_v185: `f01306a29d65ec0870767bc814ce42fa350d91ad9e754128f91291e4c8e9f6cd`
+- export gms_v48: `8d1a4c02745ee1cb5b41c358b749c6a55883207c109784c6e09b00545a3d2dc8`
+- export gms_v61: `67395ebec4c069f827ade3a69a2e32286c750b66f305d9eba197ed2e6db87de3`
+- export gms_v72: `005ee090459a5f2bea74a84ba7652af94ca98214fb61ff8b07090907581ef267`
+- export gms_v79: `4bf6b40c4ef6721d672e57a5dc78ae5211c8a75de07a21da7d54b302dd3ff804`
+- export gms_v83: `3936e66b34505a10f7886c2d145cae33083d905a358c70c433a8d0d71bf4e988`
+- export gms_v84: `e1f590c95e2198e0c78a21fd000914f1fa5d74ca82d349d1ff9c35e7e79015a9`
+- export gms_v87: `1d4094e4eb8e77c17ee808f2866a9ce29c59ca87d1fb8c4a8665f593995467be`
+- export gms_v95: `5c35a6f0074aab026a9c350f26fe00e8eb1cbabdb11b14954d33a36bd8d8894a`
+- export jms_v185: `605b56c455957ff92490ac23605c3324dd1716c5a0f6fb472eca8750c9ed873a`
 
 ## Clientbound
 
@@ -68,7 +68,7 @@ Tool: `aafe52293aa7d281d57743c027833416a49c2640d8ec4f009010c855e55820b8`
 | FORCED_STAT_RESET | CWvsContext::OnForcedStatReset |  |  | ⬜ | 0x020 | ❌ | 0x020 | ❌ | 0x020 | ❌ | 0x023 | ❌ | 0x023 | ❌ | 0x023 | ❌ | 0x022 | ❌ | 0x021 | ❌ |
 | SHOW_STATUS_INFO | CWvsContext::OnMessage | character/clientbound/StatusMessageCashItemExpire (T1) | 0x021 | ✅ | 0x024 | ✅ | 0x024 | ✅ | 0x024 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x026 | ✅ | 0x025 | ✅ |
 | MEMO_RESULT | CWvsContext::OnMemoResult | note/clientbound/NoteDisplay (T1) | 0x022 | ✅ | 0x026 | ✅ | 0x026 | ✅ | 0x026 | ✅ | 0x029 | ✅ | 0x029 | ❌ | 0x029 | ✅ | 0x028 | ✅ | 0x026 | ❌ |
-| MAP_TRANSFER_RESULT | CWvsContext::OnMapTransferResult |  | 0x023 | ❌ | 0x027 | ❌ | 0x027 | ❌ | 0x027 | ❌ | 0x02A | ❌ | 0x02A | ❌ | 0x02A | ❌ | 0x029 | ❌ | 0x027 | ❌ |
+| MAP_TRANSFER_RESULT | CWvsContext::OnMapTransferResult | teleportrock/clientbound/MapTransferError (T1) | 0x023 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x02A | ✅ | 0x02A | ✅ | 0x02A | ✅ | 0x029 | ✅ | 0x027 | ✅ |
 | WEDDING_PHOTO | CWvsContext::OnAntiMacroResult |  | 0x024 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x02B | ❌ | 0x02B | ❌ | 0x02B | ❌ | 0x02A | ❌ | 0x028 | ❌ |
 | CLAIM_RESULT | CWvsContext::OnClaimResult |  | 0x025 | ❌ | 0x02A | ❌ | 0x02A | ❌ | 0x02A | ❌ | 0x02D | ❌ | 0x02D | ❌ | 0x02D | ❌ | 0x02C | ❌ | 0x02A | ❌ |
 | OPEN_FULL_CLIENT_DOWNLOAD_LINK | CWvsContext::OnOpenFullClientDownloadLink |  |  | ⬜ | 0x025 | ❌ | 0x025 | ❌ | 0x025 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x027 | ❌ |  | ⬜ |
@@ -600,14 +600,15 @@ Tool: `aafe52293aa7d281d57743c027833416a49c2640d8ec4f009010c855e55820b8`
 | PET_FOOD | CWvsContext::SendPetFoodItemUseRequest; sub_8325D2 | pet/serverbound/PetFood (T1) |  | ⬜ | 0x04B | ❌ | 0x04B | 🟡ᶠ | 0x04A | 🟡ᶠ | 0x04C | ✅ | 0x04C | ✅ | 0x04F | ✅ | 0x052 | ✅ | 0x044 | ✅ |
 | CHAR_INFO_REQUEST | CWvsContext::SendCharacterInfoRequest; sub_71D059; sub_845B68 | character/serverbound/InfoRequest (T1) | 0x04C | ✅ | 0x059 | ✅ | 0x060 | ✅ | 0x05F | ✅ | 0x061 | ✅ | 0x061 | ✅ | 0x064 | ✅ | 0x06D | ✅ | 0x05C | ✅ |
 | USE_MOUNT_FOOD | CWvsContext::SendTamingMobFoodItemUseRequest; sub_832680; sub_955781 |  |  | ⬜ | 0x04C | ❌ | 0x04C | ❌ | 0x04B | ❌ | 0x04D | ❌ | 0x04D | ❌ | 0x050 | ❌ | 0x053 | ❌ | 0x045 | ❌ |
+| USE_TELEPORT_ROCK | CWvsContext::SendMapTransferItemUseRequest; sub_8327DB; sub_904D5E; sub_9560C6 | teleportrock/serverbound/Use (T1) |  | ⬜ | 0x04D | ✅ | 0x053 | ✅ | 0x052 | ✅ | 0x054 | ✅ | 0x054 | ✅ | 0x057 | ✅ | 0x05B | ✅ | 0x04C | ✅ |
 | SCRIPTED_ITEM | CWvsContext::SendScriptRunItemRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x04E | ❌ | 0x04E | ❌ | 0x051 | ❌ | 0x054 | ❌ | 0x046 | ❌ |
-| USE_RETURN_SCROLL | CWvsContext::SendMapTransferItemUseRequest; CWvsContext::SendPortalScrollUseRequest; sub_841AA5 |  |  | ⬜ | 0x04E | ❌ | 0x054 | ❌ | 0x053 | ❌ | 0x055 | ❌ | 0x055 | ❌ | 0x058 | ❌ | 0x05C | ❌ | 0x04D | ❌ |
+| USE_RETURN_SCROLL | CWvsContext::SendPortalScrollUseRequest; CWvsContext::SendReturnScrollUseRequest; sub_841AA5 |  |  | ⬜ | 0x04E | ❌ | 0x054 | ❌ | 0x053 | ❌ | 0x055 | ❌ | 0x055 | ❌ | 0x058 | ❌ | 0x05C | ❌ | 0x04D | ❌ |
 | USE_UPGRADE_SCROLL | CWvsContext::SendUpgradeItemUseRequest; sub_954F9B | inventory/serverbound/InventoryScrollUse (T1) |  | ⬜ | 0x04F | ✅ | 0x055 | ✅ | 0x054 | ✅ | 0x056 | ✅ | 0x056 | ✅ | 0x059 | ✅ | 0x05D | ✅ | 0x04E | ✅ |
 | DESTROY_PET_ITEM_REQUEST | CWvsContext::SendActivatePetRequest | pet/serverbound/PetSpawn (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x050 | ❌ | 0x050 | ❌ | 0x053 | ✅ | 0x056 | ✅ | 0x048 | ✅ |
+| TROCK_ADD_MAP | CWvsContext::SendMapTransferRequest; sub_71E7F3; sub_8478EA; sub_91E33E; sub_970286 | teleportrock/serverbound/AddMap | 0x051 | ✅ | 0x05E | ✅ | 0x065 | ✅ | 0x064 | ✅ | 0x066 | ✅ | 0x066 | ✅ | 0x069 | ✅ | 0x072 | ✅ | 0x061 | ✅ |
 | USE_CATCH_ITEM | CWvsContext::SendBridleItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x051 | ❌ | 0x051 | ❌ | 0x054 | ❌ | 0x057 | ❌ | 0x049 | ❌ |
 | USE_SKILL_BOOK | CWvsContext::SendSkillLearnItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x052 | ❌ | 0x052 | ❌ | 0x055 | ❌ | 0x058 | ❌ | 0x04A | ❌ |
 | ANTI_MACRO_RESULT | CUIAdminAntiMacro::SetRet; CUIAntiMacro::SetRet; sub_5F9718; sub_69C480 |  | 0x053 | ❌ | 0x060 | ❌ |  | ⬜ |  | ⬜ | 0x069 | ❌ | 0x069 | ❌ | 0x06C | ❌ | 0x075 | ❌ | 0x064 | ❌ |
-| USE_TELEPORT_ROCK | CWvsContext::SendMapTransferItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x054 | ❌ | 0x054 | ❌ | 0x057 | ❌ | 0x05B | ❌ | 0x04C | ❌ |
 | QUEST_ACTION | CQuest::OnCompleteQuestFailed; CQuest::StartQuest; CWvsContext::ResignQuest; sub_5997EF | quest/serverbound/ActionScriptEnd | 0x055 | ❌ | 0x062 | ❌ | 0x06A | ❌ | 0x069 | ❌ | 0x06B | ✅ | 0x06B | ❌ | 0x06E | ✅ | 0x077 | ✅ | 0x066 | ✅ |
 | MESO_DROP | CWvsContext::SendDropMoneyRequest; sub_8459DD | character/serverbound/DropMeso (T1) |  | ⬜ | 0x056 | ✅ | 0x05D | ✅ | 0x05C | ✅ | 0x05E | ✅ | 0x05E | ✅ | 0x061 | ✅ | 0x06A | ✅ | 0x059 | ✅ |
 | USE_SKILL_RESET_BOOK | CWvsContext::SendSkillResetItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x056 | ❌ | 0x059 | ❌ | 0x04B | ❌ |
@@ -621,7 +622,6 @@ Tool: `aafe52293aa7d281d57743c027833416a49c2640d8ec4f009010c855e55820b8`
 | PLAYER_INTERACTION | CCashTradingRoomDlg::OnTrade; CCashTradingRoomDlg::PutItem; CCashTradingRoomDlg::PutMoney; CCashTradingRoomDlg::SetRet; CCashTradingRoomDlg::Trade; CEntrustedShopDlg::AddBlackList; CEntrustedShopDlg::DeleteBlackList; CEntrustedShopDlg::OnArrange; CEntrustedShopDlg::OnBlackList; CEntrustedShopDlg::OnCorrectSSN2; CEntrustedShopDlg::OnGoOut; CEntrustedShopDlg::OnVisitList; CEntrustedShopDlg::OnWithdrawMoney; CEntrustedShopDlg::SetRet; CField::AddBlackList; CField::DeleteBlackList; CField::SendInviteTradingRoomMsg; CMemoryGameDlg::OnClickBanButton; CMemoryGameDlg::OnClickEndButton; CMemoryGameDlg::OnClickReadyButton; CMemoryGameDlg::OnClickStartButton; CMemoryGameDlg::OnEnterResult; CMemoryGameDlg::OnTieRequest; CMemoryGameDlg::SendClaimGiveUp; CMemoryGameDlg::SendTieRequest; CMemoryGameDlg::SendTurnUpCard; CMemoryGameDlg::Update; CMiniRoomBaseDlg::CheckAndSendChat; CMiniRoomBaseDlg::OnCheckSSN2Static; CMiniRoomBaseDlg::SendCashInviteResult; CMiniRoomBaseDlg::SendInviteResult; COmokDlg::OnClickBanButton; COmokDlg::OnClickEndButton; COmokDlg::OnClickReadyButton; COmokDlg::OnClickStartButton; COmokDlg::OnEnterResult; COmokDlg::OnRetreatRequest; COmokDlg::OnTieRequest; COmokDlg::PutStoneChecker; COmokDlg::SendClaimGiveUp; COmokDlg::SendRetreatRequest; COmokDlg::SendTieRequest; COmokDlg::Update; CPersonalShopDlg::BuyItem; CPersonalShopDlg::CheckCashItemInList; CPersonalShopDlg::DeliverBlackList; CPersonalShopDlg::MoveItemToInventory; CPersonalShopDlg::OnClickBanButton; CPersonalShopDlg::OnCorrectSSN2; CPersonalShopDlg::PutItem; CPersonalShopDlg::SetRet; CPersonalShopDlg::Update; CTradingRoomDlg::OnTrade; CTradingRoomDlg::PutItem; CTradingRoomDlg::PutMoney; CTradingRoomDlg::SetRet; CTradingRoomDlg::Trade; CUserLocal::HandleLButtonDblClk; CUserLocal::HandleRButtonClk; CWvsContext::OnEntrustedShopCheckResult; CWvsContext::SendCreateMiniGameRequest; CWvsContext::SendOpenShopRequest; sub_4EF97F; sub_62298D; sub_69FA53 |  | 0x05D | ❌ | 0x06F | ❌ | 0x079 | ❌ | 0x078 | ❌ | 0x07B | ❌ | 0x07D | ❌ | 0x081 | ❌ | 0x090 | ❌ | 0x07C | ❌ |
 | HYPER_UPGRADE_ITEM_USE | CWvsContext::SendHyperUpgradeItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x05E | ❌ | 0x04F | ❌ |
 | PARTY_OPERATION | CField::SendChangePartyBossMsg; CField::SendCreateNewPartyMsg; CField::SendJoinPartyMsg; CField::SendKickPartyMsg; CField::SendWithdrawPartyMsg; CWvsContext::OnPartyResult | party/serverbound/PartyOperationInvite (T1) | 0x05E | ✅ | 0x070 | 🟡ᶠ | 0x07A | 🟡ᶠ | 0x079 | 🟡ᶠ | 0x07C | ✅ | 0x07E | ✅ | 0x082 | ✅ | 0x091 | ✅ | 0x07D | ✅ |
-| TROCK_ADD_MAP | CWvsContext::SendMapTransferRequest; sub_8478EA |  |  | ⬜ | 0x05E | ❌ |  | ⬜ |  | ⬜ | 0x066 | ❌ | 0x066 | ❌ | 0x069 | ❌ | 0x072 | ❌ | 0x061 | ❌ |
 | DENY_PARTY_REQUEST | CFadeWnd::SendCloseMessage; CWvsContext::OnPartyResult | party/clientbound/PartyAlreadyJoined1 (T1) | 0x05F | ✅ | 0x071 | ✅ | 0x07B | ✅ | 0x07A | ✅ | 0x07D | ❌ | 0x07F | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |
 | ITEM_OPTION_UPGRADE_USE | CWvsContext::SendItemOptionUpgradeItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x05F | ❌ | 0x050 | ❌ |
 | GUILD_OPERATION | CField::InputGuildName; CField::SendCreateGuildAgreeMsg; CField::SendInviteGuildMsg; CField::SendKickGuildMsg; CField::SendSetGradeNameMsg; CField::SendSetGuildMarkMsg; CField::SendSetGuildNoticeMsg; CField::SendSetMemberGradeMsg; CField::SendWithdrawGuildMsg; CUIFadeYesNo::OnButtonClicked; CWvsContext::OnGuildResult | guild/serverbound/GuildAgreementResponse (T1) | 0x060 | ✅ | 0x072 | ❌ | 0x07C | ✅ | 0x07B | ✅ | 0x07E | ✅ | 0x082 | ✅ | 0x086 | ✅ | 0x095 | ✅ | 0x081 | ✅ |
@@ -833,6 +833,7 @@ Tool: `aafe52293aa7d281d57743c027833416a49c2640d8ec4f009010c855e55820b8`
 | buddy/serverbound/BuddyOperationAdd (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | buddy/serverbound/BuddyOperationDelete (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | cash/serverbound/CashItemUsePointReset (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
+| cash/serverbound/CashItemUseTeleportRock (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashShopOperationBuy (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashShopOperationBuyCouple (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashShopOperationBuyFriendship (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -994,15 +995,15 @@ Tool: `aafe52293aa7d281d57743c027833416a49c2640d8ec4f009010c855e55820b8`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 169 | 0 | 2 | 157 | 631 | 0 | 51.5% |
-| v61 | 243 | 0 | 60 | 193 | 463 | 0 | 49.0% |
-| v72 | 253 | 0 | 73 | 211 | 422 | 0 | 47.1% |
-| v79 | 267 | 0 | 72 | 207 | 413 | 0 | 48.9% |
-| v83 | 408 | 0 | 0 | 327 | 224 | 0 | 55.5% |
-| v84 | 380 | 0 | 0 | 335 | 244 | 0 | 53.1% |
-| v87 | 414 | 0 | 0 | 358 | 187 | 0 | 53.6% |
-| v95 | 439 | 0 | 0 | 417 | 103 | 0 | 51.3% |
-| JMS185 | 395 | 0 | 0 | 370 | 194 | 0 | 51.6% |
+| v48 | 171 | 0 | 2 | 157 | 630 | 0 | 51.8% |
+| v61 | 246 | 0 | 60 | 192 | 462 | 0 | 49.4% |
+| v72 | 256 | 0 | 73 | 211 | 420 | 0 | 47.4% |
+| v79 | 270 | 0 | 72 | 207 | 411 | 0 | 49.2% |
+| v83 | 412 | 0 | 0 | 324 | 224 | 0 | 56.0% |
+| v84 | 384 | 0 | 0 | 332 | 244 | 0 | 53.6% |
+| v87 | 418 | 0 | 0 | 355 | 187 | 0 | 54.1% |
+| v95 | 443 | 0 | 0 | 414 | 103 | 0 | 51.7% |
+| JMS185 | 399 | 0 | 0 | 367 | 194 | 0 | 52.1% |
 
 ## Conflicts
 

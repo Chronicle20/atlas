@@ -23,6 +23,7 @@ type (
 	DeductExperiencePayload      = sharedsaga.DeductExperiencePayload
 	CancelAllBuffsPayload        = sharedsaga.CancelAllBuffsPayload
 	WarpToPortalPayload          = sharedsaga.WarpToPortalPayload
+	WarpToRandomPortalPayload    = sharedsaga.WarpToRandomPortalPayload
 	ApplyConsumableEffectPayload = sharedsaga.ApplyConsumableEffectPayload
 	FieldEffectWeatherPayload    = sharedsaga.FieldEffectWeatherPayload
 	SetAssetOwnerPayload         = sharedsaga.SetAssetOwnerPayload
@@ -50,6 +51,7 @@ const (
 	CashShopOperation    = sharedsaga.CashShopOperation
 	CharacterRespawn     = sharedsaga.CharacterRespawn
 	FieldEffectUse       = sharedsaga.FieldEffectUse
+	TeleportRockUse      = sharedsaga.TeleportRockUse
 	ItemTagUse           = sharedsaga.ItemTagUse
 	SealingLockUse       = sharedsaga.SealingLockUse
 	IncubatorUse         = sharedsaga.IncubatorUse
@@ -78,6 +80,7 @@ const (
 	DeductExperience      = sharedsaga.DeductExperience
 	CancelAllBuffs        = sharedsaga.CancelAllBuffs
 	WarpToPortal          = sharedsaga.WarpToPortal
+	WarpToRandomPortal    = sharedsaga.WarpToRandomPortal
 	FieldEffectWeather    = sharedsaga.FieldEffectWeather
 	ApplyConsumableEffect = sharedsaga.ApplyConsumableEffect
 	SetAssetOwner         = sharedsaga.SetAssetOwner

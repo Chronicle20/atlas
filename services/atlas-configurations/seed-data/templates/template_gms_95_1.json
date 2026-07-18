@@ -245,6 +245,11 @@
         "handler": "CharacterCashItemUseHandle"
       },
       {
+        "opCode": "0x5B",
+        "validator": "LoggedInValidator",
+        "handler": "TeleportRockUseHandle"
+      },
+      {
         "opCode": "0x5D",
         "handler": "CharacterItemUseScrollHandle"
       },
@@ -286,6 +291,11 @@
       {
         "opCode": "0x6E",
         "handler": "PetSpawnHandle"
+      },
+      {
+        "opCode": "0x72",
+        "validator": "LoggedInValidator",
+        "handler": "TeleportRockAddMapHandle"
       },
       {
         "opCode": "0x77",
@@ -924,6 +934,23 @@
             "SEND_SUCCESS": 4,
             "SEND_ERROR": 5,
             "REFRESH": 7
+          }
+        }
+      },
+      {
+        "opCode": "0x29",
+        "writer": "MapTransferResult",
+        "options": {
+          "operations": {
+            "DELETE_LIST": "0x02",
+            "REGISTER_LIST": "0x03",
+            "CANNOT_GO": "0x05",
+            "UNABLE_TO_LOCATE": "0x06",
+            "UNABLE_TO_LOCATE_2": "0x07",
+            "CANNOT_GO_CONTINENT": "0x08",
+            "CURRENT_MAP": "0x09",
+            "MAP_NOT_AVAILABLE": "0x0A",
+            "MAPLE_ISLAND_LEVEL7": "0x0B"
           }
         }
       },

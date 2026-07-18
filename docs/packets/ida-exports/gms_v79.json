@@ -16151,9 +16151,44 @@
    ]
   },
   "CWvsContext::SendMapTransferItemUseRequest": {
-   "address": "0x968c52",
-   "direction": "",
-   "calls": null
+   "address": "0x9560c6",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Decode2",
+     "comment": "nPOS (inventory slot)",
+     "guard": "a3 / 10000 == 232 && CWvsContext::get_update_time()"
+    },
+    {
+     "op": "Decode4",
+     "comment": "nItemID",
+     "guard": "a3 / 10000 == 232 && CWvsContext::get_update_time()"
+    },
+    {
+     "op": "Decode4",
+     "comment": "updateTime (trailing, only if the target dialog was confirmed)",
+     "guard": "a3 / 10000 == 232 && CWvsContext::get_update_time() && CWvsContext::RunMapTransferItem(v12, 0)"
+    }
+   ]
+  },
+  "CWvsContext::SendMapTransferRequest": {
+   "address": "0x970286",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "nType (1=register current map, 0=delete selected map)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "flag (VIP saved-map slot set)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "mapId (delete only)",
+     "guard": "!nType"
+    }
+   ]
   },
   "CWvsContext::SendMigrateToShopRequest": {
    "address": "0x950f7f",

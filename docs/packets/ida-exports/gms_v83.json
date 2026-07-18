@@ -3,6 +3,72 @@
   "md5": "80ff438ced539b831f0d2ed95099275d",
   "generated_at": "2026-05-14T00:00:00Z",
   "functions": {
+    "CWvsContext::SendMapTransferItemUseRequest": {
+      "address": "0xa0a3bb",
+      "direction": "serverbound",
+      "note": "USE_TELEPORT_ROCK (task-124). nPOS(Encode2)+nItemID(Encode4), then the RunMapTransferItem target payload (byName flag + name/mapId) under the success guard, then trailing update_time. The guarded call absorbs RunMapTransferItem's own writes (parser treats an if-condition call as a guard, not a Delegate) — see CWvsContext::RunMapTransferItem below for that payload's derivation.",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CWvsContext::RunMapTransferItem(this, &v7, 0)"
+        }
+      ]
+    },
+    "CWvsContext::SendMapTransferRequest": {
+      "address": "0xa261bc",
+      "direction": "serverbound",
+      "note": "TROCK_ADD_MAP (task-124). Unnamed in the v83 IDB (sub_A261BC) until this task; mangled symbol ?SendMapTransferRequest@CWvsContext@@QAEXJKH@Z was already present, so it was renamed live to the demangled registry fname (§10 unnamed-sender convention) to resolve for harvesting. Encode1(nType)+Encode1(bCanTransferContinent), then Encode4(dwTargetField) only when nType==0 (delete).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!a2"
+        }
+      ]
+    },
+    "CWvsContext::OnMapTransferResult": {
+      "address": "0xa25268",
+      "direction": "clientbound",
+      "note": "MAP_TRANSFER_RESULT (task-124). mode(Decode1)+targetList(Decode1), then for mode in {2,3} (list-refresh form) exactly 5 (targetList==0) or 10 (targetList==1) x Decode4 mapId; modes 5-11 are the error/notice form with no further payload.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v3 == 3 && !v4"
+        }
+      ]
+    },
+    "CWvsContext::RunMapTransferItem": {
+      "address": "0xa0a4aa",
+      "direction": "serverbound",
+      "note": "Shared teleport-rock target-payload helper (task-124), called by both SendMapTransferItemUseRequest and the cash-item-use teleport-rock branch (case 22 of SendConsumeCashItemUseRequest @0xa0cab0). Live decompile (port 13342): shows a CDialog target-picker; on DoModal()==1, if a name was resolved: Encode1(1) then EncodeStr(name); else if a2 (selected map id) is set and != 999999999 (EmptyMapId): Encode1(0) then Encode4(a2); otherwise no payload bytes are written at all (dialog confirmed with no selection). The parser cannot descend into this call because the caller consumes its return value in an if-condition (treated as a guard, not a Delegate) — calls intentionally left absent (opaque relative to this static export); the payload derivation above is hand-verified from the live IDA decompile, not fabricated.",
+      "calls": null
+    },
     "CMiniRoomBaseDlg::OnPacketBase#MemoryGamePutStoneError": {
       "address": "0x6e4065",
       "direction": "clientbound",

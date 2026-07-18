@@ -27195,6 +27195,88 @@
         }
       ]
     },
+    "CWvsContext::SendMapTransferItemUseRequest": {
+      "address": "0xa547ab",
+      "direction": "serverbound",
+      "note": "USE_TELEPORT_ROCK (task-124 gms_v84 verify pass, live GMS_v84.1_U_DEVM.exe port 13345). Unnamed in the v84 IDB (sub_A547AB) until this pass; renamed live to the demangled registry fname (§10 unnamed-sender convention) to resolve for harvesting. Byte-identical to v83 0xa0a3bb: guard itemId/10000==232, Encode2(nPOS) @0xa547fb, Encode4(nItemID) @0xa54806, then CWvsContext::RunMapTransferItem(this, &v11, 0) @0xa54813 (the shared target-payload helper); on success Encode4(get_update_time()) @0xa54825 then SendPacket @0xa54834 — a genuine trailing updateTime, matching updateTimeFirst=false for MajorVersion()<87.",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CWvsContext::RunMapTransferItem(this, &v11, 0)"
+        }
+      ]
+    },
+    "CWvsContext::SendMapTransferRequest": {
+      "address": "0xa71972",
+      "direction": "serverbound",
+      "note": "TROCK_ADD_MAP (task-124 gms_v84 verify pass, live GMS_v84.1_U_DEVM.exe port 13345). Unnamed in the v84 IDB (sub_A71972) until this pass; renamed live to the demangled registry fname (§10 unnamed-sender convention). Byte-identical to v83 0xa261bc (also unnamed there, sub_A261BC): COutPacket::COutPacket(&v4, 102) @0xa71984; Encode1(a1=nType) @0xa71993; Encode1(a3=bCanTransferContinent/vip) @0xa7199e; if(!a1) Encode4(a2=dwTargetField/mapId) @0xa719af; SendPacket @0xa719be. Callers confirmed: sub_865737 (register path) calls SendMapTransferRequest(1, 0, vipFlag); sub_865A45 (delete path) calls SendMapTransferRequest(0, mapId, vipFlag).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!a1"
+        }
+      ]
+    },
+    "CWvsContext::OnMapTransferResult": {
+      "address": "0xa70963",
+      "direction": "clientbound",
+      "note": "MAP_TRANSFER_RESULT (task-124 gms_v84 verify pass, live GMS_v84.1_U_DEVM.exe port 13345). Unnamed in the v84 IDB (sub_A70963) until this pass; renamed live to the demangled registry fname; dispatched from CWvsContext::OnPacket's case 0x2A @0xa51dfd. Byte-identical to v83 0xa25268: mode(Decode1)+targetList(Decode1) @0xa70983/0xa70986, then for mode in {2,3} exactly 5 (targetList==0) or 10 (targetList==1) x Decode4 mapId @0xa709d6 loop; modes 5-11 are the error/notice form (StringPool ids differ from v83 by a small offset — 2985/2950/2956/2953/2957 vs v83's 2984/2949/2955/2952/2956 — but this does not affect wire bytes) with no further payload.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v3 == 2 || v3 == 3"
+        }
+      ]
+    },
+    "CWvsContext::RunMapTransferItem": {
+      "address": "0xa5489a",
+      "direction": "serverbound",
+      "note": "Shared teleport-rock target-payload helper (task-124 gms_v84 verify pass). Unnamed in the v84 IDB (sub_A5489A) until this pass; renamed live. Called by both SendMapTransferItemUseRequest (flag=0) and the cash-item-use teleport-rock branch (case 22 of SendConsumeCashItemUseRequest @0xa56e9d). Live decompile (port 13345): a CDialog target-picker; on success, if a name was resolved: Encode1(1) then EncodeStr(name); else if a map id is set and != 999999999 (EmptyMapId): Encode1(0) then Encode4(mapId); otherwise no payload bytes are written at all (dialog confirmed with no selection). The parser cannot descend into this call because the caller consumes its return value in an if-condition (treated as a guard, not a Delegate) — calls intentionally left absent (opaque relative to this static export), matching the v83 convention for this same helper.",
+      "calls": null
+    },
+    "CWvsContext::SendConsumeCashItemUseRequest": {
+      "address": "0xa54a2f",
+      "direction": "serverbound",
+      "note": "task-124 gms_v84 verify pass (live GMS_v84.1_U_DEVM.exe, port 13345): case 22 of the jumptable at CWvsContext::SendConsumeCashItemUseRequest @0xa54a2f (case body @0xa56e9d, reached via byte_A58F60[22-12]=8 -> jpt_A54ADD[8]=0xa56e9d) computes a flag = (itemId/1000 != 5040) @0xa56ea9 and calls CWvsContext::RunMapTransferItem(this, &v_pkt, flag) @0xa56ebb — the SAME helper USE_TELEPORT_ROCK calls — then on success falls through to the shared send tail @0xa58e47: Encode4(get_update_time()) @0xa58e50; SendPacket @0xa58e59: a genuine TRAILING updateTime, byte-identical to v83's case 22 (@0xa0cab0). No leading updateTime precedes the switch dispatch (confirmed by disassembling the function prologue), consistent with updateTimeFirst := MajorVersion()>=87 (84 < 87) in character_cash_item_use.go. candidatesFromFName keys this packet as cash/serverbound/CashItemUseTeleportRock (pkg=\"cash\" qualifier); the marker address is the resolved fname's function entry (0xa54a2f), matching the v83/v95 convention for this same shared dispatcher.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CWvsContext::RunMapTransferItem(this, &v_pkt, flag)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "trailing update_time = get_update_time(); Encode4 in common send tail"
+        }
+      ]
+    },
     "CRPSGameDlg::Update": {
       "address": "0x760e64",
       "direction": "serverbound",

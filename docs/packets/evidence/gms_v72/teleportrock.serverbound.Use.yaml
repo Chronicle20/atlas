@@ -1,0 +1,10 @@
+packet: teleportrock/serverbound/Use
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendMapTransferItemUseRequest
+    address: "0x904d5e"
+    decompile_sha256: 95eb30294b4210c013d710386ab99859c41ff2bb014af2cf390cddaafd580c70
+verifies:
+  - libs/atlas-packet/teleportrock/serverbound/use_test.go#TestUseByMapDecodeV72

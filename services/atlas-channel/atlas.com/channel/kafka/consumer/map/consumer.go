@@ -568,7 +568,31 @@ func handleStatusEventCharacterExit(sc server.Model, wp writer.Producer) func(l 
 		if err != nil {
 			l.WithError(err).Errorf("Unable to despawn character [%d] for characters in map [%d] instance [%s].", e.Body.CharacterId, e.MapId, e.Instance)
 		}
-		return
+
+		// NPC-controller reassignment (task-176, FR-5.3): release the
+		// exiting character's NPCs and hand them to the least-loaded
+		// remaining non-hidden session; none left -> uncontrolled until the
+		// next enter (lazy stale re-claim also covers a missed exit).
+		cp := controllernpc.NewProcessor(l, ctx)
+		released, rerr := cp.ReleaseFor(f, e.Body.CharacterId)
+		if rerr != nil {
+			l.WithError(rerr).Warnf("Unable to release NPC controller entries for exiting character [%d] in field [%s].", e.Body.CharacterId, f.Id())
+			return
+		}
+		if len(released) == 0 {
+			return
+		}
+		assignments, aerr := cp.ElectFor(f, released, e.Body.CharacterId)
+		if aerr != nil {
+			l.WithError(aerr).Warnf("Unable to re-elect NPC controllers after character [%d] left field [%s].", e.Body.CharacterId, f.Id())
+			return
+		}
+		for npcId, winner := range assignments {
+			if gerr := controllernpc.AnnounceGrant(l, ctx, wp)(f, winner, npcId); gerr != nil {
+				l.WithError(gerr).Warnf("Unable to announce NPC [%d] controller grant to [%d].", npcId, winner)
+			}
+		}
+		l.Debugf("NPC-controller exit: character [%d] released [%d] NPCs in field [%s]; reassigned [%d].", e.Body.CharacterId, len(released), f.Id(), len(assignments))
 	}
 }
 

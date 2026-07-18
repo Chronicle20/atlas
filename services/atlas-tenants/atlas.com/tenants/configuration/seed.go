@@ -8,10 +8,13 @@ import (
 	"strings"
 )
 
-const defaultRoutesPath = "/configurations/routes"
-const defaultInstanceRoutesPath = "/configurations/instance-routes"
-const defaultVesselsPath = "/configurations/vessels"
-const defaultMtsConfigsPath = "/configurations/mts-configs"
+const (
+	defaultRoutesPath         = "/configurations/routes"
+	defaultInstanceRoutesPath = "/configurations/instance-routes"
+	defaultVesselsPath        = "/configurations/vessels"
+	defaultRpsRewardsPath     = "/configurations/rps-rewards"
+	defaultMtsConfigsPath     = "/configurations/mts-configs"
+)
 
 // SeedResult represents the result of a seed operation
 type SeedResult struct {
@@ -61,6 +64,20 @@ func getVesselsPath() string {
 // and parses them into map[string]interface{} structs.
 func LoadVesselFiles() ([]map[string]interface{}, []error) {
 	return loadSeedFiles(getVesselsPath())
+}
+
+// getRpsRewardsPath returns the path to the rps-rewards seed directory.
+func getRpsRewardsPath() string {
+	if path := os.Getenv("RPS_REWARDS_SEED_PATH"); path != "" {
+		return path
+	}
+	return defaultRpsRewardsPath
+}
+
+// LoadRpsRewardFiles reads all JSON files from the rps-rewards seed directory
+// and parses them into map[string]interface{} structs.
+func LoadRpsRewardFiles() ([]map[string]interface{}, []error) {
+	return loadSeedFiles(getRpsRewardsPath())
 }
 
 // getMtsConfigsPath returns the path to the mts configs seed directory.

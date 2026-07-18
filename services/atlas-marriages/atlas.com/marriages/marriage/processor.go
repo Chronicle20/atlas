@@ -1,21 +1,23 @@
 package marriage
 
 import (
+	"atlas-marriages/character"
+	"atlas-marriages/kafka/message"
 	"context"
 	"errors"
 	"time"
 
-	"atlas-marriages/character"
-	"atlas-marriages/kafka/message"
 	marriageMsg "atlas-marriages/kafka/message/marriage"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // EligibilityRequirement represents minimum level requirement for marriage
@@ -1776,7 +1778,6 @@ func (p *ProcessorImpl) HandleCharacterDeletion(characterId uint32) error {
 	}
 
 	deletedMarriage, err := builder.Build()
-
 	if err != nil {
 		p.log.WithError(err).WithField("characterId", characterId).Error("Failed to build deleted marriage")
 		return err
@@ -1838,7 +1839,6 @@ func (p *ProcessorImpl) HandleCharacterDeletionAndEmit(transactionId uuid.UUID, 
 		}
 
 		deletedMarriage, err := builder.Build()
-
 		if err != nil {
 			return err
 		}

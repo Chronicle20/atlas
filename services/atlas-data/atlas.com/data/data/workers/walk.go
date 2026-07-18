@@ -7,8 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Chronicle20/atlas/libs/atlas-wz/wz/property"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-wz/wz/property"
 )
 
 // findSub locates a SubProperty by name among the given properties.

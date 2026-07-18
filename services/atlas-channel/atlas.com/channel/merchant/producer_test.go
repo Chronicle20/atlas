@@ -1,11 +1,11 @@
 package merchant
 
 import (
+	"atlas-channel/asset"
 	"encoding/json"
 	"testing"
 	"time"
 
-	"atlas-channel/asset"
 	merchant2 "atlas-channel/kafka/message/merchant"
 
 	"github.com/google/uuid"

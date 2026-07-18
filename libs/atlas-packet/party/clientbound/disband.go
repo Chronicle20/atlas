@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 // packet-audit:fname CWvsContext::OnPartyResult#Disband
@@ -21,8 +22,8 @@ func NewDisband(mode byte, partyId uint32, targetId uint32) Disband {
 	return Disband{mode: mode, partyId: partyId, targetId: targetId}
 }
 
-func (m Disband) Mode() byte      { return m.mode }
-func (m Disband) PartyId() uint32 { return m.partyId }
+func (m Disband) Mode() byte       { return m.mode }
+func (m Disband) PartyId() uint32  { return m.partyId }
 func (m Disband) TargetId() uint32 { return m.targetId }
 
 func (m Disband) Operation() string {

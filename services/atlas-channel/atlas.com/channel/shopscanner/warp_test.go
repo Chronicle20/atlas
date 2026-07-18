@@ -3,8 +3,9 @@ package shopscanner
 import (
 	"testing"
 
-	merchantpkt "github.com/Chronicle20/atlas/libs/atlas-packet/merchant"
 	"github.com/stretchr/testify/require"
+
+	merchantpkt "github.com/Chronicle20/atlas/libs/atlas-packet/merchant"
 )
 
 // valid returns a WarpCheck that passes every rung — each case below breaks

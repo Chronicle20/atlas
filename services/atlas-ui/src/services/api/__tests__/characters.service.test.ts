@@ -63,7 +63,10 @@ describe("charactersService.getPage", () => {
     const result = await charactersService.getPage({ number: 1, size: 2 });
 
     expect(result.data).toEqual([makeCharacter("1")]);
-    expect(result.meta).toEqual({ total: 3, page: { number: 1, size: 2, last: 2 } });
+    expect(result.meta).toEqual({
+      total: 3,
+      page: { number: 1, size: 2, last: 2 },
+    });
 
     const [calledUrl] = getMock.mock.calls[0] as [string];
     const params = new URL(calledUrl, "http://example.test").searchParams;
@@ -93,7 +96,9 @@ describe("charactersService.getAll", () => {
   });
 
   it("treats a no-envelope response as the whole collection", async () => {
-    getMock.mockResolvedValue({ data: [makeCharacter("1"), makeCharacter("2")] });
+    getMock.mockResolvedValue({
+      data: [makeCharacter("1"), makeCharacter("2")],
+    });
 
     const result = await charactersService.getAll();
 

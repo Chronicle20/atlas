@@ -4,8 +4,9 @@ import (
 	"errors"
 	"fmt"
 
-	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	"github.com/google/uuid"
+
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 )
 
 // Builder wraps the shared saga builder and adds validation on Build().

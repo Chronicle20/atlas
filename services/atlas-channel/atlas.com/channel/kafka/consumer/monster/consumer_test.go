@@ -9,12 +9,13 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+
 	channelconst "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 // withRecordingBroadcasters swaps the package-level broadcast seams for
@@ -38,7 +39,6 @@ func withRecordingBroadcasters(t *testing.T) (restore func(), setCalls *int, res
 		monsterStatResetBroadcaster = origReset
 	}, &setN, &resetN
 }
-
 
 func newTestTenant(t *testing.T) tenant.Model {
 	t.Helper()

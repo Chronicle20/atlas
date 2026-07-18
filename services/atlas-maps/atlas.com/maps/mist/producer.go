@@ -4,10 +4,11 @@ import (
 	mistKafka "atlas-maps/kafka/message/mist"
 	"time"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/segmentio/kafka-go"
 )
 
 // createdEventProvider builds a MIST_CREATED event keyed by the mist id.

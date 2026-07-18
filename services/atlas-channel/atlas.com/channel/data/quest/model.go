@@ -21,20 +21,20 @@ type Model struct {
 	endActions        ActionsModel
 }
 
-func (m Model) Id() uint32                          { return m.id }
-func (m Model) Name() string                        { return m.name }
-func (m Model) Parent() string                      { return m.parent }
-func (m Model) Area() uint32                        { return m.area }
-func (m Model) Order() uint32                       { return m.order }
-func (m Model) AutoStart() bool                     { return m.autoStart }
-func (m Model) AutoPreComplete() bool               { return m.autoPreComplete }
-func (m Model) AutoComplete() bool                  { return m.autoComplete }
-func (m Model) TimeLimit() uint32                   { return m.timeLimit }
-func (m Model) TimeLimit2() uint32                  { return m.timeLimit2 }
-func (m Model) SelectedMob() bool                   { return m.selectedMob }
-func (m Model) Summary() string                     { return m.summary }
-func (m Model) DemandSummary() string               { return m.demandSummary }
-func (m Model) RewardSummary() string               { return m.rewardSummary }
+func (m Model) Id() uint32                           { return m.id }
+func (m Model) Name() string                         { return m.name }
+func (m Model) Parent() string                       { return m.parent }
+func (m Model) Area() uint32                         { return m.area }
+func (m Model) Order() uint32                        { return m.order }
+func (m Model) AutoStart() bool                      { return m.autoStart }
+func (m Model) AutoPreComplete() bool                { return m.autoPreComplete }
+func (m Model) AutoComplete() bool                   { return m.autoComplete }
+func (m Model) TimeLimit() uint32                    { return m.timeLimit }
+func (m Model) TimeLimit2() uint32                   { return m.timeLimit2 }
+func (m Model) SelectedMob() bool                    { return m.selectedMob }
+func (m Model) Summary() string                      { return m.summary }
+func (m Model) DemandSummary() string                { return m.demandSummary }
+func (m Model) RewardSummary() string                { return m.rewardSummary }
 func (m Model) StartRequirements() RequirementsModel { return m.startRequirements }
 func (m Model) EndRequirements() RequirementsModel   { return m.endRequirements }
 func (m Model) StartActions() ActionsModel           { return m.startActions }
@@ -65,28 +65,28 @@ type RequirementsModel struct {
 	completionCount uint32
 }
 
-func (m RequirementsModel) NpcId() uint32                      { return m.npcId }
-func (m RequirementsModel) LevelMin() uint16                   { return m.levelMin }
-func (m RequirementsModel) LevelMax() uint16                   { return m.levelMax }
-func (m RequirementsModel) FameMin() int16                     { return m.fameMin }
-func (m RequirementsModel) MesoMin() uint32                    { return m.mesoMin }
-func (m RequirementsModel) MesoMax() uint32                    { return m.mesoMax }
-func (m RequirementsModel) Jobs() []uint16                     { return m.jobs }
-func (m RequirementsModel) Quests() []QuestRequirementModel    { return m.quests }
-func (m RequirementsModel) Items() []ItemRequirementModel      { return m.items }
-func (m RequirementsModel) Mobs() []MobRequirementModel        { return m.mobs }
-func (m RequirementsModel) FieldEnter() []uint32               { return m.fieldEnter }
-func (m RequirementsModel) Pet() []uint32                      { return m.pet }
-func (m RequirementsModel) PetTamenessMin() int16              { return m.petTamenessMin }
-func (m RequirementsModel) DayOfWeek() []string                { return m.dayOfWeek }
-func (m RequirementsModel) Start() string                      { return m.start }
-func (m RequirementsModel) End() string                        { return m.end }
-func (m RequirementsModel) Interval() uint32                   { return m.interval }
-func (m RequirementsModel) StartScript() string                { return m.startScript }
-func (m RequirementsModel) EndScript() string                  { return m.endScript }
-func (m RequirementsModel) InfoNumber() uint32                 { return m.infoNumber }
-func (m RequirementsModel) NormalAutoStart() bool              { return m.normalAutoStart }
-func (m RequirementsModel) CompletionCount() uint32            { return m.completionCount }
+func (m RequirementsModel) NpcId() uint32                   { return m.npcId }
+func (m RequirementsModel) LevelMin() uint16                { return m.levelMin }
+func (m RequirementsModel) LevelMax() uint16                { return m.levelMax }
+func (m RequirementsModel) FameMin() int16                  { return m.fameMin }
+func (m RequirementsModel) MesoMin() uint32                 { return m.mesoMin }
+func (m RequirementsModel) MesoMax() uint32                 { return m.mesoMax }
+func (m RequirementsModel) Jobs() []uint16                  { return m.jobs }
+func (m RequirementsModel) Quests() []QuestRequirementModel { return m.quests }
+func (m RequirementsModel) Items() []ItemRequirementModel   { return m.items }
+func (m RequirementsModel) Mobs() []MobRequirementModel     { return m.mobs }
+func (m RequirementsModel) FieldEnter() []uint32            { return m.fieldEnter }
+func (m RequirementsModel) Pet() []uint32                   { return m.pet }
+func (m RequirementsModel) PetTamenessMin() int16           { return m.petTamenessMin }
+func (m RequirementsModel) DayOfWeek() []string             { return m.dayOfWeek }
+func (m RequirementsModel) Start() string                   { return m.start }
+func (m RequirementsModel) End() string                     { return m.end }
+func (m RequirementsModel) Interval() uint32                { return m.interval }
+func (m RequirementsModel) StartScript() string             { return m.startScript }
+func (m RequirementsModel) EndScript() string               { return m.endScript }
+func (m RequirementsModel) InfoNumber() uint32              { return m.infoNumber }
+func (m RequirementsModel) NormalAutoStart() bool           { return m.normalAutoStart }
+func (m RequirementsModel) CompletionCount() uint32         { return m.completionCount }
 
 type QuestRequirementModel struct {
 	id    uint32

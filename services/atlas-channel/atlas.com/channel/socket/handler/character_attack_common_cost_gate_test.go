@@ -1,17 +1,18 @@
 package handler
 
 import (
+	"atlas-channel/data/skill/effect"
+	"atlas-channel/socket/writer"
 	"context"
 	"testing"
 
-	"atlas-channel/data/skill/effect"
 	channelhandler "atlas-channel/skill/handler"
-	"atlas-channel/socket/writer"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
-	"github.com/sirupsen/logrus"
 )
 
 // TestProcessAttack_RegisteredSkill_GateUsesLookup pins the dispatcher-membership
@@ -36,7 +37,8 @@ func TestProcessAttack_RegisteredSkill_GateUsesLookup(t *testing.T) {
 			packetmodel.SkillUsageInfo, effect.Model,
 		) error {
 			return func(_ writer.Producer, _ field.Model, _ uint32,
-				_ packetmodel.SkillUsageInfo, _ effect.Model) error {
+				_ packetmodel.SkillUsageInfo, _ effect.Model,
+			) error {
 				return nil
 			}
 		}

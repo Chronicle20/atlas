@@ -3,9 +3,10 @@ package serverbound
 import (
 	"testing"
 
-	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
+
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 // These byte-fixtures pin the serverbound body layout of the three
@@ -80,7 +81,7 @@ func TestCharacterSelectByteOutput(t *testing.T) {
 		Name         string
 		Region       string
 		Major, Minor uint16
-	} {
+	}{
 		{"GMS v61", "GMS", 61, 1},
 		{"GMS v72", "GMS", 72, 1},
 		{"GMS v83", "GMS", 83, 1},

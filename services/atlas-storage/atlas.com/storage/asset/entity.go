@@ -3,10 +3,11 @@ package asset
 import (
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 )
 
 type Entity struct {
@@ -21,6 +22,7 @@ type Entity struct {
 	// stackable fields
 	Quantity     uint32
 	OwnerId      uint32
+	Owner        string `gorm:"not null;default:''"`
 	Flag         uint16
 	Rechargeable uint64
 	// equipment fields
@@ -76,6 +78,7 @@ func Make(e Entity) Model {
 		expiration:     e.Expiration,
 		quantity:       e.Quantity,
 		ownerId:        e.OwnerId,
+		owner:          e.Owner,
 		flag:           e.Flag,
 		rechargeable:   e.Rechargeable,
 		strength:       e.Strength,

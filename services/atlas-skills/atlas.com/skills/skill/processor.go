@@ -6,11 +6,16 @@ import (
 	"atlas-skills/macro"
 	"context"
 	"errors"
+	"strconv"
+	"time"
+
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
-	"strconv"
-	"time"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	constskill "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
@@ -18,9 +23,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/degrade"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 // Processor defines the interface for skill processing operations

@@ -1,14 +1,17 @@
 package saga
 
 import (
+	"atlas-portal-actions/action"
+	"atlas-portal-actions/character"
+	"atlas-portal-actions/kafka/message/saga"
 	"context"
 	"fmt"
 
-	"atlas-portal-actions/action"
-	"atlas-portal-actions/character"
 	consumer2 "atlas-portal-actions/kafka/consumer"
-	"atlas-portal-actions/kafka/message/saga"
+
 	portalsaga "atlas-portal-actions/saga"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -17,7 +20,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
-	"github.com/sirupsen/logrus"
 )
 
 // InitConsumers initializes Kafka consumers for saga status events

@@ -5,11 +5,12 @@ import (
 	"testing"
 	"time"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 // v61 monster clientbound fixtures. Every monster writer is byte-identical to
@@ -44,7 +45,7 @@ func TestMonsterSpawnBytesV61(t *testing.T) {
 		0x05,       // moveAction 5
 		0x00, 0x00, // foothold 0
 		0x2C, 0x01, // homeFoothold 300
-		0xFE,       // appearType -2 (Regen)
+		0xFE,                   // appearType -2 (Regen)
 		0x00,                   // team 0
 		0x00, 0x00, 0x00, 0x00, // effectItemId 0
 		// phase omitted (<87)
@@ -90,7 +91,7 @@ func TestMonsterControlBytesV61(t *testing.T) {
 		0x05,       // moveAction 5
 		0x00, 0x00, // foothold 0
 		0x2C, 0x01, // homeFoothold 300
-		0xFE,       // appearType -2 (Regen)
+		0xFE,                   // appearType -2 (Regen)
 		0x00,                   // team 0
 		0x00, 0x00, 0x00, 0x00, // effectItemId 0
 	}

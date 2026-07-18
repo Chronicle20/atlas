@@ -7,6 +7,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	inventory2 "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
@@ -14,7 +16,6 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
-	"github.com/sirupsen/logrus"
 )
 
 // ConditionType represents the type of condition to validate

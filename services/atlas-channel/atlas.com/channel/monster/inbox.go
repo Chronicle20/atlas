@@ -3,8 +3,9 @@ package monster
 import (
 	"sync"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // Decision is the predicted next skill atlas-monsters has chosen for a

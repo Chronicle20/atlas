@@ -23,21 +23,40 @@ func TestGetTeardownManager(t *testing.T) {
 }
 
 func TestTeardownManager_TeardownFunc(t *testing.T) {
-	manager := GetTeardownManager()
+	// Use a local Manager, not GetTeardownManager()'s shared singleton:
+	// registering a teardown on the singleton parks a goroutine on its
+	// doneChan, which another test (TestBootstrapLifecycleSIGTERMFlipsReadiness)
+	// later closes — racing on this frame's `called`. A local Manager keeps
+	// the teardown isolated to this test.
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	manager := &Manager{
+		termChan:  make(chan os.Signal, 1),
+		doneChan:  make(chan struct{}),
+		waitGroup: &sync.WaitGroup{},
+		context:   ctx,
+		cancel:    cancel,
+	}
 
 	called := false
 	teardownFunc := func() {
 		called = true
 	}
 
-	// Test that TeardownFunc doesn't panic
+	// Test that TeardownFunc doesn't panic and defers execution.
 	manager.TeardownFunc(teardownFunc)
 
-	// We can't directly test the teardown execution without calling Wait()
-	// But we can test that the function was registered without error
+	// The function must not run until teardown (doneChan close).
 	if called {
 		t.Error("Teardown function was called immediately, expected to be deferred")
 	}
+
+	// Drain the parked teardown goroutine so it does not outlive the test.
+	// The close happens-before the goroutine's write, which happens-before
+	// Wait() returns — so this is race-free.
+	close(manager.doneChan)
+	manager.waitGroup.Wait()
 }
 
 func TestTeardownManager_Wait(t *testing.T) {

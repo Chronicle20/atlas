@@ -1,12 +1,11 @@
 package model
 
 import (
+	"context"
 	"errors"
 	"sync/atomic"
 	"testing"
 	"time"
-
-	"context"
 )
 
 func TestGroup_TwoSuccessfulProviders(t *testing.T) {

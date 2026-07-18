@@ -1,14 +1,14 @@
 package npc
 
 import (
+	"atlas-npc-conversations/conversation/recipe"
 	"testing"
 
-	"atlas-npc-conversations/conversation/recipe"
-
-	"github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 )
 
 // DeleteAllForTenant clears recipe rows then conversation rows (class A).

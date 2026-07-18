@@ -11,7 +11,6 @@ func TestModelBuilder_Build_Success(t *testing.T) {
 		SetType(4).
 		SetAction(0).
 		Build()
-
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}

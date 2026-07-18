@@ -2,6 +2,7 @@ package baseline
 
 import (
 	"archive/tar"
+	"atlas-data/canonical"
 	"bytes"
 	"context"
 	"crypto/sha256"
@@ -12,7 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"atlas-data/canonical"
 	minio "atlas-data/storage/minio"
 
 	"github.com/jackc/pgx/v5/stdlib"

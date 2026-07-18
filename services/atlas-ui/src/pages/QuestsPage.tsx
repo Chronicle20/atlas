@@ -39,18 +39,22 @@ export function QuestsPage() {
   const { activeTenant } = useTenant();
   const questsQuery = useQuests(activeTenant);
   const categoriesQuery = useQuestCategories(activeTenant);
-  const { isRefreshing, onRefresh } = useGridRefresh([questsQuery, categoriesQuery]);
+  const { isRefreshing, onRefresh } = useGridRefresh([
+    questsQuery,
+    categoriesQuery,
+  ]);
 
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
   const quests = questsQuery.data ?? [];
   const categories = categoriesQuery.data ?? [];
   const loading = questsQuery.isLoading || categoriesQuery.isLoading;
-  const error = questsQuery.error?.message ?? categoriesQuery.error?.message ?? null;
+  const error =
+    questsQuery.error?.message ?? categoriesQuery.error?.message ?? null;
 
   const filteredQuests = useMemo(() => {
     if (selectedCategory === "all") return quests;
-    return quests.filter(q => q.attributes.parent === selectedCategory);
+    return quests.filter((q) => q.attributes.parent === selectedCategory);
   }, [quests, selectedCategory]);
 
   const columns = useMemo(() => getColumns(), []);
@@ -99,9 +103,10 @@ export function QuestsPage() {
           initialVisibilityState={hiddenColumns}
           emptyState={{
             title: "No quests found",
-            description: selectedCategory !== "all"
-              ? `No quests found in the "${selectedCategory}" category.`
-              : "There are no quest definitions to display.",
+            description:
+              selectedCategory !== "all"
+                ? `No quests found in the "${selectedCategory}" category.`
+                : "There are no quest definitions to display.",
           }}
         />
       </div>

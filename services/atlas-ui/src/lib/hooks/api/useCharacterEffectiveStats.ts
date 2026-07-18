@@ -11,8 +11,7 @@ export const characterEffectiveStatsKeys = {
     tenantId: string | undefined,
     worldId: number,
     characterId: string,
-  ) =>
-    ["character-effective-stats", tenantId, worldId, characterId] as const,
+  ) => ["character-effective-stats", tenantId, worldId, characterId] as const,
 };
 
 /**
@@ -27,7 +26,11 @@ export function useCharacterEffectiveStats(
   characterId: string,
 ): UseQueryResult<EffectiveStats, Error> {
   return useQuery({
-    queryKey: characterEffectiveStatsKeys.detail(tenant?.id, worldId, characterId),
+    queryKey: characterEffectiveStatsKeys.detail(
+      tenant?.id,
+      worldId,
+      characterId,
+    ),
     queryFn: () =>
       characterEffectiveStatsService.getByCharacter(worldId, characterId),
     enabled: !!tenant?.id && !!characterId,

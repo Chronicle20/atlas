@@ -31,8 +31,7 @@ type MovedStatusEventBody struct {
 }
 
 // DeletedStatusEventBody is empty for deleted assets
-type DeletedStatusEventBody struct {
-}
+type DeletedStatusEventBody struct{}
 
 // IsEquipmentSlot returns true if the slot is an equipment slot (negative)
 func IsEquipmentSlot(slot int16) bool {
@@ -55,4 +54,3 @@ func IsEquipAction(oldSlot, newSlot int16) bool {
 func IsUnequipAction(oldSlot, newSlot int16) bool {
 	return IsEquipmentSlot(oldSlot) && IsInventorySlot(newSlot)
 }
-

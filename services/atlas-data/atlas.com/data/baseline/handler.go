@@ -1,18 +1,19 @@
 package baseline
 
 import (
+	"atlas-data/rest"
 	"errors"
 	"net/http"
 
-	"atlas-data/rest"
 	minio "atlas-data/storage/minio"
 
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 )
 
 // InitResource installs POST /data/baseline/publish, POST /data/baseline/restore,
@@ -118,6 +119,10 @@ func restoreInner(db *gorm.DB, mc *minio.Client, _ logrus.FieldLogger) func(d *r
 			if err := (Restorer{DB: db, MC: mc, L: d.Logger()}).Restore(req.Context(), input.Region, input.MajorVersion, input.MinorVersion, input.TenantID); err != nil {
 				if errors.Is(err, ErrSchemaMismatch) || errors.Is(err, ErrShaMismatch) {
 					http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+					return
+				}
+				if errors.Is(err, ErrRestoreInProgress) {
+					http.Error(w, err.Error(), http.StatusConflict)
 					return
 				}
 				server.WriteErrorResponse(d.Logger())(w)(err)

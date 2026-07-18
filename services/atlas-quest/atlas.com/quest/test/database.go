@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"testing"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 )
 
 // SetupTestDB creates an in-memory SQLite database for testing.

@@ -5,9 +5,10 @@ import (
 	"testing"
 	"time"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
-	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 // Per-mode body arms of CITC::OnNormalItemResult (MTS_OPERATION), task-096
@@ -163,21 +164,21 @@ func mtsTestItem() MtsItem {
 	copy(date[:], []byte{1, 2, 3, 4, 5, 6, 7, 8})
 	return NewMtsItem(
 		asset,
-		0x11111111, // nITCSN
-		0x22222222, // nPrice
-		0x33333333, // nContractFee
-		"txid",     // sContractFeeTxId
-		"rbid",     // sRollbackUsageID
-		date,       // ftITCDateExpired
-		"user",     // sUserID
-		"game",     // sGameID
-		"hello",    // sComment
-		0x44444444, // nBidCount
-		0x55555555, // nBidRange
-		0x66666666, // nBidPrice
-		0x77777777, // nMinPrice
-		0x10101010, // nMaxPrice
-		0x20202020, // nUnitPrice
+		0x11111111,                       // nITCSN
+		0x22222222,                       // nPrice
+		0x33333333,                       // nContractFee
+		"txid",                           // sContractFeeTxId
+		"rbid",                           // sRollbackUsageID
+		date,                             // ftITCDateExpired
+		"user",                           // sUserID
+		"game",                           // sGameID
+		"hello",                          // sComment
+		0x44444444,                       // nBidCount
+		0x55555555,                       // nBidRange
+		0x66666666,                       // nBidPrice
+		0x77777777,                       // nMinPrice
+		0x10101010,                       // nMaxPrice
+		0x20202020,                       // nUnitPrice
 		MtsProcessStatusHistoryPurchased, // nProcessStatus (semantic key -> config-resolved at Encode)
 	)
 }

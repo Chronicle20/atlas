@@ -1,9 +1,10 @@
 package configuration
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"encoding/json"
 	"errors"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"

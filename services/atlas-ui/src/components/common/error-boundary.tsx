@@ -52,7 +52,8 @@ function ErrorFallback({ error, reset }: ErrorFallbackProps) {
             <AlertTriangle />
             <AlertTitle>Application Error</AlertTitle>
             <AlertDescription>
-              {error.message || "An unexpected error occurred while loading this page."}
+              {error.message ||
+                "An unexpected error occurred while loading this page."}
             </AlertDescription>
           </Alert>
 
@@ -71,15 +72,19 @@ function ErrorFallback({ error, reset }: ErrorFallbackProps) {
                   <div className="font-medium mb-2">Error Details:</div>
                   <div className="font-mono text-xs break-all">
                     <div className="mb-2">
-                      <span className="text-muted-foreground">Name:</span> {error.name}
+                      <span className="text-muted-foreground">Name:</span>{" "}
+                      {error.name}
                     </div>
                     <div className="mb-2">
-                      <span className="text-muted-foreground">Message:</span> {error.message}
+                      <span className="text-muted-foreground">Message:</span>{" "}
+                      {error.message}
                     </div>
                     {error.stack && (
                       <div className="mb-2">
                         <span className="text-muted-foreground">Stack:</span>
-                        <pre className="mt-1 whitespace-pre-wrap text-xs">{error.stack}</pre>
+                        <pre className="mt-1 whitespace-pre-wrap text-xs">
+                          {error.stack}
+                        </pre>
                       </div>
                     )}
                   </div>
@@ -96,8 +101,14 @@ function ErrorFallback({ error, reset }: ErrorFallbackProps) {
               size="sm"
               className="w-full"
             >
-              <Bug className={`h-4 w-4 mr-2 ${reportLoading ? "animate-spin" : ""}`} />
-              {reportLoading ? "Sending Report..." : reportSent ? "Report Sent" : "Report This Error"}
+              <Bug
+                className={`h-4 w-4 mr-2 ${reportLoading ? "animate-spin" : ""}`}
+              />
+              {reportLoading
+                ? "Sending Report..."
+                : reportSent
+                  ? "Report Sent"
+                  : "Report This Error"}
             </Button>
 
             <div className="flex gap-2">

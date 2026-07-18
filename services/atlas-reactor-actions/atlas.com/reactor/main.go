@@ -1,18 +1,19 @@
 package main
 
 import (
+	"atlas-reactor-actions/script"
 	"os"
 
-	"atlas-reactor-actions/script"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	seeder "github.com/Chronicle20/atlas/libs/atlas-seeder"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
+
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	"gorm.io/gorm"
 )
 
 const serviceName = "atlas-reactor-actions"

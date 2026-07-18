@@ -4,9 +4,10 @@ import (
 	"atlas-messages/character"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/sirupsen/logrus/hooks/test"
 	"golang.org/x/net/context"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
 // createTestCharacter creates a character model for testing.

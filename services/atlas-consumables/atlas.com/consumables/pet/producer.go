@@ -3,9 +3,10 @@ package pet
 import (
 	message "atlas-consumables/kafka/message/pet"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 )
 
 func awardFullnessCommandProvider(actorId uint32, petId uint64, amount byte) model.Provider[[]kafka.Message] {

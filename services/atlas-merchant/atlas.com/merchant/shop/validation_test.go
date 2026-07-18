@@ -1,9 +1,8 @@
 package shop
 
 import (
-	"testing"
-
 	"atlas-merchant/data/portal"
+	"testing"
 
 	"github.com/stretchr/testify/assert"
 )

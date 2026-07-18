@@ -7,8 +7,8 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-wz/manifest"
 	"github.com/Chronicle20/atlas/libs/atlas-wz/atlas/pngenc"
+	"github.com/Chronicle20/atlas/libs/atlas-wz/manifest"
 )
 
 // makeSprites builds a deterministic 200-sprite fixture of varied sizes.
@@ -25,8 +25,8 @@ func makeSprites(seed int64) []Input {
 			}
 		}
 		out[i] = Input{
-			Name: nameOf(i),
-			Img:  img,
+			Name:   nameOf(i),
+			Img:    img,
 			Origin: image.Point{X: w / 2, Y: h / 2},
 			Anchors: map[string]image.Point{
 				"neck": {X: w / 4, Y: h / 4},

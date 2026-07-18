@@ -4,8 +4,9 @@ import (
 	"sync"
 	"time"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // StatusEffectAppliedBody mirrors the wire payload of a monster

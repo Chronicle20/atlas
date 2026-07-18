@@ -4,8 +4,9 @@ import (
 	"atlas-data/document"
 	"atlas-data/equipment"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 type ProcessorMock struct {

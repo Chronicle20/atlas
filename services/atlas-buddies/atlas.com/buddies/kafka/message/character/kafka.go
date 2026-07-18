@@ -1,10 +1,11 @@
 package character
 
 import (
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
@@ -28,8 +29,7 @@ type CreatedStatusEventBody struct {
 	Name string `json:"name"`
 }
 
-type DeletedStatusEventBody struct {
-}
+type DeletedStatusEventBody struct{}
 
 type LoginStatusEventBody struct {
 	ChannelId channel.Id `json:"channelId"`

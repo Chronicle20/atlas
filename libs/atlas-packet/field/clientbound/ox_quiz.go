@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const OxQuizWriter = "OxQuiz"
@@ -22,9 +23,9 @@ func NewOxQuiz(enabled byte, category byte, number uint16) OxQuiz {
 	return OxQuiz{enabled: enabled, category: category, number: number}
 }
 
-func (m OxQuiz) Enabled() byte    { return m.enabled }
-func (m OxQuiz) Category() byte   { return m.category }
-func (m OxQuiz) Number() uint16   { return m.number }
+func (m OxQuiz) Enabled() byte  { return m.enabled }
+func (m OxQuiz) Category() byte { return m.category }
+func (m OxQuiz) Number() uint16 { return m.number }
 
 func (m OxQuiz) Operation() string { return OxQuizWriter }
 func (m OxQuiz) String() string {

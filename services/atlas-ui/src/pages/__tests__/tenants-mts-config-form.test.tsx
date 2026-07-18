@@ -23,7 +23,10 @@ const sampleConfig: MtsConfig = {
 // Mutable holders so a test can render the "no config" branch and inspect the
 // mutation call, without re-declaring the hook mock per test.
 const { configHolder, mutateMock } = vi.hoisted(() => ({
-  configHolder: { data: undefined as MtsConfig | null | undefined, isLoading: false },
+  configHolder: {
+    data: undefined as MtsConfig | null | undefined,
+    isLoading: false,
+  },
   mutateMock: vi.fn(),
 }));
 

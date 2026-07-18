@@ -39,7 +39,7 @@ export function useNpcQuests(
     queryKey: npcQuestsKeys.byNpc(activeTenant?.id, npcId),
     queryFn: async (): Promise<NpcQuestEntry[]> => {
       const quests = await npcsService.getNpcQuests(npcId);
-      return quests.map(quest => ({
+      return quests.map((quest) => ({
         quest,
         role: deriveNpcQuestRole(quest, npcId),
       }));

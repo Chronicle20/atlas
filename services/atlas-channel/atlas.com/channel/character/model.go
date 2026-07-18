@@ -184,7 +184,7 @@ func (m Model) HasSPTable() bool {
 
 func (m Model) Sp() []uint16 {
 	s := strings.Split(m.sp, ",")
-	var sps = make([]uint16, 0)
+	sps := make([]uint16, 0)
 	for _, x := range s {
 		sp, err := strconv.ParseUint(x, 10, 16)
 		if err == nil {

@@ -8,7 +8,8 @@ import (
 	"sync"
 
 	"github.com/sirupsen/logrus"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type NpcString struct {
@@ -31,8 +32,10 @@ func (m NpcString) Name() string {
 	return m.name
 }
 
-var nsReg *document.Registry[string, NpcString]
-var nsOnce sync.Once
+var (
+	nsReg  *document.Registry[string, NpcString]
+	nsOnce sync.Once
+)
 
 func GetNpcStringRegistry() *document.Registry[string, NpcString] {
 	nsOnce.Do(func() {

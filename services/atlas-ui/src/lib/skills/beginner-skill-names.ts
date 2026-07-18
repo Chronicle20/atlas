@@ -23,7 +23,10 @@ export const BEGINNER_SKILL_NAMES: Record<number, string> = {
  * the curated map; otherwise `Skill <id>`. Driven by a blank server name (FR-3.3),
  * so any future blank-name skill degrades cleanly — never special-cased to job 0.
  */
-export function resolveSkillName(id: number, serverName: string | undefined): string {
+export function resolveSkillName(
+  id: number,
+  serverName: string | undefined,
+): string {
   if (serverName != null && serverName.trim() !== "") {
     return serverName;
   }

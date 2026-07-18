@@ -3,8 +3,9 @@ package consumer
 import (
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/segmentio/kafka-go"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // NewConfig builds a consumer Config with the library defaults.

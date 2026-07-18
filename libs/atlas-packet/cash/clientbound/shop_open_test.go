@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"testing"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
+
 	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
-	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 // CASH_SHOP_OPEN / SET_CASH_SHOP (CStage::OnSetCashShop) — the scene-transition

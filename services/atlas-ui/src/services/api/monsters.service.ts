@@ -1,5 +1,9 @@
 import { api } from "@/lib/api/client";
-import { buildQueryString, type ServiceOptions, type QueryOptions } from "@/lib/api/query-params";
+import {
+  buildQueryString,
+  type ServiceOptions,
+  type QueryOptions,
+} from "@/lib/api/query-params";
 import { fetchAll, fetchPaged } from "@/services/api/pagination";
 import type { MonsterData, MonsterSpawnMapData } from "@/types/models/monster";
 
@@ -18,7 +22,11 @@ function sortById<T extends { id: string }>(rows: T[]): T[] {
  * `getAllMonsters` — consumers that need the whole collection.
  */
 async function fetchAllSorted(options?: QueryOptions): Promise<MonsterData[]> {
-  const monsters = await fetchAll<MonsterData>(`${BASE_PATH}${buildQueryString(options)}`, undefined, options);
+  const monsters = await fetchAll<MonsterData>(
+    `${BASE_PATH}${buildQueryString(options)}`,
+    undefined,
+    options,
+  );
   return sortById(monsters);
 }
 
@@ -40,7 +48,10 @@ export const monstersService = {
     return fetchAllSorted(options);
   },
 
-  async getMonsterById(id: string, options?: ServiceOptions): Promise<MonsterData> {
+  async getMonsterById(
+    id: string,
+    options?: ServiceOptions,
+  ): Promise<MonsterData> {
     return api.getOne<MonsterData>(`${BASE_PATH}/${id}`, options);
   },
 
@@ -49,7 +60,10 @@ export const monstersService = {
     return monster.attributes.name;
   },
 
-  async searchMonsters(query: string, options?: QueryOptions): Promise<MonsterData[]> {
+  async searchMonsters(
+    query: string,
+    options?: QueryOptions,
+  ): Promise<MonsterData[]> {
     return fetchSearchPage({ ...options, search: query });
   },
 

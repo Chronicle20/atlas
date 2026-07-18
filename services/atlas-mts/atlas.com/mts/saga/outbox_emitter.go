@@ -5,9 +5,10 @@ import (
 
 	msgsaga "atlas-mts/kafka/message/saga"
 
-	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 )
 
 // OutboxEmitter is a SagaEmitter that persists the saga command as a

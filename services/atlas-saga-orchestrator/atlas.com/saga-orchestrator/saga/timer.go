@@ -8,9 +8,10 @@ import (
 
 	sagaMsg "atlas-saga-orchestrator/kafka/message/saga"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // TimerRegistry tracks the per-saga timeout backstop timers introduced in

@@ -3,8 +3,9 @@ package mock
 import (
 	"atlas-messengers/invite"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 type ProcessorMock struct {

@@ -1,9 +1,10 @@
 package mapimage
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-wz/wz/property"
 	"fmt"
 	"strconv"
+
+	"github.com/Chronicle20/atlas/libs/atlas-wz/wz/property"
 )
 
 // WorldBounds is the world-space rect a map renders into.

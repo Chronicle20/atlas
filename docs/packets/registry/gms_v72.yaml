@@ -2900,3 +2900,11 @@
   ida:
     address: 9561179
   note: task-127 - legacy frame [str serial][short pos][int itemId] (pre-v83)
+- op: RPS_ACTION
+  direction: serverbound
+  opcode: 134
+  fname: CRPSGameDlg::OnBtStart
+  provenance: ida-discovered
+  ida:
+    address: 6928026
+  note: 'Dedicated RPS serverbound opcode 0x86 (134); 6 RPS send helpers sub-ops 0-5 (start=0, select=1+throw), no other class on 134. Mini-room base=0x79 separate. Clientbound OnPacket byte-identical to verified v83. Live IDA 2026-07-16; see ida-rps-legacy-reaudit.md.'

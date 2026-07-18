@@ -2,7 +2,10 @@ import { useState } from "react";
 import { useTenant } from "@/context/tenant-context";
 import { useTenantConfiguration } from "@/lib/hooks/api/useTenants";
 import { useMtsListings } from "@/lib/hooks/api/useMtsListings";
-import type { MtsListing } from "@/services/api/mts-listings.service";
+import type {
+  MtsListing,
+  MtsListingAttributes,
+} from "@/services/api/mts-listings.service";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,10 +26,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Store, Search, Loader2 } from "lucide-react";
+import { Store, Search, Loader2, Tag } from "lucide-react";
+import { SealIcon } from "@/components/seal-icon";
 import { Link } from "react-router-dom";
 import { ItemNameCell } from "@/components/item-name-cell";
 import { Pager } from "@/components/common/Pager";
+import { FLAG_LOCK } from "@/lib/utils/asset-flags";
+import type { Tenant } from "@/types/models/tenant";
 
 const LISTINGS_PAGE_SIZE = 16;
 const SALE_TYPE_ANY = "any";
@@ -58,7 +64,13 @@ export function MarketplacePage() {
     saleType: string;
     sellerName: string;
     itemId: number;
-  }>({ category: "", subCategory: "", saleType: "", sellerName: "", itemId: 0 });
+  }>({
+    category: "",
+    subCategory: "",
+    saleType: "",
+    sellerName: "",
+    itemId: 0,
+  });
 
   const listingsQuery = useMtsListings(
     activeTenant?.id ?? "",
@@ -106,7 +118,13 @@ export function MarketplacePage() {
     setSaleTypeInput(SALE_TYPE_ANY);
     setSellerNameInput("");
     setItemIdInput("");
-    setApplied({ category: "", subCategory: "", saleType: "", sellerName: "", itemId: 0 });
+    setApplied({
+      category: "",
+      subCategory: "",
+      saleType: "",
+      sellerName: "",
+      itemId: 0,
+    });
     setPage(1);
   };
 
@@ -231,13 +249,17 @@ export function MarketplacePage() {
         </CardHeader>
         <CardContent className="flex-1 min-h-0 flex flex-col">
           {!activeTenant ? (
-            <div className="text-center py-8 text-muted-foreground">Select a tenant to browse listings.</div>
+            <div className="text-center py-8 text-muted-foreground">
+              Select a tenant to browse listings.
+            </div>
           ) : listingsQuery.error ? (
             <div className="text-center py-8 text-destructive">
               {listingsQuery.error.message}
             </div>
           ) : loading ? (
-            <div className="text-center py-8 text-muted-foreground">Loading listings...</div>
+            <div className="text-center py-8 text-muted-foreground">
+              Loading listings...
+            </div>
           ) : listings.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No listings found matching your search criteria.
@@ -282,15 +304,52 @@ export function MarketplacePage() {
   );
 }
 
+/**
+ * Item cell for a Marketplace listing row: the item name/icon (linked to the
+ * item detail page) plus inline sealing-lock and item-tag-owner indicators,
+ * mirroring the inventory badges (InventoryCard/EquipmentCell) but sized for
+ * a table row. `flags`/`owner` come straight off the listing's `MtsListingAttributes`
+ * rather than the `Asset` shape the `isSealed`/`isTagged` helpers expect, so the
+ * checks are inlined here.
+ */
+export function ListingItemCell({
+  attributes,
+  tenant,
+}: {
+  attributes: MtsListingAttributes;
+  tenant: Tenant | null;
+}) {
+  const tagged = (attributes.owner ?? "").trim() !== "";
+  const sealed = (attributes.flags & FLAG_LOCK) !== 0;
+  return (
+    <div className="flex items-center gap-1.5">
+      <Link to={`/items/${attributes.templateId}`}>
+        <ItemNameCell itemId={String(attributes.templateId)} tenant={tenant} />
+      </Link>
+      {tagged && (
+        <span className="inline-flex items-center gap-0.5 text-xs text-muted-foreground">
+          <Tag
+            data-testid="tag-icon"
+            className="h-3 w-3 text-amber-500"
+            aria-label="Named item"
+          />
+          {attributes.owner}
+        </span>
+      )}
+      {sealed && (
+        <SealIcon tenant={tenant} className="h-3 w-3 text-amber-500" />
+      )}
+    </div>
+  );
+}
+
 function ListingRow({ listing }: { listing: MtsListing }) {
   const { activeTenant } = useTenant();
   const a = listing.attributes;
   return (
     <TableRow>
       <TableCell>
-        <Link to={`/items/${a.templateId}`}>
-          <ItemNameCell itemId={String(a.templateId)} tenant={activeTenant} />
-        </Link>
+        <ListingItemCell attributes={a} tenant={activeTenant} />
       </TableCell>
       <TableCell>{a.sellerName}</TableCell>
       <TableCell>
@@ -314,7 +373,9 @@ function ListingRow({ listing }: { listing: MtsListing }) {
         </span>
       </TableCell>
       <TableCell>
-        <span className="font-mono">{a.currentBid > 0 ? a.currentBid.toLocaleString() : "—"}</span>
+        <span className="font-mono">
+          {a.currentBid > 0 ? a.currentBid.toLocaleString() : "—"}
+        </span>
       </TableCell>
       <TableCell>{formatEndsAt(a.endsAt)}</TableCell>
     </TableRow>

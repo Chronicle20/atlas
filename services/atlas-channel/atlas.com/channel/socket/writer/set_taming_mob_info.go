@@ -3,9 +3,10 @@ package writer
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
-	"github.com/sirupsen/logrus"
 )
 
 func SetTamingMobInfoBody(characterId, level, exp, tiredness uint32, levelUp bool) packet.Encode {

@@ -14,7 +14,6 @@ func TestBuilderValidBuild(t *testing.T) {
 		SetPassword("hashedpassword").
 		SetGender(1).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Expected successful build, got error: %v", err)
 	}
@@ -52,7 +51,6 @@ func TestBuilderEmptyNameValidation(t *testing.T) {
 
 func TestBuilderNilTenantAllowed(t *testing.T) {
 	_, err := NewBuilder(uuid.Nil, "testuser").Build()
-
 	if err != nil {
 		t.Fatalf("Expected nil tenant to be allowed for REST input models, got error: %v", err)
 	}
@@ -70,7 +68,6 @@ func TestBuilderAllSetters(t *testing.T) {
 		SetGender(1).
 		SetTOS(true).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build failed: %v", err)
 	}
@@ -98,7 +95,6 @@ func TestBuilderAllSetters(t *testing.T) {
 
 func TestBuilderDefaults(t *testing.T) {
 	m, err := NewBuilder(uuid.New(), "testuser").Build()
-
 	if err != nil {
 		t.Fatalf("Build failed: %v", err)
 	}

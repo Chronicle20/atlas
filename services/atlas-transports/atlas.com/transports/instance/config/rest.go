@@ -8,15 +8,15 @@ import (
 )
 
 type InstanceRouteRestModel struct {
-	Id                    string `json:"-"`
-	Name                  string `json:"name"`
-	StartMapId            _map.Id `json:"startMapId"`
+	Id                    string    `json:"-"`
+	Name                  string    `json:"name"`
+	StartMapId            _map.Id   `json:"startMapId"`
 	TransitMapIds         []_map.Id `json:"transitMapIds"`
-	DestinationMapId      _map.Id `json:"destinationMapId"`
-	Capacity              uint32  `json:"capacity"`
-	BoardingWindowSeconds uint32  `json:"boardingWindowSeconds"`
-	TravelDurationSeconds uint32  `json:"travelDurationSeconds"`
-	TransitMessage        string  `json:"transitMessage"`
+	DestinationMapId      _map.Id   `json:"destinationMapId"`
+	Capacity              uint32    `json:"capacity"`
+	BoardingWindowSeconds uint32    `json:"boardingWindowSeconds"`
+	TravelDurationSeconds uint32    `json:"travelDurationSeconds"`
+	TransitMessage        string    `json:"transitMessage"`
 }
 
 func (r InstanceRouteRestModel) GetID() string {

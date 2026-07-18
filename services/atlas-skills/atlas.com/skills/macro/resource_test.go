@@ -1,18 +1,15 @@
 package macro_test
 
 import (
+	"atlas-skills/kafka/message"
+	"atlas-skills/macro"
+	"atlas-skills/test"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"atlas-skills/kafka/message"
-	"atlas-skills/macro"
-	"atlas-skills/test"
-
-	skillconst "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -21,6 +18,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
+
+	skillconst "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 type testServerInformation struct{}

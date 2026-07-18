@@ -27,9 +27,7 @@
       "stance": "stand1",
       "frame": 0,
       "resize": 2,
-      "items": [
-        1002357
-      ],
+      "items": [1002357],
       "gender": 0,
       "canonical": "tenant-a|GMS|83.1|0|30030|20000|stand1|0|2|1002357|0",
       "expectedHash": "436d7010b54d8190"
@@ -45,11 +43,7 @@
       "stance": "stand2",
       "frame": 0,
       "resize": 2,
-      "items": [
-        1002357,
-        1402024,
-        1442024
-      ],
+      "items": [1002357, 1402024, 1442024],
       "gender": 0,
       "canonical": "tenant-a|GMS|83.1|2|30030|20000|stand2|0|2|1002357,1402024,1442024|0",
       "expectedHash": "e4f1f40cc1bf7eea"
@@ -65,9 +59,7 @@
       "stance": "walk1",
       "frame": 1,
       "resize": 4,
-      "items": [
-        1002357
-      ],
+      "items": [1002357],
       "gender": 0,
       "canonical": "tenant-b|GMS|83.1|0|30030|20000|walk1|1|4|1002357|0",
       "expectedHash": "eff62bd21040885d"

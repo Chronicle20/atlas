@@ -7,6 +7,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -16,8 +19,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	goredis "github.com/redis/go-redis/v9"
 )
 
 // storedDoor is the JSON-serializable representation stored in Redis.
@@ -60,8 +61,10 @@ type Registry struct {
 	townIdx  *atlasredis.KeyedSet[string]
 }
 
-var registry *Registry
-var once sync.Once
+var (
+	registry *Registry
+	once     sync.Once
+)
 
 func newRegistry(rc *goredis.Client) *Registry {
 	id := func(s string) string { return s }

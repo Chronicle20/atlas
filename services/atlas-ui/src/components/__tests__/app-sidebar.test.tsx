@@ -1,17 +1,18 @@
-import { describe, it, expect, vi, beforeAll } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
-import { AppSidebar, sidebarItems } from '@/components/app-sidebar';
-import { SidebarProvider } from '@/components/ui/sidebar';
-import { isDeploymentRoute } from '@/lib/deployment-routes';
+import { describe, it, expect, vi, beforeAll } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import { AppSidebar } from "@/components/app-sidebar";
+import { sidebarItems } from "@/components/app-sidebar-items";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { isDeploymentRoute } from "@/lib/deployment-routes";
 
-vi.mock('@/components/app-tenant-switcher', () => ({
+vi.mock("@/components/app-tenant-switcher", () => ({
   TenantSwitcher: () => <div data-testid="tenant-switcher-stub" />,
 }));
 
 beforeAll(() => {
   // SidebarProvider's mobile detection needs matchMedia, absent in jsdom.
-  Object.defineProperty(window, 'matchMedia', {
+  Object.defineProperty(window, "matchMedia", {
     writable: true,
     value: vi.fn().mockImplementation((query: string) => ({
       matches: false,
@@ -26,7 +27,7 @@ beforeAll(() => {
   });
 });
 
-function renderSidebar(initialPath = '/') {
+function renderSidebar(initialPath = "/") {
   return render(
     <MemoryRouter initialEntries={[initialPath]}>
       <SidebarProvider>
@@ -36,36 +37,55 @@ function renderSidebar(initialPath = '/') {
   );
 }
 
-describe('AppSidebar', () => {
-  it('declares groups in blast-radius order with the Deployment children ordered', () => {
-    expect(sidebarItems.map((g) => g.title)).toEqual(['Operations', 'Security', 'Setup', 'Deployment']);
+describe("AppSidebar", () => {
+  it("declares groups in blast-radius order with the Deployment children ordered", () => {
+    expect(sidebarItems.map((g) => g.title)).toEqual([
+      "Operations",
+      "Security",
+      "Setup",
+      "Deployment",
+    ]);
     const deployment = sidebarItems[3]!;
-    expect(deployment.children.map((c) => c.title)).toEqual(['Templates', 'Tenants', 'Services', 'Baselines']);
+    expect(deployment.children.map((c) => c.title)).toEqual([
+      "Templates",
+      "Tenants",
+      "Services",
+      "Baselines",
+    ]);
     expect(deployment.separated).toBe(true);
-    expect(deployment.caption).toBe('Applies to all tenants');
+    expect(deployment.caption).toBe("Applies to all tenants");
     const setup = sidebarItems[2]!;
-    expect(setup.children).toEqual([{ title: 'Setup', url: '/setup' }]);
+    expect(setup.children).toEqual([{ title: "Setup", url: "/setup" }]);
   });
 
-  it('keeps the sidebar and the route predicate in sync', () => {
-    const deployment = sidebarItems.find((g) => g.title === 'Deployment')!;
+  it("keeps the sidebar and the route predicate in sync", () => {
+    const deployment = sidebarItems.find((g) => g.title === "Deployment")!;
     for (const child of deployment.children) {
-      expect(isDeploymentRoute(child.url), `${child.url} must be a Deployment route`).toBe(true);
+      expect(
+        isDeploymentRoute(child.url),
+        `${child.url} must be a Deployment route`,
+      ).toBe(true);
     }
-    for (const group of sidebarItems.filter((g) => g.title !== 'Deployment')) {
+    for (const group of sidebarItems.filter((g) => g.title !== "Deployment")) {
       for (const child of group.children) {
-        expect(isDeploymentRoute(child.url), `${child.url} must NOT be a Deployment route`).toBe(false);
+        expect(
+          isDeploymentRoute(child.url),
+          `${child.url} must NOT be a Deployment route`,
+        ).toBe(false);
       }
     }
   });
 
-  it('renders the Deployment caption', () => {
+  it("renders the Deployment caption", () => {
     renderSidebar();
-    expect(screen.getByText('Applies to all tenants')).toBeInTheDocument();
+    expect(screen.getByText("Applies to all tenants")).toBeInTheDocument();
   });
 
-  it('renders the Baselines link', () => {
-    renderSidebar('/baselines');
-    expect(screen.getByRole('link', { name: 'Baselines' })).toHaveAttribute('href', '/baselines');
+  it("renders the Baselines link", () => {
+    renderSidebar("/baselines");
+    expect(screen.getByRole("link", { name: "Baselines" })).toHaveAttribute(
+      "href",
+      "/baselines",
+    );
   });
 });

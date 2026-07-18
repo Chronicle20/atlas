@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const MobEscortFullPathWriter = "MobEscortFullPath"
@@ -68,13 +69,13 @@ func NewMobEscortFullPath(mode int32, waypoints []MobEscortWaypoint, tail int32,
 	return MobEscortFullPath{mode: mode, waypoints: waypoints, tail: tail, hasArrive: hasArrive, arriveDelay: arriveDelay, hasReset: hasReset}
 }
 
-func (m MobEscortFullPath) Mode() int32                  { return m.mode }
+func (m MobEscortFullPath) Mode() int32                    { return m.mode }
 func (m MobEscortFullPath) Waypoints() []MobEscortWaypoint { return m.waypoints }
-func (m MobEscortFullPath) Tail() int32                  { return m.tail }
-func (m MobEscortFullPath) HasArrive() bool              { return m.hasArrive }
-func (m MobEscortFullPath) ArriveDelay() int32           { return m.arriveDelay }
-func (m MobEscortFullPath) HasReset() bool               { return m.hasReset }
-func (m MobEscortFullPath) Operation() string            { return MobEscortFullPathWriter }
+func (m MobEscortFullPath) Tail() int32                    { return m.tail }
+func (m MobEscortFullPath) HasArrive() bool                { return m.hasArrive }
+func (m MobEscortFullPath) ArriveDelay() int32             { return m.arriveDelay }
+func (m MobEscortFullPath) HasReset() bool                 { return m.hasReset }
+func (m MobEscortFullPath) Operation() string              { return MobEscortFullPathWriter }
 func (m MobEscortFullPath) String() string {
 	return fmt.Sprintf("mode [%d], waypoints [%d], tail [%d], hasArrive [%t], arriveDelay [%d], hasReset [%t]",
 		m.mode, len(m.waypoints), m.tail, m.hasArrive, m.arriveDelay, m.hasReset)

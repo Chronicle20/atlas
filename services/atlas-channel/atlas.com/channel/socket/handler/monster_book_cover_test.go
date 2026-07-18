@@ -4,9 +4,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/sirupsen/logrus"
+
 	mbsb "github.com/Chronicle20/atlas/libs/atlas-packet/character/serverbound/monsterbook"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 // TestMonsterBookCoverDecode pins the wire format that

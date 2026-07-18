@@ -37,7 +37,11 @@ function configPath(tenantId: string): string {
 }
 
 interface UpdateMtsConfigInput {
-  data: { id: string; type: typeof MTS_CONFIG_RESOURCE_TYPE; attributes: MtsConfigAttributes };
+  data: {
+    id: string;
+    type: typeof MTS_CONFIG_RESOURCE_TYPE;
+    attributes: MtsConfigAttributes;
+  };
 }
 
 export const mtsConfigService = {
@@ -45,7 +49,10 @@ export const mtsConfigService = {
    * Fetch the single per-tenant MTS configuration. The backend returns a single
    * JSON:API object (not a list); 404 when no config exists for the tenant.
    */
-  async getConfig(tenantId: string, options?: ServiceOptions): Promise<MtsConfig> {
+  async getConfig(
+    tenantId: string,
+    options?: ServiceOptions,
+  ): Promise<MtsConfig> {
     return api.getOne<MtsConfig>(configPath(tenantId), options);
   },
 
@@ -59,11 +66,18 @@ export const mtsConfigService = {
     updatedAttributes: Partial<MtsConfigAttributes>,
     options?: ServiceOptions,
   ): Promise<MtsConfig> {
-    const attributes: MtsConfigAttributes = { ...config.attributes, ...updatedAttributes };
+    const attributes: MtsConfigAttributes = {
+      ...config.attributes,
+      ...updatedAttributes,
+    };
     const input: UpdateMtsConfigInput = {
       data: { id: config.id, type: MTS_CONFIG_RESOURCE_TYPE, attributes },
     };
-    await api.patch<void>(`${configPath(tenantId)}/${config.id}`, input, options);
+    await api.patch<void>(
+      `${configPath(tenantId)}/${config.id}`,
+      input,
+      options,
+    );
     return { ...config, attributes };
   },
 };

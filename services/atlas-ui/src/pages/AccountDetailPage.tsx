@@ -17,7 +17,9 @@ function getLoginStateName(state: number): string {
   return "In Transition";
 }
 
-function getLoginStateBadgeVariant(state: number): "secondary" | "default" | "outline" {
+function getLoginStateBadgeVariant(
+  state: number,
+): "secondary" | "default" | "outline" {
   if (state === 0) return "secondary";
   if (state === 1) return "default";
   return "outline";
@@ -34,10 +36,15 @@ export function AccountDetailPage() {
   const wallet = walletQuery.data ?? null;
   const loading = accountQuery.isLoading || walletQuery.isLoading;
   const error = accountQuery.error?.message ?? null;
-  const walletError = walletQuery.error ? "Wallet not found for this account" : null;
+  const walletError = walletQuery.error
+    ? "Wallet not found for this account"
+    : null;
 
   if (loading) return <AccountDetailSkeleton />;
-  if (error || !account) return <ErrorDisplay error={error || "Account not found"} className="p-4" />;
+  if (error || !account)
+    return (
+      <ErrorDisplay error={error || "Account not found"} className="p-4" />
+    );
 
   const lastLogin = account.attributes.lastLogin
     ? new Date(account.attributes.lastLogin).toLocaleString()
@@ -55,17 +62,23 @@ export function AccountDetailPage() {
           <CardContent className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-muted-foreground">Gender</p>
-              <p className="font-medium">{account.attributes.gender === 0 ? "Male" : "Female"}</p>
+              <p className="font-medium">
+                {account.attributes.gender === 0 ? "Male" : "Female"}
+              </p>
             </div>
             <div>
               <p className="text-muted-foreground">State</p>
-              <Badge variant={getLoginStateBadgeVariant(account.attributes.loggedIn)}>
+              <Badge
+                variant={getLoginStateBadgeVariant(account.attributes.loggedIn)}
+              >
                 {getLoginStateName(account.attributes.loggedIn)}
               </Badge>
             </div>
             <div>
               <p className="text-muted-foreground">Terms of Service</p>
-              <p className="font-medium">{account.attributes.tos ? "Accepted" : "Not Accepted"}</p>
+              <p className="font-medium">
+                {account.attributes.tos ? "Accepted" : "Not Accepted"}
+              </p>
             </div>
             <div>
               <p className="text-muted-foreground">Last Login</p>
@@ -83,7 +96,11 @@ export function AccountDetailPage() {
         </Card>
 
         {wallet && activeTenant ? (
-          <WalletPanel wallet={wallet} accountId={String(id)} tenant={activeTenant} />
+          <WalletPanel
+            wallet={wallet}
+            accountId={String(id)}
+            tenant={activeTenant}
+          />
         ) : (
           <Card className="flex-1">
             <CardHeader>
@@ -98,7 +115,9 @@ export function AccountDetailPage() {
         )}
       </div>
 
-      {activeTenant && <CharactersPanel tenant={activeTenant} account={account} />}
+      {activeTenant && (
+        <CharactersPanel tenant={activeTenant} account={account} />
+      )}
 
       <Toaster richColors />
     </div>

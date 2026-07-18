@@ -9,10 +9,11 @@ import (
 	"sync"
 	"time"
 
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-	"github.com/Chronicle20/atlas/libs/atlas-socket"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+	socket "github.com/Chronicle20/atlas/libs/atlas-socket"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const idleThreshold = 30 * time.Second
@@ -51,7 +52,6 @@ func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 					socket.SetReadWriter(rw),
 					socket.SetIdleNotifier(session.SendPing(l, ctx, wp), idleThreshold),
 				)
-
 				if err != nil {
 					if errors.Is(err, net.ErrClosed) {
 						return

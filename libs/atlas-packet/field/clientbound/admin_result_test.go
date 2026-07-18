@@ -27,20 +27,20 @@ func TestAdminResultGolden(t *testing.T) {
 	actual := test.Encode(t, ctx, input.Encode, nil)
 	// v83 post-mode order: s(0),b(0),b(1),b(2),i,b(3),b(4),s(1),s(2),s(3),b(5),b(6),b(7)
 	want := []byte{
-		0x0B,                           // mode             (Decode1 @0x5352e9)
-		0x01, 0x00, 'a',                // s[0]="a"         (DecodeStr)
-		0x11,                           // b[0]             (Decode1)
-		0x22,                           // b[1]             (Decode1)
-		0x33,                           // b[2]             (Decode1)
-		0x04, 0x03, 0x02, 0x01,         // mapId=0x01020304 (Decode4)
-		0x44,                           // b[3]             (Decode1)
-		0x55,                           // b[4]             (Decode1)
-		0x02, 0x00, 'b', 'b',           // s[1]="bb"        (DecodeStr)
-		0x03, 0x00, 'c', 'c', 'c',      // s[2]="ccc"       (DecodeStr)
+		0x0B,            // mode             (Decode1 @0x5352e9)
+		0x01, 0x00, 'a', // s[0]="a"         (DecodeStr)
+		0x11,                   // b[0]             (Decode1)
+		0x22,                   // b[1]             (Decode1)
+		0x33,                   // b[2]             (Decode1)
+		0x04, 0x03, 0x02, 0x01, // mapId=0x01020304 (Decode4)
+		0x44,                 // b[3]             (Decode1)
+		0x55,                 // b[4]             (Decode1)
+		0x02, 0x00, 'b', 'b', // s[1]="bb"        (DecodeStr)
+		0x03, 0x00, 'c', 'c', 'c', // s[2]="ccc"       (DecodeStr)
 		0x04, 0x00, 'd', 'd', 'd', 'd', // s[3]="dddd"      (DecodeStr)
-		0x66,                           // b[5]             (Decode1)
-		0x77,                           // b[6]             (Decode1)
-		0x88,                           // b[7]             (Decode1)
+		0x66, // b[5]             (Decode1)
+		0x77, // b[6]             (Decode1)
+		0x88, // b[7]             (Decode1)
 	}
 	if !bytes.Equal(actual, want) {
 		t.Fatalf("golden mismatch:\n got %v\nwant %v", actual, want)
@@ -67,10 +67,10 @@ func TestAdminResultByteOutputV48(t *testing.T) {
 		0x22,                   // b[1]
 		0x33,                   // b[2]
 		0x04, 0x03, 0x02, 0x01, // mapId=0x01020304
-		0x44,                      // b[3]
-		0x55,                      // b[4]
-		0x01, 0x00, 'a',           // s[0]="a"
-		0x02, 0x00, 'b', 'b',      // s[1]="bb"
+		0x44,            // b[3]
+		0x55,            // b[4]
+		0x01, 0x00, 'a', // s[0]="a"
+		0x02, 0x00, 'b', 'b', // s[1]="bb"
 		0x03, 0x00, 'c', 'c', 'c', // s[2]="ccc"
 		0x66, // b[5]
 		0x77, // b[6]
@@ -97,10 +97,10 @@ func TestAdminResultByteOutputV79(t *testing.T) {
 		0x22,                   // b[1]             (Decode1 @0x520b5f)
 		0x33,                   // b[2]             (Decode1 @0x520b71)
 		0x04, 0x03, 0x02, 0x01, // mapId=0x01020304 (Decode4 @0x520cd9)
-		0x44,                      // b[3]          (Decode1 @0x520bb5)
-		0x55,                      // b[4]          (Decode1 @0x5207c4)
-		0x01, 0x00, 'a',           // s[0]="a"      (DecodeStr @0x5207d5)
-		0x02, 0x00, 'b', 'b',      // s[1]="bb"     (DecodeStr @0x520827)
+		0x44,            // b[3]          (Decode1 @0x520bb5)
+		0x55,            // b[4]          (Decode1 @0x5207c4)
+		0x01, 0x00, 'a', // s[0]="a"      (DecodeStr @0x5207d5)
+		0x02, 0x00, 'b', 'b', // s[1]="bb"     (DecodeStr @0x520827)
 		0x03, 0x00, 'c', 'c', 'c', // s[2]="ccc"    (DecodeStr @0x520836)
 		0x66, // b[5]                              (Decode1 @0x52096d)
 		0x77, // b[6]                              (Decode1 @0x520a39)

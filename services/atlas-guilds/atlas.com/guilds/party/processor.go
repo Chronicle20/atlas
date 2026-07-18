@@ -3,9 +3,10 @@ package party
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {
@@ -61,7 +62,7 @@ func (p *ProcessorImpl) ByMemberIdProvider(memberId uint32) model.Provider[[]Mod
 		if err != nil {
 			return []Model{}, err
 		}
-		var results = make([]Model, 0)
+		results := make([]Model, 0)
 		for _, pa := range ps {
 			ms, err := requests.SliceProvider[MemberRestModel, MemberModel](p.l, p.ctx)(requestMembers(pa.Id()), ExtractMember, model.Filters[MemberModel]())()
 			if err != nil {

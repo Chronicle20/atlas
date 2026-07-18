@@ -4,8 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 )
 
 // packet-audit:verify packet=character/serverbound/monsterbook/CharacterCover version=gms_v83 ida=0x95fb3e

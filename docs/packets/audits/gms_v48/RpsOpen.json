@@ -1,0 +1,30 @@
+{
+  "WriterName": "RpsOpen",
+  "IDAName": "CRPSGameDlg::OnPacket#OPEN",
+  "Address": "0x5adc8f",
+  "Variant": "GMS/v48",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/rps/clientbound/operation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode byte (real dispatcher sub_5ADB94 @0x5adba6, live IDA re-audit port 13337 2026-07-16; the v48 IDB mislabels this function -- ground truth per docs/tasks/task-132-rps-npc-game/ida-rps-legacy-reaudit.md; case 8 = OPEN)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "ante -- participation fee (CInPacket::Decode4 @0x5adc8f; StringPool(3313) notice that follows is a static resource, not a packet field)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

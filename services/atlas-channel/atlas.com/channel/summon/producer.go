@@ -3,10 +3,11 @@ package summon
 import (
 	summon2 "atlas-channel/kafka/message/summon"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 )
 
 func SpawnCommandProvider(f field.Model, ownerCharacterId uint32, skillId uint32, level byte, x int16, y int16, auraLevel byte, hexLevel byte) model.Provider[[]kafka.Message] {

@@ -1,6 +1,7 @@
 package monster_test
 
 import (
+	"atlas-maps/data/map/monster"
 	"context"
 	"fmt"
 	"net/http"
@@ -9,11 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"atlas-maps/data/map/monster"
-
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // spawnPointDoc renders a JSON:API document for monster spawn points

@@ -3,10 +3,11 @@ package rest
 import (
 	"net/http"
 
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 type HandlerDependency = server.HandlerDependency
@@ -43,6 +44,10 @@ func ParseVesselId(l logrus.FieldLogger, next func(string) http.HandlerFunc) htt
 
 func ParseInstanceRouteId(l logrus.FieldLogger, next func(string) http.HandlerFunc) http.HandlerFunc {
 	return server.ParseStringId(l, "instanceRouteId", next)
+}
+
+func ParseRpsRewardId(l logrus.FieldLogger, next func(string) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseStringId(l, "rpsRewardId", next)
 }
 
 func ParseMtsConfigId(l logrus.FieldLogger, next func(string) http.HandlerFunc) http.HandlerFunc {

@@ -3,11 +3,12 @@ package outbox
 import (
 	"context"
 
-	kafkaproducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	kafkaproducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 )
 
 // EnqueueBuffer persists a message.Buffer-shaped payload (env-var token →

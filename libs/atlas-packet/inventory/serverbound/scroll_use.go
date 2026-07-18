@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const CharacterItemUseScrollHandle = "CharacterItemUseScrollHandle"
@@ -21,10 +22,10 @@ type ScrollUse struct {
 	legendarySpirit bool
 }
 
-func (m ScrollUse) UpdateTime() uint32   { return m.updateTime }
-func (m ScrollUse) ScrollSlot() int16    { return m.scrollSlot }
-func (m ScrollUse) EquipSlot() int16     { return m.equipSlot }
-func (m ScrollUse) WhiteScroll() bool    { return (m.bWhiteScroll & 2) == 2 }
+func (m ScrollUse) UpdateTime() uint32    { return m.updateTime }
+func (m ScrollUse) ScrollSlot() int16     { return m.scrollSlot }
+func (m ScrollUse) EquipSlot() int16      { return m.equipSlot }
+func (m ScrollUse) WhiteScroll() bool     { return (m.bWhiteScroll & 2) == 2 }
 func (m ScrollUse) LegendarySpirit() bool { return m.legendarySpirit }
 
 func (m ScrollUse) Operation() string {

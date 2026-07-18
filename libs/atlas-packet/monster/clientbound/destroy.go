@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const MonsterDestroyWriter = "DestroyMonster"
@@ -45,10 +46,10 @@ func NewMonsterDestroyBySwallow(uniqueId uint32, swallowCharacterId uint32) Dest
 	}
 }
 
-func (m Destroy) UniqueId() uint32                 { return m.uniqueId }
-func (m Destroy) DestroyType() DestroyType         { return m.destroyType }
-func (m Destroy) SwallowCharacterId() uint32       { return m.swallowCharacterId }
-func (m Destroy) Operation() string                { return MonsterDestroyWriter }
+func (m Destroy) UniqueId() uint32           { return m.uniqueId }
+func (m Destroy) DestroyType() DestroyType   { return m.destroyType }
+func (m Destroy) SwallowCharacterId() uint32 { return m.swallowCharacterId }
+func (m Destroy) Operation() string          { return MonsterDestroyWriter }
 func (m Destroy) String() string {
 	return fmt.Sprintf("uniqueId [%d], destroyType [%d]", m.uniqueId, m.destroyType)
 }

@@ -213,11 +213,13 @@ func TestWhisperFindResultErrorRoundTrip(t *testing.T) {
 // TestWhisperByteOutputV61 pins every present gms_v61 WHISPER (op 0x65 = 101)
 // clientbound sub-mode. IDA: CField::OnWhisper @0x4eabd7 (GMS_v61.1_U_DEVM.exe)
 // dispatches on Decode1(mode)-9 over exactly four top-level modes:
-//   mode 10 SendResult : DecodeStr(target) + Decode1(success)
-//   mode 18 Receive    : DecodeStr(from) + Decode1(ch) + Decode1(gm) + DecodeStr(msg)
-//   mode 34 Error      : DecodeStr(target) + Decode1(whispersEnabled)
-//   mode  9 FindResult : DecodeStr(target) + Decode1(findMode) + Decode4(value)
-//                        [findMode 1 (Map) adds Decode4 x + Decode4 y]
+//
+//	mode 10 SendResult : DecodeStr(target) + Decode1(success)
+//	mode 18 Receive    : DecodeStr(from) + Decode1(ch) + Decode1(gm) + DecodeStr(msg)
+//	mode 34 Error      : DecodeStr(target) + Decode1(whispersEnabled)
+//	mode  9 FindResult : DecodeStr(target) + Decode1(findMode) + Decode4(value)
+//	                     [findMode 1 (Map) adds Decode4 x + Decode4 y]
+//
 // The find-mode sub-switch covers findMode 2 (CashShop, value -1), 1 (Map),
 // 3 (Channel), 0/default (Error). Any other top-level mode returns without a
 // read, so WhisperWeather (mode 146) is version-absent in v61 (dispositioned n-a).
@@ -294,13 +296,14 @@ func wstrV79(s string) []byte {
 // TestWhisperVariantsByteOutputV79 pins the remaining gms_v79 WHISPER (op 0x7F)
 // clientbound sub-modes so the op-cell lifts off worst-of-siblings. IDA:
 // CField::OnWhisper @0x51d76d (GMS_v79_1_DEVM.exe) switch on Decode1(mode) @0x51d79f:
-//   case 10  SendResult  : DecodeStr(target)@0x51db21 + Decode1(success)@0x51db3a
-//   case 18  Receive     : DecodeStr(from)@0x51d965-region + Decode1(ch)@0x51d951 +
-//                          Decode1(gm)@0x51d95c + DecodeStr(msg)@0x51d965
-//   case 9/72 FindResult : DecodeStr(target)@0x51dc37 + Decode1(findMode)@0x51dc52 +
-//                          Decode4(value)@0x51dc5a  [Map adds Decode4 x,y @0x51ddbb/bd]
-//   case 146 Weather     : DecodeStr(from)@0x51d7e5 + Decode1(flag)@0x51d7f3 +
-//                          DecodeStr(msg)@0x51d7fe
+//
+//	case 10  SendResult  : DecodeStr(target)@0x51db21 + Decode1(success)@0x51db3a
+//	case 18  Receive     : DecodeStr(from)@0x51d965-region + Decode1(ch)@0x51d951 +
+//	                       Decode1(gm)@0x51d95c + DecodeStr(msg)@0x51d965
+//	case 9/72 FindResult : DecodeStr(target)@0x51dc37 + Decode1(findMode)@0x51dc52 +
+//	                       Decode4(value)@0x51dc5a  [Map adds Decode4 x,y @0x51ddbb/bd]
+//	case 146 Weather     : DecodeStr(from)@0x51d7e5 + Decode1(flag)@0x51d7f3 +
+//	                       DecodeStr(msg)@0x51d7fe
 func TestWhisperVariantsByteOutputV79(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 79, 1)
 
@@ -494,13 +497,15 @@ func TestWhisperWeatherRoundTrip(t *testing.T) {
 // clientbound sub-mode. IDA: CField::OnWhisper @0x4c71d5 (GMS_v48_1_DEVM.exe,
 // port 13337) dispatches on Decode1(mode)-9 over exactly four top-level modes —
 // byte-identical structure to the verified v61 handler @0x4eabd7:
-//   mode 10 SendResult : DecodeStr(target) @0x4c7502 + Decode1(success) @0x4c7518
-//   mode 18 Receive    : DecodeStr(from) @0x4c7308 + Decode1(ch) @0x4c7319 +
-//                        Decode1(gm) @0x4c7324 + DecodeStr(msg) @0x4c732d
-//   mode 34 Error      : DecodeStr(target) @0x4c7239 + Decode1(whispersEnabled) @0x4c7244
-//   mode  9 FindResult : DecodeStr(target) @0x4c763d + Decode1(findMode) @0x4c7652 +
-//                        Decode4(value) @0x4c7655  [findMode 1 (Map) adds Decode4 x,y
-//                        @0x4c779e/@0x4c77a1]
+//
+//	mode 10 SendResult : DecodeStr(target) @0x4c7502 + Decode1(success) @0x4c7518
+//	mode 18 Receive    : DecodeStr(from) @0x4c7308 + Decode1(ch) @0x4c7319 +
+//	                     Decode1(gm) @0x4c7324 + DecodeStr(msg) @0x4c732d
+//	mode 34 Error      : DecodeStr(target) @0x4c7239 + Decode1(whispersEnabled) @0x4c7244
+//	mode  9 FindResult : DecodeStr(target) @0x4c763d + Decode1(findMode) @0x4c7652 +
+//	                     Decode4(value) @0x4c7655  [findMode 1 (Map) adds Decode4 x,y
+//	                     @0x4c779e/@0x4c77a1]
+//
 // The find-mode sub-switch covers findMode 2 (CashShop, value -1), 1 (Map),
 // 3 (Channel), 0/default (Error). Any other top-level mode returns without a read,
 // so WhisperWeather (mode 146) is version-absent in v48 (no gms_v48 report; n-a).

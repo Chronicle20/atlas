@@ -1,11 +1,10 @@
 package baseline
 
 import (
+	"atlas-data/canonical"
 	"context"
 	"strings"
 	"testing"
-
-	"atlas-data/canonical"
 
 	"github.com/sirupsen/logrus"
 )

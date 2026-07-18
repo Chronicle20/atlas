@@ -1,6 +1,6 @@
-import * as React from 'react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import * as React from "react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface EmptyStateProps {
   icon?: React.ReactNode;
@@ -13,26 +13,22 @@ interface EmptyStateProps {
   className?: string;
 }
 
-export function EmptyState({ 
-  icon, 
-  title, 
-  description, 
-  action, 
-  className 
+export function EmptyState({
+  icon,
+  title,
+  description,
+  action,
+  className,
 }: EmptyStateProps) {
   return (
-    <div 
+    <div
       className={cn(
-        'flex flex-col items-center justify-center p-8 text-center',
-        className
+        "flex flex-col items-center justify-center p-8 text-center",
+        className,
       )}
       data-testid="empty-state"
     >
-      {icon && (
-        <div className="mb-4 text-muted-foreground">
-          {icon}
-        </div>
-      )}
+      {icon && <div className="mb-4 text-muted-foreground">{icon}</div>}
       <h3 className="text-lg font-semibold">{title}</h3>
       {description && (
         <p className="mt-2 text-sm text-muted-foreground max-w-sm">

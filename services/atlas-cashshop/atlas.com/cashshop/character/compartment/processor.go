@@ -6,9 +6,10 @@ import (
 	compartment2 "atlas-cashshop/kafka/producer/character/compartment"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	inventory3 "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {

@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 const CharacterKeyMapWriter = "CharacterKeyMap"
@@ -43,9 +44,9 @@ func NewCharacterKeyMapResetToDefault() CharacterKeyMap {
 	return CharacterKeyMap{resetToDefault: true}
 }
 
-func (m CharacterKeyMap) ResetToDefault() bool         { return m.resetToDefault }
-func (m CharacterKeyMap) Keys() map[int32]KeyBinding   { return m.keys }
-func (m CharacterKeyMap) Operation() string             { return CharacterKeyMapWriter }
+func (m CharacterKeyMap) ResetToDefault() bool       { return m.resetToDefault }
+func (m CharacterKeyMap) Keys() map[int32]KeyBinding { return m.keys }
+func (m CharacterKeyMap) Operation() string          { return CharacterKeyMapWriter }
 func (m CharacterKeyMap) String() string {
 	if m.resetToDefault {
 		return "resetToDefault"

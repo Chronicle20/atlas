@@ -42,5 +42,5 @@ func (r *RestModel) SetID(idStr string) error {
 // UnmarshalToManyRelations", which the caller surfaces as ErrNotFound. The
 // relationship payload is irrelevant to requirement-gate inputs, so the
 // methods are intentionally no-ops.
-func (r *RestModel) SetToOneReferenceID(_, _ string) error             { return nil }
+func (r *RestModel) SetToOneReferenceID(_, _ string) error            { return nil }
 func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }

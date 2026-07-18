@@ -8,9 +8,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+
 	ts "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
-	"github.com/google/uuid"
 )
 
 // Reference item IDs used across the tests.
@@ -65,7 +66,7 @@ func expiredBuffWithStat(statType ts.TemporaryStatType) buff.Model {
 }
 
 func TestComputeCount(t *testing.T) {
-	se := effect.Model{} // BulletConsume == 0 → base 1.
+	se := effect.Model{} // bulletCount == 0 → base 1.
 	if got := computeCount(item.WeaponTypeBow, se, nil); got != 1 {
 		t.Fatalf("bow base count = %d, want 1", got)
 	}
@@ -85,6 +86,36 @@ func TestComputeCount(t *testing.T) {
 	expired := []buff.Model{expiredBuffWithStat(ts.TemporaryStatTypeShadowPartner)}
 	if got := computeCount(item.WeaponTypeClaw, se, expired); got != 1 {
 		t.Fatalf("claw + expired SP count = %d, want 1", got)
+	}
+
+	// Per-attack count is driven by WZ bulletCount (Lucky Seven 2, Triple Throw
+	// 3), NOT bulletConsume. Lucky Seven throws 2, doubled to 4 under Shadow
+	// Partner.
+	luckySeven, err := effect.Extract(effect.RestModel{BulletCount: 2})
+	if err != nil {
+		t.Fatalf("extract lucky seven effect: %v", err)
+	}
+	if got := computeCount(item.WeaponTypeClaw, luckySeven, nil); got != 2 {
+		t.Fatalf("Lucky Seven (bulletCount=2) count = %d, want 2", got)
+	}
+	if got := computeCount(item.WeaponTypeClaw, luckySeven, buffs); got != 4 {
+		t.Fatalf("Lucky Seven + Shadow Partner count = %d, want 4", got)
+	}
+	tripleThrow, err := effect.Extract(effect.RestModel{BulletCount: 3})
+	if err != nil {
+		t.Fatalf("extract triple throw effect: %v", err)
+	}
+	if got := computeCount(item.WeaponTypeClaw, tripleThrow, nil); got != 3 {
+		t.Fatalf("Triple Throw (bulletCount=3) count = %d, want 3", got)
+	}
+	// bulletConsume (the Shadow Stars 200-star cast cost) must NOT drive the
+	// per-attack projectile count.
+	shadowStars, err := effect.Extract(effect.RestModel{BulletConsume: 200})
+	if err != nil {
+		t.Fatalf("extract shadow stars effect: %v", err)
+	}
+	if got := computeCount(item.WeaponTypeClaw, shadowStars, nil); got != 1 {
+		t.Fatalf("bulletConsume=200 must not affect per-attack count = %d, want 1", got)
 	}
 }
 
@@ -180,6 +211,35 @@ func TestResolvePlan_EmptyQtySlotsSkipped(t *testing.T) {
 	}
 	if available != 3 {
 		t.Fatalf("available = %d, want 3", available)
+	}
+}
+
+func TestProjectileConsumptionSkipped(t *testing.T) {
+	soulArrow := []buff.Model{buffWithStat(ts.TemporaryStatTypeSoulArrow)}
+	shadowClaw := []buff.Model{buffWithStat(ts.TemporaryStatTypeShadowClaw)}
+	expiredClaw := []buff.Model{expiredBuffWithStat(ts.TemporaryStatTypeShadowClaw)}
+
+	cases := []struct {
+		name   string
+		weapon item.WeaponType
+		buffs  []buff.Model
+		want   bool
+	}{
+		{"bow + soul arrow -> skip", item.WeaponTypeBow, soulArrow, true},
+		{"crossbow + soul arrow -> skip", item.WeaponTypeCrossbow, soulArrow, true},
+		{"claw + shadow claw -> skip", item.WeaponTypeClaw, shadowClaw, true},
+		{"claw + no buff -> consume", item.WeaponTypeClaw, nil, false},
+		{"claw + expired shadow claw -> consume", item.WeaponTypeClaw, expiredClaw, false},
+		{"claw + soul arrow -> consume", item.WeaponTypeClaw, soulArrow, false},
+		{"bow + shadow claw -> consume", item.WeaponTypeBow, shadowClaw, false},
+		{"gun + shadow claw -> consume", item.WeaponTypeGun, shadowClaw, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := projectileConsumptionSkipped(tc.weapon, tc.buffs); got != tc.want {
+				t.Fatalf("projectileConsumptionSkipped(%v) = %v, want %v", tc.weapon, got, tc.want)
+			}
+		})
 	}
 }
 

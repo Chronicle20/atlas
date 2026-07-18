@@ -43,17 +43,19 @@ import (
 // packet-audit:verify packet=character/clientbound/CharacterViewAllError version=jms_v185 ida=0x6709e4
 // v48 VIEW_ALL_CHAR result dispatcher — sub_50232D @0x50232d (GMS_v48_1_DEVM.exe,
 // port 13337), keyed on a leading Decode1(mode):
-//   mode 0 (case 0u @0x50257d): Decode1(worldId) + Decode1(count) + per-char
-//     GW_CharacterStat::Decode (sub_49B627) + AvatarLook::Decode (sub_49E1E0) +
-//     Decode1(rankFlag)?DecodeBuffer(16):memset  → CharacterViewAllCharacters.
-//     No trailing PIC byte (v48 < 87). Stat/avatar use the v48 single-pet legacy
-//     shape (see TestCharacterListByteOutputV48).
-//   mode 1 (case 1u @0x502380): Decode4(worldCount) + Decode4(unk)
-//     → CharacterViewAllCount.
-//   modes 2/4/5 (@0x50240b / @0x50249d): reset/notice arms that read NOTHING beyond
-//     the mode byte → the code-only CharacterViewAllError (mode 2) /
-//     CharacterViewAllSearchFailed. (modes 3/6/7 additionally read Decode1(hasMsg)+
-//     optional DecodeStr — a client notice variant Atlas does not model/emit.)
+//
+//	mode 0 (case 0u @0x50257d): Decode1(worldId) + Decode1(count) + per-char
+//	  GW_CharacterStat::Decode (sub_49B627) + AvatarLook::Decode (sub_49E1E0) +
+//	  Decode1(rankFlag)?DecodeBuffer(16):memset  → CharacterViewAllCharacters.
+//	  No trailing PIC byte (v48 < 87). Stat/avatar use the v48 single-pet legacy
+//	  shape (see TestCharacterListByteOutputV48).
+//	mode 1 (case 1u @0x502380): Decode4(worldCount) + Decode4(unk)
+//	  → CharacterViewAllCount.
+//	modes 2/4/5 (@0x50240b / @0x50249d): reset/notice arms that read NOTHING beyond
+//	  the mode byte → the code-only CharacterViewAllError (mode 2) /
+//	  CharacterViewAllSearchFailed. (modes 3/6/7 additionally read Decode1(hasMsg)+
+//	  optional DecodeStr — a client notice variant Atlas does not model/emit.)
+//
 // packet-audit:verify packet=character/clientbound/CharacterViewAllCharacters version=gms_v48 ida=0x50232d
 // packet-audit:verify packet=character/clientbound/CharacterViewAllCount version=gms_v48 ida=0x50232d
 // packet-audit:verify packet=character/clientbound/CharacterViewAllSearchFailed version=gms_v48 ida=0x50232d
@@ -108,9 +110,9 @@ func TestCharacterViewAllByteOutputV48(t *testing.T) {
 			0x03, 0x00, // ap
 			0x02, 0x00, // sp
 			0x00, 0x00, 0x00, 0x00, // exp
-			0x08, 0x00,             // fame
+			0x08, 0x00, // fame
 			0xb8, 0x0b, 0x00, 0x00, // mapId
-			0x00,                   // spawnPoint
+			0x00, // spawnPoint
 
 			// --- AvatarLook block --- sub_49E1E0 @0x49e1e0
 			0x00,                   // gender

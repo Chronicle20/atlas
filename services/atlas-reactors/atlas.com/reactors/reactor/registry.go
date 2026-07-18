@@ -7,6 +7,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
@@ -14,8 +17,6 @@ import (
 	objectid "github.com/Chronicle20/atlas/libs/atlas-object-id"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	goredis "github.com/redis/go-redis/v9"
 )
 
 type Registry struct {

@@ -3,11 +3,12 @@ package guild
 import (
 	guild2 "atlas-guilds/kafka/message/guild"
 
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
 )
 
 func statusEventRequestAgreementProvider(worldId world.Id, characterId uint32, proposedName string, transactionId uuid.UUID) model.Provider[[]kafka.Message] {

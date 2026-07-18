@@ -1,6 +1,11 @@
-
 import { useRef } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Loader2,
@@ -40,7 +45,11 @@ import {
   useReactorScriptsSeedStatus,
   useMapActionScriptsSeedStatus,
 } from "@/lib/hooks/api/useSeed";
-import { SetupRow, formatCount, pluralize } from "@/components/features/setup/SetupRow";
+import { SetupRow } from "@/components/features/setup/SetupRow";
+import {
+  formatCount,
+  pluralize,
+} from "@/components/features/setup/setup-format";
 import { useRestoreBaseline } from "@/lib/hooks/api/useBaseline";
 import { useTenant } from "@/context/tenant-context";
 import { formatBytes } from "@/lib/format";
@@ -88,7 +97,7 @@ export function SetupPage() {
   const ingestDisabled =
     !wzInputData || wzInputData.fileCount === 0 || anyMutationPending;
 
-  const handleSeed = (mutation: { mutate: () => void; }, label: string) => {
+  const handleSeed = (mutation: { mutate: () => void }, label: string) => {
     mutation.mutate();
     toast.info(`Seeding ${label}...`);
   };
@@ -97,20 +106,23 @@ export function SetupPage() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (!file.name.toLowerCase().endsWith('.zip')) {
+    if (!file.name.toLowerCase().endsWith(".zip")) {
       toast.error("Please select a .zip file");
       return;
     }
 
     const size = file.size;
-    uploadWz.mutate({ file }, {
-      onSuccess: () => {
-        toast.success(`WZ files uploaded (${formatBytes(size)})`);
+    uploadWz.mutate(
+      { file },
+      {
+        onSuccess: () => {
+          toast.success(`WZ files uploaded (${formatBytes(size)})`);
+        },
       },
-    });
+    );
 
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
@@ -145,13 +157,11 @@ export function SetupPage() {
     );
   };
 
-  const wzInputBadge = !wzInputData ? (
-    "—"
-  ) : wzInputData.fileCount === 0 ? (
-    "0 .wz files"
-  ) : (
-    `${formatCount(wzInputData.fileCount)} ${pluralize(wzInputData.fileCount, ".wz file", ".wz files")}, ${formatBytes(wzInputData.totalBytes)}`
-  );
+  const wzInputBadge = !wzInputData
+    ? "—"
+    : wzInputData.fileCount === 0
+      ? "0 .wz files"
+      : `${formatCount(wzInputData.fileCount)} ${pluralize(wzInputData.fileCount, ".wz file", ".wz files")}, ${formatBytes(wzInputData.totalBytes)}`;
 
   const dataStatusBadge = !dataStatusData
     ? "—"
@@ -183,7 +193,7 @@ export function SetupPage() {
       },
     },
     {
-      label: "Gachapons",
+      label: "Reward Pools",
       icon: <Package className="h-5 w-5" />,
       mutation: seedGachapons,
       formatBadge: () => {
@@ -199,7 +209,9 @@ export function SetupPage() {
       mutation: seedNpcConversations,
       formatBadge: () => {
         const d = npcConversationsSeed.data;
-        return !d ? "—" : `${formatCount(d.conversationCount)} ${pluralize(d.conversationCount, "conversation", "conversations")}`;
+        return !d
+          ? "—"
+          : `${formatCount(d.conversationCount)} ${pluralize(d.conversationCount, "conversation", "conversations")}`;
       },
     },
     {
@@ -208,7 +220,9 @@ export function SetupPage() {
       mutation: seedQuestConversations,
       formatBadge: () => {
         const d = questConversationsSeed.data;
-        return !d ? "—" : `${formatCount(d.conversationCount)} ${pluralize(d.conversationCount, "conversation", "conversations")}`;
+        return !d
+          ? "—"
+          : `${formatCount(d.conversationCount)} ${pluralize(d.conversationCount, "conversation", "conversations")}`;
       },
     },
     {
@@ -228,7 +242,9 @@ export function SetupPage() {
       mutation: seedPortalScripts,
       formatBadge: () => {
         const d = portalScriptsSeed.data;
-        return !d ? "—" : `${formatCount(d.scriptCount)} ${pluralize(d.scriptCount, "script", "scripts")}`;
+        return !d
+          ? "—"
+          : `${formatCount(d.scriptCount)} ${pluralize(d.scriptCount, "script", "scripts")}`;
       },
     },
     {
@@ -237,7 +253,9 @@ export function SetupPage() {
       mutation: seedReactorScripts,
       formatBadge: () => {
         const d = reactorScriptsSeed.data;
-        return !d ? "—" : `${formatCount(d.scriptCount)} ${pluralize(d.scriptCount, "script", "scripts")}`;
+        return !d
+          ? "—"
+          : `${formatCount(d.scriptCount)} ${pluralize(d.scriptCount, "script", "scripts")}`;
       },
     },
     {
@@ -246,7 +264,9 @@ export function SetupPage() {
       mutation: seedMapActionScripts,
       formatBadge: () => {
         const d = mapActionScriptsSeed.data;
-        return !d ? "—" : `${formatCount(d.scriptCount)} ${pluralize(d.scriptCount, "map action", "map actions")}`;
+        return !d
+          ? "—"
+          : `${formatCount(d.scriptCount)} ${pluralize(d.scriptCount, "map action", "map actions")}`;
       },
     },
   ];
@@ -255,14 +275,17 @@ export function SetupPage() {
     <div className="flex flex-col space-y-6 p-10 pb-16 overflow-y-auto">
       <div className="items-center justify-between space-y-2">
         <h2 className="text-2xl font-bold tracking-tight">Setup</h2>
-        <p className="text-muted-foreground">Prepare the selected tenant&apos;s game data and seeded services.</p>
+        <p className="text-muted-foreground">
+          Prepare the selected tenant&apos;s game data and seeded services.
+        </p>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Game Data</CardTitle>
           <CardDescription>
-            Upload a WZ zip and process it into atlas-data for the selected tenant.
+            Upload a WZ zip and process it into atlas-data for the selected
+            tenant.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -310,7 +333,10 @@ export function SetupPage() {
                 variant="outline"
                 onClick={handleRunProcessing}
                 disabled={ingestDisabled || !activeTenant}
-                title={ingestDisabledReason ?? (runProcessing.isPending ? "Processing…" : undefined)}
+                title={
+                  ingestDisabledReason ??
+                  (runProcessing.isPending ? "Processing…" : undefined)
+                }
               >
                 {runProcessing.isPending ? (
                   <>
@@ -358,7 +384,8 @@ export function SetupPage() {
       <div>
         <h3 className="text-lg font-semibold mb-3">Seed Data</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Populate individual service databases from their configured data sources.
+          Populate individual service databases from their configured data
+          sources.
         </p>
         <div className="grid gap-0">
           {seedRows.map((row) => (
@@ -374,7 +401,11 @@ export function SetupPage() {
                   onClick={() => handleSeed(row.mutation, row.label)}
                   disabled={row.mutation.isPending}
                 >
-                  {row.mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Seed"}
+                  {row.mutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "Seed"
+                  )}
                 </Button>
               }
             />

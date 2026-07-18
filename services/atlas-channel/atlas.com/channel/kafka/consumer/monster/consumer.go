@@ -17,6 +17,9 @@ import (
 	"math"
 	"time"
 
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -27,9 +30,7 @@ import (
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	monsterpkt "github.com/Chronicle20/atlas/libs/atlas-packet/monster/clientbound"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model2.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -227,7 +228,7 @@ func handleStatusEventDamaged(sc server.Model, wp writer.Producer) message.Handl
 			if e.Body.Boss {
 				err = _map.NewProcessor(l, ctx).ForSessionsInMap(f, announcer)
 			} else {
-				var idProvider = model2.FixedProvider([]uint32{e.Body.ActorId})
+				idProvider := model2.FixedProvider([]uint32{e.Body.ActorId})
 
 				p, err2 := party.NewProcessor(l, ctx).GetByMemberId(e.Body.ActorId)
 				if err2 == nil {

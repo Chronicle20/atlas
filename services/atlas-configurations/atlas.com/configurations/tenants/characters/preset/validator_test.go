@@ -8,8 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	tenantlib "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
+
+	tenantlib "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // tenantCtx returns a context carrying a synthetic tenant so the validator's

@@ -40,8 +40,8 @@ func TestEffectSkillUseByteOutput(t *testing.T) {
 		want := []byte{
 			0x01,                   // mode (Decode1)                /*0x9377ec*/
 			0x03, 0x02, 0x01, 0x00, // skillId = 0x010203 (Decode4)  /*0x9378d1*/
-			0x1e,                   // characterLevel (Decode1 v11)  /*0x9378d9*/
-			0x0a,                   // skillLevel (Decode1 nSLV)     /*0x937902*/
+			0x1e, // characterLevel (Decode1 v11)  /*0x9378d9*/
+			0x0a, // skillLevel (Decode1 nSLV)     /*0x937902*/
 		}
 		if !bytes.Equal(got, want) {
 			t.Errorf("plain bytes:\n got %x\nwant %x", got, want)
@@ -55,9 +55,9 @@ func TestEffectSkillUseByteOutput(t *testing.T) {
 		want := []byte{
 			0x01,                   // mode                          /*0x9377ec*/
 			0xe9, 0x1a, 0x11, 0x00, // skillId = 1121001 = 0x111AE9 (Decode4) /*0x9378d1*/
-			0x1e,                   // characterLevel                /*0x9378d9*/
-			0x0a,                   // skillLevel                    /*0x937902*/
-			0x01,                   // berserk darkForce (Decode1)   /*0x937b7b*/
+			0x1e, // characterLevel                /*0x9378d9*/
+			0x0a, // skillLevel                    /*0x937902*/
+			0x01, // berserk darkForce (Decode1)   /*0x937b7b*/
 		}
 		if !bytes.Equal(got, want) {
 			t.Errorf("berserk bytes:\n got %x\nwant %x", got, want)
@@ -72,8 +72,8 @@ func TestEffectSkillUseByteOutput(t *testing.T) {
 			0x78, 0x56, 0x34, 0x12, // characterId (foreign prefix)
 			0x01,                   // mode
 			0x03, 0x02, 0x01, 0x00, // skillId
-			0x1e,                   // characterLevel
-			0x0a,                   // skillLevel
+			0x1e, // characterLevel
+			0x0a, // skillLevel
 		}
 		if !bytes.Equal(got, want) {
 			t.Errorf("foreign bytes:\n got %x\nwant %x", got, want)
@@ -107,7 +107,7 @@ func TestEffectSkillUseByteOutputV79(t *testing.T) {
 		want := []byte{
 			0x01,                   // mode (Decode1)               /*0x89113f*/
 			0x03, 0x02, 0x01, 0x00, // skillId = 0x010203 (Decode4) /*0x891225*/
-			0x0a,                   // skillLevel (Decode1)         /*0x89122f*/  (no characterLevel)
+			0x0a, // skillLevel (Decode1)         /*0x89122f*/  (no characterLevel)
 		}
 		if !bytes.Equal(got, want) {
 			t.Errorf("plain v79 bytes:\n got %x\nwant %x", got, want)
@@ -121,8 +121,8 @@ func TestEffectSkillUseByteOutputV79(t *testing.T) {
 		want := []byte{
 			0x01,                   // mode                          /*0x89113f*/
 			0xe9, 0x1a, 0x11, 0x00, // skillId = 1121001 = 0x111AE9 (Decode4) /*0x891225*/
-			0x0a,                   // skillLevel                    /*0x89122f*/
-			0x01,                   // berserk darkForce (Decode1)   /*0x891477*/
+			0x0a, // skillLevel                    /*0x89122f*/
+			0x01, // berserk darkForce (Decode1)   /*0x891477*/
 		}
 		if !bytes.Equal(got, want) {
 			t.Errorf("berserk v79 bytes:\n got %x\nwant %x", got, want)
@@ -137,7 +137,7 @@ func TestEffectSkillUseByteOutputV79(t *testing.T) {
 			0x78, 0x56, 0x34, 0x12, // characterId (foreign prefix)
 			0x01,                   // mode
 			0x03, 0x02, 0x01, 0x00, // skillId
-			0x0a,                   // skillLevel (no characterLevel)
+			0x0a, // skillLevel (no characterLevel)
 		}
 		if !bytes.Equal(got, want) {
 			t.Errorf("foreign v79 bytes:\n got %x\nwant %x", got, want)
@@ -172,7 +172,7 @@ func TestEffectSkillUseByteOutputV72(t *testing.T) {
 		want := []byte{
 			0x01,                   // mode (Decode1)               /*0x846e31*/
 			0x03, 0x02, 0x01, 0x00, // skillId = 0x010203 (Decode4) /*0x846f1c*/
-			0x0a,                   // skillLevel (Decode1)         /*0x846f30*/  (no characterLevel)
+			0x0a, // skillLevel (Decode1)         /*0x846f30*/  (no characterLevel)
 		}
 		if !bytes.Equal(got, want) {
 			t.Errorf("plain v72 bytes:\n got %x\nwant %x", got, want)
@@ -186,8 +186,8 @@ func TestEffectSkillUseByteOutputV72(t *testing.T) {
 		want := []byte{
 			0x01,                   // mode                          /*0x846e31*/
 			0xe9, 0x1a, 0x11, 0x00, // skillId = 1121001 = 0x111AE9 (Decode4) /*0x846f1c*/
-			0x0a,                   // skillLevel                    /*0x846f30*/
-			0x01,                   // berserk darkForce (Decode1)   /*0x847167*/
+			0x0a, // skillLevel                    /*0x846f30*/
+			0x01, // berserk darkForce (Decode1)   /*0x847167*/
 		}
 		if !bytes.Equal(got, want) {
 			t.Errorf("berserk v72 bytes:\n got %x\nwant %x", got, want)
@@ -202,7 +202,7 @@ func TestEffectSkillUseByteOutputV72(t *testing.T) {
 			0x78, 0x56, 0x34, 0x12, // characterId (foreign prefix)
 			0x01,                   // mode
 			0x03, 0x02, 0x01, 0x00, // skillId
-			0x0a,                   // skillLevel (no characterLevel)
+			0x0a, // skillLevel (no characterLevel)
 		}
 		if !bytes.Equal(got, want) {
 			t.Errorf("foreign v72 bytes:\n got %x\nwant %x", got, want)
@@ -237,8 +237,8 @@ func TestEffectSkillUseByteOutputV84(t *testing.T) {
 		want := []byte{
 			0x01,                   // mode (Decode1)                /*0x96eaa5*/
 			0x03, 0x02, 0x01, 0x00, // skillId = 0x010203 (Decode4)  /*0x96eb84*/
-			0x1e,                   // characterLevel (Decode1 v10)  /*0x96eb8c*/
-			0x0a,                   // skillLevel (Decode1 Value)    /*0x96ebb5*/
+			0x1e, // characterLevel (Decode1 v10)  /*0x96eb8c*/
+			0x0a, // skillLevel (Decode1 Value)    /*0x96ebb5*/
 		}
 		if !bytes.Equal(got, want) {
 			t.Errorf("plain v84 bytes:\n got %x\nwant %x", got, want)
@@ -252,9 +252,9 @@ func TestEffectSkillUseByteOutputV84(t *testing.T) {
 		want := []byte{
 			0x01,                   // mode                          /*0x96eaa5*/
 			0xe9, 0x1a, 0x11, 0x00, // skillId = 1121001 = 0x111AE9 (Decode4) /*0x96eb84*/
-			0x1e,                   // characterLevel                /*0x96eb8c*/
-			0x0a,                   // skillLevel                    /*0x96ebb5*/
-			0x01,                   // berserk darkForce (Decode1)   /*0x96eee9*/
+			0x1e, // characterLevel                /*0x96eb8c*/
+			0x0a, // skillLevel                    /*0x96ebb5*/
+			0x01, // berserk darkForce (Decode1)   /*0x96eee9*/
 		}
 		if !bytes.Equal(got, want) {
 			t.Errorf("berserk v84 bytes:\n got %x\nwant %x", got, want)
@@ -269,8 +269,8 @@ func TestEffectSkillUseByteOutputV84(t *testing.T) {
 			0x78, 0x56, 0x34, 0x12, // characterId (foreign prefix)
 			0x01,                   // mode
 			0x03, 0x02, 0x01, 0x00, // skillId
-			0x1e,                   // characterLevel
-			0x0a,                   // skillLevel
+			0x1e, // characterLevel
+			0x0a, // skillLevel
 		}
 		if !bytes.Equal(got, want) {
 			t.Errorf("foreign v84 bytes:\n got %x\nwant %x", got, want)
@@ -304,8 +304,8 @@ func TestEffectSkillUseByteOutputV87(t *testing.T) {
 		want := []byte{
 			0x01,                   // mode (Decode1)                /*0x9b1f03*/
 			0x03, 0x02, 0x01, 0x00, // skillId = 0x010203 (Decode4)  /*0x9b1fe8*/
-			0x1e,                   // characterLevel (Decode1 v9)   /*0x9b1ff0*/
-			0x0a,                   // skillLevel (Decode1 Value)    /*0x9b2019*/
+			0x1e, // characterLevel (Decode1 v9)   /*0x9b1ff0*/
+			0x0a, // skillLevel (Decode1 Value)    /*0x9b2019*/
 		}
 		if !bytes.Equal(got, want) {
 			t.Errorf("plain v87 bytes:\n got %x\nwant %x", got, want)
@@ -319,9 +319,9 @@ func TestEffectSkillUseByteOutputV87(t *testing.T) {
 		want := []byte{
 			0x01,                   // mode                          /*0x9b1f03*/
 			0xe9, 0x1a, 0x11, 0x00, // skillId = 1121001 = 0x111AE9 (Decode4) /*0x9b1fe8*/
-			0x1e,                   // characterLevel                /*0x9b1ff0*/
-			0x0a,                   // skillLevel                    /*0x9b2019*/
-			0x01,                   // berserk darkForce (Decode1)   /*0x9b2344*/
+			0x1e, // characterLevel                /*0x9b1ff0*/
+			0x0a, // skillLevel                    /*0x9b2019*/
+			0x01, // berserk darkForce (Decode1)   /*0x9b2344*/
 		}
 		if !bytes.Equal(got, want) {
 			t.Errorf("berserk v87 bytes:\n got %x\nwant %x", got, want)
@@ -336,8 +336,8 @@ func TestEffectSkillUseByteOutputV87(t *testing.T) {
 			0x78, 0x56, 0x34, 0x12, // characterId (foreign prefix)
 			0x01,                   // mode
 			0x03, 0x02, 0x01, 0x00, // skillId
-			0x1e,                   // characterLevel
-			0x0a,                   // skillLevel
+			0x1e, // characterLevel
+			0x0a, // skillLevel
 		}
 		if !bytes.Equal(got, want) {
 			t.Errorf("foreign v87 bytes:\n got %x\nwant %x", got, want)
@@ -375,8 +375,8 @@ func TestEffectSkillUseByteOutputV95(t *testing.T) {
 		want := []byte{
 			0x01,                   // mode (Decode1)                /*0x8f9ab4*/
 			0x03, 0x02, 0x01, 0x00, // skillId = 0x010203 (Decode4)  /*0x8f9b8f*/
-			0x1e,                   // characterLevel (Decode1)      /*0x8f9b98*/
-			0x0a,                   // skillLevel (Decode1)          /*0x8f9bb8*/
+			0x1e, // characterLevel (Decode1)      /*0x8f9b98*/
+			0x0a, // skillLevel (Decode1)          /*0x8f9bb8*/
 		}
 		if !bytes.Equal(got, want) {
 			t.Errorf("plain v95 bytes:\n got %x\nwant %x", got, want)
@@ -390,9 +390,9 @@ func TestEffectSkillUseByteOutputV95(t *testing.T) {
 		want := []byte{
 			0x01,                   // mode                          /*0x8f9ab4*/
 			0xe9, 0x1a, 0x11, 0x00, // skillId = 1121001 = 0x111AE9 (Decode4) /*0x8f9b8f*/
-			0x1e,                   // characterLevel                /*0x8f9b98*/
-			0x0a,                   // skillLevel                    /*0x8f9bb8*/
-			0x01,                   // berserk darkForce (Decode1)   /*0x8fa788*/
+			0x1e, // characterLevel                /*0x8f9b98*/
+			0x0a, // skillLevel                    /*0x8f9bb8*/
+			0x01, // berserk darkForce (Decode1)   /*0x8fa788*/
 		}
 		if !bytes.Equal(got, want) {
 			t.Errorf("berserk v95 bytes:\n got %x\nwant %x", got, want)
@@ -407,8 +407,8 @@ func TestEffectSkillUseByteOutputV95(t *testing.T) {
 			0x78, 0x56, 0x34, 0x12, // characterId (foreign prefix)
 			0x01,                   // mode
 			0x03, 0x02, 0x01, 0x00, // skillId
-			0x1e,                   // characterLevel
-			0x0a,                   // skillLevel
+			0x1e, // characterLevel
+			0x0a, // skillLevel
 		}
 		if !bytes.Equal(got, want) {
 			t.Errorf("foreign v95 bytes:\n got %x\nwant %x", got, want)
@@ -446,8 +446,8 @@ func TestEffectSkillUseByteOutputJMS(t *testing.T) {
 		want := []byte{
 			0x01,                   // mode (Decode1)                /*0x9f63c0*/
 			0x03, 0x02, 0x01, 0x00, // skillId = 0x010203 (Decode4)  /*0x9f6480*/
-			0x1e,                   // characterLevel (Decode1 v9)   /*0x9f648a*/
-			0x0a,                   // skillLevel (Decode1 Value)    /*0x9f64a7*/
+			0x1e, // characterLevel (Decode1 v9)   /*0x9f648a*/
+			0x0a, // skillLevel (Decode1 Value)    /*0x9f64a7*/
 		}
 		if !bytes.Equal(got, want) {
 			t.Errorf("plain jms bytes:\n got %x\nwant %x", got, want)
@@ -461,9 +461,9 @@ func TestEffectSkillUseByteOutputJMS(t *testing.T) {
 		want := []byte{
 			0x01,                   // mode                          /*0x9f63c0*/
 			0xe9, 0x1a, 0x11, 0x00, // skillId = 1121001 = 0x111AE9 (Decode4) /*0x9f6480*/
-			0x1e,                   // characterLevel                /*0x9f648a*/
-			0x0a,                   // skillLevel                    /*0x9f64a7*/
-			0x01,                   // berserk darkForce (Decode1)   /*0x9f68b6*/
+			0x1e, // characterLevel                /*0x9f648a*/
+			0x0a, // skillLevel                    /*0x9f64a7*/
+			0x01, // berserk darkForce (Decode1)   /*0x9f68b6*/
 		}
 		if !bytes.Equal(got, want) {
 			t.Errorf("berserk jms bytes:\n got %x\nwant %x", got, want)
@@ -478,8 +478,8 @@ func TestEffectSkillUseByteOutputJMS(t *testing.T) {
 			0x78, 0x56, 0x34, 0x12, // characterId (foreign prefix)
 			0x01,                   // mode
 			0x03, 0x02, 0x01, 0x00, // skillId
-			0x1e,                   // characterLevel
-			0x0a,                   // skillLevel
+			0x1e, // characterLevel
+			0x0a, // skillLevel
 		}
 		if !bytes.Equal(got, want) {
 			t.Errorf("foreign jms bytes:\n got %x\nwant %x", got, want)

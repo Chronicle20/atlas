@@ -5,7 +5,10 @@ import (
 	"atlas-parties/location"
 	"context"
 	"errors"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -13,8 +16,7 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Processor interface {
@@ -59,7 +61,6 @@ func (p *ProcessorImpl) LoginAndEmit(f field.Model, characterId uint32) error {
 	return message.Emit(p.p)(func(buf *message.Buffer) error {
 		return p.Login(buf)(f, characterId)
 	})
-
 }
 
 func (p *ProcessorImpl) Login(mb *message.Buffer) func(f field.Model, characterId uint32) error {

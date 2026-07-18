@@ -1,19 +1,19 @@
 package rest
 
 import (
+	"atlas-data/rest"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
-	"atlas-data/rest"
-
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // InitResource installs POST/GET /data/process. When jc is nil (k8s unavailable)

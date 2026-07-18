@@ -16,7 +16,10 @@ function transformEntry(data: LoginHistoryEntry): LoginHistoryEntry {
 }
 
 export const loginHistoryService = {
-  async getByIp(ip: string, options?: ServiceOptions): Promise<LoginHistoryEntry[]> {
+  async getByIp(
+    ip: string,
+    options?: ServiceOptions,
+  ): Promise<LoginHistoryEntry[]> {
     const entries = await api.getList<LoginHistoryEntry>(
       `${BASE_PATH}?ip=${encodeURIComponent(ip)}`,
       options,
@@ -24,7 +27,10 @@ export const loginHistoryService = {
     return entries.map(transformEntry);
   },
 
-  async getByHwid(hwid: string, options?: ServiceOptions): Promise<LoginHistoryEntry[]> {
+  async getByHwid(
+    hwid: string,
+    options?: ServiceOptions,
+  ): Promise<LoginHistoryEntry[]> {
     const entries = await api.getList<LoginHistoryEntry>(
       `${BASE_PATH}?hwid=${encodeURIComponent(hwid)}`,
       options,
@@ -32,7 +38,10 @@ export const loginHistoryService = {
     return entries.map(transformEntry);
   },
 
-  async getByAccountId(accountId: number, options?: ServiceOptions): Promise<LoginHistoryEntry[]> {
+  async getByAccountId(
+    accountId: number,
+    options?: ServiceOptions,
+  ): Promise<LoginHistoryEntry[]> {
     const entries = await api.getList<LoginHistoryEntry>(
       `${BASE_PATH}/accounts/${accountId}`,
       options,
@@ -45,9 +54,11 @@ export const loginHistoryService = {
     options?: ServiceOptions,
   ): Promise<LoginHistoryEntry[]> {
     // Prioritise by specificity: accountId > hwid > ip
-    if (criteria.accountId) return loginHistoryService.getByAccountId( criteria.accountId, options);
-    if (criteria.hwid) return loginHistoryService.getByHwid( criteria.hwid, options);
-    if (criteria.ip) return loginHistoryService.getByIp( criteria.ip, options);
+    if (criteria.accountId)
+      return loginHistoryService.getByAccountId(criteria.accountId, options);
+    if (criteria.hwid)
+      return loginHistoryService.getByHwid(criteria.hwid, options);
+    if (criteria.ip) return loginHistoryService.getByIp(criteria.ip, options);
     return [];
   },
 };

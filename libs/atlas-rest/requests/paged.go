@@ -6,8 +6,9 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // drainWarnPages is the page count past which a single drain logs a warning.

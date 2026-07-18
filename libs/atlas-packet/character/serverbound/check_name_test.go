@@ -30,7 +30,9 @@ func TestCheckNameRoundTrip(t *testing.T) {
 // TestCheckNameJMSGolden pins the exact jms_v185 wire for CheckName against
 // CLogin::SendCheckDuplicateIDPacket @0x66e467: COutPacket(8) then EncodeStr(s)
 // — a single Shift-JIS length-prefixed name, no other fields.
-//   EncodeStr("TestChar") = short(8) + "TestChar".
+//
+//	EncodeStr("TestChar") = short(8) + "TestChar".
+//
 // TestCheckNameV48ByteOutput pins the gms_v48 CHECK_CHAR_NAME (op 17). IDA:
 // CLogin::SendCheckDuplicateIDPacket = sub_500693 @0x500693 (GMS_v48_1_DEVM.exe)
 // builds COutPacket(17) then EncodeStr(name)@0x5006f9 — a single ascii string,

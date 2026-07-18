@@ -1,7 +1,7 @@
-import { AlertCircle, RefreshCw } from 'lucide-react';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { AlertCircle, RefreshCw } from "lucide-react";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface ErrorDisplayProps {
   error: Error | { message: string } | string;
@@ -11,26 +11,30 @@ interface ErrorDisplayProps {
   showIcon?: boolean;
 }
 
-export function ErrorDisplay({ 
-  error, 
-  retry, 
-  className, 
-  title = 'Error',
-  showIcon = true 
+export function ErrorDisplay({
+  error,
+  retry,
+  className,
+  title = "Error",
+  showIcon = true,
 }: ErrorDisplayProps) {
-  const message = typeof error === 'string' ? error : error.message;
-  
+  const message = typeof error === "string" ? error : error.message;
+
   return (
-    <Alert variant="destructive" className={cn('', className)} data-testid="error-display">
+    <Alert
+      variant="destructive"
+      className={cn("", className)}
+      data-testid="error-display"
+    >
       {showIcon && <AlertCircle />}
       <AlertTitle>{title}</AlertTitle>
       <AlertDescription>
         <div className="flex items-center justify-between gap-4">
           <span className="flex-1">{message}</span>
           {retry && (
-            <Button 
-              size="sm" 
-              variant="outline" 
+            <Button
+              size="sm"
+              variant="outline"
               onClick={retry}
               className="shrink-0"
             >

@@ -1,4 +1,4 @@
-import { api } from '@/lib/api/client';
+import { api } from "@/lib/api/client";
 
 export interface MapPortalData {
   id: string;
@@ -68,7 +68,9 @@ class MapEntitiesService {
   }
 
   async getPortal(mapId: string, portalId: string): Promise<MapPortalData> {
-    return api.getOne<MapPortalData>(`/api/data/maps/${mapId}/portals/${portalId}`);
+    return api.getOne<MapPortalData>(
+      `/api/data/maps/${mapId}/portals/${portalId}`,
+    );
   }
 
   async getNpcs(mapId: string): Promise<MapNpcData[]> {

@@ -10,11 +10,12 @@ package testsupport
 import (
 	mtsmsg "atlas-mts/kafka/message/mts"
 
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	kprod "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
 )
 
 // BuyCommandProvider mirrors the channel's BuyCommandProvider

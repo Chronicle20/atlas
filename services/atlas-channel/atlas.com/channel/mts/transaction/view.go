@@ -44,22 +44,22 @@ func ToMtsItem(m Model) fieldcb.MtsItem {
 	item := packetmodel.NewAsset(true, 0, m.ItemId(), time.Time{}).SetStackableInfo(m.Quantity(), 0, 0)
 	dateExpired := packetmodel.MsTimeBytes(m.CreatedAt())
 	return fieldpkt.MtsOperationNewItem(
-		item,                            // GW_ItemSlotBase blob
-		0,                               // nITCSN (history rows are not addressable)
-		m.TotalPrice(),                  // nPrice
-		0,                               // nContractFee
-		"",                              // sContractFeeTxId
-		"",                              // sRollbackUsageID
-		dateExpired,                     // ftITCDateExpired (the History "Date" column)
-		"",                              // sUserID
-		"",                              // sGameID
-		"",                              // sComment
-		0,                               // nBidCount
-		0,                               // nBidRange
-		0,                               // nBidPrice
-		m.TotalPrice(),                  // nMinPrice
-		0,                               // nMaxPrice
-		m.TotalPrice(),                  // nUnitPrice
+		item,                              // GW_ItemSlotBase blob
+		0,                                 // nITCSN (history rows are not addressable)
+		m.TotalPrice(),                    // nPrice
+		0,                                 // nContractFee
+		"",                                // sContractFeeTxId
+		"",                                // sRollbackUsageID
+		dateExpired,                       // ftITCDateExpired (the History "Date" column)
+		"",                                // sUserID
+		"",                                // sGameID
+		"",                                // sComment
+		0,                                 // nBidCount
+		0,                                 // nBidRange
+		0,                                 // nBidPrice
+		m.TotalPrice(),                    // nMinPrice
+		0,                                 // nMaxPrice
+		m.TotalPrice(),                    // nUnitPrice
 		processStatusKeyForKind(m.Kind()), // nProcessStatus (config-resolved disposition)
 	)
 }

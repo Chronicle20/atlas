@@ -12,11 +12,13 @@ import (
 //
 // IDA evidence (CUserPool::OnUserRemotePacket reads the characterId via Decode4,
 // then dispatches to CUserRemote::OnGuildNameChanged which reads the name):
-//   v83 OnGuildNameChanged@0x983a6a: DecodeStr(newGuildName);
-//       dispatcher CUserPool::OnUserRemotePacket@0x94b39a Decode4(characterId).
-//   v84 OnGuildNameChanged@0x9c3e08: DecodeStr(newGuildName).
-//   v87 OnGuildNameChanged@0xa094f4: DecodeStr(newGuildName).
-//   v95 OnGuildNameChanged@0x9550b0: DecodeStr(newGuildName).
+//
+//	v83 OnGuildNameChanged@0x983a6a: DecodeStr(newGuildName);
+//	    dispatcher CUserPool::OnUserRemotePacket@0x94b39a Decode4(characterId).
+//	v84 OnGuildNameChanged@0x9c3e08: DecodeStr(newGuildName).
+//	v87 OnGuildNameChanged@0xa094f4: DecodeStr(newGuildName).
+//	v95 OnGuildNameChanged@0x9550b0: DecodeStr(newGuildName).
+//
 // All four read orders are byte-identical: characterId(4) + name(2+len).
 // name="NewGuildName" -> 2+12=14 bytes; total 4+14 = 18 bytes.
 //

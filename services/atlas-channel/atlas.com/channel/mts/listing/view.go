@@ -16,43 +16,53 @@ import (
 // effectively-permanent listing instead.
 var mtsFixedExpiry = time.Date(2079, 1, 1, 0, 0, 0, 0, time.UTC)
 
-// ToMtsItem maps one channel-side listing.Model to a clientbound MtsItem
-// (ITCITEM) for the browse / user-sale page. The item-slot blob carries the
-// template id and quantity; the MTS trailer carries itcSn (= the listing's
-// serial), price, and the auction bid metadata. The contract-fee / rollback /
-// user-id strings are empty (the channel surfaces no such state). The
-// date-expired FILETIME is the auction end (so the bid dialog's countdown is
-// correct) or a far-future sentinel for non-expiring fixed listings.
+// mtsItemAsset builds the ITCITEM's GW_ItemSlotBase blob from a listing. For an
+// equip it carries the full equipment stat block + upgrade slots (SetEquipmentStats
+// / SetEquipmentMeta) so the client renders the item's real, scrolled stats — e.g.
+// a +2 weapon-attack cape shows +2, not the base template. For a non-equip it is a
+// bundle (stackable) blob. Both paths carry the item-tag owner name (sOwner) so a
+// tagged item surfaces its owner in every MTS view. The equip stats + owner are
+// stored on the listing by atlas-mts (captured from the seller's asset at list
+// time); this is purely the presentation of already-persisted data.
 //
-// zeroPosition=true: the ITCITEM's GW_ItemSlotBase blob is bare (the v83
-// client's GW_ItemSlotBase::Decode reads the item type byte first, with NO
-// leading inventory-slot byte). A slot-prefixed blob is misread as the item
-// type and overruns a later DecodeStr → client crash on browse.
+// zeroPosition=true: the blob is bare (the v83 client's GW_ItemSlotBase::Decode
+// reads the item type byte first, with NO leading inventory-slot byte). A
+// slot-prefixed blob is misread as the item type and overruns a later DecodeStr →
+// client crash on browse. The equip type byte (0x01) and stackable type byte (0x02)
+// are both valid bare leads; only a slot prefix is the crash.
+func mtsItemAsset(m Model) packetmodel.Asset {
+	asset := packetmodel.NewAsset(true, 0, m.TemplateId(), time.Time{})
+	if it, ok := inventory.TypeFromItemId(item.Id(m.TemplateId())); ok && it == inventory.TypeValueEquip {
+		asset = asset.
+			SetEquipmentStats(m.Strength(), m.Dexterity(), m.Intelligence(), m.Luck(), m.HP(), m.MP(), m.WeaponAttack(), m.MagicAttack(), m.WeaponDefense(), m.MagicDefense(), m.Accuracy(), m.Avoidability(), m.Hands(), m.Speed(), m.Jump()).
+			SetEquipmentMeta(m.Slots(), 0, m.Level(), m.ItemExp(), 0, m.Flags())
+	} else {
+		asset = asset.SetStackableInfo(m.Quantity(), 0, 0)
+	}
+	return asset.SetOwner(m.Owner())
+}
+
+// ToMtsItem maps one channel-side listing.Model to a clientbound MtsItem
+// (ITCITEM) for the browse / user-sale page. The item-slot blob (see mtsItemAsset)
+// carries the full equipment stats for equips and the owner tag for any item; the
+// MTS trailer carries itcSn (= the listing's serial), price, and the auction bid
+// metadata. The contract-fee / rollback / user-id strings are empty (the channel
+// surfaces no such state). The date-expired FILETIME is the auction end (so the
+// bid dialog's countdown is correct) or a far-future sentinel for non-expiring
+// fixed listings.
 //
 // Shared by the browse arm (socket/handler) and the post-event re-push of the
 // seller's "Not Yet Sold" list (kafka/consumer/mts) so both produce identical
 // wire bytes.
 func ToMtsItem(m Model) fieldcb.MtsItem {
-	asset := packetmodel.NewAsset(true, 0, m.TemplateId(), time.Time{}).SetStackableInfo(m.Quantity(), 0, 0)
-	return toMtsItem(m, asset)
+	return toMtsItem(m, mtsItemAsset(m))
 }
 
-// ToMtsItemDetailed is ToMtsItem except the ITCITEM's item-slot blob carries full
-// equipment stats when the listed item is an equip, so a want-ad poster viewing the
-// offers on their ad (VIEW_WISH) can compare each offered equip's real stats. For
-// non-equips it is byte-identical to ToMtsItem (the same stackable blob). Only the
-// item asset differs — every trailer field (itcSn, price, contract fee,
-// dateExpired, seller name, processStatus) is the same.
+// ToMtsItemDetailed is retained for the want-ad offers view (VIEW_WISH). Since the
+// browse view now renders full equipment stats too (mtsItemAsset), it is identical
+// to ToMtsItem; the distinct name documents the offer-comparison call site.
 func ToMtsItemDetailed(m Model) fieldcb.MtsItem {
-	var asset packetmodel.Asset
-	if it, ok := inventory.TypeFromItemId(item.Id(m.TemplateId())); ok && it == inventory.TypeValueEquip {
-		asset = packetmodel.NewAsset(true, 0, m.TemplateId(), time.Time{}).
-			SetEquipmentStats(m.Strength(), m.Dexterity(), m.Intelligence(), m.Luck(), m.HP(), m.MP(), m.WeaponAttack(), m.MagicAttack(), m.WeaponDefense(), m.MagicDefense(), m.Accuracy(), m.Avoidability(), m.Hands(), m.Speed(), m.Jump()).
-			SetEquipmentMeta(m.Slots(), 0, m.Level(), m.ItemExp(), 0, m.Flags())
-	} else {
-		asset = packetmodel.NewAsset(true, 0, m.TemplateId(), time.Time{}).SetStackableInfo(m.Quantity(), 0, 0)
-	}
-	return toMtsItem(m, asset)
+	return ToMtsItem(m)
 }
 
 // toMtsItem builds the ITCITEM from a listing and a pre-built item-slot asset. The

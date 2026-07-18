@@ -1,15 +1,14 @@
 package projection_test
 
 import (
-	"context"
-	"encoding/json"
-	"testing"
-	"time"
-
 	"atlas-login/configuration"
 	"atlas-login/configuration/projection"
 	"atlas-login/configuration/tenant"
 	"atlas-login/listener"
+	"context"
+	"encoding/json"
+	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"

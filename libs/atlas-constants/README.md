@@ -30,6 +30,7 @@ a service-local copy.
 | [`merchant`](./merchant) | `ShopType` (character/hired-merchant), `ShopState` (Draft/Open/Maintenance/Closed) | Anything interpreting merchant-shop rows off the REST/Kafka wire. **Do not hand-mirror these bytes in services.** |
 | [`job`](./job) | `Id`, `Type` | Job / class IDs and type-codes (Beginner / Warrior / Magician / …). |
 | [`map`](./map) | `Id` (`uint32`), field-limit constants | Map IDs in routing, drop tables, spawn rules. |
+| [`miniroom`](./miniroom) | Mini-room (`CMiniRoom`) type bytes: `Omok`=1, `MatchCards`=2, `Trade`=3, `PersonalShop`=4, `MerchantShop`=5, `CashTrade`=6 | The room-type discriminator on mini-room create/enter/balloon packets and mini-game room/record events. **Don't redeclare 1/2 as local omok/match-card consts.** |
 | [`monster`](./monster) | `Id`, monster status / skill constants | Monster IDs and per-monster status flags. |
 | [`point`](./point) | `X`, `Y` (`int16`) | Map coordinates — keep them typed, don't pass raw ints. |
 | [`skill`](./skill) | `Id`, summon-movement constants | Player and mob skill IDs. |

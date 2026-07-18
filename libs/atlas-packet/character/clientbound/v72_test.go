@@ -55,8 +55,8 @@ func TestCharacterListByteOutputV72(t *testing.T) {
 	want = append(want, statBlockV79...)
 	want = append(want, avatarBlockV79...)
 	// NO family byte (v72 < 73) — the next byte is the rank-enabled flag.
-	want = append(want, 0x01)         // rankEnabled = !gm     /*0x5b384d*/
-	want = append(want, rank16V79...) // rank ints             /*0x5b3868*/
+	want = append(want, 0x01)                   // rankEnabled = !gm     /*0x5b384d*/
+	want = append(want, rank16V79...)           // rank ints             /*0x5b3868*/
 	want = append(want, 0x08, 0x00, 0x00, 0x00) // slots — no hasPic /*0x5b38ba*/
 
 	if !bytes.Equal(got, want) {
@@ -103,6 +103,7 @@ func TestCharacterViewAllCharactersByteOutputV72(t *testing.T) {
 }
 
 // CharacterViewAllCount v72 — mode 1 (case 1u @0x5b3fb3):
+//
 //	mode  = Decode1                       // dispatcher mode (1)             /*0x5b3fb3*/
 //	svrCount = Decode4                    // *((_DWORD*)this+66)             /*0x5b3fd0*/
 //	charCount= Decode4                    // *((_DWORD*)this+67)             /*0x5b3fe7*/
@@ -288,7 +289,7 @@ func TestCharacterAppearanceUpdateByteOutputV72(t *testing.T) {
 
 	want := []byte{
 		0x78, 0x56, 0x34, 0x12, // characterId (WriteInt)                 /*0x88c934 dispatch*/
-		0x01,                   // flags = 1 (look-only)                  /*0x88c94d*/
+		0x01, // flags = 1 (look-only)                  /*0x88c94d*/
 		// --- AvatarLook block (flags & 1) --- @0x4d340d                  /*0x88c959*/
 		0x01,                   // gender (Decode1)
 		0x02,                   // skinColor (Decode1)
@@ -414,12 +415,12 @@ func TestCharacterSpawnByteOutputV72(t *testing.T) {
 	var wantPrefix []byte
 	wantPrefix = append(wantPrefix, 0x39, 0x30, 0x00, 0x00) // characterId 12345 (Decode4) /*0x87bc88*/
 	// NO level byte
-	wantPrefix = append(wantPrefix, 0x08, 0x00, 0x54, 0x65, 0x73, 0x74, 0x43, 0x68, 0x61, 0x72) // "TestChar" /*0x888b1f*/
+	wantPrefix = append(wantPrefix, 0x08, 0x00, 0x54, 0x65, 0x73, 0x74, 0x43, 0x68, 0x61, 0x72)       // "TestChar" /*0x888b1f*/
 	wantPrefix = append(wantPrefix, 0x09, 0x00, 0x54, 0x65, 0x73, 0x74, 0x47, 0x75, 0x69, 0x6c, 0x64) // "TestGuild" /*0x888b4f*/
-	wantPrefix = append(wantPrefix, 0x01, 0x00) // logoBg (Decode2)      /*0x888b85*/
-	wantPrefix = append(wantPrefix, 0x02)       // logoBgColor (Decode1) /*0x888b93*/
-	wantPrefix = append(wantPrefix, 0x03, 0x00) // logo (Decode2)        /*0x888ba0*/
-	wantPrefix = append(wantPrefix, 0x04)       // logoColor (Decode1)   /*0x888bac*/
+	wantPrefix = append(wantPrefix, 0x01, 0x00)                                                       // logoBg (Decode2)      /*0x888b85*/
+	wantPrefix = append(wantPrefix, 0x02)                                                             // logoBgColor (Decode1) /*0x888b93*/
+	wantPrefix = append(wantPrefix, 0x03, 0x00)                                                       // logo (Decode2)        /*0x888ba0*/
+	wantPrefix = append(wantPrefix, 0x04)                                                             // logoColor (Decode1)   /*0x888bac*/
 	if !bytes.HasPrefix(got, wantPrefix) {
 		t.Errorf("v72 CharacterSpawn prefix (no level byte):\n got %x\nwant %x", got[:min(len(got), len(wantPrefix))], wantPrefix)
 	}
@@ -427,27 +428,27 @@ func TestCharacterSpawnByteOutputV72(t *testing.T) {
 	// Suffix from jobId — proves NO trailing team byte (last wire byte is effectFlag @0x8891c1).
 	avatarBytes := model.Avatar{}.Encode(nil, ctx)(nil)
 	var wantSuffix []byte
-	wantSuffix = append(wantSuffix, 0x64, 0x00) // jobId 100 (Decode2)   /*0x888bd0*/
-	wantSuffix = append(wantSuffix, avatarBytes...) // avatar (opaque §5) /*0x888c09*/
+	wantSuffix = append(wantSuffix, 0x64, 0x00)             // jobId 100 (Decode2)   /*0x888bd0*/
+	wantSuffix = append(wantSuffix, avatarBytes...)         // avatar (opaque §5) /*0x888c09*/
 	wantSuffix = append(wantSuffix, 0x00, 0x00, 0x00, 0x00) // choco (Decode4)      /*0x888c1e*/
 	wantSuffix = append(wantSuffix, 0x00, 0x00, 0x00, 0x00) // itemEffect (Decode4) /*0x888c28*/
 	wantSuffix = append(wantSuffix, 0x00, 0x00, 0x00, 0x00) // chair (Decode4)      /*0x888c32*/
-	wantSuffix = append(wantSuffix, 0x64, 0x00) // x 100 (Decode2)       /*0x888c42*/
-	wantSuffix = append(wantSuffix, 0xc8, 0x00) // y 200 (Decode2)       /*0x888c4f*/
-	wantSuffix = append(wantSuffix, 0x03)       // stance (Decode1)      /*0x888c5a*/
-	wantSuffix = append(wantSuffix, 0x00, 0x00) // foothold (Decode2)    /*0x888c6a*/
-	wantSuffix = append(wantSuffix, 0x00)       // bShowAdmin (Decode1)  /*0x888ce7*/
-	wantSuffix = append(wantSuffix, 0x00)       // pets terminator       /*0x888d7e*/
+	wantSuffix = append(wantSuffix, 0x64, 0x00)             // x 100 (Decode2)       /*0x888c42*/
+	wantSuffix = append(wantSuffix, 0xc8, 0x00)             // y 200 (Decode2)       /*0x888c4f*/
+	wantSuffix = append(wantSuffix, 0x03)                   // stance (Decode1)      /*0x888c5a*/
+	wantSuffix = append(wantSuffix, 0x00, 0x00)             // foothold (Decode2)    /*0x888c6a*/
+	wantSuffix = append(wantSuffix, 0x00)                   // bShowAdmin (Decode1)  /*0x888ce7*/
+	wantSuffix = append(wantSuffix, 0x00)                   // pets terminator       /*0x888d7e*/
 	wantSuffix = append(wantSuffix, 0x01, 0x00, 0x00, 0x00) // mountLevel (Decode4) /*0x888df4*/
 	wantSuffix = append(wantSuffix, 0x00, 0x00, 0x00, 0x00) // mountExp (Decode4)   /*0x888e01*/
 	wantSuffix = append(wantSuffix, 0x00, 0x00, 0x00, 0x00) // mountTired (Decode4) /*0x888e0e*/
-	wantSuffix = append(wantSuffix, 0x00) // miniRoom (Decode1)    /*0x888e23*/
-	wantSuffix = append(wantSuffix, 0x00) // adBoard (Decode1)     /*0x888f89*/
-	wantSuffix = append(wantSuffix, 0x00) // couple (Decode1)      /*0x8890b6*/
-	wantSuffix = append(wantSuffix, 0x00) // friend (Decode1)      /*0x8890fb*/
-	wantSuffix = append(wantSuffix, 0x00) // marriage (Decode1)    /*0x889140*/
-	wantSuffix = append(wantSuffix, 0x00) // newYearCard (Decode1) /*0x889185*/
-	wantSuffix = append(wantSuffix, 0x00) // effectFlag (Decode1, last read) /*0x8891c1*/
+	wantSuffix = append(wantSuffix, 0x00)                   // miniRoom (Decode1)    /*0x888e23*/
+	wantSuffix = append(wantSuffix, 0x00)                   // adBoard (Decode1)     /*0x888f89*/
+	wantSuffix = append(wantSuffix, 0x00)                   // couple (Decode1)      /*0x8890b6*/
+	wantSuffix = append(wantSuffix, 0x00)                   // friend (Decode1)      /*0x8890fb*/
+	wantSuffix = append(wantSuffix, 0x00)                   // marriage (Decode1)    /*0x889140*/
+	wantSuffix = append(wantSuffix, 0x00)                   // newYearCard (Decode1) /*0x889185*/
+	wantSuffix = append(wantSuffix, 0x00)                   // effectFlag (Decode1, last read) /*0x8891c1*/
 	if !bytes.HasSuffix(got, wantSuffix) {
 		n := len(wantSuffix)
 		if n > len(got) {
@@ -573,7 +574,7 @@ func TestCharacterKeyMapByteOutputV72(t *testing.T) {
 	got := NewCharacterKeyMap(keys).Encode(nil, ctx)(nil)
 
 	var want []byte
-	want = append(want, 0x00) // not-reset flag (Decode1 == 0) /*0x551378*/
+	want = append(want, 0x00)        // not-reset flag (Decode1 == 0) /*0x551378*/
 	for i := int32(0); i < 89; i++ { // v72 reads 89 FUNCKEY_MAPPED entries /*0x5513ad v5=89*/
 		if k, ok := keys[i]; ok {
 			want = append(want, byte(k.KeyType)) // nType /*0x5513b4*/
@@ -617,8 +618,8 @@ func TestEffectQuestByteOutputV72(t *testing.T) {
 	t.Run("message", func(t *testing.T) {
 		got := NewEffectQuest(3, "Hello", 0x10, nil).Encode(nil, ctx)(nil)
 		want := []byte{
-			0x03,                         // mode (OnEffect selector = case 3) /*0x846e31*/
-			0x00,                         // count = 0 (Decode1)               /*0x8471dd*/
+			0x03,                                     // mode (OnEffect selector = case 3) /*0x846e31*/
+			0x00,                                     // count = 0 (Decode1)               /*0x8471dd*/
 			0x05, 0x00, 0x48, 0x65, 0x6c, 0x6c, 0x6f, // "Hello" (DecodeStr)    /*0x847357*/
 			0x10, 0x00, 0x00, 0x00, // nEffect 0x10 (Decode4)                  /*0x847397*/
 		}
@@ -644,8 +645,8 @@ func TestEffectQuestByteOutputV72(t *testing.T) {
 		got := NewEffectQuestForeign(0x12345678, 3, "Hi", 7, nil).Encode(nil, ctx)(nil)
 		want := []byte{
 			0x78, 0x56, 0x34, 0x12, // characterId (dispatcher Decode4)      /*0x87c050*/
-			0x03,             // mode                                        /*0x846e31*/
-			0x00,             // count = 0                                   /*0x8471dd*/
+			0x03,                   // mode                                        /*0x846e31*/
+			0x00,                   // count = 0                                   /*0x8471dd*/
 			0x02, 0x00, 0x48, 0x69, // "Hi"                                  /*0x847357*/
 			0x07, 0x00, 0x00, 0x00, // nEffect 7 (Decode4)                   /*0x847397*/
 		}
@@ -743,8 +744,8 @@ func TestStatusMessageDropPickUpMesoByteOutputV72(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 72, 1)
 	got := NewStatusMessageDropPickUpMeso(0, true, 1000, 0).Encode(nil, ctx)(nil)
 	want := []byte{
-		0x00,                   // mode = 0 (drops dispatch byte)   /*0x9191fd*/
-		0x01,                   // inner drop-type = 1 (meso)       /*0x9192ef*/
+		0x00, // mode = 0 (drops dispatch byte)   /*0x9191fd*/
+		0x01, // inner drop-type = 1 (meso)       /*0x9192ef*/
 		// NO partial-pickup byte (v72 < 79)
 		0xe8, 0x03, 0x00, 0x00, // meso 1000 (Decode4)              /*0x91930b*/
 		0x00, 0x00, // internetCafeBonus 0 (Decode2)   /*0x919314*/

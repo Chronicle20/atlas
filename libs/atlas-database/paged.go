@@ -4,9 +4,10 @@ package database
 import (
 	"fmt"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // PagedQuery runs a COUNT plus an OFFSET/LIMIT Find against the same scoped

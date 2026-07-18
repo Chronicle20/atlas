@@ -17,6 +17,7 @@ func Create(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID) func(m Model)
 			Expiration:     m.expiration,
 			Quantity:       m.quantity,
 			OwnerId:        m.ownerId,
+			Owner:          m.owner,
 			Flag:           m.flag,
 			Rechargeable:   m.rechargeable,
 			Strength:       m.strength,

@@ -4,10 +4,11 @@ import (
 	"atlas-npc-conversations/test"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 func TestProviderFunctionCurrying(t *testing.T) {

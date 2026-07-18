@@ -83,7 +83,7 @@ func TestMonsterControlBytesV79(t *testing.T) {
 		0x05,       // moveAction 5
 		0x00, 0x00, // foothold 0
 		0x2C, 0x01, // homeFoothold 300
-		0xFE,       // appearType -2 (Regen)
+		0xFE,                   // appearType -2 (Regen)
 		0x00,                   // team 0
 		0x00, 0x00, 0x00, 0x00, // effectItemId 0
 	}
@@ -124,7 +124,7 @@ func TestMonsterControlBytesV72(t *testing.T) {
 		0x05,       // moveAction 5
 		0x00, 0x00, // foothold 0
 		0x2C, 0x01, // homeFoothold 300
-		0xFE,       // appearType -2 (Regen)
+		0xFE,                   // appearType -2 (Regen)
 		0x00,                   // team 0
 		0x00, 0x00, 0x00, 0x00, // effectItemId 0
 	}

@@ -2,16 +2,17 @@ package listing_test
 
 import (
 	"atlas-mts/listing"
-	"errors"
 	"atlas-mts/saga"
 	"atlas-mts/test"
+	"errors"
 	"testing"
 	"time"
 
-	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 )
 
 // stubBalanceReader is an injectable buyer-prepaid balance source so the buy flow
@@ -80,9 +81,9 @@ func seedActiveListingForBuy(t *testing.T, db *gorm.DB) uuid.UUID {
 }
 
 const (
-	sellerForBuy   = uint32(100)
-	buyerForBuy    = uint32(200)
-	buyerAcctForBuy = uint32(2000)
+	sellerForBuy     = uint32(100)
+	buyerForBuy      = uint32(200)
+	buyerAcctForBuy  = uint32(2000)
 	sellerAcctForBuy = uint32(1000)
 )
 

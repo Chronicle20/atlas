@@ -1,9 +1,10 @@
 package storage
 
 import (
+	lru "github.com/hashicorp/golang-lru/v2"
+
 	"github.com/Chronicle20/atlas/libs/atlas-wz/manifest"
 	"github.com/Chronicle20/atlas/libs/atlas-wz/maplayout"
-	lru "github.com/hashicorp/golang-lru/v2"
 )
 
 // AtlasEntry is a hot-cached sprite atlas: the PNG bytes plus its manifest.

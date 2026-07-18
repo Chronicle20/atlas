@@ -1,10 +1,6 @@
 package main
 
 import (
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-
-	characterevt "atlas-summons/kafka/consumer/character"
-	summoncmd "atlas-summons/kafka/consumer/summon"
 	"atlas-summons/summon"
 	"atlas-summons/tasks"
 	"atlas-summons/world"
@@ -12,14 +8,20 @@ import (
 	"os"
 	"time"
 
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
+	characterevt "atlas-summons/kafka/consumer/character"
+	summoncmd "atlas-summons/kafka/consumer/summon"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	lock "github.com/Chronicle20/atlas/libs/atlas-lock"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
-	"github.com/sirupsen/logrus"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 )
 
 const serviceName = "atlas-summons"

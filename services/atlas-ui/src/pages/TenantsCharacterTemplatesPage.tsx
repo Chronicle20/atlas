@@ -2,9 +2,9 @@ import { TenantDetailLayout } from "@/components/features/tenants/TenantDetailLa
 import { TemplatesForm } from "@/pages/tenants-character-templates-form";
 
 export function TenantsCharacterTemplatesPage() {
-    return (
-        <TenantDetailLayout>
-            <TemplatesForm />
-        </TenantDetailLayout>
-    );
+  return (
+    <TenantDetailLayout>
+      <TemplatesForm />
+    </TenantDetailLayout>
+  );
 }

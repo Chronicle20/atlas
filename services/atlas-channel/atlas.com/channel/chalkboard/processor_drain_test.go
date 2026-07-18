@@ -1,6 +1,7 @@
 package chalkboard_test
 
 import (
+	"atlas-channel/chalkboard"
 	"context"
 	"fmt"
 	"net/http"
@@ -9,15 +10,14 @@ import (
 	"strings"
 	"testing"
 
-	"atlas-channel/chalkboard"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus/hooks/test"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	mapconst "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus/hooks/test"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // chalkboardsDoc renders a JSON:API "chalkboards" document for character

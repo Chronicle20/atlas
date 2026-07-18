@@ -4,13 +4,14 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus/hooks/test"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus/hooks/test"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func createTestContext() (context.Context, tenant.Model) {
@@ -364,7 +365,7 @@ func TestRegistry_RemoveCharacterFromAllMaps_MultiMapMultiInstance(t *testing.T)
 	channelId := channel.Id(11)
 	mapId1 := _map.Id(200000000)
 	mapId2 := _map.Id(200000001)
-	instance1 := uuid.New()   // non-zero instance to exercise multi-instance path
+	instance1 := uuid.New() // non-zero instance to exercise multi-instance path
 	targetChar := uint32(111001)
 	otherChar := uint32(111002)
 

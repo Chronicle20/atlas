@@ -93,7 +93,25 @@ if (nType == 0) Encode4(mapId)     // mapId only on delete (nType 0); register (
   inline destination (v83 appends `RunMapTransferItem`). Needs a pre-v83 codec +
   a resolved use→warp flow.
 
-## Central open question (drives the use flow)
+## v61 saved-map dialog (RE'd) — list management resolved, warp-trigger not yet
+
+The dialog is a `CDialog`-derived class (vtable @0x8ecdc8); button dispatch
+`sub_6CA1CA(this, buttonId)`:
+- button **2000** → `sub_6CA4C9` = **register current map** (`sub_8478EA(1,0,vip)`; full-list/dup/continent checks + YesNo).
+- button **2001** → `sub_6CA6D8` = **delete selected map** (`sub_8478EA(0, selectedMapId, vip)`).
+- buttons **1 / 2** → a vtable-dispatched action (the GO / close pair — the warp trigger, not yet cleanly resolved).
+- The dialog create (`sub_6C974C`) builds buttons 2000/2001/1/2 + a scrollbar + a
+  `CCtrlEdit` (name input, for warp-by-player as in v83), and copies the saved-map
+  list from **CharacterData** (`+1187` regular / `+1207` VIP, 5/10 entries; empty
+  slot = 999999999). So the list is client-resident character state.
+
+Confirmed: register/delete ride `TROCK_ADD_MAP` (nType 1/0) exactly like v83. The
+warp itself (select saved map or type a name → GO) is the one op still to pin
+(dialog buttons 1/2 → vtable method). It is NOT `USE_TELEPORT_ROCK` (that packet
+is bare and is sent from `CDraggableItem::OnDoubleClicked` to *open* the flow),
+and NOT `TROCK_ADD_MAP` (register/delete only).
+
+## Central open question (drives the use flow) — narrowed
 
 v83's use packet carries the destination; the pre-v83 use packet does not. So in
 legacy the flow must be: double-click rock → `SendMapTransferItemUseRequest`

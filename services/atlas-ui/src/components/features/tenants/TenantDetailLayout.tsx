@@ -38,8 +38,10 @@ export function TenantDetailLayout({ children }: TenantDetailLayoutProps) {
             <DetailSidebar items={sidebarNavItems} />
           </aside>
           <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-            <div className="flex-1 overflow-y-auto">{children}</div>
-            <DetailActionBar />
+            <div className="flex-1 overflow-y-auto px-2 py-1">{children}</div>
+            <div className="px-2">
+              <DetailActionBar />
+            </div>
           </div>
         </div>
       </div>

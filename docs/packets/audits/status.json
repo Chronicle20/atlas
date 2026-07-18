@@ -4660,8 +4660,7 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 35
         },
         "gms_v61": {

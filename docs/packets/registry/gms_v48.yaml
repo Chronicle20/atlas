@@ -270,7 +270,8 @@
   fname: CWvsContext::OnMapTransferResult
   provenance: ida-discovered
   ida:
-    address: 7393813
+    address: 7461420
+  note: 'task-124 v48 verify pass (live GMS_v48_1_DEVM.exe, port 13337, the OLDEST GMS IDB in the set): CWvsContext::OnMapTransferResult @0x71da2c (already named in this IDB) — corrected ida.address from a stale shared batch-import placeholder (7393813 / 0x70d215, shared with several unrelated neighboring registry entries) to the confirmed function entry 7461420 / 0x71da2c. Decompiled: mode=Decode1 @0x71da4c, targetList(flag)=Decode1 @0x71da56; modes 2/3 (DELETE_LIST/REGISTER_LIST) read (flag?10:5) x Decode4 @0x71da9f into the saved-map list (this+911 VIP / this+891 regular); modes 5,6,7,8,9,10,11 are CHATLOG_ADD/StringPool notice lookups (469/2644/2644/2678/2650/2647/2651) with no further packet reads. The case set is EXACTLY {2,3,5,6,7,8,9,10,11} — the SAME 9 modes as v61/v72/v79/v83, byte-for-byte identical read order even on the oldest client in the IDB set. Serverbound USE_TELEPORT_ROCK and TROCK_ADD_MAP were searched for exhaustively this pass (every COutPacket-ctor caller in the CWvsContext item-use region 0x700000-0x726000 was enumerated and either matched to an already-registered op or individually decompiled: op56/59/60/61/63/64/65/117/142) and genuinely do NOT exist as distinct target-carrying senders on v48 — no RunMapTransferItem-equivalent helper, no EncodeStr/Encode1(hasName) call, no register(2000)/delete(2001) saved-map dialog anywhere in the binary; the only Sub_711F20 dialog found is an unrelated single CWnd (resource 2615) called unconditionally inside SendConsumeCashItemUseRequest (op62). USE_ITEM (op65, generic consumable use) is bare Enc4(time)+Enc2(slot)+Enc4(itemId) with a WZ-fixed-destination (moveTo) continent check — the return-scroll shape, not the player-selected-destination teleport-rock shape. Left n-a; not force-fit to v83.'
 - op: WEDDING_PHOTO
   direction: clientbound
   opcode: 36

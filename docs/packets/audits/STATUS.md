@@ -68,7 +68,7 @@ Tool: `a460f1eee7c4df1b23605ae2ae295ea54f930d881570e0325632f1c15c730d91`
 | FORCED_STAT_RESET | CWvsContext::OnForcedStatReset |  |  | ⬜ | 0x020 | ❌ | 0x020 | ❌ | 0x020 | ❌ | 0x023 | ❌ | 0x023 | ❌ | 0x023 | ❌ | 0x022 | ❌ | 0x021 | ❌ |
 | SHOW_STATUS_INFO | CWvsContext::OnMessage | character/clientbound/StatusMessageCashItemExpire (T1) | 0x021 | ✅ | 0x024 | ✅ | 0x024 | ✅ | 0x024 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x026 | ✅ | 0x025 | ✅ |
 | MEMO_RESULT | CWvsContext::OnMemoResult | note/clientbound/NoteDisplay (T1) | 0x022 | ✅ | 0x026 | ✅ | 0x026 | ✅ | 0x026 | ✅ | 0x029 | ✅ | 0x029 | ❌ | 0x029 | ✅ | 0x028 | ✅ | 0x026 | ❌ |
-| MAP_TRANSFER_RESULT | CWvsContext::OnMapTransferResult | teleportrock/clientbound/MapTransferError (T1) | 0x023 | ❌ | 0x027 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x02A | ✅ | 0x02A | ✅ | 0x02A | ✅ | 0x029 | ✅ | 0x027 | ✅ |
+| MAP_TRANSFER_RESULT | CWvsContext::OnMapTransferResult | teleportrock/clientbound/MapTransferError (T1) | 0x023 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x02A | ✅ | 0x02A | ✅ | 0x02A | ✅ | 0x029 | ✅ | 0x027 | ✅ |
 | WEDDING_PHOTO | CWvsContext::OnAntiMacroResult |  | 0x024 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x02B | ❌ | 0x02B | ❌ | 0x02B | ❌ | 0x02A | ❌ | 0x028 | ❌ |
 | CLAIM_RESULT | CWvsContext::OnClaimResult |  | 0x025 | ❌ | 0x02A | ❌ | 0x02A | ❌ | 0x02A | ❌ | 0x02D | ❌ | 0x02D | ❌ | 0x02D | ❌ | 0x02C | ❌ | 0x02A | ❌ |
 | OPEN_FULL_CLIENT_DOWNLOAD_LINK | CWvsContext::OnOpenFullClientDownloadLink |  |  | ⬜ | 0x025 | ❌ | 0x025 | ❌ | 0x025 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x027 | ❌ |  | ⬜ |
@@ -995,7 +995,7 @@ Tool: `a460f1eee7c4df1b23605ae2ae295ea54f930d881570e0325632f1c15c730d91`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 169 | 0 | 2 | 158 | 631 | 0 | 51.4% |
+| v48 | 170 | 0 | 2 | 157 | 631 | 0 | 51.7% |
 | v61 | 246 | 0 | 60 | 192 | 462 | 0 | 49.4% |
 | v72 | 256 | 0 | 73 | 211 | 420 | 0 | 47.4% |
 | v79 | 270 | 0 | 72 | 207 | 411 | 0 | 49.2% |

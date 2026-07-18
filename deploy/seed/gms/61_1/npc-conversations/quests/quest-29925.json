@@ -1,0 +1,172 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "checkRequirements",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "1142130",
+                      "type": "inventorySpace",
+                      "value": "1"
+                    },
+                    {
+                      "operator": "<",
+                      "referenceId": "1142130",
+                      "type": "item",
+                      "value": "1"
+                    },
+                    {
+                      "operator": ">=",
+                      "type": "level",
+                      "value": "30"
+                    },
+                    {
+                      "operator": ">=",
+                      "type": "jobId",
+                      "value": "2100"
+                    },
+                    {
+                      "operator": "<",
+                      "type": "jobId",
+                      "value": "2200"
+                    }
+                  ],
+                  "nextState": "awardMedal"
+                },
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "checkRequirements",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "1142130",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {},
+                  "type": "start_quest"
+                },
+                {
+                  "params": {
+                    "force": "true"
+                  },
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "awardMedal",
+            "type": "genericAction"
+          }
+        ]
+      },
+      "questId": 29925,
+      "questName": "Aran Medal Quest",
+      "startStateMachine": {
+        "startState": "checkRequirements",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "1142130",
+                      "type": "inventorySpace",
+                      "value": "1"
+                    },
+                    {
+                      "operator": "<",
+                      "referenceId": "1142130",
+                      "type": "item",
+                      "value": "1"
+                    },
+                    {
+                      "operator": ">=",
+                      "type": "level",
+                      "value": "30"
+                    },
+                    {
+                      "operator": ">=",
+                      "type": "jobId",
+                      "value": "2100"
+                    },
+                    {
+                      "operator": "<",
+                      "type": "jobId",
+                      "value": "2200"
+                    }
+                  ],
+                  "nextState": "awardMedal"
+                },
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "checkRequirements",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "1142130",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {},
+                  "type": "start_quest"
+                },
+                {
+                  "params": {
+                    "force": "true"
+                  },
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "awardMedal",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "29925",
+    "type": "quest-conversation"
+  }
+}

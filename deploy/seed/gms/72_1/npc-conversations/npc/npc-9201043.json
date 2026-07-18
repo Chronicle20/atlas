@@ -1,0 +1,270 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 9201043,
+      "startState": "mainMenu",
+      "states": [
+        {
+          "id": "mainMenu",
+          "listSelection": {
+            "choices": [
+              {
+                "context": {
+                  "selection": "0"
+                },
+                "nextState": "checkEntranceTicket",
+                "text": "Enter the Amorian Challenge!!"
+              },
+              {
+                "context": {
+                  "selection": "1"
+                },
+                "nextState": "checkTradeConditions",
+                "text": "Trade 10 Keys for a Ticket!"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "My name is Amos the Strong. What would you like to do?"
+          },
+          "type": "listSelection"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "4031592",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "confirmEnter"
+              },
+              {
+                "conditions": [],
+                "nextState": "noTicket"
+              }
+            ]
+          },
+          "id": "checkEntranceTicket",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "performEnter",
+                "text": "Yes"
+              },
+              {
+                "nextState": "comeBack",
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "So you would like to enter the #bEntrance#k?"
+          },
+          "id": "confirmEnter",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "You must have an Entrance Ticket to enter."
+          },
+          "id": "noTicket",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "4031592",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "alreadyHaveTicket"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "4031593",
+                    "type": "item",
+                    "value": "10"
+                  }
+                ],
+                "nextState": "confirmTrade"
+              },
+              {
+                "conditions": [],
+                "nextState": "needMoreKeys"
+              }
+            ]
+          },
+          "id": "checkTradeConditions",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "You already have an Entrance Ticket!"
+          },
+          "id": "alreadyHaveTicket",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "performTrade",
+                "text": "Yes"
+              },
+              {
+                "nextState": "comeBack",
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "So you would like a Ticket?"
+          },
+          "id": "confirmTrade",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Please get me 10 Keys first!"
+          },
+          "id": "needMoreKeys",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Ok come back when you're ready."
+          },
+          "id": "comeBack",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "4031592",
+                  "quantity": "1"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "mapId": "670010100",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "performEnter",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "4031593",
+                  "quantity": "10"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "itemId": "4031592",
+                  "quantity": "1"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "performTrade",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "9201043",
+    "type": "npc-conversation"
+  }
+}

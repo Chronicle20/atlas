@@ -1,0 +1,397 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "checkHp",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": "<",
+                      "type": "hp",
+                      "value": "50"
+                    }
+                  ],
+                  "nextState": "notDrunkYet"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "heroReturned"
+                }
+              ]
+            },
+            "id": "checkHp",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "You have't drank the potion yet."
+            },
+            "id": "notDrunkYet",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "talkToPenguins",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "We've been digging and digging inside the Ice Cave in the hope of finding a hero, but I never thought I'd actually see the day... The prophecy was true! You were right, #p1201000#! Now that one of the legendary heroes has returned, we have no reason to fear the Black Mage!"
+            },
+            "id": "heroReturned",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "completeQuest",
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Oh, I've kept you too long. I'm sorry, I got a little carried away. I'm sure the other Penguins feel the same way. I know you're busy, but could you #bstop and talk to the other Penguins#k on your way to town? They would be so honored.\r\n\r\n#fUI/UIWindow.img/QuestIcon/4/0# \r\n#i2000022# 5 #t2000022#\r\n#i2000023# 5 #t2000023#\r\n\r\n#fUI/UIWindow.img/QuestIcon/8/0# 16 exp"
+            },
+            "id": "talkToPenguins",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "amount": "16"
+                  },
+                  "type": "award_exp"
+                },
+                {
+                  "params": {
+                    "itemId": "2000022",
+                    "quantity": "3"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {
+                    "itemId": "2000023",
+                    "quantity": "3"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "levelUp"
+                }
+              ]
+            },
+            "id": "completeQuest",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "checkSkills",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "endChat": false,
+              "speaker": "NPC",
+              "text": "Oh, you've leveled up! You may have even received some skill points. In Maple World, you can acquire 3 skill points every time you level up. Press the #bK key #kto view the Skill window."
+            },
+            "id": "levelUp",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "levelUp",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "showSkillGuideHint",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "endChat": false,
+              "speaker": "CHARACTER",
+              "text": "#b(Everyone's been so nice to me, but I just can't remember anything. Am I really a hero? I should check my skills and see. But how do I check them?)"
+            },
+            "id": "checkSkills",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "hintId": "15"
+                  },
+                  "type": "show_guide_hint"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "showSkillGuideHint",
+            "type": "genericAction"
+          }
+        ]
+      },
+      "npcId": 1201000,
+      "questId": 21010,
+      "questName": "Learning about Potions",
+      "startStateMachine": {
+        "startState": "intro1",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "intro2",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Hm, what's a human doing on this island? Wait, it's #p1201000#. What are you doing here, #p1201000#? And who's that beside you? Is it someone you know, #p1201000#? What? The hero, you say?"
+            },
+            "id": "intro1",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "intro1",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "intro3",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "     #i4001170#"
+            },
+            "id": "intro2",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "intro2",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "offerPotion",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "Ah, this must be the hero you and your clan have been waiting for. Am I right, #p1201000#? Ah, I knew you weren't just accompanying an average passerby..."
+            },
+            "id": "intro3",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "givePotion",
+                  "text": "Accept"
+                },
+                {
+                  "nextState": "declineMessage",
+                  "text": "Decline"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendAcceptDecline",
+              "text": "Oh, but it seems our hero has become very weak since the Black Mage's curse. It's only makes sense, considering that the hero has been asleep for hundreds of years. #bHere, I'll give you a HP Recovery Potion.#k"
+            },
+            "id": "offerPotion",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Oh, no need to decline my offer. It's no big deal. It's just a potion. Well, let me know if you change your mind."
+            },
+            "id": "declineMessage",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "amount": "25"
+                  },
+                  "type": "set_hp"
+                },
+                {
+                  "params": {
+                    "itemId": "2000022",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "drinkFirst"
+                }
+              ]
+            },
+            "id": "givePotion",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "howToDrink",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "endChat": false,
+              "speaker": "NPC",
+              "text": "Drink it first. Then we'll talk."
+            },
+            "id": "drinkFirst",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "drinkFirst",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "showGuideHint",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "endChat": false,
+              "speaker": "CHARACTER",
+              "text": "#b(How do I drink the potion? I don't remember..)"
+            },
+            "id": "howToDrink",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "hintId": "14"
+                  },
+                  "type": "show_guide_hint"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "showGuideHint",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "21010",
+    "type": "quest-conversation"
+  }
+}

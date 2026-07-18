@@ -1,0 +1,355 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "dialogue1",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "dialogue2",
+                  "text": "Next"
+                },
+                {
+                  "nextState": "exitEarly",
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "First you promise to defeat the Black Mage and make me a famous weapon, then you abandon me for hundreds of years, and now you're telling me you don't remember who I am? What the...?! Do you think I will let you get away with that? You're the one who begged and pined for me!"
+            },
+            "id": "dialogue1",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Hey! At least say you tried!"
+            },
+            "id": "exitEarly",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "dialogue1",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "dialogue3",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "speaker": "CHARACTER",
+              "text": "I did tell #p1203000# to make a pole arm for me if I could prove my worth."
+            },
+            "id": "dialogue2",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "dialogue2",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "dialogue4",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "After all that begging, shouldn't you treat me with a little more love and respect? Ya know, a weapon like me's a rare and wonderful thing. I am the ultimate #p1201001# that can help you defeat the Black Mage. How could you ditch me for hundreds of years?"
+            },
+            "id": "dialogue3",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "dialogue3",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "dialogue5",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "speaker": "CHARACTER",
+              "text": "Hey, I never begged for you."
+            },
+            "id": "dialogue4",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "dialogue4",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "dialogue6",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "What? You never begged for me? Ha! #p1203000# told me you got on your knees, begged for me in tears, and... Wait a sec. Aran! Did you just remember who I am?"
+            },
+            "id": "dialogue5",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "dialogue5",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "dialogue7",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "speaker": "CHARACTER",
+              "text": "Maybe a little bit..."
+            },
+            "id": "dialogue6",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "dialogue6",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "askAccept",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "Aran, it is you! *Sniff sniff* Wait, *ahem* I didn't get emotional, it's just allergies. I know the Black Mage has stripped you of your abilities so you probably don't even have the strength to lift me... but at least you remember me! I'm glad that your memory's starting to return."
+            },
+            "id": "dialogue7",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "checkInventorySpace",
+                  "text": "Accept"
+                },
+                {
+                  "nextState": "exitEarly",
+                  "text": "Decline"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendAcceptDecline",
+              "text": "Even though you've lost your memory, you're still my master. You endured some very tough training in the past, and I'm sure your body still remembers the skills you got through those hard times. Alright, I'll restore your abilities!"
+            },
+            "id": "askAccept",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "1142130",
+                      "type": "inventorySpace",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "completeQuest"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "inventoryFull"
+                }
+              ]
+            },
+            "id": "checkInventorySpace",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Wow, your #bequip#k inventory is full. I need you to make at least 1 empty slot to complete this quest."
+            },
+            "id": "inventoryFull",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "1142130",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {
+                    "jobId": "2110"
+                  },
+                  "type": "change_job"
+                },
+                {
+                  "params": {
+                    "level": "0",
+                    "masterLevel": "20",
+                    "skillId": "21100000"
+                  },
+                  "type": "create_skill"
+                },
+                {
+                  "params": {
+                    "level": "0",
+                    "masterLevel": "30",
+                    "skillId": "21100002"
+                  },
+                  "type": "create_skill"
+                },
+                {
+                  "params": {
+                    "level": "0",
+                    "masterLevel": "20",
+                    "skillId": "21100004"
+                  },
+                  "type": "create_skill"
+                },
+                {
+                  "params": {
+                    "level": "0",
+                    "masterLevel": "20",
+                    "skillId": "21100005"
+                  },
+                  "type": "create_skill"
+                },
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "confirmCompletion"
+                }
+              ]
+            },
+            "id": "completeQuest",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Your level isn't what it used to be back in your glory days, so I can't restore all of your old abilities. But the few I can restore should help you level up faster. Now hurry up and train so you can return to the old you."
+            },
+            "id": "confirmCompletion",
+            "type": "dialogue"
+          }
+        ]
+      },
+      "npcId": 1201001,
+      "questId": 21201,
+      "questName": "Giant Polearm (Aran's Memory Restoration)",
+      "startStateMachine": {
+        "startState": "startQuest",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "startQuest",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "21201",
+    "type": "quest-conversation"
+  }
+}

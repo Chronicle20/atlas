@@ -1,0 +1,208 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "dialogue1",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "dialogue2",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Did you manage to slay #o9001013#? Hahaha... you're my master, indeed. Okay, now give me the Red Jade that you found there. I'll have to put it back on the body, and... wait, why aren't you saying a word? Don't tell me... that you didn't bring that back!"
+            },
+            "id": "dialogue1",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "dialogue1",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "dialogue3",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "What?! You really didn't bring back the Red Jade? Why? Did you just completely forget it? Ahh... even with the curse of the Black Mage, and the amount of time that has passed and all, never did I think my master would turn out to be stupid..."
+            },
+            "id": "dialogue2",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "dialogue2",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "dialogue4",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "No, no, I can't let this put me in despair. This is when I should remain calm and in control, unlike my master...\r\noosah..."
+            },
+            "id": "dialogue3",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "dialogue3",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "dialogue5",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "Even if you go back there now, the thief probably made its way out of there. This means you'll have to make the Red Jade anew. You've made one before, so you do remember the materials required to make one, right? Now go..."
+            },
+            "id": "dialogue4",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "dialogue4",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "dialogue6",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "\r\n\r\n\r\nTHIS GUY HAS DEFINITELY LOST ALL MEMORIES!"
+            },
+            "id": "dialogue5",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "dialogue5",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "completeQuest",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "...No hope, no dreams... Nooooo!!"
+            },
+            "id": "dialogue6",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "dialogue7"
+                }
+              ]
+            },
+            "id": "completeQuest",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "dialogue6",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "speaker": "CHARACTER",
+              "text": "#b(Maha is beginning to really get hysterical. I better leave right this minute. Maybe Lilin can do something about it.)"
+            },
+            "id": "dialogue7",
+            "type": "dialogue"
+          }
+        ]
+      },
+      "npcId": 1201002,
+      "questId": 21301,
+      "questName": "Maha - Lost Red Jade",
+      "startStateMachine": {
+        "startState": "startQuest",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "startQuest",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "21301",
+    "type": "quest-conversation"
+  }
+}

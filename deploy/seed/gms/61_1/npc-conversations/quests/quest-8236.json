@@ -1,0 +1,92 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 9201054,
+      "questId": 8236,
+      "questName": "Bounty Hunter - One Step A-Head",
+      "startStateMachine": {
+        "startState": "askAccept",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "startQuest",
+                  "text": "Accept"
+                },
+                {
+                  "nextState": "declined",
+                  "text": "Decline"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendAcceptDecline",
+              "text": "Hey, traveler! I need your help. A new threat has appeared to the citizens of the New Leaf City. I'm currently recruiting anyone, and this time's target #ris the Headless Horseman#k. Are you in?"
+            },
+            "id": "askAccept",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Okay, then. See you around."
+            },
+            "id": "declined",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "executeStartQuest",
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Very well. Get me #r1 #t4031903##k, asap. The NLC is counting on you."
+            },
+            "id": "startQuest",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "executeStartQuest",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "8236",
+    "type": "quest-conversation"
+  }
+}

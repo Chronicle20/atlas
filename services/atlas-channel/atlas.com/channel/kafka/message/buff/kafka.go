@@ -11,9 +11,10 @@ import (
 )
 
 const (
-	EnvCommandTopic   = "COMMAND_TOPIC_CHARACTER_BUFF"
-	CommandTypeApply  = "APPLY"
-	CommandTypeCancel = "CANCEL"
+	EnvCommandTopic          = "COMMAND_TOPIC_CHARACTER_BUFF"
+	CommandTypeApply         = "APPLY"
+	CommandTypeCancel        = "CANCEL"
+	CommandTypeCancelByTypes = "CANCEL_BY_TYPES"
 )
 
 type Command[E any] struct {
@@ -41,6 +42,10 @@ type StatChange struct {
 
 type CancelCommandBody struct {
 	SourceId int32 `json:"sourceId"`
+}
+
+type CancelByTypesCommandBody struct {
+	Types []string `json:"types"`
 }
 
 const (

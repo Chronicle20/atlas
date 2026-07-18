@@ -24,6 +24,8 @@ type PartyRecipient struct {
 	y     int16
 	hp    uint16
 	maxHp uint16
+	mp    uint16
+	maxMp uint16
 }
 
 func (r PartyRecipient) Id() uint32    { return r.id }
@@ -31,6 +33,8 @@ func (r PartyRecipient) X() int16      { return r.x }
 func (r PartyRecipient) Y() int16      { return r.y }
 func (r PartyRecipient) Hp() uint16    { return r.hp }
 func (r PartyRecipient) MaxHp() uint16 { return r.maxHp }
+func (r PartyRecipient) Mp() uint16    { return r.mp }
+func (r PartyRecipient) MaxMp() uint16 { return r.maxMp }
 
 // PartyRecipientBuilder is the canonical constructor for PartyRecipient.
 type PartyRecipientBuilder struct {
@@ -44,6 +48,8 @@ func (b *PartyRecipientBuilder) SetX(v int16) *PartyRecipientBuilder      { b.r.
 func (b *PartyRecipientBuilder) SetY(v int16) *PartyRecipientBuilder      { b.r.y = v; return b }
 func (b *PartyRecipientBuilder) SetHp(v uint16) *PartyRecipientBuilder    { b.r.hp = v; return b }
 func (b *PartyRecipientBuilder) SetMaxHp(v uint16) *PartyRecipientBuilder { b.r.maxHp = v; return b }
+func (b *PartyRecipientBuilder) SetMp(v uint16) *PartyRecipientBuilder    { b.r.mp = v; return b }
+func (b *PartyRecipientBuilder) SetMaxMp(v uint16) *PartyRecipientBuilder { b.r.maxMp = v; return b }
 func (b *PartyRecipientBuilder) Build() PartyRecipient                    { return b.r }
 
 // loadCasterPartyFunc is the party-load seam tests can replace.
@@ -184,6 +190,37 @@ func SelectPartyMembersInMap(
 	f field.Model, casterId uint32, memberBitmap byte,
 ) []PartyRecipient {
 	return selectPartyMembers(l, ctx, f, casterId, 0, 0, effect.Model{}, memberBitmap, false, false)
+}
+
+// SelectAllCharactersInMap returns a recipient for EVERY character with a live
+// session in the field f, irrespective of party membership, HP, or position.
+// Unlike the party selectors it applies no bitmap, no LT/RB rectangle, and no
+// HP>0 filter — it is the map-wide selector for GM Heal + Dispel, which
+// benefits every player in the map INCLUDING the caster.
+//
+// The in-map id set comes from the same live-session source the spawn paths
+// use (ForSessionsInMap via inMapCharacterIdsFunc). Each id is loaded for its
+// HP/MP snapshot; a member whose load fails is logged and skipped.
+func SelectAllCharactersInMap(l logrus.FieldLogger, ctx context.Context, f field.Model) []PartyRecipient {
+	inMap := inMapCharacterIdsFunc(l, ctx, f)
+	out := make([]PartyRecipient, 0, len(inMap))
+	for id := range inMap {
+		mc, err := loadPartyMemberFunc(l, ctx, id)
+		if err != nil {
+			l.WithError(err).Debugf("SelectAllCharactersInMap: skipping character [%d]: fetch failed.", id)
+			continue
+		}
+		out = append(out, NewPartyRecipientBuilder().
+			SetId(mc.Id()).
+			SetX(mc.X()).
+			SetY(mc.Y()).
+			SetHp(mc.Hp()).
+			SetMaxHp(mc.MaxHp()).
+			SetMp(mc.Mp()).
+			SetMaxMp(mc.MaxMp()).
+			Build())
+	}
+	return out
 }
 
 // selectPartyMembers is the shared enumeration backing both party-member

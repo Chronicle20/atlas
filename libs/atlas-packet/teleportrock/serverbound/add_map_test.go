@@ -213,6 +213,41 @@ func TestAddMapDeleteDecodeV79(t *testing.T) {
 	}
 }
 
+// task-124 CORRECTION pass v48 verify (live GMS_v48_1_DEVM.exe, port 13337,
+// the OLDEST GMS IDB in the set): a prior verify pass (commit 97280bcb9)
+// wrongly concluded this op was absent on v48, having scoped its search to
+// the generic item-use region (0x700000-0x726000) and missed the
+// map-transfer UI dialog region (0x614xxx-0x616xxx). Unnamed sub_71E7F3
+// @0x71e7f3 (renamed live to CWvsContext::SendMapTransferRequest this pass):
+// COutPacket::COutPacket(&v4,81) @0x71e807 (opcode 81 = 0x51); Encode1(a1=
+// nType) @0x71e816; Encode1(a3=bCanTransferContinent) @0x71e821; guarded
+// Encode4(a2=mapId) @0x71e832 when a1==0 — byte-identical read order to
+// v61/v72/v79/v83/v84/v87/v95/jms_v185 (only the opcode differs: 81 here).
+// Caller confirmed: the saved-map REGISTER-button handler
+// CWvsContext::OnTeleportRockRegisterMap (renamed live from sub_615D0B this
+// pass) calls SendMapTransferRequest(1,0,vip) on YesNo()==6, driven by the
+// teleport-rock map-transfer dialog CWvsContext::RunMapTransferItem (renamed
+// live from sub_614DA6 this pass; vtable base 0x7a2154/0x7a2108/0x7a2104,
+// buttons 2000=register/2001=delete), which is instantiated from
+// CWvsContext::SendConsumeCashItemUseRequest (op 62) jumptable case 20.
+//
+// packet-audit:verify packet=teleportrock/serverbound/AddMap version=gms_v48 ida=0x71e7f3
+func TestAddMapDeleteDecodeV48(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 48, 1)
+	b := []byte{
+		0x00, 0x00, // delete, regular list
+		0x00, 0xE1, 0xF5, 0x05, // mapId = 100000000
+	}
+	req := request.Request(b)
+	r := request.NewRequestReader(&req, 0)
+	p := AddMap{}
+	p.Decode(l, ctx)(&r, nil)
+	if p.Register() || p.Vip() || p.MapId() != 100000000 {
+		t.Fatalf("decode: %+v", p)
+	}
+}
+
 func TestAddMapRoundTrip(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	for _, v := range pt.Variants {

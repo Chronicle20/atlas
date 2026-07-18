@@ -1,7 +1,7 @@
 {
   "toolSha": "a460f1eee7c4df1b23605ae2ae295ea54f930d881570e0325632f1c15c730d91",
   "exportHashes": {
-    "gms_v48": "a7f7dd20743f55f26646c1a912e4ba0e33dcb0b86f56183cd889c3bd2fd04021",
+    "gms_v48": "8d1a4c02745ee1cb5b41c358b749c6a55883207c109784c6e09b00545a3d2dc8",
     "gms_v61": "67395ebec4c069f827ade3a69a2e32286c750b66f305d9eba197ed2e6db87de3",
     "gms_v72": "005ee090459a5f2bea74a84ba7652af94ca98214fb61ff8b07090907581ef267",
     "gms_v79": "4bf6b40c4ef6721d672e57a5dc78ae5211c8a75de07a21da7d54b302dd3ff804",
@@ -11325,6 +11325,58 @@
     },
     {
       "kind": "op",
+      "op": "TROCK_ADD_MAP",
+      "packet": "teleportrock/serverbound/AddMap",
+      "direction": "serverbound",
+      "tier1": false,
+      "fnames": [
+        "CWvsContext::SendMapTransferRequest",
+        "sub_71E7F3",
+        "sub_8478EA",
+        "sub_91E33E",
+        "sub_970286"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "verified",
+          "opcode": 81
+        },
+        "gms_v61": {
+          "state": "verified",
+          "opcode": 94
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": 101
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 100
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 102
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 102
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 105
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 114
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 97
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "USE_CATCH_ITEM",
       "direction": "serverbound",
       "tier1": false,
@@ -14427,57 +14479,6 @@
         "jms_v185": {
           "state": "verified",
           "opcode": 147
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "TROCK_ADD_MAP",
-      "packet": "teleportrock/serverbound/AddMap",
-      "direction": "serverbound",
-      "tier1": false,
-      "fnames": [
-        "CWvsContext::SendMapTransferRequest",
-        "sub_8478EA",
-        "sub_91E33E",
-        "sub_970286"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "verified",
-          "opcode": 94
-        },
-        "gms_v72": {
-          "state": "verified",
-          "opcode": 101
-        },
-        "gms_v79": {
-          "state": "verified",
-          "opcode": 100
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 102
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 102
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 105
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 114
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 97
         }
       }
     },

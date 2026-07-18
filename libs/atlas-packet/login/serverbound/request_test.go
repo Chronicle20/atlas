@@ -3,8 +3,9 @@ package serverbound
 import (
 	"testing"
 
-	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	"github.com/sirupsen/logrus"
+
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 // packet-audit:verify packet=login/serverbound/Request version=gms_v83 ida=0x5f6952

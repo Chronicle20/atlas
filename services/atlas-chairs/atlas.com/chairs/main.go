@@ -5,8 +5,9 @@ import (
 	character2 "atlas-chairs/character"
 	"atlas-chairs/kafka/consumer/chair"
 	"atlas-chairs/kafka/consumer/character"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"os"
+
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"

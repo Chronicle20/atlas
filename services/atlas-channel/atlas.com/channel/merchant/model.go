@@ -3,10 +3,11 @@ package merchant
 import (
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	merchantconst "github.com/Chronicle20/atlas/libs/atlas-constants/merchant"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 type Model struct {
@@ -42,23 +43,23 @@ func (m MessageModel) Content() string     { return m.content }
 func (m MessageModel) SentAt() time.Time   { return m.sentAt }
 
 func (m Model) Id() uuid.UUID            { return m.id }
-func (m Model) CharacterId() uint32       { return m.characterId }
-func (m Model) ShopType() byte            { return m.shopType }
-func (m Model) State() byte               { return m.state }
-func (m Model) Title() string             { return m.title }
-func (m Model) WorldId() world.Id         { return m.worldId }
-func (m Model) ChannelId() channel.Id     { return m.channelId }
-func (m Model) MapId() uint32             { return m.mapId }
-func (m Model) InstanceId() uuid.UUID     { return m.instanceId }
-func (m Model) X() int16                  { return m.x }
-func (m Model) Y() int16                  { return m.y }
-func (m Model) PermitItemId() uint32      { return m.permitItemId }
-func (m Model) MesoBalance() uint32       { return m.mesoBalance }
-func (m Model) CreatedAt() time.Time      { return m.createdAt }
-func (m Model) ListingCount() int64       { return m.listingCount }
-func (m Model) Visitors() []uint32        { return m.visitors }
-func (m Model) Messages() []MessageModel   { return m.messages }
-func (m Model) Listings() []ListingModel  { return m.listings }
+func (m Model) CharacterId() uint32      { return m.characterId }
+func (m Model) ShopType() byte           { return m.shopType }
+func (m Model) State() byte              { return m.state }
+func (m Model) Title() string            { return m.title }
+func (m Model) WorldId() world.Id        { return m.worldId }
+func (m Model) ChannelId() channel.Id    { return m.channelId }
+func (m Model) MapId() uint32            { return m.mapId }
+func (m Model) InstanceId() uuid.UUID    { return m.instanceId }
+func (m Model) X() int16                 { return m.x }
+func (m Model) Y() int16                 { return m.y }
+func (m Model) PermitItemId() uint32     { return m.permitItemId }
+func (m Model) MesoBalance() uint32      { return m.mesoBalance }
+func (m Model) CreatedAt() time.Time     { return m.createdAt }
+func (m Model) ListingCount() int64      { return m.listingCount }
+func (m Model) Visitors() []uint32       { return m.visitors }
+func (m Model) Messages() []MessageModel { return m.messages }
+func (m Model) Listings() []ListingModel { return m.listings }
 
 // Shop states derived from the shared atlas-constants enum (the same source
 // atlas-merchant persists), exposed as byte to match the wire model.

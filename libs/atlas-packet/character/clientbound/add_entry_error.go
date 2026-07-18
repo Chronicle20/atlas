@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 type AddCharacterError struct {
@@ -18,8 +19,8 @@ func NewAddCharacterError(code byte) AddCharacterError {
 }
 
 func (m AddCharacterError) Code() byte        { return m.code }
-func (m AddCharacterError) Operation() string  { return AddCharacterEntryWriter }
-func (m AddCharacterError) String() string     { return fmt.Sprintf("errorCode [%d]", m.code) }
+func (m AddCharacterError) Operation() string { return AddCharacterEntryWriter }
+func (m AddCharacterError) String() string    { return fmt.Sprintf("errorCode [%d]", m.code) }
 
 func (m AddCharacterError) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)

@@ -6,12 +6,13 @@ import (
 	"context"
 	"testing"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func mustTenantCtx(t *testing.T) context.Context {
@@ -240,8 +241,8 @@ func TestHandleAssetCreatedEvent_CharacterMismatch(t *testing.T) {
 
 func TestHandleAssetQuantityUpdatedEvent(t *testing.T) {
 	tests := []struct {
-		name      string
-		eventType string
+		name          string
+		eventType     string
 		expectProcess bool
 	}{
 		{
@@ -324,8 +325,8 @@ func assertDebugReason(t *testing.T, hook *test.Hook, want string) {
 
 func TestHandleAssetMovedEvent(t *testing.T) {
 	tests := []struct {
-		name      string
-		eventType string
+		name          string
+		eventType     string
 		expectProcess bool
 	}{
 		{

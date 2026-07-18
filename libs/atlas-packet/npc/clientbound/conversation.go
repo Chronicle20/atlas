@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 const NpcConversationWriter = "NPCConversation"
@@ -53,13 +54,13 @@ func NewNpcConversation(speakerTypeId byte, speakerTemplateId uint32, msgType by
 	}
 }
 
-func (m NpcConversation) SpeakerTypeId() byte                { return m.speakerTypeId }
-func (m NpcConversation) SpeakerTemplateId() uint32          { return m.speakerTemplateId }
-func (m NpcConversation) SecondaryNpcTemplateId() uint32     { return m.secondaryNpcTemplateId }
-func (m NpcConversation) MsgType() byte                      { return m.msgType }
-func (m NpcConversation) Param() byte                        { return m.param }
-func (m NpcConversation) ConversationDetail() []byte         { return m.conversationDetail }
-func (m NpcConversation) Operation() string                  { return NpcConversationWriter }
+func (m NpcConversation) SpeakerTypeId() byte            { return m.speakerTypeId }
+func (m NpcConversation) SpeakerTemplateId() uint32      { return m.speakerTemplateId }
+func (m NpcConversation) SecondaryNpcTemplateId() uint32 { return m.secondaryNpcTemplateId }
+func (m NpcConversation) MsgType() byte                  { return m.msgType }
+func (m NpcConversation) Param() byte                    { return m.param }
+func (m NpcConversation) ConversationDetail() []byte     { return m.conversationDetail }
+func (m NpcConversation) Operation() string              { return NpcConversationWriter }
 func (m NpcConversation) String() string {
 	return fmt.Sprintf("speakerTypeId [%d], speakerTemplateId [%d], msgType [%d], param [%d]", m.speakerTypeId, m.speakerTemplateId, m.msgType, m.param)
 }

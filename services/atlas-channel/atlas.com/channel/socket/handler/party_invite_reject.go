@@ -7,10 +7,11 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	invite2 "github.com/Chronicle20/atlas/libs/atlas-constants/invite"
 	partysb "github.com/Chronicle20/atlas/libs/atlas-packet/party/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 func PartyInviteRejectHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {

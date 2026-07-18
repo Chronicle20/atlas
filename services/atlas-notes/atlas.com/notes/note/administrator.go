@@ -1,9 +1,10 @@
 package note
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 )
 
 func createNote(db *gorm.DB, tenantId uuid.UUID, note Model) (Model, error) {

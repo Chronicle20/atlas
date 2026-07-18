@@ -13,19 +13,20 @@ import (
 // INVENTORY_OPERATION v48 (GMS_v48_1_DEVM.exe, port 13337).
 //
 // Client read order — CWvsContext::OnInventoryOperation @0x71a4f6:
-//   Decode1(exclReq)      /*0x71a50e*/  (clears the exclusive-request latch)
-//   Decode1(count)        /*0x71a552*/
-//   count x per entry:
-//     Decode1(mode)       /*0x71a570*/
-//     Decode1(invType)    /*0x71a57b*/
-//     Decode2(slot)       /*0x71a583*/
-//     mode body:
-//       0 = Add            GW_ItemSlotBase::Decode (opaque) /*0x71a6cd*/
-//       1 = QuantityUpdate Decode2(newQuantity)            /*0x71a670*/
-//       2 = Move           Decode2(newSlot)                /*0x71a5cd*/
-//       3 = Remove         (no extra read)
-//   post-loop, when any entry set the move-out flag (mode 2/3, invType==EQUIP,
-//   negative slot): Decode1(addMov) /*0x71a75a*/.
+//
+//	Decode1(exclReq)      /*0x71a50e*/  (clears the exclusive-request latch)
+//	Decode1(count)        /*0x71a552*/
+//	count x per entry:
+//	  Decode1(mode)       /*0x71a570*/
+//	  Decode1(invType)    /*0x71a57b*/
+//	  Decode2(slot)       /*0x71a583*/
+//	  mode body:
+//	    0 = Add            GW_ItemSlotBase::Decode (opaque) /*0x71a6cd*/
+//	    1 = QuantityUpdate Decode2(newQuantity)            /*0x71a670*/
+//	    2 = Move           Decode2(newSlot)                /*0x71a5cd*/
+//	    3 = Remove         (no extra read)
+//	post-loop, when any entry set the move-out flag (mode 2/3, invType==EQUIP,
+//	negative slot): Decode1(addMov) /*0x71a75a*/.
 //
 // This is byte-identical to the verified v79 handler @0x96953e (same header,
 // same mode enum, same post-loop addMov byte) — the inventory change codec and

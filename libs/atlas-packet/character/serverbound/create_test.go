@@ -65,7 +65,9 @@ func TestCreateCharacterRoundTrip(t *testing.T) {
 // TestCreateCharacterJMSGolden pins the exact jms_v185 wire for CreateCharacter
 // against CLogin::SendNewCharPacket @0x66e2ab (non-charSale branch, COutPacket
 // 0xB):
-//   EncodeStr(name) → Encode4(race/job) → Encode2(subJob) → 6× Encode4(item[i]).
+//
+//	EncodeStr(name) → Encode4(race/job) → Encode2(subJob) → 6× Encode4(item[i]).
+//
 // The 6 ints are the avatar templates (face, hair, top, bottom, shoes, weapon).
 // JMS skips hairColor/skinColor and the trailing gender byte (GMS-only).
 // TestCreateCharacterV48ByteOutput pins the gms_v48 CREATE_CHAR (op 21). IDA:
@@ -94,7 +96,7 @@ func TestCreateCharacterV48ByteOutput(t *testing.T) {
 		0xa2, 0x2c, 0x10, 0x00, // Encode4 bottom    = 1060002
 		0x81, 0x5b, 0x10, 0x00, // Encode4 shoes     = 1072001
 		0xf0, 0xdd, 0x13, 0x00, // Encode4 weapon    = 1302000
-		0x00,             // Encode1 gender = 0
+		0x00,                   // Encode1 gender = 0
 		0x0d, 0x04, 0x04, 0x04, // Encode1 str/dex/int/luk = 13/4/4/4
 	}
 	if !bytes.Equal(got, want) {

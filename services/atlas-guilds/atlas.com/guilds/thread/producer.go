@@ -3,10 +3,11 @@ package thread
 import (
 	thread2 "atlas-guilds/kafka/message/thread"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 )
 
 func statusEventCreatedProvider(worldId world.Id, guildId uint32, threadId uint32, actorId uint32) model.Provider[[]kafka.Message] {

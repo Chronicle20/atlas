@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
-	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 // TestCharacterMovementByteOutput pins the CharacterMovement (MOVE_PLAYER) wire

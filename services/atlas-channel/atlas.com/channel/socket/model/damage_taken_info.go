@@ -1,9 +1,10 @@
 package model
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type DamageType int8
@@ -85,7 +86,6 @@ func (d *DamageTakenInfo) Decode(l logrus.FieldLogger, t tenant.Model, _ map[str
 			"powerGuard [%t], hit x,y [%d,%d], character x,y [%d, %d], expression [%d].",
 			d.characterId, d.damage, d.updateTime, d.nAttackIdx, d.nMagicElemAttr, d.obstacleData, d.monsterTemplateId, d.monsterId, d.left, d.nX,
 			d.bGuard, d.relativeDir, d.bPowerGuard, d.monsterId2, d.powerGuard, d.hitX, d.hitY, d.characterX, d.characterY, d.expression)
-
 	}
 }
 

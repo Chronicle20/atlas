@@ -29,8 +29,14 @@ func TestComputeSlotNotMemberFallsToZero(t *testing.T) {
 }
 
 func TestResolveTownPortalWithEnoughDoorPortals(t *testing.T) {
-	portals := []TownPortal{{X: -10, Y: 1}, {X: -20, Y: 2}, {X: -30, Y: 3},
-		{X: -40, Y: 4}, {X: -50, Y: 5}, {X: -60, Y: 6}}
+	portals := []TownPortal{
+		{X: -10, Y: 1},
+		{X: -20, Y: 2},
+		{X: -30, Y: 3},
+		{X: -40, Y: 4},
+		{X: -50, Y: 5},
+		{X: -60, Y: 6},
+	}
 	wireId, x, y, ok := ResolveTownPortal(portals, 3, defaultTownX, defaultTownY)
 	if !ok || wireId != 0x83 || x != -40 || y != 4 {
 		t.Fatalf("want 0x83/-40/4 got %d/%d/%d ok=%v", wireId, x, y, ok)

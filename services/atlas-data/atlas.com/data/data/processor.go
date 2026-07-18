@@ -22,7 +22,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -30,10 +29,13 @@ import (
 	"sync"
 	"time"
 
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const (
@@ -213,8 +215,10 @@ func (p *ProcessorImpl) StartWorker(name string, path string) error {
 	return nil
 }
 
-type Worker func() error
-type RegisterFunc func(filePath string) error
+type (
+	Worker       func() error
+	RegisterFunc func(filePath string) error
+)
 
 func (p *ProcessorImpl) RegisterAllData(rootDir string, wzFileName string, rf RegisterFunc) Worker {
 	return func() error {
@@ -286,7 +290,6 @@ func (p *ProcessorImpl) RegisterAllData(rootDir string, wzFileName string, rf Re
 			return err
 		}
 		return nil
-
 	}
 }
 

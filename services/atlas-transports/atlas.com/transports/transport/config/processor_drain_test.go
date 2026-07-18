@@ -1,6 +1,7 @@
 package config_test
 
 import (
+	"atlas-transports/transport/config"
 	"context"
 	"fmt"
 	"net/http"
@@ -9,11 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"atlas-transports/transport/config"
-
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // routeDoc renders a JSON:API document for routes [from, to]. Each route's

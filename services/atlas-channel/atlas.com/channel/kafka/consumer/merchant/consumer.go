@@ -16,6 +16,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
@@ -31,9 +34,7 @@ import (
 	merchantpkt "github.com/Chronicle20/atlas/libs/atlas-packet/merchant"
 	merchantcb "github.com/Chronicle20/atlas/libs/atlas-packet/merchant/clientbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...atlasmodel.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -170,13 +171,13 @@ func handleShopOpenedEvent(sc server.Model, wp writer.Producer) func(l logrus.Fi
 				// GetByCharacterId(serialNumber) — so the SN must be the owner's
 				// character id, else the visit lookup hits characters/0/merchants
 				// and no one can enter the store (task-127).
-				Id:              e.CharacterId,
-				Title:           e.Body.Title,
-				Spec:            skinSpec,
-				CapacityVal:     4,
-				OwnerId:         e.CharacterId,
-				VisitorCount:    0,
-				VisitorList:     []interactionpkt.MiniRoomVisitor{},
+				Id:           e.CharacterId,
+				Title:        e.Body.Title,
+				Spec:         skinSpec,
+				CapacityVal:  4,
+				OwnerId:      e.CharacterId,
+				VisitorCount: 0,
+				VisitorList:  []interactionpkt.MiniRoomVisitor{},
 			}
 			if err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, session.Announce(l)(ctx)(wp)(interactionpkt.MiniRoomWriter)(mr.Spawn(e.CharacterId))); err != nil {
 				l.WithError(err).Errorf("Unable to spawn personal store [%s] for characters in map [%d] instance [%s].", e.Body.ShopId, e.Body.MapId, e.Body.InstanceId)

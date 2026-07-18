@@ -1,39 +1,44 @@
 package main
 
 import (
-	"context"
-
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-
 	"atlas-saga-orchestrator/kafka/consumer/asset"
 	"atlas-saga-orchestrator/kafka/consumer/buddylist"
 	"atlas-saga-orchestrator/kafka/consumer/cashshop"
-	cashshopCompartment "atlas-saga-orchestrator/kafka/consumer/cashshop/compartment"
 	"atlas-saga-orchestrator/kafka/consumer/character"
 	"atlas-saga-orchestrator/kafka/consumer/compartment"
 	"atlas-saga-orchestrator/kafka/consumer/consumable"
 	"atlas-saga-orchestrator/kafka/consumer/guild"
-	inventoryConsumer "atlas-saga-orchestrator/kafka/consumer/inventory"
-	mtsCustody "atlas-saga-orchestrator/kafka/consumer/mts/custody"
 	"atlas-saga-orchestrator/kafka/consumer/pet"
 	"atlas-saga-orchestrator/kafka/consumer/quest"
-	saga2 "atlas-saga-orchestrator/kafka/consumer/saga"
 	"atlas-saga-orchestrator/kafka/consumer/skill"
 	"atlas-saga-orchestrator/kafka/consumer/storage"
-	storageCompartment "atlas-saga-orchestrator/kafka/consumer/storage/compartment"
 	"atlas-saga-orchestrator/saga"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
+	"context"
 	"os"
 	"strconv"
 	"time"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
+	cashshopCompartment "atlas-saga-orchestrator/kafka/consumer/cashshop/compartment"
+
+	inventoryConsumer "atlas-saga-orchestrator/kafka/consumer/inventory"
+	mtsCustody "atlas-saga-orchestrator/kafka/consumer/mts/custody"
+
+	saga2 "atlas-saga-orchestrator/kafka/consumer/saga"
+
+	storageCompartment "atlas-saga-orchestrator/kafka/consumer/storage/compartment"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 const serviceName = "atlas-saga-orchestrator"

@@ -57,32 +57,32 @@ type StatChange struct {
 	Amount int32
 }
 
-func (m Model) Id() uint32                   { return m.id }
-func (m Model) OwnerCharacterId() uint32     { return m.ownerCharacterId }
-func (m Model) SkillId() uint32              { return m.skillId }
-func (m Model) SkillLevel() byte             { return m.skillLevel }
-func (m Model) SummonType() SummonType       { return m.summonType }
-func (m Model) MovementType() MovementType   { return m.movementType }
-func (m Model) Field() field.Model           { return m.fld }
-func (m Model) X() int16                     { return m.x }
-func (m Model) Y() int16                     { return m.y }
-func (m Model) Stance() byte                 { return m.stance }
-func (m Model) Hp() int32                    { return m.hp }
-func (m Model) MaxHp() int32                 { return m.maxHp }
-func (m Model) Animated() bool               { return m.animated }
-func (m Model) SpawnTime() time.Time         { return m.spawnTime }
-func (m Model) ExpiresAt() time.Time         { return m.expiresAt }
-func (m Model) IsPuppet() bool               { return m.summonType == SummonTypePuppet }
-func (m Model) IsBeholder() bool             { return m.summonType == SummonTypeBuffAura }
-func (m Model) NextHealAt() time.Time        { return m.nextHealAt }
-func (m Model) NextBuffAt() time.Time        { return m.nextBuffAt }
-func (m Model) HealAmount() int16            { return m.healAmount }
-func (m Model) HealInterval() time.Duration  { return m.healInterval }
-func (m Model) BuffInterval() time.Duration  { return m.buffInterval }
-func (m Model) BuffSourceId() int32          { return m.buffSourceId }
-func (m Model) BuffLevel() byte              { return m.buffLevel }
-func (m Model) BuffDuration() int32          { return m.buffDuration }
-func (m Model) BuffChanges() []StatChange    { return m.buffChanges }
+func (m Model) Id() uint32                  { return m.id }
+func (m Model) OwnerCharacterId() uint32    { return m.ownerCharacterId }
+func (m Model) SkillId() uint32             { return m.skillId }
+func (m Model) SkillLevel() byte            { return m.skillLevel }
+func (m Model) SummonType() SummonType      { return m.summonType }
+func (m Model) MovementType() MovementType  { return m.movementType }
+func (m Model) Field() field.Model          { return m.fld }
+func (m Model) X() int16                    { return m.x }
+func (m Model) Y() int16                    { return m.y }
+func (m Model) Stance() byte                { return m.stance }
+func (m Model) Hp() int32                   { return m.hp }
+func (m Model) MaxHp() int32                { return m.maxHp }
+func (m Model) Animated() bool              { return m.animated }
+func (m Model) SpawnTime() time.Time        { return m.spawnTime }
+func (m Model) ExpiresAt() time.Time        { return m.expiresAt }
+func (m Model) IsPuppet() bool              { return m.summonType == SummonTypePuppet }
+func (m Model) IsBeholder() bool            { return m.summonType == SummonTypeBuffAura }
+func (m Model) NextHealAt() time.Time       { return m.nextHealAt }
+func (m Model) NextBuffAt() time.Time       { return m.nextBuffAt }
+func (m Model) HealAmount() int16           { return m.healAmount }
+func (m Model) HealInterval() time.Duration { return m.healInterval }
+func (m Model) BuffInterval() time.Duration { return m.buffInterval }
+func (m Model) BuffSourceId() int32         { return m.buffSourceId }
+func (m Model) BuffLevel() byte             { return m.buffLevel }
+func (m Model) BuffDuration() int32         { return m.buffDuration }
+func (m Model) BuffChanges() []StatChange   { return m.buffChanges }
 
 // Move returns a copy at the new position/stance (non-stationary summons only).
 func (m Model) Move(x int16, y int16, stance byte) Model {

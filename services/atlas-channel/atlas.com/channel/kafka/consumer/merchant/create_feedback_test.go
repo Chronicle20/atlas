@@ -5,8 +5,9 @@ import (
 
 	merchant2 "atlas-channel/kafka/message/merchant"
 
-	interactioncb "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/clientbound"
 	"github.com/stretchr/testify/assert"
+
+	interactioncb "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/clientbound"
 )
 
 func TestShopCreateFailureMode(t *testing.T) {

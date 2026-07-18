@@ -360,15 +360,15 @@ func CreateSingleMtsConfigJsonData(config map[string]interface{}) (json.RawMessa
 
 // InstanceRouteRestModel is the JSON:API resource for instance routes
 type InstanceRouteRestModel struct {
-	Id                    string `json:"-"`
-	Name                  string `json:"name"`
-	StartMapId            uint32 `json:"startMapId"`
+	Id                    string   `json:"-"`
+	Name                  string   `json:"name"`
+	StartMapId            uint32   `json:"startMapId"`
 	TransitMapIds         []uint32 `json:"transitMapIds"`
-	DestinationMapId      uint32 `json:"destinationMapId"`
-	Capacity              uint32 `json:"capacity"`
-	BoardingWindowSeconds uint32 `json:"boardingWindowSeconds"`
-	TravelDurationSeconds uint32 `json:"travelDurationSeconds"`
-	TransitMessage        string `json:"transitMessage,omitempty"`
+	DestinationMapId      uint32   `json:"destinationMapId"`
+	Capacity              uint32   `json:"capacity"`
+	BoardingWindowSeconds uint32   `json:"boardingWindowSeconds"`
+	TravelDurationSeconds uint32   `json:"travelDurationSeconds"`
+	TransitMessage        string   `json:"transitMessage,omitempty"`
 }
 
 // GetID returns the resource ID
@@ -539,4 +539,130 @@ func ExtractRankings(r RankingsRestModel) (map[string]interface{}, error) {
 // for the single-object rankings configuration
 func CreateSingleRankingsJsonData(rankings map[string]interface{}) (json.RawMessage, error) {
 	return json.Marshal(map[string]interface{}{"data": rankings})
+}
+
+// RpsRewardRungRestModel is the nested JSON attribute shape of a single rung
+// embedded in the rps-rewards `ladder` array.
+type RpsRewardRungRestModel struct {
+	Rung     int    `json:"rung"`
+	ItemId   uint32 `json:"itemId"`
+	Quantity uint32 `json:"quantity"`
+	Meso     uint32 `json:"meso"`
+}
+
+// RpsRewardRestModel is the JSON:API resource for the rps-rewards configuration
+type RpsRewardRestModel struct {
+	Id string `json:"-"`
+	// EntryCostMeso is the participation fee charged to enter (and to Retry).
+	EntryCostMeso uint32 `json:"entryCostMeso"`
+	// ConsolationMeso is the meso awarded on a loss (the client's "consolation
+	// prize" message). 0 disables the consolation award.
+	ConsolationMeso uint32                   `json:"consolationMeso"`
+	Ladder          []RpsRewardRungRestModel `json:"ladder"`
+}
+
+// GetID returns the resource ID
+func (r RpsRewardRestModel) GetID() string {
+	return r.Id
+}
+
+// SetID sets the resource ID
+func (r *RpsRewardRestModel) SetID(id string) error {
+	r.Id = id
+	return nil
+}
+
+// GetName returns the resource name
+func (r RpsRewardRestModel) GetName() string {
+	return "rps-rewards"
+}
+
+// TransformRpsReward converts a map[string]interface{} to a RpsRewardRestModel
+func TransformRpsReward(data map[string]interface{}) (RpsRewardRestModel, error) {
+	id, _ := data["id"].(string)
+
+	attributes, ok := data["attributes"].(map[string]interface{})
+	if !ok {
+		attributes = make(map[string]interface{})
+	}
+
+	entryCostMeso := uint32(0)
+	if val, ok := attributes["entryCostMeso"].(float64); ok {
+		entryCostMeso = uint32(val)
+	}
+
+	consolationMeso := uint32(0)
+	if val, ok := attributes["consolationMeso"].(float64); ok {
+		consolationMeso = uint32(val)
+	}
+
+	ladder := make([]RpsRewardRungRestModel, 0)
+	if vals, ok := attributes["ladder"].([]interface{}); ok {
+		for _, v := range vals {
+			rungMap, ok := v.(map[string]interface{})
+			if !ok {
+				continue
+			}
+
+			rung := 0
+			if val, ok := rungMap["rung"].(float64); ok {
+				rung = int(val)
+			}
+
+			itemId := uint32(0)
+			if val, ok := rungMap["itemId"].(float64); ok {
+				itemId = uint32(val)
+			}
+
+			quantity := uint32(0)
+			if val, ok := rungMap["quantity"].(float64); ok {
+				quantity = uint32(val)
+			}
+
+			meso := uint32(0)
+			if val, ok := rungMap["meso"].(float64); ok {
+				meso = uint32(val)
+			}
+
+			ladder = append(ladder, RpsRewardRungRestModel{
+				Rung:     rung,
+				ItemId:   itemId,
+				Quantity: quantity,
+				Meso:     meso,
+			})
+		}
+	}
+
+	return RpsRewardRestModel{
+		Id:              id,
+		EntryCostMeso:   entryCostMeso,
+		ConsolationMeso: consolationMeso,
+		Ladder:          ladder,
+	}, nil
+}
+
+// ExtractRpsReward converts a RpsRewardRestModel to a map[string]interface{}
+func ExtractRpsReward(r RpsRewardRestModel) (map[string]interface{}, error) {
+	return map[string]interface{}{
+		"type": "rps-rewards",
+		"id":   r.Id,
+		"attributes": map[string]interface{}{
+			"entryCostMeso":   r.EntryCostMeso,
+			"consolationMeso": r.ConsolationMeso,
+			"ladder":          r.Ladder,
+		},
+	}, nil
+}
+
+// CreateRpsRewardJsonData creates a JSON:API compliant data structure for rps-rewards
+func CreateRpsRewardJsonData(rewards []map[string]interface{}) (json.RawMessage, error) {
+	data := map[string]interface{}{
+		"data": rewards,
+	}
+	return json.Marshal(data)
+}
+
+// CreateSingleRpsRewardJsonData creates a JSON:API compliant data structure for a single rps-reward
+func CreateSingleRpsRewardJsonData(reward map[string]interface{}) (json.RawMessage, error) {
+	return CreateRpsRewardJsonData([]map[string]interface{}{reward})
 }

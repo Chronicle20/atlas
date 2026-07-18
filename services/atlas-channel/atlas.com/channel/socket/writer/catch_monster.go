@@ -3,9 +3,10 @@ package writer
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	monsterpkt "github.com/Chronicle20/atlas/libs/atlas-packet/monster/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
-	"github.com/sirupsen/logrus"
 )
 
 // CatchMonsterBody encodes the clientbound CATCH_MONSTER packet, which plays a

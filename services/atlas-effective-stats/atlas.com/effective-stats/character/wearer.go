@@ -13,5 +13,5 @@ func NewWearerProfile(level byte, jobId job.Id) WearerProfile {
 	return WearerProfile{level: level, jobId: jobId}
 }
 
-func (p WearerProfile) Level() byte    { return p.level }
-func (p WearerProfile) JobId() job.Id  { return p.jobId }
+func (p WearerProfile) Level() byte   { return p.level }
+func (p WearerProfile) JobId() job.Id { return p.jobId }

@@ -15,6 +15,7 @@ import (
 //   - CCashTradingRoomDlg::Trade @0x47e5f5 — Encode1(0x11) only, no entry list.
 //   - CPersonalShopDlg::BuyItem @0x689ce7 — Encode1(mode),Encode1(index),
 //     Encode2(quantity); no trailing itemCRC Encode4.
+//
 // The GMS v83 senders (already fixture-verified) include the entry list / CRC,
 // so the boundary sits between v79 and v83.
 func tradeCrcPresent(t tenant.Model) bool {

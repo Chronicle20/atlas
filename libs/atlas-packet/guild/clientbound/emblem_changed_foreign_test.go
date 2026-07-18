@@ -13,13 +13,16 @@ import (
 //
 // IDA evidence (CUserPool::OnUserRemotePacket reads the characterId via Decode4,
 // then dispatches to CUserRemote::OnGuildMarkChanged):
-//   v83 OnGuildMarkChanged@0x983ab5: Decode2(nMarkBg)+Decode1(nMarkBgColor)+Decode2(nMark)+Decode1(nMarkColor);
-//       dispatcher CUserPool::OnUserRemotePacket@0x94b39a Decode4(characterId).
-//   v84 OnGuildMarkChanged@0x9c3e53: Decode2+Decode1+Decode2+Decode1.
-//   v87 OnGuildMarkChanged@0xa0953f: Decode2+Decode1+Decode2+Decode1.
-//   v95 OnGuildMarkChanged@0x953fe0: Decode2+Decode1+Decode2+Decode1.
+//
+//	v83 OnGuildMarkChanged@0x983ab5: Decode2(nMarkBg)+Decode1(nMarkBgColor)+Decode2(nMark)+Decode1(nMarkColor);
+//	    dispatcher CUserPool::OnUserRemotePacket@0x94b39a Decode4(characterId).
+//	v84 OnGuildMarkChanged@0x9c3e53: Decode2+Decode1+Decode2+Decode1.
+//	v87 OnGuildMarkChanged@0xa0953f: Decode2+Decode1+Decode2+Decode1.
+//	v95 OnGuildMarkChanged@0x953fe0: Decode2+Decode1+Decode2+Decode1.
+//
 // All four read orders are byte-identical:
-//   characterId(4) + logoBackground(2) + logoBackgroundColor(1) + logo(2) + logoColor(1) = 10 bytes.
+//
+//	characterId(4) + logoBackground(2) + logoBackgroundColor(1) + logo(2) + logoColor(1) = 10 bytes.
 //
 // packet-audit:verify packet=guild/clientbound/GuildForeignEmblemChanged version=gms_v83 ida=0x983ab5
 // packet-audit:verify packet=guild/clientbound/GuildForeignEmblemChanged version=gms_v84 ida=0x9c3e53

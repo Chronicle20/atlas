@@ -1,18 +1,18 @@
 package scheduler
 
 import (
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-
+	"atlas-marriages/marriage"
 	"context"
 	"time"
 
-	"atlas-marriages/marriage"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 
-	"github.com/Chronicle20/atlas/libs/atlas-retry"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	retry "github.com/Chronicle20/atlas/libs/atlas-retry"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // CeremonyTimeoutScheduler handles periodic checking and timeout of active ceremonies
@@ -136,7 +136,6 @@ func (s *CeremonyTimeoutScheduler) processActiveCeremoniesForTenant(tenantId uui
 		err = processor.ProcessCeremonyTimeouts()
 		return err != nil, err
 	})
-
 	if err != nil {
 		s.log.WithFields(logrus.Fields{
 			"tenantId": tenantId,

@@ -9,10 +9,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 type Model struct {
@@ -176,7 +177,7 @@ func (m Model) HasSPTable() bool {
 
 func (m Model) Sp() []uint16 {
 	s := strings.Split(m.sp, ",")
-	var sps = make([]uint16, 0)
+	sps := make([]uint16, 0)
 	for _, x := range s {
 		sp, err := strconv.ParseUint(x, 10, 16)
 		if err == nil {

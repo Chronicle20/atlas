@@ -28,7 +28,10 @@ export interface PagedResult<T> {
 
 const DEFAULT_DRAIN_SIZE = 250;
 
-function withPageParams(url: string, page: { number: number; size: number }): string {
+function withPageParams(
+  url: string,
+  page: { number: number; size: number },
+): string {
   const queryIndex = url.indexOf("?");
   const path = queryIndex === -1 ? url : url.slice(0, queryIndex);
   const query = queryIndex === -1 ? "" : url.slice(queryIndex + 1);
@@ -48,7 +51,7 @@ function withPageParams(url: string, page: { number: number; size: number }): st
 export async function fetchPaged<T>(
   url: string,
   page: { number: number; size: number },
-  options?: ApiRequestOptions
+  options?: ApiRequestOptions,
 ): Promise<PagedResult<T>> {
   const pagedUrl = withPageParams(url, page);
   const doc = await api.get<{ data: T[]; meta?: PageMeta }>(pagedUrl, options);
@@ -64,7 +67,7 @@ export async function fetchPaged<T>(
 export async function fetchAll<T>(
   url: string,
   size: number = DEFAULT_DRAIN_SIZE,
-  options?: ApiRequestOptions
+  options?: ApiRequestOptions,
 ): Promise<T[]> {
   const first = await fetchPaged<T>(url, { number: 1, size }, options);
 
@@ -76,7 +79,11 @@ export async function fetchAll<T>(
   const lastPage = first.meta.page.last;
 
   for (let pageNumber = 2; pageNumber <= lastPage; pageNumber++) {
-    const next = await fetchPaged<T>(url, { number: pageNumber, size }, options);
+    const next = await fetchPaged<T>(
+      url,
+      { number: pageNumber, size },
+      options,
+    );
     if (next.data.length === 0) break;
     results.push(...next.data);
   }

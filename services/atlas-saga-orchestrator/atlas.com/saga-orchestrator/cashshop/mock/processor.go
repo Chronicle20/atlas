@@ -45,7 +45,9 @@ func (m *ProcessorMock) Accept(mb *message.Buffer) func(transactionId uuid.UUID,
 	if m.AcceptFunc != nil {
 		return m.AcceptFunc(mb)
 	}
-	return func(uuid.UUID, uint32, uint32, uuid.UUID, byte, int64, uint32, uint32, uint32, uint32, uint16) error { return nil }
+	return func(uuid.UUID, uint32, uint32, uuid.UUID, byte, int64, uint32, uint32, uint32, uint32, uint16) error {
+		return nil
+	}
 }
 
 // ReleaseAndEmit is a mock implementation of the cashshop.Processor.ReleaseAndEmit method

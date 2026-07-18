@@ -1,16 +1,16 @@
 package listing
 
 import (
+	"atlas-mts/serial"
 	"fmt"
 	"time"
 
-	"atlas-mts/serial"
+	"github.com/google/uuid"
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 // parseId converts a string id into a uuid, returning uuid.Nil on a malformed
@@ -124,6 +124,7 @@ func CreateListing(db *gorm.DB, m Model) (Model, error) {
 		RingId:           m.RingId(),
 		ViciousCount:     m.ViciousCount(),
 		Flags:            m.Flags(),
+		Owner:            m.Owner(),
 		ListValue:        m.ListValue(),
 		BuyNowPrice:      m.BuyNowPrice(),
 		CommissionRate:   m.CommissionRate(),

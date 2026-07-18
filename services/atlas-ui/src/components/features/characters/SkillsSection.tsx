@@ -17,12 +17,19 @@ export function SkillsSection({ character, tenant }: Props) {
   const { data: characterSkills } = useCharacterSkills(tenant, character.id);
 
   if (path.length === 0) {
-    return <p className="text-sm text-muted-foreground">No skill book available for this job.</p>;
+    return (
+      <p className="text-sm text-muted-foreground">
+        No skill book available for this job.
+      </p>
+    );
   }
 
   const learnedById = new Map<number, { level: number; masterLevel: number }>();
   for (const cs of characterSkills ?? []) {
-    learnedById.set(parseInt(cs.id, 10), { level: cs.level, masterLevel: cs.masterLevel });
+    learnedById.set(parseInt(cs.id, 10), {
+      level: cs.level,
+      masterLevel: cs.masterLevel,
+    });
   }
 
   const defaultJob = String(character.attributes.jobId);
@@ -31,12 +38,18 @@ export function SkillsSection({ character, tenant }: Props) {
     <Tabs defaultValue={defaultJob}>
       <TabsList className="flex flex-wrap">
         {path.map((j) => (
-          <TabsTrigger key={j.id} value={String(j.id)}>{j.name}</TabsTrigger>
+          <TabsTrigger key={j.id} value={String(j.id)}>
+            {j.name}
+          </TabsTrigger>
         ))}
       </TabsList>
       {path.map((j) => (
         <TabsContent key={j.id} value={String(j.id)}>
-          <JobSkillGrid jobId={j.id} tenant={tenant} learnedById={learnedById} />
+          <JobSkillGrid
+            jobId={j.id}
+            tenant={tenant}
+            learnedById={learnedById}
+          />
         </TabsContent>
       ))}
     </Tabs>
@@ -44,7 +57,9 @@ export function SkillsSection({ character, tenant }: Props) {
 }
 
 function JobSkillGrid({
-  jobId, tenant, learnedById,
+  jobId,
+  tenant,
+  learnedById,
 }: {
   jobId: number;
   tenant: Tenant;
@@ -54,12 +69,16 @@ function JobSkillGrid({
   if (isLoading) {
     return (
       <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-7 gap-2">
-        {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-24" />)}
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} className="h-24" />
+        ))}
       </div>
     );
   }
   if (isError || !skillIds || skillIds.length === 0) {
-    return <p className="text-sm text-muted-foreground">No skills in this book</p>;
+    return (
+      <p className="text-sm text-muted-foreground">No skills in this book</p>
+    );
   }
   return (
     <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-7 gap-2">

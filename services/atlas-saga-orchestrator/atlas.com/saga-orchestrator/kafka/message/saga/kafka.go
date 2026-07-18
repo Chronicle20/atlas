@@ -42,8 +42,8 @@ type StatusEvent[E any] struct {
 }
 
 type StatusEventCompletedBody struct {
-	SagaType    string         `json:"sagaType,omitempty"`
-	Results     map[string]any `json:"results,omitempty"`
+	SagaType string         `json:"sagaType,omitempty"`
+	Results  map[string]any `json:"results,omitempty"`
 }
 
 type StatusEventFailedBody struct {

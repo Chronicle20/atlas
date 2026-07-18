@@ -1,7 +1,6 @@
 import {
   createContext,
   useContext,
-  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -93,15 +92,23 @@ export function QuestConversationProvider({
   const [isDirty, setIsDirty] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
+  // Sync draft to the latest conversation prop unless the user has local
+  // (unsaved) edits. Adjusted during render instead of in an effect.
+  const [prevSync, setPrevSync] = useState({ conversation, isDirty });
+  if (conversation !== prevSync.conversation || isDirty !== prevSync.isDirty) {
+    setPrevSync({ conversation, isDirty });
     if (!isDirty) setDraft(conversation);
-  }, [conversation, isDirty]);
+  }
 
   const hasEnd = !!draft.attributes.endStateMachine;
 
   const startConversation = useMemo(
     () =>
-      machineToConversation(draft.id, draft.attributes.startStateMachine, "start"),
+      machineToConversation(
+        draft.id,
+        draft.attributes.startStateMachine,
+        "start",
+      ),
     [draft],
   );
   const endConversation = useMemo(() => {
@@ -117,7 +124,7 @@ export function QuestConversationProvider({
   );
 
   const applyStart = (next: Conversation) => {
-    setDraft(current => ({
+    setDraft((current) => ({
       ...current,
       attributes: {
         ...current.attributes,
@@ -128,7 +135,7 @@ export function QuestConversationProvider({
   };
 
   const applyEnd = (next: Conversation) => {
-    setDraft(current => ({
+    setDraft((current) => ({
       ...current,
       attributes: {
         ...current.attributes,

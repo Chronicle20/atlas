@@ -16,10 +16,11 @@ import (
 	"strings"
 	"sync/atomic"
 
+	"github.com/sirupsen/logrus"
+
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func parseMapId(filePath string) (_map.Id, error) {
@@ -104,7 +105,7 @@ func Read(l logrus.FieldLogger) func(ctx context.Context) func(path string, id u
 			monsters, npcs := getLife(t, exml)
 			m.Monsters = monsters
 			m.NPCs = npcs
-			//TODO player NPCS and CPQ support
+			// TODO player NPCS and CPQ support
 
 			limitArea := m.MapArea
 			if limitArea == nil {

@@ -17,7 +17,8 @@ import { getItemType } from "@/types/models/item";
 import type { DropData } from "@/types/models/drop";
 import type { MonsterAttributes } from "@/types/models/monster";
 
-type DropGroupKey = "equipment" | "consumable" | "setup" | "etc" | "cash" | "other";
+type DropGroupKey =
+  "equipment" | "consumable" | "setup" | "etc" | "cash" | "other";
 
 const DROP_GROUP_ORDER: DropGroupKey[] = [
   "equipment",
@@ -100,10 +101,7 @@ export function MonsterDetailPage() {
   );
   useItemBatchData(itemIds);
 
-  const { mesos, groups } = useMemo(
-    () => groupDrops(drops ?? []),
-    [drops],
-  );
+  const { mesos, groups } = useMemo(() => groupDrops(drops ?? []), [drops]);
 
   const sortedSpawnMaps = useMemo(() => {
     if (!spawnMaps) return [];
@@ -121,7 +119,10 @@ export function MonsterDetailPage() {
   if (error || !monster) {
     return (
       <div className="p-10">
-        <ErrorDisplay error={error ?? "Monster not found"} retry={() => refetch()} />
+        <ErrorDisplay
+          error={error ?? "Monster not found"}
+          retry={() => refetch()}
+        />
       </div>
     );
   }
@@ -213,14 +214,20 @@ export function MonsterDetailPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-sm font-medium">
-            Spawn Locations {sortedSpawnMaps.length > 0 && `(${sortedSpawnMaps.length})`}
+            Spawn Locations{" "}
+            {sortedSpawnMaps.length > 0 && `(${sortedSpawnMaps.length})`}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {spawnMapsLoading ? (
-            <p className="text-sm text-muted-foreground">Loading spawn locations...</p>
+            <p className="text-sm text-muted-foreground">
+              Loading spawn locations...
+            </p>
           ) : spawnMapsError ? (
-            <ErrorDisplay error={spawnMapsError} retry={() => refetchSpawnMaps()} />
+            <ErrorDisplay
+              error={spawnMapsError}
+              retry={() => refetchSpawnMaps()}
+            />
           ) : sortedSpawnMaps.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
               {sortedSpawnMaps.map((entry) => (
@@ -252,8 +259,10 @@ function MonsterStatsCard({ attrs }: { attrs: MonsterAttributes }) {
     { label: "Mag Def", value: String(attrs.magic_defense) },
   ];
   if (attrs.cp > 0) stats.push({ label: "CP", value: String(attrs.cp) });
-  if (attrs.hp_recovery > 0) stats.push({ label: "HP regen", value: `${attrs.hp_recovery}/s` });
-  if (attrs.mp_recovery > 0) stats.push({ label: "MP regen", value: `${attrs.mp_recovery}/s` });
+  if (attrs.hp_recovery > 0)
+    stats.push({ label: "HP regen", value: `${attrs.hp_recovery}/s` });
+  if (attrs.mp_recovery > 0)
+    stats.push({ label: "MP regen", value: `${attrs.mp_recovery}/s` });
 
   return (
     <Card>
@@ -264,7 +273,9 @@ function MonsterStatsCard({ attrs }: { attrs: MonsterAttributes }) {
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-2 text-sm">
           {stats.map((s) => (
             <div key={s.label} className="flex flex-col">
-              <span className="text-xs text-muted-foreground uppercase tracking-wide">{s.label}</span>
+              <span className="text-xs text-muted-foreground uppercase tracking-wide">
+                {s.label}
+              </span>
               <span className="font-medium">{s.value}</span>
             </div>
           ))}
@@ -284,11 +295,16 @@ function MonsterTagsCard({ attrs }: { attrs: MonsterAttributes }) {
   if (attrs.ffa_loot) tags.push({ label: "FFA loot" });
   if (attrs.explosive_reward) tags.push({ label: "Explosive reward" });
   if (attrs.changeable) tags.push({ label: "Changeable" });
-  if (attrs.remove_on_miss) tags.push({ label: "Removed on miss", tone: "warn" });
-  if (attrs.fixed_stance > 0) tags.push({ label: `Fixed stance ${attrs.fixed_stance}` });
-  if (attrs.buff_to_give > 0) tags.push({ label: `Self-buffs (#${attrs.buff_to_give})` });
+  if (attrs.remove_on_miss)
+    tags.push({ label: "Removed on miss", tone: "warn" });
+  if (attrs.fixed_stance > 0)
+    tags.push({ label: `Fixed stance ${attrs.fixed_stance}` });
+  if (attrs.buff_to_give > 0)
+    tags.push({ label: `Self-buffs (#${attrs.buff_to_give})` });
 
-  const resistanceEntries = Object.entries(attrs.resistances ?? {}).filter(([, v]) => v && v.length > 0);
+  const resistanceEntries = Object.entries(attrs.resistances ?? {}).filter(
+    ([, v]) => v && v.length > 0,
+  );
 
   if (tags.length === 0 && resistanceEntries.length === 0) return null;
 
@@ -318,7 +334,11 @@ function MonsterTagsCard({ attrs }: { attrs: MonsterAttributes }) {
             </p>
             <div className="flex flex-wrap gap-1.5">
               {resistanceEntries.map(([element, level]) => (
-                <Badge key={element} variant="outline" className="text-xs font-normal">
+                <Badge
+                  key={element}
+                  variant="outline"
+                  className="text-xs font-normal"
+                >
                   {element}: {level}
                 </Badge>
               ))}

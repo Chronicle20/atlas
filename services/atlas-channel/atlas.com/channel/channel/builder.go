@@ -4,14 +4,13 @@ import (
 	"errors"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
-var (
-	ErrInvalidId = errors.New("channel id must not be nil")
-)
+var ErrInvalidId = errors.New("channel id must not be nil")
 
 type modelBuilder struct {
 	id              uuid.UUID

@@ -3,9 +3,10 @@ package asset
 import (
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 func getByCompartmentId(compartmentId uuid.UUID) database.EntityProvider[[]Entity] {

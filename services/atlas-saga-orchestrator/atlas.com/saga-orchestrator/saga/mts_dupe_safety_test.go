@@ -24,12 +24,13 @@ import (
 	"context"
 	"testing"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // dupeRegrantCall captures a RequestAcceptAsset (re-grant) dispatch.

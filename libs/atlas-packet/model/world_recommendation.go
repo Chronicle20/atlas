@@ -16,7 +16,7 @@ func NewWorldRecommendation(worldId world.Id, reason string) WorldRecommendation
 }
 
 func (m WorldRecommendation) WorldId() world.Id { return m.worldId }
-func (m WorldRecommendation) Reason() string     { return m.reason }
+func (m WorldRecommendation) Reason() string    { return m.reason }
 
 func (m WorldRecommendation) Write(w *response.Writer) {
 	w.WriteInt(uint32(m.worldId))

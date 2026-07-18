@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"testing"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
+
 	constants "github.com/Chronicle20/atlas/libs/atlas-constants/stat"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
-	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 func testStatOptions() map[string]interface{} {
@@ -143,8 +144,8 @@ func TestStatChangedV79(t *testing.T) {
 	want := []byte{
 		0x01,                   // Decode1 exclRequestSent = true
 		0x10, 0x00, 0x00, 0x00, // Decode4 mask = 0x10 (LEVEL, index 4)
-		0x78,                   // Decode1 LEVEL = 120
-		0x00,                   // trailing secondary-stat flag (atlas over-writes; client reads only when mask&0x180008)
+		0x78, // Decode1 LEVEL = 120
+		0x00, // trailing secondary-stat flag (atlas over-writes; client reads only when mask&0x180008)
 	}
 	if got := in.Encode(l, ctx)(opts); !bytes.Equal(got, want) {
 		t.Errorf("v79 StatChanged golden mismatch\n got: % x\nwant: % x", got, want)
@@ -180,8 +181,8 @@ func TestStatChangedV72(t *testing.T) {
 	want := []byte{
 		0x01,                   // Decode1 exclRequestSent = true (@0x9186f8)
 		0x10, 0x00, 0x00, 0x00, // Decode4 mask = 0x10 (LEVEL, index 4) (@0x4cf5ab)
-		0x78,                   // Decode1 LEVEL = 120 (@0x4cf62a)
-		0x00,                   // trailing secondary-stat flag (atlas over-writes; client reads only when mask&0x180008 @0x918752)
+		0x78, // Decode1 LEVEL = 120 (@0x4cf62a)
+		0x00, // trailing secondary-stat flag (atlas over-writes; client reads only when mask&0x180008 @0x918752)
 	}
 	if got := in.Encode(l, ctx)(opts); !bytes.Equal(got, want) {
 		t.Errorf("v72 StatChanged golden mismatch\n got: % x\nwant: % x", got, want)
@@ -246,9 +247,9 @@ func TestStatChangedV61(t *testing.T) {
 		0x39, 0x04, 0x05, 0x00, // Decode4 mask = 0x00050439 (@0x4b44f5)
 		0x07,                                           // SKIN=7 Decode1 (bit 0x1 @0x4b450b)
 		0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, // PET_SN_1=0x1122334455667788 DecodeBuffer(8) (bit 0x8 @0x4b453b)
-		0x78,                   // LEVEL=120 Decode1 (bit 0x10 @0x4b4574)
-		0x64, 0x00,             // JOB=100 Decode2 (bit 0x20 @0x4b4586)
-		0x88, 0x13,             // HP=5000 Decode2 (bit 0x400 @0x4b4608)
+		0x78,       // LEVEL=120 Decode1 (bit 0x10 @0x4b4574)
+		0x64, 0x00, // JOB=100 Decode2 (bit 0x20 @0x4b4586)
+		0x88, 0x13, // HP=5000 Decode2 (bit 0x400 @0x4b4608)
 		0xA0, 0x86, 0x01, 0x00, // EXPERIENCE=100000 Decode4 (bit 0x10000 @0x4b46b0)
 		0x3F, 0x42, 0x0F, 0x00, // MESO=999999 Decode4 (bit 0x40000 @0x4b46f0)
 		0x00, // trailing bSecondaryStatChangedPoint (mask&0x180008 set via PET_SN_1 → client reads; atlas over-writes 0) @0x842d87
@@ -309,9 +310,9 @@ func TestStatChangedV48(t *testing.T) {
 		0x39, 0x04, 0x05, 0x00, // Decode4 mask = 0x00050439 (@0x49ba5a)
 		0x07,                                           // SKIN=7 Decode1 (bit 0x1 @0x49ba68)
 		0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, // PET_SN_1 DecodeBuffer(8) (bit 0x8 @0x49ba96)
-		0x78,                   // LEVEL=120 Decode1 (bit 0x10 @0x49baaa)
-		0x64, 0x00,             // JOB=100 Decode2 (bit 0x20 @0x49babb)
-		0x88, 0x13,             // HP=5000 Decode2 narrow (bit 0x400 @0x49bb38)
+		0x78,       // LEVEL=120 Decode1 (bit 0x10 @0x49baaa)
+		0x64, 0x00, // JOB=100 Decode2 (bit 0x20 @0x49babb)
+		0x88, 0x13, // HP=5000 Decode2 narrow (bit 0x400 @0x49bb38)
 		0xA0, 0x86, 0x01, 0x00, // EXPERIENCE=100000 Decode4 (bit 0x10000 @0x49bbd1)
 		0x3F, 0x42, 0x0F, 0x00, // MESO=999999 Decode4 (bit 0x40000 @0x49bc15)
 		0x00, // trailing bSecondaryStatChangedPoint (mask&8 set via PET_SN_1 → client reads; atlas over-writes 0) @0x71aafa

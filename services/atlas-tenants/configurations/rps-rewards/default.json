@@ -1,0 +1,20 @@
+{
+  "id": "rps-rewards",
+  "type": "rps-rewards",
+  "attributes": {
+    "entryCostMeso": 1000,
+    "consolationMeso": 500,
+    "ladder": [
+      { "rung": 1, "itemId": 4031332, "quantity": 1, "meso": 0 },
+      { "rung": 2, "itemId": 4031333, "quantity": 1, "meso": 0 },
+      { "rung": 3, "itemId": 4031334, "quantity": 1, "meso": 0 },
+      { "rung": 4, "itemId": 4031335, "quantity": 1, "meso": 0 },
+      { "rung": 5, "itemId": 4031336, "quantity": 1, "meso": 0 },
+      { "rung": 6, "itemId": 4031337, "quantity": 1, "meso": 0 },
+      { "rung": 7, "itemId": 4031338, "quantity": 1, "meso": 0 },
+      { "rung": 8, "itemId": 4031339, "quantity": 1, "meso": 0 },
+      { "rung": 9, "itemId": 4031340, "quantity": 1, "meso": 0 },
+      { "rung": 10, "itemId": 4031341, "quantity": 1, "meso": 0 }
+    ]
+  }
+}

@@ -9,16 +9,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const (
@@ -225,7 +227,7 @@ func (p *ProcessorImpl) Update(accountId uint32, input Model) (Model, error) {
 		return Model{}, err
 	}
 
-	var modifiers = make([]EntityUpdateFunction, 0)
+	modifiers := make([]EntityUpdateFunction, 0)
 
 	if a.pin != input.pin && input.pin != "" {
 		p.l.Debugf("Updating PIN of account [%d].", accountId)

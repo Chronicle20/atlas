@@ -4,8 +4,9 @@ import (
 	"encoding/binary"
 	"testing"
 
-	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	testlog "github.com/sirupsen/logrus/hooks/test"
+
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 // packet-audit:verify packet=socket/serverbound/ChannelConnect version=gms_v83 ida=0x494ed1
@@ -50,10 +51,11 @@ func TestChannelConnectRoundTrip(t *testing.T) {
 //   - COutPacket::Encode2(dummy1)            → 2 bytes  ← JMS gm field is uint16
 //   - COutPacket::Encode1(0)                 → 1 byte
 //   - COutPacket::EncodeBuffer(unknown2, 8)  → 8 bytes
-//   Total: 4+16+2+1+8 = 31 bytes
+//     Total: 4+16+2+1+8 = 31 bytes
 //
 // GMS (all versions) uses Encode1 for gm, so:
-//   Total: 4+16+1+1+8 = 30 bytes
+//
+//	Total: 4+16+1+1+8 = 30 bytes
 func TestChannelConnectWireShape(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	input := ChannelConnect{

@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { mtsListingsService, buildBrowseListingsQuery } from "@/services/api/mts-listings.service";
+import {
+  mtsListingsService,
+  buildBrowseListingsQuery,
+} from "@/services/api/mts-listings.service";
 import { apiClient } from "@/lib/api/client";
 
 vi.mock("@/lib/api/client", () => ({
@@ -48,8 +51,15 @@ describe("mtsListingsService.browse", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("hits the per-world listings endpoint with the built query", async () => {
-    (apiClient.get as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [], meta: { total: 0, page: { last: 1 } } });
-    await mtsListingsService.browse(0, { saleType: "auction", page: 0, pageSize: 16 });
+    (apiClient.get as ReturnType<typeof vi.fn>).mockResolvedValue({
+      data: [],
+      meta: { total: 0, page: { last: 1 } },
+    });
+    await mtsListingsService.browse(0, {
+      saleType: "auction",
+      page: 0,
+      pageSize: 16,
+    });
     expect(apiClient.get).toHaveBeenCalledWith(
       "/api/worlds/0/listings?saleType=auction&page%5Bnumber%5D=1&page%5Bsize%5D=16",
       undefined,
@@ -69,8 +79,13 @@ describe("mtsListingsService.browse", () => {
   });
 
   it("falls back to the page length and last page 1 when meta is absent", async () => {
-    const listings = [{ id: "l1", attributes: {} }, { id: "l2", attributes: {} }];
-    (apiClient.get as ReturnType<typeof vi.fn>).mockResolvedValue({ data: listings });
+    const listings = [
+      { id: "l1", attributes: {} },
+      { id: "l2", attributes: {} },
+    ];
+    (apiClient.get as ReturnType<typeof vi.fn>).mockResolvedValue({
+      data: listings,
+    });
     const res = await mtsListingsService.browse(0, {});
     expect(res.total).toBe(2);
     expect(res.lastPage).toBe(1);

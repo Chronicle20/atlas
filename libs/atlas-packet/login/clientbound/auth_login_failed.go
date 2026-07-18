@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const AuthLoginFailedWriter = "AuthLoginFailed"
@@ -20,7 +21,7 @@ func NewAuthLoginFailed(reason byte) AuthLoginFailed {
 	return AuthLoginFailed{reason: reason}
 }
 
-func (m AuthLoginFailed) Reason() byte     { return m.reason }
+func (m AuthLoginFailed) Reason() byte      { return m.reason }
 func (m AuthLoginFailed) Operation() string { return AuthLoginFailedWriter }
 func (m AuthLoginFailed) String() string    { return fmt.Sprintf("reason [%d]", m.reason) }
 

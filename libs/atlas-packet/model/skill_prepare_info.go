@@ -3,10 +3,11 @@ package model
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // swallowMobPrepareSkillId is the skill whose serverbound prepare packet
@@ -52,10 +53,10 @@ func NewSkillPrepareInfo() *SkillPrepareInfo {
 // Getters
 
 func (m *SkillPrepareInfo) SkillId() uint32      { return m.skillId }
-func (m *SkillPrepareInfo) Level() byte           { return m.level }
-func (m *SkillPrepareInfo) Action() uint16        { return m.action }
-func (m *SkillPrepareInfo) ActionSpeed() byte     { return m.actionSpeed }
-func (m *SkillPrepareInfo) SwallowMobId() uint32  { return m.swallowMobId }
+func (m *SkillPrepareInfo) Level() byte          { return m.level }
+func (m *SkillPrepareInfo) Action() uint16       { return m.action }
+func (m *SkillPrepareInfo) ActionSpeed() byte    { return m.actionSpeed }
+func (m *SkillPrepareInfo) SwallowMobId() uint32 { return m.swallowMobId }
 
 // Setters (builder-style, return *SkillPrepareInfo for chaining)
 

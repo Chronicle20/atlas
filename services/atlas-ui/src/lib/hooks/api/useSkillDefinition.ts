@@ -1,6 +1,9 @@
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import type { Tenant } from "@/services/api/tenants.service";
-import { skillsService, type SkillDefinition } from "@/services/api/skills.service";
+import {
+  skillsService,
+  type SkillDefinition,
+} from "@/services/api/skills.service";
 import { getAssetIconUrl } from "@/lib/utils/asset-url";
 
 export interface SkillDefinitionWithIcon extends SkillDefinition {
@@ -33,7 +36,10 @@ export async function fetchSkillDefinitionWithIcon(
 }
 
 /** Retry policy shared with the batch hook: never retry a 404. */
-export function skillDefinitionRetry(failureCount: number, error: Error): boolean {
+export function skillDefinitionRetry(
+  failureCount: number,
+  error: Error,
+): boolean {
   const msg = error?.message?.toLowerCase() ?? "";
   if (msg.includes("404") || msg.includes("not found")) return false;
   return failureCount < 3;

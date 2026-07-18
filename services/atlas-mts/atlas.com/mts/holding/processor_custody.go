@@ -1,8 +1,9 @@
 package holding
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"gorm.io/gorm"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 )
 
 // ReleaseResult reports the outcome of a Release. Taken is the holding captured

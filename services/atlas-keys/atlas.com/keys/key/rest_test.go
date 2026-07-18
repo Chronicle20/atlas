@@ -21,7 +21,6 @@ func TestRestModel_GetID(t *testing.T) {
 func TestRestModel_SetID(t *testing.T) {
 	r := &RestModel{}
 	err := r.SetID("42")
-
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -48,7 +47,6 @@ func TestTransform(t *testing.T) {
 		Build()
 
 	r, err := Transform(m)
-
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}

@@ -6,9 +6,20 @@ import type { MonsterData } from "@/types/models/monster";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Table,
   TableBody,
@@ -97,7 +108,8 @@ function MonstersPageContent() {
         <CardHeader>
           <CardTitle>Search Monsters</CardTitle>
           <CardDescription>
-            Search for monsters by ID or name. Results are limited to 50 entries.
+            Search for monsters by ID or name. Results are limited to 50
+            entries.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -126,7 +138,8 @@ function MonstersPageContent() {
               Results
               {monsters.length > 0 && (
                 <span className="ml-2 text-muted-foreground font-normal">
-                  ({monsters.length} {monsters.length === 1 ? "monster" : "monsters"})
+                  ({monsters.length}{" "}
+                  {monsters.length === 1 ? "monster" : "monsters"})
                 </span>
               )}
             </CardTitle>
@@ -151,14 +164,16 @@ function MonstersPageContent() {
                   </TableHeader>
                   <TableBody>
                     {monsters.map((monster) => {
-                      const iconUrl = activeTenant ? getAssetIconUrl(
-                        activeTenant.id,
-                        activeTenant.attributes.region,
-                        activeTenant.attributes.majorVersion,
-                        activeTenant.attributes.minorVersion,
-                        'mob',
-                        parseInt(monster.id),
-                      ) : undefined;
+                      const iconUrl = activeTenant
+                        ? getAssetIconUrl(
+                            activeTenant.id,
+                            activeTenant.attributes.region,
+                            activeTenant.attributes.majorVersion,
+                            activeTenant.attributes.minorVersion,
+                            "mob",
+                            parseInt(monster.id),
+                          )
+                        : undefined;
                       const detail = detailsById.get(monster.id)?.attributes;
                       return (
                         <TableRow key={monster.id}>
@@ -178,7 +193,9 @@ function MonstersPageContent() {
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Link to={`/monsters/${monster.id}`}>
-                                    <Badge variant="secondary">{monster.attributes.name}</Badge>
+                                    <Badge variant="secondary">
+                                      {monster.attributes.name}
+                                    </Badge>
                                   </Link>
                                 </TooltipTrigger>
                                 <TooltipContent copyable>
@@ -187,18 +204,50 @@ function MonstersPageContent() {
                               </Tooltip>
                             </TooltipProvider>
                           </TableCell>
-                          <TableCell>{detail ? detail.level : <Skeleton className="h-4 w-8" />}</TableCell>
-                          <TableCell>{detail ? detail.hp.toLocaleString() : <Skeleton className="h-4 w-16" />}</TableCell>
-                          <TableCell>{detail ? detail.experience.toLocaleString() : <Skeleton className="h-4 w-16" />}</TableCell>
+                          <TableCell>
+                            {detail ? (
+                              detail.level
+                            ) : (
+                              <Skeleton className="h-4 w-8" />
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {detail ? (
+                              detail.hp.toLocaleString()
+                            ) : (
+                              <Skeleton className="h-4 w-16" />
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {detail ? (
+                              detail.experience.toLocaleString()
+                            ) : (
+                              <Skeleton className="h-4 w-16" />
+                            )}
+                          </TableCell>
                           <TableCell>
                             {detail ? (
                               <div className="flex flex-wrap gap-1">
-                                {detail.boss && <Badge variant="destructive">Boss</Badge>}
-                                {detail.undead && <Badge variant="secondary">Undead</Badge>}
-                                {detail.friendly && <Badge variant="outline">Friendly</Badge>}
-                                {detail.flying && <Badge variant="outline">Flying</Badge>}
-                                {detail.swimming && <Badge variant="outline">Swimming</Badge>}
-                                {detail.first_attack && <Badge variant="destructive">First attack</Badge>}
+                                {detail.boss && (
+                                  <Badge variant="destructive">Boss</Badge>
+                                )}
+                                {detail.undead && (
+                                  <Badge variant="secondary">Undead</Badge>
+                                )}
+                                {detail.friendly && (
+                                  <Badge variant="outline">Friendly</Badge>
+                                )}
+                                {detail.flying && (
+                                  <Badge variant="outline">Flying</Badge>
+                                )}
+                                {detail.swimming && (
+                                  <Badge variant="outline">Swimming</Badge>
+                                )}
+                                {detail.first_attack && (
+                                  <Badge variant="destructive">
+                                    First attack
+                                  </Badge>
+                                )}
                               </div>
                             ) : (
                               <Skeleton className="h-4 w-20" />

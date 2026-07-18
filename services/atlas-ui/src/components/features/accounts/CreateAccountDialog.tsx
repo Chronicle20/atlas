@@ -122,7 +122,9 @@ export function CreateAccountDialog({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel htmlFor="create-account-name">Account name</FormLabel>
+                  <FormLabel htmlFor="create-account-name">
+                    Account name
+                  </FormLabel>
                   <FormControl>
                     <Input
                       id="create-account-name"
@@ -140,7 +142,9 @@ export function CreateAccountDialog({
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel htmlFor="create-account-password">Password</FormLabel>
+                  <FormLabel htmlFor="create-account-password">
+                    Password
+                  </FormLabel>
                   <FormControl>
                     <Input
                       id="create-account-password"

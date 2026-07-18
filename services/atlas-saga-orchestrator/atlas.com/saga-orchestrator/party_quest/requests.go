@@ -4,20 +4,21 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/google/uuid"
+	"github.com/jtumidanski/api2go/jsonapi"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/google/uuid"
-	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 const (
 	EnvCommandTopic              = "COMMAND_TOPIC_PARTY_QUEST"
 	CommandTypeRegister          = "REGISTER"
 	CommandTypeLeave             = "LEAVE"
-	CommandTypeUpdateCustomData   = "UPDATE_CUSTOM_DATA"
-	CommandTypeBroadcastMessage   = "BROADCAST_MESSAGE"
-	CommandTypeStageClearAttempt  = "STAGE_CLEAR_ATTEMPT"
+	CommandTypeUpdateCustomData  = "UPDATE_CUSTOM_DATA"
+	CommandTypeBroadcastMessage  = "BROADCAST_MESSAGE"
+	CommandTypeStageClearAttempt = "STAGE_CLEAR_ATTEMPT"
 	CommandTypeEnterBonus        = "ENTER_BONUS"
 )
 
@@ -236,8 +237,7 @@ type RegisterCommandBody struct {
 }
 
 // LeaveCommandBody represents the body of a LEAVE command
-type LeaveCommandBody struct {
-}
+type LeaveCommandBody struct{}
 
 // UpdateCustomDataCommandBody represents the body of an UPDATE_CUSTOM_DATA command
 type UpdateCustomDataCommandBody struct {

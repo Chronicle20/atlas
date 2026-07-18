@@ -2,8 +2,15 @@
  * React Query hooks for quest definitions.
  */
 
-import { useQuery, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
-import { questsService, type QuestQueryOptions } from "@/services/api/quests.service";
+import {
+  useQuery,
+  useQueryClient,
+  type UseQueryResult,
+} from "@tanstack/react-query";
+import {
+  questsService,
+  type QuestQueryOptions,
+} from "@/services/api/quests.service";
 import type { QuestDefinition } from "@/types/models/quest";
 import type { Tenant } from "@/types/models/tenant";
 import type { ServiceOptions } from "@/lib/api/query-params";
@@ -26,7 +33,7 @@ export function useQuests(
 ): UseQueryResult<QuestDefinition[], Error> {
   return useQuery({
     queryKey: questKeys.list(tenant, options),
-    queryFn: () => questsService.getAllQuests( options),
+    queryFn: () => questsService.getAllQuests(options),
     enabled: !!tenant?.id,
     staleTime: 10 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -53,7 +60,7 @@ export function useQuest(
 ): UseQueryResult<QuestDefinition, Error> {
   return useQuery({
     queryKey: questKeys.detail(tenant, id),
-    queryFn: () => questsService.getQuestById( id, options),
+    queryFn: () => questsService.getQuestById(id, options),
     enabled: !!tenant?.id && !!id,
     staleTime: 10 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -63,8 +70,10 @@ export function useQuest(
 export function useInvalidateQuests() {
   const queryClient = useQueryClient();
   return {
-    invalidateAll: () => queryClient.invalidateQueries({ queryKey: questKeys.all }),
-    invalidateLists: () => queryClient.invalidateQueries({ queryKey: questKeys.lists() }),
+    invalidateAll: () =>
+      queryClient.invalidateQueries({ queryKey: questKeys.all }),
+    invalidateLists: () =>
+      queryClient.invalidateQueries({ queryKey: questKeys.lists() }),
     invalidateDetail: (tenant: Tenant | null, id: string) =>
       queryClient.invalidateQueries({ queryKey: questKeys.detail(tenant, id) }),
   };

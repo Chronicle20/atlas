@@ -6,8 +6,9 @@ import (
 
 	mtsmsg "atlas-mts/kafka/message/mts"
 
-	kprod "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/google/uuid"
+
+	kprod "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 )
 
 // TestBuyCommandProviderShape pins the simulated buy command to the exact

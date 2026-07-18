@@ -1,18 +1,18 @@
 package shop
 
 import (
+	"atlas-merchant/kafka/message/asset"
+	"atlas-merchant/listing"
 	"testing"
 	"time"
 
-	"atlas-merchant/kafka/message/asset"
-	"atlas-merchant/listing"
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 )
 
 // seedSearchData creates, for one tenant: an Open shop in world 0, an Open

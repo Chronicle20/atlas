@@ -7,11 +7,12 @@ import (
 
 	consumer2 "atlas-character-factory/kafka/consumer"
 
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 )
 
 // Subscriber consumes the tenant config-status topic, snapshots end

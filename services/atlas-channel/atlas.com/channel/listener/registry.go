@@ -1,17 +1,17 @@
 package listener
 
 import (
+	"atlas-channel/server"
 	"context"
 	"sync"
 	"time"
 
-	"atlas-channel/server"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // Dependencies is the seam between this package and the rest of

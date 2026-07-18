@@ -174,11 +174,11 @@
       "docker_context": "."
     },
     {
-      "name": "atlas-gachapons",
+      "name": "atlas-reward-pools",
       "type": "go-service",
-      "path": "services/atlas-gachapons",
-      "module_path": "services/atlas-gachapons/atlas.com/gachapons",
-      "docker_image": "ghcr.io/chronicle20/atlas-gachapons/atlas-gachapons",
+      "path": "services/atlas-reward-pools",
+      "module_path": "services/atlas-reward-pools/atlas.com/reward-pools",
+      "docker_image": "ghcr.io/chronicle20/atlas-reward-pools/atlas-reward-pools",
       "docker_context": "."
     },
     {
@@ -267,6 +267,14 @@
       "path": "services/atlas-messengers",
       "module_path": "services/atlas-messengers/atlas.com/messengers",
       "docker_image": "ghcr.io/chronicle20/atlas-messengers/atlas-messengers",
+      "docker_context": "."
+    },
+    {
+      "name": "atlas-mini-games",
+      "type": "go-service",
+      "path": "services/atlas-mini-games",
+      "module_path": "services/atlas-mini-games/atlas.com/mini-games",
+      "docker_image": "ghcr.io/chronicle20/atlas-mini-games/atlas-mini-games",
       "docker_context": "."
     },
     {
@@ -434,6 +442,14 @@
       "path": "services/atlas-renders",
       "module_path": "services/atlas-renders/atlas.com/renders",
       "docker_image": "ghcr.io/chronicle20/atlas-renders/atlas-renders",
+      "docker_context": "."
+    },
+    {
+      "name": "atlas-rps",
+      "type": "go-service",
+      "path": "services/atlas-rps",
+      "module_path": "services/atlas-rps/atlas.com/rps",
+      "docker_image": "ghcr.io/chronicle20/atlas-rps/atlas-rps",
       "docker_context": "."
     },
     {

@@ -1,0 +1,10 @@
+packet: interaction/clientbound/InteractionInteractionMiniGameStartOmok
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CMiniRoomBaseDlg::OnPacketBase#MemoryGameStartOmok
+    address: "0x684a00"
+    decompile_sha256: d4bad13f55850115d97a8a9db36ca98f43021dd6ad326353e0c679207d127143
+verifies:
+    - libs/atlas-packet/interaction/clientbound/interaction_minigame_test.go#TestInteractionMiniGameStartOmokRoundTrip

@@ -1,15 +1,13 @@
 package account_test
 
 import (
+	"atlas-account/account"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"atlas-account/account"
-
-	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -19,6 +17,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
+
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 )
 
 type testServerInformation struct{}

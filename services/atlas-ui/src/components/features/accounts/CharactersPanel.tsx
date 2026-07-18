@@ -25,7 +25,8 @@ export function CharactersPanel({ tenant, account }: CharactersPanelProps) {
 
   const slots = account.attributes.characterSlots;
   const worlds = tenantConfigQuery.data?.attributes?.worlds ?? [];
-  const templates = tenantConfigQuery.data?.attributes?.characters?.templates ?? [];
+  const templates =
+    tenantConfigQuery.data?.attributes?.characters?.templates ?? [];
   const emptyTemplate = templates[0];
   const hasPresets =
     (tenantConfigQuery.data?.attributes?.characters?.presets ?? []).length > 0;
@@ -43,7 +44,10 @@ export function CharactersPanel({ tenant, account }: CharactersPanelProps) {
       return (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {Array.from({ length: slots }).map((_, i) => (
-            <Skeleton key={i} className={cn(tileFrameClasses, "animate-pulse")} />
+            <Skeleton
+              key={i}
+              className={cn(tileFrameClasses, "animate-pulse")}
+            />
           ))}
         </div>
       );
@@ -55,12 +59,18 @@ export function CharactersPanel({ tenant, account }: CharactersPanelProps) {
       <>
         {overCapacity && (
           <p className="text-xs text-muted-foreground mb-2">
-            Over capacity: this account has more characters than allocated slots.
+            Over capacity: this account has more characters than allocated
+            slots.
           </p>
         )}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {filtered.map((c) => (
-            <FilledSlotTile key={c.id} character={c} tenant={tenant} worlds={worlds} />
+            <FilledSlotTile
+              key={c.id}
+              character={c}
+              tenant={tenant}
+              worlds={worlds}
+            />
           ))}
           {Array.from({ length: emptyCount }).map((_, i) => (
             <EmptySlotTile
@@ -68,7 +78,9 @@ export function CharactersPanel({ tenant, account }: CharactersPanelProps) {
               onClick={() => setAddOpen(true)}
               disabled={!hasPresets}
               {...(emptyTemplate && { template: emptyTemplate })}
-              {...(tenant.attributes.region && { region: tenant.attributes.region })}
+              {...(tenant.attributes.region && {
+                region: tenant.attributes.region,
+              })}
               {...(tenant.attributes.majorVersion && {
                 majorVersion: tenant.attributes.majorVersion,
               })}

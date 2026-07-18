@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"testing"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 func TestSummonSpawn(t *testing.T) {
@@ -133,6 +134,7 @@ var summonSpawnV79Body = []byte{
 //     Decode2(y)@0x719f9f, Decode1(stance)@0x719fac, Decode2(foothold)@0x719faf,
 //     Decode1(movementType)@0x719fc3, Decode1(!puppet)@0x719fda, then (after the
 //     GetSkill guard sub_6DC2F7) Decode1(!animated)@0x71a001.
+//
 // The missing SLV byte is the v79 delta vs v83+ (spawnHasSkillLevel(GMS,79)=false).
 // packet-audit:verify packet=summon/clientbound/SummonSpawn version=gms_v79 ida=0x89268a
 func TestSummonSpawnBytesV79(t *testing.T) {
@@ -160,6 +162,7 @@ func TestSummonSpawnBytesV79(t *testing.T) {
 //     Decode1(stance)@0x6e5f90, Decode2(foothold)@0x6e5fb3, Decode1(movementType)@0x6e5fc0,
 //     Decode1(!puppet)@0x6e5fc6, and later Decode1(!animated)@0x6e630e. NO trailing
 //     avatar byte (spawnHasAvatarLook(GMS,72)=false).
+//
 // packet-audit:verify packet=summon/clientbound/SummonSpawn version=gms_v72 ida=0x8481ad
 func TestSummonSpawnBytesV72(t *testing.T) {
 	in := NewSummonSpawn(42, 1000001, 3111002, 20, 100, -50, 0, 0, true, false)
@@ -180,18 +183,19 @@ func TestSummonSpawnBytesV72(t *testing.T) {
 //     vtable-calls the spawn leaf sub_97038B@0x97038b (the ACTIVE leaf — v84 has no
 //     inactive twin like v83's; the committed report already points here).
 //   - sub_97038B@0x97038b reads (cid already consumed upstream):
-//       Decode4@0x9703ad → oid (pool key for sub_97B9D1 lookup)
-//       Decode4@0x9703b7 → skillId (v13)
-//       Decode1@0x9703c1 → charLevel (v14)
-//       Decode1@0x9703d0 → SLV (v15)
+//     Decode4@0x9703ad → oid (pool key for sub_97B9D1 lookup)
+//     Decode4@0x9703b7 → skillId (v13)
+//     Decode1@0x9703c1 → charLevel (v14)
+//     Decode1@0x9703d0 → SLV (v15)
 //     then sub_7C83D7@0x7c83d7 reads the Init blob:
-//       Decode2@0x7c83ee → nX, Decode2@0x7c83fb → nY, Decode1@0x7c8408 → stance,
-//       Decode2@0x7c8412 → foothold, Decode1@0x7c841f → movementType,
-//       Decode1@0x7c8436 → !puppet, then (after the GetSkill guard sub_77EAC3)
-//       Decode1@0x7c845d → !animated.
+//     Decode2@0x7c83ee → nX, Decode2@0x7c83fb → nY, Decode1@0x7c8408 → stance,
+//     Decode2@0x7c8412 → foothold, Decode1@0x7c841f → movementType,
+//     Decode1@0x7c8436 → !puppet, then (after the GetSkill guard sub_77EAC3)
+//     Decode1@0x7c845d → !animated.
 //     NO avatar-look byte on v84 — the active path reads nothing after !animated.
 //     spawnHasAvatarLook(GMS,84) = (GMS && 84>=95) = false → v83 path; off-by-one
 //     confirmed clear.
+//
 // packet-audit:verify packet=summon/clientbound/SummonSpawn version=gms_v84 ida=0x97038b
 func TestSummonSpawnBytesV84(t *testing.T) {
 	in := NewSummonSpawn(42, 1000001, 3111002, 20, 100, -50, 0, 0, true, false)
@@ -211,21 +215,22 @@ func TestSummonSpawnBytesV84(t *testing.T) {
 //     vtable+0x30 target — confirmed: 0x9b3749 sits at offset +0x30 in all 3 CUser
 //     vtables that carry it: 0xb96060/0xbe4e14/0xbe5840).
 //   - sub_9B3749@0x9b3749 reads (cid already consumed upstream):
-//       Decode4@0x9b376b → oid (arg1 to the CSummoned ctor sub_7F489E, stored at
-//         obj+172 — the object id; IDB-confirmed the same +172 oid slot as the v83
-//         ctor sub_7A30A9, so the first leaf Decode4 IS the oid, not the skillId)
-//       Decode4@0x9b3775 → skillId (arg2, stored obj+180)
-//       Decode1@0x9b377f → charLevel (arg3)
-//       Decode1@0x9b378e → SLV (arg4)
+//     Decode4@0x9b376b → oid (arg1 to the CSummoned ctor sub_7F489E, stored at
+//     obj+172 — the object id; IDB-confirmed the same +172 oid slot as the v83
+//     ctor sub_7A30A9, so the first leaf Decode4 IS the oid, not the skillId)
+//     Decode4@0x9b3775 → skillId (arg2, stored obj+180)
+//     Decode1@0x9b377f → charLevel (arg3)
+//     Decode1@0x9b378e → SLV (arg4)
 //     then sub_7F504A@0x7f504a reads the Init blob:
-//       Decode2@0x7f5061 → nX, Decode2@0x7f506e → nY, Decode1@0x7f507b → stance,
-//       Decode2@0x7f507e → foothold, Decode1@0x7f5092 → movementType,
-//       Decode1@0x7f50a9 → !puppet, then (if GetSkill(skillId)!=0)
-//       Decode1@0x7f50d0 → !animated, and returns (CSummoned::Init takes the
-//       AvatarLook ptr from the CALLER, not the packet).
+//     Decode2@0x7f5061 → nX, Decode2@0x7f506e → nY, Decode1@0x7f507b → stance,
+//     Decode2@0x7f507e → foothold, Decode1@0x7f5092 → movementType,
+//     Decode1@0x7f50a9 → !puppet, then (if GetSkill(skillId)!=0)
+//     Decode1@0x7f50d0 → !animated, and returns (CSummoned::Init takes the
+//     AvatarLook ptr from the CALLER, not the packet).
 //     NO avatar-look byte on v87 — the active path reads nothing after !animated.
 //     spawnHasAvatarLook(GMS,87) = (GMS && 87>=95) = false → v83 path; off-by-one
 //     confirmed clear.
+//
 // packet-audit:verify packet=summon/clientbound/SummonSpawn version=gms_v87 ida=0x9b3749
 func TestSummonSpawnBytesV87(t *testing.T) {
 	in := NewSummonSpawn(42, 1000001, 3111002, 20, 100, -50, 0, 0, true, false)
@@ -261,17 +266,18 @@ func TestSummonSpawnBytesV95(t *testing.T) {
 //   - CUserPool::OnUserCommonPacket reads cid, op 0xB5 (181) routes to the spawn
 //     leaf CSummonedPool::OnCreated sub_9F80F8@0x9f80f8 (the report/active target).
 //   - sub_9F80F8@0x9f80f8 reads (cid already consumed upstream):
-//       Decode4@0x9f811a → cid/ownerId (re-read here as the pool key)
-//       Decode4@0x9f8124 → skillId (nSkillID; consumed by GetSkill in sub_823AED)
-//       Decode1@0x9f812e → charLevel (nCharLevel; atlas writes fixed 0x0A)
-//       Decode1@0x9f813d → SLV (nSLV; atlas 'level')
+//     Decode4@0x9f811a → cid/ownerId (re-read here as the pool key)
+//     Decode4@0x9f8124 → skillId (nSkillID; consumed by GetSkill in sub_823AED)
+//     Decode1@0x9f812e → charLevel (nCharLevel; atlas writes fixed 0x0A)
+//     Decode1@0x9f813d → SLV (nSLV; atlas 'level')
 //     then sub_823AED@0x823aed reads the Init blob:
-//       Decode2@0x823b15 → nX, Decode2@0x823b22 → nY, Decode1@0x823b2f → stance,
-//       Decode2@0x823b39 → nCurFoothold, Decode1@0x823b46 → movementType,
-//       Decode1@0x823b49 → !puppet (nAssistType), Decode1@0x823b8b → !animated
-//       (nEnterType, read unconditionally on jms185), then
-//       Decode1@0x823b99 → bAvatarLook present-byte, then
-//       `if (v8) AvatarLook::Decode`@0x823bb0 (only entered when bAvatarLook != 0).
+//     Decode2@0x823b15 → nX, Decode2@0x823b22 → nY, Decode1@0x823b2f → stance,
+//     Decode2@0x823b39 → nCurFoothold, Decode1@0x823b46 → movementType,
+//     Decode1@0x823b49 → !puppet (nAssistType), Decode1@0x823b8b → !animated
+//     (nEnterType, read unconditionally on jms185), then
+//     Decode1@0x823b99 → bAvatarLook present-byte, then
+//     `if (v8) AvatarLook::Decode`@0x823bb0 (only entered when bAvatarLook != 0).
+//
 // The trailing bAvatarLook byte is the JMS185 delta over GMS v83/v84/v87 (which
 // have no avatar byte). spawnHasAvatarLook(JMS,185) = (185 >= 185) = true. None of
 // the 21 v83-roster summons carry an avatar look (Tesla Coil is out of roster), so

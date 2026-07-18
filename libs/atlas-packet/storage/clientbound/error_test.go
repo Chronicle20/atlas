@@ -3,8 +3,9 @@ package clientbound
 import (
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	testlog "github.com/sirupsen/logrus/hooks/test"
+
+	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 // storageNoticeMode returns the per-version mode byte for a STORAGE notice arm

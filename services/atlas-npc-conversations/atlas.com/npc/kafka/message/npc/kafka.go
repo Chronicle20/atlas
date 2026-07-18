@@ -1,11 +1,12 @@
 package npc
 
 import (
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/stat"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
@@ -43,8 +44,7 @@ type CommandConversationContinueBody struct {
 	Selection       int32 `json:"selection"`
 }
 
-type CommandConversationEndBody struct {
-}
+type CommandConversationEndBody struct{}
 
 type ConversationCommand[E any] struct {
 	WorldId        world.Id   `json:"worldId"`

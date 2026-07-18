@@ -4,13 +4,14 @@ import (
 	"errors"
 	"testing"
 
-	kafkaproducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
+
+	kafkaproducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 )
 
 // localProvider mirrors every service's kafka/producer.Provider named type;

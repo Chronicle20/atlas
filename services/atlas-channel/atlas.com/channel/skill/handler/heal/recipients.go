@@ -1,10 +1,9 @@
 package heal
 
 import (
-	"sync"
-
 	"atlas-channel/data/skill/effect"
 	"atlas-channel/skill/handler"
+	"sync"
 
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 )

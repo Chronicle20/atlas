@@ -23,7 +23,7 @@ resources:
   - atlas-effective-stats.yaml
   - atlas-expressions.yaml
   - atlas-fame.yaml
-  - atlas-gachapons.yaml
+  - atlas-reward-pools.yaml
   - atlas-guilds.yaml
   - atlas-ingress.yaml
   - atlas-inventory.yaml
@@ -34,9 +34,11 @@ resources:
   - atlas-map-actions.yaml
   - atlas-maps.yaml
   - atlas-minio-init.yaml
+  - atlas-minio-reconcile.yaml
   - atlas-merchant.yaml
   - atlas-messages.yaml
   - atlas-messengers.yaml
+  - atlas-mini-games.yaml
   - atlas-monster-book.yaml
   - atlas-monster-death.yaml
   - atlas-monsters.yaml
@@ -55,6 +57,7 @@ resources:
   - atlas-rankings.yaml
   - atlas-rates.yaml
   - atlas-renders.yaml
+  - atlas-rps.yaml
   - atlas-reactor-actions.yaml
   - atlas-reactors.yaml
   - atlas-saga-orchestrator.yaml

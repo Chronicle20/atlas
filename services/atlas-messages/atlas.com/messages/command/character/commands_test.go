@@ -4,15 +4,16 @@ import (
 	"atlas-messages/character"
 	"atlas-messages/command"
 	"atlas-messages/saga"
+	"context"
 	"regexp"
 	"testing"
+
+	"github.com/sirupsen/logrus/hooks/test"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/sirupsen/logrus/hooks/test"
-	"golang.org/x/net/context"
 )
 
 // createTestCharacter creates a character model for testing
@@ -392,7 +393,7 @@ func TestAwardExperienceCommandProducer_GmCheck(t *testing.T) {
 
 			producer := AwardExperienceCommandProducer(logger)
 			f := field.NewBuilder(1, 1, 100000000).Build()
-			_, found := producer(ctx)(f,char, tc.message)
+			_, found := producer(ctx)(f, char, tc.message)
 
 			if found != tc.expectFound {
 				t.Errorf("Expected found=%v for GM=%v, got found=%v", tc.expectFound, tc.isGm, found)
@@ -432,7 +433,7 @@ func TestAwardLevelCommandProducer_GmCheck(t *testing.T) {
 
 			producer := AwardLevelCommandProducer(logger)
 			f := field.NewBuilder(1, 1, 100000000).Build()
-			_, found := producer(ctx)(f,char, tc.message)
+			_, found := producer(ctx)(f, char, tc.message)
 
 			if found != tc.expectFound {
 				t.Errorf("Expected found=%v for GM=%v, got found=%v", tc.expectFound, tc.isGm, found)
@@ -472,7 +473,7 @@ func TestChangeJobCommandProducer_GmCheck(t *testing.T) {
 
 			producer := ChangeJobCommandProducer(logger)
 			f := field.NewBuilder(1, 1, 100000000).Build()
-			_, found := producer(ctx)(f,char, tc.message)
+			_, found := producer(ctx)(f, char, tc.message)
 
 			if found != tc.expectFound {
 				t.Errorf("Expected found=%v for GM=%v, got found=%v", tc.expectFound, tc.isGm, found)
@@ -512,7 +513,7 @@ func TestAwardMesoCommandProducer_GmCheck(t *testing.T) {
 
 			producer := AwardMesoCommandProducer(logger)
 			f := field.NewBuilder(1, 1, 100000000).Build()
-			_, found := producer(ctx)(f,char, tc.message)
+			_, found := producer(ctx)(f, char, tc.message)
 
 			if found != tc.expectFound {
 				t.Errorf("Expected found=%v for GM=%v, got found=%v", tc.expectFound, tc.isGm, found)
@@ -604,7 +605,7 @@ func TestAwardExperienceCommandProducer_InvalidAmount(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			producer := AwardExperienceCommandProducer(logger)
 			f := field.NewBuilder(1, 1, 100000000).Build()
-			_, found := producer(ctx)(f,gmChar, tc.message)
+			_, found := producer(ctx)(f, gmChar, tc.message)
 
 			if found != tc.expectFound {
 				t.Errorf("Expected found=%v, got found=%v", tc.expectFound, found)
@@ -640,7 +641,7 @@ func TestAwardLevelCommandProducer_InvalidAmount(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			producer := AwardLevelCommandProducer(logger)
 			f := field.NewBuilder(1, 1, 100000000).Build()
-			_, found := producer(ctx)(f,gmChar, tc.message)
+			_, found := producer(ctx)(f, gmChar, tc.message)
 
 			if found != tc.expectFound {
 				t.Errorf("Expected found=%v, got found=%v", tc.expectFound, found)

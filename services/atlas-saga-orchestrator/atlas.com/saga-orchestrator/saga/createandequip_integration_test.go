@@ -9,11 +9,12 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // TestCreateAndEquipAssetIntegration tests the full integration flow of CreateAndEquipAsset
@@ -192,7 +193,7 @@ func TestCreateAndEquipAssetIntegration(t *testing.T) {
 func TestCreateAndEquipAssetKafkaEventFlow_Disabled(t *testing.T) {
 	// Reset cache to ensure test isolation
 	ResetCache()
-	
+
 	tests := []struct {
 		name                   string
 		initialSagaPayload     CreateAndEquipAssetPayload
@@ -261,7 +262,7 @@ func TestCreateAndEquipAssetKafkaEventFlow_Disabled(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Reset cache to ensure test isolation
 			ResetCache()
-			
+
 			// Setup test environment
 			logger, hook := test.NewNullLogger()
 			logger.SetLevel(logrus.DebugLevel)

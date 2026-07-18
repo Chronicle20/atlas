@@ -3,10 +3,11 @@ package portal
 import (
 	portalMsg "atlas-saga-orchestrator/kafka/message/portal"
 
+	"github.com/segmentio/kafka-go"
+
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 )
 
 // BlockCommandProvider creates a Kafka message for blocking a portal for a character

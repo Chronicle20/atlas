@@ -82,7 +82,7 @@ Holds all computed effective stats for a character.
 
 ### Stat Mapping
 
-The `MapBuffStatType` function maps buff stat type strings to stat types. Most buff types map to flat bonuses. `HYPER_BODY_HP`, `HYPER_BODY_MP`, and `MAPLE_WARRIOR` map to multiplier bonuses.
+The `BonusesForBuffChange` function converts one buff stat change into the stat bonuses it grants (one-to-many). Most buff types yield a single flat bonus. `HYPER_BODY_HP` and `HYPER_BODY_MP` yield multiplier bonuses on `(base + flat)`. `MAPLE_WARRIOR` yields four base-percent bonuses (strength, dexterity, intelligence, luck), each applied as `floor(base × percent / 100)` added flat — the basis is the raw base stat only, never equipment. Unknown buff types yield no bonuses.
 
 The `MapStatupType` function maps passive skill statup type strings to stat types. It accepts both short-form (e.g., `PAD`, `STR`) and long-form (e.g., `WEAPON_ATTACK`, `STRENGTH`) identifiers.
 

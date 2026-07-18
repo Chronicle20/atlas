@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 const CharacterInfoWriter = "CharacterInfo"
@@ -60,7 +61,8 @@ type CharacterInfo struct {
 }
 
 func NewCharacterInfo(characterId uint32, level byte, jobId uint16, fame int16, guildName string,
-	pets []InfoPet, wishList []uint32, medalId uint32, monsterBook MonsterBookInfo, mount MountInfo) CharacterInfo {
+	pets []InfoPet, wishList []uint32, medalId uint32, monsterBook MonsterBookInfo, mount MountInfo,
+) CharacterInfo {
 	return CharacterInfo{
 		characterId: characterId, level: level, jobId: jobId, fame: fame,
 		guildName: guildName, pets: pets, wishList: wishList, medalId: medalId,
@@ -84,23 +86,23 @@ func (m CharacterInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(op
 		// v61 (@0x8455ed) is the first to add marriage/alliance/medalInfo/monster-book.
 		// The medal block (>61) and chair int (>=87) are already absent below.
 		if t.Region() == "GMS" && t.MajorVersion() > 28 && t.MajorVersion() < 61 {
-			w.WriteInt(m.characterId) // Decode4     @0x71cb22
-			w.WriteByte(m.level)      // Decode1      @0x71cb49
-			w.WriteShort(m.jobId)     // Decode2      @0x71cb53
-			w.WriteInt16(m.fame)      // Decode2      @0x71cb5d
+			w.WriteInt(m.characterId)       // Decode4     @0x71cb22
+			w.WriteByte(m.level)            // Decode1      @0x71cb49
+			w.WriteShort(m.jobId)           // Decode2      @0x71cb53
+			w.WriteInt16(m.fame)            // Decode2      @0x71cb5d
 			w.WriteAsciiString(m.guildName) // DecodeStr @0x71cb64
 			// Single flag-gated pet: Decode1(flag) @0x71cb6f; if set the 7 pet
 			// fields @0x71cbe1..0x71cc20 (no trailing "more pets" byte).
 			if len(m.pets) > 0 {
 				p := m.pets[0]
 				w.WriteBool(true)
-				w.WriteInt(p.TemplateId)     // Decode4  @0x71cbe1
-				w.WriteAsciiString(p.Name)   // DecodeStr @0x71cbe9
-				w.WriteByte(p.Level)         // Decode1  @0x71cbfb
-				w.WriteShort(p.Closeness)    // Decode2  @0x71cc05
-				w.WriteByte(p.Fullness)      // Decode1  @0x71cc0e
-				w.WriteShort(0)              // Decode2 skill  @0x71cc18
-				w.WriteInt(0)                // Decode4 itemId @0x71cc20
+				w.WriteInt(p.TemplateId)   // Decode4  @0x71cbe1
+				w.WriteAsciiString(p.Name) // DecodeStr @0x71cbe9
+				w.WriteByte(p.Level)       // Decode1  @0x71cbfb
+				w.WriteShort(p.Closeness)  // Decode2  @0x71cc05
+				w.WriteByte(p.Fullness)    // Decode1  @0x71cc0e
+				w.WriteShort(0)            // Decode2 skill  @0x71cc18
+				w.WriteInt(0)              // Decode4 itemId @0x71cc20
 			} else {
 				w.WriteBool(false)
 			}

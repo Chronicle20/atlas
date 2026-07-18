@@ -3,8 +3,9 @@ package shop
 import (
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 )
 
 // IsListableItem gates what can be put up for sale: pets and cash items are

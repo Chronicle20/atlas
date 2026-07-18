@@ -3,7 +3,10 @@ package model
 import (
 	"testing"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
+
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 )
 
 // sampleAttackInfo builds a representative client->server attack request. skillId
@@ -50,6 +53,51 @@ func TestAttackInfoRoundTrip(t *testing.T) {
 				pt.RoundTrip(t, ctx, ai.Encode, ai.Decode, nil)
 			})
 		}
+	}
+}
+
+// TestAttackInfoSpiritJavelinStarId pins the Shadow Stars / Spirit Javelin star
+// id that rides a ranged attack when mask1 bit 6 is set. The gate is mask1 bit 6
+// in EVERY client version (verified in the GMS clients v48–v95; jms v185 follows
+// v87) — NOT the GMS v95 explicit ExJablin bool. Gating on the wrong flag leaves
+// the per-mob damage-info loop reading 4 bytes off, silently dropping all monster
+// damage while Shadow Stars is active. RoundTrip byte-balance alone does NOT catch
+// that (Encode and Decode drop the field symmetrically), so this asserts the
+// decoded star id AND the trailer that sits after it (bulletX/bulletY).
+func TestAttackInfoSpiritJavelinStarId(t *testing.T) {
+	const starId = uint32(2070006) // an ilbi throwing star (207xxxx)
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			ai := sampleAttackInfo(AttackTypeRanged)
+			ai.SetOption(0x10 | 0x40) // keep the sample's flags; add Spirit Javelin (bit 6)
+			ai.SetBulletItemId(starId)
+
+			l, _ := testlog.NewNullLogger()
+			wire := ai.Encode(l, ctx)(nil)
+
+			req := request.Request(wire)
+			reader := request.NewRequestReader(&req, 0)
+			got := NewAttackInfo(AttackTypeRanged)
+			got.Decode(l, ctx)(&reader, nil)
+
+			if !got.SpiritJavelin() {
+				t.Fatalf("SpiritJavelin() = false, want true (mask1 bit 6 set)")
+			}
+			if got.BulletItemId() != starId {
+				t.Fatalf("BulletItemId() = %d, want %d — star id dropped or misaligned", got.BulletItemId(), starId)
+			}
+			// The per-mob damage-info loop sits immediately after the star id — the
+			// exact bytes bug #3 garbled. If the star id was not consumed, the loop
+			// decodes 4 bytes early and monsterId reads from the star id's bytes.
+			di := got.DamageInfo()
+			if len(di) != 1 || di[0].MonsterId() != 9001 {
+				t.Fatalf("DamageInfo monsterId = %v, want [9001] — damage loop misaligned past the star id", di)
+			}
+			if reader.Available() > 0 {
+				t.Fatalf("%d unconsumed bytes after decode", reader.Available())
+			}
+		})
 	}
 }
 

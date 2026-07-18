@@ -11,16 +11,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"math"
 	"path/filepath"
 	"strconv"
 	"strings"
 
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 type Processor interface {

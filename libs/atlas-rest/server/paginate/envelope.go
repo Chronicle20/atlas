@@ -5,8 +5,9 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/jtumidanski/api2go/jsonapi"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // Envelope captures everything needed to build a JSON:API paginated document

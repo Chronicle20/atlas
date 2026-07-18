@@ -4,9 +4,10 @@ import (
 	"encoding/binary"
 	"testing"
 
-	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	testlog "github.com/sirupsen/logrus/hooks/test"
+
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // packet-audit:verify packet=merchant/serverbound/ShopScannerItemUse version=gms_v83 ida=0xa0a25e

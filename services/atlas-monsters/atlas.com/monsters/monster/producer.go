@@ -3,11 +3,12 @@ package monster
 import (
 	mistKafka "atlas-monsters/kafka/message/mist"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/segmentio/kafka-go"
 )
 
 // mistCreateCommandProvider builds a MIST_CREATE command keyed by the owning

@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 type DiscardEntry struct {
@@ -24,9 +25,9 @@ func (e DiscardEntry) Flag() byte {
 
 // packet-audit:fname CMemoListDlg::SetRet
 type OperationDiscard struct {
-	count         byte
+	count          byte
 	emptySlotCount byte
-	entries       []DiscardEntry
+	entries        []DiscardEntry
 }
 
 func (m OperationDiscard) Count() byte {

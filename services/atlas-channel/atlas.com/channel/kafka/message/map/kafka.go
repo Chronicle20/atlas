@@ -1,18 +1,19 @@
 package _map
 
 import (
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
-	EnvEventTopicMapStatus                = "EVENT_TOPIC_MAP_STATUS"
-	EventTopicMapStatusTypeCharacterEnter = "CHARACTER_ENTER"
-	EventTopicMapStatusTypeCharacterExit  = "CHARACTER_EXIT"
-	EventTopicMapStatusTypeWeatherStart   = "WEATHER_START"
-	EventTopicMapStatusTypeWeatherEnd     = "WEATHER_END"
+	EnvEventTopicMapStatus                 = "EVENT_TOPIC_MAP_STATUS"
+	EventTopicMapStatusTypeCharacterEnter  = "CHARACTER_ENTER"
+	EventTopicMapStatusTypeCharacterExit   = "CHARACTER_EXIT"
+	EventTopicMapStatusTypeWeatherStart    = "WEATHER_START"
+	EventTopicMapStatusTypeWeatherEnd      = "WEATHER_END"
 	EventTopicMapStatusTypeMapTimerStarted = "MAP_TIMER_STARTED"
 )
 

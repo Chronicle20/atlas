@@ -1,10 +1,11 @@
 package searchcount
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 // incrementSearchCount is an atomic upsert: first search inserts count=1,

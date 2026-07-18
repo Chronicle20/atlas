@@ -3,6 +3,11 @@ location ~ ^/api/merchants(/.*)?$ {
   proxy_pass http://$u$request_uri;
 }
 
+location ~ ^/api/rps(/.*)?$ {
+  set $u "atlas-rps.${POD_NAMESPACE}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
 location ~ ^/api/messengers(/.*)?$ {
   set $u "atlas-messengers.${POD_NAMESPACE}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
@@ -150,6 +155,21 @@ location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/chalkboa
 
 location ~ ^/api/chalkboards(/.*)?$ {
   set $u "atlas-chalkboards.${POD_NAMESPACE}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
+location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/games(/.*)?$ {
+  set $u "atlas-mini-games.${POD_NAMESPACE}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
+location ~ ^/api/characters/[^/]+/game-records(/.*)?$ {
+  set $u "atlas-mini-games.${POD_NAMESPACE}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
+location ~ ^/api/characters/[^/]+/games(/.*)?$ {
+  set $u "atlas-mini-games.${POD_NAMESPACE}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
@@ -375,12 +395,12 @@ location ~ ^/api/data(/.*)?$ {
 }
 
 location ~ ^/api/gachapons(/.*)?$ {
-  set $u "atlas-gachapons.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-reward-pools.${POD_NAMESPACE}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/global-items(/.*)?$ {
-  set $u "atlas-gachapons.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-reward-pools.${POD_NAMESPACE}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 

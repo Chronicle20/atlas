@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const SelectWorldWriter = "SelectWorld"
@@ -19,9 +20,9 @@ func NewSelectWorld(worldId uint32) SelectWorld {
 	return SelectWorld{worldId: worldId}
 }
 
-func (m SelectWorld) WorldId() uint32    { return m.worldId }
-func (m SelectWorld) Operation() string  { return SelectWorldWriter }
-func (m SelectWorld) String() string     { return fmt.Sprintf("worldId [%d]", m.worldId) }
+func (m SelectWorld) WorldId() uint32   { return m.worldId }
+func (m SelectWorld) Operation() string { return SelectWorldWriter }
+func (m SelectWorld) String() string    { return fmt.Sprintf("worldId [%d]", m.worldId) }
 
 func (m SelectWorld) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)

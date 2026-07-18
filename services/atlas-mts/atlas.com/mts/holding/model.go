@@ -3,8 +3,9 @@ package holding
 import (
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 // Origin enumerates why an item entered a character's holding (take-home) bucket.
@@ -57,6 +58,7 @@ type Model struct {
 	ringId        uint32
 	viciousCount  uint32
 	flags         uint16
+	owner         string
 
 	createdAt time.Time
 }
@@ -91,4 +93,5 @@ func (m Model) ItemExp() uint32       { return m.itemExp }
 func (m Model) RingId() uint32        { return m.ringId }
 func (m Model) ViciousCount() uint32  { return m.viciousCount }
 func (m Model) Flags() uint16         { return m.flags }
+func (m Model) Owner() string         { return m.owner }
 func (m Model) CreatedAt() time.Time  { return m.createdAt }

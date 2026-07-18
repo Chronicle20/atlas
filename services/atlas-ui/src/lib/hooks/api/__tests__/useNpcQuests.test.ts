@@ -20,11 +20,15 @@ function buildQuest(overrides: {
       startRequirements: overrides.startReqNpc
         ? { npcId: overrides.startReqNpc }
         : {},
-      endRequirements: overrides.endReqNpc ? { npcId: overrides.endReqNpc } : {},
+      endRequirements: overrides.endReqNpc
+        ? { npcId: overrides.endReqNpc }
+        : {},
       startActions: overrides.startActionNpc
         ? { npcId: overrides.startActionNpc }
         : {},
-      endActions: overrides.endActionNpc ? { npcId: overrides.endActionNpc } : {},
+      endActions: overrides.endActionNpc
+        ? { npcId: overrides.endActionNpc }
+        : {},
     },
   };
 }

@@ -5,11 +5,12 @@ import (
 	"testing"
 	"time"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 // TestMonsterStatSetByteOutputV83 verifies the exact wire bytes for a

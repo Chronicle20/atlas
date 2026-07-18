@@ -3,7 +3,7 @@
 
 // Job ID to name mapping
 export interface JobNameMap {
-    [key: number]: string;
+  [key: number]: string;
 }
 
 export type JobId = number;

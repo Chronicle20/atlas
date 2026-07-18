@@ -44,10 +44,11 @@ func AllTypes() []Type {
 
 // Bonus represents a single contribution to a stat
 type Bonus struct {
-	source     string  // e.g., "equipment:12345", "passive:1000001", "buff:2311003"
-	statType   Type    // which stat this bonus affects
-	amount     int32   // flat bonus value (+20)
-	multiplier float64 // percentage bonus (1.10 = +10%, or 0.10 for additive multipliers)
+	source      string  // e.g., "equipment:12345", "passive:1000001", "buff:2311003"
+	statType    Type    // which stat this bonus affects
+	amount      int32   // flat bonus value (+20)
+	multiplier  float64 // percentage bonus of (base + flat) (0.10 for +10%)
+	basePercent int32   // percent of base stat only, applied as floor(base*pct/100) flat
 }
 
 func (b Bonus) Source() string {
@@ -64,6 +65,10 @@ func (b Bonus) Amount() int32 {
 
 func (b Bonus) Multiplier() float64 {
 	return b.multiplier
+}
+
+func (b Bonus) BasePercent() int32 {
+	return b.basePercent
 }
 
 // NewBonus creates a new stat bonus with a flat amount
@@ -96,26 +101,47 @@ func NewFullBonus(source string, statType Type, amount int32, multiplier float64
 	}
 }
 
+// NewBasePercentBonus creates a stat bonus that grants floor(base*percent/100)
+// as a flat addition, where the basis is the character's base stat only.
+// The percent is the raw integer rate from the wire (10 = +10%).
+func NewBasePercentBonus(source string, statType Type, percent int32) Bonus {
+	return Bonus{
+		source:      source,
+		statType:    statType,
+		basePercent: percent,
+	}
+}
+
+// WithSource returns a copy of the bonus with the source replaced,
+// preserving every bonus dimension.
+func (b Bonus) WithSource(source string) Bonus {
+	b.source = source
+	return b
+}
+
 func (b Bonus) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Source     string  `json:"source"`
-		StatType   Type    `json:"statType"`
-		Amount     int32   `json:"amount"`
-		Multiplier float64 `json:"multiplier"`
+		Source      string  `json:"source"`
+		StatType    Type    `json:"statType"`
+		Amount      int32   `json:"amount"`
+		Multiplier  float64 `json:"multiplier"`
+		BasePercent int32   `json:"basePercent"`
 	}{
-		Source:     b.source,
-		StatType:   b.statType,
-		Amount:     b.amount,
-		Multiplier: b.multiplier,
+		Source:      b.source,
+		StatType:    b.statType,
+		Amount:      b.amount,
+		Multiplier:  b.multiplier,
+		BasePercent: b.basePercent,
 	})
 }
 
 func (b *Bonus) UnmarshalJSON(data []byte) error {
 	var aux struct {
-		Source     string  `json:"source"`
-		StatType   Type    `json:"statType"`
-		Amount     int32   `json:"amount"`
-		Multiplier float64 `json:"multiplier"`
+		Source      string  `json:"source"`
+		StatType    Type    `json:"statType"`
+		Amount      int32   `json:"amount"`
+		Multiplier  float64 `json:"multiplier"`
+		BasePercent int32   `json:"basePercent"`
 	}
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
@@ -124,6 +150,7 @@ func (b *Bonus) UnmarshalJSON(data []byte) error {
 	b.statType = aux.StatType
 	b.amount = aux.Amount
 	b.multiplier = aux.Multiplier
+	b.basePercent = aux.BasePercent
 	return nil
 }
 
@@ -405,37 +432,47 @@ func (b *Base) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// MapBuffStatType maps buff stat type strings to Type and indicates if it's a multiplier.
-// Returns empty string for unknown buff types.
-func MapBuffStatType(buffType string) (Type, bool) {
+// BonusesForBuffChange converts one buff stat change into the stat bonuses
+// it grants. Returns an empty slice for unknown buff types.
+//
+// One buff change can affect several stats (MAPLE_WARRIOR grants a
+// base-percent bonus to all four primary stats); the amount-to-bonus
+// conversion lives here so the live-apply and initializer paths cannot
+// drift.
+func BonusesForBuffChange(source string, buffType string, amount int32) []Bonus {
 	switch buffType {
 	case "WEAPON_ATTACK", "PAD":
-		return TypeWeaponAttack, false
+		return []Bonus{NewBonus(source, TypeWeaponAttack, amount)}
 	case "MAGIC_ATTACK", "MAD":
-		return TypeMagicAttack, false
+		return []Bonus{NewBonus(source, TypeMagicAttack, amount)}
 	case "WEAPON_DEFENSE", "PDD":
-		return TypeWeaponDefense, false
+		return []Bonus{NewBonus(source, TypeWeaponDefense, amount)}
 	case "MAGIC_DEFENSE", "MDD":
-		return TypeMagicDefense, false
+		return []Bonus{NewBonus(source, TypeMagicDefense, amount)}
 	case "ACCURACY", "ACC":
-		return TypeAccuracy, false
+		return []Bonus{NewBonus(source, TypeAccuracy, amount)}
 	case "AVOIDABILITY", "AVOID", "EVA":
-		return TypeAvoidability, false
+		return []Bonus{NewBonus(source, TypeAvoidability, amount)}
 	case "SPEED":
-		return TypeSpeed, false
+		return []Bonus{NewBonus(source, TypeSpeed, amount)}
 	case "JUMP":
-		return TypeJump, false
+		return []Bonus{NewBonus(source, TypeJump, amount)}
 	case "HYPER_BODY_HP":
-		return TypeMaxHp, true
+		return []Bonus{NewMultiplierBonus(source, TypeMaxHp, float64(amount)/100.0)}
 	case "HYPER_BODY_MP":
-		return TypeMaxMp, true
+		return []Bonus{NewMultiplierBonus(source, TypeMaxMp, float64(amount)/100.0)}
 	case "MAPLE_WARRIOR":
-		// Maple Warrior affects all primary stats - we need to handle this specially
-		// For now, return strength as the representative stat
-		// The actual implementation should add bonuses for all 4 primary stats
-		return TypeStrength, true
+		// Client applies rate% of the RAW base stat (never base+equip) to each
+		// primary stat, truncating per stat (IDA-verified v83 BasicStat::SetFrom
+		// @0x77ec9f, v95 @0x732ba0 — see PRD §4.1).
+		return []Bonus{
+			NewBasePercentBonus(source, TypeStrength, amount),
+			NewBasePercentBonus(source, TypeDexterity, amount),
+			NewBasePercentBonus(source, TypeIntelligence, amount),
+			NewBasePercentBonus(source, TypeLuck, amount),
+		}
 	default:
-		return "", false
+		return []Bonus{}
 	}
 }
 

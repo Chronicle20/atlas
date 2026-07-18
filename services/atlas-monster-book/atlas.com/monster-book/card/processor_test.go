@@ -1,15 +1,15 @@
 package card
 
 import (
+	"atlas-monster-book/kafka/message"
 	"context"
 	"testing"
 
-	"atlas-monster-book/kafka/message"
-
-	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func tenantCtx(t *testing.T, id uuid.UUID) context.Context {

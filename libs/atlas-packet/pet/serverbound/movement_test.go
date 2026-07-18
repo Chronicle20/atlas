@@ -48,7 +48,7 @@ func TestPetMovementBytesV72(t *testing.T) {
 		0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, // petId EncodeBuffer(8)@0x8c51bc (LE)
 		0x00, 0x00, // movement StartX
 		0x00, 0x00, // movement StartY
-		0x00,       // movement element count = 0
+		0x00, // movement element count = 0
 	}
 	if !bytes.Equal(got, want) {
 		t.Fatalf("v72 = % X, want % X", got, want)
@@ -84,7 +84,7 @@ func TestPetMovementBytesV79(t *testing.T) {
 		0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, // petId EncodeBuffer(8)@0x9150ef (LE)
 		0x00, 0x00, // movement StartX
 		0x00, 0x00, // movement StartY
-		0x00,       // movement element count = 0
+		0x00, // movement element count = 0
 	}
 	if !bytes.Equal(got, want) {
 		t.Fatalf("v79 = % X, want % X", got, want)

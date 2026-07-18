@@ -25,7 +25,7 @@ func TestMultiChatByteOutputV48(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 48, 1)
 	input := MultiChat{mode: 1, from: "PlayerOne", message: "hi"}
 	expected := []byte{
-		0x01, // mode @0x4c6dee
+		0x01,                                                             // mode @0x4c6dee
 		0x09, 0x00, 0x50, 0x6C, 0x61, 0x79, 0x65, 0x72, 0x4F, 0x6E, 0x65, // from "PlayerOne" @0x4c6e1d
 		0x02, 0x00, 0x68, 0x69, // message "hi" @0x4c6e77
 	}
@@ -48,7 +48,7 @@ func TestMultiChatByteOutputV79(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 79, 1)
 	input := MultiChat{mode: 1, from: "PlayerOne", message: "hi"}
 	expected := []byte{
-		0x01, // mode @0x51d340
+		0x01,                                                             // mode @0x51d340
 		0x09, 0x00, 0x50, 0x6C, 0x61, 0x79, 0x65, 0x72, 0x4F, 0x6E, 0x65, // from "PlayerOne" @0x51d37d
 		0x02, 0x00, 0x68, 0x69, // message "hi" @0x51d3c2
 	}
@@ -73,7 +73,7 @@ func TestMultiChatByteOutputV72(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 72, 1)
 	input := MultiChat{mode: 1, from: "PlayerOne", message: "hi"}
 	expected := []byte{
-		0x01, // mode @0x516284
+		0x01,                                                             // mode @0x516284
 		0x09, 0x00, 0x50, 0x6C, 0x61, 0x79, 0x65, 0x72, 0x4F, 0x6E, 0x65, // from "PlayerOne" @0x5162c1
 		0x02, 0x00, 0x68, 0x69, // message "hi" @0x516306
 	}
@@ -92,7 +92,7 @@ func TestMultiChatByteOutputV61(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 61, 1)
 	input := MultiChat{mode: 1, from: "PlayerOne", message: "hi"}
 	expected := []byte{
-		0x01, // mode
+		0x01,                                                             // mode
 		0x09, 0x00, 0x50, 0x6C, 0x61, 0x79, 0x65, 0x72, 0x4F, 0x6E, 0x65, // from "PlayerOne"
 		0x02, 0x00, 0x68, 0x69, // message "hi"
 	}

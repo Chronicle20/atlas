@@ -3,9 +3,10 @@ package map_
 import (
 	"strconv"
 
+	"github.com/jtumidanski/api2go/jsonapi"
+
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/point"
-	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 // PortalRestModel mirrors atlas-data's portal sub-resource wire format.

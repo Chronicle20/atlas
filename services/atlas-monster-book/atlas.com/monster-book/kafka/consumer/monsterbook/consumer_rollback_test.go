@@ -1,16 +1,17 @@
 package monsterbook
 
 import (
-	"testing"
-
 	"atlas-monster-book/card"
 	"atlas-monster-book/collection"
+	"testing"
+
 	mbmsg "atlas-monster-book/kafka/message/monsterbook"
 
-	"github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 )
 
 // CARD_PICKED_UP upserts a card row then recomputes the collection book level

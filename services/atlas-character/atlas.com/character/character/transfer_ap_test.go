@@ -10,15 +10,16 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/stat"
-	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/stat"
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 )
 
 // -- shared test harness (mirrors provider_test.go's newCharsDB / processor_test.go's

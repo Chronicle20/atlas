@@ -2,9 +2,9 @@ import { TemplateDetailLayout } from "@/components/features/templates/TemplateDe
 import { TemplatesForm } from "@/pages/templates-character-templates-form";
 
 export function TemplatesCharacterTemplatesPage() {
-    return (
-        <TemplateDetailLayout>
-            <TemplatesForm />
-        </TemplateDetailLayout>
-    );
+  return (
+    <TemplateDetailLayout>
+      <TemplatesForm />
+    </TemplateDetailLayout>
+  );
 }

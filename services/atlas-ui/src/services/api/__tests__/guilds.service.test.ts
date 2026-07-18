@@ -14,7 +14,12 @@ vi.mock("@/lib/api/client", () => ({
 import { guildsService } from "@/services/api/guilds.service";
 import type { Guild, GuildMember } from "@/types/models/guild";
 
-function makeGuild(id: string, name: string, points: number, worldId = 0): Guild {
+function makeGuild(
+  id: string,
+  name: string,
+  points: number,
+  worldId = 0,
+): Guild {
   const member: GuildMember = {
     characterId: 1,
     name: "Leader",
@@ -54,9 +59,15 @@ describe("guildsService.getPage", () => {
 
     const result = await guildsService.getPage({ number: 2, size: 2 });
 
-    expect(result.meta).toEqual({ total: 5, page: { number: 2, size: 2, last: 3 } });
+    expect(result.meta).toEqual({
+      total: 5,
+      page: { number: 2, size: 2, last: 3 },
+    });
     // Sorted by points descending within the page.
-    expect(result.data.map((g) => g.attributes.name)).toEqual(["Alpha", "Bravo"]);
+    expect(result.data.map((g) => g.attributes.name)).toEqual([
+      "Alpha",
+      "Bravo",
+    ]);
 
     const [calledUrl] = getMock.mock.calls[0] as [string];
     const params = new URL(calledUrl, "http://example.test").searchParams;
@@ -77,7 +88,10 @@ describe("guildsService.search", () => {
     const result = await guildsService.search("alpha", { number: 1, size: 50 });
 
     expect(result.data.map((g) => g.attributes.name)).toEqual(["Alpha Guild"]);
-    expect(result.meta).toEqual({ total: 1, page: { number: 1, size: 50, last: 1 } });
+    expect(result.meta).toEqual({
+      total: 1,
+      page: { number: 1, size: 50, last: 1 },
+    });
 
     // Exactly one server request for the search — no fetch-all-then-filter.
     expect(getMock).toHaveBeenCalledTimes(1);
@@ -129,15 +143,18 @@ describe("guildsService.getWithSpace", () => {
 
   it("drains the collection and filters guilds with open capacity", async () => {
     const full = makeGuild("1", "Full", 100, 0);
-    full.attributes.members = Array.from({ length: full.attributes.capacity }, (_, i) => ({
-      characterId: i,
-      name: `M${i}`,
-      jobId: 0,
-      level: 1,
-      title: 0,
-      online: false,
-      allianceTitle: 0,
-    }));
+    full.attributes.members = Array.from(
+      { length: full.attributes.capacity },
+      (_, i) => ({
+        characterId: i,
+        name: `M${i}`,
+        jobId: 0,
+        level: 1,
+        title: 0,
+        online: false,
+        allianceTitle: 0,
+      }),
+    );
     const open = makeGuild("2", "Open", 50, 0);
 
     getMock.mockResolvedValue({ data: [full, open], meta: null });
@@ -153,7 +170,11 @@ describe("guildsService.getRankings", () => {
 
   it("drains, sorts by points descending, and limits", async () => {
     getMock.mockResolvedValue({
-      data: [makeGuild("1", "Low", 10), makeGuild("2", "High", 999), makeGuild("3", "Mid", 500)],
+      data: [
+        makeGuild("1", "Low", 10),
+        makeGuild("2", "High", 999),
+        makeGuild("3", "Mid", 500),
+      ],
       meta: null,
     });
 

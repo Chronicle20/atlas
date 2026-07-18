@@ -6,11 +6,12 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	merchantpkt "github.com/Chronicle20/atlas/libs/atlas-packet/merchant"
 	merchantcb "github.com/Chronicle20/atlas/libs/atlas-packet/merchant/clientbound"
 	merchantsb "github.com/Chronicle20/atlas/libs/atlas-packet/merchant/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 // HiredMerchantOperationHandleFunc handles the entrusted-shop (hired-merchant)

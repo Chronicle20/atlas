@@ -26,17 +26,17 @@ op: PLAYER_INTERACTION
 direction: serverbound
 opcodes: { gms_v61: "0x6F", gms_v72: "0x79", gms_v79: "0x78", gms_v83: "0x7B", gms_v84: "0x7D", gms_v87: "0x81", gms_v95: "0x90", jms_v185: "0x7C" }
 operations:
-  - { key: CREATE,                             modes: { gms_v61: 0, gms_v72: 0, gms_v79: 0, gms_v83: 0, gms_v84: 0, gms_v87: 0, gms_v95: 0, jms_v185: 0 } }
-  - { key: INVITE,                             modes: { gms_v61: 2, gms_v72: 2, gms_v79: 2, gms_v83: 2, gms_v84: 2, gms_v87: 2, gms_v95: 2, jms_v185: 2 } }
+  - { key: CREATE,                             modes: { gms_v48: 0, gms_v61: 0, gms_v72: 0, gms_v79: 0, gms_v83: 0, gms_v84: 0, gms_v87: 0, gms_v95: 0, jms_v185: 0 } }
+  - { key: INVITE,                             modes: { gms_v48: 2, gms_v61: 2, gms_v72: 2, gms_v79: 2, gms_v83: 2, gms_v84: 2, gms_v87: 2, gms_v95: 2, jms_v185: 2 } }
   - { key: INVITE_DECLINE,                     modes: { gms_v79: 3, gms_v83: 3, gms_v84: 3, gms_v87: 3, gms_v95: 3, jms_v185: 3 } }
-  - { key: VISIT,                              modes: { gms_v61: 4, gms_v72: 4, gms_v79: 4, gms_v83: 4, gms_v84: 4, gms_v87: 4, gms_v95: 4, jms_v185: 4 } }
-  - { key: CHAT,                               modes: { gms_v61: 6, gms_v72: 6, gms_v79: 6, gms_v83: 6, gms_v84: 6, gms_v87: 6, gms_v95: 6, jms_v185: 6 } }
+  - { key: VISIT,                              modes: { gms_v48: 4, gms_v61: 4, gms_v72: 4, gms_v79: 4, gms_v83: 4, gms_v84: 4, gms_v87: 4, gms_v95: 4, jms_v185: 4 } }
+  - { key: CHAT,                               modes: { gms_v48: 6, gms_v61: 6, gms_v72: 6, gms_v79: 6, gms_v83: 6, gms_v84: 6, gms_v87: 6, gms_v95: 6, jms_v185: 6 } }
   - { key: EXIT,                               modes: { gms_v61: 10, gms_v72: 10, gms_v79: 10, gms_v83: 10, gms_v84: 10, gms_v87: 10, gms_v95: 10, jms_v185: 10 } }
   - { key: OPEN,                               modes: { gms_v61: 11, gms_v72: 11, gms_v79: 11, gms_v83: 11, gms_v84: 11, gms_v87: 11, gms_v95: 11, jms_v185: 11 } }
   - { key: CASH_TRADE_OPEN,                    modes: { gms_v79: 14, gms_v83: 14, gms_v84: 14, gms_v87: 14, gms_v95: 14 } }
-  - { key: TRADE_PUT_ITEM,                     modes: { gms_v61: 14, gms_v72: 14, gms_v79: 15, gms_v83: 15, gms_v84: 15, gms_v87: 15, gms_v95: 15, jms_v185: 13 } }
-  - { key: TRADE_ADD_MESO,                     modes: { gms_v61: 15, gms_v72: 15, gms_v79: 16, gms_v83: 16, gms_v84: 16, gms_v87: 16, gms_v95: 16, jms_v185: 14 } }
-  - { key: TRADE_CONFIRM,                      modes: { gms_v61: 16, gms_v72: 16, gms_v79: 17, gms_v83: 17, gms_v84: 17, gms_v87: 17, gms_v95: 17, jms_v185: 15 } }
+  - { key: TRADE_PUT_ITEM,                     modes: { gms_v48: 14, gms_v61: 14, gms_v72: 14, gms_v79: 15, gms_v83: 15, gms_v84: 15, gms_v87: 15, gms_v95: 15, jms_v185: 13 } }
+  - { key: TRADE_ADD_MESO,                     modes: { gms_v48: 15, gms_v61: 15, gms_v72: 15, gms_v79: 16, gms_v83: 16, gms_v84: 16, gms_v87: 16, gms_v95: 16, jms_v185: 14 } }
+  - { key: TRADE_CONFIRM,                      modes: { gms_v48: 16, gms_v61: 16, gms_v72: 16, gms_v79: 17, gms_v83: 17, gms_v84: 17, gms_v87: 17, gms_v95: 17, jms_v185: 15 } }
   - { key: TRANSACTION,                        modes: { gms_v83: 20, gms_v84: 20, gms_v87: 20, gms_v95: 20 } }
   - { key: PERSONAL_STORE_PUT_ITEM,            modes: { gms_v61: 20, gms_v72: 20, gms_v79: 21, gms_v83: 22, gms_v84: 22, gms_v87: 22, gms_v95: 22, jms_v185: 19 } }
   - { key: PERSONAL_STORE_BUY,                 modes: { gms_v61: 21, gms_v72: 21, gms_v79: 22, gms_v83: 23, gms_v84: 23, gms_v87: 23, gms_v95: 23, jms_v185: 20 } }
@@ -57,17 +57,38 @@ operations:
   - { key: MERCHANT_VIEW_BLACK_LIST,           modes: { gms_v79: 46, gms_v83: 47, gms_v84: 47, gms_v87: 47, gms_v95: 47, jms_v185: 44 } }
   - { key: MERCHANT_ADD_TO_BLACK_LIST,         modes: { gms_v79: 47, gms_v83: 48, gms_v84: 48, gms_v87: 48, gms_v95: 48, jms_v185: 45 } }
   - { key: MERCHANT_REMOVE_FROM_BLACK_LIST,    modes: { gms_v79: 48, gms_v83: 49, gms_v84: 49, gms_v87: 49, gms_v95: 49, jms_v185: 46 } }
-  - { key: MEMORY_GAME_ASK_TIE,                modes: { gms_v79: 50, gms_v83: 50, gms_v84: 50, gms_v87: 50, gms_v95: 50, jms_v185: 47 } }
-  - { key: MEMORY_GAME_TIE_ANSWER,             modes: { gms_v79: 51, gms_v83: 51, gms_v84: 51, gms_v87: 51, gms_v95: 51, jms_v185: 48 } }
-  - { key: MEMORY_GAME_FORFEIT,                modes: { gms_v79: 49, gms_v83: 52, gms_v84: 52, gms_v87: 52, gms_v95: 52, jms_v185: 49 } }
-  - { key: MEMORY_GAME_ASK_RETREAT,            modes: { gms_v79: 53, gms_v83: 54, gms_v84: 54, gms_v87: 54, gms_v95: 54, jms_v185: 51 } }
-  - { key: MEMORY_GAME_RETREAT_ANSWER,         modes: { gms_v79: 54, gms_v83: 55, gms_v84: 55, gms_v87: 55, gms_v95: 55, jms_v185: 52 } }
-  - { key: MEMORY_GAME_EXIT_AFTER_GAME,        modes: { gms_v79: 55, gms_v83: 56, gms_v84: 56, gms_v87: 56, gms_v95: 56, jms_v185: 53 } }
-  - { key: MEMORY_GAME_CANCEL_EXIT_AFTER_GAME, modes: { gms_v79: 56, gms_v83: 57, gms_v84: 57, gms_v87: 57, gms_v95: 57, jms_v185: 54 } }
-  - { key: MEMORY_GAME_READY,                  modes: { gms_v79: 57, gms_v83: 58, gms_v84: 58, gms_v87: 58, gms_v95: 58, jms_v185: 55 } }
-  - { key: MEMORY_GAME_UNREADY,                modes: { gms_v79: 58, gms_v83: 59, gms_v84: 59, gms_v87: 59, gms_v95: 59, jms_v185: 56 } }
-  - { key: MEMORY_GAME_EXPEL,                  modes: { gms_v79: 59, gms_v83: 60, gms_v84: 60, gms_v87: 60, gms_v95: 60, jms_v185: 57 } }
-  - { key: MEMORY_GAME_START,                  modes: { gms_v79: 60, gms_v83: 61, gms_v84: 61, gms_v87: 61, gms_v95: 61, jms_v185: 58 } }
-  - { key: MEMORY_GAME_SKIP,                   modes: { gms_v79: 62, gms_v83: 63, gms_v84: 63, gms_v87: 63, gms_v95: 63, jms_v185: 60 } }
-  - { key: MEMORY_GAME_MOVE_STONE,             modes: { gms_v79: 63, gms_v83: 64, gms_v84: 64, gms_v87: 64, gms_v95: 64, jms_v185: 61 } }
-  - { key: MEMORY_GAME_FIP_CARD,               modes: { gms_v79: 67, gms_v83: 68, gms_v84: 68, gms_v87: 68, gms_v95: 68, jms_v185: 65 } }
+  # Legacy MEMORY_GAME serverbound modes (task-133 full bring-up) — every byte
+  # IDA-derived from the client's COutPacket(op)+Encode1(mode) SEND sites per IDB.
+  # v48=v61-1, v72=v61 (uniform). Send-site addresses (GMS_v48_1_DEVM /
+  # GMS_v61.1_U_DEVM / GMS_v72.1_U_DEVM):
+  #   ASK_TIE(request)   v48 sub_578494 0x2B / v61 sub_5FC5E3 0x2C / v72 sub_653317 0x2C
+  #   TIE_ANSWER         v48 @0x573a54 0x2C  / v61 sub_5F7BA3 0x2D / v72 sub_64E893 0x2D
+  #   FORFEIT            v48 sub_5783FB 0x2D / v61 sub_5FC54A 0x2E / v72 sub_65327D 0x2E
+  #   ASK_RETREAT        v48 sub_578531 0x2F / v61 sub_5FC680 0x30 / v72 sub_6533B5 0x30
+  #   RETREAT_ANSWER     v48 @0x573b11 0x30  / v61 sub_5F7C60 0x31 / v72 sub_64E953 0x31
+  #   EXIT_AFTER_GAME    v48 sub_578797 0x31 / v61 sub_5FC8E6 0x32 / v72 sub_65361C 0x32
+  #   CANCEL_EXIT        v48 sub_578797 0x32 / v61 sub_5FC8E6 0x33 / v72 sub_65361C 0x33
+  #   READY/UNREADY      v48 sub_578663 0x33/0x34 / v61 sub_5FC7B2 0x34/0x35 / v72 sub_6534E7 0x34/0x35
+  #   EXPEL              v48 sub_57871D 0x35 / v61 sub_5FC86C 0x36 / v72 sub_6535A1 0x36
+  #   START              v48 sub_57860C 0x36 / v61 sub_5FC75B 0x37 / v72 sub_653492 0x37
+  #   SKIP(timeout)      v48 sub_57489D 0x38 / v61 sub_5F89EC 0x39 / v72 sub_64F750 0x39
+  #   MOVE_STONE         v48 sub_578388 0x39 / v61 sub_5FC4D7 0x3A / v72 sub_65320C 0x3A
+  #   FIP_CARD           v48 sub_53875D 0x3D / v61 sub_5B10FA 0x3E / v72 sub_5FF6BA 0x3E
+  # The shared TIE flow is the LOWER mode (ASK_TIE) and Omok-only RETREAT is
+  # HIGHER (ASK_RETREAT) — the legacy interleaved layout, corrected vs the earlier
+  # tie/retreat label swap (both dialogs' ASK_TIE handler send the same tie mode;
+  # only Omok has the retreat handler).
+  - { key: MEMORY_GAME_ASK_TIE,                modes: { gms_v48: 43, gms_v61: 44, gms_v72: 44, gms_v79: 50, gms_v83: 50, gms_v84: 50, gms_v87: 50, gms_v95: 50, jms_v185: 47 } }
+  - { key: MEMORY_GAME_TIE_ANSWER,             modes: { gms_v48: 44, gms_v61: 45, gms_v72: 45, gms_v79: 51, gms_v83: 51, gms_v84: 51, gms_v87: 51, gms_v95: 51, jms_v185: 48 } }
+  - { key: MEMORY_GAME_FORFEIT,                modes: { gms_v48: 45, gms_v61: 46, gms_v72: 46, gms_v79: 49, gms_v83: 52, gms_v84: 52, gms_v87: 52, gms_v95: 52, jms_v185: 49 } }
+  - { key: MEMORY_GAME_ASK_RETREAT,            modes: { gms_v48: 47, gms_v61: 48, gms_v72: 48, gms_v79: 53, gms_v83: 54, gms_v84: 54, gms_v87: 54, gms_v95: 54, jms_v185: 51 } }
+  - { key: MEMORY_GAME_RETREAT_ANSWER,         modes: { gms_v48: 48, gms_v61: 49, gms_v72: 49, gms_v79: 54, gms_v83: 55, gms_v84: 55, gms_v87: 55, gms_v95: 55, jms_v185: 52 } }
+  - { key: MEMORY_GAME_EXIT_AFTER_GAME,        modes: { gms_v48: 49, gms_v61: 50, gms_v72: 50, gms_v79: 55, gms_v83: 56, gms_v84: 56, gms_v87: 56, gms_v95: 56, jms_v185: 53 } }
+  - { key: MEMORY_GAME_CANCEL_EXIT_AFTER_GAME, modes: { gms_v48: 50, gms_v61: 51, gms_v72: 51, gms_v79: 56, gms_v83: 57, gms_v84: 57, gms_v87: 57, gms_v95: 57, jms_v185: 54 } }
+  - { key: MEMORY_GAME_READY,                  modes: { gms_v48: 51, gms_v61: 52, gms_v72: 52, gms_v79: 57, gms_v83: 58, gms_v84: 58, gms_v87: 58, gms_v95: 58, jms_v185: 55 } }
+  - { key: MEMORY_GAME_UNREADY,                modes: { gms_v48: 52, gms_v61: 53, gms_v72: 53, gms_v79: 58, gms_v83: 59, gms_v84: 59, gms_v87: 59, gms_v95: 59, jms_v185: 56 } }
+  - { key: MEMORY_GAME_EXPEL,                  modes: { gms_v48: 53, gms_v61: 54, gms_v72: 54, gms_v79: 59, gms_v83: 60, gms_v84: 60, gms_v87: 60, gms_v95: 60, jms_v185: 57 } }
+  - { key: MEMORY_GAME_START,                  modes: { gms_v48: 54, gms_v61: 55, gms_v72: 55, gms_v79: 60, gms_v83: 61, gms_v84: 61, gms_v87: 61, gms_v95: 61, jms_v185: 58 } }
+  - { key: MEMORY_GAME_SKIP,                   modes: { gms_v48: 56, gms_v61: 57, gms_v72: 57, gms_v79: 62, gms_v83: 63, gms_v84: 63, gms_v87: 63, gms_v95: 63, jms_v185: 60 } }
+  - { key: MEMORY_GAME_MOVE_STONE,             modes: { gms_v48: 57, gms_v61: 58, gms_v72: 58, gms_v79: 63, gms_v83: 64, gms_v84: 64, gms_v87: 64, gms_v95: 64, jms_v185: 61 } }
+  - { key: MEMORY_GAME_FIP_CARD,               modes: { gms_v48: 61, gms_v61: 62, gms_v72: 62, gms_v79: 67, gms_v83: 68, gms_v84: 68, gms_v87: 68, gms_v95: 68, jms_v185: 65 } }

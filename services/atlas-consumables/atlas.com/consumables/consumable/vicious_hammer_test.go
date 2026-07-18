@@ -1,9 +1,8 @@
 package consumable
 
 import (
-	"testing"
-
 	"atlas-consumables/asset"
+	"testing"
 
 	"github.com/google/uuid"
 )

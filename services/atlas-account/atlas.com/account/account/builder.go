@@ -8,27 +8,27 @@ import (
 )
 
 type Builder struct {
-	tenantId  uuid.UUID
-	id        uint32
-	name      string
-	password  string
-	pin       string
+	tenantId    uuid.UUID
+	id          uint32
+	name        string
+	password    string
+	pin         string
 	pic         string
 	pinAttempts int
 	picAttempts int
 	state       State
-	gender byte
-	tos    bool
-	updatedAt time.Time
+	gender      byte
+	tos         bool
+	updatedAt   time.Time
 }
 
 func NewBuilder(tenantId uuid.UUID, name string) *Builder {
 	return &Builder{
 		tenantId: tenantId,
 		name:     name,
-		state:  StateNotLoggedIn,
-		gender: 0,
-		tos:    false,
+		state:    StateNotLoggedIn,
+		gender:   0,
+		tos:      false,
 	}
 }
 
@@ -88,17 +88,17 @@ func (b *Builder) Build() (Model, error) {
 	}
 
 	return Model{
-		tenantId:  b.tenantId,
-		id:        b.id,
-		name:      b.name,
-		password:  b.password,
-		pin:       b.pin,
+		tenantId:    b.tenantId,
+		id:          b.id,
+		name:        b.name,
+		password:    b.password,
+		pin:         b.pin,
 		pic:         b.pic,
 		pinAttempts: b.pinAttempts,
 		picAttempts: b.picAttempts,
 		state:       b.state,
-		gender: b.gender,
-		tos:    b.tos,
-		updatedAt: b.updatedAt,
+		gender:      b.gender,
+		tos:         b.tos,
+		updatedAt:   b.updatedAt,
 	}, nil
 }

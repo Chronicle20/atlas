@@ -8,12 +8,15 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-retry"
 	"github.com/sirupsen/logrus"
+
+	retry "github.com/Chronicle20/atlas/libs/atlas-retry"
 )
 
-var ErrBadRequest = errors.New("bad request")
-var ErrNotFound = errors.New("not found")
+var (
+	ErrBadRequest = errors.New("bad request")
+	ErrNotFound   = errors.New("not found")
+)
 
 // ErrServiceUnavailable is returned when a GET exhausted its attempts and the
 // final response was 503 Service Unavailable — the dependency is saturated
@@ -96,7 +99,6 @@ func getBody(l logrus.FieldLogger, ctx context.Context) func(url string, configu
 		}
 		cfg := retry.DefaultConfig().WithMaxRetries(c.retries).WithInitialDelay(200 * time.Millisecond).WithMaxDelay(2 * time.Second)
 		err := retry.Try(ctx, cfg, get)
-
 		if err != nil {
 			if errors.Is(err, errServiceUnavailableAttempt) {
 				l.WithError(err).Errorf("Service unavailable after retries calling [%s] on [%s].", http.MethodGet, url)

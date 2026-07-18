@@ -14,9 +14,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
-var (
-	ErrInvalidId = errors.New("character id must be greater than 0")
-)
+var ErrInvalidId = errors.New("character id must be greater than 0")
 
 type modelBuilder struct {
 	id                 uint32

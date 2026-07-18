@@ -3,8 +3,9 @@ package session
 import (
 	"strconv"
 
-	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 )
 
 func WriteHello(l logrus.FieldLogger) func(majorVersion uint16, minorVersion uint16, sendIv []byte, recvIv []byte, locale byte) []byte {

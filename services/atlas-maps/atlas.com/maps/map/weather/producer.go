@@ -3,11 +3,12 @@ package weather
 import (
 	mapKafka "atlas-maps/kafka/message/map"
 
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
 )
 
 func WeatherStartEventProvider(transactionId uuid.UUID, f field.Model, itemId uint32, message string) model.Provider[[]kafka.Message] {

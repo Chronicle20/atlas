@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"testing"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 func TestSummonMove(t *testing.T) {
@@ -76,6 +77,7 @@ func TestSummonMoveBytes(t *testing.T) {
 //   - sub_71CFC8 forwards the CInPacket to CMovePath::OnMovePacket@0x6583fc,
 //     which decodes the raw movement blob (the blob itself begins with start x,y
 //     per CMovePath::Encode).
+//
 // Wire = int cid (consumed upstream) + int oid + raw CMovePath blob, with NO
 // separately-written start position.
 // packet-audit:verify packet=summon/clientbound/SummonMove version=gms_v79 ida=0x71cfc8
@@ -103,6 +105,7 @@ func TestSummonMoveBytesV79(t *testing.T) {
 //     sub_6E9285@0x6e9285.
 //   - sub_6E9285 forwards the CInPacket to CMovePath::OnMovePacket@0x635bc2, which
 //     decodes the raw movement blob (the blob begins with start x,y per CMovePath::Encode).
+//
 // Wire = int cid (consumed upstream) + int oid + raw CMovePath blob, no separate pos.
 // packet-audit:verify packet=summon/clientbound/SummonMove version=gms_v72 ida=0x6e9285
 func TestSummonMoveBytesV72(t *testing.T) {
@@ -130,6 +133,7 @@ func TestSummonMoveBytesV72(t *testing.T) {
 //   - CSummonedPool::OnMove@0x7a6861 forwards the CInPacket to
 //     CMovePath::OnMovePacket@0x68b371, which decodes the raw movement blob (the
 //     blob itself begins with start x,y per CMovePath::Encode).
+//
 // So the wire is: int cid (consumed upstream) + int oid + raw CMovePath blob, with
 // NO separately-written start position (writing one mis-aligns the observer decode).
 // packet-audit:verify packet=summon/clientbound/SummonMove version=gms_v83 ida=0x7a6861
@@ -160,6 +164,7 @@ func TestSummonMoveBytesV83(t *testing.T) {
 //   - sub_7CC317@0x7cc317 forwards the CInPacket to CMovePath__OnMovePacket
 //     (@0x6a203f), which decodes the raw movement blob (the blob itself begins with
 //     start x,y per CMovePath::Encode).
+//
 // Wire = int cid (consumed upstream) + int oid + raw CMovePath blob, with NO
 // separately-written start position. No off-by-one: Move has no version gate, so the
 // v84 path is byte-identical to v83.
@@ -191,6 +196,7 @@ func TestSummonMoveBytesV84(t *testing.T) {
 //   - CSummonedPool::OnMove@0x7f902b forwards the CInPacket to
 //     CMovePath::OnMovePacket@0x6c802d, which decodes the raw movement blob (the
 //     blob itself begins with start x,y per CMovePath::Encode).
+//
 // Wire = int cid (consumed upstream) + int oid + raw CMovePath blob, with NO
 // separately-written start position. No off-by-one: Move has no version gate, so the
 // v87 path is byte-identical to v83.
@@ -240,6 +246,7 @@ func TestSummonMoveBytesV95(t *testing.T) {
 //   - CSummonedPool::OnMove@0x8286e4 forwards the CInPacket to
 //     CMovePath::OnMovePacket@0x70c5dc, which decodes the raw movement blob (the
 //     blob itself begins with start x,y per CMovePath::Encode).
+//
 // Wire = int cid (consumed upstream) + int oid + raw CMovePath blob, with NO
 // separately-written start position (writing one mis-aligns the observer decode).
 // Move has no version gate, so the jms185 path is byte-identical to v83.

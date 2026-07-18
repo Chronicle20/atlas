@@ -7,8 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // tenantGMS83 creates a GMS 83.1 tenant for tests.

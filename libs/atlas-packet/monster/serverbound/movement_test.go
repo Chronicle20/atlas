@@ -148,8 +148,8 @@ func TestMonsterMovementBytesV79(t *testing.T) {
 	want := []byte{
 		0xE9, 0x03, 0x00, 0x00, // uniqueId 1001 (Encode4 @0x63a7ba)
 		0x37, 0x00, // moveId 55 (Encode2 @0x63a7ec)
-		0x01, // dwFlag 1 (Encode1 @0x63a803)
-		0xFD, // nActionAndDir -3 (Encode1 @0x63a80e)
+		0x01,                   // dwFlag 1 (Encode1 @0x63a803)
+		0xFD,                   // nActionAndDir -3 (Encode1 @0x63a80e)
 		0x05, 0x03, 0x00, 0x00, // skillData 0x0305 (Encode4 @0x63a819)
 		0x00,                   // moveFlags 0 (Encode1 @0x63a83b)
 		0x00, 0x00, 0x00, 0x00, // hackedCode 0 (Encode4 @0x63a849)
@@ -203,8 +203,8 @@ func TestMonsterMovementBytesV72(t *testing.T) {
 	want := []byte{
 		0xE9, 0x03, 0x00, 0x00, // uniqueId 1001 (Encode4 @0x61af78)
 		0x37, 0x00, // moveId 55 (Encode2 @0x61afaa)
-		0x01, // dwFlag 1 (Encode1 @0x61afbc)
-		0xFD, // nActionAndDir -3 (Encode1 @0x61afc7)
+		0x01,                   // dwFlag 1 (Encode1 @0x61afbc)
+		0xFD,                   // nActionAndDir -3 (Encode1 @0x61afc7)
 		0x05, 0x03, 0x00, 0x00, // skillData 0x0305 (Encode4 @0x61afd2)
 		0x00,                   // moveFlags 0 (Encode1 @0x61aff4)
 		0x00, 0x00, 0x00, 0x00, // hackedCode 0 (Encode4 @0x61b002)

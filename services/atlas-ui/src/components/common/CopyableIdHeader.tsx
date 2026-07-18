@@ -13,7 +13,11 @@ interface CopyableIdHeaderProps {
   actions?: ReactNode;
 }
 
-export function CopyableIdHeader({ title, id, actions }: CopyableIdHeaderProps) {
+export function CopyableIdHeader({
+  title,
+  id,
+  actions,
+}: CopyableIdHeaderProps) {
   return (
     <div className="flex flex-row items-center justify-between gap-4">
       <TooltipProvider>
@@ -32,7 +36,9 @@ export function CopyableIdHeader({ title, id, actions }: CopyableIdHeaderProps) 
         </Tooltip>
       </TooltipProvider>
 
-      {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
+      {actions ? (
+        <div className="flex items-center gap-2">{actions}</div>
+      ) : null}
     </div>
   );
 }

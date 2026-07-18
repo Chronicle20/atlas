@@ -1,6 +1,7 @@
 package merchant_test
 
 import (
+	"atlas-channel/merchant"
 	"context"
 	"fmt"
 	"net/http"
@@ -9,12 +10,11 @@ import (
 	"strings"
 	"testing"
 
-	"atlas-channel/merchant"
-
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // merchantDoc renders a JSON:API document for n shops, all owned by

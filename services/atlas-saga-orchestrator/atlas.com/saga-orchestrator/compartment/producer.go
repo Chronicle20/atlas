@@ -5,11 +5,12 @@ import (
 	"atlas-saga-orchestrator/kafka/message/compartment"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
 )
 
 func RequestCreateAssetCommandProvider(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, useAverageStats bool) model.Provider[[]kafka.Message] {
@@ -106,6 +107,30 @@ func RequestReleaseAssetCommandProvider(transactionId uuid.UUID, characterId uin
 			AssetId:       assetId,
 			Quantity:      quantity,
 		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func RequestSetOwnerCommandProvider(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, owner string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &compartment.Command[compartment.SetOwnerCommandBody]{
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		InventoryType: inventoryType,
+		Type:          compartment.CommandSetOwner,
+		Body:          compartment.SetOwnerCommandBody{Slot: slot, Owner: owner},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func RequestApplyLockCommandProvider(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, expiration time.Time) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &compartment.Command[compartment.ApplyLockCommandBody]{
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		InventoryType: inventoryType,
+		Type:          compartment.CommandApplyLock,
+		Body:          compartment.ApplyLockCommandBody{Slot: slot, Expiration: expiration},
 	}
 	return producer.SingleMessageProvider(key, value)
 }

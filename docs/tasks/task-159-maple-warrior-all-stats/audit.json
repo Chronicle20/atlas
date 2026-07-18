@@ -1,0 +1,133 @@
+{
+  "service": "atlas-effective-stats",
+  "path": "services/atlas-effective-stats/atlas.com/effective-stats",
+  "date": "2026-07-17",
+  "build": "pass",
+  "testsPassed": null,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "note": "Build/test verified clean by the controller prior to this pass and not re-run here; testsPassed count not independently captured by this reviewer.",
+  "domains": [
+    {
+      "name": "stat",
+      "type": "domain",
+      "checks": [
+        {
+          "id": "DOM-04",
+          "name": "Transform function",
+          "status": "fail",
+          "evidence": "stat/rest.go:41-56 BonusRestModel/TransformBonus do not serialize the new Bonus.basePercent field (added stat/model.go:47-52,70-72). GET /characters/{id}/stats (character/resource.go:25-37) returns basePercent bonuses as amount:0, multiplier:0."
+        },
+        {
+          "id": "DOM-05",
+          "name": "TransformSlice function",
+          "status": "warn",
+          "evidence": "N/A - no TransformSlice; single-resource GET only (character/resource.go:21)."
+        },
+        {
+          "id": "DOM-18",
+          "name": "JSON:API interface on REST models",
+          "status": "pass",
+          "evidence": "stat/rest.go:26-36 GetName()/GetID()/SetID()"
+        },
+        {
+          "id": "DOM-19",
+          "name": "Request models flat structure",
+          "status": "warn",
+          "evidence": "N/A - no CreateRequest/UpdateRequest defined in stat package"
+        },
+        {
+          "id": "DOM-20",
+          "name": "Table-driven tests",
+          "status": "pass",
+          "evidence": "stat/model_test.go:314-345,359+ TestBonusesForBuffChange_Flat/_HyperBody use tests := []struct + t.Run"
+        },
+        {
+          "id": "DOM-21",
+          "name": "No duplication of atlas-constants types",
+          "status": "pass",
+          "evidence": "basePercent int32 (stat/model.go:51) is a plain rate; grep -rn percent libs/atlas-constants returns zero matches"
+        },
+        {
+          "id": "FILE-01-02-06",
+          "name": "File Responsibilities",
+          "status": "pass",
+          "evidence": "stat/model.go holds only value objects + pure helpers; stat/rest.go holds RestModel/Transform correctly placed (content gap tracked separately as DOM-04)"
+        }
+      ]
+    },
+    {
+      "name": "character",
+      "type": "domain",
+      "checks": [
+        {
+          "id": "ARCH-NOTE",
+          "name": "No GORM database (Redis-backed registry)",
+          "status": "warn",
+          "evidence": "grep -rn 'database.Connect|gorm' character/*.go stat/*.go (excl _test.go) = zero matches; character/registry.go:19-38 TenantRegistry. Makes DOM-01/02/03/10/11/16/27 N/A for this service."
+        },
+        {
+          "id": "DOM-06",
+          "name": "Processor accepts FieldLogger",
+          "status": "pass",
+          "evidence": "character/processor.go:44 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor"
+        },
+        {
+          "id": "DOM-13-14-15",
+          "name": "No cross-domain logic/provider calls/direct writes in handlers",
+          "status": "pass",
+          "evidence": "character/resource.go:30 handler calls NewProcessor(...).GetEffectiveStats(...) only"
+        },
+        {
+          "id": "DOM-20",
+          "name": "Table-driven tests",
+          "status": "warn",
+          "evidence": "character/model_test.go:569-648 and character/processor_test.go:507-632 new tests are individual named funcs, not tests := []struct + t.Run; testing-guide.md:18 says 'prefer' (soft); consistent with pre-existing package-wide style, not diff-introduced"
+        },
+        {
+          "id": "DOM-24",
+          "name": "Kafka producer stubbed in tests that emit",
+          "status": "pass",
+          "evidence": "character/testmain_test.go:11-13 producertest.InstallNoop() in TestMain; no t.Cleanup(producer.ResetInstance) found"
+        },
+        {
+          "id": "FILE-01",
+          "name": "Processor in processor.go",
+          "status": "pass",
+          "evidence": "grep '^func (p *ProcessorImpl)' character/*.go -> all 18 methods in character/processor.go"
+        }
+      ]
+    },
+    {
+      "name": "kafka/consumer/buff",
+      "type": "sub-domain",
+      "checks": [
+        {
+          "id": "SUB-01",
+          "name": "Business logic not in handler",
+          "status": "pass",
+          "evidence": "kafka/consumer/buff/consumer.go:48-67 handleBuffApplied delegates to character.Processor.AddBuffBonuses"
+        },
+        {
+          "id": "SUB-02",
+          "name": "Writes via processor",
+          "status": "pass",
+          "evidence": "no db.Create/db.Save in consumer.go"
+        },
+        {
+          "id": "SUB-04",
+          "name": "No manual JSON parsing",
+          "status": "pass",
+          "evidence": "grep json.NewDecoder|json.Unmarshal|io.ReadAll kafka/consumer/buff/consumer.go -> zero matches"
+        }
+      ]
+    }
+  ],
+  "blocking": [
+    "DOM-04: stat/rest.go TransformBonus/BonusRestModel (lines 41-56) omit the new Bonus.basePercent dimension; GET /characters/{id}/stats silently reports Maple Warrior bonuses as amount:0/multiplier:0 in the bonuses breakdown despite Computed being correct"
+  ],
+  "nonBlocking": [
+    "DOM-20: new tests in character/model_test.go:569-648 and character/processor_test.go:507-632 are not table-driven (testing-guide.md 'prefer', package-wide pre-existing style)",
+    "Observation: character/processor.go:183 AddEquipmentBonuses still uses dimension-dropping stat.NewFullBonus instead of WithSource; intentional per plan.md, harmless today since equipment never carries basePercent, latent risk only"
+  ]
+}

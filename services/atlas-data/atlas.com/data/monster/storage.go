@@ -1,16 +1,16 @@
 package monster
 
 import (
+	"atlas-data/document"
+	"atlas-data/searchindex"
 	"context"
 	"time"
 
-	"atlas-data/document"
-	"atlas-data/searchindex"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 type Storage struct {

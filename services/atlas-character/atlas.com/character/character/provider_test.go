@@ -3,13 +3,14 @@ package character
 import (
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 func newCharsDB(t *testing.T) (*gorm.DB, uuid.UUID, uuid.UUID) {

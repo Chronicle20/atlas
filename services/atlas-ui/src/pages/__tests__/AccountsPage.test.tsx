@@ -23,7 +23,10 @@ vi.mock("@/services/api/bans.service", () => ({
 
 vi.mock("@/context/tenant-context", () => ({
   useTenant: () => ({
-    activeTenant: { id: "test-tenant", attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 } },
+    activeTenant: {
+      id: "test-tenant",
+      attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 },
+    },
   }),
 }));
 
@@ -95,7 +98,9 @@ describe("AccountsPage", () => {
     await user.click(screen.getByRole("button", { name: /next page/i }));
 
     await waitFor(() => {
-      const lastCall = vi.mocked(accountsService.getAccountsPage).mock.calls.at(-1)!;
+      const lastCall = vi
+        .mocked(accountsService.getAccountsPage)
+        .mock.calls.at(-1)!;
       expect(lastCall[0]).toEqual({ number: 2, size: 50 });
     });
   });

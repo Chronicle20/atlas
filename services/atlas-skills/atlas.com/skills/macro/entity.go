@@ -1,9 +1,10 @@
 package macro
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 )
 
 func Migration(db *gorm.DB) error {

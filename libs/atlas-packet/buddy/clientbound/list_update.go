@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const BuddyListUpdateWriter = "BuddyListUpdate"
@@ -31,9 +32,9 @@ func NewBuddyListUpdate(mode byte, buddies []BuddyEntry) ListUpdate {
 	return ListUpdate{mode: mode, buddies: buddies}
 }
 
-func (m ListUpdate) Mode() byte          { return m.mode }
+func (m ListUpdate) Mode() byte            { return m.mode }
 func (m ListUpdate) Buddies() []BuddyEntry { return m.buddies }
-func (m ListUpdate) Operation() string    { return BuddyListUpdateWriter }
+func (m ListUpdate) Operation() string     { return BuddyListUpdateWriter }
 
 func (m ListUpdate) String() string {
 	return fmt.Sprintf("list update with [%d] buddies", len(m.buddies))

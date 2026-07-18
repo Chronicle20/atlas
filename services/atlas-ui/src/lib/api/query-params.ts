@@ -71,8 +71,10 @@ export function buildQueryString(options?: QueryOptions): string {
   if (options.search) params.append("search", options.search);
   if (options.sortBy) params.append("sortBy", options.sortBy);
   if (options.sortOrder) params.append("sortOrder", options.sortOrder);
-  if (options.limit !== undefined) params.append("limit", String(options.limit));
-  if (options.offset !== undefined) params.append("offset", String(options.offset));
+  if (options.limit !== undefined)
+    params.append("limit", String(options.limit));
+  if (options.offset !== undefined)
+    params.append("offset", String(options.offset));
 
   if (options.filters) {
     for (const [key, value] of Object.entries(options.filters)) {

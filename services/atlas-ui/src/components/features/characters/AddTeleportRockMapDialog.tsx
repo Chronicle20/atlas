@@ -11,6 +11,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useDebounce } from "@/lib/utils/debounce";
 import { useMapsByName } from "@/lib/hooks/api/useMaps";
 import { useAddTeleportRockMap } from "@/lib/hooks/api/useTeleportRocks";
+import { useTenant } from "@/context/tenant-context";
+import { createErrorFromUnknown } from "@/types/api/errors";
 import type { TeleportRockListType } from "@/services/api/teleport-rocks.service";
 import { toast } from "sonner";
 
@@ -32,6 +34,7 @@ export function AddTeleportRockMapDialog({
   const [query, setQuery] = useState("");
   const debounced = useDebounce(query.trim(), 300);
   const { data: results, isLoading } = useMapsByName(debounced);
+  const { activeTenant } = useTenant();
   const { mutateAsync: addMap, isPending } = useAddTeleportRockMap();
 
   const filteredResults = (results ?? []).filter(
@@ -40,15 +43,11 @@ export function AddTeleportRockMapDialog({
 
   const handleSelect = async (mapId: number, mapName: string) => {
     try {
-      await addMap({ characterId, list, mapId });
+      await addMap({ tenant: activeTenant, characterId, list, mapId });
       toast.success(`Added ${mapName} to the ${list} teleport rock list`);
       onOpenChange(false);
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "An unexpected error occurred while adding the map";
-      toast.error(errorMessage);
+      toast.error(createErrorFromUnknown(error).message);
     }
   };
 

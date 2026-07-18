@@ -61,11 +61,24 @@ describe("TeleportRockListCard", () => {
     await waitFor(() =>
       expect(removeMap).toHaveBeenCalledWith(
         expect.objectContaining({
+          tenant: { id: "t" },
           characterId: "42",
           list: "regular",
           mapId: 100000000,
         }),
       ),
     );
+  });
+
+  it("shows an error toast when removing a map fails", async () => {
+    const { toast } = await import("sonner");
+    removeMap.mockRejectedValueOnce(new Error("boom"));
+
+    renderCard();
+    fireEvent.click(
+      screen.getByRole("button", { name: /remove map 100000000/i }),
+    );
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith("boom"));
   });
 });

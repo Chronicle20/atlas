@@ -14,6 +14,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useItemData } from "@/lib/hooks/useItemData";
 import { useMap } from "@/lib/hooks/api/useMaps";
 import { useRemoveTeleportRockMap } from "@/lib/hooks/api/useTeleportRocks";
+import { useTenant } from "@/context/tenant-context";
+import { createErrorFromUnknown } from "@/types/api/errors";
 import type { TeleportRockListType } from "@/services/api/teleport-rocks.service";
 import { AddTeleportRockMapDialog } from "@/components/features/characters/AddTeleportRockMapDialog";
 
@@ -41,20 +43,17 @@ interface MapRowProps {
  */
 function MapRow({ characterId, list, mapId }: MapRowProps) {
   const { data: map } = useMap(String(mapId));
+  const { activeTenant } = useTenant();
   const { mutateAsync: removeMap, isPending } = useRemoveTeleportRockMap();
 
   const mapName = map?.attributes.name ?? `Map ${mapId}`;
 
   const handleRemove = async () => {
     try {
-      await removeMap({ characterId, list, mapId });
+      await removeMap({ tenant: activeTenant, characterId, list, mapId });
       toast.success(`Removed ${mapName} from the ${list} teleport rock list`);
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "An unexpected error occurred while removing the map";
-      toast.error(errorMessage);
+      toast.error(createErrorFromUnknown(error).message);
     }
   };
 
@@ -64,7 +63,7 @@ function MapRow({ characterId, list, mapId }: MapRowProps) {
       <Button
         variant="ghost"
         size="icon"
-        className="h-6 w-6 hover:bg-red-100 hover:text-red-600"
+        className="h-6 w-6 hover:bg-destructive/10 hover:text-destructive"
         onClick={handleRemove}
         disabled={isPending}
         aria-label={`Remove map ${mapId}`}
@@ -98,6 +97,7 @@ export function TeleportRockListCard({
             alt={title}
             width={24}
             height={24}
+            loading="lazy"
             className="h-6 w-6"
           />
         )}

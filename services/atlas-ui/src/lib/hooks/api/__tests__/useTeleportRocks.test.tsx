@@ -25,18 +25,6 @@ const mockTenant: Tenant = {
   },
 } as unknown as Tenant;
 
-vi.mock("@/context/tenant-context", () => ({
-  useTenant: () => ({
-    activeTenant: mockTenant,
-    tenants: [mockTenant],
-    loading: false,
-    setActiveTenant: vi.fn(),
-    refreshTenants: vi.fn(),
-    refreshAndSelectTenant: vi.fn(),
-    fetchTenantConfiguration: vi.fn(),
-  }),
-}));
-
 vi.mock("@/services/api/teleport-rocks.service", () => ({
   teleportRocksService: {
     getByCharacterId: vi.fn(),
@@ -158,6 +146,7 @@ describe("useTeleportRocks hooks", () => {
       );
 
       mutateResult.current.mutate({
+        tenant: mockTenant,
         characterId: "1",
         list: "regular",
         mapId: 102000000,
@@ -211,6 +200,7 @@ describe("useTeleportRocks hooks", () => {
       );
 
       mutateResult.current.mutate({
+        tenant: mockTenant,
         characterId: "1",
         list: "vip",
         mapId: 200000100,
@@ -240,6 +230,14 @@ describe("useTeleportRocks hooks", () => {
       expect(teleportRockKeys.detail("tenant-1", "1")).toEqual([
         "teleport-rocks",
         "tenant-1",
+        "1",
+      ]);
+    });
+
+    it("falls back to a stable key segment when tenantId is undefined", () => {
+      expect(teleportRockKeys.detail(undefined, "1")).toEqual([
+        "teleport-rocks",
+        "no-tenant",
         "1",
       ]);
     });

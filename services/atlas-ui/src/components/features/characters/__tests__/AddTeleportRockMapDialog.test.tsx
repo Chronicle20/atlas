@@ -9,6 +9,9 @@ vi.mock("@/lib/hooks/api/useMaps", () => ({
     isLoading: false,
   }),
 }));
+vi.mock("@/context/tenant-context", () => ({
+  useTenant: () => ({ activeTenant: { id: "t" } }),
+}));
 const addMap = vi.fn().mockResolvedValue({
   regular: [100000000],
   vip: [],
@@ -47,6 +50,7 @@ describe("AddTeleportRockMapDialog", () => {
     await waitFor(() =>
       expect(addMap).toHaveBeenCalledWith(
         expect.objectContaining({
+          tenant: { id: "t" },
           characterId: "42",
           list: "regular",
           mapId: 100000000,

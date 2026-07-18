@@ -125,7 +125,7 @@ export function MapPicker({
         </PopoverContent>
       </Popover>
       {unresolved && (
-        <p className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-500">
+        <p className="flex items-center gap-1 text-xs text-warning-foreground">
           <TriangleAlert className="size-3" />
           not found in map data for this version
         </p>

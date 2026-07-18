@@ -10,7 +10,7 @@ import {
   type PreviewPicks,
 } from "./editorState";
 import { buildVariantLoadout } from "./previewLoadout";
-import { AppearanceThumb } from "./AppearanceThumb";
+import { AppearanceThumb, THUMB_SIZE } from "./AppearanceThumb";
 
 interface AppearancePoolSectionProps {
   dimension: AppearancePoolKey;
@@ -86,7 +86,8 @@ export function AppearancePoolSection({
         <Button
           type="button"
           variant="outline"
-          className="h-[76px] w-[76px] flex-col gap-1 text-xs"
+          className="flex-col gap-1 text-xs"
+          style={{ width: THUMB_SIZE, height: THUMB_SIZE }}
           onClick={() => setAddOpen(true)}
         >
           <Plus className="size-4" /> Add

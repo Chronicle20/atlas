@@ -141,9 +141,10 @@ export function CharacterTemplatesEditor({
     dispatch({ type: "discard" });
     // Mirror the reducer's own post-discard selection (clampIndex against the
     // baseline length) so the URL param agrees with the nearest-valid tab the
-    // reducer picks. Without this the template-count-change effect would read a
-    // now-out-of-range ?tpl and apply the blanket invalid->0 policy, landing on
-    // tab 0 instead of the tab the reducer restored.
+    // reducer picks. This handler owns the URL sync for discard directly (via
+    // syncSelection) — there is no longer a templates.length-watching effect
+    // to fall back on, so without this the ?tpl param would go stale against
+    // the restored baseline.
     const length = state.baseline.length;
     const index =
       length <= 0 ? 0 : Math.min(Math.max(state.selectedIndex, 0), length - 1);

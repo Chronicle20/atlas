@@ -60,6 +60,21 @@ byte-identical to v83; Note DISCARD/REQUEST match (SEND=0 UI-gated, parity);
    `Configuring opcode ... handler ...` + no "not configured for use" at startup.
 5. Code review → PR from task-178 branch.
 
+## Outcome (live patch)
+- **Templates**: all 4 populated + committed; correctness-reviewed (values vs RE
+  evidence, no dup modes, movement types, clean diff) — PASS.
+- **Live v72 `48d415ca` + v79 `92adbe47`**: PATCH 200, atlas-channel restarted
+  clean (750 opcodes configured, zero "not configured for use"). DONE + verified.
+- **Live v48 `e1f06ae2` + v61 `0d250dc9`: BLOCKED** — full-replace PATCH re-validates
+  the whole tenant and rejects pre-existing invalid character presets: the
+  "Corsair — 4th job" (Pirate jobId 522) preset references skills 5221xxx that are
+  absent from v48 atlas-data ("skill not found") and exceed maxLevel on v61
+  ("must be in [1,maxLevel]"). This is a SEPARATE legacy-preset data bug (newer-job
+  presets seeded into old clients). Only one tenant-update endpoint exists
+  (`PATCH /configurations/tenants/{id}`, full-replace) — no socket-scoped partial —
+  so the socket fix can't land on v48/v61 until the preset data is valid. Not fixed
+  here (would mean deleting/altering character presets — out of scope, needs a call).
+
 ## Open decisions (resolve at population)
 - v79 CashShop `ENABLE_EQUIP_SLOT` sends 6 OR 7 (7 for 9110xxx items) — one atlas
   key → two modes. Decide mapping vs handler semantics; a dropped mode-7 is a minor

@@ -589,7 +589,14 @@ func (m *CharacterData) encodeSkills(w *response.Writer, t tenant.Model) {
 	for _, s := range m.Skills {
 		w.WriteInt(s.Id)
 		w.WriteInt(s.Level)
-		w.WriteInt64(s.Expiration)
+		// Per-skill expiration (Int64) was introduced between v79 and v83.
+		// v79 client GW skill decode reads id+level(+mastery) only (verified
+		// CharacterData::Decode v79 @0x4da2ca); v83 adds DecodeBuffer(8)
+		// (verified @0x4e592d). Writing it ungated shifts every later section
+		// for v79 and over-reads at GW_CoupleRecord::Decode (error 38).
+		if (t.Region() == "GMS" && t.MajorAtLeast(83)) || t.Region() == "JMS" {
+			w.WriteInt64(s.Expiration)
+		}
 		if s.FourthJob {
 			w.WriteInt(s.MasterLevel)
 		}
@@ -610,7 +617,10 @@ func (m *CharacterData) decodeSkills(r *request.Reader, t tenant.Model) {
 	for i := uint16(0); i < skillCount; i++ {
 		m.Skills[i].Id = r.ReadUint32()
 		m.Skills[i].Level = r.ReadUint32()
-		m.Skills[i].Expiration = r.ReadInt64()
+		// Mirror of encodeSkills: expiration present only for GMS >= 83 / JMS.
+		if (t.Region() == "GMS" && t.MajorAtLeast(83)) || t.Region() == "JMS" {
+			m.Skills[i].Expiration = r.ReadInt64()
+		}
 		jobId := job.IdFromSkillId(skill.Id(m.Skills[i].Id))
 		m.Skills[i].FourthJob = job.IsFourthJob(jobId)
 		if m.Skills[i].FourthJob {

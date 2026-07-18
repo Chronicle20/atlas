@@ -21,7 +21,10 @@ func (f *fakeMCP) GetFunctionByName(_ context.Context, n string) (string, bool, 
 	a, ok := f.addrs[n]
 	return a, ok, nil
 }
-func (f *fakeMCP) DecompileFunction(_ context.Context, a string) (string, error) { return f.decomp[a], nil }
+
+func (f *fakeMCP) DecompileFunction(_ context.Context, a string) (string, error) {
+	return f.decomp[a], nil
+}
 func (f *fakeMCP) GetCallees(_ context.Context, a string) ([]idasrc.Callee, error) { return nil, nil }
 func (f *fakeMCP) StructInfo(_ context.Context, n string) (idasrc.StructLayout, error) {
 	return idasrc.StructLayout{}, nil
@@ -40,8 +43,10 @@ func TestExportRunDeterministic(t *testing.T) {
 	}
 	dir := t.TempDir()
 	out := filepath.Join(dir, "gms_v95.json")
-	opts := exportOpts{Version: "gms_v95", Output: out,
-		PriorExport: "testdata/gms_v95_mini.json", GeneratedAt: "2026-01-01T00:00:00Z", DescentDepth: 4}
+	opts := exportOpts{
+		Version: "gms_v95", Output: out,
+		PriorExport: "testdata/gms_v95_mini.json", GeneratedAt: "2026-01-01T00:00:00Z", DescentDepth: 4,
+	}
 	if code := exportRun(opts, fc, io.Discard, io.Discard); code != 0 {
 		t.Fatalf("exportRun exit = %d", code)
 	}
@@ -78,8 +83,10 @@ func twoFnMCP(fooBody string) *fakeMCP {
 }
 
 func baseExportOpts(out string) exportOpts {
-	return exportOpts{Version: "gms_v95", Output: out,
-		PriorExport: "testdata/gms_v95_mini.json", GeneratedAt: "2026-01-01T00:00:00Z", DescentDepth: 4}
+	return exportOpts{
+		Version: "gms_v95", Output: out,
+		PriorExport: "testdata/gms_v95_mini.json", GeneratedAt: "2026-01-01T00:00:00Z", DescentDepth: 4,
+	}
 }
 
 // TestExportRefusesDifferingOverwrite proves the non-destructive default

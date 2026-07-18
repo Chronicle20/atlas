@@ -197,8 +197,10 @@ func (s *ExportSource) ResolveShape(ctx context.Context, fname string) (Fields, 
 	if !ok {
 		return Fields{}, fmt.Errorf("idasrc: function %q not in export", fname)
 	}
-	return Fields{Function: f.Function, Address: f.Address, Direction: f.Direction,
-		Calls: ExtractShape(f, raw.Dispatch)}, nil
+	return Fields{
+		Function: f.Function, Address: f.Address, Direction: f.Direction,
+		Calls: ExtractShape(f, raw.Dispatch),
+	}, nil
 }
 
 // resolveWithVisited is the workhorse that handles recursive Delegate descent.
@@ -275,19 +277,19 @@ func combineGuards(outer, inner string) string {
 // The prefixes mirror the bytes that the in-game dispatcher reads before
 // forwarding the remaining payload to the leaf handler:
 //
-//   per-mob         → CMobPool::OnMobPacket reads Decode4 mobId, then routes
-//                     to CMob::On*.
-//   per-pet         → CUserPool::OnUserRemotePacket reads Decode4 characterId,
-//                     then CUser::OnPetPacket reads Decode1 slot, then routes
-//                     to CPet::On*.
-//   per-pet-remote  → CUserPool::OnUserRemotePacket reads Decode4 characterId,
-//                     then routes to CUserRemote::OnPetActivated. The slot
-//                     byte is part of the leaf payload here, not the prefix.
-//   per-user-remote → CUserPool::OnUserRemotePacket reads Decode4 characterId,
-//                     then routes to a CUserRemote::On* leaf (e.g. OnReceiveHP,
-//                     UPDATE_PARTYMEMBER_HP). Same prefix byte as per-pet-remote
-//                     but the generic remote-user dispatch, not the pet path;
-//                     kept distinct for accurate per-packet documentation.
+//	per-mob         → CMobPool::OnMobPacket reads Decode4 mobId, then routes
+//	                  to CMob::On*.
+//	per-pet         → CUserPool::OnUserRemotePacket reads Decode4 characterId,
+//	                  then CUser::OnPetPacket reads Decode1 slot, then routes
+//	                  to CPet::On*.
+//	per-pet-remote  → CUserPool::OnUserRemotePacket reads Decode4 characterId,
+//	                  then routes to CUserRemote::OnPetActivated. The slot
+//	                  byte is part of the leaf payload here, not the prefix.
+//	per-user-remote → CUserPool::OnUserRemotePacket reads Decode4 characterId,
+//	                  then routes to a CUserRemote::On* leaf (e.g. OnReceiveHP,
+//	                  UPDATE_PARTYMEMBER_HP). Same prefix byte as per-pet-remote
+//	                  but the generic remote-user dispatch, not the pet path;
+//	                  kept distinct for accurate per-packet documentation.
 //
 // Keep this list narrow and well-tested — adding a new dispatcher requires a
 // matching test in export_test.go.

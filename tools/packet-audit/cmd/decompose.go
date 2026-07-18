@@ -123,24 +123,30 @@ func decomposeRun(opts decomposeOpts, client idasrc.MCPClient, stdout io.Writer)
 			// Faithful order matches hand reads under width tolerance: the
 			// non-✅ verdict is a representation/elsewhere issue, NOT truncation.
 			// Leave the entry untouched.
-			results = append(results, decomposeResult{FName: fn, Class: classUnchanged,
-				Detail: "faithful order matches hand reads (not truncation)"})
+			results = append(results, decomposeResult{
+				FName: fn, Class: classUnchanged,
+				Detail: "faithful order matches hand reads (not truncation)",
+			})
 		case classUpgraded:
 			// Strict prefix-extension: F is longer than H and every H[i] is
 			// field-equivalent to F[i]. This is provably-safe truncation — the
 			// export stopped short and the client reads more. Replace the
 			// entry's calls (OUTPUT only) with the faithful order.
 			upgrades[fn] = fieldsToRawCalls(f.Calls)
-			results = append(results, decomposeResult{FName: fn, Class: classUpgraded,
-				Detail: fmt.Sprintf("hand %d ops → faithful %d ops", len(entry.HandCalls), len(f.Calls))})
+			results = append(results, decomposeResult{
+				FName: fn, Class: classUpgraded,
+				Detail: fmt.Sprintf("hand %d ops → faithful %d ops", len(entry.HandCalls), len(f.Calls)),
+			})
 		default:
 			// classDivergence: mid-stream mismatch at a common prefix position,
 			// or faithful is SHORTER than hand (Atlas writes a field the client
 			// does not read). Either case is a candidate real wire bug — NEVER
 			// silently overwritten. Leave the entry untouched and flag for triage.
-			results = append(results, decomposeResult{FName: fn, Class: classDivergence,
+			results = append(results, decomposeResult{
+				FName: fn, Class: classDivergence,
 				Detail: fmt.Sprintf("hand %d ops vs faithful %d ops — mid-stream mismatch or over-read; needs human triage",
-					len(entry.HandCalls), len(f.Calls))})
+					len(entry.HandCalls), len(f.Calls)),
+			})
 		}
 	}
 

@@ -10,17 +10,23 @@ import (
 func summaryFixture() Matrix {
 	return Matrix{Rows: []MatrixRow{
 		{Kind: RowOp, Op: "VERIFIED_OP", Direction: opregistry.DirClientbound, Cells: map[string]Cell{
-			"gms_v83": {State: StateVerified, Opcode: 0x001}}},
+			"gms_v83": {State: StateVerified, Opcode: 0x001},
+		}},
 		{Kind: RowOp, Op: "OPEN_OP", Direction: opregistry.DirClientbound, Cells: map[string]Cell{
-			"gms_v83": {State: StateIncomplete, Note: "no audit report", Opcode: 0x002}}},
+			"gms_v83": {State: StateIncomplete, Note: "no audit report", Opcode: 0x002},
+		}},
 		{Kind: RowOp, Op: "STALE_OP", Direction: opregistry.DirClientbound, Cells: map[string]Cell{
-			"gms_v83": {State: StateIncomplete, Note: "evidence stale (decompile hash drift)", Opcode: 0x003}}},
+			"gms_v83": {State: StateIncomplete, Note: "evidence stale (decompile hash drift)", Opcode: 0x003},
+		}},
 		{Kind: RowOp, Op: "PARTIAL_OP", Direction: opregistry.DirServerbound, Cells: map[string]Cell{
-			"gms_v83": {State: StatePartial, Note: "tool ✅ without byte-test", Opcode: 0x004}}},
+			"gms_v83": {State: StatePartial, Note: "tool ✅ without byte-test", Opcode: 0x004},
+		}},
 		{Kind: RowOp, Op: "CONFLICT_OP", Direction: opregistry.DirClientbound, Cells: map[string]Cell{
-			"gms_v83": {State: StateConflict, Note: "template-wiring gap", Opcode: 0x005}}},
+			"gms_v83": {State: StateConflict, Note: "template-wiring gap", Opcode: 0x005},
+		}},
 		{Kind: RowSubStruct, Packet: "npc/clientbound/Detail", Cells: map[string]Cell{
-			"gms_v83": {State: StateNA, Note: dispositionNote, Opcode: -1}}},
+			"gms_v83": {State: StateNA, Note: dispositionNote, Opcode: -1},
+		}},
 	}}
 }
 

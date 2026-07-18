@@ -26,15 +26,18 @@ func (f *fakeClient) GetFunctionByName(_ context.Context, n string) (string, boo
 	a, ok := f.addrs[n]
 	return a, ok, nil
 }
+
 func (f *fakeClient) DecompileFunction(_ context.Context, a string) (string, error) {
 	if e := f.decompErr[a]; e != nil {
 		return "", e
 	}
 	return f.decomp[a], nil
 }
+
 func (f *fakeClient) GetCallees(_ context.Context, a string) ([]Callee, error) {
 	return f.callees[a], nil
 }
+
 func (f *fakeClient) StructInfo(_ context.Context, n string) (StructLayout, error) {
 	return f.structs[n], nil
 }

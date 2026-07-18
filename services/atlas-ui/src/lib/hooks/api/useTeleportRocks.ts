@@ -10,6 +10,7 @@ import {
   type TeleportRockListType,
   type TeleportRockLists,
 } from "@/services/api/teleport-rocks.service";
+import { useTenant } from "@/context/tenant-context";
 import type { Tenant } from "@/types/models/tenant";
 
 export const teleportRockKeys = {
@@ -35,7 +36,6 @@ interface AddVars {
   characterId: string;
   list: TeleportRockListType;
   mapId: number;
-  tenantId?: string;
 }
 
 type RemoveVars = AddVars;
@@ -46,11 +46,15 @@ export function useAddTeleportRockMap(): UseMutationResult<
   AddVars
 > {
   const qc = useQueryClient();
+  const { activeTenant } = useTenant();
   return useMutation({
     mutationFn: (v: AddVars) =>
       teleportRocksService.addMap(v.characterId, v.list, v.mapId),
     onSuccess: (data, v) =>
-      qc.setQueryData(teleportRockKeys.detail(v.tenantId, v.characterId), data),
+      qc.setQueryData(
+        teleportRockKeys.detail(activeTenant?.id, v.characterId),
+        data,
+      ),
   });
 }
 
@@ -60,10 +64,14 @@ export function useRemoveTeleportRockMap(): UseMutationResult<
   RemoveVars
 > {
   const qc = useQueryClient();
+  const { activeTenant } = useTenant();
   return useMutation({
     mutationFn: (v: RemoveVars) =>
       teleportRocksService.removeMap(v.characterId, v.list, v.mapId),
     onSuccess: (data, v) =>
-      qc.setQueryData(teleportRockKeys.detail(v.tenantId, v.characterId), data),
+      qc.setQueryData(
+        teleportRockKeys.detail(activeTenant?.id, v.characterId),
+        data,
+      ),
   });
 }

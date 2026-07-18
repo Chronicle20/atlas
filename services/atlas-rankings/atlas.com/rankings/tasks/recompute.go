@@ -1,17 +1,18 @@
 package tasks
 
 import (
+	"atlas-rankings/configuration"
+	"atlas-rankings/ranking"
 	"context"
 	"time"
 
-	"atlas-rankings/configuration"
-	"atlas-rankings/ranking"
 	tenantclient "atlas-rankings/tenant"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // RecomputeTask ticks every interval (60s base tick), re-enumerates tenants

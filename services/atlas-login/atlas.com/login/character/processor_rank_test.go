@@ -1,11 +1,10 @@
 package character
 
 import (
+	"atlas-login/ranking"
 	"context"
 	"errors"
 	"testing"
-
-	"atlas-login/ranking"
 
 	"github.com/sirupsen/logrus"
 )

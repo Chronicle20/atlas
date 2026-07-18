@@ -3,9 +3,10 @@ package character
 import (
 	"strconv"
 
+	"github.com/jtumidanski/api2go/jsonapi"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 // RestModel is a trimmed read model of atlas-character's characters

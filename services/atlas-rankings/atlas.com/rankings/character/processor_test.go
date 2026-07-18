@@ -9,9 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const charactersFixture = `{
@@ -99,10 +100,8 @@ func characterDoc(from, to, total, number, size, last int) string {
 		if b.Len() > 0 {
 			b.WriteString(",")
 		}
-		b.WriteString(fmt.Sprintf(
-			`{"type":"characters","id":"%d","attributes":{"accountId":%d,"worldId":2,"name":"Drain-%d","level":%d,"experience":%d,"jobId":200,"gm":0},"relationships":{"equipment":{"data":[]},"inventories":{"data":[]}}}`,
-			i, 9000+i, i, (i%100)+1, i*10,
-		))
+		fmt.Fprintf(&b, `{"type":"characters","id":"%d","attributes":{"accountId":%d,"worldId":2,"name":"Drain-%d","level":%d,"experience":%d,"jobId":200,"gm":0},"relationships":{"equipment":{"data":[]},"inventories":{"data":[]}}}`,
+			i, 9000+i, i, (i%100)+1, i*10)
 	}
 	return fmt.Sprintf(
 		`{"data":[%s],"meta":{"total":%d,"page":{"number":%d,"size":%d,"last":%d}}}`,

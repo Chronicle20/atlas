@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"time"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const upsertBatchSize = 500

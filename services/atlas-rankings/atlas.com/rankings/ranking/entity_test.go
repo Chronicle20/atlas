@@ -3,10 +3,11 @@ package ranking
 import (
 	"testing"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 )
 
 func testDatabase(t *testing.T) *gorm.DB {

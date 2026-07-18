@@ -1,17 +1,17 @@
 package tasks
 
 import (
+	"atlas-rankings/ranking"
 	"context"
 	"errors"
 	"testing"
 	"time"
 
-	"atlas-rankings/ranking"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 type fakeProcessor struct {
@@ -41,6 +41,7 @@ func (f fakeProcessor) Recompute(time.Time) error {
 	}
 	return nil
 }
+
 func (f fakeProcessor) WithCharacterSupplier(ranking.CharacterSupplier) ranking.Processor {
 	return f
 }

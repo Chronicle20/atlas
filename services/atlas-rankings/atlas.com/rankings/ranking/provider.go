@@ -1,9 +1,10 @@
 package ranking
 
 import (
+	"gorm.io/gorm"
+
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"gorm.io/gorm"
 )
 
 // byCharacterIdEntityProvider reads the ranking row for one character.

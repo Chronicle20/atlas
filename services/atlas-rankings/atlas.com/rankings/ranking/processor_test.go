@@ -1,16 +1,16 @@
 package ranking
 
 import (
+	"atlas-rankings/character"
 	"errors"
 	"testing"
 	"time"
 
-	"atlas-rankings/character"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 // characterFixture builds a character.Model via its JSON:API extract path —

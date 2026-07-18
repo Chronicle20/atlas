@@ -1,9 +1,10 @@
 package tenant
 
 import (
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // RestModel is the JSON:API resource for tenants

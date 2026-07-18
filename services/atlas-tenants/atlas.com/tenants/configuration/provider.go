@@ -299,7 +299,6 @@ func GetRankingsProvider(tenantID uuid.UUID) func(db *gorm.DB) model.Provider[ma
 	}
 }
 
-
 // GetRpsRewardByIdProvider returns a provider for a specific rps-reward by ID
 func GetRpsRewardByIdProvider(tenantID uuid.UUID, rpsRewardID string) func(db *gorm.DB) model.Provider[map[string]interface{}] {
 	return func(db *gorm.DB) model.Provider[map[string]interface{}] {

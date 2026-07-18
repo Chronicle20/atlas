@@ -6,9 +6,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // tenantsFixture renders a JSON:API document for two tenants with distinct,

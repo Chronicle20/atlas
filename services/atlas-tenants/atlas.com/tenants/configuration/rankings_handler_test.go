@@ -11,10 +11,11 @@ import (
 	"strings"
 	"testing"
 
-	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	logtest "github.com/sirupsen/logrus/hooks/test"
+
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 )
 
 // rankingsHandlerTestDB builds the same in-memory sqlite database

@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 )
 
 // DefaultRecomputeInterval applies when a tenant has no rankings

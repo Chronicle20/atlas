@@ -7,13 +7,14 @@ import (
 	"os"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	lock "github.com/Chronicle20/atlas/libs/atlas-lock"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
-	"github.com/sirupsen/logrus"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 )
 
 const serviceName = "atlas-rankings"

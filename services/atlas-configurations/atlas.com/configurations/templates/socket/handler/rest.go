@@ -5,4 +5,5 @@ type RestModel struct {
 	Validator string                 `json:"validator"`
 	Handler   string                 `json:"handler"`
 	Options   map[string]interface{} `json:"options"`
+	Services  []string               `json:"services,omitempty"`
 }

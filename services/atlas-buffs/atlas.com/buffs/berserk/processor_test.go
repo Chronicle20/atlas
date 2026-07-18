@@ -132,48 +132,63 @@ func TestProcessTicksReevaluates(t *testing.T) {
 	assert.True(t, m.Active())
 	assert.Equal(t, byte(120), m.CharacterLevel(), "character level refreshed from REST")
 	assert.True(t, m.DirtyAt().IsZero(), "claim cleared")
-	assert.True(t, m.NextBroadcastAt().Equal(now.Add(InitialBroadcastDelay)), "fresh 5s schedule")
+	assert.True(t, m.NextBroadcastAt().Equal(now), "first evaluation broadcasts promptly (no initial delay)")
 }
 
-// TestProcessTicksReevalDoesNotBroadcastSamePass pins that a SUCCESSFUL
-// re-evaluation does not also broadcast in the same pass. The load-bearing
-// assertion is about emission, which producertest.InstallNoop makes a no-op,
-// so this pins the invariant via observable schedule state instead: after
-// the pass, NextBroadcastAt must be exactly now+InitialBroadcastDelay (the
-// re-eval's fresh schedule, StoreEvaluation/registry.go), and NOT
-// now+BroadcastPeriod (what a ClaimBroadcast claim would have left,
-// registry.go ClaimBroadcast). ProcessTicks itself does not enforce
-// "one or the other" via control flow (both `if e.DirtyDue` and
-// `if e.BroadcastDue` run unconditionally against the pre-pass snapshot) —
-// it is ClaimBroadcast's *fresh* re-read inside the Redis Update transaction
-// that declines the broadcast, because by the time it runs
-// nextBroadcastAt is already now+InitialBroadcastDelay (not due). Do not
-// reintroduce a `continue` after the re-eval branch to "enforce" this
-// mutual exclusion — it is already guaranteed by ClaimBroadcast's freshness
-// check, and a `continue` there instead starves broadcasts during a
-// sustained re-evaluation lookup failure (see
-// TestProcessTicksLookupFailureStillBroadcasts).
-func TestProcessTicksReevalDoesNotBroadcastSamePass(t *testing.T) {
+// TestProcessTicksReevalUnchangedStatePreservesSchedule is the core regression
+// test for the aura-starvation fix (task-154 live-test finding). When a
+// re-evaluation finds the berserk state UNCHANGED, it must leave the running
+// broadcast schedule alone. Before the fix, every re-evaluation reset
+// nextBroadcastAt to now+InitialBroadcastDelay, so a stream of HP STAT_CHANGED
+// events (sustained combat) pushed the broadcast deadline out on every pass and
+// the aura never broadcast until HP stopped changing.
+func TestProcessTicksReevalUnchangedStatePreservesSchedule(t *testing.T) {
 	setupTestRegistry(t)
 	ctx := setupTestContext(t, setupTestTenant(t))
 	now := time.Now()
 	p := testProcessor(t, ctx, now)
+	// testProcessor evaluates active=true (hp 100 / maxHp 1000 = 10% < x 30).
 
-	// Dirty AND broadcast-due: the re-evaluation succeeds and replaces
-	// the schedule (design D2 cancel-and-replace semantics); the broadcast
-	// claim must decline because the fresh schedule is no longer due.
+	// Already active, mid-cadence (a broadcast scheduled 2s out), and dirty (an
+	// HP change just arrived). The re-eval recomputes active=true — unchanged —
+	// so it must NOT touch the schedule.
+	sched := now.Add(2 * time.Second)
 	m := NewBuilder(world.Id(0), 42, 10).SetChannel(channel.Id(1)).SetDirtyAt(now).Build().
-		evaluated(false, 120, now)
+		evaluated(true, 120, sched)
 	assert.NoError(t, GetRegistry().Track(ctx, m))
 
 	assert.NoError(t, p.ProcessTicks())
 
 	got, _ := GetRegistry().Get(ctx, 42)
-	assert.True(t, got.NextBroadcastAt().Equal(now.Add(InitialBroadcastDelay)),
-		"schedule is the re-evaluation's fresh now+InitialBroadcastDelay")
-	assert.False(t, got.NextBroadcastAt().Equal(now.Add(BroadcastPeriod)),
-		"schedule must NOT be now+BroadcastPeriod, which is what a broadcast claim advancing the "+
-			"pre-reeval schedule would have produced")
+	assert.True(t, got.Active(), "still active")
+	assert.True(t, got.DirtyAt().IsZero(), "re-eval claim cleared the dirty flag")
+	assert.True(t, got.NextBroadcastAt().Equal(sched),
+		"unchanged state must NOT reset the broadcast schedule (anti-starvation)")
+}
+
+// TestProcessTicksReevalTransitionBroadcastsPromptly pins that a state change
+// makes the aura flip promptly: the re-evaluation sets nextBroadcastAt to `now`
+// so the next scan pass broadcasts the new state, instead of parking it behind a
+// fresh delay. Here the last-known state is inactive with the schedule parked a
+// minute out; the re-eval finds active=true.
+func TestProcessTicksReevalTransitionBroadcastsPromptly(t *testing.T) {
+	setupTestRegistry(t)
+	ctx := setupTestContext(t, setupTestTenant(t))
+	now := time.Now()
+	p := testProcessor(t, ctx, now)
+	// testProcessor evaluates active=true.
+
+	future := now.Add(time.Minute)
+	m := NewBuilder(world.Id(0), 42, 10).SetChannel(channel.Id(1)).SetDirtyAt(now).Build().
+		evaluated(false, 120, future)
+	assert.NoError(t, GetRegistry().Track(ctx, m))
+
+	assert.NoError(t, p.ProcessTicks())
+
+	got, _ := GetRegistry().Get(ctx, 42)
+	assert.True(t, got.Active(), "flipped to active")
+	assert.True(t, got.NextBroadcastAt().Equal(now),
+		"a transition resets the schedule to now so the aura broadcasts on the next pass")
 }
 
 func TestProcessTicksBroadcastAdvancesSchedule(t *testing.T) {

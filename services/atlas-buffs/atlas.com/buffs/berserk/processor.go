@@ -224,7 +224,7 @@ func (p *ProcessorImpl) reevaluate(m Model, now time.Time) {
 	if active != m.Active() {
 		p.l.Debugf("Berserk state for character [%d] now [%v] (hp [%d] maxHp [%d] x [%d]).", m.CharacterId(), active, c.Hp, maxHp, x)
 	}
-	if err := GetRegistry().StoreEvaluation(p.ctx, m.CharacterId(), active, c.Level, now.Add(InitialBroadcastDelay)); err != nil {
+	if err := GetRegistry().StoreEvaluation(p.ctx, m.CharacterId(), active, c.Level, now); err != nil {
 		p.l.WithError(err).Warnf("Unable to store berserk evaluation for character [%d].", m.CharacterId())
 	}
 }

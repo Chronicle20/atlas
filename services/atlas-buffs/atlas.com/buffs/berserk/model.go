@@ -8,12 +8,18 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
-// Broadcast cadence (PRD FR-3: 5000ms initial delay, 3000ms period) plus
-// service-local pacing knobs. Exported so the character package's buff hook
-// and tests reference the same values.
+// Broadcast cadence and service-local pacing knobs. Exported so the character
+// package's buff hook and tests reference the same values.
+//
+// BroadcastPeriod is the steady re-broadcast interval once a schedule is
+// running. There is intentionally no "initial delay": Model.evaluated (re)starts
+// the schedule at `now` on a state transition so the aura flips on the threshold
+// crossing rather than seconds later. The former 5s initial delay was reset on
+// every HP re-evaluation, so a stream of HP STAT_CHANGED events (sustained
+// combat) pushed the deadline out indefinitely and the aura only appeared once
+// HP stopped changing (task-154 live-test finding).
 const (
-	InitialBroadcastDelay = 5 * time.Second
-	BroadcastPeriod       = 3 * time.Second
+	BroadcastPeriod = 3 * time.Second
 	// ReevalGrace defers buff-origin re-evaluations so atlas-effective-stats can
 	// consume the buff event and recompute max HP before we read it (design D5).
 	ReevalGrace = 2 * time.Second
@@ -81,10 +87,24 @@ func (m Model) dirtyCleared() Model {
 	return m
 }
 
-func (m Model) evaluated(active bool, characterLevel byte, nextBroadcastAt time.Time) Model {
+// evaluated records a re-evaluation outcome: the captured active state and the
+// refreshed character level. The broadcast schedule is (re)started at `now`
+// ONLY on a state transition or the first evaluation; an unchanged state leaves
+// nextBroadcastAt untouched so the steady re-broadcast keeps its running cadence.
+//
+// This is the aura-starvation fix (task-154 live-test finding): every HP
+// STAT_CHANGED triggers a re-evaluation, and resetting the schedule on every one
+// pushed the broadcast deadline out indefinitely during sustained combat, so the
+// aura only appeared once HP stopped changing. Broadcasting promptly (now) on a
+// transition makes the aura flip on the threshold crossing instead of seconds
+// later.
+func (m Model) evaluated(active bool, characterLevel byte, now time.Time) Model {
+	transition := active != m.active || m.nextBroadcastAt.IsZero()
 	m.active = active
 	m.characterLevel = characterLevel
-	m.nextBroadcastAt = nextBroadcastAt
+	if transition {
+		m.nextBroadcastAt = now
+	}
 	return m
 }
 

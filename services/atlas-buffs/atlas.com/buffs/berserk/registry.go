@@ -205,13 +205,16 @@ func (r *Registry) ClaimBroadcast(ctx context.Context, characterId uint32, now t
 	return m, true
 }
 
-// StoreEvaluation writes the outcome of a re-evaluation: captured active
-// state, refreshed character level, and a fresh initial-delay schedule
-// (every re-evaluation replaces the schedule, design D2).
-func (r *Registry) StoreEvaluation(ctx context.Context, characterId uint32, active bool, characterLevel byte, nextBroadcastAt time.Time) error {
+// StoreEvaluation writes the outcome of a re-evaluation: the captured active
+// state and refreshed character level. The broadcast schedule is only
+// (re)started (at `now`) on a state transition or the first evaluation
+// (Model.evaluated); an unchanged state preserves the running cadence so
+// frequent HP re-evaluations don't starve the periodic re-broadcast
+// (task-154 aura-starvation fix, revising design D2's cancel-and-replace).
+func (r *Registry) StoreEvaluation(ctx context.Context, characterId uint32, active bool, characterLevel byte, now time.Time) error {
 	t := tenant.MustFromContext(ctx)
 	_, err := r.updateWithRetry(ctx, t, characterId, func(m Model) Model {
-		return m.evaluated(active, characterLevel, nextBroadcastAt)
+		return m.evaluated(active, characterLevel, now)
 	})
 	if errors.Is(err, atlas.ErrNotFound) {
 		return nil

@@ -1,4 +1,10 @@
-import { act, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -140,6 +146,35 @@ describe("ItemSearchCombobox", () => {
     expect(row).toHaveAttribute("aria-disabled", "true");
     await userEvent.click(row);
     expect(onAdd).not.toHaveBeenCalled();
+  });
+
+  it("shows a distinct error message when the search fails, manual id fallback still works", async () => {
+    // A default resolved fallback keeps any extra/lingering queryFn
+    // invocation (e.g. TanStack Query's gc/cleanup teardown call, see the
+    // debounce/page atomicity test below) from rejecting into an unhandled
+    // promise rejection — only the one call the assertions care about
+    // (mockRejectedValueOnce) needs to fail.
+    searchItemsMock.mockResolvedValue(page([]));
+    searchItemsMock.mockRejectedValueOnce(new Error("boom"));
+    const onAdd = vi.fn();
+    renderBox({ onAdd });
+    await userEvent.click(screen.getByRole("button", { name: /add/i }));
+    // fireEvent.change sets the whole value in one state update — unlike
+    // userEvent.type's per-keystroke updates, this guarantees exactly one
+    // debounce-settled query call (for "1402001"), so the mockRejectedValueOnce
+    // above is guaranteed to cover that call rather than an intermediate
+    // substring typed along the way.
+    fireEvent.change(screen.getByRole("textbox"), {
+      target: { value: "1402001" },
+    });
+    expect(
+      await screen.findByText(/search failed — enter an id manually/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("No matches.")).not.toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole("option", { name: /use id 1402001/i }),
+    );
+    expect(onAdd).toHaveBeenCalledWith(1402001);
   });
 
   describe("debounce/page atomicity", () => {

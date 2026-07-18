@@ -56,6 +56,26 @@ describe("MapPicker", () => {
     expect(onChange).toHaveBeenCalledWith(10000);
   });
 
+  it("shows a distinct error message when the search fails, manual id fallback still works", async () => {
+    useMapMock.mockReturnValue({ data: undefined, isError: false });
+    useMapsByNameMock.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+    });
+    const onChange = vi.fn();
+    render(<MapPicker value={0} onChange={onChange} debounceMs={0} />);
+    await userEvent.click(screen.getByRole("button", { name: /Map 0/ }));
+    await userEvent.type(screen.getByRole("textbox"), "100000000");
+    expect(
+      await screen.findByText(/search failed — enter an id manually/i),
+    ).toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole("option", { name: /use id 100000000/i }),
+    );
+    expect(onChange).toHaveBeenCalledWith(100000000);
+  });
+
   it("numeric input offers the manual Use id fallback", async () => {
     useMapMock.mockReturnValue({ data: undefined, isError: false });
     const onChange = vi.fn();

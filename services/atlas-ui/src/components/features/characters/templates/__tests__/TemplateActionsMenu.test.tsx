@@ -66,4 +66,25 @@ describe("TemplateActionsMenu", () => {
     await userEvent.click(screen.getByRole("button", { name: /^remove$/i }));
     expect(onRemove).toHaveBeenCalled();
   });
+
+  it("Remove confirm button uses destructive styling", async () => {
+    render(
+      <TemplateActionsMenu
+        label="Adventurer · M"
+        onDuplicate={vi.fn()}
+        onRemove={vi.fn()}
+      />,
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: /template actions/i }),
+    );
+    await userEvent.click(
+      screen.getByRole("menuitem", { name: /remove template/i }),
+    );
+    expect(screen.getByRole("button", { name: /^remove$/i })).toHaveClass(
+      "bg-destructive",
+      "text-destructive-foreground",
+      "hover:bg-destructive/90",
+    );
+  });
 });

@@ -121,6 +121,11 @@ export function MapPicker({
                 Searching…
               </li>
             )}
+            {results.isError && debounced.trim() && (
+              <li className="px-2 py-1 text-sm text-warning-foreground">
+                Search failed — enter an id manually
+              </li>
+            )}
           </ul>
         </PopoverContent>
       </Popover>

@@ -185,7 +185,13 @@ export function ItemSearchCombobox({
               Searching…
             </li>
           )}
+          {query.isError && settled.term && (
+            <li className="px-2 py-1 text-sm text-warning-foreground">
+              Search failed — enter an id manually
+            </li>
+          )}
           {!query.isLoading &&
+            !query.isError &&
             settled.term &&
             rows.length === 0 &&
             manualId === undefined && (

@@ -72,6 +72,7 @@ export function TemplateActionsMenu({
                 setConfirmOpen(false);
                 onRemove();
               }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Remove
             </AlertDialogAction>

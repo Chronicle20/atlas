@@ -49,4 +49,59 @@ describe("TemplateSelector", () => {
     await userEvent.click(screen.getByRole("button", { name: /new/i }));
     expect(onAdd).toHaveBeenCalled();
   });
+
+  it("roving tabindex: only the selected tab is a tab stop", () => {
+    render(
+      <TemplateSelector
+        templates={templates}
+        selectedIndex={1}
+        onSelect={vi.fn()}
+        onAdd={vi.fn()}
+      />,
+    );
+    const tabs = screen.getAllByRole("tab");
+    tabs.forEach((tab, index) => {
+      expect(tab).toHaveAttribute("tabindex", index === 1 ? "0" : "-1");
+    });
+  });
+
+  it("ArrowRight selects and focuses the next tab, wrapping from the last to the first", async () => {
+    const onSelect = vi.fn();
+    render(
+      <TemplateSelector
+        templates={templates}
+        selectedIndex={2}
+        onSelect={onSelect}
+        onAdd={vi.fn()}
+      />,
+    );
+    const tabs = screen.getAllByRole("tab");
+    tabs[2]!.focus();
+    await userEvent.keyboard("{ArrowRight}");
+    expect(onSelect).toHaveBeenCalledWith(0);
+    expect(tabs[0]).toHaveFocus();
+  });
+
+  it("Home/End jump to the first/last tab", async () => {
+    const onSelect = vi.fn();
+    render(
+      <TemplateSelector
+        templates={templates}
+        selectedIndex={1}
+        onSelect={onSelect}
+        onAdd={vi.fn()}
+      />,
+    );
+    const tabs = screen.getAllByRole("tab");
+    tabs[1]!.focus();
+    await userEvent.keyboard("{End}");
+    expect(onSelect).toHaveBeenCalledWith(2);
+    expect(tabs[2]).toHaveFocus();
+
+    onSelect.mockClear();
+    tabs[1]!.focus();
+    await userEvent.keyboard("{Home}");
+    expect(onSelect).toHaveBeenCalledWith(0);
+    expect(tabs[0]).toHaveFocus();
+  });
 });

@@ -95,4 +95,42 @@ describe("StartingKitSection", () => {
     await userEvent.click(screen.getByRole("button", { name: /add skill/i }));
     expect(onAddSkill).toHaveBeenCalledWith(1001);
   });
+
+  it("skill row remove button fires onRemoveSkill with the row's index", async () => {
+    const onRemoveSkill = vi.fn();
+    render(
+      <StartingKitSection
+        items={[]}
+        skills={[1000, 2000]}
+        onAddItem={vi.fn()}
+        onRemoveItem={vi.fn()}
+        onAddSkill={vi.fn()}
+        onRemoveSkill={onRemoveSkill}
+      />,
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "Remove skill 2000" }),
+    );
+    expect(onRemoveSkill).toHaveBeenCalledWith(1);
+  });
+
+  it("degrades to the Sparkles fallback icon and Unknown skill text when the lookup has no data", () => {
+    useSkillDataMock.mockReturnValue({ name: undefined, iconUrl: undefined });
+    const { container } = render(
+      <StartingKitSection
+        items={[]}
+        skills={[9999999]}
+        onAddItem={vi.fn()}
+        onRemoveItem={vi.fn()}
+        onAddSkill={vi.fn()}
+        onRemoveSkill={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("Unknown skill")).toBeInTheDocument();
+    expect(container.querySelector("img")).not.toBeInTheDocument();
+    expect(container.querySelector("svg.lucide-sparkles")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Remove skill 9999999" }),
+    ).toBeInTheDocument();
+  });
 });

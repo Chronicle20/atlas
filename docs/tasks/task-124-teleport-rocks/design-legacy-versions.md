@@ -141,7 +141,13 @@ applies. Much smaller than the "divergent pre-v83 codec" fear.
 
 **v61 opcodes:** USE=77 (0x4D), TROCK_ADD_MAP=94 (0x5E), MAP_TRANSFER_RESULT=39.
 
-**Discrepancy to settle during opcode verification:** v72/v79 have a *named*
+**v79 cross-check (confirms the resolution):** v79's `SendConsumeCashItemUseRequest`
+@0x95634a calls `CDialog::DoModal` + `EncodeStr` + `Encode1`/`Encode4` inline — it
+opens the map-transfer dialog and encodes the byName/byMap target, exactly like
+v61/v83. So the cash rock carries the target on v79 too. The teleport-rock feature
+is confirmed v83-structured on a second legacy version.
+
+**Discrepancy to settle during per-cell verification:** v72/v79 have a *named*
 `SendMapTransferItemUseRequest` (0x917221/0x968c52) that looked bare
 (Encode4+Encode2+Encode4, op 0x54/0x53) with NO RunMapTransferItem call — yet v61's
 real sender does call it. Likely the named v72/v79 symbol is an older/other variant
@@ -182,6 +188,27 @@ Per version v48/v61/v72/v79 (name functions in-IDB as they're found):
 2. Locate + name `SendMapTransferRequest` (TROCK_ADD_MAP) in v48/v72/v79 — opcode + payload (v61 done).
 3. Confirm `OnMapTransferResult` opcode + read order per version (v79 done; v48/61/72 spot-check).
 4. Resolve the use→destination→warp flow (the central open question).
+
+## Implementation path (bounded — reuses existing codecs)
+
+Because the feature is v83-structured, no new codecs are needed. Per legacy
+version (v48/v61/v72/v79), via the packet-audit per-cell workflow
+(`/verify-packet` + `packet-verifier`, `VERIFYING_A_PACKET.md`):
+
+1. **Pin the real per-version opcodes** for `USE_TELEPORT_ROCK` /
+   `TROCK_ADD_MAP` (naming the real senders in-IDB; the v72/v79 named
+   `SendMapTransferItemUseRequest` is a mislabeled/older symbol — the real sender
+   calls `RunMapTransferItem`, as v61's `sub_8327DB` and the cash path do). RESULT
+   opcodes already known (v48=35, v61/72/79=39). v61 confirmed: USE=77, ADD_MAP=94.
+2. **Route** USE/ADD_MAP/RESULT into `template_gms_{48,61,72,79}_1.json` with those
+   opcodes + the operations table (same keys as v83+).
+3. **Byte-fixture verify** each op×version, pin evidence, regenerate the matrix,
+   and **correct the wrong `n-a` cells** (USE/ADD_MAP exist on these versions).
+4. atlas-ui saved-map card + the atlas-channel handlers/use-flow already apply
+   (structure = v83); only the version-gated opcode routing is new.
+
+Do NOT re-derive layouts — they equal v83; the work is opcode confirmation +
+wiring + per-cell byte fixtures.
 
 ## Out of scope
 

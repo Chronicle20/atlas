@@ -9,7 +9,8 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	npcpkt "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
+	npcpkt "github.com/Chronicle20/atlas/libs/atlas-packet/npc"
+	npccb "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
 )
 
 // AnnounceGrant sends the controller grant (OnNpcChangeController flag 1)
@@ -23,7 +24,7 @@ func AnnounceGrant(l logrus.FieldLogger, ctx context.Context, wp writer.Producer
 				return err
 			}
 			l.Debugf("Granting NPC [%d] control to character [%d] in field [%s].", npcObjectId, characterId, f.Id())
-			return session.Announce(l)(ctx)(wp)(npcpkt.NpcSpawnRequestControllerWriter)(npcpkt.NewNpcSpawnRequestController(n.Id(), n.Template(), n.X(), n.CY(), int32(n.F()), n.Fh(), n.RX0(), n.RX1(), true).Encode)(s)
+			return session.Announce(l)(ctx)(wp)(npccb.NpcSpawnRequestControllerWriter)(npcpkt.NpcControllerGrantBody(n.Id(), n.Template(), n.X(), n.CY(), int32(n.F()), n.Fh(), n.RX0(), n.RX1(), true))(s)
 		})
 	}
 }
@@ -33,6 +34,6 @@ func AnnounceGrant(l logrus.FieldLogger, ctx context.Context, wp writer.Producer
 func AnnounceRevoke(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, npcObjectId uint32) error {
 	return func(s session.Model, npcObjectId uint32) error {
 		l.Debugf("Revoking NPC [%d] control from character [%d].", npcObjectId, s.CharacterId())
-		return session.Announce(l)(ctx)(wp)(npcpkt.NpcSpawnRequestControllerWriter)(npcpkt.NewNpcRemoveController(npcObjectId).Encode)(s)
+		return session.Announce(l)(ctx)(wp)(npccb.NpcSpawnRequestControllerWriter)(npcpkt.NpcControllerRevokeBody(npcObjectId))(s)
 	}
 }

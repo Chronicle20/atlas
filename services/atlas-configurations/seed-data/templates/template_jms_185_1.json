@@ -2148,7 +2148,13 @@
       },
       {
         "opCode": "0x118",
-        "writer": "SpawnNPCRequestController"
+        "writer": "SpawnNPCRequestController",
+        "options": {
+          "operations": {
+            "GRANT": 1,
+            "REVOKE": 0
+          }
+        }
       },
       {
         "opCode": "0x119",

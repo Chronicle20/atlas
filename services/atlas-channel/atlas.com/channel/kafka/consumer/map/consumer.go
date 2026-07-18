@@ -53,6 +53,7 @@ import (
 	interactioncb "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/clientbound"
 	merchantcb "github.com/Chronicle20/atlas/libs/atlas-packet/merchant/clientbound"
 	monsterpkt "github.com/Chronicle20/atlas/libs/atlas-packet/monster/clientbound"
+	npcbody "github.com/Chronicle20/atlas/libs/atlas-packet/npc"
 	npcpkt "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
 	petpkt "github.com/Chronicle20/atlas/libs/atlas-packet/pet/clientbound"
 	reactorpkt "github.com/Chronicle20/atlas/libs/atlas-packet/reactor/clientbound"
@@ -627,7 +628,7 @@ func spawnNPCForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 					if !claimed {
 						return nil
 					}
-					return session.Announce(l)(ctx)(wp)(npcpkt.NpcSpawnRequestControllerWriter)(npcpkt.NewNpcSpawnRequestController(n.Id(), n.Template(), n.X(), n.CY(), int32(n.F()), n.Fh(), n.RX0(), n.RX1(), true).Encode)(s)
+					return session.Announce(l)(ctx)(wp)(npcpkt.NpcSpawnRequestControllerWriter)(npcbody.NpcControllerGrantBody(n.Id(), n.Template(), n.X(), n.CY(), int32(n.F()), n.Fh(), n.RX0(), n.RX1(), true))(s)
 				}
 			}
 		}

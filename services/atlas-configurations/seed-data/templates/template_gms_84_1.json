@@ -2538,7 +2538,13 @@
       },
       {
         "opCode": "0x10A",
-        "writer": "SpawnNPCRequestController"
+        "writer": "SpawnNPCRequestController",
+        "options": {
+          "operations": {
+            "GRANT": 1,
+            "REVOKE": 0
+          }
+        }
       },
       {
         "opCode": "0x10B",

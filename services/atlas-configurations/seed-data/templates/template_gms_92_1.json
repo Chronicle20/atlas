@@ -487,7 +487,13 @@
       },
       {
         "opCode": "0x131",
-        "writer": "SpawnNPCRequestController"
+        "writer": "SpawnNPCRequestController",
+        "options": {
+          "operations": {
+            "GRANT": 1,
+            "REVOKE": 0
+          }
+        }
       },
       {
         "opCode": "0x132",

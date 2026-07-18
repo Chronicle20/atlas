@@ -18,11 +18,12 @@ import (
 // flag-1 grant arm); read order: Decode1 flag, Decode4 npc object id, no
 // further reads (GMS v95 0x679730, GMS v83 0x6d9a83).
 type RemoveController struct {
-	id uint32
+	flag byte
+	id   uint32
 }
 
-func NewNpcRemoveController(id uint32) RemoveController {
-	return RemoveController{id: id}
+func NewNpcRemoveController(flag byte, id uint32) RemoveController {
+	return RemoveController{flag: flag, id: id}
 }
 
 func (m RemoveController) Id() uint32 {
@@ -40,7 +41,7 @@ func (m RemoveController) String() string {
 func (m RemoveController) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
-		w.WriteByte(0)
+		w.WriteByte(m.flag)
 		w.WriteInt(m.id)
 		return w.Bytes()
 	}
@@ -48,7 +49,7 @@ func (m RemoveController) Encode(l logrus.FieldLogger, _ context.Context) func(o
 
 func (m *RemoveController) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
-		_ = r.ReadByte() // always 0 (remove arm)
+		m.flag = r.ReadByte()
 		m.id = r.ReadUint32()
 	}
 }

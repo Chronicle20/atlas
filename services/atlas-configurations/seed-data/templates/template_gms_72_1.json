@@ -2023,7 +2023,13 @@
       },
       {
         "opCode": "0xE5",
-        "writer": "SpawnNPCRequestController"
+        "writer": "SpawnNPCRequestController",
+        "options": {
+          "operations": {
+            "GRANT": 1,
+            "REVOKE": 0
+          }
+        }
       },
       {
         "opCode": "0xE6",

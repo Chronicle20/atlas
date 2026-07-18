@@ -72,13 +72,26 @@ per version — not four different codecs. The same uniformity very likely holds
 for the RESULT (structure already ≈ v83) and ADD_MAP (v61 documented) sides,
 pending confirmation of the unnamed functions in v48/v61.
 
-### v61 (port 13338) — confirmed named/unnamed state
+### v61 (port 13338) — confirmed
 
 `OnMapTransferResult` @0x846a0f (named, opcode 39). `SendMapTransferItemUseRequest`
-(USE) is **unnamed**; the ADD_MAP sender is `sub_8478EA` (op 94, per the prior
-registry pass). So v61 needs the USE function located + opcode pinned. v48 is
-the same shape (USE unnamed). Given the uniform payload, this is opcode discovery,
-not layout discovery.
+(USE) is **unnamed** (needs locating). ADD_MAP sender `sub_8478EA` decompiled:
+```
+COutPacket(94)
+Encode1(nType)
+Encode1(flag)
+if (nType == 0) Encode4(mapId)     // mapId only on delete (nType 0); register (nType 1) sends none
+```
+**This is structurally identical to v83's `SendMapTransferRequest`** (Encode1 nType
++ Encode1 flag + conditional mapId) — only the opcode differs (94 vs v83's 102).
+
+### Revised conclusion — 2 of 3 ops are reusable
+
+- **MAP_TRANSFER_RESULT** (CB): structure ≈ v83 across legacy → existing codec, per-version opcode.
+- **TROCK_ADD_MAP** (SB): structure = v83 (v61 confirmed) → existing codec, per-version opcode.
+- **USE_TELEPORT_ROCK** (SB): the ONLY divergence — bare `updateTime+nPOS+nItemID`, no
+  inline destination (v83 appends `RunMapTransferItem`). Needs a pre-v83 codec +
+  a resolved use→warp flow.
 
 ## Central open question (drives the use flow)
 

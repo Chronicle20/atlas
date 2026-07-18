@@ -157,6 +157,49 @@ func TestItemUseMegaphoneByteOutputV84(t *testing.T) {
 	}
 }
 
+// IDA evidence (jms185 MapleStory_dump_SCY.exe, port 13344) —
+// CWvsContext::SendConsumeCashItemUseRequest@0xaef2f5:
+//
+// Function header (0xaef35e-0xaef393): COutPacket ctor (opcode 0x47) ->
+// get_update_time() -> Encode4(update_time) -> Encode2(nType/slot) ->
+// Encode4(String2/itemId) -> get_consume_cash_item_type -> switch(type-12).
+// update_time is LEADING, confirming updateTimeFirst=TRUE for jms185
+// (matches the production gate: t.MajorVersion()>=87).
+//
+// get_cashslot_item_type@0x49a1ee (507-family switch on tier =
+// nItemID%10000/1000): tier 0 (Cheap, 5070000) -> type 12 (case0@0x49a274,
+// push 0Ch). The dispatch jumptable (jpt_AEF3A8, base 0xaf2b6a) routes type
+// 12 to the shared arm @0xaef5b9 (comment "jumptable 00AEF3A8 cases
+// 12,13,15,47,48") along with the basic-Megaphone(tier1/type13),
+// Heart(tier3/type47), and Skull(tier4/type48) items. Inside that arm the
+// tail @0xaef987-0xaef9c8 does:
+//
+//	EncodeStr(message) @0xaef98a
+//	cmp type,0x0D(13); jz whisper    @0xaef98f-0xaef993
+//	cmp type,0x2F(47); jz whisper    @0xaef995-0xaef999
+//	cmp type,0x30(48); jnz skip_whisper (type 12 is none of 13/47/48, SKIPPED)
+//	[shared cleanup, NO trailing update_time — already written in the leading
+//	 header]
+//
+// Wire (jms185, type 12/Cheap): message(str) ONLY — matches
+// ItemUseMegaphone.Encode(updateTimeFirst=true) exactly, confirming the
+// existing case-0 (Cheap) routing in character_cash_item_use_megaphone.go
+// reuses the correct shape on JMS.
+//
+// packet-audit:verify packet=cash/serverbound/CashItemUseMegaphone version=jms_v185 ida=0xaef2f5
+func TestItemUseMegaphoneByteOutputJMS(t *testing.T) {
+	ctx := pt.CreateContext("JMS", 185, 1)
+	input := NewItemUseMegaphone(true)
+	input.message = "Hello world!"
+	expected := []byte{
+		0x0C, 0x00, 'H', 'e', 'l', 'l', 'o', ' ', 'w', 'o', 'r', 'l', 'd', '!', // message
+	}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("jms185 item use megaphone (type 12/Cheap) golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
 func TestItemUseMegaphoneRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

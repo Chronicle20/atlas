@@ -1,0 +1,8 @@
+packet: cash/serverbound/CashItemUseSuperMegaphone
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendConsumeCashItemUseRequest
+    address: "0xaef2f5"
+    decompile_sha256: d14d6dec378bee38dfc4b5f829ed2ac8085934ef4d4ad03264eaa9284baff362

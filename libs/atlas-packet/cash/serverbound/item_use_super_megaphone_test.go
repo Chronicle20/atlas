@@ -136,6 +136,59 @@ func TestItemUseSuperMegaphoneByteOutputV84(t *testing.T) {
 	}
 }
 
+// IDA evidence (jms185 MapleStory_dump_SCY.exe, port 13344) —
+// CWvsContext::SendConsumeCashItemUseRequest@0xaef2f5, shared arm @0xaef5b9
+// (comment "jumptable 00AEF3A8 cases 12,13,15,47,48"):
+//
+// get_cashslot_item_type@0x49a1ee: tier 3 (Heart, 5073000) -> type 47
+// (case3@0x49a27c, push 2Fh); tier 4 (Skull, 5074000) -> type 48
+// (case4@0x49a280, push 30h). Both land in the same shared arm as
+// Cheap(type12)/basic-Megaphone(type13). Tail @0xaef987-0xaef9c8:
+//
+//	EncodeStr(message) @0xaef98a
+//	cmp type,0x0D(13); jz whisper    @0xaef98f-0xaef993
+//	cmp type,0x2F(47); jz whisper    @0xaef995-0xaef999   (Heart, TAKEN)
+//	cmp type,0x30(48); jnz skip      @0xaef99b-0xaef99f   (Skull, TAKEN via jz)
+//	loc_AEF9A1: Encode1(whisper) @0xaef9a7
+//	[shared cleanup, NO trailing update_time — leading header, updateTimeFirst=TRUE]
+//
+// Wire (jms185, type 47/Heart and type 48/Skull): message(str) +
+// whisper(bool) — matches ItemUseSuperMegaphone.Encode(updateTimeFirst=true)
+// exactly, confirming the existing case-3 (Heart) and case-4 (Skull) super
+// routing in character_cash_item_use_megaphone.go reuses the correct shape
+// on JMS. (Note: get_cashslot_item_type's 507-family switch has NO arm for
+// tier 2/Super Megaphone itself on jms185 — index 2 of jpt_49A26D resolves
+// to def_49A22A/return-0 — so plain 5072000 has no JMS send path at all;
+// out of scope for this task's Heart/Skull verification, flagged in the
+// task-123 report.)
+//
+// packet-audit:verify packet=cash/serverbound/CashItemUseSuperMegaphone version=jms_v185 ida=0xaef2f5
+func TestItemUseSuperMegaphoneByteOutputJMS(t *testing.T) {
+	cases := []struct {
+		name string
+		typ  string
+	}{
+		{"heart_type47", "heart"},
+		{"skull_type48", "skull"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := pt.CreateContext("JMS", 185, 1)
+			input := NewItemUseSuperMegaphone(true)
+			input.message = "Super hello!"
+			input.whisper = true
+			expected := []byte{
+				0x0C, 0x00, 'S', 'u', 'p', 'e', 'r', ' ', 'h', 'e', 'l', 'l', 'o', '!', // message
+				0x01, // whisper=true
+			}
+			actual := pt.Encode(t, ctx, input.Encode, nil)
+			if !bytes.Equal(actual, expected) {
+				t.Errorf("jms185 item use super megaphone (%s) golden mismatch: got %v want %v", tc.typ, actual, expected)
+			}
+		})
+	}
+}
+
 func TestItemUseSuperMegaphoneRoundTrip(t *testing.T) {
 	cases := []struct {
 		name    string

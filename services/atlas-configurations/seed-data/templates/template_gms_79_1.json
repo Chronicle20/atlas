@@ -437,6 +437,11 @@
         "handler": "CharacterExpressionHandle"
       },
       {
+        "opCode": "0x52",
+        "validator": "LoggedInValidator",
+        "handler": "TeleportRockUseHandle"
+      },
+      {
         "opCode": "0x53",
         "validator": "LoggedInValidator",
         "handler": "CharacterItemUseTownScrollHandle"
@@ -806,6 +811,11 @@
         "handler": "OwlWarpHandle"
       },
       {
+        "opCode": "0x64",
+        "validator": "LoggedInValidator",
+        "handler": "TeleportRockAddMapHandle"
+      },
+      {
         "opCode": "0x65",
         "validator": "LoggedInValidator",
         "handler": "ShopScannerItemUseHandle"
@@ -1136,6 +1146,23 @@
             "RECEIVER_ONLINE": 0,
             "RECEIVER_UNKNOWN": 1,
             "RECEIVER_INBOX_FULL": 2
+          }
+        }
+      },
+      {
+        "opCode": "0x27",
+        "writer": "MapTransferResult",
+        "options": {
+          "operations": {
+            "DELETE_LIST": "0x02",
+            "REGISTER_LIST": "0x03",
+            "CANNOT_GO": "0x05",
+            "UNABLE_TO_LOCATE": "0x06",
+            "UNABLE_TO_LOCATE_2": "0x07",
+            "CANNOT_GO_CONTINENT": "0x08",
+            "CURRENT_MAP": "0x09",
+            "MAP_NOT_AVAILABLE": "0x0A",
+            "MAPLE_ISLAND_LEVEL7": "0x0B"
           }
         }
       },

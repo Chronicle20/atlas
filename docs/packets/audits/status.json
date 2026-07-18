@@ -4,7 +4,7 @@
     "gms_v48": "a7f7dd20743f55f26646c1a912e4ba0e33dcb0b86f56183cd889c3bd2fd04021",
     "gms_v61": "67395ebec4c069f827ade3a69a2e32286c750b66f305d9eba197ed2e6db87de3",
     "gms_v72": "005ee090459a5f2bea74a84ba7652af94ca98214fb61ff8b07090907581ef267",
-    "gms_v79": "9b64f8fc1da43f8d7cfa4ae375ef91c23deb11c6e8ad216d0ea38e00ab267a6d",
+    "gms_v79": "4bf6b40c4ef6721d672e57a5dc78ae5211c8a75de07a21da7d54b302dd3ff804",
     "gms_v83": "3936e66b34505a10f7886c2d145cae33083d905a358c70c433a8d0d71bf4e988",
     "gms_v84": "e1f590c95e2198e0c78a21fd000914f1fa5d74ca82d349d1ff9c35e7e79015a9",
     "gms_v87": "1d4094e4eb8e77c17ee808f2866a9ce29c59ca87d1fb8c4a8665f593995467be",
@@ -4673,8 +4673,7 @@
           "opcode": 39
         },
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 39
         },
         "gms_v83": {
@@ -10464,7 +10463,8 @@
       "fnames": [
         "CWvsContext::SendMapTransferItemUseRequest",
         "sub_8327DB",
-        "sub_904D5E"
+        "sub_904D5E",
+        "sub_9560C6"
       ],
       "cells": {
         "gms_v48": {
@@ -10480,8 +10480,8 @@
           "opcode": 83
         },
         "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
+          "state": "verified",
+          "opcode": 82
         },
         "gms_v83": {
           "state": "verified",
@@ -10721,7 +10721,6 @@
       "direction": "serverbound",
       "tier1": false,
       "fnames": [
-        "CWvsContext::SendMapTransferItemUseRequest",
         "CWvsContext::SendPortalScrollUseRequest",
         "CWvsContext::SendReturnScrollUseRequest",
         "sub_841AA5"
@@ -14441,7 +14440,8 @@
       "fnames": [
         "CWvsContext::SendMapTransferRequest",
         "sub_8478EA",
-        "sub_91E33E"
+        "sub_91E33E",
+        "sub_970286"
       ],
       "cells": {
         "gms_v48": {
@@ -14457,8 +14457,8 @@
           "opcode": 101
         },
         "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
+          "state": "verified",
+          "opcode": 100
         },
         "gms_v83": {
           "state": "verified",

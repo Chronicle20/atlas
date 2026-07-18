@@ -270,6 +270,54 @@ func TestUseByMapDecodeV72(t *testing.T) {
 	}
 }
 
+// task-124 v79 verify pass (live GMS_v79_1_DEVM.exe, port 13340):
+// unnamed sub_9560C6 @0x9560c6 — renamed live to
+// CWvsContext::SendMapTransferItemUseRequest (the registry fname), found via
+// byte-signature search `6A 52 8D` (push 0x52; lea; call COutPacket ctor) —
+// unique hit in the binary. The pre-existing IDB symbol of that exact name
+// @0x968c52 was MISLABELED: it builds a bare 3-field packet
+// (COutPacket(83)+Encode4(updateTime)+Encode2+Encode4, no RunMapTransferItem
+// call) and reads WZ Return-Scroll props (StringPool ids 2293/2294/2296) —
+// it is genuinely the Return Scroll sender, renamed live this pass to
+// CWvsContext::SendReturnScrollUseRequest (see USE_RETURN_SCROLL in the
+// registry). Byte-identical read order to v61/v72/v83/v84/v87/v95/jms_v185:
+// guard nItemID/10000==232 @0x9560d9-0x9560e6 && get_update_time()
+// @0x9560f5, COutPacket::COutPacket(&v12,82) @0x956107 (opcode 82 = 0x52,
+// matches registry USE_TELEPORT_ROCK), Encode2(nPOS) @0x956116,
+// Encode4(nItemID) @0x956121, then CWvsContext::RunMapTransferItem(v12,0)
+// @0x95612e (the shared target-payload helper, renamed live this pass from
+// sub_9561B5 — appends Encode1(1)+EncodeStr(name) OR Encode1(0)+
+// Encode4(mapId), confirmed via decompile at 0x9562ea/0x956319-956324); on
+// success Encode4(updateTime) @0x956140 then SendPacket @0x95614f — a
+// genuine trailing updateTime. Confirms the "version-invariant" claim above
+// for v79.
+//
+// packet-audit:verify packet=teleportrock/serverbound/Use version=gms_v79 ida=0x9560c6
+func TestUseByMapDecodeV79(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 79, 1)
+	b := []byte{
+		0x02, 0x00, // slot = 2
+		0x80, 0x66, 0x23, 0x00, // itemId = 2320000
+		0x00,                   // byName = 0
+		0x00, 0xE1, 0xF5, 0x05, // mapId = 100000000
+		0x2A, 0x00, 0x00, 0x00, // updateTime = 42
+	}
+	req := request.Request(b)
+	r := request.NewRequestReader(&req, 0)
+	p := Use{}
+	p.Decode(l, ctx)(&r, nil)
+	if !p.Valid() {
+		t.Fatalf("expected valid decode")
+	}
+	if p.Slot() != 2 || p.ItemId() != 2320000 || p.UpdateTime() != 42 {
+		t.Fatalf("fields: %+v", p)
+	}
+	if p.Target().ByName() || p.Target().TargetMap() != 100000000 {
+		t.Fatalf("target: %+v", p.Target())
+	}
+}
+
 // Client sent the packet with no target payload (dialog closed without a
 // selection) — must decode as invalid, never panic.
 func TestUseAbsentTargetIsInvalid(t *testing.T) {

@@ -96,7 +96,7 @@ type AttackInfo struct {
 	grenadeX             uint16
 	grenadeY             uint16
 	reserveSpark         uint32
-	javlin               bool
+	exJablin             bool
 	properBulletPosition uint16
 	cashBulletPosition   uint16
 	nShootRange          byte
@@ -164,7 +164,7 @@ func (m *AttackInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 		w.WriteByte(m.mask1)
 		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 			if m.attackType == AttackTypeRanged {
-				w.WriteBool(m.javlin)
+				w.WriteBool(m.exJablin)
 			}
 		}
 		// Attack-action / direction field. Legacy pre-79 GMS packs bLeft (bit7) +
@@ -194,7 +194,7 @@ func (m *AttackInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 			w.WriteShort(m.properBulletPosition)
 			w.WriteShort(m.cashBulletPosition)
 			w.WriteByte(m.nShootRange)
-			if m.javlin && !skill.IsShootSkillNotConsumingBullet(skill.Id(m.skillId)) {
+			if m.spiritJavelin() && !skill.IsShootSkillNotConsumingBullet(skill.Id(m.skillId)) {
 				w.WriteInt(m.bulletItemId)
 			}
 		} else if m.attackType == AttackTypeMagic {
@@ -302,11 +302,16 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, ctx context.Context) func(r *r
 		m.shadowPartner = int((m.mask1 >> 3) & 0x01)       // Extract bit 3
 		m.unknown1 = int((m.mask1 >> 4) & 0x01)            // Extract bit 4
 		m.serialAttackSkillId = int((m.mask1 >> 5) & 0x01) // Extract bit 5 (boolean flag)
-		m.unknown2 = int((m.mask1 >> 7) & 0x7F)            // Extract bits 7-13 (7-bit value)
+		// bit 6 is the Spirit Javelin (Shadow Stars active) flag — see spiritJavelin().
+		m.unknown2 = int((m.mask1 >> 7) & 0x01) // Extract bit 7
 
+		// GMS v95+ writes an explicit "ExJablin applied" bool right after mask1
+		// (ranged only). It is a SEPARATE field from the mask1 bit-6 gate below —
+		// consume it for alignment but do NOT use it to gate the star id. Verified
+		// across every client version: the bulletItemId gate is mask1 bit 6.
 		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 			if m.attackType == AttackTypeRanged {
-				m.javlin = r.ReadBool()
+				m.exJablin = r.ReadBool()
 			}
 		}
 
@@ -340,13 +345,13 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, ctx context.Context) func(r *r
 			m.cashBulletPosition = r.ReadUint16()
 			m.nShootRange = r.ReadByte()
 
-			// TODO(task-007): the `javlin` flag is tied to a specific skill mechanic
-			// whose gameplay semantics are not yet fully understood (the original name
-			// is a poor translation). Projectile consumption in atlas-channel's
-			// character_attack_projectile.go intentionally bails out when javlin=true
-			// to avoid mis-consuming. Revisit the gate at both sites when the mechanic
-			// is characterized.
-			if m.javlin && !skill.IsShootSkillNotConsumingBullet(skill.Id(m.skillId)) {
+			// Spirit Javelin / Shadow Stars star id. When the caster has Shadow Stars
+			// active the client draws imbued throwing stars from the buff and appends
+			// the chosen star id here, gated on mask1 bit 6 (verified in every GMS
+			// client v48–v95; v87's IDB names it nSpiritJavelin; jms v185 assumed to
+			// follow v87). Missing this read decodes the per-mob damage-info loop 4
+			// bytes misaligned, so monster damage silently drops.
+			if m.spiritJavelin() && !skill.IsShootSkillNotConsumingBullet(skill.Id(m.skillId)) {
 				m.bulletItemId = r.ReadUint32()
 			}
 		} else if m.attackType == AttackTypeMagic {
@@ -425,8 +430,17 @@ func (m *AttackInfo) BulletItemId() uint32 {
 	return m.bulletItemId
 }
 
-func (m *AttackInfo) Javlin() bool {
-	return m.javlin
+// SpiritJavelin reports whether mask1 bit 6 — the client's Spirit Javelin
+// (Shadow Stars active) flag — is set. When set, the caster throws stars imbued
+// by the Shadow Stars buff, so the ranged attack carries an explicit star id and
+// per-attack projectile consumption is skipped (the stars were charged in bulk
+// at cast time).
+func (m *AttackInfo) SpiritJavelin() bool {
+	return m.spiritJavelin()
+}
+
+func (m *AttackInfo) spiritJavelin() bool {
+	return (m.mask1>>6)&0x01 == 1
 }
 
 func (m *AttackInfo) Keydown() uint32 {
@@ -498,6 +512,13 @@ func (m *AttackInfo) SetKeydown(keydown uint32) *AttackInfo {
 func (m *AttackInfo) SetBulletPosition(bulletX uint16, bulletY uint16) *AttackInfo {
 	m.bulletX = bulletX
 	m.bulletY = bulletY
+	return m
+}
+
+// SetBulletItemId sets the Spirit Javelin / Shadow Stars star id carried on the
+// wire when mask1 bit 6 is set. Only encoded for ranged attacks with the bit set.
+func (m *AttackInfo) SetBulletItemId(bulletItemId uint32) *AttackInfo {
+	m.bulletItemId = bulletItemId
 	return m
 }
 

@@ -84,13 +84,13 @@ func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Pro
 					l.WithError(invErr).Warnf("Character [%d] cast Shadow Stars [%d] but inventory load failed; aborting cast.", characterId, info.SkillId())
 					return nil
 				}
-				rewritten, draws, shortfall, ok := resolveShadowStarsCast(assets, e.StatUps(), info.SpiritJavelinItemId(), int(e.BulletCount()))
+				rewritten, draws, shortfall, ok := resolveShadowStarsCast(assets, e.StatUps(), info.SpiritJavelinItemId(), int(e.BulletConsume()))
 				if !ok {
 					l.Warnf("Character [%d] cast Shadow Stars [%d] with invalid star [%d] (not a throwing star or not owned); aborting cast.", characterId, info.SkillId(), info.SpiritJavelinItemId())
 					return nil
 				}
 				if shortfall {
-					l.Warnf("Character [%d] cast Shadow Stars [%d]: insufficient star [%d] for cast cost [%d]; consuming what's available.", characterId, info.SkillId(), info.SpiritJavelinItemId(), e.BulletCount())
+					l.Warnf("Character [%d] cast Shadow Stars [%d]: insufficient star [%d] for cast cost [%d]; consuming what's available.", characterId, info.SkillId(), info.SpiritJavelinItemId(), e.BulletConsume())
 				}
 				statupsToApply = rewritten
 				shadowStarDraws = draws
@@ -136,8 +136,8 @@ func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Pro
 				_ = applyToParty(l)(ctx)(f, characterId, info.AffectedPartyMemberBitmap())(applyBuffFunc)
 			}
 
-			// Shadow Stars cast cost (FR-4): charge bulletCount of the chosen
-			// star after the buff is applied. shadowStarDraws is empty for every
+			// Shadow Stars cast cost (FR-4): charge bulletConsume (200 in WZ) of the
+			// chosen star after the buff is applied. shadowStarDraws is empty for every
 			// other skill.
 			if len(shadowStarDraws) > 0 {
 				if err := emitStarConsume(l, ctx, characterId, shadowStarDraws); err != nil {

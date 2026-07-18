@@ -66,13 +66,13 @@ func (p *ProjectileProcessorImpl) Plan(c character.Model, ai packetmodel.AttackI
 	if ai.AttackType() != packetmodel.AttackTypeRanged {
 		return nil, false
 	}
-	// TODO(task-007): the javelin packet flag at libs/atlas-packet/model/attack_info.go:153
-	// is tied to a specific skill mechanic whose semantics are not yet fully understood
-	// (the original name is a poor translation). Consumption is currently skipped when
-	// javlin=true to avoid mis-consuming. Revisit once the mechanic is characterized.
-	if ai.Javlin() {
+	// Spirit Javelin (Shadow Stars active): the caster throws stars imbued by the
+	// buff, drawn from the shadow rather than a bullet slot, so per-attack
+	// projectile consumption is skipped. The 200-star activation cost was already
+	// charged in bulk at cast time (Shadow Stars bulletConsume — see common.go).
+	if ai.SpiritJavelin() {
 		p.l.WithField("characterId", c.Id()).WithField("skillId", ai.SkillId()).
-			Debugf("Skipping projectile consumption: javlin flag set.")
+			Debugf("Skipping projectile consumption: Spirit Javelin (Shadow Stars) active.")
 		return nil, false
 	}
 	if skillConst.IsShootSkillNotConsumingBullet(skillConst.Id(ai.SkillId())) {
@@ -237,10 +237,12 @@ func requiredClassification(w item.WeaponType) (item.Classification, bool) {
 }
 
 // computeCount returns the total projectile quantity expected to be consumed for this
-// attack. Base is the skill's BulletConsume when > 0, else 1. Claws under Shadow
-// Partner double the total.
+// attack. Base is the skill's WZ bulletCount when > 0 (e.g. Lucky Seven 2, Triple
+// Throw 3), else 1. Claws under Shadow Partner double the total. NOTE: this is the WZ
+// `bulletCount` field, NOT `bulletConsume` — the latter is the one-time Shadow Stars
+// activation cost (200), unrelated to per-attack projectile spend.
 func computeCount(w item.WeaponType, se effect.Model, buffs []buff.Model) int {
-	count := int(se.BulletConsume())
+	count := int(se.BulletCount())
 	if count <= 0 {
 		count = 1
 	}

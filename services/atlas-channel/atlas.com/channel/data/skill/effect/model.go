@@ -102,13 +102,16 @@ func (m Model) CureAbnormalStatuses() []string {
 	return m.cureAbnormalStatuses
 }
 
+// BulletConsume returns the WZ `bulletConsume` attribute — the one-time star
+// batch charged when casting Shadow Stars (200 in reference data). Distinct from
+// BulletCount (per-attack projectile count).
 func (m Model) BulletConsume() uint16 {
 	return m.bulletConsume
 }
 
-// BulletCount returns the WZ `bulletCount` attribute — the one-time star
-// batch charged when casting Shadow Stars (200 in reference data). Distinct
-// from BulletConsume (per-attack projectile count).
+// BulletCount returns the WZ `bulletCount` attribute — the number of projectiles
+// spent per attack (e.g. Lucky Seven 2, Triple Throw 3). Distinct from
+// BulletConsume (the one-time Shadow Stars activation cost).
 func (m Model) BulletCount() uint16 {
 	return m.bulletCount
 }

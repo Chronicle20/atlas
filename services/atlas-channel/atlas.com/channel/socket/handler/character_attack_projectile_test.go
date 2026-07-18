@@ -66,7 +66,7 @@ func expiredBuffWithStat(statType ts.TemporaryStatType) buff.Model {
 }
 
 func TestComputeCount(t *testing.T) {
-	se := effect.Model{} // BulletConsume == 0 → base 1.
+	se := effect.Model{} // bulletCount == 0 → base 1.
 	if got := computeCount(item.WeaponTypeBow, se, nil); got != 1 {
 		t.Fatalf("bow base count = %d, want 1", got)
 	}
@@ -86,6 +86,36 @@ func TestComputeCount(t *testing.T) {
 	expired := []buff.Model{expiredBuffWithStat(ts.TemporaryStatTypeShadowPartner)}
 	if got := computeCount(item.WeaponTypeClaw, se, expired); got != 1 {
 		t.Fatalf("claw + expired SP count = %d, want 1", got)
+	}
+
+	// Per-attack count is driven by WZ bulletCount (Lucky Seven 2, Triple Throw
+	// 3), NOT bulletConsume. Lucky Seven throws 2, doubled to 4 under Shadow
+	// Partner.
+	luckySeven, err := effect.Extract(effect.RestModel{BulletCount: 2})
+	if err != nil {
+		t.Fatalf("extract lucky seven effect: %v", err)
+	}
+	if got := computeCount(item.WeaponTypeClaw, luckySeven, nil); got != 2 {
+		t.Fatalf("Lucky Seven (bulletCount=2) count = %d, want 2", got)
+	}
+	if got := computeCount(item.WeaponTypeClaw, luckySeven, buffs); got != 4 {
+		t.Fatalf("Lucky Seven + Shadow Partner count = %d, want 4", got)
+	}
+	tripleThrow, err := effect.Extract(effect.RestModel{BulletCount: 3})
+	if err != nil {
+		t.Fatalf("extract triple throw effect: %v", err)
+	}
+	if got := computeCount(item.WeaponTypeClaw, tripleThrow, nil); got != 3 {
+		t.Fatalf("Triple Throw (bulletCount=3) count = %d, want 3", got)
+	}
+	// bulletConsume (the Shadow Stars 200-star cast cost) must NOT drive the
+	// per-attack projectile count.
+	shadowStars, err := effect.Extract(effect.RestModel{BulletConsume: 200})
+	if err != nil {
+		t.Fatalf("extract shadow stars effect: %v", err)
+	}
+	if got := computeCount(item.WeaponTypeClaw, shadowStars, nil); got != 1 {
+		t.Fatalf("bulletConsume=200 must not affect per-attack count = %d, want 1", got)
 	}
 }
 

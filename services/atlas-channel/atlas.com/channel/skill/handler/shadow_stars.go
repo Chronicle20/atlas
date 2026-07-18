@@ -101,16 +101,18 @@ func rewriteShadowClawStatups(statups []statup.Model, starItemId uint32) []statu
 }
 
 // resolveShadowStarsCast validates the chosen star and resolves the buff
-// statups + consume draws for a Shadow Stars cast. ok=false means the star is
-// invalid (wrong classification or not owned) and the cast MUST abort — the
-// returned rewritten/draws are nil. shortfall reports available < bulletCount.
-func resolveShadowStarsCast(assets []asset.Model, statups []statup.Model, starItemId uint32, bulletCount int) (rewritten []statup.Model, draws []StarDraw, shortfall bool, ok bool) {
+// statups + consume draws for a Shadow Stars cast. castCost is the WZ
+// `bulletConsume` (200 in reference data) — the one-time bulk star charge.
+// ok=false means the star is invalid (wrong classification or not owned) and the
+// cast MUST abort — the returned rewritten/draws are nil. shortfall reports
+// available < castCost.
+func resolveShadowStarsCast(assets []asset.Model, statups []statup.Model, starItemId uint32, castCost int) (rewritten []statup.Model, draws []StarDraw, shortfall bool, ok bool) {
 	if !validateShadowStar(assets, starItemId) {
 		return nil, nil, false, false
 	}
-	draws, available := resolveStarConsume(assets, starItemId, bulletCount)
+	draws, available := resolveStarConsume(assets, starItemId, castCost)
 	rewritten = rewriteShadowClawStatups(statups, starItemId)
-	return rewritten, draws, available < bulletCount, true
+	return rewritten, draws, available < castCost, true
 }
 
 // loadCasterInventoryFunc is the caster-inventory load seam tests can replace.

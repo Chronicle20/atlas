@@ -1864,6 +1864,10 @@
         "writer": "Clock"
       },
       {
+        "opCode": "0x8D",
+        "writer": "FieldTransportState"
+      },
+      {
         "opCode": "0x8E",
         "writer": "SetQuestClear"
       },
@@ -1882,6 +1886,10 @@
       {
         "opCode": "0x92",
         "writer": "StopClock"
+      },
+      {
+        "opCode": "0x93",
+        "writer": "AriantArenaShowResult"
       },
       {
         "opCode": "0x94",
@@ -2634,6 +2642,50 @@
         "writer": "ReactorDestroy"
       },
       {
+        "opCode": "0x104",
+        "writer": "SnowballHit"
+      },
+      {
+        "opCode": "0x105",
+        "writer": "SnowballMessage"
+      },
+      {
+        "opCode": "0x106",
+        "writer": "SnowballTouch"
+      },
+      {
+        "opCode": "0x107",
+        "writer": "CoconutHit"
+      },
+      {
+        "opCode": "0x108",
+        "writer": "CoconutScore"
+      },
+      {
+        "opCode": "0x109",
+        "writer": "GuildBossHealerMove"
+      },
+      {
+        "opCode": "0x10A",
+        "writer": "GuildBossPulleyStateChange"
+      },
+      {
+        "opCode": "0x10C",
+        "writer": "MonsterCarnivalObtainedCP"
+      },
+      {
+        "opCode": "0x10D",
+        "writer": "MonsterCarnivalPartyCP"
+      },
+      {
+        "opCode": "0x112",
+        "writer": "MonsterCarnivalResult"
+      },
+      {
+        "opCode": "0x117",
+        "writer": "WitchTowerScoreUpdate"
+      },
+      {
         "opCode": "0x118",
         "writer": "HorntailCave"
       },
@@ -2803,6 +2855,22 @@
         }
       },
       {
+        "opCode": "0x128",
+        "writer": "TournamentUew"
+      },
+      {
+        "opCode": "0x129",
+        "writer": "TournamentCharacters"
+      },
+      {
+        "opCode": "0x12A",
+        "writer": "WeddingProgress"
+      },
+      {
+        "opCode": "0x12B",
+        "writer": "WeddingCeremonyEnd"
+      },
+      {
         "opCode": "0x12E",
         "writer": "CashShopCashQueryResult"
       },
@@ -2838,6 +2906,10 @@
       {
         "opCode": "0x142",
         "writer": "MtsChargeParamResult"
+      },
+      {
+        "opCode": "0x143",
+        "writer": "MtsOperation2"
       },
       {
         "opCode": "0x14A",

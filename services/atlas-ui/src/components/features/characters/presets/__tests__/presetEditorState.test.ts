@@ -157,6 +157,21 @@ describe("presetEditorState", () => {
     expect(presetDirty(s, "b2")).toBe(true);
   });
 
+  it("presetDirty matches baseline by id, not position, after an earlier row is removed", () => {
+    let s = loaded([preset("a1", "One"), preset("b2", "Two"), preset("c3", "Three")]);
+    s = presetReducer(s, { type: "removePreset", key: "a1" });
+    expect(presetDirty(s, "b2")).toBe(false);
+    expect(presetDirty(s, "c3")).toBe(false);
+  });
+
+  it("setField coerces stringly-typed gender values", () => {
+    let s = loaded([preset("a1", "One")]);
+    s = presetReducer(s, { type: "setField", key: "a1", path: "gender", value: "1" });
+    expect(s.presets[0].attributes.gender).toBe(1);
+    s = presetReducer(s, { type: "setField", key: "a1", path: "gender", value: "0" });
+    expect(s.presets[0].attributes.gender).toBe(0);
+  });
+
   it("normalizePreset fills missing fields from defaults", () => {
     const attrs = normalizePreset({ name: "Partial" } as never);
     expect(attrs.jobId).toBe(0);

@@ -139,11 +139,13 @@ export function selectedPreset(state: PresetEditorState): WorkingPreset | null {
 }
 
 export function presetDirty(state: PresetEditorState, key: string): boolean {
-  const idx = state.presets.findIndex((p) => p.key === key);
-  if (idx < 0) return false;
-  const base = state.baseline[idx];
-  if (!base) return true; // freshly added row with no baseline counterpart
-  return JSON.stringify(project(state.presets[idx])) !== JSON.stringify(base);
+  const p = state.presets.find((p) => p.key === key);
+  if (!p) return false;
+  const base = p.id !== undefined
+    ? state.baseline.find((b) => b.id === p.id)
+    : undefined; // no id => freshly added, never had a baseline counterpart
+  if (!base) return true;
+  return JSON.stringify(project(p)) !== JSON.stringify(base);
 }
 
 function updateOne(
@@ -213,7 +215,7 @@ export function presetReducer(
           return { ...a, stats: { ...a.stats, [stat]: action.value as number } };
         }
         if (action.path === "gender") {
-          return { ...a, gender: (action.value as number) === 1 ? 1 : 0 };
+          return { ...a, gender: Number(action.value) === 1 ? 1 : 0 };
         }
         return { ...a, [action.path]: action.value } as CharacterPresetAttributes;
       });

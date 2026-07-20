@@ -9,12 +9,12 @@ Tool: `a0c47bb5655b63e6be7139d84d0dc93e198b0eac6c23d546ecc5a6b3f49936b7`
 - export gms_v48: `8d1a4c02745ee1cb5b41c358b749c6a55883207c109784c6e09b00545a3d2dc8`
 - export gms_v61: `67395ebec4c069f827ade3a69a2e32286c750b66f305d9eba197ed2e6db87de3`
 - export gms_v72: `005ee090459a5f2bea74a84ba7652af94ca98214fb61ff8b07090907581ef267`
-- export gms_v79: `99eaa3a9682b7bfc2a93ea99c4718711db52fd3077f5f6fd1d74faae065ffcfb`
-- export gms_v83: `8ce63ca7f0800376c132ac9a2b9c09cca7915abee84869407a7cff5d7ad86b47`
-- export gms_v84: `d50d088f1e9197858530a3d520436605c45600ef3a33b21c08bb76a91aeaad0f`
-- export gms_v87: `f54112a53fe73144d1feda40f4c1becc6f1f75bdbf5701665ace57bf2e4eb43c`
-- export gms_v95: `55881964543d752866e4ece41b4125ea5f7a57e8e59fcf0b4f4eb95c6b000d91`
-- export jms_v185: `605b56c455957ff92490ac23605c3324dd1716c5a0f6fb472eca8750c9ed873a`
+- export gms_v79: `2db999334587b0cbfd92492b711ce03664f9a938b4a92febf0e5aab476747618`
+- export gms_v83: `7e579f34a746da52813f16fe4f11d8dc946e265dcd38b8eccae876b6102686e2`
+- export gms_v84: `a0302037bcd6e2bc2f4bf590a291b03a5b22e3f372b52a6c1ed6b77654d0d62e`
+- export gms_v87: `3bbdc03e4959b14419cd684ea84785d6f6a2c03f1d93c3c9942b352f14065b9c`
+- export gms_v95: `b3d50ab6e08d37d1f5e6adbfaab8a7e6e227c5b950b1e05515aaf73da8a3af26`
+- export jms_v185: `bb65540944c9bf2be6c4eda44ba932d2ad15f1379cc6657f10a8a5edc8915c6e`
 
 ## Clientbound
 
@@ -244,6 +244,7 @@ Tool: `a0c47bb5655b63e6be7139d84d0dc93e198b0eac6c23d546ecc5a6b3f49936b7`
 | TRANSFER_CHANNEL | CWvsContext::OnTransferChannel |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x08A | ❌ |  | ⬜ |
 | DAMAGE_SUMMON | CSummonedPool::OnHit; sub_67C936; sub_6E9839 | summon/clientbound/SummonDamage |  | ⬜ | 0x08B | ✅ | 0x0A5 | ✅ | 0x0A9 | ✅ | 0x0B3 | ✅ | 0x0B8 | ✅ | 0x0C0 | ✅ | 0x11B | ✅ | 0x0B9 | ✅ |
 | DISALLOWED_DELIVERY_QUEST_LIST | CWvsContext::OnDisallowedDeliveryQuestList |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x08B | ❌ |  | ⬜ |
+| CONTI_MOVE | CField_ContiMove::OnContiMove | field/clientbound/FieldContiMove (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x08C | ✅ | 0x094 | ✅ | 0x097 | ✅ | 0x09C | ✅ | 0x0A4 | ✅ | 0x091 | ✅ |
 | CONTI_STATE | CField_ContiMove::OnContiState | field/clientbound/FieldTransport (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x08D | ✅ | 0x095 | ✅ | 0x098 | ✅ | 0x09D | ✅ | 0x0A5 | ✅ | 0x092 | ✅ |
 | MOVE_PLAYER | CUserRemote::OnMove | character/clientbound/CharacterMovement (T1) |  | ⬜ | 0x08D | ✅ | 0x0A7 | ✅ | 0x0AB | ✅ | 0x0B9 | ✅ | 0x0BD | ✅ | 0x0C6 | ✅ | 0x0D2 | ✅ | 0x0BF | ✅ |
 | CLOSE_RANGE_ATTACK | CUserRemote::OnAttack | character/clientbound/Attack (T1) |  | ⬜ | 0x08E | ✅ | 0x0A8 | ✅ | 0x0AC | ✅ | 0x0BA | ✅ | 0x0BE | ✅ | 0x0C7 | ✅ | 0x0D3 | ✅ | 0x0C0 | ✅ |
@@ -254,7 +255,6 @@ Tool: `a0c47bb5655b63e6be7139d84d0dc93e198b0eac6c23d546ecc5a6b3f49936b7`
 | ARIANT_ARENA_SHOW_RESULT | CField_AriantArena::OnShowResult | field/clientbound/FieldAriantArenaShowResult (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x093 | ✅ | 0x09B | ✅ | 0x09E | ✅ | 0x0A3 | ✅ | 0x0AB | ✅ | 0x097 | ✅ |
 | CANCEL_SKILL_EFFECT | CUserRemote::OnSkillCancel; sub_980BF5 | character/clientbound/CharacterSkillCancelForeign (T1) |  | ⬜ | 0x093 | ✅ | 0x0AD | ✅ | 0x0B1 | ✅ | 0x0BF | ✅ | 0x0C3 | ✅ | 0x0CC | ✅ | 0x0D9 | ✅ | 0x0C5 | ✅ |
 | CHATTEXT1 | CUser::OnChat | chat/clientbound/ChatGeneralChat |  | ⬜ |  | ⬜ | 0x094 | ❌ | 0x098 | ❌ | 0x0A3 | ❌ | 0x0A6 | ❌ | 0x0AE | ❌ | 0x0B6 | ✅ | 0x0A1 | ✅ |
-| CONTI_MOVE | CField_ContiMove::OnContiMove | field/clientbound/FieldContiMove (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x094 | ✅ | 0x097 | ✅ | 0x09C | ✅ | 0x0A4 | ✅ | 0x091 | ✅ |
 | DAMAGE_PLAYER | CUserRemote::OnHit | character/clientbound/CharacterDamage (T1) |  | ⬜ | 0x094 | ✅ | 0x0AE | ✅ | 0x0B2 | ✅ | 0x0C0 | ✅ | 0x0C4 | ✅ | 0x0CD | ✅ | 0x0DA | ✅ | 0x0C6 | ✅ |
 | FACIAL_EXPRESSION | CAvatar::SetEmotion; CUser::OnEmotion | character/clientbound/CharacterExpression (T1) |  | ⬜ | 0x095 | ✅ | 0x0AF | ✅ | 0x0B3 | ✅ | 0x0C1 | ✅ | 0x0C5 | ✅ | 0x0CE | ✅ | 0x0DB | ✅ | 0x0C7 | ✅ |
 | SHOW_ITEM_EFFECT | CUser::SetActiveEffectItem; CUserRemote::OnSetActiveEffectItem |  |  | ⬜ | 0x096 | ❌ | 0x0B0 | ❌ | 0x0B4 | ❌ | 0x0C2 | ❌ | 0x0C6 | ❌ | 0x0CF | ❌ | 0x0DC | ❌ | 0x0C8 | ❌ |
@@ -998,7 +998,7 @@ Tool: `a0c47bb5655b63e6be7139d84d0dc93e198b0eac6c23d546ecc5a6b3f49936b7`
 | v48 | 171 | 0 | 2 | 157 | 630 | 0 | 51.8% |
 | v61 | 246 | 0 | 60 | 192 | 462 | 0 | 49.4% |
 | v72 | 256 | 0 | 73 | 211 | 420 | 0 | 47.4% |
-| v79 | 289 | 0 | 72 | 207 | 392 | 0 | 50.9% |
+| v79 | 290 | 0 | 72 | 207 | 391 | 0 | 51.0% |
 | v83 | 412 | 0 | 0 | 324 | 224 | 0 | 56.0% |
 | v84 | 384 | 0 | 0 | 332 | 244 | 0 | 53.6% |
 | v87 | 418 | 0 | 0 | 355 | 187 | 0 | 54.1% |

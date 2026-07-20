@@ -10162,7 +10162,11 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": ""
+          "comment": "state; (state-7) selects one of 6 arms"
+        },
+        {
+          "op": "Decode1",
+          "comment": "subState (state-gated: only arms 8/10/12 -- OnStartShipMoveField/OnMoveField/OnEndShipMoveField -- read a second byte; arms 7/9/11 are nullsubs and read nothing further)"
         }
       ]
     },

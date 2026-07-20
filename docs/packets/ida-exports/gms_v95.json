@@ -3498,7 +3498,11 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": ""
+          "comment": "state; (state-7) selects one of 6 arms (v95 uses a switch: case 8/0xA/0xC)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "subState (state-gated: only cases 8/10/12 -- OnStartShipMoveField/OnMoveField/OnEndShipMoveField -- read a second byte; other cases hit default and read nothing further)"
         }
       ]
     },

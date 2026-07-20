@@ -3242,13 +3242,16 @@
       ]
     },
     "CField_ContiMove::OnContiMove": {
-      "address": "",
+      "address": "0x5374c1",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "state; (state-7) selects one of 6 arms (nullsub_7/sub_5375AE/nullsub_8/sub_5375D3/nullsub_9/sub_537609)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "subState (state-gated: only arms 8/10/12 -- sub_5375AE/sub_5375D3/sub_537609 -- read a second byte; arms 7/9/11 are nullsubs and read nothing further)"
         }
       ]
     },

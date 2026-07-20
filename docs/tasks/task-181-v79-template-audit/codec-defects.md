@@ -93,14 +93,49 @@ Confirm against a precedent list writer's grading before landing.
   `OnTournamentMatchTable @0x55871f` reads a real match-table struct
   (`sub_750E40`). Needs the real body reversed.
 
+## DEFECT-3: ContiMove — unconditional single state byte (should be state + state-gated subState) — **FIXED**
+
+**Resolution (task-181):** re-read `CField_ContiMove::OnContiMove` live across
+five IDBs — gms_v79 `@0x5374c1`, gms_v83 `@0x54dca3`, gms_v87 `@0x577bbc`,
+gms_v95 `@0x54d680` (PDB-backed, switch form), jms_v185 `@0x58e21b`
+(gms_v84 `@0x55a4e2` byte-identical to v83) — all **identical structure**:
+`Decode1(state)` dispatches on `(state-7)` to one of six arms. Descending into
+each arm's body (not just the top-level dispatch) showed three of the six
+(state 8/10/12 — `OnStartShipMoveField`/`OnMoveField`/`OnEndShipMoveField`,
+named via `CShip::LeaveShipMove`/`AppearShip`/`DisappearShip`/`EnterShipMove`
+in v83/v87/v95/jms) each `Decode1` a **second** `subState` byte; the other
+three (state 7/9/11) are nullsubs that read nothing further. This is a genuine
+**true false-pass**, not a route-only case: the prior atlas codec wrote/read
+only the unconditional state byte, silently dropping subState for 8/10/12 —
+and the v83/v84/v87/v95/jms ida-exports encoded the same wrong 1-call shape
+(matching the false golden), so the pre-existing ✅ cells were false passes too.
+
+Re-modelled `ContiMove{state byte, subState byte}` with a shared
+`contiMoveHasSubState(state)` gate (state ∈ {8,10,12}) used by both `Encode`
+(conditionally writes subState) and `Decode` (conditionally reads it) —
+deterministic on the state value itself (not off-wire, unlike SnowballState's
+`first`). Widened the channel wrapper `ContiMoveBody(state, subState)` (its
+only caller — never actually emitted). Corrected the 2-call read order
+(`Decode1` state + state-gated `Decode1` subState) in the
+gms_v79/v83/v84/v87/v95/jms exports (v79 was `unresolved`; the other five held
+the same wrong 1-call shape as the old codec), re-pinned all six evidence
+records, regenerated the ContiMove report per version, and routed it in
+`template_gms_79_1.json` (opcode `0x8C`, previously unrouted between `0x8B`
+Clock and `0x8D` FieldTransportState) + registry entry. All six cells verify
+✅ (`matrix --check` clean); goldens updated (nullsub state + both v83/v79
+two-byte cases) plus `TestContiMoveByteOutputV79` /
+`TestContiMoveByteOutputV79Nullsub`.
+
 ## Remaining divergent writers (proven recipe: RE across IDBs → re-model codec →
 correct exports if their read-order is wrong → re-pin evidence → selective
-per-version report regen → route v79). SnowballState (DEFECT-1) and
-AriantArenaUserScore (DEFECT-2) are the completed exemplars — the latter
-confirming the count-loop export convention (no splice needed except for the
-previously-unresolved v79 entry).
+per-version report regen → route v79). SnowballState (DEFECT-1),
+AriantArenaUserScore (DEFECT-2), and ContiMove (DEFECT-3) are the completed
+exemplars — DEFECT-2 confirmed the count-loop export convention (no splice
+needed except for the previously-unresolved v79 entry), DEFECT-3 confirmed a
+genuine state-gated conditional-field false-pass spanning ALL previously-✅
+versions, not just v79.
 - Small: Tournament (v79 ≤2 bytes vs atlas 3), TournamentSetPrize (conditional
-  int-pair), ContiMove (sub-dispatch — confirm emitted states).
+  int-pair).
 - Medium: TournamentMatchTable, MonsterCarnival
   Start/Summon/Message/Died/Leave (variable str/loop bodies).
 - Large: MtsOperation — `CITC::OnNormalItemResult` 35-arm dispatcher family

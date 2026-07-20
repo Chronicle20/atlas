@@ -1864,6 +1864,10 @@
         "writer": "Clock"
       },
       {
+        "opCode": "0x8C",
+        "writer": "ContiMove"
+      },
+      {
         "opCode": "0x8D",
         "writer": "FieldTransportState"
       },

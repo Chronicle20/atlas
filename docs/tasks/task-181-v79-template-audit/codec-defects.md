@@ -334,27 +334,72 @@ show correct, independent ✅ verdicts) or `matrix --check`/`gatecheck`
 out-of-scope for this route-only task; flagging for a future cleanup of
 `build.go`'s FName→packet resolution when multiple ops share one dispatcher.
 
+## DEFECT-9: MonsterCarnivalDied + MonsterCarnivalLeave — route-only gap, both codecs already correct — **FIXED**
+
+**Resolution (task-181):** `CField_MonsterCarnival::OnProcessForDeath`
+(MonsterCarnivalDied) and `CField_MonsterCarnival::OnShowMemberOutMsg`
+(MonsterCarnivalLeave) are two distinct opcode-dispatched handlers —
+`CField_MonsterCarnival::OnPacket` (`sub_54827B` in the v79 IDB) switches on
+the packet opcode and calls `sub_548774(a3)` for case 272 (`0x110`, DIED) and
+`sub_5488EF(a3)` for case 273 (`0x111`, LEAVE) — confirmed against the live
+dispatcher switch decompile in v79 (`@0x54827b`). Decompiled both handlers
+live in five IDBs:
+
+- `OnProcessForDeath` — gms_v79 `@0x548774`, gms_v83 `@0x5657e7`, gms_v87
+  `@0x590568`, gms_v95 `@0x55ab90` (PDB-backed), jms_v185 `@0x5b0597`
+  (gms_v84 `@0x5724ee` byte-identical to v83) — **identical structure in all
+  five**: `Decode1` team (team color selector: `!=0` ⇒ MAPLE_BLUE, `0` ⇒
+  MAPLE_RED), `DecodeStr` name (defeated character name), `Decode1` lostCp
+  (CP lost by the team; `<=0` ⇒ "no CP lost" message variant) — all three
+  reads happen unconditionally before any branching; everything after is
+  StringPool lookups + `CHATLOG_ADD`, never wire data.
+- `OnShowMemberOutMsg` — gms_v79 `@0x5488ef`, gms_v83 `@0x565962`, gms_v87
+  `@0x5906e3`, gms_v95 `@0x55ad80` (PDB-backed), jms_v185 `@0x5b070f`
+  (gms_v84 `@0x572669` byte-identical to v83) — **identical structure in all
+  five**: `Decode1` leader (`==6` ⇒ "leader quit, X appointed" message
+  variant — the second `Decode1` call itself is unconditional, evaluated as
+  part of an `if` condition, so no read is ever skipped), `Decode1` team
+  (same color selector), `DecodeStr` name (quitting character name).
+
+Like DEFECT-7/8, this was **not a false pass** — the pre-existing atlas
+`MonsterCarnivalDied` (`team byte, name string, lostCp byte`) and
+`MonsterCarnivalLeave` (`leader byte, team byte, name string`) codecs already
+modelled both shapes correctly, and v83/v84/v87/v95/jms were already ✅ for
+both ops with correct 3-call exports. The only gap was **v79**: both export
+entries held `unresolved` (function not found at export time), and neither
+opcode `0x110` nor `0x111` was routed in `template_gms_79_1.json`. Spliced
+the real read order into the v79 export for both ops, re-pinned both evidence
+records, regenerated both reports (selective revert — the root regen command
+still churns ~217 unrelated files; reverted everything except the two
+`MonsterCarnival{Died,Leave}` report pairs and `git clean`ed the recreated
+strays), and routed `0x110`/`0x111` in the v79 template between `0x10F`
+MonsterCarnivalMessage and `0x112` MonsterCarnivalResult, plus two registry
+entries. Added `TestMonsterCarnivalDiedByteOutputV79` and
+`TestMonsterCarnivalLeaveByteOutputV79`. Both v79 cells verify ✅ (`matrix
+--check` clean); all five other versions remain ✅ for both ops.
+
 ## Remaining divergent writers (proven recipe: RE across IDBs → re-model codec →
 correct exports if their read-order is wrong → re-pin evidence → selective
 per-version report regen → route v79). SnowballState (DEFECT-1),
 AriantArenaUserScore (DEFECT-2), ContiMove (DEFECT-3), TournamentSetPrize
 (DEFECT-4), Tournament (DEFECT-5), TournamentMatchTable (DEFECT-6),
-MonsterCarnivalStart (DEFECT-7), and MonsterCarnivalSummon +
-MonsterCarnivalMessage (DEFECT-8) are the completed exemplars — DEFECT-2
-confirmed the count-loop export convention (no splice needed except for the
-previously-unresolved v79 entry), DEFECT-3 confirmed a genuine state-gated
-conditional-field false-pass spanning ALL previously-✅ versions, DEFECT-4
-confirmed a flag-gated conditional-field false-pass where the non-v79 exports
-were already correct (only the codec and the v79 export needed fixing),
-DEFECT-5 confirmed a flat-invariant-length false-pass (no gate needed at all
-— the branch determines *meaning*, never byte count), DEFECT-6 confirmed an
-empty-stub false-pass whose true body lives behind a helper/ctor indirection
-the handler itself never shows, DEFECT-7 confirmed the inverse case: a codec
-that was already right, where the only defect was an unrouted v79 opcode + an
-unresolved v79 export, and DEFECT-8 confirmed the same inverse case for a
-2-way arg-dispatched (not opcode-dispatched) function sharing one fname
-across two ops.
-- Medium: MonsterCarnival Died/Leave (variable str/loop bodies).
+MonsterCarnivalStart (DEFECT-7), MonsterCarnivalSummon + MonsterCarnivalMessage
+(DEFECT-8), and MonsterCarnivalDied + MonsterCarnivalLeave (DEFECT-9) are the
+completed exemplars — DEFECT-2 confirmed the count-loop export convention (no
+splice needed except for the previously-unresolved v79 entry), DEFECT-3
+confirmed a genuine state-gated conditional-field false-pass spanning ALL
+previously-✅ versions, DEFECT-4 confirmed a flag-gated conditional-field
+false-pass where the non-v79 exports were already correct (only the codec and
+the v79 export needed fixing), DEFECT-5 confirmed a flat-invariant-length
+false-pass (no gate needed at all — the branch determines *meaning*, never
+byte count), DEFECT-6 confirmed an empty-stub false-pass whose true body lives
+behind a helper/ctor indirection the handler itself never shows, DEFECT-7
+confirmed the inverse case: a codec that was already right, where the only
+defect was an unrouted v79 opcode + an unresolved v79 export, DEFECT-8
+confirmed the same inverse case for a 2-way arg-dispatched (not
+opcode-dispatched) function sharing one fname across two ops, and DEFECT-9
+confirmed the same inverse case again for two independently opcode-dispatched
+handlers (no shared fname, no arg-dispatch) in the same family.
 - Large: MtsOperation — `CITC::OnNormalItemResult` 35-arm dispatcher family
   (`DISPATCHER_FAMILY.md`).
 

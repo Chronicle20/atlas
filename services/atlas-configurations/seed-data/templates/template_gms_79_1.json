@@ -2698,6 +2698,14 @@
         "writer": "MonsterCarnivalMessage"
       },
       {
+        "opCode": "0x110",
+        "writer": "MonsterCarnivalDied"
+      },
+      {
+        "opCode": "0x111",
+        "writer": "MonsterCarnivalLeave"
+      },
+      {
         "opCode": "0x112",
         "writer": "MonsterCarnivalResult"
       },

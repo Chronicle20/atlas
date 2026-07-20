@@ -3380,13 +3380,20 @@
       ]
     },
     "CField_MonsterCarnival::OnProcessForDeath": {
-      "address": "",
+      "address": "0x548774",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "team (team color selector: !=0 => MAPLE_BLUE, 0 => MAPLE_RED)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "name (defeated character name)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "lostCp (CP lost by the team; <=0 => no-cp-lost message variant)"
         }
       ]
     },
@@ -3424,13 +3431,20 @@
       ]
     },
     "CField_MonsterCarnival::OnShowMemberOutMsg": {
-      "address": "",
+      "address": "0x5488ef",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "leader (==6 => leader-quit-appointed message variant)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "team (team color selector: !=0 => MAPLE_BLUE, 0 => MAPLE_RED)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "name (quitting character name)"
         }
       ]
     },

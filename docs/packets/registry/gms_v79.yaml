@@ -2082,6 +2082,24 @@
   ida:
     address: 5539082
   note: 'task-181: v79 IDB CField_MonsterCarnival::OnRequestResult (0x54850a, seed template_gms_79_1.json opCode 0x10F, CField_MonsterCarnival::OnPacket case 271 confirmed against the live dispatcher decompile: sub_54827B case 271 -> sub_54850A(0, a3)) — the a2==0 (MESSAGE) branch: a single Decode1 message-selector byte; the displayed text is sourced from the client StringPool, not the packet. Identical to v83 (0x56557d), v84 (0x572284, byte-identical to v83), v87 (0x590303), v95 (0x55a890, PDB-backed), jms (0x5b0332). This is a DISTINCT wire shape from the SUMMON branch (arg!=0) of the same dispatched function. Existing atlas codec already modelled this shape correctly (single message byte) -- this is a route-only fix: v79 opCode 0x10F was simply unrouted and the v79 export was unresolved.'
+- op: MONSTER_CARNIVAL_DIED
+  direction: clientbound
+  opcode: 272
+  fname: CField_MonsterCarnival::OnProcessForDeath
+  packet: monster/carnival/clientbound/MonsterCarnivalDied
+  provenance: ida-discovered
+  ida:
+    address: 5539700
+  note: 'task-181: v79 IDB CField_MonsterCarnival::OnProcessForDeath (0x548774, seed template_gms_79_1.json opCode 0x110, CField_MonsterCarnival::OnPacket case 272 confirmed against the live dispatcher decompile: sub_54827B case 272 -> sub_548774(a3)) reads Decode1 team (team color selector: !=0 => MAPLE_BLUE, 0 => MAPLE_RED), DecodeStr name (defeated character name), Decode1 lostCp (CP lost by the team; <=0 => no-cp-lost message variant); the remaining reads are StringPool lookups and a CHATLOG_ADD call, not wire data. Identical read order confirmed in v83 (0x5657e7), v84 (0x5724ee, byte-identical to v83), v87 (0x590568), v95 (0x55ab90, PDB-backed), jms (0x5b0597). Existing atlas codec already modelled this shape correctly (team/name/lostCp) -- this is a route-only fix: v79 opCode 0x110 was simply unrouted and the v79 export was unresolved.'
+- op: MONSTER_CARNIVAL_LEAVE
+  direction: clientbound
+  opcode: 273
+  fname: CField_MonsterCarnival::OnShowMemberOutMsg
+  packet: monster/carnival/clientbound/MonsterCarnivalLeave
+  provenance: ida-discovered
+  ida:
+    address: 5540079
+  note: 'task-181: v79 IDB CField_MonsterCarnival::OnShowMemberOutMsg (0x5488ef, seed template_gms_79_1.json opCode 0x111, CField_MonsterCarnival::OnPacket case 273 confirmed against the live dispatcher decompile: sub_54827B case 273 -> sub_5488EF(a3)) reads Decode1 leader (==6 => leader-quit-appointed message variant), Decode1 team (team color selector: !=0 => MAPLE_BLUE, 0 => MAPLE_RED), DecodeStr name (quitting character name); the remaining reads are StringPool lookups and a CHATLOG_ADD call, not wire data. Identical read order confirmed in v83 (0x565962), v84 (0x572669, byte-identical to v83), v87 (0x5906e3), v95 (0x55ad80, PDB-backed), jms (0x5b070f). Existing atlas codec already modelled this shape correctly (leader/team/name) -- this is a route-only fix: v79 opCode 0x111 was simply unrouted and the v79 export was unresolved.'
 - op: MONSTER_CARNIVAL_RESULT
   direction: clientbound
   opcode: 274

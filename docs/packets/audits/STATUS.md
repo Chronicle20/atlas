@@ -9,7 +9,7 @@ Tool: `a0c47bb5655b63e6be7139d84d0dc93e198b0eac6c23d546ecc5a6b3f49936b7`
 - export gms_v48: `8d1a4c02745ee1cb5b41c358b749c6a55883207c109784c6e09b00545a3d2dc8`
 - export gms_v61: `67395ebec4c069f827ade3a69a2e32286c750b66f305d9eba197ed2e6db87de3`
 - export gms_v72: `005ee090459a5f2bea74a84ba7652af94ca98214fb61ff8b07090907581ef267`
-- export gms_v79: `6dd44d5b4d8dbdcf512a5160dbbd0d7e540f35252e9805069480a4c0e4dd0816`
+- export gms_v79: `2c2af17a3493b277d696a0d629c263073aa9afbc9c4e82b7ad0b873cec47144e`
 - export gms_v83: `2c83800f68d4fb785bed69ea7767b363acb38db4f445a1a772a4a33013c11400`
 - export gms_v84: `add645423c5199734172e15c44a7438656e893918efd1b5147cf31e546e002f1`
 - export gms_v87: `cdb60fec8064a3e6cadef27348923f541ba22873d8b4015010582c2718b14fd6`
@@ -436,8 +436,10 @@ Tool: `a0c47bb5655b63e6be7139d84d0dc93e198b0eac6c23d546ecc5a6b3f49936b7`
 | IDA_0X10F | CUserLocal::OnVengeanceSkillApply |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x10F | ❌ |  | ⬜ |
 | MONSTER_CARNIVAL_MESSAGE | CField_MonsterCarnival::OnRequestResult | monster/carnival/clientbound/MonsterCarnivalMessage (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x10F | ✅ | 0x125 | ✅ | 0x12C | ✅ | 0x136 | ✅ | 0x15E | ✅ | 0x13D | ✅ |
 | IDA_0X110 | CUserLocal::OnExJablinApply |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x110 | ❌ |  | ⬜ |
+| MONSTER_CARNIVAL_DIED | CField_MonsterCarnival::OnProcessForDeath | monster/carnival/clientbound/MonsterCarnivalDied (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x110 | ✅ | 0x126 | ✅ | 0x12D | ✅ | 0x137 | ✅ | 0x15F | ✅ | 0x13E | ✅ |
 | ADMIN_SHOP_MESSAGE | CAdminShopDlg::OnPacket |  |  | ⬜ |  | ⬜ | 0x111 | ❌ | 0x11D | ❌ | 0x133 | ❌ | 0x13A | ❌ | 0x144 | ❌ | 0x16E | ❌ | 0x14C | ❌ |
 | IDA_0X111 | CUserLocal::OnAskAPSPEvent |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x111 | ❌ |  | ⬜ |
+| MONSTER_CARNIVAL_LEAVE | CField_MonsterCarnival::OnShowMemberOutMsg | monster/carnival/clientbound/MonsterCarnivalLeave (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x111 | ✅ | 0x127 | ✅ | 0x12E | ✅ | 0x138 | ✅ | 0x160 | ✅ | 0x13F | ✅ |
 | MTS_CHARGE_PARAM_RESULT | CITC::OnChargeParamResult |  |  | ⬜ | 0x111 | ✅ | 0x135 | ✅ | 0x142 | ✅ | 0x15A | ✅ | 0x164 | ✅ | 0x16F | ✅ | 0x19A | ✅ |  | ⬜ |
 | IDA_0X112 | CUserLocal::OnQuestGuideResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x112 | ❌ |  | ⬜ |
 | MONSTER_CARNIVAL_RESULT | CField_MonsterCarnival::OnShowGameResult | monster/carnival/clientbound/MonsterCarnivalResult (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x112 | ✅ | 0x128 | ✅ | 0x12F | ✅ | 0x139 | ✅ | 0x161 | ✅ | 0x140 | ✅ |
@@ -450,9 +452,7 @@ Tool: `a0c47bb5655b63e6be7139d84d0dc93e198b0eac6c23d546ecc5a6b3f49936b7`
 | IDA_0X11B | CNpc::OnSetSpecialAction |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x11B | ❌ |
 | PARCEL | CParcelDlg::OnPacket |  |  | ⬜ |  | ⬜ | 0x120 | ❌ | 0x12C | ❌ | 0x142 | ❌ | 0x149 | ❌ | 0x153 | ❌ | 0x17D | ❌ | 0x160 | ❌ |
 | TOURNAMENT | CField_Tournament::OnTournament | field/clientbound/FieldTournament (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x125 | ✅ | 0x13B | ✅ | 0x142 | ✅ | 0x14C | ✅ | 0x176 | ✅ | 0x154 | ✅ |
-| MONSTER_CARNIVAL_DIED | CField_MonsterCarnival::OnProcessForDeath | monster/carnival/clientbound/MonsterCarnivalDied (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x126 | ✅ | 0x12D | ✅ | 0x137 | ✅ | 0x15F | ✅ | 0x13E | ✅ |
 | TOURNAMENT_MATCH_TABLE | CField_Tournament::OnTournamentMatchTable | field/clientbound/FieldTournamentMatchTable (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x126 | ✅ | 0x13C | ✅ | 0x143 | ✅ | 0x14D | ✅ | 0x177 | ✅ | 0x155 | ✅ |
-| MONSTER_CARNIVAL_LEAVE | CField_MonsterCarnival::OnShowMemberOutMsg | monster/carnival/clientbound/MonsterCarnivalLeave (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x127 | ✅ | 0x12E | ✅ | 0x138 | ✅ | 0x160 | ✅ | 0x13F | ✅ |
 | TOURNAMENT_SET_PRIZE | CField_Tournament::OnTournamentSetPrize | field/clientbound/FieldTournamentSetPrize (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x127 | ✅ | 0x13D | ✅ | 0x144 | ✅ | 0x14E | ✅ | 0x178 | ✅ | 0x156 | ✅ |
 | TOURNAMENT_UEW | CField_Tournament::OnTournamentUEW | field/clientbound/FieldTournamentUew (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x128 | ✅ | 0x13E | ✅ | 0x145 | ✅ | 0x14F | ✅ | 0x179 | ✅ | 0x157 | ✅ |
 | TOURNAMENT_CHARACTERS | CField_Tournament::OnPacket | field/clientbound/FieldTournamentCharacters (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x129 | ✅ | 0x13F | ✅ | 0x146 | ✅ | 0x150 | ✅ | 0x17A | ✅ | 0x158 | ✅ |
@@ -998,7 +998,7 @@ Tool: `a0c47bb5655b63e6be7139d84d0dc93e198b0eac6c23d546ecc5a6b3f49936b7`
 | v48 | 171 | 0 | 2 | 157 | 630 | 0 | 51.8% |
 | v61 | 246 | 0 | 60 | 192 | 462 | 0 | 49.4% |
 | v72 | 256 | 0 | 73 | 211 | 420 | 0 | 47.4% |
-| v79 | 296 | 0 | 72 | 207 | 385 | 0 | 51.5% |
+| v79 | 298 | 0 | 72 | 207 | 383 | 0 | 51.6% |
 | v83 | 412 | 0 | 0 | 324 | 224 | 0 | 56.0% |
 | v84 | 384 | 0 | 0 | 332 | 244 | 0 | 53.6% |
 | v87 | 418 | 0 | 0 | 355 | 187 | 0 | 54.1% |

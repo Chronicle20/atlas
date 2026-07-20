@@ -1956,6 +1956,15 @@
   ida:
     address: 5469478
   note: 'task-181: v79 IDB CField_ContiMove::OnContiState (0x537526, seed template_gms_79_1.json opCode 0x8D) reads Decode1(state)+Decode1(overrideAppear); body byte-identical to v83.'
+- op: SNOWBALL_STATE
+  direction: clientbound
+  opcode: 259
+  fname: CField_SnowBall::OnSnowBallState
+  packet: field/clientbound/FieldSnowballState
+  provenance: ida-discovered
+  ida:
+    address: 5580223
+  note: 'task-181: v79 IDB CField_SnowBall::OnSnowBallState (0x5525bf, seed opCode 0x103) reads Decode1+Decode4+Decode4+2x(Decode2+Decode1)+first-gated(3x Decode2); structure identical across v79/v83/v84/v87/v95/jms. Prior atlas codec modelled 1 snowball + unconditional tail (false pass); corrected task-181.'
 - op: HIT_SNOWBALL
   direction: clientbound
   opcode: 260

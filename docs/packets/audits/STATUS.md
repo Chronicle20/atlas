@@ -4,16 +4,16 @@
 > ✅ verified · 🧩 family (mode-prefix dispatcher; sub-arms unverified) · 🟡 partial · ❌ incomplete · ⬜ n-a · 🟥 conflict
 > Partial (🟡) sub-glyphs: 🟡ᶠ tier-1 needs byte-fixture · 🟡ᵈ tool-pass diff-only (no byte-test) · 🟡ᵖ evidence-pinned deferral
 
-Tool: `a030faa7284aa48f0894ee0172a84096c5a5ecb6864795dcca4d250b7d90516b`
+Tool: `a0c47bb5655b63e6be7139d84d0dc93e198b0eac6c23d546ecc5a6b3f49936b7`
 
 - export gms_v48: `8d1a4c02745ee1cb5b41c358b749c6a55883207c109784c6e09b00545a3d2dc8`
 - export gms_v61: `67395ebec4c069f827ade3a69a2e32286c750b66f305d9eba197ed2e6db87de3`
 - export gms_v72: `005ee090459a5f2bea74a84ba7652af94ca98214fb61ff8b07090907581ef267`
-- export gms_v79: `924665c542aab5fb779c929374f2904bc11e0c9e54f88587b5529124db5f1b45`
-- export gms_v83: `3936e66b34505a10f7886c2d145cae33083d905a358c70c433a8d0d71bf4e988`
-- export gms_v84: `e1f590c95e2198e0c78a21fd000914f1fa5d74ca82d349d1ff9c35e7e79015a9`
-- export gms_v87: `1d4094e4eb8e77c17ee808f2866a9ce29c59ca87d1fb8c4a8665f593995467be`
-- export gms_v95: `5c35a6f0074aab026a9c350f26fe00e8eb1cbabdb11b14954d33a36bd8d8894a`
+- export gms_v79: `5f99725955fa2a4e780937a9238494c6dbb74889947e3983e034fb0834adaf12`
+- export gms_v83: `8ce63ca7f0800376c132ac9a2b9c09cca7915abee84869407a7cff5d7ad86b47`
+- export gms_v84: `d50d088f1e9197858530a3d520436605c45600ef3a33b21c08bb76a91aeaad0f`
+- export gms_v87: `f54112a53fe73144d1feda40f4c1becc6f1f75bdbf5701665ace57bf2e4eb43c`
+- export gms_v95: `55881964543d752866e4ece41b4125ea5f7a57e8e59fcf0b4f4eb95c6b000d91`
 - export jms_v185: `605b56c455957ff92490ac23605c3324dd1716c5a0f6fb472eca8750c9ed873a`
 
 ## Clientbound
@@ -407,6 +407,7 @@ Tool: `a030faa7284aa48f0894ee0172a84096c5a5ecb6864795dcca4d250b7d90516b`
 | CASHSHOP_CASH_ITEM_GACHAPON_RESULT | CCashShop::OnCashItemGachaponResult |  | 0x101 | ❌ | 0x100 | ❌ | 0x124 | ❌ |  | ⬜ | 0x14D | ❌ | 0x154 | ❌ | 0x15E | ❌ | 0x188 | ❌ | 0x16D | ❌ |
 | CASHSHOP_CHECK_NAME_CHANGE | CCashShop::OnCheckDuplicatedIDResult; CCashShop::OnCheckNameChangePossibleResult; sub_455A7F; sub_463900; sub_473519 |  | 0x102 | ❌ | 0x101 | ❌ | 0x125 | ❌ | 0x131 | ❌ | 0x148 | ❌ | 0x14F | ❌ | 0x159 | ❌ | 0x183 | ❌ |  | ⬜ |
 | CASHSHOP_GACHAPON_STAMP_RESULT | CCashShop::OnCashShopGachaponStampResult |  | 0x103 | ❌ | 0x102 | ❌ | 0x126 | ❌ | 0x135 | ❌ | 0x14C | ❌ | 0x153 | ❌ | 0x15D | ❌ | 0x187 | ❌ | 0x16B | ❌ |
+| SNOWBALL_STATE | CField_SnowBall::OnSnowBallState | field/clientbound/FieldSnowballState (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x103 | ✅ | 0x119 | ✅ | 0x120 | ✅ | 0x12A | ✅ | 0x152 | ✅ | 0x131 | ✅ |
 | HIT_SNOWBALL | CField_SnowBall::OnSnowBallHit | field/clientbound/FieldSnowballHit (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x104 | ✅ | 0x11A | ✅ | 0x121 | ✅ | 0x12B | ✅ | 0x153 | ✅ | 0x132 | ✅ |
 | CASHSHOP_CHECK_TRANSFER_WORLD_POSSIBLE_RESULT | CCashShop::OnCheckTransferWorldPossibleResult |  | 0x105 | ❌ | 0x104 | ❌ | 0x128 | ❌ | 0x134 | ❌ | 0x14B | ❌ | 0x152 | ❌ | 0x15C | ❌ | 0x186 | ❌ | 0x16C | ❌ |
 | MOB_SKILL_DELAY | CMob::OnMobSkillDelay | monster/clientbound/MonsterMobSkillDelay (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x105 | ✅ | 0x10F | ✅ | 0x12F | ✅ | 0x10F | ✅ |
@@ -441,7 +442,6 @@ Tool: `a030faa7284aa48f0894ee0172a84096c5a5ecb6864795dcca4d250b7d90516b`
 | IDA_0X114 | CMob::OnMobAttackedByMob | monster/clientbound/MonsterMobAttackedByMob (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x114 | ✅ |
 | REACTOR_MOVE | CReactorPool::OnReactorMove |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x116 | ❌ | 0x116 | ❌ | 0x127 | ❌ | 0x14F | ❌ | 0x12E | ❌ |
 | WITCH_TOWER_SCORE_UPDATE | CField::OnChaosZakumTimer; CField_Witchtower::OnScoreUpdate | field/clientbound/FieldWitchTowerScoreUpdate (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x117 | ✅ | 0x12D | ✅ | 0x134 | ✅ | 0x13E | ✅ | 0x168 | ✅ | 0x146 | ✅ |
-| SNOWBALL_STATE | CField_SnowBall::OnSnowBallState | field/clientbound/FieldSnowballState (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x119 | ✅ | 0x120 | ✅ | 0x12A | ✅ | 0x152 | ✅ | 0x131 | ✅ |
 | IDA_0X11A | CNpc::OnUpdateLimitedInfo |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x11A | ❌ |
 | IDA_0X11B | CNpc::OnSetSpecialAction |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x11B | ❌ |
 | PARCEL | CParcelDlg::OnPacket |  |  | ⬜ |  | ⬜ | 0x120 | ❌ | 0x12C | ❌ | 0x142 | ❌ | 0x149 | ❌ | 0x153 | ❌ | 0x17D | ❌ | 0x160 | ❌ |
@@ -998,7 +998,7 @@ Tool: `a030faa7284aa48f0894ee0172a84096c5a5ecb6864795dcca4d250b7d90516b`
 | v48 | 171 | 0 | 2 | 157 | 630 | 0 | 51.8% |
 | v61 | 246 | 0 | 60 | 192 | 462 | 0 | 49.4% |
 | v72 | 256 | 0 | 73 | 211 | 420 | 0 | 47.4% |
-| v79 | 287 | 0 | 72 | 207 | 394 | 0 | 50.7% |
+| v79 | 288 | 0 | 72 | 207 | 393 | 0 | 50.8% |
 | v83 | 412 | 0 | 0 | 324 | 224 | 0 | 56.0% |
 | v84 | 384 | 0 | 0 | 332 | 244 | 0 | 53.6% |
 | v87 | 418 | 0 | 0 | 355 | 187 | 0 | 54.1% |

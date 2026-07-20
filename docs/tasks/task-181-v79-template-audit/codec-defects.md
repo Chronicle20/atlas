@@ -6,7 +6,20 @@ surfaced codecs that are wrong for **every** version, whose existing
 encoder's own output, not the client read order). These predate task-181 and are
 on `main`.
 
-## DEFECT-1: SnowballState — 1 snowball + unconditional tail (should be 2 + gated)
+## DEFECT-1: SnowballState — 1 snowball + unconditional tail (should be 2 + gated) — **FIXED**
+
+**Resolution (task-181):** codec re-modelled (2 snowballs + first-gated damage
+tail); `SnowballState.Encode/Decode` + channel wrapper + goldens corrected; the
+false-derived read-order was spliced with the real 10-call order in the
+gms_v79/v83/v84/v87/v95 exports; evidence re-pinned and the SnowballState report
+regenerated per version. All five cells verify ✅ against the corrected body,
+`matrix --check` clean. **Residual:** jms_v185 has no ida-export file (its reports
+come from live mcp), so its SnowballState report still shows the old 8-field
+layout — its cell is ✅ and its evidence hashes the correct client decompile, but
+the report doc needs a live-jms mcp regen to reflect the 10-field body.
+
+Original finding below.
+
 
 `CField_SnowBall::OnSnowBallState`, re-read directly in six IDBs — **identical
 structure in all of them**:

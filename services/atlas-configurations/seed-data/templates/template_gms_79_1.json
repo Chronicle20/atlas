@@ -2642,6 +2642,10 @@
         "writer": "ReactorDestroy"
       },
       {
+        "opCode": "0x103",
+        "writer": "SnowballState"
+      },
+      {
         "opCode": "0x104",
         "writer": "SnowballHit"
       },

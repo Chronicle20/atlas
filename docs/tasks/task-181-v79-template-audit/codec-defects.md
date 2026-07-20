@@ -378,6 +378,62 @@ entries. Added `TestMonsterCarnivalDiedByteOutputV79` and
 `TestMonsterCarnivalLeaveByteOutputV79`. Both v79 cells verify ✅ (`matrix
 --check` clean); all five other versions remain ✅ for both ops.
 
+## DEFECT-10: MtsOperation (MTS_OPERATION) — route-only gap, dispatcher family already correct — **FIXED**
+
+**Resolution (task-181):** `CITC::OnNormalItemResult` is the mode-prefix
+dispatcher already built discrete-per-mode (task-096) in
+`libs/atlas-packet/field/clientbound/mts_operation.go` (35 structs) +
+`libs/atlas-packet/field/mts_operation_body.go`, verified ✅ for
+gms_v83/v84/v87/v95 with `docs/packets/dispatchers/mts_operation.yaml`
+documenting the mode table as version-stable. **v79 and jms_v185 were the only
+gaps** (⬜, unrouted). Per `docs/packets/DISPATCHER_FAMILY.md` this claim of
+version-stability had to be verified, not assumed — the dispatcher itself
+(`CITC::OnNormalItemResult @0x57f4a7`) plus **all 35 per-arm sub-handlers**
+were re-decompiled live in the v79 IDB (`88dfa464`) and diffed field-by-field
+against the existing v83-cited body doc-comments:
+
+- Dispatcher case-label set: identical — `0x15,0x16,0x17,0x18,0x1D-0x38,0x3C,
+  0x3D,0x3E` (35 cases), same target sub-handler names, same `Decode1(mode)`
+  discriminator.
+- Every arm's read order matched byte-for-byte with zero divergence: the 7
+  list/item-blob arms (`GetItcListDone`/`GetSearchItcListDone`/
+  `GetUserPurchaseItemDone`/`GetUserSaleItemDone`/`LoadWishSaleListDone` +
+  the two conditional-tail arms `RegisterSaleEntryFailed` (reason==0x48 gates
+  a trailing `Decode2`) and `SuccessBidInfo` (itemId>0 gates a trailing
+  `Decode4`+`DecodeBuffer(8)`)), the 2 "TwoInts" arms
+  (`MoveItcPurchaseItemLtoSDone`, `NotifyCancelWishResult`), the "Reason"
+  arms (single `Decode1` reason byte), and the 24 notice-only "Empty" arms
+  (mode byte only, no further `CInPacket::Decode*`) — all reproduced exactly
+  in v79. No per-arm fix was needed.
+- CITC::OnPacket (`0x57f39b`) case 324 (`0x144`) → `CITC::OnNormalItemResult`,
+  confirmed via live decompile (322=`0x142`=MtsChargeParamResult,
+  323=`0x143`=MtsOperation2, 324=`0x144`=MtsOperation — sequential, matches
+  the seed template's existing 0x142/0x143 routing).
+
+Spliced all 35 `CITC::OnNormalItemResult#<Arm>` export entries in
+`docs/packets/ida-exports/gms_v79.json` (previously `unresolved`) with the
+v79 addresses + the (now-confirmed-identical) call lists, routed `0x144` in
+`template_gms_79_1.json` (copying the version-stable `operations` /
+`noticeFailReasons` / `processStatusCodes` config tables verbatim — identical
+across v83/v84/v87/v95), added the `MTS_OPERATION` registry entry in
+`docs/packets/registry/gms_v79.yaml`, appended a `gms_v79` marker line to each
+of the 35 `packet-audit:verify` blocks in `mts_operation_test.go` (same golden
+bytes — the mode values are numerically identical across versions, no new
+test functions needed), and pinned all 35 evidence records
+(`evidence pin --category TIER1-FIXTURE`). Selective report regen kept only
+the 35 `FieldMtsResult*` report pairs under `docs/packets/audits/gms_v79/`
+(reverted the rest + `git clean`ed the recreated strays). All 35 v79 cells
+verify ✅; the `MTS_OPERATION` op-row is now ✅ for
+v79/v83/v84/v87/v95 (`matrix --check` clean). The previously-documented
+"BLOCKER: can't cleanly regenerate the v79 matrix reports" section below is
+now **stale** — the cited `CCashShop::TrySendQueryCashRequest` export defect
+is no longer present in `gms_v79.json` (already fixed by an earlier pass on
+this task) and the selective regen ran clean with no conflict reintroduction.
+
+jms_v185 has **no CITC op at all** (registry-absent per the family yaml — the
+JMS client build never shipped the MTS feature), so jms_v185 stays ⬜
+(version-absent, not a gap) and was correctly out of scope for this bring-up.
+
 ## Remaining divergent writers (proven recipe: RE across IDBs → re-model codec →
 correct exports if their read-order is wrong → re-pin evidence → selective
 per-version report regen → route v79). SnowballState (DEFECT-1),

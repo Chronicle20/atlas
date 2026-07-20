@@ -4,7 +4,7 @@
     "gms_v48": "8d1a4c02745ee1cb5b41c358b749c6a55883207c109784c6e09b00545a3d2dc8",
     "gms_v61": "67395ebec4c069f827ade3a69a2e32286c750b66f305d9eba197ed2e6db87de3",
     "gms_v72": "005ee090459a5f2bea74a84ba7652af94ca98214fb61ff8b07090907581ef267",
-    "gms_v79": "2c2af17a3493b277d696a0d629c263073aa9afbc9c4e82b7ad0b873cec47144e",
+    "gms_v79": "9a8c30eaf8ea8530a63b4875bc14c5c031fbab475baa518f4bd685226933500e",
     "gms_v83": "2c83800f68d4fb785bed69ea7767b363acb38db4f445a1a772a4a33013c11400",
     "gms_v84": "add645423c5199734172e15c44a7438656e893918efd1b5147cf31e546e002f1",
     "gms_v87": "cdb60fec8064a3e6cadef27348923f541ba22873d8b4015010582c2718b14fd6",
@@ -38906,6 +38906,55 @@
     },
     {
       "kind": "op",
+      "op": "MTS_OPERATION",
+      "packet": "field/clientbound/FieldMtsResultBidAuctionFailed",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField::OnCharacterSale",
+        "CITC::OnNormalItemResult"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 324
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 348
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 348
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 369
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 412
+        },
+        "jms_v185": {
+          "state": "n-a",
+          "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "CASHSHOP_GIFT_INFO_RESULT",
       "direction": "clientbound",
       "tier1": false,
@@ -39241,55 +39290,6 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 347
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "MTS_OPERATION",
-      "packet": "field/clientbound/FieldMtsResultBidAuctionFailed",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField::OnCharacterSale",
-        "CITC::OnNormalItemResult"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 348
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 348
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 369
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 412
-        },
-        "jms_v185": {
-          "state": "n-a",
-          "opcode": -1
         }
       }
     },

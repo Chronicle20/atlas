@@ -4280,255 +4280,395 @@
       ]
     },
     "CITC::OnNormalItemResult#BidAuctionFailed": {
-      "address": "",
+      "address": "0x5805a1",
+      "region": "GMS",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x3C BidAuctionFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultBidAuctionFailed. Re-verified live in gms_v79 (CITC::OnNormalItemResult dispatcher @0x57f4a7, task-181): identical case-label set (0x15-0x38,0x3C-0x3E) and byte-identical per-arm read order to v83/v84/v87/v95 (IDA-confirmed, no divergence).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x3C BidAuctionFailed)"
         }
       ]
     },
     "CITC::OnNormalItemResult#BuyItemDone": {
-      "address": "",
+      "address": "0x580271",
+      "region": "GMS",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x33 BuyItemDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultBuyItemDone. Re-verified live in gms_v79 (CITC::OnNormalItemResult dispatcher @0x57f4a7, task-181): identical case-label set (0x15-0x38,0x3C-0x3E) and byte-identical per-arm read order to v83/v84/v87/v95 (IDA-confirmed, no divergence).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x33 BuyItemDone)"
         }
       ]
     },
     "CITC::OnNormalItemResult#BuyItemFailed": {
-      "address": "",
+      "address": "0x58029c",
+      "region": "GMS",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x34 BuyItemFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultBuyItemFailed. Re-verified live in gms_v79 (CITC::OnNormalItemResult dispatcher @0x57f4a7, task-181): identical case-label set (0x15-0x38,0x3C-0x3E) and byte-identical per-arm read order to v83/v84/v87/v95 (IDA-confirmed, no divergence).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x34 BuyItemFailed)"
         }
       ]
     },
     "CITC::OnNormalItemResult#BuyWishDone": {
-      "address": "",
+      "address": "0x5801a7",
+      "region": "GMS",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x2F BuyWishDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultBuyWishDone. Re-verified live in gms_v79 (CITC::OnNormalItemResult dispatcher @0x57f4a7, task-181): identical case-label set (0x15-0x38,0x3C-0x3E) and byte-identical per-arm read order to v83/v84/v87/v95 (IDA-confirmed, no divergence).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x2F BuyWishDone)"
         }
       ]
     },
     "CITC::OnNormalItemResult#BuyWishFailed": {
-      "address": "",
+      "address": "0x5801d2",
+      "region": "GMS",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x30 BuyWishFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultBuyWishFailed. Re-verified live in gms_v79 (CITC::OnNormalItemResult dispatcher @0x57f4a7, task-181): identical case-label set (0x15-0x38,0x3C-0x3E) and byte-identical per-arm read order to v83/v84/v87/v95 (IDA-confirmed, no divergence).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x30 BuyWishFailed)"
         }
       ]
     },
     "CITC::OnNormalItemResult#BuyZzimItemDone": {
-      "address": "",
+      "address": "0x5802d1",
+      "region": "GMS",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x35 BuyZzimItemDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultBuyZzimItemDone. Re-verified live in gms_v79 (CITC::OnNormalItemResult dispatcher @0x57f4a7, task-181): identical case-label set (0x15-0x38,0x3C-0x3E) and byte-identical per-arm read order to v83/v84/v87/v95 (IDA-confirmed, no divergence).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x35 BuyZzimItemDone)"
         }
       ]
     },
     "CITC::OnNormalItemResult#BuyZzimItemFailed": {
-      "address": "",
+      "address": "0x5802fc",
+      "region": "GMS",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x36 BuyZzimItemFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultBuyZzimItemFailed. Re-verified live in gms_v79 (CITC::OnNormalItemResult dispatcher @0x57f4a7, task-181): identical case-label set (0x15-0x38,0x3C-0x3E) and byte-identical per-arm read order to v83/v84/v87/v95 (IDA-confirmed, no divergence).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x36 BuyZzimItemFailed)"
         }
       ]
     },
     "CITC::OnNormalItemResult#CancelSaleItemDone": {
-      "address": "",
+      "address": "0x57feaa",
+      "region": "GMS",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x25 CancelSaleItemDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultCancelSaleItemDone. Re-verified live in gms_v79 (CITC::OnNormalItemResult dispatcher @0x57f4a7, task-181): identical case-label set (0x15-0x38,0x3C-0x3E) and byte-identical per-arm read order to v83/v84/v87/v95 (IDA-confirmed, no divergence).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x25 CancelSaleItemDone)"
         }
       ]
     },
     "CITC::OnNormalItemResult#CancelSaleItemFailed": {
-      "address": "",
+      "address": "0x57fedf",
+      "region": "GMS",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x26 CancelSaleItemFailed arm of CITC::OnNormalItemResult. Reason-shape: the sub-handler reads Decode1(mode) then Decode1(reason) (the reason==73/65 transfer-field re-send branches read NO further bytes). Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultCancelSaleItemFailed. Re-verified live in gms_v79 (CITC::OnNormalItemResult dispatcher @0x57f4a7, task-181): identical case-label set (0x15-0x38,0x3C-0x3E) and byte-identical per-arm read order to v83/v84/v87/v95 (IDA-confirmed, no divergence).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x26 CancelSaleItemFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "Decode1 fail reason -> NoticeFailReason"
         }
       ]
     },
     "CITC::OnNormalItemResult#CancelWishDone": {
-      "address": "",
+      "address": "0x580207",
+      "region": "GMS",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x31 CancelWishDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultCancelWishDone. Re-verified live in gms_v79 (CITC::OnNormalItemResult dispatcher @0x57f4a7, task-181): identical case-label set (0x15-0x38,0x3C-0x3E) and byte-identical per-arm read order to v83/v84/v87/v95 (IDA-confirmed, no divergence).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x31 CancelWishDone)"
         }
       ]
     },
     "CITC::OnNormalItemResult#CancelWishFailed": {
-      "address": "",
+      "address": "0x58023c",
+      "region": "GMS",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x32 CancelWishFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultCancelWishFailed. Re-verified live in gms_v79 (CITC::OnNormalItemResult dispatcher @0x57f4a7, task-181): identical case-label set (0x15-0x38,0x3C-0x3E) and byte-identical per-arm read order to v83/v84/v87/v95 (IDA-confirmed, no divergence).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x32 CancelWishFailed)"
         }
       ]
     },
     "CITC::OnNormalItemResult#DeleteZzimDone": {
-      "address": "",
+      "address": "0x57fffc",
+      "region": "GMS",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x2B DeleteZzimDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultDeleteZzimDone. Re-verified live in gms_v79 (CITC::OnNormalItemResult dispatcher @0x57f4a7, task-181): identical case-label set (0x15-0x38,0x3C-0x3E) and byte-identical per-arm read order to v83/v84/v87/v95 (IDA-confirmed, no divergence).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x2B DeleteZzimDone)"
         }
       ]
     },
     "CITC::OnNormalItemResult#DeleteZzimFailed": {
-      "address": "",
+      "address": "0x580027",
+      "region": "GMS",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x2C DeleteZzimFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultDeleteZzimFailed. Re-verified live in gms_v79 (CITC::OnNormalItemResult dispatcher @0x57f4a7, task-181): identical case-label set (0x15-0x38,0x3C-0x3E) and byte-identical per-arm read order to v83/v84/v87/v95 (IDA-confirmed, no divergence).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x2C DeleteZzimFailed)"
         }
       ]
     },
     "CITC::OnNormalItemResult#GetItcListDone": {
-      "address": "",
+      "address": "0x57fa45",
+      "region": "GMS",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 6): 0x15 GetITCListDone list arm of CITC::OnNormalItemResult. Reads a count then count*ITCITEM::Decode (collapsed to one loop-guarded opaque representative, mirroring the atlas MtsItem recurse). The full per-field ITCITEM read order is byte-fixture verified (round-trip across all variants). Maps atlas field/clientbound. Re-verified live in gms_v79 (CITC::OnNormalItemResult dispatcher @0x57f4a7, task-181): identical case-label set (0x15-0x38,0x3C-0x3E) and byte-identical per-arm read order to v83/v84/v87/v95 (IDA-confirmed, no divergence).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x15 GET_ITC_LIST_DONE)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "categoryItemCnt"
+        },
+        {
+          "op": "Decode4",
+          "comment": "pageItemCnt (loop count)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "category"
+        },
+        {
+          "op": "Decode4",
+          "comment": "subCategory"
+        },
+        {
+          "op": "Decode4",
+          "comment": "page"
+        },
+        {
+          "op": "Decode1",
+          "comment": "sortType"
+        },
+        {
+          "op": "Decode1",
+          "comment": "sortColumn"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "ITCITEM::Decode entry (repeated per loop count): opaque GW_ItemSlotBase blob (Decode1 type + RawDecode; model.Asset recurse) then Decode4 nITCSN/nPrice/nContractFee, DecodeStr txid/rollback, DecodeBuffer(8) ftExpired, DecodeStr user/game/comment, Decode4 nBidCount/Range/Price/Min/Max/Unit, Decode2 nProcessStatus. Whole entry opaque to the flat differ (MtsItem recurse collapses) \u2014 byte-fixture verified.",
+          "guard": "loop items"
+        },
+        {
+          "op": "Decode1",
+          "comment": "requestSent flag"
         }
       ]
     },
     "CITC::OnNormalItemResult#GetItcListFailed": {
-      "address": "",
+      "address": "0x57fa18",
+      "region": "GMS",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x16 GetItcListFailed arm of CITC::OnNormalItemResult. Reason-shape: the sub-handler reads Decode1(mode) then Decode1(reason) (the reason==73/65 transfer-field re-send branches read NO further bytes). Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultGetItcListFailed. Re-verified live in gms_v79 (CITC::OnNormalItemResult dispatcher @0x57f4a7, task-181): identical case-label set (0x15-0x38,0x3C-0x3E) and byte-identical per-arm read order to v83/v84/v87/v95 (IDA-confirmed, no divergence).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x16 GetItcListFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "Decode1 fail reason -> NoticeFailReason"
         }
       ]
     },
     "CITC::OnNormalItemResult#GetSearchItcListDone": {
-      "address": "",
+      "address": "0x57fb98",
+      "region": "GMS",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 6): 0x17 GetSearchITCListDone list arm of CITC::OnNormalItemResult. Reads a count then count*ITCITEM::Decode (collapsed to one loop-guarded opaque representative, mirroring the atlas MtsItem recurse). The full per-field ITCITEM read order is byte-fixture verified (round-trip across all variants). Maps atlas field/clientbound. Re-verified live in gms_v79 (CITC::OnNormalItemResult dispatcher @0x57f4a7, task-181): identical case-label set (0x15-0x38,0x3C-0x3E) and byte-identical per-arm read order to v83/v84/v87/v95 (IDA-confirmed, no divergence).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x17 GET_SEARCH_ITC_LIST_DONE)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "categoryItemCnt"
+        },
+        {
+          "op": "Decode4",
+          "comment": "pageItemCnt (loop count)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "category"
+        },
+        {
+          "op": "Decode4",
+          "comment": "subCategory"
+        },
+        {
+          "op": "Decode4",
+          "comment": "page"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "ITCITEM::Decode entry (repeated per loop count): opaque GW_ItemSlotBase blob (Decode1 type + RawDecode; model.Asset recurse) then Decode4 nITCSN/nPrice/nContractFee, DecodeStr txid/rollback, DecodeBuffer(8) ftExpired, DecodeStr user/game/comment, Decode4 nBidCount/Range/Price/Min/Max/Unit, Decode2 nProcessStatus. Whole entry opaque to the flat differ (MtsItem recurse collapses) \u2014 byte-fixture verified.",
+          "guard": "loop items"
         }
       ]
     },
     "CITC::OnNormalItemResult#GetSearchItcListFailed": {
-      "address": "",
+      "address": "0x57fb79",
+      "region": "GMS",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x18 GetSearchItcListFailed arm of CITC::OnNormalItemResult. Reason-shape: the sub-handler reads Decode1(mode) then Decode1(reason) (the reason==73/65 transfer-field re-send branches read NO further bytes). Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultGetSearchItcListFailed. Re-verified live in gms_v79 (CITC::OnNormalItemResult dispatcher @0x57f4a7, task-181): identical case-label set (0x15-0x38,0x3C-0x3E) and byte-identical per-arm read order to v83/v84/v87/v95 (IDA-confirmed, no divergence).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x18 GetSearchItcListFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "Decode1 fail reason -> NoticeFailReason"
         }
       ]
     },
     "CITC::OnNormalItemResult#GetUserPurchaseItemDone": {
-      "address": "",
+      "address": "0x57fc89",
+      "region": "GMS",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 6): 0x21 GetUserPurchaseItemDone list arm of CITC::OnNormalItemResult. Reads a count then count*ITCITEM::Decode (collapsed to one loop-guarded opaque representative, mirroring the atlas MtsItem recurse). The full per-field ITCITEM read order is byte-fixture verified (round-trip across all variants). Maps atlas field/clientbound. Re-verified live in gms_v79 (CITC::OnNormalItemResult dispatcher @0x57f4a7, task-181): identical case-label set (0x15-0x38,0x3C-0x3E) and byte-identical per-arm read order to v83/v84/v87/v95 (IDA-confirmed, no divergence).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x21 GET_USER_PURCHASE_ITEM_DONE)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "totalCount (loop count)"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "ITCITEM::Decode entry (repeated per loop count): opaque GW_ItemSlotBase blob (Decode1 type + RawDecode; model.Asset recurse) then Decode4 nITCSN/nPrice/nContractFee, DecodeStr txid/rollback, DecodeBuffer(8) ftExpired, DecodeStr user/game/comment, Decode4 nBidCount/Range/Price/Min/Max/Unit, Decode2 nProcessStatus. Whole entry opaque to the flat differ (MtsItem recurse collapses) \u2014 byte-fixture verified.",
+          "guard": "loop items"
+        },
+        {
+          "op": "Decode4",
+          "comment": "limitedCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "requestSent flag"
         }
       ]
     },
     "CITC::OnNormalItemResult#GetUserPurchaseItemFailed": {
-      "address": "",
+      "address": "0x57fdc0",
+      "region": "GMS",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x22 GetUserPurchaseItemFailed arm of CITC::OnNormalItemResult. Reason-shape: the sub-handler reads Decode1(mode) then Decode1(reason) (the reason==73/65 transfer-field re-send branches read NO further bytes). Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultGetUserPurchaseItemFailed. Re-verified live in gms_v79 (CITC::OnNormalItemResult dispatcher @0x57f4a7, task-181): identical case-label set (0x15-0x38,0x3C-0x3E) and byte-identical per-arm read order to v83/v84/v87/v95 (IDA-confirmed, no divergence).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x22 GetUserPurchaseItemFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "Decode1 fail reason -> NoticeFailReason"
         }
       ]
     },
     "CITC::OnNormalItemResult#GetUserSaleItemDone": {
-      "address": "",
+      "address": "0x57fded",
+      "region": "GMS",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 6): 0x23 GetUserSaleItemDone list arm of CITC::OnNormalItemResult. Reads a count then count*ITCITEM::Decode (collapsed to one loop-guarded opaque representative, mirroring the atlas MtsItem recurse). The full per-field ITCITEM read order is byte-fixture verified (round-trip across all variants). Maps atlas field/clientbound. Re-verified live in gms_v79 (CITC::OnNormalItemResult dispatcher @0x57f4a7, task-181): identical case-label set (0x15-0x38,0x3C-0x3E) and byte-identical per-arm read order to v83/v84/v87/v95 (IDA-confirmed, no divergence).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x23 GET_USER_SALE_ITEM_DONE)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "totalCount (loop count)"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "ITCITEM::Decode entry (repeated per loop count): opaque GW_ItemSlotBase blob (Decode1 type + RawDecode; model.Asset recurse) then Decode4 nITCSN/nPrice/nContractFee, DecodeStr txid/rollback, DecodeBuffer(8) ftExpired, DecodeStr user/game/comment, Decode4 nBidCount/Range/Price/Min/Max/Unit, Decode2 nProcessStatus. Whole entry opaque to the flat differ (MtsItem recurse collapses) \u2014 byte-fixture verified.",
+          "guard": "loop items"
         }
       ]
     },
     "CITC::OnNormalItemResult#GetUserSaleItemFailed": {
-      "address": "",
+      "address": "0x57fe7d",
+      "region": "GMS",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x24 GetUserSaleItemFailed arm of CITC::OnNormalItemResult. Reason-shape: the sub-handler reads Decode1(mode) then Decode1(reason) (the reason==73/65 transfer-field re-send branches read NO further bytes). Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultGetUserSaleItemFailed. Re-verified live in gms_v79 (CITC::OnNormalItemResult dispatcher @0x57f4a7, task-181): identical case-label set (0x15-0x38,0x3C-0x3E) and byte-identical per-arm read order to v83/v84/v87/v95 (IDA-confirmed, no divergence).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x24 GetUserSaleItemFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "Decode1 fail reason -> NoticeFailReason"
         }
       ]
     },
     "CITC::OnNormalItemResult#LoadWishSaleListDone": {
-      "address": "",
+      "address": "0x58005c",
+      "region": "GMS",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 6): 0x2D LoadWishSaleListDone list arm of CITC::OnNormalItemResult. Reads a count then count*ITCITEM::Decode (collapsed to one loop-guarded opaque representative, mirroring the atlas MtsItem recurse). The full per-field ITCITEM read order is byte-fixture verified (round-trip across all variants). Maps atlas field/clientbound. Re-verified live in gms_v79 (CITC::OnNormalItemResult dispatcher @0x57f4a7, task-181): identical case-label set (0x15-0x38,0x3C-0x3E) and byte-identical per-arm read order to v83/v84/v87/v95 (IDA-confirmed, no divergence).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x2D LOAD_WISH_SALE_LIST_DONE)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "totalCount (loop count)"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "ITCITEM::Decode entry (repeated per loop count): opaque GW_ItemSlotBase blob (Decode1 type + RawDecode; model.Asset recurse) then Decode4 nITCSN/nPrice/nContractFee, DecodeStr txid/rollback, DecodeBuffer(8) ftExpired, DecodeStr user/game/comment, Decode4 nBidCount/Range/Price/Min/Max/Unit, Decode2 nProcessStatus. Whole entry opaque to the flat differ (MtsItem recurse collapses) \u2014 byte-fixture verified.",
+          "guard": "loop items"
         }
       ]
     },
     "CITC::OnNormalItemResult#LoadWishSaleListFailed": {
-      "address": "",
+      "address": "0x580172",
+      "region": "GMS",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x2E LoadWishSaleListFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultLoadWishSaleListFailed. Re-verified live in gms_v79 (CITC::OnNormalItemResult dispatcher @0x57f4a7, task-181): identical case-label set (0x15-0x38,0x3C-0x3E) and byte-identical per-arm read order to v83/v84/v87/v95 (IDA-confirmed, no divergence).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x2E LoadWishSaleListFailed)"
         }
       ]
     },
@@ -4544,134 +4684,194 @@
       ]
     },
     "CITC::OnNormalItemResult#MoveItcPurchaseItemLtoSDone": {
-      "address": "",
+      "address": "0x57fefe",
+      "region": "GMS",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x27 MoveItcPurchaseItemLtoSDone arm of CITC::OnNormalItemResult. TwoInts-shape: the sub-handler reads Decode1(mode) then Decode4 then Decode4. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultMoveItcPurchaseItemLtoSDone. Re-verified live in gms_v79 (CITC::OnNormalItemResult dispatcher @0x57f4a7, task-181): identical case-label set (0x15-0x38,0x3C-0x3E) and byte-identical per-arm read order to v83/v84/v87/v95 (IDA-confirmed, no divergence).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x27 MoveItcPurchaseItemLtoSDone)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "Decode4 tab (-> CCtrlTab::SetTab(tab-1))"
+        },
+        {
+          "op": "Decode4",
+          "comment": "Decode4 selectedNo"
         }
       ]
     },
     "CITC::OnNormalItemResult#MoveItcPurchaseItemLtoSFailed": {
-      "address": "",
+      "address": "0x57ff65",
+      "region": "GMS",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x28 MoveItcPurchaseItemLtoSFailed arm of CITC::OnNormalItemResult. Reason-shape: the sub-handler reads Decode1(mode) then Decode1(reason) (the reason==73/65 transfer-field re-send branches read NO further bytes). Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultMoveItcPurchaseItemLtoSFailed. Re-verified live in gms_v79 (CITC::OnNormalItemResult dispatcher @0x57f4a7, task-181): identical case-label set (0x15-0x38,0x3C-0x3E) and byte-identical per-arm read order to v83/v84/v87/v95 (IDA-confirmed, no divergence).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x28 MoveItcPurchaseItemLtoSFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "Decode1 fail reason -> NoticeFailReason"
         }
       ]
     },
     "CITC::OnNormalItemResult#NotifyCancelWishResult": {
-      "address": "",
+      "address": "0x58039b",
+      "region": "GMS",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x3D NotifyCancelWishResult arm of CITC::OnNormalItemResult. TwoInts-shape: the sub-handler reads Decode1(mode) then Decode4 then Decode4. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultNotifyCancelWishResult. Re-verified live in gms_v79 (CITC::OnNormalItemResult dispatcher @0x57f4a7, task-181): identical case-label set (0x15-0x38,0x3C-0x3E) and byte-identical per-arm read order to v83/v84/v87/v95 (IDA-confirmed, no divergence).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x3D NotifyCancelWishResult)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "Decode4 first notice count"
+        },
+        {
+          "op": "Decode4",
+          "comment": "Decode4 second notice count"
         }
       ]
     },
     "CITC::OnNormalItemResult#RegisterSaleEntryDone": {
-      "address": "",
+      "address": "0x57f80a",
+      "region": "GMS",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x1D RegisterSaleEntryDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultRegisterSaleEntryDone. Re-verified live in gms_v79 (CITC::OnNormalItemResult dispatcher @0x57f4a7, task-181): identical case-label set (0x15-0x38,0x3C-0x3E) and byte-identical per-arm read order to v83/v84/v87/v95 (IDA-confirmed, no divergence).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x1D RegisterSaleEntryDone)"
         }
       ]
     },
     "CITC::OnNormalItemResult#RegisterSaleEntryFailed": {
-      "address": "",
+      "address": "0x57f717",
+      "region": "GMS",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 5): 0x1E RegisterSaleEntryFailed arm of CITC::OnNormalItemResult. Reads Decode1(reason) -> NoticeFailReason; ONLY when reason==0x48 (sale-limit) it then reads a trailing Decode2 sale-limit short (Format StringPool 0x12BB). The trailing Decode2 is the maximal (reason==0x48) read shape the codec encodes; the cell is byte-fixture verified for both the plain and sale-limit reasons. Maps atlas field/clientbound MtsResultRegisterSaleEntryFailed. Re-verified live in gms_v79 (CITC::OnNormalItemResult dispatcher @0x57f4a7, task-181): identical case-label set (0x15-0x38,0x3C-0x3E) and byte-identical per-arm read order to v83/v84/v87/v95 (IDA-confirmed, no divergence).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x1E RegisterSaleEntryFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "fail reason byte -> NoticeFailReason"
+        },
+        {
+          "op": "Decode2",
+          "comment": "sale-limit count (reason==0x48 branch only)"
         }
       ]
     },
     "CITC::OnNormalItemResult#RegisterWishItemDone": {
-      "address": "",
+      "address": "0x580331",
+      "region": "GMS",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x37 RegisterWishItemDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultRegisterWishItemDone. Re-verified live in gms_v79 (CITC::OnNormalItemResult dispatcher @0x57f4a7, task-181): identical case-label set (0x15-0x38,0x3C-0x3E) and byte-identical per-arm read order to v83/v84/v87/v95 (IDA-confirmed, no divergence).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x37 RegisterWishItemDone)"
         }
       ]
     },
     "CITC::OnNormalItemResult#RegisterWishItemFailed": {
-      "address": "",
+      "address": "0x580366",
+      "region": "GMS",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x38 RegisterWishItemFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultRegisterWishItemFailed. Re-verified live in gms_v79 (CITC::OnNormalItemResult dispatcher @0x57f4a7, task-181): identical case-label set (0x15-0x38,0x3C-0x3E) and byte-identical per-arm read order to v83/v84/v87/v95 (IDA-confirmed, no divergence).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x38 RegisterWishItemFailed)"
         }
       ]
     },
     "CITC::OnNormalItemResult#SaleCurrentItemToWishDone": {
-      "address": "",
+      "address": "0x57f848",
+      "region": "GMS",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x1F SaleCurrentItemToWishDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultSaleCurrentItemToWishDone. Re-verified live in gms_v79 (CITC::OnNormalItemResult dispatcher @0x57f4a7, task-181): identical case-label set (0x15-0x38,0x3C-0x3E) and byte-identical per-arm read order to v83/v84/v87/v95 (IDA-confirmed, no divergence).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x1F SaleCurrentItemToWishDone)"
         }
       ]
     },
     "CITC::OnNormalItemResult#SaleCurrentItemToWishFailed": {
-      "address": "",
+      "address": "0x57f886",
+      "region": "GMS",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x20 SaleCurrentItemToWishFailed arm of CITC::OnNormalItemResult. Reason-shape: the sub-handler reads Decode1(mode) then Decode1(reason) (the reason==73/65 transfer-field re-send branches read NO further bytes). Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultSaleCurrentItemToWishFailed. Re-verified live in gms_v79 (CITC::OnNormalItemResult dispatcher @0x57f4a7, task-181): identical case-label set (0x15-0x38,0x3C-0x3E) and byte-identical per-arm read order to v83/v84/v87/v95 (IDA-confirmed, no divergence).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x20 SaleCurrentItemToWishFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "Decode1 fail reason -> reason-keyed StringPool notice"
         }
       ]
     },
     "CITC::OnNormalItemResult#SetZzimDone": {
-      "address": "",
+      "address": "0x57ff92",
+      "region": "GMS",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x29 SetZzimDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultSetZzimDone. Re-verified live in gms_v79 (CITC::OnNormalItemResult dispatcher @0x57f4a7, task-181): identical case-label set (0x15-0x38,0x3C-0x3E) and byte-identical per-arm read order to v83/v84/v87/v95 (IDA-confirmed, no divergence).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x29 SetZzimDone)"
         }
       ]
     },
     "CITC::OnNormalItemResult#SetZzimFailed": {
-      "address": "",
+      "address": "0x57ffc7",
+      "region": "GMS",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x2A SetZzimFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultSetZzimFailed. Re-verified live in gms_v79 (CITC::OnNormalItemResult dispatcher @0x57f4a7, task-181): identical case-label set (0x15-0x38,0x3C-0x3E) and byte-identical per-arm read order to v83/v84/v87/v95 (IDA-confirmed, no divergence).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x2A SetZzimFailed)"
         }
       ]
     },
     "CITC::OnNormalItemResult#SuccessBidInfo": {
-      "address": "",
+      "address": "0x58043b",
+      "region": "GMS",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 5): 0x3E SuccessBidInfoResult arm of CITC::OnNormalItemResult. Reads Decode1(soldFlag) + Decode4(itemId); ONLY when itemId>0 it then reads Decode4(price) + DecodeBuffer(8) FILETIME contract date. The trailing Decode4+DecodeBuffer(8) is the maximal (itemId>0) read shape the codec encodes; the cell is byte-fixture verified for both the no-item and with-item paths. Maps atlas field/clientbound MtsResultSuccessBidInfo. Re-verified live in gms_v79 (CITC::OnNormalItemResult dispatcher @0x57f4a7, task-181): identical case-label set (0x15-0x38,0x3C-0x3E) and byte-identical per-arm read order to v83/v84/v87/v95 (IDA-confirmed, no divergence).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "MTS result mode byte (0x3E SuccessBidInfoResult)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "sold(1)/bought flag -> StringPool 0x12AA/0x12AB"
+        },
+        {
+          "op": "Decode4",
+          "comment": "ITC item id; <=0 ends the body"
+        },
+        {
+          "op": "Decode4",
+          "comment": "meso price (itemId>0 branch only)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "8-byte FILETIME contract date (itemId>0 branch only)"
         }
       ]
     },

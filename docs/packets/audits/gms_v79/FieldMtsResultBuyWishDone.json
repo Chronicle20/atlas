@@ -1,7 +1,7 @@
 {
   "WriterName": "FieldMtsResultBuyWishDone",
   "IDAName": "CITC::OnNormalItemResult#BuyWishDone",
-  "Address": "",
+  "Address": "0x5801a7",
   "Variant": "GMS/v79",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/field/clientbound/mts_operation.go",
@@ -10,12 +10,12 @@
       "Index": 0,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 0,
+      "IDAComment": "MTS result mode byte (0x2F BuyWishDone)",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 4,
+  "Verdict": 0,
   "FlatInvalid": false
 }

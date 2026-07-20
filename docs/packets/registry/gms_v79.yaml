@@ -2163,6 +2163,15 @@
   ida:
     address: 5764130
   note: 'task-181: v79 IDB CITC::OnQueryCashResult (0x57f422, seed template_gms_79_1.json opCode 0x143) reads Decode4+Decode4; body byte-identical to v83.'
+- op: MTS_OPERATION
+  direction: clientbound
+  opcode: 324
+  fname: CITC::OnNormalItemResult
+  packet: field/clientbound/mts_operation.go (35 discrete per-mode structs)
+  provenance: ida-discovered
+  ida:
+    address: 5764263
+  note: 'task-181: v79 IDB CITC::OnPacket (0x57f39b) case 324 -> CITC::OnNormalItemResult (0x57f4a7, seed template_gms_79_1.json opCode 0x144). Mode-prefix dispatcher (Decode1(mode) switch, cases 0x15-0x38,0x3C-0x3E, 35 arms) re-decompiled live in full: identical case-label set and byte-identical per-arm read order to gms_v83/v84/v87/v95 (IDA-confirmed, no divergence found). Per-mode addresses: GetItcListDone 0x57fa45, GetItcListFailed 0x57fa18, GetSearchItcListDone 0x57fb98, GetSearchItcListFailed 0x57fb79, RegisterSaleEntryDone 0x57f80a, RegisterSaleEntryFailed 0x57f717, SaleCurrentItemToWishDone 0x57f848, SaleCurrentItemToWishFailed 0x57f886, GetUserPurchaseItemDone 0x57fc89, GetUserPurchaseItemFailed 0x57fdc0, GetUserSaleItemDone 0x57fded, GetUserSaleItemFailed 0x57fe7d, CancelSaleItemDone 0x57feaa, CancelSaleItemFailed 0x57fedf, MoveItcPurchaseItemLtoSDone 0x57fefe, MoveItcPurchaseItemLtoSFailed 0x57ff65, SetZzimDone 0x57ff92, SetZzimFailed 0x57ffc7, DeleteZzimDone 0x57fffc, DeleteZzimFailed 0x580027, LoadWishSaleListDone 0x58005c, LoadWishSaleListFailed 0x580172, BuyWishDone 0x5801a7, BuyWishFailed 0x5801d2, CancelWishDone 0x580207, CancelWishFailed 0x58023c, BuyItemDone 0x580271, BuyItemFailed 0x58029c, BuyZzimItemDone 0x5802d1, BuyZzimItemFailed 0x5802fc, RegisterWishItemDone 0x580331, RegisterWishItemFailed 0x580366, BidAuctionFailed 0x5805a1, NotifyCancelWishResult 0x58039b, SuccessBidInfo 0x58043b.'
 - op: LOGIN_PASSWORD
   direction: serverbound
   opcode: 1

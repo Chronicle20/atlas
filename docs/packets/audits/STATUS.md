@@ -9,7 +9,7 @@ Tool: `a0c47bb5655b63e6be7139d84d0dc93e198b0eac6c23d546ecc5a6b3f49936b7`
 - export gms_v48: `8d1a4c02745ee1cb5b41c358b749c6a55883207c109784c6e09b00545a3d2dc8`
 - export gms_v61: `67395ebec4c069f827ade3a69a2e32286c750b66f305d9eba197ed2e6db87de3`
 - export gms_v72: `005ee090459a5f2bea74a84ba7652af94ca98214fb61ff8b07090907581ef267`
-- export gms_v79: `2c2af17a3493b277d696a0d629c263073aa9afbc9c4e82b7ad0b873cec47144e`
+- export gms_v79: `9a8c30eaf8ea8530a63b4875bc14c5c031fbab475baa518f4bd685226933500e`
 - export gms_v83: `2c83800f68d4fb785bed69ea7767b363acb38db4f445a1a772a4a33013c11400`
 - export gms_v84: `add645423c5199734172e15c44a7438656e893918efd1b5147cf31e546e002f1`
 - export gms_v87: `cdb60fec8064a3e6cadef27348923f541ba22873d8b4015010582c2718b14fd6`
@@ -473,6 +473,7 @@ Tool: `a0c47bb5655b63e6be7139d84d0dc93e198b0eac6c23d546ecc5a6b3f49936b7`
 | MOB_NEXT_ATTACK | CMob::OnNextAttack | monster/clientbound/MonsterMobNextAttack (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x134 | ✅ |  | ⬜ |
 | WEDDING_PROGRESS | CField_Wedding::OnWeddingProgress | field/serverbound/FieldWeddingAction (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x140 | ✅ | 0x147 | ✅ | 0x151 | ✅ | 0x17B | ✅ | 0x159 | ✅ |
 | MTS_OPERATION2 | CField::OnCharacterSale; CITC::OnQueryCashResult | field/clientbound/FieldMtsOperation2 (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x143 | ✅ | 0x15B | ✅ | 0x15B | ✅ | 0x170 | ✅ | 0x19B | ✅ |  | ⬜ |
+| MTS_OPERATION | CField::OnCharacterSale; CITC::OnNormalItemResult | field/clientbound/FieldMtsResultBidAuctionFailed (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x144 | ✅ | 0x15C | ✅ | 0x15C | ✅ | 0x171 | ✅ | 0x19C | ✅ |  | ⬜ |
 | CASHSHOP_GIFT_INFO_RESULT | CCashShop::OnGiftMateInfoResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x147 | ❌ | 0x14E | ❌ | 0x158 | ❌ | 0x182 | ❌ | 0x166 | ❌ |
 | CASHSHOP_REGISTER_NEW_CHARACTER_RESULT |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x14A | ❌ | 0x151 | ❌ | 0x15B | ❌ | 0x185 | ❌ |  | ⬜ |
 | VICIOUS_HAMMER | CField::OnItemUpgrade | field/clientbound/FieldViciousHammerFailure (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x14A | ✅ | 0x162 | ✅ | 0x16C | ✅ | 0x177 | ✅ | 0x1A9 | ✅ |  | ⬜ |
@@ -480,7 +481,6 @@ Tool: `a0c47bb5655b63e6be7139d84d0dc93e198b0eac6c23d546ecc5a6b3f49936b7`
 | OPEN_GATE_REMOVED | COpenGatePool::OnOpenGateRemoved |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x14D | ❌ |  | ⬜ |
 | CASHSHOP_CASH_GACHAPON_OPEN_RESULT | CCashShop::OnCashItemGachaponResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x14E | ❌ | 0x155 | ❌ | 0x15F | ❌ | 0x189 | ❌ |  | ⬜ |
 | TIP_BEANS |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15B | ❌ |
-| MTS_OPERATION | CField::OnCharacterSale; CITC::OnNormalItemResult | field/clientbound/FieldMtsResultBidAuctionFailed (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15C | ✅ | 0x15C | ✅ | 0x171 | ✅ | 0x19C | ✅ |  | ⬜ |
 | OPEN_BEANS |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15C | ❌ |
 | MAPLELIFE_RESULT | CUICharacterSaleDlg::OnCheckDuplicatedIDResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15D | ❌ | 0x15D | ❌ | 0x172 | ❌ | 0x19D | ❌ |  | ⬜ |
 | SHOOT_BEANS |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15D | ❌ |
@@ -998,7 +998,7 @@ Tool: `a0c47bb5655b63e6be7139d84d0dc93e198b0eac6c23d546ecc5a6b3f49936b7`
 | v48 | 171 | 0 | 2 | 157 | 630 | 0 | 51.8% |
 | v61 | 246 | 0 | 60 | 192 | 462 | 0 | 49.4% |
 | v72 | 256 | 0 | 73 | 211 | 420 | 0 | 47.4% |
-| v79 | 298 | 0 | 72 | 207 | 383 | 0 | 51.6% |
+| v79 | 299 | 0 | 72 | 207 | 382 | 0 | 51.7% |
 | v83 | 412 | 0 | 0 | 324 | 224 | 0 | 56.0% |
 | v84 | 384 | 0 | 0 | 332 | 244 | 0 | 53.6% |
 | v87 | 418 | 0 | 0 | 355 | 187 | 0 | 54.1% |

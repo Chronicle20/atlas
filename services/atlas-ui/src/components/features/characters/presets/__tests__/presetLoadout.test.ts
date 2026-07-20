@@ -5,6 +5,11 @@ import {
   wornTemplateIds,
 } from "../presetLoadout";
 import { DEFAULT_PRESET_ATTRIBUTES } from "../presetEditorState";
+import {
+  RENDER_DEFAULT_HAIR,
+  RENDER_DEFAULT_FACE,
+  RENDER_DEFAULT_SKIN,
+} from "../../templates/previewLoadout";
 
 const attrs = (o: Partial<typeof DEFAULT_PRESET_ATTRIBUTES>) => ({
   ...DEFAULT_PRESET_ATTRIBUTES,
@@ -51,13 +56,9 @@ describe("presetLoadout", () => {
 
   it("empty loadout falls back to render defaults", () => {
     const l = buildPresetLoadout(attrs({ hair: 0, hairColor: 0, face: 0, skinColor: 0 }));
-    // hair 0 + 0 stays 0 only if attrs provide it; defaults apply when fields are the
-    // documented empty sentinels — assert the fallback path for face/skin explicitly:
-    const l2 = buildPresetLoadout({ ...DEFAULT_PRESET_ATTRIBUTES });
-    expect(l2.face).toBe(20000);
-    expect(l2.hair).toBe(30030);
-    expect(l2.skin).toBe(0);
-    expect(l).toBeDefined();
+    expect(l.hair).toBe(RENDER_DEFAULT_HAIR);
+    expect(l.face).toBe(RENDER_DEFAULT_FACE);
+    expect(l.skin).toBe(RENDER_DEFAULT_SKIN);
   });
 
   it("variant loadout substitutes one dimension", () => {

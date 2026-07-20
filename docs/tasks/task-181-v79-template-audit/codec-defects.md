@@ -1,0 +1,77 @@
+# task-181 — mis-modeled clientbound codecs found via live-IDB (all versions)
+
+Verifying the divergent writers against the **live IDBs** (not the export)
+surfaced codecs that are wrong for **every** version, whose existing
+`packet-audit:verify` markers are a **false pass** (the golden test asserts the
+encoder's own output, not the client read order). These predate task-181 and are
+on `main`.
+
+## DEFECT-1: SnowballState — 1 snowball + unconditional tail (should be 2 + gated)
+
+`CField_SnowBall::OnSnowBallState`, re-read directly in six IDBs — **identical
+structure in all of them**:
+
+| version | session/IDB | addr |
+|---|---|---|
+| gms_v79 | GMS_v79_1_DEVM.exe | 0x5525bf |
+| gms_v83 | MapleStory_dump.exe | 0x5750a3 |
+| gms_v87 | GMSv87_4GB.exe | 0x5a3328 |
+| gms_v95 | GMS_v95.0_U_DEVM.exe (PDB-backed) | 0x560ab0 |
+| jms_v185 | MapleStory_dump_SCY.exe | 0x5c959d |
+| gms_v84 | (byte-identical to v83, per project memory) | 0x584a1c |
+
+Real wire (PDB names from v95):
+```
+Decode1  state           -> m_nState (bFirst = prev m_nState == -1)
+Decode4  leftSnowmanHp   -> m_aSnowMan[0].m_nHP
+Decode4  rightSnowmanHp  -> m_aSnowMan[1].m_nHP
+2x { Decode2 x; Decode1 y } -> CSnowBall::SetPos(m_aSnowBall[0..1])   <-- TWO snowballs
+if bFirst: Decode2 damageSnowBall; Decode2 damageSnowMan0; Decode2 damageSnowMan1
+```
+
+Atlas `SnowballState.Encode` writes `byte,int,int, short,byte, short,short,short`
+— **one** snowball and the 3 damage shorts **unconditionally** (18 bytes). The
+client reads 15 (non-initial) or 21 (initial) bytes. They never match.
+
+**Correct model** (version-agnostic — no gate): `state byte, leftSnowmanHp uint32,
+rightSnowmanHp uint32, snowball0{x uint16, y byte}, snowball1{x uint16, y byte},
+first bool, damageSnowBall uint16, damageSnowMan0 uint16, damageSnowMan1 uint16`.
+`first` is not on the wire (client gates on its own prior state == -1); the
+server sets it for the initial snapshot, and Decode recovers it from the
+trailing bytes' presence (`r.Available() >= 6`). The channel wrapper
+`services/atlas-channel/.../writer/snowball_state.go` (its only caller — never
+actually emitted) takes the widened signature. This fix was implemented and
+green (`go test ./field/clientbound/` + atlas-channel build) but **backed out**
+pending the blocker below.
+
+## Likely same class (not yet re-confirmed against all versions)
+- **AriantArenaUserScore** — atlas models a single `count,name,score`; v79
+  `OnUserScore @0x528799` reads `Decode1(count)` then a **count-length loop** of
+  `DecodeStr,Decode4`. Almost certainly wrong for v83+ too.
+- **TournamentMatchTable** — atlas `Encode` is an **empty stub**; v79
+  `OnTournamentMatchTable @0x55871f` reads a real match-table struct
+  (`sub_750E40`).
+
+## BLOCKER: can't cleanly regenerate the v79 matrix reports
+
+Promoting a corrected codec needs its audit report regenerated
+(`docs/packets/audits/gms_v79/Field*.json`). The root regen command
+(`go run ./tools/packet-audit -csv-clientbound … -csv-serverbound … -template …
+-ida-source docs/packets/ida-exports/gms_v79.json`) **exits 1** on a pre-existing
+serverbound export defect:
+
+```
+resolve CCashShop::TrySendQueryCashRequest: call 0 (…): unknown primitive "COutPacket"
+```
+
+and, in the same run, rewrites 200+ unrelated v79 reports (non-deterministic vs
+the committed set) and reintroduces a `MOB_SKILL_DELAY_END` conflict + the
+`FieldAriantScore` stray. So a corrected SnowballState codec cannot be promoted
+to a matching, `--check`-clean report without first fixing that pipeline error
+(or learning the narrower per-packet regen recipe the batch-1 agent used).
+
+**Recommended sequence:** (1) fix the `CCashShop::TrySendQueryCashRequest`
+serverbound export/resolution so `packet-audit` regen is clean and
+deterministic; (2) re-apply the SnowballState codec fix (spec above) + regen its
+6 cells + add gms_v79; (3) do AriantArenaUserScore / TournamentMatchTable the
+same way. Flag all three as false-pass regressions found on `main` in the PR.

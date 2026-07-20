@@ -4,7 +4,7 @@
     "gms_v48": "8d1a4c02745ee1cb5b41c358b749c6a55883207c109784c6e09b00545a3d2dc8",
     "gms_v61": "67395ebec4c069f827ade3a69a2e32286c750b66f305d9eba197ed2e6db87de3",
     "gms_v72": "005ee090459a5f2bea74a84ba7652af94ca98214fb61ff8b07090907581ef267",
-    "gms_v79": "436554fb45b014e0c8933cfe12241aba161020f33dcc07ead85ae9d96d5ab2f7",
+    "gms_v79": "7438b61e7456816de65c3c7da4a6b072975101fddfdcf57273939e7cb91945d7",
     "gms_v83": "2c83800f68d4fb785bed69ea7767b363acb38db4f445a1a772a4a33013c11400",
     "gms_v84": "add645423c5199734172e15c44a7438656e893918efd1b5147cf31e546e002f1",
     "gms_v87": "cdb60fec8064a3e6cadef27348923f541ba22873d8b4015010582c2718b14fd6",
@@ -35611,6 +35611,54 @@
     },
     {
       "kind": "op",
+      "op": "MONSTER_CARNIVAL_START",
+      "packet": "monster/carnival/clientbound/MonsterCarnivalStart",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField_MonsterCarnival::OnEnter"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 267
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 289
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 296
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 306
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 346
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 313
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "IDA_0X10C",
       "direction": "clientbound",
       "tier1": false,
@@ -37181,54 +37229,6 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 352
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "MONSTER_CARNIVAL_START",
-      "packet": "monster/carnival/clientbound/MonsterCarnivalStart",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField_MonsterCarnival::OnEnter"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 289
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 296
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 306
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 346
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 313
         }
       }
     },

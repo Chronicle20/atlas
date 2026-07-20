@@ -2678,6 +2678,10 @@
         "writer": "GuildBossPulleyStateChange"
       },
       {
+        "opCode": "0x10B",
+        "writer": "MonsterCarnivalStart"
+      },
+      {
         "opCode": "0x10C",
         "writer": "MonsterCarnivalObtainedCP"
       },

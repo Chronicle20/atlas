@@ -2037,6 +2037,15 @@
   ida:
     address: 5511563
   note: 'task-181: v79 IDB CField_GuildBoss::OnPulleyStateChange (0x54198b, seed template_gms_79_1.json opCode 0x10A) reads Decode1; body byte-identical to v83.'
+- op: MONSTER_CARNIVAL_START
+  direction: clientbound
+  opcode: 267
+  fname: CField_MonsterCarnival::OnEnter
+  packet: monster/carnival/clientbound/MonsterCarnivalStart
+  provenance: ida-discovered
+  ida:
+    address: 5538596
+  note: 'task-181: v79 IDB CField_MonsterCarnival::OnEnter (0x548324, seed template_gms_79_1.json opCode 0x10B, CField_MonsterCarnival::OnPacket case 267) reads Decode1(team), 6x Decode2 (personalCp/personalTotal/myTeamCp/myTeamTotal/enemyTeamCp/enemyTeamTotal via SetPersonalCP+2xSetTeamCP), then a loop over the client-local m_aSummonedMob array (loop bound = the array''s stored element count at header[-1], NOT wire-read) reading one Decode1 (spelled level) per element. Structure and field order byte-identical to v83 (0x565397) and v95 (0x55a6c0, PDB-backed field names m_aSummonedMob/SetPersonalCP/SetTeamCP confirm the order), also confirmed against v87 (0x59011d) and jms (0x5b014c). Existing atlas codec already modelled this shape correctly (team/6 shorts/spelled []byte with caller-agreed length) -- this is a route-only fix: v79 opCode 0x10B was simply unrouted and the v79 export was unresolved.'
 - op: MONSTER_CARNIVAL_OBTAINED_CP
   direction: clientbound
   opcode: 268

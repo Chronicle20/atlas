@@ -245,22 +245,58 @@ against the live `OnPacket` switch decompile) + registry entry. All six cells
 verify ✅ (`matrix --check` clean); goldens replaced (non-zero 768-byte
 fixture + trailing state byte) plus `TestTournamentMatchTableByteOutputV79`.
 
+## DEFECT-7: MonsterCarnivalStart — route-only gap, codec already correct — **FIXED**
+
+**Resolution (task-181):** `CField_MonsterCarnival::OnEnter` decompiled live in
+five IDBs — gms_v79 `@0x548324`, gms_v83 `@0x565397`, gms_v87 `@0x59011d`,
+gms_v95 `@0x55a6c0` (PDB-backed field names), jms_v185 `@0x5b014c` (gms_v84
+byte-identical to v83) — **identical structure in all of them**:
+`Decode1(team)`, then 6x `Decode2` (`SetPersonalCP(personalCp,
+personalTotal)` + `SetTeamCP(team, myTeamCp, myTeamTotal)` +
+`SetTeamCP(!team, enemyTeamCp, enemyTeamTotal)`), then a loop over the
+client-local `m_aSummonedMob` array reading one `Decode1` (spelled level) per
+element. The loop bound is **not wire-read**: each iteration checks
+`m_aSummonedMob.a[-1]` (the array's own stored element count, the standard
+ZArray header-count convention in this client, index `-1` before the data
+pointer) against a running counter — confirmed identical in all five
+decompiles, including the v95 PDB names (`m_aSummonedMob`, `SetPersonalCP`,
+`SetTeamCP`) that anchor the field order.
+
+Unlike DEFECT-1..6, this was **not a false pass** — the pre-existing atlas
+`MonsterCarnivalStart` codec (`team byte, personalCp/personalTotal/myTeamCp/
+myTeamTotal/enemyTeamCp/enemyTeamTotal uint16, spelled []byte` with the slice
+length left to the caller, matching the off-wire loop bound) already modelled
+this shape correctly, and v83/v84/v87/v95/jms were already ✅ with correct
+exports (`[Decode1, Decode2 x6, Decode1]`). The only gap was **v79**: its
+export held `unresolved` (function not found at export time) and opcode
+`0x10B` (`CField_MonsterCarnival::OnPacket` case 267, confirmed against the
+live dispatcher switch decompile) was never routed in `template_gms_79_1.json`.
+Spliced the real read order into the v79 export, re-pinned its evidence,
+regenerated the MonsterCarnivalStart report (selective revert), routed
+`0x10B` in the v79 template between `0x10A` GuildBossPulleyStateChange and
+`0x10C` MonsterCarnivalObtainedCP, added the registry entry, and added
+`TestMonsterCarnivalStartByteOutputV79`. All six cells verify ✅ (`matrix
+--check` clean).
+
 ## Remaining divergent writers (proven recipe: RE across IDBs → re-model codec →
 correct exports if their read-order is wrong → re-pin evidence → selective
 per-version report regen → route v79). SnowballState (DEFECT-1),
 AriantArenaUserScore (DEFECT-2), ContiMove (DEFECT-3), TournamentSetPrize
-(DEFECT-4), Tournament (DEFECT-5), and TournamentMatchTable (DEFECT-6) are the
-completed exemplars — DEFECT-2 confirmed the count-loop export convention (no
-splice needed except for the previously-unresolved v79 entry), DEFECT-3
-confirmed a genuine state-gated conditional-field false-pass spanning ALL
-previously-✅ versions, DEFECT-4 confirmed a flag-gated conditional-field
-false-pass where the non-v79 exports were already correct (only the codec and
-the v79 export needed fixing), DEFECT-5 confirmed a flat-invariant-length
-false-pass (no gate needed at all — the branch determines *meaning*, never
-byte count), DEFECT-6 confirmed an empty-stub false-pass whose true body lives
-behind a helper/ctor indirection the handler itself never shows.
-- Medium: MonsterCarnival
-  Start/Summon/Message/Died/Leave (variable str/loop bodies).
+(DEFECT-4), Tournament (DEFECT-5), TournamentMatchTable (DEFECT-6), and
+MonsterCarnivalStart (DEFECT-7) are the completed exemplars — DEFECT-2
+confirmed the count-loop export convention (no splice needed except for the
+previously-unresolved v79 entry), DEFECT-3 confirmed a genuine state-gated
+conditional-field false-pass spanning ALL previously-✅ versions, DEFECT-4
+confirmed a flag-gated conditional-field false-pass where the non-v79 exports
+were already correct (only the codec and the v79 export needed fixing),
+DEFECT-5 confirmed a flat-invariant-length false-pass (no gate needed at all
+— the branch determines *meaning*, never byte count), DEFECT-6 confirmed an
+empty-stub false-pass whose true body lives behind a helper/ctor indirection
+the handler itself never shows, and DEFECT-7 confirmed the inverse case: a
+codec that was already right, where the only defect was an unrouted v79
+opcode + an unresolved v79 export.
+- Medium: MonsterCarnival Summon/Message/Died/Leave (variable str/loop
+  bodies).
 - Large: MtsOperation — `CITC::OnNormalItemResult` 35-arm dispatcher family
   (`DISPATCHER_FAMILY.md`).
 

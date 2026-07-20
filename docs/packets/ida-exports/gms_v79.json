@@ -3328,13 +3328,40 @@
       ]
     },
     "CField_MonsterCarnival::OnEnter": {
-      "address": "",
+      "address": "0x548324",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "team"
+        },
+        {
+          "op": "Decode2",
+          "comment": "personalCp"
+        },
+        {
+          "op": "Decode2",
+          "comment": "personalTotal"
+        },
+        {
+          "op": "Decode2",
+          "comment": "myTeamCp"
+        },
+        {
+          "op": "Decode2",
+          "comment": "myTeamTotal"
+        },
+        {
+          "op": "Decode2",
+          "comment": "enemyTeamCp"
+        },
+        {
+          "op": "Decode2",
+          "comment": "enemyTeamTotal"
+        },
+        {
+          "op": "Decode1",
+          "comment": "spelled (looped once per m_aSummonedMob element; loop bound is the client-local array's own stored count, not wire-read)"
         }
       ]
     },

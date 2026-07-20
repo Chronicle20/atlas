@@ -166,11 +166,11 @@ export function presetReducer(
   switch (action.type) {
     case "load": {
       let seq = 0;
-      const presets: WorkingPreset[] = action.presets.map((p) => ({
-        key: p.id ?? `local-${seq++}`,
-        id: p.id,
-        attributes: normalizePreset(p.attributes),
-      }));
+      const presets: WorkingPreset[] = action.presets.map((p) =>
+        p.id !== undefined
+          ? { key: p.id, id: p.id, attributes: normalizePreset(p.attributes) }
+          : { key: `local-${seq++}`, attributes: normalizePreset(p.attributes) },
+      );
       return {
         presets,
         baseline: presets.map(project),
@@ -281,11 +281,11 @@ export function presetReducer(
       }));
     case "discard": {
       let seq = 0;
-      const presets: WorkingPreset[] = state.baseline.map((p) => ({
-        key: p.id ?? `local-${seq++}`,
-        id: p.id,
-        attributes: normalizePreset(p.attributes),
-      }));
+      const presets: WorkingPreset[] = state.baseline.map((p) =>
+        p.id !== undefined
+          ? { key: p.id, id: p.id, attributes: normalizePreset(p.attributes) }
+          : { key: `local-${seq++}`, attributes: normalizePreset(p.attributes) },
+      );
       return { ...state, presets, localSeq: seq, selectedKey: null };
     }
     case "savedOk":

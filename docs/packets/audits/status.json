@@ -4,7 +4,7 @@
     "gms_v48": "8d1a4c02745ee1cb5b41c358b749c6a55883207c109784c6e09b00545a3d2dc8",
     "gms_v61": "67395ebec4c069f827ade3a69a2e32286c750b66f305d9eba197ed2e6db87de3",
     "gms_v72": "005ee090459a5f2bea74a84ba7652af94ca98214fb61ff8b07090907581ef267",
-    "gms_v79": "5f99725955fa2a4e780937a9238494c6dbb74889947e3983e034fb0834adaf12",
+    "gms_v79": "99eaa3a9682b7bfc2a93ea99c4718711db52fd3077f5f6fd1d74faae065ffcfb",
     "gms_v83": "8ce63ca7f0800376c132ac9a2b9c09cca7915abee84869407a7cff5d7ad86b47",
     "gms_v84": "d50d088f1e9197858530a3d520436605c45600ef3a33b21c08bb76a91aeaad0f",
     "gms_v87": "f54112a53fe73144d1feda40f4c1becc6f1f75bdbf5701665ace57bf2e4eb43c",
@@ -36741,6 +36741,54 @@
     },
     {
       "kind": "op",
+      "op": "ARIANT_ARENA_USER_SCORE",
+      "packet": "field/clientbound/FieldAriantArenaUserScore",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField_AriantArena::OnUserScore"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 275
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 297
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 304
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 314
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 354
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 321
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "IDA_0X113",
       "direction": "clientbound",
       "tier1": false,
@@ -37421,54 +37469,6 @@
         "jms_v185": {
           "state": "verified",
           "opcode": 343
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "ARIANT_ARENA_USER_SCORE",
-      "packet": "field/clientbound/FieldAriantArenaUserScore",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField_AriantArena::OnUserScore"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 297
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 304
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 314
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 354
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 321
         }
       }
     },

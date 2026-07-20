@@ -57,7 +57,24 @@ actually emitted) takes the widened signature. This fix was implemented and
 green (`go test ./field/clientbound/` + atlas-channel build) but **backed out**
 pending the blocker below.
 
-## DEFECT-2: AriantArenaUserScore — single entry (should be a count-length list) — **CONFIRMED, fix pending**
+## DEFECT-2: AriantArenaUserScore — single entry (should be a count-length list) — **FIXED**
+
+**Resolution (task-181):** codec re-modelled as `entries []AriantArenaScoreEntry{Name,
+Score}` with `count = len(entries)`, `Encode`/`Decode` looping over it; channel
+wrapper (`AriantArenaUserScoreBody`, its only caller — never emitted) widened to
+take `[]AriantArenaScoreEntry`. Re-verified the read order live in v79 (`@0x528799`),
+v83 (`@0x53e5e1`), v95 PDB-backed (`@0x5492b0`), plus v87/jms addresses via
+func_query — identical `Decode1(count)` + count-length loop of
+`{DecodeStr(name), Decode4(score)}` in every version. As predicted, the
+v83/v84/v87/v95/jms exports already held the correct count+one-iteration shape
+(`[Decode1, DecodeStr, Decode4]`) — no splice needed there. Only the v79 export
+was `unresolved` (function not found under that name at export time); spliced in
+its address + calls, re-pinned evidence, and routed the writer in
+`template_gms_79_1.json` (opcode `0x113`, previously unrouted) + registry entry.
+All six cells now verify ✅ (`matrix --check` clean); goldens updated (2-entry +
+empty-list cases) plus a `TestAriantArenaUserScoreByteOutputV79`.
+
+Original finding below.
 
 atlas models a single `count,name,score`; the client reads `Decode1(count)` then
 a **count-length loop** of `DecodeStr,Decode4` into `ZArray<UserScore>`.
@@ -78,11 +95,13 @@ Confirm against a precedent list writer's grading before landing.
 
 ## Remaining divergent writers (proven recipe: RE across IDBs → re-model codec →
 correct exports if their read-order is wrong → re-pin evidence → selective
-per-version report regen → route v79). SnowballState (DEFECT-1) is the completed
-exemplar.
+per-version report regen → route v79). SnowballState (DEFECT-1) and
+AriantArenaUserScore (DEFECT-2) are the completed exemplars — the latter
+confirming the count-loop export convention (no splice needed except for the
+previously-unresolved v79 entry).
 - Small: Tournament (v79 ≤2 bytes vs atlas 3), TournamentSetPrize (conditional
   int-pair), ContiMove (sub-dispatch — confirm emitted states).
-- Medium: AriantArenaUserScore (DEFECT-2), TournamentMatchTable, MonsterCarnival
+- Medium: TournamentMatchTable, MonsterCarnival
   Start/Summon/Message/Died/Leave (variable str/loop bodies).
 - Large: MtsOperation — `CITC::OnNormalItemResult` 35-arm dispatcher family
   (`DISPATCHER_FAMILY.md`).

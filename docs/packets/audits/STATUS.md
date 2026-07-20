@@ -9,7 +9,7 @@ Tool: `a0c47bb5655b63e6be7139d84d0dc93e198b0eac6c23d546ecc5a6b3f49936b7`
 - export gms_v48: `8d1a4c02745ee1cb5b41c358b749c6a55883207c109784c6e09b00545a3d2dc8`
 - export gms_v61: `67395ebec4c069f827ade3a69a2e32286c750b66f305d9eba197ed2e6db87de3`
 - export gms_v72: `005ee090459a5f2bea74a84ba7652af94ca98214fb61ff8b07090907581ef267`
-- export gms_v79: `5f99725955fa2a4e780937a9238494c6dbb74889947e3983e034fb0834adaf12`
+- export gms_v79: `99eaa3a9682b7bfc2a93ea99c4718711db52fd3077f5f6fd1d74faae065ffcfb`
 - export gms_v83: `8ce63ca7f0800376c132ac9a2b9c09cca7915abee84869407a7cff5d7ad86b47`
 - export gms_v84: `d50d088f1e9197858530a3d520436605c45600ef3a33b21c08bb76a91aeaad0f`
 - export gms_v87: `f54112a53fe73144d1feda40f4c1becc6f1f75bdbf5701665ace57bf2e4eb43c`
@@ -438,6 +438,7 @@ Tool: `a0c47bb5655b63e6be7139d84d0dc93e198b0eac6c23d546ecc5a6b3f49936b7`
 | MTS_CHARGE_PARAM_RESULT | CITC::OnChargeParamResult |  |  | ⬜ | 0x111 | ✅ | 0x135 | ✅ | 0x142 | ✅ | 0x15A | ✅ | 0x164 | ✅ | 0x16F | ✅ | 0x19A | ✅ |  | ⬜ |
 | IDA_0X112 | CUserLocal::OnQuestGuideResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x112 | ❌ |  | ⬜ |
 | MONSTER_CARNIVAL_RESULT | CField_MonsterCarnival::OnShowGameResult | monster/carnival/clientbound/MonsterCarnivalResult (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x112 | ✅ | 0x128 | ✅ | 0x12F | ✅ | 0x139 | ✅ | 0x161 | ✅ | 0x140 | ✅ |
+| ARIANT_ARENA_USER_SCORE | CField_AriantArena::OnUserScore | field/clientbound/FieldAriantArenaUserScore (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x113 | ✅ | 0x129 | ✅ | 0x130 | ✅ | 0x13A | ✅ | 0x162 | ✅ | 0x141 | ✅ |
 | IDA_0X113 | CUserLocal::OnDeliveryQuest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x113 | ❌ |  | ⬜ |
 | IDA_0X114 | CMob::OnMobAttackedByMob | monster/clientbound/MonsterMobAttackedByMob (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x114 | ✅ |
 | REACTOR_MOVE | CReactorPool::OnReactorMove |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x116 | ❌ | 0x116 | ❌ | 0x127 | ❌ | 0x14F | ❌ | 0x12E | ❌ |
@@ -451,7 +452,6 @@ Tool: `a0c47bb5655b63e6be7139d84d0dc93e198b0eac6c23d546ecc5a6b3f49936b7`
 | MONSTER_CARNIVAL_DIED | CField_MonsterCarnival::OnProcessForDeath | monster/carnival/clientbound/MonsterCarnivalDied (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x126 | ✅ | 0x12D | ✅ | 0x137 | ✅ | 0x15F | ✅ | 0x13E | ✅ |
 | MONSTER_CARNIVAL_LEAVE | CField_MonsterCarnival::OnShowMemberOutMsg | monster/carnival/clientbound/MonsterCarnivalLeave (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x127 | ✅ | 0x12E | ✅ | 0x138 | ✅ | 0x160 | ✅ | 0x13F | ✅ |
 | TOURNAMENT_UEW | CField_Tournament::OnTournamentUEW | field/clientbound/FieldTournamentUew (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x128 | ✅ | 0x13E | ✅ | 0x145 | ✅ | 0x14F | ✅ | 0x179 | ✅ | 0x157 | ✅ |
-| ARIANT_ARENA_USER_SCORE | CField_AriantArena::OnUserScore | field/clientbound/FieldAriantArenaUserScore (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x129 | ✅ | 0x130 | ✅ | 0x13A | ✅ | 0x162 | ✅ | 0x141 | ✅ |
 | TOURNAMENT_CHARACTERS | CField_Tournament::OnPacket | field/clientbound/FieldTournamentCharacters (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x129 | ✅ | 0x13F | ✅ | 0x146 | ✅ | 0x150 | ✅ | 0x17A | ✅ | 0x158 | ✅ |
 | IDA_0X12A | sub_5FD42F |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x12A | ❌ |
 | IDA_0X12B | sub_5FE06B |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x12B | ❌ |
@@ -998,7 +998,7 @@ Tool: `a0c47bb5655b63e6be7139d84d0dc93e198b0eac6c23d546ecc5a6b3f49936b7`
 | v48 | 171 | 0 | 2 | 157 | 630 | 0 | 51.8% |
 | v61 | 246 | 0 | 60 | 192 | 462 | 0 | 49.4% |
 | v72 | 256 | 0 | 73 | 211 | 420 | 0 | 47.4% |
-| v79 | 288 | 0 | 72 | 207 | 393 | 0 | 50.8% |
+| v79 | 289 | 0 | 72 | 207 | 392 | 0 | 50.9% |
 | v83 | 412 | 0 | 0 | 324 | 224 | 0 | 56.0% |
 | v84 | 384 | 0 | 0 | 332 | 244 | 0 | 53.6% |
 | v87 | 418 | 0 | 0 | 355 | 187 | 0 | 54.1% |

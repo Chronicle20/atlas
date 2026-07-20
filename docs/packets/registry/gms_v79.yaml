@@ -2055,6 +2055,15 @@
   ida:
     address: 5540458
   note: 'task-181: v79 IDB CField_MonsterCarnival::OnShowGameResult (0x548a6a, seed template_gms_79_1.json opCode 0x112) reads a single Decode1 result-selector byte; body byte-identical to v83.'
+- op: ARIANT_ARENA_USER_SCORE
+  direction: clientbound
+  opcode: 275
+  fname: CField_AriantArena::OnUserScore
+  packet: field/clientbound/FieldAriantArenaUserScore
+  provenance: ida-discovered
+  ida:
+    address: 5408665
+  note: 'task-181: v79 IDB CField_AriantArena::OnUserScore (0x528799, seed template_gms_79_1.json opCode 0x113) reads Decode1(count) then a count-length loop of DecodeStr(name)+Decode4(score); body byte-identical to v83/v84/v87/v95/jms. Prior atlas codec modelled a single entry (false pass); corrected task-181. Not previously routed in the v79 template.'
 - op: WITCH_TOWER_SCORE_UPDATE
   direction: clientbound
   opcode: 279

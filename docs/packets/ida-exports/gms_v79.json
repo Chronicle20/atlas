@@ -3152,13 +3152,22 @@
       "calls": null
     },
     "CField_AriantArena::OnUserScore": {
-      "address": "",
+      "address": "0x528799",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "count"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sName",
+          "guard": "loop count"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nScore",
+          "guard": "loop count"
         }
       ]
     },

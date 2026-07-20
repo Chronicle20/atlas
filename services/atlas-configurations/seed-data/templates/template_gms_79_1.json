@@ -2686,6 +2686,10 @@
         "writer": "MonsterCarnivalResult"
       },
       {
+        "opCode": "0x113",
+        "writer": "AriantArenaUserScore"
+      },
+      {
         "opCode": "0x117",
         "writer": "WitchTowerScoreUpdate"
       },

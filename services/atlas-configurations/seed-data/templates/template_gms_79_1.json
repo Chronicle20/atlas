@@ -2871,6 +2871,10 @@
         "writer": "Tournament"
       },
       {
+        "opCode": "0x126",
+        "writer": "TournamentMatchTable"
+      },
+      {
         "opCode": "0x127",
         "writer": "TournamentSetPrize"
       },

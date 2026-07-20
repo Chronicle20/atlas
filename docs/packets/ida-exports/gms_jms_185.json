@@ -9912,8 +9912,17 @@
     },
     "CField_Tournament::OnTournamentMatchTable": {
       "address": "0x5cff1c",
-      "direction": "",
-      "calls": null
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "DecodeBuffer",
+          "comment": "match table (m_aaMatch; 0x300=768-byte raw blob, PDB-typed unsigned int[32][6]; single bulk memcpy, not per-field reads; read inside ctor helper sub_864212 @0x864212)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "state (m_nState)"
+        }
+      ]
     },
     "CField_Tournament::OnTournamentSetPrize": {
       "address": "0x5cffa7",

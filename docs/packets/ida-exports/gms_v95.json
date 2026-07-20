@@ -11075,8 +11075,17 @@
     },
     "CField_Tournament::OnTournamentMatchTable": {
       "address": "0x5630d0",
-      "direction": "",
-      "calls": null
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "DecodeBuffer",
+          "comment": "match table (m_aaMatch; 0x300=768-byte raw blob, PDB-typed unsigned int[32][6]; single bulk memcpy, not per-field reads; read inside CMatchTableDlg::CMatchTableDlg ctor @0x780210, PDB-backed names)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "state (m_nState)"
+        }
+      ]
     },
     "CSummoned::SetDamaged": {
       "address": "0x74b730",

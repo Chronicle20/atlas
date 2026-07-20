@@ -3165,6 +3165,15 @@
   ida:
     address: 5604783
   note: 'task-181: v79 IDB CField_Tournament::OnTournament (0x5585af, seed template_gms_79_1.json opCode 0x125, CField_Tournament::OnPacket case 293) reads Decode1(mode) consumed inside the leading branch condition itself (C || short-circuit against a client-local TSecType flag, never a wire read) selecting one of two mutually-exclusive UI arms, then Decode1(value) unconditionally in whichever arm is taken; both arms terminate after that second byte. The wire is a flat, unconditional two bytes -- no third byte, no gating needed. Structure identical across v79/v83/v84/v87/v95/jms. Prior atlas codec wrote/read an unconditional THIRD byte, permanently desyncing the client on every OnTournament packet (false pass); re-modelled and corrected task-181.'
+- op: TOURNAMENT_MATCH_TABLE
+  direction: clientbound
+  opcode: 294
+  fname: CField_Tournament::OnTournamentMatchTable
+  packet: field/clientbound/FieldTournamentMatchTable
+  provenance: ida-discovered
+  ida:
+    address: 5605151
+  note: 'task-181: v79 IDB CField_Tournament::OnTournamentMatchTable (0x55871f, seed template_gms_79_1.json opCode 0x126, CField_Tournament::OnPacket case 294) only allocates + constructs a CMatchTableDlg (CDialog::DoModal) -- ALL wire reads happen inside that dialog ctor (ctor helper sub_750E40 @0x750e40), which reads CInPacket::DecodeBuffer(m_aaMatch, 0x300) (a single bulk 768-byte memcpy; PDB types the field unsigned int[32][6] but the wire itself carries one opaque buffer, not 192 individual Decode4 reads) then CInPacket::Decode1() into m_nState. Fixed-size, unconditional, no count prefix. Structure identical across v79/v83/v84/v87/v95/jms (ctor helpers sub_7DE42C@0x7de42c/byte-identical v84/CMatchTableDlg::CMatchTableDlg@0x83517f/@0x780210 PDB-backed/sub_864212@0x864212). Prior atlas codec Encode was an EMPTY stub emitting zero bytes -- a false pass; re-modelled and corrected task-181.'
 - op: TOURNAMENT_SET_PRIZE
   direction: clientbound
   opcode: 295

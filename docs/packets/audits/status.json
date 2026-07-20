@@ -4,12 +4,12 @@
     "gms_v48": "8d1a4c02745ee1cb5b41c358b749c6a55883207c109784c6e09b00545a3d2dc8",
     "gms_v61": "67395ebec4c069f827ade3a69a2e32286c750b66f305d9eba197ed2e6db87de3",
     "gms_v72": "005ee090459a5f2bea74a84ba7652af94ca98214fb61ff8b07090907581ef267",
-    "gms_v79": "f1af056fe9230f160f826cc6255c0768688e50e3bca8aa80bf85127074bfbd0a",
-    "gms_v83": "87511a8daaa33e24fac2c0c46ef275699b58dca602095db246b7db0ea1ea1c92",
-    "gms_v84": "23320dcb0e538121d9523c88592dc44c2d69f192bfbb5fc465ae5c93232fe03e",
-    "gms_v87": "54ac0d5ce4661108dc1c0a4b8be18188d2005ffe90a7c1b5fddf4034d04ad45f",
-    "gms_v95": "322db112127ba6d8999dd5d87667831581c193f1960eff0816527e769148298c",
-    "jms_v185": "708bd9ac2c002e0cb90bb4d20ba13cf320b87c9fd881bd0f0873231fc1d32aae"
+    "gms_v79": "436554fb45b014e0c8933cfe12241aba161020f33dcc07ead85ae9d96d5ab2f7",
+    "gms_v83": "2c83800f68d4fb785bed69ea7767b363acb38db4f445a1a772a4a33013c11400",
+    "gms_v84": "add645423c5199734172e15c44a7438656e893918efd1b5147cf31e546e002f1",
+    "gms_v87": "cdb60fec8064a3e6cadef27348923f541ba22873d8b4015010582c2718b14fd6",
+    "gms_v95": "0e43405510ef56bb1aadf7467889659711c27e905747eb4e0452ed58b787054d",
+    "jms_v185": "1d02fabf901ade2891c3b71429c1381d14e9715b849703b161c08f3951425b08"
   },
   "rows": [
     {
@@ -37426,6 +37426,54 @@
     },
     {
       "kind": "op",
+      "op": "TOURNAMENT_MATCH_TABLE",
+      "packet": "field/clientbound/FieldTournamentMatchTable",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField_Tournament::OnTournamentMatchTable"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 294
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 316
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 323
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 333
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 375
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 341
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "MONSTER_CARNIVAL_LEAVE",
       "packet": "monster/carnival/clientbound/MonsterCarnivalLeave",
       "direction": "clientbound",
@@ -38756,54 +38804,6 @@
         "jms_v185": {
           "state": "n-a",
           "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "TOURNAMENT_MATCH_TABLE",
-      "packet": "field/clientbound/FieldTournamentMatchTable",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField_Tournament::OnTournamentMatchTable"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 316
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 323
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 333
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 375
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 341
         }
       }
     },

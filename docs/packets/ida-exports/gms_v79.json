@@ -3548,13 +3548,16 @@
       ]
     },
     "CField_Tournament::OnTournamentMatchTable": {
-      "address": "",
+      "address": "0x55871f",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "DecodeBuffer",
+          "comment": "match table (m_aaMatch; 0x300=768-byte raw blob, PDB-typed unsigned int[32][6]; single bulk memcpy, not per-field reads; read inside ctor helper sub_750E40 @0x750e40)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "state (m_nState)"
         }
       ]
     },

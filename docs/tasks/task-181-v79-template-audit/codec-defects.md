@@ -91,7 +91,7 @@ Confirm against a precedent list writer's grading before landing.
 
 - **TournamentMatchTable** — atlas `Encode` is an **empty stub**; v79
   `OnTournamentMatchTable @0x55871f` reads a real match-table struct
-  (`sub_750E40`). Needs the real body reversed.
+  (`sub_750E40`). Needs the real body reversed. **FIXED — see DEFECT-6.**
 
 ## DEFECT-3: ContiMove — unconditional single state byte (should be state + state-gated subState) — **FIXED**
 
@@ -203,19 +203,63 @@ case 293, previously unrouted between `0x124` CharacterInteraction and
 decompile) + registry entry. All six cells verify ✅ (`matrix --check`
 clean); goldens replaced (2-byte golden) plus `TestTournamentByteOutputV79`.
 
+## DEFECT-6: TournamentMatchTable — empty stub (true wire is a 769-byte fixed body) — **FIXED**
+
+**Resolution (task-181):** `CField_Tournament::OnTournamentMatchTable` itself
+only allocates + `CDialog::DoModal`'s a match-table dialog — ALL wire reads
+live in that dialog's constructor, which the handler calls as an anonymous
+helper in every version except v87/v95 (named `CMatchTableDlg::CMatchTableDlg`
+there, PDB-backed in v95). Decompiled the handler AND its ctor helper live in
+five IDBs — gms_v79 `OnTournamentMatchTable @0x55871f` → ctor helper
+`sub_750E40 @0x750e40`, gms_v83 `@0x57b78a` → `sub_7DE42C @0x7de42c`, gms_v87
+`@0x5a9ed7` → `CMatchTableDlg::CMatchTableDlg @0x83517f`, gms_v95 `@0x5630d0`
+→ `CMatchTableDlg::CMatchTableDlg @0x780210` (PDB-backed field names), jms_v185
+`@0x5cff1c` → `sub_864212 @0x864212` (gms_v84 `@0x58b29b` byte-identical to
+v83) — all **identical structure**: `CInPacket::DecodeBuffer(this->m_aaMatch,
+0x300)` (a single bulk 768-byte memcpy — the v95 PDB types `m_aaMatch` as
+`unsigned int[32][6]`, but the wire itself carries one opaque buffer, not 192
+individually-typed `Decode4` reads) followed by `this->m_nState =
+CInPacket::Decode1()` (one trailing byte). No count prefix, no conditional
+gating — both fields are fixed-size and always present, so the true wire body
+is a flat, unconditional **769 bytes**. This is a genuine **true false-pass**:
+the prior atlas codec's `Encode` was an **empty stub** (`return w.Bytes()`
+with zero writes) while `Decode` was likewise a no-op — every previously-✅
+export (v83/v84/v87/v95/jms all held `"calls": null`, matching the empty
+stub) was a false pass; the client always expects the 769-byte body and would
+desync on every `OnTournamentMatchTable` packet.
+
+Re-modelled `TournamentMatchTable{match [768]byte, state byte}` (raw
+byte-array modeling of the `DecodeBuffer` blob, matching the existing
+FILETIME/`DecodeBuffer(8)` convention used by `SetITC`/`MtsOperation` rather
+than inventing per-field semantics for the opaque 32x6 grid) — `Encode`/
+`Decode` are unconditional buffer-then-byte read/writes, no gate function
+needed. Widened the channel wrapper `TournamentMatchTableBody(match, state)`
+(its only caller — never actually emitted). Spliced the correct 2-call
+`[DecodeBuffer, Decode1]` order into all six exports (v79 was `unresolved`;
+the other five held `calls: null`), re-pinned all six evidence records,
+regenerated the TournamentMatchTable report per version (selective revert —
+regen churns hundreds of unrelated files), and routed it in
+`template_gms_79_1.json` (opcode `0x126`, `CField_Tournament::OnPacket` case
+294, between `0x125` Tournament and `0x127` TournamentSetPrize — confirmed
+against the live `OnPacket` switch decompile) + registry entry. All six cells
+verify ✅ (`matrix --check` clean); goldens replaced (non-zero 768-byte
+fixture + trailing state byte) plus `TestTournamentMatchTableByteOutputV79`.
+
 ## Remaining divergent writers (proven recipe: RE across IDBs → re-model codec →
 correct exports if their read-order is wrong → re-pin evidence → selective
 per-version report regen → route v79). SnowballState (DEFECT-1),
 AriantArenaUserScore (DEFECT-2), ContiMove (DEFECT-3), TournamentSetPrize
-(DEFECT-4), and Tournament (DEFECT-5) are the completed exemplars — DEFECT-2
-confirmed the count-loop export convention (no splice needed except for the
-previously-unresolved v79 entry), DEFECT-3 confirmed a genuine state-gated
-conditional-field false-pass spanning ALL previously-✅ versions, DEFECT-4
-confirmed a flag-gated conditional-field false-pass where the non-v79
-exports were already correct (only the codec and the v79 export needed
-fixing), DEFECT-5 confirmed a flat-invariant-length false-pass (no gate
-needed at all — the branch determines *meaning*, never byte count).
-- Medium: TournamentMatchTable, MonsterCarnival
+(DEFECT-4), Tournament (DEFECT-5), and TournamentMatchTable (DEFECT-6) are the
+completed exemplars — DEFECT-2 confirmed the count-loop export convention (no
+splice needed except for the previously-unresolved v79 entry), DEFECT-3
+confirmed a genuine state-gated conditional-field false-pass spanning ALL
+previously-✅ versions, DEFECT-4 confirmed a flag-gated conditional-field
+false-pass where the non-v79 exports were already correct (only the codec and
+the v79 export needed fixing), DEFECT-5 confirmed a flat-invariant-length
+false-pass (no gate needed at all — the branch determines *meaning*, never
+byte count), DEFECT-6 confirmed an empty-stub false-pass whose true body lives
+behind a helper/ctor indirection the handler itself never shows.
+- Medium: MonsterCarnival
   Start/Summon/Message/Died/Leave (variable str/loop bodies).
 - Large: MtsOperation — `CITC::OnNormalItemResult` 35-arm dispatcher family
   (`DISPATCHER_FAMILY.md`).

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CharacterPresetInventoryEntry } from "@/types/models/template";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,12 @@ interface InventorySectionProps {
  * Uncontrolled-feeling quantity input: keeps a local text draft so mid-edit
  * keystrokes (e.g. clearing before typing a new value) aren't clobbered by
  * the parent's clamped-to-1 prop echo. Resyncs from `value` whenever it
- * changes out from under the input (preset switch, external clamp).
+ * changes out from under the input (preset switch, external clamp) — but
+ * NEVER while the field is focused, otherwise a reducer round-trip
+ * triggered by clearing the field (clamped to 1) would echo back mid-edit
+ * and prepend a stale "1" in front of the next digit typed. On blur the
+ * draft is force-resynced to the current committed value to normalize
+ * formatting (e.g. leading zeros, stale text from an aborted edit).
  */
 function QuantityInput({
   value,
@@ -26,8 +31,13 @@ function QuantityInput({
   onChange: (value: number) => void;
 }) {
   const [draft, setDraft] = useState(String(value));
+  const isFocusedRef = useRef(false);
 
-  useEffect(() => setDraft(String(value)), [value]);
+  useEffect(() => {
+    if (!isFocusedRef.current) {
+      setDraft(String(value));
+    }
+  }, [value]);
 
   return (
     <Input
@@ -36,6 +46,13 @@ function QuantityInput({
       aria-label="Quantity"
       className="w-20"
       value={draft}
+      onFocus={() => {
+        isFocusedRef.current = true;
+      }}
+      onBlur={() => {
+        isFocusedRef.current = false;
+        setDraft(String(value));
+      }}
       onChange={(e) => {
         setDraft(e.target.value);
         const parsed = Number(e.target.value);

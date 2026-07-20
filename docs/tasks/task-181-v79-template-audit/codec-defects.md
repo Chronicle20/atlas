@@ -57,13 +57,35 @@ actually emitted) takes the widened signature. This fix was implemented and
 green (`go test ./field/clientbound/` + atlas-channel build) but **backed out**
 pending the blocker below.
 
-## Likely same class (not yet re-confirmed against all versions)
-- **AriantArenaUserScore** — atlas models a single `count,name,score`; v79
-  `OnUserScore @0x528799` reads `Decode1(count)` then a **count-length loop** of
-  `DecodeStr,Decode4`. Almost certainly wrong for v83+ too.
+## DEFECT-2: AriantArenaUserScore — single entry (should be a count-length list) — **CONFIRMED, fix pending**
+
+atlas models a single `count,name,score`; the client reads `Decode1(count)` then
+a **count-length loop** of `DecodeStr,Decode4` into `ZArray<UserScore>`.
+Re-confirmed in the live IDBs: v79 `OnUserScore @0x528799`, v95 (PDB-backed)
+`@0x5492b0` — both loop. Same false-pass class as SnowballState (single-entry
+model + single-entry export coincidentally match).
+
+Fix shape: re-model as `entries []{name string, score uint32}` with `count = len`.
+NOTE the export convention question — a variable count-loop can't be flat-expanded
+like SnowballState's fixed 2x; the existing export `[Decode1, DecodeStr, Decode4]`
+already represents the count + one-iteration shape, so the fix is likely
+**codec-only** (Encode/Decode loop that flattens to that shape), no export splice.
+Confirm against a precedent list writer's grading before landing.
+
 - **TournamentMatchTable** — atlas `Encode` is an **empty stub**; v79
   `OnTournamentMatchTable @0x55871f` reads a real match-table struct
-  (`sub_750E40`).
+  (`sub_750E40`). Needs the real body reversed.
+
+## Remaining divergent writers (proven recipe: RE across IDBs → re-model codec →
+correct exports if their read-order is wrong → re-pin evidence → selective
+per-version report regen → route v79). SnowballState (DEFECT-1) is the completed
+exemplar.
+- Small: Tournament (v79 ≤2 bytes vs atlas 3), TournamentSetPrize (conditional
+  int-pair), ContiMove (sub-dispatch — confirm emitted states).
+- Medium: AriantArenaUserScore (DEFECT-2), TournamentMatchTable, MonsterCarnival
+  Start/Summon/Message/Died/Leave (variable str/loop bodies).
+- Large: MtsOperation — `CITC::OnNormalItemResult` 35-arm dispatcher family
+  (`DISPATCHER_FAMILY.md`).
 
 ## BLOCKER: can't cleanly regenerate the v79 matrix reports
 

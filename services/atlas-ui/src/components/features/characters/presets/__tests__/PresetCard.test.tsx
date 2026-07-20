@@ -31,6 +31,11 @@ describe("PresetCard", () => {
     expect(screen.getByTestId("dirty-dot")).toBeInTheDocument();
   });
 
+  it("does not render the dirty-dot when not dirty", () => {
+    render(<PresetCard preset={preset} dirty={false} onOpen={vi.fn()} onDuplicate={vi.fn()} />);
+    expect(screen.queryByTestId("dirty-dot")).toBeNull();
+  });
+
   it("opening (click/Enter) fires onOpen; Duplicate fires onDuplicate", async () => {
     const onOpen = vi.fn();
     const onDuplicate = vi.fn();
@@ -44,5 +49,20 @@ describe("PresetCard", () => {
   it("hides Apply quick-action when onApply is absent", () => {
     render(<PresetCard preset={preset} dirty={false} onOpen={vi.fn()} onDuplicate={vi.fn()} />);
     expect(screen.queryByRole("button", { name: /apply to account/i })).toBeNull();
+  });
+
+  it("clicking Apply fires onApply", async () => {
+    const onApply = vi.fn();
+    render(
+      <PresetCard
+        preset={preset}
+        dirty={false}
+        onOpen={vi.fn()}
+        onDuplicate={vi.fn()}
+        onApply={onApply}
+      />,
+    );
+    await userEvent.click(screen.getByRole("button", { name: /apply to account/i }));
+    expect(onApply).toHaveBeenCalled();
   });
 });

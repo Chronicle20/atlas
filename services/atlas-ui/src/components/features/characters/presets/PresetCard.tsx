@@ -46,7 +46,7 @@ export function PresetCard({ preset, dirty, onOpen, onDuplicate, onApply }: Pres
 
   return (
     <div className="group relative flex flex-col overflow-hidden rounded-xl border bg-card transition hover:border-primary hover:shadow-lg">
-      <div className="absolute right-2 top-2 z-10 hidden gap-1 group-hover:flex group-focus-within:flex">
+      <div className="absolute right-2 top-2 z-10 flex gap-1 opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto">
         <button
           type="button"
           aria-label="Duplicate"
@@ -84,7 +84,9 @@ export function PresetCard({ preset, dirty, onOpen, onDuplicate, onApply }: Pres
               data-testid="dirty-dot"
               title="Unsaved changes"
               className="absolute left-2 top-2 h-1.5 w-1.5 rounded-full bg-primary"
-            />
+            >
+              <span className="sr-only">Unsaved changes</span>
+            </span>
           )}
           {image.isLoading && <Skeleton className="h-[100px] w-[80px]" />}
           {!image.isLoading && !image.isError && image.imageUrl && (

@@ -3147,15 +3147,9 @@
    ]
   },
   "CField_AriantArena::OnShowResult": {
-   "address": "",
+   "address": "0x52914d",
    "direction": "clientbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": null
   },
   "CField_AriantArena::OnUserScore": {
    "address": "",
@@ -3207,24 +3201,34 @@
    ]
   },
   "CField_Coconut::OnCoconutHit": {
-   "address": "",
+   "address": "0x5332fa",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode2",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
     }
    ]
   },
   "CField_Coconut::OnCoconutScore": {
-   "address": "",
+   "address": "0x5332c8",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode2",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
     }
    ]
   },
@@ -3240,13 +3244,16 @@
    ]
   },
   "CField_ContiMove::OnContiState": {
-   "address": "",
+   "address": "0x537526",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
     }
    ]
   },
@@ -3267,24 +3274,22 @@
    ]
   },
   "CField_GuildBoss::OnHealerMove": {
-   "address": "",
+   "address": "0x54195c",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode2",
+     "comment": ""
     }
    ]
   },
   "CField_GuildBoss::OnPulleyStateChange": {
-   "address": "",
+   "address": "0x54198b",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": ""
     }
    ]
   },
@@ -3322,13 +3327,16 @@
    ]
   },
   "CField_MonsterCarnival::OnPersonalCP": {
-   "address": "",
+   "address": "0x54849b",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode2",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
     }
    ]
   },
@@ -3355,13 +3363,12 @@
    ]
   },
   "CField_MonsterCarnival::OnShowGameResult": {
-   "address": "",
+   "address": "0x548a6a",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": ""
     }
    ]
   },
@@ -3377,13 +3384,20 @@
    ]
   },
   "CField_MonsterCarnival::OnTeamCP": {
-   "address": "",
+   "address": "0x5484cb",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
     }
    ]
   },
@@ -3404,24 +3418,34 @@
    ]
   },
   "CField_SnowBall::OnSnowBallHit": {
-   "address": "",
+   "address": "0x5526ad",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
+    },
+    {
+     "op": "Decode2",
+     "comment": ""
     }
    ]
   },
   "CField_SnowBall::OnSnowBallMsg": {
-   "address": "",
+   "address": "0x5526e8",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": ""
+    },
+    {
+     "op": "Decode1",
+     "comment": ""
     }
    ]
   },
@@ -3437,15 +3461,9 @@
    ]
   },
   "CField_SnowBall::OnSnowBallTouch": {
-   "address": "",
+   "address": "0x55288e",
    "direction": "clientbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": null
   },
   "CField_SnowBall::Update": {
    "address": "0x55230d",
@@ -3464,15 +3482,9 @@
    ]
   },
   "CField_Tournament::OnPacket": {
-   "address": "",
+   "address": "0x558549",
    "direction": "clientbound",
-   "unresolved": true,
-   "calls": [
-    {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
-    }
-   ]
+   "calls": null
   },
   "CField_Tournament::OnTournament": {
    "address": "",
@@ -3508,15 +3520,19 @@
    ]
   },
   "CField_Tournament::OnTournamentUEW": {
-   "address": "",
+   "address": "0x5589e4",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": ""
     }
    ]
+  },
+  "CField_Wedding::OnWeddingCeremonyEnd": {
+   "address": "0x55e5c7",
+   "direction": "clientbound",
+   "calls": null
   },
   "CField_Wedding::OnWeddingProgress": {
    "address": "0x55dfbb",
@@ -3563,13 +3579,12 @@
    ]
   },
   "CField_Witchtower::OnScoreUpdate": {
-   "address": "",
+   "address": "0x561a4f",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode1",
+     "comment": ""
     }
    ]
   },
@@ -4556,13 +4571,16 @@
    ]
   },
   "CITC::OnQueryCashResult": {
-   "address": "",
+   "address": "0x57f422",
    "direction": "clientbound",
-   "unresolved": true,
    "calls": [
     {
-     "op": "Unresolved",
-     "comment": "function not found in IDB"
+     "op": "Decode4",
+     "comment": ""
+    },
+    {
+     "op": "Decode4",
+     "comment": ""
     }
    ]
   },

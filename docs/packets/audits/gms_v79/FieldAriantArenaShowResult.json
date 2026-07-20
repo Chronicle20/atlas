@@ -1,21 +1,11 @@
 {
   "WriterName": "FieldAriantArenaShowResult",
   "IDAName": "CField_AriantArena::OnShowResult",
-  "Address": "",
+  "Address": "0x52914d",
   "Variant": "GMS/v79",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/field/clientbound/ariant_arena_show_result.go",
-  "Rows": [
-    {
-      "Index": 0,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
-    }
-  ],
-  "Verdict": 2,
+  "Rows": null,
+  "Verdict": 0,
   "FlatInvalid": false
 }

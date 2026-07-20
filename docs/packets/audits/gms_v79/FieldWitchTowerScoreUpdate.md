@@ -1,6 +1,6 @@
 # FieldWitchTowerScoreUpdate (← `CField_Witchtower::OnScoreUpdate`)
 
-- **IDA:** 
+- **IDA:** 0x561a4f
 - **Atlas file:** `libs/atlas-packet/field/clientbound/witch_tower_score_update.go`
 - **Variant:** GMS/v79
 - **Branch depth:** 1
@@ -11,6 +11,6 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
+| 0 | byte | byte `` | ✅ |  |
 | 1 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 

@@ -1938,6 +1938,159 @@
   ida:
     address: 6322457
   note: 'CMapleTVMan::OnPacket case 319; v83 ENABLE_TV=343.'
+- op: ARIANT_ARENA_SHOW_RESULT
+  direction: clientbound
+  opcode: 147
+  fname: CField_AriantArena::OnShowResult
+  packet: field/clientbound/FieldAriantArenaShowResult
+  provenance: ida-discovered
+  ida:
+    address: 5411149
+  note: 'task-181: v79 IDB CField_AriantArena::OnShowResult (0x52914d, seed template_gms_79_1.json opCode 0x93) reads nothing from CInPacket (UI/string-pool only); body byte-identical (empty) to v83.'
+- op: CONTI_STATE
+  direction: clientbound
+  opcode: 141
+  fname: CField_ContiMove::OnContiState
+  packet: field/clientbound/FieldTransport
+  provenance: ida-discovered
+  ida:
+    address: 5469478
+  note: 'task-181: v79 IDB CField_ContiMove::OnContiState (0x537526, seed template_gms_79_1.json opCode 0x8D) reads Decode1(state)+Decode1(overrideAppear); body byte-identical to v83.'
+- op: HIT_SNOWBALL
+  direction: clientbound
+  opcode: 260
+  fname: CField_SnowBall::OnSnowBallHit
+  packet: field/clientbound/FieldSnowballHit
+  provenance: ida-discovered
+  ida:
+    address: 5580461
+  note: 'task-181: v79 IDB CField_SnowBall::OnSnowBallHit (0x5526ad, seed template_gms_79_1.json opCode 0x104) reads Decode1+Decode2+Decode2; body byte-identical to v83.'
+- op: SNOWBALL_MESSAGE
+  direction: clientbound
+  opcode: 261
+  fname: CField_SnowBall::OnSnowBallMsg
+  packet: field/clientbound/FieldSnowballMessage
+  provenance: ida-discovered
+  ida:
+    address: 5580520
+  note: 'task-181: v79 IDB CField_SnowBall::OnSnowBallMsg (0x5526e8, seed template_gms_79_1.json opCode 0x105) reads Decode1+Decode1 before string-pool chat UI logic; body byte-identical to v83.'
+- op: LEFT_KNOCK_BACK
+  direction: clientbound
+  opcode: 262
+  fname: CField_SnowBall::OnSnowBallTouch
+  packet: field/clientbound/FieldSnowballTouch
+  provenance: ida-discovered
+  ida:
+    address: 5580942
+  note: 'task-181: v79 IDB CField_SnowBall::OnSnowBallTouch (0x55288e, seed template_gms_79_1.json opCode 0x106) reads nothing from CInPacket; body byte-identical (empty) to v83.'
+- op: COCONUT_HIT
+  direction: clientbound
+  opcode: 263
+  fname: CField_Coconut::OnCoconutHit
+  packet: field/clientbound/FieldCoconutHit
+  provenance: ida-discovered
+  ida:
+    address: 5452538
+  note: 'task-181: v79 IDB CField_Coconut::OnCoconutHit (0x5332fa, seed template_gms_79_1.json opCode 0x107) reads Decode2+Decode2+Decode1; body byte-identical to v83.'
+- op: COCONUT_SCORE
+  direction: clientbound
+  opcode: 264
+  fname: CField_Coconut::OnCoconutScore
+  packet: field/clientbound/FieldCoconutScore
+  provenance: ida-discovered
+  ida:
+    address: 5452488
+  note: 'task-181: v79 IDB CField_Coconut::OnCoconutScore (0x5332c8, seed template_gms_79_1.json opCode 0x108) reads Decode2+Decode2; body byte-identical to v83.'
+- op: GUILD_BOSS_HEALER_MOVE
+  direction: clientbound
+  opcode: 265
+  fname: CField_GuildBoss::OnHealerMove
+  packet: field/clientbound/FieldGuildBossHealerMove
+  provenance: ida-discovered
+  ida:
+    address: 5511516
+  note: 'task-181: v79 IDB CField_GuildBoss::OnHealerMove (0x54195c, seed template_gms_79_1.json opCode 0x109) reads Decode2; body byte-identical to v83.'
+- op: GUILD_BOSS_PULLEY_STATE_CHANGE
+  direction: clientbound
+  opcode: 266
+  fname: CField_GuildBoss::OnPulleyStateChange
+  packet: field/clientbound/FieldGuildBossPulleyStateChange
+  provenance: ida-discovered
+  ida:
+    address: 5511563
+  note: 'task-181: v79 IDB CField_GuildBoss::OnPulleyStateChange (0x54198b, seed template_gms_79_1.json opCode 0x10A) reads Decode1; body byte-identical to v83.'
+- op: MONSTER_CARNIVAL_OBTAINED_CP
+  direction: clientbound
+  opcode: 268
+  fname: CField_MonsterCarnival::OnPersonalCP
+  packet: monster/carnival/clientbound/MonsterCarnivalObtainedCP
+  provenance: ida-discovered
+  ida:
+    address: 5538971
+  note: 'task-181: v79 IDB CField_MonsterCarnival::OnPersonalCP (0x54849b, seed template_gms_79_1.json opCode 0x10C) reads Decode2+Decode2; body byte-identical to v83.'
+- op: MONSTER_CARNIVAL_PARTY_CP
+  direction: clientbound
+  opcode: 269
+  fname: CField_MonsterCarnival::OnTeamCP
+  packet: monster/carnival/clientbound/MonsterCarnivalPartyCP
+  provenance: ida-discovered
+  ida:
+    address: 5539019
+  note: 'task-181: v79 IDB CField_MonsterCarnival::OnTeamCP (0x5484cb, seed template_gms_79_1.json opCode 0x10D) reads Decode1+Decode2+Decode2; body byte-identical to v83.'
+- op: MONSTER_CARNIVAL_RESULT
+  direction: clientbound
+  opcode: 274
+  fname: CField_MonsterCarnival::OnShowGameResult
+  packet: monster/carnival/clientbound/MonsterCarnivalResult
+  provenance: ida-discovered
+  ida:
+    address: 5540458
+  note: 'task-181: v79 IDB CField_MonsterCarnival::OnShowGameResult (0x548a6a, seed template_gms_79_1.json opCode 0x112) reads a single Decode1 result-selector byte; body byte-identical to v83.'
+- op: WITCH_TOWER_SCORE_UPDATE
+  direction: clientbound
+  opcode: 279
+  fname: CField_Witchtower::OnScoreUpdate
+  packet: field/clientbound/FieldWitchTowerScoreUpdate
+  provenance: ida-discovered
+  ida:
+    address: 5642831
+  note: 'task-181: v79 IDB CField_Witchtower::OnScoreUpdate (0x561a4f, seed template_gms_79_1.json opCode 0x117) reads a single Decode1 score byte only (v79<95, MajorAtLeast(95) seconds uint32 gated off); body byte-identical to v83.'
+- op: TOURNAMENT_UEW
+  direction: clientbound
+  opcode: 296
+  fname: CField_Tournament::OnTournamentUEW
+  packet: field/clientbound/FieldTournamentUew
+  provenance: ida-discovered
+  ida:
+    address: 5605860
+  note: 'task-181: v79 IDB CField_Tournament::OnTournamentUEW (0x5589e4, seed template_gms_79_1.json opCode 0x128) reads a single Decode1 selector byte before string-pool UI logic; body byte-identical to v83.'
+- op: TOURNAMENT_CHARACTERS
+  direction: clientbound
+  opcode: 297
+  fname: CField_Tournament::OnPacket
+  packet: field/clientbound/FieldTournamentCharacters
+  provenance: ida-discovered
+  ida:
+    address: 5604681
+  note: 'task-181: v79 IDB CField_Tournament::OnPacket case 297 (nullsub_10 @0x558add, seed template_gms_79_1.json opCode 0x129) reads nothing from CInPacket; body byte-identical (empty) to v83.'
+- op: WEDDING_CEREMONY_END
+  direction: clientbound
+  opcode: 299
+  fname: CField_Wedding::OnWeddingCeremonyEnd
+  packet: field/clientbound/FieldWeddingCeremonyEnd
+  provenance: ida-discovered
+  ida:
+    address: 5629383
+  note: 'task-181: v79 IDB CField_Wedding::OnWeddingCeremonyEnd (0x55e5c7, seed template_gms_79_1.json opCode 0x12B) reads nothing from CInPacket (this-state + UI vtable only); body byte-identical (empty) to v83.'
+- op: MTS_OPERATION2
+  direction: clientbound
+  opcode: 323
+  fname: CITC::OnQueryCashResult
+  packet: field/clientbound/FieldMtsOperation2
+  provenance: ida-discovered
+  ida:
+    address: 5764130
+  note: 'task-181: v79 IDB CITC::OnQueryCashResult (0x57f422, seed template_gms_79_1.json opCode 0x143) reads Decode4+Decode4; body byte-identical to v83.'
 - op: LOGIN_PASSWORD
   direction: serverbound
   opcode: 1

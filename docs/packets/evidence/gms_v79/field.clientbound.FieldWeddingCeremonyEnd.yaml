@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldWeddingCeremonyEnd
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CField_Wedding::OnWeddingCeremonyEnd
+    address: "0x55e5c7"
+    decompile_sha256: b4e9dc7cd08dcb2bd75634bb95d4503f5c505dc4e051e706c181fa5496bb3946
+verifies:
+    - libs/atlas-packet/field/clientbound/wedding_ceremony_end_test.go#TestWeddingCeremonyEndByteOutputV79

@@ -91,7 +91,7 @@ describe("PresetEditor", () => {
     expect(screen.getByText("Lv 30 · GM 3")).toBeInTheDocument();
   });
 
-  it("Apply is disabled with a hint when the preset has no id yet (unsaved)", async () => {
+  it("Apply is disabled with a reachable hint when the preset has no id yet (unsaved)", async () => {
     const unsaved = { key: "local-0", attributes: base.attributes };
     render(
       <PresetEditor preset={unsaved} onBack={vi.fn()} onApply={vi.fn()} {...handlers} />,
@@ -102,6 +102,22 @@ describe("PresetEditor", () => {
       "aria-disabled",
       "true",
     );
+    // The hint must be always-visible DOM text (not a `title` on a
+    // pointer-events:none disabled item, which never becomes hoverable).
+    expect(
+      screen.getByText(/save this preset before applying/i),
+    ).toBeInTheDocument();
+  });
+
+  it("Apply hint is absent once the preset is saved (Apply enabled)", async () => {
+    render(
+      <PresetEditor preset={base} onBack={vi.fn()} onApply={vi.fn()} {...handlers} />,
+    );
+    await userEvent.click(screen.getByRole("button", { name: /preset actions/i }));
+    await screen.findByText(/apply to an account/i);
+    expect(
+      screen.queryByText(/save this preset before applying/i),
+    ).toBeNull();
   });
 
   it("kebab Duplicate/Remove call the editor's onDuplicate/onRemove", async () => {

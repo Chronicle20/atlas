@@ -54,13 +54,16 @@ export function PresetActionsMenu({
             <Copy className="size-4" /> Duplicate
           </DropdownMenuItem>
           {onApply && (
-            <DropdownMenuItem
-              onSelect={onApply}
-              disabled={!canApply}
-              title={!canApply ? applyDisabledReason : undefined}
-            >
-              <Send className="size-4" /> Apply to an account…
-            </DropdownMenuItem>
+            <>
+              <DropdownMenuItem onSelect={onApply} disabled={!canApply}>
+                <Send className="size-4" /> Apply to an account…
+              </DropdownMenuItem>
+              {!canApply && applyDisabledReason && (
+                <p className="px-2 py-1 text-xs text-muted-foreground">
+                  {applyDisabledReason}
+                </p>
+              )}
+            </>
           )}
           <DropdownMenuItem
             className="text-destructive focus:text-destructive"

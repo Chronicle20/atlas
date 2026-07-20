@@ -66,22 +66,13 @@ export function PresetEditor({
         <ArrowLeft className="size-4" /> Preset library
       </Button>
 
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <h2 className="text-lg font-semibold">{attrs.name}</h2>
-          <Badge variant="secondary">{jobLabel(attrs.jobId)}</Badge>
-          <span className="text-sm text-muted-foreground">
-            Lv {attrs.level}
-            {attrs.gm > 0 ? ` · GM ${attrs.gm}` : ""}
-          </span>
-        </div>
-        <PresetActionsMenu
-          onDuplicate={onDuplicate}
-          onRemove={onRemove}
-          {...(onApply ? { onApply } : {})}
-          canApply={preset.id !== undefined}
-          applyDisabledReason="Save this preset before applying"
-        />
+      <div className="flex flex-wrap items-center gap-2">
+        <h2 className="text-lg font-semibold">{attrs.name}</h2>
+        <Badge variant="secondary">{jobLabel(attrs.jobId)}</Badge>
+        <span className="text-sm text-muted-foreground">
+          Lv {attrs.level}
+          {attrs.gm > 0 ? ` · GM ${attrs.gm}` : ""}
+        </span>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_252px]">
@@ -91,6 +82,15 @@ export function PresetEditor({
             onSetField={onSetField}
             onAddTag={onAddTag}
             onRemoveTag={onRemoveTag}
+            actions={
+              <PresetActionsMenu
+                onDuplicate={onDuplicate}
+                onRemove={onRemove}
+                {...(onApply ? { onApply } : {})}
+                canApply={preset.id !== undefined}
+                applyDisabledReason="Save this preset before applying"
+              />
+            }
           />
           <ClassAppearanceSection attrs={attrs} onSetField={onSetField} />
           <SpawnProgressionSection attrs={attrs} onSetField={onSetField} />

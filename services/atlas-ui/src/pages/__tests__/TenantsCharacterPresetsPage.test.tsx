@@ -27,6 +27,7 @@ vi.mock(
 const useTenantConfigurationMock = vi.fn();
 const useTenantMock = vi.fn();
 const mutateMock = vi.fn();
+const refetchMock = vi.fn();
 vi.mock("@/lib/hooks/api/useTenants", () => ({
   useTenantConfiguration: (...a: unknown[]) => useTenantConfigurationMock(...a),
   useUpdateTenantConfiguration: () => ({
@@ -78,6 +79,7 @@ beforeEach(() => {
     data: tenant,
     isLoading: false,
     error: null,
+    refetch: refetchMock,
   });
   useTenantMock.mockReturnValue({
     data: tenantBasic,
@@ -129,7 +131,7 @@ describe("TenantsCharacterPresetsPage", () => {
     expect(sentUpdates.presets[0]).not.toHaveProperty("key");
   });
 
-  it("surfaces the persisted presets (with server ids) to the onSuccess callback", () => {
+  it("re-reads the config after the PATCH lands, so onSuccess receives presets with server-assigned ids", async () => {
     render(
       <MemoryRouter initialEntries={["/tenants/t1/character/presets"]}>
         <TenantsCharacterPresetsPage />
@@ -141,20 +143,53 @@ describe("TenantsCharacterPresetsPage", () => {
       };
     };
     const onSuccess = vi.fn();
-    adapter.save([{ attributes: { name: "P" } }], onSuccess);
-    const persistedPresets = [{ id: "server-1", attributes: { name: "P" } }];
-    const updatedTenant = {
-      ...tenant,
-      attributes: {
-        ...tenant.attributes,
-        characters: { templates, presets: persistedPresets },
+
+    // The PATCH itself carries no response body (204). The follow-up GET is
+    // what surfaces the id atlas-configurations assigned to the previously
+    // id-less preset, in the same order it was sent.
+    const persistedPresets = [{ id: "server-uuid-1", attributes: { name: "P" } }];
+    refetchMock.mockResolvedValue({
+      data: {
+        ...tenant,
+        attributes: {
+          ...tenant.attributes,
+          characters: { templates, presets: persistedPresets },
+        },
       },
-    };
+    });
+
+    adapter.save([{ attributes: { name: "P" } }], onSuccess);
+
+    // Drive the mutation's own onSuccess callback the way react-query would.
     const [, options] = mutateMock.mock.calls[0]!;
-    (options as { onSuccess: (data: unknown) => void }).onSuccess(
-      updatedTenant,
-    );
+    await (options as { onSuccess: () => Promise<void> }).onSuccess();
+
+    expect(refetchMock).toHaveBeenCalled();
     expect(onSuccess).toHaveBeenCalledWith(persistedPresets);
+  });
+
+  it("degrades gracefully when the follow-up read fails, still invoking onSuccess without crashing", async () => {
+    render(
+      <MemoryRouter initialEntries={["/tenants/t1/character/presets"]}>
+        <TenantsCharacterPresetsPage />
+      </MemoryRouter>,
+    );
+    const { adapter } = editorMock.mock.calls.at(-1)![0] as {
+      adapter: {
+        save: (p: unknown[], onSuccess: (persisted?: unknown[]) => void) => void;
+      };
+    };
+    const onSuccess = vi.fn();
+    refetchMock.mockRejectedValue(new Error("network unreachable"));
+
+    adapter.save([{ attributes: { name: "P" } }], onSuccess);
+
+    const [, options] = mutateMock.mock.calls[0]!;
+    await expect(
+      (options as { onSuccess: () => Promise<void> }).onSuccess(),
+    ).resolves.toBeUndefined();
+
+    expect(onSuccess).toHaveBeenCalledWith();
   });
 
   it("supplies apply.tenant capability", () => {

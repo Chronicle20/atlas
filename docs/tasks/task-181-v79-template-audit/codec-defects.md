@@ -126,16 +126,53 @@ Clock and `0x8D` FieldTransportState) + registry entry. All six cells verify
 two-byte cases) plus `TestContiMoveByteOutputV79` /
 `TestContiMoveByteOutputV79Nullsub`.
 
+## DEFECT-4: TournamentSetPrize — unconditional int-pair (should be flag-gated) — **FIXED**
+
+**Resolution (task-181):** re-read `CField_Tournament::OnTournamentSetPrize` live
+across five IDBs — gms_v79 `@0x5587e3`, gms_v83 `@0x57b815`, gms_v87 `@0x5a9f62`,
+gms_v95 `@0x5633a0` (PDB-backed), jms_v185 `@0x5cffa7` (gms_v84 `@0x58b326`
+byte-identical to v83) — all **identical structure**: `Decode1(slot)`,
+`Decode1(flag)`; only when `flag != 0` does the client `Decode4` two further
+ints (both fed to `CItemInfo::GetItemName`, formatted into the client string
+`"...PRIZE...1ST: %s...2ND: %s"` — SP_917 in v83/v79). When `flag == 0` no
+further ints are read; `slot` instead selects one of two success/failure
+StringPool messages. This is a genuine **true false-pass**, not a route-only
+case, of the same class as ContiMove: the prior atlas codec wrote/read the two
+item ids **unconditionally**, silently desyncing the client whenever
+`flag == 0`. The v83/v84/v87/v95/jms ida-exports already held the CORRECT
+guarded shape (`Decode4` rows carried `guard: "CInPacket::Decode1(v2)"`), so
+only the codec was wrong there — the exports themselves were never spliced for
+those five. Only the v79 export was `unresolved` (function not found under
+that name at export time); spliced in its address + the same 4-call guarded
+shape.
+
+Re-modelled `TournamentSetPrize{slot byte, flag byte, itemId1 uint32, itemId2
+uint32}` (renamed the trailing fields from `itemId`/`count` to `itemId1`/
+`itemId2` — both are verified item ids, not an item+count pair) with a shared
+`tournamentSetPrizeHasItems(flag)` gate (`flag != 0`) used by both `Encode`
+(conditionally writes the two ints) and `Decode` (conditionally reads them) —
+deterministic on the flag value itself, no off-wire recovery needed. Widened
+the channel wrapper `TournamentSetPrizeBody(slot, flag, itemId1, itemId2)`
+(its only caller — never actually emitted). Re-pinned the gms_v79 evidence
+record, regenerated the TournamentSetPrize report (selective per-version
+revert — the v79 report set is ~200+ files stale and regen churns all of
+them), and routed it in `template_gms_79_1.json` (opcode `0x127`, previously
+unrouted between `0x124` CharacterInteraction and `0x128` TournamentUew) +
+registry entry. All six cells verify ✅ (`matrix --check` clean); goldens
+updated (flag-set + flag-clear cases) plus `TestTournamentSetPrizeByteOutputV79`
+/ `TestTournamentSetPrizeByteOutputV79NoItems`.
+
 ## Remaining divergent writers (proven recipe: RE across IDBs → re-model codec →
 correct exports if their read-order is wrong → re-pin evidence → selective
 per-version report regen → route v79). SnowballState (DEFECT-1),
-AriantArenaUserScore (DEFECT-2), and ContiMove (DEFECT-3) are the completed
-exemplars — DEFECT-2 confirmed the count-loop export convention (no splice
-needed except for the previously-unresolved v79 entry), DEFECT-3 confirmed a
-genuine state-gated conditional-field false-pass spanning ALL previously-✅
-versions, not just v79.
-- Small: Tournament (v79 ≤2 bytes vs atlas 3), TournamentSetPrize (conditional
-  int-pair).
+AriantArenaUserScore (DEFECT-2), ContiMove (DEFECT-3), and TournamentSetPrize
+(DEFECT-4) are the completed exemplars — DEFECT-2 confirmed the count-loop
+export convention (no splice needed except for the previously-unresolved v79
+entry), DEFECT-3 confirmed a genuine state-gated conditional-field false-pass
+spanning ALL previously-✅ versions, DEFECT-4 confirmed a flag-gated
+conditional-field false-pass where the non-v79 exports were already correct
+(only the codec and the v79 export needed fixing).
+- Small: Tournament (v79 ≤2 bytes vs atlas 3).
 - Medium: TournamentMatchTable, MonsterCarnival
   Start/Summon/Message/Died/Leave (variable str/loop bodies).
 - Large: MtsOperation — `CITC::OnNormalItemResult` 35-arm dispatcher family

@@ -4,7 +4,7 @@
     "gms_v48": "8d1a4c02745ee1cb5b41c358b749c6a55883207c109784c6e09b00545a3d2dc8",
     "gms_v61": "67395ebec4c069f827ade3a69a2e32286c750b66f305d9eba197ed2e6db87de3",
     "gms_v72": "005ee090459a5f2bea74a84ba7652af94ca98214fb61ff8b07090907581ef267",
-    "gms_v79": "2db999334587b0cbfd92492b711ce03664f9a938b4a92febf0e5aab476747618",
+    "gms_v79": "3edefd3be192e5eb89c998f04b9f3f036ccf613fcbf7690b741ca84d02ad1078",
     "gms_v83": "7e579f34a746da52813f16fe4f11d8dc946e265dcd38b8eccae876b6102686e2",
     "gms_v84": "a0302037bcd6e2bc2f4bf590a291b03a5b22e3f372b52a6c1ed6b77654d0d62e",
     "gms_v87": "3bbdc03e4959b14419cd684ea84785d6f6a2c03f1d93c3c9942b352f14065b9c",
@@ -37426,6 +37426,54 @@
     },
     {
       "kind": "op",
+      "op": "TOURNAMENT_SET_PRIZE",
+      "packet": "field/clientbound/FieldTournamentSetPrize",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField_Tournament::OnTournamentSetPrize"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 295
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 317
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 324
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 334
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 376
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 342
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "TOURNAMENT_UEW",
       "packet": "field/clientbound/FieldTournamentUew",
       "direction": "clientbound",
@@ -38756,54 +38804,6 @@
         "jms_v185": {
           "state": "verified",
           "opcode": 341
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "TOURNAMENT_SET_PRIZE",
-      "packet": "field/clientbound/FieldTournamentSetPrize",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField_Tournament::OnTournamentSetPrize"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 317
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 324
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 334
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 376
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 342
         }
       }
     },

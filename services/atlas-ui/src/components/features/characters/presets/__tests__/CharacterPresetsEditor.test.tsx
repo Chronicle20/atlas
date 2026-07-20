@@ -5,6 +5,7 @@ import { MemoryRouter, useSearchParams } from "react-router-dom";
 import { CharacterPresetsEditor, type PresetsEditorAdapter } from "../CharacterPresetsEditor";
 import { DEFAULT_PRESET_ATTRIBUTES } from "../presetEditorState";
 import type { Tenant } from "@/types/models/tenant";
+import type { CharacterPreset } from "@/types/models/template";
 
 // Mock the action bar + heavy leaves; keep library + editor real enough to assert flow.
 vi.mock("@/components/DetailActionBarContext", () => ({ useRegisterDetailActionBar: vi.fn() }));
@@ -263,5 +264,44 @@ describe("CharacterPresetsEditor apply orchestration", () => {
     await userEvent.click(screen.getByText("apply:Two"));
     await userEvent.click(await screen.findByText("pick-account"));
     expect(await screen.findByText("apply-dialog:42:b2")).toBeInTheDocument();
+  });
+
+  it("backfills the server id on save so a freshly-created preset becomes Apply-eligible in-session, without moving selection/URL", async () => {
+    const { useRegisterDetailActionBar } = await import("@/components/DetailActionBarContext");
+    // Adapter echoes back the sent presets, minting a server id for any that
+    // arrived without one — this is the contract Task 20's page adapter must
+    // fulfill (see the save() JSDoc in CharacterPresetsEditor.tsx).
+    const save = vi.fn(
+      (sent: CharacterPreset[], onSuccess: (persisted?: CharacterPreset[]) => void) => {
+        const persisted: CharacterPreset[] = sent.map((p) =>
+          p.id ? p : { ...p, id: "new-server-id" },
+        );
+        onSuccess(persisted);
+      },
+    );
+    renderWithProbe("/", adapter({ apply: { tenant }, save }));
+
+    // Create a new preset in-session (no id yet) and name it.
+    await userEvent.click(screen.getByText("new"));
+    await screen.findByText(/^editor:/);
+    expect(screen.getByTestId("preset-param")).toHaveTextContent("local-0");
+    await userEvent.click(screen.getByText("make-dirty"));
+
+    // Trigger Save via the action bar registration, as the real bar would.
+    const calls = (useRegisterDetailActionBar as unknown as { mock: { calls: unknown[][] } }).mock.calls;
+    const lastReg = () =>
+      calls.map((c) => c[0]).filter(Boolean).at(-1) as { onSave: () => void; dirty: boolean };
+    lastReg().onSave();
+    expect(save).toHaveBeenCalled();
+
+    // Selection/URL must not have moved off the local-<n> key.
+    expect(screen.getByTestId("preset-param")).toHaveTextContent("local-0");
+    // No longer dirty post-save (rebaselined with the backfilled id).
+    await waitFor(() => expect(lastReg().dirty).toBe(false));
+
+    // Apply is now enabled for this preset (no "save first" block).
+    await userEvent.click(screen.getByText("apply-open"));
+    await userEvent.click(await screen.findByText("pick-account"));
+    expect(await screen.findByText("apply-dialog:42:new-server-id")).toBeInTheDocument();
   });
 });

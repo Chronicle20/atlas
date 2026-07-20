@@ -62,7 +62,7 @@ export type PresetEditorAction =
   | { type: "addTag"; key: string; tag: string }
   | { type: "removeTag"; key: string; tag: string }
   | { type: "discard" }
-  | { type: "savedOk" };
+  | { type: "savedOk"; persisted?: CharacterPreset[] };
 
 export const DEFAULT_PRESET_ATTRIBUTES: CharacterPresetAttributes = {
   name: "New preset",
@@ -288,7 +288,23 @@ export function presetReducer(
       );
       return { ...state, presets, localSeq: seq, selectedKey: null };
     }
-    case "savedOk":
-      return { ...state, baseline: state.presets.map(project) };
+    case "savedOk": {
+      // Positional match is safe here: `persisted` is whatever the adapter's
+      // save() success callback hands back, and the container always sends
+      // presets via projectForSave() in array order — the server is expected
+      // to echo the same order back, so index i in `persisted` corresponds to
+      // index i in state.presets. We only ever use this to backfill an id
+      // that is still undefined (a freshly-created preset); an id that is
+      // already set is left untouched, and key/attributes/selectedKey are
+      // never touched here.
+      const presets = action.persisted
+        ? state.presets.map((p, i) =>
+            p.id === undefined && action.persisted![i]?.id !== undefined
+              ? { ...p, id: action.persisted![i]!.id }
+              : p,
+          )
+        : state.presets;
+      return { ...state, presets, baseline: presets.map(project) };
+    }
   }
 }

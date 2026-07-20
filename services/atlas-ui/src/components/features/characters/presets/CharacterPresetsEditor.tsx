@@ -23,8 +23,19 @@ export interface PresetsEditorAdapter {
   presets: CharacterPreset[] | undefined;
   isLoading: boolean;
   error: Error | null;
-  /** Fire the context's PATCH; call onSuccess only when it lands. */
-  save: (presets: CharacterPreset[], onSuccess: () => void) => void;
+  /**
+   * Fire the context's PATCH; call onSuccess only when it lands.
+   *
+   * Contract for the page adapter (Task 20): onSuccess MUST be invoked with
+   * the persisted presets — the same array that was sent, but with
+   * server-issued `id`s filled in for any that were missing one — in the
+   * same order they were sent. This lets the reducer backfill ids onto
+   * freshly-created working presets so Apply becomes available for them
+   * without a page reload. Omitting the argument (or passing undefined) is
+   * tolerated for backward compatibility, but a newly-created preset will
+   * then stay Apply-disabled until the page is reloaded.
+   */
+  save: (presets: CharacterPreset[], onSuccess: (persisted?: CharacterPreset[]) => void) => void;
   isSaving: boolean;
   /** Present only in tenant context; absent on the template page hides Apply. */
   apply?: { tenant: Tenant };
@@ -124,6 +135,10 @@ export function CharacterPresetsEditor({ adapter }: CharacterPresetsEditorProps)
   };
   const remove = (key: string) => {
     dispatch({ type: "removePreset", key });
+    // Unconditional syncSelection(null) relies on remove() only ever being
+    // called for the currently-selected preset (the library grid has no
+    // remove affordance today). If a library-grid remove is added later,
+    // this must branch on `key === state.selectedKey` before clearing.
     syncSelection(null);
   };
   const discard = () => {
@@ -148,7 +163,9 @@ export function CharacterPresetsEditor({ adapter }: CharacterPresetsEditorProps)
         return;
       }
     }
-    adapter.save(projected, () => dispatch({ type: "savedOk" }));
+    adapter.save(projected, (persisted) =>
+      dispatch({ type: "savedOk", ...(persisted ? { persisted } : {}) }),
+    );
   };
 
   // Drive the shared detail-page action bar instead of a local Save/Discard

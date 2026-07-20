@@ -149,6 +149,30 @@ describe("presetEditorState", () => {
     expect(presetDirty(s, "a1")).toBe(false);
   });
 
+  it("savedOk with persisted backfills a missing id by position and rebaselines", () => {
+    let s = loaded([preset("a1", "One")]);
+    s = presetReducer(s, { type: "addPreset" }); // local-0, no id
+    expect(s.presets[1]!.id).toBeUndefined();
+    const persisted: CharacterPreset[] = [
+      { id: "a1", attributes: s.presets[0]!.attributes },
+      { id: "new-server-id", attributes: s.presets[1]!.attributes },
+    ];
+    s = presetReducer(s, { type: "savedOk", persisted });
+    expect(s.presets[1]!.id).toBe("new-server-id");
+    expect(s.presets[1]!.key).toBe("local-0"); // key untouched
+    expect(isDirty(s)).toBe(false);
+    expect(presetDirty(s, "local-0")).toBe(false);
+  });
+
+  it("savedOk with persisted never overwrites an already-set id", () => {
+    let s = loaded([preset("a1", "One")]);
+    const persisted: CharacterPreset[] = [
+      { id: "different-id", attributes: s.presets[0]!.attributes },
+    ];
+    s = presetReducer(s, { type: "savedOk", persisted });
+    expect(s.presets[0]!.id).toBe("a1");
+  });
+
   it("presetDirty reflects a single preset's diff vs baseline", () => {
     let s = loaded([preset("a1", "One"), preset("b2", "Two")]);
     s = presetReducer(s, { type: "setField", key: "b2", path: "level", value: 7 });

@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -150,17 +150,35 @@ export function ApplyPresetDialog({
   });
   const validity = validityQuery.data;
 
-  // Reset form on open/close. If an `initialPresetId` was supplied and it
-  // matches a saved preset, pre-select it; otherwise fall back to no
-  // selection (unchanged default behavior).
+  // Seed the form exactly once per dialog open (mirrors the pre-task
+  // behavior of one reset per `open` transition). If an `initialPresetId`
+  // was supplied and it matches a saved preset, pre-select it; otherwise
+  // fall back to no selection. `presets` is memoized above, but its
+  // identity can still change while the dialog stays open (e.g. the
+  // sibling character-presets editor invalidates the same tenant-config
+  // query on save) — `seededRef` guards against that later change
+  // re-running `form.reset` and clobbering whatever the user has since
+  // typed or picked. If the dialog opens before `presets` has loaded
+  // (empty array) and `initialPresetId` can't resolve yet, we deliberately
+  // skip marking as seeded so a later presets-load can still land the
+  // pre-selection exactly once.
+  const seededRef = useRef(false);
   useEffect(() => {
-    if (open) {
-      const preset =
-        initialPresetId && presets.some((p) => p.id === initialPresetId)
-          ? initialPresetId
-          : "";
-      form.reset({ presetId: preset, worldId: 0, name: "" });
+    if (!open) {
+      seededRef.current = false;
+      return;
     }
+    if (seededRef.current) return;
+
+    const resolvesNow =
+      !!initialPresetId && presets.some((p) => p.id === initialPresetId);
+    const stillWaitingForPresets =
+      !!initialPresetId && !resolvesNow && presets.length === 0;
+    if (stillWaitingForPresets) return;
+
+    const preset = resolvesNow ? initialPresetId : "";
+    form.reset({ presetId: preset, worldId: 0, name: "" });
+    seededRef.current = true;
   }, [open, form, initialPresetId, presets]);
 
   // Read isValid unconditionally (not inside the short-circuiting `||` chain

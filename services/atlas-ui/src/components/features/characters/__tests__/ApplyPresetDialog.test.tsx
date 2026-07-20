@@ -297,7 +297,11 @@ describe("ApplyPresetDialog", () => {
     );
   });
 
-  it("does not pre-select any preset when initialPresetId does not match a saved preset", () => {
+  it("does not pre-select any preset when initialPresetId does not match a saved preset", async () => {
+    useNameValidityMock.mockReturnValue({
+      data: { valid: true },
+      isLoading: false,
+    });
     render(
       <ApplyPresetDialog
         {...defaultProps({ initialPresetId: "does-not-exist" })}
@@ -306,6 +310,104 @@ describe("ApplyPresetDialog", () => {
     for (const tile of screen.getAllByRole("radio")) {
       expect(tile).toHaveAttribute("aria-checked", "false");
     }
+
+    // Strengthen beyond the aria-checked check: a naive implementation could
+    // set the form's `presetId` to the literal invalid string
+    // "does-not-exist" (rather than "") and every tile would still correctly
+    // render aria-checked="false" (none of them equals that literal string),
+    // masking the bug. Fill in world + a valid name and confirm Apply stays
+    // disabled because `presetId` is actually "" and fails the "select a
+    // preset" schema validation — proving the resolved value, not just the
+    // rendered tiles.
+    const nativeSelect = document.querySelector(
+      'select[aria-hidden="true"]',
+    ) as HTMLSelectElement | null;
+    if (nativeSelect) {
+      fireEvent.change(nativeSelect, { target: { value: "0" } });
+    }
+    const nameInput = screen.getByPlaceholderText("3-12 characters");
+    await userEvent.type(nameInput, "Foobar");
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /apply/i })).toBeDisabled();
+    });
+  });
+
+  it("does not clobber user edits when presets changes identity while the dialog stays open", async () => {
+    useNameValidityMock.mockReturnValue({
+      data: { valid: true },
+      isLoading: false,
+    });
+
+    const initialConfig = {
+      attributes: {
+        characters: { presets: twoPresets },
+        worlds: [
+          { name: "Scania", flag: "" },
+          { name: "Bera", flag: "" },
+        ],
+      },
+    };
+    useTenantConfigurationMock.mockReturnValue({
+      data: initialConfig,
+      isLoading: false,
+    });
+
+    const { rerender } = render(
+      <ApplyPresetDialog
+        {...defaultProps({ initialPresetId: "preset-1" })}
+      />,
+    );
+
+    // Confirm the initial seed landed (Warrior pre-selected).
+    const warriorTile = await screen.findByRole("radio", {
+      name: /Warrior/i,
+    });
+    await waitFor(() =>
+      expect(warriorTile).toHaveAttribute("aria-checked", "true"),
+    );
+
+    // User changes state: types a name and picks a DIFFERENT preset.
+    const nameInput = screen.getByPlaceholderText("3-12 characters");
+    await userEvent.type(nameInput, "MyHero");
+
+    const mageTile = screen
+      .getAllByRole("radio")
+      .find((el) => el.textContent?.includes("Mage"))!;
+    await userEvent.click(mageTile);
+    await waitFor(() =>
+      expect(mageTile).toHaveAttribute("aria-checked", "true"),
+    );
+
+    // Simulate the tenant-config query being invalidated/refetched with a
+    // NEW reference but equal content (as happens when the sibling
+    // character-presets editor saves while this dialog is open).
+    const newConfigSameContent = {
+      attributes: {
+        characters: { presets: [...twoPresets] },
+        worlds: [
+          { name: "Scania", flag: "" },
+          { name: "Bera", flag: "" },
+        ],
+      },
+    };
+    useTenantConfigurationMock.mockReturnValue({
+      data: newConfigSameContent,
+      isLoading: false,
+    });
+    rerender(
+      <ApplyPresetDialog
+        {...defaultProps({ initialPresetId: "preset-1" })}
+      />,
+    );
+
+    // The user's typed name and manually-picked preset must survive — NOT
+    // be reset back to initialPresetId="preset-1"/"".
+    expect(screen.getByPlaceholderText("3-12 characters")).toHaveValue(
+      "MyHero",
+    );
+    expect(mageTile).toHaveAttribute("aria-checked", "true");
+    expect(warriorTile).toHaveAttribute("aria-checked", "false");
   });
 });
 

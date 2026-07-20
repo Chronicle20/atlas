@@ -4,7 +4,7 @@
     "gms_v48": "8d1a4c02745ee1cb5b41c358b749c6a55883207c109784c6e09b00545a3d2dc8",
     "gms_v61": "67395ebec4c069f827ade3a69a2e32286c750b66f305d9eba197ed2e6db87de3",
     "gms_v72": "005ee090459a5f2bea74a84ba7652af94ca98214fb61ff8b07090907581ef267",
-    "gms_v79": "7438b61e7456816de65c3c7da4a6b072975101fddfdcf57273939e7cb91945d7",
+    "gms_v79": "6dd44d5b4d8dbdcf512a5160dbbd0d7e540f35252e9805069480a4c0e4dd0816",
     "gms_v83": "2c83800f68d4fb785bed69ea7767b363acb38db4f445a1a772a4a33013c11400",
     "gms_v84": "add645423c5199734172e15c44a7438656e893918efd1b5147cf31e546e002f1",
     "gms_v87": "cdb60fec8064a3e6cadef27348923f541ba22873d8b4015010582c2718b14fd6",
@@ -36309,6 +36309,54 @@
     },
     {
       "kind": "op",
+      "op": "MONSTER_CARNIVAL_SUMMON",
+      "packet": "monster/carnival/clientbound/MonsterCarnivalMessage",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField_MonsterCarnival::OnRequestResult"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 270
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 292
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 299
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 309
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 349
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 316
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "IDA_0X10F",
       "direction": "clientbound",
       "tier1": false,
@@ -36352,6 +36400,54 @@
         "jms_v185": {
           "state": "n-a",
           "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "MONSTER_CARNIVAL_MESSAGE",
+      "packet": "monster/carnival/clientbound/MonsterCarnivalMessage",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField_MonsterCarnival::OnRequestResult"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 271
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 293
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 300
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 310
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 350
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 317
         }
       }
     },
@@ -37229,102 +37325,6 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 352
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "MONSTER_CARNIVAL_SUMMON",
-      "packet": "monster/carnival/clientbound/MonsterCarnivalMessage",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField_MonsterCarnival::OnRequestResult"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 292
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 299
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 309
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 349
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 316
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "MONSTER_CARNIVAL_MESSAGE",
-      "packet": "monster/carnival/clientbound/MonsterCarnivalMessage",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField_MonsterCarnival::OnRequestResult"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 293
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 300
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 310
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 350
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 317
         }
       }
     },

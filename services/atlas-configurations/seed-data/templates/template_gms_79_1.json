@@ -2690,6 +2690,14 @@
         "writer": "MonsterCarnivalPartyCP"
       },
       {
+        "opCode": "0x10E",
+        "writer": "MonsterCarnivalSummon"
+      },
+      {
+        "opCode": "0x10F",
+        "writer": "MonsterCarnivalMessage"
+      },
+      {
         "opCode": "0x112",
         "writer": "MonsterCarnivalResult"
       },

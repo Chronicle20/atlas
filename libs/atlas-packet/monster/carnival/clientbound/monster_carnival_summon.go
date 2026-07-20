@@ -22,10 +22,12 @@ const MonsterCarnivalSummonWriter = "MonsterCarnivalSummon"
 //   - idx  : byte   — Decode1; RequestResult arg2 (the summoned slot index)
 //   - name : string — DecodeStr; the requesting character's name (length-prefixed ascii)
 //
-// IDA basis: CField_MonsterCarnival::OnRequestResult — v83 @0x56557d, v84 @0x572284,
-// v87 @0x590303, v95 @0x55a890, jms @0x5b0332. The `bResult != 0` (SUMMON) branch:
-// `v3=Decode1; v4=Decode1; DecodeStr(name); RequestResult(v3, v4, name)`. This is a
-// DISTINCT wire shape from the MESSAGE mode (single Decode1) of the same dispatcher.
+// IDA basis: CField_MonsterCarnival::OnRequestResult — v79 @0x54850a, v83 @0x56557d,
+// v84 @0x572284, v87 @0x590303, v95 @0x55a890, jms @0x5b0332. The `bResult != 0`
+// (SUMMON) branch: `v3=Decode1; v4=Decode1; DecodeStr(name); RequestResult(v3, v4,
+// name)`. This is a DISTINCT wire shape from the MESSAGE mode (single Decode1) of
+// the same dispatcher. v79 confirmed against the live OnPacket dispatcher switch:
+// case 270 -> OnRequestResult(1, packet) (arg!=0, SUMMON).
 type MonsterCarnivalSummon struct {
 	tab  byte
 	idx  byte

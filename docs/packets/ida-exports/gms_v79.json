@@ -3391,13 +3391,25 @@
       ]
     },
     "CField_MonsterCarnival::OnRequestResult": {
-      "address": "",
+      "address": "0x54850a",
       "direction": "clientbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "",
+          "guard": "!a2"
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "DecodeStr",
+          "comment": ""
         }
       ]
     },

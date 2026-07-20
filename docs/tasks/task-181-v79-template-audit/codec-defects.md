@@ -278,12 +278,69 @@ regenerated the MonsterCarnivalStart report (selective revert), routed
 `TestMonsterCarnivalStartByteOutputV79`. All six cells verify ✅ (`matrix
 --check` clean).
 
+## DEFECT-8: MonsterCarnivalSummon + MonsterCarnivalMessage — route-only gap, both codecs already correct — **FIXED**
+
+**Resolution (task-181):** `CField_MonsterCarnival::OnRequestResult` is a
+single dispatched function selected by a leading `int a2` argument passed by
+its caller — `CField_MonsterCarnival::OnPacket` (`sub_54827B` in the v79 IDB)
+switches on the packet opcode and calls `OnRequestResult(1, packet)` for
+case 270 (`0x10E`, SUMMON) and `OnRequestResult(0, packet)` for case 271
+(`0x10F`, MESSAGE) — confirmed against the live dispatcher switch decompile
+in v79 (`@0x54827b`). Decompiled `OnRequestResult` itself live in five IDBs —
+gms_v79 `@0x54850a`, gms_v83 `@0x56557d`, gms_v87 `@0x590303`, gms_v95
+`@0x55a890` (PDB-backed, parameter literally named `bResult`), jms_v185
+`@0x5b0332` (gms_v84 `@0x572284` byte-identical to v83) — **identical
+two-branch structure in all of them**:
+
+- `a2 != 0` (SUMMON, opcode `0x10E`): `Decode1` tab, `Decode1` idx, `DecodeStr`
+  name, then `RequestResult(tab, idx, name)` — no further packet reads.
+- `a2 == 0` (MESSAGE, opcode `0x10F`): a single `Decode1` message-selector
+  byte, then a `switch` over cached `StringPool::GetString` IDs
+  (`SP_4082..SP_4086` / raw IDs `0x101B..0x101F` depending on the version's
+  StringPool table) to format a chat-log line — the displayed text comes from
+  the client's local string table, never from the packet, and no further
+  bytes are read after the selector.
+
+Unlike DEFECT-1..6, this was **not a false pass** — the pre-existing atlas
+`MonsterCarnivalSummon` (`tab byte, idx byte, name string`) and
+`MonsterCarnivalMessage` (`message byte`) codecs already modelled both
+branch shapes correctly, and v83/v84/v87/v95/jms were already ✅ for both
+ops with correct 4-call/1-call exports. The only gap was **v79**: both ops'
+shared export entry (`CField_MonsterCarnival::OnRequestResult`) held
+`unresolved` (function not found at export time), and neither opcode `0x10E`
+nor `0x10F` was routed in `template_gms_79_1.json`. Spliced the real
+guard-gated read order (`Decode1` guarded `!a2` for MESSAGE, then the
+unconditional `Decode1, Decode1, DecodeStr` for SUMMON — mirroring the
+existing v83/v84/v87/jms export shape) into the v79 export, re-pinned both
+evidence records, regenerated both reports (selective revert — the root
+regen command still churns ~217 unrelated files; reverted everything except
+the two `MonsterCarnival{Summon,Message}` report pairs and `git clean`ed the
+recreated strays), and routed `0x10E`/`0x10F` in the v79 template between
+`0x10D` MonsterCarnivalPartyCP and `0x112` MonsterCarnivalResult, plus two
+registry entries. Added `TestMonsterCarnivalSummonByteOutputV79` and
+`TestMonsterCarnivalMessageByteOutputV79`. Both v79 cells verify ✅ (`matrix
+--check` clean); all five other versions remain ✅ for both ops.
+
+Note: `status.json`/`STATUS.md` display a pre-existing, unrelated cosmetic
+bug for the SUMMON row's "packet" column (it shows
+`monster/carnival/clientbound/MonsterCarnivalMessage` instead of
+`MonsterCarnivalSummon`) — `tools/packet-audit/internal/matrix/build.go`'s
+`rowPacketAndTier()` picks the alphabetically-first writer sharing an FName
+without matching it back to the specific op row, and both ops share
+`CField_MonsterCarnival::OnRequestResult`. This does not affect per-op cell
+grading (`worstCandidateCell()` grades each writer independently — both ops
+show correct, independent ✅ verdicts) or `matrix --check`/`gatecheck`
+(no `gates.yaml` entry keys on either packet name today). Left unfixed as
+out-of-scope for this route-only task; flagging for a future cleanup of
+`build.go`'s FName→packet resolution when multiple ops share one dispatcher.
+
 ## Remaining divergent writers (proven recipe: RE across IDBs → re-model codec →
 correct exports if their read-order is wrong → re-pin evidence → selective
 per-version report regen → route v79). SnowballState (DEFECT-1),
 AriantArenaUserScore (DEFECT-2), ContiMove (DEFECT-3), TournamentSetPrize
-(DEFECT-4), Tournament (DEFECT-5), TournamentMatchTable (DEFECT-6), and
-MonsterCarnivalStart (DEFECT-7) are the completed exemplars — DEFECT-2
+(DEFECT-4), Tournament (DEFECT-5), TournamentMatchTable (DEFECT-6),
+MonsterCarnivalStart (DEFECT-7), and MonsterCarnivalSummon +
+MonsterCarnivalMessage (DEFECT-8) are the completed exemplars — DEFECT-2
 confirmed the count-loop export convention (no splice needed except for the
 previously-unresolved v79 entry), DEFECT-3 confirmed a genuine state-gated
 conditional-field false-pass spanning ALL previously-✅ versions, DEFECT-4
@@ -292,11 +349,12 @@ were already correct (only the codec and the v79 export needed fixing),
 DEFECT-5 confirmed a flat-invariant-length false-pass (no gate needed at all
 — the branch determines *meaning*, never byte count), DEFECT-6 confirmed an
 empty-stub false-pass whose true body lives behind a helper/ctor indirection
-the handler itself never shows, and DEFECT-7 confirmed the inverse case: a
-codec that was already right, where the only defect was an unrouted v79
-opcode + an unresolved v79 export.
-- Medium: MonsterCarnival Summon/Message/Died/Leave (variable str/loop
-  bodies).
+the handler itself never shows, DEFECT-7 confirmed the inverse case: a codec
+that was already right, where the only defect was an unrouted v79 opcode + an
+unresolved v79 export, and DEFECT-8 confirmed the same inverse case for a
+2-way arg-dispatched (not opcode-dispatched) function sharing one fname
+across two ops.
+- Medium: MonsterCarnival Died/Leave (variable str/loop bodies).
 - Large: MtsOperation — `CITC::OnNormalItemResult` 35-arm dispatcher family
   (`DISPATCHER_FAMILY.md`).
 

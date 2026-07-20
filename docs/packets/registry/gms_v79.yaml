@@ -2064,6 +2064,24 @@
   ida:
     address: 5539019
   note: 'task-181: v79 IDB CField_MonsterCarnival::OnTeamCP (0x5484cb, seed template_gms_79_1.json opCode 0x10D) reads Decode1+Decode2+Decode2; body byte-identical to v83.'
+- op: MONSTER_CARNIVAL_SUMMON
+  direction: clientbound
+  opcode: 270
+  fname: CField_MonsterCarnival::OnRequestResult
+  packet: monster/carnival/clientbound/MonsterCarnivalSummon
+  provenance: ida-discovered
+  ida:
+    address: 5539082
+  note: 'task-181: v79 IDB CField_MonsterCarnival::OnRequestResult (0x54850a, seed template_gms_79_1.json opCode 0x10E, CField_MonsterCarnival::OnPacket case 270 confirmed against the live dispatcher decompile: sub_54827B case 270 -> sub_54850A(1, a3)) — the a2!=0 (SUMMON) branch: Decode1 tab, Decode1 idx, DecodeStr name. Identical to v83 (0x56557d), v84 (0x572284, byte-identical to v83), v87 (0x590303), v95 (0x55a890, PDB-backed), jms (0x5b0332). This is a DISTINCT wire shape from the MESSAGE branch (arg==0) of the same dispatched function. Existing atlas codec already modelled this shape correctly (tab/idx bytes + name string) -- this is a route-only fix: v79 opCode 0x10E was simply unrouted and the v79 export was unresolved.'
+- op: MONSTER_CARNIVAL_MESSAGE
+  direction: clientbound
+  opcode: 271
+  fname: CField_MonsterCarnival::OnRequestResult
+  packet: monster/carnival/clientbound/MonsterCarnivalMessage
+  provenance: ida-discovered
+  ida:
+    address: 5539082
+  note: 'task-181: v79 IDB CField_MonsterCarnival::OnRequestResult (0x54850a, seed template_gms_79_1.json opCode 0x10F, CField_MonsterCarnival::OnPacket case 271 confirmed against the live dispatcher decompile: sub_54827B case 271 -> sub_54850A(0, a3)) — the a2==0 (MESSAGE) branch: a single Decode1 message-selector byte; the displayed text is sourced from the client StringPool, not the packet. Identical to v83 (0x56557d), v84 (0x572284, byte-identical to v83), v87 (0x590303), v95 (0x55a890, PDB-backed), jms (0x5b0332). This is a DISTINCT wire shape from the SUMMON branch (arg!=0) of the same dispatched function. Existing atlas codec already modelled this shape correctly (single message byte) -- this is a route-only fix: v79 opCode 0x10F was simply unrouted and the v79 export was unresolved.'
 - op: MONSTER_CARNIVAL_RESULT
   direction: clientbound
   opcode: 274

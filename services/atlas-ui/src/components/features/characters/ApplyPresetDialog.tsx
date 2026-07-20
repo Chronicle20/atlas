@@ -51,6 +51,7 @@ interface ApplyPresetDialogProps {
   accountId: number;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialPresetId?: string;
 }
 
 type CharacterPreset = TenantConfigAttributes["characters"]["presets"][number];
@@ -99,6 +100,7 @@ export function ApplyPresetDialog({
   accountId,
   open,
   onOpenChange,
+  initialPresetId,
 }: ApplyPresetDialogProps) {
   const tenantConfigQuery = useTenantConfiguration(tenant.id);
   const servicesQuery = useServices();
@@ -125,9 +127,13 @@ export function ApplyPresetDialog({
       .filter(({ worldId }) => serviceableWorldIds.has(worldId));
   }, [tenantConfigQuery.data, serviceableWorldIds]);
 
-  const presets = (
-    tenantConfigQuery.data?.attributes?.characters?.presets ?? []
-  ).filter((p): p is PresetWithId => !!p.id);
+  const presets = useMemo(
+    () =>
+      (tenantConfigQuery.data?.attributes?.characters?.presets ?? []).filter(
+        (p): p is PresetWithId => !!p.id,
+      ),
+    [tenantConfigQuery.data],
+  );
   const mutation = useCreateCharacterFromPreset(tenant);
 
   const form = useForm<FormValues>({
@@ -144,12 +150,18 @@ export function ApplyPresetDialog({
   });
   const validity = validityQuery.data;
 
-  // Reset form on open/close
+  // Reset form on open/close. If an `initialPresetId` was supplied and it
+  // matches a saved preset, pre-select it; otherwise fall back to no
+  // selection (unchanged default behavior).
   useEffect(() => {
     if (open) {
-      form.reset({ presetId: "", worldId: 0, name: "" });
+      const preset =
+        initialPresetId && presets.some((p) => p.id === initialPresetId)
+          ? initialPresetId
+          : "";
+      form.reset({ presetId: preset, worldId: 0, name: "" });
     }
-  }, [open, form]);
+  }, [open, form, initialPresetId, presets]);
 
   // Read isValid unconditionally (not inside the short-circuiting `||` chain
   // below) so react-hook-form's formState proxy subscribes to it from mount.

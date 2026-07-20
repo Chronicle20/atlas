@@ -284,6 +284,29 @@ describe("ApplyPresetDialog", () => {
     fireEvent.click(cancelBtn);
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
+
+  it("pre-selects initialPresetId when provided and it matches a saved preset", async () => {
+    render(
+      <ApplyPresetDialog
+        {...defaultProps({ initialPresetId: "preset-2" })}
+      />,
+    );
+    const mageTile = await screen.findByRole("radio", { name: /Mage/i });
+    await waitFor(() =>
+      expect(mageTile).toHaveAttribute("aria-checked", "true"),
+    );
+  });
+
+  it("does not pre-select any preset when initialPresetId does not match a saved preset", () => {
+    render(
+      <ApplyPresetDialog
+        {...defaultProps({ initialPresetId: "does-not-exist" })}
+      />,
+    );
+    for (const tile of screen.getAllByRole("radio")) {
+      expect(tile).toHaveAttribute("aria-checked", "false");
+    }
+  });
 });
 
 describe("ApplyPresetDialog — world filtering", () => {

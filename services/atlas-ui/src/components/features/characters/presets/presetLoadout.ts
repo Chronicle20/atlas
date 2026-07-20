@@ -11,10 +11,7 @@ import {
 } from "../templates/previewLoadout";
 
 export type PresetAppearanceDimension =
-  | "faces"
-  | "hairs"
-  | "hairColors"
-  | "skinColors";
+  "faces" | "hairs" | "hairColors" | "skinColors";
 
 /** Placeable worn template ids in slot-assignment order (unplaceable dropped). */
 export function wornTemplateIds(attrs: CharacterPresetAttributes): number[] {
@@ -24,7 +21,9 @@ export function wornTemplateIds(attrs: CharacterPresetAttributes): number[] {
 }
 
 /** Worn equipment as a slot→templateId map, later same-slot items overwriting earlier. */
-function placedEquipment(attrs: CharacterPresetAttributes): Record<string, number> {
+function placedEquipment(
+  attrs: CharacterPresetAttributes,
+): Record<string, number> {
   const eq: Record<string, number> = {};
   for (const e of attrs.equipment) {
     const slot = getDefaultSlotForTemplateId(e.templateId);
@@ -59,7 +58,10 @@ export function buildPresetVariantLoadout(
     case "hairs":
       return { ...base, hair: candidateId + attrs.hairColor };
     case "hairColors":
-      return { ...base, hair: (attrs.hair || RENDER_DEFAULT_HAIR) + candidateId };
+      return {
+        ...base,
+        hair: (attrs.hair || RENDER_DEFAULT_HAIR) + candidateId,
+      };
     case "skinColors":
       return { ...base, skin: candidateId };
   }

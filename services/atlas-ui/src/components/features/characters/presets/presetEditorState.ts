@@ -49,7 +49,12 @@ export type PresetEditorAction =
   | { type: "addPreset" }
   | { type: "duplicatePreset"; key: string }
   | { type: "removePreset"; key: string }
-  | { type: "setField"; key: string; path: PresetFieldPath; value: number | string }
+  | {
+      type: "setField";
+      key: string;
+      path: PresetFieldPath;
+      value: number | string;
+    }
   | { type: "addEquip"; key: string; templateId: number }
   | { type: "removeEquip"; key: string; index: number }
   | { type: "setEquipAvg"; key: string; index: number; value: boolean }
@@ -111,12 +116,20 @@ export function normalizePreset(
   };
 }
 
-function cloneAttributes(a: CharacterPresetAttributes): CharacterPresetAttributes {
+function cloneAttributes(
+  a: CharacterPresetAttributes,
+): CharacterPresetAttributes {
   return normalizePreset(a);
 }
 
 export function initialPresetEditorState(): PresetEditorState {
-  return { presets: [], baseline: [], selectedKey: null, localSeq: 0, loaded: false };
+  return {
+    presets: [],
+    baseline: [],
+    selectedKey: null,
+    localSeq: 0,
+    loaded: false,
+  };
 }
 
 function project(p: WorkingPreset): CharacterPreset {
@@ -130,7 +143,10 @@ export function projectForSave(state: PresetEditorState): CharacterPreset[] {
 }
 
 export function isDirty(state: PresetEditorState): boolean {
-  return JSON.stringify(state.presets.map(project)) !== JSON.stringify(state.baseline);
+  return (
+    JSON.stringify(state.presets.map(project)) !==
+    JSON.stringify(state.baseline)
+  );
 }
 
 export function selectedPreset(state: PresetEditorState): WorkingPreset | null {
@@ -141,9 +157,8 @@ export function selectedPreset(state: PresetEditorState): WorkingPreset | null {
 export function presetDirty(state: PresetEditorState, key: string): boolean {
   const p = state.presets.find((p) => p.key === key);
   if (!p) return false;
-  const base = p.id !== undefined
-    ? state.baseline.find((b) => b.id === p.id)
-    : undefined; // no id => freshly added, never had a baseline counterpart
+  const base =
+    p.id !== undefined ? state.baseline.find((b) => b.id === p.id) : undefined; // no id => freshly added, never had a baseline counterpart
   if (!base) return true;
   return JSON.stringify(project(p)) !== JSON.stringify(base);
 }
@@ -154,7 +169,9 @@ function updateOne(
   update: (a: CharacterPresetAttributes) => CharacterPresetAttributes,
 ): PresetEditorState {
   const presets = state.presets.map((p) =>
-    p.key === key ? { ...p, attributes: update(cloneAttributes(p.attributes)) } : p,
+    p.key === key
+      ? { ...p, attributes: update(cloneAttributes(p.attributes)) }
+      : p,
   );
   return { ...state, presets };
 }
@@ -169,7 +186,10 @@ export function presetReducer(
       const presets: WorkingPreset[] = action.presets.map((p) =>
         p.id !== undefined
           ? { key: p.id, id: p.id, attributes: normalizePreset(p.attributes) }
-          : { key: `local-${seq++}`, attributes: normalizePreset(p.attributes) },
+          : {
+              key: `local-${seq++}`,
+              attributes: normalizePreset(p.attributes),
+            },
       );
       return {
         presets,
@@ -183,7 +203,10 @@ export function presetReducer(
       return { ...state, selectedKey: action.key };
     case "addPreset": {
       const key = `local-${state.localSeq}`;
-      const row: WorkingPreset = { key, attributes: cloneAttributes(DEFAULT_PRESET_ATTRIBUTES) };
+      const row: WorkingPreset = {
+        key,
+        attributes: cloneAttributes(DEFAULT_PRESET_ATTRIBUTES),
+      };
       return {
         ...state,
         presets: [...state.presets, row],
@@ -195,7 +218,10 @@ export function presetReducer(
       const src = state.presets.find((p) => p.key === action.key);
       if (!src) return state;
       const key = `local-${state.localSeq}`;
-      const row: WorkingPreset = { key, attributes: cloneAttributes(src.attributes) };
+      const row: WorkingPreset = {
+        key,
+        attributes: cloneAttributes(src.attributes),
+      };
       return {
         ...state,
         presets: [...state.presets, row],
@@ -205,24 +231,36 @@ export function presetReducer(
     }
     case "removePreset": {
       const presets = state.presets.filter((p) => p.key !== action.key);
-      const selectedKey = state.selectedKey === action.key ? null : state.selectedKey;
+      const selectedKey =
+        state.selectedKey === action.key ? null : state.selectedKey;
       return { ...state, presets, selectedKey };
     }
     case "setField":
       return updateOne(state, action.key, (a) => {
         if (action.path.startsWith("stats.")) {
-          const stat = action.path.slice("stats.".length) as keyof typeof a.stats;
-          return { ...a, stats: { ...a.stats, [stat]: action.value as number } };
+          const stat = action.path.slice(
+            "stats.".length,
+          ) as keyof typeof a.stats;
+          return {
+            ...a,
+            stats: { ...a.stats, [stat]: action.value as number },
+          };
         }
         if (action.path === "gender") {
           return { ...a, gender: Number(action.value) === 1 ? 1 : 0 };
         }
-        return { ...a, [action.path]: action.value } as CharacterPresetAttributes;
+        return {
+          ...a,
+          [action.path]: action.value,
+        } as CharacterPresetAttributes;
       });
     case "addEquip":
       return updateOne(state, action.key, (a) => ({
         ...a,
-        equipment: [...a.equipment, { templateId: action.templateId, useAverageStats: true }],
+        equipment: [
+          ...a.equipment,
+          { templateId: action.templateId, useAverageStats: true },
+        ],
       }));
     case "removeEquip":
       return updateOne(state, action.key, (a) => ({
@@ -239,7 +277,10 @@ export function presetReducer(
     case "addInventory":
       return updateOne(state, action.key, (a) => ({
         ...a,
-        inventory: [...a.inventory, { templateId: action.templateId, quantity: 1 }],
+        inventory: [
+          ...a.inventory,
+          { templateId: action.templateId, quantity: 1 },
+        ],
       }));
     case "removeInventory":
       return updateOne(state, action.key, (a) => ({
@@ -250,7 +291,9 @@ export function presetReducer(
       return updateOne(state, action.key, (a) => ({
         ...a,
         inventory: a.inventory.map((e, i) =>
-          i === action.index ? { ...e, quantity: Math.max(1, action.value) } : e,
+          i === action.index
+            ? { ...e, quantity: Math.max(1, action.value) }
+            : e,
         ),
       }));
     case "addSkill":
@@ -272,7 +315,9 @@ export function presetReducer(
       }));
     case "addTag":
       return updateOne(state, action.key, (a) =>
-        a.tags.includes(action.tag) ? a : { ...a, tags: [...a.tags, action.tag] },
+        a.tags.includes(action.tag)
+          ? a
+          : { ...a, tags: [...a.tags, action.tag] },
       );
     case "removeTag":
       return updateOne(state, action.key, (a) => ({
@@ -284,7 +329,10 @@ export function presetReducer(
       const presets: WorkingPreset[] = state.baseline.map((p) =>
         p.id !== undefined
           ? { key: p.id, id: p.id, attributes: normalizePreset(p.attributes) }
-          : { key: `local-${seq++}`, attributes: normalizePreset(p.attributes) },
+          : {
+              key: `local-${seq++}`,
+              attributes: normalizePreset(p.attributes),
+            },
       );
       return { ...state, presets, localSeq: seq, selectedKey: null };
     }

@@ -19,7 +19,13 @@ const attrs = (o: Partial<typeof DEFAULT_PRESET_ATTRIBUTES>) => ({
 describe("presetLoadout", () => {
   it("composites hair as base + color and passes gender/face/skin", () => {
     const l = buildPresetLoadout(
-      attrs({ hair: 30030, hairColor: 2, face: 20001, skinColor: 3, gender: 1 }),
+      attrs({
+        hair: 30030,
+        hairColor: 2,
+        face: 20001,
+        skinColor: 3,
+        gender: 1,
+      }),
     );
     expect(l.hair).toBe(30032);
     expect(l.face).toBe(20001);
@@ -55,14 +61,21 @@ describe("presetLoadout", () => {
   });
 
   it("empty loadout falls back to render defaults", () => {
-    const l = buildPresetLoadout(attrs({ hair: 0, hairColor: 0, face: 0, skinColor: 0 }));
+    const l = buildPresetLoadout(
+      attrs({ hair: 0, hairColor: 0, face: 0, skinColor: 0 }),
+    );
     expect(l.hair).toBe(RENDER_DEFAULT_HAIR);
     expect(l.face).toBe(RENDER_DEFAULT_FACE);
     expect(l.skin).toBe(RENDER_DEFAULT_SKIN);
   });
 
   it("variant loadout substitutes one dimension", () => {
-    const base = attrs({ hair: 30030, hairColor: 1, face: 20000, skinColor: 0 });
+    const base = attrs({
+      hair: 30030,
+      hairColor: 1,
+      face: 20000,
+      skinColor: 0,
+    });
     expect(buildPresetVariantLoadout(base, "faces", 21000).face).toBe(21000);
     expect(buildPresetVariantLoadout(base, "hairs", 30040).hair).toBe(30041);
     expect(buildPresetVariantLoadout(base, "hairColors", 5).hair).toBe(30035);

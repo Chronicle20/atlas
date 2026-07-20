@@ -7,7 +7,12 @@ import { DEFAULT_PRESET_ATTRIBUTES } from "../presetEditorState";
 describe("BaseStatsSection", () => {
   it("renders all six stats and edits STR", async () => {
     const onSetStat = vi.fn();
-    render(<BaseStatsSection attrs={{ ...DEFAULT_PRESET_ATTRIBUTES }} onSetStat={onSetStat} />);
+    render(
+      <BaseStatsSection
+        attrs={{ ...DEFAULT_PRESET_ATTRIBUTES }}
+        onSetStat={onSetStat}
+      />,
+    );
     for (const s of ["STR", "DEX", "INT", "LUK", "HP", "MP"]) {
       expect(screen.getByLabelText(s)).toBeInTheDocument();
     }
@@ -18,15 +23,25 @@ describe("BaseStatsSection", () => {
   });
 
   it("notes stats are written verbatim", () => {
-    render(<BaseStatsSection attrs={{ ...DEFAULT_PRESET_ATTRIBUTES }} onSetStat={vi.fn()} />);
+    render(
+      <BaseStatsSection
+        attrs={{ ...DEFAULT_PRESET_ATTRIBUTES }}
+        onSetStat={vi.fn()}
+      />,
+    );
     expect(screen.getByText(/written verbatim/i)).toBeInTheDocument();
   });
 
   it("re-syncs the draft values when the attrs switch (e.g. selecting a different preset)", () => {
     const { rerender } = render(
-      <BaseStatsSection attrs={{ ...DEFAULT_PRESET_ATTRIBUTES }} onSetStat={vi.fn()} />,
+      <BaseStatsSection
+        attrs={{ ...DEFAULT_PRESET_ATTRIBUTES }}
+        onSetStat={vi.fn()}
+      />,
     );
-    expect(screen.getByLabelText("STR")).toHaveValue(DEFAULT_PRESET_ATTRIBUTES.stats.str);
+    expect(screen.getByLabelText("STR")).toHaveValue(
+      DEFAULT_PRESET_ATTRIBUTES.stats.str,
+    );
 
     const otherAttrs = {
       ...DEFAULT_PRESET_ATTRIBUTES,

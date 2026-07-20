@@ -111,7 +111,10 @@ describe("TenantsCharacterPresetsPage", () => {
     );
     const { adapter } = editorMock.mock.calls.at(-1)![0] as {
       adapter: {
-        save: (p: unknown[], onSuccess: (persisted?: unknown[]) => void) => void;
+        save: (
+          p: unknown[],
+          onSuccess: (persisted?: unknown[]) => void,
+        ) => void;
       };
     };
     adapter.save([{ attributes: { name: "P" } }], () => {});
@@ -139,7 +142,10 @@ describe("TenantsCharacterPresetsPage", () => {
     );
     const { adapter } = editorMock.mock.calls.at(-1)![0] as {
       adapter: {
-        save: (p: unknown[], onSuccess: (persisted?: unknown[]) => void) => void;
+        save: (
+          p: unknown[],
+          onSuccess: (persisted?: unknown[]) => void,
+        ) => void;
       };
     };
     const onSuccess = vi.fn();
@@ -147,7 +153,9 @@ describe("TenantsCharacterPresetsPage", () => {
     // The PATCH itself carries no response body (204). The follow-up GET is
     // what surfaces the id atlas-configurations assigned to the previously
     // id-less preset, in the same order it was sent.
-    const persistedPresets = [{ id: "server-uuid-1", attributes: { name: "P" } }];
+    const persistedPresets = [
+      { id: "server-uuid-1", attributes: { name: "P" } },
+    ];
     refetchMock.mockResolvedValue({
       data: {
         ...tenant,
@@ -176,7 +184,10 @@ describe("TenantsCharacterPresetsPage", () => {
     );
     const { adapter } = editorMock.mock.calls.at(-1)![0] as {
       adapter: {
-        save: (p: unknown[], onSuccess: (persisted?: unknown[]) => void) => void;
+        save: (
+          p: unknown[],
+          onSuccess: (persisted?: unknown[]) => void,
+        ) => void;
       };
     };
     const onSuccess = vi.fn();

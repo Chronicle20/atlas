@@ -37,9 +37,7 @@ describe("IdentitySection", () => {
 
     await userEvent.click(screen.getByRole("button", { name: /add tag/i }));
     await userEvent.type(screen.getByPlaceholderText(/tag/i), "Solo");
-    await userEvent.click(
-      screen.getByRole("button", { name: /^add$/i }),
-    );
+    await userEvent.click(screen.getByRole("button", { name: /^add$/i }));
     expect(onAddTag).toHaveBeenCalledWith("Solo");
   });
 
@@ -47,16 +45,17 @@ describe("IdentitySection", () => {
     const onSetField = vi.fn();
     render(
       <IdentitySection
-        attrs={{ ...DEFAULT_PRESET_ATTRIBUTES, defaultName: "", description: "" }}
+        attrs={{
+          ...DEFAULT_PRESET_ATTRIBUTES,
+          defaultName: "",
+          description: "",
+        }}
         onSetField={onSetField}
         onAddTag={vi.fn()}
         onRemoveTag={vi.fn()}
       />,
     );
-    await userEvent.type(
-      screen.getByLabelText(/default character name/i),
-      "X",
-    );
+    await userEvent.type(screen.getByLabelText(/default character name/i), "X");
     expect(onSetField).toHaveBeenCalledWith("defaultName", expect.any(String));
 
     await userEvent.type(screen.getByLabelText(/description/i), "Y");

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { CharacterPresetAttributes } from "@/types/models/template";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,12 +19,16 @@ import {
 } from "./presetLoadout";
 import { AppearanceBrowserDialog } from "../templates/AppearanceBrowserDialog";
 import { AppearanceThumb } from "../templates/AppearanceThumb";
+import { useSyncedNumberInput } from "./useSyncedNumberInput";
 
 type AppearanceField = "face" | "hair" | "hairColor" | "skinColor";
 
 interface ClassAppearanceSectionProps {
   attrs: CharacterPresetAttributes;
-  onSetField: (path: "jobId" | "gender" | AppearanceField, value: number) => void;
+  onSetField: (
+    path: "jobId" | "gender" | AppearanceField,
+    value: number,
+  ) => void;
 }
 
 // GMS-shaped face/hair id ranges; not an enumeration — just a small on-hand
@@ -70,8 +74,7 @@ export function ClassAppearanceSection({
 
   // Local echo so the DOM value reflects keystrokes as they land — the
   // canonical value only updates once the reducer round-trips onSetField.
-  const [jobIdInput, setJobIdInput] = useState(String(attrs.jobId));
-  useEffect(() => setJobIdInput(String(attrs.jobId)), [attrs.jobId]);
+  const [jobIdInput, setJobIdInput] = useSyncedNumberInput(attrs.jobId);
 
   const renderThumbRow = (
     dimension: PresetAppearanceDimension,
@@ -186,12 +189,16 @@ export function ClassAppearanceSection({
         <AppearanceBrowserDialog
           dimension={browserDimension}
           gender={attrs.gender}
-          variantLoadout={(dim, id) => buildPresetVariantLoadout(attrs, dim, id)}
+          variantLoadout={(dim, id) =>
+            buildPresetVariantLoadout(attrs, dim, id)
+          }
           open
           onOpenChange={(open) => {
             if (!open) setBrowserDimension(null);
           }}
-          onSelect={(id) => onSetField(FIELD_BY_DIMENSION[browserDimension], id)}
+          onSelect={(id) =>
+            onSetField(FIELD_BY_DIMENSION[browserDimension], id)
+          }
           selectMode="replace"
           selectedId={attrs[FIELD_BY_DIMENSION[browserDimension]]}
         />

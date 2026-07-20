@@ -23,7 +23,9 @@ export function TenantsCharacterPresetsPage() {
     isLoading: tenantQuery.isLoading,
     error: tenantQuery.error ?? null,
     isSaving: updateTenantConfig.isPending,
-    ...(tenantBasicQuery.data ? { apply: { tenant: tenantBasicQuery.data } } : {}),
+    ...(tenantBasicQuery.data
+      ? { apply: { tenant: tenantBasicQuery.data } }
+      : {}),
     save: (presets, onSuccess) => {
       if (!tenant) return;
       updateTenantConfig.mutate(

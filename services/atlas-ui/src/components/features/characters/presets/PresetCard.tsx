@@ -17,7 +17,13 @@ interface PresetCardProps {
   onApply?: () => void;
 }
 
-export function PresetCard({ preset, dirty, onOpen, onDuplicate, onApply }: PresetCardProps) {
+export function PresetCard({
+  preset,
+  dirty,
+  onOpen,
+  onDuplicate,
+  onApply,
+}: PresetCardProps) {
   const { activeTenant } = useTenant();
   const { attributes: attrs } = preset;
   const loadout = buildPresetLoadout(attrs);

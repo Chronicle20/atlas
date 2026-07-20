@@ -35,7 +35,10 @@ export interface PresetsEditorAdapter {
    * tolerated for backward compatibility, but a newly-created preset will
    * then stay Apply-disabled until the page is reloaded.
    */
-  save: (presets: CharacterPreset[], onSuccess: (persisted?: CharacterPreset[]) => void) => void;
+  save: (
+    presets: CharacterPreset[],
+    onSuccess: (persisted?: CharacterPreset[]) => void,
+  ) => void;
   isSaving: boolean;
   /** Present only in tenant context; absent on the template page hides Apply. */
   apply?: { tenant: Tenant };
@@ -47,7 +50,9 @@ interface CharacterPresetsEditorProps {
 
 const PRESET_PARAM = "preset";
 
-export function CharacterPresetsEditor({ adapter }: CharacterPresetsEditorProps) {
+export function CharacterPresetsEditor({
+  adapter,
+}: CharacterPresetsEditorProps) {
   const [state, dispatch] = useReducer(
     presetReducer,
     undefined,
@@ -100,7 +105,9 @@ export function CharacterPresetsEditor({ adapter }: CharacterPresetsEditorProps)
   // no `id` yet). `null` returns to the library and clears the param.
   const syncSelection = (key: string | null) => {
     const urlValue =
-      key === null ? null : (state.presets.find((p) => p.key === key)?.id ?? key);
+      key === null
+        ? null
+        : (state.presets.find((p) => p.key === key)?.id ?? key);
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev);
@@ -236,7 +243,9 @@ export function CharacterPresetsEditor({ adapter }: CharacterPresetsEditorProps)
           onSetField={(path, value) =>
             dispatch({ type: "setField", key: selected.key, path, value })
           }
-          onAddTag={(tag) => dispatch({ type: "addTag", key: selected.key, tag })}
+          onAddTag={(tag) =>
+            dispatch({ type: "addTag", key: selected.key, tag })
+          }
           onRemoveTag={(tag) =>
             dispatch({ type: "removeTag", key: selected.key, tag })
           }

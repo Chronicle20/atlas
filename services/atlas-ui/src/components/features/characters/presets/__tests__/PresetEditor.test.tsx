@@ -12,14 +12,24 @@ import {
 import type { CharacterPreset } from "@/types/models/template";
 
 // Mock the heavy leaf sections/preview so this test targets assembly + kebab only.
-vi.mock("../PresetPreviewCard", () => ({ PresetPreviewCard: () => <div data-testid="preview" /> }));
-vi.mock("../ClassAppearanceSection", () => ({ ClassAppearanceSection: () => <div /> }));
-vi.mock("../SpawnProgressionSection", () => ({ SpawnProgressionSection: () => <div /> }));
+vi.mock("../PresetPreviewCard", () => ({
+  PresetPreviewCard: () => <div data-testid="preview" />,
+}));
+vi.mock("../ClassAppearanceSection", () => ({
+  ClassAppearanceSection: () => <div />,
+}));
+vi.mock("../SpawnProgressionSection", () => ({
+  SpawnProgressionSection: () => <div />,
+}));
 vi.mock("../EquipmentSection", () => ({ EquipmentSection: () => <div /> }));
 vi.mock("../InventorySection", () => ({ InventorySection: () => <div /> }));
 vi.mock("../SkillsSection", () => ({ SkillsSection: () => <div /> }));
 
-const base = { key: "a1", id: "a1", attributes: { ...DEFAULT_PRESET_ATTRIBUTES, name: "Hero" } };
+const base = {
+  key: "a1",
+  id: "a1",
+  attributes: { ...DEFAULT_PRESET_ATTRIBUTES, name: "Hero" },
+};
 // Typed explicitly (rather than `Object.fromEntries(...) as never`) so it
 // can be spread into <PresetEditor> under this repo's strict tsconfig
 // (exactOptionalPropertyTypes etc.) without a cast.
@@ -43,7 +53,9 @@ const handlers: Omit<PresetEditorProps, "preset" | "onBack" | "onApply"> = {
 describe("PresetEditor", () => {
   it("renders backlink, preview, and header name", () => {
     render(<PresetEditor preset={base} onBack={vi.fn()} {...handlers} />);
-    expect(screen.getByRole("button", { name: /preset library/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /preset library/i }),
+    ).toBeInTheDocument();
     expect(screen.getByTestId("preview")).toBeInTheDocument();
     expect(screen.getByText("Hero")).toBeInTheDocument();
   });
@@ -51,19 +63,32 @@ describe("PresetEditor", () => {
   it("backlink calls onBack", async () => {
     const onBack = vi.fn();
     render(<PresetEditor preset={base} onBack={onBack} {...handlers} />);
-    await userEvent.click(screen.getByRole("button", { name: /preset library/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /preset library/i }),
+    );
     expect(onBack).toHaveBeenCalled();
   });
 
   it("kebab hides Apply when onApply is absent", async () => {
     render(<PresetEditor preset={base} onBack={vi.fn()} {...handlers} />);
-    await userEvent.click(screen.getByRole("button", { name: /preset actions/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /preset actions/i }),
+    );
     expect(screen.queryByText(/apply to an account/i)).toBeNull();
   });
 
   it("kebab shows Apply when onApply is present", async () => {
-    render(<PresetEditor preset={base} onBack={vi.fn()} onApply={vi.fn()} {...handlers} />);
-    await userEvent.click(screen.getByRole("button", { name: /preset actions/i }));
+    render(
+      <PresetEditor
+        preset={base}
+        onBack={vi.fn()}
+        onApply={vi.fn()}
+        {...handlers}
+      />,
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: /preset actions/i }),
+    );
     expect(await screen.findByText(/apply to an account/i)).toBeInTheDocument();
   });
 
@@ -72,7 +97,13 @@ describe("PresetEditor", () => {
     // below can't accidentally collide on the same text node.
     const gm = {
       ...base,
-      attributes: { ...base.attributes, name: "My Warrior", jobId: 112, level: 30, gm: 0 },
+      attributes: {
+        ...base.attributes,
+        name: "My Warrior",
+        jobId: 112,
+        level: 30,
+        gm: 0,
+      },
     };
     const { rerender } = render(
       <PresetEditor preset={gm} onBack={vi.fn()} {...handlers} />,
@@ -94,9 +125,16 @@ describe("PresetEditor", () => {
   it("Apply is disabled with a reachable hint when the preset has no id yet (unsaved)", async () => {
     const unsaved = { key: "local-0", attributes: base.attributes };
     render(
-      <PresetEditor preset={unsaved} onBack={vi.fn()} onApply={vi.fn()} {...handlers} />,
+      <PresetEditor
+        preset={unsaved}
+        onBack={vi.fn()}
+        onApply={vi.fn()}
+        {...handlers}
+      />,
     );
-    await userEvent.click(screen.getByRole("button", { name: /preset actions/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /preset actions/i }),
+    );
     const item = await screen.findByText(/apply to an account/i);
     expect(item.closest('[role="menuitem"]')).toHaveAttribute(
       "aria-disabled",
@@ -111,13 +149,18 @@ describe("PresetEditor", () => {
 
   it("Apply hint is absent once the preset is saved (Apply enabled)", async () => {
     render(
-      <PresetEditor preset={base} onBack={vi.fn()} onApply={vi.fn()} {...handlers} />,
+      <PresetEditor
+        preset={base}
+        onBack={vi.fn()}
+        onApply={vi.fn()}
+        {...handlers}
+      />,
     );
-    await userEvent.click(screen.getByRole("button", { name: /preset actions/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /preset actions/i }),
+    );
     await screen.findByText(/apply to an account/i);
-    expect(
-      screen.queryByText(/save this preset before applying/i),
-    ).toBeNull();
+    expect(screen.queryByText(/save this preset before applying/i)).toBeNull();
   });
 
   it("kebab Duplicate/Remove call the editor's onDuplicate/onRemove", async () => {
@@ -132,11 +175,15 @@ describe("PresetEditor", () => {
         onRemove={onRemove}
       />,
     );
-    await userEvent.click(screen.getByRole("button", { name: /preset actions/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /preset actions/i }),
+    );
     await userEvent.click(screen.getByRole("menuitem", { name: /duplicate/i }));
     expect(onDuplicate).toHaveBeenCalledTimes(1);
 
-    await userEvent.click(screen.getByRole("button", { name: /preset actions/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /preset actions/i }),
+    );
     await userEvent.click(screen.getByRole("menuitem", { name: /^remove$/i }));
     // Remove requires AlertDialog confirm before firing.
     expect(onRemove).not.toHaveBeenCalled();
@@ -147,10 +194,19 @@ describe("PresetEditor", () => {
   it("kebab Apply fires onApply when enabled", async () => {
     const onApply = vi.fn();
     render(
-      <PresetEditor preset={base} onBack={vi.fn()} onApply={onApply} {...handlers} />,
+      <PresetEditor
+        preset={base}
+        onBack={vi.fn()}
+        onApply={onApply}
+        {...handlers}
+      />,
     );
-    await userEvent.click(screen.getByRole("button", { name: /preset actions/i }));
-    await userEvent.click(screen.getByRole("menuitem", { name: /apply to an account/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /preset actions/i }),
+    );
+    await userEvent.click(
+      screen.getByRole("menuitem", { name: /apply to an account/i }),
+    );
     expect(onApply).toHaveBeenCalledTimes(1);
   });
 });
@@ -199,7 +255,12 @@ describe("PresetEditor wired to the real reducer", () => {
     const onSetField = vi.fn();
     render(
       <Host
-        initial={[{ id: "a1", attributes: { ...DEFAULT_PRESET_ATTRIBUTES, name: "Hero" } }]}
+        initial={[
+          {
+            id: "a1",
+            attributes: { ...DEFAULT_PRESET_ATTRIBUTES, name: "Hero" },
+          },
+        ]}
         onSetFieldSpy={onSetField}
       />,
     );
@@ -220,7 +281,12 @@ describe("PresetEditor wired to the real reducer", () => {
     const onSetField = vi.fn();
     render(
       <Host
-        initial={[{ id: "a1", attributes: { ...DEFAULT_PRESET_ATTRIBUTES, name: "Hero" } }]}
+        initial={[
+          {
+            id: "a1",
+            attributes: { ...DEFAULT_PRESET_ATTRIBUTES, name: "Hero" },
+          },
+        ]}
         onSetFieldSpy={onSetField}
       />,
     );

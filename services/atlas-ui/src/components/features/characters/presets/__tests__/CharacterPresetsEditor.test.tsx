@@ -2,13 +2,18 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
 import { MemoryRouter, useSearchParams } from "react-router-dom";
-import { CharacterPresetsEditor, type PresetsEditorAdapter } from "../CharacterPresetsEditor";
+import {
+  CharacterPresetsEditor,
+  type PresetsEditorAdapter,
+} from "../CharacterPresetsEditor";
 import { DEFAULT_PRESET_ATTRIBUTES } from "../presetEditorState";
 import type { Tenant } from "@/types/models/tenant";
 import type { CharacterPreset } from "@/types/models/template";
 
 // Mock the action bar + heavy leaves; keep library + editor real enough to assert flow.
-vi.mock("@/components/DetailActionBarContext", () => ({ useRegisterDetailActionBar: vi.fn() }));
+vi.mock("@/components/DetailActionBarContext", () => ({
+  useRegisterDetailActionBar: vi.fn(),
+}));
 vi.mock("sonner", () => ({
   toast: { error: vi.fn(), warning: vi.fn(), success: vi.fn() },
 }));
@@ -64,10 +69,16 @@ vi.mock("../PresetLibrary", () => ({
     <div>
       {presets.map((p) => (
         <div key={p.key}>
-          <button onClick={() => onOpen(p.key)}>open:{p.attributes.name}</button>
-          <button onClick={() => onDuplicate(p.key)}>duplicate:{p.attributes.name}</button>
+          <button onClick={() => onOpen(p.key)}>
+            open:{p.attributes.name}
+          </button>
+          <button onClick={() => onDuplicate(p.key)}>
+            duplicate:{p.attributes.name}
+          </button>
           {canApply && (
-            <button onClick={() => onApply(p.key)}>apply:{p.attributes.name}</button>
+            <button onClick={() => onApply(p.key)}>
+              apply:{p.attributes.name}
+            </button>
           )}
         </div>
       ))}
@@ -82,7 +93,8 @@ vi.mock("../AccountPickerDialog", () => ({
   }: {
     open: boolean;
     onPick: (accountId: number) => void;
-  }) => (open ? <button onClick={() => onPick(42)}>pick-account</button> : null),
+  }) =>
+    open ? <button onClick={() => onPick(42)}>pick-account</button> : null,
 }));
 vi.mock("@/components/features/characters/ApplyPresetDialog", () => ({
   ApplyPresetDialog: ({
@@ -105,12 +117,23 @@ const presets = [
   { id: "a1", attributes: { ...DEFAULT_PRESET_ATTRIBUTES, name: "One" } },
   { id: "b2", attributes: { ...DEFAULT_PRESET_ATTRIBUTES, name: "Two" } },
 ];
-const adapter = (over: Partial<PresetsEditorAdapter> = {}): PresetsEditorAdapter => ({
-  presets, isLoading: false, error: null, isSaving: false, save: vi.fn(), ...over,
+const adapter = (
+  over: Partial<PresetsEditorAdapter> = {},
+): PresetsEditorAdapter => ({
+  presets,
+  isLoading: false,
+  error: null,
+  isSaving: false,
+  save: vi.fn(),
+  ...over,
 });
 
 const renderAt = (url: string, a: PresetsEditorAdapter) =>
-  render(<MemoryRouter initialEntries={[url]}><CharacterPresetsEditor adapter={a} /></MemoryRouter>);
+  render(
+    <MemoryRouter initialEntries={[url]}>
+      <CharacterPresetsEditor adapter={a} />
+    </MemoryRouter>,
+  );
 
 describe("CharacterPresetsEditor", () => {
   it("shows the library when no ?preset=", () => {
@@ -134,16 +157,24 @@ describe("CharacterPresetsEditor", () => {
     await userEvent.click(screen.getByText("open:Two"));
     expect(await screen.findByText("editor:Two")).toBeInTheDocument();
     await userEvent.click(screen.getByText("back"));
-    await waitFor(() => expect(screen.getByText("open:One")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText("open:One")).toBeInTheDocument(),
+    );
   });
 
   it("registers the action bar and Save projects the array (id-only, no key)", async () => {
-    const { useRegisterDetailActionBar } = await import("@/components/DetailActionBarContext");
+    const { useRegisterDetailActionBar } =
+      await import("@/components/DetailActionBarContext");
     const save = vi.fn();
     renderAt("/", adapter({ save }));
     // grab the last registration's onSave
-    const calls = (useRegisterDetailActionBar as unknown as { mock: { calls: unknown[][] } }).mock.calls;
-    const reg = calls.map((c) => c[0]).filter(Boolean).at(-1) as { onSave: () => void };
+    const calls = (
+      useRegisterDetailActionBar as unknown as { mock: { calls: unknown[][] } }
+    ).mock.calls;
+    const reg = calls
+      .map((c) => c[0])
+      .filter(Boolean)
+      .at(-1) as { onSave: () => void };
     reg.onSave();
     expect(save).toHaveBeenCalledWith(
       [
@@ -157,7 +188,9 @@ describe("CharacterPresetsEditor", () => {
 
 function PresetParamProbe() {
   const [params] = useSearchParams();
-  return <output data-testid="preset-param">{params.get("preset") ?? ""}</output>;
+  return (
+    <output data-testid="preset-param">{params.get("preset") ?? ""}</output>
+  );
 }
 
 function renderWithProbe(url: string, a: PresetsEditorAdapter) {
@@ -182,7 +215,9 @@ describe("CharacterPresetsEditor URL sync (syncSelection, no length-watcher)", (
     await screen.findByText("editor:One");
     expect(screen.getByTestId("preset-param")).toHaveTextContent("a1");
     await userEvent.click(screen.getByText("back"));
-    await waitFor(() => expect(screen.getByTestId("preset-param")).toHaveTextContent(""));
+    await waitFor(() =>
+      expect(screen.getByTestId("preset-param")).toHaveTextContent(""),
+    );
     expect(screen.getByText("open:One")).toBeInTheDocument();
   });
 
@@ -197,23 +232,34 @@ describe("CharacterPresetsEditor URL sync (syncSelection, no length-watcher)", (
     renderWithProbe("/?preset=b2", adapter());
     await screen.findByText("editor:Two");
     await userEvent.click(screen.getByText("remove-open"));
-    await waitFor(() => expect(screen.getByTestId("preset-param")).toHaveTextContent(""));
+    await waitFor(() =>
+      expect(screen.getByTestId("preset-param")).toHaveTextContent(""),
+    );
     expect(screen.getByText("open:One")).toBeInTheDocument();
     expect(screen.queryByText("open:Two")).toBeNull();
   });
 
   it("discard (via the action bar) clears selection and the param", async () => {
-    const { useRegisterDetailActionBar } = await import("@/components/DetailActionBarContext");
+    const { useRegisterDetailActionBar } =
+      await import("@/components/DetailActionBarContext");
     renderWithProbe("/?preset=a1", adapter());
     await screen.findByText("editor:One");
     await userEvent.click(screen.getByText("make-dirty"));
 
-    const calls = (useRegisterDetailActionBar as unknown as { mock: { calls: unknown[][] } }).mock.calls;
-    const lastReg = () => calls.map((c) => c[0]).filter(Boolean).at(-1) as { onDiscard: () => void; dirty: boolean };
+    const calls = (
+      useRegisterDetailActionBar as unknown as { mock: { calls: unknown[][] } }
+    ).mock.calls;
+    const lastReg = () =>
+      calls
+        .map((c) => c[0])
+        .filter(Boolean)
+        .at(-1) as { onDiscard: () => void; dirty: boolean };
     expect(lastReg().dirty).toBe(true);
 
     lastReg().onDiscard();
-    await waitFor(() => expect(screen.getByTestId("preset-param")).toHaveTextContent(""));
+    await waitFor(() =>
+      expect(screen.getByTestId("preset-param")).toHaveTextContent(""),
+    );
     expect(screen.getByText("open:One")).toBeInTheDocument();
   });
 });
@@ -267,12 +313,16 @@ describe("CharacterPresetsEditor apply orchestration", () => {
   });
 
   it("backfills the server id on save so a freshly-created preset becomes Apply-eligible in-session, without moving selection/URL", async () => {
-    const { useRegisterDetailActionBar } = await import("@/components/DetailActionBarContext");
+    const { useRegisterDetailActionBar } =
+      await import("@/components/DetailActionBarContext");
     // Adapter echoes back the sent presets, minting a server id for any that
     // arrived without one — this is the contract Task 20's page adapter must
     // fulfill (see the save() JSDoc in CharacterPresetsEditor.tsx).
     const save = vi.fn(
-      (sent: CharacterPreset[], onSuccess: (persisted?: CharacterPreset[]) => void) => {
+      (
+        sent: CharacterPreset[],
+        onSuccess: (persisted?: CharacterPreset[]) => void,
+      ) => {
         const persisted: CharacterPreset[] = sent.map((p) =>
           p.id ? p : { ...p, id: "new-server-id" },
         );
@@ -288,9 +338,14 @@ describe("CharacterPresetsEditor apply orchestration", () => {
     await userEvent.click(screen.getByText("make-dirty"));
 
     // Trigger Save via the action bar registration, as the real bar would.
-    const calls = (useRegisterDetailActionBar as unknown as { mock: { calls: unknown[][] } }).mock.calls;
+    const calls = (
+      useRegisterDetailActionBar as unknown as { mock: { calls: unknown[][] } }
+    ).mock.calls;
     const lastReg = () =>
-      calls.map((c) => c[0]).filter(Boolean).at(-1) as { onSave: () => void; dirty: boolean };
+      calls
+        .map((c) => c[0])
+        .filter(Boolean)
+        .at(-1) as { onSave: () => void; dirty: boolean };
     lastReg().onSave();
     expect(save).toHaveBeenCalled();
 
@@ -302,6 +357,8 @@ describe("CharacterPresetsEditor apply orchestration", () => {
     // Apply is now enabled for this preset (no "save first" block).
     await userEvent.click(screen.getByText("apply-open"));
     await userEvent.click(await screen.findByText("pick-account"));
-    expect(await screen.findByText("apply-dialog:42:new-server-id")).toBeInTheDocument();
+    expect(
+      await screen.findByText("apply-dialog:42:new-server-id"),
+    ).toBeInTheDocument();
   });
 });

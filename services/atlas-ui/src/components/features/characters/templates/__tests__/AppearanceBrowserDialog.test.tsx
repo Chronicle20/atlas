@@ -119,12 +119,7 @@ describe("AppearanceBrowserDialog", () => {
       dimension: "hairColors",
       gender: template.gender,
       variantLoadout: (dim: string, id: number) =>
-        buildVariantLoadout(
-          template,
-          DEFAULT_PICKS,
-          dim as "hairColors",
-          id,
-        ),
+        buildVariantLoadout(template, DEFAULT_PICKS, dim as "hairColors", id),
       markedIds: template.hairColors,
     });
     expect(
@@ -141,12 +136,7 @@ describe("AppearanceBrowserDialog", () => {
       dimension: "skinColors",
       gender: template.gender,
       variantLoadout: (dim: string, id: number) =>
-        buildVariantLoadout(
-          template,
-          DEFAULT_PICKS,
-          dim as "skinColors",
-          id,
-        ),
+        buildVariantLoadout(template, DEFAULT_PICKS, dim as "skinColors", id),
       markedIds: template.skinColors,
     });
     expect(
@@ -160,7 +150,13 @@ describe("AppearanceBrowserDialog", () => {
       <AppearanceBrowserDialog
         dimension="skinColors"
         gender={0}
-        variantLoadout={(_d, id) => ({ skin: id, hair: 30030, face: 20000, equipment: {}, gender: 0 })}
+        variantLoadout={(_d, id) => ({
+          skin: id,
+          hair: 30030,
+          face: 20000,
+          equipment: {},
+          gender: 0,
+        })}
         open
         onOpenChange={() => {}}
         onSelect={onSelect}
@@ -169,7 +165,9 @@ describe("AppearanceBrowserDialog", () => {
       />,
     );
     // skin candidates 0-9 render; the selectedId thumb is marked selected
-    const selected = await screen.findByRole("button", { name: /skin tone 2/i });
+    const selected = await screen.findByRole("button", {
+      name: /skin tone 2/i,
+    });
     expect(selected.className).toMatch(/ring/);
     const other = screen.getByRole("button", { name: /skin tone 5/i });
     await userEvent.click(other);

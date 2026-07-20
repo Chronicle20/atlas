@@ -13,7 +13,12 @@ interface ItemRowProps {
 }
 
 /** Icon + display name + mono id + remove ×. Bad ids degrade, never block. */
-export function ItemRow({ id, onRemove, removeAriaLabel, trailing }: ItemRowProps) {
+export function ItemRow({
+  id,
+  onRemove,
+  removeAriaLabel,
+  trailing,
+}: ItemRowProps) {
   const { activeTenant } = useTenant();
   const name = useItemName(String(id));
   const [iconFailed, setIconFailed] = useState(false);

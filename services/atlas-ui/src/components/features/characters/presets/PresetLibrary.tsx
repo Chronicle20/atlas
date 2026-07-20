@@ -44,7 +44,8 @@ export function PresetLibrary({
     () =>
       presets.filter(
         (p) =>
-          matchesQuery(p, query) && (activeTag === null || p.attributes.tags.includes(activeTag)),
+          matchesQuery(p, query) &&
+          (activeTag === null || p.attributes.tags.includes(activeTag)),
       ),
     [presets, query, activeTag],
   );

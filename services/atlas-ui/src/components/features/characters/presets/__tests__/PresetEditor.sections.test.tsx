@@ -21,17 +21,31 @@ import type { CharacterPreset } from "@/types/models/template";
 // stay mocked — their own dependency chains (cosmetics browser, map picker,
 // character-image React Query) are out of scope here and already covered by
 // their own section tests.
-vi.mock("../PresetPreviewCard", () => ({ PresetPreviewCard: () => <div data-testid="preview" /> }));
-vi.mock("../ClassAppearanceSection", () => ({ ClassAppearanceSection: () => <div /> }));
-vi.mock("../SpawnProgressionSection", () => ({ SpawnProgressionSection: () => <div /> }));
+vi.mock("../PresetPreviewCard", () => ({
+  PresetPreviewCard: () => <div data-testid="preview" />,
+}));
+vi.mock("../ClassAppearanceSection", () => ({
+  ClassAppearanceSection: () => <div />,
+}));
+vi.mock("../SpawnProgressionSection", () => ({
+  SpawnProgressionSection: () => <div />,
+}));
 
-vi.mock("@/context/tenant-context", () => ({ useTenant: () => ({ activeTenant: null }) }));
-vi.mock("@/lib/hooks/api/useItemStrings", () => ({ useItemName: () => ({ data: "Item", isError: false }) }));
-vi.mock("@/lib/hooks/useSkillData", () => ({ useSkillData: () => ({ data: { name: "Power Strike" }, isError: false }) }));
+vi.mock("@/context/tenant-context", () => ({
+  useTenant: () => ({ activeTenant: null }),
+}));
+vi.mock("@/lib/hooks/api/useItemStrings", () => ({
+  useItemName: () => ({ data: "Item", isError: false }),
+}));
+vi.mock("@/lib/hooks/useSkillData", () => ({
+  useSkillData: () => ({ data: { name: "Power Strike" }, isError: false }),
+}));
 // Real ItemSearchCombobox needs a QueryClientProvider; not under test here.
 vi.mock("../../templates/ItemSearchCombobox", () => ({
   ItemSearchCombobox: ({ onAdd }: { onAdd: (id: number) => void }) => (
-    <button aria-label="combo-add" onClick={() => onAdd(1040002)}>combo</button>
+    <button aria-label="combo-add" onClick={() => onAdd(1040002)}>
+      combo
+    </button>
   ),
 }));
 
@@ -88,17 +102,23 @@ describe("PresetEditor: Equipment/Inventory/Skills index-callback wiring", () =>
         onSetInventoryQty={noop}
         onRemoveSkill={noop}
         onSetSkillLevel={noop}
-        onRemoveEquip={(index) => h.dispatch({ type: "removeEquip", key: h.key, index })}
+        onRemoveEquip={(index) =>
+          h.dispatch({ type: "removeEquip", key: h.key, index })
+        }
         onSetEquipAvg={(index, value) =>
           h.dispatch({ type: "setEquipAvg", key: h.key, index, value })
         }
       />,
     );
 
-    await userEvent.click(screen.getByRole("switch", { name: /average stats/i }));
+    await userEvent.click(
+      screen.getByRole("switch", { name: /average stats/i }),
+    );
     expect(h.current().attributes.equipment[0]!.useAverageStats).toBe(false);
 
-    await userEvent.click(screen.getByRole("button", { name: /remove equipment 1040002/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /remove equipment 1040002/i }),
+    );
     expect(h.current().attributes.equipment).toHaveLength(0);
   });
 
@@ -126,7 +146,9 @@ describe("PresetEditor: Equipment/Inventory/Skills index-callback wiring", () =>
         onSetInventoryQty={(index, value) =>
           h.dispatch({ type: "setInventoryQty", key: h.key, index, value })
         }
-        onRemoveInventory={(index) => h.dispatch({ type: "removeInventory", key: h.key, index })}
+        onRemoveInventory={(index) =>
+          h.dispatch({ type: "removeInventory", key: h.key, index })
+        }
       />,
     );
 
@@ -135,7 +157,9 @@ describe("PresetEditor: Equipment/Inventory/Skills index-callback wiring", () =>
     await userEvent.type(qty, "5");
     expect(h.current().attributes.inventory[0]!.quantity).toBe(5);
 
-    await userEvent.click(screen.getByRole("button", { name: /remove item 2000000/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /remove item 2000000/i }),
+    );
     expect(h.current().attributes.inventory).toHaveLength(0);
   });
 
@@ -163,7 +187,9 @@ describe("PresetEditor: Equipment/Inventory/Skills index-callback wiring", () =>
         onSetSkillLevel={(index, value) =>
           h.dispatch({ type: "setSkillLevel", key: h.key, index, value })
         }
-        onRemoveSkill={(index) => h.dispatch({ type: "removeSkill", key: h.key, index })}
+        onRemoveSkill={(index) =>
+          h.dispatch({ type: "removeSkill", key: h.key, index })
+        }
       />,
     );
 
@@ -172,12 +198,16 @@ describe("PresetEditor: Equipment/Inventory/Skills index-callback wiring", () =>
     await userEvent.type(level, "7");
     expect(h.current().attributes.skills[0]!.level).toBe(7);
 
-    await userEvent.click(screen.getByRole("button", { name: /remove skill 1001/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /remove skill 1001/i }),
+    );
     expect(h.current().attributes.skills).toHaveLength(0);
   });
 
   it("EquipmentSection/InventorySection Add wire to onAddEquip/onAddInventory with the raw templateId (via the search combobox)", async () => {
-    const h = harness([{ id: "a1", attributes: { ...DEFAULT_PRESET_ATTRIBUTES } }]);
+    const h = harness([
+      { id: "a1", attributes: { ...DEFAULT_PRESET_ATTRIBUTES } },
+    ]);
     const onAddEquip = vi.fn();
 
     render(

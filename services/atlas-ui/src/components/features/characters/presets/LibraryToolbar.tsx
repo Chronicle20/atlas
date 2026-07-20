@@ -12,7 +12,14 @@ interface LibraryToolbarProps {
   onNew: () => void;
 }
 
-export function LibraryToolbar({ query, onQuery, tags, activeTag, onTag, onNew }: LibraryToolbarProps) {
+export function LibraryToolbar({
+  query,
+  onQuery,
+  tags,
+  activeTag,
+  onTag,
+  onNew,
+}: LibraryToolbarProps) {
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex flex-1 flex-wrap items-center gap-3">
@@ -61,7 +68,12 @@ export function LibraryToolbar({ query, onQuery, tags, activeTag, onTag, onNew }
           ))}
         </div>
       </div>
-      <Button type="button" aria-label="New preset" onClick={onNew} className="gap-1.5">
+      <Button
+        type="button"
+        aria-label="New preset"
+        onClick={onNew}
+        className="gap-1.5"
+      >
         <Plus className="h-4 w-4" />
         New preset
       </Button>

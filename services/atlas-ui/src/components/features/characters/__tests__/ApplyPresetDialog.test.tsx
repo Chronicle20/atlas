@@ -287,9 +287,7 @@ describe("ApplyPresetDialog", () => {
 
   it("pre-selects initialPresetId when provided and it matches a saved preset", async () => {
     render(
-      <ApplyPresetDialog
-        {...defaultProps({ initialPresetId: "preset-2" })}
-      />,
+      <ApplyPresetDialog {...defaultProps({ initialPresetId: "preset-2" })} />,
     );
     const mageTile = await screen.findByRole("radio", { name: /Mage/i });
     await waitFor(() =>
@@ -354,9 +352,7 @@ describe("ApplyPresetDialog", () => {
     });
 
     const { rerender } = render(
-      <ApplyPresetDialog
-        {...defaultProps({ initialPresetId: "preset-1" })}
-      />,
+      <ApplyPresetDialog {...defaultProps({ initialPresetId: "preset-1" })} />,
     );
 
     // Confirm the initial seed landed (Warrior pre-selected).
@@ -396,9 +392,7 @@ describe("ApplyPresetDialog", () => {
       isLoading: false,
     });
     rerender(
-      <ApplyPresetDialog
-        {...defaultProps({ initialPresetId: "preset-1" })}
-      />,
+      <ApplyPresetDialog {...defaultProps({ initialPresetId: "preset-1" })} />,
     );
 
     // The user's typed name and manually-picked preset must survive — NOT

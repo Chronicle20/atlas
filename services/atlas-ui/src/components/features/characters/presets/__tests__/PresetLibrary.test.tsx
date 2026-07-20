@@ -5,20 +5,33 @@ import { PresetLibrary } from "../PresetLibrary";
 import { DEFAULT_PRESET_ATTRIBUTES } from "../presetEditorState";
 
 vi.mock("../PresetCard", () => ({
-  PresetCard: ({ preset, onOpen }: { preset: { attributes: { name: string } }; onOpen: () => void }) => (
-    <button onClick={onOpen}>{preset.attributes.name}</button>
-  ),
+  PresetCard: ({
+    preset,
+    onOpen,
+  }: {
+    preset: { attributes: { name: string } };
+    onOpen: () => void;
+  }) => <button onClick={onOpen}>{preset.attributes.name}</button>,
 }));
 
 const mk = (key: string, name: string, tags: string[], description = "") => ({
-  key, id: key, attributes: { ...DEFAULT_PRESET_ATTRIBUTES, name, tags, description },
+  key,
+  id: key,
+  attributes: { ...DEFAULT_PRESET_ATTRIBUTES, name, tags, description },
 });
 const presets = [
   mk("a", "Fresh Beginner", ["starter"], "level 1 blank"),
   mk("b", "Test Warrior", ["combat"], "a tank"),
   mk("c", "GM Admin", ["staff"], "godmode"),
 ];
-const base = { dirtyKeys: new Set<string>(), canApply: true, onOpen: vi.fn(), onNew: vi.fn(), onDuplicate: vi.fn(), onApply: vi.fn() };
+const base = {
+  dirtyKeys: new Set<string>(),
+  canApply: true,
+  onOpen: vi.fn(),
+  onNew: vi.fn(),
+  onDuplicate: vi.fn(),
+  onApply: vi.fn(),
+};
 
 describe("PresetLibrary", () => {
   it("search matches name/description/tags case-insensitively", async () => {

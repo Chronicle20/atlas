@@ -36,12 +36,18 @@ export function AccountPickerDialog({
     return () => clearTimeout(handle);
   }, [query]);
 
-  useEffect(() => {
+  // Reset the search on every open — adjusted during render (rather than in
+  // an effect) via React's "adjust state when a prop changes" pattern
+  // (https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes),
+  // so this doesn't trip react-hooks/set-state-in-effect.
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (prevOpen !== open) {
+    setPrevOpen(open);
     if (open) {
       setQuery("");
       setDebounced("");
     }
-  }, [open]);
+  }
 
   const { data, isLoading, isError } = useAccountSearch(tenant, debounced);
 

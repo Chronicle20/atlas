@@ -100,7 +100,10 @@ describe("TemplatesCharacterPresetsPage", () => {
     );
     const { adapter } = editorMock.mock.calls.at(-1)![0] as {
       adapter: {
-        save: (p: unknown[], onSuccess: (persisted?: unknown[]) => void) => void;
+        save: (
+          p: unknown[],
+          onSuccess: (persisted?: unknown[]) => void,
+        ) => void;
       };
     };
     adapter.save([{ attributes: { name: "P" } }], () => {});
@@ -128,7 +131,10 @@ describe("TemplatesCharacterPresetsPage", () => {
     );
     const { adapter } = editorMock.mock.calls.at(-1)![0] as {
       adapter: {
-        save: (p: unknown[], onSuccess: (persisted?: unknown[]) => void) => void;
+        save: (
+          p: unknown[],
+          onSuccess: (persisted?: unknown[]) => void,
+        ) => void;
       };
     };
     const onSuccess = vi.fn();

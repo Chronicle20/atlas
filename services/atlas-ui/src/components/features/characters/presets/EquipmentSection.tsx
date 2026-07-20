@@ -53,7 +53,10 @@ export function EquipmentSection({
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold">Worn items</h3>
         <div className="flex items-center gap-2">
-          <Select value={poolKey} onValueChange={(v) => setPoolKey(v as SearchPoolKey)}>
+          <Select
+            value={poolKey}
+            onValueChange={(v) => setPoolKey(v as SearchPoolKey)}
+          >
             <SelectTrigger className="w-32" aria-label="Item subcategory">
               <SelectValue />
             </SelectTrigger>

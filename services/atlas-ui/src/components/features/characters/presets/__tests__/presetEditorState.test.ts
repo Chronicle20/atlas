@@ -208,6 +208,40 @@ describe("presetEditorState", () => {
     expect(presetDirty(s, "local-0")).toBe(false);
   });
 
+  it("savedOk with a persisted array of mismatched length skips positional backfill but still rebaselines", () => {
+    // Simulates the exact corruption this guard prevents: at the moment
+    // save() was called, state.presets was [a1, local-0(no id)], and the
+    // server echoed back persisted = [{id:"a1"}, {id:"new-id-for-local-0"}]
+    // in that same order. But *while the save was in flight*, the user
+    // removed "a1" — so by the time savedOk fires, state.presets has
+    // shifted to just [local-0]. Without a length guard, the old positional
+    // code would zip persisted[0] (id "a1", meant for the now-removed
+    // preset) onto the surviving id-less local-0 — silently attaching the
+    // WRONG server id to the wrong working preset.
+    let s = loaded([preset("a1", "One")]);
+    s = presetReducer(s, { type: "addPreset" }); // local-0, no id
+    expect(s.presets).toHaveLength(2);
+    expect(s.presets[1]!.id).toBeUndefined();
+    const persisted: CharacterPreset[] = [
+      { id: "a1", attributes: s.presets[0]!.attributes },
+      { id: "new-id-for-local-0", attributes: s.presets[1]!.attributes },
+    ];
+    // Mid-save removal of "a1": persisted (length 2) no longer lines up
+    // with state.presets (now length 1).
+    s = presetReducer(s, { type: "removePreset", key: "a1" });
+    expect(s.presets).toHaveLength(1);
+    s = presetReducer(s, { type: "savedOk", persisted });
+    // The survivor must NOT have picked up persisted[0]'s id ("a1") —
+    // that id belonged to the preset that was removed mid-save.
+    expect(s.presets[0]!.key).toBe("local-0");
+    expect(s.presets[0]!.id).toBeUndefined();
+    // Still rebaselines to the current working copy as a whole, so the
+    // editor is not dirty overall (per-row presetDirty for an id-less
+    // preset is always true by design — it never has a baseline
+    // counterpart to compare against — so that is not asserted here).
+    expect(isDirty(s)).toBe(false);
+  });
+
   it("savedOk with persisted never overwrites an already-set id", () => {
     let s = loaded([preset("a1", "One")]);
     const persisted: CharacterPreset[] = [

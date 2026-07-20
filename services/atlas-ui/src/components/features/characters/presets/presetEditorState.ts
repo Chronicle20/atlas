@@ -345,13 +345,24 @@ export function presetReducer(
       // that is still undefined (a freshly-created preset); an id that is
       // already set is left untouched, and key/attributes/selectedKey are
       // never touched here.
-      const presets = action.persisted
-        ? state.presets.map((p, i) =>
-            p.id === undefined && action.persisted![i]?.id !== undefined
-              ? { ...p, id: action.persisted![i]!.id }
-              : p,
-          )
-        : state.presets;
+      //
+      // Length guard: the save is async, so `state.presets` may have gained
+      // or lost rows (addPreset/removePreset) between the save() call and
+      // this success callback firing. If the lengths no longer match, the
+      // positional correspondence assumed above no longer holds and blindly
+      // zipping `persisted[i]` onto `state.presets[i]` could attach a
+      // server-issued id to the WRONG working preset — silent
+      // misattribution. Safely degrade instead: skip the backfill entirely
+      // and just rebaseline. A newly-created preset simply stays id-less
+      // until the next save/reload picks it up correctly.
+      const presets =
+        action.persisted && action.persisted.length === state.presets.length
+          ? state.presets.map((p, i) =>
+              p.id === undefined && action.persisted![i]?.id !== undefined
+                ? { ...p, id: action.persisted![i]!.id }
+                : p,
+            )
+          : state.presets;
       return { ...state, presets, baseline: presets.map(project) };
     }
   }

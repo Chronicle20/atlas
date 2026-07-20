@@ -187,7 +187,7 @@ export function ClassAppearanceSection({
           dimension={browserDimension}
           gender={attrs.gender}
           variantLoadout={(dim, id) => buildPresetVariantLoadout(attrs, dim, id)}
-          open={browserDimension !== null}
+          open
           onOpenChange={(open) => {
             if (!open) setBrowserDimension(null);
           }}

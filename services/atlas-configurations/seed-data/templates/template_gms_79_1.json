@@ -2867,6 +2867,10 @@
         }
       },
       {
+        "opCode": "0x125",
+        "writer": "Tournament"
+      },
+      {
         "opCode": "0x127",
         "writer": "TournamentSetPrize"
       },

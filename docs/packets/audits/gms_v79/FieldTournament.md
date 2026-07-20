@@ -1,16 +1,15 @@
 # FieldTournament (← `CField_Tournament::OnTournament`)
 
-- **IDA:** 
+- **IDA:** 0x5585af
 - **Atlas file:** `libs/atlas-packet/field/clientbound/tournament.go`
 - **Variant:** GMS/v79
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `mode; consumed inside the leading branch condition itself (C \|\| short-circuit against a client-local TSecType flag, never a wire read) -- selects one of two mutually-exclusive UI arms` | ✅ |  |
+| 1 | byte | byte `value; read unconditionally by whichever arm is selected -- champion/finalist/round-N notice in one arm, prize-not-set/insufficient-users notice in the other. Both arms terminate after this byte.` | ✅ |  |
 

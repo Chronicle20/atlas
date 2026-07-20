@@ -162,17 +162,59 @@ registry entry. All six cells verify ✅ (`matrix --check` clean); goldens
 updated (flag-set + flag-clear cases) plus `TestTournamentSetPrizeByteOutputV79`
 / `TestTournamentSetPrizeByteOutputV79NoItems`.
 
+## DEFECT-5: Tournament — unconditional 3rd byte (true wire is flat 2 bytes) — **FIXED**
+
+**Resolution (task-181):** re-read `CField_Tournament::OnTournament` live
+across five IDBs — gms_v79 `@0x5585af`, gms_v83 `@0x57b61a`, gms_v87
+`@0x5a9d67`, gms_v95 `@0x5631a0` (PDB-backed, condition negated but
+functionally identical), jms_v185 `@0x5cfdac` (gms_v84 `@0x58b12b`
+byte-identical to v83) — all **identical structure**. The leading
+`if (Decode1() || (secType&1)==0)` reads the FIRST byte as part of the
+branch condition itself (C `||` short-circuit: the second operand — a
+purely client-local `TSecType` flag — is never a wire read, only evaluated
+when the first `Decode1()` is falsy). Whichever arm the branch selects then
+reads exactly **one further** `Decode1()` unconditionally (a rank/place
+value formatted into a champion/finalist/round-N notice in one arm; a
+start-state value formatted into a prize-not-set/insufficient-users notice
+in the other). Both arms terminate immediately after that second byte — no
+further `CInPacket` reads on either path. The wire is therefore a **flat,
+unconditional two bytes**; there is no third byte and no gating is needed in
+the codec (unlike ContiMove/TournamentSetPrize, byte count never varies).
+This is a genuine **true false-pass**: the prior atlas codec wrote/read an
+unconditional THIRD byte, permanently desyncing the client on every
+`OnTournament` packet (the excess byte gets consumed as the start of the
+next packet header) — and the v83/v84/v87/v95/jms ida-exports encoded the
+same wrong 3-call shape (v83/v87/v95 even tagged the 2nd/3rd calls with
+mutually-exclusive `guard` fields, but still listed both as separate rows
+instead of collapsing the mutex to one position), so the pre-existing ✅
+cells were false passes too.
+
+Re-modelled `Tournament{mode byte, value byte}` — dropped the third field
+entirely; `Encode`/`Decode` are unconditional two-byte read/writes, no gate
+function needed. Widened the channel wrapper `TournamentBody(mode, value)`
+(its only caller — never actually emitted). Corrected the 2-call
+unconditional read order in all six exports (v79 was `unresolved`; the
+other five held the wrong 3-call shape), re-pinned all six evidence
+records, regenerated the Tournament report per version (selective revert —
+regen churns hundreds of unrelated files), and routed it in
+`template_gms_79_1.json` (opcode `0x125`, `CField_Tournament::OnPacket`
+case 293, previously unrouted between `0x124` CharacterInteraction and
+`0x127` TournamentSetPrize — confirmed against the live `OnPacket` switch
+decompile) + registry entry. All six cells verify ✅ (`matrix --check`
+clean); goldens replaced (2-byte golden) plus `TestTournamentByteOutputV79`.
+
 ## Remaining divergent writers (proven recipe: RE across IDBs → re-model codec →
 correct exports if their read-order is wrong → re-pin evidence → selective
 per-version report regen → route v79). SnowballState (DEFECT-1),
-AriantArenaUserScore (DEFECT-2), ContiMove (DEFECT-3), and TournamentSetPrize
-(DEFECT-4) are the completed exemplars — DEFECT-2 confirmed the count-loop
-export convention (no splice needed except for the previously-unresolved v79
-entry), DEFECT-3 confirmed a genuine state-gated conditional-field false-pass
-spanning ALL previously-✅ versions, DEFECT-4 confirmed a flag-gated
-conditional-field false-pass where the non-v79 exports were already correct
-(only the codec and the v79 export needed fixing).
-- Small: Tournament (v79 ≤2 bytes vs atlas 3).
+AriantArenaUserScore (DEFECT-2), ContiMove (DEFECT-3), TournamentSetPrize
+(DEFECT-4), and Tournament (DEFECT-5) are the completed exemplars — DEFECT-2
+confirmed the count-loop export convention (no splice needed except for the
+previously-unresolved v79 entry), DEFECT-3 confirmed a genuine state-gated
+conditional-field false-pass spanning ALL previously-✅ versions, DEFECT-4
+confirmed a flag-gated conditional-field false-pass where the non-v79
+exports were already correct (only the codec and the v79 export needed
+fixing), DEFECT-5 confirmed a flat-invariant-length false-pass (no gate
+needed at all — the branch determines *meaning*, never byte count).
 - Medium: TournamentMatchTable, MonsterCarnival
   Start/Summon/Message/Died/Leave (variable str/loop bodies).
 - Large: MtsOperation — `CITC::OnNormalItemResult` 35-arm dispatcher family

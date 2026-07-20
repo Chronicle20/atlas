@@ -3156,6 +3156,15 @@
   ida:
     address: 7081642
   note: 'Dedicated RPS serverbound opcode 0x85 (133); 6 RPS send helpers sub-ops 0-5, structurally identical to v72/v83. Clientbound OnPacket byte-identical to verified v83. Live IDA 2026-07-16; see ida-rps-legacy-reaudit.md.'
+- op: TOURNAMENT
+  direction: clientbound
+  opcode: 293
+  fname: CField_Tournament::OnTournament
+  packet: field/clientbound/FieldTournament
+  provenance: ida-discovered
+  ida:
+    address: 5604783
+  note: 'task-181: v79 IDB CField_Tournament::OnTournament (0x5585af, seed template_gms_79_1.json opCode 0x125, CField_Tournament::OnPacket case 293) reads Decode1(mode) consumed inside the leading branch condition itself (C || short-circuit against a client-local TSecType flag, never a wire read) selecting one of two mutually-exclusive UI arms, then Decode1(value) unconditionally in whichever arm is taken; both arms terminate after that second byte. The wire is a flat, unconditional two bytes -- no third byte, no gating needed. Structure identical across v79/v83/v84/v87/v95/jms. Prior atlas codec wrote/read an unconditional THIRD byte, permanently desyncing the client on every OnTournament packet (false pass); re-modelled and corrected task-181.'
 - op: TOURNAMENT_SET_PRIZE
   direction: clientbound
   opcode: 295

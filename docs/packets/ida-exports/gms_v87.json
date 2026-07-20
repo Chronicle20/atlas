@@ -10022,17 +10022,11 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": ""
+          "comment": "mode; consumed inside the leading branch condition itself (C || short-circuit against a client-local TSecType flag, never a wire read) -- selects one of two mutually-exclusive UI arms"
         },
         {
           "op": "Decode1",
-          "comment": "",
-          "guard": "CInPacket::Decode1(a1"
-        },
-        {
-          "op": "Decode1",
-          "comment": "",
-          "guard": "<default>"
+          "comment": "value; read unconditionally by whichever arm is selected -- champion/finalist/round-N notice in one arm, prize-not-set/insufficient-users notice in the other. Both arms terminate after this byte."
         }
       ]
     },

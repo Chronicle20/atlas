@@ -1473,7 +1473,8 @@
       },
       {
         "opCode": "0xB6",
-        "writer": "ChatGeneralChat"
+        "writer": "ChatGeneralChat",
+        "services": ["channel"]
       },
       {
         "opCode": "0xB7",

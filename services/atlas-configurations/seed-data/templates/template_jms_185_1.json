@@ -2035,7 +2035,8 @@
       },
       {
         "opCode": "0xA1",
-        "writer": "ChatGeneralChat"
+        "writer": "ChatGeneralChat",
+        "services": ["channel"]
       },
       {
         "opCode": "0xA2",

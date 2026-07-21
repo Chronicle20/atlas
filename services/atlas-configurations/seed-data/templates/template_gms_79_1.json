@@ -2212,7 +2212,8 @@
       },
       {
         "opCode": "0x98",
-        "writer": "ChatGeneralChat"
+        "writer": "ChatGeneralChat",
+        "services": ["channel"]
       },
       {
         "opCode": "0x99",

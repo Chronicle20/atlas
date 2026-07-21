@@ -44,7 +44,13 @@ func NewAriantArenaUserScore(entries []AriantArenaScoreEntry) AriantArenaUserSco
 	return AriantArenaUserScore{entries: entries}
 }
 
-func (m AriantArenaUserScore) Entries() []AriantArenaScoreEntry { return m.entries }
+// Entries returns a copy so the immutable model can't be mutated through the
+// returned slice (entries are value structs, so a shallow copy suffices).
+func (m AriantArenaUserScore) Entries() []AriantArenaScoreEntry {
+	out := make([]AriantArenaScoreEntry, len(m.entries))
+	copy(out, m.entries)
+	return out
+}
 
 func (m AriantArenaUserScore) Operation() string { return AriantArenaUserScoreWriter }
 func (m AriantArenaUserScore) String() string {

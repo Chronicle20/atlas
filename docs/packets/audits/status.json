@@ -37804,6 +37804,54 @@
     },
     {
       "kind": "op",
+      "op": "WEDDING_PROGRESS",
+      "packet": "field/serverbound/FieldWeddingAction",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField_Wedding::OnWeddingProgress"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 298
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 320
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 327
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 337
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 379
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 345
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "BATTLE_RECORD_REQUEST",
       "direction": "serverbound",
       "tier1": false,
@@ -38804,54 +38852,6 @@
         "jms_v185": {
           "state": "n-a",
           "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "WEDDING_PROGRESS",
-      "packet": "field/serverbound/FieldWeddingAction",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField_Wedding::OnWeddingProgress"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 320
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 327
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 337
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 379
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 345
         }
       }
     },

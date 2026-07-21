@@ -2145,6 +2145,15 @@
   ida:
     address: 5604681
   note: 'task-181: v79 IDB CField_Tournament::OnPacket case 297 (nullsub_10 @0x558add, seed template_gms_79_1.json opCode 0x129) reads nothing from CInPacket; body byte-identical (empty) to v83.'
+- op: WEDDING_PROGRESS
+  direction: clientbound
+  opcode: 298
+  fname: CField_Wedding::OnWeddingProgress
+  packet: field/clientbound/FieldWeddingProgress
+  provenance: ida-discovered
+  ida:
+    address: 5627835
+  note: 'task-181: v79 IDB CField_Wedding::OnWeddingProgress (0x55dfbb, seed template_gms_79_1.json opCode 0x12A) reads Decode1(step)+Decode4(groomId)+Decode4(brideId); body byte-identical to v83 (GMS keeps the step byte). The batch-1 fixture pass added the v79 test marker but not this op row, so the v79 cell was silently n-a; registry entry added task-181.'
 - op: WEDDING_CEREMONY_END
   direction: clientbound
   opcode: 299

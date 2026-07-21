@@ -222,27 +222,46 @@ func (m *Asset) encodeEquipableInfo(l logrus.FieldLogger, ctx context.Context) f
 		}
 
 		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
-			w.WriteByte(m.levelType)
-			w.WriteByte(m.level)
-			w.WriteInt(m.experience)
-			if t.IsRegion("GMS") && t.MajorAtLeast(84) {
-				w.WriteInt32(-1) // nDurability (-1 = no durability): GMS v84+ equip field, ordered experience/durability/hammersApplied (GW_ItemSlotEquip::RawDecode +212; absent v83). IDA-verified.
-			}
-			w.WriteInt(m.hammersApplied)
+			// levelType/level/experience(/durability/hammers): the whole extended
+			// equip trailer was added in the v72 revision. v48/v61 read NOTHING
+			// between the flag short and the single trailing 8-byte buffer below
+			// (verified equip RawDecode v61 @0x4b4e7d, v48 @0x49c332); v72+ read
+			// levelType+level+exp then two buffers + an int (v72 @0x4d0172).
+			if (t.IsRegion("GMS") && t.MajorAtLeast(72)) || t.Region() == "JMS" {
+				w.WriteByte(m.levelType)
+				w.WriteByte(m.level)
+				w.WriteInt(m.experience)
+				if t.IsRegion("GMS") && t.MajorAtLeast(84) {
+					w.WriteInt32(-1) // nDurability (-1 = no durability): GMS v84+ equip field, ordered experience/durability/hammersApplied (GW_ItemSlotEquip::RawDecode +212; absent v83). IDA-verified.
+				}
+				// hammersApplied (nIUC): added in the v79 revision (v72 @0x4d0172
+				// reads a single Decode4 = experience; v79 @0x4d7ee8 / v83 @0x4e3c3d
+				// read two). IDA-verified.
+				if (t.IsRegion("GMS") && t.MajorAtLeast(79)) || t.Region() == "JMS" {
+					w.WriteInt(m.hammersApplied)
+				}
 
-			if t.Region() == "JMS" {
-				w.WriteByte(0)
-				w.WriteShort(0)
-				w.WriteShort(0)
-				w.WriteShort(0)
-				w.WriteShort(0)
-				w.WriteShort(0)
-				w.WriteInt(0)
+				if t.Region() == "JMS" {
+					w.WriteByte(0)
+					w.WriteShort(0)
+					w.WriteShort(0)
+					w.WriteShort(0)
+					w.WriteShort(0)
+					w.WriteShort(0)
+					w.WriteInt(0)
+				}
 			}
 
+			// Trailing 8-byte buffer (a dateExpire FILETIME), present for every
+			// version that has equips (v48+). Non-cash items always carry it (the
+			// client reads it under `if(!cash)`; verified v48 @0x49c50f, v61 @0x4b505a).
 			w.WriteLong(0)
-			w.WriteInt64(94354848000000000)
-			w.WriteInt32(-1)
+
+			// Second buffer + int: also v72-revision additions (absent v48/v61).
+			if (t.IsRegion("GMS") && t.MajorAtLeast(72)) || t.Region() == "JMS" {
+				w.WriteInt64(94354848000000000)
+				w.WriteInt32(-1)
+			}
 		}
 		return w.Bytes()
 	}
@@ -272,8 +291,19 @@ func (m *Asset) encodeCashEquipableInfo(l logrus.FieldLogger, ctx context.Contex
 			w.WriteAsciiString(m.owner)
 			w.WriteShort(m.flag)
 
-			if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
-				for i := 0; i < 10; i++ {
+			// The cash-equip extended trailer is a v72-revision addition. For a CASH
+			// item the client skips the non-cash 8-byte buffer, so v48/v61 read
+			// NOTHING after the flag short (verified v48/v61 equip RawDecode cash
+			// branch) — the whole block is gated v72+.
+			if (t.IsRegion("GMS") && t.MajorAtLeast(72)) || t.Region() == "JMS" {
+				// 0x40 filler stands in for levelType(1)+level(1)+experience(4)+hammersApplied(4).
+				// hammersApplied (4 bytes) was added in the v79 revision, so v72 reads
+				// only 6 filler bytes here (no hammers). IDA-verified.
+				filler := 10
+				if t.IsRegion("GMS") && !t.MajorAtLeast(79) {
+					filler = 6
+				}
+				for i := 0; i < filler; i++ {
 					w.WriteByte(0x40)
 				}
 				w.WriteInt64(94354848000000000)
@@ -432,32 +462,54 @@ func (m *Asset) decodeEquipableInfo(r *request.Reader, t tenant.Model, isCash bo
 
 		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
 			if isCash {
-				for i := 0; i < 10; i++ {
-					_ = r.ReadByte()
+				// Cash-equip trailer: v72+ (mirror of encodeCashEquipableInfo).
+				// v48/v61 cash equips read nothing after the flag short.
+				if (t.IsRegion("GMS") && t.MajorAtLeast(72)) || t.Region() == "JMS" {
+					// v79+ reads 10 filler bytes (incl. hammersApplied); v72 reads 6.
+					fillerLen := 10
+					if t.IsRegion("GMS") && !t.MajorAtLeast(79) {
+						fillerLen = 6
+					}
+					for i := 0; i < fillerLen; i++ {
+						_ = r.ReadByte()
+					}
+					_ = r.ReadInt64() // 94354848000000000
+					_ = r.ReadInt32() // -1
 				}
 			} else {
-				m.levelType = r.ReadByte()
-				m.level = r.ReadByte()
-				m.experience = r.ReadUint32()
-				if t.IsRegion("GMS") && t.MajorAtLeast(84) {
-					_ = r.ReadInt32() // nDurability: GMS v84+, ordered experience/durability/hammersApplied (mirror of Encode)
-				}
-				m.hammersApplied = r.ReadUint32()
+				// levelType/level/exp(/durability/hammers): v72+ (mirror of Encode).
+				if (t.IsRegion("GMS") && t.MajorAtLeast(72)) || t.Region() == "JMS" {
+					m.levelType = r.ReadByte()
+					m.level = r.ReadByte()
+					m.experience = r.ReadUint32()
+					if t.IsRegion("GMS") && t.MajorAtLeast(84) {
+						_ = r.ReadInt32() // nDurability: GMS v84+ (mirror of Encode)
+					}
+					// hammersApplied (nIUC): v79+ only (mirror of Encode).
+					if (t.IsRegion("GMS") && t.MajorAtLeast(79)) || t.Region() == "JMS" {
+						m.hammersApplied = r.ReadUint32()
+					}
 
-				if t.Region() == "JMS" {
-					_ = r.ReadByte()
-					_ = r.ReadUint16()
-					_ = r.ReadUint16()
-					_ = r.ReadUint16()
-					_ = r.ReadUint16()
-					_ = r.ReadUint16()
-					_ = r.ReadUint32()
+					if t.Region() == "JMS" {
+						_ = r.ReadByte()
+						_ = r.ReadUint16()
+						_ = r.ReadUint16()
+						_ = r.ReadUint16()
+						_ = r.ReadUint16()
+						_ = r.ReadUint16()
+						_ = r.ReadUint32()
+					}
 				}
 
-				_ = r.ReadUint64() // 0
+				// Trailing 8-byte buffer, present v48+ (mirror of Encode WriteLong(0)).
+				_ = r.ReadUint64()
+
+				// Second buffer + int: v72+ (mirror of Encode).
+				if (t.IsRegion("GMS") && t.MajorAtLeast(72)) || t.Region() == "JMS" {
+					_ = r.ReadInt64() // 94354848000000000
+					_ = r.ReadInt32() // -1
+				}
 			}
-			_ = r.ReadInt64() // 94354848000000000
-			_ = r.ReadInt32() // -1
 		}
 	}
 }

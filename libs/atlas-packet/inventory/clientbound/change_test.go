@@ -9,16 +9,14 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
-// TestAddEquipmentBytesV72 pins that the v72 InventoryAdd wire is byte-identical
-// to the verified v79 output. Neither the InventoryAdd codec nor the opaque
-// model.Asset equipment blob carries a version gate that differs between GMS v72
-// and v79: the Asset gates are (GMS>12) [both true], (GMS>28) [both true] and
-// (GMS>=84) [both false], so the two versions encode the same bytes. The v72
-// client handler is CWvsContext::OnInventoryOperation@0x917ad0 (dispatched from
-// CWvsContext::OnPacket case 26 @0x9025e4), the same read structure the v79 leaf
-// (@0x96953e) verifies. Opaque-family verification (OPAQUE_LEDGER exception): the
-// bytes inside the Asset blob are derived from the encoder and asserted here by
-// equality with the verified v79 encoding.
+// TestAddEquipmentBytesV72 pins the v72 InventoryAdd equip wire. The InventoryAdd
+// framing (handler CWvsContext::OnInventoryOperation@0x917ad0, dispatched from
+// OnPacket case 26 @0x9025e4) is version-agnostic vs v79, but the embedded
+// model.Asset equip blob is NOT: the v72 equip decode (GW_ItemSlotEquip::RawDecode
+// @0x4d0172) reads a single Decode4 (experience) where v79 (@0x4d7ee8) reads two
+// (experience + hammersApplied). So the v72 equip is exactly 4 bytes shorter than
+// v79. Opaque-family (OPAQUE_LEDGER exception): the equip blob is derived from the
+// encoder; here we assert its length delta against the verified v79 encoding.
 // packet-audit:verify packet=inventory/clientbound/InventoryAdd version=gms_v72 ida=0x917ad0
 func TestAddEquipmentBytesV72(t *testing.T) {
 	asset := model.NewAsset(true, 0, 1302000, time.Time{}).
@@ -27,23 +25,19 @@ func TestAddEquipmentBytesV72(t *testing.T) {
 	input := NewInventoryAdd(false, 1, -1, asset)
 	got72 := test.Encode(t, test.CreateContext("GMS", 72, 1), input.Encode, nil)
 	got79 := test.Encode(t, test.CreateContext("GMS", 79, 1), input.Encode, nil)
-	if !bytes.Equal(got72, got79) {
-		t.Fatalf("v72 = % X, want (v79) % X", got72, got79)
+	if len(got72) != len(got79)-4 {
+		t.Fatalf("v72 equip len %d, want v79 len %d - 4 (no hammersApplied)\n v72=% X\n v79=% X", len(got72), len(got79), got72, got79)
 	}
 }
 
-// TestAddEquipmentBytesV61 pins that the v61 InventoryAdd wire is byte-identical
-// to the verified v72/v79 output. IDA GMS_v61.1_U_DEVM.exe @port 13338:
-// CWvsContext::OnInventoryOperation@0x8422fc reads Decode1(exclReq)@0x842314 +
-// Decode1(count)@0x842358 then per entry Decode1(mode)@0x842376 +
-// Decode1(invType)@0x842379 + Decode2(slot)@0x842387 + [mode body: 0=Add
-// GW_ItemSlotBase::Decode@0x842661 opaque, 1=QuantityUpdate Decode2@0x842602,
-// 2=Move Decode2@0x8424bc, 3=Remove] with a single post-loop addMov byte
-// Decode1@0x8426f9 — the same read structure the v79 leaf (@0x96953e) verifies.
-// The InventoryAdd codec and the opaque model.Asset blob gates (GMS>12 [true],
-// GMS>28 [true], GMS>=84 [false]) put v61 in the same bracket as v72/v79, so the
-// bytes are identical. Opaque-family (OPAQUE_LEDGER exception): Asset blob bytes
-// derived from the encoder, asserted here by equality with the verified v79 encoding.
+// TestAddEquipmentBytesV61 pins the v61 InventoryAdd equip wire. IDA
+// GMS_v61.1_U_DEVM.exe: CWvsContext::OnInventoryOperation@0x8422fc frames the
+// packet identically to v79, but the v61 equip decode (GW_ItemSlotEquip::RawDecode
+// @0x4b4e7d) has NO levelType/level/experience/hammers trailer at all — after the
+// owner+flag it reads only a single 8-byte buffer (non-cash). So the v61 equip is
+// 22 bytes shorter than v79 (missing levelType+level+exp+2nd buf+int = 18, and
+// hammersApplied = 4). Opaque-family (OPAQUE_LEDGER exception): length delta vs the
+// verified v79 encoding.
 // packet-audit:verify packet=inventory/clientbound/InventoryAdd version=gms_v61 ida=0x8422fc
 func TestAddEquipmentBytesV61(t *testing.T) {
 	asset := model.NewAsset(true, 0, 1302000, time.Time{}).
@@ -52,8 +46,8 @@ func TestAddEquipmentBytesV61(t *testing.T) {
 	input := NewInventoryAdd(false, 1, -1, asset)
 	got61 := test.Encode(t, test.CreateContext("GMS", 61, 1), input.Encode, nil)
 	got79 := test.Encode(t, test.CreateContext("GMS", 79, 1), input.Encode, nil)
-	if !bytes.Equal(got61, got79) {
-		t.Fatalf("v61 = % X, want (v79) % X", got61, got79)
+	if len(got61) != len(got79)-22 {
+		t.Fatalf("v61 equip len %d, want v79 len %d - 22 (no v72/v79 equip trailer)\n v61=% X\n v79=% X", len(got61), len(got79), got61, got79)
 	}
 }
 

@@ -447,8 +447,27 @@ func (wz *File) tryParseWithVersion(hash uint32, key *crypto.WzKey) bool {
 		return false
 	}
 
-	// Try to read the first entry - if it fails, this isn't the right version
-	for i := int32(0); i < count && i < 1; i++ {
+	// Validate the version hash against EVERY root directory entry, not just
+	// the first. The encrypted-version header is only ~8 bits (see
+	// CalculateVersionHash), so many versions collide on it — e.g. GMS v72's
+	// Mob.wz collides with v3. A wrong hash still decodes the *first* entry's
+	// offset in-bounds by chance, but the offsets it produces for the remaining
+	// entries are effectively random and almost always fall out of bounds.
+	// Checking all entries makes the wrong version fail here so the brute-force
+	// continues to the correct one. (Previously only entry[0] was validated, so
+	// v72's Mob.wz mis-detected as v3 — wrong versionHash → every image offset
+	// wrong → EOF on every monster image → zero monster documents ingested.)
+	//
+	// The per-type advancement mirrors parseDirectory exactly (notably the
+	// type-1 `continue`, which has no size/checksum/offset) so traversal stays
+	// aligned across all entries.
+	fileInfo, err := wz.f.Stat()
+	if err != nil {
+		return false
+	}
+	fileSize := fileInfo.Size()
+
+	for i := int32(0); i < count; i++ {
 		elemType, err := r.ReadByte()
 		if err != nil {
 			return false
@@ -456,30 +475,32 @@ func (wz *File) tryParseWithVersion(hash uint32, key *crypto.WzKey) bool {
 
 		switch elemType {
 		case 1:
-			// Skip 10 bytes
+			// Unknown entry: 10 bytes, no size/checksum/offset trailer.
 			if err := r.Skip(10); err != nil {
 				return false
 			}
+			continue
 		case 2:
-			// UOL - read offset
-			_, err := r.ReadInt32()
-			if err != nil {
+			// UOL: the int32 is a name offset; size/checksum/offset follow.
+			if _, err := r.ReadInt32(); err != nil {
 				return false
 			}
 		case 3, 4:
-			// Directory or image - read name
+			// Sub-directory or image name. The key only affects the decoded
+			// characters, not the length-prefixed advancement, so the probe
+			// key is sufficient to traverse.
 			savedKey := r.Key()
 			r.SetKey(key.Bytes(0x10000))
-			_, err := r.ReadWzString()
+			_, nerr := r.ReadWzString()
 			r.SetKey(savedKey)
-			if err != nil {
+			if nerr != nil {
 				return false
 			}
 		default:
 			return false
 		}
 
-		// Read size, checksum, offset
+		// size, checksum
 		if _, err := r.ReadWzInt(); err != nil {
 			return false
 		}
@@ -487,18 +508,13 @@ func (wz *File) tryParseWithVersion(hash uint32, key *crypto.WzKey) bool {
 			return false
 		}
 
-		// Try reading the WZ offset - this validates the hash
+		// The WZ offset decode is the only version-hash-dependent read; a wrong
+		// hash lands out of bounds for the vast majority of entries.
 		offset, err := r.ReadWzOffset(uint32(wz.contentStart), hash)
 		if err != nil {
 			return false
 		}
-
-		// Sanity check: offset should be within file bounds
-		fileInfo, err := wz.f.Stat()
-		if err != nil {
-			return false
-		}
-		if int64(offset) >= fileInfo.Size() || offset == 0 {
+		if offset == 0 || int64(offset) >= fileSize {
 			return false
 		}
 	}

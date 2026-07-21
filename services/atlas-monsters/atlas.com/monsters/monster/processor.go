@@ -44,6 +44,7 @@ type Processor interface {
 	StartControl(uniqueId uint32, controllerId uint32) (Model, error)
 	StopControl(m Model) error
 	FindNextController(idp model.Provider[[]uint32]) model.Operator[Model]
+	ControlOnEnter(enteringCharacterId uint32, idp model.Provider[[]uint32]) model.Operator[Model]
 	Damage(id uint32, characterId uint32, damages []uint32, attackType byte)
 	DamageFriendly(uniqueId uint32, attackerUniqueId uint32, observerUniqueId uint32)
 	Move(id uint32, x int16, y int16, fh int16, stance byte) error
@@ -306,6 +307,47 @@ func (p *ProcessorImpl) FindNextController(idp model.Provider[[]uint32]) model.O
 	return func(m Model) error {
 		cid, err := p.getControllerCandidate(m.Field(), m.X(), m.Y(), idp)
 		if err != nil {
+			return err
+		}
+
+		_, err = p.StartControl(m.UniqueId(), cid)
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to start [%d] controlling [%d] in field [%s].", cid, m.UniqueId(), m.Field().Id())
+		}
+		return err
+	}
+}
+
+// ControlOnEnter assigns a controller to a not-yet-controlled monster when a
+// character enters the field.
+//
+// When the chosen controller is the *entering* character, the assignment is
+// applied IN-PLACE in the registry WITHOUT emitting a StartControl event —
+// mirroring Create's in-place assignment. That character's client is still
+// loading the field and has NOT been sent this mob's Spawn packet yet; the
+// channel's spawnMonsterForSession sends Spawn-then-Control to it, preserving
+// the client invariant that Control never precedes Spawn. An early Control
+// packet makes the v79/v83 client materialize the mob from the Control body
+// (CMobPool::SetLocalMob -> CreateMob -> CMob::Init): a 0/1 stance then routes
+// to CMob::OnResolveMoveAction and null-derefs (crash), and a control-first
+// birth on a slope lands the mob below the surface (fall-through). See
+// docs/tasks/task-179-mob-spawn-stance-byte and the channel spawnMonsterForSession.
+//
+// When the chosen controller is an already-present player (who already has the
+// mob spawned on their client), the normal StartControl path — with event
+// emission — is used, since Control-first is safe there.
+func (p *ProcessorImpl) ControlOnEnter(enteringCharacterId uint32, idp model.Provider[[]uint32]) model.Operator[Model] {
+	return func(m Model) error {
+		cid, err := p.getControllerCandidate(m.Field(), m.X(), m.Y(), idp)
+		if err != nil {
+			return err
+		}
+
+		if cid == enteringCharacterId {
+			p.l.Debugf("Assigning entering controller [%d] for monster [%d] in field [%s] in-place (no StartControl event; channel sends Spawn-then-Control).", cid, m.UniqueId(), m.Field().Id())
+			if _, err = GetMonsterRegistry().ControlMonster(p.t, m.UniqueId(), cid); err != nil {
+				p.l.WithError(err).Errorf("Unable to assign entering controller [%d] for monster [%d] in field [%s].", cid, m.UniqueId(), m.Field().Id())
+			}
 			return err
 		}
 

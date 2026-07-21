@@ -103,11 +103,16 @@ func SnapMobPosition(l logrus.FieldLogger, ctx context.Context, mapId _map.Id, x
 	}
 	surfaceY, ok := m.SurfaceYOnFoothold(uint32(fh), x)
 	if !ok {
+		// foothold missing / wall / x outside its span: the client can't validate
+		// against an unknown surface either, so leave y untouched.
 		return x, y
 	}
 	target := surfaceY - 1
 	if y > target {
+		// mob reported at-or-below the surface: bump it 1px above so spawn-packet
+		// validation doesn't treat it as embedded-in-terrain and drop it.
 		return x, target
 	}
+	// y <= target: mob is already above the surface; leave it for client gravity.
 	return x, y
 }

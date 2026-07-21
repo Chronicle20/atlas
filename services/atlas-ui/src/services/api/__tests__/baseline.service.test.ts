@@ -23,7 +23,7 @@ describe("baselineService", () => {
   });
 
   describe("restore", () => {
-    it("POSTs JSON with tenant headers and no operator header", async () => {
+    it("POSTs JSON with tenant headers and the operator header", async () => {
       fetchMock.mockResolvedValue({
         ok: true,
         status: 202,
@@ -48,7 +48,8 @@ describe("baselineService", () => {
       expect(headers.get("MAJOR_VERSION")).toBe("83");
       expect(headers.get("MINOR_VERSION")).toBe("1");
       expect(headers.get("Content-Type")).toBe("application/json");
-      expect(headers.get("X-Atlas-Operator")).toBeNull();
+      // Restore is operator-scoped: atlas-data's handler 403s without this flag.
+      expect(headers.get("X-Atlas-Operator")).toBe("1");
       expect(init.body).toBe(
         JSON.stringify({
           data: {

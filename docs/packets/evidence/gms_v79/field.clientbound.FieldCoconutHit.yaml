@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldCoconutHit
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CField_Coconut::OnCoconutHit
+    address: "0x5332fa"
+    decompile_sha256: 6055d4a1984634b2a89f621c2257ce058fc2600801fb04d526602bdf75a0af98
+verifies:
+    - libs/atlas-packet/field/clientbound/coconut_hit_test.go#TestCoconutHitByteOutputV79

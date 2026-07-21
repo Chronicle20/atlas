@@ -5,4 +5,4 @@ category: TIER1-FIXTURE
 ida:
     function: CField_SnowBall::OnSnowBallState
     address: "0x5a3328"
-    decompile_sha256: eb88a553e95b927438348fb573dabb83347ed98935f7008536fc649f8631ac7c
+    decompile_sha256: d9769e4548225ea091ba4fbc9bf49d5bc4314eaba64a7d1c58ace7664ec5c3cd

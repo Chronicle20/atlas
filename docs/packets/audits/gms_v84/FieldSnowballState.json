@@ -3,7 +3,7 @@
   "IDAName": "CField_SnowBall::OnSnowBallState",
   "Address": "0x584a1c",
   "Variant": "GMS/v84",
-  "BranchDepth": 0,
+  "BranchDepth": 1,
   "AtlasFile": "libs/atlas-packet/field/clientbound/snowball_state.go",
   "Rows": [
     {
@@ -11,7 +11,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
+      "IDAComment": "state",
       "Verdict": 0,
       "Note": ""
     },
@@ -20,7 +20,7 @@
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "",
+      "IDAComment": "leftSnowmanHp m_aSnowMan[0].m_nHP",
       "Verdict": 0,
       "Note": ""
     },
@@ -29,7 +29,7 @@
       "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
-      "IDAComment": "",
+      "IDAComment": "rightSnowmanHp m_aSnowMan[1].m_nHP",
       "Verdict": 0,
       "Note": ""
     },
@@ -38,7 +38,7 @@
       "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 1,
-      "IDAComment": "",
+      "IDAComment": "snowball0 x",
       "Verdict": 0,
       "Note": ""
     },
@@ -47,7 +47,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
+      "IDAComment": "snowball0 y",
       "Verdict": 0,
       "Note": ""
     },
@@ -56,16 +56,16 @@
       "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 1,
-      "IDAComment": "",
+      "IDAComment": "snowball1 x",
       "Verdict": 0,
       "Note": ""
     },
     {
       "Index": 6,
-      "AtlasOp": 1,
+      "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 1,
-      "IDAComment": "",
+      "IDAOp": 0,
+      "IDAComment": "snowball1 y",
       "Verdict": 0,
       "Note": ""
     },
@@ -74,7 +74,25 @@
       "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 1,
-      "IDAComment": "",
+      "IDAComment": "damageSnowBall (first-gated)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 8,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "damageSnowMan0 (first-gated)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 9,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "damageSnowMan1 (first-gated)",
       "Verdict": 0,
       "Note": ""
     }

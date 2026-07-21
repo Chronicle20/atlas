@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldMtsResultGetUserSaleItemDone
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnNormalItemResult#GetUserSaleItemDone
+    address: "0x57fded"
+    decompile_sha256: 204133e34213d4f448133e6d8d9c1e04eed51545bd0d4162224763a32223602c
+verifies:
+  - libs/atlas-packet/field/clientbound/mts_operation_test.go#TestMtsResultGetUserSaleItemDoneGolden

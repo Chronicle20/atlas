@@ -1,19 +1,18 @@
 # FieldMtsResultSuccessBidInfo (← `CITC::OnNormalItemResult#SuccessBidInfo`)
 
-- **IDA:** 
+- **IDA:** 0x58043b
 - **Atlas file:** `libs/atlas-packet/field/clientbound/mts_operation.go`
 - **Variant:** GMS/v79
 - **Branch depth:** 1
-- **Verdict:** 🔍
-- **Flat-diff-invalid:** the wire shape depends on a runtime discriminator a flat positional diff cannot model — the Atlas writer branches on a non-version condition (a data-dependent field or an untraced version-derived local), and/or the client reads fields conditionally (e.g. `mode <= 1`). The verdict is capped to 🔍; the row-level mismatches below are a modeling limitation, not a verified wire bug — confirm per-branch via byte-level tests.
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | bytes | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `MTS result mode byte (0x3E SuccessBidInfoResult)` | ✅ |  |
+| 1 | byte | byte `sold(1)/bought flag -> StringPool 0x12AA/0x12AB` | ✅ |  |
+| 2 | int32 | int32 `ITC item id; <=0 ends the body` | ✅ |  |
+| 3 | int32 | int32 `meso price (itemId>0 branch only)` | ✅ |  |
+| 4 | bytes | bytes `8-byte FILETIME contract date (itemId>0 branch only)` | ✅ |  |
 

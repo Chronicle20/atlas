@@ -5,4 +5,4 @@ category: TIER1-FIXTURE
 ida:
     function: CField_Tournament::OnTournamentMatchTable
     address: "0x5630d0"
-    decompile_sha256: 678c0a26a2ba3ec784ed35f908a08f58b4d9b2eccf3b67253077bc3979aa188a
+    decompile_sha256: 4ee6d0b01bb819552333a78409e60a77befd9dcb9e11204737502c40be7bbb83

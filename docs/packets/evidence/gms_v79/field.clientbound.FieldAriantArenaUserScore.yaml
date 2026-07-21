@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldAriantArenaUserScore
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CField_AriantArena::OnUserScore
+    address: "0x528799"
+    decompile_sha256: 56f1b53dade87f974f74edba52715a3e98c0924782753f226798da221eda2f2a

@@ -9746,7 +9746,11 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": ""
+          "comment": "state; (state-7) selects one of 6 arms"
+        },
+        {
+          "op": "Decode1",
+          "comment": "subState (state-gated: only arms 8/10/12 -- OnStartShipMoveField/OnMoveField/OnEndShipMoveField -- read a second byte; arms 7/9/11 are nullsubs and read nothing further)"
         }
       ]
     },
@@ -9898,22 +9902,27 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": ""
+          "comment": "mode; consumed inside the leading branch condition itself (C || short-circuit against a client-local TSecType flag, never a wire read) -- selects one of two mutually-exclusive UI arms"
         },
         {
           "op": "Decode1",
-          "comment": ""
-        },
-        {
-          "op": "Decode1",
-          "comment": ""
+          "comment": "value; read unconditionally by whichever arm is selected -- champion/finalist/round-N notice in one arm, prize-not-set/insufficient-users notice in the other. Both arms terminate after this byte."
         }
       ]
     },
     "CField_Tournament::OnTournamentMatchTable": {
       "address": "0x5cff1c",
-      "direction": "",
-      "calls": null
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "DecodeBuffer",
+          "comment": "match table (m_aaMatch; 0x300=768-byte raw blob, PDB-typed unsigned int[32][6]; single bulk memcpy, not per-field reads; read inside ctor helper sub_864212 @0x864212)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "state (m_nState)"
+        }
+      ]
     },
     "CField_Tournament::OnTournamentSetPrize": {
       "address": "0x5cffa7",

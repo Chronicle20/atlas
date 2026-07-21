@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldTransport
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CField_ContiMove::OnContiState
+    address: "0x537526"
+    decompile_sha256: 3f5acd8f6862ba21dc6431deae98a9cd6f1f9b853e9a555f5d0820087937ffd2
+verifies:
+    - libs/atlas-packet/field/clientbound/transport_test.go#TestFieldTransportByteOutputV79

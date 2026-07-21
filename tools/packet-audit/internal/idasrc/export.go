@@ -246,6 +246,13 @@ func (s *ExportSource) resolveWithVisited(ctx context.Context, fname string, vis
 			}
 			continue
 		}
+		if c.Op == "COutPacket" {
+			// COutPacket is the opcode-header constructor, not a field
+			// primitive. An opcode-only (bodiless) serverbound send records it
+			// with no Encode calls following; skip it so such packets resolve
+			// to an empty body rather than erroring on an unknown primitive.
+			continue
+		}
 		op, err := parsePrim(c.Op)
 		if err != nil {
 			return Fields{}, fmt.Errorf("call %d (%s): %w", i, fname, err)

@@ -254,7 +254,15 @@
       {
         "opCode": "0x76",
         "validator": "LoggedInValidator",
-        "handler": "BuddyOperationHandle"
+        "handler": "BuddyOperationHandle",
+        "options": {
+          "operations": {
+            "RELOAD": 0,
+            "ADD": 1,
+            "ACCEPT": 2,
+            "DELETE": 3
+          }
+        }
       },
       {
         "opCode": "0x79",
@@ -279,7 +287,17 @@
       {
         "opCode": "0x86",
         "validator": "LoggedInValidator",
-        "handler": "GuildBBSHandle"
+        "handler": "GuildBBSHandle",
+        "options": {
+          "operations": {
+            "CREATE_OR_EDIT_THREAD": 0,
+            "DELETE_THREAD": 1,
+            "LIST_THREADS": 2,
+            "DISPLAY_THREAD": 3,
+            "REPLY_THREAD": 4,
+            "DELETE_REPLY": 5
+          }
+        }
       },
       {
         "opCode": "0x88",
@@ -299,7 +317,103 @@
       {
         "opCode": "0xA4",
         "validator": "LoggedInValidator",
-        "handler": "NPCActionHandle"
+        "handler": "NPCActionHandle",
+        "options": {
+          "types": [
+            {
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            }
+          ]
+        }
       },
       {
         "opCode": "0xAC",
@@ -314,7 +428,26 @@
       {
         "opCode": "0xC4",
         "validator": "LoggedInValidator",
-        "handler": "CashShopOperationHandle"
+        "handler": "CashShopOperationHandle",
+        "options": {
+          "operations": {
+            "BUY": 3,
+            "GIFT": 4,
+            "SET_WISHLIST": 5,
+            "INCREASE_INVENTORY": 6,
+            "INCREASE_STORAGE": 7,
+            "BUY_FRIENDSHIP": 8,
+            "MOVE_FROM_CASH_INVENTORY": 12,
+            "MOVE_TO_CASH_INVENTORY": 13,
+            "REBATE_LOCKER_ITEM": 24,
+            "BUY_COUPLE": 28,
+            "BUY_OTHER_PACKAGE": 29,
+            "BUY_PACKAGE": 30,
+            "APPLY_WISHLIST": 31,
+            "BUY_NORMAL": 33,
+            "BUY_NAME_CHANGE": 39
+          }
+        }
       },
       {
         "opCode": "0x62",
@@ -324,7 +457,16 @@
       {
         "opCode": "0x6E",
         "validator": "LoggedInValidator",
-        "handler": "MessengerOperationHandle"
+        "handler": "MessengerOperationHandle",
+        "options": {
+          "operations": {
+            "ANSWER_INVITE": 0,
+            "CLOSE": 2,
+            "INVITE": 3,
+            "DECLINE_INVITE": 5,
+            "CHAT": 6
+          }
+        }
       },
       {
         "opCode": "0x71",
@@ -334,7 +476,21 @@
       {
         "opCode": "0x72",
         "validator": "LoggedInValidator",
-        "handler": "GuildOperationHandle"
+        "handler": "GuildOperationHandle",
+        "options": {
+          "operations": {
+            "REQUEST_CREATE": 2,
+            "INVITE": 5,
+            "JOIN": 6,
+            "WITHDRAW": 7,
+            "KICK": 8,
+            "SET_TITLE_NAMES": 13,
+            "SET_MEMBER_TITLE": 14,
+            "SET_EMBLEM": 15,
+            "SET_NOTICE": 16,
+            "AGREEMENT_RESPONSE": 30
+          }
+        }
       },
       {
         "opCode": "0x04",
@@ -472,14 +628,31 @@
         }
       },
       {
-        "opCode": "0x3C",
+        "opCode": "0x39",
         "validator": "LoggedInValidator",
-        "handler": "NPCShopHandle"
+        "handler": "NPCShopHandle",
+        "options": {
+          "operations": {
+            "BUY": 0,
+            "SELL": 1,
+            "RECHARGE": 2,
+            "LEAVE": 3
+          }
+        }
       },
       {
-        "opCode": "0x3D",
+        "opCode": "0x3A",
         "validator": "LoggedInValidator",
-        "handler": "StorageOperationHandle"
+        "handler": "StorageOperationHandle",
+        "options": {
+          "operations": {
+            "RETRIEVE_ASSET": 4,
+            "STORE_ASSET": 5,
+            "ARRANGE_ASSET": 6,
+            "MESO": 7,
+            "CLOSE": 8
+          }
+        }
       },
       {
         "opCode": "0x3E",
@@ -621,12 +794,115 @@
       {
         "opCode": "0x77",
         "validator": "LoggedInValidator",
-        "handler": "NoteOperationHandle"
+        "handler": "NoteOperationHandle",
+        "options": {
+          "operations": {
+            "SEND": 0,
+            "DISCARD": 1,
+            "REQUEST": 2
+          }
+        }
       },
       {
         "opCode": "0x8A",
         "validator": "LoggedInValidator",
-        "handler": "PetMovementHandle"
+        "handler": "PetMovementHandle",
+        "options": {
+          "types": [
+            {
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            }
+          ]
+        }
       },
       {
         "opCode": "0x8C",
@@ -646,7 +922,103 @@
       {
         "opCode": "0x92",
         "validator": "LoggedInValidator",
-        "handler": "SummonMoveHandle"
+        "handler": "SummonMoveHandle",
+        "options": {
+          "types": [
+            {
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            }
+          ]
+        }
       },
       {
         "opCode": "0x93",
@@ -661,7 +1033,103 @@
       {
         "opCode": "0x9B",
         "validator": "LoggedInValidator",
-        "handler": "MonsterMovementHandle"
+        "handler": "MonsterMovementHandle",
+        "options": {
+          "types": [
+            {
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            }
+          ]
+        }
       },
       {
         "opCode": "0x9D",
@@ -2678,19 +3146,11 @@
               "useAverageStats": true
             },
             {
-              "templateId": 1052160,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1002357,
               "useAverageStats": true
             },
             {
               "templateId": 1102041,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1122059,
               "useAverageStats": true
             },
             {
@@ -2831,7 +3291,7 @@
             },
             {
               "skillId": 1121000,
-              "level": 30
+              "level": 20
             },
             {
               "skillId": 1121001,
@@ -2855,7 +3315,7 @@
             },
             {
               "skillId": 1121011,
-              "level": 5
+              "level": 1
             }
           ]
         }
@@ -2899,19 +3359,11 @@
               "useAverageStats": true
             },
             {
-              "templateId": 1052160,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1002357,
               "useAverageStats": true
             },
             {
               "templateId": 1102041,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1122059,
               "useAverageStats": true
             },
             {
@@ -3056,7 +3508,7 @@
             },
             {
               "skillId": 1221000,
-              "level": 30
+              "level": 20
             },
             {
               "skillId": 1221001,
@@ -3088,7 +3540,7 @@
             },
             {
               "skillId": 1221012,
-              "level": 5
+              "level": 1
             }
           ]
         }
@@ -3128,19 +3580,11 @@
               "useAverageStats": true
             },
             {
-              "templateId": 1052160,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1002357,
               "useAverageStats": true
             },
             {
               "templateId": 1102041,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1122059,
               "useAverageStats": true
             },
             {
@@ -3285,7 +3729,7 @@
             },
             {
               "skillId": 1321000,
-              "level": 30
+              "level": 20
             },
             {
               "skillId": 1321001,
@@ -3305,7 +3749,7 @@
             },
             {
               "skillId": 1321010,
-              "level": 5
+              "level": 1
             }
           ]
         }
@@ -3349,19 +3793,11 @@
               "useAverageStats": true
             },
             {
-              "templateId": 1052161,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1002357,
               "useAverageStats": true
             },
             {
               "templateId": 1102041,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1122059,
               "useAverageStats": true
             },
             {
@@ -3474,7 +3910,7 @@
             },
             {
               "skillId": 2121000,
-              "level": 30
+              "level": 20
             },
             {
               "skillId": 2121001,
@@ -3506,7 +3942,7 @@
             },
             {
               "skillId": 2121008,
-              "level": 5
+              "level": 1
             }
           ]
         }
@@ -3550,19 +3986,11 @@
               "useAverageStats": true
             },
             {
-              "templateId": 1052161,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1002357,
               "useAverageStats": true
             },
             {
               "templateId": 1102041,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1122059,
               "useAverageStats": true
             },
             {
@@ -3675,7 +4103,7 @@
             },
             {
               "skillId": 2221000,
-              "level": 30
+              "level": 20
             },
             {
               "skillId": 2221001,
@@ -3707,7 +4135,7 @@
             },
             {
               "skillId": 2221008,
-              "level": 5
+              "level": 1
             }
           ]
         }
@@ -3751,19 +4179,11 @@
               "useAverageStats": true
             },
             {
-              "templateId": 1052161,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1002357,
               "useAverageStats": true
             },
             {
               "templateId": 1102041,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1122059,
               "useAverageStats": true
             },
             {
@@ -3876,7 +4296,7 @@
             },
             {
               "skillId": 2321000,
-              "level": 30
+              "level": 20
             },
             {
               "skillId": 2321001,
@@ -3912,7 +4332,7 @@
             },
             {
               "skillId": 2321009,
-              "level": 5
+              "level": 1
             }
           ]
         }
@@ -3948,23 +4368,11 @@
           "defaultName": "AdminBowmaster",
           "equipment": [
             {
-              "templateId": 1452059,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1052162,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1002357,
               "useAverageStats": true
             },
             {
               "templateId": 1102041,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1122059,
               "useAverageStats": true
             },
             {
@@ -4085,7 +4493,7 @@
             },
             {
               "skillId": 3121000,
-              "level": 30
+              "level": 20
             },
             {
               "skillId": 3121002,
@@ -4113,7 +4521,7 @@
             },
             {
               "skillId": 3121009,
-              "level": 5
+              "level": 1
             }
           ]
         }
@@ -4149,23 +4557,11 @@
           "defaultName": "AdminMarksman",
           "equipment": [
             {
-              "templateId": 1462051,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1052162,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1002357,
               "useAverageStats": true
             },
             {
               "templateId": 1102041,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1122059,
               "useAverageStats": true
             },
             {
@@ -4286,7 +4682,7 @@
             },
             {
               "skillId": 3221000,
-              "level": 30
+              "level": 20
             },
             {
               "skillId": 3221001,
@@ -4314,7 +4710,7 @@
             },
             {
               "skillId": 3221008,
-              "level": 5
+              "level": 1
             }
           ]
         }
@@ -4354,19 +4750,11 @@
               "useAverageStats": true
             },
             {
-              "templateId": 1052163,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1002357,
               "useAverageStats": true
             },
             {
               "templateId": 1102041,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1122059,
               "useAverageStats": true
             },
             {
@@ -4491,7 +4879,7 @@
             },
             {
               "skillId": 4121000,
-              "level": 30
+              "level": 20
             },
             {
               "skillId": 4121003,
@@ -4515,7 +4903,7 @@
             },
             {
               "skillId": 4121009,
-              "level": 5
+              "level": 1
             }
           ]
         }
@@ -4559,19 +4947,11 @@
               "useAverageStats": true
             },
             {
-              "templateId": 1052163,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1002357,
               "useAverageStats": true
             },
             {
               "templateId": 1102041,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1122059,
               "useAverageStats": true
             },
             {
@@ -4692,7 +5072,7 @@
             },
             {
               "skillId": 4221000,
-              "level": 30
+              "level": 20
             },
             {
               "skillId": 4221001,
@@ -4716,413 +5096,7 @@
             },
             {
               "skillId": 4221008,
-              "level": 5
-            }
-          ]
-        }
-      },
-      {
-        "id": "525dc913-5988-4599-b12a-a14eb68253e0",
-        "attributes": {
-          "name": "Buccaneer \u2014 4th job",
-          "description": "Full 4th-job Buccaneer \u2014 branch skills maxed; iconic Maple Golden Claw (knuckle) + Reverse Burgunt set.",
-          "tags": [
-            "4th-job",
-            "pirate",
-            "explorer"
-          ],
-          "jobId": 512,
-          "gender": 0,
-          "face": 20000,
-          "hair": 30030,
-          "hairColor": 0,
-          "skinColor": 0,
-          "mapId": 240000000,
-          "level": 200,
-          "meso": 100000000,
-          "gm": 0,
-          "stats": {
-            "str": 999,
-            "dex": 999,
-            "int": 999,
-            "luk": 999,
-            "hp": 30000,
-            "mp": 6000
-          },
-          "defaultName": "AdminBuccaneer",
-          "equipment": [
-            {
-              "templateId": 1482022,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1052164,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1002357,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1102041,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1122059,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1072344,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1082223,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1032031,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1012098,
-              "useAverageStats": true
-            }
-          ],
-          "inventory": [
-            {
-              "templateId": 2000004,
-              "quantity": 200
-            },
-            {
-              "templateId": 2000005,
-              "quantity": 200
-            },
-            {
-              "templateId": 2030019,
-              "quantity": 50
-            }
-          ],
-          "skills": [
-            {
-              "skillId": 5000000,
-              "level": 20
-            },
-            {
-              "skillId": 5001001,
-              "level": 20
-            },
-            {
-              "skillId": 5001002,
-              "level": 20
-            },
-            {
-              "skillId": 5001003,
-              "level": 20
-            },
-            {
-              "skillId": 5001005,
-              "level": 10
-            },
-            {
-              "skillId": 5100000,
-              "level": 10
-            },
-            {
-              "skillId": 5100001,
-              "level": 20
-            },
-            {
-              "skillId": 5101002,
-              "level": 20
-            },
-            {
-              "skillId": 5101003,
-              "level": 20
-            },
-            {
-              "skillId": 5101004,
-              "level": 20
-            },
-            {
-              "skillId": 5101005,
-              "level": 10
-            },
-            {
-              "skillId": 5101006,
-              "level": 20
-            },
-            {
-              "skillId": 5101007,
-              "level": 10
-            },
-            {
-              "skillId": 5110000,
-              "level": 20
-            },
-            {
-              "skillId": 5110001,
-              "level": 40
-            },
-            {
-              "skillId": 5111002,
-              "level": 30
-            },
-            {
-              "skillId": 5111004,
-              "level": 20
-            },
-            {
-              "skillId": 5111005,
-              "level": 20
-            },
-            {
-              "skillId": 5111006,
-              "level": 30
-            },
-            {
-              "skillId": 5121000,
-              "level": 30
-            },
-            {
-              "skillId": 5121001,
-              "level": 30
-            },
-            {
-              "skillId": 5121002,
-              "level": 30
-            },
-            {
-              "skillId": 5121003,
-              "level": 20
-            },
-            {
-              "skillId": 5121004,
-              "level": 30
-            },
-            {
-              "skillId": 5121005,
-              "level": 30
-            },
-            {
-              "skillId": 5121007,
-              "level": 30
-            },
-            {
-              "skillId": 5121008,
-              "level": 5
-            },
-            {
-              "skillId": 5121009,
-              "level": 20
-            },
-            {
-              "skillId": 5121010,
-              "level": 30
-            }
-          ]
-        }
-      },
-      {
-        "id": "1c51eefc-47be-4352-bd75-5cde0200b141",
-        "attributes": {
-          "name": "Corsair \u2014 4th job",
-          "description": "Full 4th-job Corsair \u2014 branch skills maxed; iconic Maple Storm Pistol + Reverse Burgunt set + Eternal Bullets.",
-          "tags": [
-            "4th-job",
-            "pirate",
-            "explorer"
-          ],
-          "jobId": 522,
-          "gender": 0,
-          "face": 20000,
-          "hair": 30030,
-          "hairColor": 0,
-          "skinColor": 0,
-          "mapId": 240000000,
-          "level": 200,
-          "meso": 100000000,
-          "gm": 0,
-          "stats": {
-            "str": 999,
-            "dex": 999,
-            "int": 999,
-            "luk": 999,
-            "hp": 30000,
-            "mp": 6000
-          },
-          "defaultName": "AdminCorsair",
-          "equipment": [
-            {
-              "templateId": 1492021,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1052164,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1002357,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1102041,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1122059,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1072344,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1082223,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1032031,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1012098,
-              "useAverageStats": true
-            }
-          ],
-          "inventory": [
-            {
-              "templateId": 2000004,
-              "quantity": 200
-            },
-            {
-              "templateId": 2000005,
-              "quantity": 200
-            },
-            {
-              "templateId": 2030019,
-              "quantity": 50
-            },
-            {
-              "templateId": 2330005,
-              "quantity": 200
-            }
-          ],
-          "skills": [
-            {
-              "skillId": 5000000,
-              "level": 20
-            },
-            {
-              "skillId": 5001001,
-              "level": 20
-            },
-            {
-              "skillId": 5001002,
-              "level": 20
-            },
-            {
-              "skillId": 5001003,
-              "level": 20
-            },
-            {
-              "skillId": 5001005,
-              "level": 10
-            },
-            {
-              "skillId": 5200000,
-              "level": 20
-            },
-            {
-              "skillId": 5201001,
-              "level": 20
-            },
-            {
-              "skillId": 5201002,
-              "level": 20
-            },
-            {
-              "skillId": 5201003,
-              "level": 20
-            },
-            {
-              "skillId": 5201004,
-              "level": 20
-            },
-            {
-              "skillId": 5201005,
-              "level": 10
-            },
-            {
-              "skillId": 5201006,
-              "level": 20
-            },
-            {
-              "skillId": 5210000,
-              "level": 20
-            },
-            {
-              "skillId": 5211001,
-              "level": 30
-            },
-            {
-              "skillId": 5211002,
-              "level": 30
-            },
-            {
-              "skillId": 5211004,
-              "level": 30
-            },
-            {
-              "skillId": 5211005,
-              "level": 30
-            },
-            {
-              "skillId": 5211006,
-              "level": 30
-            },
-            {
-              "skillId": 5220001,
-              "level": 30
-            },
-            {
-              "skillId": 5220002,
-              "level": 20
-            },
-            {
-              "skillId": 5220011,
-              "level": 20
-            },
-            {
-              "skillId": 5221000,
-              "level": 30
-            },
-            {
-              "skillId": 5221003,
-              "level": 30
-            },
-            {
-              "skillId": 5221004,
-              "level": 30
-            },
-            {
-              "skillId": 5221006,
-              "level": 10
-            },
-            {
-              "skillId": 5221007,
-              "level": 30
-            },
-            {
-              "skillId": 5221008,
-              "level": 30
-            },
-            {
-              "skillId": 5221009,
-              "level": 20
-            },
-            {
-              "skillId": 5221010,
-              "level": 5
+              "level": 1
             }
           ]
         }

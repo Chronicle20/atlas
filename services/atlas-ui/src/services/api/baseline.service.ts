@@ -54,7 +54,13 @@ async function decodeErrorMessage(
 // is rejected with 400 "Source JSON is empty and has no attributes payload object".
 export class BaselineService {
   async restore(tenant: Tenant, body: BaselineRestoreInput): Promise<void> {
+    // Restore targets a specific tenant (body.tenantId), so it carries that
+    // tenant's headers — but it is also an operator-scoped action: atlas-data's
+    // restore handler gates on X-Atlas-Operator and returns 403 "operator
+    // required" without it (baseline/handler.go). tenantHeaders alone omits the
+    // flag (only canonicalHeaders bakes it in), so set it explicitly here.
     const headers = tenantHeaders(tenant);
+    headers.set("X-Atlas-Operator", "1");
     headers.set("Content-Type", "application/json");
     const r = await fetch("/api/data/baseline/restore", {
       method: "POST",

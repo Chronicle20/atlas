@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldMtsResultGetUserPurchaseItemFailed
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnNormalItemResult#GetUserPurchaseItemFailed
+    address: "0x57fdc0"
+    decompile_sha256: 7555b37b26146a4974086e5a3a8c1096d0bb3a7c000cae68abe91b2acd484d7a
+verifies:
+  - libs/atlas-packet/field/clientbound/mts_operation_test.go#TestMtsResultGetUserPurchaseItemFailed

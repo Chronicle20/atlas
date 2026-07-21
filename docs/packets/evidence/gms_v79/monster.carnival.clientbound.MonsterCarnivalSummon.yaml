@@ -1,0 +1,8 @@
+packet: monster/carnival/clientbound/MonsterCarnivalSummon
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CField_MonsterCarnival::OnRequestResult
+    address: "0x54850a"
+    decompile_sha256: 5f962b7b6a43c6d2e6eee258169a96889451fe961918ecbf7f72c60d4f64dee0

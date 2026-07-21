@@ -6,6 +6,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=field/clientbound/FieldSnowballTouch version=gms_v79 ida=0x55288e
 // packet-audit:verify packet=field/clientbound/FieldSnowballTouch version=gms_v83 ida=0x575372
 // packet-audit:verify packet=field/clientbound/FieldSnowballTouch version=gms_v84 ida=0x584ceb
 // packet-audit:verify packet=field/clientbound/FieldSnowballTouch version=gms_v87 ida=0x5a35f7
@@ -17,6 +18,19 @@ func TestSnowballTouchGolden(t *testing.T) {
 	actual := test.Encode(t, ctx, input.Encode, nil)
 	if len(actual) != 0 {
 		t.Errorf("golden mismatch: got %v want empty", actual)
+	}
+}
+
+// TestSnowballTouchByteOutputV79 pins the gms_v79 FIELD_SNOWBALL_TOUCH
+// clientbound read. IDA: CField_Snowball::OnTouch @0x55288e
+// (GMS_v79_1_DEVM.exe) reads no fields. Body is byte-identical (empty) to
+// the v83 golden.
+func TestSnowballTouchByteOutputV79(t *testing.T) {
+	input := NewSnowballTouch()
+	ctx := test.CreateContext("GMS", 79, 1)
+	actual := test.Encode(t, ctx, input.Encode, nil)
+	if len(actual) != 0 {
+		t.Errorf("v79 golden mismatch: got %v want empty", actual)
 	}
 }
 

@@ -1,16 +1,16 @@
 # FieldSnowballHit (← `CField_SnowBall::OnSnowBallHit`)
 
-- **IDA:** 
+- **IDA:** 0x5526ad
 - **Atlas file:** `libs/atlas-packet/field/clientbound/snowball_hit.go`
 - **Variant:** GMS/v79
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `` | ✅ |  |
+| 1 | int16 | int16 `` | ✅ |  |
+| 2 | int16 | int16 `` | ✅ |  |
 

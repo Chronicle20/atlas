@@ -10,4 +10,6 @@
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
+| 0 | bytes | bytes `match table (m_aaMatch; 0x300=768-byte raw blob, PDB-typed unsigned int[32][6]; single bulk memcpy, not per-field reads; read inside CMatchTableDlg::CMatchTableDlg ctor @0x780210, PDB-backed names)` | ✅ |  |
+| 1 | byte | byte `state (m_nState)` | ✅ |  |
 

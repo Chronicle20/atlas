@@ -1,0 +1,195 @@
+{
+  "_doc": "task-178 consolidated per-version options. operations = serverbound mode tables (RE-verified). Stable families (Buddy/GuildBBS/NPCShop/Storage/Messenger/Guild) confirmed byte-identical to v83 \u2192 v83 tables used verbatim. Note uses v83 table; SEND=0 is parity-inferred (UI-gated, no static send site any version), REQUEST=2 parity where server-pushed. CashShop is version-divergent \u2192 only unambiguous single-mode RE-verified keys included; dual-mode/unresolved/absent keys omitted (documented in re-vNN.md). Movement types are copied from each template's own CharacterMoveHandle.types by the populate script (not listed here).",
+  "opcode_fixes": {
+    "61": {
+      "NPCShopHandle": "0x39",
+      "StorageOperationHandle": "0x3A"
+    }
+  },
+  "stable_v83": {
+    "BuddyOperationHandle": {
+      "RELOAD": 0,
+      "ADD": 1,
+      "ACCEPT": 2,
+      "DELETE": 3
+    },
+    "GuildBBSHandle": {
+      "CREATE_OR_EDIT_THREAD": 0,
+      "DELETE_THREAD": 1,
+      "LIST_THREADS": 2,
+      "DISPLAY_THREAD": 3,
+      "REPLY_THREAD": 4,
+      "DELETE_REPLY": 5
+    },
+    "NPCShopHandle": {
+      "BUY": 0,
+      "SELL": 1,
+      "RECHARGE": 2,
+      "LEAVE": 3
+    },
+    "StorageOperationHandle": {
+      "RETRIEVE_ASSET": 4,
+      "STORE_ASSET": 5,
+      "ARRANGE_ASSET": 6,
+      "MESO": 7,
+      "CLOSE": 8
+    },
+    "NoteOperationHandle": {
+      "SEND": 0,
+      "DISCARD": 1,
+      "REQUEST": 2
+    },
+    "MessengerOperationHandle": {
+      "ANSWER_INVITE": 0,
+      "CLOSE": 2,
+      "INVITE": 3,
+      "DECLINE_INVITE": 5,
+      "CHAT": 6
+    },
+    "GuildOperationHandle": {
+      "REQUEST_CREATE": 2,
+      "INVITE": 5,
+      "JOIN": 6,
+      "WITHDRAW": 7,
+      "KICK": 8,
+      "SET_TITLE_NAMES": 13,
+      "SET_MEMBER_TITLE": 14,
+      "SET_EMBLEM": 15,
+      "SET_NOTICE": 16,
+      "AGREEMENT_RESPONSE": 30
+    }
+  },
+  "cashshop": {
+    "79": {
+      "BUY": 3,
+      "GIFT": 4,
+      "SET_WISHLIST": 5,
+      "INCREASE_INVENTORY": 6,
+      "INCREASE_STORAGE": 7,
+      "BUY_FRIENDSHIP": 8,
+      "INCREASE_CHARACTER_SLOT": 9,
+      "MOVE_FROM_CASH_INVENTORY": 13,
+      "MOVE_TO_CASH_INVENTORY": 14,
+      "REBATE_LOCKER_ITEM": 26,
+      "BUY_COUPLE": 30,
+      "BUY_OTHER_PACKAGE": 31,
+      "BUY_PACKAGE": 32,
+      "APPLY_WISHLIST": 33,
+      "BUY_NORMAL": 35,
+      "GET_PURCHASE_RECORD": 40,
+      "BUY_NAME_CHANGE": 45
+    },
+    "72": {
+      "BUY": 3,
+      "GIFT": 4,
+      "SET_WISHLIST": 5,
+      "INCREASE_INVENTORY": 6,
+      "INCREASE_STORAGE": 7,
+      "BUY_FRIENDSHIP": 8,
+      "MOVE_FROM_CASH_INVENTORY": 12,
+      "MOVE_TO_CASH_INVENTORY": 13,
+      "REBATE_LOCKER_ITEM": 25,
+      "BUY_COUPLE": 29,
+      "BUY_OTHER_PACKAGE": 30,
+      "BUY_PACKAGE": 31,
+      "APPLY_WISHLIST": 32,
+      "BUY_NORMAL": 34,
+      "GET_PURCHASE_RECORD": 39,
+      "BUY_NAME_CHANGE": 41
+    },
+    "61": {
+      "BUY": 3,
+      "GIFT": 4,
+      "SET_WISHLIST": 5,
+      "INCREASE_INVENTORY": 6,
+      "INCREASE_STORAGE": 7,
+      "BUY_FRIENDSHIP": 8,
+      "MOVE_FROM_CASH_INVENTORY": 12,
+      "MOVE_TO_CASH_INVENTORY": 13,
+      "REBATE_LOCKER_ITEM": 24,
+      "BUY_COUPLE": 28,
+      "BUY_OTHER_PACKAGE": 29,
+      "BUY_PACKAGE": 30,
+      "APPLY_WISHLIST": 31,
+      "BUY_NORMAL": 33,
+      "BUY_NAME_CHANGE": 39
+    },
+    "48": {
+      "BUY": 2,
+      "GIFT": 3,
+      "SET_WISHLIST": 4,
+      "INCREASE_INVENTORY": 5,
+      "INCREASE_STORAGE": 6,
+      "MOVE_FROM_CASH_INVENTORY": 10,
+      "MOVE_TO_CASH_INVENTORY": 11,
+      "BUY_COUPLE": 26,
+      "BUY_OTHER_PACKAGE": 27,
+      "BUY_PACKAGE": 28,
+      "APPLY_WISHLIST": 29,
+      "BUY_NORMAL": 31,
+      "BUY_NAME_CHANGE": 34
+    }
+  },
+  "families_per_version": {
+    "79": [
+      "BuddyOperationHandle",
+      "GuildBBSHandle",
+      "NPCShopHandle",
+      "StorageOperationHandle",
+      "NoteOperationHandle",
+      "MessengerOperationHandle",
+      "GuildOperationHandle",
+      "CashShopOperationHandle"
+    ],
+    "72": [
+      "BuddyOperationHandle",
+      "GuildBBSHandle",
+      "NPCShopHandle",
+      "StorageOperationHandle",
+      "NoteOperationHandle",
+      "MessengerOperationHandle",
+      "GuildOperationHandle",
+      "CashShopOperationHandle"
+    ],
+    "61": [
+      "BuddyOperationHandle",
+      "GuildBBSHandle",
+      "NPCShopHandle",
+      "StorageOperationHandle",
+      "NoteOperationHandle",
+      "MessengerOperationHandle",
+      "GuildOperationHandle",
+      "CashShopOperationHandle"
+    ],
+    "48": [
+      "BuddyOperationHandle",
+      "NPCShopHandle",
+      "StorageOperationHandle",
+      "NoteOperationHandle",
+      "MessengerOperationHandle",
+      "GuildOperationHandle",
+      "CashShopOperationHandle"
+    ]
+  },
+  "movement_types_copy_targets": {
+    "79": [
+      "NPCActionHandle",
+      "PetMovementHandle",
+      "MonsterMovementHandle"
+    ],
+    "72": [
+      "NPCActionHandle",
+      "PetMovementHandle",
+      "MonsterMovementHandle"
+    ],
+    "61": [
+      "NPCActionHandle",
+      "PetMovementHandle",
+      "MonsterMovementHandle"
+    ],
+    "48": [
+      "PetMovementHandle",
+      "MonsterMovementHandle"
+    ]
+  }
+}

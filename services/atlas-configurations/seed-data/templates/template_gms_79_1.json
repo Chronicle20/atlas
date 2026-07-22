@@ -8,117 +8,140 @@
       {
         "opCode": "0x01",
         "validator": "NoOpValidator",
-        "handler": "LoginHandle"
+        "handler": "LoginHandle",
+        "services": ["login"]
       },
       {
         "opCode": "0x04",
         "validator": "LoggedInValidator",
-        "handler": "ServerListRequestHandle"
+        "handler": "ServerListRequestHandle",
+        "services": ["login"]
       },
       {
         "opCode": "0x05",
         "validator": "LoggedInValidator",
-        "handler": "CharacterListWorldHandle"
+        "handler": "CharacterListWorldHandle",
+        "services": ["login"]
       },
       {
         "opCode": "0x06",
         "validator": "LoggedInValidator",
-        "handler": "ServerStatusHandle"
+        "handler": "ServerStatusHandle",
+        "services": ["login"]
       },
       {
         "opCode": "0x07",
         "validator": "LoggedInValidator",
-        "handler": "AcceptTosHandle"
+        "handler": "AcceptTosHandle",
+        "services": ["login"]
       },
       {
         "opCode": "0x08",
         "validator": "LoggedInValidator",
-        "handler": "SetGenderHandle"
+        "handler": "SetGenderHandle",
+        "services": ["login"]
       },
       {
         "opCode": "0x09",
         "validator": "LoggedInValidator",
-        "handler": "AfterLoginHandle"
+        "handler": "AfterLoginHandle",
+        "services": ["login"]
       },
       {
         "opCode": "0x0A",
         "validator": "LoggedInValidator",
-        "handler": "RegisterPinHandle"
+        "handler": "RegisterPinHandle",
+        "services": ["login"]
       },
       {
         "opCode": "0x0B",
         "validator": "LoggedInValidator",
-        "handler": "ServerListRequestHandle"
+        "handler": "ServerListRequestHandle",
+        "services": ["login"]
       },
       {
         "opCode": "0x0D",
         "validator": "LoggedInValidator",
-        "handler": "CharacterViewAllHandle"
+        "handler": "CharacterViewAllHandle",
+        "services": ["login"]
       },
       {
         "opCode": "0x0E",
         "validator": "LoggedInValidator",
-        "handler": "CharacterViewAllSelectedHandle"
+        "handler": "CharacterViewAllSelectedHandle",
+        "services": ["login"]
       },
       {
         "opCode": "0x0F",
         "validator": "LoggedInValidator",
-        "handler": "CharacterViewAllPongHandle"
+        "handler": "CharacterViewAllPongHandle",
+        "services": ["login"]
       },
       {
         "opCode": "0x13",
         "validator": "LoggedInValidator",
-        "handler": "CharacterSelectedHandle"
+        "handler": "CharacterSelectedHandle",
+        "services": ["login"]
       },
       {
         "opCode": "0x14",
         "validator": "NoOpValidator",
-        "handler": "CharacterLoggedInHandle"
+        "handler": "CharacterLoggedInHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x15",
         "validator": "LoggedInValidator",
-        "handler": "CharacterCheckNameHandle"
+        "handler": "CharacterCheckNameHandle",
+        "services": ["login"]
       },
       {
         "opCode": "0x16",
         "validator": "LoggedInValidator",
-        "handler": "CreateCharacterHandle"
+        "handler": "CreateCharacterHandle",
+        "services": ["login"]
       },
       {
         "opCode": "0x17",
         "validator": "LoggedInValidator",
-        "handler": "DeleteCharacterHandle"
+        "handler": "DeleteCharacterHandle",
+        "services": ["login"]
       },
       {
         "opCode": "0x18",
         "validator": "NoOpValidator",
-        "handler": "PongHandle"
+        "handler": "PongHandle",
+        "services": ["login","channel"]
       },
       {
         "opCode": "0x19",
         "validator": "NoOpValidator",
-        "handler": "StartErrorHandle"
+        "handler": "StartErrorHandle",
+        "services": ["login"]
       },
       {
         "opCode": "0x24",
         "validator": "LoggedInValidator",
-        "handler": "MapChangeHandle"
+        "handler": "MapChangeHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x25",
         "validator": "LoggedInValidator",
-        "handler": "ChannelChangeHandle"
+        "handler": "ChannelChangeHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x26",
         "validator": "LoggedInValidator",
-        "handler": "CashShopEntryHandle"
+        "handler": "CashShopEntryHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x27",
         "validator": "LoggedInValidator",
         "handler": "CharacterMoveHandle",
+        "services": ["channel"],
         "options": {
           "types": [
             {
@@ -219,72 +242,86 @@
       {
         "opCode": "0x28",
         "validator": "LoggedInValidator",
-        "handler": "CharacterChairInteractionHandle"
+        "handler": "CharacterChairInteractionHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x29",
         "validator": "LoggedInValidator",
-        "handler": "CharacterChairPortableHandle"
+        "handler": "CharacterChairPortableHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x2A",
         "validator": "LoggedInValidator",
-        "handler": "CharacterMeleeAttackHandle"
+        "handler": "CharacterMeleeAttackHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x2B",
         "validator": "LoggedInValidator",
-        "handler": "CharacterRangedAttackHandle"
+        "handler": "CharacterRangedAttackHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x2C",
         "validator": "LoggedInValidator",
-        "handler": "CharacterMagicAttackHandle"
+        "handler": "CharacterMagicAttackHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x2D",
         "validator": "LoggedInValidator",
-        "handler": "CharacterTouchAttackHandle"
+        "handler": "CharacterTouchAttackHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x2E",
         "validator": "LoggedInValidator",
-        "handler": "CharacterDamageHandle"
+        "handler": "CharacterDamageHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x2F",
         "validator": "LoggedInValidator",
-        "handler": "CharacterChatGeneralHandle"
+        "handler": "CharacterChatGeneralHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x30",
         "validator": "LoggedInValidator",
-        "handler": "ChalkboardCloseHandle"
+        "handler": "ChalkboardCloseHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x31",
         "validator": "LoggedInValidator",
-        "handler": "CharacterExpressionHandle"
+        "handler": "CharacterExpressionHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x36",
         "validator": "LoggedInValidator",
-        "handler": "MobBanishPlayer"
+        "handler": "MobBanishPlayer",
+        "services": ["channel"]
       },
       {
         "opCode": "0x37",
         "validator": "LoggedInValidator",
-        "handler": "MonsterBookCover"
+        "handler": "MonsterBookCover",
+        "services": ["channel"]
       },
       {
         "opCode": "0x38",
         "validator": "LoggedInValidator",
-        "handler": "NPCStartConversationHandle"
+        "handler": "NPCStartConversationHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x3A",
         "validator": "LoggedInValidator",
         "handler": "NPCContinueConversationHandle",
+        "services": ["channel"],
         "options": {
           "messageType": {
             "SAY": 0,
@@ -305,6 +342,7 @@
         "opCode": "0x3B",
         "validator": "LoggedInValidator",
         "handler": "NPCShopHandle",
+        "services": ["channel"],
         "options": {
           "operations": {
             "BUY": 0,
@@ -318,6 +356,7 @@
         "opCode": "0x3C",
         "validator": "LoggedInValidator",
         "handler": "StorageOperationHandle",
+        "services": ["channel"],
         "options": {
           "operations": {
             "RETRIEVE_ASSET": 4,
@@ -331,187 +370,224 @@
       {
         "opCode": "0x3D",
         "validator": "LoggedInValidator",
-        "handler": "HiredMerchantOperationHandle"
+        "handler": "HiredMerchantOperationHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x41",
         "validator": "LoggedInValidator",
-        "handler": "OwlWarpHandle"
+        "handler": "OwlWarpHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x43",
         "validator": "LoggedInValidator",
-        "handler": "CompartmentMergeHandle"
+        "handler": "CompartmentMergeHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x44",
         "validator": "LoggedInValidator",
-        "handler": "CompartmentSortHandle"
+        "handler": "CompartmentSortHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x45",
         "validator": "LoggedInValidator",
-        "handler": "CharacterInventoryMoveHandle"
+        "handler": "CharacterInventoryMoveHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x46",
         "validator": "LoggedInValidator",
-        "handler": "CharacterItemUseHandle"
+        "handler": "CharacterItemUseHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x47",
         "validator": "LoggedInValidator",
-        "handler": "CharacterItemCancelHandle"
+        "handler": "CharacterItemCancelHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x49",
         "validator": "LoggedInValidator",
-        "handler": "CharacterItemUseSummonBagHandle"
+        "handler": "CharacterItemUseSummonBagHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x4A",
         "validator": "LoggedInValidator",
-        "handler": "PetFoodHandle"
+        "handler": "PetFoodHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x4B",
         "validator": "LoggedInValidator",
-        "handler": "MountFoodHandle"
+        "handler": "MountFoodHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x4D",
         "validator": "LoggedInValidator",
-        "handler": "CharacterCashItemUseHandle"
+        "handler": "CharacterCashItemUseHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x52",
         "validator": "LoggedInValidator",
-        "handler": "TeleportRockUseHandle"
+        "handler": "TeleportRockUseHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x53",
         "validator": "LoggedInValidator",
-        "handler": "CharacterItemUseTownScrollHandle"
+        "handler": "CharacterItemUseTownScrollHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x54",
         "validator": "LoggedInValidator",
-        "handler": "CharacterItemUseScrollHandle"
+        "handler": "CharacterItemUseScrollHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x55",
         "validator": "LoggedInValidator",
-        "handler": "CharacterDistributeApHandle"
+        "handler": "CharacterDistributeApHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x56",
         "validator": "LoggedInValidator",
-        "handler": "CharacterAutoDistributeApHandle"
+        "handler": "CharacterAutoDistributeApHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x57",
         "validator": "LoggedInValidator",
-        "handler": "CharacterHealOverTimeHandle"
+        "handler": "CharacterHealOverTimeHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x58",
         "validator": "LoggedInValidator",
-        "handler": "CharacterDistributeSpHandle"
+        "handler": "CharacterDistributeSpHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x59",
         "validator": "LoggedInValidator",
-        "handler": "CharacterUseSkillHandle"
+        "handler": "CharacterUseSkillHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x5A",
         "validator": "LoggedInValidator",
-        "handler": "CharacterBuffCancel"
+        "handler": "CharacterBuffCancel",
+        "services": ["channel"]
       },
       {
         "opCode": "0x5B",
         "validator": "LoggedInValidator",
-        "handler": "CharacterSkillPrepareHandle"
+        "handler": "CharacterSkillPrepareHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x5C",
         "validator": "LoggedInValidator",
-        "handler": "CharacterDropMesoHandle"
+        "handler": "CharacterDropMesoHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x5D",
         "validator": "LoggedInValidator",
-        "handler": "FameChangeHandle"
+        "handler": "FameChangeHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x5F",
         "validator": "LoggedInValidator",
-        "handler": "CharacterInfoRequestHandle"
+        "handler": "CharacterInfoRequestHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x60",
         "validator": "LoggedInValidator",
-        "handler": "PetSpawnHandle"
+        "handler": "PetSpawnHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x62",
         "validator": "LoggedInValidator",
-        "handler": "PortalScriptHandle"
+        "handler": "PortalScriptHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x64",
         "validator": "LoggedInValidator",
-        "handler": "TeleportRockAddMapHandle"
+        "handler": "TeleportRockAddMapHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x65",
         "validator": "LoggedInValidator",
-        "handler": "ShopScannerItemUseHandle"
+        "handler": "ShopScannerItemUseHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x69",
         "validator": "LoggedInValidator",
-        "handler": "QuestActionHandle"
+        "handler": "QuestActionHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x6C",
         "validator": "LoggedInValidator",
-        "handler": "CharacterSkillMacroHandle"
+        "handler": "CharacterSkillMacroHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x6E",
         "validator": "LoggedInValidator",
-        "handler": "CharacterItemUseLotteryHandle"
+        "handler": "CharacterItemUseLotteryHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x70",
         "validator": "LoggedInValidator",
-        "handler": "SueCharacter"
+        "handler": "SueCharacter",
+        "services": ["channel"]
       },
       {
         "opCode": "0x73",
         "validator": "LoggedInValidator",
-        "handler": "AdminChat"
+        "handler": "AdminChat",
+        "services": ["channel"]
       },
       {
         "opCode": "0x74",
         "validator": "LoggedInValidator",
-        "handler": "CharacterMultiChatHandle"
+        "handler": "CharacterMultiChatHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x75",
         "validator": "LoggedInValidator",
-        "handler": "CharacterChatWhisperHandle"
+        "handler": "CharacterChatWhisperHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x76",
         "validator": "LoggedInValidator",
-        "handler": "CharacterSpouseChatHandle"
+        "handler": "CharacterSpouseChatHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x77",
         "validator": "LoggedInValidator",
         "handler": "MessengerOperationHandle",
+        "services": ["channel"],
         "options": {
           "operations": {
             "ANSWER_INVITE": 0,
@@ -526,6 +602,7 @@
         "opCode": "0x78",
         "validator": "LoggedInValidator",
         "handler": "CharacterInteractionHandle",
+        "services": ["channel"],
         "options": {
           "operations": {
             "CREATE": 0,
@@ -579,6 +656,7 @@
         "opCode": "0x79",
         "validator": "LoggedInValidator",
         "handler": "PartyOperationHandle",
+        "services": ["channel"],
         "options": {
           "operations": {
             "CREATE": 1,
@@ -593,12 +671,14 @@
       {
         "opCode": "0x7A",
         "validator": "LoggedInValidator",
-        "handler": "PartyInviteRejectHandle"
+        "handler": "PartyInviteRejectHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x7B",
         "validator": "LoggedInValidator",
         "handler": "GuildOperationHandle",
+        "services": ["channel"],
         "options": {
           "operations": {
             "REQUEST_CREATE": 2,
@@ -617,22 +697,26 @@
       {
         "opCode": "0x7C",
         "validator": "LoggedInValidator",
-        "handler": "GuildInviteRejectHandle"
+        "handler": "GuildInviteRejectHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x7D",
         "validator": "LoggedInValidator",
-        "handler": "AdminCommand"
+        "handler": "AdminCommand",
+        "services": ["channel"]
       },
       {
         "opCode": "0x7E",
         "validator": "LoggedInValidator",
-        "handler": "AdminLog"
+        "handler": "AdminLog",
+        "services": ["channel"]
       },
       {
         "opCode": "0x7F",
         "validator": "LoggedInValidator",
         "handler": "BuddyOperationHandle",
+        "services": ["channel"],
         "options": {
           "operations": {
             "RELOAD": 0,
@@ -646,6 +730,7 @@
         "opCode": "0x80",
         "validator": "LoggedInValidator",
         "handler": "NoteOperationHandle",
+        "services": ["channel"],
         "options": {
           "operations": {
             "SEND": 0,
@@ -657,17 +742,20 @@
       {
         "opCode": "0x82",
         "validator": "LoggedInValidator",
-        "handler": "UseDoor"
+        "handler": "UseDoor",
+        "services": ["channel"]
       },
       {
         "opCode": "0x84",
         "validator": "LoggedInValidator",
-        "handler": "CharacterKeyMapChangeHandle"
+        "handler": "CharacterKeyMapChangeHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x085",
         "validator": "LoggedInValidator",
         "handler": "RPSActionHandle",
+        "services": ["channel"],
         "options": {
           "operations": {
             "START": 0,
@@ -682,17 +770,20 @@
       {
         "opCode": "0x88",
         "validator": "LoggedInValidator",
-        "handler": "WeddingAction"
+        "handler": "WeddingAction",
+        "services": ["channel"]
       },
       {
         "opCode": "0x89",
         "validator": "LoggedInValidator",
-        "handler": "WeddingTalk"
+        "handler": "WeddingTalk",
+        "services": ["channel"]
       },
       {
         "opCode": "0x98",
         "validator": "LoggedInValidator",
         "handler": "GuildBBSHandle",
+        "services": ["channel"],
         "options": {
           "operations": {
             "CREATE_OR_EDIT_THREAD": 0,
@@ -707,17 +798,20 @@
       {
         "opCode": "0x99",
         "validator": "LoggedInValidator",
-        "handler": "EnterMtsHandle"
+        "handler": "EnterMtsHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x9A",
         "validator": "LoggedInValidator",
-        "handler": "MobCrcKeyChangedReply"
+        "handler": "MobCrcKeyChangedReply",
+        "services": ["channel"]
       },
       {
         "opCode": "0xA3",
         "validator": "LoggedInValidator",
         "handler": "PetMovementHandle",
+        "services": ["channel"],
         "options": {
           "types": [
             {
@@ -818,32 +912,38 @@
       {
         "opCode": "0xA4",
         "validator": "LoggedInValidator",
-        "handler": "PetChatHandle"
+        "handler": "PetChatHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0xA5",
         "validator": "LoggedInValidator",
-        "handler": "PetCommandHandle"
+        "handler": "PetCommandHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0xA6",
         "validator": "LoggedInValidator",
-        "handler": "PetDropPickUpHandle"
+        "handler": "PetDropPickUpHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0xA7",
         "validator": "LoggedInValidator",
-        "handler": "PetItemUseHandle"
+        "handler": "PetItemUseHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0xA8",
         "validator": "LoggedInValidator",
-        "handler": "PetItemExcludeHandle"
+        "handler": "PetItemExcludeHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0xAB",
         "validator": "LoggedInValidator",
         "handler": "SummonMoveHandle",
+        "services": ["channel"],
         "options": {
           "types": [
             {
@@ -944,17 +1044,20 @@
       {
         "opCode": "0xAC",
         "validator": "LoggedInValidator",
-        "handler": "SummonAttackHandle"
+        "handler": "SummonAttackHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0xAD",
         "validator": "LoggedInValidator",
-        "handler": "SummonDamageHandle"
+        "handler": "SummonDamageHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0xB4",
         "validator": "LoggedInValidator",
         "handler": "MonsterMovementHandle",
+        "services": ["channel"],
         "options": {
           "types": [
             {
@@ -1055,32 +1158,38 @@
       {
         "opCode": "0xB6",
         "validator": "LoggedInValidator",
-        "handler": "MobDropPickupRequest"
+        "handler": "MobDropPickupRequest",
+        "services": ["channel"]
       },
       {
         "opCode": "0xB7",
         "validator": "LoggedInValidator",
-        "handler": "FieldDamageMob"
+        "handler": "FieldDamageMob",
+        "services": ["channel"]
       },
       {
         "opCode": "0xB8",
         "validator": "LoggedInValidator",
-        "handler": "MonsterDamageFriendlyHandle"
+        "handler": "MonsterDamageFriendlyHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0xB9",
         "validator": "LoggedInValidator",
-        "handler": "MonsterBomb"
+        "handler": "MonsterBomb",
+        "services": ["channel"]
       },
       {
         "opCode": "0xBA",
         "validator": "LoggedInValidator",
-        "handler": "MobDamageMob"
+        "handler": "MobDamageMob",
+        "services": ["channel"]
       },
       {
         "opCode": "0xBD",
         "validator": "LoggedInValidator",
         "handler": "NPCActionHandle",
+        "services": ["channel"],
         "options": {
           "types": [
             {
@@ -1181,52 +1290,62 @@
       {
         "opCode": "0xC2",
         "validator": "LoggedInValidator",
-        "handler": "DropPickUpHandle"
+        "handler": "DropPickUpHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0xC5",
         "validator": "LoggedInValidator",
-        "handler": "ReactorHitHandle"
+        "handler": "ReactorHitHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0xCB",
         "validator": "LoggedInValidator",
-        "handler": "Snowball"
+        "handler": "Snowball",
+        "services": ["channel"]
       },
       {
         "opCode": "0xCC",
         "validator": "LoggedInValidator",
-        "handler": "LeftKnockback"
+        "handler": "LeftKnockback",
+        "services": ["channel"]
       },
       {
         "opCode": "0xCD",
         "validator": "LoggedInValidator",
-        "handler": "Coconut"
+        "handler": "Coconut",
+        "services": ["channel"]
       },
       {
         "opCode": "0xCE",
         "validator": "LoggedInValidator",
-        "handler": "MatchTable"
+        "handler": "MatchTable",
+        "services": ["channel"]
       },
       {
         "opCode": "0xCF",
         "validator": "LoggedInValidator",
-        "handler": "GuildBoss"
+        "handler": "GuildBoss",
+        "services": ["channel"]
       },
       {
         "opCode": "0xD2",
         "validator": "LoggedInValidator",
-        "handler": "MonsterCarnival"
+        "handler": "MonsterCarnival",
+        "services": ["channel"]
       },
       {
         "opCode": "0xDC",
         "validator": "LoggedInValidator",
-        "handler": "CashShopCheckWalletHandle"
+        "handler": "CashShopCheckWalletHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0xDD",
         "validator": "LoggedInValidator",
         "handler": "CashShopOperationHandle",
+        "services": ["channel"],
         "options": {
           "operations": {
             "BUY": 3,
@@ -1252,17 +1371,20 @@
       {
         "opCode": "0xF1",
         "validator": "NoOpValidator",
-        "handler": "ItcStatusChargeHandle"
+        "handler": "ItcStatusChargeHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0xF2",
         "validator": "LoggedInValidator",
-        "handler": "ItcQueryCashRequestHandle"
+        "handler": "ItcQueryCashRequestHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0xF3",
         "validator": "LoggedInValidator",
         "handler": "ItcOperationHandle",
+        "services": ["channel"],
         "options": {
           "operations": {
             "REGISTER_SALE": 2,
@@ -1288,17 +1410,20 @@
       {
         "opCode": "0xFA",
         "validator": "LoggedInValidator",
-        "handler": "ItemUpgradeUpdateHandle"
+        "handler": "ItemUpgradeUpdateHandle",
+        "services": ["channel"]
       }
     ],
     "writers": [
       {
         "opCode": "0x00",
-        "writer": "AuthSuccess"
+        "writer": "AuthSuccess",
+        "services": ["login"]
       },
       {
         "opCode": "0x00",
         "writer": "AuthTemporaryBan",
+        "services": ["login"],
         "options": {
           "failedReasonCodes": {
             "BANNED": 2,
@@ -1326,6 +1451,7 @@
       {
         "opCode": "0x00",
         "writer": "AuthPermanentBan",
+        "services": ["login"],
         "options": {
           "failedReasonCodes": {
             "BANNED": 2,
@@ -1353,6 +1479,7 @@
       {
         "opCode": "0x00",
         "writer": "AuthLoginFailed",
+        "services": ["login"],
         "options": {
           "failedReasonCodes": {
             "BANNED": 2,
@@ -1379,15 +1506,18 @@
       },
       {
         "opCode": "0x03",
-        "writer": "ServerStatus"
+        "writer": "ServerStatus",
+        "services": ["login"]
       },
       {
         "opCode": "0x04",
-        "writer": "SetAccountResult"
+        "writer": "SetAccountResult",
+        "services": ["login"]
       },
       {
         "opCode": "0x06",
         "writer": "PinOperation",
+        "services": ["login"],
         "options": {
           "modes": {
             "OK": 0,
@@ -1402,6 +1532,7 @@
       {
         "opCode": "0x07",
         "writer": "PinUpdate",
+        "services": ["login"],
         "options": {
           "modes": {
             "OK": 0,
@@ -1412,6 +1543,7 @@
       {
         "opCode": "0x08",
         "writer": "CharacterViewAll",
+        "services": ["login"],
         "options": {
           "codes": {
             "NORMAL": 0,
@@ -1425,19 +1557,23 @@
       },
       {
         "opCode": "0x0A",
-        "writer": "ServerListEntry"
+        "writer": "ServerListEntry",
+        "services": ["login"]
       },
       {
         "opCode": "0x0A",
-        "writer": "ServerListEnd"
+        "writer": "ServerListEnd",
+        "services": ["login"]
       },
       {
         "opCode": "0x0B",
-        "writer": "CharacterList"
+        "writer": "CharacterList",
+        "services": ["login"]
       },
       {
         "opCode": "0x0C",
         "writer": "ServerIP",
+        "services": ["login"],
         "options": {
           "codes": {
             "OK": 0,
@@ -1468,6 +1604,7 @@
       {
         "opCode": "0x0D",
         "writer": "CharacterNameResponse",
+        "services": ["login"],
         "options": {
           "codes": {
             "OK": 0,
@@ -1480,6 +1617,7 @@
       {
         "opCode": "0x0E",
         "writer": "AddCharacterEntry",
+        "services": ["login"],
         "options": {
           "codes": {
             "OK": 0,
@@ -1493,6 +1631,7 @@
       {
         "opCode": "0x0F",
         "writer": "DeleteCharacterResponse",
+        "services": ["login"],
         "options": {
           "codes": {
             "OK": 0,
@@ -1509,19 +1648,23 @@
       },
       {
         "opCode": "0x10",
-        "writer": "ChannelChange"
+        "writer": "ChannelChange",
+        "services": ["channel"]
       },
       {
         "opCode": "0x11",
-        "writer": "Ping"
+        "writer": "Ping",
+        "services": ["login","channel"]
       },
       {
         "opCode": "0x1A",
-        "writer": "CharacterInventoryChange"
+        "writer": "CharacterInventoryChange",
+        "services": ["channel"]
       },
       {
         "opCode": "0x1C",
         "writer": "StatChanged",
+        "services": ["channel"],
         "options": {
           "statistics": [
             "SKIN",
@@ -1551,19 +1694,23 @@
       },
       {
         "opCode": "0x1D",
-        "writer": "CharacterBuffGive"
+        "writer": "CharacterBuffGive",
+        "services": ["channel"]
       },
       {
         "opCode": "0x1E",
-        "writer": "CharacterBuffCancel"
+        "writer": "CharacterBuffCancel",
+        "services": ["channel"]
       },
       {
         "opCode": "0x21",
-        "writer": "CharacterSkillChange"
+        "writer": "CharacterSkillChange",
+        "services": ["channel"]
       },
       {
         "opCode": "0x23",
         "writer": "FameResponse",
+        "services": ["channel"],
         "options": {
           "operations": {
             "GIVE": "0x00",
@@ -1579,6 +1726,7 @@
       {
         "opCode": "0x24",
         "writer": "CharacterStatusMessage",
+        "services": ["channel"],
         "options": {
           "operations": {
             "DROP_PICK_UP": 0,
@@ -1601,6 +1749,7 @@
       {
         "opCode": "0x26",
         "writer": "NoteOperation",
+        "services": ["channel"],
         "options": {
           "operations": {
             "SHOW": 3,
@@ -1618,6 +1767,7 @@
       {
         "opCode": "0x27",
         "writer": "MapTransferResult",
+        "services": ["channel"],
         "options": {
           "operations": {
             "DELETE_LIST": "0x02",
@@ -1634,11 +1784,13 @@
       },
       {
         "opCode": "0x2D",
-        "writer": "SetTamingMobInfo"
+        "writer": "SetTamingMobInfo",
+        "services": ["channel"]
       },
       {
         "opCode": "0x2F",
         "writer": "HiredMerchantOperation",
+        "services": ["channel"],
         "options": {
           "operations": {
             "OPEN_SHOP": 7,
@@ -1657,15 +1809,18 @@
       },
       {
         "opCode": "0x31",
-        "writer": "CompartmentMerge"
+        "writer": "CompartmentMerge",
+        "services": ["channel"]
       },
       {
         "opCode": "0x32",
-        "writer": "CompartmentSort"
+        "writer": "CompartmentSort",
+        "services": ["channel"]
       },
       {
         "opCode": "0x38",
         "writer": "GuildBBS",
+        "services": ["channel"],
         "options": {
           "operations": {
             "BBS_THREAD_LIST": 6,
@@ -1676,11 +1831,13 @@
       },
       {
         "opCode": "0x3A",
-        "writer": "CharacterInfo"
+        "writer": "CharacterInfo",
+        "services": ["channel"]
       },
       {
         "opCode": "0x3B",
         "writer": "PartyOperation",
+        "services": ["channel"],
         "options": {
           "operations": {
             "INVITE": 4,
@@ -1713,6 +1870,7 @@
       {
         "opCode": "0x3C",
         "writer": "BuddyOperation",
+        "services": ["channel"],
         "options": {
           "operations": {
             "UPDATE": 7,
@@ -1737,6 +1895,7 @@
       {
         "opCode": "0x3E",
         "writer": "GuildOperation",
+        "services": ["channel"],
         "options": {
           "operations": {
             "REQUEST_NAME": 1,
@@ -1779,15 +1938,18 @@
       },
       {
         "opCode": "0x40",
-        "writer": "SpawnPortal"
+        "writer": "SpawnPortal",
+        "services": ["channel"]
       },
       {
         "opCode": "0x40",
-        "writer": "RemoveTownDoor"
+        "writer": "RemoveTownDoor",
+        "services": ["channel"]
       },
       {
         "opCode": "0x41",
         "writer": "WorldMessage",
+        "services": ["channel"],
         "options": {
           "operations": {
             "NOTICE": 0,
@@ -1814,11 +1976,13 @@
       },
       {
         "opCode": "0x42",
-        "writer": "IncubatorResult"
+        "writer": "IncubatorResult",
+        "services": ["channel"]
       },
       {
         "opCode": "0x43",
         "writer": "ShopScannerResult",
+        "services": ["channel"],
         "options": {
           "operations": {
             "RESULT": 6,
@@ -1829,6 +1993,7 @@
       {
         "opCode": "0x44",
         "writer": "ShopLinkResult",
+        "services": ["channel"],
         "options": {
           "operations": {
             "SUCCESS": 0,
@@ -1845,71 +2010,88 @@
       },
       {
         "opCode": "0x49",
-        "writer": "PetCashFoodResult"
+        "writer": "PetCashFoodResult",
+        "services": ["channel"]
       },
       {
         "opCode": "0x4C",
-        "writer": "BridleMobCatchFail"
+        "writer": "BridleMobCatchFail",
+        "services": ["channel"]
       },
       {
         "opCode": "0x50",
-        "writer": "MonsterBookSetCard"
+        "writer": "MonsterBookSetCard",
+        "services": ["channel"]
       },
       {
         "opCode": "0x51",
-        "writer": "MonsterBookSetCover"
+        "writer": "MonsterBookSetCover",
+        "services": ["channel"]
       },
       {
         "opCode": "0x74",
-        "writer": "ScriptProgress"
+        "writer": "ScriptProgress",
+        "services": ["channel"]
       },
       {
         "opCode": "0x75",
-        "writer": "CharacterSkillMacro"
+        "writer": "CharacterSkillMacro",
+        "services": ["channel"]
       },
       {
         "opCode": "0x76",
-        "writer": "SetField"
+        "writer": "SetField",
+        "services": ["channel"]
       },
       {
         "opCode": "0x77",
-        "writer": "SetItc"
+        "writer": "SetItc",
+        "services": ["channel"]
       },
       {
         "opCode": "0x78",
-        "writer": "CashShopOpen"
+        "writer": "CashShopOpen",
+        "services": ["channel"]
       },
       {
         "opCode": "0x7B",
-        "writer": "BlockedMap"
+        "writer": "BlockedMap",
+        "services": ["channel"]
       },
       {
         "opCode": "0x7C",
-        "writer": "BlockedServer"
+        "writer": "BlockedServer",
+        "services": ["channel"]
       },
       {
         "opCode": "0x7D",
-        "writer": "ForcedMapEquip"
+        "writer": "ForcedMapEquip",
+        "services": ["channel"]
       },
       {
         "opCode": "0x7E",
-        "writer": "CharacterMultiChat"
+        "writer": "CharacterMultiChat",
+        "services": ["channel"]
       },
       {
         "opCode": "0x7F",
-        "writer": "CharacterChatWhisper"
+        "writer": "CharacterChatWhisper",
+        "services": ["channel"]
       },
       {
         "opCode": "0x80",
-        "writer": "SpouseChat"
+        "writer": "SpouseChat",
+        "services": ["channel"]
       },
       {
         "opCode": "0x81",
-        "writer": "SummonItemUnavailable"
+        "writer": "SummonItemUnavailable",
+        "services": ["channel"]
       },
       {
         "opCode": "0x82",
         "writer": "FieldEffect",
+        "services": ["channel"],
         "options": {
           "operations": {
             "SUMMON": 0,
@@ -1925,108 +2107,134 @@
       },
       {
         "opCode": "0x83",
-        "writer": "FieldObstacleOnOff"
+        "writer": "FieldObstacleOnOff",
+        "services": ["channel"]
       },
       {
         "opCode": "0x84",
-        "writer": "FieldObstacleOnOffList"
+        "writer": "FieldObstacleOnOffList",
+        "services": ["channel"]
       },
       {
         "opCode": "0x85",
-        "writer": "FieldObstacleAllReset"
+        "writer": "FieldObstacleAllReset",
+        "services": ["channel"]
       },
       {
         "opCode": "0x86",
-        "writer": "FieldEffectWeather"
+        "writer": "FieldEffectWeather",
+        "services": ["channel"]
       },
       {
         "opCode": "0x87",
-        "writer": "PlayJukebox"
+        "writer": "PlayJukebox",
+        "services": ["channel"]
       },
       {
         "opCode": "0x88",
-        "writer": "AdminResult"
+        "writer": "AdminResult",
+        "services": ["channel"]
       },
       {
         "opCode": "0x89",
-        "writer": "OxQuiz"
+        "writer": "OxQuiz",
+        "services": ["channel"]
       },
       {
         "opCode": "0x8A",
-        "writer": "GmEventInstructions"
+        "writer": "GmEventInstructions",
+        "services": ["channel"]
       },
       {
         "opCode": "0x8B",
-        "writer": "Clock"
+        "writer": "Clock",
+        "services": ["channel"]
       },
       {
         "opCode": "0x8C",
-        "writer": "ContiMove"
+        "writer": "ContiMove",
+        "services": ["channel"]
       },
       {
         "opCode": "0x8D",
-        "writer": "FieldTransportState"
+        "writer": "FieldTransportState",
+        "services": ["channel"]
       },
       {
         "opCode": "0x8E",
-        "writer": "SetQuestClear"
+        "writer": "SetQuestClear",
+        "services": ["channel"]
       },
       {
         "opCode": "0x8F",
-        "writer": "SetQuestTime"
+        "writer": "SetQuestTime",
+        "services": ["channel"]
       },
       {
         "opCode": "0x90",
-        "writer": "AriantResult"
+        "writer": "AriantResult",
+        "services": ["channel"]
       },
       {
         "opCode": "0x91",
-        "writer": "SetObjectState"
+        "writer": "SetObjectState",
+        "services": ["channel"]
       },
       {
         "opCode": "0x92",
-        "writer": "StopClock"
+        "writer": "StopClock",
+        "services": ["channel"]
       },
       {
         "opCode": "0x93",
-        "writer": "AriantArenaShowResult"
+        "writer": "AriantArenaShowResult",
+        "services": ["channel"]
       },
       {
         "opCode": "0x94",
-        "writer": "StalkResult"
+        "writer": "StalkResult",
+        "services": ["channel"]
       },
       {
         "opCode": "0x95",
-        "writer": "CharacterSpawn"
+        "writer": "CharacterSpawn",
+        "services": ["channel"]
       },
       {
         "opCode": "0x96",
-        "writer": "CharacterDespawn"
+        "writer": "CharacterDespawn",
+        "services": ["channel"]
       },
       {
         "opCode": "0x97",
-        "writer": "CharacterChatGeneral"
+        "writer": "CharacterChatGeneral",
+        "services": ["channel"]
       },
       {
         "opCode": "0x98",
-        "writer": "ChatGeneralChat"
+        "writer": "ChatGeneralChat",
+        "services": ["channel"]
       },
       {
         "opCode": "0x99",
-        "writer": "ChalkboardUse"
+        "writer": "ChalkboardUse",
+        "services": ["channel"]
       },
       {
         "opCode": "0x9A",
         "writer": "MiniRoom",
+        "services": ["channel"],
         "options": {}
       },
       {
         "opCode": "0x9C",
-        "writer": "CharacterItemUpgrade"
+        "writer": "CharacterItemUpgrade",
+        "services": ["channel"]
       },
       {
         "opCode": "0x9D",
         "writer": "PetActivated",
+        "services": ["channel"],
         "options": {
           "operations": {
             "NORMAL": 0,
@@ -2040,6 +2248,7 @@
       {
         "opCode": "0x9F",
         "writer": "PetMovement",
+        "services": ["channel"],
         "options": {
           "types": [
             {
@@ -2139,43 +2348,53 @@
       },
       {
         "opCode": "0xA0",
-        "writer": "PetChat"
+        "writer": "PetChat",
+        "services": ["channel"]
       },
       {
         "opCode": "0xA2",
-        "writer": "PetExcludeResponse"
+        "writer": "PetExcludeResponse",
+        "services": ["channel"]
       },
       {
         "opCode": "0xA3",
-        "writer": "PetCommandResponse"
+        "writer": "PetCommandResponse",
+        "services": ["channel"]
       },
       {
         "opCode": "0xA4",
-        "writer": "SummonSpawn"
+        "writer": "SummonSpawn",
+        "services": ["channel"]
       },
       {
         "opCode": "0xA5",
-        "writer": "SummonRemove"
+        "writer": "SummonRemove",
+        "services": ["channel"]
       },
       {
         "opCode": "0xA6",
-        "writer": "SummonMove"
+        "writer": "SummonMove",
+        "services": ["channel"]
       },
       {
         "opCode": "0xA7",
-        "writer": "SummonAttack"
+        "writer": "SummonAttack",
+        "services": ["channel"]
       },
       {
         "opCode": "0xA8",
-        "writer": "SummonSkill"
+        "writer": "SummonSkill",
+        "services": ["channel"]
       },
       {
         "opCode": "0xA9",
-        "writer": "SummonDamage"
+        "writer": "SummonDamage",
+        "services": ["channel"]
       },
       {
         "opCode": "0xAB",
         "writer": "CharacterMovement",
+        "services": ["channel"],
         "options": {
           "types": [
             {
@@ -2275,47 +2494,58 @@
       },
       {
         "opCode": "0xAC",
-        "writer": "CharacterAttackMelee"
+        "writer": "CharacterAttackMelee",
+        "services": ["channel"]
       },
       {
         "opCode": "0xAD",
-        "writer": "CharacterAttackRanged"
+        "writer": "CharacterAttackRanged",
+        "services": ["channel"]
       },
       {
         "opCode": "0xAE",
-        "writer": "CharacterAttackMagic"
+        "writer": "CharacterAttackMagic",
+        "services": ["channel"]
       },
       {
         "opCode": "0xAF",
-        "writer": "CharacterAttackEnergy"
+        "writer": "CharacterAttackEnergy",
+        "services": ["channel"]
       },
       {
         "opCode": "0xB0",
-        "writer": "CharacterSkillPrepareForeign"
+        "writer": "CharacterSkillPrepareForeign",
+        "services": ["channel"]
       },
       {
         "opCode": "0xB1",
-        "writer": "CharacterSkillCancelForeign"
+        "writer": "CharacterSkillCancelForeign",
+        "services": ["channel"]
       },
       {
         "opCode": "0xB2",
-        "writer": "CharacterDamage"
+        "writer": "CharacterDamage",
+        "services": ["channel"]
       },
       {
         "opCode": "0xB3",
-        "writer": "CharacterExpression"
+        "writer": "CharacterExpression",
+        "services": ["channel"]
       },
       {
         "opCode": "0xB6",
-        "writer": "CharacterShowChair"
+        "writer": "CharacterShowChair",
+        "services": ["channel"]
       },
       {
         "opCode": "0xB7",
-        "writer": "CharacterAppearanceUpdate"
+        "writer": "CharacterAppearanceUpdate",
+        "services": ["channel"]
       },
       {
         "opCode": "0xB8",
         "writer": "CharacterEffectForeign",
+        "services": ["channel"],
         "options": {
           "operations": {
             "LEVEL_UP": 0,
@@ -2349,31 +2579,38 @@
       },
       {
         "opCode": "0xB9",
-        "writer": "CharacterBuffGiveForeign"
+        "writer": "CharacterBuffGiveForeign",
+        "services": ["channel"]
       },
       {
         "opCode": "0xBA",
-        "writer": "CharacterBuffCancelForeign"
+        "writer": "CharacterBuffCancelForeign",
+        "services": ["channel"]
       },
       {
         "opCode": "0xBB",
-        "writer": "PartyMemberHP"
+        "writer": "PartyMemberHP",
+        "services": ["channel"]
       },
       {
         "opCode": "0xBC",
-        "writer": "GuildNameChanged"
+        "writer": "GuildNameChanged",
+        "services": ["channel"]
       },
       {
         "opCode": "0xBD",
-        "writer": "GuildEmblemChanged"
+        "writer": "GuildEmblemChanged",
+        "services": ["channel"]
       },
       {
         "opCode": "0xBF",
-        "writer": "CharacterSitResult"
+        "writer": "CharacterSitResult",
+        "services": ["channel"]
       },
       {
         "opCode": "0xC0",
         "writer": "CharacterEffect",
+        "services": ["channel"],
         "options": {
           "operations": {
             "LEVEL_UP": 0,
@@ -2407,39 +2644,48 @@
       },
       {
         "opCode": "0xC8",
-        "writer": "CharacterHint"
+        "writer": "CharacterHint",
+        "services": ["channel"]
       },
       {
         "opCode": "0xCE",
-        "writer": "UiLock"
+        "writer": "UiLock",
+        "services": ["channel"]
       },
       {
         "opCode": "0xCF",
-        "writer": "UiDisable"
+        "writer": "UiDisable",
+        "services": ["channel"]
       },
       {
         "opCode": "0xD1",
-        "writer": "GuideTalk"
+        "writer": "GuideTalk",
+        "services": ["channel"]
       },
       {
         "opCode": "0xD4",
-        "writer": "CharacterSkillCooldown"
+        "writer": "CharacterSkillCooldown",
+        "services": ["channel"]
       },
       {
         "opCode": "0xD6",
-        "writer": "SpawnMonster"
+        "writer": "SpawnMonster",
+        "services": ["channel"]
       },
       {
         "opCode": "0xD7",
-        "writer": "DestroyMonster"
+        "writer": "DestroyMonster",
+        "services": ["channel"]
       },
       {
         "opCode": "0xD8",
-        "writer": "ControlMonster"
+        "writer": "ControlMonster",
+        "services": ["channel"]
       },
       {
         "opCode": "0xD9",
         "writer": "MoveMonster",
+        "services": ["channel"],
         "options": {
           "types": [
             {
@@ -2539,71 +2785,88 @@
       },
       {
         "opCode": "0xDA",
-        "writer": "MoveMonsterAck"
+        "writer": "MoveMonsterAck",
+        "services": ["channel"]
       },
       {
         "opCode": "0xDC",
-        "writer": "MonsterStatSet"
+        "writer": "MonsterStatSet",
+        "services": ["channel"]
       },
       {
         "opCode": "0xDD",
-        "writer": "MonsterStatReset"
+        "writer": "MonsterStatReset",
+        "services": ["channel"]
       },
       {
         "opCode": "0xDE",
-        "writer": "ResetMonsterAnimation"
+        "writer": "ResetMonsterAnimation",
+        "services": ["channel"]
       },
       {
         "opCode": "0xDF",
-        "writer": "MobAffected"
+        "writer": "MobAffected",
+        "services": ["channel"]
       },
       {
         "opCode": "0xE0",
-        "writer": "MonsterDamage"
+        "writer": "MonsterDamage",
+        "services": ["channel"]
       },
       {
         "opCode": "0xE1",
-        "writer": "MonsterSpecialEffectBySkill"
+        "writer": "MonsterSpecialEffectBySkill",
+        "services": ["channel"]
       },
       {
         "opCode": "0xE3",
-        "writer": "MobCrcKeyChanged"
+        "writer": "MobCrcKeyChanged",
+        "services": ["channel"]
       },
       {
         "opCode": "0xE4",
-        "writer": "MonsterHealth"
+        "writer": "MonsterHealth",
+        "services": ["channel"]
       },
       {
         "opCode": "0xE5",
-        "writer": "CatchMonster"
+        "writer": "CatchMonster",
+        "services": ["channel"]
       },
       {
         "opCode": "0xE6",
-        "writer": "CatchMonsterWithItem"
+        "writer": "CatchMonsterWithItem",
+        "services": ["channel"]
       },
       {
         "opCode": "0xE7",
-        "writer": "MobSpeaking"
+        "writer": "MobSpeaking",
+        "services": ["channel"]
       },
       {
         "opCode": "0xE8",
-        "writer": "IncMobChargeCount"
+        "writer": "IncMobChargeCount",
+        "services": ["channel"]
       },
       {
         "opCode": "0xE9",
-        "writer": "MobAttackedByMob"
+        "writer": "MobAttackedByMob",
+        "services": ["channel"]
       },
       {
         "opCode": "0xEB",
-        "writer": "SpawnNPC"
+        "writer": "SpawnNPC",
+        "services": ["channel"]
       },
       {
         "opCode": "0xED",
-        "writer": "SpawnNPCRequestController"
+        "writer": "SpawnNPCRequestController",
+        "services": ["channel"]
       },
       {
         "opCode": "0xEE",
         "writer": "NPCAction",
+        "services": ["channel"],
         "options": {
           "types": [
             {
@@ -2703,127 +2966,158 @@
       },
       {
         "opCode": "0xF3",
-        "writer": "SpawnHiredMerchant"
+        "writer": "SpawnHiredMerchant",
+        "services": ["channel"]
       },
       {
         "opCode": "0xF4",
-        "writer": "DestroyHiredMerchant"
+        "writer": "DestroyHiredMerchant",
+        "services": ["channel"]
       },
       {
         "opCode": "0xF5",
-        "writer": "UpdateHiredMerchant"
+        "writer": "UpdateHiredMerchant",
+        "services": ["channel"]
       },
       {
         "opCode": "0xF6",
-        "writer": "DropSpawn"
+        "writer": "DropSpawn",
+        "services": ["channel"]
       },
       {
         "opCode": "0xF7",
-        "writer": "DropDestroy"
+        "writer": "DropDestroy",
+        "services": ["channel"]
       },
       {
         "opCode": "0xFD",
-        "writer": "SpawnDoor"
+        "writer": "SpawnDoor",
+        "services": ["channel"]
       },
       {
         "opCode": "0xFE",
-        "writer": "RemoveDoor"
+        "writer": "RemoveDoor",
+        "services": ["channel"]
       },
       {
         "opCode": "0xFF",
-        "writer": "ReactorHit"
+        "writer": "ReactorHit",
+        "services": ["channel"]
       },
       {
         "opCode": "0x101",
-        "writer": "ReactorSpawn"
+        "writer": "ReactorSpawn",
+        "services": ["channel"]
       },
       {
         "opCode": "0x102",
-        "writer": "ReactorDestroy"
+        "writer": "ReactorDestroy",
+        "services": ["channel"]
       },
       {
         "opCode": "0x103",
-        "writer": "SnowballState"
+        "writer": "SnowballState",
+        "services": ["channel"]
       },
       {
         "opCode": "0x104",
-        "writer": "SnowballHit"
+        "writer": "SnowballHit",
+        "services": ["channel"]
       },
       {
         "opCode": "0x105",
-        "writer": "SnowballMessage"
+        "writer": "SnowballMessage",
+        "services": ["channel"]
       },
       {
         "opCode": "0x106",
-        "writer": "SnowballTouch"
+        "writer": "SnowballTouch",
+        "services": ["channel"]
       },
       {
         "opCode": "0x107",
-        "writer": "CoconutHit"
+        "writer": "CoconutHit",
+        "services": ["channel"]
       },
       {
         "opCode": "0x108",
-        "writer": "CoconutScore"
+        "writer": "CoconutScore",
+        "services": ["channel"]
       },
       {
         "opCode": "0x109",
-        "writer": "GuildBossHealerMove"
+        "writer": "GuildBossHealerMove",
+        "services": ["channel"]
       },
       {
         "opCode": "0x10A",
-        "writer": "GuildBossPulleyStateChange"
+        "writer": "GuildBossPulleyStateChange",
+        "services": ["channel"]
       },
       {
         "opCode": "0x10B",
-        "writer": "MonsterCarnivalStart"
+        "writer": "MonsterCarnivalStart",
+        "services": ["channel"]
       },
       {
         "opCode": "0x10C",
-        "writer": "MonsterCarnivalObtainedCP"
+        "writer": "MonsterCarnivalObtainedCP",
+        "services": ["channel"]
       },
       {
         "opCode": "0x10D",
-        "writer": "MonsterCarnivalPartyCP"
+        "writer": "MonsterCarnivalPartyCP",
+        "services": ["channel"]
       },
       {
         "opCode": "0x10E",
-        "writer": "MonsterCarnivalSummon"
+        "writer": "MonsterCarnivalSummon",
+        "services": ["channel"]
       },
       {
         "opCode": "0x10F",
-        "writer": "MonsterCarnivalMessage"
+        "writer": "MonsterCarnivalMessage",
+        "services": ["channel"]
       },
       {
         "opCode": "0x110",
-        "writer": "MonsterCarnivalDied"
+        "writer": "MonsterCarnivalDied",
+        "services": ["channel"]
       },
       {
         "opCode": "0x111",
-        "writer": "MonsterCarnivalLeave"
+        "writer": "MonsterCarnivalLeave",
+        "services": ["channel"]
       },
       {
         "opCode": "0x112",
-        "writer": "MonsterCarnivalResult"
+        "writer": "MonsterCarnivalResult",
+        "services": ["channel"]
       },
       {
         "opCode": "0x113",
-        "writer": "AriantArenaUserScore"
+        "writer": "AriantArenaUserScore",
+        "services": ["channel"]
       },
       {
         "opCode": "0x117",
-        "writer": "WitchTowerScoreUpdate"
+        "writer": "WitchTowerScoreUpdate",
+        "services": ["channel"]
       },
       {
         "opCode": "0x118",
-        "writer": "HorntailCave"
+        "writer": "HorntailCave",
+        "services": ["channel"]
       },
       {
         "opCode": "0x119",
-        "writer": "ZakumShrine"
+        "writer": "ZakumShrine",
+        "services": ["channel"]
       },
       {
         "opCode": "0x11A",
         "writer": "NPCConversation",
+        "services": ["channel"],
         "options": {
           "messageType": {
             "SAY": 0,
@@ -2842,11 +3136,13 @@
       },
       {
         "opCode": "0x11B",
-        "writer": "NPCShop"
+        "writer": "NPCShop",
+        "services": ["channel"]
       },
       {
         "opCode": "0x11C",
         "writer": "NPCShopOperation",
+        "services": ["channel"],
         "options": {
           "operations": {
             "OK": 0,
@@ -2866,6 +3162,7 @@
       {
         "opCode": "0x11F",
         "writer": "StorageOperation",
+        "services": ["channel"],
         "options": {
           "operations": {
             "RETRIEVE_ASSETS": 9,
@@ -2884,6 +3181,7 @@
       {
         "opCode": "0x122",
         "writer": "RPSGame",
+        "services": ["channel"],
         "options": {
           "operations": {
             "OPEN": 8,
@@ -2896,6 +3194,7 @@
       {
         "opCode": "0x123",
         "writer": "MessengerOperation",
+        "services": ["channel"],
         "options": {
           "operations": {
             "ADD": 0,
@@ -2912,6 +3211,7 @@
       {
         "opCode": "0x124",
         "writer": "CharacterInteraction",
+        "services": ["channel"],
         "options": {
           "operations": {
             "INVITE": 2,
@@ -2984,39 +3284,48 @@
       },
       {
         "opCode": "0x125",
-        "writer": "Tournament"
+        "writer": "Tournament",
+        "services": ["channel"]
       },
       {
         "opCode": "0x126",
-        "writer": "TournamentMatchTable"
+        "writer": "TournamentMatchTable",
+        "services": ["channel"]
       },
       {
         "opCode": "0x127",
-        "writer": "TournamentSetPrize"
+        "writer": "TournamentSetPrize",
+        "services": ["channel"]
       },
       {
         "opCode": "0x128",
-        "writer": "TournamentUew"
+        "writer": "TournamentUew",
+        "services": ["channel"]
       },
       {
         "opCode": "0x129",
-        "writer": "TournamentCharacters"
+        "writer": "TournamentCharacters",
+        "services": ["channel"]
       },
       {
         "opCode": "0x12A",
-        "writer": "WeddingProgress"
+        "writer": "WeddingProgress",
+        "services": ["channel"]
       },
       {
         "opCode": "0x12B",
-        "writer": "WeddingCeremonyEnd"
+        "writer": "WeddingCeremonyEnd",
+        "services": ["channel"]
       },
       {
         "opCode": "0x12E",
-        "writer": "CashShopCashQueryResult"
+        "writer": "CashShopCashQueryResult",
+        "services": ["channel"]
       },
       {
         "opCode": "0x12F",
         "writer": "CashShopOperation",
+        "services": ["channel"],
         "options": {
           "operations": {
             "LOAD_INVENTORY_SUCCESS": 67,
@@ -3033,27 +3342,33 @@
       },
       {
         "opCode": "0x137",
-        "writer": "CharacterKeyMap"
+        "writer": "CharacterKeyMap",
+        "services": ["channel"]
       },
       {
         "opCode": "0x138",
-        "writer": "CharacterKeyMapAutoHp"
+        "writer": "CharacterKeyMapAutoHp",
+        "services": ["channel"]
       },
       {
         "opCode": "0x139",
-        "writer": "CharacterKeyMapAutoMp"
+        "writer": "CharacterKeyMapAutoMp",
+        "services": ["channel"]
       },
       {
         "opCode": "0x142",
-        "writer": "MtsChargeParamResult"
+        "writer": "MtsChargeParamResult",
+        "services": ["channel"]
       },
       {
         "opCode": "0x143",
-        "writer": "MtsOperation2"
+        "writer": "MtsOperation2",
+        "services": ["channel"]
       },
       {
         "opCode": "0x144",
         "writer": "MtsOperation",
+        "services": ["channel"],
         "options": {
           "processStatusCodes": {
             "HISTORY_SOLD": 0,
@@ -3118,6 +3433,7 @@
       {
         "opCode": "0x14A",
         "writer": "ViciousHammer",
+        "services": ["channel"],
         "options": {
           "operations": {
             "OPEN": 0,

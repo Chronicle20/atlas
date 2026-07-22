@@ -580,7 +580,7 @@ func parseDrainDeadline() time.Duration {
 
 func produceWriterProducer(l logrus.FieldLogger) func(writers []opcodes.WriterConfig, writerList []string, w socket2.OpWriter) writer.Producer {
 	return func(writers []opcodes.WriterConfig, writerList []string, w socket2.OpWriter) writer.Producer {
-		return opcodes.BuildWriterProducer(l, writers, writerList, w)
+		return opcodes.BuildWriterProducer(l, opcodes.ServiceChannel, writers, writerList, w)
 	}
 }
 
@@ -924,7 +924,7 @@ func handlerProducer(l logrus.FieldLogger) func(adapter handler.Adapter) func(ha
 			for k, v := range hm {
 				hmGeneric[k] = v
 			}
-			handlers := opcodes.BuildHandlerMap(l, handlerConfig, vmGeneric, hmGeneric, adapt)
+			handlers := opcodes.BuildHandlerMap(l, opcodes.ServiceChannel, handlerConfig, vmGeneric, hmGeneric, adapt)
 			return func() map[uint16]request.Handler {
 				return handlers
 			}

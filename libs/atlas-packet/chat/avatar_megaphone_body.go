@@ -3,9 +3,10 @@ package chat
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	atlas_packet "github.com/Chronicle20/atlas/libs/atlas-packet"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/chat/clientbound"
-	"github.com/sirupsen/logrus"
 )
 
 // AvatarMegaphoneResultReason is the SEMANTIC notice a domain service selects

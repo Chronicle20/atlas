@@ -6,10 +6,11 @@ import (
 
 	message "atlas-world/kafka/message/broadcast"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	kproducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
-	"github.com/stretchr/testify/require"
 )
 
 // TestQueuedStatusEventProvider proves the QUEUED status event carries the

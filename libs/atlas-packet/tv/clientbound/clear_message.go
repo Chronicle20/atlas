@@ -3,9 +3,10 @@ package clientbound
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const TvClearMessageWriter = "TvClearMessage"
@@ -13,8 +14,7 @@ const TvClearMessageWriter = "TvClearMessage"
 // TvClearMessage tears down the Maple TV UI. The body is empty — no fields,
 // no resolution needed.
 // packet-audit:fname CMapleTVMan::OnClearMessage
-type TvClearMessage struct {
-}
+type TvClearMessage struct{}
 
 func NewTvClearMessage() TvClearMessage {
 	return TvClearMessage{}

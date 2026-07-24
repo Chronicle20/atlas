@@ -10,18 +10,19 @@ import (
 	"context"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	cashsb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/serverbound"
-	chatpkg "github.com/Chronicle20/atlas/libs/atlas-packet/chat"            // A1: body funcs (resolved codes)
+	chatpkg "github.com/Chronicle20/atlas/libs/atlas-packet/chat"             // A1: body funcs (resolved codes)
 	chatpkt "github.com/Chronicle20/atlas/libs/atlas-packet/chat/clientbound" // writer name consts
-	tvpkg "github.com/Chronicle20/atlas/libs/atlas-packet/tv"                // A1: body funcs (resolved codes)
+	tvpkg "github.com/Chronicle20/atlas/libs/atlas-packet/tv"                 // A1: body funcs (resolved codes)
 	tvpkt "github.com/Chronicle20/atlas/libs/atlas-packet/tv/clientbound"     // writer name consts
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const (
@@ -312,11 +313,15 @@ func handleMapleTVUse(l logrus.FieldLogger, ctx context.Context, wp writer.Produ
 
 		now := time.Now()
 		steps := []saga.Step{
-			{StepId: "consume_tv_item", Status: saga.Pending, Action: saga.DestroyAsset,
+			{
+				StepId: "consume_tv_item", Status: saga.Pending, Action: saga.DestroyAsset,
 				Payload:   saga.DestroyAssetPayload{CharacterId: s.CharacterId(), TemplateId: uint32(itemId), Quantity: 1, RemoveAll: false},
-				CreatedAt: now, UpdatedAt: now},
-			{StepId: "enqueue_tv_broadcast", Status: saga.Pending, Action: saga.EnqueueWorldBroadcast,
-				Payload: enqueue, CreatedAt: now, UpdatedAt: now},
+				CreatedAt: now, UpdatedAt: now,
+			},
+			{
+				StepId: "enqueue_tv_broadcast", Status: saga.Pending, Action: saga.EnqueueWorldBroadcast,
+				Payload: enqueue, CreatedAt: now, UpdatedAt: now,
+			},
 		}
 		if tvType >= 3 {
 			// Megassenger tiers also fire a super megaphone with the concatenated
@@ -384,19 +389,23 @@ func handleAvatarMegaphoneUse(l logrus.FieldLogger, ctx context.Context, wp writ
 		_ = saga.NewProcessor(l, ctx).Create(saga.Saga{
 			TransactionId: uuid.New(), SagaType: saga.MegaphoneUse, InitiatedBy: "CASH_ITEM_USE",
 			Steps: []saga.Step{
-				{StepId: "consume_avatar_megaphone", Status: saga.Pending, Action: saga.DestroyAsset,
+				{
+					StepId: "consume_avatar_megaphone", Status: saga.Pending, Action: saga.DestroyAsset,
 					Payload:   saga.DestroyAssetPayload{CharacterId: s.CharacterId(), TemplateId: uint32(itemId), Quantity: 1, RemoveAll: false},
-					CreatedAt: now, UpdatedAt: now},
-				{StepId: "enqueue_avatar_broadcast", Status: saga.Pending, Action: saga.EnqueueWorldBroadcast,
+					CreatedAt: now, UpdatedAt: now,
+				},
+				{
+					StepId: "enqueue_avatar_broadcast", Status: saga.Pending, Action: saga.EnqueueWorldBroadcast,
 					Payload: saga.EnqueueWorldBroadcastPayload{
 						Family:  worldbroadcast.FamilyAvatar,
 						WorldId: f.WorldId(), ChannelId: f.ChannelId(), CharacterId: s.CharacterId(),
 						SenderName: c.Name(), SenderMedal: "",
 						Messages: sp.Lines(), WhispersOn: sp.Whisper(),
-						ItemId:   uint32(itemId), DurationSeconds: avatarDurationSecs,
+						ItemId: uint32(itemId), DurationSeconds: avatarDurationSecs,
 						SenderLook: socketmodel.NewAvatarSnapshot(c),
 					},
-					CreatedAt: now, UpdatedAt: now},
+					CreatedAt: now, UpdatedAt: now,
+				},
 			},
 		})
 	}

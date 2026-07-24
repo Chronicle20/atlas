@@ -5,10 +5,11 @@ import (
 	"io"
 	"testing"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
-	"github.com/sirupsen/logrus"
 )
 
 func testLogger() logrus.FieldLogger {

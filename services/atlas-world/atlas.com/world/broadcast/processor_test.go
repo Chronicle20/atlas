@@ -10,10 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	kproducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer/producertest"
-	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
@@ -21,6 +17,11 @@ import (
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	kproducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer/producertest"
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 )
 
 // capturingWriter implements kproducer.Writer by recording every message

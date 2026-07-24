@@ -8,10 +8,11 @@ import (
 	bmessage "atlas-world/kafka/message/broadcast"
 	bproducer "atlas-world/kafka/producer/broadcast"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	kproducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // Processor defines broadcast queue operations: enqueueing a new entry

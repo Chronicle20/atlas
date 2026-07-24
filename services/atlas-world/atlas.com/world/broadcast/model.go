@@ -5,8 +5,9 @@ import (
 	"math"
 	"time"
 
-	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	"github.com/google/uuid"
+
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 )
 
 // Family identifies which serialized world-broadcast queue an entry belongs

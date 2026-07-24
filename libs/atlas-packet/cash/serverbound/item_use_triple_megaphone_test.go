@@ -44,9 +44,9 @@ func TestItemUseTripleMegaphoneByteOutputV95(t *testing.T) {
 			lines:   []string{"A1"},
 			whisper: false,
 			expected: []byte{
-				0x01,                             // count=1
-				0x02, 0x00, 'A', '1',              // line[0]
-				0x00,                              // whisper=false
+				0x01,                 // count=1
+				0x02, 0x00, 'A', '1', // line[0]
+				0x00, // whisper=false
 			},
 		},
 		{
@@ -54,11 +54,11 @@ func TestItemUseTripleMegaphoneByteOutputV95(t *testing.T) {
 			lines:   []string{"L1", "L2", "L3"},
 			whisper: true,
 			expected: []byte{
-				0x03,                             // count=3
-				0x02, 0x00, 'L', '1',              // line[0]
-				0x02, 0x00, 'L', '2',              // line[1]
-				0x02, 0x00, 'L', '3',              // line[2]
-				0x01,                              // whisper=true
+				0x03,                 // count=3
+				0x02, 0x00, 'L', '1', // line[0]
+				0x02, 0x00, 'L', '2', // line[1]
+				0x02, 0x00, 'L', '3', // line[2]
+				0x01, // whisper=true
 			},
 		},
 	}
@@ -112,11 +112,11 @@ func TestItemUseTripleMegaphoneByteOutputV83(t *testing.T) {
 	input.whisper = true
 	input.updateTime = 24680
 	expected := []byte{
-		0x02,                             // count=2
-		0x02, 0x00, 'L', '1',              // line[0]
-		0x02, 0x00, 'L', '2',              // line[1]
-		0x01,                              // whisper=true
-		0x68, 0x60, 0x00, 0x00,            // updateTime=24680 LE (trailing)
+		0x02,                 // count=2
+		0x02, 0x00, 'L', '1', // line[0]
+		0x02, 0x00, 'L', '2', // line[1]
+		0x01,                   // whisper=true
+		0x68, 0x60, 0x00, 0x00, // updateTime=24680 LE (trailing)
 	}
 	actual := pt.Encode(t, ctx, input.Encode, nil)
 	if !bytes.Equal(actual, expected) {
@@ -155,10 +155,10 @@ func TestItemUseTripleMegaphoneByteOutputV84(t *testing.T) {
 	input.whisper = true
 	input.updateTime = 24680
 	expected := []byte{
-		0x02,                  // count=2
-		0x02, 0x00, 'L', '1',  // line[0]
-		0x02, 0x00, 'L', '2',  // line[1]
-		0x01,                  // whisper=true
+		0x02,                 // count=2
+		0x02, 0x00, 'L', '1', // line[0]
+		0x02, 0x00, 'L', '2', // line[1]
+		0x01,                   // whisper=true
 		0x68, 0x60, 0x00, 0x00, // updateTime=24680 LE (trailing)
 	}
 	actual := pt.Encode(t, ctx, input.Encode, nil)
@@ -199,7 +199,7 @@ func TestItemUseTripleMegaphoneByteOutputV87(t *testing.T) {
 		0x02,                 // count=2
 		0x02, 0x00, 'L', '1', // line[0]
 		0x02, 0x00, 'L', '2', // line[1]
-		0x01,                 // whisper=true
+		0x01, // whisper=true
 	}
 	actual := pt.Encode(t, ctx, input.Encode, nil)
 	if !bytes.Equal(actual, expected) {
@@ -248,7 +248,7 @@ func TestItemUseTripleMegaphoneByteOutputJMS185(t *testing.T) {
 		0x02,                 // count=2
 		0x02, 0x00, 'L', '1', // line[0]
 		0x02, 0x00, 'L', '2', // line[1]
-		0x01,                 // whisper=true
+		0x01, // whisper=true
 	}
 	actual := pt.Encode(t, ctx, input.Encode, nil)
 	if !bytes.Equal(actual, expected) {

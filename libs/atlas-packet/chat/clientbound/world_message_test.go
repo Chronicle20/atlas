@@ -388,13 +388,13 @@ func TestWorldMessageMultiMegaphoneByteOutputV83(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 83, 1)
 	input := WorldMessageMultiMegaphone{mode: 10, messages: []string{"a", "b", "c"}, channelId: 1, whispersOn: true}
 	expected := []byte{
-		0x0A,                   // mode
-		0x01, 0x00, 0x61,       // message[0]="a"
-		0x03,                   // count
-		0x01, 0x00, 0x62,       // message[1]="b"
-		0x01, 0x00, 0x63,       // message[2]="c"
-		0x01,                   // channelId
-		0x01,                   // whispersOn
+		0x0A,             // mode
+		0x01, 0x00, 0x61, // message[0]="a"
+		0x03,             // count
+		0x01, 0x00, 0x62, // message[1]="b"
+		0x01, 0x00, 0x63, // message[2]="c"
+		0x01, // channelId
+		0x01, // whispersOn
 	}
 	actual := pt.Encode(t, ctx, input.Encode, nil)
 	if !bytes.Equal(actual, expected) {

@@ -4,16 +4,19 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
-const SetAvatarMegaphoneWriter = "SetAvatarMegaphone"
-const ClearAvatarMegaphoneWriter = "ClearAvatarMegaphone"
-const AvatarMegaphoneResultWriter = "AvatarMegaphoneResult"
+const (
+	SetAvatarMegaphoneWriter    = "SetAvatarMegaphone"
+	ClearAvatarMegaphoneWriter  = "ClearAvatarMegaphone"
+	AvatarMegaphoneResultWriter = "AvatarMegaphoneResult"
+)
 
 // SetAvatarMegaphone arms the avatar (Mega Phone / character-look) megaphone
 // UI: itemId, sender name, 4 message lines, channel, whisper flag, and the
@@ -106,8 +109,7 @@ func (m *SetAvatarMegaphone) Decode(l logrus.FieldLogger, ctx context.Context) f
 // CAvatarMegaphone::ByeAvatarMegaphone. The body is therefore EMPTY (no guard
 // byte); Cosmic's single-byte body does not match the real client read.
 // packet-audit:fname CWvsContext::OnClearAvatarMegaphone
-type ClearAvatarMegaphone struct {
-}
+type ClearAvatarMegaphone struct{}
 
 func NewClearAvatarMegaphone() ClearAvatarMegaphone {
 	return ClearAvatarMegaphone{}

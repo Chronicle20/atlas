@@ -3,8 +3,9 @@ package worldbroadcast
 import (
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 // Processor exposes reads of the atlas-world broadcast-queue resource

@@ -24,7 +24,7 @@ func newTestTenant(t *testing.T, region string) tenant.Model {
 
 func TestTenantRegistry_Clear_EmptyNamespace(t *testing.T) {
 	client, _ := setupTestRedis(t)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	reg := NewTenantRegistry[string, string](client, "test:clear", func(k string) string { return k })
 	tm := newTestTenant(t, "GMS")
 
@@ -39,7 +39,7 @@ func TestTenantRegistry_Clear_EmptyNamespace(t *testing.T) {
 
 func TestTenantRegistry_Clear_DeletesAllForTenant(t *testing.T) {
 	client, _ := setupTestRedis(t)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	reg := NewTenantRegistry[string, string](client, "test:clear", func(k string) string { return k })
 	tm := newTestTenant(t, "GMS")
 	ctx := context.Background()
@@ -67,7 +67,7 @@ func TestTenantRegistry_Clear_DeletesAllForTenant(t *testing.T) {
 
 func TestTenantRegistry_Clear_TenantIsolation(t *testing.T) {
 	client, _ := setupTestRedis(t)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	reg := NewTenantRegistry[string, string](client, "test:clear", func(k string) string { return k })
 	tA := newTestTenant(t, "GMS")
 	tB := newTestTenant(t, "GMS")
@@ -97,7 +97,7 @@ func TestTenantRegistry_Clear_TenantIsolation(t *testing.T) {
 
 func TestTenantRegistry_Clear_NamespaceIsolation(t *testing.T) {
 	client, _ := setupTestRedis(t)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	regA := NewTenantRegistry[string, string](client, "test:clear:A", func(k string) string { return k })
 	regB := NewTenantRegistry[string, string](client, "test:clear:B", func(k string) string { return k })
 	tm := newTestTenant(t, "GMS")
@@ -127,7 +127,7 @@ func TestTenantRegistry_Clear_NamespaceIsolation(t *testing.T) {
 
 func TestTenantRegistry_Clear_RaceCleanWithPut(t *testing.T) {
 	client, _ := setupTestRedis(t)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	reg := NewTenantRegistry[string, string](client, "test:clear:race", func(k string) string { return k })
 	tm := newTestTenant(t, "GMS")
 	ctx := context.Background()
@@ -164,7 +164,7 @@ func TestTenantRegistry_Clear_RaceCleanWithPut(t *testing.T) {
 
 func TestTenantRegistry_GetAllEntries(t *testing.T) {
 	client, _ := setupTestRedis(t)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	reg := NewTenantRegistry[string, string](client, "test:entries", func(k string) string { return k })
 	t1 := newTestTenant(t, "GMS")
 	t2 := newTestTenant(t, "EMS")
@@ -195,7 +195,7 @@ func TestTenantRegistry_GetAllEntries(t *testing.T) {
 
 func TestTenantRegistry_GetAllEntries_SkipsInternalKeys(t *testing.T) {
 	client, _ := setupTestRedis(t)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	reg := NewTenantRegistry[string, string](client, "test:entries:internal", func(k string) string { return k })
 	tm := newTestTenant(t, "GMS")
 	ctx := context.Background()
@@ -219,7 +219,7 @@ func TestTenantRegistry_GetAllEntries_SkipsInternalKeys(t *testing.T) {
 
 func TestTenantRegistry_ClearByPrefix(t *testing.T) {
 	client, _ := setupTestRedis(t)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	reg := NewTenantRegistry[string, string](client, "test:prefix", func(k string) string { return k })
 	tm := newTestTenant(t, "GMS")
 	ctx := context.Background()
@@ -251,7 +251,7 @@ func TestTenantRegistry_ClearByPrefix(t *testing.T) {
 
 func TestTenantRegistry_ClearByPrefix_Empty(t *testing.T) {
 	client, _ := setupTestRedis(t)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	reg := NewTenantRegistry[string, string](client, "test:prefix:empty", func(k string) string { return k })
 	tm := newTestTenant(t, "GMS")
 	ctx := context.Background()
@@ -267,7 +267,7 @@ func TestTenantRegistry_ClearByPrefix_Empty(t *testing.T) {
 
 func TestTenantRegistry_Update_NotFound(t *testing.T) {
 	client, _ := setupTestRedis(t)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	reg := NewTenantRegistry[uint32, string](client, "test:update:notfound", func(k uint32) string {
 		return strconv.FormatUint(uint64(k), 10)
 	})
@@ -291,7 +291,7 @@ func TestTenantRegistry_Update_NotFound(t *testing.T) {
 // with goredis.TxFailedErr — this is not a simulated/faked assertion.
 func TestTenantRegistry_Update_RetriesOnContention(t *testing.T) {
 	client, _ := setupTestRedis(t)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	reg := NewTenantRegistry[uint32, string](client, "test:update:contend", func(k uint32) string {
 		return strconv.FormatUint(uint64(k), 10)
 	})

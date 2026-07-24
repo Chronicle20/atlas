@@ -844,6 +844,7 @@ func TestUnmarshalDestroyAssetFromSlotTemplateId(t *testing.T) {
 		t.Fatalf("payload = %+v", p)
 	}
 }
+
 func TestUnmarshalEmitMegaphoneStep(t *testing.T) {
 	created := time.Date(2026, 7, 17, 0, 0, 0, 0, time.UTC)
 	original := Step[any]{

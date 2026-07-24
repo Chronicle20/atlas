@@ -18,7 +18,12 @@ vi.mock("@/components/features/characters/OptimizedCharacterRenderer", () => ({
   OptimizedCharacterRenderer: () => <div data-testid="renderer" />,
 }));
 
-function row(over: number, move: number): RankingEntry {
+function row(
+  over: number,
+  move: number,
+  jobOver = 1,
+  jobMove = 0,
+): RankingEntry {
   return {
     id: String(over),
     attributes: {
@@ -30,8 +35,8 @@ function row(over: number, move: number): RankingEntry {
       jobCategory: 1,
       rank: over,
       rankMove: move,
-      jobRank: 1,
-      jobRankMove: 0,
+      jobRank: jobOver,
+      jobRankMove: jobMove,
       computedAt: "",
     },
   };
@@ -60,5 +65,39 @@ describe("LeaderboardRow", () => {
       </table>,
     );
     expect(screen.getByLabelText("moved up")).toBeInTheDocument();
+  });
+
+  it("shows a down arrow when rankMove is negative", () => {
+    render(
+      <table>
+        <tbody>
+          <LeaderboardRow entry={row(1, -2)} view="overall" />
+        </tbody>
+      </table>,
+    );
+    expect(screen.getByLabelText("moved down")).toBeInTheDocument();
+  });
+
+  it("shows a no-change indicator when rankMove is zero", () => {
+    render(
+      <table>
+        <tbody>
+          <LeaderboardRow entry={row(1, 0)} view="overall" />
+        </tbody>
+      </table>,
+    );
+    expect(screen.getByLabelText("no change")).toBeInTheDocument();
+  });
+
+  it("uses jobRank/jobRankMove instead of rank/rankMove when view is job", () => {
+    render(
+      <table>
+        <tbody>
+          <LeaderboardRow entry={row(1, 5, 7, -4)} view="job" />
+        </tbody>
+      </table>,
+    );
+    expect(screen.getByText("#7")).toBeInTheDocument();
+    expect(screen.getByLabelText("moved down")).toBeInTheDocument();
   });
 });

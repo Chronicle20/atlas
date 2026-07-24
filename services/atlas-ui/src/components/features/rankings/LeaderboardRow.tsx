@@ -12,10 +12,11 @@ interface LeaderboardRowProps {
 
 function MoveArrow({ move }: { move: number }) {
   if (move > 0)
+    // no semantic success token in the palette; matches repo convention
     return <ArrowUp className="h-4 w-4 text-green-600" aria-label="moved up" />;
   if (move < 0)
     return (
-      <ArrowDown className="h-4 w-4 text-red-600" aria-label="moved down" />
+      <ArrowDown className="h-4 w-4 text-destructive" aria-label="moved down" />
     );
   return (
     <Minus className="h-4 w-4 text-muted-foreground" aria-label="no change" />

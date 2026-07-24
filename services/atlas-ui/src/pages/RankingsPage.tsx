@@ -103,7 +103,9 @@ export function RankingsPage() {
       </div>
 
       {query.isError ? (
-        <p className="text-red-600">Failed to load rankings.</p>
+        <p className="text-destructive">Failed to load rankings.</p>
+      ) : query.isLoading ? (
+        <p className="text-sm text-muted-foreground">Loading…</p>
       ) : (
         <table className="w-full text-sm">
           <thead>

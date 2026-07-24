@@ -18,6 +18,7 @@ import (
 	"atlas-channel/merchant"
 	"atlas-channel/minigame"
 	"atlas-channel/monster"
+	controllernpc "atlas-channel/npc/controller"
 	"atlas-channel/party"
 	"atlas-channel/party/hpsync"
 	"atlas-channel/party_quest"
@@ -52,6 +53,7 @@ import (
 	interactioncb "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/clientbound"
 	merchantcb "github.com/Chronicle20/atlas/libs/atlas-packet/merchant/clientbound"
 	monsterpkt "github.com/Chronicle20/atlas/libs/atlas-packet/monster/clientbound"
+	npcbody "github.com/Chronicle20/atlas/libs/atlas-packet/npc"
 	npcpkt "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
 	petpkt "github.com/Chronicle20/atlas/libs/atlas-packet/pet/clientbound"
 	reactorpkt "github.com/Chronicle20/atlas/libs/atlas-packet/reactor/clientbound"
@@ -567,7 +569,31 @@ func handleStatusEventCharacterExit(sc server.Model, wp writer.Producer) func(l 
 		if err != nil {
 			l.WithError(err).Errorf("Unable to despawn character [%d] for characters in map [%d] instance [%s].", e.Body.CharacterId, e.MapId, e.Instance)
 		}
-		return
+
+		// NPC-controller reassignment (task-176, FR-5.3): release the
+		// exiting character's NPCs and hand them to the least-loaded
+		// remaining non-hidden session; none left -> uncontrolled until the
+		// next enter (lazy stale re-claim also covers a missed exit).
+		cp := controllernpc.NewProcessor(l, ctx)
+		released, rerr := cp.ReleaseFor(f, e.Body.CharacterId)
+		if rerr != nil {
+			l.WithError(rerr).Warnf("Unable to release NPC controller entries for exiting character [%d] in field [%s].", e.Body.CharacterId, f.Id())
+			return
+		}
+		if len(released) == 0 {
+			return
+		}
+		assignments, aerr := cp.ElectFor(f, released, e.Body.CharacterId)
+		if aerr != nil {
+			l.WithError(aerr).Warnf("Unable to re-elect NPC controllers after character [%d] left field [%s].", e.Body.CharacterId, f.Id())
+			return
+		}
+		for npcId, winner := range assignments {
+			if gerr := controllernpc.AnnounceGrant(l, ctx, wp)(f, winner, npcId); gerr != nil {
+				l.WithError(gerr).Warnf("Unable to announce NPC [%d] controller grant to [%d].", npcId, winner)
+			}
+		}
+		l.Debugf("NPC-controller exit: character [%d] released [%d] NPCs in field [%s]; reassigned [%d].", e.Body.CharacterId, len(released), f.Id(), len(assignments))
 	}
 }
 
@@ -585,12 +611,24 @@ func spawnNPCForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[npc2.Model] {
 		return func(wp writer.Producer) func(s session.Model) model.Operator[npc2.Model] {
 			return func(s session.Model) model.Operator[npc2.Model] {
+				cp := controllernpc.NewProcessor(l, ctx)
 				return func(n npc2.Model) error {
 					err := session.Announce(l)(ctx)(wp)(npcpkt.NpcSpawnWriter)(npcpkt.NewNpcSpawn(n.Id(), n.Template(), n.X(), n.CY(), int32(n.F()), n.Fh(), n.RX0(), n.RX1()).Encode)(s)
 					if err != nil {
 						return err
 					}
-					return session.Announce(l)(ctx)(wp)(npcpkt.NpcSpawnRequestControllerWriter)(npcpkt.NewNpcSpawnRequestController(n.Id(), n.Template(), n.X(), n.CY(), int32(n.F()), n.Fh(), n.RX0(), n.RX1(), true).Encode)(s)
+					// Single-controller election (task-176, FR-5.2/FR-5.4):
+					// claim synchronously so NpcSpawn -> grant land on the
+					// same session in order; non-controllers get spawn only.
+					claimed, cerr := cp.TryClaim(s.Field(), n.Id(), s.CharacterId())
+					if cerr != nil {
+						l.WithError(cerr).Warnf("NPC-controller claim failed for NPC [%d]; session [%d] gets spawn only.", n.Id(), s.CharacterId())
+						return nil
+					}
+					if !claimed {
+						return nil
+					}
+					return session.Announce(l)(ctx)(wp)(npcpkt.NpcSpawnRequestControllerWriter)(npcbody.NpcControllerGrantBody(n.Id(), n.Template(), n.X(), n.CY(), int32(n.F()), n.Fh(), n.RX0(), n.RX1(), true))(s)
 				}
 			}
 		}

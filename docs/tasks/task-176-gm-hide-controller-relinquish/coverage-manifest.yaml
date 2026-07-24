@@ -1,0 +1,12 @@
+# coverage-manifest
+ops:
+  - SPAWN_NPC_REQUEST_CONTROLLER
+versions:
+  - gms_v83
+  - gms_v84
+  - gms_v87
+  - gms_v95
+  - jms_v185
+fields:
+  - "npc/clientbound/RemoveController: new flag-0 (remove) arm of CNpcPool::OnNpcChangeController; same opcode as the verified grant arm; no wire change to any existing codec; read order IDA-derived (v95 0x679730, v83 0x6d9a83)"
+out_of_scope: []

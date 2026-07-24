@@ -123,6 +123,26 @@ describe("Route Configuration", () => {
       const lastBreadcrumb = breadcrumbs[breadcrumbs.length - 1];
       expect(lastBreadcrumb!.isCurrentPage).toBe(true);
     });
+
+    it("marks the grouping-only 'Character' node non-navigable (templates)", () => {
+      const breadcrumbs = getBreadcrumbsFromRoute(
+        "/templates/abc-123/character/presets",
+      );
+      const character = breadcrumbs.find((b) => b.label === "Character");
+      expect(character).toBeDefined();
+      expect(character!.nonNavigable).toBe(true);
+      // Real pages in the trail are not flagged.
+      const presets = breadcrumbs.find((b) => b.label === "Character Presets");
+      expect(presets!.nonNavigable).toBeUndefined();
+    });
+
+    it("marks the grouping-only 'Character' node non-navigable (tenants)", () => {
+      const breadcrumbs = getBreadcrumbsFromRoute(
+        "/tenants/abc-123/character/templates",
+      );
+      const character = breadcrumbs.find((b) => b.label === "Character");
+      expect(character!.nonNavigable).toBe(true);
+    });
   });
 
   describe("buildHrefFromPattern", () => {

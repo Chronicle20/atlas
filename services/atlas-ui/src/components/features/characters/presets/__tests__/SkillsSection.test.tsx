@@ -1,7 +1,7 @@
 import { useEffect, useReducer } from "react";
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { SkillsSection } from "../SkillsSection";
 import {
   DEFAULT_PRESET_ATTRIBUTES,
@@ -16,11 +16,13 @@ import type { CharacterPreset } from "@/types/models/template";
 vi.mock("@/context/tenant-context", () => ({
   useTenant: () => ({ activeTenant: null }),
 }));
+const useSkillDataMock = vi.fn();
 vi.mock("@/lib/hooks/useSkillData", () => ({
-  useSkillData: () => ({ data: { name: "Power Strike" }, isError: false }),
+  useSkillData: (...a: unknown[]) => useSkillDataMock(...a),
 }));
-// SkillSearchCombobox's real prop is `onAdd` — mocked so section tests don't
-// need a QueryClient (its own behavior is covered in SkillSearchCombobox.test).
+// SkillSearchCombobox/JobSkillsAddButton real props are onAdd/onAddMany —
+// mocked so section tests don't need a QueryClient (their own behavior is
+// covered in their dedicated test files).
 vi.mock("../SkillSearchCombobox", () => ({
   SkillSearchCombobox: ({ onAdd }: { onAdd: (id: number) => void }) => (
     <button aria-label="combo-add" onClick={() => onAdd(1001004)}>
@@ -28,6 +30,24 @@ vi.mock("../SkillSearchCombobox", () => ({
     </button>
   ),
 }));
+vi.mock("../JobSkillsAddButton", () => ({
+  JobSkillsAddButton: ({
+    onAddMany,
+  }: {
+    onAddMany: (ids: number[]) => void;
+  }) => (
+    <button aria-label="job-skills-add" onClick={() => onAddMany([1001, 1002])}>
+      job
+    </button>
+  ),
+}));
+
+beforeEach(() => {
+  useSkillDataMock.mockReturnValue({
+    data: { name: "Power Strike", maxLevel: 20 },
+    isError: false,
+  });
+});
 
 /**
  * Wires SkillsSection to the REAL presetReducer (not inert vi.fn() mocks) so
@@ -57,6 +77,9 @@ function Harness({
       onAdd={(skillId) =>
         dispatch({ type: "addSkill", key: preset.key, skillId })
       }
+      onAddMany={(skillIds) =>
+        dispatch({ type: "addSkills", key: preset.key, skillIds })
+      }
       onRemove={(index) =>
         dispatch({ type: "removeSkill", key: preset.key, index })
       }
@@ -73,6 +96,7 @@ describe("SkillsSection", () => {
       <SkillsSection
         skills={[]}
         onAdd={vi.fn()}
+        onAddMany={vi.fn()}
         onRemove={vi.fn()}
         onSetLevel={vi.fn()}
       />,
@@ -86,6 +110,7 @@ describe("SkillsSection", () => {
       <SkillsSection
         skills={[]}
         onAdd={onAdd}
+        onAddMany={vi.fn()}
         onRemove={vi.fn()}
         onSetLevel={vi.fn()}
       />,
@@ -101,6 +126,7 @@ describe("SkillsSection", () => {
       <SkillsSection
         skills={[{ skillId: 1001004, level: 1 }]}
         onAdd={vi.fn()}
+        onAddMany={vi.fn()}
         onRemove={onRemove}
         onSetLevel={onSetLevel}
       />,
@@ -113,6 +139,66 @@ describe("SkillsSection", () => {
       screen.getByRole("button", { name: /remove skill 1001004/i }),
     );
     expect(onRemove).toHaveBeenCalledWith(0);
+  });
+
+  it("shows the skill's max level and clamps input above it", async () => {
+    const onSetLevel = vi.fn();
+    render(
+      <SkillsSection
+        skills={[{ skillId: 1001004, level: 1 }]}
+        onAdd={vi.fn()}
+        onAddMany={vi.fn()}
+        onRemove={vi.fn()}
+        onSetLevel={onSetLevel}
+      />,
+    );
+    // maxLevel 20 from the mocked useSkillData is shown inline.
+    expect(screen.getByText("/ 20")).toBeInTheDocument();
+    const lvl = screen.getByLabelText(/level/i);
+    await userEvent.clear(lvl);
+    await userEvent.type(lvl, "99");
+    // Every committed value is clamped to the max — never above 20.
+    expect(onSetLevel.mock.calls.every(([, v]) => (v as number) <= 20)).toBe(
+      true,
+    );
+    expect(onSetLevel).toHaveBeenCalledWith(0, 20);
+  });
+
+  it("does not clamp when the skill has no known max level", async () => {
+    useSkillDataMock.mockReturnValue({
+      data: { name: "Power Strike" }, // no maxLevel
+      isError: false,
+    });
+    const onSetLevel = vi.fn();
+    render(
+      <SkillsSection
+        skills={[{ skillId: 1001004, level: 1 }]}
+        onAdd={vi.fn()}
+        onAddMany={vi.fn()}
+        onRemove={vi.fn()}
+        onSetLevel={onSetLevel}
+      />,
+    );
+    expect(screen.queryByText(/^\/ /)).not.toBeInTheDocument();
+    const lvl = screen.getByLabelText(/level/i);
+    await userEvent.clear(lvl);
+    await userEvent.type(lvl, "99");
+    expect(onSetLevel).toHaveBeenCalledWith(0, 99);
+  });
+
+  it("job-family button bulk-adds skill ids via onAddMany", async () => {
+    const onAddMany = vi.fn();
+    render(
+      <SkillsSection
+        skills={[]}
+        onAdd={vi.fn()}
+        onAddMany={onAddMany}
+        onRemove={vi.fn()}
+        onSetLevel={vi.fn()}
+      />,
+    );
+    await userEvent.click(screen.getByLabelText("job-skills-add"));
+    expect(onAddMany).toHaveBeenCalledWith([1001, 1002]);
   });
 
   it("reducer round-trip: clearing and retyping commits exactly the typed value, not a prepend", async () => {

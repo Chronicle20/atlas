@@ -154,6 +154,36 @@ describe("presetEditorState", () => {
     expect(s.presets[0]!.attributes.inventory).toEqual([]);
   });
 
+  it("addSkills batch-appends at level 1, skipping already-granted and duplicate ids", () => {
+    let s = loaded([preset("a1", "One")]);
+    s = presetReducer(s, { type: "addSkill", key: "a1", skillId: 1001 });
+    s = presetReducer(s, {
+      type: "setSkillLevel",
+      key: "a1",
+      index: 0,
+      value: 9,
+    });
+    // 1001 already present (keep its level 9); 4001 appears twice in the batch.
+    s = presetReducer(s, {
+      type: "addSkills",
+      key: "a1",
+      skillIds: [1001, 4001, 4002, 4001, 0],
+    });
+    expect(s.presets[0]!.attributes.skills).toEqual([
+      { skillId: 1001, level: 9 },
+      { skillId: 4001, level: 1 },
+      { skillId: 4002, level: 1 },
+    ]);
+  });
+
+  it("addSkills with nothing new returns the preset unchanged", () => {
+    let s = loaded([preset("a1", "One")]);
+    s = presetReducer(s, { type: "addSkill", key: "a1", skillId: 1001 });
+    const before = s.presets[0]!.attributes.skills;
+    s = presetReducer(s, { type: "addSkills", key: "a1", skillIds: [1001] });
+    expect(s.presets[0]!.attributes.skills).toEqual(before);
+  });
+
   it("tags add/remove is case-preserving and de-duplicated", () => {
     let s = loaded([preset("a1", "One")]);
     s = presetReducer(s, { type: "addTag", key: "a1", tag: "PvP" });

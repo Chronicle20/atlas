@@ -275,6 +275,9 @@ export function CharacterPresetsEditor({
           onAddSkill={(skillId) =>
             dispatch({ type: "addSkill", key: selected.key, skillId })
           }
+          onAddSkills={(skillIds) =>
+            dispatch({ type: "addSkills", key: selected.key, skillIds })
+          }
           onRemoveSkill={(index) =>
             dispatch({ type: "removeSkill", key: selected.key, index })
           }

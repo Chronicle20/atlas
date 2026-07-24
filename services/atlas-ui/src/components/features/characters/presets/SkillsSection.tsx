@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSkillData } from "@/lib/hooks/useSkillData";
 import { SkillSearchCombobox } from "./SkillSearchCombobox";
+import { JobSkillsAddButton } from "./JobSkillsAddButton";
 
 interface SkillsSectionProps {
   skills: CharacterPresetSkillEntry[];
   onAdd: (skillId: number) => void;
+  onAddMany: (skillIds: number[]) => void;
   onRemove: (index: number) => void;
   onSetLevel: (index: number, value: number) => void;
 }
@@ -25,12 +27,18 @@ interface SkillsSectionProps {
  * formatting (e.g. leading zeros, stale text from an aborted edit).
  *
  * Mirrors InventorySection's QuantityInput — same shape of bug, same fix.
+ *
+ * `max` (a skill's maxLevel) is enforced here, not in the reducer: maxLevel
+ * comes from client-only skill-definition data the reducer doesn't have, so
+ * the upper clamp lives at the input. Unknown maxLevel ⇒ no upper bound.
  */
 function LevelInput({
   value,
+  max,
   onChange,
 }: {
   value: number;
+  max: number | undefined;
   onChange: (value: number) => void;
 }) {
   const [draft, setDraft] = useState(String(value));
@@ -46,6 +54,7 @@ function LevelInput({
     <Input
       type="number"
       min={1}
+      {...(max !== undefined ? { max } : {})}
       aria-label="Level"
       className="w-20"
       value={draft}
@@ -60,7 +69,8 @@ function LevelInput({
         setDraft(e.target.value);
         const parsed = Number(e.target.value);
         if (!Number.isNaN(parsed)) {
-          onChange(Math.max(1, parsed));
+          const clamped = Math.max(1, parsed);
+          onChange(max !== undefined ? Math.min(max, clamped) : clamped);
         }
       }}
     />
@@ -80,6 +90,7 @@ function SkillRow({
 }) {
   const skill = useSkillData(skillId);
   const [iconFailed, setIconFailed] = useState(false);
+  const maxLevel = skill.data?.maxLevel;
 
   return (
     <div className="flex items-center gap-2 rounded-md border px-2 py-1.5">
@@ -100,7 +111,10 @@ function SkillRow({
         {skill.name ?? "Unknown skill"}
       </span>
       <span className="font-mono text-xs text-muted-foreground">{skillId}</span>
-      <LevelInput value={level} onChange={onSetLevel} />
+      <LevelInput value={level} max={maxLevel} onChange={onSetLevel} />
+      <span className="w-12 shrink-0 text-xs text-muted-foreground">
+        {maxLevel !== undefined ? `/ ${maxLevel}` : ""}
+      </span>
       <Button
         type="button"
         variant="ghost"
@@ -117,6 +131,7 @@ function SkillRow({
 export function SkillsSection({
   skills,
   onAdd,
+  onAddMany,
   onRemove,
   onSetLevel,
 }: SkillsSectionProps) {
@@ -126,7 +141,10 @@ export function SkillsSection({
     <section className="space-y-2">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold">Granted skills</h3>
-        <SkillSearchCombobox existingIds={existingIds} onAdd={onAdd} />
+        <div className="flex items-center gap-2">
+          <JobSkillsAddButton onAddMany={onAddMany} />
+          <SkillSearchCombobox existingIds={existingIds} onAdd={onAdd} />
+        </div>
       </div>
 
       <div className="space-y-1">

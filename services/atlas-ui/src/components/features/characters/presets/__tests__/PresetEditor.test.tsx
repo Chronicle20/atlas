@@ -44,6 +44,7 @@ const handlers: Omit<PresetEditorProps, "preset" | "onBack" | "onApply"> = {
   onRemoveInventory: vi.fn(),
   onSetInventoryQty: vi.fn(),
   onAddSkill: vi.fn(),
+  onAddSkills: vi.fn(),
   onRemoveSkill: vi.fn(),
   onSetSkillLevel: vi.fn(),
   onDuplicate: vi.fn(),

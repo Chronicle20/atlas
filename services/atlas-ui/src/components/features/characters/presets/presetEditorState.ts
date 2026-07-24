@@ -62,6 +62,7 @@ export type PresetEditorAction =
   | { type: "removeInventory"; key: string; index: number }
   | { type: "setInventoryQty"; key: string; index: number; value: number }
   | { type: "addSkill"; key: string; skillId: number }
+  | { type: "addSkills"; key: string; skillIds: number[] }
   | { type: "removeSkill"; key: string; index: number }
   | { type: "setSkillLevel"; key: string; index: number; value: number }
   | { type: "addTag"; key: string; tag: string }
@@ -301,6 +302,20 @@ export function presetReducer(
         ...a,
         skills: [...a.skills, { skillId: action.skillId, level: 1 }],
       }));
+    case "addSkills":
+      // Batch add (e.g. a whole job family) — skip ids already granted and
+      // any duplicate within the incoming list; each new skill starts at 1.
+      return updateOne(state, action.key, (a) => {
+        const seen = new Set(a.skills.map((s) => s.skillId));
+        const added: { skillId: number; level: number }[] = [];
+        for (const id of action.skillIds) {
+          if (id > 0 && !seen.has(id)) {
+            seen.add(id);
+            added.push({ skillId: id, level: 1 });
+          }
+        }
+        return added.length ? { ...a, skills: [...a.skills, ...added] } : a;
+      });
     case "removeSkill":
       return updateOne(state, action.key, (a) => ({
         ...a,

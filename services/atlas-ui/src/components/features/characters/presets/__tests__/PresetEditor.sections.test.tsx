@@ -56,6 +56,17 @@ vi.mock("../SkillSearchCombobox", () => ({
     </button>
   ),
 }));
+vi.mock("../JobSkillsAddButton", () => ({
+  JobSkillsAddButton: ({
+    onAddMany,
+  }: {
+    onAddMany: (ids: number[]) => void;
+  }) => (
+    <button aria-label="job-skills-add" onClick={() => onAddMany([1001, 1002])}>
+      job
+    </button>
+  ),
+}));
 
 const noop = () => {};
 const passthroughHandlers = {
@@ -64,6 +75,7 @@ const passthroughHandlers = {
   onAddEquip: noop,
   onAddInventory: noop,
   onAddSkill: noop,
+  onAddSkills: noop,
   onDuplicate: noop,
   onRemove: noop,
 };

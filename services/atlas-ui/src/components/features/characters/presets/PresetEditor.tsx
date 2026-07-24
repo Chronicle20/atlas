@@ -26,6 +26,7 @@ export interface PresetEditorProps {
   onRemoveInventory: (index: number) => void;
   onSetInventoryQty: (index: number, value: number) => void;
   onAddSkill: (skillId: number) => void;
+  onAddSkills: (skillIds: number[]) => void;
   onRemoveSkill: (index: number) => void;
   onSetSkillLevel: (index: number, value: number) => void;
   onDuplicate: () => void;
@@ -47,6 +48,7 @@ export function PresetEditor({
   onRemoveInventory,
   onSetInventoryQty,
   onAddSkill,
+  onAddSkills,
   onRemoveSkill,
   onSetSkillLevel,
   onDuplicate,
@@ -113,6 +115,7 @@ export function PresetEditor({
           <SkillsSection
             skills={attrs.skills}
             onAdd={onAddSkill}
+            onAddMany={onAddSkills}
             onRemove={onRemoveSkill}
             onSetLevel={onSetSkillLevel}
           />

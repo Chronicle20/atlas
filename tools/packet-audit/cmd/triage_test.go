@@ -22,15 +22,18 @@ type triageFakeMCP struct {
 func (f *triageFakeMCP) GetFunctionByName(_ context.Context, _ string) (string, bool, error) {
 	return "", false, nil
 }
+
 func (f *triageFakeMCP) DecompileFunction(_ context.Context, a string) (string, error) {
 	if err := f.decompErr[a]; err != nil {
 		return "", err
 	}
 	return f.decomp[a], nil
 }
+
 func (f *triageFakeMCP) GetCallees(_ context.Context, _ string) ([]idasrc.Callee, error) {
 	return nil, nil
 }
+
 func (f *triageFakeMCP) StructInfo(_ context.Context, _ string) (idasrc.StructLayout, error) {
 	return idasrc.StructLayout{}, nil
 }

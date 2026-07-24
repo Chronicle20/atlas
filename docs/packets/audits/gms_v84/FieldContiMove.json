@@ -3,7 +3,7 @@
   "IDAName": "CField_ContiMove::OnContiMove",
   "Address": "0x55a4e2",
   "Variant": "GMS/v84",
-  "BranchDepth": 0,
+  "BranchDepth": 1,
   "AtlasFile": "libs/atlas-packet/field/clientbound/conti_move.go",
   "Rows": [
     {
@@ -11,7 +11,16 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
+      "IDAComment": "state; (state-7) selects one of 6 arms",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "subState (state-gated: only arms 8/10/12 -- OnStartShipMoveField/OnMoveField/OnEndShipMoveField -- read a second byte; arms 7/9/11 are nullsubs and read nothing further)",
       "Verdict": 0,
       "Note": ""
     }

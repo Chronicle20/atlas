@@ -4,17 +4,17 @@
 > ✅ verified · 🧩 family (mode-prefix dispatcher; sub-arms unverified) · 🟡 partial · ❌ incomplete · ⬜ n-a · 🟥 conflict
 > Partial (🟡) sub-glyphs: 🟡ᶠ tier-1 needs byte-fixture · 🟡ᵈ tool-pass diff-only (no byte-test) · 🟡ᵖ evidence-pinned deferral
 
-Tool: `aafe52293aa7d281d57743c027833416a49c2640d8ec4f009010c855e55820b8`
+Tool: `a0c47bb5655b63e6be7139d84d0dc93e198b0eac6c23d546ecc5a6b3f49936b7`
 
-- export gms_v48: `a7f7dd20743f55f26646c1a912e4ba0e33dcb0b86f56183cd889c3bd2fd04021`
-- export gms_v61: `860627887e4c61add45e05bde16b247787ff5831eabbb1525aec000d83eea9db`
-- export gms_v72: `c5a50df5bf65eef32963aeb560428adfbefa431e58615252814bc57aebb6c9a7`
-- export gms_v79: `9b64f8fc1da43f8d7cfa4ae375ef91c23deb11c6e8ad216d0ea38e00ab267a6d`
-- export gms_v83: `4e917fcb4860f63c4462ac4876bc90fc06f22efb39b0989f485637969074a2b1`
-- export gms_v84: `3ad4771e83bbba138ebd0e534076a6553f92ef2cbc7f546e8b8eca22459d6f9f`
-- export gms_v87: `ff192ac103c071da22f1db22f138cad6f66637d2183c507a996188eaecc046fa`
-- export gms_v95: `8f76aa42e0d1035d365407d5798c6eeb237b5c58043580665b10d0d1dbc42982`
-- export jms_v185: `f01306a29d65ec0870767bc814ce42fa350d91ad9e754128f91291e4c8e9f6cd`
+- export gms_v48: `8d1a4c02745ee1cb5b41c358b749c6a55883207c109784c6e09b00545a3d2dc8`
+- export gms_v61: `67395ebec4c069f827ade3a69a2e32286c750b66f305d9eba197ed2e6db87de3`
+- export gms_v72: `005ee090459a5f2bea74a84ba7652af94ca98214fb61ff8b07090907581ef267`
+- export gms_v79: `9a8c30eaf8ea8530a63b4875bc14c5c031fbab475baa518f4bd685226933500e`
+- export gms_v83: `2c83800f68d4fb785bed69ea7767b363acb38db4f445a1a772a4a33013c11400`
+- export gms_v84: `add645423c5199734172e15c44a7438656e893918efd1b5147cf31e546e002f1`
+- export gms_v87: `cdb60fec8064a3e6cadef27348923f541ba22873d8b4015010582c2718b14fd6`
+- export gms_v95: `0e43405510ef56bb1aadf7467889659711c27e905747eb4e0452ed58b787054d`
+- export jms_v185: `1d02fabf901ade2891c3b71429c1381d14e9715b849703b161c08f3951425b08`
 
 ## Clientbound
 
@@ -68,7 +68,7 @@ Tool: `aafe52293aa7d281d57743c027833416a49c2640d8ec4f009010c855e55820b8`
 | FORCED_STAT_RESET | CWvsContext::OnForcedStatReset |  |  | ⬜ | 0x020 | ❌ | 0x020 | ❌ | 0x020 | ❌ | 0x023 | ❌ | 0x023 | ❌ | 0x023 | ❌ | 0x022 | ❌ | 0x021 | ❌ |
 | SHOW_STATUS_INFO | CWvsContext::OnMessage | character/clientbound/StatusMessageCashItemExpire (T1) | 0x021 | ✅ | 0x024 | ✅ | 0x024 | ✅ | 0x024 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x026 | ✅ | 0x025 | ✅ |
 | MEMO_RESULT | CWvsContext::OnMemoResult | note/clientbound/NoteDisplay (T1) | 0x022 | ✅ | 0x026 | ✅ | 0x026 | ✅ | 0x026 | ✅ | 0x029 | ✅ | 0x029 | ❌ | 0x029 | ✅ | 0x028 | ✅ | 0x026 | ❌ |
-| MAP_TRANSFER_RESULT | CWvsContext::OnMapTransferResult |  | 0x023 | ❌ | 0x027 | ❌ | 0x027 | ❌ | 0x027 | ❌ | 0x02A | ❌ | 0x02A | ❌ | 0x02A | ❌ | 0x029 | ❌ | 0x027 | ❌ |
+| MAP_TRANSFER_RESULT | CWvsContext::OnMapTransferResult | teleportrock/clientbound/MapTransferError (T1) | 0x023 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x02A | ✅ | 0x02A | ✅ | 0x02A | ✅ | 0x029 | ✅ | 0x027 | ✅ |
 | WEDDING_PHOTO | CWvsContext::OnAntiMacroResult |  | 0x024 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x02B | ❌ | 0x02B | ❌ | 0x02B | ❌ | 0x02A | ❌ | 0x028 | ❌ |
 | CLAIM_RESULT | CWvsContext::OnClaimResult |  | 0x025 | ❌ | 0x02A | ❌ | 0x02A | ❌ | 0x02A | ❌ | 0x02D | ❌ | 0x02D | ❌ | 0x02D | ❌ | 0x02C | ❌ | 0x02A | ❌ |
 | OPEN_FULL_CLIENT_DOWNLOAD_LINK | CWvsContext::OnOpenFullClientDownloadLink |  |  | ⬜ | 0x025 | ❌ | 0x025 | ❌ | 0x025 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x027 | ❌ |  | ⬜ |
@@ -244,17 +244,18 @@ Tool: `aafe52293aa7d281d57743c027833416a49c2640d8ec4f009010c855e55820b8`
 | TRANSFER_CHANNEL | CWvsContext::OnTransferChannel |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x08A | ❌ |  | ⬜ |
 | DAMAGE_SUMMON | CSummonedPool::OnHit; sub_67C936; sub_6E9839 | summon/clientbound/SummonDamage |  | ⬜ | 0x08B | ✅ | 0x0A5 | ✅ | 0x0A9 | ✅ | 0x0B3 | ✅ | 0x0B8 | ✅ | 0x0C0 | ✅ | 0x11B | ✅ | 0x0B9 | ✅ |
 | DISALLOWED_DELIVERY_QUEST_LIST | CWvsContext::OnDisallowedDeliveryQuestList |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x08B | ❌ |  | ⬜ |
+| CONTI_MOVE | CField_ContiMove::OnContiMove | field/clientbound/FieldContiMove (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x08C | ✅ | 0x094 | ✅ | 0x097 | ✅ | 0x09C | ✅ | 0x0A4 | ✅ | 0x091 | ✅ |
+| CONTI_STATE | CField_ContiMove::OnContiState | field/clientbound/FieldTransport (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x08D | ✅ | 0x095 | ✅ | 0x098 | ✅ | 0x09D | ✅ | 0x0A5 | ✅ | 0x092 | ✅ |
 | MOVE_PLAYER | CUserRemote::OnMove | character/clientbound/CharacterMovement (T1) |  | ⬜ | 0x08D | ✅ | 0x0A7 | ✅ | 0x0AB | ✅ | 0x0B9 | ✅ | 0x0BD | ✅ | 0x0C6 | ✅ | 0x0D2 | ✅ | 0x0BF | ✅ |
 | CLOSE_RANGE_ATTACK | CUserRemote::OnAttack | character/clientbound/Attack (T1) |  | ⬜ | 0x08E | ✅ | 0x0A8 | ✅ | 0x0AC | ✅ | 0x0BA | ✅ | 0x0BE | ✅ | 0x0C7 | ✅ | 0x0D3 | ✅ | 0x0C0 | ✅ |
 | RANGED_ATTACK | CUserRemote::OnAttack | character/clientbound/Attack (T1) |  | ⬜ | 0x08F | ✅ | 0x0A9 | ✅ | 0x0AD | ✅ | 0x0BB | ✅ | 0x0BF | ✅ | 0x0C8 | ✅ | 0x0D4 | ✅ | 0x0C1 | ✅ |
 | MAGIC_ATTACK | CUserRemote::OnAttack | character/clientbound/Attack (T1) |  | ⬜ | 0x090 | ✅ | 0x0AA | ✅ | 0x0AE | ✅ | 0x0BC | ✅ | 0x0C0 | ✅ | 0x0C9 | ✅ | 0x0D5 | ✅ | 0x0C2 | ✅ |
 | ENERGY_ATTACK | CUserRemote::OnAttack | character/clientbound/Attack (T1) |  | ⬜ | 0x091 | ✅ | 0x0AB | ✅ | 0x0AF | ✅ | 0x0BD | ✅ | 0x0C1 | ✅ | 0x0CA | ✅ | 0x0D6 | ✅ | 0x0C3 | ✅ |
 | SKILL_EFFECT | CUserRemote::OnSkillPrepare | character/clientbound/CharacterSkillPrepareForeign (T1) |  | ⬜ | 0x092 | ✅ | 0x0AC | ✅ | 0x0B0 | ✅ | 0x0BE | ✅ | 0x0C2 | ✅ | 0x0CB | ✅ | 0x0D7 | ✅ | 0x0C4 | ✅ |
+| ARIANT_ARENA_SHOW_RESULT | CField_AriantArena::OnShowResult | field/clientbound/FieldAriantArenaShowResult (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x093 | ✅ | 0x09B | ✅ | 0x09E | ✅ | 0x0A3 | ✅ | 0x0AB | ✅ | 0x097 | ✅ |
 | CANCEL_SKILL_EFFECT | CUserRemote::OnSkillCancel; sub_980BF5 | character/clientbound/CharacterSkillCancelForeign (T1) |  | ⬜ | 0x093 | ✅ | 0x0AD | ✅ | 0x0B1 | ✅ | 0x0BF | ✅ | 0x0C3 | ✅ | 0x0CC | ✅ | 0x0D9 | ✅ | 0x0C5 | ✅ |
 | CHATTEXT1 | CUser::OnChat | chat/clientbound/ChatGeneralChat |  | ⬜ |  | ⬜ | 0x094 | ❌ | 0x098 | ❌ | 0x0A3 | ❌ | 0x0A6 | ❌ | 0x0AE | ❌ | 0x0B6 | ✅ | 0x0A1 | ✅ |
-| CONTI_MOVE | CField_ContiMove::OnContiMove | field/clientbound/FieldContiMove (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x094 | ✅ | 0x097 | ✅ | 0x09C | ✅ | 0x0A4 | ✅ | 0x091 | ✅ |
 | DAMAGE_PLAYER | CUserRemote::OnHit | character/clientbound/CharacterDamage (T1) |  | ⬜ | 0x094 | ✅ | 0x0AE | ✅ | 0x0B2 | ✅ | 0x0C0 | ✅ | 0x0C4 | ✅ | 0x0CD | ✅ | 0x0DA | ✅ | 0x0C6 | ✅ |
-| CONTI_STATE | CField_ContiMove::OnContiState | field/clientbound/FieldTransport (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x095 | ✅ | 0x098 | ✅ | 0x09D | ✅ | 0x0A5 | ✅ | 0x092 | ✅ |
 | FACIAL_EXPRESSION | CAvatar::SetEmotion; CUser::OnEmotion | character/clientbound/CharacterExpression (T1) |  | ⬜ | 0x095 | ✅ | 0x0AF | ✅ | 0x0B3 | ✅ | 0x0C1 | ✅ | 0x0C5 | ✅ | 0x0CE | ✅ | 0x0DB | ✅ | 0x0C7 | ✅ |
 | SHOW_ITEM_EFFECT | CUser::SetActiveEffectItem; CUserRemote::OnSetActiveEffectItem |  |  | ⬜ | 0x096 | ❌ | 0x0B0 | ❌ | 0x0B4 | ❌ | 0x0C2 | ❌ | 0x0C6 | ❌ | 0x0CF | ❌ | 0x0DC | ❌ | 0x0C8 | ❌ |
 | SHOW_CHAIR | CUserRemote::OnSetActivePortableChair | character/clientbound/CharacterChairShow (T1) |  | ⬜ | 0x097 | ✅ | 0x0B2 | ✅ | 0x0B6 | ✅ | 0x0C4 | ✅ | 0x0C8 | ✅ | 0x0D1 | ✅ | 0x0DE | ✅ | 0x0CA | ✅ |
@@ -262,7 +263,6 @@ Tool: `aafe52293aa7d281d57743c027833416a49c2640d8ec4f009010c855e55820b8`
 | UPDATE_CHAR_LOOK | CUserRemote::OnAvatarModified | character/clientbound/CharacterAppearanceUpdate (T1) |  | ⬜ | 0x098 | ✅ | 0x0B3 | ✅ | 0x0B7 | ✅ | 0x0C5 | ✅ | 0x0C9 | ✅ | 0x0D2 | ✅ | 0x0DF | ✅ | 0x0CB | ✅ |
 | SHOW_FOREIGN_EFFECT | CUser::OnEffect | character/clientbound/EffectQuest (T1) |  | ⬜ | 0x099 | ✅ | 0x0B4 | ✅ | 0x0B8 | ✅ | 0x0C6 | ✅ | 0x0CA | ✅ | 0x0D3 | ✅ | 0x0E0 | ✅ | 0x0CC | ✅ |
 | GIVE_FOREIGN_BUFF | CUserRemote::OnSetTemporaryStat | character/clientbound/BuffGiveForeign (T1) |  | ⬜ | 0x09A | ✅ | 0x0B5 | ✅ | 0x0B9 | ✅ | 0x0C7 | ✅ | 0x0CB | ✅ | 0x0D4 | ✅ | 0x0E1 | ✅ | 0x0CD | ✅ |
-| ARIANT_ARENA_SHOW_RESULT | CField_AriantArena::OnShowResult | field/clientbound/FieldAriantArenaShowResult (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x09B | ✅ | 0x09E | ✅ | 0x0A3 | ✅ | 0x0AB | ✅ | 0x097 | ✅ |
 | CANCEL_FOREIGN_BUFF | CUserRemote::OnResetTemporaryStat | character/clientbound/BuffCancelForeign (T1) |  | ⬜ | 0x09B | 🟡ᶠ | 0x0B6 | 🟡ᶠ | 0x0BA | 🟡ᶠ | 0x0C8 | ✅ | 0x0CC | ✅ | 0x0D5 | ✅ | 0x0E2 | ✅ | 0x0CE | ✅ |
 | UPDATE_PARTYMEMBER_HP | CUserRemote::OnReceiveHP | party/clientbound/PartyMemberHP (T1) |  | ⬜ | 0x09C | ✅ | 0x0B7 | ✅ | 0x0BB | ✅ | 0x0C9 | ✅ | 0x0CD | ✅ | 0x0D6 | ✅ | 0x0E3 | ✅ | 0x0CF | ✅ |
 | GUILD_NAME_CHANGED | CUserRemote::OnGuildNameChanged | guild/clientbound/GuildForeignNameChanged (T1) |  | ⬜ | 0x09D | ✅ | 0x0B8 | ✅ | 0x0BC | ✅ | 0x0CA | ✅ | 0x0CE | ✅ | 0x0D7 | ✅ | 0x0E4 | ✅ | 0x0D0 | ✅ |
@@ -407,56 +407,63 @@ Tool: `aafe52293aa7d281d57743c027833416a49c2640d8ec4f009010c855e55820b8`
 | CASHSHOP_CASH_ITEM_GACHAPON_RESULT | CCashShop::OnCashItemGachaponResult |  | 0x101 | ❌ | 0x100 | ❌ | 0x124 | ❌ |  | ⬜ | 0x14D | ❌ | 0x154 | ❌ | 0x15E | ❌ | 0x188 | ❌ | 0x16D | ❌ |
 | CASHSHOP_CHECK_NAME_CHANGE | CCashShop::OnCheckDuplicatedIDResult; CCashShop::OnCheckNameChangePossibleResult; sub_455A7F; sub_463900; sub_473519 |  | 0x102 | ❌ | 0x101 | ❌ | 0x125 | ❌ | 0x131 | ❌ | 0x148 | ❌ | 0x14F | ❌ | 0x159 | ❌ | 0x183 | ❌ |  | ⬜ |
 | CASHSHOP_GACHAPON_STAMP_RESULT | CCashShop::OnCashShopGachaponStampResult |  | 0x103 | ❌ | 0x102 | ❌ | 0x126 | ❌ | 0x135 | ❌ | 0x14C | ❌ | 0x153 | ❌ | 0x15D | ❌ | 0x187 | ❌ | 0x16B | ❌ |
+| SNOWBALL_STATE | CField_SnowBall::OnSnowBallState | field/clientbound/FieldSnowballState (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x103 | ✅ | 0x119 | ✅ | 0x120 | ✅ | 0x12A | ✅ | 0x152 | ✅ | 0x131 | ✅ |
+| HIT_SNOWBALL | CField_SnowBall::OnSnowBallHit | field/clientbound/FieldSnowballHit (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x104 | ✅ | 0x11A | ✅ | 0x121 | ✅ | 0x12B | ✅ | 0x153 | ✅ | 0x132 | ✅ |
 | CASHSHOP_CHECK_TRANSFER_WORLD_POSSIBLE_RESULT | CCashShop::OnCheckTransferWorldPossibleResult |  | 0x105 | ❌ | 0x104 | ❌ | 0x128 | ❌ | 0x134 | ❌ | 0x14B | ❌ | 0x152 | ❌ | 0x15C | ❌ | 0x186 | ❌ | 0x16C | ❌ |
 | MOB_SKILL_DELAY | CMob::OnMobSkillDelay | monster/clientbound/MonsterMobSkillDelay (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x105 | ✅ | 0x10F | ✅ | 0x12F | ✅ | 0x10F | ✅ |
+| SNOWBALL_MESSAGE | CField_SnowBall::OnSnowBallMsg | field/clientbound/FieldSnowballMessage (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x105 | ✅ | 0x11B | ✅ | 0x122 | ✅ | 0x12C | ✅ | 0x154 | ✅ | 0x133 | ✅ |
 | KEYMAP | CFuncKeyMappedMan::OnInit | character/clientbound/CharacterKeyMap (T1) |  | ⬜ | 0x106 | ✅ | 0x12A | ✅ | 0x137 | ✅ | 0x14F | ✅ | 0x158 | ✅ | 0x163 | ✅ | 0x18E | ✅ | 0x170 | ✅ |
+| LEFT_KNOCK_BACK | CField_SnowBall::OnSnowBallTouch | field/clientbound/FieldSnowballTouch (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x106 | ✅ | 0x11C | ✅ | 0x123 | ✅ | 0x12D | ✅ | 0x155 | ✅ | 0x134 | ✅ |
 | AUTO_HP_POT | CFuncKeyMappedMan::OnPetConsumeItemInit | character/clientbound/CharacterKeyMapAutoHp (T1) |  | ⬜ | 0x107 | 🟡ᶠ | 0x12B | 🟡ᶠ | 0x138 | 🟡ᶠ | 0x150 | ✅ | 0x159 | ✅ | 0x164 | ✅ | 0x18F | ✅ | 0x171 | ✅ |
+| COCONUT_HIT | CField_Coconut::OnCoconutHit | field/clientbound/FieldCoconutHit (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x107 | ✅ | 0x11D | ✅ | 0x124 | ✅ | 0x12E | ✅ | 0x156 | ✅ | 0x135 | ✅ |
 | AUTO_MP_POT | CFuncKeyMappedMan::OnPetConsumeMPItemInit | character/clientbound/CharacterKeyMapAutoMp (T1) |  | ⬜ | 0x108 | 🟡ᶠ | 0x12C | 🟡ᶠ | 0x139 | 🟡ᶠ | 0x151 | ✅ | 0x15A | ✅ | 0x165 | ✅ | 0x190 | ✅ | 0x172 | ✅ |
+| COCONUT_SCORE | CField_Coconut::OnCoconutScore | field/clientbound/FieldCoconutScore (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x108 | ✅ | 0x11E | ✅ | 0x125 | ✅ | 0x12F | ✅ | 0x157 | ✅ | 0x136 | ✅ |
+| GUILD_BOSS_HEALER_MOVE | CField_GuildBoss::OnHealerMove | field/clientbound/FieldGuildBossHealerMove (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x109 | ✅ | 0x11F | ✅ | 0x126 | ✅ | 0x130 | ✅ | 0x158 | ✅ | 0x137 | ✅ |
+| GUILD_BOSS_PULLEY_STATE_CHANGE | CField_GuildBoss::OnPulleyStateChange | field/clientbound/FieldGuildBossPulleyStateChange (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x10A | ✅ | 0x120 | ✅ | 0x127 | ✅ | 0x131 | ✅ | 0x159 | ✅ | 0x138 | ✅ |
 | IDA_0X10A | CUserLocal::OnGoToCommoditySN |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x10A | ❌ |  | ⬜ |
 | IDA_0X10B | CUserLocal::OnDamageMeter |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x10B | ❌ |  | ⬜ |
+| MONSTER_CARNIVAL_START | CField_MonsterCarnival::OnEnter | monster/carnival/clientbound/MonsterCarnivalStart (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x10B | ✅ | 0x121 | ✅ | 0x128 | ✅ | 0x132 | ✅ | 0x15A | ✅ | 0x139 | ✅ |
 | IDA_0X10C | CUserLocal::OnTimeBombAttack |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x10C | ❌ |  | ⬜ |
+| MONSTER_CARNIVAL_OBTAINED_CP | CField_MonsterCarnival::OnPersonalCP | monster/carnival/clientbound/MonsterCarnivalObtainedCP (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x10C | ✅ | 0x122 | ✅ | 0x129 | ✅ | 0x133 | ✅ | 0x15B | ✅ | 0x13A | ✅ |
 | SEND_TV | CMapleTVMan::OnSetMessage; sub_59BD98 |  |  | ⬜ | 0x10C | ❌ | 0x130 | ❌ | 0x13D | ❌ | 0x155 | ❌ | 0x15F | ❌ | 0x16A | ❌ | 0x195 | ❌ | 0x17A | ❌ |
 | IDA_0X10D | CUser::OnPassiveMove |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x10D | ❌ |  | ⬜ |
+| MONSTER_CARNIVAL_PARTY_CP | CField_MonsterCarnival::OnTeamCP | monster/carnival/clientbound/MonsterCarnivalPartyCP (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x10D | ✅ | 0x123 | ✅ | 0x12A | ✅ | 0x134 | ✅ | 0x15C | ✅ | 0x13B | ✅ |
 | REMOVE_TV | CMapleTVMan::OnClearMessage; sub_59BD84 |  |  | ⬜ | 0x10D | ❌ | 0x131 | ❌ | 0x13E | ❌ | 0x156 | ❌ | 0x160 | ❌ | 0x16B | ❌ | 0x196 | ❌ | 0x17B | ❌ |
 | ZAKUM_SHRINE | CField::OnZakumTimer | field/clientbound/FieldZakumShrine (T1) |  | ⬜ |  | ⬜ | 0x10D | 🟡ᶠ | 0x119 | 🟡ᶠ | 0x12F | ✅ | 0x136 | ✅ | 0x140 | ✅ | 0x16A | ✅ | 0x148 | ✅ |
 | ENABLE_TV | CMapleTVMan::OnSendMessageResult; sub_59BF77 |  |  | ⬜ | 0x10E | ❌ | 0x132 | ❌ | 0x13F | ❌ | 0x157 | ❌ | 0x161 | ❌ | 0x16C | ❌ | 0x197 | ❌ | 0x17C | ❌ |
 | FOLLOW_CHARACTER_FAILED | CUserLocal::OnFollowCharacterFailed |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x10E | ❌ |  | ⬜ |
+| MONSTER_CARNIVAL_SUMMON | CField_MonsterCarnival::OnRequestResult | monster/carnival/clientbound/MonsterCarnivalMessage (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x10E | ✅ | 0x124 | ✅ | 0x12B | ✅ | 0x135 | ✅ | 0x15D | ✅ | 0x13C | ✅ |
 | IDA_0X10F | CUserLocal::OnVengeanceSkillApply |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x10F | ❌ |  | ⬜ |
+| MONSTER_CARNIVAL_MESSAGE | CField_MonsterCarnival::OnRequestResult | monster/carnival/clientbound/MonsterCarnivalMessage (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x10F | ✅ | 0x125 | ✅ | 0x12C | ✅ | 0x136 | ✅ | 0x15E | ✅ | 0x13D | ✅ |
 | IDA_0X110 | CUserLocal::OnExJablinApply |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x110 | ❌ |  | ⬜ |
+| MONSTER_CARNIVAL_DIED | CField_MonsterCarnival::OnProcessForDeath | monster/carnival/clientbound/MonsterCarnivalDied (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x110 | ✅ | 0x126 | ✅ | 0x12D | ✅ | 0x137 | ✅ | 0x15F | ✅ | 0x13E | ✅ |
 | ADMIN_SHOP_MESSAGE | CAdminShopDlg::OnPacket |  |  | ⬜ |  | ⬜ | 0x111 | ❌ | 0x11D | ❌ | 0x133 | ❌ | 0x13A | ❌ | 0x144 | ❌ | 0x16E | ❌ | 0x14C | ❌ |
 | IDA_0X111 | CUserLocal::OnAskAPSPEvent |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x111 | ❌ |  | ⬜ |
+| MONSTER_CARNIVAL_LEAVE | CField_MonsterCarnival::OnShowMemberOutMsg | monster/carnival/clientbound/MonsterCarnivalLeave (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x111 | ✅ | 0x127 | ✅ | 0x12E | ✅ | 0x138 | ✅ | 0x160 | ✅ | 0x13F | ✅ |
 | MTS_CHARGE_PARAM_RESULT | CITC::OnChargeParamResult |  |  | ⬜ | 0x111 | ✅ | 0x135 | ✅ | 0x142 | ✅ | 0x15A | ✅ | 0x164 | ✅ | 0x16F | ✅ | 0x19A | ✅ |  | ⬜ |
 | IDA_0X112 | CUserLocal::OnQuestGuideResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x112 | ❌ |  | ⬜ |
+| MONSTER_CARNIVAL_RESULT | CField_MonsterCarnival::OnShowGameResult | monster/carnival/clientbound/MonsterCarnivalResult (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x112 | ✅ | 0x128 | ✅ | 0x12F | ✅ | 0x139 | ✅ | 0x161 | ✅ | 0x140 | ✅ |
+| ARIANT_ARENA_USER_SCORE | CField_AriantArena::OnUserScore | field/clientbound/FieldAriantArenaUserScore (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x113 | ✅ | 0x129 | ✅ | 0x130 | ✅ | 0x13A | ✅ | 0x162 | ✅ | 0x141 | ✅ |
 | IDA_0X113 | CUserLocal::OnDeliveryQuest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x113 | ❌ |  | ⬜ |
 | IDA_0X114 | CMob::OnMobAttackedByMob | monster/clientbound/MonsterMobAttackedByMob (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x114 | ✅ |
 | REACTOR_MOVE | CReactorPool::OnReactorMove |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x116 | ❌ | 0x116 | ❌ | 0x127 | ❌ | 0x14F | ❌ | 0x12E | ❌ |
-| SNOWBALL_STATE | CField_SnowBall::OnSnowBallState | field/clientbound/FieldSnowballState (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x119 | ✅ | 0x120 | ✅ | 0x12A | ✅ | 0x152 | ✅ | 0x131 | ✅ |
-| HIT_SNOWBALL | CField_SnowBall::OnSnowBallHit | field/clientbound/FieldSnowballHit (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x11A | ✅ | 0x121 | ✅ | 0x12B | ✅ | 0x153 | ✅ | 0x132 | ✅ |
+| WITCH_TOWER_SCORE_UPDATE | CField::OnChaosZakumTimer; CField_Witchtower::OnScoreUpdate | field/clientbound/FieldWitchTowerScoreUpdate (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x117 | ✅ | 0x12D | ✅ | 0x134 | ✅ | 0x13E | ✅ | 0x168 | ✅ | 0x146 | ✅ |
 | IDA_0X11A | CNpc::OnUpdateLimitedInfo |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x11A | ❌ |
 | IDA_0X11B | CNpc::OnSetSpecialAction |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x11B | ❌ |
-| SNOWBALL_MESSAGE | CField_SnowBall::OnSnowBallMsg | field/clientbound/FieldSnowballMessage (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x11B | ✅ | 0x122 | ✅ | 0x12C | ✅ | 0x154 | ✅ | 0x133 | ✅ |
-| LEFT_KNOCK_BACK | CField_SnowBall::OnSnowBallTouch | field/clientbound/FieldSnowballTouch (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x11C | ✅ | 0x123 | ✅ | 0x12D | ✅ | 0x155 | ✅ | 0x134 | ✅ |
-| COCONUT_HIT | CField_Coconut::OnCoconutHit | field/clientbound/FieldCoconutHit (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x11D | ✅ | 0x124 | ✅ | 0x12E | ✅ | 0x156 | ✅ | 0x135 | ✅ |
-| COCONUT_SCORE | CField_Coconut::OnCoconutScore | field/clientbound/FieldCoconutScore (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x11E | ✅ | 0x125 | ✅ | 0x12F | ✅ | 0x157 | ✅ | 0x136 | ✅ |
-| GUILD_BOSS_HEALER_MOVE | CField_GuildBoss::OnHealerMove | field/clientbound/FieldGuildBossHealerMove (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x11F | ✅ | 0x126 | ✅ | 0x130 | ✅ | 0x158 | ✅ | 0x137 | ✅ |
-| GUILD_BOSS_PULLEY_STATE_CHANGE | CField_GuildBoss::OnPulleyStateChange | field/clientbound/FieldGuildBossPulleyStateChange (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x120 | ✅ | 0x127 | ✅ | 0x131 | ✅ | 0x159 | ✅ | 0x138 | ✅ |
 | PARCEL | CParcelDlg::OnPacket |  |  | ⬜ |  | ⬜ | 0x120 | ❌ | 0x12C | ❌ | 0x142 | ❌ | 0x149 | ❌ | 0x153 | ❌ | 0x17D | ❌ | 0x160 | ❌ |
-| MONSTER_CARNIVAL_START | CField_MonsterCarnival::OnEnter | monster/carnival/clientbound/MonsterCarnivalStart (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x121 | ✅ | 0x128 | ✅ | 0x132 | ✅ | 0x15A | ✅ | 0x139 | ✅ |
-| MONSTER_CARNIVAL_OBTAINED_CP | CField_MonsterCarnival::OnPersonalCP | monster/carnival/clientbound/MonsterCarnivalObtainedCP (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x122 | ✅ | 0x129 | ✅ | 0x133 | ✅ | 0x15B | ✅ | 0x13A | ✅ |
-| MONSTER_CARNIVAL_PARTY_CP | CField_MonsterCarnival::OnTeamCP | monster/carnival/clientbound/MonsterCarnivalPartyCP (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x123 | ✅ | 0x12A | ✅ | 0x134 | ✅ | 0x15C | ✅ | 0x13B | ✅ |
-| MONSTER_CARNIVAL_SUMMON | CField_MonsterCarnival::OnRequestResult | monster/carnival/clientbound/MonsterCarnivalMessage (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x124 | ✅ | 0x12B | ✅ | 0x135 | ✅ | 0x15D | ✅ | 0x13C | ✅ |
-| MONSTER_CARNIVAL_MESSAGE | CField_MonsterCarnival::OnRequestResult | monster/carnival/clientbound/MonsterCarnivalMessage (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x125 | ✅ | 0x12C | ✅ | 0x136 | ✅ | 0x15E | ✅ | 0x13D | ✅ |
-| MONSTER_CARNIVAL_DIED | CField_MonsterCarnival::OnProcessForDeath | monster/carnival/clientbound/MonsterCarnivalDied (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x126 | ✅ | 0x12D | ✅ | 0x137 | ✅ | 0x15F | ✅ | 0x13E | ✅ |
-| MONSTER_CARNIVAL_LEAVE | CField_MonsterCarnival::OnShowMemberOutMsg | monster/carnival/clientbound/MonsterCarnivalLeave (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x127 | ✅ | 0x12E | ✅ | 0x138 | ✅ | 0x160 | ✅ | 0x13F | ✅ |
-| MONSTER_CARNIVAL_RESULT | CField_MonsterCarnival::OnShowGameResult | monster/carnival/clientbound/MonsterCarnivalResult (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x128 | ✅ | 0x12F | ✅ | 0x139 | ✅ | 0x161 | ✅ | 0x140 | ✅ |
-| ARIANT_ARENA_USER_SCORE | CField_AriantArena::OnUserScore | field/clientbound/FieldAriantArenaUserScore (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x129 | ✅ | 0x130 | ✅ | 0x13A | ✅ | 0x162 | ✅ | 0x141 | ✅ |
+| TOURNAMENT | CField_Tournament::OnTournament | field/clientbound/FieldTournament (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x125 | ✅ | 0x13B | ✅ | 0x142 | ✅ | 0x14C | ✅ | 0x176 | ✅ | 0x154 | ✅ |
+| TOURNAMENT_MATCH_TABLE | CField_Tournament::OnTournamentMatchTable | field/clientbound/FieldTournamentMatchTable (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x126 | ✅ | 0x13C | ✅ | 0x143 | ✅ | 0x14D | ✅ | 0x177 | ✅ | 0x155 | ✅ |
+| TOURNAMENT_SET_PRIZE | CField_Tournament::OnTournamentSetPrize | field/clientbound/FieldTournamentSetPrize (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x127 | ✅ | 0x13D | ✅ | 0x144 | ✅ | 0x14E | ✅ | 0x178 | ✅ | 0x156 | ✅ |
+| TOURNAMENT_UEW | CField_Tournament::OnTournamentUEW | field/clientbound/FieldTournamentUew (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x128 | ✅ | 0x13E | ✅ | 0x145 | ✅ | 0x14F | ✅ | 0x179 | ✅ | 0x157 | ✅ |
+| TOURNAMENT_CHARACTERS | CField_Tournament::OnPacket | field/clientbound/FieldTournamentCharacters (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x129 | ✅ | 0x13F | ✅ | 0x146 | ✅ | 0x150 | ✅ | 0x17A | ✅ | 0x158 | ✅ |
 | IDA_0X12A | sub_5FD42F |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x12A | ❌ |
+| WEDDING_PROGRESS | CField_Wedding::OnWeddingProgress | field/serverbound/FieldWeddingAction (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x12A | ✅ | 0x140 | ✅ | 0x147 | ✅ | 0x151 | ✅ | 0x17B | ✅ | 0x159 | ✅ |
 | IDA_0X12B | sub_5FE06B |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x12B | ❌ |
 | SHEEP_RANCH_INFO | CField_Battlefield::OnScoreUpdate | field/clientbound/FieldSheepRanchInfo (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x12B | ✅ | 0x132 | ✅ | 0x13C | ✅ | 0x164 | ✅ | 0x143 | ✅ |
+| WEDDING_CEREMONY_END | CField_Wedding::OnWeddingCeremonyEnd | field/clientbound/FieldWeddingCeremonyEnd (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x12B | ✅ | 0x141 | ✅ | 0x148 | ✅ | 0x152 | ✅ | 0x17C | ✅ | 0x15A | ✅ |
 | IDA_0X12C | sub_5FDCF1 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x12C | ❌ |
 | SHEEP_RANCH_CLOTHES | CField_Battlefield::OnTeamChanged | field/clientbound/FieldSheepRanchClothes (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x12C | ✅ | 0x133 | ✅ | 0x13D | ✅ | 0x165 | ✅ | 0x144 | ✅ |
 | CHARGE_PARAM_RESULT | CCashShop::OnChargeParamResult |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x12D | ❌ | 0x143 | ❌ | 0x14A | ❌ | 0x154 | ❌ | 0x17E | ❌ | 0x161 | ❌ |
-| WITCH_TOWER_SCORE_UPDATE | CField::OnChaosZakumTimer; CField_Witchtower::OnScoreUpdate | field/clientbound/FieldWitchTowerScoreUpdate (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x12D | ✅ | 0x134 | ✅ | 0x13E | ✅ | 0x168 | ✅ | 0x146 | ✅ |
 | QUERY_CASH_RESULT | CCashShop::OnQueryCashResult | cash/clientbound/CashQueryResult (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x12E | 🟡ᶠ | 0x144 | ✅ | 0x14B | ✅ | 0x155 | ✅ | 0x17F | ✅ | 0x163 | ✅ |
 | CASHSHOP_PURCHASE_EXP_CHANGED | CCashShop::OnPurchaseExpChanged |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x130 | ❌ | 0x146 | ❌ | 0x14D | ❌ | 0x157 | ❌ | 0x181 | ❌ | 0x165 | ❌ |
 | MOB_ESCORT_FULL_PATH | CMob::OnEscortFullPath | monster/clientbound/MonsterMobEscortFullPath (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x130 | ✅ | 0x110 | ✅ |
@@ -465,22 +472,15 @@ Tool: `aafe52293aa7d281d57743c027833416a49c2640d8ec4f009010c855e55820b8`
 | MOB_ESCORT_STOP_SAY | CMob::OnEscortStopSay | monster/clientbound/MonsterMobEscortStopSay (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x132 | ✅ | 0x112 | ✅ |
 | MOB_ESCORT_RETURN_BEFORE | CMob::OnEscortReturnBefore | monster/clientbound/MonsterMobEscortReturnBefore (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x133 | ✅ | 0x113 | ✅ |
 | MOB_NEXT_ATTACK | CMob::OnNextAttack | monster/clientbound/MonsterMobNextAttack (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x134 | ✅ |  | ⬜ |
-| TOURNAMENT | CField_Tournament::OnTournament | field/clientbound/FieldTournament (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x13B | ✅ | 0x142 | ✅ | 0x14C | ✅ | 0x176 | ✅ | 0x154 | ✅ |
-| TOURNAMENT_MATCH_TABLE | CField_Tournament::OnTournamentMatchTable | field/clientbound/FieldTournamentMatchTable (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x13C | ✅ | 0x143 | ✅ | 0x14D | ✅ | 0x177 | ✅ | 0x155 | ✅ |
-| TOURNAMENT_SET_PRIZE | CField_Tournament::OnTournamentSetPrize | field/clientbound/FieldTournamentSetPrize (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x13D | ✅ | 0x144 | ✅ | 0x14E | ✅ | 0x178 | ✅ | 0x156 | ✅ |
-| TOURNAMENT_UEW | CField_Tournament::OnTournamentUEW | field/clientbound/FieldTournamentUew (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x13E | ✅ | 0x145 | ✅ | 0x14F | ✅ | 0x179 | ✅ | 0x157 | ✅ |
-| TOURNAMENT_CHARACTERS | CField_Tournament::OnPacket | field/clientbound/FieldTournamentCharacters (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x13F | ✅ | 0x146 | ✅ | 0x150 | ✅ | 0x17A | ✅ | 0x158 | ✅ |
-| WEDDING_PROGRESS | CField_Wedding::OnWeddingProgress | field/serverbound/FieldWeddingAction (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x140 | ✅ | 0x147 | ✅ | 0x151 | ✅ | 0x17B | ✅ | 0x159 | ✅ |
-| WEDDING_CEREMONY_END | CField_Wedding::OnWeddingCeremonyEnd | field/clientbound/FieldWeddingCeremonyEnd (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x141 | ✅ | 0x148 | ✅ | 0x152 | ✅ | 0x17C | ✅ | 0x15A | ✅ |
+| MTS_OPERATION2 | CField::OnCharacterSale; CITC::OnQueryCashResult | field/clientbound/FieldMtsOperation2 (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x143 | ✅ | 0x15B | ✅ | 0x15B | ✅ | 0x170 | ✅ | 0x19B | ✅ |  | ⬜ |
+| MTS_OPERATION | CField::OnCharacterSale; CITC::OnNormalItemResult | field/clientbound/FieldMtsResultBidAuctionFailed (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x144 | ✅ | 0x15C | ✅ | 0x15C | ✅ | 0x171 | ✅ | 0x19C | ✅ |  | ⬜ |
 | CASHSHOP_GIFT_INFO_RESULT | CCashShop::OnGiftMateInfoResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x147 | ❌ | 0x14E | ❌ | 0x158 | ❌ | 0x182 | ❌ | 0x166 | ❌ |
 | CASHSHOP_REGISTER_NEW_CHARACTER_RESULT |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x14A | ❌ | 0x151 | ❌ | 0x15B | ❌ | 0x185 | ❌ |  | ⬜ |
 | VICIOUS_HAMMER | CField::OnItemUpgrade | field/clientbound/FieldViciousHammerFailure (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x14A | ✅ | 0x162 | ✅ | 0x16C | ✅ | 0x177 | ✅ | 0x1A9 | ✅ |  | ⬜ |
 | OPEN_GATE_CREATED | COpenGatePool::OnOpenGateCreated |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x14C | ❌ |  | ⬜ |
 | OPEN_GATE_REMOVED | COpenGatePool::OnOpenGateRemoved |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x14D | ❌ |  | ⬜ |
 | CASHSHOP_CASH_GACHAPON_OPEN_RESULT | CCashShop::OnCashItemGachaponResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x14E | ❌ | 0x155 | ❌ | 0x15F | ❌ | 0x189 | ❌ |  | ⬜ |
-| MTS_OPERATION2 | CField::OnCharacterSale; CITC::OnQueryCashResult | field/clientbound/FieldMtsOperation2 (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15B | ✅ | 0x15B | ✅ | 0x170 | ✅ | 0x19B | ✅ |  | ⬜ |
 | TIP_BEANS |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15B | ❌ |
-| MTS_OPERATION | CField::OnCharacterSale; CITC::OnNormalItemResult | field/clientbound/FieldMtsResultBidAuctionFailed (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15C | ✅ | 0x15C | ✅ | 0x171 | ✅ | 0x19C | ✅ |  | ⬜ |
 | OPEN_BEANS |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15C | ❌ |
 | MAPLELIFE_RESULT | CUICharacterSaleDlg::OnCheckDuplicatedIDResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15D | ❌ | 0x15D | ❌ | 0x172 | ❌ | 0x19D | ❌ |  | ⬜ |
 | SHOOT_BEANS |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15D | ❌ |
@@ -600,14 +600,15 @@ Tool: `aafe52293aa7d281d57743c027833416a49c2640d8ec4f009010c855e55820b8`
 | PET_FOOD | CWvsContext::SendPetFoodItemUseRequest; sub_8325D2 | pet/serverbound/PetFood (T1) |  | ⬜ | 0x04B | ❌ | 0x04B | 🟡ᶠ | 0x04A | 🟡ᶠ | 0x04C | ✅ | 0x04C | ✅ | 0x04F | ✅ | 0x052 | ✅ | 0x044 | ✅ |
 | CHAR_INFO_REQUEST | CWvsContext::SendCharacterInfoRequest; sub_71D059; sub_845B68 | character/serverbound/InfoRequest (T1) | 0x04C | ✅ | 0x059 | ✅ | 0x060 | ✅ | 0x05F | ✅ | 0x061 | ✅ | 0x061 | ✅ | 0x064 | ✅ | 0x06D | ✅ | 0x05C | ✅ |
 | USE_MOUNT_FOOD | CWvsContext::SendTamingMobFoodItemUseRequest; sub_832680; sub_955781 |  |  | ⬜ | 0x04C | ❌ | 0x04C | ❌ | 0x04B | ❌ | 0x04D | ❌ | 0x04D | ❌ | 0x050 | ❌ | 0x053 | ❌ | 0x045 | ❌ |
+| USE_TELEPORT_ROCK | CWvsContext::SendMapTransferItemUseRequest; sub_8327DB; sub_904D5E; sub_9560C6 | teleportrock/serverbound/Use (T1) |  | ⬜ | 0x04D | ✅ | 0x053 | ✅ | 0x052 | ✅ | 0x054 | ✅ | 0x054 | ✅ | 0x057 | ✅ | 0x05B | ✅ | 0x04C | ✅ |
 | SCRIPTED_ITEM | CWvsContext::SendScriptRunItemRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x04E | ❌ | 0x04E | ❌ | 0x051 | ❌ | 0x054 | ❌ | 0x046 | ❌ |
-| USE_RETURN_SCROLL | CWvsContext::SendMapTransferItemUseRequest; CWvsContext::SendPortalScrollUseRequest; sub_841AA5 |  |  | ⬜ | 0x04E | ❌ | 0x054 | ❌ | 0x053 | ❌ | 0x055 | ❌ | 0x055 | ❌ | 0x058 | ❌ | 0x05C | ❌ | 0x04D | ❌ |
+| USE_RETURN_SCROLL | CWvsContext::SendPortalScrollUseRequest; CWvsContext::SendReturnScrollUseRequest; sub_841AA5 |  |  | ⬜ | 0x04E | ❌ | 0x054 | ❌ | 0x053 | ❌ | 0x055 | ❌ | 0x055 | ❌ | 0x058 | ❌ | 0x05C | ❌ | 0x04D | ❌ |
 | USE_UPGRADE_SCROLL | CWvsContext::SendUpgradeItemUseRequest; sub_954F9B | inventory/serverbound/InventoryScrollUse (T1) |  | ⬜ | 0x04F | ✅ | 0x055 | ✅ | 0x054 | ✅ | 0x056 | ✅ | 0x056 | ✅ | 0x059 | ✅ | 0x05D | ✅ | 0x04E | ✅ |
 | DESTROY_PET_ITEM_REQUEST | CWvsContext::SendActivatePetRequest | pet/serverbound/PetSpawn (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x050 | ❌ | 0x050 | ❌ | 0x053 | ✅ | 0x056 | ✅ | 0x048 | ✅ |
+| TROCK_ADD_MAP | CWvsContext::SendMapTransferRequest; sub_71E7F3; sub_8478EA; sub_91E33E; sub_970286 | teleportrock/serverbound/AddMap | 0x051 | ✅ | 0x05E | ✅ | 0x065 | ✅ | 0x064 | ✅ | 0x066 | ✅ | 0x066 | ✅ | 0x069 | ✅ | 0x072 | ✅ | 0x061 | ✅ |
 | USE_CATCH_ITEM | CWvsContext::SendBridleItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x051 | ❌ | 0x051 | ❌ | 0x054 | ❌ | 0x057 | ❌ | 0x049 | ❌ |
 | USE_SKILL_BOOK | CWvsContext::SendSkillLearnItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x052 | ❌ | 0x052 | ❌ | 0x055 | ❌ | 0x058 | ❌ | 0x04A | ❌ |
 | ANTI_MACRO_RESULT | CUIAdminAntiMacro::SetRet; CUIAntiMacro::SetRet; sub_5F9718; sub_69C480 |  | 0x053 | ❌ | 0x060 | ❌ |  | ⬜ |  | ⬜ | 0x069 | ❌ | 0x069 | ❌ | 0x06C | ❌ | 0x075 | ❌ | 0x064 | ❌ |
-| USE_TELEPORT_ROCK | CWvsContext::SendMapTransferItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x054 | ❌ | 0x054 | ❌ | 0x057 | ❌ | 0x05B | ❌ | 0x04C | ❌ |
 | QUEST_ACTION | CQuest::OnCompleteQuestFailed; CQuest::StartQuest; CWvsContext::ResignQuest; sub_5997EF | quest/serverbound/ActionScriptEnd | 0x055 | ❌ | 0x062 | ❌ | 0x06A | ❌ | 0x069 | ❌ | 0x06B | ✅ | 0x06B | ❌ | 0x06E | ✅ | 0x077 | ✅ | 0x066 | ✅ |
 | MESO_DROP | CWvsContext::SendDropMoneyRequest; sub_8459DD | character/serverbound/DropMeso (T1) |  | ⬜ | 0x056 | ✅ | 0x05D | ✅ | 0x05C | ✅ | 0x05E | ✅ | 0x05E | ✅ | 0x061 | ✅ | 0x06A | ✅ | 0x059 | ✅ |
 | USE_SKILL_RESET_BOOK | CWvsContext::SendSkillResetItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x056 | ❌ | 0x059 | ❌ | 0x04B | ❌ |
@@ -621,7 +622,6 @@ Tool: `aafe52293aa7d281d57743c027833416a49c2640d8ec4f009010c855e55820b8`
 | PLAYER_INTERACTION | CCashTradingRoomDlg::OnTrade; CCashTradingRoomDlg::PutItem; CCashTradingRoomDlg::PutMoney; CCashTradingRoomDlg::SetRet; CCashTradingRoomDlg::Trade; CEntrustedShopDlg::AddBlackList; CEntrustedShopDlg::DeleteBlackList; CEntrustedShopDlg::OnArrange; CEntrustedShopDlg::OnBlackList; CEntrustedShopDlg::OnCorrectSSN2; CEntrustedShopDlg::OnGoOut; CEntrustedShopDlg::OnVisitList; CEntrustedShopDlg::OnWithdrawMoney; CEntrustedShopDlg::SetRet; CField::AddBlackList; CField::DeleteBlackList; CField::SendInviteTradingRoomMsg; CMemoryGameDlg::OnClickBanButton; CMemoryGameDlg::OnClickEndButton; CMemoryGameDlg::OnClickReadyButton; CMemoryGameDlg::OnClickStartButton; CMemoryGameDlg::OnEnterResult; CMemoryGameDlg::OnTieRequest; CMemoryGameDlg::SendClaimGiveUp; CMemoryGameDlg::SendTieRequest; CMemoryGameDlg::SendTurnUpCard; CMemoryGameDlg::Update; CMiniRoomBaseDlg::CheckAndSendChat; CMiniRoomBaseDlg::OnCheckSSN2Static; CMiniRoomBaseDlg::SendCashInviteResult; CMiniRoomBaseDlg::SendInviteResult; COmokDlg::OnClickBanButton; COmokDlg::OnClickEndButton; COmokDlg::OnClickReadyButton; COmokDlg::OnClickStartButton; COmokDlg::OnEnterResult; COmokDlg::OnRetreatRequest; COmokDlg::OnTieRequest; COmokDlg::PutStoneChecker; COmokDlg::SendClaimGiveUp; COmokDlg::SendRetreatRequest; COmokDlg::SendTieRequest; COmokDlg::Update; CPersonalShopDlg::BuyItem; CPersonalShopDlg::CheckCashItemInList; CPersonalShopDlg::DeliverBlackList; CPersonalShopDlg::MoveItemToInventory; CPersonalShopDlg::OnClickBanButton; CPersonalShopDlg::OnCorrectSSN2; CPersonalShopDlg::PutItem; CPersonalShopDlg::SetRet; CPersonalShopDlg::Update; CTradingRoomDlg::OnTrade; CTradingRoomDlg::PutItem; CTradingRoomDlg::PutMoney; CTradingRoomDlg::SetRet; CTradingRoomDlg::Trade; CUserLocal::HandleLButtonDblClk; CUserLocal::HandleRButtonClk; CWvsContext::OnEntrustedShopCheckResult; CWvsContext::SendCreateMiniGameRequest; CWvsContext::SendOpenShopRequest; sub_4EF97F; sub_62298D; sub_69FA53 |  | 0x05D | ❌ | 0x06F | ❌ | 0x079 | ❌ | 0x078 | ❌ | 0x07B | ❌ | 0x07D | ❌ | 0x081 | ❌ | 0x090 | ❌ | 0x07C | ❌ |
 | HYPER_UPGRADE_ITEM_USE | CWvsContext::SendHyperUpgradeItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x05E | ❌ | 0x04F | ❌ |
 | PARTY_OPERATION | CField::SendChangePartyBossMsg; CField::SendCreateNewPartyMsg; CField::SendJoinPartyMsg; CField::SendKickPartyMsg; CField::SendWithdrawPartyMsg; CWvsContext::OnPartyResult | party/serverbound/PartyOperationInvite (T1) | 0x05E | ✅ | 0x070 | 🟡ᶠ | 0x07A | 🟡ᶠ | 0x079 | 🟡ᶠ | 0x07C | ✅ | 0x07E | ✅ | 0x082 | ✅ | 0x091 | ✅ | 0x07D | ✅ |
-| TROCK_ADD_MAP | CWvsContext::SendMapTransferRequest; sub_8478EA |  |  | ⬜ | 0x05E | ❌ |  | ⬜ |  | ⬜ | 0x066 | ❌ | 0x066 | ❌ | 0x069 | ❌ | 0x072 | ❌ | 0x061 | ❌ |
 | DENY_PARTY_REQUEST | CFadeWnd::SendCloseMessage; CWvsContext::OnPartyResult | party/clientbound/PartyAlreadyJoined1 (T1) | 0x05F | ✅ | 0x071 | ✅ | 0x07B | ✅ | 0x07A | ✅ | 0x07D | ❌ | 0x07F | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |
 | ITEM_OPTION_UPGRADE_USE | CWvsContext::SendItemOptionUpgradeItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x05F | ❌ | 0x050 | ❌ |
 | GUILD_OPERATION | CField::InputGuildName; CField::SendCreateGuildAgreeMsg; CField::SendInviteGuildMsg; CField::SendKickGuildMsg; CField::SendSetGradeNameMsg; CField::SendSetGuildMarkMsg; CField::SendSetGuildNoticeMsg; CField::SendSetMemberGradeMsg; CField::SendWithdrawGuildMsg; CUIFadeYesNo::OnButtonClicked; CWvsContext::OnGuildResult | guild/serverbound/GuildAgreementResponse (T1) | 0x060 | ✅ | 0x072 | ❌ | 0x07C | ✅ | 0x07B | ✅ | 0x07E | ✅ | 0x082 | ✅ | 0x086 | ✅ | 0x095 | ✅ | 0x081 | ✅ |
@@ -833,6 +833,7 @@ Tool: `aafe52293aa7d281d57743c027833416a49c2640d8ec4f009010c855e55820b8`
 | buddy/serverbound/BuddyOperationAdd (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | buddy/serverbound/BuddyOperationDelete (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | cash/serverbound/CashItemUsePointReset (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
+| cash/serverbound/CashItemUseTeleportRock (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashShopOperationBuy (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashShopOperationBuyCouple (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashShopOperationBuyFriendship (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -994,15 +995,15 @@ Tool: `aafe52293aa7d281d57743c027833416a49c2640d8ec4f009010c855e55820b8`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 169 | 0 | 2 | 157 | 631 | 0 | 51.5% |
-| v61 | 243 | 0 | 60 | 193 | 463 | 0 | 49.0% |
-| v72 | 253 | 0 | 73 | 211 | 422 | 0 | 47.1% |
-| v79 | 267 | 0 | 72 | 207 | 413 | 0 | 48.9% |
-| v83 | 408 | 0 | 0 | 327 | 224 | 0 | 55.5% |
-| v84 | 380 | 0 | 0 | 335 | 244 | 0 | 53.1% |
-| v87 | 414 | 0 | 0 | 358 | 187 | 0 | 53.6% |
-| v95 | 439 | 0 | 0 | 417 | 103 | 0 | 51.3% |
-| JMS185 | 395 | 0 | 0 | 370 | 194 | 0 | 51.6% |
+| v48 | 171 | 0 | 2 | 157 | 630 | 0 | 51.8% |
+| v61 | 246 | 0 | 60 | 192 | 462 | 0 | 49.4% |
+| v72 | 256 | 0 | 73 | 211 | 420 | 0 | 47.4% |
+| v79 | 300 | 0 | 72 | 207 | 381 | 0 | 51.8% |
+| v83 | 412 | 0 | 0 | 324 | 224 | 0 | 56.0% |
+| v84 | 384 | 0 | 0 | 332 | 244 | 0 | 53.6% |
+| v87 | 418 | 0 | 0 | 355 | 187 | 0 | 54.1% |
+| v95 | 443 | 0 | 0 | 414 | 103 | 0 | 51.7% |
+| JMS185 | 399 | 0 | 0 | 367 | 194 | 0 | 52.1% |
 
 ## Conflicts
 

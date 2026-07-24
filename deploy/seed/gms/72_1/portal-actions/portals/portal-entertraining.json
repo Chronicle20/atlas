@@ -1,0 +1,133 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Maple Road - Entrance to Adventurer Training Center - Warps to appropriate training center based on active quest from Mai",
+      "mapId": 1010000,
+      "portalId": "entertraining",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "operator": "=",
+              "referenceId": "1041",
+              "type": "questStatus",
+              "value": "1"
+            }
+          ],
+          "id": "quest_1041_training_center_1",
+          "onMatch": {
+            "allow": true,
+            "operations": [
+              {
+                "type": "play_portal_sound"
+              },
+              {
+                "params": {
+                  "mapId": "1010100",
+                  "portalId": "4"
+                },
+                "type": "warp"
+              }
+            ]
+          }
+        },
+        {
+          "conditions": [
+            {
+              "operator": "=",
+              "referenceId": "1042",
+              "type": "questStatus",
+              "value": "1"
+            }
+          ],
+          "id": "quest_1042_training_center_2",
+          "onMatch": {
+            "allow": true,
+            "operations": [
+              {
+                "type": "play_portal_sound"
+              },
+              {
+                "params": {
+                  "mapId": "1010200",
+                  "portalId": "4"
+                },
+                "type": "warp"
+              }
+            ]
+          }
+        },
+        {
+          "conditions": [
+            {
+              "operator": "=",
+              "referenceId": "1043",
+              "type": "questStatus",
+              "value": "1"
+            }
+          ],
+          "id": "quest_1043_training_center_3",
+          "onMatch": {
+            "allow": true,
+            "operations": [
+              {
+                "type": "play_portal_sound"
+              },
+              {
+                "params": {
+                  "mapId": "1010300",
+                  "portalId": "4"
+                },
+                "type": "warp"
+              }
+            ]
+          }
+        },
+        {
+          "conditions": [
+            {
+              "operator": "=",
+              "referenceId": "1044",
+              "type": "questStatus",
+              "value": "1"
+            }
+          ],
+          "id": "quest_1044_training_center_4",
+          "onMatch": {
+            "allow": true,
+            "operations": [
+              {
+                "type": "play_portal_sound"
+              },
+              {
+                "params": {
+                  "mapId": "1010400",
+                  "portalId": "4"
+                },
+                "type": "warp"
+              }
+            ]
+          }
+        },
+        {
+          "conditions": [],
+          "id": "default_deny",
+          "onMatch": {
+            "allow": false,
+            "operations": [
+              {
+                "params": {
+                  "message": "Only the adventurers that have been trained by Mai may enter.",
+                  "messageType": "PINK_TEXT"
+                },
+                "type": "drop_message"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "id": "entertraining",
+    "type": "portal-action"
+  }
+}

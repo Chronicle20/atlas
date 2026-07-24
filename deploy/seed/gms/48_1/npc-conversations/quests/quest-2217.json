@@ -1,0 +1,107 @@
+{
+  "data": {
+    "attributes": {
+      "questId": 2217,
+      "questName": "Kerning City Sewer Investigation",
+      "startStateMachine": {
+        "startState": "showStench",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "completeQuest",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Hey, did you notice already, it looks like some awful stench is emanating from the sewers... Ewww"
+            },
+            "id": "showStench",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                },
+                {
+                  "params": {
+                    "amount": "7000"
+                  },
+                  "type": "award_exp"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": "=",
+                      "referenceId": "2216",
+                      "type": "questStatus",
+                      "value": "3"
+                    },
+                    {
+                      "operator": "=",
+                      "referenceId": "2218",
+                      "type": "questStatus",
+                      "value": "3"
+                    },
+                    {
+                      "operator": "=",
+                      "referenceId": "2219",
+                      "type": "questStatus",
+                      "value": "3"
+                    },
+                    {
+                      "operator": ">=",
+                      "referenceId": "4031894",
+                      "type": "item",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "removeItem"
+                },
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "completeQuest",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "4031894",
+                    "quantity": "1"
+                  },
+                  "type": "destroy_item"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "removeItem",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "2217",
+    "type": "quest-conversation"
+  }
+}

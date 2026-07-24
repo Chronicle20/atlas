@@ -10795,6 +10795,25 @@
         }
       ]
     },
+    "CWvsContext::SendMapTransferRequest": {
+      "address": "0x71e7f3",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "nType (1=register current map, 0=delete selected map)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "flag (VIP saved-map slot set)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "mapId (delete only)",
+          "guard": "!nType"
+        }
+      ]
+    },
     "CWvsContext::SendMigrateToShopRequest": {
       "address": "",
       "direction": "",

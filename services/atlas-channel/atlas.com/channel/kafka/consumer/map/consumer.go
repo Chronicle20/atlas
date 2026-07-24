@@ -636,17 +636,26 @@ func spawnNPCForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 }
 
 // spawnMonsterForSession sends the per-mob spawn packet to the entering session
-// and, when the entering character is the current controller, also re-issues the
-// MonsterControl packet that grants client-side ownership.
+// and, when the entering character is the current controller, follows it with
+// the MonsterControl packet that grants client-side ownership — Spawn first,
+// Control second, always.
 //
-// Why the re-issue: on cash-shop return atlas-monsters reassigns control via
-// CharacterEnter (MAP_STATUS) and emits StartControl events that atlas-channel
-// turns into MonsterControl packets — but those land on the wire ~1s before the
-// matching mob spawn packets that this function emits. The v83 client drops
-// (or ignores) MonsterControl for an unknown uniqueId, so by the time the spawn
-// renders the mob it has no formal owner. Sending MonsterControl right after
-// the spawn closes that gap deterministically; the earlier Kafka-driven
-// MonsterControl is at worst a harmless duplicate.
+// Why Spawn MUST precede Control for the entering player: an unknown-mob
+// MonsterControl is NOT dropped by the client. CMobPool::OnMobChangeController
+// -> SetLocalMob materializes the mob from the Control body (CreateMob ->
+// CMob::Init) on v79 AND v83. If Control arrives before Spawn the mob is born
+// from the Control payload: a 0/1 stance routes CMob::Init into
+// CMob::OnResolveMoveAction (null-deref crash), and a control-first birth on a
+// slope lands ~0.67px below the surface (fall-through) — and the later Spawn is
+// then a no-op (GetMob hits -> SetTemporaryStat only, never re-Init/reposition).
+//
+// That race is now prevented at the source: atlas-monsters' ControlOnEnter
+// assigns the *entering* player in-place WITHOUT emitting StartControl (see
+// monster/processor.go ControlOnEnter), so no early MonsterControl is produced
+// for a still-loading client. This function is the sole controller-grant for the
+// entering player, guaranteeing Spawn-then-Control. (An already-present player
+// that becomes controller on enter still gets a StartControl-driven packet — safe,
+// since that client already has the mob spawned.)
 func spawnMonsterForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[monster.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[monster.Model] {
 		return func(wp writer.Producer) func(s session.Model) model.Operator[monster.Model] {

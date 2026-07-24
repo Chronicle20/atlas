@@ -219,7 +219,6 @@ func validateRun(opts validateOpts, client idasrc.MCPClient, stdout io.Writer) i
 	return writeReport(opts, results, stdout)
 }
 
-
 // writeReport writes the deterministic markdown report and prints the roll-up
 // counts to stdout. Results are bucketed by verdict and sorted by FName within
 // each section. Returns a process exit code.

@@ -55,6 +55,29 @@ func TestNewRegistry(t *testing.T) {
 	}
 }
 
+// The registry must round-trip the per-service Services tag; dropping it in
+// Writers()/Handlers() would silently widen a scoped entry back to all services.
+func TestRegistryPreservesServices(t *testing.T) {
+	handlers := []HandlerConfig{
+		{OpCode: "0x01", Validator: "NoOp", Handler: "LoginHandle", Services: []string{ServiceLogin}},
+	}
+	writers := []WriterConfig{
+		{OpCode: "0x18", Writer: "Ping", Services: []string{ServiceLogin, ServiceChannel}},
+	}
+
+	r := NewRegistry(handlers, writers)
+
+	gotHandlers := r.Handlers()
+	if len(gotHandlers) != 1 || len(gotHandlers[0].Services) != 1 || gotHandlers[0].Services[0] != ServiceLogin {
+		t.Errorf("Handlers() dropped Services tag: %+v", gotHandlers)
+	}
+
+	gotWriters := r.Writers()
+	if len(gotWriters) != 1 || len(gotWriters[0].Services) != 2 {
+		t.Errorf("Writers() dropped Services tag: %+v", gotWriters)
+	}
+}
+
 func TestRegistryInvalidOpCode(t *testing.T) {
 	handlers := []HandlerConfig{
 		{OpCode: "invalid", Validator: "NoOp", Handler: "LoginHandle"},

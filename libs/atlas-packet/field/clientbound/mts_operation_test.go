@@ -12,11 +12,12 @@ import (
 )
 
 // Per-mode body arms of CITC::OnNormalItemResult (MTS_OPERATION), task-096
-// iteration 1. The body shapes are version-stable across gms_v83/v84/v87/v95
-// (IDA-confirmed identical read order; only the dispatcher mode bytes and
-// sub-handler addresses shift). jms_v185 has NO CITC op (VERSION-ABSENT) so it
-// is not marked. The per-version ida= addresses below pin each arm's
-// sub-handler in the matching dispatcher.
+// iteration 1 (gms_v79 bring-up added task-181). The body shapes are
+// version-stable across gms_v79/v83/v84/v87/v95 (IDA-confirmed identical
+// read order; only the dispatcher mode bytes and sub-handler addresses
+// shift; v79 re-decompiled live in full, no divergence found). jms_v185 has
+// NO CITC op (VERSION-ABSENT) so it is not marked. The per-version ida=
+// addresses below pin each arm's sub-handler in the matching dispatcher.
 
 // MtsResultRegisterSaleEntryFailed (0x1E) — Decode1(reason); ONLY when
 // reason==0x48 a trailing Decode2 sale-limit short. Decompiled identical in all
@@ -26,6 +27,7 @@ import (
 // packet-audit:verify packet=field/clientbound/FieldMtsResultRegisterSaleEntryFailed version=gms_v84 ida=0x5b4a38
 // packet-audit:verify packet=field/clientbound/FieldMtsResultRegisterSaleEntryFailed version=gms_v87 ida=0x5d4640
 // packet-audit:verify packet=field/clientbound/FieldMtsResultRegisterSaleEntryFailed version=gms_v95 ida=0x576b80
+// packet-audit:verify packet=field/clientbound/FieldMtsResultRegisterSaleEntryFailed version=gms_v79 ida=0x57f717
 func TestMtsResultRegisterSaleEntryFailedGolden(t *testing.T) {
 	ctx := test.CreateContext("GMS", 95, 0)
 
@@ -84,6 +86,7 @@ func TestMtsResultRegisterSaleEntryFailedRoundTrip(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldMtsResultSuccessBidInfo version=gms_v84 ida=0x5b5795
 // packet-audit:verify packet=field/clientbound/FieldMtsResultSuccessBidInfo version=gms_v87 ida=0x5d5398
 // packet-audit:verify packet=field/clientbound/FieldMtsResultSuccessBidInfo version=gms_v95 ida=0x577000
+// packet-audit:verify packet=field/clientbound/FieldMtsResultSuccessBidInfo version=gms_v79 ida=0x58043b
 func TestMtsResultSuccessBidInfoGolden(t *testing.T) {
 	ctx := test.CreateContext("GMS", 95, 0)
 
@@ -252,6 +255,7 @@ func TestMtsItemRoundTrip(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldMtsResultGetItcListDone version=gms_v84 ida=0x5b4d9f
 // packet-audit:verify packet=field/clientbound/FieldMtsResultGetItcListDone version=gms_v87 ida=0x5d499f
 // packet-audit:verify packet=field/clientbound/FieldMtsResultGetItcListDone version=gms_v95 ida=0x576500
+// packet-audit:verify packet=field/clientbound/FieldMtsResultGetItcListDone version=gms_v79 ida=0x57fa45
 func TestMtsResultGetItcListDoneGolden(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := test.CreateContext("GMS", 95, 0)
@@ -311,6 +315,7 @@ func TestMtsResultGetItcListDoneGolden(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldMtsResultGetSearchItcListDone version=gms_v84 ida=0x5b4ef2
 // packet-audit:verify packet=field/clientbound/FieldMtsResultGetSearchItcListDone version=gms_v87 ida=0x5d4af2
 // packet-audit:verify packet=field/clientbound/FieldMtsResultGetSearchItcListDone version=gms_v95 ida=0x5766e0
+// packet-audit:verify packet=field/clientbound/FieldMtsResultGetSearchItcListDone version=gms_v79 ida=0x57fb98
 func TestMtsResultGetSearchItcListDoneGolden(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := test.CreateContext("GMS", 95, 0)
@@ -355,6 +360,7 @@ func TestMtsResultGetSearchItcListDoneGolden(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldMtsResultGetUserPurchaseItemDone version=gms_v84 ida=0x5b4fe3
 // packet-audit:verify packet=field/clientbound/FieldMtsResultGetUserPurchaseItemDone version=gms_v87 ida=0x5d4be3
 // packet-audit:verify packet=field/clientbound/FieldMtsResultGetUserPurchaseItemDone version=gms_v95 ida=0x576cf0
+// packet-audit:verify packet=field/clientbound/FieldMtsResultGetUserPurchaseItemDone version=gms_v79 ida=0x57fc89
 func TestMtsResultGetUserPurchaseItemDoneGolden(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := test.CreateContext("GMS", 95, 0)
@@ -391,6 +397,7 @@ func TestMtsResultGetUserPurchaseItemDoneGolden(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldMtsResultGetUserSaleItemDone version=gms_v84 ida=0x5b5147
 // packet-audit:verify packet=field/clientbound/FieldMtsResultGetUserSaleItemDone version=gms_v87 ida=0x5d4d47
 // packet-audit:verify packet=field/clientbound/FieldMtsResultGetUserSaleItemDone version=gms_v95 ida=0x576870
+// packet-audit:verify packet=field/clientbound/FieldMtsResultGetUserSaleItemDone version=gms_v79 ida=0x57fded
 func TestMtsResultGetUserSaleItemDoneGolden(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := test.CreateContext("GMS", 95, 0)
@@ -419,6 +426,7 @@ func TestMtsResultGetUserSaleItemDoneGolden(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldMtsResultLoadWishSaleListDone version=gms_v84 ida=0x5b53b6
 // packet-audit:verify packet=field/clientbound/FieldMtsResultLoadWishSaleListDone version=gms_v87 ida=0x5d4fb9
 // packet-audit:verify packet=field/clientbound/FieldMtsResultLoadWishSaleListDone version=gms_v95 ida=0x5769a0
+// packet-audit:verify packet=field/clientbound/FieldMtsResultLoadWishSaleListDone version=gms_v79 ida=0x58005c
 func TestMtsResultLoadWishSaleListDoneGolden(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := test.CreateContext("GMS", 95, 0)
@@ -456,6 +464,7 @@ func le32(b []byte) uint32 {
 // packet-audit:verify packet=field/clientbound/FieldMtsResultRegisterSaleEntryDone version=gms_v84 ida=0x5b4b64
 // packet-audit:verify packet=field/clientbound/FieldMtsResultRegisterSaleEntryDone version=gms_v87 ida=0x5d4748
 // packet-audit:verify packet=field/clientbound/FieldMtsResultRegisterSaleEntryDone version=gms_v95 ida=0x575cd0
+// packet-audit:verify packet=field/clientbound/FieldMtsResultRegisterSaleEntryDone version=gms_v79 ida=0x57f80a
 func TestMtsResultRegisterSaleEntryDone(t *testing.T) {
 	input := NewMtsResultRegisterSaleEntryDone(0x1D)
 	ctx := test.CreateContext("GMS", 95, 0)
@@ -480,6 +489,7 @@ func TestMtsResultRegisterSaleEntryDone(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldMtsResultSaleCurrentItemToWishDone version=gms_v84 ida=0x5b4ba2
 // packet-audit:verify packet=field/clientbound/FieldMtsResultSaleCurrentItemToWishDone version=gms_v87 ida=0x5d4786
 // packet-audit:verify packet=field/clientbound/FieldMtsResultSaleCurrentItemToWishDone version=gms_v95 ida=0x575d20
+// packet-audit:verify packet=field/clientbound/FieldMtsResultSaleCurrentItemToWishDone version=gms_v79 ida=0x57f848
 func TestMtsResultSaleCurrentItemToWishDone(t *testing.T) {
 	input := NewMtsResultSaleCurrentItemToWishDone(0x1F)
 	ctx := test.CreateContext("GMS", 95, 0)
@@ -504,6 +514,7 @@ func TestMtsResultSaleCurrentItemToWishDone(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldMtsResultCancelSaleItemDone version=gms_v84 ida=0x5b5204
 // packet-audit:verify packet=field/clientbound/FieldMtsResultCancelSaleItemDone version=gms_v87 ida=0x5d4e04
 // packet-audit:verify packet=field/clientbound/FieldMtsResultCancelSaleItemDone version=gms_v95 ida=0x576030
+// packet-audit:verify packet=field/clientbound/FieldMtsResultCancelSaleItemDone version=gms_v79 ida=0x57feaa
 func TestMtsResultCancelSaleItemDone(t *testing.T) {
 	input := NewMtsResultCancelSaleItemDone(0x25)
 	ctx := test.CreateContext("GMS", 95, 0)
@@ -528,6 +539,7 @@ func TestMtsResultCancelSaleItemDone(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldMtsResultSetZzimDone version=gms_v84 ida=0x5b52ec
 // packet-audit:verify packet=field/clientbound/FieldMtsResultSetZzimDone version=gms_v87 ida=0x5d4eef
 // packet-audit:verify packet=field/clientbound/FieldMtsResultSetZzimDone version=gms_v95 ida=0x576140
+// packet-audit:verify packet=field/clientbound/FieldMtsResultSetZzimDone version=gms_v79 ida=0x57ff92
 func TestMtsResultSetZzimDone(t *testing.T) {
 	input := NewMtsResultSetZzimDone(0x29)
 	ctx := test.CreateContext("GMS", 95, 0)
@@ -552,6 +564,7 @@ func TestMtsResultSetZzimDone(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldMtsResultSetZzimFailed version=gms_v84 ida=0x5b5321
 // packet-audit:verify packet=field/clientbound/FieldMtsResultSetZzimFailed version=gms_v87 ida=0x5d4f24
 // packet-audit:verify packet=field/clientbound/FieldMtsResultSetZzimFailed version=gms_v95 ida=0x576180
+// packet-audit:verify packet=field/clientbound/FieldMtsResultSetZzimFailed version=gms_v79 ida=0x57ffc7
 func TestMtsResultSetZzimFailed(t *testing.T) {
 	input := NewMtsResultSetZzimFailed(0x2A)
 	ctx := test.CreateContext("GMS", 95, 0)
@@ -576,6 +589,7 @@ func TestMtsResultSetZzimFailed(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldMtsResultDeleteZzimDone version=gms_v84 ida=0x5b5356
 // packet-audit:verify packet=field/clientbound/FieldMtsResultDeleteZzimDone version=gms_v87 ida=0x5d4f59
 // packet-audit:verify packet=field/clientbound/FieldMtsResultDeleteZzimDone version=gms_v95 ida=0x5761c0
+// packet-audit:verify packet=field/clientbound/FieldMtsResultDeleteZzimDone version=gms_v79 ida=0x57fffc
 func TestMtsResultDeleteZzimDone(t *testing.T) {
 	input := NewMtsResultDeleteZzimDone(0x2B)
 	ctx := test.CreateContext("GMS", 95, 0)
@@ -600,6 +614,7 @@ func TestMtsResultDeleteZzimDone(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldMtsResultDeleteZzimFailed version=gms_v84 ida=0x5b5381
 // packet-audit:verify packet=field/clientbound/FieldMtsResultDeleteZzimFailed version=gms_v87 ida=0x5d4f84
 // packet-audit:verify packet=field/clientbound/FieldMtsResultDeleteZzimFailed version=gms_v95 ida=0x5761f0
+// packet-audit:verify packet=field/clientbound/FieldMtsResultDeleteZzimFailed version=gms_v79 ida=0x580027
 func TestMtsResultDeleteZzimFailed(t *testing.T) {
 	input := NewMtsResultDeleteZzimFailed(0x2C)
 	ctx := test.CreateContext("GMS", 95, 0)
@@ -624,6 +639,7 @@ func TestMtsResultDeleteZzimFailed(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldMtsResultLoadWishSaleListFailed version=gms_v84 ida=0x5b54cc
 // packet-audit:verify packet=field/clientbound/FieldMtsResultLoadWishSaleListFailed version=gms_v87 ida=0x5d50cf
 // packet-audit:verify packet=field/clientbound/FieldMtsResultLoadWishSaleListFailed version=gms_v95 ida=0x576230
+// packet-audit:verify packet=field/clientbound/FieldMtsResultLoadWishSaleListFailed version=gms_v79 ida=0x580172
 func TestMtsResultLoadWishSaleListFailed(t *testing.T) {
 	input := NewMtsResultLoadWishSaleListFailed(0x2E)
 	ctx := test.CreateContext("GMS", 95, 0)
@@ -648,6 +664,7 @@ func TestMtsResultLoadWishSaleListFailed(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldMtsResultBuyWishDone version=gms_v84 ida=0x5b5501
 // packet-audit:verify packet=field/clientbound/FieldMtsResultBuyWishDone version=gms_v87 ida=0x5d5104
 // packet-audit:verify packet=field/clientbound/FieldMtsResultBuyWishDone version=gms_v95 ida=0x576270
+// packet-audit:verify packet=field/clientbound/FieldMtsResultBuyWishDone version=gms_v79 ida=0x5801a7
 func TestMtsResultBuyWishDone(t *testing.T) {
 	input := NewMtsResultBuyWishDone(0x2F)
 	ctx := test.CreateContext("GMS", 95, 0)
@@ -672,6 +689,7 @@ func TestMtsResultBuyWishDone(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldMtsResultBuyWishFailed version=gms_v84 ida=0x5b552c
 // packet-audit:verify packet=field/clientbound/FieldMtsResultBuyWishFailed version=gms_v87 ida=0x5d512f
 // packet-audit:verify packet=field/clientbound/FieldMtsResultBuyWishFailed version=gms_v95 ida=0x5762a0
+// packet-audit:verify packet=field/clientbound/FieldMtsResultBuyWishFailed version=gms_v79 ida=0x5801d2
 func TestMtsResultBuyWishFailed(t *testing.T) {
 	input := NewMtsResultBuyWishFailed(0x30)
 	ctx := test.CreateContext("GMS", 95, 0)
@@ -696,6 +714,7 @@ func TestMtsResultBuyWishFailed(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldMtsResultCancelWishDone version=gms_v84 ida=0x5b5561
 // packet-audit:verify packet=field/clientbound/FieldMtsResultCancelWishDone version=gms_v87 ida=0x5d5164
 // packet-audit:verify packet=field/clientbound/FieldMtsResultCancelWishDone version=gms_v95 ida=0x5762e0
+// packet-audit:verify packet=field/clientbound/FieldMtsResultCancelWishDone version=gms_v79 ida=0x580207
 func TestMtsResultCancelWishDone(t *testing.T) {
 	input := NewMtsResultCancelWishDone(0x31)
 	ctx := test.CreateContext("GMS", 95, 0)
@@ -720,6 +739,7 @@ func TestMtsResultCancelWishDone(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldMtsResultCancelWishFailed version=gms_v84 ida=0x5b5596
 // packet-audit:verify packet=field/clientbound/FieldMtsResultCancelWishFailed version=gms_v87 ida=0x5d5199
 // packet-audit:verify packet=field/clientbound/FieldMtsResultCancelWishFailed version=gms_v95 ida=0x576320
+// packet-audit:verify packet=field/clientbound/FieldMtsResultCancelWishFailed version=gms_v79 ida=0x58023c
 func TestMtsResultCancelWishFailed(t *testing.T) {
 	input := NewMtsResultCancelWishFailed(0x32)
 	ctx := test.CreateContext("GMS", 95, 0)
@@ -744,6 +764,7 @@ func TestMtsResultCancelWishFailed(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldMtsResultBuyItemDone version=gms_v84 ida=0x5b55cb
 // packet-audit:verify packet=field/clientbound/FieldMtsResultBuyItemDone version=gms_v87 ida=0x5d51ce
 // packet-audit:verify packet=field/clientbound/FieldMtsResultBuyItemDone version=gms_v95 ida=0x576360
+// packet-audit:verify packet=field/clientbound/FieldMtsResultBuyItemDone version=gms_v79 ida=0x580271
 func TestMtsResultBuyItemDone(t *testing.T) {
 	input := NewMtsResultBuyItemDone(0x33)
 	ctx := test.CreateContext("GMS", 95, 0)
@@ -768,6 +789,7 @@ func TestMtsResultBuyItemDone(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldMtsResultBuyItemFailed version=gms_v84 ida=0x5b55f6
 // packet-audit:verify packet=field/clientbound/FieldMtsResultBuyItemFailed version=gms_v87 ida=0x5d51f9
 // packet-audit:verify packet=field/clientbound/FieldMtsResultBuyItemFailed version=gms_v95 ida=0x576390
+// packet-audit:verify packet=field/clientbound/FieldMtsResultBuyItemFailed version=gms_v79 ida=0x58029c
 func TestMtsResultBuyItemFailed(t *testing.T) {
 	input := NewMtsResultBuyItemFailed(0x34)
 	ctx := test.CreateContext("GMS", 95, 0)
@@ -792,6 +814,7 @@ func TestMtsResultBuyItemFailed(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldMtsResultBuyZzimItemDone version=gms_v84 ida=0x5b562b
 // packet-audit:verify packet=field/clientbound/FieldMtsResultBuyZzimItemDone version=gms_v87 ida=0x5d522e
 // packet-audit:verify packet=field/clientbound/FieldMtsResultBuyZzimItemDone version=gms_v95 ida=0x5763d0
+// packet-audit:verify packet=field/clientbound/FieldMtsResultBuyZzimItemDone version=gms_v79 ida=0x5802d1
 func TestMtsResultBuyZzimItemDone(t *testing.T) {
 	input := NewMtsResultBuyZzimItemDone(0x35)
 	ctx := test.CreateContext("GMS", 95, 0)
@@ -816,6 +839,7 @@ func TestMtsResultBuyZzimItemDone(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldMtsResultBuyZzimItemFailed version=gms_v84 ida=0x5b5656
 // packet-audit:verify packet=field/clientbound/FieldMtsResultBuyZzimItemFailed version=gms_v87 ida=0x5d5259
 // packet-audit:verify packet=field/clientbound/FieldMtsResultBuyZzimItemFailed version=gms_v95 ida=0x576400
+// packet-audit:verify packet=field/clientbound/FieldMtsResultBuyZzimItemFailed version=gms_v79 ida=0x5802fc
 func TestMtsResultBuyZzimItemFailed(t *testing.T) {
 	input := NewMtsResultBuyZzimItemFailed(0x36)
 	ctx := test.CreateContext("GMS", 95, 0)
@@ -840,6 +864,7 @@ func TestMtsResultBuyZzimItemFailed(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldMtsResultRegisterWishItemDone version=gms_v84 ida=0x5b568b
 // packet-audit:verify packet=field/clientbound/FieldMtsResultRegisterWishItemDone version=gms_v87 ida=0x5d528e
 // packet-audit:verify packet=field/clientbound/FieldMtsResultRegisterWishItemDone version=gms_v95 ida=0x576440
+// packet-audit:verify packet=field/clientbound/FieldMtsResultRegisterWishItemDone version=gms_v79 ida=0x580331
 func TestMtsResultRegisterWishItemDone(t *testing.T) {
 	input := NewMtsResultRegisterWishItemDone(0x37)
 	ctx := test.CreateContext("GMS", 95, 0)
@@ -864,6 +889,7 @@ func TestMtsResultRegisterWishItemDone(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldMtsResultRegisterWishItemFailed version=gms_v84 ida=0x5b56c0
 // packet-audit:verify packet=field/clientbound/FieldMtsResultRegisterWishItemFailed version=gms_v87 ida=0x5d52c3
 // packet-audit:verify packet=field/clientbound/FieldMtsResultRegisterWishItemFailed version=gms_v95 ida=0x576480
+// packet-audit:verify packet=field/clientbound/FieldMtsResultRegisterWishItemFailed version=gms_v79 ida=0x580366
 func TestMtsResultRegisterWishItemFailed(t *testing.T) {
 	input := NewMtsResultRegisterWishItemFailed(0x38)
 	ctx := test.CreateContext("GMS", 95, 0)
@@ -888,6 +914,7 @@ func TestMtsResultRegisterWishItemFailed(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldMtsResultBidAuctionFailed version=gms_v84 ida=0x5b58fb
 // packet-audit:verify packet=field/clientbound/FieldMtsResultBidAuctionFailed version=gms_v87 ida=0x5d54fe
 // packet-audit:verify packet=field/clientbound/FieldMtsResultBidAuctionFailed version=gms_v95 ida=0x5764c0
+// packet-audit:verify packet=field/clientbound/FieldMtsResultBidAuctionFailed version=gms_v79 ida=0x5805a1
 func TestMtsResultBidAuctionFailed(t *testing.T) {
 	input := NewMtsResultBidAuctionFailed(0x3C)
 	ctx := test.CreateContext("GMS", 95, 0)
@@ -921,6 +948,7 @@ func TestMtsResultBidAuctionFailed(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldMtsResultGetItcListFailed version=gms_v84 ida=0x5b4d72
 // packet-audit:verify packet=field/clientbound/FieldMtsResultGetItcListFailed version=gms_v87 ida=0x5d4972
 // packet-audit:verify packet=field/clientbound/FieldMtsResultGetItcListFailed version=gms_v95 ida=0x575f70
+// packet-audit:verify packet=field/clientbound/FieldMtsResultGetItcListFailed version=gms_v79 ida=0x57fa18
 func TestMtsResultGetItcListFailed(t *testing.T) {
 	input := NewMtsResultGetItcListFailed(0x16, 0x49) // reason 73 = the transfer-field branch value
 	ctx := test.CreateContext("GMS", 95, 0)
@@ -948,6 +976,7 @@ func TestMtsResultGetItcListFailed(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldMtsResultGetSearchItcListFailed version=gms_v84 ida=0x5b4ed3
 // packet-audit:verify packet=field/clientbound/FieldMtsResultGetSearchItcListFailed version=gms_v87 ida=0x5d4ad3
 // packet-audit:verify packet=field/clientbound/FieldMtsResultGetSearchItcListFailed version=gms_v95 ida=0x575fa0
+// packet-audit:verify packet=field/clientbound/FieldMtsResultGetSearchItcListFailed version=gms_v79 ida=0x57fb79
 func TestMtsResultGetSearchItcListFailed(t *testing.T) {
 	input := NewMtsResultGetSearchItcListFailed(0x18, 0x51)
 	ctx := test.CreateContext("GMS", 95, 0)
@@ -975,6 +1004,7 @@ func TestMtsResultGetSearchItcListFailed(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldMtsResultSaleCurrentItemToWishFailed version=gms_v84 ida=0x5b4be0
 // packet-audit:verify packet=field/clientbound/FieldMtsResultSaleCurrentItemToWishFailed version=gms_v87 ida=0x5d47c4
 // packet-audit:verify packet=field/clientbound/FieldMtsResultSaleCurrentItemToWishFailed version=gms_v95 ida=0x575d70
+// packet-audit:verify packet=field/clientbound/FieldMtsResultSaleCurrentItemToWishFailed version=gms_v79 ida=0x57f886
 func TestMtsResultSaleCurrentItemToWishFailed(t *testing.T) {
 	input := NewMtsResultSaleCurrentItemToWishFailed(0x20, 0x50)
 	ctx := test.CreateContext("GMS", 95, 0)
@@ -1002,6 +1032,7 @@ func TestMtsResultSaleCurrentItemToWishFailed(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldMtsResultGetUserPurchaseItemFailed version=gms_v84 ida=0x5b511a
 // packet-audit:verify packet=field/clientbound/FieldMtsResultGetUserPurchaseItemFailed version=gms_v87 ida=0x5d4d1a
 // packet-audit:verify packet=field/clientbound/FieldMtsResultGetUserPurchaseItemFailed version=gms_v95 ida=0x575fd0
+// packet-audit:verify packet=field/clientbound/FieldMtsResultGetUserPurchaseItemFailed version=gms_v79 ida=0x57fdc0
 func TestMtsResultGetUserPurchaseItemFailed(t *testing.T) {
 	input := NewMtsResultGetUserPurchaseItemFailed(0x22, 0x49)
 	ctx := test.CreateContext("GMS", 95, 0)
@@ -1029,6 +1060,7 @@ func TestMtsResultGetUserPurchaseItemFailed(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldMtsResultGetUserSaleItemFailed version=gms_v84 ida=0x5b51d7
 // packet-audit:verify packet=field/clientbound/FieldMtsResultGetUserSaleItemFailed version=gms_v87 ida=0x5d4dd7
 // packet-audit:verify packet=field/clientbound/FieldMtsResultGetUserSaleItemFailed version=gms_v95 ida=0x576000
+// packet-audit:verify packet=field/clientbound/FieldMtsResultGetUserSaleItemFailed version=gms_v79 ida=0x57fe7d
 func TestMtsResultGetUserSaleItemFailed(t *testing.T) {
 	input := NewMtsResultGetUserSaleItemFailed(0x24, 0x49)
 	ctx := test.CreateContext("GMS", 95, 0)
@@ -1056,6 +1088,7 @@ func TestMtsResultGetUserSaleItemFailed(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldMtsResultCancelSaleItemFailed version=gms_v84 ida=0x5b5239
 // packet-audit:verify packet=field/clientbound/FieldMtsResultCancelSaleItemFailed version=gms_v87 ida=0x5d4e39
 // packet-audit:verify packet=field/clientbound/FieldMtsResultCancelSaleItemFailed version=gms_v95 ida=0x576070
+// packet-audit:verify packet=field/clientbound/FieldMtsResultCancelSaleItemFailed version=gms_v79 ida=0x57fedf
 func TestMtsResultCancelSaleItemFailed(t *testing.T) {
 	input := NewMtsResultCancelSaleItemFailed(0x26, 0x42)
 	ctx := test.CreateContext("GMS", 95, 0)
@@ -1083,6 +1116,7 @@ func TestMtsResultCancelSaleItemFailed(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldMtsResultMoveItcPurchaseItemLtoSFailed version=gms_v84 ida=0x5b52bf
 // packet-audit:verify packet=field/clientbound/FieldMtsResultMoveItcPurchaseItemLtoSFailed version=gms_v87 ida=0x5d4ec2
 // packet-audit:verify packet=field/clientbound/FieldMtsResultMoveItcPurchaseItemLtoSFailed version=gms_v95 ida=0x576110
+// packet-audit:verify packet=field/clientbound/FieldMtsResultMoveItcPurchaseItemLtoSFailed version=gms_v79 ida=0x57ff65
 func TestMtsResultMoveItcPurchaseItemLtoSFailed(t *testing.T) {
 	input := NewMtsResultMoveItcPurchaseItemLtoSFailed(0x28, 0x41) // reason 65 = the transfer-field re-send branch value
 	ctx := test.CreateContext("GMS", 95, 0)
@@ -1117,6 +1151,7 @@ func TestMtsResultMoveItcPurchaseItemLtoSFailed(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldMtsResultMoveItcPurchaseItemLtoSDone version=gms_v84 ida=0x5b5258
 // packet-audit:verify packet=field/clientbound/FieldMtsResultMoveItcPurchaseItemLtoSDone version=gms_v87 ida=0x5d4e58
 // packet-audit:verify packet=field/clientbound/FieldMtsResultMoveItcPurchaseItemLtoSDone version=gms_v95 ida=0x5760a0
+// packet-audit:verify packet=field/clientbound/FieldMtsResultMoveItcPurchaseItemLtoSDone version=gms_v79 ida=0x57fefe
 func TestMtsResultMoveItcPurchaseItemLtoSDone(t *testing.T) {
 	// Sub-handler decompile (v95 0x5760a0): Decode4(tab) -> SetTab(tab-1),
 	// Decode4(selectedNo). The codec writes them little-endian via WriteInt.
@@ -1153,6 +1188,7 @@ func TestMtsResultMoveItcPurchaseItemLtoSDone(t *testing.T) {
 // packet-audit:verify packet=field/clientbound/FieldMtsResultNotifyCancelWishResult version=gms_v84 ida=0x5b56f5
 // packet-audit:verify packet=field/clientbound/FieldMtsResultNotifyCancelWishResult version=gms_v87 ida=0x5d52f8
 // packet-audit:verify packet=field/clientbound/FieldMtsResultNotifyCancelWishResult version=gms_v95 ida=0x576f00
+// packet-audit:verify packet=field/clientbound/FieldMtsResultNotifyCancelWishResult version=gms_v79 ida=0x58039b
 func TestMtsResultNotifyCancelWishResult(t *testing.T) {
 	// Sub-handler decompile (v95 0x576f00): Decode4(countA) Decode4(countB);
 	// each >0 guards a StringPool notice. Read order is Decode4 then Decode4.

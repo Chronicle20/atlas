@@ -1,14 +1,14 @@
 # FieldGuildBossPulleyStateChange (← `CField_GuildBoss::OnPulleyStateChange`)
 
-- **IDA:** 
+- **IDA:** 0x54198b
 - **Atlas file:** `libs/atlas-packet/field/clientbound/guild_boss_pulley_state_change.go`
 - **Variant:** GMS/v79
 - **Branch depth:** 0
-- **Verdict:** 🚫
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
+| 0 | byte | byte `` | ✅ |  |
 

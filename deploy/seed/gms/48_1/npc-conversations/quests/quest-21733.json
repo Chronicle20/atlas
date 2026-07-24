@@ -1,0 +1,124 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "thankYou",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "rewardInfo",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Aran, thank you very much! Somehow the Puppeteer managed to bypass the security of Lith Harbor. He was trying to seek revenge because of the other day. Luckily, you came by. Nicely done!"
+            },
+            "id": "thankYou",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "giveRewards",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "I will teach you the #rPolearm Mastery#k skill, to reward your actions here. You will be able to improve your accuracy and the overall mastery of your polearm arts."
+            },
+            "id": "rewardInfo",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "amount": "8000"
+                  },
+                  "type": "award_exp"
+                },
+                {
+                  "params": {
+                    "level": "0",
+                    "masterLevel": "20",
+                    "skillId": "21100000"
+                  },
+                  "type": "create_skill"
+                },
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "giveRewards",
+            "type": "genericAction"
+          }
+        ]
+      },
+      "questId": 21733,
+      "questName": "Unknown Quest",
+      "startStateMachine": {
+        "startState": "intro",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "startQuest",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Aran, Lith have been caught off guard. We are under attack! Get here ASAP."
+            },
+            "id": "intro",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "startQuest",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "21733",
+    "type": "quest-conversation"
+  }
+}

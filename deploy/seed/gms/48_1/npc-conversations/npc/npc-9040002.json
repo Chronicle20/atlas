@@ -1,0 +1,210 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 9040002,
+      "startState": "initialMenu",
+      "states": [
+        {
+          "id": "initialMenu",
+          "listSelection": {
+            "choices": [
+              {
+                "context": {
+                  "selectedOption": "0"
+                },
+                "nextState": "sharenianInfo1",
+                "text": "What's Sharenian?"
+              },
+              {
+                "context": {
+                  "selectedOption": "1"
+                },
+                "nextState": "rubianInfo",
+                "text": "#t4001024#? What's that?"
+              },
+              {
+                "context": {
+                  "selectedOption": "2"
+                },
+                "nextState": "guildQuestInfo1",
+                "text": "Guild Quest?"
+              },
+              {
+                "context": {
+                  "selectedOption": "3"
+                },
+                "nextState": "goodbye",
+                "text": "No, I'm fine now."
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "We, the Union of Guilds, have been trying to decipher 'Emerald Tablet,' a treasured old relic, for a long time. As a result, we have found out that Sharenian, the mysterious country from the past, lay asleep here. We also found out that clues of #t4001024#, a legendary, mythical jewelry, may be here at the remains of Sharenian. This is why the Union of Guilds have opened Guild Quest to ultimately find #t4001024#.\r\n#b#L0# What's Sharenian?#l\r\n#b#L1# #t4001024#? What's that?#l\r\n#b#L2# Guild Quest?#l\r\n#b#L3# No, I'm fine now.#l"
+          },
+          "type": "listSelection"
+        },
+        {
+          "id": "returnMenu",
+          "listSelection": {
+            "choices": [
+              {
+                "context": {
+                  "selectedOption": "0"
+                },
+                "nextState": "sharenianInfo1",
+                "text": "What's Sharenian?"
+              },
+              {
+                "context": {
+                  "selectedOption": "1"
+                },
+                "nextState": "rubianInfo",
+                "text": "#t4001024#? What's that?"
+              },
+              {
+                "context": {
+                  "selectedOption": "2"
+                },
+                "nextState": "guildQuestInfo1",
+                "text": "Guild Quest?"
+              },
+              {
+                "context": {
+                  "selectedOption": "3"
+                },
+                "nextState": "goodbye",
+                "text": "No, I'm fine now."
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "Do you have any other questions?\r\n#b#L0# What's Sharenian?#l\r\n#b#L1# #t4001024#? What's that?#l\r\n#b#L2# Guild Quest?#l\r\n#b#L3# No, I'm fine now.#l"
+          },
+          "type": "listSelection"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "sharenianInfo2",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Sharenian was a literate civilization from the past that had control over every area of the Victoria Island. The Temple of Golem, the Shrine in the deep part of the Dungeon, and other old architectural constructions where no one knows who built it are indeed made during the Sharenian times."
+          },
+          "id": "sharenianInfo1",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "sharenianInfo1",
+                "text": "Previous"
+              },
+              {
+                "nextState": "returnMenu",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNextPrev",
+            "text": "The last king of Sharenian was a gentleman named Sharen III, and apparently he was a very wise and compassionate king. But one day, the whole kingdom collapsed, and there was no explanation made for it."
+          },
+          "id": "sharenianInfo2",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "returnMenu",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "#t4001024# is a legendary jewel that brings eternal youth to the one that possesses it. Ironically, it seems like everyone that had #t4001024# ended up downtrodden, which should explain the downfall of Sharenian."
+          },
+          "id": "rubianInfo",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "guildQuestInfo2",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "I've sent groups of explorers to Sharenian before, but none of them ever came back, which prompted us to start the Guild Quest. We've been waiting for guilds that are strong enough to take on tough challenges, guilds like yours."
+          },
+          "id": "guildQuestInfo1",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "guildQuestInfo1",
+                "text": "Previous"
+              },
+              {
+                "nextState": "returnMenu",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNextPrev",
+            "text": "The ultimate goal of this Guild Quest is to explore Sharenian and find #t4001024#. This is not a task where power solves everything. Teamwork is more important here."
+          },
+          "id": "guildQuestInfo2",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Really? If you have anything else to ask, please feel free to talk to me."
+          },
+          "id": "goodbye",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "9040002",
+    "type": "npc-conversation"
+  }
+}

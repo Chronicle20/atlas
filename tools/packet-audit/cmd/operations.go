@@ -11,8 +11,9 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/Chronicle20/atlas/tools/packet-audit/internal/matrix"
 	"gopkg.in/yaml.v3"
+
+	"github.com/Chronicle20/atlas/tools/packet-audit/internal/matrix"
 )
 
 // operations validates (and generates) the tenant template `operations` mode

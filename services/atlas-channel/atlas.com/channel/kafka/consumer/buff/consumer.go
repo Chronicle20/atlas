@@ -11,6 +11,7 @@ import (
 	controllernpc "atlas-channel/npc/controller"
 	"atlas-channel/server"
 	"atlas-channel/session"
+	socketHandler "atlas-channel/socket/handler"
 	"atlas-channel/socket/writer"
 	"context"
 
@@ -58,6 +59,11 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventGmHideExpired(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventBerserk(sc, wp))))
 				if err != nil {
 					return nil, err
 				}
@@ -244,6 +250,33 @@ func handleStatusEventGmHideExpired(sc server.Model, wp writer.Producer) message
 				}
 			}
 			l.Debugf("GM-reveal: elected controllers for [%d] of [%d] uncontrolled NPCs in field [%s].", len(assignments), len(unc), f.Id())
+			return nil
+		})
+	}
+}
+
+// handleStatusEventBerserk translates one berserk broadcast tick into the own
+// + foreign EffectSkillUse packets (task-154). Stateless by design (D4):
+// atlas-buffs owns the schedule; the periodic re-broadcast covers late-joining
+// observers, so there is no map-enter hook. No session means the character
+// transferred or logged out between emit and consume — the next tick
+// self-corrects.
+func handleStatusEventBerserk(sc server.Model, wp writer.Producer) message.Handler[buff2.StatusEvent[buff2.BerserkStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e buff2.StatusEvent[buff2.BerserkStatusEventBody]) {
+		if e.Type != buff2.EventStatusTypeBerserk {
+			return
+		}
+
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.Body.ChannelId) {
+			return
+		}
+
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
+			if err := socketHandler.AnnounceBerserkEffect(l)(ctx)(wp)(e.Body.SkillId, e.Body.CharacterLevel, e.Body.SkillLevel, e.Body.Active)(s); err != nil {
+				l.WithError(err).Errorf("Unable to write berserk effect for character [%d].", e.CharacterId)
+			}
+
+			_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), socketHandler.AnnounceForeignBerserkEffect(l)(ctx)(wp)(e.CharacterId, e.Body.SkillId, e.Body.CharacterLevel, e.Body.SkillLevel, e.Body.Active))
 			return nil
 		})
 	}

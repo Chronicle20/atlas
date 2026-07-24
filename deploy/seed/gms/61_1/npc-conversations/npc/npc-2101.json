@@ -1,0 +1,91 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2101,
+      "startState": "askLeaveTraining",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "confirmLeave",
+                "text": "Yes"
+              },
+              {
+                "nextState": "notFinished",
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "Are you done with your training? If you wish, I will send you out from this training camp."
+          },
+          "id": "askLeaveTraining",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Haven't you finished the training program yet? If you want to leave this place, please do not hesitate to tell me."
+          },
+          "id": "notFinished",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "performWarp",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Then, I will send you out from here. Good job."
+          },
+          "id": "confirmLeave",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "40000",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "performWarp",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "2101",
+    "type": "npc-conversation"
+  }
+}

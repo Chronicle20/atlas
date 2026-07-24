@@ -40,8 +40,10 @@ func TestGradeConflictAtlasClaimsAbsentOp(t *testing.T) {
 	}}
 	in.FNameToWriter = map[string]map[string]string{"gms_v83": {"CLogin::OnAccountInfoResult": "AccountInfo"}}
 	// presentFnames does not contain this fname → conflict fires.
-	c := gradeOpCell(in, opEntryRef{Op: "ACCOUNT_INFO", Dir: opregistry.DirClientbound, Opcode: 0x002,
-		FName: "CLogin::OnAccountInfoResult"}, "gms_v83", false, map[string]bool{})
+	c := gradeOpCell(in, opEntryRef{
+		Op: "ACCOUNT_INFO", Dir: opregistry.DirClientbound, Opcode: 0x002,
+		FName: "CLogin::OnAccountInfoResult",
+	}, "gms_v83", false, map[string]bool{})
 	if c.State != StateConflict {
 		t.Errorf("state = %v (%s)", c.State.Name(), c.Note)
 	}
@@ -59,8 +61,10 @@ func TestGradeAbsentUnresolvedReportIsNA(t *testing.T) {
 		AtlasFile: "libs/atlas-packet/guild/serverbound/bbs_list_threads.go", Verdict: diff.VerdictBlocker,
 	}}
 	in.FNameToWriter = map[string]map[string]string{"gms_v83": {"CUIGuildBBS::SendLoadListRequest": "GuildBBSListThreads"}}
-	c := gradeOpCell(in, opEntryRef{Op: "GUILD_BBS_LIST_THREADS", Dir: opregistry.DirServerbound, Opcode: 0x0E5,
-		FName: "CUIGuildBBS::SendLoadListRequest"}, "gms_v83", false, nil)
+	c := gradeOpCell(in, opEntryRef{
+		Op: "GUILD_BBS_LIST_THREADS", Dir: opregistry.DirServerbound, Opcode: 0x0E5,
+		FName: "CUIGuildBBS::SendLoadListRequest",
+	}, "gms_v83", false, nil)
 	if c.State != StateNA {
 		t.Errorf("absent + unresolved report must be NA; got %v (%s)", c.State.Name(), c.Note)
 	}
@@ -80,8 +84,10 @@ func TestGradeAbsentReportClaimedByPresentOpIsNA(t *testing.T) {
 	in.FNameToWriter = map[string]map[string]string{"gms_v83": {"CUser::OnEmotion": "Emotion"}}
 	// presentFnames contains "CUser::OnEmotion" — a present op in this version owns it.
 	presentFnames := map[string]bool{"CUser::OnEmotion": true}
-	c := gradeOpCell(in, opEntryRef{Op: "IDA_0X0E8", Dir: opregistry.DirClientbound, Opcode: 0x0E8,
-		FName: "CUser::OnEmotion"}, "gms_v83", false, presentFnames)
+	c := gradeOpCell(in, opEntryRef{
+		Op: "IDA_0X0E8", Dir: opregistry.DirClientbound, Opcode: 0x0E8,
+		FName: "CUser::OnEmotion",
+	}, "gms_v83", false, presentFnames)
 	if c.State != StateNA {
 		t.Errorf("absent + resolved report claimed by present op must be NA; got %v (%s)", c.State.Name(), c.Note)
 	}
@@ -97,7 +103,8 @@ func TestGradeConflictCrossVersionTemplateGap(t *testing.T) {
 	in := baseInputs()
 	in.Registry.Versions["gms_v83"] = vfWith(t, opregistry.Entry{
 		Op: "ACCOUNT_INFO", Direction: opregistry.DirClientbound, Opcode: 0x002,
-		FName: "CLogin::OnAccountInfoResult", Provenance: "csv-import"})
+		FName: "CLogin::OnAccountInfoResult", Provenance: "csv-import",
+	})
 	in.Routed["gms_v83"] = map[RouteKey]bool{} // not routed here
 	// Provide a local report so the coverage-gap conflict fires (not mere absence).
 	in.Reports["gms_v83"] = map[string]LoadedReport{"AccountInfo": {
@@ -106,8 +113,10 @@ func TestGradeConflictCrossVersionTemplateGap(t *testing.T) {
 	}}
 	in.FNameToWriter = map[string]map[string]string{"gms_v83": {"CLogin::OnAccountInfoResult": "AccountInfo"}}
 	// routedElsewhere=true signals that another version routes this op (by its own opcode).
-	c := gradeOpCell(in, opEntryRef{Op: "ACCOUNT_INFO", Dir: opregistry.DirClientbound, Opcode: 0x002,
-		FName: "CLogin::OnAccountInfoResult"}, "gms_v83", true /* routedElsewhere */, nil)
+	c := gradeOpCell(in, opEntryRef{
+		Op: "ACCOUNT_INFO", Dir: opregistry.DirClientbound, Opcode: 0x002,
+		FName: "CLogin::OnAccountInfoResult",
+	}, "gms_v83", true /* routedElsewhere */, nil)
 	if c.State != StateConflict {
 		t.Errorf("state = %v (%s)", c.State.Name(), c.Note)
 	}
@@ -122,11 +131,14 @@ func TestGradeCoverageGapNoReportIsIncomplete(t *testing.T) {
 	in := baseInputs()
 	in.Registry.Versions["gms_v83"] = vfWith(t, opregistry.Entry{
 		Op: "ACCOUNT_INFO", Direction: opregistry.DirClientbound, Opcode: 0x002,
-		FName: "CLogin::OnAccountInfoResult", Provenance: "csv-import"})
+		FName: "CLogin::OnAccountInfoResult", Provenance: "csv-import",
+	})
 	in.Routed["gms_v83"] = map[RouteKey]bool{} // not routed here
 	// No Reports / FNameToWriter set — no local report for this version.
-	c := gradeOpCell(in, opEntryRef{Op: "ACCOUNT_INFO", Dir: opregistry.DirClientbound, Opcode: 0x002,
-		FName: "CLogin::OnAccountInfoResult"}, "gms_v83", true /* routedElsewhere */, nil)
+	c := gradeOpCell(in, opEntryRef{
+		Op: "ACCOUNT_INFO", Dir: opregistry.DirClientbound, Opcode: 0x002,
+		FName: "CLogin::OnAccountInfoResult",
+	}, "gms_v83", true /* routedElsewhere */, nil)
 	if c.State != StateIncomplete {
 		t.Errorf("coverage-gap with no report must be Incomplete (❌), not %v (%s)", c.State.Name(), c.Note)
 	}
@@ -140,10 +152,13 @@ func TestGradeUnroutedEverywhereIsIncompleteNotConflict(t *testing.T) {
 	in := baseInputs()
 	in.Registry.Versions["gms_v83"] = vfWith(t, opregistry.Entry{
 		Op: "ACCOUNT_INFO", Direction: opregistry.DirClientbound, Opcode: 0x002,
-		FName: "CLogin::OnAccountInfoResult", Provenance: "csv-import"})
+		FName: "CLogin::OnAccountInfoResult", Provenance: "csv-import",
+	})
 	// routedElsewhere=false: no other version routes this specific op.
-	c := gradeOpCell(in, opEntryRef{Op: "ACCOUNT_INFO", Dir: opregistry.DirClientbound, Opcode: 0x002,
-		FName: "CLogin::OnAccountInfoResult"}, "gms_v83", false /* routedElsewhere */, nil)
+	c := gradeOpCell(in, opEntryRef{
+		Op: "ACCOUNT_INFO", Dir: opregistry.DirClientbound, Opcode: 0x002,
+		FName: "CLogin::OnAccountInfoResult",
+	}, "gms_v83", false /* routedElsewhere */, nil)
 	if c.State != StateIncomplete {
 		t.Errorf("unrouted-everywhere must be Incomplete, not Conflict; state = %v (%s)", c.State.Name(), c.Note)
 	}
@@ -280,14 +295,19 @@ func TestDemuxFamilyWorstOfNoConflict(t *testing.T) {
 	in := baseInputs()
 	in.Registry.Versions["gms_v83"] = vfWith(t, opregistry.Entry{
 		Op: "ACCOUNT_INFO", Direction: opregistry.DirClientbound, Opcode: 0x002,
-		FName: "CLogin::OnAccountInfoResult", Provenance: "csv-import"})
+		FName: "CLogin::OnAccountInfoResult", Provenance: "csv-import",
+	})
 	in.Routed["gms_v83"] = map[RouteKey]bool{{0x002, opregistry.DirClientbound}: true}
 	// Two writers sharing the same base FName via different #case suffixes.
 	in.Reports["gms_v83"] = map[string]LoadedReport{
-		"AccountInfoV1": {WriterName: "AccountInfoV1", IDAName: "CLogin::OnAccountInfoResult#A",
-			AtlasFile: "libs/atlas-packet/login/clientbound/account_info_v1.go", Verdict: diff.VerdictMatch},
-		"AccountInfoV2": {WriterName: "AccountInfoV2", IDAName: "CLogin::OnAccountInfoResult#B",
-			AtlasFile: "libs/atlas-packet/login/clientbound/account_info_v2.go", Verdict: diff.VerdictMatch},
+		"AccountInfoV1": {
+			WriterName: "AccountInfoV1", IDAName: "CLogin::OnAccountInfoResult#A",
+			AtlasFile: "libs/atlas-packet/login/clientbound/account_info_v1.go", Verdict: diff.VerdictMatch,
+		},
+		"AccountInfoV2": {
+			WriterName: "AccountInfoV2", IDAName: "CLogin::OnAccountInfoResult#B",
+			AtlasFile: "libs/atlas-packet/login/clientbound/account_info_v2.go", Verdict: diff.VerdictMatch,
+		},
 	}
 	m := Build(in, []string{"gms_v83"})
 	var cell Cell
@@ -319,14 +339,19 @@ func TestDemuxFamilyIdenticalFullIDANameWorstOf(t *testing.T) {
 	in := baseInputs()
 	in.Registry.Versions["gms_v83"] = vfWith(t, opregistry.Entry{
 		Op: "ACCOUNT_INFO", Direction: opregistry.DirClientbound, Opcode: 0x002,
-		FName: "CLogin::OnAccountInfoResult", Provenance: "csv-import"})
+		FName: "CLogin::OnAccountInfoResult", Provenance: "csv-import",
+	})
 	in.Routed["gms_v83"] = map[RouteKey]bool{{0x002, opregistry.DirClientbound}: true}
 	// Both writers carry the exact same IDAName — demux-family worst-of applies.
 	in.Reports["gms_v83"] = map[string]LoadedReport{
-		"AccountInfoV1": {WriterName: "AccountInfoV1", IDAName: "CLogin::OnAccountInfoResult",
-			AtlasFile: "libs/atlas-packet/login/clientbound/account_info_v1.go", Verdict: diff.VerdictMatch},
-		"AccountInfoV2": {WriterName: "AccountInfoV2", IDAName: "CLogin::OnAccountInfoResult",
-			AtlasFile: "libs/atlas-packet/login/clientbound/account_info_v2.go", Verdict: diff.VerdictBlocker},
+		"AccountInfoV1": {
+			WriterName: "AccountInfoV1", IDAName: "CLogin::OnAccountInfoResult",
+			AtlasFile: "libs/atlas-packet/login/clientbound/account_info_v1.go", Verdict: diff.VerdictMatch,
+		},
+		"AccountInfoV2": {
+			WriterName: "AccountInfoV2", IDAName: "CLogin::OnAccountInfoResult",
+			AtlasFile: "libs/atlas-packet/login/clientbound/account_info_v2.go", Verdict: diff.VerdictBlocker,
+		},
 	}
 	m := Build(in, []string{"gms_v83"})
 	var cell Cell
@@ -358,13 +383,18 @@ func TestWorstOfBlockerWinsOverMatch(t *testing.T) {
 	in := baseInputs()
 	in.Registry.Versions["gms_v83"] = vfWith(t, opregistry.Entry{
 		Op: "ACCOUNT_INFO", Direction: opregistry.DirClientbound, Opcode: 0x002,
-		FName: "CFoo::OnBar", Provenance: "csv-import"})
+		FName: "CFoo::OnBar", Provenance: "csv-import",
+	})
 	in.Routed["gms_v83"] = map[RouteKey]bool{{0x002, opregistry.DirClientbound}: true}
 	in.Reports["gms_v83"] = map[string]LoadedReport{
-		"FooBarA": {WriterName: "FooBarA", IDAName: "CFoo::OnBar#A",
-			AtlasFile: "libs/atlas-packet/foo/clientbound/foo_bar_a.go", Verdict: diff.VerdictMatch},
-		"FooBarB": {WriterName: "FooBarB", IDAName: "CFoo::OnBar#B",
-			AtlasFile: "libs/atlas-packet/foo/clientbound/foo_bar_b.go", Verdict: diff.VerdictBlocker},
+		"FooBarA": {
+			WriterName: "FooBarA", IDAName: "CFoo::OnBar#A",
+			AtlasFile: "libs/atlas-packet/foo/clientbound/foo_bar_a.go", Verdict: diff.VerdictMatch,
+		},
+		"FooBarB": {
+			WriterName: "FooBarB", IDAName: "CFoo::OnBar#B",
+			AtlasFile: "libs/atlas-packet/foo/clientbound/foo_bar_b.go", Verdict: diff.VerdictBlocker,
+		},
 	}
 	m := Build(in, []string{"gms_v83"})
 	var cell Cell
@@ -398,10 +428,12 @@ func TestBuildPerPacketRoutingConflictAndFalsePositive(t *testing.T) {
 	in := baseInputs()
 	in.Registry.Versions["gms_v83"] = vfWith(t, opregistry.Entry{
 		Op: "MAP_TRANSFER_RESULT", Direction: opregistry.DirClientbound, Opcode: 0x010,
-		FName: "CField::OnTransferFieldResult", Provenance: "csv-import"})
+		FName: "CField::OnTransferFieldResult", Provenance: "csv-import",
+	})
 	in.Registry.Versions["gms_v87"] = vfWith(t, opregistry.Entry{
 		Op: "MAP_TRANSFER_RESULT", Direction: opregistry.DirClientbound, Opcode: 0x020,
-		FName: "CField::OnTransferFieldResult", Provenance: "csv-import"})
+		FName: "CField::OnTransferFieldResult", Provenance: "csv-import",
+	})
 	in.Routed["gms_v83"] = map[RouteKey]bool{{0x010, opregistry.DirClientbound}: true} // A routes its opcode
 	in.Routed["gms_v87"] = map[RouteKey]bool{}                                         // B does NOT route 0x020
 	// B (gms_v87) has a local report — Atlas implements this op — so the
@@ -437,13 +469,16 @@ func TestBuildPerPacketRoutingConflictAndFalsePositive(t *testing.T) {
 	in2.Registry.Versions["gms_v83"] = vfWith(t,
 		opregistry.Entry{
 			Op: "MAP_TRANSFER_RESULT", Direction: opregistry.DirClientbound, Opcode: 0x042,
-			FName: "CField::OnTransferFieldResult", Provenance: "csv-import"},
+			FName: "CField::OnTransferFieldResult", Provenance: "csv-import",
+		},
 		opregistry.Entry{
 			Op: "OTHER_OP", Direction: opregistry.DirClientbound, Opcode: 0x041,
-			FName: "CField::OnOtherOp", Provenance: "csv-import"})
+			FName: "CField::OnOtherOp", Provenance: "csv-import",
+		})
 	in2.Registry.Versions["gms_v95"] = vfWith(t, opregistry.Entry{
 		Op: "MAP_TRANSFER_RESULT", Direction: opregistry.DirClientbound, Opcode: 0x041,
-		FName: "CField::OnTransferFieldResult", Provenance: "csv-import"})
+		FName: "CField::OnTransferFieldResult", Provenance: "csv-import",
+	})
 	// A routes OTHER_OP (0x041) but NOT MAP_TRANSFER_RESULT (0x042).
 	// v95's MAP_TRANSFER_RESULT opcode 0x041 coincides with A's OTHER_OP opcode.
 	in2.Routed["gms_v83"] = map[RouteKey]bool{{0x041, opregistry.DirClientbound}: true} // OTHER_OP routed, NOT MAP_TRANSFER_RESULT
@@ -499,11 +534,13 @@ func TestBuildRoutedNamesOpIdentityGuard(t *testing.T) {
 		// Version A (gms_v83): WEDDING_ACTION serverbound at the colliding opcode 0x8B.
 		in.Registry.Versions["gms_v83"] = vfWith(t, opregistry.Entry{
 			Op: "WEDDING_ACTION", Direction: opregistry.DirServerbound, Opcode: 0x8B,
-			FName: weddingFName, Provenance: "csv-import"})
+			FName: weddingFName, Provenance: "csv-import",
+		})
 		// Version B (gms_v87): WEDDING_ACTION serverbound at a DIFFERENT opcode 0x90.
 		in.Registry.Versions["gms_v87"] = vfWith(t, opregistry.Entry{
 			Op: "WEDDING_ACTION", Direction: opregistry.DirServerbound, Opcode: 0x90,
-			FName: weddingFName, Provenance: "csv-import"})
+			FName: weddingFName, Provenance: "csv-import",
+		})
 		// A routes opcode 0x8B (occupancy true); the NAME it routes to varies per case.
 		in.Routed["gms_v83"] = map[RouteKey]bool{{0x8B, opregistry.DirServerbound}: true}
 		in.RoutedNames = map[string]map[RouteKey]string{
@@ -572,8 +609,10 @@ func TestBuildRoutedNamesOpIdentityGuard(t *testing.T) {
 // --- helpers ---
 
 func refACCOUNT() opEntryRef {
-	return opEntryRef{Op: "ACCOUNT_INFO", Dir: opregistry.DirClientbound, Opcode: 0x002,
-		FName: "CLogin::OnAccountInfoResult"}
+	return opEntryRef{
+		Op: "ACCOUNT_INFO", Dir: opregistry.DirClientbound, Opcode: 0x002,
+		FName: "CLogin::OnAccountInfoResult",
+	}
 }
 
 func presentWithReport(t *testing.T, v diff.Verdict, flatInvalid bool) Inputs {
@@ -581,7 +620,8 @@ func presentWithReport(t *testing.T, v diff.Verdict, flatInvalid bool) Inputs {
 	in := baseInputs()
 	in.Registry.Versions["gms_v83"] = vfWith(t, opregistry.Entry{
 		Op: "ACCOUNT_INFO", Direction: opregistry.DirClientbound, Opcode: 0x002,
-		FName: "CLogin::OnAccountInfoResult", Provenance: "csv-import"})
+		FName: "CLogin::OnAccountInfoResult", Provenance: "csv-import",
+	})
 	in.Routed["gms_v83"] = map[RouteKey]bool{{0x002, opregistry.DirClientbound}: true}
 	in.Reports["gms_v83"] = map[string]LoadedReport{"AccountInfo": {
 		WriterName: "AccountInfo", IDAName: "CLogin::OnAccountInfoResult", Address: "0xa3f2e8",
@@ -607,8 +647,10 @@ func vfWith(t *testing.T, entries ...opregistry.Entry) *opregistry.VersionFile {
 
 // setItcRef mirrors the SET_ITC op (present, report-less clientbound writer).
 func setItcRef() opEntryRef {
-	return opEntryRef{Op: "SET_ITC", Dir: opregistry.DirClientbound, Opcode: 0x07E,
-		FName: "CStage::OnSetITC", Packet: "field/clientbound/SetItc"}
+	return opEntryRef{
+		Op: "SET_ITC", Dir: opregistry.DirClientbound, Opcode: 0x07E,
+		FName: "CStage::OnSetITC", Packet: "field/clientbound/SetItc",
+	}
 }
 
 func setItcInputs(t *testing.T) Inputs {

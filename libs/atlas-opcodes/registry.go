@@ -13,9 +13,10 @@ type Registry struct {
 }
 
 type entry struct {
-	opCode  uint16
-	name    string
-	options map[string]interface{}
+	opCode   uint16
+	name     string
+	options  map[string]interface{}
+	services []string
 }
 
 // NewRegistry builds a Registry from handler and writer configuration.
@@ -32,7 +33,7 @@ func NewRegistry(handlers []HandlerConfig, writers []WriterConfig) Registry {
 		if err != nil {
 			continue
 		}
-		e := entry{opCode: uint16(op), name: wc.Writer, options: wc.Options}
+		e := entry{opCode: uint16(op), name: wc.Writer, options: wc.Options, services: wc.Services}
 		r.writersByName[wc.Writer] = e
 		r.writersByOpCode[uint16(op)] = e
 	}
@@ -42,7 +43,7 @@ func NewRegistry(handlers []HandlerConfig, writers []WriterConfig) Registry {
 		if err != nil {
 			continue
 		}
-		e := entry{opCode: uint16(op), name: hc.Handler, options: hc.Options}
+		e := entry{opCode: uint16(op), name: hc.Handler, options: hc.Options, services: hc.Services}
 		r.handlersByName[hc.Handler] = e
 		r.handlersByOp[uint16(op)] = e
 	}
@@ -109,9 +110,10 @@ func (r Registry) Writers() []WriterConfig {
 	result := make([]WriterConfig, 0, len(r.writersByName))
 	for _, e := range r.writersByName {
 		result = append(result, WriterConfig{
-			OpCode:  "0x" + strconv.FormatUint(uint64(e.opCode), 16),
-			Writer:  e.name,
-			Options: e.options,
+			OpCode:   "0x" + strconv.FormatUint(uint64(e.opCode), 16),
+			Writer:   e.name,
+			Options:  e.options,
+			Services: e.services,
 		})
 	}
 	return result
@@ -122,9 +124,10 @@ func (r Registry) Handlers() []HandlerConfig {
 	result := make([]HandlerConfig, 0, len(r.handlersByName))
 	for _, e := range r.handlersByName {
 		result = append(result, HandlerConfig{
-			OpCode:  "0x" + strconv.FormatUint(uint64(e.opCode), 16),
-			Handler: e.name,
-			Options: e.options,
+			OpCode:   "0x" + strconv.FormatUint(uint64(e.opCode), 16),
+			Handler:  e.name,
+			Options:  e.options,
+			Services: e.services,
 		})
 	}
 	return result

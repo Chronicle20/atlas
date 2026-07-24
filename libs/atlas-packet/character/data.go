@@ -105,25 +105,42 @@ type CharacterData struct {
 	StartedQuests   []QuestProgress
 	CompletedQuests []QuestCompleted
 	MonsterBook     MonsterBookData
+	// TeleportMaps / VipTeleportMaps are the saved teleport-rock lists
+	// (regular: 5 slots, VIP: 10 slots). Encoding pads with EmptyMapId;
+	// decoding strips the padding.
+	TeleportMaps    []_map.Id
+	VipTeleportMaps []_map.Id
 }
 
 func (m CharacterData) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
-		// dbcharFlag
-		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+		// dbcharFlag: widened from a 16-bit mask to a 64-bit mask in the v61
+		// protocol revision. v48's CharacterData::Decode reads Decode2 (verified
+		// @0x49d341, max bit 0x8000 → no monster-book/new-year/area sections);
+		// v61+ read DecodeBuffer(8) (verified v61 @0x4b656d, v72 @0x4d1c80).
+		if (t.IsRegion("GMS") && t.MajorAtLeast(61)) || t.Region() == "JMS" {
 			w.WriteInt64(-1)
-			w.WriteByte(0) // SN list size
 		} else {
 			w.WriteInt16(-1)
+		}
+		// SN list size: added in the v79 protocol revision. Absent in v48/v61/v72,
+		// whose CharacterData::Decode reads the 8-byte flag then goes straight to the
+		// stat section (verified CStage::OnSetField v72 @0x6c0c9b / CharacterData::Decode
+		// v72 @0x4d1c60 vs v79 @0x4d9b85, v83 @0x4e592d). Writing it pre-79 shifts the
+		// whole stream by 1 byte (consumed as the first byte of the character id).
+		if (t.IsRegion("GMS") && t.MajorAtLeast(79)) || t.Region() == "JMS" {
+			w.WriteByte(0) // SN list size
 		}
 
 		m.encodeStats(w, t)
 		w.WriteByte(m.BuddyCapacity)
 
-		// linked name
-		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+		// linked name: added in the v79 protocol revision (absent v48/v61/v72; v72
+		// reads buddyCap then meso with no linked-name byte in between — DecodeMoney
+		// v72 @0x4cf30d reads only meso). IDA-verified.
+		if (t.IsRegion("GMS") && t.MajorAtLeast(79)) || t.Region() == "JMS" {
 			w.WriteByte(0) // not linked
 		}
 		w.WriteInt(m.Meso)
@@ -145,12 +162,22 @@ func (m CharacterData) Encode(l logrus.FieldLogger, ctx context.Context) func(op
 			w.WriteShort(0)
 		}
 
-		// Monster book: present for GMS (28,87] and JMS; absent in v28 and GMS v95+.
-		if (t.Region() == "GMS" && t.MajorVersion() > 28 && t.MajorVersion() <= 87) || t.Region() == "JMS" {
-			m.encodeMonsterBook(w)
+		// Monster book. The COVER (flag 0x20000) arrived in the v61 revision; the
+		// CARD list (flag 0x10000) arrived in the v72 revision; both are gone by
+		// GMS v95+. v48's 16-bit dbcharFlag cannot even express these bits, so it
+		// has no monster book at all (verified v48 CharacterData::Decode @0x49d320
+		// ends at teleport rocks; v61 @0x4b654d has cover only @0x4b70fd; v72
+		// @0x4d1c60 has cover @0x4d2845 + cards @0x4d2869). Absent in GMS v95+.
+		if (t.IsRegion("GMS") && t.MajorAtLeast(61) && t.MajorVersion() <= 87) || t.Region() == "JMS" {
+			m.encodeMonsterBookCover(w)
 		}
-		// New-year cards / area popup / trailing short — gate unchanged (GMS > 28 || JMS).
-		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+		if (t.IsRegion("GMS") && t.MajorAtLeast(72) && t.MajorVersion() <= 87) || t.Region() == "JMS" {
+			m.encodeMonsterBookCards(w)
+		}
+		// New-year cards / area popup / trailing short — v72 revision (flags
+		// 0x40000/0x80000/0x100000). Absent in v48/v61 (verified: v61 ends at the
+		// monster-book cover; v48's flag cannot express these bits).
+		if (t.IsRegion("GMS") && t.MajorAtLeast(72)) || t.Region() == "JMS" {
 			if t.Region() == "GMS" {
 				m.encodeNewYear(w)
 				m.encodeArea(w)
@@ -167,19 +194,22 @@ func (m *CharacterData) Decode(l logrus.FieldLogger, ctx context.Context) func(r
 	return func(r *request.Reader, options map[string]interface{}) {
 		t := tenant.MustFromContext(ctx)
 
-		// dbcharFlag
-		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+		// dbcharFlag: Int16 pre-v61, Int64 v61+ (mirror of Encode).
+		if (t.IsRegion("GMS") && t.MajorAtLeast(61)) || t.Region() == "JMS" {
 			_ = r.ReadInt64()
-			_ = r.ReadByte() // SN list size
 		} else {
 			_ = r.ReadInt16()
+		}
+		// SN list size: v79+ only (mirror of Encode).
+		if (t.IsRegion("GMS") && t.MajorAtLeast(79)) || t.Region() == "JMS" {
+			_ = r.ReadByte() // SN list size
 		}
 
 		m.decodeStats(r, t)
 		m.BuddyCapacity = r.ReadByte()
 
-		// linked name
-		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+		// linked name: v79+ only (mirror of Encode).
+		if (t.IsRegion("GMS") && t.MajorAtLeast(79)) || t.Region() == "JMS" {
 			linked := r.ReadByte()
 			if linked == 1 {
 				_ = r.ReadAsciiString()
@@ -204,12 +234,15 @@ func (m *CharacterData) Decode(l logrus.FieldLogger, ctx context.Context) func(r
 			_ = r.ReadUint16()
 		}
 
-		// Monster book: present for GMS (28,87] and JMS; absent in v28 and GMS v95+.
-		if (t.Region() == "GMS" && t.MajorVersion() > 28 && t.MajorVersion() <= 87) || t.Region() == "JMS" {
-			m.decodeMonsterBook(r)
+		// Monster book cover (v61+) and cards (v72+); both gone by GMS v95+. Mirror of Encode.
+		if (t.IsRegion("GMS") && t.MajorAtLeast(61) && t.MajorVersion() <= 87) || t.Region() == "JMS" {
+			m.decodeMonsterBookCover(r)
 		}
-		// New-year cards / area popup / trailing short — gate unchanged (GMS > 28 || JMS).
-		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+		if (t.IsRegion("GMS") && t.MajorAtLeast(72) && t.MajorVersion() <= 87) || t.Region() == "JMS" {
+			m.decodeMonsterBookCards(r)
+		}
+		// New-year cards / area popup / trailing short — v72+ (mirror of Encode).
+		if (t.IsRegion("GMS") && t.MajorAtLeast(72)) || t.Region() == "JMS" {
 			if t.Region() == "GMS" {
 				m.decodeNewYear(r)
 				m.decodeArea(r)
@@ -248,7 +281,11 @@ func (m *CharacterData) encodeStats(w *response.Writer, t tenant.Model) {
 	w.WriteInt(m.Stats.Face)
 	w.WriteInt(m.Stats.Hair)
 
-	if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+	// The character-stat pet-cash-id array widened from 1 slot to 3 in the v61
+	// revision. v48 reads DecodeBuffer(8) = one long (verified GW_CharacterStat
+	// @0x49b6bc); v61+ read DecodeBuffer(24) = three (verified v61 @0x4b4116,
+	// v72 @0x4cf183).
+	if (t.IsRegion("GMS") && t.MajorAtLeast(61)) || t.Region() == "JMS" {
 		for i := 0; i < 3; i++ {
 			w.WriteLong(m.Stats.PetIds[i])
 		}
@@ -277,16 +314,23 @@ func (m *CharacterData) encodeStats(w *response.Writer, t tenant.Model) {
 	w.WriteInt(m.Stats.Exp)
 	w.WriteInt16(m.Stats.Fame)
 
-	if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+	// gachaExp: inserted before mapId in the v72 revision. Absent v48/v61, whose
+	// stat tail after fame is just mapId(Decode4)+spawnPoint(Decode1) — v61
+	// OnSetField @0x659fd3 uses stat+177 (the first post-fame int) as the map id;
+	// v72 @0x4cf0ee reads gachaExp @+177 then mapId @+189. IDA-verified.
+	if (t.IsRegion("GMS") && t.MajorAtLeast(72)) || t.Region() == "JMS" {
 		w.WriteInt(m.Stats.GachaExp)
 	}
 	w.WriteInt(m.Stats.MapId)
 	w.WriteByte(m.Stats.SpawnPoint)
 
 	if t.Region() == "GMS" {
-		if t.MajorVersion() > 12 {
+		// Trailing stat int added in the v72 revision (v72 stat ends spawn+Decode4
+		// @+207; v48/v61 stat ends at spawnPoint). v12-and-older wrote a wider
+		// legacy block. IDA-verified.
+		if t.MajorAtLeast(72) {
 			w.WriteInt(0)
-		} else {
+		} else if t.MajorVersion() <= 12 {
 			w.WriteInt64(0)
 			w.WriteInt(0)
 			w.WriteInt(0)
@@ -321,7 +365,8 @@ func (m *CharacterData) decodeStats(r *request.Reader, t tenant.Model) {
 	m.Stats.Face = r.ReadUint32()
 	m.Stats.Hair = r.ReadUint32()
 
-	if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+	// Pet-cash-id array: 1 slot pre-v61, 3 slots v61+ (mirror of Encode).
+	if (t.IsRegion("GMS") && t.MajorAtLeast(61)) || t.Region() == "JMS" {
 		for i := 0; i < 3; i++ {
 			m.Stats.PetIds[i] = r.ReadUint64()
 		}
@@ -353,16 +398,18 @@ func (m *CharacterData) decodeStats(r *request.Reader, t tenant.Model) {
 	m.Stats.Exp = r.ReadUint32()
 	m.Stats.Fame = r.ReadInt16()
 
-	if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+	// gachaExp: v72+ only (mirror of Encode).
+	if (t.IsRegion("GMS") && t.MajorAtLeast(72)) || t.Region() == "JMS" {
 		m.Stats.GachaExp = r.ReadUint32()
 	}
 	m.Stats.MapId = r.ReadUint32()
 	m.Stats.SpawnPoint = r.ReadByte()
 
 	if t.Region() == "GMS" {
-		if t.MajorVersion() > 12 {
+		// Trailing stat int: v72+ (mirror of Encode); v12-and-older legacy block.
+		if t.MajorAtLeast(72) {
 			_ = r.ReadUint32()
-		} else {
+		} else if t.MajorVersion() <= 12 {
 			_ = r.ReadInt64()
 			_ = r.ReadUint32()
 			_ = r.ReadUint32()
@@ -392,7 +439,10 @@ func (m *CharacterData) encodeInventory(l logrus.FieldLogger, ctx context.Contex
 		w.WriteByte(m.Inventory.CashCapacity)
 	}
 
-	if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+	// Inventory-update FILETIME: added in the v79 protocol revision (flag 0x100000,
+	// read before the equip section). Absent v48/v61/v72 — v72 has no 0x100000 block
+	// before equipment (its only 0x100000 use is the trailing wishlist map). IDA-verified.
+	if (t.IsRegion("GMS") && t.MajorAtLeast(79)) || t.Region() == "JMS" {
 		w.WriteInt64(m.Inventory.Timestamp)
 	}
 
@@ -400,7 +450,9 @@ func (m *CharacterData) encodeInventory(l logrus.FieldLogger, ctx context.Contex
 	for i := range m.Inventory.RegularEquip {
 		w.WriteByteArray(m.Inventory.RegularEquip[i].Encode(l, ctx)(options))
 	}
-	if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+	// Equip-section terminator width tracks the equip slot width: short for
+	// GMS>=83/JMS, byte for legacy GMS (<83). See model.Asset.encodeSlot.
+	if (t.Region() == "GMS" && t.MajorAtLeast(83)) || t.Region() == "JMS" {
 		w.WriteShort(0)
 	} else {
 		w.WriteByte(0)
@@ -410,7 +462,7 @@ func (m *CharacterData) encodeInventory(l logrus.FieldLogger, ctx context.Contex
 	for i := range m.Inventory.CashEquip {
 		w.WriteByteArray(m.Inventory.CashEquip[i].Encode(l, ctx)(options))
 	}
-	if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+	if (t.Region() == "GMS" && t.MajorAtLeast(83)) || t.Region() == "JMS" {
 		w.WriteShort(0)
 	} else {
 		w.WriteByte(0)
@@ -423,7 +475,10 @@ func (m *CharacterData) encodeInventory(l logrus.FieldLogger, ctx context.Contex
 	for i := range m.Inventory.EquipInv {
 		w.WriteByteArray(m.Inventory.EquipInv[i].Encode(l, ctx)(options))
 	}
-	if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+	// GMS>=83/JMS fold the empty 4th (dragon/mechanic) equip loop terminator
+	// into this Int(0) (two short terminators). Legacy GMS (<83) has no such
+	// loop and terminates the equipable inventory with a single byte.
+	if (t.Region() == "GMS" && t.MajorAtLeast(83)) || t.Region() == "JMS" {
 		w.WriteInt(0)
 	} else {
 		w.WriteByte(0)
@@ -477,7 +532,8 @@ func (m *CharacterData) decodeInventory(l logrus.FieldLogger, ctx context.Contex
 		m.Inventory.CashCapacity = r.ReadByte()
 	}
 
-	if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+	// Inventory-update FILETIME: v79+ only (mirror of Encode).
+	if (t.IsRegion("GMS") && t.MajorAtLeast(79)) || t.Region() == "JMS" {
 		m.Inventory.Timestamp = r.ReadInt64()
 	}
 
@@ -522,7 +578,7 @@ func decodeEquipmentSection(l logrus.FieldLogger, ctx context.Context, r *reques
 	var assets []model.Asset
 	for {
 		var wireSlot uint16
-		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+		if (t.Region() == "GMS" && t.MajorAtLeast(83)) || t.Region() == "JMS" {
 			wireSlot = r.ReadUint16()
 		} else {
 			wireSlot = uint16(r.ReadByte())
@@ -546,7 +602,7 @@ func decodeEquipmentSection(l logrus.FieldLogger, ctx context.Context, r *reques
 func decodeEquipableInventorySection(l logrus.FieldLogger, ctx context.Context, r *request.Reader, options map[string]interface{}, t tenant.Model) []model.Asset {
 	var assets []model.Asset
 	for {
-		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+		if (t.Region() == "GMS" && t.MajorAtLeast(83)) || t.Region() == "JMS" {
 			wireSlot := r.ReadUint16()
 			if wireSlot == 0 {
 				_ = r.ReadUint16() // consume remaining 2 bytes of WriteInt(0) terminator
@@ -589,7 +645,14 @@ func (m *CharacterData) encodeSkills(w *response.Writer, t tenant.Model) {
 	for _, s := range m.Skills {
 		w.WriteInt(s.Id)
 		w.WriteInt(s.Level)
-		w.WriteInt64(s.Expiration)
+		// Per-skill expiration (Int64) was introduced between v79 and v83.
+		// v79 client GW skill decode reads id+level(+mastery) only (verified
+		// CharacterData::Decode v79 @0x4da2ca); v83 adds DecodeBuffer(8)
+		// (verified @0x4e592d). Writing it ungated shifts every later section
+		// for v79 and over-reads at GW_CoupleRecord::Decode (error 38).
+		if (t.Region() == "GMS" && t.MajorAtLeast(83)) || t.Region() == "JMS" {
+			w.WriteInt64(s.Expiration)
+		}
 		if s.FourthJob {
 			w.WriteInt(s.MasterLevel)
 		}
@@ -610,7 +673,10 @@ func (m *CharacterData) decodeSkills(r *request.Reader, t tenant.Model) {
 	for i := uint16(0); i < skillCount; i++ {
 		m.Skills[i].Id = r.ReadUint32()
 		m.Skills[i].Level = r.ReadUint32()
-		m.Skills[i].Expiration = r.ReadInt64()
+		// Mirror of encodeSkills: expiration present only for GMS >= 83 / JMS.
+		if (t.Region() == "GMS" && t.MajorAtLeast(83)) || t.Region() == "JMS" {
+			m.Skills[i].Expiration = r.ReadInt64()
+		}
 		jobId := job.IdFromSkillId(skill.Id(m.Skills[i].Id))
 		m.Skills[i].FourthJob = job.IsFourthJob(jobId)
 		if m.Skills[i].FourthJob {
@@ -700,29 +766,50 @@ func (m *CharacterData) decodeRings(r *request.Reader, t tenant.Model) {
 
 func (m *CharacterData) encodeTeleports(w *response.Writer, t tenant.Model) {
 	for i := 0; i < 5; i++ {
-		w.WriteInt(uint32(_map.EmptyMapId))
+		v := _map.EmptyMapId
+		if i < len(m.TeleportMaps) {
+			v = m.TeleportMaps[i]
+		}
+		w.WriteInt(uint32(v))
 	}
 	if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
 		for i := 0; i < 10; i++ {
-			w.WriteInt(uint32(_map.EmptyMapId))
+			v := _map.EmptyMapId
+			if i < len(m.VipTeleportMaps) {
+				v = m.VipTeleportMaps[i]
+			}
+			w.WriteInt(uint32(v))
 		}
 	}
 }
 
 func (m *CharacterData) decodeTeleports(r *request.Reader, t tenant.Model) {
 	for i := 0; i < 5; i++ {
-		_ = r.ReadUint32()
+		v := _map.Id(r.ReadUint32())
+		if v != _map.EmptyMapId {
+			m.TeleportMaps = append(m.TeleportMaps, v)
+		}
 	}
 	if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
 		for i := 0; i < 10; i++ {
-			_ = r.ReadUint32()
+			v := _map.Id(r.ReadUint32())
+			if v != _map.EmptyMapId {
+				m.VipTeleportMaps = append(m.VipTeleportMaps, v)
+			}
 		}
 	}
 }
 
-func (m *CharacterData) encodeMonsterBook(w *response.Writer) {
+// encodeMonsterBookCover writes the monster-book cover card id (flag 0x20000),
+// introduced in the v61 revision.
+func (m *CharacterData) encodeMonsterBookCover(w *response.Writer) {
 	w.WriteInt(uint32(m.MonsterBook.CoverCardId)) // cover: full item id (flag 0x20000)
-	w.WriteByte(0)                                // mode 0: simple list (flag 0x10000)
+}
+
+// encodeMonsterBookCards writes the owned-card list (flag 0x10000), introduced in
+// the v72 revision. Always mode 0 (simple list).
+func (m *CharacterData) encodeMonsterBookCards(w *response.Writer) {
+	w.WriteByte(0) // mode 0: simple list (flag 0x10000)
 	w.WriteShort(uint16(len(m.MonsterBook.Cards)))
 	for _, c := range m.MonsterBook.Cards {
 		w.WriteShort(uint16(uint32(c.CardId) - uint32(item.MonsterBookCardBase)))
@@ -730,11 +817,14 @@ func (m *CharacterData) encodeMonsterBook(w *response.Writer) {
 	}
 }
 
-// decodeMonsterBook is the symmetric reader for atlas's own mode-0 output. The
-// server only ever emits mode 0, so only mode 0 is decoded (the client-side
-// mode-1 bitmap form is never produced here).
-func (m *CharacterData) decodeMonsterBook(r *request.Reader) {
+func (m *CharacterData) decodeMonsterBookCover(r *request.Reader) {
 	m.MonsterBook.CoverCardId = item.Id(r.ReadUint32())
+}
+
+// decodeMonsterBookCards is the symmetric reader for atlas's own mode-0 output.
+// The server only ever emits mode 0, so only mode 0 is decoded (the client-side
+// mode-1 bitmap form is never produced here).
+func (m *CharacterData) decodeMonsterBookCards(r *request.Reader) {
 	_ = r.ReadByte() // mode selector (always 0 on the wire we emit)
 	count := r.ReadUint16()
 	m.MonsterBook.Cards = make([]MonsterBookCard, count)

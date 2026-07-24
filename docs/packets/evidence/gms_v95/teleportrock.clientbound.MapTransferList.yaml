@@ -1,0 +1,10 @@
+packet: teleportrock/clientbound/MapTransferList
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMapTransferResult
+    address: "0x9f9f90"
+    decompile_sha256: afda1d29ff4fd2645b3c181e7688bebd284dd23f048b89fc7f47e7241b4bfd37
+verifies:
+  - libs/atlas-packet/teleportrock/clientbound/result_test.go#TestMapTransferListVipPadsToTen

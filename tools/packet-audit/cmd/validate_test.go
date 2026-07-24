@@ -24,15 +24,18 @@ type validateFakeMCP struct {
 func (f *validateFakeMCP) GetFunctionByName(_ context.Context, _ string) (string, bool, error) {
 	return "", false, nil
 }
+
 func (f *validateFakeMCP) DecompileFunction(_ context.Context, a string) (string, error) {
 	if err := f.decompErr[a]; err != nil {
 		return "", err
 	}
 	return f.decomp[a], nil
 }
+
 func (f *validateFakeMCP) GetCallees(_ context.Context, _ string) ([]idasrc.Callee, error) {
 	return nil, nil
 }
+
 func (f *validateFakeMCP) StructInfo(_ context.Context, _ string) (idasrc.StructLayout, error) {
 	return idasrc.StructLayout{}, nil
 }

@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldWitchTowerScoreUpdate
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CField_Witchtower::OnScoreUpdate
+    address: "0x561a4f"
+    decompile_sha256: ee57ccd5a9b4889e735401ff4ae05675eccfc7ad0081c462be782b806140acb3
+verifies:
+    - libs/atlas-packet/field/clientbound/witch_tower_score_update_test.go#TestWitchTowerScoreUpdateByteOutputV79

@@ -1,0 +1,10 @@
+packet: cash/serverbound/CashItemUseTeleportRock
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendConsumeCashItemUseRequest
+    address: "0x9eb3e0"
+    decompile_sha256: 0c76949e4efbae837ee4b463874b964b54abb7eb646a8e1e14ed6f00325e901e
+verifies:
+  - libs/atlas-packet/cash/serverbound/item_use_teleport_rock_test.go#TestItemUseTeleportRockByMapV95

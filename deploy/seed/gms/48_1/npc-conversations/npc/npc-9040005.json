@@ -1,0 +1,55 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 9040005,
+      "startState": "askExit",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "performWarp",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "Would you like to exit the Guild Quest?"
+          },
+          "id": "askExit",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "101030104",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "performWarp",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "9040005",
+    "type": "npc-conversation"
+  }
+}

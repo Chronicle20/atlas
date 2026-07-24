@@ -2047,12 +2047,40 @@ func candidatesFromFName(fname string) []candidate {
 	case "CWvsContext::SendLotteryItemUseRequest":
 		return []candidate{{name: "LotteryItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
 	// Vega's Spell (category 561) USE_CASH_ITEM sub-body (task-130 §2.1) shares
-	// the cash-item-use sender fname with task-126's AP/SP point-reset arm. Both
-	// candidates are keyed to the same fname, so return them together.
+	// the cash-item-use sender fname with task-126's AP/SP point-reset arm and
+	// task-124's teleport-rock arm. All candidates are keyed to the same fname,
+	// so return them together.
 	case "CWvsContext::SendConsumeCashItemUseRequest", "CItemSpeakerDlg::_SendConsumeCashItemUseRequest":
 		return []candidate{
 			{name: "ItemUsePointReset", dir: csvpkg.DirServerbound, pkg: "cash"},
 			{name: "ItemUseVegaScroll", dir: csvpkg.DirServerbound, pkg: "cash"},
+			{name: "ItemUseTeleportRock", dir: csvpkg.DirServerbound, pkg: "cash"},
+		}
+	// Teleport-rock family (task-124). USE_TELEPORT_ROCK (serverbound) sends
+	// slot+itemId then delegates the target payload to the shared
+	// CWvsContext::RunMapTransferItem helper (byName flag + name/mapId), plus a
+	// trailing update_time (v83 @0xa0a3bb, RunMapTransferItem @0xa0a4aa — both
+	// IDA-verified live MapleStory_dump.exe port 13342, task-124 verify pass).
+	// TROCK_ADD_MAP (serverbound) was unnamed in the v83 IDB (sub_A261BC,
+	// mangled symbol ?SendMapTransferRequest@CWvsContext@@QAEXJKH@Z already
+	// present) — renamed live to match the registry fname so it resolves by
+	// name for export harvesting (task-124, §10 unnamed-sender convention).
+	// MAP_TRANSFER_RESULT (clientbound) OnMapTransferResult switches on mode:
+	// cases 2/3 are the list-refresh form (MapTransferList), cases 5-11 are the
+	// error/notice form (MapTransferError) — both keyed to the same fname.
+	// No `pkg` hint on these four: Use/AddMap/MapTransferList/MapTransferError
+	// are globally-unique struct names (no cross-package collision), so pkg is
+	// omitted to keep the packet id unqualified (teleportrock/serverbound/Use,
+	// not teleportrock/serverbound/TeleportrockUse) — matching the markers
+	// already committed in the teleportrock test files.
+	case "CWvsContext::SendMapTransferItemUseRequest":
+		return []candidate{{name: "Use", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::SendMapTransferRequest":
+		return []candidate{{name: "AddMap", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::OnMapTransferResult":
+		return []candidate{
+			{name: "MapTransferList", dir: csvpkg.DirClientbound},
+			{name: "MapTransferError", dir: csvpkg.DirClientbound},
 		}
 	// --- interaction sub-domain (task-067) ---
 	// NOTE: the interaction serverbound dispatcher struct is also named `Operation`

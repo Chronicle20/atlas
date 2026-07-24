@@ -1,21 +1,30 @@
 {
   "WriterName": "FieldContiMove",
   "IDAName": "CField_ContiMove::OnContiMove",
-  "Address": "",
+  "Address": "0x5374c1",
   "Variant": "GMS/v79",
-  "BranchDepth": 0,
+  "BranchDepth": 1,
   "AtlasFile": "libs/atlas-packet/field/clientbound/conti_move.go",
   "Rows": [
     {
       "Index": 0,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "function not found in IDB",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: function not found in IDB"
+      "IDAOp": 0,
+      "IDAComment": "state; (state-7) selects one of 6 arms (nullsub_7/sub_5375AE/nullsub_8/sub_5375D3/nullsub_9/sub_537609)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "subState (state-gated: only arms 8/10/12 -- sub_5375AE/sub_5375D3/sub_537609 -- read a second byte; arms 7/9/11 are nullsubs and read nothing further)",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 4,
+  "Verdict": 0,
   "FlatInvalid": false
 }

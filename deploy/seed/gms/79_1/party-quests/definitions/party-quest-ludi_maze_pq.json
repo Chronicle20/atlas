@@ -1,0 +1,95 @@
+{
+  "data": {
+    "attributes": {
+      "duration": 900,
+      "exit": 809050017,
+      "failRequirements": [],
+      "fieldLock": "channel",
+      "name": "Ludibrium Maze Party Quest",
+      "questId": "ludi_maze_pq",
+      "registration": {
+        "duration": 0,
+        "mapId": 220000000,
+        "mode": "instant",
+        "type": "party"
+      },
+      "rewards": [],
+      "stages": [
+        {
+          "clearConditions": [
+            {
+              "operator": ">=",
+              "referenceId": 4001106,
+              "type": "item",
+              "value": 30
+            }
+          ],
+          "duration": 0,
+          "index": 0,
+          "mapIds": [
+            809050000,
+            809050001,
+            809050002,
+            809050003,
+            809050004,
+            809050005,
+            809050006,
+            809050007,
+            809050008,
+            809050009,
+            809050010,
+            809050011,
+            809050012,
+            809050013,
+            809050014,
+            809050015
+          ],
+          "name": "The Maze",
+          "properties": {
+            "collectItemId": 4001106,
+            "exitNpcMap": 809050015,
+            "minimumTickets": 30,
+            "npcId": 9103000
+          },
+          "rewards": [
+            {
+              "amount": 0,
+              "type": "experience"
+            }
+          ],
+          "type": "item_collection",
+          "warpType": "all"
+        }
+      ],
+      "startEvents": [
+        {
+          "target": "party",
+          "type": "warp",
+          "value": "809050000"
+        }
+      ],
+      "startRequirements": [
+        {
+          "operator": "gte",
+          "referenceId": 0,
+          "type": "party_size",
+          "value": 3
+        },
+        {
+          "operator": "gte",
+          "referenceId": 0,
+          "type": "level_min",
+          "value": 51
+        },
+        {
+          "operator": "lte",
+          "referenceId": 0,
+          "type": "level_max",
+          "value": 70
+        }
+      ]
+    },
+    "id": "ludi_maze_pq",
+    "type": "party-quest-definition"
+  }
+}

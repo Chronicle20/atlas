@@ -49,8 +49,8 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		source := slot.Position(p.Source())
 		itemId := item.Id(p.ItemId())
 
-		a, err := character2.NewProcessor(l, ctx).GetItemInSlot(s.CharacterId(), inventory.TypeValueCash, int16(source))()
-		if err != nil || item.Id(a.TemplateId()) != itemId {
+		templateId, err := cashItemInSlotFunc(l, ctx, s.CharacterId(), int16(source))
+		if err != nil || item.Id(templateId) != itemId {
 			l.Warnf("Character [%d] attempted to use cash item [%d] in slot [%d], but item not found or mismatched.", s.CharacterId(), itemId, source)
 			return
 		}
@@ -118,6 +118,23 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 				Steps:         steps,
 			})
 			return
+		}
+		if it == CashSlotItemTypeTeleportRock {
+			// Enum 12 is shared: teleport rocks (classification 504) AND some
+			// megaphones alias here (GetCashSlotItemType's ClassificationMegaphones
+			// branch, otherCategory==1, above). Only the rocks route into the
+			// use-flow here; aliased megaphones fall through to the warn-and-drop
+			// below, unchanged.
+			if item.GetClassification(itemId) == item.ClassificationTeleportRock {
+				sp := cashsb.NewItemUseTeleportRock(updateTimeFirst)
+				sp.Decode(l, ctx)(r, readerOptions)
+				if !sp.Target().Valid() {
+					l.Warnf("Character [%d] sent cash teleport-rock use without a target payload.", s.CharacterId())
+					return
+				}
+				useRockFunc(l, ctx, wp)(s, itemId, sp.Target())
+				return
+			}
 		}
 		if it == CashSlotItemTypeItemTag {
 			sp := cashsb.NewItemUseItemTag(updateTimeFirst)
@@ -450,7 +467,23 @@ const (
 	CashSlotItemTypeVegasSpell95     = CashSlotItemType(71)
 	CashSlotItemTypeViciousHammer    = CashSlotItemType(66) // GMS < 95
 	CashSlotItemTypeViciousHammerV95 = CashSlotItemType(67) // GMS >= 95
+	// CashSlotItemTypeTeleportRock (enum 12) is shared with some megaphones
+	// (GetCashSlotItemType's ClassificationMegaphones branch, otherCategory==1)
+	// — the handler gates on item.ClassificationTeleportRock (504) before
+	// routing into the use-flow, so aliased megaphones are unaffected.
+	CashSlotItemTypeTeleportRock = CashSlotItemType(12)
 )
+
+// cashItemInSlotFunc is a test seam for the cash-inventory ownership check
+// (package-var injection precedent: itemInSlotFunc in teleport_rock_use.go).
+// Returns the template id of the TypeValueCash item in the slot.
+var cashItemInSlotFunc = func(l logrus.FieldLogger, ctx context.Context, characterId uint32, slot int16) (uint32, error) {
+	a, err := character2.NewProcessor(l, ctx).GetItemInSlot(characterId, inventory.TypeValueCash, slot)()
+	if err != nil {
+		return 0, err
+	}
+	return uint32(a.TemplateId()), nil
+}
 
 const (
 	pigmyEggMinId item.Id = 4170000

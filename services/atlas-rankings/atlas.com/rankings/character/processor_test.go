@@ -171,3 +171,14 @@ func TestAllProviderDrainsBeyondOnePage(t *testing.T) {
 		t.Fatalf("character 251 decoded wrong: %+v", last)
 	}
 }
+
+func TestExtractCarriesName(t *testing.T) {
+	rm := RestModel{Id: 7, Name: "Hero", WorldId: 0, Level: 30, Experience: 100, JobId: 100, Gm: 0}
+	m, err := Extract(rm)
+	if err != nil {
+		t.Fatalf("Extract: %v", err)
+	}
+	if m.Name() != "Hero" {
+		t.Fatalf("Name = %q, want Hero", m.Name())
+	}
+}

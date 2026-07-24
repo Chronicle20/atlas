@@ -9,6 +9,7 @@ import (
 // character — only the attributes ranking computation needs.
 type Model struct {
 	id         uint32
+	name       string
 	worldId    world.Id
 	jobId      job.Id
 	level      byte
@@ -17,6 +18,7 @@ type Model struct {
 }
 
 func (m Model) Id() uint32         { return m.id }
+func (m Model) Name() string       { return m.name }
 func (m Model) WorldId() world.Id  { return m.worldId }
 func (m Model) JobId() job.Id      { return m.jobId }
 func (m Model) Level() byte        { return m.level }

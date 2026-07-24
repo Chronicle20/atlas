@@ -14,6 +14,7 @@ import (
 type RestModel struct {
 	Id         uint32   `json:"-"`
 	AccountId  uint32   `json:"accountId"`
+	Name       string   `json:"name"`
 	WorldId    world.Id `json:"worldId"`
 	Level      byte     `json:"level"`
 	Experience uint32   `json:"experience"`
@@ -55,6 +56,7 @@ func (r *RestModel) SetReferencedStructs(_ map[string]map[string]jsonapi.Data) e
 func Extract(r RestModel) (Model, error) {
 	return Model{
 		id:         r.Id,
+		name:       r.Name,
 		worldId:    r.WorldId,
 		jobId:      r.JobId,
 		level:      r.Level,

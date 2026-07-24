@@ -44,10 +44,10 @@ func TestJobCategory(t *testing.T) {
 func TestRankOrderingAndTiebreaks(t *testing.T) {
 	// level DESC, experience DESC, characterId ASC
 	inputs := []Input{
-		{CharacterId: 1, WorldId: 0, JobId: 100, Level: 50, Experience: 100},
-		{CharacterId: 2, WorldId: 0, JobId: 100, Level: 70, Experience: 5},
-		{CharacterId: 3, WorldId: 0, JobId: 100, Level: 50, Experience: 200},
-		{CharacterId: 4, WorldId: 0, JobId: 100, Level: 50, Experience: 100}, // ties char 1 on level+exp; id 4 > 1
+		{CharacterId: 1, Name: "Char1", WorldId: 0, JobId: 100, Level: 50, Experience: 100},
+		{CharacterId: 2, Name: "Char2", WorldId: 0, JobId: 100, Level: 70, Experience: 5},
+		{CharacterId: 3, Name: "Char3", WorldId: 0, JobId: 100, Level: 50, Experience: 200},
+		{CharacterId: 4, Name: "Char4", WorldId: 0, JobId: 100, Level: 50, Experience: 100}, // ties char 1 on level+exp; id 4 > 1
 	}
 	got := rankedById(Rank(inputs))
 	if got[2].OverallRank != 1 {
@@ -63,9 +63,9 @@ func TestRankOrderingAndTiebreaks(t *testing.T) {
 
 func TestRankUniquePerWorld(t *testing.T) {
 	inputs := []Input{
-		{CharacterId: 1, WorldId: 0, JobId: 0, Level: 10, Experience: 0},
-		{CharacterId: 2, WorldId: 0, JobId: 0, Level: 10, Experience: 0},
-		{CharacterId: 3, WorldId: 1, JobId: 0, Level: 5, Experience: 0},
+		{CharacterId: 1, Name: "Char1", WorldId: 0, JobId: 0, Level: 10, Experience: 0},
+		{CharacterId: 2, Name: "Char2", WorldId: 0, JobId: 0, Level: 10, Experience: 0},
+		{CharacterId: 3, Name: "Char3", WorldId: 1, JobId: 0, Level: 5, Experience: 0},
 	}
 	got := rankedById(Rank(inputs))
 	if got[1].OverallRank == got[2].OverallRank {
@@ -78,9 +78,9 @@ func TestRankUniquePerWorld(t *testing.T) {
 
 func TestJobRankRestrictedToCategory(t *testing.T) {
 	inputs := []Input{
-		{CharacterId: 1, WorldId: 0, JobId: 100, Level: 90, Experience: 0}, // warrior, overall 1
-		{CharacterId: 2, WorldId: 0, JobId: 200, Level: 80, Experience: 0}, // magician, overall 2
-		{CharacterId: 3, WorldId: 0, JobId: 110, Level: 70, Experience: 0}, // warrior, overall 3
+		{CharacterId: 1, Name: "Char1", WorldId: 0, JobId: 100, Level: 90, Experience: 0}, // warrior, overall 1
+		{CharacterId: 2, Name: "Char2", WorldId: 0, JobId: 200, Level: 80, Experience: 0}, // magician, overall 2
+		{CharacterId: 3, Name: "Char3", WorldId: 0, JobId: 110, Level: 70, Experience: 0}, // warrior, overall 3
 	}
 	got := rankedById(Rank(inputs))
 	if got[1].JobRank != 1 || got[3].JobRank != 2 {
@@ -91,6 +91,24 @@ func TestJobRankRestrictedToCategory(t *testing.T) {
 	}
 	if got[1].JobCategory != 1 || got[2].JobCategory != 2 {
 		t.Errorf("job categories wrong: %+v", got)
+	}
+}
+
+func TestRankCarriesDisplayFields(t *testing.T) {
+	inputs := []Input{
+		{CharacterId: 1, Name: "Alpha", WorldId: 0, JobId: 110, Level: 40, Experience: 500},
+		{CharacterId: 2, Name: "Beta", WorldId: 0, JobId: 210, Level: 30, Experience: 100},
+	}
+	got := Rank(inputs)
+	byId := map[uint32]Ranked{}
+	for _, r := range got {
+		byId[r.CharacterId] = r
+	}
+	if byId[1].Name != "Alpha" || byId[1].Level != 40 || byId[1].JobId != 110 {
+		t.Fatalf("Ranked[1] display fields not carried: %+v", byId[1])
+	}
+	if byId[1].OverallRank != 1 || byId[2].OverallRank != 2 {
+		t.Fatalf("ordering changed: %+v", byId)
 	}
 }
 

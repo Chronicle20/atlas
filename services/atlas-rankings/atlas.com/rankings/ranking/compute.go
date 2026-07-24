@@ -11,6 +11,7 @@ import (
 // (gm > 0 excluded entirely) happens before Inputs are built.
 type Input struct {
 	CharacterId uint32
+	Name        string
 	WorldId     world.Id
 	JobId       job.Id
 	Level       byte
@@ -22,8 +23,11 @@ type Input struct {
 // strict total order, so dense and ordinal ranking coincide.
 type Ranked struct {
 	CharacterId uint32
+	Name        string
 	WorldId     world.Id
 	JobCategory uint16
+	Level       byte
+	JobId       job.Id
 	OverallRank uint32
 	JobRank     uint32
 }
@@ -64,8 +68,11 @@ func Rank(inputs []Input) []Ranked {
 			jobPos[cat]++
 			results = append(results, Ranked{
 				CharacterId: c.CharacterId,
+				Name:        c.Name,
 				WorldId:     wid,
 				JobCategory: cat,
+				Level:       c.Level,
+				JobId:       c.JobId,
 				OverallRank: uint32(idx + 1),
 				JobRank:     jobPos[cat],
 			})

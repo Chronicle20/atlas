@@ -111,6 +111,7 @@ func (p *ProcessorImpl) Recompute(now time.Time) error {
 		}
 		inputs = append(inputs, Input{
 			CharacterId: c.Id(),
+			Name:        c.Name(),
 			WorldId:     c.WorldId(),
 			JobId:       c.JobId(),
 			Level:       c.Level(),
@@ -139,8 +140,11 @@ func (p *ProcessorImpl) Recompute(now time.Time) error {
 		}
 		entities = append(entities, Entity{
 			CharacterId:     r.CharacterId,
+			Name:            r.Name,
 			WorldId:         r.WorldId,
 			JobCategory:     r.JobCategory,
+			Level:           r.Level,
+			JobId:           r.JobId,
 			OverallRank:     r.OverallRank,
 			OverallRankMove: Move(prevOverall, r.OverallRank),
 			JobRank:         r.JobRank,

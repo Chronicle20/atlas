@@ -334,3 +334,32 @@ func TestRecomputeGmBoundaryIsGreaterThanZero(t *testing.T) {
 		t.Fatalf("gm=2 character must be excluded (gm > 0), got err=%v", err)
 	}
 }
+
+// TestRecomputePersistsDisplayFields proves Recompute actually threads the
+// character's Name/Level/JobId all the way through the Input → Ranked →
+// Entity build and into the persisted row, not just through Rank() in
+// isolation (compute_test.go already covers that narrower slice).
+func TestRecomputePersistsDisplayFields(t *testing.T) {
+	db := testDatabase(t)
+	_, ctx := testTenantContext(t)
+	l := logrus.New()
+
+	rm := character.RestModel{Id: 1, Name: "Alpha", WorldId: 0, JobId: 110, Level: 40, Experience: 500}
+	c, err := character.Extract(rm)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+
+	p := NewProcessor(l, ctx, db).WithCharacterSupplier(supplierOf(c))
+	if err := p.Recompute(time.Unix(1000, 0)); err != nil {
+		t.Fatalf("recompute: %v", err)
+	}
+
+	rows, err := allEntityProvider()(db.WithContext(ctx))()
+	if err != nil {
+		t.Fatalf("read rows: %v", err)
+	}
+	if len(rows) != 1 || rows[0].Name != "Alpha" || rows[0].Level != 40 || rows[0].JobId != job.Id(110) {
+		t.Fatalf("row display fields wrong: %+v", rows)
+	}
+}

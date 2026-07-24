@@ -14,6 +14,7 @@ const NpcSpawnRequestControllerWriter = "SpawnNPCRequestController"
 
 // packet-audit:fname CNpcPool::OnNpcChangeController
 type SpawnRequestController struct {
+	flag     byte
 	id       uint32
 	template uint32
 	x        int16
@@ -25,8 +26,8 @@ type SpawnRequestController struct {
 	miniMap  bool
 }
 
-func NewNpcSpawnRequestController(id uint32, template uint32, x int16, cy int16, f int32, fh uint16, rx0 int16, rx1 int16, miniMap bool) SpawnRequestController {
-	return SpawnRequestController{id: id, template: template, x: x, cy: cy, f: f, fh: fh, rx0: rx0, rx1: rx1, miniMap: miniMap}
+func NewNpcSpawnRequestController(flag byte, id uint32, template uint32, x int16, cy int16, f int32, fh uint16, rx0 int16, rx1 int16, miniMap bool) SpawnRequestController {
+	return SpawnRequestController{flag: flag, id: id, template: template, x: x, cy: cy, f: f, fh: fh, rx0: rx0, rx1: rx1, miniMap: miniMap}
 }
 
 func (m SpawnRequestController) Operation() string { return NpcSpawnRequestControllerWriter }
@@ -37,7 +38,7 @@ func (m SpawnRequestController) String() string {
 func (m SpawnRequestController) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
-		w.WriteByte(1)
+		w.WriteByte(m.flag)
 		w.WriteInt(m.id)
 		w.WriteInt(m.template)
 		w.WriteInt16(m.x)
@@ -57,7 +58,7 @@ func (m SpawnRequestController) Encode(l logrus.FieldLogger, _ context.Context) 
 
 func (m *SpawnRequestController) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
-		_ = r.ReadByte() // always 1
+		m.flag = r.ReadByte()
 		m.id = r.ReadUint32()
 		m.template = r.ReadUint32()
 		m.x = r.ReadInt16()

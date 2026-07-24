@@ -2929,7 +2929,13 @@
       {
         "opCode": "0x10A",
         "writer": "SpawnNPCRequestController",
-        "services": ["channel"]
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "GRANT": 1,
+            "REVOKE": 0
+          }
+        }
       },
       {
         "opCode": "0x10B",

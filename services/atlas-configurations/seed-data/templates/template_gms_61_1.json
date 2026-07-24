@@ -2672,7 +2672,13 @@
       {
         "opCode": "0xC4",
         "writer": "SpawnNPCRequestController",
-        "services": ["channel"]
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "GRANT": 1,
+            "REVOKE": 0
+          }
+        }
       },
       {
         "opCode": "0xC5",

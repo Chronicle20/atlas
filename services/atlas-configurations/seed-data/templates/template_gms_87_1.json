@@ -2559,7 +2559,13 @@
       {
         "opCode": "0x114",
         "writer": "SpawnNPCRequestController",
-        "services": ["channel"]
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "GRANT": 1,
+            "REVOKE": 0
+          }
+        }
       },
       {
         "opCode": "0x115",

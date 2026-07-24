@@ -1,0 +1,101 @@
+{
+  "service": "atlas-monsters, atlas-channel, libs/atlas-packet",
+  "path": "services/atlas-monsters/atlas.com/monsters; services/atlas-channel/atlas.com/channel; libs/atlas-packet",
+  "date": "2026-07-18",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "atlas-monsters/character/hidden",
+      "type": "support",
+      "checks": [
+        { "id": "FILE-01..06", "name": "File responsibilities", "status": "pass", "evidence": "registry.go single-purpose Redis registry; task.go single-purpose sweep runner" },
+        { "id": "DOM-26", "name": "Goroutines via routine.Go", "status": "pass", "evidence": "tools/goroutine-guard.sh exit 0" },
+        { "id": "DOM-21", "name": "No atlas-constants duplication", "status": "pass", "evidence": "uses tenant.Model, world/channel ids via field.Model accessors" }
+      ]
+    },
+    {
+      "name": "atlas-monsters/character/buff",
+      "type": "domain (REST-client, no DB)",
+      "checks": [
+        { "id": "DOM-01", "name": "builder.go exists", "status": "warn", "evidence": "absent; N/A — stateless REST-client projection, no persistence" },
+        { "id": "DOM-02", "name": "ToEntity() method", "status": "warn", "evidence": "no entity.go; N/A — no DB backing" },
+        { "id": "DOM-03", "name": "Make(Entity) function", "status": "warn", "evidence": "no entity.go; N/A — no DB backing" },
+        { "id": "DOM-04", "name": "Transform function in rest.go", "status": "warn", "evidence": "rest.go:28 defines Extract (inbound), not Transform (outbound); correct analog for a REST-client package" },
+        { "id": "DOM-06", "name": "Processor accepts FieldLogger", "status": "pass", "evidence": "processor.go:21 NewProcessor(l logrus.FieldLogger, ctx context.Context)" },
+        { "id": "EXT-01", "name": "Relationship interfaces on target struct", "status": "fail", "evidence": "rest.go:9-26 RestModel has no SetToOneReferenceID/SetToManyReferenceIDs" },
+        { "id": "EXT-02", "name": "httptest-backed integration test", "status": "fail", "evidence": "no *_test.go files in character/buff/ at all" },
+        { "id": "EXT-03", "name": "Errors distinguish 404 from other failures", "status": "fail", "evidence": "no errors.Is(err, requests.ErrNotFound) usage in package" },
+        { "id": "EXT-04", "name": "Service URL via RootUrl", "status": "pass", "evidence": "requests.go:12 requests.RootUrl(\"BUFFS\")" }
+      ]
+    },
+    {
+      "name": "atlas-monsters/map (client additions)",
+      "type": "support (REST client extension)",
+      "checks": [
+        { "id": "FILE-02", "name": "RestModel/Transform/Extract in rest.go", "status": "pass", "evidence": "rest.go:41-70 LocationRestModel + ExtractLocation" },
+        { "id": "FILE-03", "name": "Cross-service request funcs in requests.go", "status": "pass", "evidence": "requests.go:30-31 requestCharacterLocation" },
+        { "id": "EXT-01", "name": "Relationship interfaces on target struct", "status": "fail", "evidence": "rest.go:41-70 LocationRestModel has no SetToOneReferenceID/SetToManyReferenceIDs (contrast with correct sibling services/atlas-maps/.../location/rest.go:42-49)" },
+        { "id": "EXT-02", "name": "httptest-backed integration test", "status": "fail", "evidence": "processor_drain_test.go only covers CharacterIdsInFieldProvider, not GetCharacterField" },
+        { "id": "EXT-03", "name": "Errors distinguish 404 from other failures", "status": "fail", "evidence": "no errors.Is(err, requests.ErrNotFound) usage" },
+        { "id": "EXT-04", "name": "Service URL via RootUrl", "status": "pass", "evidence": "requests.go:18 requests.RootUrl(\"MAPS\")" }
+      ]
+    },
+    {
+      "name": "atlas-monsters/monster (processor.go)",
+      "type": "domain",
+      "checks": [
+        { "id": "FILE-01", "name": "Processor methods in processor.go", "status": "pass", "evidence": "RelinquishControlOnHide/RestoreCandidacyOnReveal added in processor.go, same file as interface + impl" },
+        { "id": "DOM-24", "name": "Kafka producer stubbed in emit-path tests", "status": "pass", "evidence": "registry_test.go:26-27 package TestMain calls producertest.InstallNoop(); processor_test.go's hide/reveal tests use real NewProcessor() emit path, covered by the shared TestMain; no t.Cleanup(producer.ResetInstance) found" },
+        { "id": "concurrency-fix-verify", "name": "hiddenSet fail-open / election pool-leak fix", "status": "pass", "evidence": "processor.go getControllerCandidate seeds controlCounts only from non-hidden pool ids; -race clean" }
+      ]
+    },
+    {
+      "name": "atlas-channel/npc/controller",
+      "type": "support (Redis registry + election processor)",
+      "checks": [
+        { "id": "FILE-01", "name": "Processor interface + methods in processor.go", "status": "pass", "evidence": "processor.go:15-273" },
+        { "id": "FILE-06", "name": "No package-named catch-all file", "status": "pass", "evidence": "registry.go (Redis only), announce.go (packet announce only), processor.go (business logic only) — no bundling" },
+        { "id": "concurrency-fix-verify", "name": "hiddenCacheMu guard", "status": "pass", "evidence": "processor.go:37-38,73-82 full lock over check-then-fetch-then-store; -race clean (TestTryClaimConcurrentSameCharacterId)" },
+        { "id": "DOM-06", "name": "Processor accepts FieldLogger", "status": "pass", "evidence": "processor.go:41 NewProcessor(l logrus.FieldLogger, ctx context.Context)" }
+      ]
+    },
+    {
+      "name": "atlas-channel/kafka/consumer/buff (GM-hide/reveal handlers)",
+      "type": "support (Kafka consumer)",
+      "checks": [
+        { "id": "concurrency-fix-verify", "name": "Synchronous InMapModelProvider in reveal handler", "status": "pass", "evidence": "consumer.go:209-226 uses InMapModelProvider(...)() synchronous fetch + sequential range instead of ForEachInMap's parallel-callback append; matches commit 12d1539b5" },
+        { "id": "DOM-23", "name": "Kafka topic naming convention", "status": "pass", "evidence": "deploy/k8s/base/env-configmap.yaml:94 EVENT_TOPIC_CHARACTER_BUFF_STATUS; no literal override in atlas-channel.yaml/atlas-monsters.yaml" }
+      ]
+    },
+    {
+      "name": "libs/atlas-packet/npc/clientbound",
+      "type": "packet codec",
+      "checks": [
+        { "id": "DOM-25", "name": "Client-interpreted byte values config-resolved", "status": "fail", "evidence": "remove_controller.go:43 w.WriteByte(0) hardcodes the OnNpcChangeController remove-arm flag byte as a Go literal instead of a tenant writer-options table lookup (sibling grant arm spawn_request_controller.go:40 has the same pre-existing defect, untouched by this diff)" }
+      ]
+    },
+    {
+      "name": "atlas-channel go.mod (new direct require: atlas-redis)",
+      "type": "dependency/deploy",
+      "checks": [
+        { "id": "DOM-22", "name": "Dockerfile has 4 mentions per direct lib require", "status": "pass", "evidence": "N/A — shared root Dockerfile unconditionally COPYs/go.work-uses all 21 libs incl. atlas-redis (lines 41,71,94) for every service target; corroborated by successful docker buildx bake atlas-channel per plan-adherence audit" }
+      ]
+    }
+  ],
+  "blocking": [
+    "DOM-25: libs/atlas-packet/npc/clientbound/remove_controller.go:43 hardcodes client dispatcher flag byte (w.WriteByte(0)) instead of resolving via tenant writer-options table",
+    "EXT-01: services/atlas-monsters/atlas.com/monsters/map/rest.go LocationRestModel missing SetToOneReferenceID/SetToManyReferenceIDs",
+    "EXT-01: services/atlas-monsters/atlas.com/monsters/character/buff/rest.go RestModel missing SetToOneReferenceID/SetToManyReferenceIDs",
+    "EXT-02: services/atlas-monsters/atlas.com/monsters/character/buff/ has zero test files (no httptest coverage of GetByCharacterId unmarshal)",
+    "EXT-02: services/atlas-monsters/atlas.com/monsters/map/processor_drain_test.go does not cover GetCharacterField/requestCharacterLocation",
+    "EXT-03: no errors.Is(err, requests.ErrNotFound) distinction in map/ or character/buff/ of atlas-monsters — 404 and transient failures both silently degrade the same way in RelinquishControlOnHide/RestoreCandidacyOnReveal"
+  ],
+  "nonBlocking": [
+    "DOM-20: new test files across both services use individual Test funcs rather than table-driven tests := []struct{...} pattern",
+    "DOM-28-adjacent: location-lookup failure in RelinquishControlOnHide/RestoreCandidacyOnReveal logs at Debugf not Warnf, no degrade metric, though explicitly documented as deliberate (FR-7.2) with a reconciliation-sweep backstop",
+    "character/buff (atlas-monsters) technically triggers the Phase-2 'has model.go -> domain package' classification but is builder/entity-less by design (REST-client projection, no DB)"
+  ]
+}

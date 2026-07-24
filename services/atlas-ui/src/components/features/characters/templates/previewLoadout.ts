@@ -46,8 +46,9 @@ export function buildPreviewLoadout(
 
 /**
  * Loadout for a thumbnail/browser candidate: current preview picks with one
- * appearance dimension substituted (v83 convention: rendered hair id =
- * base hair id + color digit).
+ * appearance dimension substituted. Hair candidates arrive render-ready
+ * (base variant id) — the color digit is only applied for hairColors tiles
+ * (v83 convention: rendered hair id = base hair id + color digit).
  */
 export function buildVariantLoadout(
   t: CharacterTemplate,
@@ -60,10 +61,7 @@ export function buildVariantLoadout(
     case "faces":
       return { ...base, face: candidateId };
     case "hairs":
-      return {
-        ...base,
-        hair: candidateId + (at(t.hairColors, picks.hairColorIdx) ?? 0),
-      };
+      return { ...base, hair: candidateId };
     case "hairColors":
       return {
         ...base,

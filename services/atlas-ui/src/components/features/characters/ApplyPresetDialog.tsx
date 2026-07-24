@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -51,6 +51,7 @@ interface ApplyPresetDialogProps {
   accountId: number;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialPresetId?: string;
 }
 
 type CharacterPreset = TenantConfigAttributes["characters"]["presets"][number];
@@ -99,6 +100,7 @@ export function ApplyPresetDialog({
   accountId,
   open,
   onOpenChange,
+  initialPresetId,
 }: ApplyPresetDialogProps) {
   const tenantConfigQuery = useTenantConfiguration(tenant.id);
   const servicesQuery = useServices();
@@ -125,9 +127,13 @@ export function ApplyPresetDialog({
       .filter(({ worldId }) => serviceableWorldIds.has(worldId));
   }, [tenantConfigQuery.data, serviceableWorldIds]);
 
-  const presets = (
-    tenantConfigQuery.data?.attributes?.characters?.presets ?? []
-  ).filter((p): p is PresetWithId => !!p.id);
+  const presets = useMemo(
+    () =>
+      (tenantConfigQuery.data?.attributes?.characters?.presets ?? []).filter(
+        (p): p is PresetWithId => !!p.id,
+      ),
+    [tenantConfigQuery.data],
+  );
   const mutation = useCreateCharacterFromPreset(tenant);
 
   const form = useForm<FormValues>({
@@ -144,19 +150,37 @@ export function ApplyPresetDialog({
   });
   const validity = validityQuery.data;
 
-  // Reset form on open/close
+  // Seed the form exactly once per dialog open (mirrors the pre-task
+  // behavior of one reset per `open` transition). If an `initialPresetId`
+  // was supplied and it matches a saved preset, pre-select it; otherwise
+  // fall back to no selection. `presets` is memoized above, but its
+  // identity can still change while the dialog stays open (e.g. the
+  // sibling character-presets editor invalidates the same tenant-config
+  // query on save) — `seededRef` guards against that later change
+  // re-running `form.reset` and clobbering whatever the user has since
+  // typed or picked. If the dialog opens before `presets` has loaded
+  // (empty array) and `initialPresetId` can't resolve yet, we deliberately
+  // skip marking as seeded so a later presets-load can still land the
+  // pre-selection exactly once.
+  const seededRef = useRef(false);
   useEffect(() => {
-    if (open) {
-      form.reset({ presetId: "", worldId: 0, name: "" });
+    if (!open) {
+      seededRef.current = false;
+      return;
     }
-  }, [open, form]);
+    if (seededRef.current) return;
 
-  // Read isValid unconditionally (not inside the short-circuiting `||` chain
-  // below) so react-hook-form's formState proxy subscribes to it from mount.
-  // Otherwise, while `validity` is undefined the `||` short-circuits before
-  // reaching `form.formState.isValid`, RHF never tracks/recomputes isValid, and
-  // by the time the async name check resolves it reads a stale `false` — leaving
-  // Apply permanently disabled.
+    const resolvesNow =
+      !!initialPresetId && presets.some((p) => p.id === initialPresetId);
+    const stillWaitingForPresets =
+      !!initialPresetId && !resolvesNow && presets.length === 0;
+    if (stillWaitingForPresets) return;
+
+    const preset = resolvesNow ? initialPresetId : "";
+    form.reset({ presetId: preset, worldId: 0, name: "" });
+    seededRef.current = true;
+  }, [open, form, initialPresetId, presets]);
+
   // Read isValid unconditionally (not inside the short-circuiting `||` chain
   // below) so react-hook-form's formState proxy subscribes to it from mount.
   // Otherwise, while `validity` is undefined the `||` short-circuits before

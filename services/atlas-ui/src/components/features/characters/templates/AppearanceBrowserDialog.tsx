@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import type { CharacterTemplate } from "@/types/models/template";
 import {
   Dialog,
   DialogContent,
@@ -13,13 +12,14 @@ import { ErrorDisplay } from "@/components/common";
 import {
   generateCharacterUrl,
   isFemaleCosmeticId,
+  type CharacterLoadout,
 } from "@/services/api/characterRender.service";
 import { useTenant } from "@/context/tenant-context";
 import { useFaceIds, useHairIds } from "@/lib/hooks/api/useCosmetics";
 import { useItemNames } from "@/lib/hooks/api/useItemNames";
-import type { AppearancePoolKey, PreviewPicks } from "./editorState";
-import { buildVariantLoadout } from "./previewLoadout";
+import type { AppearancePoolKey } from "./editorState";
 import { AppearanceThumb } from "./AppearanceThumb";
+import { collapseHairBases, type BrowserTile } from "./hairBases";
 
 export const PAGE_SIZE = 24;
 
@@ -44,20 +44,33 @@ const NOUN: Record<AppearancePoolKey, string> = {
 
 interface AppearanceBrowserDialogProps {
   dimension: AppearancePoolKey;
-  template: CharacterTemplate;
-  picks: PreviewPicks;
+  gender: number;
+  variantLoadout: (
+    dimension: AppearancePoolKey,
+    id: number,
+  ) => CharacterLoadout;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAdd: (id: number) => void;
+  onSelect: (id: number) => void;
+  /** "add" (default) appends to a pool and keeps the dialog open; "replace"
+   * picks a single value, marks it with a selection ring, and closes. */
+  selectMode?: "add" | "replace";
+  /** "add" mode: ids already in the pool — rendered disabled/marked. */
+  markedIds?: number[];
+  /** "replace" mode: the current single value — rendered with a ring. */
+  selectedId?: number;
 }
 
 export function AppearanceBrowserDialog({
   dimension,
-  template,
-  picks,
+  gender,
+  variantLoadout,
   open,
   onOpenChange,
-  onAdd,
+  onSelect,
+  selectMode = "add",
+  markedIds,
+  selectedId,
 }: AppearanceBrowserDialogProps) {
   const { activeTenant } = useTenant();
   const [showAll, setShowAll] = useState(false);
@@ -68,34 +81,47 @@ export function AppearanceBrowserDialog({
   const hairs = useHairIds();
   const enumQuery = dimension === "faces" ? faces : hairs;
 
-  const candidates = useMemo(() => {
-    if (dimension === "hairColors") return HAIR_COLOR_DIGITS;
-    if (dimension === "skinColors") return SKIN_IDS;
-    const all = enumQuery.data ?? [];
-    const wantFemale = template.gender === 1;
+  const candidates = useMemo<BrowserTile[]>(() => {
+    if (dimension === "hairColors")
+      return HAIR_COLOR_DIGITS.map((d) => ({ value: d, renderId: d }));
+    if (dimension === "skinColors")
+      return SKIN_IDS.map((s) => ({ value: s, renderId: s }));
+    const all =
+      dimension === "hairs"
+        ? collapseHairBases(enumQuery.data ?? [])
+        : (enumQuery.data ?? []).map((id) => ({ value: id, renderId: id }));
+    const wantFemale = gender === 1;
     if (!showAll) {
-      return all.filter((id) => isFemaleCosmeticId(id) === wantFemale);
+      return all.filter((t) => isFemaleCosmeticId(t.value) === wantFemale);
     }
     // Show-all: lead with the currently-hidden (opposite-gender) candidates
     // so toggling doesn't bury them behind however many pages of
     // already-visible same-gender ids happen to sort first.
-    const opposite = all.filter((id) => isFemaleCosmeticId(id) !== wantFemale);
-    const wanted = all.filter((id) => isFemaleCosmeticId(id) === wantFemale);
+    const opposite = all.filter(
+      (t) => isFemaleCosmeticId(t.value) !== wantFemale,
+    );
+    const wanted = all.filter(
+      (t) => isFemaleCosmeticId(t.value) === wantFemale,
+    );
     return [...opposite, ...wanted];
-  }, [dimension, enumQuery.data, showAll, template.gender]);
+  }, [dimension, enumQuery.data, showAll, gender]);
 
   const pageCount = Math.max(1, Math.ceil(candidates.length / PAGE_SIZE));
   const clampedPage = Math.min(page, pageCount - 1);
-  const pageIds = candidates.slice(
+  const pageTiles = candidates.slice(
     clampedPage * PAGE_SIZE,
     (clampedPage + 1) * PAGE_SIZE,
   );
 
   // Names only exist for faces/hairs (item-strings covers them by id; the
   // search index does NOT — enumerate + resolve per page, never search).
-  const names = useItemNames(isEnumerated ? pageIds : []);
+  // Resolve by renderId — a hair base whose black variant is absent still
+  // has a name under its lowest existing variant.
+  const names = useItemNames(
+    isEnumerated ? pageTiles.map((t) => t.renderId) : [],
+  );
 
-  const inPool = template[dimension];
+  const inPool = markedIds ?? [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -128,25 +154,34 @@ export function AppearanceBrowserDialog({
           <>
             <div className="grid max-h-[420px] grid-cols-4 gap-2 overflow-y-auto sm:grid-cols-6">
               {activeTenant &&
-                pageIds.map((id) => (
-                  <div key={id} className="flex flex-col items-center gap-0.5">
+                pageTiles.map((t) => (
+                  <div
+                    key={t.value}
+                    className="flex flex-col items-center gap-0.5"
+                  >
                     <AppearanceThumb
                       url={generateCharacterUrl(
                         activeTenant.id,
                         activeTenant.attributes.region,
                         activeTenant.attributes.majorVersion,
                         activeTenant.attributes.minorVersion,
-                        buildVariantLoadout(template, picks, dimension, id),
+                        variantLoadout(dimension, t.renderId),
                         { stance: "stand1", resize: 2 },
                       )}
-                      idLabel={id}
-                      ariaLabel={`Add ${NOUN[dimension]} ${id}`}
-                      marked={inPool.includes(id)}
-                      onSelect={() => onAdd(id)}
+                      idLabel={t.value}
+                      ariaLabel={`Add ${NOUN[dimension]} ${t.value}`}
+                      marked={selectMode === "add" && inPool.includes(t.value)}
+                      selected={
+                        selectMode === "replace" && selectedId === t.value
+                      }
+                      onSelect={() => {
+                        onSelect(t.value);
+                        if (selectMode === "replace") onOpenChange(false);
+                      }}
                     />
                     {isEnumerated && (
                       <span className="max-w-[76px] truncate text-[10px] text-muted-foreground">
-                        {names[id] ?? "…"}
+                        {names[t.renderId] ?? "…"}
                       </span>
                     )}
                   </div>

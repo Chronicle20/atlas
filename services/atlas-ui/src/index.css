@@ -94,6 +94,18 @@
     --nord-14: 92 28% 65%;
     --nord-15: 311 20% 63%;
 
+    /* Branch accents for the jobs explorer (Nord aurora/frost, darkened for the light ground) — task-182 */
+    --c-warrior: 354 42% 48%;
+    --c-magician: 213 32% 44%;
+    --c-bowman: 92 28% 38%;
+    --c-thief: 311 20% 45%;
+    --c-pirate: 14 51% 46%;
+    --c-cygnus: 40 71% 38%;
+    --c-aran: 193 43% 38%;
+    --c-evan: 179 25% 38%;
+    --c-special: 210 34% 44%;
+    --acc-fg: 210 20% 98%;
+
     --background: 218 27% 94%;
 
     --foreground: 220 16% 22%;
@@ -233,6 +245,18 @@
     --sidebar-border: 240 3.7% 15.9%;
 
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Branch accents: Nord originals read well on the dark ground — task-182 */
+    --c-warrior: 354 42% 56%;
+    --c-magician: 213 32% 63%;
+    --c-bowman: 92 28% 65%;
+    --c-thief: 311 20% 63%;
+    --c-pirate: 14 51% 63%;
+    --c-cygnus: 40 71% 73%;
+    --c-aran: 193 43% 67%;
+    --c-evan: 179 25% 65%;
+    --c-special: 210 34% 63%;
+    --acc-fg: 220 16% 22%;
   }
 }
 

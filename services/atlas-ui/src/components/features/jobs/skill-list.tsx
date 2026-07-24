@@ -9,11 +9,7 @@ import { resolveSkillName } from "@/lib/skills/beginner-skill-names";
 import { SkillIcon } from "@/components/features/jobs/skill-icon";
 
 export type SkillListState =
-  | "loading"
-  | "error"
-  | "empty"
-  | "defs-failed"
-  | "ready";
+  "loading" | "error" | "empty" | "defs-failed" | "ready";
 
 interface SkillListProps {
   jobName: string;

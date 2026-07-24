@@ -32,9 +32,7 @@ describe("SkillDetail", () => {
     expect(screen.getByText("ID 1001004")).toBeInTheDocument();
     expect(screen.getByText("Active")).toBeInTheDocument();
     expect(screen.getByText("Master Lv 20")).toBeInTheDocument();
-    expect(
-      screen.getByText(/Strikes a single enemy/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Strikes a single enemy/)).toBeInTheDocument();
   });
 
   it("drives the stat readout and table highlight from the slider", () => {
@@ -65,12 +63,7 @@ describe("SkillDetail", () => {
   });
 
   it("shows 'No per-level data.' when the level table is empty", () => {
-    render(
-      <SkillDetail
-        def={makeDef({ effects: [] })}
-        accent="--c-warrior"
-      />,
-    );
+    render(<SkillDetail def={makeDef({ effects: [] })} accent="--c-warrior" />);
     expect(screen.getByText("No per-level data.")).toBeInTheDocument();
   });
 

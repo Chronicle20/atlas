@@ -56,9 +56,7 @@ describe("visibleRailGroups", () => {
   });
 
   it("adds Pirate at v62, Cygnus/Aran/Brigadier at v83, Evan at v84", () => {
-    expect(
-      visibleRailGroups(62)[0]!.entries.map((e) => e.id),
-    ).toContain(500);
+    expect(visibleRailGroups(62)[0]!.entries.map((e) => e.id)).toContain(500);
     const v83 = visibleRailGroups(83);
     expect(v83.map((g) => g.label)).toEqual([
       "Explorers",

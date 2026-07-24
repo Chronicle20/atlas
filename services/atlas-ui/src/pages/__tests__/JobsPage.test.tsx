@@ -121,9 +121,10 @@ describe("JobsPage", () => {
 
   it("defaults /jobs to the Warrior entry with no skill selected", () => {
     renderAt("/jobs");
-    expect(
-      screen.getByRole("button", { name: /Warrior 10/ }),
-    ).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: /Warrior 10/ })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
     expect(screen.getByText("Warrior — Skills")).toBeInTheDocument();
     expect(useJobSkillsMock).toHaveBeenCalledWith(expect.anything(), 100);
     expect(
@@ -133,9 +134,10 @@ describe("JobsPage", () => {
 
   it("deep-links /jobs/110 to Fighter in the Warrior branch", () => {
     renderAt("/jobs/110");
-    expect(
-      screen.getByRole("button", { name: /Warrior 10/ }),
-    ).toHaveAttribute("aria-pressed", "true"); // rail highlights the branch
+    expect(screen.getByRole("button", { name: /Warrior 10/ })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    ); // rail highlights the branch
     expect(screen.getByRole("button", { name: /Fighter/ })).toHaveAttribute(
       "aria-pressed",
       "true",
@@ -175,9 +177,7 @@ describe("JobsPage", () => {
     renderAt("/jobs/110");
     fireEvent.click(screen.getByRole("button", { name: /Power Guard/ }));
     expect(screen.getByTestId("nav-type")).toHaveTextContent("PUSH");
-    expect(screen.getByTestId("location")).toHaveTextContent(
-      "?skill=1101007",
-    );
+    expect(screen.getByTestId("location")).toHaveTextContent("?skill=1101007");
   });
 
   it("normalizes an unknown jobId to /jobs with the default selection", async () => {

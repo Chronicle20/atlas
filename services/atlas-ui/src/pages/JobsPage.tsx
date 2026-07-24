@@ -57,23 +57,18 @@ export function JobsPage() {
   const jobName = JOB_GRAPH[jobId]?.name ?? `Job ${jobId}`;
 
   const skillsQuery = useJobSkills(activeTenant, jobId);
-  const skillIds = useMemo(
-    () => skillsQuery.data ?? [],
-    [skillsQuery.data],
-  );
+  const skillIds = useMemo(() => skillsQuery.data ?? [], [skillsQuery.data]);
   const {
     definitions,
     isLoading: defsLoading,
     isError: defsError,
   } = useJobSkillDefinitions(activeTenant, skillIds);
 
-  const loading =
-    skillsQuery.isLoading || (skillIds.length > 0 && defsLoading);
+  const loading = skillsQuery.isLoading || (skillIds.length > 0 && defsLoading);
 
   const skillParam = searchParams.get("skill");
   const selectedSkillId = skillParam !== null ? Number(skillParam) : null;
-  const selectedDef =
-    definitions.find((d) => d.id === selectedSkillId) ?? null;
+  const selectedDef = definitions.find((d) => d.id === selectedSkillId) ?? null;
 
   // D1: a ?skill= that never resolves for this job is stripped (replace) once
   // definitions settle.
@@ -98,11 +93,7 @@ export function JobsPage() {
   const clearSkill = () => setSearchParams({});
 
   const detail = selectedDef ? (
-    <SkillDetail
-      key={selectedDef.id}
-      def={selectedDef}
-      accent={entry.accent}
-    />
+    <SkillDetail key={selectedDef.id} def={selectedDef} accent={entry.accent} />
   ) : null;
 
   return (
@@ -177,7 +168,10 @@ export function JobsPage() {
                 if (!open) clearSkill();
               }}
             >
-              <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-md">
+              <SheetContent
+                side="right"
+                className="w-full overflow-y-auto sm:max-w-md"
+              >
                 <SheetHeader>
                   <SheetTitle className="sr-only">Skill detail</SheetTitle>
                 </SheetHeader>

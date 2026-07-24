@@ -55,9 +55,10 @@ describe("SkillList", () => {
   it("marks the selected row pressed and fires onSelect", () => {
     const onSelect = vi.fn();
     renderList({ selectedSkillId: 1001005, onSelect });
-    expect(
-      screen.getByRole("button", { name: /Slash Blast/ }),
-    ).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: /Slash Blast/ })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
     fireEvent.click(screen.getByRole("button", { name: /Power Strike/ }));
     expect(onSelect).toHaveBeenCalledWith(1001004);
   });

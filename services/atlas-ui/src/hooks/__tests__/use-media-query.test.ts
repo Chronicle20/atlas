@@ -35,17 +35,13 @@ afterEach(() => {
 describe("useMediaQuery", () => {
   it("returns the current match state synchronously", () => {
     stubMatchMedia(true);
-    const { result } = renderHook(() =>
-      useMediaQuery("(min-width: 1150px)"),
-    );
+    const { result } = renderHook(() => useMediaQuery("(min-width: 1150px)"));
     expect(result.current).toBe(true);
   });
 
   it("re-renders when the media query flips", () => {
     const media = stubMatchMedia(false);
-    const { result } = renderHook(() =>
-      useMediaQuery("(min-width: 1150px)"),
-    );
+    const { result } = renderHook(() => useMediaQuery("(min-width: 1150px)"));
     expect(result.current).toBe(false);
     act(() => media.set(true));
     expect(result.current).toBe(true);

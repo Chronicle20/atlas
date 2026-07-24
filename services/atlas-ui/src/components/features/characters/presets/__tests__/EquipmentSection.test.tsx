@@ -31,6 +31,8 @@ describe("EquipmentSection", () => {
         onSetAvg={onSetAvg}
       />,
     );
+    // The toggle carries a VISIBLE label, not just an aria-label.
+    expect(screen.getByText(/avg stats/i)).toBeInTheDocument();
     await userEvent.click(
       screen.getByRole("switch", { name: /average stats/i }),
     );
@@ -53,22 +55,6 @@ describe("EquipmentSection", () => {
     );
     await userEvent.click(screen.getByLabelText("combo-add"));
     expect(onAdd).toHaveBeenCalledWith(1040002);
-  });
-
-  it("adds via manual id fallback", async () => {
-    const onAdd = vi.fn();
-    render(
-      <EquipmentSection
-        equipment={[]}
-        onAdd={onAdd}
-        onRemove={vi.fn()}
-        onSetAvg={vi.fn()}
-      />,
-    );
-    const manual = screen.getByLabelText(/manual item id/i);
-    await userEvent.type(manual, "1302000");
-    await userEvent.click(screen.getByRole("button", { name: /add item id/i }));
-    expect(onAdd).toHaveBeenCalledWith(1302000);
   });
 
   it("shows empty copy when there is no worn equipment", () => {

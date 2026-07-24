@@ -19,6 +19,15 @@ vi.mock("@/context/tenant-context", () => ({
 vi.mock("@/lib/hooks/useSkillData", () => ({
   useSkillData: () => ({ data: { name: "Power Strike" }, isError: false }),
 }));
+// SkillSearchCombobox's real prop is `onAdd` — mocked so section tests don't
+// need a QueryClient (its own behavior is covered in SkillSearchCombobox.test).
+vi.mock("../SkillSearchCombobox", () => ({
+  SkillSearchCombobox: ({ onAdd }: { onAdd: (id: number) => void }) => (
+    <button aria-label="combo-add" onClick={() => onAdd(1001004)}>
+      combo
+    </button>
+  ),
+}));
 
 /**
  * Wires SkillsSection to the REAL presetReducer (not inert vi.fn() mocks) so
@@ -71,7 +80,7 @@ describe("SkillsSection", () => {
     expect(screen.getByText(/grants no skills/i)).toBeInTheDocument();
   });
 
-  it("adds by numeric id", async () => {
+  it("adds via the search combobox", async () => {
     const onAdd = vi.fn();
     render(
       <SkillsSection
@@ -81,8 +90,7 @@ describe("SkillsSection", () => {
         onSetLevel={vi.fn()}
       />,
     );
-    await userEvent.type(screen.getByLabelText(/skill id/i), "1001004");
-    await userEvent.click(screen.getByRole("button", { name: /add skill/i }));
+    await userEvent.click(screen.getByLabelText("combo-add"));
     expect(onAdd).toHaveBeenCalledWith(1001004);
   });
 

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import type { CharacterPresetInventoryEntry } from "@/types/models/template";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ItemRow } from "../templates/ItemRow";
 import { ItemSearchCombobox } from "../templates/ItemSearchCombobox";
@@ -70,17 +69,7 @@ export function InventorySection({
   onRemove,
   onSetQty,
 }: InventorySectionProps) {
-  const [manualId, setManualId] = useState("");
-
   const existingIds = inventory.map((e) => e.templateId);
-
-  const handleManualAdd = () => {
-    const parsed = Number(manualId);
-    if (Number.isInteger(parsed) && parsed > 0) {
-      onAdd(parsed);
-      setManualId("");
-    }
-  };
 
   return (
     <section className="space-y-2">
@@ -91,25 +80,6 @@ export function InventorySection({
           existingIds={existingIds}
           onAdd={onAdd}
         />
-      </div>
-
-      <div className="flex items-center gap-2">
-        <Input
-          aria-label="Manual item id"
-          value={manualId}
-          onChange={(e) => setManualId(e.target.value)}
-          placeholder="Enter item id…"
-          className="w-40"
-        />
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          aria-label="Add item id"
-          onClick={handleManualAdd}
-        >
-          Add
-        </Button>
       </div>
 
       <div className="space-y-1">

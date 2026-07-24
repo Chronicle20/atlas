@@ -69,7 +69,7 @@ describe("presetLoadout", () => {
     expect(l.skin).toBe(RENDER_DEFAULT_SKIN);
   });
 
-  it("variant loadout substitutes one dimension", () => {
+  it("variant loadout substitutes one dimension; hair candidates are render-ready", () => {
     const base = attrs({
       hair: 30030,
       hairColor: 1,
@@ -77,9 +77,19 @@ describe("presetLoadout", () => {
       skinColor: 0,
     });
     expect(buildPresetVariantLoadout(base, "faces", 21000).face).toBe(21000);
-    expect(buildPresetVariantLoadout(base, "hairs", 30040).hair).toBe(30041);
+    // Hair candidates arrive render-ready (base variant) — no color arithmetic.
+    expect(buildPresetVariantLoadout(base, "hairs", 30040).hair).toBe(30040);
     expect(buildPresetVariantLoadout(base, "hairColors", 5).hair).toBe(30035);
     expect(buildPresetVariantLoadout(base, "skinColors", 4).skin).toBe(4);
+  });
+
+  it("variant loadout strips worn equipment (bare-mannequin previews)", () => {
+    const base = attrs({
+      equipment: [{ templateId: 1040002, useAverageStats: true }],
+    });
+    expect(buildPresetVariantLoadout(base, "faces", 21000).equipment).toEqual(
+      {},
+    );
   });
 
   it("wornTemplateIds lists placeable ids only", () => {

@@ -40,10 +40,18 @@ vi.mock("@/lib/hooks/api/useItemStrings", () => ({
 vi.mock("@/lib/hooks/useSkillData", () => ({
   useSkillData: () => ({ data: { name: "Power Strike" }, isError: false }),
 }));
-// Real ItemSearchCombobox needs a QueryClientProvider; not under test here.
+// Real ItemSearchCombobox/SkillSearchCombobox need a QueryClientProvider;
+// not under test here.
 vi.mock("../../templates/ItemSearchCombobox", () => ({
   ItemSearchCombobox: ({ onAdd }: { onAdd: (id: number) => void }) => (
     <button aria-label="combo-add" onClick={() => onAdd(1040002)}>
+      combo
+    </button>
+  ),
+}));
+vi.mock("../SkillSearchCombobox", () => ({
+  SkillSearchCombobox: ({ onAdd }: { onAdd: (id: number) => void }) => (
+    <button aria-label="skill-combo-add" onClick={() => onAdd(1001004)}>
       combo
     </button>
   ),

@@ -29,6 +29,7 @@ vi.mock("@/lib/hooks/api/useItemNames", () => ({
 
 import { normalizeTemplate, DEFAULT_PICKS } from "../editorState";
 import { AppearanceBrowserDialog, PAGE_SIZE } from "../AppearanceBrowserDialog";
+import { collapseHairBases } from "../hairBases";
 import { buildVariantLoadout } from "../previewLoadout";
 
 // 20000-20009 male, 21000-21009 female
@@ -172,5 +173,21 @@ describe("AppearanceBrowserDialog", () => {
     const other = screen.getByRole("button", { name: /skin tone 5/i });
     await userEvent.click(other);
     expect(onSelect).toHaveBeenCalledWith(5);
+  });
+});
+
+describe("collapseHairBases", () => {
+  it("collapses color variants to one base entry rendering the lowest digit", () => {
+    expect(collapseHairBases([30000, 30002, 30030, 30031, 31000])).toEqual([
+      { value: 30000, renderId: 30000 },
+      { value: 30030, renderId: 30030 },
+      { value: 31000, renderId: 31000 },
+    ]);
+  });
+
+  it("renders the lowest EXISTING variant when the black one is absent", () => {
+    expect(collapseHairBases([30033, 30031])).toEqual([
+      { value: 30030, renderId: 30031 },
+    ]);
   });
 });

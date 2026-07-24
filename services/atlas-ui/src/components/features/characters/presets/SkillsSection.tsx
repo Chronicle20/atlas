@@ -4,6 +4,7 @@ import type { CharacterPresetSkillEntry } from "@/types/models/template";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSkillData } from "@/lib/hooks/useSkillData";
+import { SkillSearchCombobox } from "./SkillSearchCombobox";
 
 interface SkillsSectionProps {
   skills: CharacterPresetSkillEntry[];
@@ -119,39 +120,13 @@ export function SkillsSection({
   onRemove,
   onSetLevel,
 }: SkillsSectionProps) {
-  const [manualId, setManualId] = useState("");
-
-  const handleManualAdd = () => {
-    const parsed = Number(manualId);
-    if (Number.isInteger(parsed) && parsed > 0) {
-      onAdd(parsed);
-      setManualId("");
-    }
-  };
+  const existingIds = skills.map((e) => e.skillId);
 
   return (
     <section className="space-y-2">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold">Granted skills</h3>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <Input
-          aria-label="Skill id"
-          value={manualId}
-          onChange={(e) => setManualId(e.target.value)}
-          placeholder="Enter skill id…"
-          className="w-40"
-        />
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          aria-label="Add skill"
-          onClick={handleManualAdd}
-        >
-          Add
-        </Button>
+        <SkillSearchCombobox existingIds={existingIds} onAdd={onAdd} />
       </div>
 
       <div className="space-y-1">

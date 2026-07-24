@@ -1,7 +1,5 @@
 import { useState } from "react";
 import type { CharacterPresetEquipmentEntry } from "@/types/models/template";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -36,17 +34,8 @@ export function EquipmentSection({
   onSetAvg,
 }: EquipmentSectionProps) {
   const [poolKey, setPoolKey] = useState<SearchPoolKey>("items");
-  const [manualId, setManualId] = useState("");
 
   const existingIds = equipment.map((e) => e.templateId);
-
-  const handleManualAdd = () => {
-    const parsed = Number(manualId);
-    if (Number.isInteger(parsed) && parsed > 0) {
-      onAdd(parsed);
-      setManualId("");
-    }
-  };
 
   return (
     <section className="space-y-2">
@@ -76,25 +65,6 @@ export function EquipmentSection({
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        <Input
-          aria-label="Manual item id"
-          value={manualId}
-          onChange={(e) => setManualId(e.target.value)}
-          placeholder="Enter item id…"
-          className="w-40"
-        />
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          aria-label="Add item id"
-          onClick={handleManualAdd}
-        >
-          Add
-        </Button>
-      </div>
-
       <div className="space-y-1">
         {equipment.length === 0 && (
           <p className="text-sm text-muted-foreground">No worn items.</p>
@@ -106,11 +76,14 @@ export function EquipmentSection({
             removeAriaLabel={`Remove equipment ${e.templateId}`}
             onRemove={() => onRemove(i)}
             trailing={
-              <Switch
-                aria-label="Use average stats"
-                checked={e.useAverageStats}
-                onCheckedChange={(v) => onSetAvg(i, v)}
-              />
+              <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                Avg stats
+                <Switch
+                  aria-label="Use average stats"
+                  checked={e.useAverageStats}
+                  onCheckedChange={(v) => onSetAvg(i, v)}
+                />
+              </label>
             }
           />
         ))}

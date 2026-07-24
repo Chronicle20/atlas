@@ -46,17 +46,23 @@ export function buildPresetLoadout(
   };
 }
 
+/**
+ * Loadout for an appearance-dimension thumbnail: bare mannequin (no worn
+ * equipment — gear covers exactly the features being compared) with one
+ * dimension substituted. Hair candidates arrive as render-ready ids (base
+ * variant, or base+digit for color tiles) — no color arithmetic here.
+ */
 export function buildPresetVariantLoadout(
   attrs: CharacterPresetAttributes,
   dimension: PresetAppearanceDimension,
   candidateId: number,
 ): CharacterLoadout {
-  const base = buildPresetLoadout(attrs);
+  const base = { ...buildPresetLoadout(attrs), equipment: {} };
   switch (dimension) {
     case "faces":
       return { ...base, face: candidateId };
     case "hairs":
-      return { ...base, hair: candidateId + attrs.hairColor };
+      return { ...base, hair: candidateId };
     case "hairColors":
       return {
         ...base,

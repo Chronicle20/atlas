@@ -1,25 +1,21 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { CharacterPresetAttributes } from "@/types/models/template";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useTenant } from "@/context/tenant-context";
-import { generateCharacterUrl } from "@/services/api/characterRender.service";
-import { PRESET_JOBS, jobLabel } from "./presetJobs";
+import {
+  generateCharacterUrl,
+  isFemaleCosmeticId,
+} from "@/services/api/characterRender.service";
+import { useFaceIds, useHairIds } from "@/lib/hooks/api/useCosmetics";
 import {
   buildPresetVariantLoadout,
   type PresetAppearanceDimension,
 } from "./presetLoadout";
 import { AppearanceBrowserDialog } from "../templates/AppearanceBrowserDialog";
+import { collapseHairBases } from "../templates/hairBases";
 import { AppearanceThumb } from "../templates/AppearanceThumb";
-import { useSyncedNumberInput } from "./useSyncedNumberInput";
+import { JobCombobox } from "./JobCombobox";
 
 type AppearanceField = "face" | "hair" | "hairColor" | "skinColor";
 
@@ -31,12 +27,9 @@ interface ClassAppearanceSectionProps {
   ) => void;
 }
 
-// GMS-shaped face/hair id ranges; not an enumeration — just a small on-hand
-// set for quick reselection. Exhaustive browsing lives behind the "+" dialog.
-const FACE_STARTER_IDS = [20000, 20001, 21000, 21001];
-const HAIR_STARTER_IDS = [30000, 30010, 30020, 30030];
 const HAIR_COLOR_IDS = [0, 1, 2, 3, 4, 5, 6, 7];
 const SKIN_IDS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+const STARTER_COUNT = 4;
 
 const FIELD_BY_DIMENSION: Record<PresetAppearanceDimension, AppearanceField> = {
   faces: "face",
@@ -59,9 +52,18 @@ const ROW_TITLE: Record<PresetAppearanceDimension, string> = {
   skinColors: "Skin tone",
 };
 
-/** Current value first (deduped), followed by the curated starter ids. */
-function onHandIds(current: number, starters: number[]): number[] {
-  return [current, ...starters.filter((id) => id !== current)];
+/** On-hand row entry: `value` is stored/compared, `renderId` is drawn. */
+interface RowTile {
+  value: number;
+  renderId: number;
+}
+
+/** Row order is FIXED — selecting never reshuffles. The current value is
+ * appended at the end only when it isn't already an on-hand candidate. */
+function withCurrent(tiles: RowTile[], current: RowTile): RowTile[] {
+  return tiles.some((t) => t.value === current.value)
+    ? tiles
+    : [...tiles, current];
 }
 
 export function ClassAppearanceSection({
@@ -72,14 +74,63 @@ export function ClassAppearanceSection({
   const [browserDimension, setBrowserDimension] =
     useState<PresetAppearanceDimension | null>(null);
 
-  // Local echo so the DOM value reflects keystrokes as they land — the
-  // canonical value only updates once the reducer round-trips onSetField.
-  const [jobIdInput, setJobIdInput] = useSyncedNumberInput(attrs.jobId);
+  const faces = useFaceIds();
+  const hairs = useHairIds();
+  const wantFemale = attrs.gender === 1;
+
+  const faceStarters = useMemo<RowTile[]>(
+    () =>
+      (faces.data ?? [])
+        .filter((id) => isFemaleCosmeticId(id) === wantFemale)
+        .slice(0, STARTER_COUNT)
+        .map((id) => ({ value: id, renderId: id })),
+    [faces.data, wantFemale],
+  );
+
+  const hairBases = useMemo(
+    () => collapseHairBases(hairs.data ?? []),
+    [hairs.data],
+  );
+  const hairStarters = useMemo<RowTile[]>(
+    () =>
+      hairBases
+        .filter((t) => isFemaleCosmeticId(t.value) === wantFemale)
+        .slice(0, STARTER_COUNT),
+    [hairBases, wantFemale],
+  );
+
+  const hairIdSet = useMemo(() => new Set(hairs.data ?? []), [hairs.data]);
+
+  // Colors the SELECTED hair actually exists in (enumeration lists every
+  // base+digit variant). Unconstrained until the enumeration loads.
+  const validColorDigits = useMemo(() => {
+    if (hairIdSet.size === 0) return HAIR_COLOR_IDS;
+    const valid = HAIR_COLOR_IDS.filter((d) => hairIdSet.has(attrs.hair + d));
+    return valid.length > 0 ? valid : HAIR_COLOR_IDS;
+  }, [hairIdSet, attrs.hair]);
+
+  /** Selecting a hair keeps the current color when the new hair has it,
+   * otherwise snaps to the new hair's lowest existing color digit — a
+   * base+color combination that doesn't exist renders no hair at all. */
+  const selectHair = (base: number) => {
+    onSetField("hair", base);
+    if (hairIdSet.size > 0 && !hairIdSet.has(base + attrs.hairColor)) {
+      const [lowest] = HAIR_COLOR_IDS.filter((d) => hairIdSet.has(base + d));
+      if (lowest !== undefined) onSetField("hairColor", lowest);
+    }
+  };
+
+  const currentHairTile: RowTile = {
+    value: attrs.hair,
+    renderId:
+      hairBases.find((t) => t.value === attrs.hair)?.renderId ?? attrs.hair,
+  };
 
   const renderThumbRow = (
     dimension: PresetAppearanceDimension,
-    ids: number[],
+    tiles: RowTile[],
     withBrowser: boolean,
+    onPick: (value: number) => void,
   ) => {
     const field = FIELD_BY_DIMENSION[dimension];
     return (
@@ -87,21 +138,21 @@ export function ClassAppearanceSection({
         <Label>{ROW_TITLE[dimension]}</Label>
         <div className="flex flex-wrap items-center gap-2">
           {activeTenant &&
-            ids.map((id) => (
+            tiles.map((t) => (
               <AppearanceThumb
-                key={id}
+                key={t.value}
                 url={generateCharacterUrl(
                   activeTenant.id,
                   activeTenant.attributes.region,
                   activeTenant.attributes.majorVersion,
                   activeTenant.attributes.minorVersion,
-                  buildPresetVariantLoadout(attrs, dimension, id),
+                  buildPresetVariantLoadout(attrs, dimension, t.renderId),
                   { stance: "stand1", resize: 2 },
                 )}
-                idLabel={id}
-                ariaLabel={`${NOUN[dimension]} ${id}`}
-                selected={attrs[field] === id}
-                onSelect={() => onSetField(field, id)}
+                idLabel={t.value}
+                ariaLabel={`${NOUN[dimension]} ${t.value}`}
+                selected={attrs[field] === t.value}
+                onSelect={() => onPick(t.value)}
               />
             ))}
           {withBrowser && (
@@ -120,39 +171,18 @@ export function ClassAppearanceSection({
     );
   };
 
+  const asTiles = (ids: number[]): RowTile[] =>
+    ids.map((id) => ({ value: id, renderId: id }));
+
   return (
     <section className="space-y-4">
       <h3 className="text-sm font-semibold">Class &amp; appearance</h3>
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="space-y-1">
-          <Label htmlFor="preset-job">Class</Label>
-          <Select
-            value={String(attrs.jobId)}
-            onValueChange={(v) => onSetField("jobId", Number(v))}
-          >
-            <SelectTrigger id="preset-job" aria-label="Class">
-              <SelectValue>{jobLabel(attrs.jobId)}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {PRESET_JOBS.map((j) => (
-                <SelectItem key={j.id} value={String(j.id)}>
-                  {j.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="preset-job-advanced">Advanced job id</Label>
-          <Input
-            id="preset-job-advanced"
-            aria-label="Advanced job id"
-            type="number"
-            value={jobIdInput}
-            onChange={(e) => {
-              setJobIdInput(e.target.value);
-              onSetField("jobId", Number(e.target.value));
-            }}
+          <Label>Class</Label>
+          <JobCombobox
+            value={attrs.jobId}
+            onChange={(id) => onSetField("jobId", id)}
           />
         </div>
         <div className="space-y-1">
@@ -179,10 +209,27 @@ export function ClassAppearanceSection({
       </div>
 
       <div className="space-y-3">
-        {renderThumbRow("faces", onHandIds(attrs.face, FACE_STARTER_IDS), true)}
-        {renderThumbRow("hairs", onHandIds(attrs.hair, HAIR_STARTER_IDS), true)}
-        {renderThumbRow("hairColors", HAIR_COLOR_IDS, false)}
-        {renderThumbRow("skinColors", SKIN_IDS, false)}
+        {renderThumbRow(
+          "faces",
+          withCurrent(faceStarters, {
+            value: attrs.face,
+            renderId: attrs.face,
+          }),
+          true,
+          (v) => onSetField("face", v),
+        )}
+        {renderThumbRow(
+          "hairs",
+          withCurrent(hairStarters, currentHairTile),
+          true,
+          selectHair,
+        )}
+        {renderThumbRow("hairColors", asTiles(validColorDigits), false, (v) =>
+          onSetField("hairColor", v),
+        )}
+        {renderThumbRow("skinColors", asTiles(SKIN_IDS), false, (v) =>
+          onSetField("skinColor", v),
+        )}
       </div>
 
       {browserDimension && (
@@ -197,7 +244,9 @@ export function ClassAppearanceSection({
             if (!open) setBrowserDimension(null);
           }}
           onSelect={(id) =>
-            onSetField(FIELD_BY_DIMENSION[browserDimension], id)
+            browserDimension === "hairs"
+              ? selectHair(id)
+              : onSetField(FIELD_BY_DIMENSION[browserDimension], id)
           }
           selectMode="replace"
           selectedId={attrs[FIELD_BY_DIMENSION[browserDimension]]}

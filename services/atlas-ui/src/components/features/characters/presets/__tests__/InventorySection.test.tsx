@@ -117,22 +117,6 @@ describe("InventorySection", () => {
     expect(onAdd).toHaveBeenCalledWith(2000000);
   });
 
-  it("adds via manual id fallback", async () => {
-    const onAdd = vi.fn();
-    render(
-      <InventorySection
-        inventory={[]}
-        onAdd={onAdd}
-        onRemove={vi.fn()}
-        onSetQty={vi.fn()}
-      />,
-    );
-    const manual = screen.getByLabelText(/manual item id/i);
-    await userEvent.type(manual, "2000001");
-    await userEvent.click(screen.getByRole("button", { name: /add item id/i }));
-    expect(onAdd).toHaveBeenCalledWith(2000001);
-  });
-
   it("reducer round-trip: clearing and retyping commits exactly the typed value, not a prepend", async () => {
     const seedPresets: CharacterPreset[] = [
       {

@@ -12,9 +12,16 @@ import (
 
 // BuildWriterProducer builds a writer.Producer from configuration, filtering to only the writers
 // declared in availableWriters. This extracts the common pattern from service main.go files.
-func BuildWriterProducer(l logrus.FieldLogger, writers []WriterConfig, availableWriters []string, opWriter socket.OpWriter) sw.Producer {
+//
+// service scopes the shared tenant socket config to this socket service: writer entries owned by
+// another service (per WriterConfig.Services) are ignored, so the config need not be split across
+// services physically. Untagged entries apply to every service.
+func BuildWriterProducer(l logrus.FieldLogger, service string, writers []WriterConfig, availableWriters []string, opWriter socket.OpWriter) sw.Producer {
 	rwm := make(map[string]sw.BodyFunc)
 	for _, wc := range writers {
+		if !appliesToService(wc.Services, service) {
+			continue
+		}
 		op, err := strconv.ParseUint(wc.OpCode, 0, 16)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to configure writer [%s] for opcode [%s].", wc.Writer, wc.OpCode)
@@ -42,9 +49,19 @@ type HandlerAdapter func(name string, validator interface{}, handler interface{}
 // BuildHandlerMap builds a map of opcode to request.Handler from configuration.
 // The validatorMap and handlerMap use interface{} values because the concrete types
 // are service-specific (parameterized on session type).
-func BuildHandlerMap(l logrus.FieldLogger, handlers []HandlerConfig, validatorMap map[string]interface{}, handlerMap map[string]interface{}, adapt HandlerAdapter) map[uint16]request.Handler {
+//
+// A tenant's socket config is shared by every service that speaks the tenant's protocol
+// (login and channel read the same list). service scopes it to this socket service:
+// entries owned by another service (per HandlerConfig.Services) are ignored, so the
+// per-service list is authoritative and "no handler registered" is a real signal rather
+// than benign cross-service noise. Untagged entries apply to every service (legacy configs).
+func BuildHandlerMap(l logrus.FieldLogger, service string, handlers []HandlerConfig, validatorMap map[string]interface{}, handlerMap map[string]interface{}, adapt HandlerAdapter) map[uint16]request.Handler {
 	result := make(map[uint16]request.Handler)
 	for _, hc := range handlers {
+		if !appliesToService(hc.Services, service) {
+			continue
+		}
+
 		v, ok := validatorMap[hc.Validator]
 		if !ok {
 			l.Warnf("Unable to locate validator [%s] for handler [%s].", hc.Validator, hc.Handler)

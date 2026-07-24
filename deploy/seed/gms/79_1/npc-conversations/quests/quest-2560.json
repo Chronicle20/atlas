@@ -1,0 +1,114 @@
+{
+  "data": {
+    "attributes": {
+      "questId": 2560,
+      "questName": "Quest 2560",
+      "startStateMachine": {
+        "startState": "monkeyGreeting",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "playerQuestion",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Ooook! Ook! Ook!"
+            },
+            "id": "monkeyGreeting",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "monkeyGreeting",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "askAccept",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "speaker": "CHARACTER",
+              "text": "Well, that hit the spot, but... I still don't understand what happened. Where's the ship? Hey, do you know what happened to me?"
+            },
+            "id": "playerQuestion",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "startQuest",
+                  "text": "Accept"
+                },
+                {
+                  "nextState": "declineResponse",
+                  "text": "Decline"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendAcceptDecline",
+              "text": "Oook! (The monkey nods. Does he really know what's going on? Couldn't hurt to ask.)"
+            },
+            "id": "askAccept",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "startQuest",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Ook! Ook! (The monkey looks very dissatisfied.)"
+            },
+            "id": "declineResponse",
+            "type": "dialogue"
+          }
+        ]
+      }
+    },
+    "id": "2560",
+    "type": "quest-conversation"
+  }
+}

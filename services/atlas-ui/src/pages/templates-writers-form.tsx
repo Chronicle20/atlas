@@ -22,6 +22,9 @@ interface FormValues {
     opCode: string;
     writer: string;
     options: unknown;
+    // Preserved (not edited here) so saving the form doesn't strip the
+    // per-service scope tag and silently widen the entry to all services.
+    services?: string[];
   }[];
 }
 
@@ -43,6 +46,7 @@ export function WritersForm() {
           opCode: writer.opCode,
           writer: writer.writer,
           options: writer.options,
+          services: writer.services ?? [],
         })),
       });
     }
@@ -123,7 +127,9 @@ export function WritersForm() {
         <div className="flex flex-row gap-2 justify-between">
           <Button
             type="button"
-            onClick={() => append({ opCode: "", writer: "", options: null })}
+            onClick={() =>
+              append({ opCode: "", writer: "", options: null, services: [] })
+            }
           >
             Add
           </Button>

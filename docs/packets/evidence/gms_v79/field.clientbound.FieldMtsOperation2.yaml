@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldMtsOperation2
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnQueryCashResult
+    address: "0x57f422"
+    decompile_sha256: ddf2d654c0eddaa66aa2126f0a85892f45f7d3787b62563d72d5dd253ee51fb8
+verifies:
+    - libs/atlas-packet/field/clientbound/mts_operation2_test.go#TestMtsOperation2ByteOutputV79

@@ -15,8 +15,10 @@ func (f rtFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r)
 
 func jsonResp(v any) *http.Response {
 	b, _ := json.Marshal(v)
-	return &http.Response{StatusCode: 200, Body: io.NopCloser(bytes.NewReader(b)),
-		Header: http.Header{"Content-Type": []string{"application/json"}}}
+	return &http.Response{
+		StatusCode: 200, Body: io.NopCloser(bytes.NewReader(b)),
+		Header: http.Header{"Content-Type": []string{"application/json"}},
+	}
 }
 
 // structuredResp builds a NEW-server tools/call response carrying the given
@@ -46,11 +48,13 @@ func initResp(sessionID string) *http.Response {
 			"serverInfo":      map[string]any{"name": "ida-pro-mcp", "version": "1"},
 		},
 	})
-	return &http.Response{StatusCode: 200, Body: io.NopCloser(bytes.NewReader(b)),
+	return &http.Response{
+		StatusCode: 200, Body: io.NopCloser(bytes.NewReader(b)),
 		Header: http.Header{
 			"Content-Type":   []string{"application/json"},
 			"Mcp-Session-Id": []string{sessionID},
-		}}
+		},
+	}
 }
 
 // notInitErrResp mimics the real server, which does NOT implement
@@ -597,8 +601,10 @@ func TestMCPHTTPNotification202Tolerated(t *testing.T) {
 			resp.Header.Set("Mcp-Session-Id", "sess-1")
 			return resp, nil
 		case "notifications/initialized":
-			return &http.Response{StatusCode: 202, Body: io.NopCloser(bytes.NewReader(nil)),
-				Header: http.Header{}}, nil
+			return &http.Response{
+				StatusCode: 202, Body: io.NopCloser(bytes.NewReader(nil)),
+				Header: http.Header{},
+			}, nil
 		default: // tools/call
 			return structuredResp(map[string]any{
 				"result": []map[string]any{{"query": "x", "fn": map[string]any{"addr": "0xabc"}, "error": nil}},

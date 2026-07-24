@@ -5,6 +5,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 )
 
-func TournamentMatchTableBody() packet.Encode {
-	return fieldcb.NewTournamentMatchTable().Encode
+func TournamentMatchTableBody(match [fieldcb.TournamentMatchTableBufferSize]byte, state byte) packet.Encode {
+	return fieldcb.NewTournamentMatchTable(match, state).Encode
 }

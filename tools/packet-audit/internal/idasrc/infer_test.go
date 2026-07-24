@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func mkFields(calls ...FieldCall) Fields { return Fields{Calls: calls} }
+func mkFields(calls ...FieldCall) Fields     { return Fields{Calls: calls} }
 func r(op Primitive, guard string) FieldCall { return FieldCall{Op: op, Guard: guard} }
 
 func TestInferDispatchClearMatch(t *testing.T) {
@@ -84,7 +84,7 @@ func TestInferDispatchUnresolvedAbsorbsRun(t *testing.T) {
 func TestInferDispatchTrailingUnresolvedAbsorbsRest(t *testing.T) {
 	base := mkFields(
 		r(Decode1, ""),
-		r(Decode2, "switch == 1"),                              // case 1: short
+		r(Decode2, "switch == 1"),                               // case 1: short
 		r(Decode4, "switch == 2"), r(Unresolved, "switch == 2"), // case 2: D4 then undecompilable rest
 	)
 	hand := []FieldCall{r(Decode1, ""), r(Decode4, ""), r(Decode4, ""), r(DecodeStr, ""), r(Decode1, "")}
@@ -97,7 +97,7 @@ func TestInferDispatchTrailingUnresolvedAbsorbsRest(t *testing.T) {
 func TestInferDispatchJointResolvesConflict(t *testing.T) {
 	base := mkFields(
 		r(Decode1, ""),
-		r(Decode1, "switch == 8"),                               // case 8 (Update-like): short
+		r(Decode1, "switch == 8"), // case 8 (Update-like): short
 		r(Decode4, "switch == 9"), r(DecodeStr, "switch == 9"),
 		r(Unresolved, "switch == 9"), r(Decode1, "switch == 9"), // case 9 (Invite-like): w/ Unresolved
 	)

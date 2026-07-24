@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldGuildBossPulleyStateChange
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CField_GuildBoss::OnPulleyStateChange
+    address: "0x54198b"
+    decompile_sha256: c0737f48ee6c9ce0c21e2958ab1c8c59d8fa7917f1417a052b1999cb3d384521
+verifies:
+    - libs/atlas-packet/field/clientbound/guild_boss_pulley_state_change_test.go#TestGuildBossPulleyStateChangeByteOutputV79

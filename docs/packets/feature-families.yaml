@@ -1,0 +1,10 @@
+# Ops that together form one logical feature. Rule (enforced by
+# `packet-audit matrix --check`): if ANY member is `verified` on a version, no
+# member may be `n-a` on that version unless it carries positive absence
+# evidence in docs/packets/feature-na-evidence.yaml. The receive side proves
+# the send side. Add families here as related packets are verified.
+families:
+  teleport_rock:
+    - USE_TELEPORT_ROCK
+    - TROCK_ADD_MAP
+    - MAP_TRANSFER_RESULT

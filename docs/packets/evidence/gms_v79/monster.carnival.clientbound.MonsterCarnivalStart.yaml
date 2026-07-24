@@ -1,0 +1,8 @@
+packet: monster/carnival/clientbound/MonsterCarnivalStart
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CField_MonsterCarnival::OnEnter
+    address: "0x548324"
+    decompile_sha256: cef0763c51fb3e2f719087b7b86c02bd417c1fae3f644bbdb391e81cf4a7e909

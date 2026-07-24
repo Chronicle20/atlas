@@ -1,21 +1,21 @@
 # MonsterCarnivalStart (← `CField_MonsterCarnival::OnEnter`)
 
-- **IDA:** 
+- **IDA:** 0x548324
 - **Atlas file:** `libs/atlas-packet/monster/carnival/clientbound/monster_carnival_start.go`
 - **Variant:** GMS/v79
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 5 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 6 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 7 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `team` | ✅ |  |
+| 1 | int16 | int16 `personalCp` | ✅ |  |
+| 2 | int16 | int16 `personalTotal` | ✅ |  |
+| 3 | int16 | int16 `myTeamCp` | ✅ |  |
+| 4 | int16 | int16 `myTeamTotal` | ✅ |  |
+| 5 | int16 | int16 `enemyTeamCp` | ✅ |  |
+| 6 | int16 | int16 `enemyTeamTotal` | ✅ |  |
+| 7 | byte | byte `spelled (looped once per m_aSummonedMob element; loop bound is the client-local array's own stored count, not wire-read)` | ✅ |  |
 

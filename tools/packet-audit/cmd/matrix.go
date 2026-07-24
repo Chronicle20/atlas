@@ -36,9 +36,16 @@ type matrixOpts struct {
 	TiersFile    string // consumed from Phase 2 on; defaults to docs/packets/evidence/tiers.yaml
 	FamiliesFile string // mode-prefix dispatcher membership; defaults to docs/packets/evidence/families.yaml
 	PacketLibDir string // consumed from Phase 3 on (marker scan); empty = no markers
-	Versions     []string
-	OutDir       string
-	Check        bool
+	// FeatureFamiliesFile and NAEvidenceFile drive the feature-family n-a
+	// consistency gate (task-124): "the receive side proves the send side" — a
+	// same-feature sibling op that is verified on a version means a member op
+	// cannot be n-a on that version without recorded positive absence proof.
+	// See docs/packets/audits/VERIFYING_A_PACKET.md "Is this cell n-a?".
+	FeatureFamiliesFile string
+	NAEvidenceFile      string
+	Versions            []string
+	OutDir              string
+	Check               bool
 }
 
 func runMatrix(args []string, stderr io.Writer) int {
@@ -54,6 +61,8 @@ func runMatrix(args []string, stderr io.Writer) int {
 	fs.StringVar(&o.TiersFile, "tiers", "docs/packets/evidence/tiers.yaml", "tier-1 membership YAML")
 	fs.StringVar(&o.FamiliesFile, "families", "docs/packets/evidence/families.yaml", "mode-prefix dispatcher membership YAML")
 	fs.StringVar(&o.PacketLibDir, "packet-lib", "libs/atlas-packet", "atlas-packet root for marker scanning")
+	fs.StringVar(&o.FeatureFamiliesFile, "feature-families", defaultFeatureFamiliesPath, "feature-family membership YAML (task-124 n-a consistency gate)")
+	fs.StringVar(&o.NAEvidenceFile, "na-evidence", defaultFeatureNAEvidencePath, "positive n-a absence evidence YAML (task-124 n-a consistency gate)")
 	fs.StringVar(&versionsCSV, "versions", strings.Join(matrix.VersionKeys, ","), "comma-separated version keys")
 	fs.StringVar(&o.OutDir, "out-dir", "docs/packets/audits", "output dir for STATUS.md/status.json")
 	fs.BoolVar(&o.Check, "check", false, "CI mode: verify committed outputs are current; fail on conflicts/drift")
@@ -79,7 +88,8 @@ func matrixRun(o matrixOpts, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "packet-audit matrix: %v\n", err)
 		return exitRuntime
 	}
-	in := matrix.Inputs{Registry: reg,
+	in := matrix.Inputs{
+		Registry:    reg,
 		Reports:     map[string]map[string]matrix.LoadedReport{},
 		Routed:      map[string]map[matrix.RouteKey]bool{},
 		RoutedNames: map[string]map[matrix.RouteKey]string{},
@@ -260,6 +270,24 @@ func matrixRun(o matrixOpts, stdout, stderr io.Writer) int {
 	m := matrix.Build(in, o.Versions)
 	m.ExportHashes = hashes
 	m.ToolSHA = toolTreeSHA()
+
+	// task-124 feature-family n-a consistency gate: "the receive side proves
+	// the send side" — a same-feature sibling op verified on a version means a
+	// member op cannot be n-a on that version without recorded positive
+	// absence proof. Check-only: does not affect grading or rendered output.
+	featFams, err := loadFeatureFamilies(o.FeatureFamiliesFile)
+	if err != nil {
+		_, _ = fmt.Fprintf(stderr, "packet-audit matrix: %v\n", err)
+		return exitRuntime
+	}
+	naEvidence, err := loadNAEvidence(o.NAEvidenceFile)
+	if err != nil {
+		_, _ = fmt.Fprintf(stderr, "packet-audit matrix: %v\n", err)
+		return exitRuntime
+	}
+	naResult := naConsistencyCheck(m, featFams, naEvidence, o.Versions)
+	checkProblems = append(checkProblems, naResult.Problems...)
+	printNANotes(stdout, naResult.Notes)
 
 	md := matrix.RenderMarkdown(m, o.Versions)
 	js, err := matrix.RenderJSON(m)

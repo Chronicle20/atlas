@@ -7,6 +7,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=field/clientbound/FieldTournamentUew version=gms_v79 ida=0x5589e4
 // packet-audit:verify packet=field/clientbound/FieldTournamentUew version=gms_v83 ida=0x57ba16
 // packet-audit:verify packet=field/clientbound/FieldTournamentUew version=gms_v84 ida=0x58b527
 // packet-audit:verify packet=field/clientbound/FieldTournamentUew version=gms_v87 ida=0x5aa13f
@@ -19,6 +20,19 @@ func TestTournamentUewGolden(t *testing.T) {
 	actual := test.Encode(t, ctx, input.Encode, nil)
 	if !bytes.Equal(actual, expected) {
 		t.Errorf("golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// TestTournamentUewByteOutputV79 pins the gms_v79 FIELD_TOURNAMENT_UEW
+// clientbound read. IDA: CField_Tournament::OnUew @0x5589e4
+// (GMS_v79_1_DEVM.exe). Body is byte-identical to the v83 golden.
+func TestTournamentUewByteOutputV79(t *testing.T) {
+	input := NewTournamentUew(0x01)
+	ctx := test.CreateContext("GMS", 79, 1)
+	expected := []byte{0x01}
+	actual := test.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v79 golden mismatch: got %v want %v", actual, expected)
 	}
 }
 

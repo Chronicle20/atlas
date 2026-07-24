@@ -47,8 +47,8 @@ func TestStatusRunPrintsSummary(t *testing.T) {
 		"packet coverage — gms_v83",
 		"verified   1",
 		"n-a        1",
-		"OPEN_OP",           // open gap listed
-		"STALE_OP",          // appears in both open gaps and stale
+		"OPEN_OP",  // open gap listed
+		"STALE_OP", // appears in both open gaps and stale
 		"stale evidence (1):",
 	} {
 		if !strings.Contains(got, want) {

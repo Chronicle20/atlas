@@ -13,11 +13,14 @@ import (
 func TestPartialNotesRenderDistinctly(t *testing.T) {
 	m := Matrix{Rows: []MatrixRow{
 		{Kind: RowOp, Op: "NEEDS_FIXTURE", Direction: opregistry.DirClientbound, Cells: map[string]Cell{
-			"gms_v83": {State: StatePartial, Note: "tier-1: needs byte-fixture test to verify", Opcode: 0x001}}},
+			"gms_v83": {State: StatePartial, Note: "tier-1: needs byte-fixture test to verify", Opcode: 0x001},
+		}},
 		{Kind: RowOp, Op: "DIFF_ONLY", Direction: opregistry.DirClientbound, Cells: map[string]Cell{
-			"gms_v83": {State: StatePartial, Note: "tool ✅ without byte-test", Opcode: 0x002}}},
+			"gms_v83": {State: StatePartial, Note: "tool ✅ without byte-test", Opcode: 0x002},
+		}},
 		{Kind: RowOp, Op: "PINNED", Direction: opregistry.DirClientbound, Cells: map[string]Cell{
-			"gms_v83": {State: StatePartial, Note: "evidence-pinned deferral", Opcode: 0x003}}},
+			"gms_v83": {State: StatePartial, Note: "evidence-pinned deferral", Opcode: 0x003},
+		}},
 	}}
 	got := RenderMarkdown(m, []string{"gms_v83"})
 

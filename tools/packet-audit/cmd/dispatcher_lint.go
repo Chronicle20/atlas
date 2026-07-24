@@ -9,8 +9,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/Chronicle20/atlas/tools/packet-audit/internal/matrix"
 	"gopkg.in/yaml.v3"
+
+	"github.com/Chronicle20/atlas/tools/packet-audit/internal/matrix"
 )
 
 // dispatcher-lint enforces the mode-prefix dispatcher-family invariants
@@ -434,15 +435,19 @@ func checkFamilyCap(cfg dispatcherLintConfig) ([]violation, error) {
 			return nil, fmt.Errorf("parsing dispatcher family %s: %w", p, err)
 		}
 		if d.FName == "" {
-			out = append(out, violation{file: p, inv: "FAM-CAP",
-				msg: "dispatcher family file declares no `fname:` — cannot confirm it is mode-prefix capped"})
+			out = append(out, violation{
+				file: p, inv: "FAM-CAP",
+				msg: "dispatcher family file declares no `fname:` — cannot confirm it is mode-prefix capped",
+			})
 			continue
 		}
 		if armSet[d.FName] || famSet[d.FName] {
 			continue
 		}
-		out = append(out, violation{file: p, inv: "FAM-CAP",
-			msg: fmt.Sprintf("family %s is neither discrete-implemented in run.go (no #-suffixed arms) nor listed in families.yaml/baseline — author it discrete-per-mode or add a baseline/families cap [family=%s]", d.FName, d.FName)})
+		out = append(out, violation{
+			file: p, inv: "FAM-CAP",
+			msg: fmt.Sprintf("family %s is neither discrete-implemented in run.go (no #-suffixed arms) nor listed in families.yaml/baseline — author it discrete-per-mode or add a baseline/families cap [family=%s]", d.FName, d.FName),
+		})
 	}
 	return out, nil
 }
@@ -950,8 +955,10 @@ func bodyFileCandidates(packetLib, pkg string) []string {
 // reportAtlasFileJSONRe and reportAtlasFileMDRe extract the recorded Atlas file
 // path from a committed audit report (JSON: "AtlasFile": "…"; MD:
 // **Atlas file:** `…`).
-var reportAtlasFileJSONRe = regexp.MustCompile(`"AtlasFile":\s*"([^"]+)"`)
-var reportAtlasFileMDRe = regexp.MustCompile("(?i)\\*\\*Atlas file:\\*\\*\\s*`([^`]+)`")
+var (
+	reportAtlasFileJSONRe = regexp.MustCompile(`"AtlasFile":\s*"([^"]+)"`)
+	reportAtlasFileMDRe   = regexp.MustCompile("(?i)\\*\\*Atlas file:\\*\\*\\s*`([^`]+)`")
+)
 
 // reportAtlasFileRepoRel normalizes an AtlasFile path from an audit report to a
 // repo-relative path: it strips any leading `../` segments (legacy reports carry

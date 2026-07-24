@@ -1,0 +1,171 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2131003,
+      "startState": "askExchange",
+      "states": [
+        {
+          "id": "askExchange",
+          "listSelection": {
+            "choices": [
+              {
+                "nextState": "checkItems",
+                "text": "Hey, take these black spores. You can make better medicine with them."
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "So many injuries, so little medicine...#b"
+          },
+          "type": "listSelection"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "<",
+                    "referenceId": "4000437",
+                    "type": "item",
+                    "value": "100"
+                  }
+                ],
+                "nextState": "notEnoughItems"
+              },
+              {
+                "conditions": [],
+                "nextState": "askQuantity"
+              }
+            ]
+          },
+          "id": "checkItems",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "You don't have enough... I need at least 100."
+          },
+          "id": "notEnoughItems",
+          "type": "dialogue"
+        },
+        {
+          "askNumber": {
+            "contextKey": "quantity",
+            "default": 1,
+            "max": 300,
+            "min": 1,
+            "nextState": "checkSpace",
+            "text": "Hey, that's a good idea! I can give you #i4310000#Perfect Pitch for each 100 #i4000437##t4000437# you give me. How many do you want?"
+          },
+          "id": "askQuantity",
+          "type": "askNumber"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "4310000",
+                    "type": "inventorySpace",
+                    "value": "{context.quantity}"
+                  }
+                ],
+                "nextState": "performExchange"
+              },
+              {
+                "conditions": [],
+                "nextState": "noSpace"
+              }
+            ]
+          },
+          "id": "checkSpace",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Please make some space in ETC tab."
+          },
+          "id": "noSpace",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "4310000",
+                  "quantity": "{context.quantity}"
+                },
+                "type": "award_item"
+              },
+              {
+                "params": {
+                  "itemId": "4000437",
+                  "quantity": "100 * {context.quantity}"
+                },
+                "type": "destroy_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "success"
+              }
+            ]
+          },
+          "id": "performExchange",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Thanks!"
+          },
+          "id": "success",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "2131003",
+    "type": "npc-conversation"
+  }
+}

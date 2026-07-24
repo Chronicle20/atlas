@@ -47,7 +47,12 @@ func handleStatusEventCharacterEnter(l logrus.FieldLogger, ctx context.Context, 
 
 	p := monster.NewProcessor(l, ctx)
 	provider := p.NotControlledInFieldProvider(f)
-	_ = model.ForEachSlice(provider, p.FindNextController(_map.NewProcessor(l, ctx).CharacterIdsInFieldProvider(f)), model.ParallelExecute())
+	// ControlOnEnter (not FindNextController): when the entering character is the
+	// chosen controller, assign in-place without emitting StartControl — the
+	// channel sends Spawn-then-Control for the still-loading client, so Control
+	// never races ahead of Spawn (which would make the client materialize the mob
+	// from the Control body: 0/1-stance crash + slope fall-through).
+	_ = model.ForEachSlice(provider, p.ControlOnEnter(e.Body.CharacterId, _map.NewProcessor(l, ctx).CharacterIdsInFieldProvider(f)), model.ParallelExecute())
 }
 
 func handleStatusEventCharacterExit(l logrus.FieldLogger, ctx context.Context, e statusEvent[characterExit]) {

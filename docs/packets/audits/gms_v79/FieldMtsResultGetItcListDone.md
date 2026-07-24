@@ -1,39 +1,23 @@
 # FieldMtsResultGetItcListDone (← `CITC::OnNormalItemResult#GetItcListDone`)
 
-- **IDA:** 
+- **IDA:** 0x57fa45
 - **Atlas file:** `libs/atlas-packet/field/clientbound/mts_operation.go`
 - **Variant:** GMS/v79
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 5 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 6 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 7 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 8 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 9 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 10 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 11 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 12 | string | byte `` | ❌ | atlas: extra — client never reads this field |
-| 13 | string | byte `` | ❌ | atlas: extra — client never reads this field |
-| 14 | bytes | byte `` | ❌ | atlas: extra — client never reads this field |
-| 15 | string | byte `` | ❌ | atlas: extra — client never reads this field |
-| 16 | string | byte `` | ❌ | atlas: extra — client never reads this field |
-| 17 | string | byte `` | ❌ | atlas: extra — client never reads this field |
-| 18 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 19 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 20 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 21 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 22 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 23 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 24 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 25 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `MTS result mode byte (0x15 GET_ITC_LIST_DONE)` | ✅ |  |
+| 1 | int32 | int32 `categoryItemCnt` | ✅ |  |
+| 2 | int32 | int32 `pageItemCnt (loop count)` | ✅ |  |
+| 3 | int32 | int32 `category` | ✅ |  |
+| 4 | int32 | int32 `subCategory` | ✅ |  |
+| 5 | int32 | int32 `page` | ✅ |  |
+| 6 | byte | byte `sortType` | ✅ |  |
+| 7 | byte | byte `sortColumn` | ✅ |  |
+| 8 | bytes | bytes `ITCITEM::Decode entry (repeated per loop count): opaque GW_ItemSlotBase blob (Decode1 type + RawDecode; model.Asset recurse) then Decode4 nITCSN/nPrice/nContractFee, DecodeStr txid/rollback, DecodeBuffer(8) ftExpired, DecodeStr user/game/comment, Decode4 nBidCount/Range/Price/Min/Max/Unit, Decode2 nProcessStatus. Whole entry opaque to the flat differ (MtsItem recurse collapses) — byte-fixture verified.` | ✅ |  |
+| 9 | byte | byte `requestSent flag` | ✅ |  |
 

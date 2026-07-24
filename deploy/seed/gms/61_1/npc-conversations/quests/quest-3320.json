@@ -1,0 +1,63 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2111006,
+      "questId": 3320,
+      "questName": "Finding Dr. De Lang",
+      "startStateMachine": {
+        "startState": "askTransport",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "startAndWarp",
+                  "text": "Accept"
+                },
+                {
+                  "nextState": null,
+                  "text": "Decline"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendAcceptDecline",
+              "text": "I may have an idea of the whereabouts of Dr. De Lang. Are you ready to be transported to the area?"
+            },
+            "id": "askTransport",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                },
+                {
+                  "params": {
+                    "mapId": "926120200",
+                    "portalId": "1"
+                  },
+                  "type": "warp_to_map"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "startAndWarp",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "3320",
+    "type": "quest-conversation"
+  }
+}

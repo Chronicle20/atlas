@@ -1,0 +1,316 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "checkPendantReward",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "4001159",
+                      "type": "item",
+                      "value": "25"
+                    },
+                    {
+                      "operator": ">=",
+                      "referenceId": "4001160",
+                      "type": "item",
+                      "value": "25"
+                    },
+                    {
+                      "includeEquipped": true,
+                      "operator": "<",
+                      "referenceId": "1122010",
+                      "type": "item",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "checkPendantSpace"
+                },
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "4001159",
+                      "type": "item",
+                      "value": "10"
+                    },
+                    {
+                      "operator": ">=",
+                      "referenceId": "4001160",
+                      "type": "item",
+                      "value": "10"
+                    }
+                  ],
+                  "nextState": "checkScrollSpace"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "notEnoughMarbles"
+                }
+              ]
+            },
+            "id": "checkPendantReward",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "1122010",
+                      "type": "inventorySpace",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "awardPendant"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "noEquipSpace"
+                }
+              ]
+            },
+            "id": "checkPendantSpace",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Free a slot on your EQUIP tab before claiming a prize."
+            },
+            "id": "noEquipSpace",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "4001159",
+                    "quantity": "25"
+                  },
+                  "type": "destroy_item"
+                },
+                {
+                  "params": {
+                    "itemId": "4001160",
+                    "quantity": "25"
+                  },
+                  "type": "destroy_item"
+                },
+                {
+                  "params": {
+                    "itemId": "1122010",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "pendantRewardMessage"
+                }
+              ]
+            },
+            "id": "awardPendant",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "completeQuest",
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Thank you for retrieving the marbles. Accept this pendant as a token of my appreciation."
+            },
+            "id": "pendantRewardMessage",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "2041212",
+                      "type": "inventorySpace",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "awardScroll"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "noUseSpace"
+                }
+              ]
+            },
+            "id": "checkScrollSpace",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Free a slot on your USE tab before claiming a prize."
+            },
+            "id": "noUseSpace",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "4001159",
+                    "quantity": "10"
+                  },
+                  "type": "destroy_item"
+                },
+                {
+                  "params": {
+                    "itemId": "4001160",
+                    "quantity": "10"
+                  },
+                  "type": "destroy_item"
+                },
+                {
+                  "params": {
+                    "itemId": "2041212",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "scrollRewardMessage"
+                }
+              ]
+            },
+            "id": "awardScroll",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "completeQuest",
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Thank you for retrieving the marbles. This rock, that I am giving to you, can be used to improve the stats on the #b#t1122010##k. Take it as a token of my appreciation and use it wisely."
+            },
+            "id": "scrollRewardMessage",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "I need at least #b10 of both #t4001159# and #t4001160##k to reward you appropriately. If you happen to come with #b25 of these#k instead, I can reward you with a valuable gear. Fare well."
+            },
+            "id": "notEnoughMarbles",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "force": "true"
+                  },
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "completeQuest",
+            "type": "genericAction"
+          }
+        ]
+      },
+      "npcId": 2112000,
+      "questId": 3382,
+      "questName": "Yulete's Reward",
+      "startStateMachine": {
+        "startState": "noStartDialogue",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "noStartDialogue",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "3382",
+    "type": "quest-conversation"
+  }
+}

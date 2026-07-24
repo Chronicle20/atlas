@@ -87,11 +87,13 @@ export interface TemplateAttributes {
       validator: string;
       handler: string;
       options: unknown;
+      services?: string[];
     }[];
     writers: {
       opCode: string;
       writer: string;
       options: unknown;
+      services?: string[];
     }[];
   };
   worlds: {

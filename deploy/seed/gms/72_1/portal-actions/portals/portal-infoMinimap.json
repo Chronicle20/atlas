@@ -1,0 +1,50 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Tutorial minimap info trigger - shows minimap tutorial when quest 1031 is active",
+      "mapId": 0,
+      "portalId": "infoMinimap",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "operator": "=",
+              "referenceId": "1031",
+              "type": "questStatus",
+              "value": "1"
+            }
+          ],
+          "id": "quest_active_show_info",
+          "onMatch": {
+            "allow": true,
+            "operations": [
+              {
+                "params": {
+                  "path": "UI/tutorial.img/25"
+                },
+                "type": "show_info"
+              },
+              {
+                "type": "block_portal"
+              }
+            ]
+          }
+        },
+        {
+          "conditions": [],
+          "id": "default_allow",
+          "onMatch": {
+            "allow": true,
+            "operations": [
+              {
+                "type": "block_portal"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "id": "infoMinimap",
+    "type": "portal-action"
+  }
+}

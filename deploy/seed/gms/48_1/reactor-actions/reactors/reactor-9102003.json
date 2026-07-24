@@ -1,0 +1,22 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [],
+          "id": "drop_items",
+          "operations": [
+            {
+              "type": "drop_items"
+            }
+          ]
+        }
+      ],
+      "description": "Primrose Hill - drops Purple Primrose Seeds",
+      "hitRules": [],
+      "reactorId": "9102003"
+    },
+    "id": "9102003",
+    "type": "reactor-action"
+  }
+}

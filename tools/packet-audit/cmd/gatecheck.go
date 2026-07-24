@@ -8,8 +8,9 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/Chronicle20/atlas/tools/packet-audit/internal/matrix"
 	"gopkg.in/yaml.v3"
+
+	"github.com/Chronicle20/atlas/tools/packet-audit/internal/matrix"
 )
 
 // gate-check (task-169 FR-3.1b) is the BEHAVIORAL guard for the off-by-one
@@ -70,11 +71,11 @@ func runGateCheck(args []string, stderr io.Writer) int {
 
 // gateCheckResult classifies one gate.
 type gateCheckResult struct {
-	gate         gateEntry
-	lowerOK      bool
-	upperOK      bool
-	packetKnown  bool // at least one row matched packet+direction
-	configErr    string
+	gate        gateEntry
+	lowerOK     bool
+	upperOK     bool
+	packetKnown bool // at least one row matched packet+direction
+	configErr   string
 }
 
 func (r gateCheckResult) ok() bool {

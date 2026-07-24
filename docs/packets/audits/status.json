@@ -1,15 +1,15 @@
 {
-  "toolSha": "aafe52293aa7d281d57743c027833416a49c2640d8ec4f009010c855e55820b8",
+  "toolSha": "a0c47bb5655b63e6be7139d84d0dc93e198b0eac6c23d546ecc5a6b3f49936b7",
   "exportHashes": {
-    "gms_v48": "a7f7dd20743f55f26646c1a912e4ba0e33dcb0b86f56183cd889c3bd2fd04021",
-    "gms_v61": "860627887e4c61add45e05bde16b247787ff5831eabbb1525aec000d83eea9db",
-    "gms_v72": "c5a50df5bf65eef32963aeb560428adfbefa431e58615252814bc57aebb6c9a7",
-    "gms_v79": "9b64f8fc1da43f8d7cfa4ae375ef91c23deb11c6e8ad216d0ea38e00ab267a6d",
-    "gms_v83": "4e917fcb4860f63c4462ac4876bc90fc06f22efb39b0989f485637969074a2b1",
-    "gms_v84": "3ad4771e83bbba138ebd0e534076a6553f92ef2cbc7f546e8b8eca22459d6f9f",
-    "gms_v87": "ff192ac103c071da22f1db22f138cad6f66637d2183c507a996188eaecc046fa",
-    "gms_v95": "8f76aa42e0d1035d365407d5798c6eeb237b5c58043580665b10d0d1dbc42982",
-    "jms_v185": "f01306a29d65ec0870767bc814ce42fa350d91ad9e754128f91291e4c8e9f6cd"
+    "gms_v48": "8d1a4c02745ee1cb5b41c358b749c6a55883207c109784c6e09b00545a3d2dc8",
+    "gms_v61": "67395ebec4c069f827ade3a69a2e32286c750b66f305d9eba197ed2e6db87de3",
+    "gms_v72": "005ee090459a5f2bea74a84ba7652af94ca98214fb61ff8b07090907581ef267",
+    "gms_v79": "9a8c30eaf8ea8530a63b4875bc14c5c031fbab475baa518f4bd685226933500e",
+    "gms_v83": "2c83800f68d4fb785bed69ea7767b363acb38db4f445a1a772a4a33013c11400",
+    "gms_v84": "add645423c5199734172e15c44a7438656e893918efd1b5147cf31e546e002f1",
+    "gms_v87": "cdb60fec8064a3e6cadef27348923f541ba22873d8b4015010582c2718b14fd6",
+    "gms_v95": "0e43405510ef56bb1aadf7467889659711c27e905747eb4e0452ed58b787054d",
+    "jms_v185": "1d02fabf901ade2891c3b71429c1381d14e9715b849703b161c08f3951425b08"
   },
   "rows": [
     {
@@ -4652,55 +4652,47 @@
     {
       "kind": "op",
       "op": "MAP_TRANSFER_RESULT",
+      "packet": "teleportrock/clientbound/MapTransferError",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CWvsContext::OnMapTransferResult"
       ],
       "cells": {
         "gms_v48": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 35
         },
         "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 39
         },
         "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 39
         },
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 39
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 42
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 42
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 42
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 41
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 39
         }
       }
@@ -10463,6 +10455,57 @@
     },
     {
       "kind": "op",
+      "op": "USE_TELEPORT_ROCK",
+      "packet": "teleportrock/serverbound/Use",
+      "direction": "serverbound",
+      "tier1": true,
+      "fnames": [
+        "CWvsContext::SendMapTransferItemUseRequest",
+        "sub_8327DB",
+        "sub_904D5E",
+        "sub_9560C6"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "verified",
+          "opcode": 77
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": 83
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 82
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 84
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 84
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 87
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 91
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 76
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "BLOCKED_SERVER",
       "packet": "field/clientbound/FieldBlockedServer",
       "direction": "clientbound",
@@ -10677,8 +10720,8 @@
       "direction": "serverbound",
       "tier1": false,
       "fnames": [
-        "CWvsContext::SendMapTransferItemUseRequest",
         "CWvsContext::SendPortalScrollUseRequest",
+        "CWvsContext::SendReturnScrollUseRequest",
         "sub_841AA5"
       ],
       "cells": {
@@ -11277,6 +11320,58 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 81
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "TROCK_ADD_MAP",
+      "packet": "teleportrock/serverbound/AddMap",
+      "direction": "serverbound",
+      "tier1": false,
+      "fnames": [
+        "CWvsContext::SendMapTransferRequest",
+        "sub_71E7F3",
+        "sub_8478EA",
+        "sub_91E33E",
+        "sub_970286"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "verified",
+          "opcode": 81
+        },
+        "gms_v61": {
+          "state": "verified",
+          "opcode": 94
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": 101
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 100
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 102
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 102
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 105
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 114
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 97
         }
       }
     },
@@ -11943,58 +12038,6 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 84
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "USE_TELEPORT_ROCK",
-      "direction": "serverbound",
-      "tier1": false,
-      "fnames": [
-        "CWvsContext::SendMapTransferItemUseRequest"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 84
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 84
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 87
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 91
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 76
         }
       }
     },
@@ -14436,60 +14479,6 @@
         "jms_v185": {
           "state": "verified",
           "opcode": 147
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "TROCK_ADD_MAP",
-      "direction": "serverbound",
-      "tier1": false,
-      "fnames": [
-        "CWvsContext::SendMapTransferRequest",
-        "sub_8478EA"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 94
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 102
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 102
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 105
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 114
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 97
         }
       }
     },
@@ -20761,6 +20750,54 @@
     },
     {
       "kind": "op",
+      "op": "CONTI_MOVE",
+      "packet": "field/clientbound/FieldContiMove",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField_ContiMove::OnContiMove"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 140
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 148
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 151
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 156
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 164
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 145
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "BOOBY_TRAP_ALERT",
       "direction": "serverbound",
       "tier1": false,
@@ -20808,6 +20845,54 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 143
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "CONTI_STATE",
+      "packet": "field/clientbound/FieldTransport",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField_ContiMove::OnContiState"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 141
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 149
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 152
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 157
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 165
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 146
         }
       }
     },
@@ -21616,6 +21701,54 @@
     },
     {
       "kind": "op",
+      "op": "ARIANT_ARENA_SHOW_RESULT",
+      "packet": "field/clientbound/FieldAriantArenaShowResult",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField_AriantArena::OnShowResult"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 147
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 155
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 158
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 163
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 171
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 151
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "CANCEL_SKILL_EFFECT",
       "packet": "character/clientbound/CharacterSkillCancelForeign",
       "direction": "clientbound",
@@ -21718,54 +21851,6 @@
     },
     {
       "kind": "op",
-      "op": "CONTI_MOVE",
-      "packet": "field/clientbound/FieldContiMove",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField_ContiMove::OnContiMove"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 148
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 151
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 156
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 164
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 145
-        }
-      }
-    },
-    {
-      "kind": "op",
       "op": "DAMAGE_PLAYER",
       "packet": "character/clientbound/CharacterDamage",
       "direction": "clientbound",
@@ -21861,54 +21946,6 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 150
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "CONTI_STATE",
-      "packet": "field/clientbound/FieldTransport",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField_ContiMove::OnContiState"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 149
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 152
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 157
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 165
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 146
         }
       }
     },
@@ -22705,54 +22742,6 @@
         "jms_v185": {
           "state": "n-a",
           "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "ARIANT_ARENA_SHOW_RESULT",
-      "packet": "field/clientbound/FieldAriantArenaShowResult",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField_AriantArena::OnShowResult"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 155
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 158
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 163
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 171
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 151
         }
       }
     },
@@ -34888,6 +34877,102 @@
     },
     {
       "kind": "op",
+      "op": "SNOWBALL_STATE",
+      "packet": "field/clientbound/FieldSnowballState",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField_SnowBall::OnSnowBallState"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 259
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 281
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 288
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 298
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 338
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 305
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "HIT_SNOWBALL",
+      "packet": "field/clientbound/FieldSnowballHit",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField_SnowBall::OnSnowBallHit"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 260
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 282
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 289
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 299
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 339
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 306
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "CASHSHOP_CHECK_TRANSFER_WORLD_POSSIBLE_RESULT",
       "direction": "clientbound",
       "tier1": false,
@@ -34992,6 +35077,54 @@
     },
     {
       "kind": "op",
+      "op": "SNOWBALL_MESSAGE",
+      "packet": "field/clientbound/FieldSnowballMessage",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField_SnowBall::OnSnowBallMsg"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 261
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 283
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 290
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 300
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 340
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 307
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "KEYMAP",
       "packet": "character/clientbound/CharacterKeyMap",
       "direction": "clientbound",
@@ -35035,6 +35168,54 @@
         "jms_v185": {
           "state": "verified",
           "opcode": 368
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "LEFT_KNOCK_BACK",
+      "packet": "field/clientbound/FieldSnowballTouch",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField_SnowBall::OnSnowBallTouch"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 262
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 284
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 291
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 301
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 341
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 308
         }
       }
     },
@@ -35091,6 +35272,54 @@
     },
     {
       "kind": "op",
+      "op": "COCONUT_HIT",
+      "packet": "field/clientbound/FieldCoconutHit",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField_Coconut::OnCoconutHit"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 263
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 285
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 292
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 302
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 342
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 309
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "AUTO_MP_POT",
       "packet": "character/clientbound/CharacterKeyMapAutoMp",
       "direction": "clientbound",
@@ -35137,6 +35366,150 @@
         "jms_v185": {
           "state": "verified",
           "opcode": 370
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "COCONUT_SCORE",
+      "packet": "field/clientbound/FieldCoconutScore",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField_Coconut::OnCoconutScore"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 264
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 286
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 293
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 303
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 343
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 310
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "GUILD_BOSS_HEALER_MOVE",
+      "packet": "field/clientbound/FieldGuildBossHealerMove",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField_GuildBoss::OnHealerMove"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 265
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 287
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 294
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 304
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 344
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 311
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "GUILD_BOSS_PULLEY_STATE_CHANGE",
+      "packet": "field/clientbound/FieldGuildBossPulleyStateChange",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField_GuildBoss::OnPulleyStateChange"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 266
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 288
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 295
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 305
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 345
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 312
         }
       }
     },
@@ -35238,6 +35611,54 @@
     },
     {
       "kind": "op",
+      "op": "MONSTER_CARNIVAL_START",
+      "packet": "monster/carnival/clientbound/MonsterCarnivalStart",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField_MonsterCarnival::OnEnter"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 267
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 289
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 296
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 306
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 346
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 313
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "IDA_0X10C",
       "direction": "clientbound",
       "tier1": false,
@@ -35281,6 +35702,54 @@
         "jms_v185": {
           "state": "n-a",
           "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "MONSTER_CARNIVAL_OBTAINED_CP",
+      "packet": "monster/carnival/clientbound/MonsterCarnivalObtainedCP",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField_MonsterCarnival::OnPersonalCP"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 268
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 290
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 297
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 307
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 347
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 314
         }
       }
     },
@@ -35432,6 +35901,54 @@
         "jms_v185": {
           "state": "n-a",
           "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "MONSTER_CARNIVAL_PARTY_CP",
+      "packet": "monster/carnival/clientbound/MonsterCarnivalPartyCP",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField_MonsterCarnival::OnTeamCP"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 269
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 291
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 298
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 308
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 348
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 315
         }
       }
     },
@@ -35792,6 +36309,54 @@
     },
     {
       "kind": "op",
+      "op": "MONSTER_CARNIVAL_SUMMON",
+      "packet": "monster/carnival/clientbound/MonsterCarnivalMessage",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField_MonsterCarnival::OnRequestResult"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 270
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 292
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 299
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 309
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 349
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 316
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "IDA_0X10F",
       "direction": "clientbound",
       "tier1": false,
@@ -35835,6 +36400,54 @@
         "jms_v185": {
           "state": "n-a",
           "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "MONSTER_CARNIVAL_MESSAGE",
+      "packet": "monster/carnival/clientbound/MonsterCarnivalMessage",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField_MonsterCarnival::OnRequestResult"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 271
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 293
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 300
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 310
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 350
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 317
         }
       }
     },
@@ -35930,6 +36543,54 @@
         "jms_v185": {
           "state": "n-a",
           "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "MONSTER_CARNIVAL_DIED",
+      "packet": "monster/carnival/clientbound/MonsterCarnivalDied",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField_MonsterCarnival::OnProcessForDeath"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 272
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 294
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 301
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 311
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 351
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 318
         }
       }
     },
@@ -36083,6 +36744,54 @@
     },
     {
       "kind": "op",
+      "op": "MONSTER_CARNIVAL_LEAVE",
+      "packet": "monster/carnival/clientbound/MonsterCarnivalLeave",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField_MonsterCarnival::OnShowMemberOutMsg"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 273
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 295
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 302
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 312
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 352
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 319
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "MTS_CHARGE_PARAM_RESULT",
       "direction": "clientbound",
       "tier1": false,
@@ -36219,6 +36928,102 @@
         "jms_v185": {
           "state": "n-a",
           "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "MONSTER_CARNIVAL_RESULT",
+      "packet": "monster/carnival/clientbound/MonsterCarnivalResult",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField_MonsterCarnival::OnShowGameResult"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 274
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 296
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 303
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 313
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 353
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 320
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "ARIANT_ARENA_USER_SCORE",
+      "packet": "field/clientbound/FieldAriantArenaUserScore",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField_AriantArena::OnUserScore"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 275
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 297
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 304
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 314
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 354
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 321
         }
       }
     },
@@ -36422,12 +37227,13 @@
     },
     {
       "kind": "op",
-      "op": "SNOWBALL_STATE",
-      "packet": "field/clientbound/FieldSnowballState",
+      "op": "WITCH_TOWER_SCORE_UPDATE",
+      "packet": "field/clientbound/FieldWitchTowerScoreUpdate",
       "direction": "clientbound",
       "tier1": true,
       "fnames": [
-        "CField_SnowBall::OnSnowBallState"
+        "CField::OnChaosZakumTimer",
+        "CField_Witchtower::OnScoreUpdate"
       ],
       "cells": {
         "gms_v48": {
@@ -36443,76 +37249,28 @@
           "opcode": -1
         },
         "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
+          "state": "verified",
+          "opcode": 279
         },
         "gms_v83": {
           "state": "verified",
-          "opcode": 281
+          "opcode": 301
         },
         "gms_v84": {
           "state": "verified",
-          "opcode": 288
+          "opcode": 308
         },
         "gms_v87": {
           "state": "verified",
-          "opcode": 298
+          "opcode": 318
         },
         "gms_v95": {
           "state": "verified",
-          "opcode": 338
+          "opcode": 360
         },
         "jms_v185": {
           "state": "verified",
-          "opcode": 305
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "HIT_SNOWBALL",
-      "packet": "field/clientbound/FieldSnowballHit",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField_SnowBall::OnSnowBallHit"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 282
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 289
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 299
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 339
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 306
+          "opcode": 326
         }
       }
     },
@@ -36614,294 +37372,6 @@
     },
     {
       "kind": "op",
-      "op": "SNOWBALL_MESSAGE",
-      "packet": "field/clientbound/FieldSnowballMessage",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField_SnowBall::OnSnowBallMsg"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 283
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 290
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 300
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 340
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 307
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "LEFT_KNOCK_BACK",
-      "packet": "field/clientbound/FieldSnowballTouch",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField_SnowBall::OnSnowBallTouch"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 284
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 291
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 301
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 341
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 308
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "COCONUT_HIT",
-      "packet": "field/clientbound/FieldCoconutHit",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField_Coconut::OnCoconutHit"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 285
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 292
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 302
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 342
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 309
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "COCONUT_SCORE",
-      "packet": "field/clientbound/FieldCoconutScore",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField_Coconut::OnCoconutScore"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 286
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 293
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 303
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 343
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 310
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "GUILD_BOSS_HEALER_MOVE",
-      "packet": "field/clientbound/FieldGuildBossHealerMove",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField_GuildBoss::OnHealerMove"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 287
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 294
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 304
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 344
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 311
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "GUILD_BOSS_PULLEY_STATE_CHANGE",
-      "packet": "field/clientbound/FieldGuildBossPulleyStateChange",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField_GuildBoss::OnPulleyStateChange"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 288
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 295
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 305
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 345
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 312
-        }
-      }
-    },
-    {
-      "kind": "op",
       "op": "PARCEL",
       "direction": "clientbound",
       "tier1": false,
@@ -36956,12 +37426,12 @@
     },
     {
       "kind": "op",
-      "op": "MONSTER_CARNIVAL_START",
-      "packet": "monster/carnival/clientbound/MonsterCarnivalStart",
+      "op": "TOURNAMENT",
+      "packet": "field/clientbound/FieldTournament",
       "direction": "clientbound",
       "tier1": true,
       "fnames": [
-        "CField_MonsterCarnival::OnEnter"
+        "CField_Tournament::OnTournament"
       ],
       "cells": {
         "gms_v48": {
@@ -36977,231 +37447,39 @@
           "opcode": -1
         },
         "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 289
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 296
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 306
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 346
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 313
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "MONSTER_CARNIVAL_OBTAINED_CP",
-      "packet": "monster/carnival/clientbound/MonsterCarnivalObtainedCP",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField_MonsterCarnival::OnPersonalCP"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 290
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 297
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 307
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 347
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 314
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "MONSTER_CARNIVAL_PARTY_CP",
-      "packet": "monster/carnival/clientbound/MonsterCarnivalPartyCP",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField_MonsterCarnival::OnTeamCP"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 291
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 298
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 308
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 348
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 315
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "MONSTER_CARNIVAL_SUMMON",
-      "packet": "monster/carnival/clientbound/MonsterCarnivalMessage",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField_MonsterCarnival::OnRequestResult"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 292
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 299
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 309
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 349
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 316
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "MONSTER_CARNIVAL_MESSAGE",
-      "packet": "monster/carnival/clientbound/MonsterCarnivalMessage",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField_MonsterCarnival::OnRequestResult"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
           "state": "verified",
           "opcode": 293
         },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 315
+        },
         "gms_v84": {
           "state": "verified",
-          "opcode": 300
+          "opcode": 322
         },
         "gms_v87": {
           "state": "verified",
-          "opcode": 310
+          "opcode": 332
         },
         "gms_v95": {
           "state": "verified",
-          "opcode": 350
+          "opcode": 374
         },
         "jms_v185": {
           "state": "verified",
-          "opcode": 317
+          "opcode": 340
         }
       }
     },
     {
       "kind": "op",
-      "op": "MONSTER_CARNIVAL_DIED",
-      "packet": "monster/carnival/clientbound/MonsterCarnivalDied",
+      "op": "TOURNAMENT_MATCH_TABLE",
+      "packet": "field/clientbound/FieldTournamentMatchTable",
       "direction": "clientbound",
       "tier1": true,
       "fnames": [
-        "CField_MonsterCarnival::OnProcessForDeath"
+        "CField_Tournament::OnTournamentMatchTable"
       ],
       "cells": {
         "gms_v48": {
@@ -37217,39 +37495,39 @@
           "opcode": -1
         },
         "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
           "state": "verified",
           "opcode": 294
         },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 316
+        },
         "gms_v84": {
           "state": "verified",
-          "opcode": 301
+          "opcode": 323
         },
         "gms_v87": {
           "state": "verified",
-          "opcode": 311
+          "opcode": 333
         },
         "gms_v95": {
           "state": "verified",
-          "opcode": 351
+          "opcode": 375
         },
         "jms_v185": {
           "state": "verified",
-          "opcode": 318
+          "opcode": 341
         }
       }
     },
     {
       "kind": "op",
-      "op": "MONSTER_CARNIVAL_LEAVE",
-      "packet": "monster/carnival/clientbound/MonsterCarnivalLeave",
+      "op": "TOURNAMENT_SET_PRIZE",
+      "packet": "field/clientbound/FieldTournamentSetPrize",
       "direction": "clientbound",
       "tier1": true,
       "fnames": [
-        "CField_MonsterCarnival::OnShowMemberOutMsg"
+        "CField_Tournament::OnTournamentSetPrize"
       ],
       "cells": {
         "gms_v48": {
@@ -37265,39 +37543,39 @@
           "opcode": -1
         },
         "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
           "state": "verified",
           "opcode": 295
         },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 317
+        },
         "gms_v84": {
           "state": "verified",
-          "opcode": 302
+          "opcode": 324
         },
         "gms_v87": {
           "state": "verified",
-          "opcode": 312
+          "opcode": 334
         },
         "gms_v95": {
           "state": "verified",
-          "opcode": 352
+          "opcode": 376
         },
         "jms_v185": {
           "state": "verified",
-          "opcode": 319
+          "opcode": 342
         }
       }
     },
     {
       "kind": "op",
-      "op": "MONSTER_CARNIVAL_RESULT",
-      "packet": "monster/carnival/clientbound/MonsterCarnivalResult",
+      "op": "TOURNAMENT_UEW",
+      "packet": "field/clientbound/FieldTournamentUew",
       "direction": "clientbound",
       "tier1": true,
       "fnames": [
-        "CField_MonsterCarnival::OnShowGameResult"
+        "CField_Tournament::OnTournamentUEW"
       ],
       "cells": {
         "gms_v48": {
@@ -37313,39 +37591,39 @@
           "opcode": -1
         },
         "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
           "state": "verified",
           "opcode": 296
         },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 318
+        },
         "gms_v84": {
           "state": "verified",
-          "opcode": 303
+          "opcode": 325
         },
         "gms_v87": {
           "state": "verified",
-          "opcode": 313
+          "opcode": 335
         },
         "gms_v95": {
           "state": "verified",
-          "opcode": 353
+          "opcode": 377
         },
         "jms_v185": {
           "state": "verified",
-          "opcode": 320
+          "opcode": 343
         }
       }
     },
     {
       "kind": "op",
-      "op": "ARIANT_ARENA_USER_SCORE",
-      "packet": "field/clientbound/FieldAriantArenaUserScore",
+      "op": "TOURNAMENT_CHARACTERS",
+      "packet": "field/clientbound/FieldTournamentCharacters",
       "direction": "clientbound",
       "tier1": true,
       "fnames": [
-        "CField_AriantArena::OnUserScore"
+        "CField_Tournament::OnPacket"
       ],
       "cells": {
         "gms_v48": {
@@ -37361,28 +37639,28 @@
           "opcode": -1
         },
         "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
           "state": "verified",
           "opcode": 297
         },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 319
+        },
         "gms_v84": {
           "state": "verified",
-          "opcode": 304
+          "opcode": 326
         },
         "gms_v87": {
           "state": "verified",
-          "opcode": 314
+          "opcode": 336
         },
         "gms_v95": {
           "state": "verified",
-          "opcode": 354
+          "opcode": 378
         },
         "jms_v185": {
           "state": "verified",
-          "opcode": 321
+          "opcode": 344
         }
       }
     },
@@ -37521,6 +37799,54 @@
         "jms_v185": {
           "state": "n-a",
           "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "WEDDING_PROGRESS",
+      "packet": "field/serverbound/FieldWeddingAction",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField_Wedding::OnWeddingProgress"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 298
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 320
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 327
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 337
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 379
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 345
         }
       }
     },
@@ -37665,6 +37991,54 @@
         "jms_v185": {
           "state": "verified",
           "opcode": 323
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "WEDDING_CEREMONY_END",
+      "packet": "field/clientbound/FieldWeddingCeremonyEnd",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CField_Wedding::OnWeddingCeremonyEnd"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 299
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 321
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 328
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 338
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 380
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 346
         }
       }
     },
@@ -37904,55 +38278,6 @@
         "jms_v185": {
           "state": "n-a",
           "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "WITCH_TOWER_SCORE_UPDATE",
-      "packet": "field/clientbound/FieldWitchTowerScoreUpdate",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField::OnChaosZakumTimer",
-        "CField_Witchtower::OnScoreUpdate"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 301
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 308
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 318
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 360
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 326
         }
       }
     },
@@ -38532,12 +38857,13 @@
     },
     {
       "kind": "op",
-      "op": "TOURNAMENT",
-      "packet": "field/clientbound/FieldTournament",
+      "op": "MTS_OPERATION2",
+      "packet": "field/clientbound/FieldMtsOperation2",
       "direction": "clientbound",
       "tier1": true,
       "fnames": [
-        "CField_Tournament::OnTournament"
+        "CField::OnCharacterSale",
+        "CITC::OnQueryCashResult"
       ],
       "cells": {
         "gms_v48": {
@@ -38553,87 +38879,40 @@
           "opcode": -1
         },
         "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 315
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 322
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 332
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 374
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 340
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "TOURNAMENT_MATCH_TABLE",
-      "packet": "field/clientbound/FieldTournamentMatchTable",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField_Tournament::OnTournamentMatchTable"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 316
-        },
-        "gms_v84": {
           "state": "verified",
           "opcode": 323
         },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 347
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 347
+        },
         "gms_v87": {
           "state": "verified",
-          "opcode": 333
+          "opcode": 368
         },
         "gms_v95": {
           "state": "verified",
-          "opcode": 375
+          "opcode": 411
         },
         "jms_v185": {
-          "state": "verified",
-          "opcode": 341
+          "state": "n-a",
+          "opcode": -1
         }
       }
     },
     {
       "kind": "op",
-      "op": "TOURNAMENT_SET_PRIZE",
-      "packet": "field/clientbound/FieldTournamentSetPrize",
+      "op": "MTS_OPERATION",
+      "packet": "field/clientbound/FieldMtsResultBidAuctionFailed",
       "direction": "clientbound",
       "tier1": true,
       "fnames": [
-        "CField_Tournament::OnTournamentSetPrize"
+        "CField::OnCharacterSale",
+        "CITC::OnNormalItemResult"
       ],
       "cells": {
         "gms_v48": {
@@ -38649,220 +38928,28 @@
           "opcode": -1
         },
         "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 317
-        },
-        "gms_v84": {
           "state": "verified",
           "opcode": 324
         },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 334
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 376
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 342
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "TOURNAMENT_UEW",
-      "packet": "field/clientbound/FieldTournamentUew",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField_Tournament::OnTournamentUEW"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
         "gms_v83": {
           "state": "verified",
-          "opcode": 318
+          "opcode": 348
         },
         "gms_v84": {
           "state": "verified",
-          "opcode": 325
+          "opcode": 348
         },
         "gms_v87": {
           "state": "verified",
-          "opcode": 335
+          "opcode": 369
         },
         "gms_v95": {
           "state": "verified",
-          "opcode": 377
+          "opcode": 412
         },
         "jms_v185": {
-          "state": "verified",
-          "opcode": 343
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "TOURNAMENT_CHARACTERS",
-      "packet": "field/clientbound/FieldTournamentCharacters",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField_Tournament::OnPacket"
-      ],
-      "cells": {
-        "gms_v48": {
           "state": "n-a",
           "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 319
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 326
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 336
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 378
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 344
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "WEDDING_PROGRESS",
-      "packet": "field/serverbound/FieldWeddingAction",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField_Wedding::OnWeddingProgress"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 320
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 327
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 337
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 379
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 345
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "WEDDING_CEREMONY_END",
-      "packet": "field/clientbound/FieldWeddingCeremonyEnd",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField_Wedding::OnWeddingCeremonyEnd"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 321
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 328
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 338
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 380
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 346
         }
       }
     },
@@ -39163,55 +39250,6 @@
     },
     {
       "kind": "op",
-      "op": "MTS_OPERATION2",
-      "packet": "field/clientbound/FieldMtsOperation2",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField::OnCharacterSale",
-        "CITC::OnQueryCashResult"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 347
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 347
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 368
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 411
-        },
-        "jms_v185": {
-          "state": "n-a",
-          "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "op",
       "op": "TIP_BEANS",
       "direction": "clientbound",
       "tier1": false,
@@ -39252,55 +39290,6 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 347
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "MTS_OPERATION",
-      "packet": "field/clientbound/FieldMtsResultBidAuctionFailed",
-      "direction": "clientbound",
-      "tier1": true,
-      "fnames": [
-        "CField::OnCharacterSale",
-        "CITC::OnNormalItemResult"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 348
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 348
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 369
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 412
-        },
-        "jms_v185": {
-          "state": "n-a",
-          "opcode": -1
         }
       }
     },
@@ -40557,6 +40546,53 @@
         "jms_v185": {
           "state": "incomplete",
           "note": "no audit report",
+          "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "sub-struct",
+      "packet": "cash/serverbound/CashItemUseTeleportRock",
+      "tier1": true,
+      "cells": {
+        "gms_v48": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "jms_v185": {
+          "state": "verified",
           "opcode": -1
         }
       }

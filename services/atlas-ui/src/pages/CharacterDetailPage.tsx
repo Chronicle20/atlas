@@ -13,6 +13,7 @@ import {
   useInvalidateInventory,
 } from "@/lib/hooks/api/useInventory";
 import { useTenantConfiguration } from "@/lib/hooks/api/useTenants";
+import { useTeleportRockMaps } from "@/lib/hooks/api/useTeleportRocks";
 import {
   inventoryService,
   type Compartment,
@@ -32,6 +33,7 @@ import { EquipmentPanel } from "@/components/features/characters/EquipmentPanel"
 import { InventoryGrid } from "@/components/features/characters/InventoryGrid";
 import { SkillsSection } from "@/components/features/characters/SkillsSection";
 import { MonsterBookWidget } from "@/components/features/characters/MonsterBookWidget";
+import { TeleportRockListCard } from "@/components/features/characters/TeleportRockListCard";
 import { QuestStatusTabs } from "@/components/features/quests";
 import { ErrorDisplay } from "@/components/common";
 import { CharacterDetailSkeleton } from "@/components/common/skeletons/CharacterDetailSkeleton";
@@ -53,6 +55,7 @@ export function CharacterDetailPage() {
   const characterQuery = useCharacter(activeTenant!, id ?? "");
   const inventoryQuery = useInventory(activeTenant!, id ?? "");
   const tenantConfigQuery = useTenantConfiguration(activeTenant?.id ?? "");
+  const teleportRocksQuery = useTeleportRockMaps(activeTenant!, id ?? "");
   const deleteAsset = useDeleteAsset();
   const { invalidateAll: invalidateCharacters } = useInvalidateCharacters();
   const { invalidateAll: invalidateInventory } = useInvalidateInventory();
@@ -258,6 +261,23 @@ export function CharacterDetailPage() {
         <h3 className="text-lg font-semibold">Monster Book</h3>
         <MonsterBookWidget characterId={parseInt(String(id ?? "0"), 10)} />
       </section>
+
+      {teleportRocksQuery.data && (
+        <div className="grid gap-4 md:grid-cols-2">
+          <TeleportRockListCard
+            characterId={String(id)}
+            list="regular"
+            maps={teleportRocksQuery.data.regular}
+            capacity={teleportRocksQuery.data.regularCapacity}
+          />
+          <TeleportRockListCard
+            characterId={String(id)}
+            list="vip"
+            maps={teleportRocksQuery.data.vip}
+            capacity={teleportRocksQuery.data.vipCapacity}
+          />
+        </div>
+      )}
 
       <Toaster richColors />
 

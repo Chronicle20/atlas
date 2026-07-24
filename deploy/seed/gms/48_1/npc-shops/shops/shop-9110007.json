@@ -1,0 +1,48 @@
+{
+  "data": {
+    "attributes": {
+      "commodities": [
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 1100,
+          "period": 0,
+          "templateId": 2022017,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 1600,
+          "period": 0,
+          "templateId": 2022018,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 850,
+          "period": 0,
+          "templateId": 2022019,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        },
+        {
+          "discountRate": 0,
+          "levelLimit": 0,
+          "mesoPrice": 550,
+          "period": 0,
+          "templateId": 2022020,
+          "tokenPrice": 0,
+          "tokenTemplateId": 0
+        }
+      ],
+      "npcId": 9110007,
+      "recharger": false
+    },
+    "id": "9110007",
+    "type": "npc-shop"
+  }
+}

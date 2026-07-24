@@ -1,0 +1,112 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Job advancement test maps - spawns job-specific test monster based on map ID",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "operator": "=",
+              "type": "map_id",
+              "value": "108010101"
+            }
+          ],
+          "id": "spawn_archer_test",
+          "operations": [
+            {
+              "params": {
+                "monsterId": "9001002",
+                "x": "188",
+                "y": "20"
+              },
+              "type": "spawn_monster"
+            }
+          ]
+        },
+        {
+          "conditions": [
+            {
+              "operator": "=",
+              "type": "map_id",
+              "value": "108010301"
+            }
+          ],
+          "id": "spawn_warrior_test",
+          "operations": [
+            {
+              "params": {
+                "monsterId": "9001000",
+                "x": "188",
+                "y": "20"
+              },
+              "type": "spawn_monster"
+            }
+          ]
+        },
+        {
+          "conditions": [
+            {
+              "operator": "=",
+              "type": "map_id",
+              "value": "108010201"
+            }
+          ],
+          "id": "spawn_mage_test",
+          "operations": [
+            {
+              "params": {
+                "monsterId": "9001001",
+                "x": "188",
+                "y": "20"
+              },
+              "type": "spawn_monster"
+            }
+          ]
+        },
+        {
+          "conditions": [
+            {
+              "operator": "=",
+              "type": "map_id",
+              "value": "108010401"
+            }
+          ],
+          "id": "spawn_thief_test",
+          "operations": [
+            {
+              "params": {
+                "monsterId": "9001003",
+                "x": "188",
+                "y": "20"
+              },
+              "type": "spawn_monster"
+            }
+          ]
+        },
+        {
+          "conditions": [
+            {
+              "operator": "=",
+              "type": "map_id",
+              "value": "108010501"
+            }
+          ],
+          "id": "spawn_pirate_test",
+          "operations": [
+            {
+              "params": {
+                "monsterId": "9001008",
+                "x": "188",
+                "y": "20"
+              },
+              "type": "spawn_monster"
+            }
+          ]
+        }
+      ],
+      "scriptName": "108010301"
+    },
+    "id": "108010301",
+    "type": "map-action"
+  }
+}

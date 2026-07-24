@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
-	"strings"
 	"testing"
 	"time"
 
@@ -197,9 +196,25 @@ func TestLeaderboardOrdersByOverallRank(t *testing.T) {
 	if rr.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200; body=%s", rr.Code, rr.Body.String())
 	}
-	// First data element must be character 2 (overall_rank 1).
-	if !strings.Contains(rr.Body.String(), `"characterId":2`) {
-		t.Fatalf("missing characterId 2 in body: %s", rr.Body.String())
+	// First data element must be character 2 (overall_rank 1), before character 1 (overall_rank 2).
+	var body struct {
+		Data []struct {
+			Attributes struct {
+				CharacterId uint32 `json:"characterId"`
+			} `json:"attributes"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(body.Data) < 2 {
+		t.Fatalf("expected at least 2 entries, got %d: %s", len(body.Data), rr.Body.String())
+	}
+	if body.Data[0].Attributes.CharacterId != 2 {
+		t.Fatalf("data[0].characterId = %d, want 2", body.Data[0].Attributes.CharacterId)
+	}
+	if body.Data[1].Attributes.CharacterId != 1 {
+		t.Fatalf("data[1].characterId = %d, want 1", body.Data[1].Attributes.CharacterId)
 	}
 }
 

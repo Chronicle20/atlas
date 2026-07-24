@@ -44,7 +44,10 @@ export interface LeaderboardFilter {
   pageSize?: number | undefined;
 }
 
-export function buildLeaderboardQuery(worldId: number, filter: LeaderboardFilter): string {
+export function buildLeaderboardQuery(
+  worldId: number,
+  filter: LeaderboardFilter,
+): string {
   const params = new URLSearchParams();
   params.set("filter[worldId]", String(worldId));
   if (filter.jobCategory !== undefined)

@@ -2,13 +2,17 @@ package saga
 
 import (
 	asset2 "atlas-saga-orchestrator/kafka/message/asset"
+	"atlas-saga-orchestrator/kafka/message/broadcast"
 	incubator2 "atlas-saga-orchestrator/kafka/message/incubator"
+	"atlas-saga-orchestrator/kafka/message/megaphone"
 	"atlas-saga-orchestrator/kafka/message/saga"
 	"encoding/json"
 	"testing"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
@@ -142,4 +146,131 @@ func TestIncubatorResultEventProvider_EggIdSurvives(t *testing.T) {
 	require.Equal(t, itemId, ev.ItemId)
 	require.Equal(t, count, ev.Count)
 	require.Equal(t, eggId, ev.EggId, "EggId must survive from payload into the emitted event body")
+}
+
+// TestMegaphoneBroadcastEventProvider_MessageShape proves
+// MegaphoneBroadcastEventProvider builds exactly one message, keyed by
+// WorldId (D1: single-partition ordering per world), whose JSON body
+// round-trips into megaphone.BroadcastEvent with every field carried
+// through from EmitMegaphonePayload. This is the happy-path coverage for
+// handleEmitMegaphone's message-building logic; the handler itself is not
+// exercised here because it calls the real atlas-kafka producer.ProviderImpl
+// (see TestHandleEmitMegaphone_InvalidPayload for why).
+func TestMegaphoneBroadcastEventProvider_MessageShape(t *testing.T) {
+	payload := EmitMegaphonePayload{
+		Tier:        "SUPER",
+		Scope:       "WORLD",
+		WorldId:     3,
+		ChannelId:   1,
+		CharacterId: 555,
+		SenderName:  "Bob",
+		SenderMedal: "<Adventurer>",
+		Messages:    []string{"hello", "world"},
+		WhispersOn:  true,
+		Item: &AssetSnapshot{
+			Slot:       -1,
+			TemplateId: 5062000,
+			Quantity:   1,
+		},
+	}
+
+	msgs, err := MegaphoneBroadcastEventProvider(payload)()
+	require.NoError(t, err)
+	require.Len(t, msgs, 1)
+	require.Equal(t, producer.CreateKey(int(payload.WorldId)), msgs[0].Key)
+
+	var ev megaphone.BroadcastEvent
+	require.NoError(t, json.Unmarshal(msgs[0].Value, &ev))
+	require.Equal(t, payload.Tier, ev.Tier)
+	require.Equal(t, payload.Scope, ev.Scope)
+	require.Equal(t, byte(payload.WorldId), ev.WorldId)
+	require.Equal(t, byte(payload.ChannelId), ev.ChannelId)
+	require.Equal(t, payload.CharacterId, ev.CharacterId)
+	require.Equal(t, payload.SenderName, ev.SenderName)
+	require.Equal(t, payload.SenderMedal, ev.SenderMedal)
+	require.Equal(t, payload.Messages, ev.Messages)
+	require.Equal(t, payload.WhispersOn, ev.WhispersOn)
+	require.NotNil(t, ev.Item)
+	require.Equal(t, payload.Item.TemplateId, ev.Item.TemplateId)
+}
+
+// TestMegaphoneBroadcastEventProvider_NilItem proves the ITEM tier's Item
+// field round-trips as absent (json:",omitempty") for the non-ITEM tiers,
+// rather than a spurious non-nil zero value.
+func TestMegaphoneBroadcastEventProvider_NilItem(t *testing.T) {
+	payload := EmitMegaphonePayload{
+		Tier:        "MEGAPHONE",
+		Scope:       "CHANNEL",
+		WorldId:     0,
+		ChannelId:   0,
+		CharacterId: 1,
+		SenderName:  "Alice",
+		Messages:    []string{"hi"},
+	}
+
+	msgs, err := MegaphoneBroadcastEventProvider(payload)()
+	require.NoError(t, err)
+	require.Len(t, msgs, 1)
+
+	var ev megaphone.BroadcastEvent
+	require.NoError(t, json.Unmarshal(msgs[0].Value, &ev))
+	require.Nil(t, ev.Item)
+}
+
+// TestWorldBroadcastEnqueueCommandProvider_MessageShape proves
+// WorldBroadcastEnqueueCommandProvider builds exactly one message, keyed by
+// WorldId (D1: single-partition ordering per world so atlas-world's queue
+// consumer sees enqueue commands for a world in order), whose JSON body
+// round-trips into broadcast.EnqueueCommand with every field carried
+// through from EnqueueWorldBroadcastPayload — including TvMessageType as
+// the semantic string key, never a client wire byte (A1 delta, DOM-25(c)).
+func TestWorldBroadcastEnqueueCommandProvider_MessageShape(t *testing.T) {
+	payload := EnqueueWorldBroadcastPayload{
+		Family:          "TV",
+		WorldId:         2,
+		ChannelId:       4,
+		CharacterId:     777,
+		SenderName:      "Carol",
+		SenderMedal:     "<GM>",
+		Messages:        []string{"a", "b", "c", "d", "e"},
+		WhispersOn:      false,
+		ItemId:          0,
+		TvMessageType:   "STAR",
+		DurationSeconds: 30,
+		SenderLook: AvatarSnapshot{
+			Gender:    0,
+			SkinColor: 0,
+			Face:      20000,
+			Hair:      30000,
+		},
+		ReceiverName: "Dave",
+		ReceiverLook: &AvatarSnapshot{
+			Gender: 1,
+			Face:   20001,
+			Hair:   30001,
+		},
+	}
+
+	msgs, err := WorldBroadcastEnqueueCommandProvider(payload)()
+	require.NoError(t, err)
+	require.Len(t, msgs, 1)
+	require.Equal(t, producer.CreateKey(int(payload.WorldId)), msgs[0].Key)
+
+	var cmd broadcast.EnqueueCommand
+	require.NoError(t, json.Unmarshal(msgs[0].Value, &cmd))
+	require.Equal(t, payload.Family, cmd.Family)
+	require.Equal(t, byte(payload.WorldId), cmd.WorldId)
+	require.Equal(t, byte(payload.ChannelId), cmd.ChannelId)
+	require.Equal(t, payload.CharacterId, cmd.CharacterId)
+	require.Equal(t, payload.SenderName, cmd.SenderName)
+	require.Equal(t, payload.SenderMedal, cmd.SenderMedal)
+	require.Equal(t, payload.Messages, cmd.Messages)
+	require.Equal(t, payload.WhispersOn, cmd.WhispersOn)
+	require.Equal(t, payload.ItemId, cmd.ItemId)
+	require.Equal(t, "STAR", cmd.TvMessageType)
+	require.Equal(t, payload.DurationSeconds, cmd.DurationSeconds)
+	require.Equal(t, payload.SenderLook.Face, cmd.SenderLook.Face)
+	require.Equal(t, payload.ReceiverName, cmd.ReceiverName)
+	require.NotNil(t, cmd.ReceiverLook)
+	require.Equal(t, payload.ReceiverLook.Face, cmd.ReceiverLook.Face)
 }

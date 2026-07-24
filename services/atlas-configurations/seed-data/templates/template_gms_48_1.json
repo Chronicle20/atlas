@@ -1640,6 +1640,16 @@
         }
       },
       {
+        "opCode": "0x42",
+        "writer": "SetAvatarMegaphone",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x43",
+        "writer": "ClearAvatarMegaphone",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0xED",
         "writer": "RPSGame",
         "services": ["channel"],

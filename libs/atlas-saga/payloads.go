@@ -955,3 +955,90 @@ type IncubatorResultPayload struct {
 	Count       uint32     `json:"count"`       // Count of the resulting item
 	EggId       uint32     `json:"eggId"`       // EggId of the sacrificed Pigmy Egg (v95 client uses it to pick the region success NPC)
 }
+
+// AssetSnapshot captures one inventory asset at decode time (item megaphone).
+// Snapshot DTO shared by saga payloads AND the kafka message structs of
+// channel/world/orchestrator (single source of truth; PRD Q6: snapshot at
+// decode time, never re-resolved).
+type AssetSnapshot struct {
+	Slot         int16     `json:"slot"`
+	TemplateId   uint32    `json:"templateId"`
+	Expiration   time.Time `json:"expiration"`
+	CashId       int64     `json:"cashId"`
+	Quantity     uint32    `json:"quantity"`
+	Flag         uint16    `json:"flag"`
+	Rechargeable uint64    `json:"rechargeable"`
+	// equipment stats (zero for non-equips)
+	Strength       uint16 `json:"strength"`
+	Dexterity      uint16 `json:"dexterity"`
+	Intelligence   uint16 `json:"intelligence"`
+	Luck           uint16 `json:"luck"`
+	Hp             uint16 `json:"hp"`
+	Mp             uint16 `json:"mp"`
+	WeaponAttack   uint16 `json:"weaponAttack"`
+	MagicAttack    uint16 `json:"magicAttack"`
+	WeaponDefense  uint16 `json:"weaponDefense"`
+	MagicDefense   uint16 `json:"magicDefense"`
+	Accuracy       uint16 `json:"accuracy"`
+	Avoidability   uint16 `json:"avoidability"`
+	Hands          uint16 `json:"hands"`
+	Speed          uint16 `json:"speed"`
+	Jump           uint16 `json:"jump"`
+	Slots          uint16 `json:"slots"`
+	LevelType      byte   `json:"levelType"`
+	Level          byte   `json:"level"`
+	Experience     uint32 `json:"experience"`
+	HammersApplied uint32 `json:"hammersApplied"`
+	// pet fields (zero/empty for non-pets)
+	PetId     uint32 `json:"petId"`
+	PetName   string `json:"petName"`
+	PetLevel  byte   `json:"petLevel"`
+	Closeness uint16 `json:"closeness"`
+	Fullness  byte   `json:"fullness"`
+}
+
+// AvatarSnapshot captures a character's look at decode time (avatar megaphone / TV).
+// Map keys are negated slot positions exactly as packetmodel.NewAvatar expects.
+type AvatarSnapshot struct {
+	Gender       byte             `json:"gender"`
+	SkinColor    byte             `json:"skinColor"`
+	Face         uint32           `json:"face"`
+	Hair         uint32           `json:"hair"`
+	Equips       map[int16]uint32 `json:"equips"`
+	MaskedEquips map[int16]uint32 `json:"maskedEquips"`
+	Pets         map[int8]uint32  `json:"pets"`
+}
+
+// EmitMegaphonePayload represents the payload for the stateless megaphone tiers
+// (MEGAPHONE/SUPER/ITEM/TRIPLE).
+type EmitMegaphonePayload struct {
+	Tier        string         `json:"tier"`  // MEGAPHONE|SUPER|ITEM|TRIPLE
+	Scope       string         `json:"scope"` // CHANNEL|WORLD
+	WorldId     world.Id       `json:"worldId"`
+	ChannelId   channel.Id     `json:"channelId"` // sender's channel
+	CharacterId uint32         `json:"characterId"`
+	SenderName  string         `json:"senderName"`
+	SenderMedal string         `json:"senderMedal"`
+	Messages    []string       `json:"messages"`
+	WhispersOn  bool           `json:"whispersOn"`
+	Item        *AssetSnapshot `json:"item,omitempty"` // ITEM tier only
+}
+
+// EnqueueWorldBroadcastPayload represents the payload for the serialized world
+// broadcast tiers (TV/AVATAR).
+type EnqueueWorldBroadcastPayload struct {
+	Family          string          `json:"family"` // TV|AVATAR
+	WorldId         world.Id        `json:"worldId"`
+	ChannelId       channel.Id      `json:"channelId"`
+	CharacterId     uint32          `json:"characterId"`
+	SenderName      string          `json:"senderName"`
+	SenderMedal     string          `json:"senderMedal"`
+	Messages        []string        `json:"messages"` // 5 for TV, 4 for AVATAR
+	WhispersOn      bool            `json:"whispersOn"`
+	ItemId          uint32          `json:"itemId"`        // AVATAR: used item id (SET packet field)
+	TvMessageType   string          `json:"tvMessageType"` // semantic key NORMAL|STAR|HEART; resolved to a client wire byte via the tenant messageTypes writer table, never carried as a byte here (DOM-25)
+	DurationSeconds uint32          `json:"durationSeconds"`
+	SenderLook      AvatarSnapshot  `json:"senderLook"`
+	ReceiverName    string          `json:"receiverName"`
+	ReceiverLook    *AvatarSnapshot `json:"receiverLook,omitempty"`
+}

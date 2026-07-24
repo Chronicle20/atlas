@@ -20422,6 +20422,82 @@
           "comment": "throw (0=Rock/1=Paper/2=Scissors, RAW passthrough; CRPSGameDlg::SendSelection @0x6c230a, COutPacket(133)+Encode1(1)+Encode1(throw) @0x6c233d; sub-op mode byte 1 written earlier by the same sender, excluded here per the storage OperationMeso/StoreAsset/RetrieveAsset convention; live IDA port 13340 2026-07-16)"
         }
       ]
+    },
+    "CItemSpeakerDlg::_SendConsumeCashItemUseRequest": {
+      "address": "0x5c2336",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode2",
+          "comment": "slot (*(WORD*)(this+120)) @0x5c2429"
+        },
+        {
+          "op": "Encode4",
+          "comment": "itemId (*(DWORD*)(this+124)) @0x5c2434"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "message (CCtrlEdit::GetText()) @0x5c2455"
+        },
+        {
+          "op": "Encode1",
+          "comment": "whisper (*(DWORD*)(*(DWORD*)(this+1448)+72)) @0x5c2466"
+        },
+        {
+          "op": "Encode1",
+          "comment": "hasItem (*(DWORD*)(this+140)!=0) @0x5c2478"
+        },
+        {
+          "op": "Encode4",
+          "comment": "invType (*(DWORD*)(this+128)) @0x5c248e",
+          "guard": "hasItem"
+        },
+        {
+          "op": "Encode4",
+          "comment": "slot (*(DWORD*)(this+132)) @0x5c249c",
+          "guard": "hasItem"
+        },
+        {
+          "op": "Encode4",
+          "comment": "updateTime (SetExclRequestSent() return) @0x5c24aa"
+        }
+      ]
+    },
+    "CWvsContext::OnBroadcastMsg#Megaphone": {
+      "address": "0x96c94f",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=2, MEGAPHONE)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message - mode 2 has no header-extras arm (cmp esi,3/8/9/11 chain skips mode 2) (task-123 legacy phase 1, IDA-verified)"
+        }
+      ]
+    },
+    "CWvsContext::OnBroadcastMsg#SuperMegaphone": {
+      "address": "0x96c94f",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=3, SUPER_MEGAPHONE)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message"
+        },
+        {
+          "op": "Decode1",
+          "comment": "channelId (task-123 legacy phase 1, IDA-verified)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "whispersOn"
+        }
+      ]
     }
   }
 }

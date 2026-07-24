@@ -1,0 +1,11 @@
+packet: cash/serverbound/CashItemUseItemMegaphone
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CItemSpeakerDlg::_SendConsumeCashItemUseRequest
+    address: "0x660672"
+    decompile_sha256: 4bc261fda0aba5a53fc1b34b1551442fbea2faa482251b80d14287d504e3829e
+verifies:
+    - libs/atlas-packet/cash/serverbound/item_use_item_megaphone_test.go#TestItemUseItemMegaphoneByteOutputJMS185HasItem
+    - libs/atlas-packet/cash/serverbound/item_use_item_megaphone_test.go#TestItemUseItemMegaphoneByteOutputJMS185NoItem

@@ -1,0 +1,57 @@
+{
+  "WriterName": "CashItemUseMegaphone",
+  "IDAName": "CWvsContext::SendConsumeCashItemUseRequest",
+  "Address": "0xaef2f5",
+  "Variant": "JMS/v185",
+  "BranchDepth": 1,
+  "AtlasFile": "libs/atlas-packet/cash/serverbound/item_use_megaphone.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "update_time = get_update_time(); Encode4 in the SHARED HEADER, written FIRST (before slot/itemId) - confirms updateTimeFirst=TRUE for jms185 @0xaef36c-0xaef375",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "slot (nType) - Encode2 @0xaef37a-0xaef380",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "itemId (String2) - Encode4 @0xaef385-0xaef38b, then get_consume_cash_item_type(itemId) drives the type switch (get_cashslot_item_type@0x49a1ee: tier0/Cheap -\u003e type 12)",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "message - jumptable comment 'cases 12,13,15,47,48' @0xaef5b9 (jpt_AEF3A8 base 0xaf2b6a); shared tail EncodeStr @0xaef98a",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "whisper - Encode1 @0xaef9a7, gated on type==13(0x0D)||type==47(0x2F)||type==48(0x30) @0xaef98f-0xaef99f; type==12 (Cheap) skips this write",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    }
+  ],
+  "Verdict": 3,
+  "FlatInvalid": true
+}

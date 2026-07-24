@@ -2027,14 +2027,9 @@
             "ITEM_MEGAPHONE": 8,
             "YELLOW_MEGAPHONE": 9,
             "MULTI_MEGAPHONE": 10,
-            "WEATHER": 11,
-            "GACHAPON": 12,
-            "UNKNOWN_3": 13,
-            "UNKNOWN_4": 14,
-            "CLIPBOARD_NOTICE_1": 15,
-            "CLIPBOARD_NOTICE_2": 16,
-            "UNKNOWN_7": 17,
-            "UNKNOWN_8": 18
+            "GACHAPON": 11,
+            "CLIPBOARD_NOTICE_1": 12,
+            "CLIPBOARD_NOTICE_2": 13
           }
         }
       },
@@ -3590,6 +3585,56 @@
             "DENIED": 17,
             "MAINTENANCE": 18,
             "FM_ONLY": 23
+          }
+        }
+      },
+      {
+        "opCode": "0x6F",
+        "writer": "SetAvatarMegaphone",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x70",
+        "writer": "ClearAvatarMegaphone",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x6E",
+        "writer": "AvatarMegaphoneResult",
+        "services": ["channel"],
+        "options": {
+          "errorCodes": {
+            "WAITING_LINE": 83,
+            "LEVEL_GATE": 84
+          }
+        }
+      },
+      {
+        "opCode": "0x155",
+        "writer": "TvSetMessage",
+        "services": ["channel"],
+        "options": {
+          "messageTypes": {
+            "NORMAL": 0,
+            "STAR": 1,
+            "HEART": 2
+          }
+        }
+      },
+      {
+        "opCode": "0x156",
+        "writer": "TvClearMessage",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x157",
+        "writer": "TvSendMessageResult",
+        "services": ["channel"],
+        "options": {
+          "errorCodes": {
+            "GM_MESSAGE": 1,
+            "WRONG_USER": 2,
+            "QUEUE_TOO_LONG": 3
           }
         }
       }

@@ -1,0 +1,10 @@
+packet: chat/clientbound/ChatSetAvatarMegaphone
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnSetAvatarMegaphone
+    address: "0x721295"
+    decompile_sha256: 61894e839db358e33f4dbb3062f02714bd81b86048083ffc210d9b51fccab83b
+verifies:
+    - libs/atlas-packet/chat/clientbound/avatar_megaphone_legacy_test.go#TestSetAvatarMegaphoneRoundTripV48

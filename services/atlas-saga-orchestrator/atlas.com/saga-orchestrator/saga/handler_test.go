@@ -1404,3 +1404,63 @@ func TestHandleIncubatorResult_InvalidPayload(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid payload")
 }
+
+// TestHandleEmitMegaphone_InvalidPayload proves handleEmitMegaphone rejects a
+// step whose payload is not an EmitMegaphonePayload before touching Kafka.
+// The happy path (producer.ProviderImpl emitting to EVENT_TOPIC_MEGAPHONE) is
+// not covered here — no fixture in this package stubs the atlas-kafka
+// producer's WriterFactory/env-topic resolution (see sibling handlers
+// handleEmitGachaponWin / handleFieldEffectWeather, which are also
+// untested for the same reason); message-shape coverage for the happy path
+// lives in TestMegaphoneBroadcastEventProvider (producer_test.go), and
+// dispatch/decode coverage lives in the acceptanceTable and
+// Step[any].UnmarshalJSON completeness tests (event_acceptance_test.go,
+// unmarshal_completeness_test.go).
+func TestHandleEmitMegaphone_InvalidPayload(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+
+	_, ctx := setupContext()
+
+	transactionId := uuid.New()
+	saga, err := NewBuilder().
+		SetTransactionId(transactionId).
+		SetSagaType(QuestReward).
+		SetInitiatedBy("test").
+		Build()
+	assert.NoError(t, err)
+
+	step := NewStep[any]("emit-megaphone-step", Pending, EmitMegaphone, "invalid-payload-type")
+
+	err = NewHandler(logger, ctx).handleEmitMegaphone(saga, step)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid payload")
+}
+
+// TestHandleEnqueueWorldBroadcast_InvalidPayload proves
+// handleEnqueueWorldBroadcast rejects a step whose payload is not an
+// EnqueueWorldBroadcastPayload before touching Kafka. See
+// TestHandleEmitMegaphone_InvalidPayload for why the happy path is not
+// covered by a handler-level test in this package.
+func TestHandleEnqueueWorldBroadcast_InvalidPayload(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+
+	_, ctx := setupContext()
+
+	transactionId := uuid.New()
+	saga, err := NewBuilder().
+		SetTransactionId(transactionId).
+		SetSagaType(QuestReward).
+		SetInitiatedBy("test").
+		Build()
+	assert.NoError(t, err)
+
+	step := NewStep[any]("enqueue-world-broadcast-step", Pending, EnqueueWorldBroadcast, "invalid-payload-type")
+
+	err = NewHandler(logger, ctx).handleEnqueueWorldBroadcast(saga, step)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid payload")
+}

@@ -1,0 +1,66 @@
+{
+  "WriterName": "ChatSetAvatarMegaphone",
+  "IDAName": "CWvsContext::OnSetAvatarMegaphone",
+  "Address": "0xb117bb",
+  "Variant": "JMS/v185",
+  "BranchDepth": 1,
+  "AtlasFile": "libs/atlas-packet/chat/clientbound/avatar_megaphone.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "itemId",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "name (sender name)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "lines[0] — DIVERGENT from GMS: jms_v185 decodes only ONE message line here (raw disasm b117fc/b1180b: exactly two DecodeStr calls total before the trailing fields), not four",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "channelId",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "whispersOn",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 5,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "AvatarLook::Decode(look) — opaque avatar block (model.Avatar recurse)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

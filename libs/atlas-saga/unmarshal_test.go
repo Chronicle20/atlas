@@ -844,3 +844,161 @@ func TestUnmarshalDestroyAssetFromSlotTemplateId(t *testing.T) {
 		t.Fatalf("payload = %+v", p)
 	}
 }
+
+func TestUnmarshalEmitMegaphoneStep(t *testing.T) {
+	created := time.Date(2026, 7, 17, 0, 0, 0, 0, time.UTC)
+	original := Step[any]{
+		StepId: "emit_megaphone-1",
+		Status: Pending,
+		Action: EmitMegaphone,
+		Payload: EmitMegaphonePayload{
+			Tier:        "ITEM",
+			Scope:       "WORLD",
+			WorldId:     0,
+			ChannelId:   1,
+			CharacterId: 100,
+			SenderName:  "Bob",
+			SenderMedal: "<Legend>",
+			Messages:    []string{"hello", "world"},
+			WhispersOn:  true,
+			Item: &AssetSnapshot{
+				Slot:       1,
+				TemplateId: 5100000,
+				CashId:     999,
+				Quantity:   1,
+			},
+		},
+		CreatedAt: created,
+		UpdatedAt: created,
+	}
+
+	data, err := json.Marshal(original)
+	if err != nil {
+		t.Fatalf("marshal failed: %v", err)
+	}
+
+	var step Step[any]
+	if err := json.Unmarshal(data, &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != EmitMegaphone {
+		t.Fatalf("expected action EmitMegaphone, got %q", step.Action)
+	}
+	p, ok := step.Payload.(EmitMegaphonePayload)
+	if !ok {
+		t.Fatalf("expected EmitMegaphonePayload, got %T", step.Payload)
+	}
+	if p.Tier != "ITEM" {
+		t.Errorf("tier: expected ITEM, got %q", p.Tier)
+	}
+	if p.Scope != "WORLD" {
+		t.Errorf("scope: expected WORLD, got %q", p.Scope)
+	}
+	if p.CharacterId != 100 {
+		t.Errorf("characterId: expected 100, got %d", p.CharacterId)
+	}
+	if len(p.Messages) != 2 || p.Messages[0] != "hello" || p.Messages[1] != "world" {
+		t.Errorf("messages: expected [hello world], got %v", p.Messages)
+	}
+	if !p.WhispersOn {
+		t.Errorf("whispersOn: expected true, got false")
+	}
+	if p.Item == nil {
+		t.Fatalf("expected non-nil Item")
+	}
+	if p.Item.TemplateId != 5100000 {
+		t.Errorf("item.templateId: expected 5100000, got %d", p.Item.TemplateId)
+	}
+	if p.Item.CashId != 999 {
+		t.Errorf("item.cashId: expected 999, got %d", p.Item.CashId)
+	}
+}
+
+func TestUnmarshalEnqueueWorldBroadcastStep(t *testing.T) {
+	created := time.Date(2026, 7, 17, 0, 0, 0, 0, time.UTC)
+	original := Step[any]{
+		StepId: "enqueue_world_broadcast-1",
+		Status: Pending,
+		Action: EnqueueWorldBroadcast,
+		Payload: EnqueueWorldBroadcastPayload{
+			Family:          "AVATAR",
+			WorldId:         0,
+			ChannelId:       1,
+			CharacterId:     100,
+			SenderName:      "Alice",
+			SenderMedal:     "",
+			Messages:        []string{"a", "b", "c", "d"},
+			WhispersOn:      false,
+			ItemId:          5390000,
+			TvMessageType:   "HEART",
+			DurationSeconds: 30,
+			SenderLook: AvatarSnapshot{
+				Gender:    0,
+				SkinColor: 0,
+				Face:      20000,
+				Hair:      30000,
+				Equips:    map[int16]uint32{-1: 1002140, -5: 1040002},
+				Pets:      map[int8]uint32{},
+			},
+			ReceiverName: "Carol",
+			ReceiverLook: &AvatarSnapshot{
+				Gender:       1,
+				SkinColor:    2,
+				Face:         21000,
+				Hair:         31000,
+				Equips:       map[int16]uint32{-1: 1002141},
+				MaskedEquips: map[int16]uint32{-101: 1002999},
+				Pets:         map[int8]uint32{1: 5000000},
+			},
+		},
+		CreatedAt: created,
+		UpdatedAt: created,
+	}
+
+	data, err := json.Marshal(original)
+	if err != nil {
+		t.Fatalf("marshal failed: %v", err)
+	}
+
+	var step Step[any]
+	if err := json.Unmarshal(data, &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != EnqueueWorldBroadcast {
+		t.Fatalf("expected action EnqueueWorldBroadcast, got %q", step.Action)
+	}
+	p, ok := step.Payload.(EnqueueWorldBroadcastPayload)
+	if !ok {
+		t.Fatalf("expected EnqueueWorldBroadcastPayload, got %T", step.Payload)
+	}
+	if p.Family != "AVATAR" {
+		t.Errorf("family: expected AVATAR, got %q", p.Family)
+	}
+	if p.TvMessageType != "HEART" {
+		t.Errorf("tvMessageType: expected HEART, got %q", p.TvMessageType)
+	}
+	if p.ItemId != 5390000 {
+		t.Errorf("itemId: expected 5390000, got %d", p.ItemId)
+	}
+	if p.ReceiverName != "Carol" {
+		t.Errorf("receiverName: expected Carol, got %q", p.ReceiverName)
+	}
+	if p.ReceiverLook == nil {
+		t.Fatalf("expected non-nil ReceiverLook")
+	}
+	if p.ReceiverLook.Gender != 1 {
+		t.Errorf("receiverLook.gender: expected 1, got %d", p.ReceiverLook.Gender)
+	}
+	if p.ReceiverLook.Equips[-1] != 1002141 {
+		t.Errorf("receiverLook.equips[-1]: expected 1002141, got %d", p.ReceiverLook.Equips[-1])
+	}
+	if p.ReceiverLook.MaskedEquips[-101] != 1002999 {
+		t.Errorf("receiverLook.maskedEquips[-101]: expected 1002999, got %d", p.ReceiverLook.MaskedEquips[-101])
+	}
+	if p.ReceiverLook.Pets[1] != 5000000 {
+		t.Errorf("receiverLook.pets[1]: expected 5000000, got %d", p.ReceiverLook.Pets[1])
+	}
+	if p.SenderLook.Equips[-5] != 1040002 {
+		t.Errorf("senderLook.equips[-5]: expected 1040002, got %d", p.SenderLook.Equips[-5])
+	}
+}

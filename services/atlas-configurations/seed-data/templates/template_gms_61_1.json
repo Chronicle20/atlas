@@ -3058,6 +3058,16 @@
         }
       },
       {
+        "opCode": "0x54",
+        "writer": "SetAvatarMegaphone",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x55",
+        "writer": "ClearAvatarMegaphone",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0xF2",
         "writer": "RPSGame",
         "services": ["channel"],

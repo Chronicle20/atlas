@@ -31,6 +31,12 @@ type (
 	IncubatorResultPayload       = sharedsaga.IncubatorResultPayload
 	DestroyAssetFromSlotPayload  = sharedsaga.DestroyAssetFromSlotPayload
 
+	// Megaphone / world broadcast payload types
+	EmitMegaphonePayload         = sharedsaga.EmitMegaphonePayload
+	EnqueueWorldBroadcastPayload = sharedsaga.EnqueueWorldBroadcastPayload
+	AssetSnapshot                = sharedsaga.AssetSnapshot
+	AvatarSnapshot               = sharedsaga.AvatarSnapshot
+
 	// Storage payload types
 	DepositToStoragePayload     = sharedsaga.DepositToStoragePayload
 	UpdateStorageMesosPayload   = sharedsaga.UpdateStorageMesosPayload
@@ -56,6 +62,7 @@ const (
 	SealingLockUse       = sharedsaga.SealingLockUse
 	IncubatorUse         = sharedsaga.IncubatorUse
 	PointReset           = sharedsaga.PointReset
+	MegaphoneUse         = sharedsaga.MegaphoneUse
 
 	// Status constants
 	Pending   = sharedsaga.Pending
@@ -89,6 +96,8 @@ const (
 	DestroyAssetFromSlot  = sharedsaga.DestroyAssetFromSlot
 	TransferAP            = sharedsaga.TransferAP
 	TransferSP            = sharedsaga.TransferSP
+	EmitMegaphone         = sharedsaga.EmitMegaphone
+	EnqueueWorldBroadcast = sharedsaga.EnqueueWorldBroadcast
 )
 
 // TransferToCashShopPayload is kept local because CashId is uint64 here

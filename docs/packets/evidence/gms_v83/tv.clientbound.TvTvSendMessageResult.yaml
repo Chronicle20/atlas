@@ -1,0 +1,10 @@
+packet: tv/clientbound/TvTvSendMessageResult
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CMapleTVMan::OnSendMessageResult
+    address: "0x6373a0"
+    decompile_sha256: 99da813dd050d596052e3ca2d2ec5d568cb8c0372ad69f7b14dffae07b74985f
+verifies:
+    - libs/atlas-packet/tv/clientbound/send_message_result_test.go#TestTvSendMessageResultSuccessRoundTrip

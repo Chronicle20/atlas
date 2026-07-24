@@ -3161,6 +3161,16 @@
         }
       },
       {
+        "opCode": "0x67",
+        "writer": "SetAvatarMegaphone",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x68",
+        "writer": "ClearAvatarMegaphone",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x116",
         "writer": "RPSGame",
         "services": ["channel"],

@@ -1,0 +1,21 @@
+{
+  "WriterName": "CashItemUseMapleTV",
+  "IDAName": "CWvsContext::SendConsumeCashItemUseRequest",
+  "Address": "0xa9fef9",
+  "Variant": "GMS/v87",
+  "BranchDepth": 1,
+  "AtlasFile": "libs/atlas-packet/cash/serverbound/item_use_maple_tv.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "cases 46-51 (@0xaa2985-0xaa3ea4), one per tvType arm: tvType-conditional pad/ear/receiver prefix + 5xline(str), NO trailing update_time (updateTimeFirst=TRUE) \u2014 task-123 megaphone gap-fill pass.",
+      "Verdict": 3,
+      "Note": "flat-diff-invalid: data-dependent branch (cash-item type discriminated dialog body) \u2014 see byte-fixture test for the verified per-branch wire shape"
+    }
+  ],
+  "Verdict": 3,
+  "FlatInvalid": true
+}

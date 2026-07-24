@@ -6,6 +6,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 )
@@ -82,6 +83,7 @@ func (m *WorldMessageTopScroll) Decode(_ logrus.FieldLogger, _ context.Context) 
 }
 
 // WorldMessageSuperMegaphone - mode(3), message, channel, whispersOn
+// packet-audit:fname CWvsContext::OnBroadcastMsg#SuperMegaphone
 type WorldMessageSuperMegaphone struct {
 	mode       byte
 	message    string
@@ -157,49 +159,96 @@ func (m *WorldMessageBlueText) Decode(_ logrus.FieldLogger, _ context.Context) f
 	}
 }
 
-// WorldMessageItemMegaphone - mode, message, channel, whispersOn, hasItem(true), slot
+// WorldMessageMegaphone - discrete MEGAPHONE arm (mode 2 in v83): mode, message.
+// Discrete (not WorldMessageSimple) so the dispatcher #-entry maps one struct
+// to one mode (DISPATCHER_FAMILY.md INV-1).
+// packet-audit:fname CWvsContext::OnBroadcastMsg#Megaphone
+type WorldMessageMegaphone struct {
+	mode    byte
+	message string
+}
+
+func NewWorldMessageMegaphone(mode byte, message string) WorldMessageMegaphone {
+	return WorldMessageMegaphone{mode: mode, message: message}
+}
+
+func (m WorldMessageMegaphone) Mode() byte        { return m.mode }
+func (m WorldMessageMegaphone) Message() string   { return m.message }
+func (m WorldMessageMegaphone) Operation() string { return WorldMessageWriter }
+func (m WorldMessageMegaphone) String() string    { return "world message megaphone" }
+
+func (m WorldMessageMegaphone) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)
+		w.WriteAsciiString(m.message)
+		return w.Bytes()
+	}
+}
+
+func (m *WorldMessageMegaphone) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.message = r.ReadAsciiString()
+	}
+}
+
+// WorldMessageItemMegaphone - mode, message, channel, whispersOn, hasItem, [item block]
+// Item block is the shared model.Asset (GW_ItemSlotBase-style) encoder. (design D4)
+//
+// Cosmic reference (PacketCreator.itemMegaphone): writeBool(item != null), then
+// when present addItemInfo(p, item, true) (zero-position item block). The exact
+// presence/order of a slotPos byte is IDA-verified in Task 19; this ships the
+// Cosmic-cited shape hasItem + item block.
+// packet-audit:fname CWvsContext::OnBroadcastMsg#ItemMegaphone
 type WorldMessageItemMegaphone struct {
 	mode       byte
 	message    string
 	channelId  byte
 	whispersOn bool
-	slot       int32
+	item       *model.Asset
 }
 
-func NewWorldMessageItemMegaphone(mode byte, message string, channelId byte, whispersOn bool, slot int32) WorldMessageItemMegaphone {
-	return WorldMessageItemMegaphone{mode: mode, message: message, channelId: channelId, whispersOn: whispersOn, slot: slot}
+func NewWorldMessageItemMegaphone(mode byte, message string, channelId byte, whispersOn bool, item *model.Asset) WorldMessageItemMegaphone {
+	return WorldMessageItemMegaphone{mode: mode, message: message, channelId: channelId, whispersOn: whispersOn, item: item}
 }
 
-func (m WorldMessageItemMegaphone) Mode() byte       { return m.mode }
-func (m WorldMessageItemMegaphone) Message() string  { return m.message }
-func (m WorldMessageItemMegaphone) ChannelId() byte  { return m.channelId }
-func (m WorldMessageItemMegaphone) WhispersOn() bool { return m.whispersOn }
-func (m WorldMessageItemMegaphone) Slot() int32      { return m.slot }
+func (m WorldMessageItemMegaphone) Mode() byte         { return m.mode }
+func (m WorldMessageItemMegaphone) Message() string    { return m.message }
+func (m WorldMessageItemMegaphone) ChannelId() byte    { return m.channelId }
+func (m WorldMessageItemMegaphone) WhispersOn() bool   { return m.whispersOn }
+func (m WorldMessageItemMegaphone) HasItem() bool      { return m.item != nil }
+func (m WorldMessageItemMegaphone) Item() *model.Asset { return m.item }
 
 func (m WorldMessageItemMegaphone) Operation() string { return WorldMessageWriter }
 func (m WorldMessageItemMegaphone) String() string    { return "world message item megaphone" }
 
-func (m WorldMessageItemMegaphone) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m WorldMessageItemMegaphone) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
 		w.WriteAsciiString(m.message)
 		w.WriteByte(m.channelId)
 		w.WriteBool(m.whispersOn)
-		w.WriteBool(true)
-		w.WriteInt32(m.slot)
+		w.WriteBool(m.item != nil)
+		if m.item != nil {
+			w.WriteByteArray(m.item.Encode(l, ctx)(options))
+		}
 		return w.Bytes()
 	}
 }
 
-func (m *WorldMessageItemMegaphone) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *WorldMessageItemMegaphone) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.message = r.ReadAsciiString()
 		m.channelId = r.ReadByte()
 		m.whispersOn = r.ReadBool()
-		_ = r.ReadBool()
-		m.slot = r.ReadInt32()
+		if r.ReadBool() {
+			item := model.Asset{}
+			item.Decode(l, ctx)(r, options)
+			m.item = &item
+		}
 	}
 }
 
@@ -240,6 +289,7 @@ func (m *WorldMessageYellowMegaphone) Decode(_ logrus.FieldLogger, _ context.Con
 }
 
 // WorldMessageMultiMegaphone - mode, messages, channel, whispersOn
+// packet-audit:fname CWvsContext::OnBroadcastMsg#MultiMegaphone
 type WorldMessageMultiMegaphone struct {
 	mode       byte
 	messages   []string

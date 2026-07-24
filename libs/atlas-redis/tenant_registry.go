@@ -132,7 +132,7 @@ func (r *TenantRegistry[K, V]) Update(ctx context.Context, t tenant.Model, key K
 	rk := r.entityKey(t, key)
 
 	var result V
-	err := r.client.Watch(ctx, func(tx *goredis.Tx) error {
+	txFn := func(tx *goredis.Tx) error {
 		data, err := tx.Get(ctx, rk).Bytes()
 		if errors.Is(err, goredis.Nil) {
 			return ErrNotFound
@@ -157,8 +157,23 @@ func (r *TenantRegistry[K, V]) Update(ctx context.Context, t tenant.Model, key K
 			return nil
 		})
 		return err
-	}, rk)
-	return result, err
+	}
+
+	// Optimistic-lock retry on contention. goredis.TxFailedErr means another
+	// writer modified the key between WATCH and EXEC; the safe response is to
+	// re-read and re-apply fn. fn must be pure in its observable effects since
+	// it may run multiple times.
+	for i := 0; i < updateMaxRetries; i++ {
+		err := r.client.Watch(ctx, txFn, rk)
+		if err == nil {
+			return result, nil
+		}
+		if errors.Is(err, goredis.TxFailedErr) {
+			continue
+		}
+		return result, err
+	}
+	return result, fmt.Errorf("optimistic lock failed after %d retries", updateMaxRetries)
 }
 
 func (r *TenantRegistry[K, V]) Exists(ctx context.Context, t tenant.Model, key K) (bool, error) {

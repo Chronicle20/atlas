@@ -1,0 +1,84 @@
+{
+  "WriterName": "CashItemUseItemMegaphone",
+  "IDAName": "CItemSpeakerDlg::_SendConsumeCashItemUseRequest",
+  "Address": "0x5c9e70",
+  "Variant": "GMS/v95",
+  "BranchDepth": 1,
+  "AtlasFile": "libs/atlas-packet/cash/serverbound/item_use_item_megaphone.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "update_time = get_update_time(); Encode4 in this function's OWN header, written FIRST (before nPOS/itemId) @0x5c9fb3-0x5c9fbd - confirms updateTimeFirst=TRUE",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "nPOS (this-\u003e_nPOS) - Encode2 @0x5c9fce",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "itemId (this-\u003e_nItemID) - Encode4 @0x5c9fde",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "message = CCtrlEdit::GetText(_pEditInput) - EncodeStr @0x5c9ffa",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "whisper = _pCheckBoxWhisper.p-\u003em_bChecked - Encode1 @0x5ca00d",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "hasItem = (_pItem.p != 0) - Encode1 @0x5ca024",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 6,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "invType (this-\u003e_nTargetTI) - Encode4 @0x5ca03d",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 7,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "slot (this-\u003e_nTargetPOS) - Encode4 @0x5ca04d",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    }
+  ],
+  "Verdict": 3,
+  "FlatInvalid": true
+}

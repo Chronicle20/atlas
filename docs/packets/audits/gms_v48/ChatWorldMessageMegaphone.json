@@ -1,0 +1,30 @@
+{
+  "WriterName": "ChatWorldMessageMegaphone",
+  "IDAName": "CWvsContext::OnBroadcastMsg#Megaphone",
+  "Address": "0x71c356",
+  "Variant": "GMS/v48",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/chat/clientbound/world_message.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (=2, MEGAPHONE)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "message - mode 2 has no case in the body switch, falls straight to the display switch with no further wire reads (task-123 legacy phase 1, IDA-verified)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

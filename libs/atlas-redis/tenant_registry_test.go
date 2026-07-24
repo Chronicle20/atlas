@@ -2,6 +2,7 @@ package redis
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"sync"
@@ -23,7 +24,7 @@ func newTestTenant(t *testing.T, region string) tenant.Model {
 
 func TestTenantRegistry_Clear_EmptyNamespace(t *testing.T) {
 	client, _ := setupTestRedis(t)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	reg := NewTenantRegistry[string, string](client, "test:clear", func(k string) string { return k })
 	tm := newTestTenant(t, "GMS")
 
@@ -38,7 +39,7 @@ func TestTenantRegistry_Clear_EmptyNamespace(t *testing.T) {
 
 func TestTenantRegistry_Clear_DeletesAllForTenant(t *testing.T) {
 	client, _ := setupTestRedis(t)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	reg := NewTenantRegistry[string, string](client, "test:clear", func(k string) string { return k })
 	tm := newTestTenant(t, "GMS")
 	ctx := context.Background()
@@ -66,7 +67,7 @@ func TestTenantRegistry_Clear_DeletesAllForTenant(t *testing.T) {
 
 func TestTenantRegistry_Clear_TenantIsolation(t *testing.T) {
 	client, _ := setupTestRedis(t)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	reg := NewTenantRegistry[string, string](client, "test:clear", func(k string) string { return k })
 	tA := newTestTenant(t, "GMS")
 	tB := newTestTenant(t, "GMS")
@@ -96,7 +97,7 @@ func TestTenantRegistry_Clear_TenantIsolation(t *testing.T) {
 
 func TestTenantRegistry_Clear_NamespaceIsolation(t *testing.T) {
 	client, _ := setupTestRedis(t)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	regA := NewTenantRegistry[string, string](client, "test:clear:A", func(k string) string { return k })
 	regB := NewTenantRegistry[string, string](client, "test:clear:B", func(k string) string { return k })
 	tm := newTestTenant(t, "GMS")
@@ -126,7 +127,7 @@ func TestTenantRegistry_Clear_NamespaceIsolation(t *testing.T) {
 
 func TestTenantRegistry_Clear_RaceCleanWithPut(t *testing.T) {
 	client, _ := setupTestRedis(t)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	reg := NewTenantRegistry[string, string](client, "test:clear:race", func(k string) string { return k })
 	tm := newTestTenant(t, "GMS")
 	ctx := context.Background()
@@ -163,7 +164,7 @@ func TestTenantRegistry_Clear_RaceCleanWithPut(t *testing.T) {
 
 func TestTenantRegistry_GetAllEntries(t *testing.T) {
 	client, _ := setupTestRedis(t)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	reg := NewTenantRegistry[string, string](client, "test:entries", func(k string) string { return k })
 	t1 := newTestTenant(t, "GMS")
 	t2 := newTestTenant(t, "EMS")
@@ -194,7 +195,7 @@ func TestTenantRegistry_GetAllEntries(t *testing.T) {
 
 func TestTenantRegistry_GetAllEntries_SkipsInternalKeys(t *testing.T) {
 	client, _ := setupTestRedis(t)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	reg := NewTenantRegistry[string, string](client, "test:entries:internal", func(k string) string { return k })
 	tm := newTestTenant(t, "GMS")
 	ctx := context.Background()
@@ -218,7 +219,7 @@ func TestTenantRegistry_GetAllEntries_SkipsInternalKeys(t *testing.T) {
 
 func TestTenantRegistry_ClearByPrefix(t *testing.T) {
 	client, _ := setupTestRedis(t)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	reg := NewTenantRegistry[string, string](client, "test:prefix", func(k string) string { return k })
 	tm := newTestTenant(t, "GMS")
 	ctx := context.Background()
@@ -250,7 +251,7 @@ func TestTenantRegistry_ClearByPrefix(t *testing.T) {
 
 func TestTenantRegistry_ClearByPrefix_Empty(t *testing.T) {
 	client, _ := setupTestRedis(t)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	reg := NewTenantRegistry[string, string](client, "test:prefix:empty", func(k string) string { return k })
 	tm := newTestTenant(t, "GMS")
 	ctx := context.Background()
@@ -261,6 +262,77 @@ func TestTenantRegistry_ClearByPrefix_Empty(t *testing.T) {
 	}
 	if deleted != 0 {
 		t.Fatalf("expected 0 deleted, got %d", deleted)
+	}
+}
+
+func TestTenantRegistry_Update_NotFound(t *testing.T) {
+	client, _ := setupTestRedis(t)
+	defer func() { _ = client.Close() }()
+	reg := NewTenantRegistry[uint32, string](client, "test:update:notfound", func(k uint32) string {
+		return strconv.FormatUint(uint64(k), 10)
+	})
+	tm := newTestTenant(t, "GMS")
+	ctx := context.Background()
+
+	// The key was never Put, so Update must return ErrNotFound without
+	// retrying (ErrNotFound is not a goredis.TxFailedErr, so the retry loop's
+	// terminal `return result, err` path handles it on the first attempt).
+	_, err := reg.Update(ctx, tm, 1, func(v string) string { return v + "x" })
+	if !errors.Is(err, ErrNotFound) {
+		t.Fatalf("expected ErrNotFound, got %v", err)
+	}
+}
+
+// TestTenantRegistry_Update_RetriesOnContention proves the optimistic-lock
+// retry loop added to TenantRegistry.Update actually recovers from a real
+// WATCH/EXEC conflict rather than losing the write. miniredis tracks a
+// per-key version for WATCH, so a raw client write to the same key between
+// this Update's internal Get and its EXEC genuinely aborts the first EXEC
+// with goredis.TxFailedErr — this is not a simulated/faked assertion.
+func TestTenantRegistry_Update_RetriesOnContention(t *testing.T) {
+	client, _ := setupTestRedis(t)
+	defer func() { _ = client.Close() }()
+	reg := NewTenantRegistry[uint32, string](client, "test:update:contend", func(k uint32) string {
+		return strconv.FormatUint(uint64(k), 10)
+	})
+	tm := newTestTenant(t, "GMS")
+	ctx := context.Background()
+
+	if err := reg.Put(ctx, tm, 1, "base"); err != nil {
+		t.Fatalf("Put: %v", err)
+	}
+
+	attempts := 0
+	result, err := reg.Update(ctx, tm, 1, func(v string) string {
+		attempts++
+		if attempts == 1 {
+			// Interloper write via the raw client, bypassing this Update's
+			// transaction entirely, between its Get and its EXEC. This must
+			// invalidate the WATCH and abort the first EXEC.
+			rk := reg.entityKey(tm, 1)
+			if err := client.Set(ctx, rk, `"interloper"`, 0).Err(); err != nil {
+				t.Fatalf("interloper Set: %v", err)
+			}
+		}
+		return v + "-updated"
+	})
+	if err != nil {
+		t.Fatalf("Update failed: %v", err)
+	}
+	if attempts != 2 {
+		t.Fatalf("expected fn to run twice (1 aborted attempt + 1 successful retry), got %d", attempts)
+	}
+	// The retry must re-read the interloper's value, not the stale "base".
+	if result != "interloper-updated" {
+		t.Fatalf("expected retry to observe the interloper's write, got %q", result)
+	}
+
+	val, err := reg.Get(ctx, tm, 1)
+	if err != nil {
+		t.Fatalf("Get after Update: %v", err)
+	}
+	if val != "interloper-updated" {
+		t.Fatalf("expected stored value %q, got %q", "interloper-updated", val)
 	}
 }
 

@@ -12,13 +12,14 @@ import {
 } from "@/lib/jobs/job-advancement-tree";
 
 describe("job-advancement-tree", () => {
-  it("exposes the seven branch roots ascending", () => {
-    expect(JOB_ROOTS).toEqual([0, 800, 900, 910, 1000, 2000, 2001]);
+  it("exposes the five branch roots ascending (GM line is no longer a root)", () => {
+    expect(JOB_ROOTS).toEqual([0, 800, 1000, 2000, 2001]);
   });
 
   it("derives children from parent edges, ascending", () => {
-    expect(childrenOf(0)).toEqual([100, 200, 300, 400, 500]);
+    expect(childrenOf(0)).toEqual([100, 200, 300, 400, 500, 900]);
     expect(childrenOf(100)).toEqual([110, 120, 130]);
+    expect(childrenOf(900)).toEqual([910]); // GM advances to Super GM
     expect(childrenOf(112)).toEqual([]); // 4th job is a leaf
   });
 
@@ -27,6 +28,7 @@ describe("job-advancement-tree", () => {
     expect(rootOf(1112)).toBe(1000); // Dawn Warrior 4 -> Noblesse
     expect(rootOf(2112)).toBe(2000); // Aran 4 -> Legend
     expect(rootOf(2218)).toBe(2001); // Evan 10 -> Evan root
+    expect(rootOf(910)).toBe(0); // Super GM -> GM -> Beginner
     expect(rootOf(99999)).toBe(99999); // unknown id returns itself
   });
 
@@ -34,13 +36,13 @@ describe("job-advancement-tree", () => {
     expect(BRANCH_FLOORS).toEqual({
       0: 1,
       800: 83,
-      900: 1,
-      910: 1,
       1000: 83,
       2000: 80,
       2001: 84,
     });
     expect(floorOf(112)).toBe(1); // Adventurer — present since launch
+    expect(floorOf(900)).toBe(1); // GM — inherits Beginner's floor as a non-root
+    expect(floorOf(910)).toBe(1); // Super GM — likewise
     expect(floorOf(1112)).toBe(83); // Cygnus corrected 92 -> 83
     expect(floorOf(2112)).toBe(80); // Aran corrected 88 -> 80
     expect(floorOf(2218)).toBe(84); // Evan
@@ -55,14 +57,15 @@ describe("job-advancement-tree", () => {
     expect(visibleRoots(84)).toContain(2001); // Evan visible on v84
   });
 
-  it("shows base Adventurers + admin jobs on legacy sub-83 versions (GMS v12/v48)", () => {
+  it("shows base Adventurers + the GM line on legacy sub-83 versions (GMS v12/v48)", () => {
     const r12 = visibleRoots(12);
     expect(r12).toContain(0); // Adventurers — the jobs page was empty before this
-    expect(r12).toContain(900); // GM — always present
-    expect(r12).toContain(910); // Super GM — always present
     expect(r12).not.toContain(1000); // Cygnus (v83) hidden
     expect(r12).not.toContain(2000); // Aran (v80) hidden
     expect(r12).not.toContain(800); // Maple Leaf Brigadier (special) hidden
+    // GM/Super GM are children of Beginner now — visible via the tree, not as roots.
+    expect(visibleChildrenOf(0, 12)).toContain(900);
+    expect(visibleChildrenOf(900, 12)).toContain(910);
   });
 
   it("gates the Pirate subtree at v62 while its launch-era siblings stay visible", () => {
@@ -88,6 +91,12 @@ describe("job-advancement-tree", () => {
     ]);
     expect(jobTreePath(0).map((j) => j.name)).toEqual(["Beginner"]);
     expect(jobTreePath(99999)).toEqual([]);
+    expect(jobTreePath(910).map((j) => j.id)).toEqual([0, 900, 910]);
+    expect(jobTreePath(910).map((j) => j.name)).toEqual([
+      "Beginner",
+      "GM",
+      "Super GM",
+    ]);
   });
 
   it("has no orphan parent references", () => {

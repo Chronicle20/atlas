@@ -5,9 +5,12 @@ export interface JobEntry {
 }
 
 // Structural source of truth for the job advancement graph.
-// Ported verbatim from the former lib/utils/job-tree.ts JOB_TREE, whose ids/names
-// derive from libs/atlas-constants/job/constants.go::Jobs (v83 conventions).
-// Order per branch: branch leader (parent: null) -> 1st -> 2nd -> 3rd -> 4th.
+// Ported from the former lib/utils/job-tree.ts JOB_TREE, whose ids/names derive
+// from libs/atlas-constants/job/constants.go::Jobs (v83 conventions). One
+// intentional divergence: constants.go has GM (900) and Super GM (910) as
+// roots, but in-game they present as an advancement line from Beginner, so
+// this display graph parents 900 under 0 and 910 under 900 (task-182).
+// Order per branch: branch leader -> 1st -> 2nd -> 3rd -> 4th.
 export const JOB_GRAPH: Record<number, JobEntry> = {
   // Beginner branch
   0: { id: 0, name: "Beginner", parent: null },
@@ -57,10 +60,13 @@ export const JOB_GRAPH: Record<number, JobEntry> = {
   520: { id: 520, name: "Gunslinger", parent: 500 },
   521: { id: 521, name: "Outlaw", parent: 520 },
   522: { id: 522, name: "Corsair", parent: 521 },
-  // Special / Admin (standalone roots)
+  // Special / Admin. Maple Leaf Brigadier stays a standalone root. In-game, GM
+  // and Super GM present as an advancement line from Beginner, so the DISPLAY
+  // graph adopts Beginner > GM > Super GM — an intentional divergence from
+  // libs/atlas-constants/job/constants.go, where 900/910 are roots (task-182).
   800: { id: 800, name: "Maple Leaf Brigadier", parent: null },
-  900: { id: 900, name: "GM", parent: null },
-  910: { id: 910, name: "Super GM", parent: null },
+  900: { id: 900, name: "GM", parent: 0 },
+  910: { id: 910, name: "Super GM", parent: 900 },
   // Noblesse / Cygnus Knights
   1000: { id: 1000, name: "Noblesse", parent: null },
   1100: { id: 1100, name: "Dawn Warrior 1", parent: 1000 },
@@ -111,8 +117,6 @@ export const JOB_GRAPH: Record<number, JobEntry> = {
 //   0    Adventurers          — present since launch (the original explorer classes;
 //                               floor 1 so legacy versions e.g. GMS v12/v48 show them)
 //   800  Maple Leaf Brigadier  — v83 baseline (special)
-//   900  GM                    — admin, always present (floor 1)
-//   910  Super GM              — admin, always present (floor 1)
 //   1000 Cygnus (Noblesse)     — reference_maplestory_version_timeline: KoC exist in v83
 //   2000 Legend (Aran)         — product owner (PRD FR-8.1): Aran introduced v80
 //   2001 Evan                  — reference_maplestory_version_timeline: Evan introduced v84
@@ -121,11 +125,11 @@ export const JOB_GRAPH: Record<number, JobEntry> = {
 // (task-172 brought up GMS v12/v48 ingest — the jobs page then rendered empty).
 // Branches that truly existed since launch use floor 1; genuinely later
 // classes (Cygnus/Aran/Evan, the special Brigadier) keep their real floor.
+// NOTE: GM (900) and Super GM (910) are children of Beginner (0), not roots
+// — they inherit Beginner's floor of 1 automatically (task-182).
 export const BRANCH_FLOORS: Record<number, number> = {
   0: 1,
   800: 83,
-  900: 1,
-  910: 1,
   1000: 83,
   2000: 80,
   2001: 84,

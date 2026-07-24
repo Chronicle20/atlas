@@ -5,6 +5,6 @@ category: TIER1-FIXTURE
 ida:
     function: CWvsContext::SendConsumeCashItemUseRequest
     address: "0xa54a2f"
-    decompile_sha256: caf7183bba58d3ef110db29d2427240ba2e27fedf578881107dd2794e9d6036c
+    decompile_sha256: 9f4b762fffa95a85114a5f7673e2566132fd1a3f7526689a238f7178c071aab9
 verifies:
     - libs/atlas-packet/cash/serverbound/item_use_megaphone_test.go#TestItemUseMegaphoneByteOutputV84

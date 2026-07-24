@@ -3306,15 +3306,18 @@
       },
       {
         "opCode": "0x5A",
-        "writer": "SetAvatarMegaphone"
+        "writer": "SetAvatarMegaphone",
+        "services": ["channel"]
       },
       {
         "opCode": "0x5B",
-        "writer": "ClearAvatarMegaphone"
+        "writer": "ClearAvatarMegaphone",
+        "services": ["channel"]
       },
       {
         "opCode": "0x17A",
         "writer": "TvSetMessage",
+        "services": ["channel"],
         "options": {
           "messageTypes": {
             "NORMAL": 0,
@@ -3325,11 +3328,13 @@
       },
       {
         "opCode": "0x17B",
-        "writer": "TvClearMessage"
+        "writer": "TvClearMessage",
+        "services": ["channel"]
       },
       {
         "opCode": "0x17C",
         "writer": "TvSendMessageResult",
+        "services": ["channel"],
         "options": {
           "errorCodes": {
             "GM_MESSAGE": 1,

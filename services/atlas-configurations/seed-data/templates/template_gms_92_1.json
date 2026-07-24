@@ -282,6 +282,12 @@
         "validator": "LoggedInValidator",
         "handler": "TeleportRockAddMapHandle",
         "services": ["channel"]
+      },
+      {
+        "opCode": "0x56",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterCashItemUseHandle",
+        "services": ["channel"]
       }
     ],
     "writers": [{
@@ -700,6 +706,84 @@
             "CURRENT_MAP": "0x09",
             "MAP_NOT_AVAILABLE": "0x0A",
             "MAPLE_ISLAND_LEVEL7": "0x0B"
+          }
+        }
+      },
+      {
+        "opCode": "0x48",
+        "writer": "WorldMessage",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "NOTICE": 0,
+            "POP_UP": 1,
+            "MEGAPHONE": 2,
+            "SUPER_MEGAPHONE": 3,
+            "TOP_SCROLL": 4,
+            "PINK_TEXT": 5,
+            "BLUE_TEXT": 6,
+            "NPC": 7,
+            "ITEM_MEGAPHONE": 8,
+            "YELLOW_MEGAPHONE": 9,
+            "MULTI_MEGAPHONE": 10,
+            "WEATHER": 11,
+            "GACHAPON": 12,
+            "UNKNOWN_3": 13,
+            "UNKNOWN_4": 14,
+            "CLIPBOARD_NOTICE_1": 15,
+            "CLIPBOARD_NOTICE_2": 16,
+            "UNKNOWN_7": 18,
+            "UNKNOWN_8": 20
+          }
+        }
+      },
+      {
+        "opCode": "0x73",
+        "writer": "AvatarMegaphoneResult",
+        "services": ["channel"],
+        "options": {
+          "errorCodes": {
+            "WAITING_LINE": 95,
+            "LEVEL_GATE": 96
+          }
+        }
+      },
+      {
+        "opCode": "0x74",
+        "writer": "SetAvatarMegaphone",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x75",
+        "writer": "ClearAvatarMegaphone",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x18C",
+        "writer": "TvSetMessage",
+        "services": ["channel"],
+        "options": {
+          "messageTypes": {
+            "NORMAL": 0,
+            "STAR": 1,
+            "HEART": 2
+          }
+        }
+      },
+      {
+        "opCode": "0x18D",
+        "writer": "TvClearMessage",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x18E",
+        "writer": "TvSendMessageResult",
+        "services": ["channel"],
+        "options": {
+          "errorCodes": {
+            "GM_MESSAGE": 1,
+            "WRONG_USER": 2,
+            "QUEUE_TOO_LONG": 3
           }
         }
       }

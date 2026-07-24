@@ -416,6 +416,42 @@ note (§4) to gms_48/61/72/79 tenants once this phase merges and is deployed.
 
 ---
 
+## Step 6: gms_92 — main-merge reconciliation delta
+
+After the merge with main, the supported tenant-version set
+(`deploy/k8s/base/versions.json`) includes gms_92 and gms_12, and the
+task-124/127 precedent wires new socket features into the gms_92 template
+(gms_12 is a login-only minimal bring-up that socket features skip — same
+choice here; its `MajorVersion < 83` would land in the legacy guard anyway,
+and it carries no USE_CASH_ITEM handler at all).
+
+Unlike task-124 (which seeded gms_92 from template lineage because no v92
+IDB existed then), every value below was read from the now-named v92 IDB
+(`GMS_v92_1_DEVM.exe.i64`, ported-named from the PDB-backed v95 IDB):
+
+| Entry | v92 value | Evidence (v92 IDB) |
+|---|---|---|
+| handler `CharacterCashItemUseHandle` | `0x56` | `COutPacket(0x56)` @0x9bfed5 in `CWvsContext::SendConsumeCashItemUseRequest` @0x9bfe10; update_time → slot → itemId order confirms `updateTimeFirst` (≥87 gate) |
+| writer `WorldMessage` | `0x48` | `CWvsContext::OnPacket` @0x9ba740 case 72 → `OnBroadcastMsg` @0x9d8120 |
+| `WorldMessage` operations | modes 0–16, 18, 20 | `OnBroadcastMsg` switch: same set as the corrected v95 table (no 17; 18 Decode4-form; 20 super-megaphone-form); per-mode decode shapes match (8 = item + `GW_ItemSlotBase`, 10 = multi + extra lines, 4 = top-scroll flag) |
+| writer `AvatarMegaphoneResult` | `0x73` | `OnPacket` case 115 → `OnAvatarMegaphoneRes` @0x9d6050 |
+| `AvatarMegaphoneResult` errorCodes | `WAITING_LINE: 95`, `LEVEL_GATE: 96` | `Decode1() - 95` two-case switch; case ORDER cross-checked against v95's `Decode1() - 96` (string 4013/3785 ↔ v92 4046/3818, same first=waiting-line order) |
+| writer `SetAvatarMegaphone` | `0x74` | `OnPacket` case 116 → `OnSetAvatarMegaphone` @0x9d6170 |
+| writer `ClearAvatarMegaphone` | `0x75` | `OnPacket` case 117 → `OnClearAvatarMegaphone` @0x9c53b0 |
+| writer `TvSetMessage` | `0x18C` | `CField::OnPacket` chunk @0x6042c0: `sub eax, 18Ch` → `CMapleTVMan::OnSetMessage` @0x603d20; decode = flags, type byte, sender `AvatarLook`, 7 strings, duration u4, optional receiver look — matches the shared codec |
+| `TvSetMessage` messageTypes | `NORMAL: 0, STAR: 1, HEART: 2` | type byte raw-stored at `this+1116`, same structure as every other version |
+| writer `TvClearMessage` | `0x18D` | same chunk → `CMapleTVMan::OnClearMessage` @0x6037a0 |
+| writer `TvSendMessageResult` | `0x18E` | same chunk → `CMapleTVMan::OnSendMessageResult` @0x603aa0 |
+| `TvSendMessageResult` errorCodes | `GM_MESSAGE: 1, WRONG_USER: 2, QUEUE_TOO_LONG: 3` | `Decode1` 1/2/3 switch, identical shape to v95 |
+
+gms_92 is not a packet-matrix column (the matrix tracks the 9 versions in
+`docs/packets/PROCESS.md`), so no audit cells/evidence records exist for it —
+this table is the durable record of the derivation. Code-side, v92 needs no
+gate work: `MajorVersion() >= 87` gives it the correct `updateTimeFirst`,
+and the `MajorVersion() < 83` legacy allow-list is never entered.
+
+---
+
 ## Rollback
 
 - Config: re-PATCH the affected tenants with the pre-change `attributes`

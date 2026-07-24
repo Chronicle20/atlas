@@ -3450,11 +3450,13 @@
       },
       {
         "opCode": "0x69",
-        "writer": "SetAvatarMegaphone"
+        "writer": "SetAvatarMegaphone",
+        "services": ["channel"]
       },
       {
         "opCode": "0x6A",
-        "writer": "ClearAvatarMegaphone"
+        "writer": "ClearAvatarMegaphone",
+        "services": ["channel"]
       }
     ]
   },

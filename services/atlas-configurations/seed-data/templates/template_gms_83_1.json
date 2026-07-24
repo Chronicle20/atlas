@@ -3590,15 +3590,18 @@
       },
       {
         "opCode": "0x6F",
-        "writer": "SetAvatarMegaphone"
+        "writer": "SetAvatarMegaphone",
+        "services": ["channel"]
       },
       {
         "opCode": "0x70",
-        "writer": "ClearAvatarMegaphone"
+        "writer": "ClearAvatarMegaphone",
+        "services": ["channel"]
       },
       {
         "opCode": "0x6E",
         "writer": "AvatarMegaphoneResult",
+        "services": ["channel"],
         "options": {
           "errorCodes": {
             "WAITING_LINE": 83,
@@ -3609,6 +3612,7 @@
       {
         "opCode": "0x155",
         "writer": "TvSetMessage",
+        "services": ["channel"],
         "options": {
           "messageTypes": {
             "NORMAL": 0,
@@ -3619,11 +3623,13 @@
       },
       {
         "opCode": "0x156",
-        "writer": "TvClearMessage"
+        "writer": "TvClearMessage",
+        "services": ["channel"]
       },
       {
         "opCode": "0x157",
         "writer": "TvSendMessageResult",
+        "services": ["channel"],
         "options": {
           "errorCodes": {
             "GM_MESSAGE": 1,

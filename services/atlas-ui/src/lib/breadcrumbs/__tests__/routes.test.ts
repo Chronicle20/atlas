@@ -132,7 +132,7 @@ describe("Route Configuration", () => {
       expect(character).toBeDefined();
       expect(character!.nonNavigable).toBe(true);
       // Real pages in the trail are not flagged.
-      const presets = breadcrumbs.find((b) => b.label === "Character Presets");
+      const presets = breadcrumbs.find((b) => b.label === "Presets");
       expect(presets!.nonNavigable).toBeUndefined();
     });
 

@@ -259,7 +259,7 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
   },
   {
     pattern: "/templates/[id]/character/presets",
-    label: "Character Presets",
+    label: "Presets",
     parent: "/templates/[id]/character",
   },
 
@@ -306,7 +306,7 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
   },
   {
     pattern: "/tenants/[id]/character/presets",
-    label: "Character Presets",
+    label: "Presets",
     parent: "/tenants/[id]/character",
   },
 ];

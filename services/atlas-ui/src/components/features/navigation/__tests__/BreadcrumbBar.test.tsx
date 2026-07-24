@@ -255,7 +255,7 @@ describe("BreadcrumbBar", () => {
             },
             {
               segment: "presets",
-              label: "Character Presets",
+              label: "Presets",
               href: "/templates/abc/character/presets",
               isCurrentPage: true,
             },

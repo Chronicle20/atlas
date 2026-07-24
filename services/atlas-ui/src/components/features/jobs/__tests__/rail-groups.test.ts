@@ -13,12 +13,12 @@ describe("RAIL_GROUPS", () => {
       "Legends",
       "Special",
     ]);
-    expect(RAIL_GROUPS[0].entries.map((e) => e.id)).toEqual([
+    expect(RAIL_GROUPS[0]!.entries.map((e) => e.id)).toEqual([
       100, 200, 300, 400, 500,
     ]);
-    expect(RAIL_GROUPS[1].entries.map((e) => e.id)).toEqual([1000]);
-    expect(RAIL_GROUPS[2].entries.map((e) => e.id)).toEqual([2000, 2001]);
-    expect(RAIL_GROUPS[3].entries.map((e) => e.id)).toEqual([800, 900]);
+    expect(RAIL_GROUPS[1]!.entries.map((e) => e.id)).toEqual([1000]);
+    expect(RAIL_GROUPS[2]!.entries.map((e) => e.id)).toEqual([2000, 2001]);
+    expect(RAIL_GROUPS[3]!.entries.map((e) => e.id)).toEqual([800, 900]);
   });
 
   it("maps every entry to a --c-* accent token name", () => {
@@ -27,8 +27,8 @@ describe("RAIL_GROUPS", () => {
         expect(e.accent).toMatch(/^--c-[a-z]+$/);
       }
     }
-    expect(RAIL_GROUPS[0].entries[0].accent).toBe("--c-warrior");
-    expect(RAIL_GROUPS[3].entries[1].accent).toBe("--c-special");
+    expect(RAIL_GROUPS[0]!.entries[0]!.accent).toBe("--c-warrior");
+    expect(RAIL_GROUPS[3]!.entries[1]!.accent).toBe("--c-special");
   });
 });
 
@@ -51,13 +51,13 @@ describe("visibleRailGroups", () => {
   it("gates entries by version floor and drops empty groups (GMS v12)", () => {
     const groups = visibleRailGroups(12);
     expect(groups.map((g) => g.label)).toEqual(["Explorers", "Special"]);
-    expect(groups[0].entries.map((e) => e.id)).toEqual([100, 200, 300, 400]); // no Pirate
-    expect(groups[1].entries.map((e) => e.id)).toEqual([900]); // no Brigadier (v83)
+    expect(groups[0]!.entries.map((e) => e.id)).toEqual([100, 200, 300, 400]); // no Pirate
+    expect(groups[1]!.entries.map((e) => e.id)).toEqual([900]); // no Brigadier (v83)
   });
 
   it("adds Pirate at v62, Cygnus/Aran/Brigadier at v83, Evan at v84", () => {
     expect(
-      visibleRailGroups(62)[0].entries.map((e) => e.id),
+      visibleRailGroups(62)[0]!.entries.map((e) => e.id),
     ).toContain(500);
     const v83 = visibleRailGroups(83);
     expect(v83.map((g) => g.label)).toEqual([
@@ -66,19 +66,19 @@ describe("visibleRailGroups", () => {
       "Legends",
       "Special",
     ]);
-    expect(v83[2].entries.map((e) => e.id)).toEqual([2000]); // Evan hidden
-    expect(v83[3].entries.map((e) => e.id)).toEqual([800, 900]);
-    expect(visibleRailGroups(84)[2].entries.map((e) => e.id)).toEqual([
+    expect(v83[2]!.entries.map((e) => e.id)).toEqual([2000]); // Evan hidden
+    expect(v83[3]!.entries.map((e) => e.id)).toEqual([800, 900]);
+    expect(visibleRailGroups(84)[2]!.entries.map((e) => e.id)).toEqual([
       2000, 2001,
     ]);
   });
 
   it("decorates entries with display name and visible subtree count", () => {
     const v83 = visibleRailGroups(83);
-    const warrior = v83[0].entries[0];
+    const warrior = v83[0]!.entries[0]!;
     expect(warrior.name).toBe("Warrior");
     expect(warrior.count).toBe(10);
-    const gm = v83[3].entries.find((e) => e.id === 900);
+    const gm = v83[3]!.entries.find((e) => e.id === 900);
     expect(gm?.name).toBe("GM");
     expect(gm?.count).toBe(2);
   });

@@ -17,12 +17,15 @@ export interface RailGroup {
   entries: RailEntry[];
 }
 
+/** The Warrior rail entry; also branchEntryOf's fallback for Beginner/unknown ids. */
+const WARRIOR_ENTRY: RailEntry = { id: 100, accent: "--c-warrior" };
+
 // Rail entries per PRD FR-3.1; accents are scoped via style={{ "--acc": `var(${accent})` }}.
 export const RAIL_GROUPS: RailGroup[] = [
   {
     label: "Explorers",
     entries: [
-      { id: 100, accent: "--c-warrior" },
+      WARRIOR_ENTRY,
       { id: 200, accent: "--c-magician" },
       { id: 300, accent: "--c-bowman" },
       { id: 400, accent: "--c-thief" },
@@ -58,7 +61,7 @@ export function branchEntryOf(jobId: number): RailEntry {
       if (path.includes(e.id)) return e;
     }
   }
-  return RAIL_GROUPS[0].entries[0];
+  return WARRIOR_ENTRY;
 }
 
 export interface VisibleRailEntry extends RailEntry {

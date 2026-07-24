@@ -12,7 +12,10 @@ import (
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 )
 
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
@@ -20,11 +23,64 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 		return func(router *mux.Router, l logrus.FieldLogger) {
 			registerGet := rest.RegisterHandler(l)(db)(si)
 			r := router.PathPrefix("/rankings").Subrouter()
+			r.HandleFunc("", registerGet("get_leaderboard", handleGetLeaderboard)).Methods(http.MethodGet)
 			r.HandleFunc("/characters", registerGet("get_rankings_for_characters", handleGetRankingsForCharacters)).Methods(http.MethodGet).Queries("ids", "{ids}")
 			// Bare /characters (no ids query) is a caller error, not a missing route.
 			r.HandleFunc("/characters", registerGet("get_rankings_missing_ids", handleMissingIds)).Methods(http.MethodGet)
 			r.HandleFunc("/characters/{characterId}", registerGet("get_ranking_for_character", handleGetRankingForCharacter)).Methods(http.MethodGet)
 		}
+	}
+}
+
+func handleGetLeaderboard(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+
+		rawWorld := q.Get("filter[worldId]")
+		if rawWorld == "" {
+			server.WriteBadRequest(d.Logger(), w, "filter[worldId] query parameter is required")
+			return
+		}
+		wid64, err := strconv.ParseUint(rawWorld, 10, 8)
+		if err != nil {
+			server.WriteBadRequest(d.Logger(), w, "filter[worldId] must be a valid world id")
+			return
+		}
+		worldId := world.Id(wid64)
+
+		var jobCategory *uint16
+		if rawCat := q.Get("filter[jobCategory]"); rawCat != "" {
+			cat64, err := strconv.ParseUint(rawCat, 10, 16)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, "filter[jobCategory] must be a valid job category")
+				return
+			}
+			cat := uint16(cat64)
+			jobCategory = &cat
+		}
+
+		page, err := paginate.ParseParams(q, paginate.DefaultPageSize, paginate.MaxPageSize)
+		if err != nil {
+			server.WriteBadRequest(d.Logger(), w, err.Error())
+			return
+		}
+
+		paged, err := NewProcessor(d.Logger(), d.Context(), d.DB()).LeaderboardProvider(worldId, jobCategory, page)()
+		if err != nil {
+			d.Logger().WithError(err).Errorf("Unable to read leaderboard for world [%d].", worldId)
+			server.WriteErrorResponse(d.Logger())(w)(err)
+			return
+		}
+
+		res, err := model.SliceMap(func(m Model) (LeaderboardRestModel, error) { return TransformLeaderboard(m) })(model.FixedProvider(paged.Items))(model.ParallelMap())()
+		if err != nil {
+			d.Logger().WithError(err).Errorf("Creating leaderboard REST model.")
+			server.WriteErrorResponse(d.Logger())(w)(err)
+			return
+		}
+
+		queryParams := jsonapi.ParseQueryFields(&q)
+		server.MarshalPaginatedResponse[[]LeaderboardRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
 	}
 }
 

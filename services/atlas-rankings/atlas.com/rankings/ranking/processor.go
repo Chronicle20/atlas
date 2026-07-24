@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -22,6 +23,9 @@ type Processor interface {
 	GetByCharacterId(characterId uint32) (Model, error)
 	ByCharacterIdsProvider(characterIds []uint32) model.Provider[[]Model]
 	GetByCharacterIds(characterIds []uint32) ([]Model, error)
+	// LeaderboardProvider returns one page of ranked characters for a world,
+	// ordered overall (jobCategory nil) or within a job category.
+	LeaderboardProvider(worldId world.Id, jobCategory *uint16, page model.Page) model.Provider[model.Paged[Model]]
 	// IsDue reports whether the tenant's recompute interval has elapsed
 	// since the last cycle start (true when no cycle has ever run).
 	IsDue(interval time.Duration, now time.Time) (bool, error)
@@ -78,6 +82,11 @@ func (p *ProcessorImpl) ByCharacterIdsProvider(characterIds []uint32) model.Prov
 
 func (p *ProcessorImpl) GetByCharacterIds(characterIds []uint32) ([]Model, error) {
 	return p.ByCharacterIdsProvider(characterIds)()
+}
+
+func (p *ProcessorImpl) LeaderboardProvider(worldId world.Id, jobCategory *uint16, page model.Page) model.Provider[model.Paged[Model]] {
+	ep := byWorldPagedEntityProvider(worldId, jobCategory, page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(Make)(ep)(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) IsDue(interval time.Duration, now time.Time) (bool, error) {

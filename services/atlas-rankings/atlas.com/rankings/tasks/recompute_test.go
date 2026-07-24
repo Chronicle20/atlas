@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -30,7 +31,10 @@ func (f fakeProcessor) ByCharacterIdsProvider([]uint32) model.Provider[[]ranking
 	return func() ([]ranking.Model, error) { return nil, nil }
 }
 func (f fakeProcessor) GetByCharacterIds([]uint32) ([]ranking.Model, error) { return nil, nil }
-func (f fakeProcessor) IsDue(time.Duration, time.Time) (bool, error)        { return f.due, f.dueErr }
+func (f fakeProcessor) LeaderboardProvider(world.Id, *uint16, model.Page) model.Provider[model.Paged[ranking.Model]] {
+	return func() (model.Paged[ranking.Model], error) { return model.Paged[ranking.Model]{}, nil }
+}
+func (f fakeProcessor) IsDue(time.Duration, time.Time) (bool, error) { return f.due, f.dueErr }
 func (f fakeProcessor) Recompute(time.Time) error {
 	if f.recomputeErr != nil {
 		return f.recomputeErr

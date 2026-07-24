@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -157,5 +158,88 @@ func TestSingleEndpointBadCharacterId(t *testing.T) {
 	router.ServeHTTP(rec, req)
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("non-numeric characterId status = %d, want 400: %s", rec.Code, rec.Body.String())
+	}
+}
+
+// seedRankings inserts full ranking rows (display fields included) for the
+// leaderboard endpoint tests, which need more than the rank alone.
+func seedRankings(t *testing.T, db *gorm.DB, tm tenant.Model, entities []Entity) {
+	t.Helper()
+	for i := range entities {
+		e := entities[i]
+		e.TenantId = tm.Id()
+		if err := db.Create(&e).Error; err != nil {
+			t.Fatalf("seed: %v", err)
+		}
+	}
+}
+
+// doGet issues a GET against the given router under the seeded tenant.
+func doGet(t *testing.T, router *mux.Router, tm tenant.Model, path string) *httptest.ResponseRecorder {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodGet, "/api"+path, nil)
+	tenantHeaders(req, tm)
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+	return rec
+}
+
+func TestLeaderboardOrdersByOverallRank(t *testing.T) {
+	db := testDatabase(t)
+	tm, _ := testTenantContext(t)
+	seedRankings(t, db, tm, []Entity{
+		{CharacterId: 1, Name: "A", WorldId: 0, JobCategory: 1, Level: 40, JobId: 110, OverallRank: 2, JobRank: 2, ComputedAt: time.Unix(1, 0)},
+		{CharacterId: 2, Name: "B", WorldId: 0, JobCategory: 1, Level: 50, JobId: 110, OverallRank: 1, JobRank: 1, ComputedAt: time.Unix(1, 0)},
+	})
+	router := testRouter(t, db)
+
+	rr := doGet(t, router, tm, "/rankings?filter[worldId]=0&page[number]=1&page[size]=10")
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body=%s", rr.Code, rr.Body.String())
+	}
+	// First data element must be character 2 (overall_rank 1).
+	if !strings.Contains(rr.Body.String(), `"characterId":2`) {
+		t.Fatalf("missing characterId 2 in body: %s", rr.Body.String())
+	}
+}
+
+func TestLeaderboardRequiresWorldId(t *testing.T) {
+	db := testDatabase(t)
+	tm, _ := testTenantContext(t)
+	router := testRouter(t, db)
+
+	rr := doGet(t, router, tm, "/rankings?page[number]=1")
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400", rr.Code)
+	}
+}
+
+// TestLeaderboardEmptyWorldReturnsEmptyPage covers the case explicitly
+// called out for this task beyond the brief's two cases: a valid,
+// filter-satisfying request against a world with no ranked characters must
+// succeed with an empty page rather than erroring.
+func TestLeaderboardEmptyWorldReturnsEmptyPage(t *testing.T) {
+	db := testDatabase(t)
+	tm, _ := testTenantContext(t)
+	router := testRouter(t, db)
+
+	rr := doGet(t, router, tm, "/rankings?filter[worldId]=5&page[number]=1&page[size]=10")
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body=%s", rr.Code, rr.Body.String())
+	}
+	var body struct {
+		Data []json.RawMessage `json:"data"`
+		Meta struct {
+			Total int `json:"total"`
+		} `json:"meta"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(body.Data) != 0 {
+		t.Fatalf("expected empty page for world with no rankings, got %d items: %s", len(body.Data), rr.Body.String())
+	}
+	if body.Meta.Total != 0 {
+		t.Fatalf("expected total 0, got %d", body.Meta.Total)
 	}
 }

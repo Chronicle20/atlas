@@ -1,6 +1,12 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
+import {
+  MemoryRouter,
+  Route,
+  Routes,
+  useLocation,
+  useNavigationType,
+} from "react-router-dom";
 import type { Tenant } from "@/services/api/tenants.service";
 import type { SkillDefinitionWithIcon } from "@/lib/hooks/api/useSkillDefinition";
 import type { SkillEffect } from "@/services/api/skills.service";
@@ -61,8 +67,12 @@ const fighterDefs = [def(1101007, "Power Guard"), def(1101006, "Rage")];
 
 function LocationProbe() {
   const location = useLocation();
+  const navType = useNavigationType();
   return (
-    <div data-testid="location">{location.pathname + location.search}</div>
+    <>
+      <div data-testid="location">{location.pathname + location.search}</div>
+      <div data-testid="nav-type">{navType}</div>
+    </>
   );
 }
 
@@ -154,12 +164,36 @@ describe("JobsPage", () => {
     );
   });
 
+  it("selecting a job pushes (not replaces) so Back works", () => {
+    renderAt("/jobs/100");
+    fireEvent.click(screen.getByRole("button", { name: /Fighter/ }));
+    expect(screen.getByTestId("nav-type")).toHaveTextContent("PUSH");
+    expect(screen.getByTestId("location")).toHaveTextContent("/jobs/110");
+  });
+
+  it("selecting a skill pushes", () => {
+    renderAt("/jobs/110");
+    fireEvent.click(screen.getByRole("button", { name: /Power Guard/ }));
+    expect(screen.getByTestId("nav-type")).toHaveTextContent("PUSH");
+    expect(screen.getByTestId("location")).toHaveTextContent(
+      "?skill=1101007",
+    );
+  });
+
   it("normalizes an unknown jobId to /jobs with the default selection", async () => {
     renderAt("/jobs/99999");
     await waitFor(() =>
       expect(screen.getByTestId("location")).toHaveTextContent(/^\/jobs$/),
     );
     expect(screen.getByText("Warrior — Skills")).toBeInTheDocument();
+  });
+
+  it("normalizing an unknown jobId replaces (Back does not bounce)", async () => {
+    renderAt("/jobs/99999");
+    await waitFor(() =>
+      expect(screen.getByTestId("location")).toHaveTextContent(/^\/jobs$/),
+    );
+    expect(screen.getByTestId("nav-type")).toHaveTextContent("REPLACE");
   });
 
   it("normalizes a version-hidden jobId (Evan on v83) to /jobs", async () => {
@@ -175,6 +209,14 @@ describe("JobsPage", () => {
       expect(screen.getByTestId("location")).not.toHaveTextContent("skill="),
     );
     expect(screen.getByTestId("location")).toHaveTextContent("/jobs/110");
+  });
+
+  it("stripping a stale ?skill= replaces", async () => {
+    renderAt("/jobs/110?skill=424242");
+    await waitFor(() =>
+      expect(screen.getByTestId("location")).not.toHaveTextContent("skill="),
+    );
+    expect(screen.getByTestId("nav-type")).toHaveTextContent("REPLACE");
   });
 
   it("gates rail entries by tenant version (GMS v12)", () => {

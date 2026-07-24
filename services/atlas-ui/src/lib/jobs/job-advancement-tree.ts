@@ -216,3 +216,55 @@ export function jobTreePath(jobId: number): JobEntry[] {
   }
   return path;
 }
+
+/**
+ * Every advancement chain below entryId: one array per root-to-leaf path of
+ * the subtree, EXCLUDING entryId itself, DFS in ascending child order. A
+ * chain containing any below-floor node is dropped entirely (matches
+ * visibleChildrenOf semantics). A leaf entry yields [].
+ */
+export function advancementChains(entryId: number, major: number): number[][] {
+  const walk = (id: number): number[][] => {
+    const kids = childrenOf(id);
+    if (kids.length === 0) return [[]];
+    const out: number[][] = [];
+    for (const k of kids) {
+      for (const rest of walk(k)) out.push([k, ...rest]);
+    }
+    return out;
+  };
+  return walk(entryId)
+    .filter((chain) => chain.length > 0)
+    .filter((chain) => chain.every((id) => floorOf(id) <= major));
+}
+
+function ordinal(n: number): string {
+  if (n === 1) return "1st";
+  if (n === 2) return "2nd";
+  if (n === 3) return "3rd";
+  return `${n}th`;
+}
+
+/**
+ * Tier tag for a flow chip: "Base" for a tree root with children, "" for a
+ * childless root or unknown id, else the ordinal advancement depth
+ * ("1st" … "10th") measured from the tree root.
+ */
+export function tierLabel(jobId: number): string {
+  const depth = jobTreePath(jobId).length - 1;
+  if (depth < 0) return "";
+  if (depth === 0) return childrenOf(jobId).length > 0 ? "Base" : "";
+  return ordinal(depth);
+}
+
+/** Count of version-visible nodes in entryId's subtree, entry included (0 if the entry itself is below floor). */
+export function subtreeCount(entryId: number, major: number): number {
+  if (JOB_GRAPH[entryId] === undefined || floorOf(entryId) > major) return 0;
+  return (
+    1 +
+    visibleChildrenOf(entryId, major).reduce(
+      (n, k) => n + subtreeCount(k, major),
+      0,
+    )
+  );
+}

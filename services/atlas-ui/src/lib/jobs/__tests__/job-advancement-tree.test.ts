@@ -9,6 +9,9 @@ import {
   visibleRoots,
   visibleChildrenOf,
   jobTreePath,
+  advancementChains,
+  tierLabel,
+  subtreeCount,
 } from "@/lib/jobs/job-advancement-tree";
 
 describe("job-advancement-tree", () => {
@@ -105,5 +108,85 @@ describe("job-advancement-tree", () => {
         expect(JOB_GRAPH[e.parent]).toBeDefined();
       }
     }
+  });
+});
+
+describe("advancementChains", () => {
+  it("returns one chain per advancement path below the entry, ascending, entry excluded", () => {
+    expect(advancementChains(100, 83)).toEqual([
+      [110, 111, 112],
+      [120, 121, 122],
+      [130, 131, 132],
+    ]);
+  });
+
+  it("handles the Evan 10-tier single chain", () => {
+    expect(advancementChains(2001, 84)).toEqual([
+      [2200, 2210, 2211, 2212, 2213, 2214, 2215, 2216, 2217, 2218],
+    ]);
+  });
+
+  it("renders the GM line as a single chain below the GM entry", () => {
+    expect(advancementChains(900, 1)).toEqual([[910]]);
+  });
+
+  it("includes the GM line among Beginner's chains", () => {
+    const chains = advancementChains(0, 83);
+    expect(chains).toContainEqual([900, 910]);
+    expect(chains).toContainEqual([100, 110, 111, 112]);
+    // Warrior/Magician have 3 paths each; Bowman/Rogue/Pirate 2 each; + GM line
+    expect(chains).toHaveLength(13);
+  });
+
+  it("drops any chain containing a below-floor node (Pirate on v12)", () => {
+    const chains = advancementChains(0, 12);
+    expect(chains).toHaveLength(11); // 13 minus Pirate's 2 paths
+    for (const chain of chains) {
+      expect(chain).not.toContain(500);
+    }
+  });
+
+  it("returns [] for a leaf entry", () => {
+    expect(advancementChains(112, 83)).toEqual([]);
+    expect(advancementChains(800, 83)).toEqual([]);
+  });
+});
+
+describe("tierLabel", () => {
+  it("labels tree roots with children as Base, childless roots empty", () => {
+    expect(tierLabel(0)).toBe("Base");
+    expect(tierLabel(1000)).toBe("Base");
+    expect(tierLabel(800)).toBe("");
+  });
+
+  it("labels advancement depth ordinally, including the GM line and Evan depth 10", () => {
+    expect(tierLabel(100)).toBe("1st");
+    expect(tierLabel(110)).toBe("2nd");
+    expect(tierLabel(111)).toBe("3rd");
+    expect(tierLabel(112)).toBe("4th");
+    expect(tierLabel(900)).toBe("1st");
+    expect(tierLabel(910)).toBe("2nd");
+    expect(tierLabel(2218)).toBe("10th");
+  });
+
+  it("returns empty for unknown ids", () => {
+    expect(tierLabel(99999)).toBe("");
+  });
+});
+
+describe("subtreeCount", () => {
+  it("counts version-visible nodes including the entry", () => {
+    expect(subtreeCount(100, 83)).toBe(10); // Warrior line
+    expect(subtreeCount(900, 1)).toBe(2); // GM + Super GM
+    expect(subtreeCount(1000, 83)).toBe(21); // Noblesse + 5 paths x 4
+    expect(subtreeCount(800, 83)).toBe(1);
+    expect(subtreeCount(2001, 84)).toBe(11); // Evan root + 10 tiers
+  });
+
+  it("excludes below-floor subtrees and below-floor entries", () => {
+    // Beginner + Warrior 10 + Magician 10 + Bowman 7 + Rogue 7 + GM line 2
+    expect(subtreeCount(0, 12)).toBe(37);
+    expect(subtreeCount(0, 62)).toBe(44); // Pirate's 7 nodes join at v62
+    expect(subtreeCount(500, 12)).toBe(0); // Pirate entry itself below floor
   });
 });

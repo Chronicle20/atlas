@@ -12,7 +12,7 @@ metadata:
   name: atlas-ingress
 spec:
   rules:
-  - host: PLACEHOLDER_PR_NUMBER.atlas.home
+  - host: 1015.atlas.home
     http:
       paths:
       - path: /

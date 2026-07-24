@@ -13,9 +13,9 @@ spec:
         - name: account
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Account Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Account Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -28,9 +28,9 @@ spec:
         - name: asset-expiration
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Asset Expiration Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Asset Expiration Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -43,9 +43,9 @@ spec:
         - name: ban
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Ban Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Ban Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -58,9 +58,9 @@ spec:
         - name: buddies
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Buddy Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Buddy Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -73,9 +73,9 @@ spec:
         - name: buffs
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Buff Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Buff Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -88,9 +88,9 @@ spec:
         - name: cashshop
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Cash Shop Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Cash Shop Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -103,9 +103,9 @@ spec:
         - name: chairs
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Chairs Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Chairs Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -118,9 +118,9 @@ spec:
         - name: chalkboards
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Chalkboard Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Chalkboard Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -133,9 +133,9 @@ spec:
         - name: atlas-channel
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Channel Service - %s [PLACEHOLDER_ATLAS_ENV]"
+              value: "Channel Service - %s [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -148,9 +148,9 @@ spec:
         - name: character
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Character Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Character Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -163,9 +163,9 @@ spec:
         - name: character-factory
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Character Factory Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Character Factory Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -178,9 +178,9 @@ spec:
         - name: atlas-consumables
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Consumables Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Consumables Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -193,9 +193,9 @@ spec:
         - name: data
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Data Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Data Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -208,9 +208,9 @@ spec:
         - name: doors
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Door Registry Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Door Registry Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -223,9 +223,9 @@ spec:
         - name: drops
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Drops Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Drops Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -238,9 +238,9 @@ spec:
         - name: effective-stats
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Effective Stats Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Effective Stats Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -253,9 +253,9 @@ spec:
         - name: expressions
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Expression Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Expression Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -268,9 +268,9 @@ spec:
         - name: fame
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Fame Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Fame Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -283,9 +283,9 @@ spec:
         - name: guilds
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Guilds Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Guilds Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -298,9 +298,9 @@ spec:
         - name: inventory
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Inventory Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Inventory Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -313,9 +313,9 @@ spec:
         - name: invites
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Invitation Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Invitation Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -328,9 +328,9 @@ spec:
         - name: keys
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Key Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Key Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -343,9 +343,9 @@ spec:
         - name: atlas-login
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "ChannelConnect Service - %s [PLACEHOLDER_ATLAS_ENV]"
+              value: "ChannelConnect Service - %s [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -358,9 +358,9 @@ spec:
         - name: map-actions
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Map Actions Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Map Actions Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -373,9 +373,9 @@ spec:
         - name: maps
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Map Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Map Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -388,9 +388,9 @@ spec:
         - name: merchant
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Merchant Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Merchant Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -403,9 +403,9 @@ spec:
         - name: messages
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Messages Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Messages Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -418,9 +418,9 @@ spec:
         - name: messengers
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Messenger Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Messenger Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -433,9 +433,9 @@ spec:
         - name: mini-games
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Mini Game Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Mini Game Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -448,9 +448,9 @@ spec:
         - name: monster-book
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Monster Book Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Monster Book Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -463,9 +463,9 @@ spec:
         - name: atlas-monster-death
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Monster Death Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Monster Death Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -478,9 +478,9 @@ spec:
         - name: monsters
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Monster Registry Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Monster Registry Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -493,9 +493,9 @@ spec:
         - name: mounts
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Mounts Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Mounts Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -508,9 +508,9 @@ spec:
         - name: mts
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "MTS Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "MTS Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -523,9 +523,9 @@ spec:
         - name: notes
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Notes Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Notes Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -538,9 +538,9 @@ spec:
         - name: npc-conversations
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "NPC Conversation Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "NPC Conversation Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -553,9 +553,9 @@ spec:
         - name: npc-shops
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "NPC Shops Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "NPC Shops Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -568,9 +568,9 @@ spec:
         - name: parties
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Party Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Party Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -583,9 +583,9 @@ spec:
         - name: party-quests
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Party Quest Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Party Quest Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -598,9 +598,9 @@ spec:
         - name: pets
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Pets Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Pets Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -613,9 +613,9 @@ spec:
         - name: portal-actions
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Portal Actions Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Portal Actions Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -628,9 +628,9 @@ spec:
         - name: portals
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Portal Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Portal Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -643,9 +643,9 @@ spec:
         - name: quest
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Quest Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Quest Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -658,9 +658,9 @@ spec:
         - name: rates
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Rate Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Rate Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -673,9 +673,9 @@ spec:
         - name: reactor-actions
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Reactor Actions Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Reactor Actions Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -688,9 +688,9 @@ spec:
         - name: reactors
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Reactors Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Reactors Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -703,9 +703,9 @@ spec:
         - name: rps
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "RPS Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "RPS Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -718,9 +718,9 @@ spec:
         - name: saga-orchestrator
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Saga Orchestrator Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Saga Orchestrator Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -733,9 +733,9 @@ spec:
         - name: skills
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Skills Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Skills Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -748,9 +748,9 @@ spec:
         - name: storage
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Storage Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Storage Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -763,9 +763,9 @@ spec:
         - name: summons
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Summon Registry Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Summon Registry Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -778,9 +778,9 @@ spec:
         - name: atlas-tenants
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Tenant Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Tenant Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -793,9 +793,9 @@ spec:
         - name: atlas-transports
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "Transport Service [PLACEHOLDER_ATLAS_ENV]"
+              value: "Transport Service [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -808,6 +808,6 @@ spec:
         - name: world
           env:
             - name: KAFKA_CONSUMER_GROUP
-              value: "World Orchestrator [PLACEHOLDER_ATLAS_ENV]"
+              value: "World Orchestrator [992b]"
             - name: ATLAS_ENV
-              value: "PLACEHOLDER_ATLAS_ENV"
+              value: "992b"

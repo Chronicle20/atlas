@@ -13,7 +13,7 @@ spec:
         - name: account
           env:
             - name: DB_NAME
-              value: "atlas-accounts-PLACEHOLDER_ATLAS_ENV"
+              value: "atlas-accounts-992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -26,7 +26,7 @@ spec:
         - name: ban
           env:
             - name: DB_NAME
-              value: "atlas-bans-PLACEHOLDER_ATLAS_ENV"
+              value: "atlas-bans-992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -39,7 +39,7 @@ spec:
         - name: buddies
           env:
             - name: DB_NAME
-              value: "atlas-buddies-PLACEHOLDER_ATLAS_ENV"
+              value: "atlas-buddies-992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -52,7 +52,7 @@ spec:
         - name: cashshop
           env:
             - name: DB_NAME
-              value: "atlas-cashshop-PLACEHOLDER_ATLAS_ENV"
+              value: "atlas-cashshop-992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -65,7 +65,7 @@ spec:
         - name: character
           env:
             - name: DB_NAME
-              value: "atlas-characters-PLACEHOLDER_ATLAS_ENV"
+              value: "atlas-characters-992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -78,7 +78,7 @@ spec:
         - name: configurations
           env:
             - name: DB_NAME
-              value: "atlas-configurations-PLACEHOLDER_ATLAS_ENV"
+              value: "atlas-configurations-992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -91,7 +91,7 @@ spec:
         - name: data
           env:
             - name: DB_NAME
-              value: "atlas-data-PLACEHOLDER_ATLAS_ENV"
+              value: "atlas-data-992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -104,7 +104,7 @@ spec:
         - name: atlas-drop-information
           env:
             - name: DB_NAME
-              value: "atlas-drops-PLACEHOLDER_ATLAS_ENV"
+              value: "atlas-drops-992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -117,7 +117,7 @@ spec:
         - name: fame
           env:
             - name: DB_NAME
-              value: "atlas-fame-PLACEHOLDER_ATLAS_ENV"
+              value: "atlas-fame-992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -130,7 +130,7 @@ spec:
         - name: gachapons
           env:
             - name: DB_NAME
-              value: "atlas-reward-pools-PLACEHOLDER_ATLAS_ENV"
+              value: "atlas-reward-pools-992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -143,7 +143,7 @@ spec:
         - name: guilds
           env:
             - name: DB_NAME
-              value: "atlas-guilds-PLACEHOLDER_ATLAS_ENV"
+              value: "atlas-guilds-992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -156,7 +156,7 @@ spec:
         - name: inventory
           env:
             - name: DB_NAME
-              value: "atlas-inventory-PLACEHOLDER_ATLAS_ENV"
+              value: "atlas-inventory-992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -169,7 +169,7 @@ spec:
         - name: keys
           env:
             - name: DB_NAME
-              value: "atlas-keys-PLACEHOLDER_ATLAS_ENV"
+              value: "atlas-keys-992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -182,7 +182,7 @@ spec:
         - name: map-actions
           env:
             - name: DB_NAME
-              value: "atlas-map-actions-PLACEHOLDER_ATLAS_ENV"
+              value: "atlas-map-actions-992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -195,7 +195,7 @@ spec:
         - name: maps
           env:
             - name: DB_NAME
-              value: "atlas-maps-PLACEHOLDER_ATLAS_ENV"
+              value: "atlas-maps-992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -208,7 +208,7 @@ spec:
         - name: merchant
           env:
             - name: DB_NAME
-              value: "atlas-merchant-PLACEHOLDER_ATLAS_ENV"
+              value: "atlas-merchant-992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -221,7 +221,7 @@ spec:
         - name: mini-games
           env:
             - name: DB_NAME
-              value: "atlas-mini-games-PLACEHOLDER_ATLAS_ENV"
+              value: "atlas-mini-games-992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -234,7 +234,7 @@ spec:
         - name: monster-book
           env:
             - name: DB_NAME
-              value: "atlas-monster-book-PLACEHOLDER_ATLAS_ENV"
+              value: "atlas-monster-book-992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -247,7 +247,7 @@ spec:
         - name: mounts
           env:
             - name: DB_NAME
-              value: "atlas-mounts-PLACEHOLDER_ATLAS_ENV"
+              value: "atlas-mounts-992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -260,7 +260,7 @@ spec:
         - name: mts
           env:
             - name: DB_NAME
-              value: "atlas-mts-PLACEHOLDER_ATLAS_ENV"
+              value: "atlas-mts-992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -273,7 +273,7 @@ spec:
         - name: notes
           env:
             - name: DB_NAME
-              value: "atlas-notes-PLACEHOLDER_ATLAS_ENV"
+              value: "atlas-notes-992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -286,7 +286,7 @@ spec:
         - name: npc-conversations
           env:
             - name: DB_NAME
-              value: "atlas-npc-conversations-PLACEHOLDER_ATLAS_ENV"
+              value: "atlas-npc-conversations-992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -299,7 +299,7 @@ spec:
         - name: npc-shops
           env:
             - name: DB_NAME
-              value: "atlas-npc-shops-PLACEHOLDER_ATLAS_ENV"
+              value: "atlas-npc-shops-992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -312,7 +312,7 @@ spec:
         - name: party-quests
           env:
             - name: DB_NAME
-              value: "atlas-party-quests-PLACEHOLDER_ATLAS_ENV"
+              value: "atlas-party-quests-992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -325,7 +325,7 @@ spec:
         - name: pets
           env:
             - name: DB_NAME
-              value: "atlas-pets-PLACEHOLDER_ATLAS_ENV"
+              value: "atlas-pets-992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -338,7 +338,7 @@ spec:
         - name: portal-actions
           env:
             - name: DB_NAME
-              value: "atlas-portal-actions-PLACEHOLDER_ATLAS_ENV"
+              value: "atlas-portal-actions-992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -351,7 +351,7 @@ spec:
         - name: quest
           env:
             - name: DB_NAME
-              value: "atlas-quest-PLACEHOLDER_ATLAS_ENV"
+              value: "atlas-quest-992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -364,7 +364,7 @@ spec:
         - name: reactor-actions
           env:
             - name: DB_NAME
-              value: "atlas-reactor-actions-PLACEHOLDER_ATLAS_ENV"
+              value: "atlas-reactor-actions-992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -377,7 +377,7 @@ spec:
         - name: saga-orchestrator
           env:
             - name: DB_NAME
-              value: "atlas-saga-orchestrator-PLACEHOLDER_ATLAS_ENV"
+              value: "atlas-saga-orchestrator-992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -390,7 +390,7 @@ spec:
         - name: skills
           env:
             - name: DB_NAME
-              value: "atlas-skills-PLACEHOLDER_ATLAS_ENV"
+              value: "atlas-skills-992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -403,7 +403,7 @@ spec:
         - name: storage
           env:
             - name: DB_NAME
-              value: "atlas-storage-PLACEHOLDER_ATLAS_ENV"
+              value: "atlas-storage-992b"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -416,4 +416,4 @@ spec:
         - name: atlas-tenants
           env:
             - name: DB_NAME
-              value: "atlas-tenants-PLACEHOLDER_ATLAS_ENV"
+              value: "atlas-tenants-992b"

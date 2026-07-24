@@ -72,7 +72,7 @@ func handleGetLeaderboard(d *rest.HandlerDependency, c *rest.HandlerContext) htt
 			return
 		}
 
-		res, err := model.SliceMap(func(m Model) (LeaderboardRestModel, error) { return TransformLeaderboard(m) })(model.FixedProvider(paged.Items))(model.ParallelMap())()
+		res, err := model.SliceMap(TransformLeaderboard)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating leaderboard REST model.")
 			server.WriteErrorResponse(d.Logger())(w)(err)

@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
@@ -12,6 +11,8 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func newStoreTestDB(t *testing.T) *gorm.DB {

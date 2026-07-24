@@ -1,10 +1,9 @@
 package monster
 
 import (
+	"atlas-monster-death/monster/drop"
 	"math"
 	"testing"
-
-	"atlas-monster-death/monster/drop"
 )
 
 func TestCalculateExperienceStandardDeviationThreshold_Uniform(t *testing.T) {

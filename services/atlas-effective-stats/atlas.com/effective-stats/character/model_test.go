@@ -7,10 +7,11 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func createTestTenant() tenant.Model {
@@ -564,5 +565,84 @@ func TestBonuses_IncludesQualifiedEquipment(t *testing.T) {
 	got := m.Bonuses()
 	if len(got) != 1 || got[0].Source() != "equipment:42" || got[0].Amount() != 50 {
 		t.Errorf("Bonuses() = %+v, want one equipment:42 MaxMp=50 entry", got)
+	}
+}
+
+func TestModelComputeEffectiveStats_BasePercentTruncation(t *testing.T) {
+	// FR-13: base STR 13 with MW 10% -> floor(13*10/100) = 1 -> 14.
+	// Base DEX 4 with MW 10% -> floor(4*10/100) = 0 -> 4.
+	ten := createTestTenant()
+	ch := channel.NewModel(1, 2)
+	m := NewModel(ten, ch, 12345)
+
+	base := stat.NewBase(13, 4, 30, 25, 5000, 3000)
+	bStr := stat.NewBasePercentBonus("buff:2311003", stat.TypeStrength, 10)
+	bDex := stat.NewBasePercentBonus("buff:2311003", stat.TypeDexterity, 10)
+	m = m.WithBaseStats(base).WithBonus(bStr).WithBonus(bDex)
+
+	computed := m.ComputeEffectiveStats(nil)
+
+	if computed.Strength() != 14 {
+		t.Errorf("Strength() = %v, want 14", computed.Strength())
+	}
+	if computed.Dexterity() != 4 {
+		t.Errorf("Dexterity() = %v, want 4", computed.Dexterity())
+	}
+}
+
+func TestModelComputeEffectiveStats_BasePercentExcludesEquipment(t *testing.T) {
+	// FR-13: base 100 + 30 equip STR + MW 10% -> 100 + 30 + floor(100*10/100) = 140, NOT 143.
+	ten := createTestTenant()
+	ch := channel.NewModel(1, 2)
+	m := NewModel(ten, ch, 12345)
+
+	base := stat.NewBase(100, 40, 30, 25, 5000, 3000)
+	snap := NewEquippedAsset(1, 1052095, []stat.Bonus{stat.NewBonus("equipment:1", stat.TypeStrength, 30)})
+	mw := stat.NewBasePercentBonus("buff:2311003", stat.TypeStrength, 10)
+	m = m.WithBaseStats(base).WithEquippedAsset(snap).WithBonus(mw)
+
+	computed := m.ComputeEffectiveStats(map[uint32]bool{1: true})
+
+	if computed.Strength() != 140 {
+		t.Errorf("Strength() = %v, want 140 (equipment leaked into base-percent basis if 143)", computed.Strength())
+	}
+}
+
+func TestModelComputeEffectiveStats_BasePercentIndependentTruncation(t *testing.T) {
+	// Two 10% base-percent bonuses on base 15 truncate independently:
+	// floor(1.5) + floor(1.5) = 2 -> 17, NOT floor(15*20/100) = 3 -> 18.
+	// Distinct sources: WithBonus replaces on same (source, statType).
+	ten := createTestTenant()
+	ch := channel.NewModel(1, 2)
+	m := NewModel(ten, ch, 12345)
+
+	base := stat.NewBase(15, 40, 30, 25, 5000, 3000)
+	b1 := stat.NewBasePercentBonus("buff:1", stat.TypeStrength, 10)
+	b2 := stat.NewBasePercentBonus("buff:2", stat.TypeStrength, 10)
+	m = m.WithBaseStats(base).WithBonus(b1).WithBonus(b2)
+
+	computed := m.ComputeEffectiveStats(nil)
+
+	if computed.Strength() != 17 {
+		t.Errorf("Strength() = %v, want 17 (independent truncation)", computed.Strength())
+	}
+}
+
+func TestModelComputeEffectiveStats_BasePercentWithMultiplier(t *testing.T) {
+	// Ordering pinned: floor((base + flat + bp) * (1 + mult)).
+	// base 100, bp 10% (-> +10), mult 0.10 -> floor(110 * 1.10) = 121.
+	ten := createTestTenant()
+	ch := channel.NewModel(1, 2)
+	m := NewModel(ten, ch, 12345)
+
+	base := stat.NewBase(100, 40, 30, 25, 5000, 3000)
+	bp := stat.NewBasePercentBonus("buff:mw", stat.TypeStrength, 10)
+	mult := stat.NewMultiplierBonus("buff:other", stat.TypeStrength, 0.10)
+	m = m.WithBaseStats(base).WithBonus(bp).WithBonus(mult)
+
+	computed := m.ComputeEffectiveStats(nil)
+
+	if computed.Strength() != 121 {
+		t.Errorf("Strength() = %v, want 121", computed.Strength())
 	}
 }

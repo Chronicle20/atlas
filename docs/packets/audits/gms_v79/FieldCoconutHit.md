@@ -1,16 +1,16 @@
 # FieldCoconutHit (← `CField_Coconut::OnCoconutHit`)
 
-- **IDA:** 
+- **IDA:** 0x5332fa
 - **Atlas file:** `libs/atlas-packet/field/clientbound/coconut_hit.go`
 - **Variant:** GMS/v79
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int16 | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | int16 | int16 `` | ✅ |  |
+| 1 | int16 | int16 `` | ✅ |  |
+| 2 | byte | byte `` | ✅ |  |
 

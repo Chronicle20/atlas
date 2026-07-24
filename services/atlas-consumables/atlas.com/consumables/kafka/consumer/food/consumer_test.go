@@ -1,22 +1,23 @@
 package food
 
 import (
+	"atlas-consumables/consumable"
 	"context"
 	"encoding/json"
 	"os"
 	"sync"
 	"testing"
 
-	"atlas-consumables/consumable"
 	foodmsg "atlas-consumables/kafka/message/food"
+
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer/producertest"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
 )
 
 // TestMain installs the shared no-op producer floor so any emit that escapes a

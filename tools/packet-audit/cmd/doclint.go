@@ -7,8 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Chronicle20/atlas/tools/packet-audit/internal/matrix"
 	"gopkg.in/yaml.v3"
+
+	"github.com/Chronicle20/atlas/tools/packet-audit/internal/matrix"
 )
 
 // doc-freshness (task-169 FR-2.3) is the machine-lintable guard against RC-B

@@ -1,6 +1,9 @@
 package main
 
 import (
+	"atlas-renders/character"
+	"atlas-renders/mapr"
+	"atlas-renders/storage"
 	"context"
 	"errors"
 	"fmt"
@@ -9,16 +12,13 @@ import (
 	"strconv"
 	"time"
 
-	"atlas-renders/character"
-	"atlas-renders/mapr"
-	"atlas-renders/storage"
-
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const serviceName = "atlas-renders"

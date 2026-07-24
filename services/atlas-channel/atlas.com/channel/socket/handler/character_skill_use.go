@@ -11,12 +11,13 @@ import (
 	summoncmd "atlas-channel/summon"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/summon"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	statpkt "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 // CUserLocal::DoActiveSkill_TownPortal

@@ -1,10 +1,9 @@
 package heal
 
 import (
-	"testing"
-
 	"atlas-channel/data/skill/effect"
 	"atlas-channel/skill/handler"
+	"testing"
 )
 
 func TestSelectRecipients_CasterAlwaysIncluded(t *testing.T) {

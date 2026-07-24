@@ -1,0 +1,497 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "firstDialogue",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "checkInventorySpace",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "What the? Are you telling me you've already taken out 150 #o4230120#s? And these ... yes, these really are 120 #t4000122#s. I was wondering how you were going to complete this mission all by yourself, but you took care of it just fine. Alright, here ... this is a very important item for me, but please take it."
+            },
+            "id": "firstDialogue",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": "<",
+                      "referenceId": "1082024",
+                      "type": "inventorySpace",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "noInventorySpace"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "gloveDialogue"
+                }
+              ]
+            },
+            "id": "checkInventorySpace",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Please free a EQUIP inventory slot to receive the reward."
+            },
+            "id": "noInventorySpace",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "checkJobWarrior",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Do you like the glove? I've kept this for a while, and I was planning on using it someday, but it looks much better on you. Please put it to good use; besides, I got so much stuff from the Sector, that I don't need it anymore."
+            },
+            "id": "gloveDialogue",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "type": "jobId",
+                      "value": "100"
+                    },
+                    {
+                      "operator": "<",
+                      "type": "jobId",
+                      "value": "200"
+                    }
+                  ],
+                  "nextState": "awardWarrior"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "checkJobMagician"
+                }
+              ]
+            },
+            "id": "checkJobWarrior",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "type": "jobId",
+                      "value": "200"
+                    },
+                    {
+                      "operator": "<",
+                      "type": "jobId",
+                      "value": "300"
+                    }
+                  ],
+                  "nextState": "awardMagician"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "checkJobBowman"
+                }
+              ]
+            },
+            "id": "checkJobMagician",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "type": "jobId",
+                      "value": "300"
+                    },
+                    {
+                      "operator": "<",
+                      "type": "jobId",
+                      "value": "400"
+                    }
+                  ],
+                  "nextState": "awardBowman"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "checkJobThief"
+                }
+              ]
+            },
+            "id": "checkJobBowman",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "type": "jobId",
+                      "value": "400"
+                    },
+                    {
+                      "operator": "<",
+                      "type": "jobId",
+                      "value": "500"
+                    }
+                  ],
+                  "nextState": "awardThief"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "checkJobPirate"
+                }
+              ]
+            },
+            "id": "checkJobThief",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "type": "jobId",
+                      "value": "500"
+                    },
+                    {
+                      "operator": "<",
+                      "type": "jobId",
+                      "value": "600"
+                    }
+                  ],
+                  "nextState": "awardPirate"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "awardDefault"
+                }
+              ]
+            },
+            "id": "checkJobPirate",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                },
+                {
+                  "params": {
+                    "itemId": "1082024",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {
+                    "itemId": "4000122",
+                    "quantity": "120"
+                  },
+                  "type": "destroy_item"
+                },
+                {
+                  "params": {
+                    "amount": "6100"
+                  },
+                  "type": "award_exp"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "completionDialogue"
+                }
+              ]
+            },
+            "id": "awardWarrior",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                },
+                {
+                  "params": {
+                    "itemId": "1082063",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {
+                    "itemId": "4000122",
+                    "quantity": "120"
+                  },
+                  "type": "destroy_item"
+                },
+                {
+                  "params": {
+                    "amount": "6100"
+                  },
+                  "type": "award_exp"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "completionDialogue"
+                }
+              ]
+            },
+            "id": "awardMagician",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                },
+                {
+                  "params": {
+                    "itemId": "1082072",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {
+                    "itemId": "4000122",
+                    "quantity": "120"
+                  },
+                  "type": "destroy_item"
+                },
+                {
+                  "params": {
+                    "amount": "6100"
+                  },
+                  "type": "award_exp"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "completionDialogue"
+                }
+              ]
+            },
+            "id": "awardBowman",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                },
+                {
+                  "params": {
+                    "itemId": "1082076",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {
+                    "itemId": "4000122",
+                    "quantity": "120"
+                  },
+                  "type": "destroy_item"
+                },
+                {
+                  "params": {
+                    "amount": "6100"
+                  },
+                  "type": "award_exp"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "completionDialogue"
+                }
+              ]
+            },
+            "id": "awardThief",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                },
+                {
+                  "params": {
+                    "itemId": "1082195",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {
+                    "itemId": "4000122",
+                    "quantity": "120"
+                  },
+                  "type": "destroy_item"
+                },
+                {
+                  "params": {
+                    "amount": "6100"
+                  },
+                  "type": "award_exp"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "completionDialogue"
+                }
+              ]
+            },
+            "id": "awardPirate",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                },
+                {
+                  "params": {
+                    "itemId": "1082149",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {
+                    "itemId": "4000122",
+                    "quantity": "120"
+                  },
+                  "type": "destroy_item"
+                },
+                {
+                  "params": {
+                    "amount": "6100"
+                  },
+                  "type": "award_exp"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "completionDialogue"
+                }
+              ]
+            },
+            "id": "awardDefault",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Thank you so much for fulfilling your missions as one of the Mesorangers. I've told the Sector about your successful story, and the Sector seems to be very pleased with you, too. Hopefully you'll keep working with us. Bye~"
+            },
+            "id": "completionDialogue",
+            "type": "dialogue"
+          }
+        ]
+      },
+      "questId": 3437,
+      "questName": "Mesoranger Mission",
+      "startStateMachine": {
+        "startState": "noDialogue",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "noDialogue",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "3437",
+    "type": "quest-conversation"
+  }
+}

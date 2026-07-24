@@ -2,9 +2,9 @@ import { TenantDetailLayout } from "@/components/features/tenants/TenantDetailLa
 import { PropertiesForm } from "@/pages/tenants-properties-form";
 
 export function TenantDetailPage() {
-    return (
-        <TenantDetailLayout>
-            <PropertiesForm />
-        </TenantDetailLayout>
-    );
+  return (
+    <TenantDetailLayout>
+      <PropertiesForm />
+    </TenantDetailLayout>
+  );
 }

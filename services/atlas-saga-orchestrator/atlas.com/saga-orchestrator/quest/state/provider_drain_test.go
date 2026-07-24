@@ -1,6 +1,7 @@
 package state_test
 
 import (
+	"atlas-saga-orchestrator/quest/state"
 	"context"
 	"fmt"
 	"net/http"
@@ -9,11 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"atlas-saga-orchestrator/quest/state"
-
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // startedQuestDoc renders a JSON:API document for started quests with

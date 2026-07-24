@@ -5,11 +5,12 @@ import (
 	"atlas-mts/listing"
 	"time"
 
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 // RegisterWishRequest carries the wish-registration parameters the RegisterWish

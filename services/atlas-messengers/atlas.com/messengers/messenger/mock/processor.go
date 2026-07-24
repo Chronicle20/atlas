@@ -3,8 +3,9 @@ package mock
 import (
 	"atlas-messengers/messenger"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 type ProcessorMock struct {

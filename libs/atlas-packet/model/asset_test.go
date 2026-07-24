@@ -1,20 +1,47 @@
 package model
 
 import (
+	"bytes"
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	testlog "github.com/sirupsen/logrus/hooks/test"
+
+	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// TestEncodeSlotVersionGate guards the equip inventory slot width: byte for
+// legacy GMS (<83), short for v83+. The only wire difference between a v79 and a
+// v83 regular-equip encode is that widened slot, so v83 must be exactly 1 byte
+// longer, and the 0x01 type discriminator lands right after a 1-byte (v79) or
+// 2-byte (v83) slot. pt.Variants has no version in [29,82], so this pins it.
+func TestEncodeSlotVersionGate(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	a := NewAsset(false, -5, 1302000, time.Time{}). // equipped slot -5, equip template
+							SetEquipmentStats(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0).
+							SetEquipmentMeta(0, 0, 0, 0, 0, 0)
+
+	v79 := a.Encode(l, test.CreateContext("GMS", 79, 1))(nil)
+	v83 := a.Encode(l, test.CreateContext("GMS", 83, 1))(nil)
+
+	if len(v83) != len(v79)+1 {
+		t.Errorf("equip encode lengths: v79=%d v83=%d, want v83 == v79+1 (byte vs short slot)", len(v79), len(v83))
+	}
+	if v79[0] != 5 || v79[1] != 1 {
+		t.Errorf("v79 equip prefix = %v, want [5 1] (byte slot then 0x01 type)", v79[:2])
+	}
+	if v83[0] != 5 || v83[1] != 0 || v83[2] != 1 {
+		t.Errorf("v83 equip prefix = %v, want [5 0 1] (short slot then 0x01 type)", v83[:3])
+	}
+}
+
 func TestAssetEquipable(t *testing.T) {
 	exp := time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)
 	a := NewAsset(false, -5, 1302000, exp). // equip slot -5, templateId in equip range (1xxxxxx)
-							SetEquipmentStats(10, 11, 12, 13, 100, 50, 80, 70, 30, 25, 15, 20, 10, 5, 3).
-							SetEquipmentMeta(7, 1, 2, 500, 3, 0x0001)
+						SetEquipmentStats(10, 11, 12, 13, 100, 50, 80, 70, 30, 25, 15, 20, 10, 5, 3).
+						SetEquipmentMeta(7, 1, 2, 500, 3, 0x0001)
 
 	for _, v := range test.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -242,6 +269,44 @@ func assertEqual[T comparable](t *testing.T, name string, expected, actual T) {
 	t.Helper()
 	if expected != actual {
 		t.Errorf("%s: expected %v, got %v", name, expected, actual)
+	}
+}
+
+func TestAssetOwnerEncoded(t *testing.T) {
+	exp := time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)
+	base := NewAsset(false, -5, 1302000, exp).
+		SetEquipmentStats(10, 11, 12, 13, 100, 50, 80, 70, 30, 25, 15, 20, 10, 5, 3).
+		SetEquipmentMeta(7, 1, 2, 500, 3, 0x0001)
+	named := base.SetOwner("Tumi")
+	l, _ := testlog.NewNullLogger()
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			plain := base.Encode(l, ctx)(nil)
+			withOwner := named.Encode(l, ctx)(nil)
+			if len(withOwner) != len(plain)+len("Tumi") {
+				t.Fatalf("owner bytes not encoded: len(withOwner)=%d len(plain)=%d", len(withOwner), len(plain))
+			}
+			// empty owner must be byte-identical to the pre-change encoding
+			baseEmptyOwner := base.SetOwner("")
+			empty := baseEmptyOwner.Encode(l, ctx)(nil)
+			if !bytes.Equal(empty, plain) {
+				t.Fatal("empty owner changed the wire bytes")
+			}
+		})
+	}
+}
+
+func TestAssetOwnerEncodedStackable(t *testing.T) {
+	exp := time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)
+	base := NewAsset(false, 3, 2000000, exp).SetStackableInfo(50, 0, 0)
+	named := base.SetOwner("Tumi")
+	l, _ := testlog.NewNullLogger()
+	ctx := test.CreateContext("GMS", 83, 1)
+	plain := base.Encode(l, ctx)(nil)
+	withOwner := named.Encode(l, ctx)(nil)
+	if len(withOwner) != len(plain)+len("Tumi") {
+		t.Fatalf("owner bytes not encoded on stackable: %d vs %d", len(withOwner), len(plain))
 	}
 }
 

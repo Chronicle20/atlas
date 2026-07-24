@@ -4,12 +4,14 @@ import (
 	"atlas-channel/data/skill/effect/statup"
 	buff2 "atlas-channel/kafka/message/buff"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/sirupsen/logrus"
 )
 
 // Processor interface defines the operations for buff processing
@@ -18,6 +20,7 @@ type Processor interface {
 	GetByCharacterId(characterId uint32) ([]Model, error)
 	Apply(f field.Model, fromId uint32, sourceId int32, level byte, duration int32, statups []statup.Model) model.Operator[uint32]
 	Cancel(f field.Model, characterId uint32, sourceId int32) error
+	CancelByTypes(f field.Model, characterId uint32, types []string) error
 }
 
 // ProcessorImpl implements the Processor interface
@@ -35,7 +38,6 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 }
 
 var _ Processor = (*ProcessorImpl)(nil)
-
 
 // ByCharacterIdProvider fetches every buff for a character. The upstream
 // atlas-buffs list is now paginated (task-117); callers here need the
@@ -60,4 +62,9 @@ func (p *ProcessorImpl) Apply(f field.Model, fromId uint32, sourceId int32, leve
 func (p *ProcessorImpl) Cancel(f field.Model, characterId uint32, sourceId int32) error {
 	p.l.Debugf("Character [%d] cancelling effect from source [%d].", characterId, sourceId)
 	return producer.ProviderImpl(p.l)(p.ctx)(buff2.EnvCommandTopic)(CancelCommandProvider(f, characterId, sourceId))
+}
+
+func (p *ProcessorImpl) CancelByTypes(f field.Model, characterId uint32, types []string) error {
+	p.l.Debugf("Character [%d] cancelling buffs by types %v.", characterId, types)
+	return producer.ProviderImpl(p.l)(p.ctx)(buff2.EnvCommandTopic)(CancelByTypesCommandProvider(f, characterId, types))
 }

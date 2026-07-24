@@ -5,13 +5,14 @@ import (
 	"context"
 	"time"
 
+	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
+	"gorm.io/gorm"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
-	"go.opentelemetry.io/otel"
-	"gorm.io/gorm"
 )
 
 const TirednessTaskName = "tiredness"

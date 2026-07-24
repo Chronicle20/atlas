@@ -6,13 +6,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 func TestRequestCreateAndEquipAssetFlow(t *testing.T) {
@@ -31,11 +32,11 @@ func TestRequestCreateAndEquipAssetFlow(t *testing.T) {
 	t.Run("processor method delegates to RequestCreateItem", func(t *testing.T) {
 		// Test that RequestCreateAndEquipAsset uses the same logic as RequestCreateItem
 		// This validates that the CreateAndEquipAsset action uses award_asset semantics
-		
+
 		// Create a mock processor to validate the call
 		// Note: This would typically require dependency injection or mocking framework
 		// For now, we'll validate the payload structure
-		
+
 		assert.Equal(t, characterId, payload.CharacterId)
 		assert.Equal(t, templateId, payload.Item.TemplateId)
 		assert.Equal(t, quantity, payload.Item.Quantity)
@@ -230,14 +231,14 @@ func TestMessageProviderErrorHandling(t *testing.T) {
 func TestMessageKeyGeneration(t *testing.T) {
 	t.Run("consistent key generation", func(t *testing.T) {
 		characterId := uint32(12345)
-		
+
 		// Create multiple messages for same character
 		provider1 := RequestCreateAssetCommandProvider(uuid.New(), characterId, inventory.Type(1), 1302000, 1, time.Time{}, false)
 		provider2 := RequestEquipAssetCommandProvider(uuid.New(), characterId, 1, 5, -1)
 
 		messages1, err1 := provider1()
 		require.NoError(t, err1)
-		
+
 		messages2, err2 := provider2()
 		require.NoError(t, err2)
 
@@ -257,7 +258,7 @@ func TestMessageKeyGeneration(t *testing.T) {
 
 		messages1, err1 := provider1()
 		require.NoError(t, err1)
-		
+
 		messages2, err2 := provider2()
 		require.NoError(t, err2)
 

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Pencil, Trash2, Save, X } from "lucide-react";
@@ -50,7 +49,9 @@ export function ServiceDetailPage() {
   // Edit state
   const [editTasks, setEditTasks] = useState<TaskConfig[]>([]);
   const [editLoginTenants, setEditLoginTenants] = useState<LoginTenant[]>([]);
-  const [editChannelTenants, setEditChannelTenants] = useState<ChannelTenant[]>([]);
+  const [editChannelTenants, setEditChannelTenants] = useState<ChannelTenant[]>(
+    [],
+  );
 
   const startEditing = () => {
     if (!service) return;
@@ -149,10 +150,7 @@ export function ServiceDetailPage() {
                 <X className="mr-2 h-4 w-4" />
                 Cancel
               </Button>
-              <Button
-                onClick={handleSave}
-                disabled={updateService.isPending}
-              >
+              <Button onClick={handleSave} disabled={updateService.isPending}>
                 <Save className="mr-2 h-4 w-4" />
                 {updateService.isPending ? "Saving..." : "Save Changes"}
               </Button>
@@ -204,7 +202,8 @@ export function ServiceDetailPage() {
                     <div>
                       <p className="font-medium">{task.type}</p>
                       <p className="text-sm text-muted-foreground">
-                        Interval: {task.interval}ms | Duration: {task.duration}ms
+                        Interval: {task.interval}ms | Duration: {task.duration}
+                        ms
                       </p>
                     </div>
                   </div>
@@ -282,7 +281,10 @@ export function ServiceDetailPage() {
                           ) : (
                             <div className="space-y-2 pl-4">
                               {tenant.worlds.map((world, wIndex) => (
-                                <div key={wIndex} className="rounded border p-3 bg-muted/50">
+                                <div
+                                  key={wIndex}
+                                  className="rounded border p-3 bg-muted/50"
+                                >
                                   <p className="text-sm font-medium">
                                     World {world.id}
                                   </p>

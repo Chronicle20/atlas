@@ -1,0 +1,65 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "completeQuest",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "force": "true"
+                  },
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "completeQuest",
+            "type": "genericAction"
+          }
+        ]
+      },
+      "npcId": 9201106,
+      "questId": 8255,
+      "questName": "Lost Spirits",
+      "startStateMachine": {
+        "startState": "autoStartQuest",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                },
+                {
+                  "params": {
+                    "force": "true"
+                  },
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "autoStartQuest",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "8255",
+    "type": "quest-conversation"
+  }
+}

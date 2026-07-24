@@ -1,6 +1,7 @@
 package monster
 
 import (
+	"atlas-maps/map/character"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -9,12 +10,12 @@ import (
 	"time"
 
 	monster2 "atlas-maps/data/map/monster"
-	"atlas-maps/map/character"
 
-	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
+
+	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
 )
 
 // storedSpawnPoint is the JSON-serializable format for Redis hash storage.

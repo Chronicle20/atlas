@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"testing"
 
-	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	"github.com/sirupsen/logrus"
+
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 // TestWarpToMapByteOutputV79 pins the gms_v79 SET_FIELD warp (bCharacterData=0)
@@ -115,8 +116,10 @@ func TestWarpToMapByteOutputV61(t *testing.T) {
 // is 2 bytes on GMS v83/v87 vs 4 bytes on GMS v95+/JMS.
 //
 // GMS v83/v87 envelope: channelId(4) + sNotifier(1) + bCharData(1) +
-//   nNotifierCheck(2) + revive(1) + mapId(4) + portal(1) + hp(2) + chase(1) +
-//   timestamp(8) = 25 bytes.
+//
+//	nNotifierCheck(2) + revive(1) + mapId(4) + portal(1) + hp(2) + chase(1) +
+//	timestamp(8) = 25 bytes.
+//
 // GMS v95 adds DecodeOpt(2) + oldDriverID(4) and widens hp 2→4 => 25+2+4+2 = 33.
 // JMS adds DecodeOpt(2) + JMS pair(5) but has NO chase byte (gated GMS only) and
 // hp stays 2 (JMS185 @0x7eec9d Decode2) => 25 - chase(1) + 2 + 5 = 31.

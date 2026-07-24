@@ -1,14 +1,13 @@
 # FieldSnowballTouch (← `CField_SnowBall::OnSnowBallTouch`)
 
-- **IDA:** 
-- **Atlas file:** `libs/atlas-packet/field/clientbound/snowball_touch.go`
+- **IDA:** 0x55288e
+- **Atlas file:** `../../libs/atlas-packet/field/clientbound/snowball_touch.go`
 - **Variant:** GMS/v79
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | ❌ | atlas: short — missing trailing field |
 

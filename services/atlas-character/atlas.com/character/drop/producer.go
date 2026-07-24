@@ -3,10 +3,11 @@ package drop
 import (
 	drop2 "atlas-character/kafka/message/drop"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 )
 
 func dropMesoProvider(field field.Model, mesos uint32, dropType byte, x int16, y int16, ownerId uint32) model.Provider[[]kafka.Message] {

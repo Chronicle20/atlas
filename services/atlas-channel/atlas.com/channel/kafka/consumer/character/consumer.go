@@ -3,11 +3,11 @@ package character
 import (
 	"atlas-channel/character"
 	consumer2 "atlas-channel/kafka/consumer"
-	character2 "atlas-channel/kafka/message/character"
 	mapconsumer "atlas-channel/kafka/consumer/map"
+	character2 "atlas-channel/kafka/message/character"
 	"atlas-channel/listener"
-	"atlas-channel/maps/location"
 	_map "atlas-channel/map"
+	"atlas-channel/maps/location"
 	"atlas-channel/merchant"
 	"atlas-channel/party"
 	"atlas-channel/server"
@@ -18,6 +18,9 @@ import (
 	"context"
 	"errors"
 
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/stat"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -25,17 +28,15 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
 	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character"
 	charcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
-	famecb "github.com/Chronicle20/atlas/libs/atlas-packet/fame/clientbound"
 	famepkt "github.com/Chronicle20/atlas/libs/atlas-packet/fame"
+	famecb "github.com/Chronicle20/atlas/libs/atlas-packet/fame/clientbound"
 	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
 	partycb "github.com/Chronicle20/atlas/libs/atlas-packet/party/clientbound"
 	statpkt "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -143,7 +144,7 @@ func statChanged(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 		return func(wp writer.Producer) func(c character.Model, exclRequestSent bool, updates []stat.Type) model.Operator[session.Model] {
 			return func(c character.Model, exclRequestSent bool, updates []stat.Type) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					var su = make([]model2.StatUpdate, 0)
+					su := make([]model2.StatUpdate, 0)
 					for _, update := range updates {
 						value := int64(0)
 						if update == stat.TypeSkin {
@@ -472,6 +473,5 @@ func handleStatusEventLevelChanged(sc server.Model, wp writer.Producer) message.
 			// since other players don't receive the stat packet.
 			return _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), session.Announce(l)(ctx)(wp)(charcb.CharacterEffectForeignWriter)(charpkt.CharacterLevelUpEffectForeignBody(s.CharacterId())))
 		})
-
 	}
 }

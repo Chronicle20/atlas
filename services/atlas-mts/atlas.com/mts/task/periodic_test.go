@@ -1,23 +1,23 @@
 package task_test
 
 import (
-	"context"
-	"testing"
-	"time"
-
 	"atlas-mts/bid"
 	"atlas-mts/holding"
 	"atlas-mts/listing"
 	"atlas-mts/saga"
 	"atlas-mts/task"
 	"atlas-mts/test"
+	"context"
+	"testing"
+	"time"
 
 	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 )
 
 // newSweepDB builds a DB migrated with both the listing and holding schemas (the

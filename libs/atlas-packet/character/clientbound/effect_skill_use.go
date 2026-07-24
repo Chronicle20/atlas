@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 // effectSkillUseIncludesCharacterLevel reports whether the SHOW_SKILL_USE_EFFECT
@@ -64,16 +65,16 @@ func NewEffectSkillUseForDecode(isBerserk bool, isDragonFury bool, isMonsterMagn
 }
 
 func (m EffectSkillUse) Mode() byte              { return m.mode }
-func (m EffectSkillUse) SkillId() uint32          { return m.skillId }
-func (m EffectSkillUse) CharacterLevel() byte     { return m.characterLevel }
-func (m EffectSkillUse) SkillLevel() byte         { return m.skillLevel }
-func (m EffectSkillUse) BerserkDarkForce() bool   { return m.berserkDarkForce }
-func (m EffectSkillUse) DragonFuryCreate() bool   { return m.dragonFuryCreate }
-func (m EffectSkillUse) MonsterMagnetLeft() bool  { return m.monsterMagnetLeft }
-func (m EffectSkillUse) IsBerserk() bool          { return m.isBerserk }
-func (m EffectSkillUse) IsDragonFury() bool       { return m.isDragonFury }
-func (m EffectSkillUse) IsMonsterMagnet() bool    { return m.isMonsterMagnet }
-func (m EffectSkillUse) Operation() string        { return CharacterEffectWriter }
+func (m EffectSkillUse) SkillId() uint32         { return m.skillId }
+func (m EffectSkillUse) CharacterLevel() byte    { return m.characterLevel }
+func (m EffectSkillUse) SkillLevel() byte        { return m.skillLevel }
+func (m EffectSkillUse) BerserkDarkForce() bool  { return m.berserkDarkForce }
+func (m EffectSkillUse) DragonFuryCreate() bool  { return m.dragonFuryCreate }
+func (m EffectSkillUse) MonsterMagnetLeft() bool { return m.monsterMagnetLeft }
+func (m EffectSkillUse) IsBerserk() bool         { return m.isBerserk }
+func (m EffectSkillUse) IsDragonFury() bool      { return m.isDragonFury }
+func (m EffectSkillUse) IsMonsterMagnet() bool   { return m.isMonsterMagnet }
+func (m EffectSkillUse) Operation() string       { return CharacterEffectWriter }
 
 func (m EffectSkillUse) String() string {
 	return fmt.Sprintf("skill use skillId [%d] level [%d]", m.skillId, m.skillLevel)
@@ -164,18 +165,18 @@ func NewEffectSkillUseForeignForDecode(isBerserk bool, isDragonFury bool, isMons
 	}
 }
 
-func (m EffectSkillUseForeign) CharacterId() uint32      { return m.characterId }
-func (m EffectSkillUseForeign) Mode() byte               { return m.mode }
-func (m EffectSkillUseForeign) SkillId() uint32          { return m.skillId }
-func (m EffectSkillUseForeign) CharacterLevel() byte     { return m.characterLevel }
-func (m EffectSkillUseForeign) SkillLevel() byte         { return m.skillLevel }
-func (m EffectSkillUseForeign) BerserkDarkForce() bool   { return m.berserkDarkForce }
-func (m EffectSkillUseForeign) DragonFuryCreate() bool   { return m.dragonFuryCreate }
-func (m EffectSkillUseForeign) MonsterMagnetLeft() bool  { return m.monsterMagnetLeft }
-func (m EffectSkillUseForeign) IsBerserk() bool          { return m.isBerserk }
-func (m EffectSkillUseForeign) IsDragonFury() bool       { return m.isDragonFury }
-func (m EffectSkillUseForeign) IsMonsterMagnet() bool    { return m.isMonsterMagnet }
-func (m EffectSkillUseForeign) Operation() string        { return CharacterEffectWriter }
+func (m EffectSkillUseForeign) CharacterId() uint32     { return m.characterId }
+func (m EffectSkillUseForeign) Mode() byte              { return m.mode }
+func (m EffectSkillUseForeign) SkillId() uint32         { return m.skillId }
+func (m EffectSkillUseForeign) CharacterLevel() byte    { return m.characterLevel }
+func (m EffectSkillUseForeign) SkillLevel() byte        { return m.skillLevel }
+func (m EffectSkillUseForeign) BerserkDarkForce() bool  { return m.berserkDarkForce }
+func (m EffectSkillUseForeign) DragonFuryCreate() bool  { return m.dragonFuryCreate }
+func (m EffectSkillUseForeign) MonsterMagnetLeft() bool { return m.monsterMagnetLeft }
+func (m EffectSkillUseForeign) IsBerserk() bool         { return m.isBerserk }
+func (m EffectSkillUseForeign) IsDragonFury() bool      { return m.isDragonFury }
+func (m EffectSkillUseForeign) IsMonsterMagnet() bool   { return m.isMonsterMagnet }
+func (m EffectSkillUseForeign) Operation() string       { return CharacterEffectWriter }
 
 func (m EffectSkillUseForeign) String() string {
 	return fmt.Sprintf("foreign skill use characterId [%d] skillId [%d] level [%d]", m.characterId, m.skillId, m.skillLevel)

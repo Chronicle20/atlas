@@ -15,18 +15,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"sync"
 	"time"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 )
 
 // Processor is the interface for saga processing
@@ -1208,7 +1210,6 @@ func (p *ProcessorImpl) expandAndProcessStep(s Saga, st Step[any]) error {
 		*saga = updated
 		return nil
 	})
-
 	if err != nil {
 		return err
 	}
@@ -1598,6 +1599,7 @@ func (p *ProcessorImpl) expandTransferToMts(st Step[any]) ([]Step[any], error) {
 				Level:         foundAsset.Level,
 				ItemExp:       foundAsset.Experience,
 				Flags:         foundAsset.Flag,
+				Owner:         foundAsset.Owner,
 
 				// Sale params copied from the seller's TransferToMts payload.
 				ListValue:      payload.ListValue,
@@ -1778,6 +1780,7 @@ func assetDataFromCompartmentAsset(a *compartment.AssetRestModel) asset2.AssetDa
 		CreatedAt:      a.CreatedAt,
 		Quantity:       a.Quantity,
 		OwnerId:        a.OwnerId,
+		Owner:          a.Owner,
 		Flag:           a.Flag,
 		Rechargeable:   a.Rechargeable,
 		Strength:       a.Strength,
@@ -1898,6 +1901,7 @@ func assetDataFromStorageProjectionAsset(a *storage.ProjectionAssetRestModel) as
 		Expiration:     a.Expiration,
 		Quantity:       a.Quantity,
 		OwnerId:        a.OwnerId,
+		Owner:          a.Owner,
 		Flag:           a.Flag,
 		Rechargeable:   a.Rechargeable,
 		Strength:       a.Strength,

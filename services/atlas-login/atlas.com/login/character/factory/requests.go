@@ -14,7 +14,8 @@ func getBaseRequest() string {
 }
 
 func requestCreate(accountId uint32, worldId world.Id, name string, jobIndex uint32, subJobIndex uint16, face uint32, hair uint32, color uint32, skinColor uint32, gender byte, top uint32, bottom uint32, shoes uint32, weapon uint32,
-	strength byte, dexterity byte, intelligence byte, luck byte) requests.Request[CreateCharacterResponse] {
+	strength byte, dexterity byte, intelligence byte, luck byte,
+) requests.Request[CreateCharacterResponse] {
 	i := RestModel{
 		AccountId:    accountId,
 		WorldId:      worldId,

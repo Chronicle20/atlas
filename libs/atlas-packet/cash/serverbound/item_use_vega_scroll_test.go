@@ -4,8 +4,9 @@ import (
 	"encoding/hex"
 	"testing"
 
-	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	testlog "github.com/sirupsen/logrus/hooks/test"
+
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 func TestItemUseVegaScrollRoundTrip(t *testing.T) {
@@ -32,6 +33,7 @@ func TestItemUseVegaScrollRoundTrip(t *testing.T) {
 //   - gms_v87  sub_890CA2  LABEL_28  @0x890ca2
 //   - gms_v95  CUIVega::OnButtonClicked LABEL_12 @0x7bf4a0
 //   - jms_v185 sub_8B7CF1  @0x8b7cf1
+//
 // No packet-audit:verify marker is carried here: the serverbound cell is the
 // SHARED USE_CASH_ITEM opcode whose audit report is owned by the shared
 // cash-item-use pass (task-126, not yet landed). Adding a marker without that

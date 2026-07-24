@@ -4,8 +4,9 @@ import (
 	"atlas-portals/blocked"
 	"atlas-portals/kafka/consumer/character"
 	"atlas-portals/portal"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"os"
+
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"

@@ -6,13 +6,14 @@ import (
 	"atlas-parties/party"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/sirupsen/logrus"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -84,7 +85,6 @@ func handleStatusEventLogin(l logrus.FieldLogger, ctx context.Context, e StatusE
 		WithField("worldId", e.WorldId).
 		WithField("transactionId", e.TransactionId).
 		Debugf("Successfully processed login for character [%d].", e.CharacterId)
-
 }
 
 func handleStatusEventLogout(l logrus.FieldLogger, ctx context.Context, e StatusEvent[StatusEventLogoutBody]) {
@@ -115,7 +115,6 @@ func handleStatusEventLogout(l logrus.FieldLogger, ctx context.Context, e Status
 		WithField("worldId", e.WorldId).
 		WithField("transactionId", e.TransactionId).
 		Debugf("Successfully processed logout for character [%d].", e.CharacterId)
-
 }
 
 func handleStatusEventChannelChanged(l logrus.FieldLogger, ctx context.Context, e StatusEvent[ChangeChannelEventLoginBody]) {

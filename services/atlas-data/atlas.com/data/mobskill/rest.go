@@ -6,24 +6,24 @@ import (
 )
 
 type RestModel struct {
-	SkillId     uint16  `json:"-"`
-	Level       uint16  `json:"-"`
-	Name        string  `json:"name"`
-	MpCon       uint32  `json:"mp_con"`
-	Duration    uint32  `json:"duration"`
-	Hp          uint32  `json:"hp"`
-	X           int32   `json:"x"`
-	Y           int32   `json:"y"`
-	Prop        uint32  `json:"prop"`
-	Interval    uint32  `json:"interval"`
-	Count       uint32  `json:"count"`
-	Limit       uint32  `json:"limit"`
-	LtX         int32   `json:"lt_x"`
-	LtY         int32   `json:"lt_y"`
-	RbX         int32   `json:"rb_x"`
-	RbY         int32   `json:"rb_y"`
-	SummonEffect uint32 `json:"summon_effect"`
-	Summons     []uint32 `json:"summons"`
+	SkillId      uint16   `json:"-"`
+	Level        uint16   `json:"-"`
+	Name         string   `json:"name"`
+	MpCon        uint32   `json:"mp_con"`
+	Duration     uint32   `json:"duration"`
+	Hp           uint32   `json:"hp"`
+	X            int32    `json:"x"`
+	Y            int32    `json:"y"`
+	Prop         uint32   `json:"prop"`
+	Interval     uint32   `json:"interval"`
+	Count        uint32   `json:"count"`
+	Limit        uint32   `json:"limit"`
+	LtX          int32    `json:"lt_x"`
+	LtY          int32    `json:"lt_y"`
+	RbX          int32    `json:"rb_x"`
+	RbY          int32    `json:"rb_y"`
+	SummonEffect uint32   `json:"summon_effect"`
+	Summons      []uint32 `json:"summons"`
 }
 
 func (r RestModel) GetName() string {

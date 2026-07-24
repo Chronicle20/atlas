@@ -6,11 +6,12 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	atlas_packet "github.com/Chronicle20/atlas/libs/atlas-packet"
 	npcclient "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
 	npc2 "github.com/Chronicle20/atlas/libs/atlas-packet/npc/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 type bodyKind int
@@ -62,7 +63,7 @@ func NPCContinueConversationHandleFunc(l logrus.FieldLogger, ctx context.Context
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 		lastMessageType := p.LastMessageType()
 		action := p.Action()
-		//returnText := ""
+		// returnText := ""
 		selection := int32(-1)
 
 		switch bodyKindFor(l, readerOptions, lastMessageType) {
@@ -72,7 +73,7 @@ func NPCContinueConversationHandleFunc(l logrus.FieldLogger, ctx context.Context
 				sp.Decode(l, ctx)(r, readerOptions)
 				// TODO handle quest in progress, continue quest
 
-				//TODO set return text
+				// TODO set return text
 				_ = npc.NewProcessor(l, ctx).ContinueConversation(s.CharacterId(), action, lastMessageType, selection)
 				return
 			}

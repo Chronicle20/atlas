@@ -13,26 +13,28 @@ import (
 // INVENTORY_OPERATION v48 (GMS_v48_1_DEVM.exe, port 13337).
 //
 // Client read order — CWvsContext::OnInventoryOperation @0x71a4f6:
-//   Decode1(exclReq)      /*0x71a50e*/  (clears the exclusive-request latch)
-//   Decode1(count)        /*0x71a552*/
-//   count x per entry:
-//     Decode1(mode)       /*0x71a570*/
-//     Decode1(invType)    /*0x71a57b*/
-//     Decode2(slot)       /*0x71a583*/
-//     mode body:
-//       0 = Add            GW_ItemSlotBase::Decode (opaque) /*0x71a6cd*/
-//       1 = QuantityUpdate Decode2(newQuantity)            /*0x71a670*/
-//       2 = Move           Decode2(newSlot)                /*0x71a5cd*/
-//       3 = Remove         (no extra read)
-//   post-loop, when any entry set the move-out flag (mode 2/3, invType==EQUIP,
-//   negative slot): Decode1(addMov) /*0x71a75a*/.
 //
-// This is byte-identical to the verified v79 handler @0x96953e (same header,
-// same mode enum, same post-loop addMov byte) — the inventory change codec and
-// the opaque model.Asset blob carry no version gate below v79 (Asset gates are
-// GMS>12 [true], GMS>28 [true], GMS>=84 [false], so v48 shares the v61/v72/v79
-// bracket). Each arm is proven by equality with the verified v79 encoding of the
-// same input (OPAQUE_LEDGER exception for the Add blob).
+//	Decode1(exclReq)      /*0x71a50e*/  (clears the exclusive-request latch)
+//	Decode1(count)        /*0x71a552*/
+//	count x per entry:
+//	  Decode1(mode)       /*0x71a570*/
+//	  Decode1(invType)    /*0x71a57b*/
+//	  Decode2(slot)       /*0x71a583*/
+//	  mode body:
+//	    0 = Add            GW_ItemSlotBase::Decode (opaque) /*0x71a6cd*/
+//	    1 = QuantityUpdate Decode2(newQuantity)            /*0x71a670*/
+//	    2 = Move           Decode2(newSlot)                /*0x71a5cd*/
+//	    3 = Remove         (no extra read)
+//	post-loop, when any entry set the move-out flag (mode 2/3, invType==EQUIP,
+//	negative slot): Decode1(addMov) /*0x71a75a*/.
+//
+// The v48 InventoryAdd framing is byte-identical to the verified v79 handler
+// @0x96953e (same header, same mode enum, same post-loop addMov byte), but the
+// embedded model.Asset equip blob is NOT: the v48 equip decode
+// (GW_ItemSlotEquip::RawDecode @0x49c332) has no levelType/level/experience/hammers
+// trailer — after owner+flag it reads only a single 8-byte buffer (non-cash),
+// exactly like v61. So the v48 equip is 22 bytes shorter than v79. Opaque-family
+// (OPAQUE_LEDGER exception): length delta vs the verified v79 encoding.
 //
 // packet-audit:verify packet=inventory/clientbound/InventoryAdd version=gms_v48 ida=0x71a4f6
 func TestAddEquipmentBytesV48(t *testing.T) {
@@ -42,8 +44,8 @@ func TestAddEquipmentBytesV48(t *testing.T) {
 	input := NewInventoryAdd(false, 1, -1, asset)
 	got48 := test.Encode(t, test.CreateContext("GMS", 48, 1), input.Encode, nil)
 	got79 := test.Encode(t, test.CreateContext("GMS", 79, 1), input.Encode, nil)
-	if !bytes.Equal(got48, got79) {
-		t.Fatalf("v48 = % X, want (v79) % X", got48, got79)
+	if len(got48) != len(got79)-22 {
+		t.Fatalf("v48 equip len %d, want v79 len %d - 22 (no v72/v79 equip trailer)\n v48=% X\n v79=% X", len(got48), len(got79), got48, got79)
 	}
 }
 

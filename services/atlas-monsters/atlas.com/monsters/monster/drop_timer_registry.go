@@ -6,11 +6,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	goredis "github.com/redis/go-redis/v9"
 )
 
 type DropTimerEntry struct {
@@ -23,7 +24,7 @@ type DropTimerEntry struct {
 	lastHitAt    time.Time
 }
 
-func (e DropTimerEntry) MonsterId() uint32        { return e.monsterId }
+func (e DropTimerEntry) MonsterId() uint32         { return e.monsterId }
 func (e DropTimerEntry) Field() field.Model        { return e.field }
 func (e DropTimerEntry) DropPeriod() time.Duration { return e.dropPeriod }
 func (e DropTimerEntry) WeaponAttack() uint32      { return e.weaponAttack }
@@ -56,8 +57,10 @@ type DropTimerRegistry struct {
 	reg *atlasredis.Registry[string, storedDropTimer]
 }
 
-var dropTimerRegistry *DropTimerRegistry
-var dropTimerOnce sync.Once
+var (
+	dropTimerRegistry *DropTimerRegistry
+	dropTimerOnce     sync.Once
+)
 
 func InitDropTimerRegistry(rc *goredis.Client) {
 	dropTimerOnce.Do(func() {

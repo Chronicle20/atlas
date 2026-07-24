@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { mtsConfigService, type MtsConfig } from "@/services/api/mts-config.service";
+import {
+  mtsConfigService,
+  type MtsConfig,
+} from "@/services/api/mts-config.service";
 import { mtsConfigSchema } from "@/lib/schemas/mts-config.schema";
 import { api } from "@/lib/api/client";
 
@@ -79,7 +82,10 @@ describe("mtsConfigSchema", () => {
   });
 
   it("rejects a commissionRate outside 0..1", () => {
-    const parsed = mtsConfigSchema.safeParse({ ...sampleAttributes, commissionRate: 1.5 });
+    const parsed = mtsConfigSchema.safeParse({
+      ...sampleAttributes,
+      commissionRate: 1.5,
+    });
     expect(parsed.success).toBe(false);
   });
 
@@ -93,7 +99,10 @@ describe("mtsConfigSchema", () => {
   });
 
   it("rejects a non-integer listingFee", () => {
-    const parsed = mtsConfigSchema.safeParse({ ...sampleAttributes, listingFee: 12.5 });
+    const parsed = mtsConfigSchema.safeParse({
+      ...sampleAttributes,
+      listingFee: 12.5,
+    });
     expect(parsed.success).toBe(false);
   });
 });

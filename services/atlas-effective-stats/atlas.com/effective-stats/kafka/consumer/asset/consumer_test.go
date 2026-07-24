@@ -1,16 +1,16 @@
 package asset
 
 import (
+	"atlas-effective-stats/character"
+	"atlas-effective-stats/external/data/equipment"
+	"atlas-effective-stats/kafka/message/asset"
 	"strconv"
 	"strings"
 	"testing"
 
-	"atlas-effective-stats/character"
-	"atlas-effective-stats/external/data/equipment"
-	"atlas-effective-stats/kafka/message/asset"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-	"github.com/sirupsen/logrus"
 )
 
 // TestHandleAssetMoved_CapeUnlocksWeapon_CrossAssetQualification reproduces

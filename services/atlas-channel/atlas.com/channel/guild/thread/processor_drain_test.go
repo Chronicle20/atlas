@@ -1,6 +1,7 @@
 package thread_test
 
 import (
+	"atlas-channel/guild/thread"
 	"context"
 	"fmt"
 	"net/http"
@@ -9,11 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"atlas-channel/guild/thread"
-
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // threadsDoc renders a JSON:API "threads" document for thread ids [from, to].

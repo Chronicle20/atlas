@@ -9,9 +9,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/evidence"
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/matrix"
-	"gopkg.in/yaml.v3"
 )
 
 func runEvidence(args []string, stderr io.Writer) int {

@@ -1,0 +1,97 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1092008,
+      "startState": "checkQuestStatus",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "6410",
+                    "type": "questStatus",
+                    "value": "2"
+                  }
+                ],
+                "nextState": "askToSaveDelli"
+              },
+              {
+                "conditions": [],
+                "nextState": "questNotStarted"
+              }
+            ]
+          },
+          "id": "checkQuestStatus",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Hey, do you have any business with me?"
+          },
+          "id": "questNotStarted",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "warpToDelli",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "Let's go save #r#p2095000##k?"
+          },
+          "id": "askToSaveDelli",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "925010000",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "warpToDelli",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "1092008",
+    "type": "npc-conversation"
+  }
+}

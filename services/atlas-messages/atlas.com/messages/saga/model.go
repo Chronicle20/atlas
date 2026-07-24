@@ -13,21 +13,21 @@ type (
 	Step   = sharedsaga.Step[any]
 
 	// Payload types
-	AwardItemActionPayload    = sharedsaga.AwardItemActionPayload
-	ItemPayload               = sharedsaga.ItemPayload
-	WarpToRandomPortalPayload = sharedsaga.WarpToRandomPortalPayload
-	WarpToPortalPayload       = sharedsaga.WarpToPortalPayload
-	AwardExperiencePayload    = sharedsaga.AwardExperiencePayload
-	AwardLevelPayload         = sharedsaga.AwardLevelPayload
-	AwardMesosPayload         = sharedsaga.AwardMesosPayload
-	AwardCurrencyPayload      = sharedsaga.AwardCurrencyPayload
-	DestroyAssetPayload       = sharedsaga.DestroyAssetPayload
-	ChangeJobPayload          = sharedsaga.ChangeJobPayload
-	CancelAllBuffsPayload     = sharedsaga.CancelAllBuffsPayload
-	CreateSkillPayload        = sharedsaga.CreateSkillPayload
-	UpdateSkillPayload        = sharedsaga.UpdateSkillPayload
+	AwardItemActionPayload       = sharedsaga.AwardItemActionPayload
+	ItemPayload                  = sharedsaga.ItemPayload
+	WarpToRandomPortalPayload    = sharedsaga.WarpToRandomPortalPayload
+	WarpToPortalPayload          = sharedsaga.WarpToPortalPayload
+	AwardExperiencePayload       = sharedsaga.AwardExperiencePayload
+	AwardLevelPayload            = sharedsaga.AwardLevelPayload
+	AwardMesosPayload            = sharedsaga.AwardMesosPayload
+	AwardCurrencyPayload         = sharedsaga.AwardCurrencyPayload
+	DestroyAssetPayload          = sharedsaga.DestroyAssetPayload
+	ChangeJobPayload             = sharedsaga.ChangeJobPayload
+	CancelAllBuffsPayload        = sharedsaga.CancelAllBuffsPayload
+	CreateSkillPayload           = sharedsaga.CreateSkillPayload
+	UpdateSkillPayload           = sharedsaga.UpdateSkillPayload
 	ApplyConsumableEffectPayload = sharedsaga.ApplyConsumableEffectPayload
-	ExperienceDistributions   = sharedsaga.ExperienceDistributions
+	ExperienceDistributions      = sharedsaga.ExperienceDistributions
 )
 
 // Re-export constants from atlas-saga shared library

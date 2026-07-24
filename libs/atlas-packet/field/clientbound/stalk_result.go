@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const StalkResultWriter = "StalkResult"
@@ -62,12 +63,12 @@ func (m StalkResult) String() string {
 func (m StalkResult) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
-		w.WriteInt(m.count)            // Decode4: stalkee count
-		w.WriteInt(m.charId)           // Decode4: stalkee charId
-		w.WriteByte(m.flag)            // Decode1: 1 = remove, 0 = insert
-		w.WriteAsciiString(m.name)     // DecodeStr: name (insert branch)
-		w.WriteInt(m.x)                // Decode4: x (insert branch, tagPOINT)
-		w.WriteInt(m.y)                // Decode4: y (insert branch, tagPOINT)
+		w.WriteInt(m.count)        // Decode4: stalkee count
+		w.WriteInt(m.charId)       // Decode4: stalkee charId
+		w.WriteByte(m.flag)        // Decode1: 1 = remove, 0 = insert
+		w.WriteAsciiString(m.name) // DecodeStr: name (insert branch)
+		w.WriteInt(m.x)            // Decode4: x (insert branch, tagPOINT)
+		w.WriteInt(m.y)            // Decode4: y (insert branch, tagPOINT)
 		return w.Bytes()
 	}
 }

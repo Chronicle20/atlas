@@ -1,9 +1,9 @@
 package pointreset
 
 import (
+	"atlas-channel/character"
 	"testing"
 
-	"atlas-channel/character"
 	charskill "atlas-channel/character/skill"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"

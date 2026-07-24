@@ -3,8 +3,9 @@ package clientbound
 import (
 	"testing"
 
-	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	testlog "github.com/sirupsen/logrus/hooks/test"
+
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 // MTS_CHARGE_PARAM_RESULT (CITC::OnChargeParamResult) — the bodiless "charge

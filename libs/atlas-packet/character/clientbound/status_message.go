@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // CWvsContext::OnMessage
@@ -26,6 +27,7 @@ func NewStatusMessageDropPickUpItemUnavailable(mode byte) StatusMessageDropPickU
 func (m StatusMessageDropPickUpItemUnavailable) Operation() string {
 	return CharacterStatusMessageWriter
 }
+
 func (m StatusMessageDropPickUpItemUnavailable) String() string {
 	return fmt.Sprintf("drop pick up item unavailable, mode [%d]", m.mode)
 }
@@ -97,6 +99,7 @@ func NewStatusMessageDropPickUpGameFileDamaged(mode byte) StatusMessageDropPickU
 func (m StatusMessageDropPickUpGameFileDamaged) Operation() string {
 	return CharacterStatusMessageWriter
 }
+
 func (m StatusMessageDropPickUpGameFileDamaged) String() string {
 	return fmt.Sprintf("drop pick up game file damaged, mode [%d]", m.mode)
 }
@@ -131,6 +134,7 @@ func NewStatusMessageDropPickUpStackableItem(mode byte, itemId uint32, amount ui
 func (m StatusMessageDropPickUpStackableItem) Operation() string {
 	return CharacterStatusMessageWriter
 }
+
 func (m StatusMessageDropPickUpStackableItem) String() string {
 	return fmt.Sprintf("drop pick up stackable item [%d] amount [%d]", m.itemId, m.amount)
 }
@@ -168,6 +172,7 @@ func NewStatusMessageDropPickUpUnStackableItem(mode byte, itemId uint32) StatusM
 func (m StatusMessageDropPickUpUnStackableItem) Operation() string {
 	return CharacterStatusMessageWriter
 }
+
 func (m StatusMessageDropPickUpUnStackableItem) String() string {
 	return fmt.Sprintf("drop pick up unstackable item [%d]", m.itemId)
 }
@@ -204,6 +209,7 @@ func NewStatusMessageDropLossStackableItem(mode byte, itemId uint32, amount uint
 func (m StatusMessageDropLossStackableItem) Operation() string {
 	return CharacterStatusMessageWriter
 }
+
 func (m StatusMessageDropLossStackableItem) String() string {
 	return fmt.Sprintf("drop loss stackable item [%d] amount [%d]", m.itemId, m.amount)
 }
@@ -246,6 +252,7 @@ func NewStatusMessageDropLossUnStackableItem(mode byte, itemId uint32) StatusMes
 func (m StatusMessageDropLossUnStackableItem) Operation() string {
 	return CharacterStatusMessageWriter
 }
+
 func (m StatusMessageDropLossUnStackableItem) String() string {
 	return fmt.Sprintf("drop loss unstackable item [%d]", m.itemId)
 }
@@ -495,7 +502,8 @@ type StatusMessageIncreaseExperience struct {
 func NewStatusMessageIncreaseExperience(mode byte, white bool, amount int32, inChat bool, monsterBookBonus int32,
 	mobEventBonusPercentage byte, partyBonusPercentage byte, weddingBonusEXP int32, playTimeHour byte,
 	questBonusRate byte, questBonusRemainCount byte, partyBonusEventRate byte, partyBonusExp int32,
-	itemBonusEXP int32, premiumIPExp int32, rainbowWeekEventEXP int32, partyEXPRingEXP int32, cakePieEventBonus int32) StatusMessageIncreaseExperience {
+	itemBonusEXP int32, premiumIPExp int32, rainbowWeekEventEXP int32, partyEXPRingEXP int32, cakePieEventBonus int32,
+) StatusMessageIncreaseExperience {
 	return StatusMessageIncreaseExperience{
 		mode: mode, white: white, amount: amount, inChat: inChat, monsterBookBonus: monsterBookBonus,
 		mobEventBonusPercentage: mobEventBonusPercentage, partyBonusPercentage: partyBonusPercentage,

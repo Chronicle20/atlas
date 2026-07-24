@@ -7,10 +7,11 @@ import (
 	"testing"
 	"time"
 
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	logtest "github.com/sirupsen/logrus/hooks/test"
+
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 type testServerInformation struct{}
@@ -50,7 +51,7 @@ func TestGetAllRoutesPaginates(t *testing.T) {
 
 	routes := make([]Model, 0, 3)
 	for _, suffix := range []string{"300", "100", "200"} {
-		m, err := NewBuilder("Route-"+suffix).
+		m, err := NewBuilder("Route-" + suffix).
 			SetId(uuid.MustParse("00000000-0000-0000-0000-000000000" + suffix)).
 			SetStartMapId(_map.Id(100000000)).
 			SetStagingMapId(_map.Id(100000001)).

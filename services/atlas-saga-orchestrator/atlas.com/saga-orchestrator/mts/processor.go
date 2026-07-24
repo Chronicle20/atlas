@@ -4,12 +4,14 @@ import (
 	"atlas-saga-orchestrator/kafka/message"
 	mtsCustody "atlas-saga-orchestrator/kafka/message/mts/custody"
 	"context"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"time"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // AcceptToMtsListingParams carries the full listing-creation snapshot dispatched
@@ -51,6 +53,7 @@ type AcceptToMtsListingParams struct {
 	RingId        uint32
 	ViciousCount  uint32
 	Flags         uint16
+	Owner         string
 
 	ListValue      uint32
 	BuyNowPrice    *uint32

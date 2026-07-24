@@ -4,8 +4,9 @@ import (
 	"errors"
 	"time"
 
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/google/uuid"
+
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 // Builder is a builder for Model

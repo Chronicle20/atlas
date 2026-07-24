@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const CharacterAutoDistributeApHandle = "CharacterAutoDistributeApHandle"
@@ -23,8 +24,8 @@ type AutoDistributeAp struct {
 	distributes []DistributeEntry
 }
 
-func (m AutoDistributeAp) UpdateTime() uint32           { return m.updateTime }
-func (m AutoDistributeAp) NValue() uint32               { return m.nValue }
+func (m AutoDistributeAp) UpdateTime() uint32             { return m.updateTime }
+func (m AutoDistributeAp) NValue() uint32                 { return m.nValue }
 func (m AutoDistributeAp) Distributes() []DistributeEntry { return m.distributes }
 
 func (m AutoDistributeAp) Operation() string {

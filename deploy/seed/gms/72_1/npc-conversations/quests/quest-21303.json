@@ -1,0 +1,121 @@
+{
+  "data": {
+    "attributes": {
+      "questId": 21303,
+      "questName": "Yeti and the Robber",
+      "startStateMachine": {
+        "startState": "yetiComplaint",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "playerOffer",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "speaker": "UNKNOWN",
+              "text": "Aaaargh... Yeti's #b#t4032339##k has just been stolen! How frustrating, Yeti worked hard to get it, just to have it stolen by that #rThief Crow#k..."
+            },
+            "id": "yetiComplaint",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "yetiComplaint",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "yetiDirection",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "speaker": "CHARACTER",
+              "text": "Hey, I was just passing by and could not refrain from hearing you just now. I can lend you my strength, where did the thief go?"
+            },
+            "id": "playerOffer",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "playerOffer",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "playerAccept",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "speaker": "UNKNOWN",
+              "text": "Oh, how nice of you... Thief has passed #rthrough the gate at west#k. Bring back the #b#t4032339##k, Yeti needs it to give to beloved one."
+            },
+            "id": "yetiDirection",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "yetiDirection",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "startQuest",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "speaker": "CHARACTER",
+              "text": "Ok, wait there. I will return it back to you in no time!"
+            },
+            "id": "playerAccept",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "startQuest",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "21303",
+    "type": "quest-conversation"
+  }
+}

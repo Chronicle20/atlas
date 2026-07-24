@@ -1,10 +1,11 @@
 package character
 
 import (
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 )
 
 func awardExperienceCommandProvider(characterId uint32, ch channel.Model, white bool, amount uint32, party uint32) model.Provider[[]kafka.Message] {

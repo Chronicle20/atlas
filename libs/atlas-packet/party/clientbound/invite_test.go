@@ -8,15 +8,19 @@ import (
 
 // TestInviteByteOutput verifies the byte output of Invite across all tenant variants.
 // IDA evidence:
-//   v83 OnPartyResult@0xa3e31c case 4: Decode4(partyId)+DecodeStr(name)+Decode1(autoJoin)
-//        — no originatorJobId/Level fields.
-//   v87 OnPartyResult@0xad697a case 4: Decode4(partyId)+DecodeStr(name)+Decode4(jobId)+Decode4(level)+Decode1(autoJoin)
-//        — v87 reads jobId+level; gate is GMS >= 87 (v84..86 == v83, off-by-one fix, delta §3.2).
-//   v95 OnPartyResult: same as v87.
+//
+//	v83 OnPartyResult@0xa3e31c case 4: Decode4(partyId)+DecodeStr(name)+Decode1(autoJoin)
+//	     — no originatorJobId/Level fields.
+//	v87 OnPartyResult@0xad697a case 4: Decode4(partyId)+DecodeStr(name)+Decode4(jobId)+Decode4(level)+Decode1(autoJoin)
+//	     — v87 reads jobId+level; gate is GMS >= 87 (v84..86 == v83, off-by-one fix, delta §3.2).
+//	v95 OnPartyResult: same as v87.
+//
 // Wire layout: mode(1)+partyId(4)+name(2+len)+[jobId(4)+level(4)]+autoJoin(1).
 // originatorName="PartyLeader" → 2+11=13 bytes.
-//   v83..86: 1+4+13+1 = 19 bytes
-//   v87+:    1+4+13+4+4+1 = 27 bytes
+//
+//	v83..86: 1+4+13+1 = 19 bytes
+//	v87+:    1+4+13+4+4+1 = 27 bytes
+//
 // packet-audit:verify packet=party/clientbound/PartyInvite version=gms_v83 ida=0xa3e31c
 // packet-audit:verify packet=party/clientbound/PartyInvite version=gms_v87 ida=0xad697a
 // packet-audit:verify packet=party/clientbound/PartyInvite version=gms_v95 ida=0xa10b5f

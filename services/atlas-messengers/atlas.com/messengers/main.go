@@ -6,8 +6,9 @@ import (
 	"atlas-messengers/kafka/consumer/invite"
 	messenger2 "atlas-messengers/kafka/consumer/messenger"
 	"atlas-messengers/messenger"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"os"
+
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"

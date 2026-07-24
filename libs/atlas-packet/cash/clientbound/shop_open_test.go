@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"testing"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
+
 	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
-	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 // CASH_SHOP_OPEN / SET_CASH_SHOP (CStage::OnSetCashShop) — the scene-transition
@@ -141,8 +142,17 @@ func TestCashShopOpenLegacyGolden(t *testing.T) {
 			if !bytes.Equal(tail, wantTail) {
 				t.Errorf("v%d trailing config block mismatch:\n got %v\nwant %v", major, tail, wantTail)
 			}
-			if !bytes.Equal(b, ref) {
-				t.Errorf("v%d body diverges from v83 (GMS>12 must be version-stable)", major)
+			// The CashShop framing (GMS>12) is version-stable, but the shared
+			// CharacterData avatar is NOT: legacy GMS (<83) uses byte equip
+			// slots/terminators vs v83's short/int forms (equip slot widened
+			// byte->short at v83; IDA-verified v48/v72/v79 read Decode1, v83 Decode2).
+			// Compare the cash-shop overhead (body minus char data), which must
+			// match v83; the char-data avatar bytes legitimately differ.
+			charLegacy := cashShopTestCharacterData().Encode(l, ctx)(nil)
+			charModern := cashShopTestCharacterData().Encode(l, pt.CreateContext("GMS", 83, 1))(nil)
+			if len(b)-len(charLegacy) != len(ref)-len(charModern) {
+				t.Errorf("v%d cash-shop overhead %d diverges from v83 %d (framing must be version-stable)",
+					major, len(b)-len(charLegacy), len(ref)-len(charModern))
 			}
 		})
 	}
@@ -198,13 +208,21 @@ func TestCashShopOpenLegacyBodyV48V61(t *testing.T) {
 			if tail := b[len(b)-len(wantTail):]; !bytes.Equal(tail, wantTail) {
 				t.Errorf("v%d legacy tail mismatch:\n got %v\nwant %v", major, tail, wantTail)
 			}
-			// Legacy body is exactly 6 bytes shorter than the modern v83 body.
-			if len(b) != len(ref)-6 {
-				t.Errorf("v%d length %d, want %d (v83 %d minus ZeroGoods 2B + nHighest 4B)", major, len(b), len(ref)-6, len(ref))
-			}
-			// Everything through DecodeLimitGoods must equal the modern v83 encode.
-			if !bytes.Equal(b[:len(b)-1], ref[:len(b)-1]) {
-				t.Errorf("v%d prefix through DecodeLimitGoods diverges from modern v83 body", major)
+			// The legacy body differs from the v83 body in two independent ways:
+			//   1. the CashShop tail lacks ZeroGoods (2B) + nHighest (4B);
+			//   2. the shared CharacterData avatar uses legacy byte equip
+			//      slots/terminators (GMS <83) vs v83's short/int forms
+			//      (equip slot widened byte->short at v83; IDA-verified v48/v72/v79
+			//      read the equip slot with Decode1, v83 with Decode2).
+			// Isolate (1) by subtracting the CharacterData length, so the avatar
+			// width difference doesn't mask the cash-shop tail delta.
+			charLegacy := cashShopTestCharacterData().Encode(l, ctx)(nil)
+			charModern := cashShopTestCharacterData().Encode(l, pt.CreateContext("GMS", 83, 1))(nil)
+			legacyOverhead := len(b) - len(charLegacy)
+			modernOverhead := len(ref) - len(charModern)
+			if legacyOverhead != modernOverhead-6 {
+				t.Errorf("v%d cash-shop overhead %d, want %d (v83 overhead %d minus ZeroGoods 2B + nHighest 4B)",
+					major, legacyOverhead, modernOverhead-6, modernOverhead)
 			}
 		})
 	}

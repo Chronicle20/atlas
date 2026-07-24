@@ -4,8 +4,9 @@ import (
 	"encoding/hex"
 	"testing"
 
-	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	testlog "github.com/sirupsen/logrus/hooks/test"
+
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 // GMS v61 PlayerInteraction serverbound bodies. The mode byte is
@@ -86,7 +87,7 @@ func TestOperationMemoryGameMoveStoneV61Bytes(t *testing.T) {
 	}
 }
 
-// packet-audit:verify packet=interaction/serverbound/InteractionOperationMemoryGameRetreatAnswer version=gms_v61 ida=0x5f7ba3
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationMemoryGameRetreatAnswer version=gms_v61 ida=0x5f7c60
 func TestOperationMemoryGameRetreatAnswerV61Bytes(t *testing.T) {
 	// v61 sub_5F7BA3 @0x5f7bc9: Encode1(0x2D)=mode then Encode1(YesNo==6). bool. Body == v72.
 	l, _ := testlog.NewNullLogger()
@@ -97,7 +98,7 @@ func TestOperationMemoryGameRetreatAnswerV61Bytes(t *testing.T) {
 	}
 }
 
-// packet-audit:verify packet=interaction/serverbound/InteractionOperationMemoryGameTieAnswer version=gms_v61 ida=0x5f7c60
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationMemoryGameTieAnswer version=gms_v61 ida=0x5f7ba3
 func TestOperationMemoryGameTieAnswerV61Bytes(t *testing.T) {
 	// v61 sub_5F7C60 @0x5f7c86: Encode1(0x31)=mode then Encode1(YesNo==6). bool. Body == v72.
 	l, _ := testlog.NewNullLogger()

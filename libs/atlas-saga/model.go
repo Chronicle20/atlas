@@ -21,10 +21,14 @@ const (
 	GachaponTransaction  Type = "gachapon_transaction"
 	MtsOperation         Type = "mts_operation"
 	FieldEffectUse       Type = "field_effect_use"
+	TeleportRockUse      Type = "teleport_rock_use"
 	QuestStart           Type = "quest_start"
 	QuestComplete        Type = "quest_complete"
 	QuestRestoreItem     Type = "quest_restore_item"
 	PetEvolution         Type = "pet_evolution"
+	ItemTagUse           Type = "item_tag_use"
+	SealingLockUse       Type = "sealing_lock_use"
+	IncubatorUse         Type = "incubator_use"
 	PointReset           Type = "point_reset"
 )
 
@@ -157,6 +161,9 @@ const (
 	SelectGachaponReward Action = "select_gachapon_reward"
 	EmitGachaponWin      Action = "emit_gachapon_win"
 
+	// RPS actions
+	StartRPSGame Action = "start_rps_game"
+
 	// Party quest actions
 	RegisterPartyQuest         Action = "register_party_quest"
 	WarpPartyQuestMembersToMap Action = "warp_party_quest_members_to_map"
@@ -171,6 +178,11 @@ const (
 
 	// Field effect actions
 	FieldEffectWeather Action = "field_effect_weather"
+
+	// Item tag / sealing lock / incubator actions
+	SetAssetOwner   Action = "set_asset_owner"
+	ApplyAssetLock  Action = "apply_asset_lock"
+	IncubatorResult Action = "incubator_result"
 )
 
 // Saga represents the entire saga transaction.

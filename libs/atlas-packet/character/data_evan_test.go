@@ -11,8 +11,17 @@ func TestIsEvanJob(t *testing.T) {
 		job  uint16
 		want bool
 	}{
-		{2001, true}, {2200, true}, {2210, true}, {2218, true}, {2299, true},
-		{0, false}, {100, false}, {312, false}, {2000, false}, {2100, false}, {2300, false},
+		{2001, true},
+		{2200, true},
+		{2210, true},
+		{2218, true},
+		{2299, true},
+		{0, false},
+		{100, false},
+		{312, false},
+		{2000, false},
+		{2100, false},
+		{2300, false},
 	} {
 		if got := isEvanJob(c.job); got != c.want {
 			t.Errorf("isEvanJob(%d) = %v, want %v", c.job, got, c.want)

@@ -4,46 +4,47 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const PetDropPickUpHandle = "PetDropPickUpHandle"
 
 // packet-audit:fname CPet::SendDropPickUpRequest
 type DropPickUp struct {
-	petId          uint64
-	fieldKey       byte
-	updateTime     uint32
-	x              int16
-	y              int16
-	dropId         uint32
-	crc            uint32
-	bPickupOthers  bool
-	bSweepForDrop  bool
-	bLongRange     bool
-	ownerX         int16
-	ownerY         int16
-	posCrc         uint32
-	rectCrc        uint32
+	petId         uint64
+	fieldKey      byte
+	updateTime    uint32
+	x             int16
+	y             int16
+	dropId        uint32
+	crc           uint32
+	bPickupOthers bool
+	bSweepForDrop bool
+	bLongRange    bool
+	ownerX        int16
+	ownerY        int16
+	posCrc        uint32
+	rectCrc       uint32
 }
 
-func (m DropPickUp) PetId() uint64        { return m.petId }
-func (m DropPickUp) FieldKey() byte        { return m.fieldKey }
-func (m DropPickUp) UpdateTime() uint32    { return m.updateTime }
-func (m DropPickUp) X() int16              { return m.x }
-func (m DropPickUp) Y() int16              { return m.y }
-func (m DropPickUp) DropId() uint32        { return m.dropId }
-func (m DropPickUp) Crc() uint32           { return m.crc }
-func (m DropPickUp) BPickupOthers() bool   { return m.bPickupOthers }
-func (m DropPickUp) BSweepForDrop() bool   { return m.bSweepForDrop }
-func (m DropPickUp) BLongRange() bool      { return m.bLongRange }
-func (m DropPickUp) OwnerX() int16         { return m.ownerX }
-func (m DropPickUp) OwnerY() int16         { return m.ownerY }
-func (m DropPickUp) PosCrc() uint32        { return m.posCrc }
-func (m DropPickUp) RectCrc() uint32       { return m.rectCrc }
+func (m DropPickUp) PetId() uint64       { return m.petId }
+func (m DropPickUp) FieldKey() byte      { return m.fieldKey }
+func (m DropPickUp) UpdateTime() uint32  { return m.updateTime }
+func (m DropPickUp) X() int16            { return m.x }
+func (m DropPickUp) Y() int16            { return m.y }
+func (m DropPickUp) DropId() uint32      { return m.dropId }
+func (m DropPickUp) Crc() uint32         { return m.crc }
+func (m DropPickUp) BPickupOthers() bool { return m.bPickupOthers }
+func (m DropPickUp) BSweepForDrop() bool { return m.bSweepForDrop }
+func (m DropPickUp) BLongRange() bool    { return m.bLongRange }
+func (m DropPickUp) OwnerX() int16       { return m.ownerX }
+func (m DropPickUp) OwnerY() int16       { return m.ownerY }
+func (m DropPickUp) PosCrc() uint32      { return m.posCrc }
+func (m DropPickUp) RectCrc() uint32     { return m.rectCrc }
 
 func (m DropPickUp) Operation() string {
 	return PetDropPickUpHandle

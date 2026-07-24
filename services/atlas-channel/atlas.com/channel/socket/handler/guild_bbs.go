@@ -7,10 +7,11 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	guildcb "github.com/Chronicle20/atlas/libs/atlas-packet/guild/clientbound"
 	guildsb "github.com/Chronicle20/atlas/libs/atlas-packet/guild/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 const (

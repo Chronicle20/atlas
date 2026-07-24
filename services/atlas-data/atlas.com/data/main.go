@@ -16,6 +16,7 @@ import (
 	"atlas-data/job"
 	data2 "atlas-data/kafka/consumer/data"
 	_map "atlas-data/map"
+	"atlas-data/minioreconcile"
 	"atlas-data/mobskill"
 	"atlas-data/monster"
 	"atlas-data/npc"
@@ -30,11 +31,13 @@ import (
 	"atlas-data/tenantpurge"
 	"atlas-data/wzinput"
 	"context"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"os"
 	"time"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
+
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
@@ -139,6 +142,12 @@ func main() {
 		return false
 	})
 
+	// Heal any baseline restore that was interrupted (pod killed / cancelled
+	// mid-COPY) before this pod started: such a tenant carries a durable
+	// StatusRestoring marker and otherwise stays half-restored until an operator
+	// notices (the atlas-pr-933 empty item-search bug). Non-blocking.
+	baseline.Reconcile(rt.Context(), l, db, mc)
+
 	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	data2.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := data2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
@@ -166,6 +175,7 @@ func main() {
 		AddRouteInitializer(restruntime.InitResource(jc)(GetServer())).
 		AddRouteInitializer(baseline.InitResource(db, mc)(GetServer())).
 		AddRouteInitializer(tenantpurge.InitResource(db, mc)(GetServer())).
+		AddRouteInitializer(minioreconcile.InitResource(mc)(GetServer())).
 		AddRouteInitializer(_map.InitResource(db)(GetServer())).
 		AddRouteInitializer(monster.InitResource(db)(GetServer())).
 		AddRouteInitializer(equipment.InitResource(db)(GetServer())).

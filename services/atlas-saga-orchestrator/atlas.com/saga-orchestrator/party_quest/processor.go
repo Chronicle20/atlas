@@ -5,15 +5,16 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
-	"github.com/google/uuid"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
 )
 
 // Error codes for party quest registration failures
@@ -23,8 +24,8 @@ const (
 	ErrorCodePartySizeFailed    = "PQ_PARTY_SIZE"
 	ErrorCodeLevelMinFailed     = "PQ_LEVEL_MIN"
 	ErrorCodeLevelMaxFailed     = "PQ_LEVEL_MAX"
-	ErrorCodeDefinitionNotFound   = "PQ_DEFINITION_NOT_FOUND"
-	ErrorCodeBonusNotAvailable    = "PQ_BONUS_NOT_AVAILABLE"
+	ErrorCodeDefinitionNotFound = "PQ_DEFINITION_NOT_FOUND"
+	ErrorCodeBonusNotAvailable  = "PQ_BONUS_NOT_AVAILABLE"
 )
 
 // PartyQuestError represents an error from the party quest registration with an error code

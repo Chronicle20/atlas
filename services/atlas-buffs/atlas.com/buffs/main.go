@@ -1,12 +1,16 @@
 package main
 
 import (
+	"atlas-buffs/berserk"
 	"atlas-buffs/character"
 	character2 "atlas-buffs/kafka/consumer/character"
+	characterstatus2 "atlas-buffs/kafka/consumer/characterstatus"
+	skillstatus2 "atlas-buffs/kafka/consumer/skillstatus"
 	"atlas-buffs/tasks"
 	"context"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"os"
+
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
@@ -46,10 +50,19 @@ func main() {
 
 	rc := atlas.Connect(l)
 	character.InitRegistry(rc)
+	berserk.InitRegistry(rc)
 
 	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	character2.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := character2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	characterstatus2.InitConsumers(l)(cmf)(consumerGroupId)
+	if err := characterstatus2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	skillstatus2.InitConsumers(l)(cmf)(consumerGroupId)
+	if err := skillstatus2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 
@@ -60,6 +73,9 @@ func main() {
 	})
 	routine.Go(l, rt.Context(), func(_ context.Context) {
 		tasks.Register(l, rt.Context())(tasks.NewPoisonTick(l, 1000))
+	})
+	routine.Go(l, rt.Context(), func(_ context.Context) {
+		tasks.Register(l, rt.Context())(tasks.NewBerserkTick(l, 1000))
 	})
 
 	server.New(l).

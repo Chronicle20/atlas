@@ -6,11 +6,12 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	atlas_packet "github.com/Chronicle20/atlas/libs/atlas-packet"
 	merchantsb "github.com/Chronicle20/atlas/libs/atlas-packet/merchant/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 // OwlActionHandleFunc answers CUIShopScanner::OnCreate (mode OPEN, the only

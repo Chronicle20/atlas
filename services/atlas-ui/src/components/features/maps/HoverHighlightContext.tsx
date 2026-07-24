@@ -1,4 +1,11 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 
 export type HoverTarget =
   | { kind: "portal"; portalId: string }
@@ -13,7 +20,9 @@ interface HoverHighlightContextValue {
   isHovered: (target: NonNullable<HoverTarget>) => boolean;
 }
 
-const HoverHighlightContext = createContext<HoverHighlightContextValue | null>(null);
+const HoverHighlightContext = createContext<HoverHighlightContextValue | null>(
+  null,
+);
 
 export function HoverHighlightProvider({ children }: { children: ReactNode }) {
   const [hovered, setHovered] = useState<HoverTarget>(null);
@@ -24,11 +33,17 @@ export function HoverHighlightProvider({ children }: { children: ReactNode }) {
       if (hovered.kind !== target.kind) return false;
       switch (target.kind) {
         case "portal":
-          return hovered.kind === "portal" && hovered.portalId === target.portalId;
+          return (
+            hovered.kind === "portal" && hovered.portalId === target.portalId
+          );
         case "reactor":
-          return hovered.kind === "reactor" && hovered.reactorId === target.reactorId;
+          return (
+            hovered.kind === "reactor" && hovered.reactorId === target.reactorId
+          );
         case "monster":
-          return hovered.kind === "monster" && hovered.template === target.template;
+          return (
+            hovered.kind === "monster" && hovered.template === target.template
+          );
         case "npc":
           return hovered.kind === "npc" && hovered.template === target.template;
         default:
@@ -43,13 +58,19 @@ export function HoverHighlightProvider({ children }: { children: ReactNode }) {
     [hovered, isHovered],
   );
 
-  return <HoverHighlightContext.Provider value={value}>{children}</HoverHighlightContext.Provider>;
+  return (
+    <HoverHighlightContext.Provider value={value}>
+      {children}
+    </HoverHighlightContext.Provider>
+  );
 }
 
 export function useHoverHighlight(): HoverHighlightContextValue {
   const ctx = useContext(HoverHighlightContext);
   if (!ctx) {
-    throw new Error("useHoverHighlight must be used within a HoverHighlightProvider");
+    throw new Error(
+      "useHoverHighlight must be used within a HoverHighlightProvider",
+    );
   }
   return ctx;
 }

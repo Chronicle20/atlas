@@ -9,7 +9,11 @@ vi.mock("@/lib/hooks/useNpcData", () => ({
   useNpcData: () => ({ name: "Tylus", iconUrl: undefined, isLoading: false }),
 }));
 vi.mock("@/lib/hooks/useItemData", () => ({
-  useItemData: (id: number) => ({ name: `Item Name ${id}`, iconUrl: undefined, isLoading: false }),
+  useItemData: (id: number) => ({
+    name: `Item Name ${id}`,
+    iconUrl: undefined,
+    isLoading: false,
+  }),
 }));
 vi.mock("@/services/api/items.service", () => ({
   itemsService: {
@@ -18,7 +22,10 @@ vi.mock("@/services/api/items.service", () => ({
 }));
 vi.mock("@/context/tenant-context", () => ({
   useTenant: () => ({
-    activeTenant: { id: "t1", attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 } },
+    activeTenant: {
+      id: "t1",
+      attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 },
+    },
   }),
 }));
 
@@ -62,7 +69,17 @@ describe("RecipeWidget", () => {
   });
 
   it("renders the With Stimulator badge when stimulatorId > 0", () => {
-    render(wrap(<RecipeWidget recipe={{ ...baseRecipe, stimulatorId: 4020009, stimulatorFailChance: 0.1 }} />));
+    render(
+      wrap(
+        <RecipeWidget
+          recipe={{
+            ...baseRecipe,
+            stimulatorId: 4020009,
+            stimulatorFailChance: 0.1,
+          }}
+        />,
+      ),
+    );
     expect(screen.getByText(/With Stimulator/i)).toBeInTheDocument();
   });
 });

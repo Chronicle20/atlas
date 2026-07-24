@@ -1,4 +1,10 @@
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 
@@ -36,7 +42,10 @@ export function NpcDialogs({
   return (
     <>
       {/* Create Shop Dialog */}
-      <Dialog open={isCreateShopDialogOpen} onOpenChange={setIsCreateShopDialogOpen}>
+      <Dialog
+        open={isCreateShopDialogOpen}
+        onOpenChange={setIsCreateShopDialogOpen}
+      >
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Create Shop</DialogTitle>
@@ -50,28 +59,39 @@ export function NpcDialogs({
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateShopDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsCreateShopDialogOpen(false)}
+            >
               Cancel
             </Button>
-            <Button onClick={handleCreateShop}>
-              Create Shop
-            </Button>
+            <Button onClick={handleCreateShop}>Create Shop</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Delete All Shops Dialog */}
-      <Dialog open={isDeleteAllShopsDialogOpen} onOpenChange={setIsDeleteAllShopsDialogOpen}>
+      <Dialog
+        open={isDeleteAllShopsDialogOpen}
+        onOpenChange={setIsDeleteAllShopsDialogOpen}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete All Shops</DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <p className="text-destructive font-semibold">Warning: This action cannot be undone.</p>
-            <p>Are you sure you want to delete all shops for the current tenant?</p>
+            <p className="text-destructive font-semibold">
+              Warning: This action cannot be undone.
+            </p>
+            <p>
+              Are you sure you want to delete all shops for the current tenant?
+            </p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteAllShopsDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteAllShopsDialogOpen(false)}
+            >
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleDeleteAllShops}>
@@ -82,7 +102,10 @@ export function NpcDialogs({
       </Dialog>
 
       {/* Bulk Update Shop Dialog */}
-      <Dialog open={isBulkUpdateShopDialogOpen} onOpenChange={setIsBulkUpdateShopDialogOpen}>
+      <Dialog
+        open={isBulkUpdateShopDialogOpen}
+        onOpenChange={setIsBulkUpdateShopDialogOpen}
+      >
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Bulk Update Shop</DialogTitle>
@@ -96,12 +119,13 @@ export function NpcDialogs({
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsBulkUpdateShopDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsBulkUpdateShopDialogOpen(false)}
+            >
               Cancel
             </Button>
-            <Button onClick={handleBulkUpdateShop}>
-              Update Shop
-            </Button>
+            <Button onClick={handleBulkUpdateShop}>Update Shop</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

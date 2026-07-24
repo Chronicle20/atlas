@@ -6,10 +6,9 @@
 package listener
 
 import (
+	"atlas-channel/server"
 	"context"
 	"sync"
-
-	"atlas-channel/server"
 )
 
 // State tracks where a Handle is in its lifecycle. State transitions are

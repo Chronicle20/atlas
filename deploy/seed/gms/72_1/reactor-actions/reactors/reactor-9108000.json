@@ -1,0 +1,60 @@
+{
+  "data": {
+    "attributes": {
+      "actRules": [
+        {
+          "conditions": [
+            {
+              "operator": "=",
+              "step": "stage",
+              "type": "pq_custom_data",
+              "value": "5"
+            }
+          ],
+          "id": "stage_6_clear_attempt",
+          "operations": [
+            {
+              "params": {
+                "increments": "stage"
+              },
+              "type": "update_pq_state"
+            },
+            {
+              "params": {
+                "reactorName": "fullmoon"
+              },
+              "type": "hit_reactor"
+            },
+            {
+              "params": {},
+              "type": "stage_clear_attempt"
+            }
+          ]
+        },
+        {
+          "conditions": [],
+          "id": "increment_stage",
+          "operations": [
+            {
+              "params": {
+                "increments": "stage"
+              },
+              "type": "update_pq_state"
+            },
+            {
+              "params": {
+                "reactorName": "fullmoon"
+              },
+              "type": "hit_reactor"
+            }
+          ]
+        }
+      ],
+      "description": "Henesys PQ Seed Reactor - increments stage counter, hits fullmoon reactor. At stage 6, triggers PQ stage clear attempt.",
+      "hitRules": [],
+      "reactorId": "9108000"
+    },
+    "id": "9108000",
+    "type": "reactor-action"
+  }
+}

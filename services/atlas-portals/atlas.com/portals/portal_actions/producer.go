@@ -2,12 +2,14 @@ package portal_actions
 
 import (
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
 )
 
 func EnterCommandProvider(f field.Model, portalId uint32, characterId uint32, portalName string) model.Provider[[]kafka.Message] {

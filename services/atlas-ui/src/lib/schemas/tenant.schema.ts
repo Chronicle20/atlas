@@ -4,7 +4,7 @@
  * Zod schemas for validating tenant creation and related forms.
  */
 
-import { z } from 'zod';
+import { z } from "zod";
 
 /**
  * Schema for creating a new tenant
@@ -18,19 +18,17 @@ import { z } from 'zod';
 export const createTenantSchema = z.object({
   name: z
     .string()
-    .min(1, 'Tenant name is required')
-    .max(100, 'Tenant name must be 100 characters or less'),
-  region: z
-    .string()
-    .min(1, 'Region is required'),
+    .min(1, "Tenant name is required")
+    .max(100, "Tenant name must be 100 characters or less"),
+  region: z.string().min(1, "Region is required"),
   majorVersion: z
     .number()
-    .int('Major version must be an integer')
-    .nonnegative('Major version must be non-negative'),
+    .int("Major version must be an integer")
+    .nonnegative("Major version must be non-negative"),
   minorVersion: z
     .number()
-    .int('Minor version must be an integer')
-    .nonnegative('Minor version must be non-negative'),
+    .int("Minor version must be an integer")
+    .nonnegative("Minor version must be non-negative"),
 });
 
 /**
@@ -42,8 +40,8 @@ export type CreateTenantFormData = z.infer<typeof createTenantSchema>;
  * Default values for the create tenant form
  */
 export const createTenantDefaults: CreateTenantFormData = {
-  name: '',
-  region: '',
+  name: "",
+  region: "",
   majorVersion: 0,
   minorVersion: 0,
 };
@@ -56,8 +54,8 @@ export const tenantNameSchema = z.object({
   name: z
     .string()
     .trim()
-    .min(1, 'Tenant name is required')
-    .max(100, 'Tenant name must be 100 characters or less'),
+    .min(1, "Tenant name is required")
+    .max(100, "Tenant name must be 100 characters or less"),
 });
 
 export type TenantNameFormData = z.infer<typeof tenantNameSchema>;

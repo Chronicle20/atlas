@@ -6,12 +6,13 @@ import (
 	"context"
 	"testing"
 
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
-	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
+
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func outboxTestDb(t *testing.T) *gorm.DB {

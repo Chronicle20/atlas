@@ -9,8 +9,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var once sync.Once
-var serviceConfig *RestModel
+var (
+	once          sync.Once
+	serviceConfig *RestModel
+)
 
 func GetServiceConfig() (*RestModel, error) {
 	if serviceConfig == nil {

@@ -31,7 +31,8 @@ import type {
 import { TASK_TYPES_BY_SERVICE } from "@/types/models/service";
 
 // UUID validation regex
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const isValidUuid = (value: string): boolean => UUID_REGEX.test(value);
 
 interface CreateServiceDialogProps {
@@ -99,7 +100,9 @@ export function CreateServiceDialog({
     setCustomId(value);
     const trimmed = value.trim();
     if (trimmed && !isValidUuid(trimmed)) {
-      setCustomIdError("Invalid UUID format. Must be like: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx");
+      setCustomIdError(
+        "Invalid UUID format. Must be like: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+      );
     } else {
       setCustomIdError(null);
     }
@@ -196,7 +199,8 @@ export function CreateServiceDialog({
   const isSubmitting = createService.isPending;
 
   const canProceedFromType = serviceType !== null && !customIdError;
-  const canProceedFromConfig = tasks.length > 0 || serviceType === "drops-service";
+  const canProceedFromConfig =
+    tasks.length > 0 || serviceType === "drops-service";
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -208,8 +212,10 @@ export function CreateServiceDialog({
             {step === "tenants" && "Configure Tenants"}
           </DialogTitle>
           <DialogDescription>
-            {step === "type" && "Select the type of service you want to create."}
-            {step === "config" && "Configure the background tasks for this service."}
+            {step === "type" &&
+              "Select the type of service you want to create."}
+            {step === "config" &&
+              "Configure the background tasks for this service."}
             {step === "tenants" && "Associate tenants with this service."}
           </DialogDescription>
         </DialogHeader>
@@ -224,7 +230,8 @@ export function CreateServiceDialog({
                     key={option.type}
                     className={cn(
                       "cursor-pointer transition-colors hover:bg-muted/50",
-                      serviceType === option.type && "border-primary bg-primary/5"
+                      serviceType === option.type &&
+                        "border-primary bg-primary/5",
                     )}
                     onClick={() => handleTypeSelect(option.type)}
                   >
@@ -234,7 +241,7 @@ export function CreateServiceDialog({
                           "p-2 rounded-lg",
                           serviceType === option.type
                             ? "bg-primary text-primary-foreground"
-                            : "bg-muted"
+                            : "bg-muted",
                         )}
                       >
                         {option.icon}
@@ -252,7 +259,8 @@ export function CreateServiceDialog({
 
               <div className="grid gap-2 pt-4 border-t">
                 <Label htmlFor="customId">
-                  Service ID <span className="text-muted-foreground">(optional)</span>
+                  Service ID{" "}
+                  <span className="text-muted-foreground">(optional)</span>
                 </Label>
                 <Input
                   id="customId"

@@ -4,8 +4,9 @@ import (
 	"context"
 	"time"
 
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	"github.com/sirupsen/logrus"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 )
 
 type Task interface {

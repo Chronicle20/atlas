@@ -1,24 +1,27 @@
 package main
 
 import (
-	"context"
-
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-
-	channel2 "atlas-transports/channel"
 	"atlas-transports/instance"
-	instanceConfig "atlas-transports/instance/config"
 	"atlas-transports/kafka/consumer/channel"
 	"atlas-transports/kafka/consumer/character"
 	"atlas-transports/kafka/consumer/configuration"
 	"atlas-transports/kafka/consumer/instance_transport"
-	_map "atlas-transports/kafka/consumer/map"
-	tenant2 "atlas-transports/tenant"
 	"atlas-transports/transport"
 	"atlas-transports/transport/config"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
+	"context"
 	"os"
 	"time"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
+	channel2 "atlas-transports/channel"
+
+	instanceConfig "atlas-transports/instance/config"
+
+	_map "atlas-transports/kafka/consumer/map"
+	tenant2 "atlas-transports/tenant"
+
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"

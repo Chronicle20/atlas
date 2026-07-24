@@ -1,9 +1,8 @@
 package character_test
 
 import (
-	"testing"
-
 	"atlas-character/character"
+	"testing"
 )
 
 func TestBuildPreservesHpMpUsed(t *testing.T) {

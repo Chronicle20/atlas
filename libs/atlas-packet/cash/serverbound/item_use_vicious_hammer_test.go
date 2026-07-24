@@ -8,7 +8,9 @@ import (
 
 // Byte layout (IDA, design §2.1 step 3 — identical appends in v83
 // CUIItemUpgrade::OnButtonClicked sub_82AED3 and v95 0x7c0ca0):
-//   Encode4(itemTI) + Encode4(slotPosition) + Encode4(updateTime) = 12 bytes,
+//
+//	Encode4(itemTI) + Encode4(slotPosition) + Encode4(updateTime) = 12 bytes,
+//
 // appended AFTER the shared ItemUse prefix. No version gate.
 func TestItemUseViciousHammerByteOutput(t *testing.T) {
 	for _, v := range pt.Variants {

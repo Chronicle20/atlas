@@ -3,11 +3,12 @@ package portal
 import (
 	portal2 "atlas-channel/kafka/message/portal"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 )
 
 func EnterCommandProvider(f field.Model, portalId uint32, characterId uint32) model.Provider[[]kafka.Message] {

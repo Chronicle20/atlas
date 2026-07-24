@@ -2,9 +2,9 @@ import { TenantDetailLayout } from "@/components/features/tenants/TenantDetailLa
 import { WritersForm } from "@/pages/tenants-writers-form";
 
 export function TenantsWritersPage() {
-    return (
-        <TenantDetailLayout>
-            <WritersForm />
-        </TenantDetailLayout>
-    );
+  return (
+    <TenantDetailLayout>
+      <WritersForm />
+    </TenantDetailLayout>
+  );
 }

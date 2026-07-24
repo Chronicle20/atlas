@@ -7,7 +7,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 // A mutable holder so individual tests can flip the active tenant (e.g. the
 // "no tenant selected" empty state) without re-declaring the module mock.
 const { tenantHolder } = vi.hoisted(() => ({
-  tenantHolder: { activeTenant: { id: "test-tenant" } as { id: string } | null },
+  tenantHolder: {
+    activeTenant: { id: "test-tenant" } as { id: string } | null,
+  },
 }));
 
 vi.mock("@/context/tenant-context", () => ({
@@ -18,7 +20,9 @@ vi.mock("@/context/tenant-context", () => ({
 // is enough for these tests (world selection is a Radix Select, not exercised
 // here — jsdom lacks the pointer-capture APIs Radix needs).
 vi.mock("@/lib/hooks/api/useTenants", () => ({
-  useTenantConfiguration: () => ({ data: { attributes: { worlds: [{ name: "Scania" }] } } }),
+  useTenantConfiguration: () => ({
+    data: { attributes: { worlds: [{ name: "Scania" }] } },
+  }),
 }));
 
 // ItemNameCell resolves an item name over its own query/tenant; stub it so a
@@ -33,8 +37,52 @@ vi.mock("@/services/api/mts-listings.service", () => ({
   },
 }));
 
-import { MarketplacePage } from "@/pages/MarketplacePage";
+import { MarketplacePage, ListingItemCell } from "@/pages/MarketplacePage";
 import { mtsListingsService } from "@/services/api/mts-listings.service";
+import type { MtsListingAttributes } from "@/services/api/mts-listings.service";
+import { FLAG_LOCK } from "@/lib/utils/asset-flags";
+
+const baseListingAttributes: MtsListingAttributes = {
+  worldId: 0,
+  sellerId: 1,
+  sellerName: "Seller",
+  saleType: "fixed",
+  state: "active",
+  templateId: 1302000,
+  quantity: 1,
+  strength: 0,
+  dexterity: 0,
+  intelligence: 0,
+  luck: 0,
+  hp: 0,
+  mp: 0,
+  weaponAttack: 0,
+  magicAttack: 0,
+  weaponDefense: 0,
+  magicDefense: 0,
+  accuracy: 0,
+  avoidability: 0,
+  hands: 0,
+  speed: 0,
+  jump: 0,
+  slots: 0,
+  level: 0,
+  itemLevel: 0,
+  itemExp: 0,
+  ringId: 0,
+  viciousCount: 0,
+  flags: 0,
+  listValue: 1000,
+  commissionRate: 0.07,
+  category: "",
+  subCategory: "",
+  currentBid: 0,
+  highBidderId: 0,
+  minIncrement: 0,
+  createdAt: "",
+  updatedAt: "",
+  owner: "",
+};
 
 function lastBrowseFilter() {
   const calls = vi.mocked(mtsListingsService.browse).mock.calls;
@@ -56,7 +104,11 @@ describe("MarketplacePage", () => {
   beforeEach(() => {
     tenantHolder.activeTenant = { id: "test-tenant" };
     vi.mocked(mtsListingsService.browse).mockReset();
-    vi.mocked(mtsListingsService.browse).mockResolvedValue({ listings: [], total: 0, lastPage: 1 });
+    vi.mocked(mtsListingsService.browse).mockResolvedValue({
+      listings: [],
+      total: 0,
+      lastPage: 1,
+    });
   });
 
   it("browses on mount, converting the 1-based UI page to the 0-based wire page", async () => {
@@ -71,7 +123,9 @@ describe("MarketplacePage", () => {
   it("does not browse until a tenant is active, showing the empty state instead", async () => {
     tenantHolder.activeTenant = null;
     renderPage();
-    expect(screen.getByText(/select a tenant to browse listings/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/select a tenant to browse listings/i),
+    ).toBeInTheDocument();
     expect(mtsListingsService.browse).not.toHaveBeenCalled();
   });
 
@@ -95,46 +149,7 @@ describe("MarketplacePage", () => {
       listings: [
         {
           id: "1",
-          attributes: {
-            worldId: 0,
-            sellerId: 1,
-            sellerName: "Seller",
-            saleType: "fixed",
-            state: "active",
-            templateId: 1302000,
-            quantity: 1,
-            strength: 0,
-            dexterity: 0,
-            intelligence: 0,
-            luck: 0,
-            hp: 0,
-            mp: 0,
-            weaponAttack: 0,
-            magicAttack: 0,
-            weaponDefense: 0,
-            magicDefense: 0,
-            accuracy: 0,
-            avoidability: 0,
-            hands: 0,
-            speed: 0,
-            jump: 0,
-            slots: 0,
-            level: 0,
-            itemLevel: 0,
-            itemExp: 0,
-            ringId: 0,
-            viciousCount: 0,
-            flags: 0,
-            listValue: 1000,
-            commissionRate: 0.07,
-            category: "",
-            subCategory: "",
-            currentBid: 0,
-            highBidderId: 0,
-            minIncrement: 0,
-            createdAt: "",
-            updatedAt: "",
-          },
+          attributes: baseListingAttributes,
         },
       ],
       total: 32,
@@ -150,5 +165,34 @@ describe("MarketplacePage", () => {
       // UI page 2 → wire page 1.
       expect(lastBrowseFilter().page).toBe(1);
     });
+  });
+});
+
+describe("ListingItemCell", () => {
+  function renderCell(attributes: MtsListingAttributes) {
+    return render(
+      <MemoryRouter>
+        <ListingItemCell attributes={attributes} tenant={null} />
+      </MemoryRouter>,
+    );
+  }
+
+  it("renders the seal icon when the listing's flags carry FLAG_LOCK", () => {
+    renderCell({ ...baseListingAttributes, flags: FLAG_LOCK });
+    expect(screen.getByTestId("seal-icon")).toBeInTheDocument();
+    expect(screen.queryByTestId("tag-icon")).not.toBeInTheDocument();
+  });
+
+  it("renders the tag icon and owner name when the listing is tagged", () => {
+    renderCell({ ...baseListingAttributes, owner: "Chronicle" });
+    expect(screen.getByTestId("tag-icon")).toBeInTheDocument();
+    expect(screen.getByText("Chronicle")).toBeInTheDocument();
+    expect(screen.queryByTestId("seal-icon")).not.toBeInTheDocument();
+  });
+
+  it("renders neither icon for a plain, unsealed, untagged listing", () => {
+    renderCell(baseListingAttributes);
+    expect(screen.queryByTestId("seal-icon")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("tag-icon")).not.toBeInTheDocument();
   });
 });

@@ -20,7 +20,11 @@ import {
 } from "@/components/ui/collapsible";
 
 import { useTenantConfigurations } from "@/lib/hooks/api/useTenants";
-import type { ChannelTenant, ChannelWorld, ChannelChannel } from "@/types/models/service";
+import type {
+  ChannelTenant,
+  ChannelWorld,
+  ChannelChannel,
+} from "@/types/models/service";
 
 interface ChannelTenantConfigProps {
   tenants: ChannelTenant[];
@@ -41,8 +45,14 @@ export function ChannelTenantConfig({
   onChange,
   disabled = false,
 }: ChannelTenantConfigProps) {
-  const { data: availableTenants, isLoading, error } = useTenantConfigurations();
-  const [expandedTenants, setExpandedTenants] = useState<Set<number>>(new Set([0]));
+  const {
+    data: availableTenants,
+    isLoading,
+    error,
+  } = useTenantConfigurations();
+  const [expandedTenants, setExpandedTenants] = useState<Set<number>>(
+    new Set([0]),
+  );
   const [expandedWorlds, setExpandedWorlds] = useState<Set<string>>(new Set());
 
   // Get tenant info by ID
@@ -58,7 +68,9 @@ export function ChannelTenantConfig({
   // Get tenants not yet selected
   const getAvailableTenantOptions = (excludeId?: string) => {
     if (!availableTenants) return [];
-    const selectedIds = new Set(tenants.map((t) => t.id).filter((id) => id !== excludeId));
+    const selectedIds = new Set(
+      tenants.map((t) => t.id).filter((id) => id !== excludeId),
+    );
     return availableTenants.filter((t) => !selectedIds.has(t.id));
   };
 
@@ -106,13 +118,13 @@ export function ChannelTenantConfig({
   const handleTenantFieldChange = (
     index: number,
     field: "id" | "ipAddress",
-    value: string
+    value: string,
   ) => {
     const tenant = tenants[index];
     if (!tenant) return;
 
     const updated = tenants.map((t, i) =>
-      i === index ? { ...t, [field]: value } : t
+      i === index ? { ...t, [field]: value } : t,
     );
     onChange(updated);
   };
@@ -138,12 +150,10 @@ export function ChannelTenantConfig({
     // Create world with one default channel (a world without channels is not valid)
     const newWorld: ChannelWorld = {
       id: nextId,
-      channels: [{ id: 0, port: defaultChannelPort }]
+      channels: [{ id: 0, port: defaultChannelPort }],
     };
     const updated = tenants.map((t, i) =>
-      i === tenantIndex
-        ? { ...t, worlds: [...t.worlds, newWorld] }
-        : t
+      i === tenantIndex ? { ...t, worlds: [...t.worlds, newWorld] } : t,
     );
     onChange(updated);
 
@@ -156,7 +166,7 @@ export function ChannelTenantConfig({
     const updated = tenants.map((t, i) =>
       i === tenantIndex
         ? { ...t, worlds: t.worlds.filter((_, wi) => wi !== worldIndex) }
-        : t
+        : t,
     );
     onChange(updated);
   };
@@ -164,7 +174,7 @@ export function ChannelTenantConfig({
   const handleWorldIdChange = (
     tenantIndex: number,
     worldIndex: number,
-    value: string
+    value: string,
   ) => {
     const newId = Math.min(255, Math.max(0, parseInt(value, 10) || 0));
     const updated = tenants.map((t, ti) =>
@@ -172,10 +182,10 @@ export function ChannelTenantConfig({
         ? {
             ...t,
             worlds: t.worlds.map((w, wi) =>
-              wi === worldIndex ? { ...w, id: newId } : w
+              wi === worldIndex ? { ...w, id: newId } : w,
             ),
           }
-        : t
+        : t,
     );
     onChange(updated);
   };
@@ -209,10 +219,10 @@ export function ChannelTenantConfig({
             worlds: t.worlds.map((w, wi) =>
               wi === worldIndex
                 ? { ...w, channels: [...w.channels, newChannel] }
-                : w
+                : w,
             ),
           }
-        : t
+        : t,
     );
     onChange(updated);
   };
@@ -220,7 +230,7 @@ export function ChannelTenantConfig({
   const handleRemoveChannel = (
     tenantIndex: number,
     worldIndex: number,
-    channelIndex: number
+    channelIndex: number,
   ) => {
     const updated = tenants.map((t, ti) =>
       ti === tenantIndex
@@ -228,11 +238,14 @@ export function ChannelTenantConfig({
             ...t,
             worlds: t.worlds.map((w, wi) =>
               wi === worldIndex
-                ? { ...w, channels: w.channels.filter((_, ci) => ci !== channelIndex) }
-                : w
+                ? {
+                    ...w,
+                    channels: w.channels.filter((_, ci) => ci !== channelIndex),
+                  }
+                : w,
             ),
           }
-        : t
+        : t,
     );
     onChange(updated);
   };
@@ -242,10 +255,11 @@ export function ChannelTenantConfig({
     worldIndex: number,
     channelIndex: number,
     field: keyof ChannelChannel,
-    value: string
+    value: string,
   ) => {
     const numValue = parseInt(value, 10) || 0;
-    const safeValue = field === "id" ? Math.min(255, Math.max(0, numValue)) : numValue;
+    const safeValue =
+      field === "id" ? Math.min(255, Math.max(0, numValue)) : numValue;
 
     const updated = tenants.map((t, ti) =>
       ti === tenantIndex
@@ -256,13 +270,13 @@ export function ChannelTenantConfig({
                 ? {
                     ...w,
                     channels: w.channels.map((c, ci) =>
-                      ci === channelIndex ? { ...c, [field]: safeValue } : c
+                      ci === channelIndex ? { ...c, [field]: safeValue } : c,
                     ),
                   }
-                : w
+                : w,
             ),
           }
-        : t
+        : t,
     );
     onChange(updated);
   };
@@ -322,7 +336,10 @@ export function ChannelTenantConfig({
 
           return (
             <Card key={tIndex}>
-              <Collapsible open={isExpanded} onOpenChange={() => toggleTenantExpanded(tIndex)}>
+              <Collapsible
+                open={isExpanded}
+                onOpenChange={() => toggleTenantExpanded(tIndex)}
+              >
                 <CardHeader className="py-3">
                   <div className="flex items-center justify-between">
                     <CollapsibleTrigger asChild>
@@ -375,7 +392,8 @@ export function ChannelTenantConfig({
                           <SelectContent>
                             {getAvailableTenantOptions(tenant.id).map((t) => (
                               <SelectItem key={t.id} value={t.id}>
-                                {t.attributes.region} v{t.attributes.majorVersion}.
+                                {t.attributes.region} v
+                                {t.attributes.majorVersion}.
                                 {t.attributes.minorVersion}
                               </SelectItem>
                             ))}
@@ -387,7 +405,11 @@ export function ChannelTenantConfig({
                         <Input
                           value={tenant.ipAddress}
                           onChange={(e) =>
-                            handleTenantFieldChange(tIndex, "ipAddress", e.target.value)
+                            handleTenantFieldChange(
+                              tIndex,
+                              "ipAddress",
+                              e.target.value,
+                            )
                           }
                           disabled={disabled}
                           placeholder="127.0.0.1"
@@ -426,12 +448,18 @@ export function ChannelTenantConfig({
                             <Card key={wIndex} className="bg-muted/50">
                               <Collapsible
                                 open={isWorldExpanded}
-                                onOpenChange={() => toggleWorldExpanded(tIndex, wIndex)}
+                                onOpenChange={() =>
+                                  toggleWorldExpanded(tIndex, wIndex)
+                                }
                               >
                                 <CardHeader className="py-2 px-3">
                                   <div className="flex items-center justify-between">
                                     <CollapsibleTrigger asChild>
-                                      <Button variant="ghost" size="sm" className="p-0 h-auto">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="p-0 h-auto"
+                                      >
                                         {isWorldExpanded ? (
                                           <ChevronDown className="h-3 w-3 mr-1" />
                                         ) : (
@@ -451,7 +479,9 @@ export function ChannelTenantConfig({
                                         variant="ghost"
                                         size="icon"
                                         className="h-6 w-6"
-                                        onClick={() => handleRemoveWorld(tIndex, wIndex)}
+                                        onClick={() =>
+                                          handleRemoveWorld(tIndex, wIndex)
+                                        }
                                         disabled={disabled}
                                       >
                                         <Trash2 className="h-3 w-3 text-destructive" />
@@ -463,14 +493,20 @@ export function ChannelTenantConfig({
                                 <CollapsibleContent>
                                   <CardContent className="py-2 px-3 space-y-3">
                                     <div className="grid gap-2">
-                                      <Label className="text-xs">World ID (0-255)</Label>
+                                      <Label className="text-xs">
+                                        World ID (0-255)
+                                      </Label>
                                       <Input
                                         type="number"
                                         min={0}
                                         max={255}
                                         value={world.id}
                                         onChange={(e) =>
-                                          handleWorldIdChange(tIndex, wIndex, e.target.value)
+                                          handleWorldIdChange(
+                                            tIndex,
+                                            wIndex,
+                                            e.target.value,
+                                          )
                                         }
                                         disabled={disabled}
                                         className="h-8 text-sm"
@@ -480,14 +516,21 @@ export function ChannelTenantConfig({
                                     {/* Channels */}
                                     <div className="space-y-2">
                                       <div className="flex items-center justify-between">
-                                        <Label className="text-xs">Channels</Label>
+                                        <Label className="text-xs">
+                                          Channels
+                                        </Label>
                                         <Button
                                           type="button"
                                           variant="outline"
                                           size="sm"
                                           className="h-6 text-xs"
-                                          onClick={() => handleAddChannel(tIndex, wIndex)}
-                                          disabled={disabled || world.channels.length >= 256}
+                                          onClick={() =>
+                                            handleAddChannel(tIndex, wIndex)
+                                          }
+                                          disabled={
+                                            disabled ||
+                                            world.channels.length >= 256
+                                          }
                                         >
                                           <Plus className="mr-1 h-2 w-2" />
                                           Add
@@ -501,65 +544,75 @@ export function ChannelTenantConfig({
                                       )}
 
                                       <div className="space-y-1">
-                                        {world.channels.map((channel, cIndex) => (
-                                          <div
-                                            key={cIndex}
-                                            className="flex items-center gap-2 bg-background rounded p-2"
-                                          >
-                                            <div className="grid gap-1 flex-1">
-                                              <Label className="text-xs">Ch ID</Label>
-                                              <Input
-                                                type="number"
-                                                min={0}
-                                                max={255}
-                                                value={channel.id}
-                                                onChange={(e) =>
-                                                  handleChannelChange(
-                                                    tIndex,
-                                                    wIndex,
-                                                    cIndex,
-                                                    "id",
-                                                    e.target.value
-                                                  )
-                                                }
-                                                disabled={disabled}
-                                                className="h-7 text-xs"
-                                              />
-                                            </div>
-                                            <div className="grid gap-1 flex-1">
-                                              <Label className="text-xs">Port</Label>
-                                              <Input
-                                                type="number"
-                                                min={1}
-                                                max={65535}
-                                                value={channel.port}
-                                                onChange={(e) =>
-                                                  handleChannelChange(
-                                                    tIndex,
-                                                    wIndex,
-                                                    cIndex,
-                                                    "port",
-                                                    e.target.value
-                                                  )
-                                                }
-                                                disabled={disabled}
-                                                className="h-7 text-xs"
-                                              />
-                                            </div>
-                                            <Button
-                                              type="button"
-                                              variant="ghost"
-                                              size="icon"
-                                              className="h-6 w-6 mt-5"
-                                              onClick={() =>
-                                                handleRemoveChannel(tIndex, wIndex, cIndex)
-                                              }
-                                              disabled={disabled}
+                                        {world.channels.map(
+                                          (channel, cIndex) => (
+                                            <div
+                                              key={cIndex}
+                                              className="flex items-center gap-2 bg-background rounded p-2"
                                             >
-                                              <Trash2 className="h-3 w-3 text-destructive" />
-                                            </Button>
-                                          </div>
-                                        ))}
+                                              <div className="grid gap-1 flex-1">
+                                                <Label className="text-xs">
+                                                  Ch ID
+                                                </Label>
+                                                <Input
+                                                  type="number"
+                                                  min={0}
+                                                  max={255}
+                                                  value={channel.id}
+                                                  onChange={(e) =>
+                                                    handleChannelChange(
+                                                      tIndex,
+                                                      wIndex,
+                                                      cIndex,
+                                                      "id",
+                                                      e.target.value,
+                                                    )
+                                                  }
+                                                  disabled={disabled}
+                                                  className="h-7 text-xs"
+                                                />
+                                              </div>
+                                              <div className="grid gap-1 flex-1">
+                                                <Label className="text-xs">
+                                                  Port
+                                                </Label>
+                                                <Input
+                                                  type="number"
+                                                  min={1}
+                                                  max={65535}
+                                                  value={channel.port}
+                                                  onChange={(e) =>
+                                                    handleChannelChange(
+                                                      tIndex,
+                                                      wIndex,
+                                                      cIndex,
+                                                      "port",
+                                                      e.target.value,
+                                                    )
+                                                  }
+                                                  disabled={disabled}
+                                                  className="h-7 text-xs"
+                                                />
+                                              </div>
+                                              <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-6 w-6 mt-5"
+                                                onClick={() =>
+                                                  handleRemoveChannel(
+                                                    tIndex,
+                                                    wIndex,
+                                                    cIndex,
+                                                  )
+                                                }
+                                                disabled={disabled}
+                                              >
+                                                <Trash2 className="h-3 w-3 text-destructive" />
+                                              </Button>
+                                            </div>
+                                          ),
+                                        )}
                                       </div>
                                     </div>
                                   </CardContent>

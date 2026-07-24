@@ -7,8 +7,9 @@ import (
 	"context"
 	"regexp"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
 var commandSyntaxList = []string{

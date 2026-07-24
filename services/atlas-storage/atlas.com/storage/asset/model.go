@@ -4,21 +4,23 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/google/uuid"
+
 	af "github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
-	"github.com/google/uuid"
 )
 
 type Model struct {
-	id        uint32
-	storageId uuid.UUID
-	slot      int16
+	id         uint32
+	storageId  uuid.UUID
+	slot       int16
 	templateId uint32
 	expiration time.Time
 	// stackable fields
 	quantity     uint32
 	ownerId      uint32
+	owner        string
 	flag         uint16
 	rechargeable uint64
 	// equipment fields
@@ -50,43 +52,44 @@ type Model struct {
 	petId uint32
 }
 
-func (m Model) Id() uint32               { return m.id }
-func (m Model) StorageId() uuid.UUID     { return m.storageId }
-func (m Model) Slot() int16              { return m.slot }
-func (m Model) TemplateId() uint32       { return m.templateId }
-func (m Model) Expiration() time.Time    { return m.expiration }
-func (m Model) OwnerId() uint32          { return m.ownerId }
-func (m Model) Flag() uint16             { return m.flag }
-func (m Model) Rechargeable() uint64     { return m.rechargeable }
-func (m Model) Strength() uint16         { return m.strength }
-func (m Model) Dexterity() uint16        { return m.dexterity }
-func (m Model) Intelligence() uint16     { return m.intelligence }
-func (m Model) Luck() uint16             { return m.luck }
-func (m Model) Hp() uint16               { return m.hp }
-func (m Model) Mp() uint16               { return m.mp }
-func (m Model) WeaponAttack() uint16     { return m.weaponAttack }
-func (m Model) MagicAttack() uint16      { return m.magicAttack }
-func (m Model) WeaponDefense() uint16    { return m.weaponDefense }
-func (m Model) MagicDefense() uint16     { return m.magicDefense }
-func (m Model) Accuracy() uint16         { return m.accuracy }
-func (m Model) Avoidability() uint16     { return m.avoidability }
-func (m Model) Hands() uint16            { return m.hands }
-func (m Model) Speed() uint16            { return m.speed }
-func (m Model) Jump() uint16             { return m.jump }
-func (m Model) Slots() uint16            { return m.slots }
-func (m Model) Locked() bool             { return af.HasFlag(m.flag, af.FlagLock) }
-func (m Model) Spikes() bool             { return af.HasFlag(m.flag, af.FlagSpikes) }
-func (m Model) KarmaUsed() bool          { return af.HasFlag(m.flag, af.FlagKarmaUse) }
-func (m Model) Cold() bool               { return af.HasFlag(m.flag, af.FlagCold) }
-func (m Model) CanBeTraded() bool        { return !af.HasFlag(m.flag, af.FlagUntradeable) }
-func (m Model) LevelType() byte          { return m.levelType }
-func (m Model) Level() byte              { return m.level }
-func (m Model) Experience() uint32       { return m.experience }
-func (m Model) HammersApplied() uint32   { return m.hammersApplied }
-func (m Model) CashId() int64            { return m.cashId }
-func (m Model) CommodityId() uint32      { return m.commodityId }
-func (m Model) PurchaseBy() uint32       { return m.purchaseBy }
-func (m Model) PetId() uint32            { return m.petId }
+func (m Model) Id() uint32             { return m.id }
+func (m Model) StorageId() uuid.UUID   { return m.storageId }
+func (m Model) Slot() int16            { return m.slot }
+func (m Model) TemplateId() uint32     { return m.templateId }
+func (m Model) Expiration() time.Time  { return m.expiration }
+func (m Model) OwnerId() uint32        { return m.ownerId }
+func (m Model) Owner() string          { return m.owner }
+func (m Model) Flag() uint16           { return m.flag }
+func (m Model) Rechargeable() uint64   { return m.rechargeable }
+func (m Model) Strength() uint16       { return m.strength }
+func (m Model) Dexterity() uint16      { return m.dexterity }
+func (m Model) Intelligence() uint16   { return m.intelligence }
+func (m Model) Luck() uint16           { return m.luck }
+func (m Model) Hp() uint16             { return m.hp }
+func (m Model) Mp() uint16             { return m.mp }
+func (m Model) WeaponAttack() uint16   { return m.weaponAttack }
+func (m Model) MagicAttack() uint16    { return m.magicAttack }
+func (m Model) WeaponDefense() uint16  { return m.weaponDefense }
+func (m Model) MagicDefense() uint16   { return m.magicDefense }
+func (m Model) Accuracy() uint16       { return m.accuracy }
+func (m Model) Avoidability() uint16   { return m.avoidability }
+func (m Model) Hands() uint16          { return m.hands }
+func (m Model) Speed() uint16          { return m.speed }
+func (m Model) Jump() uint16           { return m.jump }
+func (m Model) Slots() uint16          { return m.slots }
+func (m Model) Locked() bool           { return af.HasFlag(m.flag, af.FlagLock) }
+func (m Model) Spikes() bool           { return af.HasFlag(m.flag, af.FlagSpikes) }
+func (m Model) KarmaUsed() bool        { return af.HasFlag(m.flag, af.FlagKarmaUse) }
+func (m Model) Cold() bool             { return af.HasFlag(m.flag, af.FlagCold) }
+func (m Model) CanBeTraded() bool      { return !af.HasFlag(m.flag, af.FlagUntradeable) }
+func (m Model) LevelType() byte        { return m.levelType }
+func (m Model) Level() byte            { return m.level }
+func (m Model) Experience() uint32     { return m.experience }
+func (m Model) HammersApplied() uint32 { return m.hammersApplied }
+func (m Model) CashId() int64          { return m.cashId }
+func (m Model) CommodityId() uint32    { return m.commodityId }
+func (m Model) PurchaseBy() uint32     { return m.purchaseBy }
+func (m Model) PetId() uint32          { return m.petId }
 
 func (m Model) InventoryType() inventory.Type {
 	t, _ := inventory.TypeFromItemId(item.Id(m.templateId))
@@ -146,6 +149,7 @@ func (m Model) MarshalJSON() ([]byte, error) {
 		Expiration     time.Time `json:"expiration"`
 		Quantity       uint32    `json:"quantity"`
 		OwnerId        uint32    `json:"ownerId"`
+		Owner          string    `json:"owner"`
 		Flag           uint16    `json:"flag"`
 		Rechargeable   uint64    `json:"rechargeable"`
 		Strength       uint16    `json:"strength"`
@@ -174,7 +178,7 @@ func (m Model) MarshalJSON() ([]byte, error) {
 		PetId          uint32    `json:"petId"`
 	}{
 		Id: m.id, StorageId: m.storageId, Slot: m.slot, TemplateId: m.templateId,
-		Expiration: m.expiration, Quantity: m.quantity, OwnerId: m.ownerId, Flag: m.flag,
+		Expiration: m.expiration, Quantity: m.quantity, OwnerId: m.ownerId, Owner: m.owner, Flag: m.flag,
 		Rechargeable: m.rechargeable, Strength: m.strength, Dexterity: m.dexterity,
 		Intelligence: m.intelligence, Luck: m.luck, Hp: m.hp, Mp: m.mp,
 		WeaponAttack: m.weaponAttack, MagicAttack: m.magicAttack, WeaponDefense: m.weaponDefense,
@@ -195,6 +199,7 @@ func (m *Model) UnmarshalJSON(data []byte) error {
 		Expiration     time.Time `json:"expiration"`
 		Quantity       uint32    `json:"quantity"`
 		OwnerId        uint32    `json:"ownerId"`
+		Owner          string    `json:"owner"`
 		Flag           uint16    `json:"flag"`
 		Rechargeable   uint64    `json:"rechargeable"`
 		Strength       uint16    `json:"strength"`
@@ -232,6 +237,7 @@ func (m *Model) UnmarshalJSON(data []byte) error {
 	m.expiration = aux.Expiration
 	m.quantity = aux.Quantity
 	m.ownerId = aux.OwnerId
+	m.owner = aux.Owner
 	m.flag = aux.Flag
 	m.rechargeable = aux.Rechargeable
 	m.strength = aux.Strength

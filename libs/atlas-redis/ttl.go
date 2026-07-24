@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	goredis "github.com/redis/go-redis/v9"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // TTLRegistry extends TenantRegistry with TTL-aware operations.
@@ -200,4 +201,3 @@ func (r *TTLRegistry[K, V]) Remove(ctx context.Context, t tenant.Model, key K) e
 	_, err := pipe.Exec(ctx)
 	return err
 }
-

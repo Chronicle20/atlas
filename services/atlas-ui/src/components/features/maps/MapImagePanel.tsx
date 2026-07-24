@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Download, Map as MapIcon, Maximize2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -55,14 +55,22 @@ export function MapImagePanel({
   const [state, setState] = useState<ImageState>(initialKind);
   const [expanded, setExpanded] = useState(false);
 
-  useEffect(() => {
+  // Reset image/expanded state when the map identity changes. Adjusted
+  // during render (React's documented pattern for resetting state when a
+  // prop changes) rather than in an effect, so there's no stale-state frame.
+  const resetKey = `${mapId}:${initialKind}`;
+  const [prevResetKey, setPrevResetKey] = useState(resetKey);
+  if (resetKey !== prevResetKey) {
+    setPrevResetKey(resetKey);
     setState(initialKind);
     setExpanded(false);
-  }, [mapId, initialKind]);
+  }
 
   if (!activeTenant) {
     return (
-      <Card className={`w-full ${PREVIEW_MAX_HEIGHT} flex items-center justify-center`}>
+      <Card
+        className={`w-full ${PREVIEW_MAX_HEIGHT} flex items-center justify-center`}
+      >
         <CardContent className="flex flex-col items-center gap-2 text-muted-foreground">
           <MapIcon className="w-10 h-10" />
           <p className="text-sm">No active tenant</p>
@@ -83,7 +91,9 @@ export function MapImagePanel({
 
   if (state === "placeholder") {
     return (
-      <Card className={`w-full ${PREVIEW_MAX_HEIGHT} flex items-center justify-center bg-muted/30`}>
+      <Card
+        className={`w-full ${PREVIEW_MAX_HEIGHT} flex items-center justify-center bg-muted/30`}
+      >
         <CardContent className="flex flex-col items-center gap-2 py-10 text-muted-foreground">
           <MapIcon className="w-10 h-10" />
           <p className="text-sm">No render available</p>

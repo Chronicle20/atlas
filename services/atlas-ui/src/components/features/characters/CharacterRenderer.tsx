@@ -1,18 +1,24 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Button } from '@/components/ui/button';
-import { CharacterRendererDetailSkeleton } from '@/components/common/skeletons/CharacterDetailSkeleton';
-import { useCharacterImage } from '@/lib/hooks/useCharacterImage';
-import { useLazyLoad } from '@/lib/hooks/useIntersectionObserver';
-import { characterToLoadout } from '@/services/api/characterRender.service';
-import { useTenant } from '@/context/tenant-context';
-import type { Asset } from '@/services/api/inventory.service';
-import type { CharacterRendererProps, MapleStoryCharacterData } from '@/types/models/maplestory';
-import { cn } from '@/lib/utils';
-import { getImageLoadingStrategy } from '@/lib/utils/image';
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { Button } from "@/components/ui/button";
+import { CharacterRendererDetailSkeleton } from "@/components/common/skeletons/CharacterDetailSkeleton";
+import { useCharacterImage } from "@/lib/hooks/useCharacterImage";
+import { useLazyLoad } from "@/lib/hooks/useIntersectionObserver";
+import { characterToLoadout } from "@/services/api/characterRender.service";
+import { useTenant } from "@/context/tenant-context";
+import type { Asset } from "@/services/api/inventory.service";
+import type {
+  CharacterRendererProps,
+  MapleStoryCharacterData,
+} from "@/types/models/maplestory";
+import { cn } from "@/lib/utils";
+import { getImageLoadingStrategy } from "@/lib/utils/image";
 
-interface CharacterRendererComponentProps extends Omit<CharacterRendererProps, 'equipment'> {
+interface CharacterRendererComponentProps extends Omit<
+  CharacterRendererProps,
+  "equipment"
+> {
   inventory?: Asset[];
-  size?: 'small' | 'medium' | 'large';
+  size?: "small" | "medium" | "large";
   maxRetries?: number;
   showRetryButton?: boolean;
   priority?: boolean;
@@ -28,10 +34,15 @@ interface CharacterRendererComponentProps extends Omit<CharacterRendererProps, '
    *   edge via a pixel-scan that locates the bottom-most non-transparent row. Best for tile grids where
    *   uniform foot alignment matters more than preserving headgear extents.
    */
-  frameMode?: 'tight' | 'platform';
+  frameMode?: "tight" | "platform";
 }
 
-type ErrorType = 'api_error' | 'image_load_error' | 'network_error' | 'fallback_error' | 'unknown_error';
+type ErrorType =
+  | "api_error"
+  | "image_load_error"
+  | "network_error"
+  | "fallback_error"
+  | "unknown_error";
 
 interface ErrorState {
   type: ErrorType;
@@ -40,9 +51,9 @@ interface ErrorState {
 }
 
 const sizeClasses = {
-  small: 'w-32 h-32',
-  medium: 'w-48 h-48',
-  large: 'w-32 h-32'
+  small: "w-32 h-32",
+  medium: "w-48 h-48",
+  large: "w-32 h-32",
 };
 
 // Compositor canvas convention from atlas-wz-extractor characterimage:
@@ -66,8 +77,10 @@ function anchorPlatformFeet(
   const W = img.naturalWidth;
   const H = img.naturalHeight;
   if (!W || !H) return;
-  const footRow = Math.round((H * COMPOSITOR_FEET_Y) / COMPOSITOR_CANVAS_HEIGHT);
-  const bottomMarginSrc = (H - 1) - footRow;
+  const footRow = Math.round(
+    (H * COMPOSITOR_FEET_Y) / COMPOSITOR_CANVAS_HEIGHT,
+  );
+  const bottomMarginSrc = H - 1 - footRow;
   if (bottomMarginSrc <= 0) return;
   const parent = img.parentElement;
   if (!parent) return;
@@ -82,16 +95,16 @@ function anchorPlatformFeet(
 const sizeDimensions = {
   small: { width: 128, height: 128 },
   medium: { width: 192, height: 192 },
-  large: { width: 128, height: 128 }
+  large: { width: 128, height: 128 },
 };
 
 export function CharacterRenderer({
   character,
   inventory = [],
   scale = 2,
-  size = 'medium',
+  size = "medium",
   showLoading = true,
-  fallbackAvatar = '/default-character-avatar.svg',
+  fallbackAvatar = "/default-character-avatar.svg",
   className,
   onImageLoad,
   onImageError,
@@ -103,12 +116,14 @@ export function CharacterRenderer({
   prefetchVariants = false,
   region: _region,
   majorVersion: _majorVersion,
-  frameMode = 'tight',
+  frameMode = "tight",
 }: CharacterRendererComponentProps) {
   const [fallbackImageError, setFallbackImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [manualRetryCount, setManualRetryCount] = useState(0);
-  const [platformObjectPosition, setPlatformObjectPosition] = useState<string | undefined>(undefined);
+  const [platformObjectPosition, setPlatformObjectPosition] = useState<
+    string | undefined
+  >(undefined);
   const mountedRef = useRef(true);
   const imgElRef = useRef<HTMLImageElement | null>(null);
 
@@ -117,7 +132,7 @@ export function CharacterRenderer({
   // Lazy loading support with intersection observer
   const { shouldLoad, ref: lazyRef } = useLazyLoad<HTMLDivElement>({
     enabled: lazy && !priority,
-    rootMargin: '200px', // Start loading 200px before entering viewport
+    rootMargin: "200px", // Start loading 200px before entering viewport
   });
 
   // Convert Character model to MapleStoryCharacterData, including tenant context
@@ -133,8 +148,8 @@ export function CharacterRenderer({
       skinColor: loadout.skin,
       gender: character.attributes.gender,
       equipment: loadout.equipment,
-      tenant: activeTenant?.id ?? '',
-      region: activeTenant?.attributes.region ?? '',
+      tenant: activeTenant?.id ?? "",
+      region: activeTenant?.attributes.region ?? "",
       majorVersion: activeTenant?.attributes.majorVersion ?? 0,
       minorVersion: activeTenant?.attributes.minorVersion ?? 0,
     };
@@ -166,7 +181,7 @@ export function CharacterRenderer({
       onError: (error) => {
         onImageError?.(error);
       },
-    }
+    },
   );
 
   // Prefetch variants if enabled
@@ -176,11 +191,18 @@ export function CharacterRenderer({
         { resize: scale * 0.5 }, // Smaller version
         { resize: scale * 1.5 }, // Larger version
       ];
-      
+
       // Don't await - fire and forget
       prefetchVariantsFn(variants);
     }
-  }, [prefetchVariants, prefetchVariantsFn, imageResult, isLoading, queryError, scale]);
+  }, [
+    prefetchVariants,
+    prefetchVariantsFn,
+    imageResult,
+    isLoading,
+    queryError,
+    scale,
+  ]);
 
   // Preload image if enabled and priority
   useEffect(() => {
@@ -192,47 +214,48 @@ export function CharacterRenderer({
       });
     }
   }, [enablePreload, priority, imageUrl, imageLoaded, preload]);
-  
+
   // Utility function to classify errors
   const classifyError = useCallback((err: unknown): ErrorState => {
     if (err instanceof Error) {
       const message = err.message.toLowerCase();
-      
-      if (message.includes('network') || message.includes('fetch')) {
+
+      if (message.includes("network") || message.includes("fetch")) {
         return {
-          type: 'network_error',
-          message: 'Network connection failed. Please check your internet connection.',
-          isRetryable: true
+          type: "network_error",
+          message:
+            "Network connection failed. Please check your internet connection.",
+          isRetryable: true,
         };
       }
-      
-      if (message.includes('api') || message.includes('service')) {
+
+      if (message.includes("api") || message.includes("service")) {
         return {
-          type: 'api_error', 
-          message: 'Character rendering service is temporarily unavailable.',
-          isRetryable: true
+          type: "api_error",
+          message: "Character rendering service is temporarily unavailable.",
+          isRetryable: true,
         };
       }
-      
-      if (message.includes('load') || message.includes('image')) {
+
+      if (message.includes("load") || message.includes("image")) {
         return {
-          type: 'image_load_error',
-          message: 'Failed to load character image.',
-          isRetryable: true
+          type: "image_load_error",
+          message: "Failed to load character image.",
+          isRetryable: true,
         };
       }
-      
+
       return {
-        type: 'unknown_error',
-        message: err.message || 'An unexpected error occurred.',
-        isRetryable: true
+        type: "unknown_error",
+        message: err.message || "An unexpected error occurred.",
+        isRetryable: true,
       };
     }
-    
+
     return {
-      type: 'unknown_error',
-      message: 'An unexpected error occurred while rendering character.',
-      isRetryable: true
+      type: "unknown_error",
+      message: "An unexpected error occurred while rendering character.",
+      isRetryable: true,
     };
   }, []);
 
@@ -245,13 +268,13 @@ export function CharacterRenderer({
   // Retry mechanism
   const handleRetry = useCallback(() => {
     if (manualRetryCount < maxRetries) {
-      setManualRetryCount(prev => prev + 1);
+      setManualRetryCount((prev) => prev + 1);
       setFallbackImageError(false);
       setImageLoaded(false);
       refetch();
     }
   }, [manualRetryCount, maxRetries, refetch]);
-  
+
   // Cleanup on unmount
   useEffect(() => {
     mountedRef.current = true;
@@ -259,15 +282,12 @@ export function CharacterRenderer({
       mountedRef.current = false;
     };
   }, []);
-  
+
   // Skeleton while tenant context is still loading
   if (!activeTenant) {
     return (
       <div ref={lazy && !priority ? lazyRef : undefined}>
-        <CharacterRendererDetailSkeleton
-          size={size}
-          className={className}
-        />
+        <CharacterRendererDetailSkeleton size={size} className={className} />
       </div>
     );
   }
@@ -276,14 +296,11 @@ export function CharacterRenderer({
   if (isLoading && showLoading) {
     return (
       <div ref={lazy && !priority ? lazyRef : undefined}>
-        <CharacterRendererDetailSkeleton
-          size={size}
-          className={className}
-        />
+        <CharacterRendererDetailSkeleton size={size} className={className} />
       </div>
     );
   }
-  
+
   // Error state - show fallback avatar with error handling and retry option
   if (error || !imageUrl) {
     // Handle fallback image error - create ultimate fallback
@@ -294,55 +311,36 @@ export function CharacterRenderer({
     // If both main image and fallback failed, show inline SVG
     if (fallbackImageError) {
       return (
-        <div 
+        <div
           ref={lazy && !priority ? lazyRef : undefined}
-          className={cn(sizeClasses[size], 'flex flex-col items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg', className)}
+          className={cn(
+            sizeClasses[size],
+            "flex flex-col items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg",
+            className,
+          )}
         >
           {/* Inline SVG fallback */}
-          <svg width="48" height="48" viewBox="0 0 48 48" className="text-gray-400 mb-2">
-            <circle cx="24" cy="18" r="6" fill="currentColor" opacity="0.3"/>
-            <path d="M12 36c0-6.627 5.373-12 12-12s12 5.373 12 12" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3"/>
+          <svg
+            width="48"
+            height="48"
+            viewBox="0 0 48 48"
+            className="text-gray-400 mb-2"
+          >
+            <circle cx="24" cy="18" r="6" fill="currentColor" opacity="0.3" />
+            <path
+              d="M12 36c0-6.627 5.373-12 12-12s12 5.373 12 12"
+              stroke="currentColor"
+              strokeWidth="2"
+              fill="none"
+              opacity="0.3"
+            />
           </svg>
           <div className="text-xs text-gray-500 text-center px-2 mb-2">
-            {error?.message || 'Character image unavailable'}
+            {error?.message || "Character image unavailable"}
           </div>
-          {error?.isRetryable && showRetryButton && manualRetryCount < maxRetries && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleRetry}
-              className="text-xs px-2 py-1"
-            >
-              Retry ({manualRetryCount + 1}/{maxRetries})
-            </Button>
-          )}
-        </div>
-      );
-    }
-
-    // Show fallback avatar with potential retry option
-    return (
-      <div 
-        ref={lazy && !priority ? lazyRef : undefined}
-        className={cn(sizeClasses[size], 'flex flex-col items-center justify-center', className)}
-      >
-        <div className="relative">
-          <img
-            src={fallbackAvatar}
-            alt={`${character.attributes.name} (fallback)`}
-            width={sizeDimensions[size].width}
-            height={sizeDimensions[size].height}
-            className={cn('object-contain rounded-lg')}
-            onError={handleFallbackError}
-            data-testid="character-image"
-          />
-        </div>
-        {error && (
-          <div className="mt-2">
-            <div className="text-xs text-gray-500 text-center px-2 mb-1">
-              {error.message}
-            </div>
-            {error.isRetryable && showRetryButton && manualRetryCount < maxRetries && (
+          {error?.isRetryable &&
+            showRetryButton &&
+            manualRetryCount < maxRetries && (
               <Button
                 size="sm"
                 variant="outline"
@@ -352,21 +350,63 @@ export function CharacterRenderer({
                 Retry ({manualRetryCount + 1}/{maxRetries})
               </Button>
             )}
+        </div>
+      );
+    }
+
+    // Show fallback avatar with potential retry option
+    return (
+      <div
+        ref={lazy && !priority ? lazyRef : undefined}
+        className={cn(
+          sizeClasses[size],
+          "flex flex-col items-center justify-center",
+          className,
+        )}
+      >
+        <div className="relative">
+          <img
+            src={fallbackAvatar}
+            alt={`${character.attributes.name} (fallback)`}
+            width={sizeDimensions[size].width}
+            height={sizeDimensions[size].height}
+            className={cn("object-contain rounded-lg")}
+            onError={handleFallbackError}
+            data-testid="character-image"
+          />
+        </div>
+        {error && (
+          <div className="mt-2">
+            <div className="text-xs text-gray-500 text-center px-2 mb-1">
+              {error.message}
+            </div>
+            {error.isRetryable &&
+              showRetryButton &&
+              manualRetryCount < maxRetries && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleRetry}
+                  className="text-xs px-2 py-1"
+                >
+                  Retry ({manualRetryCount + 1}/{maxRetries})
+                </Button>
+              )}
           </div>
         )}
       </div>
     );
   }
-  
+
   // Success state - show character image
-  const isPlatform = frameMode === 'platform';
+  const isPlatform = frameMode === "platform";
   return (
     <div
       ref={lazy && !priority ? lazyRef : undefined}
       className={cn(
-        isPlatform ? 'w-full h-full' : sizeClasses[size],
-        'flex',
-        isPlatform ? 'items-end justify-center' : 'items-center justify-center',
+        isPlatform ? "w-full h-full" : sizeClasses[size],
+        "flex",
+        isPlatform ? "items-end justify-center" : "items-center justify-center",
         className,
       )}
     >
@@ -376,13 +416,11 @@ export function CharacterRenderer({
         alt={character.attributes.name}
         width={sizeDimensions[size].width}
         height={sizeDimensions[size].height}
-        loading={lazy && !priority ? getImageLoadingStrategy() : 'eager'}
-        crossOrigin={isPlatform ? 'anonymous' : undefined}
+        loading={lazy && !priority ? getImageLoadingStrategy() : "eager"}
+        crossOrigin={isPlatform ? "anonymous" : undefined}
         className={cn(
-          isPlatform
-            ? 'w-full h-full object-cover'
-            : 'object-contain',
-          'rounded-lg transition-opacity duration-300 opacity-100',
+          isPlatform ? "w-full h-full object-cover" : "object-contain",
+          "rounded-lg transition-opacity duration-300 opacity-100",
         )}
         style={
           isPlatform && platformObjectPosition
@@ -401,7 +439,9 @@ export function CharacterRenderer({
         onError={() => {
           // Handle image load error by falling back to error state
           if (mountedRef.current) {
-            const errorState = classifyError(new Error('Character image failed to load'));
+            const errorState = classifyError(
+              new Error("Character image failed to load"),
+            );
             onImageError?.(new Error(errorState.message));
           }
         }}
@@ -418,17 +458,12 @@ export function CharacterRenderer({
 }
 
 // Export skeleton component for external use
-export function CharacterRendererSkeleton({ 
-  size = 'medium', 
-  className 
-}: { 
-  size?: 'small' | 'medium' | 'large';
+export function CharacterRendererSkeleton({
+  size = "medium",
+  className,
+}: {
+  size?: "small" | "medium" | "large";
   className?: string;
 }) {
-  return (
-    <CharacterRendererDetailSkeleton 
-      size={size} 
-      className={className}
-    />
-  );
+  return <CharacterRendererDetailSkeleton size={size} className={className} />;
 }

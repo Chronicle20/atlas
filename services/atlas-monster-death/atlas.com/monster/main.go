@@ -2,8 +2,9 @@ package main
 
 import (
 	"atlas-monster-death/kafka/consumer/monster"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"os"
+
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"

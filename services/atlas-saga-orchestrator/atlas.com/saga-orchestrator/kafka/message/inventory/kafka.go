@@ -19,12 +19,10 @@ type StatusEvent[E any] struct {
 	Body          E         `json:"body"`
 }
 
-type CreatedStatusEventBody struct {
-}
+type CreatedStatusEventBody struct{}
 
 type CreationFailedStatusEventBody struct {
 	Reason string `json:"reason"`
 }
 
-type DeletedStatusEventBody struct {
-}
+type DeletedStatusEventBody struct{}

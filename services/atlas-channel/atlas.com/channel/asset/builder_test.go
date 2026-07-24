@@ -26,7 +26,6 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 		SetStrength(10).
 		SetDexterity(20).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -94,7 +93,6 @@ func TestCloneModel(t *testing.T) {
 	cloned, err := asset.CloneModel(original).
 		SetSlot(10).
 		Build()
-
 	if err != nil {
 		t.Fatalf("CloneModel().Build() unexpected error: %v", err)
 	}
@@ -222,6 +220,16 @@ func TestPetModel(t *testing.T) {
 	}
 	if m.PetSlot() != 0 {
 		t.Errorf("PetSlot() = %d, want 0", m.PetSlot())
+	}
+}
+
+func TestChannelAssetOwner(t *testing.T) {
+	m := asset.NewModelBuilder(1, uuid.New(), 1302000).SetOwner("Tumi").MustBuild()
+	if m.Owner() != "Tumi" {
+		t.Fatalf("Owner() = %q", m.Owner())
+	}
+	if c := asset.Clone(m).MustBuild(); c.Owner() != "Tumi" {
+		t.Fatalf("Clone dropped owner: %q", c.Owner())
 	}
 }
 

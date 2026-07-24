@@ -3,10 +3,11 @@ package door
 import (
 	doormsg "atlas-channel/kafka/message/door"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 )
 
 func SpawnCommandProvider(f field.Model, ownerCharacterId, skillId uint32, level byte, x, y int16) model.Provider[[]kafka.Message] {

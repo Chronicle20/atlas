@@ -43,8 +43,7 @@ type commandEvent[E any] struct {
 	Body    E      `json:"body"`
 }
 
-type createCommandBody struct {
-}
+type createCommandBody struct{}
 
 type joinCommandBody struct {
 	PartyId uint32 `json:"partyId"`
@@ -68,14 +67,11 @@ type statusEvent[E any] struct {
 	Body    E        `json:"body"`
 }
 
-type createdEventBody struct {
-}
+type createdEventBody struct{}
 
-type joinedEventBody struct {
-}
+type joinedEventBody struct{}
 
-type leftEventBody struct {
-}
+type leftEventBody struct{}
 
 type expelEventBody struct {
 	CharacterId uint32 `json:"characterId"`

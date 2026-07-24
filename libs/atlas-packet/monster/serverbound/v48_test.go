@@ -46,8 +46,8 @@ func TestMonsterMovementBytesV48(t *testing.T) {
 	want := []byte{
 		0xE9, 0x03, 0x00, 0x00, // uniqueId 1001 (Encode4 @0x550888)
 		0x37, 0x00, // moveId 55 (Encode2 @0x5508ba)
-		0x01, // dwFlag 1 (Encode1 @0x5508cc)
-		0xFD, // nActionAndDir -3 (Encode1 @0x5508d7)
+		0x01,                   // dwFlag 1 (Encode1 @0x5508cc)
+		0xFD,                   // nActionAndDir -3 (Encode1 @0x5508d7)
 		0x05, 0x03, 0x00, 0x00, // skillData 0x0305 (Encode4 @0x5508e2)
 		0x00, // moveFlags 0 (Encode1 @0x5508f2)
 		// hackedCode OMITTED (v61+); flyCtx OMITTED (v79+)

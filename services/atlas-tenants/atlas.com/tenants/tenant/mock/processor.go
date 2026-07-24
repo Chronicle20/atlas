@@ -4,8 +4,9 @@ import (
 	"atlas-tenants/kafka/message"
 	"atlas-tenants/tenant"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // Compile-time interface compliance check
@@ -13,15 +14,15 @@ var _ tenant.Processor = (*ProcessorMock)(nil)
 
 // ProcessorMock is a mock implementation of the tenant.Processor interface
 type ProcessorMock struct {
-	CreateFunc       func(mb *message.Buffer) func(name string, region string, majorVersion uint16, minorVersion uint16) (tenant.Model, error)
+	CreateFunc        func(mb *message.Buffer) func(name string, region string, majorVersion uint16, minorVersion uint16) (tenant.Model, error)
 	CreateAndEmitFunc func(name string, region string, majorVersion uint16, minorVersion uint16) (tenant.Model, error)
-	UpdateFunc       func(mb *message.Buffer) func(id uuid.UUID, name string, region string, majorVersion uint16, minorVersion uint16) (tenant.Model, error)
+	UpdateFunc        func(mb *message.Buffer) func(id uuid.UUID, name string, region string, majorVersion uint16, minorVersion uint16) (tenant.Model, error)
 	UpdateAndEmitFunc func(id uuid.UUID, name string, region string, majorVersion uint16, minorVersion uint16) (tenant.Model, error)
-	DeleteFunc       func(mb *message.Buffer) func(id uuid.UUID) error
+	DeleteFunc        func(mb *message.Buffer) func(id uuid.UUID) error
 	DeleteAndEmitFunc func(id uuid.UUID) error
-	GetByIdFunc      func(id uuid.UUID) (tenant.Model, error)
-	ByIdProviderFunc func(id uuid.UUID) model.Provider[tenant.Model]
-	AllProviderFunc  func(page model.Page) model.Provider[model.Paged[tenant.Model]]
+	GetByIdFunc       func(id uuid.UUID) (tenant.Model, error)
+	ByIdProviderFunc  func(id uuid.UUID) model.Provider[tenant.Model]
+	AllProviderFunc   func(page model.Page) model.Provider[model.Paged[tenant.Model]]
 }
 
 // Create is a mock implementation

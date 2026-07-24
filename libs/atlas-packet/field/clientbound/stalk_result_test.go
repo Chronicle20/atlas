@@ -25,8 +25,8 @@ func TestStalkResultGolden(t *testing.T) {
 	want := []byte{
 		0x01, 0x00, 0x00, 0x00, // count=1            (Decode4 @0x537a6a)
 		0x44, 0x33, 0x22, 0x11, // charId=0x11223344  (Decode4)
-		0x00,                   // flag=0 (insert)    (Decode1)
-		0x02, 0x00, 'G', 'M',   // name="GM"          (DecodeStr)
+		0x00,                 // flag=0 (insert)    (Decode1)
+		0x02, 0x00, 'G', 'M', // name="GM"          (DecodeStr)
 		0x64, 0x00, 0x00, 0x00, // x=100              (Decode4)
 		0xC8, 0x00, 0x00, 0x00, // y=200              (Decode4)
 	}

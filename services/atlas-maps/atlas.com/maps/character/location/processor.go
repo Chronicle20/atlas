@@ -1,17 +1,17 @@
 package location
 
 import (
+	"atlas-maps/data/map/info"
 	"context"
 
-	"atlas-maps/data/map/info"
-
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Processor interface {

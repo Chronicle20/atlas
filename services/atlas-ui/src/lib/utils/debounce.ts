@@ -2,17 +2,17 @@
  * Debouncing utilities for API calls and user interactions
  */
 
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef } from "react";
 
 /**
  * Debounce function for regular JavaScript functions
  */
 export function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
-  delay: number
+  delay: number,
 ): (...args: Parameters<T>) => void {
   let timeoutId: NodeJS.Timeout;
-  
+
   return (...args: Parameters<T>) => {
     clearTimeout(timeoutId);
     timeoutId = setTimeout(() => func(...args), delay);
@@ -22,25 +22,24 @@ export function debounce<T extends (...args: unknown[]) => unknown>(
 /**
  * Debounce function for async functions
  */
-export function debounceAsync<T extends (...args: unknown[]) => Promise<unknown>>(
-  func: T,
-  delay: number
-): (...args: Parameters<T>) => Promise<ReturnType<T>> {
+export function debounceAsync<
+  T extends (...args: unknown[]) => Promise<unknown>,
+>(func: T, delay: number): (...args: Parameters<T>) => Promise<ReturnType<T>> {
   let timeoutId: NodeJS.Timeout;
   let latestResolve: ((value: ReturnType<T>) => void) | null = null;
   let latestReject: ((reason?: unknown) => void) | null = null;
-  
+
   return (...args: Parameters<T>): Promise<ReturnType<T>> => {
     return new Promise((resolve, reject) => {
       // Cancel previous timeout and reject previous promise
       if (latestResolve && latestReject) {
         clearTimeout(timeoutId);
-        latestReject(new Error('Debounced call cancelled'));
+        latestReject(new Error("Debounced call cancelled"));
       }
-      
+
       latestResolve = resolve;
       latestReject = reject;
-      
+
       timeoutId = setTimeout(async () => {
         try {
           const result = await func(...args);
@@ -61,17 +60,17 @@ export function debounceAsync<T extends (...args: unknown[]) => Promise<unknown>
  */
 export function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = React.useState<T>(value);
-  
+
   React.useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedValue(value);
     }, delay);
-    
+
     return () => {
       clearTimeout(handler);
     };
   }, [value, delay]);
-  
+
   return debouncedValue;
 }
 
@@ -81,39 +80,41 @@ export function useDebounce<T>(value: T, delay: number): T {
 export function useDebouncedCallback<T extends (...args: unknown[]) => unknown>(
   callback: T,
   delay: number,
-  deps: React.DependencyList = []
+  deps: React.DependencyList = [],
 ): (...args: Parameters<T>) => void {
   const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
-  
+
   return useCallback(
     (...args: Parameters<T>) => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
-      
+
       timeoutRef.current = setTimeout(() => {
         callback(...args);
       }, delay);
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [callback, delay, ...deps]
+    // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/use-memo -- deps is a variadic DependencyList; a static array literal isn't structurally possible for this generic API
+    [callback, delay, ...deps],
   );
 }
 
 /**
  * React hook for debouncing async function calls
  */
-export function useDebouncedAsyncCallback<T extends (...args: unknown[]) => Promise<unknown>>(
+export function useDebouncedAsyncCallback<
+  T extends (...args: unknown[]) => Promise<unknown>,
+>(
   callback: T,
   delay: number,
-  deps: React.DependencyList = []
+  deps: React.DependencyList = [],
 ): (...args: Parameters<T>) => Promise<ReturnType<T>> {
   const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const promiseRef = useRef<{
     resolve: (value: ReturnType<T>) => void;
     reject: (reason?: unknown) => void;
   } | null>(null);
-  
+
   return useCallback(
     (...args: Parameters<T>): Promise<ReturnType<T>> => {
       return new Promise((resolve, reject) => {
@@ -121,13 +122,13 @@ export function useDebouncedAsyncCallback<T extends (...args: unknown[]) => Prom
         if (timeoutRef.current) {
           clearTimeout(timeoutRef.current);
         }
-        
+
         if (promiseRef.current) {
-          promiseRef.current.reject(new Error('Debounced call cancelled'));
+          promiseRef.current.reject(new Error("Debounced call cancelled"));
         }
-        
+
         promiseRef.current = { resolve, reject };
-        
+
         timeoutRef.current = setTimeout(async () => {
           try {
             const result = await callback(...args);
@@ -144,8 +145,8 @@ export function useDebouncedAsyncCallback<T extends (...args: unknown[]) => Prom
         }, delay);
       });
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [callback, delay, ...deps]
+    // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/use-memo -- deps is a variadic DependencyList; a static array literal isn't structurally possible for this generic API
+    [callback, delay, ...deps],
   );
 }
 
@@ -154,10 +155,10 @@ export function useDebouncedAsyncCallback<T extends (...args: unknown[]) => Prom
  */
 export function throttle<T extends (...args: unknown[]) => unknown>(
   func: T,
-  interval: number
+  interval: number,
 ): (...args: Parameters<T>) => void {
   let lastCall = 0;
-  
+
   return (...args: Parameters<T>) => {
     const now = Date.now();
     if (now - lastCall >= interval) {
@@ -173,10 +174,10 @@ export function throttle<T extends (...args: unknown[]) => unknown>(
 export function useThrottledCallback<T extends (...args: unknown[]) => unknown>(
   callback: T,
   interval: number,
-  deps: React.DependencyList = []
+  deps: React.DependencyList = [],
 ): (...args: Parameters<T>) => void {
   const lastCallRef = useRef<number>(0);
-  
+
   return useCallback(
     (...args: Parameters<T>) => {
       const now = Date.now();
@@ -185,7 +186,7 @@ export function useThrottledCallback<T extends (...args: unknown[]) => unknown>(
         callback(...args);
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [callback, interval, ...deps]
+    // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/use-memo -- deps is a variadic DependencyList; a static array literal isn't structurally possible for this generic API
+    [callback, interval, ...deps],
   );
 }

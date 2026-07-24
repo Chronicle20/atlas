@@ -46,7 +46,7 @@ func deleteById(db *gorm.DB) IdOperator {
 
 func updatePic(pic string) EntityUpdateFunction {
 	return func() ([]string, func(e *Entity)) {
-		var cs = []string{"pic"}
+		cs := []string{"pic"}
 
 		uf := func(e *Entity) {
 			e.PIC = pic
@@ -57,7 +57,7 @@ func updatePic(pic string) EntityUpdateFunction {
 
 func updatePin(pin string) EntityUpdateFunction {
 	return func() ([]string, func(e *Entity)) {
-		var cs = []string{"pin"}
+		cs := []string{"pin"}
 
 		uf := func(e *Entity) {
 			e.PIN = pin
@@ -68,7 +68,7 @@ func updatePin(pin string) EntityUpdateFunction {
 
 func updateTos(tos bool) EntityUpdateFunction {
 	return func() ([]string, func(e *Entity)) {
-		var cs = []string{"tos"}
+		cs := []string{"tos"}
 
 		uf := func(e *Entity) {
 			e.TOS = tos
@@ -79,7 +79,7 @@ func updateTos(tos bool) EntityUpdateFunction {
 
 func updateGender(gender byte) EntityUpdateFunction {
 	return func() ([]string, func(e *Entity)) {
-		var cs = []string{"gender"}
+		cs := []string{"gender"}
 
 		uf := func(e *Entity) {
 			e.Gender = gender
@@ -90,7 +90,7 @@ func updateGender(gender byte) EntityUpdateFunction {
 
 func updatePinAttempts(pinAttempts int) EntityUpdateFunction {
 	return func() ([]string, func(e *Entity)) {
-		var cs = []string{"pin_attempts"}
+		cs := []string{"pin_attempts"}
 
 		uf := func(e *Entity) {
 			e.PinAttempts = pinAttempts
@@ -101,7 +101,7 @@ func updatePinAttempts(pinAttempts int) EntityUpdateFunction {
 
 func updatePicAttempts(picAttempts int) EntityUpdateFunction {
 	return func() ([]string, func(e *Entity)) {
-		var cs = []string{"pic_attempts"}
+		cs := []string{"pic_attempts"}
 
 		uf := func(e *Entity) {
 			e.PicAttempts = picAttempts

@@ -164,15 +164,22 @@ export function ConversationEditorPanel({
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-3 flex-wrap">
         <StateSearch
-          states={draft.attributes.states.map(s => ({ id: s.id, type: s.type }))}
+          states={draft.attributes.states.map((s) => ({
+            id: s.id,
+            type: s.type,
+          }))}
           onSelect={onSelectStateId}
         />
         <LegendItem
-          icon={<Play className="h-2.5 w-2.5 fill-emerald-500 text-emerald-500" />}
+          icon={
+            <Play className="h-2.5 w-2.5 fill-emerald-500 text-emerald-500" />
+          }
           label="start"
         />
         <LegendItem
-          icon={<Square className="h-2.5 w-2.5 fill-orange-500 text-orange-500" />}
+          icon={
+            <Square className="h-2.5 w-2.5 fill-orange-500 text-orange-500" />
+          }
           label="end"
         />
         <div className="flex items-center gap-2">
@@ -222,7 +229,7 @@ export function ConversationEditorPanel({
             conversation={draft}
             analysis={analysis}
             selectedStateId={selectedStateId}
-            onSelect={id => onSelectStateId(id)}
+            onSelect={(id) => onSelectStateId(id)}
             onUpdateState={handleUpdateState}
             onRename={handleRename}
             onDelete={handleRequestDelete}
@@ -237,7 +244,7 @@ export function ConversationEditorPanel({
         <ConversationCanvas
           conversation={draft}
           selectedStateId={selectedStateId}
-          onSelect={id => onSelectStateId(id)}
+          onSelect={(id) => onSelectStateId(id)}
           showFullLoopEdges={showFullLoopEdges}
           height={maxHeight}
         />
@@ -266,7 +273,7 @@ function StateSearch({
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return [];
-    return states.filter(s => s.id.toLowerCase().includes(q)).slice(0, 12);
+    return states.filter((s) => s.id.toLowerCase().includes(q)).slice(0, 12);
   }, [query, states]);
   const pick = (id: string) => {
     onSelect(id);
@@ -277,7 +284,7 @@ function StateSearch({
     <div className="relative">
       <Input
         value={query}
-        onChange={e => {
+        onChange={(e) => {
           setQuery(e.target.value);
           setOpen(true);
         }}
@@ -285,7 +292,7 @@ function StateSearch({
         onBlur={() => {
           window.setTimeout(() => setOpen(false), 150);
         }}
-        onKeyDown={e => {
+        onKeyDown={(e) => {
           if (e.key === "Enter" && matches.length > 0) {
             pick(matches[0]!.id);
           } else if (e.key === "Escape") {
@@ -298,11 +305,11 @@ function StateSearch({
       />
       {open && matches.length > 0 && (
         <ul className="absolute z-20 top-full left-0 mt-1 w-full max-h-64 overflow-y-auto rounded-md border bg-popover shadow-md">
-          {matches.map(m => (
+          {matches.map((m) => (
             <li key={m.id}>
               <button
                 type="button"
-                onMouseDown={e => e.preventDefault()}
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => pick(m.id)}
                 className="flex items-center gap-2 w-full text-left px-2 py-1 hover:bg-accent text-xs"
               >
@@ -319,13 +326,7 @@ function StateSearch({
   );
 }
 
-function LegendItem({
-  icon,
-  label,
-}: {
-  icon: React.ReactNode;
-  label: string;
-}) {
+function LegendItem({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
     <span className="flex items-center gap-1 text-muted-foreground text-xs">
       {icon}
@@ -354,7 +355,7 @@ function IssuesBanner({
       {unreachable.length > 0 && (
         <div className="flex flex-wrap gap-1 items-center">
           <span className="text-muted-foreground">Unreachable:</span>
-          {unreachable.slice(0, 6).map(id => (
+          {unreachable.slice(0, 6).map((id) => (
             <button
               key={id}
               type="button"
@@ -420,7 +421,7 @@ function WarningsBanner({
           <span className="text-muted-foreground">
             Dead-end (can't reach a terminal):
           </span>
-          {warnings.deadEnds.slice(0, 6).map(id => (
+          {warnings.deadEnds.slice(0, 6).map((id) => (
             <button
               key={id}
               type="button"
@@ -440,7 +441,7 @@ function WarningsBanner({
       {warnings.highFanOut.length > 0 && (
         <div className="flex flex-wrap gap-1 items-center">
           <span className="text-muted-foreground">High fan-out (≥20):</span>
-          {warnings.highFanOut.map(id => (
+          {warnings.highFanOut.map((id) => (
             <button
               key={id}
               type="button"
@@ -454,7 +455,9 @@ function WarningsBanner({
       )}
       {warnings.duplicateChoiceLabels.length > 0 && (
         <div className="flex flex-wrap gap-1 items-center">
-          <span className="text-muted-foreground">Duplicate choice labels:</span>
+          <span className="text-muted-foreground">
+            Duplicate choice labels:
+          </span>
           {warnings.duplicateChoiceLabels.slice(0, 6).map((w, i) => (
             <button
               key={i}
@@ -492,7 +495,7 @@ function DeleteDialog({
 }) {
   if (impact?.isStart) {
     return (
-      <Dialog open onOpenChange={v => !v && onClose()}>
+      <Dialog open onOpenChange={(v) => !v && onClose()}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Cannot delete start state</DialogTitle>
@@ -512,7 +515,7 @@ function DeleteDialog({
     );
   }
   return (
-    <AlertDialog open={impact !== null} onOpenChange={v => !v && onClose()}>
+    <AlertDialog open={impact !== null} onOpenChange={(v) => !v && onClose()}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>

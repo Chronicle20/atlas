@@ -6,17 +6,18 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/sirupsen/logrus"
 )
 
 // Error codes for transport failures
 const (
-	ErrorCodeCapacityFull      = "TRANSPORT_CAPACITY_FULL"
-	ErrorCodeAlreadyInTransit  = "TRANSPORT_ALREADY_IN_TRANSIT"
-	ErrorCodeRouteNotFound     = "TRANSPORT_ROUTE_NOT_FOUND"
-	ErrorCodeServiceError      = "TRANSPORT_SERVICE_ERROR"
+	ErrorCodeCapacityFull     = "TRANSPORT_CAPACITY_FULL"
+	ErrorCodeAlreadyInTransit = "TRANSPORT_ALREADY_IN_TRANSIT"
+	ErrorCodeRouteNotFound    = "TRANSPORT_ROUTE_NOT_FOUND"
+	ErrorCodeServiceError     = "TRANSPORT_SERVICE_ERROR"
 )
 
 // TransportError represents an error from the transport service with an error code

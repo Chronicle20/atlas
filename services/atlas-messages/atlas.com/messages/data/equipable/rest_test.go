@@ -104,26 +104,25 @@ func TestRestModel_SetID(t *testing.T) {
 // TestExtract tests the Extract function
 func TestExtract(t *testing.T) {
 	rm := RestModel{
-		Id:             1302000,
-		Strength:       10,
-		Dexterity:      5,
-		Intelligence:   0,
-		Luck:           0,
-		Hp:             100,
-		Mp:             50,
-		WeaponAttack:   50,
-		MagicAttack:    0,
-		WeaponDefense:  20,
-		MagicDefense:   10,
-		Accuracy:       5,
-		Avoidability:   5,
-		Speed:          0,
-		Jump:           0,
-		Slots:          7,
+		Id:            1302000,
+		Strength:      10,
+		Dexterity:     5,
+		Intelligence:  0,
+		Luck:          0,
+		Hp:            100,
+		Mp:            50,
+		WeaponAttack:  50,
+		MagicAttack:   0,
+		WeaponDefense: 20,
+		MagicDefense:  10,
+		Accuracy:      5,
+		Avoidability:  5,
+		Speed:         0,
+		Jump:          0,
+		Slots:         7,
 	}
 
 	model, err := Extract(rm)
-
 	if err != nil {
 		t.Fatalf("Extract returned error: %v", err)
 	}
@@ -153,7 +152,6 @@ func TestExtract_ZeroValues(t *testing.T) {
 	rm := RestModel{}
 
 	model, err := Extract(rm)
-
 	if err != nil {
 		t.Fatalf("Extract returned error: %v", err)
 	}

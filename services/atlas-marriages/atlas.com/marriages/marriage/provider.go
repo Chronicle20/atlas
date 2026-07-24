@@ -4,10 +4,11 @@ import (
 	"errors"
 	"time"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // GetProposalByIdProvider retrieves a proposal by ID
@@ -43,7 +44,6 @@ func GetActiveProposalProvider(db *gorm.DB, log logrus.FieldLogger) func(propose
 			err := db.Where("proposer_id = ? AND target_id = ? AND status = ?",
 				proposerId, targetId, ProposalStatusPending).
 				First(&entity).Error
-
 			if err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					return nil, nil
@@ -101,7 +101,6 @@ func GetProposalHistoryProvider(db *gorm.DB, log logrus.FieldLogger) func(propos
 				proposerId, targetId).
 				Order("created_at DESC").
 				Find(&entities).Error
-
 			if err != nil {
 				return nil, err
 			}
@@ -130,7 +129,6 @@ func GetLastProposalByProposerProvider(db *gorm.DB, log logrus.FieldLogger) func
 			err := db.Where("proposer_id = ?", proposerId).
 				Order("created_at DESC").
 				First(&entity).Error
-
 			if err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					return nil, nil
@@ -161,7 +159,6 @@ func GetLastProposalToTargetProvider(db *gorm.DB, log logrus.FieldLogger) func(p
 			err := db.Where("proposer_id = ? AND target_id = ?", proposerId, targetId).
 				Order("created_at DESC").
 				First(&entity).Error
-
 			if err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					return nil, nil
@@ -189,7 +186,6 @@ func GetActiveMarriageByCharacterProvider(db *gorm.DB, log logrus.FieldLogger) f
 			err := db.Where("(character_id1 = ? OR character_id2 = ?) AND status IN (?)",
 				characterId, characterId, []MarriageStatus{StatusProposed, StatusEngaged, StatusMarried}).
 				First(&entity).Error
-
 			if err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					return nil, nil
@@ -366,7 +362,6 @@ func GetUpcomingCeremoniesProvider(db *gorm.DB, log logrus.FieldLogger) model.Pr
 		err := db.Where("status = ?", CeremonyStatusScheduled).
 			Order("scheduled_at ASC").
 			Find(&entities).Error
-
 		if err != nil {
 			return nil, err
 		}
@@ -393,7 +388,6 @@ func GetActiveCeremoniesProvider(db *gorm.DB, log logrus.FieldLogger) model.Prov
 		err := db.Where("status = ?", CeremonyStatusActive).
 			Order("started_at ASC").
 			Find(&entities).Error
-
 		if err != nil {
 			return nil, err
 		}
@@ -422,7 +416,6 @@ func GetTimeoutCeremoniesProvider(db *gorm.DB, log logrus.FieldLogger) model.Pro
 			CeremonyStatusActive, timeoutThreshold).
 			Order("started_at ASC").
 			Find(&entities).Error
-
 		if err != nil {
 			return nil, err
 		}
@@ -453,7 +446,6 @@ func GetExpiredProposalsProvider(db *gorm.DB, log logrus.FieldLogger) model.Prov
 			ProposalStatusPending, now).
 			Order("expires_at ASC").
 			Find(&entities).Error
-
 		if err != nil {
 			return nil, err
 		}

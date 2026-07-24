@@ -9,14 +9,18 @@ import (
 
 // TestBuddyInviteByteOutput verifies the byte output of BuddyInvite across all tenant variants.
 // IDA evidence — CWvsContext::OnFriendResult case 9:
-//   v83 @0xa3f2e8: Decode4 originatorId, DecodeStr originatorName, GW_Friend(39), Decode1 inShop — NO jobId/level.
-//   v87 @0xad7ae5: ... DecodeStr originatorName, Decode4 jobId, Decode4 level, GW_Friend(39), Decode1 inShop.
-//   v95 @0xa12630: same as v87.
-//   JMS185 @0xb2a873: same as v87.
+//
+//	v83 @0xa3f2e8: Decode4 originatorId, DecodeStr originatorName, GW_Friend(39), Decode1 inShop — NO jobId/level.
+//	v87 @0xad7ae5: ... DecodeStr originatorName, Decode4 jobId, Decode4 level, GW_Friend(39), Decode1 inShop.
+//	v95 @0xa12630: same as v87.
+//	JMS185 @0xb2a873: same as v87.
+//
 // Wire layout: mode(1)+originatorId(4)+name(2+len)+[jobId(4)+level(4)]+GW_Friend(39)+inShop(1).
 // originatorName="TestPlayer" → 2+10=12 bytes. GW_Friend = 4+13+1+4+17 = 39 bytes.
-//   no-fields:   1+4+12+39+1   = 57 bytes
-//   with-fields: 1+4+12+4+4+39+1 = 65 bytes
+//
+//	no-fields:   1+4+12+39+1   = 57 bytes
+//	with-fields: 1+4+12+4+4+39+1 = 65 bytes
+//
 // packet-audit:verify packet=buddy/clientbound/BuddyInvite version=gms_v83 ida=0xa3f2e8
 // packet-audit:verify packet=buddy/clientbound/BuddyInvite version=gms_v87 ida=0xad7ae5
 // packet-audit:verify packet=buddy/clientbound/BuddyInvite version=gms_v95 ida=0xa12630

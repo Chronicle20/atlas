@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const MonsterDamageWriter = "MonsterDamage"
@@ -32,12 +33,12 @@ func NewMonsterDamage(uniqueId uint32, damageType MonsterDamageType, damage uint
 	return Damage{uniqueId: uniqueId, damageType: damageType, damage: damage, hp: hp, maxHp: maxHp}
 }
 
-func (m Damage) UniqueId() uint32          { return m.uniqueId }
+func (m Damage) UniqueId() uint32              { return m.uniqueId }
 func (m Damage) DamageType() MonsterDamageType { return m.damageType }
-func (m Damage) DamageAmount() uint32      { return m.damage }
-func (m Damage) Hp() uint32               { return m.hp }
-func (m Damage) MaxHp() uint32             { return m.maxHp }
-func (m Damage) Operation() string         { return MonsterDamageWriter }
+func (m Damage) DamageAmount() uint32          { return m.damage }
+func (m Damage) Hp() uint32                    { return m.hp }
+func (m Damage) MaxHp() uint32                 { return m.maxHp }
+func (m Damage) Operation() string             { return MonsterDamageWriter }
 func (m Damage) String() string {
 	return fmt.Sprintf("uniqueId [%d], damage [%d], hp [%d/%d]", m.uniqueId, m.damage, m.hp, m.maxHp)
 }

@@ -3,9 +3,10 @@ package thread
 import (
 	thread2 "atlas-channel/kafka/message/guild/thread"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 )
 
 func CreateCommandProvider(guildId uint32, characterId uint32, notice bool, title string, message string, emoticonId uint32) model.Provider[[]kafka.Message] {

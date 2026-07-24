@@ -1,18 +1,18 @@
 package location
 
 import (
+	"atlas-maps/data/map/info"
 	"errors"
 	"net/http"
 	"testing"
 
-	"atlas-maps/data/map/info"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 // recordingWarp captures ChangeMap calls.

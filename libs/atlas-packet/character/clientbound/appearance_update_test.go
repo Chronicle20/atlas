@@ -25,6 +25,7 @@ import (
 // the existing codec shape, version-independent.
 //
 // AvatarLook::Decode (v83 @0x4e749a):
+//
 //	gender=Decode1, skin=Decode1, face=Decode4, !mega=Decode1, hair=Decode4,
 //	equip loop (key Decode1; 0xFF terminates; else value Decode4),
 //	masked loop (same), cashWeapon=Decode4, pets=DecodeBuffer(12)=3xDecode4.
@@ -40,21 +41,21 @@ func TestCharacterAppearanceUpdateByteOutput(t *testing.T) {
 	// Empty equipment/masked maps + nil pets keep the avatar block deterministic
 	// (the encoder ranges over maps, whose iteration order is unstable otherwise).
 	avatar := model.NewAvatar(
-		1,      // gender
-		2,      // skinColor
-		0x14,   // face
-		false,  // mega -> WriteBool(!mega)=WriteBool(true)=0x01
-		0x1E,   // hair
-		nil,    // equipment (-> just 0xFF terminator)
-		nil,    // maskedEquipment (-> just 0xFF terminator)
-		nil,    // pets (-> 3x WriteInt(0))
+		1,     // gender
+		2,     // skinColor
+		0x14,  // face
+		false, // mega -> WriteBool(!mega)=WriteBool(true)=0x01
+		0x1E,  // hair
+		nil,   // equipment (-> just 0xFF terminator)
+		nil,   // maskedEquipment (-> just 0xFF terminator)
+		nil,   // pets (-> 3x WriteInt(0))
 	)
 	input := NewCharacterAppearanceUpdate(0x12345678, avatar)
 	got := input.Encode(nil, ctx)(nil)
 
 	want := []byte{
 		0x78, 0x56, 0x34, 0x12, // characterId (WriteInt)                 /*0x983697 dispatch*/
-		0x01,                   // flags = 1 (look-only)                  /*0x983697*/
+		0x01, // flags = 1 (look-only)                  /*0x983697*/
 		// --- AvatarLook block (flags & 1) ---                            /*0x9836a3*/
 		0x01,                   // gender (Decode1)                       /*0x4e74ad*/
 		0x02,                   // skinColor (Decode1)                    /*0x4e74ba*/
@@ -113,7 +114,7 @@ func TestCharacterAppearanceUpdateByteOutputV84(t *testing.T) {
 
 	want := []byte{
 		0x78, 0x56, 0x34, 0x12, // characterId (WriteInt)                 /*0x9c3a1c dispatch*/
-		0x01,                   // flags = 1 (look-only)                  /*0x9c3a35*/
+		0x01, // flags = 1 (look-only)                  /*0x9c3a35*/
 		// --- AvatarLook block (flags & 1) ---                            /*0x9c3a41*/
 		0x01,                   // gender (Decode1)                       /*0x4ef96b*/
 		0x02,                   // skinColor (Decode1)                    /*0x4ef978*/
@@ -157,6 +158,7 @@ func TestCharacterAppearanceUpdateByteOutputV84(t *testing.T) {
 // the client's read-disposition of the final int differs (now consumed, not slack).
 //
 // AvatarLook::Decode (v87 @0x508277):
+//
 //	gender=Decode1, skin=Decode1, face=Decode4, !mega=Decode1, hair=Decode4,
 //	equip loop (key Decode1; 0xFF terminates; else value Decode4),
 //	masked loop (same), cashWeapon=Decode4, pets=DecodeBuffer(12)=3xDecode4.
@@ -179,7 +181,7 @@ func TestCharacterAppearanceUpdateByteOutputV87(t *testing.T) {
 
 	want := []byte{
 		0x78, 0x56, 0x34, 0x12, // characterId (WriteInt)                 /*0xa090f4 dispatch*/
-		0x01,                   // flags = 1 (look-only)                  /*0xa0910d*/
+		0x01, // flags = 1 (look-only)                  /*0xa0910d*/
 		// --- AvatarLook block (flags & 1) ---                            /*0xa09119*/
 		0x01,                   // gender (Decode1)                       /*0x50828a*/
 		0x02,                   // skinColor (Decode1)                    /*0x508297*/
@@ -222,6 +224,7 @@ func TestCharacterAppearanceUpdateByteOutputV87(t *testing.T) {
 // as 0, so the wire bytes are unchanged from the v87 fixture.
 //
 // AvatarLook::Decode (v95 @0x4f2c00):
+//
 //	gender=Decode1, skin=Decode1, face=Decode4, !mega=Decode1, hair=Decode4,
 //	equip loop (key Decode1; 0xFF terminates; else value Decode4),
 //	masked loop (same), cashWeapon=Decode4, pets=DecodeBuffer(12)=3xDecode4.
@@ -244,7 +247,7 @@ func TestCharacterAppearanceUpdateByteOutputV95(t *testing.T) {
 
 	want := []byte{
 		0x78, 0x56, 0x34, 0x12, // characterId (WriteInt)                 /*0x954110 dispatch*/
-		0x01,                   // flags = 1 (look-only)                  /*0x954122*/
+		0x01, // flags = 1 (look-only)                  /*0x954122*/
 		// --- AvatarLook block (flags & 1) ---                            /*0x954131*/
 		0x01,                   // gender (Decode1)                       /*0x4f2c13*/
 		0x02,                   // skinColor (Decode1)                    /*0x4f2c20*/
@@ -288,6 +291,7 @@ func TestCharacterAppearanceUpdateByteOutputV95(t *testing.T) {
 // jms wire matches the GMS-shaped codec — no per-version delta.
 //
 // AvatarLook::Decode (jms @0x51517e):
+//
 //	gender=Decode1 /*0x51518a*/, skin=Decode1 /*0x515194*/, face=Decode4 /*0x5151a1*/,
 //	!mega=Decode1 /*0x5151ce*/, hair=Decode4 /*0x5151d5*/, equip loop (key Decode1
 //	0xFF term; value Decode4), masked loop (same), cashWeapon=Decode4 /*0x515251*/,
@@ -313,7 +317,7 @@ func TestCharacterAppearanceUpdateByteOutputJMS(t *testing.T) {
 
 	want := []byte{
 		0x78, 0x56, 0x34, 0x12, // characterId (WriteInt)                 /*0xa57221 dispatch*/
-		0x01,                   // flags = 1 (look-only)                  /*0xa57230*/
+		0x01, // flags = 1 (look-only)                  /*0xa57230*/
 		// --- AvatarLook block (flags & 1) ---                            /*0xa57246*/
 		0x01,                   // gender (Decode1)                       /*0x51518a*/
 		0x02,                   // skinColor (Decode1)                    /*0x515194*/
@@ -355,6 +359,7 @@ func TestCharacterAppearanceUpdateByteOutputJMS(t *testing.T) {
 // "completed set item id" is benign trailing slack. The wire is byte-identical to v83.
 //
 // AvatarLook::Decode (v79 @0x4db6dd):
+//
 //	gender=Decode1 /*0x4db6f0*/, skin=Decode1 /*0x4db6fd*/, face=Decode4 /*0x4db711*/,
 //	!mega=Decode1 /*0x4db72d*/, hair=Decode4 /*0x4db739*/, equip loop (key Decode1
 //	0xFF term; value Decode4), masked loop (same), cashWeapon=Decode4 /*0x4db7b5*/,
@@ -379,7 +384,7 @@ func TestCharacterAppearanceUpdateByteOutputV79(t *testing.T) {
 
 	want := []byte{
 		0x78, 0x56, 0x34, 0x12, // characterId (WriteInt)                 /*0x8d9824 dispatch*/
-		0x01,                   // flags = 1 (look-only)                  /*0x8d983d*/
+		0x01, // flags = 1 (look-only)                  /*0x8d983d*/
 		// --- AvatarLook block (flags & 1) ---                            /*0x8d9849*/
 		0x01,                   // gender (Decode1)                       /*0x4db6f0*/
 		0x02,                   // skinColor (Decode1)                    /*0x4db6fd*/

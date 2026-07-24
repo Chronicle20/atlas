@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	testlog "github.com/sirupsen/logrus/hooks/test"
+
+	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 // TestNPCActionByteOutputV79 pins the gms_v79 NPC_ACTION (op 0x0BD) serverbound

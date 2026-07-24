@@ -5,10 +5,11 @@ import (
 	"testing"
 	"time"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
-	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 // TestChangeBatchBytesV72 pins that InventoryChangeBatch is byte-identical between

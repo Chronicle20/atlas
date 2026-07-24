@@ -2,7 +2,6 @@ package npc
 
 import (
 	"encoding/json"
-
 	"time"
 
 	"github.com/google/uuid"

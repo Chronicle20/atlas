@@ -4,11 +4,13 @@ import (
 	"atlas-saga-orchestrator/kafka/message"
 	pet2 "atlas-saga-orchestrator/kafka/message/pet"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Processor interface {

@@ -38,7 +38,7 @@ services/atlas-effective-stats/atlas.com/effective-stats/atlas-effective-stats
 services/atlas-messages/atlas.com/messages/atlas-messages
 services/atlas-storage/.env
 /services/atlas-data/atlas.com/data/atlas-data
-/services/atlas-gachapons/atlas.com/gachapons/atlas-gachapons
+/services/atlas-reward-pools/atlas.com/reward-pools/atlas-reward-pools
 /services/atlas-maps/atlas.com/maps/atlas-maps
 /services/atlas-monsters/atlas.com/monsters/atlas-monsters
 /services/atlas-rates/atlas.com/rates/atlas-rates
@@ -67,3 +67,4 @@ deploy/k8s/secrets.yaml
 
 # Stray Node/vitest artifacts (atlas-ui has its own; the repo root should never have node_modules)
 node_modules/
+/.cache/

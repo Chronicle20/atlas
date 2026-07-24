@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 // packet-audit:fname CWvsContext::OnPartyResult#ChangeLeader
@@ -21,8 +22,8 @@ func NewChangeLeader(mode byte, targetCharacterId uint32, disconnected bool) Cha
 }
 
 func (m ChangeLeader) Mode() byte                { return m.mode }
-func (m ChangeLeader) TargetCharacterId() uint32  { return m.targetCharacterId }
-func (m ChangeLeader) Disconnected() bool         { return m.disconnected }
+func (m ChangeLeader) TargetCharacterId() uint32 { return m.targetCharacterId }
+func (m ChangeLeader) Disconnected() bool        { return m.disconnected }
 
 func (m ChangeLeader) Operation() string {
 	return PartyOperationWriter

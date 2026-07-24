@@ -6,6 +6,10 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=character/serverbound/StateChangeByPortableChair version=gms_v48 ida=0x70a977
+// packet-audit:verify packet=character/serverbound/StateChangeByPortableChair version=gms_v61 ida=0x82ceaa
+// packet-audit:verify packet=character/serverbound/StateChangeByPortableChair version=gms_v72 ida=0x8fe5c1
+// packet-audit:verify packet=character/serverbound/StateChangeByPortableChair version=gms_v79 ida=0x94f24a
 // packet-audit:verify packet=character/serverbound/StateChangeByPortableChair version=gms_v83 ida=0xa02e34
 // packet-audit:verify packet=character/serverbound/StateChangeByPortableChair version=gms_v84 ida=0xa4d05a
 // packet-audit:verify packet=character/serverbound/StateChangeByPortableChair version=gms_v87 ida=0xa97e50

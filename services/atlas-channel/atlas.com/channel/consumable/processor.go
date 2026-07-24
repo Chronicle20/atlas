@@ -3,13 +3,15 @@ package consumable
 import (
 	consumable2 "atlas-channel/kafka/message/consumable"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
-	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {

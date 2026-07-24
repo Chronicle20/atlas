@@ -1,19 +1,20 @@
 package ingest
 
 import (
+	"atlas-data/data"
+	"atlas-data/data/workers"
 	"context"
 	"fmt"
 	"os"
 	"strconv"
 
-	"atlas-data/data"
-	"atlas-data/data/workers"
 	minio "atlas-data/storage/minio"
+
+	"github.com/sirupsen/logrus"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-	"github.com/sirupsen/logrus"
 )
 
 // Run is invoked when MODE=ingest (k8s Job pod). It reads SCOPE/REGION/version

@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 const PetMovementHandle = "PetMovementHandle"
@@ -19,8 +20,8 @@ type MovementRequest struct {
 	movement model.Movement
 }
 
-func (m MovementRequest) PetId() uint64              { return m.petId }
-func (m MovementRequest) PetIdAsUint32() uint32      { return uint32(m.petId) }
+func (m MovementRequest) PetId() uint64                { return m.petId }
+func (m MovementRequest) PetIdAsUint32() uint32        { return uint32(m.petId) }
 func (m MovementRequest) MovementData() model.Movement { return m.movement }
 
 func (m MovementRequest) Operation() string {

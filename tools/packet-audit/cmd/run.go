@@ -1960,6 +1960,45 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "ErrorOneOfAKind", dir: csvpkg.DirClientbound, pkg: "storage"}}
 	case "CTrunkDlg::OnPacket#ErrorMessage":
 		return []candidate{{name: "ErrorMessage", dir: csvpkg.DirClientbound, pkg: "storage"}}
+	// --- rps sub-domain (task-132) ---
+	// Clientbound CRPSGameDlg::OnPacket is a mode-dispatched writer; synthetic
+	// #-suffix FNames map each atlas-emitted arm to its discrete struct. The
+	// four atlas-emitted arms are OPEN/START_SELECT/RESULT/END — see
+	// docs/packets/dispatchers/rps_game.yaml for why modes 6/7/10/12/14 are
+	// intentionally NOT wired here.
+	case "CRPSGameDlg::OnPacket#OPEN":
+		return []candidate{{name: "Open", dir: csvpkg.DirClientbound, pkg: "rps"}}
+	case "CRPSGameDlg::OnPacket#START_SELECT":
+		return []candidate{{name: "StartSelect", dir: csvpkg.DirClientbound, pkg: "rps"}}
+	case "CRPSGameDlg::OnPacket#RESULT":
+		return []candidate{{name: "Result", dir: csvpkg.DirClientbound, pkg: "rps"}}
+	case "CRPSGameDlg::OnPacket#END":
+		return []candidate{{name: "End", dir: csvpkg.DirClientbound, pkg: "rps"}}
+	// Serverbound RPS_ACTION senders (task-132, Task 17). Six real, distinct
+	// CRPSGameDlg sender functions share ONE opcode with a leading sub-op byte
+	// (docs/tasks/task-132-rps-npc-game/ida-rps-serverbound.md §0/§6): five are
+	// bodyless (the sub-op byte alone IS the wire content) and map to the
+	// generic Operation{mode} struct; only SendSelection (sub-op 1) carries a
+	// body (the throw byte) and maps to OperationSelect. Registry primary fname
+	// for RPS_ACTION is CRPSGameDlg::OnBtStart (gms_v83/v87/v95/jms_v185) or
+	// CRPSGameDlg::Update (gms_v84, task-100 cluster-H renumber) — both map to
+	// the SAME Operation struct so whichever is that version's primary resolves
+	// correctly; the other three bodyless senders (OnBtContinue/OnBtExit/
+	// OnBtRetry) are documented here too (registry fname_alts) even though no
+	// version's export needs them to independently claim the Operation report
+	// slot.
+	case "CRPSGameDlg::OnBtStart":
+		return []candidate{{name: "Operation", dir: csvpkg.DirServerbound, pkg: "rps"}}
+	case "CRPSGameDlg::Update":
+		return []candidate{{name: "Operation", dir: csvpkg.DirServerbound, pkg: "rps"}}
+	case "CRPSGameDlg::OnBtContinue":
+		return []candidate{{name: "Operation", dir: csvpkg.DirServerbound, pkg: "rps"}}
+	case "CRPSGameDlg::OnBtExit":
+		return []candidate{{name: "Operation", dir: csvpkg.DirServerbound, pkg: "rps"}}
+	case "CRPSGameDlg::OnBtRetry":
+		return []candidate{{name: "Operation", dir: csvpkg.DirServerbound, pkg: "rps"}}
+	case "CRPSGameDlg::SendSelection":
+		return []candidate{{name: "OperationSelect", dir: csvpkg.DirServerbound, pkg: "rps"}}
 	// Serverbound CTrunkDlg senders.
 	case "CTrunkDlg::SendGetItemRequest":
 		return []candidate{{name: "OperationRetrieveAsset", dir: csvpkg.DirServerbound, pkg: "storage"}}
@@ -2015,12 +2054,40 @@ func candidatesFromFName(fname string) []candidate {
 	case "CWvsContext::SendLotteryItemUseRequest":
 		return []candidate{{name: "LotteryItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
 	// Vega's Spell (category 561) USE_CASH_ITEM sub-body (task-130 §2.1) shares
-	// the cash-item-use sender fname with task-126's AP/SP point-reset arm. Both
-	// candidates are keyed to the same fname, so return them together.
+	// the cash-item-use sender fname with task-126's AP/SP point-reset arm and
+	// task-124's teleport-rock arm. All candidates are keyed to the same fname,
+	// so return them together.
 	case "CWvsContext::SendConsumeCashItemUseRequest", "CItemSpeakerDlg::_SendConsumeCashItemUseRequest":
 		return []candidate{
 			{name: "ItemUsePointReset", dir: csvpkg.DirServerbound, pkg: "cash"},
 			{name: "ItemUseVegaScroll", dir: csvpkg.DirServerbound, pkg: "cash"},
+			{name: "ItemUseTeleportRock", dir: csvpkg.DirServerbound, pkg: "cash"},
+		}
+	// Teleport-rock family (task-124). USE_TELEPORT_ROCK (serverbound) sends
+	// slot+itemId then delegates the target payload to the shared
+	// CWvsContext::RunMapTransferItem helper (byName flag + name/mapId), plus a
+	// trailing update_time (v83 @0xa0a3bb, RunMapTransferItem @0xa0a4aa — both
+	// IDA-verified live MapleStory_dump.exe port 13342, task-124 verify pass).
+	// TROCK_ADD_MAP (serverbound) was unnamed in the v83 IDB (sub_A261BC,
+	// mangled symbol ?SendMapTransferRequest@CWvsContext@@QAEXJKH@Z already
+	// present) — renamed live to match the registry fname so it resolves by
+	// name for export harvesting (task-124, §10 unnamed-sender convention).
+	// MAP_TRANSFER_RESULT (clientbound) OnMapTransferResult switches on mode:
+	// cases 2/3 are the list-refresh form (MapTransferList), cases 5-11 are the
+	// error/notice form (MapTransferError) — both keyed to the same fname.
+	// No `pkg` hint on these four: Use/AddMap/MapTransferList/MapTransferError
+	// are globally-unique struct names (no cross-package collision), so pkg is
+	// omitted to keep the packet id unqualified (teleportrock/serverbound/Use,
+	// not teleportrock/serverbound/TeleportrockUse) — matching the markers
+	// already committed in the teleportrock test files.
+	case "CWvsContext::SendMapTransferItemUseRequest":
+		return []candidate{{name: "Use", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::SendMapTransferRequest":
+		return []candidate{{name: "AddMap", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::OnMapTransferResult":
+		return []candidate{
+			{name: "MapTransferList", dir: csvpkg.DirClientbound},
+			{name: "MapTransferError", dir: csvpkg.DirClientbound},
 		}
 	// --- interaction sub-domain (task-067) ---
 	// NOTE: the interaction serverbound dispatcher struct is also named `Operation`
@@ -2062,6 +2129,11 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "OperationMemoryGameMoveStone", dir: csvpkg.DirServerbound, pkg: "interaction"}}
 	case "COmokDlg::OnRetreatRequest":
 		return []candidate{{name: "OperationMemoryGameRetreatAnswer", dir: csvpkg.DirServerbound, pkg: "interaction"}}
+	// Miniroom balloon double-click join (task-133, ida-notes §G4). Mode 4
+	// ENTER/VISIT — shared by the game-room and shop-visit sends (same wire
+	// shape, gated by hasPassword rather than by destination type).
+	case "CUserLocal::HandleLButtonDblClk":
+		return []candidate{{name: "OperationVisitGame", dir: csvpkg.DirServerbound, pkg: "interaction"}}
 	// Entrusted-merchant sub-ops (share CPersonalShopDlg senders w/ different op-bytes).
 	case "CEntrustedShopDlg::AddBlackList":
 		return []candidate{{name: "OperationMerchantAddToBlackList", dir: csvpkg.DirServerbound, pkg: "interaction"}}
@@ -2089,6 +2161,78 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "InteractionChat", dir: csvpkg.DirClientbound, pkg: "interaction"}}
 	case "CMiniRoomBaseDlg::OnPacketBase#Leave":
 		return []candidate{{name: "InteractionLeave", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	// Omok / Match Cards mini-game arms (task-133). Each mode of the shared
+	// PLAYER_INTERACTION enum routes to a discrete clientbound struct in
+	// interaction/clientbound/interaction_minigame.go; the synthetic #-suffix
+	// FNames disambiguate the per-mode wire shapes. Read orders + addresses are
+	// grounded in docs/tasks/task-133-miniroom-minigames/ida-notes.md §G1/§G2/§G5,
+	// verified byte-identical on gms_v83 and gms_v95 (StartMatchCards + Result are
+	// v83-only — no v95 handler-body address recorded; see ida-notes §G1/§G5).
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameReady":
+		return []candidate{{name: "InteractionMiniGameReady", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameUnready":
+		return []candidate{{name: "InteractionMiniGameUnready", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameRequestTie":
+		return []candidate{{name: "InteractionMiniGameRequestTie", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameAnswerTie":
+		return []candidate{{name: "InteractionMiniGameAnswerTie", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameRetreatRequest":
+		return []candidate{{name: "InteractionMiniGameRetreatRequest", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameRetreatAnswer":
+		return []candidate{{name: "InteractionMiniGameRetreatAnswer", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameSkip":
+		return []candidate{{name: "InteractionMiniGameSkip", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameStartOmok":
+		return []candidate{{name: "InteractionMiniGameStartOmok", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameStartMatchCards":
+		return []candidate{{name: "InteractionMiniGameStartMatchCards", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameMoveStone":
+		return []candidate{{name: "InteractionMiniGameMoveStone", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGamePutStoneError":
+		return []candidate{{name: "InteractionMiniGamePutStoneError", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameCardSelectFirst":
+		return []candidate{{name: "InteractionMiniGameCardSelectFirst", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameCardSelectSecond":
+		return []candidate{{name: "InteractionMiniGameCardSelectSecond", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameResult":
+		return []candidate{{name: "InteractionMiniGameResult", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	// Game room-enter snapshot (task-7b). The EnterResult SUCCESS body for an
+	// Omok / Match Cards room differs from the shop-room body: yourSlot after
+	// capacity, and avatars + 20-byte records in TWO separate 0xFF-terminated
+	// lists (not the interleaved single list the old model used). Assembled by
+	// OnEnterResultStatic (roomType) -> OnEnterResultBase (capacity, yourSlot,
+	// avatar list; v83 0x65ec3d / v95 0x638e30) -> COmokDlg::OnEnterResult
+	// (record list, title, gameKind, tournament; v83 0x6e388e / v95 0x680e70) /
+	// CMemoryGameDlg::OnEnterResult (v83 0x64db.. / v95 0x628610). The vtable+92
+	// IsEntrusted() predicate is 0 for both game dialogs (sub_48315F), so the
+	// owner-slot-0 Decode4/RegisterEmployer int32 branch is dead for games —
+	// every occupant is a full avatar. See ida-notes.md §G5 "Room-enter blob —
+	// FULL RESOLUTION".
+	case "CMiniRoomBaseDlg::OnPacketBase#EnterResultSuccessMiniGame":
+		return []candidate{{name: "InteractionMiniGameRoom", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	// Game ENTER arm (task-133 / task-18b). The shared ENTER arm (mode 4) has a
+	// GAME shape distinct from the shop-room #Enter: where the shop enter stops
+	// after the visitor's name, the game dialogs read a trailing 20-byte
+	// win/tie/loss record. CMiniRoomBaseDlg::OnEnterBase (v83 0x65ed1c / v95
+	// 0x638f80: slot, DecodeAvatar, name, then v84+/JMS-only Decode2 jobCode)
+	// virtual-dispatches into COmokDlg::OnEnter (v83 sub_6E3BCC @0x6e3bcc / v95
+	// 0x6812e0) or CMemoryGameDlg::OnEnter (v95 0x628980), which read
+	// GW_MiniGameRecord::Decode (v95 0x4f2ad0 = DecodeBuffer(20) = 5×int32; v83
+	// sub_4E42FC). Sent to the room owner on ENTERED; the joining visitor gets
+	// the full InteractionMiniGameRoom snapshot instead. See ida-notes.md §G5.
+	case "CMiniRoomBaseDlg::OnPacketBase#EnterMiniGame":
+		return []candidate{{name: "InteractionMiniGameEnter", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	// UPDATE_CHAR_BOX mini-room balloon (task-133). Not a mode-prefix dispatcher:
+	// there is no mode byte. CUser::OnMiniRoomBalloon reads roomType then, when
+	// roomType != 0, the trailing balloon fields (ida-notes.md §G3, verified
+	// byte-identical on gms_v83 @0x938ba5 / gms_v95 @0x8e8d30). The roomType==0
+	// "remove" shape is a distinct wire shape modelled via a #-suffixed synthetic
+	// entry so the pipeline produces a second report; the base (#-less) entry maps
+	// the full-field balloon, keeping this a single-arm (non-dispatcher) fname.
+	case "CUser::OnMiniRoomBalloon":
+		return []candidate{{name: "MiniRoomBalloon", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CUser::OnMiniRoomBalloon#Remove":
+		return []candidate{{name: "MiniRoomBalloonRemove", dir: csvpkg.DirClientbound, pkg: "interaction"}}
 	case "CEntrustedShopDlg::OnRefresh#UpdateMerchant":
 		// UPDATE_MERCHANT (mode 25) is the hired-merchant shop refresh. The
 		// dispatcher's default case virtual-dispatches into the concrete dialog;
@@ -3026,6 +3170,13 @@ func candidatesFromFName(fname string) []candidate {
 			{name: "SpawnPortal", dir: csvpkg.DirClientbound},
 			{name: "RemoveTownDoor", dir: csvpkg.DirClientbound},
 		}
+	case "CWvsContext::OnIncubatorResult":
+		// INCUBATOR_RESULT. v83/v84/v87/jms_v185: Decode4(itemId) Decode2(count)
+		// = 6B. v95 adds Decode4(gachaponItemId) Decode4(bonusItemId)
+		// Decode4(bonusCount) = 18B (task-19 IDA verification of the live v83,
+		// v84, v87, v95, jms_v185 IDBs; v87/jms_v185 do NOT read the extended
+		// tail the Atlas writer sends for GMS>=87/JMS — see result_test.go).
+		return []candidate{{name: "IncubatorResult", pkg: "incubator", dir: csvpkg.DirClientbound, reportName: "IncubatorResult"}}
 	}
 	return nil
 }

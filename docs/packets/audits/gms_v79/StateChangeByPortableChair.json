@@ -1,0 +1,11 @@
+{
+  "WriterName": "StateChangeByPortableChair",
+  "IDAName": "CWvsContext::TryRecovery",
+  "Address": "0x94f24a",
+  "Variant": "GMS/v79",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/character/serverbound/state_change_by_portable_chair.go",
+  "Rows": null,
+  "Verdict": 0,
+  "FlatInvalid": false
+}

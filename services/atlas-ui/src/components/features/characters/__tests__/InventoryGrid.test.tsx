@@ -27,7 +27,11 @@ vi.mock("@/lib/hooks/useIntersectionObserver", () => ({
 // open tooltips in jsdom, but Radix may still mount the content subtree
 // during interaction; stub the hook so it never reaches React Query.
 vi.mock("@/lib/hooks/api/useEquipmentData", () => ({
-  useEquipmentData: () => ({ data: undefined, isLoading: false, isError: false }),
+  useEquipmentData: () => ({
+    data: undefined,
+    isLoading: false,
+    isError: false,
+  }),
 }));
 
 import { InventoryGrid } from "../InventoryGrid";
@@ -52,6 +56,7 @@ const makeAsset = (overrides: Partial<Asset["attributes"]> = {}): Asset => ({
     createdAt: "0001-01-01T00:00:00Z",
     quantity: 1,
     ownerId: 0,
+    owner: "",
     flag: 0,
     rechargeable: 0,
     strength: 0,
@@ -104,7 +109,9 @@ describe("InventoryGrid", () => {
 
   it("calls onDeleteAsset when X is clicked, without opening tooltip flicker", async () => {
     const onDelete = vi.fn();
-    render(<InventoryGrid {...minimalPropsWithItem} onDeleteAsset={onDelete} />);
+    render(
+      <InventoryGrid {...minimalPropsWithItem} onDeleteAsset={onDelete} />,
+    );
     const xButton = screen.getByRole("button", { name: /delete/i });
     await userEvent.click(xButton);
     expect(onDelete).toHaveBeenCalledWith("asset-1");

@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const PinOperationWriter = "PinOperation"
@@ -20,8 +21,8 @@ func NewPinOperation(mode byte) PinOperation {
 }
 
 func (m PinOperation) Mode() byte        { return m.mode }
-func (m PinOperation) Operation() string  { return PinOperationWriter }
-func (m PinOperation) String() string     { return fmt.Sprintf("mode [%d]", m.mode) }
+func (m PinOperation) Operation() string { return PinOperationWriter }
+func (m PinOperation) String() string    { return fmt.Sprintf("mode [%d]", m.mode) }
 
 func (m PinOperation) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)

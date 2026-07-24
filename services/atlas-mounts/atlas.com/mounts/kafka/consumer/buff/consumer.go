@@ -7,6 +7,9 @@ import (
 	"atlas-mounts/mount"
 	"context"
 
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+
 	characterconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
@@ -17,8 +20,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 // Function seams. Production wires these to the real registry + processor; tests

@@ -8,7 +8,7 @@ import (
 )
 
 func NewFromCharacter(c character.Model, mega bool) packetmodel.Avatar {
-	var equips = make(map[slot.Position]uint32)
+	equips := make(map[slot.Position]uint32)
 	for _, t := range slot.Slots {
 		if s, ok := c.Equipment().Get(t.Type); ok {
 			if s.CashEquipable != nil {
@@ -20,7 +20,7 @@ func NewFromCharacter(c character.Model, mega bool) packetmodel.Avatar {
 			}
 		}
 	}
-	var maskedEquips = make(map[slot.Position]uint32)
+	maskedEquips := make(map[slot.Position]uint32)
 	for _, t := range slot.Slots {
 		if s, ok := c.Equipment().Get(t.Type); ok {
 			if s.CashEquipable != nil {
@@ -30,7 +30,7 @@ func NewFromCharacter(c character.Model, mega bool) packetmodel.Avatar {
 			}
 		}
 	}
-	var pets = make(map[int8]uint32)
+	pets := make(map[int8]uint32)
 	for _, p := range c.Pets() {
 		pets[p.Slot()] = p.TemplateId()
 	}

@@ -1,0 +1,145 @@
+{
+  "service": "atlas-channel",
+  "path": "services/atlas-channel/atlas.com/channel",
+  "date": "2026-07-17",
+  "scope": {
+    "type": "diff",
+    "base": "c9490b724",
+    "head": "1e6c398125",
+    "files": [
+      "services/atlas-channel/atlas.com/channel/session/processor.go",
+      "services/atlas-channel/atlas.com/channel/session/processor_test.go",
+      "docs/tasks/task-173-mts-map-presence/design.md"
+    ]
+  },
+  "build": "pass",
+  "vet": "pass",
+  "testsPassed": "all packages (go test ./... and go test -race ./... both clean, zero FAIL lines)",
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "session",
+      "type": "domain",
+      "checks": [
+        {
+          "id": "PREDICATE-CORRECTNESS",
+          "name": "InFieldModelProvider predicate matches design.md exactly",
+          "status": "pass",
+          "evidence": "session/processor.go:111 -- s.CharacterId() != 0 && s.CashScene() == CashSceneNone && s.Field().Equals(f)"
+        },
+        {
+          "id": "DESIGN-CITATION-1",
+          "name": "CashScene constants match design.md:55-56",
+          "status": "pass",
+          "evidence": "session/model.go:19-21"
+        },
+        {
+          "id": "DESIGN-CITATION-2",
+          "name": "MTS entry sets CashSceneMts (design.md mts_entry.go:94)",
+          "status": "pass",
+          "evidence": "socket/handler/mts_entry.go:94"
+        },
+        {
+          "id": "DESIGN-CITATION-3",
+          "name": "Cash-shop-return resets CashSceneNone (design.md map_change.go:39)",
+          "status": "pass",
+          "evidence": "socket/handler/map_change.go:39"
+        },
+        {
+          "id": "DESIGN-CITATION-4",
+          "name": "Cash-shop session destroyed on migrate (design.md socket/init.go:54)",
+          "status": "pass",
+          "evidence": "socket/init.go:49-54"
+        },
+        {
+          "id": "SINGLE-CONSUMER-CHAIN",
+          "name": "InFieldModelProvider has exactly one production consumer chain",
+          "status": "pass",
+          "evidence": "map/processor.go:44 CharacterIdsInMapModelProvider is the sole non-test/mock production caller"
+        },
+        {
+          "id": "BLAST-RADIUS-GAP",
+          "name": "Sibling InMapAllInstancesModelProvider not updated with same guard",
+          "status": "fail",
+          "severity": "important",
+          "evidence": "session/processor.go:121-132 lacks CashScene guard; feeds map/processor.go:88-90 ForSessionsInMapAllInstances, consumed by kafka/consumer/route/consumer.go:70,91 (transport arrival/departure broadcasts) -- MTS-scened sessions still receive FieldTransportStateWriter announcements, contradicting the design's own stated invariant; undocumented in design.md's Scope section"
+        },
+        {
+          "id": "BROADCAST-CONSEQUENCE",
+          "name": "Chat/weather/BGM/other field broadcasts correctly inherit the fix via ForSessionsInMap",
+          "status": "pass",
+          "evidence": "kafka/consumer/message/consumer.go:98, kafka/consumer/map/consumer.go:719,738,807, and all door/merchant/monster/drop/reactor/pet/mount/summon/consumable/party_quest/asset/chalkboard/skill/mist consumers call ForSessionsInMap -> CharacterIdsInMapModelProvider -> InFieldModelProvider (fixed)"
+        },
+        {
+          "id": "TEST-EXERCISES-FIX",
+          "name": "New tests exercise the exact predicate added",
+          "status": "pass",
+          "evidence": "session/processor_test.go:870-891 (MTS), :894-915 (CashShop) -- assert len(got)==1 excluding the scened session"
+        },
+        {
+          "id": "RED-BEFORE-GREEN-AFTER",
+          "name": "Tests would fail without the added predicate",
+          "status": "pass",
+          "evidence": "Verified by diff/logical inspection (source not modified per instructions): without s.CashScene()==CashSceneNone at processor.go:111 both new tests' scened sessions would still satisfy CharacterId()!=0 && Field().Equals(f), producing len(got)==2 and failing the len(got)!=1 assertion"
+        },
+        {
+          "id": "TEST-HELPER-PATTERN",
+          "name": "No test-only constructors introduced; uses project Builder pattern",
+          "status": "pass",
+          "evidence": "session/processor_test.go:727-738 addFieldSession (pre-existing, unchanged by this diff) built on field.NewBuilder plus already-public session API"
+        },
+        {
+          "id": "DOM-20",
+          "name": "Table-driven tests",
+          "status": "fail",
+          "severity": "minor",
+          "evidence": "session/processor_test.go:870-915 -- both new tests are individually-named functions, not tests := []struct{...} + t.Run"
+        },
+        {
+          "id": "FILE-01",
+          "name": "Processor logic remains in processor.go",
+          "status": "pass",
+          "evidence": "session/processor.go -- change confined to existing method body, no relocation"
+        },
+        {
+          "id": "DOM-06",
+          "name": "Processor constructor accepts logrus.FieldLogger",
+          "status": "pass",
+          "evidence": "session/processor.go:67 (pre-existing, unaffected by diff)"
+        },
+        {
+          "id": "DOM-11",
+          "name": "Providers use lazy evaluation",
+          "status": "pass",
+          "evidence": "session/processor.go:106-117 -- InFieldModelProvider still returns a func() ([]Model, error) closure"
+        },
+        {
+          "id": "DOM-12",
+          "name": "No os.Getenv in handlers",
+          "status": "n/a",
+          "evidence": "Diff touches no resource.go/handler file"
+        },
+        {
+          "id": "DOM-24",
+          "name": "Kafka producer stubbed in tests that emit",
+          "status": "n/a",
+          "evidence": "Neither new test calls an emit path; InFieldModelProvider is a pure in-memory read"
+        },
+        {
+          "id": "DOM-21",
+          "name": "No duplication of atlas-constants types",
+          "status": "pass",
+          "evidence": "No new type/const introduced by this diff"
+        }
+      ]
+    }
+  ],
+  "blocking": [],
+  "important": [
+    "BLAST-RADIUS-GAP: session/processor.go:121-132 InMapAllInstancesModelProvider not updated with the CashScene guard added to InFieldModelProvider; feeds map/processor.go:88-90 ForSessionsInMapAllInstances -> kafka/consumer/route/consumer.go:70,91 (transport broadcasts still reach MTS-scened sessions), and this gap is undocumented in design.md"
+  ],
+  "nonBlocking": [
+    "DOM-20: session/processor_test.go:870-915 new tests are not table-driven"
+  ]
+}

@@ -1,15 +1,15 @@
 # FieldMtsResultSaleCurrentItemToWishFailed (← `CITC::OnNormalItemResult#SaleCurrentItemToWishFailed`)
 
-- **IDA:** 
+- **IDA:** 0x57f886
 - **Atlas file:** `libs/atlas-packet/field/clientbound/mts_operation.go`
 - **Variant:** GMS/v79
 - **Branch depth:** 0
-- **Verdict:** ⚠️
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | byte | byte `` | ⚠️ | atlas: trailing padding byte — client stops reading (harmless over-write) |
+| 0 | byte | byte `MTS result mode byte (0x20 SaleCurrentItemToWishFailed)` | ✅ |  |
+| 1 | byte | byte `Decode1 fail reason -> reason-keyed StringPool notice` | ✅ |  |
 

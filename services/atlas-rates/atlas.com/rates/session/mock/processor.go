@@ -1,9 +1,8 @@
 package mock
 
 import (
-	"time"
-
 	"atlas-rates/session"
+	"time"
 )
 
 type ProcessorMock struct {

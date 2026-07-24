@@ -4,8 +4,9 @@ import (
 	"atlas-data/xml"
 	"strconv"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 func parseSetupId(name string) (uint32, error) {

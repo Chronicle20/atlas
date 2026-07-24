@@ -1,0 +1,219 @@
+{
+  "data": {
+    "attributes": {
+      "bonus": {
+        "duration": 60,
+        "entry": "auto",
+        "mapId": 610030800,
+        "properties": {
+          "chestReactors": [
+            6102002,
+            6102003,
+            6102004,
+            6102005
+          ]
+        }
+      },
+      "duration": 5400,
+      "exit": 610030010,
+      "failRequirements": [],
+      "fieldLock": "channel",
+      "name": "Crimsonwood Keep Party Quest",
+      "questId": "crimsonwood_keep_pq",
+      "registration": {
+        "duration": 0,
+        "mapId": 610030020,
+        "mode": "instant",
+        "type": "party"
+      },
+      "rewards": [],
+      "stages": [
+        {
+          "clearConditions": [],
+          "duration": 180,
+          "index": 0,
+          "mapIds": [
+            610030100
+          ],
+          "name": "Inner Sanctum Hallway",
+          "properties": {
+            "failMonster": 9400594,
+            "npcId": 9201112,
+            "triggerReactor": 6109010
+          },
+          "rewards": [],
+          "type": "reactor_trigger",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [],
+          "duration": 480,
+          "index": 1,
+          "mapIds": [
+            610030200
+          ],
+          "name": "Forgotten Storage Chamber",
+          "properties": {
+            "classSpecific": true,
+            "reactors": [
+              6109000,
+              6109001,
+              6109002,
+              6109003,
+              6109004
+            ]
+          },
+          "rewards": [],
+          "type": "reactor_trigger",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [],
+          "duration": 600,
+          "index": 2,
+          "mapIds": [
+            610030300
+          ],
+          "name": "Test of Agility",
+          "properties": {
+            "classSpecific": true,
+            "reactors": [
+              6109000,
+              6109001,
+              6109002,
+              6109003,
+              6109004
+            ],
+            "topPortalCount": 5
+          },
+          "rewards": [],
+          "type": "reactor_trigger",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [],
+          "duration": 600,
+          "index": 3,
+          "mapIds": [
+            610030400
+          ],
+          "name": "Test of Wit",
+          "properties": {
+            "classSpecific": true,
+            "fakeReactors": true,
+            "reactors": [
+              6109000,
+              6109001,
+              6109002,
+              6109003,
+              6109004
+            ]
+          },
+          "rewards": [],
+          "type": "reactor_trigger",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [],
+          "duration": 900,
+          "index": 4,
+          "mapIds": [
+            610030500,
+            610030510,
+            610030520,
+            610030521,
+            610030522,
+            610030530,
+            610030540,
+            610030550
+          ],
+          "name": "Test of Unity",
+          "properties": {
+            "classPortals": {
+              "bowman": 610030540,
+              "mage": [
+                610030520,
+                610030521,
+                610030522
+              ],
+              "pirate": 610030550,
+              "thief": 610030530,
+              "warrior": 610030510
+            },
+            "weaponReactors": [
+              6109005,
+              6109006,
+              6109007,
+              6109008,
+              6109009
+            ]
+          },
+          "rewards": [],
+          "type": "reactor_trigger",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [],
+          "duration": 5400,
+          "index": 5,
+          "mapIds": [
+            610030600
+          ],
+          "name": "Grandmaster Council Hall",
+          "properties": {
+            "bossMonsters": [
+              9400590,
+              9400591,
+              9400592,
+              9400593
+            ],
+            "guardianMonsters": [
+              9400594,
+              9400582
+            ],
+            "npcId": 9201115
+          },
+          "rewards": [],
+          "type": "boss",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [],
+          "duration": 0,
+          "index": 6,
+          "mapIds": [
+            610030700
+          ],
+          "name": "Grandmaster Secret Chamber",
+          "properties": {},
+          "rewards": [],
+          "type": "item_collection",
+          "warpType": "all"
+        }
+      ],
+      "startEvents": [
+        {
+          "target": "party",
+          "type": "warp",
+          "value": "610030100"
+        }
+      ],
+      "startRequirements": [
+        {
+          "operator": "gte",
+          "referenceId": 0,
+          "type": "party_size",
+          "value": 10
+        },
+        {
+          "operator": "gte",
+          "referenceId": 0,
+          "type": "level_min",
+          "value": 90
+        }
+      ]
+    },
+    "id": "crimsonwood_keep_pq",
+    "type": "party-quest-definition"
+  }
+}

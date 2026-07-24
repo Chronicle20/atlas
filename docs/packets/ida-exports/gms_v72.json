@@ -3,6 +3,20 @@
  "md5": "",
  "generated_at": "2026-07-01T15:41:36Z",
  "functions": {
+    "CUser::OnMiniRoomBalloon#Remove": {
+      "address": "0x847df1",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId (consumed by CUserPool::OnUserCommonPacket GetUser)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "roomType (0 -> CChatBalloon::DestroyMiniRoomBalloon; no trailing fields)"
+        }
+      ]
+    },
   "CWvsContext::SendLotteryItemUseRequest": {
    "address": "0x90c93a",
    "direction": "serverbound",
@@ -5017,7 +5031,7 @@
     },
     {
      "op": "Encode4",
-     "comment": "accountId @0x5b55c3 (*(g_pWvsContext+8232)) — LEGACY-ONLY int, absent in v83+"
+     "comment": "accountId @0x5b55c3 (*(g_pWvsContext+8232)) \u2014 LEGACY-ONLY int, absent in v83+"
     },
     {
      "op": "EncodeStr",
@@ -6499,7 +6513,7 @@
    ]
   },
   "COmokDlg::OnRetreatRequest": {
-   "address": "0x5febf2",
+   "address": "0x64e953",
    "direction": "serverbound",
    "calls": [
     {
@@ -6882,18 +6896,55 @@
     }
    ]
   },
-  "CRPSGameDlg::OnPacket": {
-   "address": "0x69c54b",
-   "direction": "",
+  "CRPSGameDlg::OnPacket#OPEN": {
+   "address": "0x69c646",
+   "direction": "clientbound",
    "calls": [
     {
      "op": "Decode1",
-     "comment": ""
+     "comment": "mode byte (OnPacket entry Decode1 @0x69c55d; case 8 = OPEN)"
     },
     {
      "op": "Decode4",
-     "comment": "",
-     "guard": "v1 == 8"
+     "comment": "ante \u2014 participation fee (CInPacket::Decode4 @0x69c646; the StringPool notice string that follows is a static resource, not a packet field)"
+    }
+   ]
+  },
+  "CRPSGameDlg::OnPacket#RESULT": {
+   "address": "0x69c7f2",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "mode byte (dispatcher sub_69C7A5 (0x69c7a5) case 11 = RESULT)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "npcThrow (CInPacket::Decode1 @0x69c7f2)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "straightVictoryCount, SIGNED int8 (CInPacket::Decode1 @0x69c7fd; client treats as signed __int8, branches on <0)"
+    }
+   ]
+  },
+    "CRPSGameDlg::OnPacket#START_SELECT": {
+      "address": "0x69c843",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte only (case 9 = START_SELECT; enable R/P/S buttons + arm selection timer, no further wire reads)"
+        }
+      ]
+    },
+  "CRPSGameDlg::OnPacket#END": {
+   "address": "0x69c5f8",
+   "direction": "clientbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "mode byte only (case 13 = CLOSE; CWnd::Destroy @0x69c5f8, no further wire reads)"
     }
    ]
   },
@@ -8052,7 +8103,7 @@
    "calls": [
     {
      "op": "Decode4",
-     "comment": "m_nChannelID (channel id) @0x6c0cce — v72 NO DecodeOpt, NO m_dwOldDriverID"
+     "comment": "m_nChannelID (channel id) @0x6c0cce \u2014 v72 NO DecodeOpt, NO m_dwOldDriverID"
     },
     {
      "op": "Decode1",
@@ -8068,7 +8119,7 @@
     },
     {
      "op": "Decode4",
-     "comment": "dwPosMap (target map id) @0x6c0e59 — NO revive byte in v72 (else branch reads mapId immediately, v72 < v83)"
+     "comment": "dwPosMap (target map id) @0x6c0e59 \u2014 NO revive byte in v72 (else branch reads mapId immediately, v72 < v83)"
     },
     {
      "op": "Decode1",
@@ -8076,7 +8127,7 @@
     },
     {
      "op": "Decode2",
-     "comment": "nHP @0x6c0e88 — v72 Decode2 (2 bytes)"
+     "comment": "nHP @0x6c0e88 \u2014 v72 Decode2 (2 bytes)"
     },
     {
      "op": "Decode1",
@@ -8165,11 +8216,11 @@
    "calls": [
     {
      "op": "Decode4",
-     "comment": "cid/ownerId — CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
+     "comment": "cid/ownerId \u2014 CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
     },
     {
      "op": "Decode4",
-     "comment": "oid — summon cluster dispatcher sub_848023@0x848062 (read before leaf dispatch)"
+     "comment": "oid \u2014 summon cluster dispatcher sub_848023@0x848062 (read before leaf dispatch)"
     },
     {
      "op": "Decode1",
@@ -8195,15 +8246,15 @@
    "calls": [
     {
      "op": "Decode4",
-     "comment": "cid/ownerId — CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
+     "comment": "cid/ownerId \u2014 CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
     },
     {
      "op": "Decode4",
-     "comment": "oid — summon cluster dispatcher sub_848023@0x848062 (read before leaf dispatch)"
+     "comment": "oid \u2014 summon cluster dispatcher sub_848023@0x848062 (read before leaf dispatch)"
     },
     {
      "op": "DecodeBuf",
-     "comment": "raw CMovePath movement blob — sub_6E9285 -> CMovePath::OnMovePacket@0x635bc2"
+     "comment": "raw CMovePath movement blob \u2014 sub_6E9285 -> CMovePath::OnMovePacket@0x635bc2"
     }
    ]
   },
@@ -8213,11 +8264,11 @@
    "calls": [
     {
      "op": "Decode4",
-     "comment": "cid/ownerId — CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
+     "comment": "cid/ownerId \u2014 CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
     },
     {
      "op": "Decode4",
-     "comment": "oid — summon cluster dispatcher sub_848023@0x848062 (read before leaf dispatch)"
+     "comment": "oid \u2014 summon cluster dispatcher sub_848023@0x848062 (read before leaf dispatch)"
     },
     {
      "op": "Decode1",
@@ -8231,11 +8282,11 @@
    "calls": [
     {
      "op": "Decode4",
-     "comment": "cid/ownerId — CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
+     "comment": "cid/ownerId \u2014 CUserPool::OnUserCommonPacket (consumed upstream before dispatch)"
     },
     {
      "op": "Decode4",
-     "comment": "oid — summon cluster dispatcher sub_848023@0x848062 (read before leaf dispatch)"
+     "comment": "oid \u2014 summon cluster dispatcher sub_848023@0x848062 (read before leaf dispatch)"
     },
     {
      "op": "Decode1",
@@ -9359,6 +9410,10 @@
    "address": "0x847df1",
    "direction": "",
    "calls": [
+    {
+     "op": "Decode4",
+     "comment": "characterId (consumed by CUserPool::OnUserCommonPacket GetUser, not OnMiniRoomBalloon)"
+    },
     {
      "op": "Decode1",
      "comment": ""
@@ -10876,6 +10931,11 @@
      "guard": "result"
     }
    ]
+  },
+  "CWvsContext::TryRecovery": {
+   "address": "0x8fe5c1",
+   "direction": "serverbound",
+   "calls": null
   },
   "CWvsContext::GetCharacterData": {
    "address": "0x422d30",
@@ -13187,7 +13247,7 @@
   },
   "CWvsContext::OnMapTransferResult": {
    "address": "0x91d41a",
-   "direction": "",
+   "direction": "clientbound",
    "calls": [
     {
      "op": "Decode1",
@@ -14921,9 +14981,44 @@
    ]
   },
   "CWvsContext::SendMapTransferItemUseRequest": {
-   "address": "0x917221",
-   "direction": "",
-   "calls": null
+   "address": "0x904d5e",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Decode2",
+     "comment": "nPOS (inventory slot)",
+     "guard": "a3 / 10000 == 232 && CWvsContext::CanSendExclRequest(this, 200, 0)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "nItemID",
+     "guard": "a3 / 10000 == 232 && CWvsContext::CanSendExclRequest(this, 200, 0)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "updateTime (trailing, only if the target dialog was confirmed)",
+     "guard": "a3 / 10000 == 232 && CWvsContext::CanSendExclRequest(this, 200, 0) && CWvsContext::RunMapTransferItem(pkt, 0)"
+    }
+   ]
+  },
+  "CWvsContext::SendMapTransferRequest": {
+   "address": "0x91e33e",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "nType (1=register current map, 0=delete selected map)"
+    },
+    {
+     "op": "Decode1",
+     "comment": "flag (VIP saved-map slot set)"
+    },
+    {
+     "op": "Decode4",
+     "comment": "mapId (delete only)",
+     "guard": "!nType"
+    }
+   ]
   },
   "CWvsContext::SendMigrateToShopRequest": {
    "address": "0x9001d8",
@@ -18966,6 +19061,26 @@
      "op": "Decode4",
      "comment": "itemId (m_anHotList entry)",
      "guard": "loop count"
+    }
+   ]
+  },
+  "CRPSGameDlg::OnBtStart": {
+   "address": "0x69c950",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "sub-op byte (0=OnBtStart @0x69c92a, Encode1(0) @0x69c950, COutPacket(134); bodyless arm, no further fields -- byte-signature 68 86 00 00 00 8D locates all 6 RPS_ACTION senders; live IDA port 13339 2026-07-16)"
+    }
+   ]
+  },
+  "CRPSGameDlg::SendSelection": {
+   "address": "0x69cb2d",
+   "direction": "serverbound",
+   "calls": [
+    {
+     "op": "Decode1",
+     "comment": "throw (0=Rock/1=Paper/2=Scissors, RAW passthrough; CRPSGameDlg::SendSelection @0x69cafa, COutPacket(134)+Encode1(1)+Encode1(throw) @0x69cb2d; sub-op mode byte 1 written earlier by the same sender, excluded here per the storage OperationMeso/StoreAsset/RetrieveAsset convention; live IDA port 13339 2026-07-16)"
     }
    ]
   }

@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const CharacterDamageWriter = "CharacterDamage"
@@ -31,12 +32,12 @@ func NewCharacterDamage(characterId uint32, attackIdx model.DamageType, damage i
 	}
 }
 
-func (m CharacterDamage) CharacterId() uint32       { return m.characterId }
+func (m CharacterDamage) CharacterId() uint32         { return m.characterId }
 func (m CharacterDamage) AttackIdx() model.DamageType { return m.attackIdx }
-func (m CharacterDamage) DamageAmount() int32       { return m.damage }
-func (m CharacterDamage) MonsterTemplateId() uint32 { return m.monsterTemplateId }
-func (m CharacterDamage) Left() bool                { return m.left }
-func (m CharacterDamage) Operation() string         { return CharacterDamageWriter }
+func (m CharacterDamage) DamageAmount() int32         { return m.damage }
+func (m CharacterDamage) MonsterTemplateId() uint32   { return m.monsterTemplateId }
+func (m CharacterDamage) Left() bool                  { return m.left }
+func (m CharacterDamage) Operation() string           { return CharacterDamageWriter }
 func (m CharacterDamage) String() string {
 	return fmt.Sprintf("characterId [%d], damage [%d]", m.characterId, m.damage)
 }

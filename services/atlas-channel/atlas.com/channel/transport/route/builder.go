@@ -4,13 +4,12 @@ import (
 	"errors"
 	"time"
 
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/google/uuid"
+
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
-var (
-	ErrInvalidId = errors.New("route id must not be nil")
-)
+var ErrInvalidId = errors.New("route id must not be nil")
 
 // modelBuilder is a builder for Model
 type modelBuilder struct {

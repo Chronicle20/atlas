@@ -173,6 +173,81 @@ jobs:
         run: ./tools/check-version-coverage.sh
 
   # ============================================
+  # Lint & Format Guard (task-171)
+  # tools/lint.sh --check is the single source of
+  # truth; these jobs mirror it in CI. Formatting
+  # is enforced tree-wide on the changed modules;
+  # lint findings are gated to new code via
+  # --new-from-rev (burn-down: docs/TODO.md).
+  # Fail closed: a missing tool or script error
+  # fails the job, never a silent pass.
+  # ============================================
+  lint-go:
+    name: Lint & Format Guard (Go)
+    needs: detect-changes
+    if: needs.detect-changes.outputs.go-services-matrix != '[]' || needs.detect-changes.outputs.go-libraries-matrix != '[]'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Full history: lint.sh needs the merge base for --new-from-rev.
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Cache lint tooling
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/golangci-lint
+            .cache/tools/bin
+          key: lint-tools-${{ runner.os }}-${{ hashFiles('tools/lint.versions') }}
+
+      - name: Lint & format guard (Go)
+        env:
+          SERVICES: ${{ needs.detect-changes.outputs.go-services-matrix }}
+          LIBRARIES: ${{ needs.detect-changes.outputs.go-libraries-matrix }}
+        run: |
+          set -euo pipefail
+          mapfile -t MODULES < <({ jq -r '.[].module_path' <<<"$SERVICES"; jq -r '.[].module_path' <<<"$LIBRARIES"; })
+          echo "Linting ${#MODULES[@]} changed module(s)"
+          if [ -n "${GITHUB_BASE_REF:-}" ]; then
+            BASE="$(git merge-base "origin/${GITHUB_BASE_REF}" HEAD)"
+            ./tools/lint.sh --check --go --base "$BASE" "${MODULES[@]}"
+          else
+            ./tools/lint.sh --check --go "${MODULES[@]}"
+          fi
+
+  lint-ui:
+    name: Lint & Format Guard (UI)
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has-ui-changes == 'true' || needs.detect-changes.outputs.has-workflow-changes == 'true' || github.event.inputs.force-all == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: services/atlas-ui/package-lock.json
+
+      - name: Install dependencies
+        working-directory: services/atlas-ui
+        run: npm ci
+
+      - name: Lint & format guard (UI)
+        run: ./tools/lint.sh --check --ui
+
+  # ============================================
   # Service Registration Guard
   # Cross-checks every hand-maintained list a
   # service must be registered in (docker-bake,
@@ -191,6 +266,24 @@ jobs:
 
       - name: service registration guard
         run: ./tools/service-registration-guard.sh
+
+  # ============================================
+  # Enforces ascending opCode order for the
+  # handlers/writers arrays in every tenant
+  # socket-config template. See
+  # docs/packets/TEMPLATE_CONVENTIONS.md.
+  # Pure shell + python3, no Go setup.
+  # ============================================
+  template-opcode-order-guard:
+    name: Template Opcode Order Guard
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: template opcode order guard
+        run: ./tools/template-opcode-order-guard.sh
 
   # ============================================
   # Test Go Libraries
@@ -557,7 +650,7 @@ jobs:
   # ============================================
   pr-validation-complete:
     name: PR Validation Complete
-    needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker, update-pr-overlay, redis-key-guard, outbox-guard, goroutine-guard, gen-lb-ports, service-registration-guard]
+    needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker, update-pr-overlay, redis-key-guard, outbox-guard, goroutine-guard, gen-lb-ports, service-registration-guard, template-opcode-order-guard, lint-go, lint-ui]
     if: always()
     runs-on: ubuntu-latest
 
@@ -578,6 +671,9 @@ jobs:
           GOROUTINE_GUARD_RESULT="${{ needs.goroutine-guard.result }}"
           LBPORTS_RESULT="${{ needs.gen-lb-ports.result }}"
           SVC_REG_GUARD_RESULT="${{ needs.service-registration-guard.result }}"
+          TMPL_ORDER_GUARD_RESULT="${{ needs.template-opcode-order-guard.result }}"
+          LINT_GO_RESULT="${{ needs.lint-go.result }}"
+          LINT_UI_RESULT="${{ needs.lint-ui.result }}"
 
           echo "| Job | Result |" >> $GITHUB_STEP_SUMMARY
           echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
@@ -591,11 +687,14 @@ jobs:
           echo "| Goroutine Guard | $GOROUTINE_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| LB Port Drift Guard | $LBPORTS_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Service Registration Guard | $SVC_REG_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
+          echo "| Template Opcode Order Guard | $TMPL_ORDER_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint & Format Guard (Go) | $LINT_GO_RESULT |" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint & Format Guard (UI) | $LINT_UI_RESULT |" >> $GITHUB_STEP_SUMMARY
 
           # Fail if any required job failed. update-pr-overlay is allowed
           # to be skipped (e.g., when the deploy-env label is absent) but
           # not to fail outright.
-          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$OVERLAY_RESULT" == "failure" ] || [ "$GUARD_RESULT" == "failure" ] || [ "$OUTBOX_GUARD_RESULT" == "failure" ] || [ "$GOROUTINE_GUARD_RESULT" == "failure" ] || [ "$LBPORTS_RESULT" == "failure" ] || [ "$SVC_REG_GUARD_RESULT" == "failure" ]; then
+          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$OVERLAY_RESULT" == "failure" ] || [ "$GUARD_RESULT" == "failure" ] || [ "$OUTBOX_GUARD_RESULT" == "failure" ] || [ "$GOROUTINE_GUARD_RESULT" == "failure" ] || [ "$LBPORTS_RESULT" == "failure" ] || [ "$SVC_REG_GUARD_RESULT" == "failure" ] || [ "$TMPL_ORDER_GUARD_RESULT" == "failure" ] || [ "$LINT_GO_RESULT" == "failure" ] || [ "$LINT_UI_RESULT" == "failure" ]; then
             echo ""
             echo "One or more jobs failed!"
             exit 1

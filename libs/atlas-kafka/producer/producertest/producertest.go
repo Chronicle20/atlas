@@ -18,8 +18,9 @@ package producertest
 import (
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/segmentio/kafka-go"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 )
 
 // NoopWriter implements producer.Writer by discarding every message.
@@ -27,9 +28,9 @@ type NoopWriter struct {
 	TopicName string
 }
 
-func (w NoopWriter) Topic() string                                              { return w.TopicName }
+func (w NoopWriter) Topic() string                                             { return w.TopicName }
 func (w NoopWriter) WriteMessages(_ context.Context, _ ...kafka.Message) error { return nil }
-func (w NoopWriter) Close() error                                               { return nil }
+func (w NoopWriter) Close() error                                              { return nil }
 
 // InstallNoop resets the producer manager singleton and reinstalls it with
 // a writer factory that returns NoopWriter for every topic.

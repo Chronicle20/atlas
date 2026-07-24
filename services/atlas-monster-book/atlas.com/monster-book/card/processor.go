@@ -1,11 +1,14 @@
 package card
 
 import (
+	"atlas-monster-book/kafka/message"
+	"atlas-monster-book/kafka/message/monsterbook"
 	"context"
 	"errors"
 
-	"atlas-monster-book/kafka/message"
-	"atlas-monster-book/kafka/message/monsterbook"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
@@ -14,13 +17,12 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
-var entityModelMapper = model.Map(Make)
-var entitySliceMapper = model.SliceMap(Make)
+var (
+	entityModelMapper = model.Map(Make)
+	entitySliceMapper = model.SliceMap(Make)
+)
 
 type Processor interface {
 	GetByCharacterId(characterId character.Id) ([]Model, error)

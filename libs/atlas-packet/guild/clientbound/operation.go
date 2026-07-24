@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 )
@@ -87,6 +88,7 @@ func (m RequestName) Encode(l logrus.FieldLogger, _ context.Context) func(map[st
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
+
 func (m *RequestName) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }
@@ -104,6 +106,7 @@ func (m RequestEmblem) Encode(l logrus.FieldLogger, _ context.Context) func(map[
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
+
 func (m *RequestEmblem) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }
@@ -122,6 +125,7 @@ func (m CreateErrorNameInUse) Encode(l logrus.FieldLogger, _ context.Context) fu
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
+
 func (m *CreateErrorNameInUse) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }
@@ -140,6 +144,7 @@ func (m CreateErrorDisagreed) Encode(l logrus.FieldLogger, _ context.Context) fu
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
+
 func (m *CreateErrorDisagreed) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }
@@ -156,6 +161,7 @@ func (m CreateError) Encode(l logrus.FieldLogger, _ context.Context) func(map[st
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
+
 func (m *CreateError) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }
@@ -174,6 +180,7 @@ func (m JoinErrorAlreadyJoined) Encode(l logrus.FieldLogger, _ context.Context) 
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
+
 func (m *JoinErrorAlreadyJoined) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }
@@ -192,6 +199,7 @@ func (m JoinErrorMaxMembers) Encode(l logrus.FieldLogger, _ context.Context) fun
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
+
 func (m *JoinErrorMaxMembers) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }
@@ -210,6 +218,7 @@ func (m JoinErrorNotInChannel) Encode(l logrus.FieldLogger, _ context.Context) f
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
+
 func (m *JoinErrorNotInChannel) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }
@@ -228,6 +237,7 @@ func (m MemberQuitErrorNotInGuild) Encode(l logrus.FieldLogger, _ context.Contex
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
+
 func (m *MemberQuitErrorNotInGuild) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }
@@ -246,6 +256,7 @@ func (m MemberExpelledErrorNotInGuild) Encode(l logrus.FieldLogger, _ context.Co
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
+
 func (m *MemberExpelledErrorNotInGuild) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }
@@ -262,6 +273,7 @@ func (m DisbandError) Encode(l logrus.FieldLogger, _ context.Context) func(map[s
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
+
 func (m *DisbandError) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }
@@ -280,6 +292,7 @@ func (m CreateErrorCannotAsAdmin) Encode(l logrus.FieldLogger, _ context.Context
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
+
 func (m *CreateErrorCannotAsAdmin) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }
@@ -298,6 +311,7 @@ func (m IncreaseCapacityError) Encode(l logrus.FieldLogger, _ context.Context) f
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
+
 func (m *IncreaseCapacityError) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }
@@ -316,6 +330,7 @@ func (m QuestErrorLessThanSixMembers) Encode(l logrus.FieldLogger, _ context.Con
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
+
 func (m *QuestErrorLessThanSixMembers) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }
@@ -334,6 +349,7 @@ func (m QuestErrorDisconnected) Encode(l logrus.FieldLogger, _ context.Context) 
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }
 }
+
 func (m *QuestErrorDisconnected) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) { m.mode = r.ReadByte() }
 }
@@ -363,6 +379,7 @@ func (m InviteErrorNotAcceptingInvites) Operation() string { return GuildOperati
 func (m InviteErrorNotAcceptingInvites) String() string {
 	return fmt.Sprintf("mode [%d], target [%s]", m.mode, m.target)
 }
+
 func (m InviteErrorNotAcceptingInvites) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte {
@@ -371,6 +388,7 @@ func (m InviteErrorNotAcceptingInvites) Encode(l logrus.FieldLogger, _ context.C
 		return w.Bytes()
 	}
 }
+
 func (m *InviteErrorNotAcceptingInvites) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) {
 		m.mode = r.ReadByte()
@@ -393,6 +411,7 @@ func (m InviteErrorAnotherInvite) Operation() string { return GuildOperationWrit
 func (m InviteErrorAnotherInvite) String() string {
 	return fmt.Sprintf("mode [%d], target [%s]", m.mode, m.target)
 }
+
 func (m InviteErrorAnotherInvite) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte {
@@ -401,6 +420,7 @@ func (m InviteErrorAnotherInvite) Encode(l logrus.FieldLogger, _ context.Context
 		return w.Bytes()
 	}
 }
+
 func (m *InviteErrorAnotherInvite) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) {
 		m.mode = r.ReadByte()
@@ -423,6 +443,7 @@ func (m InviteDenied) Operation() string { return GuildOperationWriter }
 func (m InviteDenied) String() string {
 	return fmt.Sprintf("mode [%d], target [%s]", m.mode, m.target)
 }
+
 func (m InviteDenied) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte {
@@ -431,6 +452,7 @@ func (m InviteDenied) Encode(l logrus.FieldLogger, _ context.Context) func(map[s
 		return w.Bytes()
 	}
 }
+
 func (m *InviteDenied) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) {
 		m.mode = r.ReadByte()
@@ -935,6 +957,7 @@ func (m MemberUpdate) Operation() string { return GuildOperationWriter }
 func (m MemberUpdate) String() string {
 	return fmt.Sprintf("mode [%d], guildId [%d], characterId [%d], level [%d], job [%d]", m.mode, m.guildId, m.characterId, m.level, m.job)
 }
+
 func (m MemberUpdate) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte {
@@ -946,6 +969,7 @@ func (m MemberUpdate) Encode(l logrus.FieldLogger, _ context.Context) func(map[s
 		return w.Bytes()
 	}
 }
+
 func (m *MemberUpdate) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) {
 		m.mode = r.ReadByte()
@@ -979,6 +1003,7 @@ func (m ShowTitles) Operation() string { return GuildOperationWriter }
 func (m ShowTitles) String() string {
 	return fmt.Sprintf("mode [%d], guildId [%d], entries [%d]", m.mode, m.guildId, len(m.entries))
 }
+
 func (m ShowTitles) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte {
@@ -994,6 +1019,7 @@ func (m ShowTitles) Encode(l logrus.FieldLogger, _ context.Context) func(map[str
 		return w.Bytes()
 	}
 }
+
 func (m *ShowTitles) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) {
 		m.mode = r.ReadByte()
@@ -1027,6 +1053,7 @@ func (m QuestWaitingNotice) Operation() string { return GuildOperationWriter }
 func (m QuestWaitingNotice) String() string {
 	return fmt.Sprintf("mode [%d], channel [%d], state [%d]", m.mode, m.channel, m.state)
 }
+
 func (m QuestWaitingNotice) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte {
@@ -1036,6 +1063,7 @@ func (m QuestWaitingNotice) Encode(l logrus.FieldLogger, _ context.Context) func
 		return w.Bytes()
 	}
 }
+
 func (m *QuestWaitingNotice) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) {
 		m.mode = r.ReadByte()
@@ -1059,6 +1087,7 @@ func (m BoardAuthKeyUpdate) Operation() string { return GuildOperationWriter }
 func (m BoardAuthKeyUpdate) String() string {
 	return fmt.Sprintf("mode [%d], authKey [%s]", m.mode, m.authKey)
 }
+
 func (m BoardAuthKeyUpdate) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte {
@@ -1067,6 +1096,7 @@ func (m BoardAuthKeyUpdate) Encode(l logrus.FieldLogger, _ context.Context) func
 		return w.Bytes()
 	}
 }
+
 func (m *BoardAuthKeyUpdate) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) {
 		m.mode = r.ReadByte()
@@ -1091,6 +1121,7 @@ func (m SetSkillResponse) Operation() string { return GuildOperationWriter }
 func (m SetSkillResponse) String() string {
 	return fmt.Sprintf("mode [%d], success [%t], message [%s]", m.mode, m.success, m.message)
 }
+
 func (m SetSkillResponse) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte {
@@ -1102,6 +1133,7 @@ func (m SetSkillResponse) Encode(l logrus.FieldLogger, _ context.Context) func(m
 		return w.Bytes()
 	}
 }
+
 func (m *SetSkillResponse) Decode(_ logrus.FieldLogger, _ context.Context) func(*request.Reader, map[string]interface{}) {
 	return func(r *request.Reader, _ map[string]interface{}) {
 		m.mode = r.ReadByte()

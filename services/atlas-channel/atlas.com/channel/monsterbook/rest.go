@@ -3,9 +3,10 @@ package monsterbook
 import (
 	"strconv"
 
+	"github.com/jtumidanski/api2go/jsonapi"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/monster"
-	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 // CollectionRestModel is the JSON:API representation of a character's

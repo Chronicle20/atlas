@@ -3,11 +3,13 @@ package mts
 import (
 	mtsmsg "atlas-channel/kafka/message/mts"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 // Processor emits COMMAND_TOPIC_MTS commands to atlas-mts. The per-arm

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type FieldKey struct {
@@ -24,8 +24,10 @@ type Registry struct {
 	entries map[FieldKey]WeatherEntry
 }
 
-var registry *Registry
-var once sync.Once
+var (
+	registry *Registry
+	once     sync.Once
+)
 
 func getRegistry() *Registry {
 	once.Do(func() {

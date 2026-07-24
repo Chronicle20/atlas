@@ -3,9 +3,10 @@ package model
 import (
 	"testing"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 // movementTypesV84 returns a GMS v84 move-action "types" table (indices 0..23).

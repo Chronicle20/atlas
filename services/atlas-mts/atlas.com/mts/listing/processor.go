@@ -1,26 +1,26 @@
 package listing
 
 import (
-	"context"
-	"fmt"
-	"math"
-	"time"
-
 	"atlas-mts/bid"
 	"atlas-mts/configuration"
 	"atlas-mts/holding"
 	"atlas-mts/saga"
 	"atlas-mts/transaction"
 	"atlas-mts/wallet"
+	"context"
+	"fmt"
+	"math"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 // SagaEmitter abstracts the saga-command emission so the list flow can be
@@ -361,12 +361,12 @@ func (p *ProcessorImpl) UpdateAuction(id string, currentBid uint32, highBidderId
 // the listing snapshot so the caller can emit a LISTING_CANCELLED event. On a
 // loss (Won=false) no holding was created and the other fields are zero values.
 type CancelResult struct {
-	Won        bool
-	WorldId    world.Id
-	ListingId  uuid.UUID
-	HoldingId  uuid.UUID
-	SellerId   uint32
-	ItemId     uint32
+	Won       bool
+	WorldId   world.Id
+	ListingId uuid.UUID
+	HoldingId uuid.UUID
+	SellerId  uint32
+	ItemId    uint32
 	// Held bid escrow to release: set when a cancelled auction still had an open
 	// high bid at cancel time (only the current high bidder still holds escrow —
 	// outbid bidders were released as they were outbid). A zero HeldBidderId means
@@ -629,6 +629,7 @@ func (p *ProcessorImpl) transitionToSellerHolding(db *gorm.DB, id string, termin
 			SetRingId(lm.RingId()).
 			SetViciousCount(lm.ViciousCount()).
 			SetFlags(lm.Flags()).
+			SetOwner(lm.Owner()).
 			Build()
 		if berr != nil {
 			return berr

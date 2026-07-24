@@ -5,12 +5,13 @@ import (
 	"math"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 type Asset struct {
@@ -45,6 +46,7 @@ type Asset struct {
 	// stackable fields
 	quantity     uint32
 	rechargeable uint64
+	owner        string
 	// pet fields
 	petId     uint32
 	petName   string
@@ -62,39 +64,39 @@ func NewAsset(zeroPosition bool, slot int16, templateId uint32, expiration time.
 	}
 }
 
-func (m Asset) ZeroPosition() bool   { return m.zeroPosition }
-func (m Asset) Slot() int16          { return m.slot }
-func (m Asset) TemplateId() uint32   { return m.templateId }
-func (m Asset) Expiration() time.Time { return m.expiration }
-func (m Asset) Strength() uint16     { return m.strength }
-func (m Asset) Dexterity() uint16    { return m.dexterity }
-func (m Asset) Intelligence() uint16 { return m.intelligence }
-func (m Asset) Luck() uint16         { return m.luck }
-func (m Asset) Hp() uint16           { return m.hp }
-func (m Asset) Mp() uint16           { return m.mp }
-func (m Asset) WeaponAttack() uint16 { return m.weaponAttack }
-func (m Asset) MagicAttack() uint16  { return m.magicAttack }
-func (m Asset) WeaponDefense() uint16 { return m.weaponDefense }
-func (m Asset) MagicDefense() uint16 { return m.magicDefense }
-func (m Asset) Accuracy() uint16     { return m.accuracy }
-func (m Asset) Avoidability() uint16 { return m.avoidability }
-func (m Asset) Hands() uint16        { return m.hands }
-func (m Asset) Speed() uint16        { return m.speed }
-func (m Asset) Jump() uint16         { return m.jump }
-func (m Asset) Slots() uint16        { return m.slots }
-func (m Asset) LevelType() byte      { return m.levelType }
-func (m Asset) Level() byte          { return m.level }
-func (m Asset) Experience() uint32   { return m.experience }
+func (m Asset) ZeroPosition() bool     { return m.zeroPosition }
+func (m Asset) Slot() int16            { return m.slot }
+func (m Asset) TemplateId() uint32     { return m.templateId }
+func (m Asset) Expiration() time.Time  { return m.expiration }
+func (m Asset) Strength() uint16       { return m.strength }
+func (m Asset) Dexterity() uint16      { return m.dexterity }
+func (m Asset) Intelligence() uint16   { return m.intelligence }
+func (m Asset) Luck() uint16           { return m.luck }
+func (m Asset) Hp() uint16             { return m.hp }
+func (m Asset) Mp() uint16             { return m.mp }
+func (m Asset) WeaponAttack() uint16   { return m.weaponAttack }
+func (m Asset) MagicAttack() uint16    { return m.magicAttack }
+func (m Asset) WeaponDefense() uint16  { return m.weaponDefense }
+func (m Asset) MagicDefense() uint16   { return m.magicDefense }
+func (m Asset) Accuracy() uint16       { return m.accuracy }
+func (m Asset) Avoidability() uint16   { return m.avoidability }
+func (m Asset) Hands() uint16          { return m.hands }
+func (m Asset) Speed() uint16          { return m.speed }
+func (m Asset) Jump() uint16           { return m.jump }
+func (m Asset) Slots() uint16          { return m.slots }
+func (m Asset) LevelType() byte        { return m.levelType }
+func (m Asset) Level() byte            { return m.level }
+func (m Asset) Experience() uint32     { return m.experience }
 func (m Asset) HammersApplied() uint32 { return m.hammersApplied }
-func (m Asset) Flag() uint16         { return m.flag }
-func (m Asset) CashId() int64        { return m.cashId }
-func (m Asset) Quantity() uint32     { return m.quantity }
-func (m Asset) Rechargeable() uint64 { return m.rechargeable }
-func (m Asset) PetId() uint32        { return m.petId }
-func (m Asset) PetName() string      { return m.petName }
-func (m Asset) PetLevel() byte       { return m.petLevel }
-func (m Asset) Closeness() uint16    { return m.closeness }
-func (m Asset) Fullness() byte       { return m.fullness }
+func (m Asset) Flag() uint16           { return m.flag }
+func (m Asset) CashId() int64          { return m.cashId }
+func (m Asset) Quantity() uint32       { return m.quantity }
+func (m Asset) Rechargeable() uint64   { return m.rechargeable }
+func (m Asset) PetId() uint32          { return m.petId }
+func (m Asset) PetName() string        { return m.petName }
+func (m Asset) PetLevel() byte         { return m.petLevel }
+func (m Asset) Closeness() uint16      { return m.closeness }
+func (m Asset) Fullness() byte         { return m.fullness }
 
 func (m Asset) inventoryType() inventory.Type {
 	t, _ := inventory.TypeFromItemId(item.Id(m.templateId))
@@ -166,6 +168,15 @@ func (m Asset) SetPetInfo(petId uint32, petName string, petLevel, fullness byte,
 	return m
 }
 
+func (m Asset) SetOwner(owner string) Asset {
+	m.owner = owner
+	return m
+}
+
+func (m Asset) Owner() string {
+	return m.owner
+}
+
 func (m *Asset) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	if m.IsEquipment() && !m.IsCashEquipment() {
 		return m.encodeEquipableInfo(l, ctx)
@@ -206,32 +217,51 @@ func (m *Asset) encodeEquipableInfo(l logrus.FieldLogger, ctx context.Context) f
 		m.encodeEquipmentStats(w)
 
 		if (t.Region() == "GMS" && t.MajorVersion() > 12) || t.Region() == "JMS" {
-			w.WriteAsciiString("")
+			w.WriteAsciiString(m.owner)
 			w.WriteShort(m.flag)
 		}
 
 		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
-			w.WriteByte(m.levelType)
-			w.WriteByte(m.level)
-			w.WriteInt(m.experience)
-			if t.IsRegion("GMS") && t.MajorAtLeast(84) {
-				w.WriteInt32(-1) // nDurability (-1 = no durability): GMS v84+ equip field, ordered experience/durability/hammersApplied (GW_ItemSlotEquip::RawDecode +212; absent v83). IDA-verified.
-			}
-			w.WriteInt(m.hammersApplied)
+			// levelType/level/experience(/durability/hammers): the whole extended
+			// equip trailer was added in the v72 revision. v48/v61 read NOTHING
+			// between the flag short and the single trailing 8-byte buffer below
+			// (verified equip RawDecode v61 @0x4b4e7d, v48 @0x49c332); v72+ read
+			// levelType+level+exp then two buffers + an int (v72 @0x4d0172).
+			if (t.IsRegion("GMS") && t.MajorAtLeast(72)) || t.Region() == "JMS" {
+				w.WriteByte(m.levelType)
+				w.WriteByte(m.level)
+				w.WriteInt(m.experience)
+				if t.IsRegion("GMS") && t.MajorAtLeast(84) {
+					w.WriteInt32(-1) // nDurability (-1 = no durability): GMS v84+ equip field, ordered experience/durability/hammersApplied (GW_ItemSlotEquip::RawDecode +212; absent v83). IDA-verified.
+				}
+				// hammersApplied (nIUC): added in the v79 revision (v72 @0x4d0172
+				// reads a single Decode4 = experience; v79 @0x4d7ee8 / v83 @0x4e3c3d
+				// read two). IDA-verified.
+				if (t.IsRegion("GMS") && t.MajorAtLeast(79)) || t.Region() == "JMS" {
+					w.WriteInt(m.hammersApplied)
+				}
 
-			if t.Region() == "JMS" {
-				w.WriteByte(0)
-				w.WriteShort(0)
-				w.WriteShort(0)
-				w.WriteShort(0)
-				w.WriteShort(0)
-				w.WriteShort(0)
-				w.WriteInt(0)
+				if t.Region() == "JMS" {
+					w.WriteByte(0)
+					w.WriteShort(0)
+					w.WriteShort(0)
+					w.WriteShort(0)
+					w.WriteShort(0)
+					w.WriteShort(0)
+					w.WriteInt(0)
+				}
 			}
 
+			// Trailing 8-byte buffer (a dateExpire FILETIME), present for every
+			// version that has equips (v48+). Non-cash items always carry it (the
+			// client reads it under `if(!cash)`; verified v48 @0x49c50f, v61 @0x4b505a).
 			w.WriteLong(0)
-			w.WriteInt64(94354848000000000)
-			w.WriteInt32(-1)
+
+			// Second buffer + int: also v72-revision additions (absent v48/v61).
+			if (t.IsRegion("GMS") && t.MajorAtLeast(72)) || t.Region() == "JMS" {
+				w.WriteInt64(94354848000000000)
+				w.WriteInt32(-1)
+			}
 		}
 		return w.Bytes()
 	}
@@ -258,11 +288,22 @@ func (m *Asset) encodeCashEquipableInfo(l logrus.FieldLogger, ctx context.Contex
 		m.encodeEquipmentStats(w)
 
 		if (t.Region() == "GMS" && t.MajorVersion() > 12) || t.Region() == "JMS" {
-			w.WriteAsciiString("")
+			w.WriteAsciiString(m.owner)
 			w.WriteShort(m.flag)
 
-			if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
-				for i := 0; i < 10; i++ {
+			// The cash-equip extended trailer is a v72-revision addition. For a CASH
+			// item the client skips the non-cash 8-byte buffer, so v48/v61 read
+			// NOTHING after the flag short (verified v48/v61 equip RawDecode cash
+			// branch) — the whole block is gated v72+.
+			if (t.IsRegion("GMS") && t.MajorAtLeast(72)) || t.Region() == "JMS" {
+				// 0x40 filler stands in for levelType(1)+level(1)+experience(4)+hammersApplied(4).
+				// hammersApplied (4 bytes) was added in the v79 revision, so v72 reads
+				// only 6 filler bytes here (no hammers). IDA-verified.
+				filler := 10
+				if t.IsRegion("GMS") && !t.MajorAtLeast(79) {
+					filler = 6
+				}
+				for i := 0; i < filler; i++ {
 					w.WriteByte(0x40)
 				}
 				w.WriteInt64(94354848000000000)
@@ -284,7 +325,7 @@ func (m *Asset) encodeStackableInfo(l logrus.FieldLogger, _ context.Context) fun
 		w.WriteBool(false)
 		w.WriteInt64(MsTime(m.expiration))
 		w.WriteShort(uint16(m.quantity))
-		w.WriteAsciiString("")
+		w.WriteAsciiString(m.owner)
 		w.WriteShort(m.flag)
 		if item.IsBullet(item.Id(m.templateId)) || item.IsThrowingStar(item.Id(m.templateId)) {
 			w.WriteLong(m.rechargeable)
@@ -329,7 +370,7 @@ func (m *Asset) encodeCashItemInfo(l logrus.FieldLogger, _ context.Context) func
 		w.WriteInt64(m.cashId)
 		w.WriteInt64(MsTime(m.expiration))
 		w.WriteShort(uint16(m.quantity))
-		w.WriteAsciiString("")
+		w.WriteAsciiString(m.owner)
 		w.WriteShort(m.flag)
 		return w.Bytes()
 	}
@@ -344,7 +385,10 @@ func (m *Asset) encodeSlot(w *response.Writer, t tenant.Model, _ bool) {
 	if slot > 100 {
 		slot -= 100
 	}
-	if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+	// Equip inventory position widened from byte to short between v79 and v83.
+	// v79/v72 GW inventory decode read the equip slot with Decode1 (byte); v83
+	// reads Decode2 (short). IDA-verified. Legacy GMS (<83) uses a byte.
+	if (t.Region() == "GMS" && t.MajorAtLeast(83)) || t.Region() == "JMS" {
 		w.WriteShort(uint16(slot))
 	} else {
 		w.WriteByte(byte(slot))
@@ -418,32 +462,54 @@ func (m *Asset) decodeEquipableInfo(r *request.Reader, t tenant.Model, isCash bo
 
 		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
 			if isCash {
-				for i := 0; i < 10; i++ {
-					_ = r.ReadByte()
+				// Cash-equip trailer: v72+ (mirror of encodeCashEquipableInfo).
+				// v48/v61 cash equips read nothing after the flag short.
+				if (t.IsRegion("GMS") && t.MajorAtLeast(72)) || t.Region() == "JMS" {
+					// v79+ reads 10 filler bytes (incl. hammersApplied); v72 reads 6.
+					fillerLen := 10
+					if t.IsRegion("GMS") && !t.MajorAtLeast(79) {
+						fillerLen = 6
+					}
+					for i := 0; i < fillerLen; i++ {
+						_ = r.ReadByte()
+					}
+					_ = r.ReadInt64() // 94354848000000000
+					_ = r.ReadInt32() // -1
 				}
 			} else {
-				m.levelType = r.ReadByte()
-				m.level = r.ReadByte()
-				m.experience = r.ReadUint32()
-				if t.IsRegion("GMS") && t.MajorAtLeast(84) {
-					_ = r.ReadInt32() // nDurability: GMS v84+, ordered experience/durability/hammersApplied (mirror of Encode)
-				}
-				m.hammersApplied = r.ReadUint32()
+				// levelType/level/exp(/durability/hammers): v72+ (mirror of Encode).
+				if (t.IsRegion("GMS") && t.MajorAtLeast(72)) || t.Region() == "JMS" {
+					m.levelType = r.ReadByte()
+					m.level = r.ReadByte()
+					m.experience = r.ReadUint32()
+					if t.IsRegion("GMS") && t.MajorAtLeast(84) {
+						_ = r.ReadInt32() // nDurability: GMS v84+ (mirror of Encode)
+					}
+					// hammersApplied (nIUC): v79+ only (mirror of Encode).
+					if (t.IsRegion("GMS") && t.MajorAtLeast(79)) || t.Region() == "JMS" {
+						m.hammersApplied = r.ReadUint32()
+					}
 
-				if t.Region() == "JMS" {
-					_ = r.ReadByte()
-					_ = r.ReadUint16()
-					_ = r.ReadUint16()
-					_ = r.ReadUint16()
-					_ = r.ReadUint16()
-					_ = r.ReadUint16()
-					_ = r.ReadUint32()
+					if t.Region() == "JMS" {
+						_ = r.ReadByte()
+						_ = r.ReadUint16()
+						_ = r.ReadUint16()
+						_ = r.ReadUint16()
+						_ = r.ReadUint16()
+						_ = r.ReadUint16()
+						_ = r.ReadUint32()
+					}
 				}
 
-				_ = r.ReadUint64() // 0
+				// Trailing 8-byte buffer, present v48+ (mirror of Encode WriteLong(0)).
+				_ = r.ReadUint64()
+
+				// Second buffer + int: v72+ (mirror of Encode).
+				if (t.IsRegion("GMS") && t.MajorAtLeast(72)) || t.Region() == "JMS" {
+					_ = r.ReadInt64() // 94354848000000000
+					_ = r.ReadInt32() // -1
+				}
 			}
-			_ = r.ReadInt64() // 94354848000000000
-			_ = r.ReadInt32() // -1
 		}
 	}
 }

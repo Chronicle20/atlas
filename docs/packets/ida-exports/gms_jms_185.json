@@ -3,6 +3,62 @@
   "md5": "af6652ff9b7c549341f35e3569d7564a",
   "generated_at": "2026-05-14T00:00:00Z",
   "functions": {
+    "CUser::OnMiniRoomBalloon#Remove": {
+      "address": "0x9f7d25",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId (consumed by CUserPool::OnUserCommonPacket GetUser)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "roomType (0 -> CChatBalloon::DestroyMiniRoomBalloon; no trailing fields)"
+        }
+      ]
+    },
+    "CUser::OnMiniRoomBalloon": {
+      "address": "0x9f7d25",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId (consumed by CUserPool::OnUserCommonPacket GetUser, not OnMiniRoomBalloon)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "roomType (0 = remove balloon)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "roomId (m_dwMiniRoomSN; roomType != 0)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "title (m_sMiniRoomTitle)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "hasPassword (m_bPrivate)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "pieceType (m_nGameKind)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "occupancy (m_nCurUsers)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "capacity (m_nMaxUsers)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "inProgress (m_bGameOn)"
+        }
+      ]
+    },
     "CWvsContext::SendLotteryItemUseRequest": {
       "address": "0xaf6900",
       "direction": "serverbound",
@@ -9695,7 +9751,11 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": ""
+          "comment": "state; (state-7) selects one of 6 arms"
+        },
+        {
+          "op": "Decode1",
+          "comment": "subState (state-gated: only arms 8/10/12 -- OnStartShipMoveField/OnMoveField/OnEndShipMoveField -- read a second byte; arms 7/9/11 are nullsubs and read nothing further)"
         }
       ]
     },
@@ -9847,22 +9907,27 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": ""
+          "comment": "mode; consumed inside the leading branch condition itself (C || short-circuit against a client-local TSecType flag, never a wire read) -- selects one of two mutually-exclusive UI arms"
         },
         {
           "op": "Decode1",
-          "comment": ""
-        },
-        {
-          "op": "Decode1",
-          "comment": ""
+          "comment": "value; read unconditionally by whichever arm is selected -- champion/finalist/round-N notice in one arm, prize-not-set/insufficient-users notice in the other. Both arms terminate after this byte."
         }
       ]
     },
     "CField_Tournament::OnTournamentMatchTable": {
       "address": "0x5cff1c",
-      "direction": "",
-      "calls": null
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "DecodeBuffer",
+          "comment": "match table (m_aaMatch; 0x300=768-byte raw blob, PDB-typed unsigned int[32][6]; single bulk memcpy, not per-field reads; read inside ctor helper sub_864212 @0x864212)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "state (m_nState)"
+        }
+      ]
     },
     "CField_Tournament::OnTournamentSetPrize": {
       "address": "0x5cffa7",
@@ -13241,6 +13306,178 @@
         {
           "op": "Decode1",
           "comment": "code byte (case 2/3/6/7 = error — no further reads in v83)"
+        }
+      ]
+    },
+    "CWvsContext::SendMapTransferItemUseRequest": {
+      "address": "0xaef071",
+      "direction": "serverbound",
+      "notes": "USE_TELEPORT_ROCK (task-124 jms_v185 verify pass, live MapleStory_dump_SCY.exe port 13344). Byte-identical read order to v83/v84/v87/v95: guard nItemID/10000==232 && CanSendExclRequest(this,200,0) @0xaef0a0, COutPacket::COutPacket(&pkt,0x4C) @0xaef0b2 (opcode 76, matches registry USE_TELEPORT_ROCK), Encode2(nPOS) @0xaef0c1, Encode4(nItemID) @0xaef0cc, then CWvsContext::RunMapTransferItem(this,&pkt,0) @0xaef0d9 (renamed live this pass from sub_AEF160, the shared target-payload helper — also called by the cash CashItemUseTeleportRock sub-body below); on success Encode4(get_update_time()) @0xaef0eb then SendPacket @0xaef0fa — a genuine trailing updateTime, matching teleportrock/serverbound/Use's version-invariant trailing-updateTime claim.",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CWvsContext::RunMapTransferItem(this, &pkt, 0)"
+        }
+      ]
+    },
+    "CWvsContext::SendMapTransferRequest": {
+      "address": "0xb0d9eb",
+      "direction": "serverbound",
+      "notes": "TROCK_ADD_MAP (task-124 jms_v185 verify pass, live MapleStory_dump_SCY.exe port 13344). Byte-identical read order to v83/v84/v87/v95: COutPacket::COutPacket(&v5,0x61) @0xb0d9fd (opcode 97, matches registry TROCK_ADD_MAP); Encode1(nType) @0xb0da0c; Encode1(bCanTransferContinent) @0xb0da17; if(!nType) Encode4(dwTargetField) @0xb0da28; SendPacket @0xb0da37.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "!nType"
+        }
+      ]
+    },
+    "CWvsContext::OnMapTransferResult": {
+      "address": "0xb0c8c2",
+      "direction": "clientbound",
+      "notes": "MAP_TRANSFER_RESULT (task-124 jms_v185 verify pass, live MapleStory_dump_SCY.exe port 13344). Byte-identical read order to v83/v84/v87/v95: mode(Decode1) @0xb0c8e2 + targetList(Decode1) @0xb0c8e5, then for mode in {2,3} exactly 5 (targetList==0) or 10 (targetList==1) x Decode4 mapId @0xb0c935 loop; modes 5,6/7,8,9,10 are the error/notice form (StringPool ids 0xC90/0xC6A/0xC70/0xC6D — jms-local string ids, no case 11 in this switch, does not affect wire bytes) reading only mode+targetList with no further payload.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v3 == 2 || v3 == 3"
+        }
+      ]
+    },
+    "CWvsContext::RunMapTransferItem": {
+      "address": "0xaef160",
+      "direction": "serverbound",
+      "notes": "Shared teleport-rock target-payload helper (task-124 jms_v185 verify pass). Unnamed in the jms IDB (sub_AEF160) until this pass; renamed live. Called by both SendMapTransferItemUseRequest (flag=0, @0xaef0d9) and the cash-item-use teleport-rock branch (case 22 of SendConsumeCashItemUseRequest, @0xaf14f9). Live decompile (port 13344): a CDialog target-picker; on DoModal()==1, if a name was resolved: Encode1(1) then EncodeStr(name) @0xaef295-2ab; else if n is set and != 999999999 (EmptyMapId): Encode1(0) then Encode4(n) @0xaef2c4-2cf; otherwise no payload bytes are written at all (dialog confirmed with no selection). The parser cannot descend into this call because both callers consume its return value in an if-condition (treated as a guard, not a Delegate) — calls intentionally left absent (opaque relative to this static export), matching the v83/v84/v87/v95 convention for this same helper.",
+      "calls": null
+    },
+    "CWvsContext::SendConsumeCashItemUseRequest": {
+      "address": "0xaef2f5",
+      "direction": "serverbound",
+      "notes": "cash/serverbound/CashItemUseTeleportRock (task-124 jms_v185 verify pass, live MapleStory_dump_SCY.exe port 13344). jms MajorVersion() is 185 (>=87): the function prologue writes COutPacket::COutPacket(&pkt,0x47) @0xaef363 (opcode 71, matches registry USE_CASH_ITEM), then IMMEDIATELY Encode4(get_update_time()) @0xaef36c — BEFORE Encode2(nPOS) @0xaef37a and Encode4(nItemID) @0xaef385 and the switch on get_consume_cash_item_type(nItemID) @0xaef393 — i.e. update_time is a common-header LEADING field, exactly mirroring v87/v95's shape (updateTimeFirst := MajorVersion()>=87 in character_cash_item_use.go). Case 22 (jumptable 00AEF3A8, label loc_AF14BA @0xaf14ba) calls a validity check (sub_AF2D2B @0xaf14bd), then on success computes flag = (itemId/1000 != 5040) @0xaf14e6-f0 and calls CWvsContext::RunMapTransferItem(this,&oPacket,flag) @0xaf14f9 — the SAME helper USE_TELEPORT_ROCK calls (renamed live this pass from sub_AEF160) — then on success falls to the shared tail (loc_AF2AD2: CanSendExclRequest @0xaf2adb, then sub_56BC92 @0xaf2afc, decompiled and confirmed to be a pure CClientSocket::SendPacket wrapper with NO Encode call inside it): no further Encode4 anywhere between the case-22 RunMapTransferItem call and the final SendPacket.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "update_time = get_update_time() — common header, leading (task-124 jms: MajorVersion()>=87 updateTimeFirst)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nPOS — common header"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nItemID — common header; switches via get_consume_cash_item_type(nItemID) to a per-case body (opaque to this flat harvest, same class of gap as RunMapTransferItem)"
+        }
+      ]
+    },
+    "CRPSGameDlg::OnBtStart": {
+      "address": "0x7ae7bb",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "sub-op byte (0=OnBtStart/2=Update-timeout/3=OnBtContinue/4=OnBtExit/5=OnBtRetry; bodyless arm, no further fields — docs/tasks/task-132-rps-npc-game/ida-rps-serverbound.md §0/§1-§5)"
+        }
+      ]
+    },
+    "CRPSGameDlg::SendSelection": {
+      "address": "0x7ae98b",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "throw (0=Rock/1=Paper/2=Scissors, RAW passthrough; sub-op mode byte 1 written earlier by the same sender, excluded here per the storage OperationMeso/StoreAsset/RetrieveAsset convention)"
+        }
+      ]
+    },
+    "CRPSGameDlg::OnPacket#OPEN": {
+      "address": "0x7ae4d7",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (OnPacket entry Decode1 @0x7ae3ee; case 8 = OPEN)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "ante — participation fee (CInPacket::Decode4 @0x7ae4d7; the StringPool notice string that follows is a static resource, not a packet field)"
+        }
+      ]
+    },
+    "CRPSGameDlg::OnPacket#RESULT": {
+      "address": "0x7ae683",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (dispatcher sub_7AE636 (0x7ae636) case 11 = RESULT)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "npcThrow (CInPacket::Decode1 @0x7ae683)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "straightVictoryCount, SIGNED int8 (CInPacket::Decode1 @0x7ae68e; client treats as signed __int8, branches on <0)"
+        }
+      ]
+    },
+    "CRPSGameDlg::OnPacket#START_SELECT": {
+      "address": "0x7ae6d4",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte only (case 9 = START_SELECT; enable R/P/S buttons + arm selection timer, no further wire reads)"
+        }
+      ]
+    },
+    "CRPSGameDlg::OnPacket#END": {
+      "address": "0x7ae489",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte only (case 13 = CLOSE; CWnd::Destroy @0x7ae489, no further wire reads)"
+        }
+      ]
+    },
+    "CWvsContext::OnIncubatorResult": {
+      "address": "0xb0f30b",
+      "direction": "clientbound",
+      "notes": "Task 19 (live IDA re-verify, jms_v185 port 13344): reads int itemId (Decode4) + short count (Decode2) only — no further packet reads (no gachapon/bonus tail). Matches v83/v84/gms_v87; only v95 reads the extended 5-field body.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "itemId"
+        },
+        {
+          "op": "Decode2",
+          "comment": "count"
         }
       ]
     }

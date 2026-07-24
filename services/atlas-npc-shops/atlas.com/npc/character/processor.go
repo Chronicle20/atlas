@@ -6,10 +6,11 @@ import (
 	characterMessage "atlas-npc/kafka/message/character"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {
@@ -79,4 +80,3 @@ func (p *ProcessorImpl) RequestChangeMeso(mb *message.Buffer) func(worldId world
 		return mb.Put(characterMessage.EnvCommandTopic, RequestChangeMesoCommandProvider(characterId, worldId, actorId, actorType, amount))
 	}
 }
-

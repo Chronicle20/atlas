@@ -3,12 +3,14 @@ package chalkboard
 import (
 	chalkboard2 "atlas-channel/kafka/message/chalkboard"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/sirupsen/logrus"
 )
 
 // Processor interface defines the operations for chalkboard processing
@@ -34,7 +36,6 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 }
 
 var _ Processor = (*ProcessorImpl)(nil)
-
 
 // InMapModelProvider fetches every active chalkboard message currently in
 // one map instance (used to replay existing chalkboard state to a

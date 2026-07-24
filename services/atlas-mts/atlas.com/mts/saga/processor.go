@@ -1,9 +1,9 @@
 package saga
 
 import (
+	"atlas-mts/kafka/message/saga"
 	"context"
 
-	"atlas-mts/kafka/message/saga"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"

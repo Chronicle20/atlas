@@ -5,10 +5,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-script-core/condition"
 	"github.com/Chronicle20/atlas/libs/atlas-script-core/operation"
-	"github.com/google/uuid"
 )
 
 func TestMake(t *testing.T) {

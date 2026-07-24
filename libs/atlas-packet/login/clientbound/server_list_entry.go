@@ -4,13 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const ServerListEntryWriter = "ServerListEntry"
@@ -35,13 +36,13 @@ func NewServerListEntry(worldId world.Id, worldName string, state byte, eventMes
 	}
 }
 
-func (m ServerListEntry) WorldId() world.Id                  { return m.worldId }
-func (m ServerListEntry) WorldName() string                  { return m.worldName }
-func (m ServerListEntry) State() byte                        { return m.state }
-func (m ServerListEntry) EventMessage() string               { return m.eventMessage }
-func (m ServerListEntry) ChannelLoads() []model.ChannelLoad  { return m.channelLoads }
-func (m ServerListEntry) Balloons() []model.WorldBalloon     { return m.balloons }
-func (m ServerListEntry) Operation() string                  { return ServerListEntryWriter }
+func (m ServerListEntry) WorldId() world.Id                 { return m.worldId }
+func (m ServerListEntry) WorldName() string                 { return m.worldName }
+func (m ServerListEntry) State() byte                       { return m.state }
+func (m ServerListEntry) EventMessage() string              { return m.eventMessage }
+func (m ServerListEntry) ChannelLoads() []model.ChannelLoad { return m.channelLoads }
+func (m ServerListEntry) Balloons() []model.WorldBalloon    { return m.balloons }
+func (m ServerListEntry) Operation() string                 { return ServerListEntryWriter }
 func (m ServerListEntry) String() string {
 	return fmt.Sprintf("worldId [%d], worldName [%s], channels [%d], balloons [%d]", m.worldId, m.worldName, len(m.channelLoads), len(m.balloons))
 }

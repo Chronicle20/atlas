@@ -35,6 +35,20 @@ For large refactors expect multiple fix-and-rebuild cycles. Don't shortcut the b
    services.json, deploy/k8s, docker-bake.hcl, go.work, or tools/db-bootstrap.sh
    changed. Cross-checks every hand-maintained service-registration list
    (see [`docs/adding-a-new-service.md`](docs/adding-a-new-service.md)).
+8. **`tools/lint.sh --check` clean from the repo root.** The shared lint &
+   format guard (task-171): golangci-lint v2 formatters (gofumpt + goimports,
+   tree-wide) and `standard` linters (rev-gated to new code) across every Go
+   module, plus Prettier + ESLint for atlas-ui. Fix mode (`tools/lint.sh`,
+   no flags) rewrites files in place — run it before committing. Item 2's
+   standalone `go vet` is intentionally retained (it runs full-module;
+   the guard's govet is diff-gated).
+9. **`tools/template-opcode-order-guard.sh` clean from the repo root** whenever
+   a tenant socket-config template under
+   `services/atlas-configurations/seed-data/templates/` changed. Enforces
+   strictly ascending `opCode` order for both the `handlers` and `writers`
+   arrays — new entries go at their sorted position, never appended next to a
+   semantically-related entry. See
+   [`docs/packets/TEMPLATE_CONVENTIONS.md`](docs/packets/TEMPLATE_CONVENTIONS.md).
 
 ## Code Patterns
 

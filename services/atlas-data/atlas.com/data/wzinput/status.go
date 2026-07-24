@@ -1,15 +1,16 @@
 package wzinput
 
 import (
+	"atlas-data/rest"
 	"fmt"
 	"net/http"
 
-	"atlas-data/rest"
 	minio "atlas-data/storage/minio"
+
+	"github.com/jtumidanski/api2go/jsonapi"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 // Status represents the aggregate status of WZ uploads in a scope.

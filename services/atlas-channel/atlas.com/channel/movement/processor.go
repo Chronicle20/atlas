@@ -11,8 +11,11 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	model2 "github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -21,8 +24,7 @@ import (
 	npcpkt "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
 	petpkt "github.com/Chronicle20/atlas/libs/atlas-packet/pet/clientbound"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type ProcessorImpl struct {
@@ -278,6 +280,12 @@ func foldMovementSummary(s summary, e interface{}) (summary, error) {
 	// land the mob on a foothold; we copy v.Fh from those, but only when
 	// non-zero so we don't trample the spawn-time fh during a fall sequence
 	// where the client transmits Fh=0 for "no anchor yet".
+	// NOTE: the decoder (movement.go Movement.Decode) constructs every element as
+	// a POINTER (&NormalElement{}, &TeleportElement{}, ...). The non-pointer cases
+	// below were therefore dead — a *TeleportElement never matches `case
+	// model.TeleportElement` — so Teleport/Jump/StartFallDown fragments silently
+	// did nothing (position/stance/fh never advanced for them). All cases are now
+	// pointer types so the fold actually applies them.
 	switch v := e.(type) {
 	case *model.NormalElement:
 		ms.X = v.X
@@ -287,16 +295,22 @@ func foldMovementSummary(s summary, e interface{}) (summary, error) {
 			ms.Fh = v.Fh
 		}
 		return ms, nil
-	case model.JumpElement:
-		ms.Stance = v.BMoveAction
-		return ms, nil
-	case model.TeleportElement:
+	case *model.TeleportElement:
+		// A teleport relocates the entity to (X, Y) on foothold Fh; the decoder
+		// reads all three (movement.go TeleportElement.Decode), so apply them.
+		ms.X = v.X
+		ms.Y = v.Y
 		ms.Stance = v.BMoveAction
 		if v.Fh != 0 {
 			ms.Fh = v.Fh
 		}
 		return ms, nil
-	case model.StartFallDownElement:
+	case *model.JumpElement:
+		// Mid-air: X/Y come from StartX/StartY (physics), no resting foothold.
+		ms.Stance = v.BMoveAction
+		return ms, nil
+	case *model.StartFallDownElement:
+		// Mid-air: no resting foothold; preserve the prior fh.
 		ms.Stance = v.BMoveAction
 		return ms, nil
 	default:

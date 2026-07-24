@@ -4,16 +4,18 @@ import (
 	"atlas-channel/account"
 	"atlas-channel/buddylist"
 	"atlas-channel/character"
+	"atlas-channel/character/teleportrock"
 	"atlas-channel/maps/location"
 	configuration "atlas-channel/mts/configuration"
 	"context"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 // SetItcBody builds the SET_ITC (MTS / ITC) scene-transition body. It mirrors
@@ -35,7 +37,13 @@ import (
 func SetItcBody(a account.Model, c character.Model, bl buddylist.Model) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			cd := BuildCharacterData(c, bl, location.ResolveMapId(l, ctx, c.Id()))
+			trm, err := teleportrock.NewProcessor(l, ctx).GetByCharacterId(c.Id())
+			if err != nil {
+				// Fail-open: a missing list must never block MTS/ITC entry (design §4.4).
+				l.WithError(err).Warnf("Unable to fetch teleport-rock maps for character [%d]; sending empty lists.", c.Id())
+				trm = teleportrock.Model{}
+			}
+			cd := BuildCharacterData(c, bl, location.ResolveMapId(l, ctx, c.Id()), trm)
 			t := tenant.MustFromContext(ctx)
 			cfg := configuration.GetRegistry().GetTenantConfig(l, ctx, t.Id())
 			return fieldcb.NewSetItcWithConfig(cd, a.Name(),

@@ -15,6 +15,8 @@ export interface BreadcrumbSegment {
   dynamic: boolean;
   /** Whether this is the current/active page */
   isCurrentPage: boolean;
+  /** Grouping-only node with no page — rendered as a label, never a link. */
+  nonNavigable?: boolean;
   /** Entity ID if this is a dynamic segment */
   entityId?: string;
   /** Entity type for dynamic segments (for label resolution) */

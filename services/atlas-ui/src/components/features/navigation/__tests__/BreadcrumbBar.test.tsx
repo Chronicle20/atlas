@@ -234,6 +234,50 @@ describe("BreadcrumbBar", () => {
         expect(breadcrumbPage).toHaveAttribute("role", "link");
       });
     });
+
+    it("renders a non-navigable grouping crumb as label text, not a link", async () => {
+      mockUseBreadcrumbs.mockReturnValue(
+        breadcrumbsReturn({
+          breadcrumbs: [
+            { segment: "", label: "Home", href: "/", isCurrentPage: false },
+            {
+              segment: "templates",
+              label: "Templates",
+              href: "/templates",
+              isCurrentPage: false,
+            },
+            {
+              segment: "character",
+              label: "Character",
+              href: "/templates/abc/character",
+              isCurrentPage: false,
+              nonNavigable: true,
+            },
+            {
+              segment: "presets",
+              label: "Presets",
+              href: "/templates/abc/character/presets",
+              isCurrentPage: true,
+            },
+          ],
+        } as unknown as BreadcrumbsReturn),
+      );
+
+      render(<BreadcrumbBar />);
+
+      await waitFor(() => {
+        // Not a link, and not marked as the current page either.
+        expect(screen.queryByRole("link", { name: "Character" })).toBeNull();
+        const grouping = screen.getByText("Character");
+        expect(grouping.closest("a")).toBeNull();
+        expect(grouping.closest('[aria-current="page"]')).toBeNull();
+        // Real pages remain links / current-page as usual.
+        expect(screen.getByRole("link", { name: "Templates" })).toHaveAttribute(
+          "href",
+          "/templates",
+        );
+      });
+    });
   });
 
   describe("Loading States", () => {

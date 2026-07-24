@@ -9,10 +9,16 @@ interface ItemRowProps {
   id: number;
   onRemove: () => void;
   removeAriaLabel: string;
+  trailing?: React.ReactNode;
 }
 
 /** Icon + display name + mono id + remove ×. Bad ids degrade, never block. */
-export function ItemRow({ id, onRemove, removeAriaLabel }: ItemRowProps) {
+export function ItemRow({
+  id,
+  onRemove,
+  removeAriaLabel,
+  trailing,
+}: ItemRowProps) {
   const { activeTenant } = useTenant();
   const name = useItemName(String(id));
   const [iconFailed, setIconFailed] = useState(false);
@@ -43,6 +49,7 @@ export function ItemRow({ id, onRemove, removeAriaLabel }: ItemRowProps) {
         {name.data ?? (name.isError ? "Unknown item" : "…")}
       </span>
       <span className="font-mono text-xs text-muted-foreground">{id}</span>
+      {trailing}
       <Button
         type="button"
         variant="ghost"

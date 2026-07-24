@@ -270,4 +270,14 @@ describe("Route Configuration", () => {
       expect(patterns.length).toBe(uniquePatterns.size);
     });
   });
+
+  describe("Jobs routes (task-182 explorer)", () => {
+    it("resolves /jobs and /jobs/[id] with the job-name label resolver", () => {
+      expect(findRouteConfig("/jobs")?.label).toBe("Jobs");
+      const detail = findRouteConfig("/jobs/110");
+      expect(detail).toBeTruthy();
+      expect(detail?.parent).toBe("/jobs");
+      expect(detail?.labelResolver?.({ id: "110" })).toBe("Fighter");
+    });
+  });
 });

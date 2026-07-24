@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
@@ -19,8 +20,11 @@ type Entity struct {
 	TenantId        uuid.UUID `gorm:"type:uuid;not null;uniqueIndex:idx_rankings_tenant_character;index:idx_rankings_tenant_world"`
 	Id              uuid.UUID `gorm:"type:uuid;primaryKey"`
 	CharacterId     uint32    `gorm:"not null;uniqueIndex:idx_rankings_tenant_character"`
+	Name            string    `gorm:"not null;default:''"`
 	WorldId         world.Id  `gorm:"not null;index:idx_rankings_tenant_world"`
 	JobCategory     uint16    `gorm:"not null"`
+	Level           byte      `gorm:"not null;default:0"`
+	JobId           job.Id    `gorm:"not null;default:0"`
 	OverallRank     uint32    `gorm:"not null"`
 	OverallRankMove int32     `gorm:"not null"`
 	JobRank         uint32    `gorm:"not null"`
@@ -65,8 +69,11 @@ func (e CycleEntity) TableName() string {
 func Make(e Entity) (Model, error) {
 	return NewBuilder().
 		SetCharacterId(e.CharacterId).
+		SetName(e.Name).
 		SetWorldId(e.WorldId).
 		SetJobCategory(e.JobCategory).
+		SetLevel(e.Level).
+		SetJobId(e.JobId).
 		SetOverallRank(e.OverallRank).
 		SetOverallRankMove(e.OverallRankMove).
 		SetJobRank(e.JobRank).

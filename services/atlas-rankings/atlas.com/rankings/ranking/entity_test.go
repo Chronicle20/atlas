@@ -32,3 +32,14 @@ func TestMigrationCreatesTables(t *testing.T) {
 		t.Fatal("ranking_cycles table not created")
 	}
 }
+
+func TestMakeCarriesDisplayFields(t *testing.T) {
+	e := Entity{CharacterId: 5, Name: "Gamma", Level: 50, JobId: 412, JobCategory: 4, OverallRank: 3}
+	m, err := Make(e)
+	if err != nil {
+		t.Fatalf("Make: %v", err)
+	}
+	if m.Name() != "Gamma" || m.Level() != 50 || m.JobId() != 412 {
+		t.Fatalf("Make dropped display fields: name=%q level=%d job=%d", m.Name(), m.Level(), m.JobId())
+	}
+}

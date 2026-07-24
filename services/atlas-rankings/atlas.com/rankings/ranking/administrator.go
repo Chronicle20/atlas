@@ -33,7 +33,7 @@ func upsertBatch(db *gorm.DB, tenantId uuid.UUID, entities []Entity) error {
 	return db.Clauses(clause.OnConflict{
 		Columns: []clause.Column{{Name: "tenant_id"}, {Name: "character_id"}},
 		DoUpdates: clause.AssignmentColumns([]string{
-			"world_id", "job_category",
+			"name", "world_id", "job_category", "level", "job_id",
 			"overall_rank", "overall_rank_move",
 			"job_rank", "job_rank_move",
 			"computed_at",

@@ -3,13 +3,17 @@ package ranking
 import (
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 type Model struct {
 	characterId     uint32
+	name            string
 	worldId         world.Id
 	jobCategory     uint16
+	level           byte
+	jobId           job.Id
 	overallRank     uint32
 	overallRankMove int32
 	jobRank         uint32
@@ -18,8 +22,11 @@ type Model struct {
 }
 
 func (m Model) CharacterId() uint32    { return m.characterId }
+func (m Model) Name() string           { return m.name }
 func (m Model) WorldId() world.Id      { return m.worldId }
 func (m Model) JobCategory() uint16    { return m.jobCategory }
+func (m Model) Level() byte            { return m.level }
+func (m Model) JobId() job.Id          { return m.jobId }
 func (m Model) OverallRank() uint32    { return m.overallRank }
 func (m Model) OverallRankMove() int32 { return m.overallRankMove }
 func (m Model) JobRank() uint32        { return m.jobRank }

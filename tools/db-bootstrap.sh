@@ -88,6 +88,7 @@ DBS=(
   atlas-pets
   atlas-portal-actions
   atlas-quest
+  atlas-rankings
   atlas-reactor-actions
   atlas-saga-orchestrator
   atlas-skills

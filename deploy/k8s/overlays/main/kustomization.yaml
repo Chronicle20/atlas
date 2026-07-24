@@ -297,6 +297,8 @@ images:
     newTag: main-9597053
   - name: ghcr.io/chronicle20/atlas-quest/atlas-quest
     newTag: main-9597053
+  - name: ghcr.io/chronicle20/atlas-rankings/atlas-rankings
+    newTag: main-e0321f3
   - name: ghcr.io/chronicle20/atlas-rates/atlas-rates
     newTag: main-9597053
   - name: ghcr.io/chronicle20/atlas-reactor-actions/atlas-reactor-actions

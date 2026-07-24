@@ -281,6 +281,24 @@ func GetAllInstanceRoutesProvider(tenantID uuid.UUID) func(db *gorm.DB) model.Pr
 	}
 }
 
+// GetRankingsProvider returns a provider for the tenant's single-object
+// rankings configuration
+func GetRankingsProvider(tenantID uuid.UUID) func(db *gorm.DB) model.Provider[map[string]interface{}] {
+	return func(db *gorm.DB) model.Provider[map[string]interface{}] {
+		entityProvider := GetByTenantIdAndResourceNameProvider(tenantID, "rankings")(db)
+		return model.Map(func(e Entity) (map[string]interface{}, error) {
+			var resourceData map[string]interface{}
+			if err := json.Unmarshal(e.ResourceData, &resourceData); err != nil {
+				return nil, err
+			}
+			if data, ok := resourceData["data"].(map[string]interface{}); ok {
+				return data, nil
+			}
+			return nil, gorm.ErrRecordNotFound
+		})(entityProvider)
+	}
+}
+
 // GetRpsRewardByIdProvider returns a provider for a specific rps-reward by ID
 func GetRpsRewardByIdProvider(tenantID uuid.UUID, rpsRewardID string) func(db *gorm.DB) model.Provider[map[string]interface{}] {
 	return func(db *gorm.DB) model.Provider[map[string]interface{}] {

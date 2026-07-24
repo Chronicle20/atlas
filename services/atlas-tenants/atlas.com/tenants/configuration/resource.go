@@ -1087,6 +1087,141 @@ func SeedMtsConfigsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.
 	}
 }
 
+// GetRankingsHandler handles GET /tenants/{tenantId}/configurations/rankings
+func GetRankingsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				processor := NewProcessor(d.Logger(), d.Context(), db)
+
+				rankings, err := processor.GetRankings(tenantId)
+				if err != nil {
+					if errors.Is(err, gorm.ErrRecordNotFound) {
+						w.WriteHeader(http.StatusNotFound)
+						return
+					}
+					d.Logger().WithError(err).Error("Failed to get rankings configuration")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				rm, err := TransformRankings(rankings)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to transform rankings configuration")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[RankingsRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+			}
+		})
+	}
+}
+
+// CreateRankingsHandler handles POST /tenants/{tenantId}/configurations/rankings
+func CreateRankingsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext, model RankingsRestModel) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, model RankingsRestModel) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				rankings, err := ExtractRankings(model)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to extract rankings data")
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+
+				processor := NewProcessor(d.Logger(), d.Context(), db)
+				if _, err = processor.CreateRankingsAndEmit(tenantId, rankings); err != nil {
+					d.Logger().WithError(err).Error("Failed to create rankings configuration")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				created, err := processor.GetRankings(tenantId)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to get created rankings configuration")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+				rm, err := TransformRankings(created)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to transform rankings configuration")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				w.WriteHeader(http.StatusCreated)
+				server.MarshalResponse[RankingsRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+			}
+		})
+	}
+}
+
+// UpdateRankingsHandler handles PATCH /tenants/{tenantId}/configurations/rankings
+func UpdateRankingsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext, model RankingsRestModel) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, model RankingsRestModel) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				rankings, err := ExtractRankings(model)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to extract rankings data")
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+
+				processor := NewProcessor(d.Logger(), d.Context(), db)
+				if _, err = processor.UpdateRankingsAndEmit(tenantId, rankings); err != nil {
+					if errors.Is(err, gorm.ErrRecordNotFound) {
+						w.WriteHeader(http.StatusNotFound)
+						return
+					}
+					d.Logger().WithError(err).Error("Failed to update rankings configuration")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				updated, err := processor.GetRankings(tenantId)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to get updated rankings configuration")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+				rm, err := TransformRankings(updated)
+				if err != nil {
+					d.Logger().WithError(err).Error("Failed to transform rankings configuration")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[RankingsRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+			}
+		})
+	}
+}
+
+// DeleteRankingsHandler handles DELETE /tenants/{tenantId}/configurations/rankings
+func DeleteRankingsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				processor := NewProcessor(d.Logger(), d.Context(), db)
+				if err := processor.DeleteRankingsAndEmit(tenantId); err != nil {
+					d.Logger().WithError(err).Error("Failed to delete rankings configuration")
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+				w.WriteHeader(http.StatusNoContent)
+			}
+		})
+	}
+}
+
 // SeedRpsRewardsHandler handles POST /tenants/{tenantId}/configurations/rps-rewards/seed
 func SeedRpsRewardsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
@@ -1118,6 +1253,7 @@ func RegisterRoutes(db *gorm.DB) func(si jsonapi.ServerInformation) server.Route
 			registerInstanceRouteInputHandler := rest.RegisterInputHandler[InstanceRouteRestModel](l)(si)
 			registerRpsRewardInputHandler := rest.RegisterInputHandler[RpsRewardRestModel](l)(si)
 			registerMtsConfigInputHandler := rest.RegisterInputHandler[MtsConfigRestModel](l)(si)
+			registerRankingsInputHandler := rest.RegisterInputHandler[RankingsRestModel](l)(si)
 
 			// Route endpoints
 			r.HandleFunc("/tenants/{tenantId}/configurations/routes/seed", registerHandler("seed_routes", SeedRoutesHandler(db))).Methods(http.MethodPost)
@@ -1158,6 +1294,12 @@ func RegisterRoutes(db *gorm.DB) func(si jsonapi.ServerInformation) server.Route
 			r.HandleFunc("/tenants/{tenantId}/configurations/mts-configs", registerMtsConfigInputHandler("create_mts_config", CreateMtsConfigHandler(db))).Methods(http.MethodPost)
 			r.HandleFunc("/tenants/{tenantId}/configurations/mts-configs/{mtsConfigId}", registerMtsConfigInputHandler("update_mts_config", UpdateMtsConfigHandler(db))).Methods(http.MethodPatch)
 			r.HandleFunc("/tenants/{tenantId}/configurations/mts-configs/{mtsConfigId}", registerHandler("delete_mts_config", DeleteMtsConfigHandler(db))).Methods(http.MethodDelete)
+
+			// Rankings endpoints
+			r.HandleFunc("/tenants/{tenantId}/configurations/rankings", registerHandler("get_rankings_config", GetRankingsHandler(db))).Methods(http.MethodGet)
+			r.HandleFunc("/tenants/{tenantId}/configurations/rankings", registerRankingsInputHandler("create_rankings_config", CreateRankingsHandler(db))).Methods(http.MethodPost)
+			r.HandleFunc("/tenants/{tenantId}/configurations/rankings", registerRankingsInputHandler("update_rankings_config", UpdateRankingsHandler(db))).Methods(http.MethodPatch)
+			r.HandleFunc("/tenants/{tenantId}/configurations/rankings", registerHandler("delete_rankings_config", DeleteRankingsHandler(db))).Methods(http.MethodDelete)
 		}
 	}
 }

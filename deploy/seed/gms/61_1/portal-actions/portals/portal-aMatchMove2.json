@@ -1,0 +1,31 @@
+{
+  "data": {
+    "attributes": {
+      "description": "Ariant Coliseum - Battle Arena Exit - Warp back to saved MIRROR location",
+      "mapId": 980010020,
+      "portalId": "aMatchMove2",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "return_to_mirror",
+          "onMatch": {
+            "allow": true,
+            "operations": [
+              {
+                "type": "play_portal_sound"
+              },
+              {
+                "params": {
+                  "locationType": "MIRROR"
+                },
+                "type": "warp_to_saved_location"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "id": "aMatchMove2",
+    "type": "portal-action"
+  }
+}

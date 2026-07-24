@@ -1,4 +1,4 @@
-import { fetchPaged } from '@/services/api/pagination';
+import { fetchPaged } from "@/services/api/pagination";
 
 export interface PortalScriptData {
   id: string;
@@ -14,7 +14,10 @@ export interface PortalScriptData {
 class PortalScriptsService {
   async getScriptsByPortal(portalId: string): Promise<PortalScriptData | null> {
     try {
-      const result = await fetchPaged<PortalScriptData>(`/api/portals/${portalId}/scripts`, { number: 1, size: 1 });
+      const result = await fetchPaged<PortalScriptData>(
+        `/api/portals/${portalId}/scripts`,
+        { number: 1, size: 1 },
+      );
       return result.data[0] ?? null;
     } catch {
       return null;

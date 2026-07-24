@@ -13,10 +13,11 @@ import (
 	"strings"
 	"time"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/discover"
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/idasrc"
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/opregistry"
-	"gopkg.in/yaml.v3"
 )
 
 type discoverOpsOpts struct {

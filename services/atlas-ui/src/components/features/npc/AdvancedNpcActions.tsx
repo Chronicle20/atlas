@@ -1,5 +1,10 @@
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, Plus, Trash2 } from "lucide-react";
 
 interface AdvancedNpcActionsProps {
@@ -7,7 +12,10 @@ interface AdvancedNpcActionsProps {
   onDeleteAllShops: () => void;
 }
 
-export function AdvancedNpcActions({ onCreateShop, onDeleteAllShops }: AdvancedNpcActionsProps) {
+export function AdvancedNpcActions({
+  onCreateShop,
+  onDeleteAllShops,
+}: AdvancedNpcActionsProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>

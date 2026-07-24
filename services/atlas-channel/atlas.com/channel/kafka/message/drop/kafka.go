@@ -3,10 +3,11 @@ package drop
 import (
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
@@ -36,8 +37,8 @@ const (
 	EnvEventTopicDropStatus = "EVENT_TOPIC_DROP_STATUS"
 	StatusEventTypeCreated  = "CREATED"
 	StatusEventTypeExpired  = "EXPIRED"
-	StatusEventTypePickedUp  = "PICKED_UP"
-	StatusEventTypeConsumed  = "CONSUMED"
+	StatusEventTypePickedUp = "PICKED_UP"
+	StatusEventTypeConsumed = "CONSUMED"
 )
 
 type StatusEvent[E any] struct {
@@ -67,11 +68,9 @@ type CreatedStatusEventBody struct {
 	Mod             byte      `json:"mod"`
 }
 
-type ExpiredStatusEventBody struct {
-}
+type ExpiredStatusEventBody struct{}
 
-type ConsumedStatusEventBody struct {
-}
+type ConsumedStatusEventBody struct{}
 
 type PickedUpStatusEventBody struct {
 	CharacterId uint32 `json:"characterId"`

@@ -1,13 +1,13 @@
 package item
 
 import (
+	"atlas-data/searchindex"
 	"time"
 
-	"atlas-data/searchindex"
-
-	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 )
 
 type StringSearchIndexEntity struct {

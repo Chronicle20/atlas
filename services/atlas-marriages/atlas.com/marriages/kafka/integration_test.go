@@ -1,22 +1,16 @@
 package kafka
 
 import (
+	"atlas-marriages/character"
+	"atlas-marriages/kafka/consumer/marriage"
 	"context"
 	"encoding/json"
 	"testing"
 	"time"
 
-	"atlas-marriages/character"
-	"atlas-marriages/kafka/consumer/marriage"
 	marriageMessage "atlas-marriages/kafka/message/marriage"
 	marriageService "atlas-marriages/marriage"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -24,6 +18,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // mockCharacterProcessor is a mock implementation of character.Processor for testing

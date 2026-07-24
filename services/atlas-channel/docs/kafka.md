@@ -409,9 +409,9 @@
 
 ### COMMAND_TOPIC_CHARACTER_BUFF
 - Direction: Command
-- Message Type: `Command[ApplyBody]`, `Command[CancelBody]`
+- Message Type: `Command[ApplyBody]`, `Command[CancelBody]`, `Command[CancelByTypesCommandBody]`
 - Envelope Fields: worldId, channelId, mapId, instance, characterId
-- Purpose: Issues buff application/removal commands
+- Purpose: Issues buff application/removal commands. `CANCEL_BY_TYPES` (body: `{ types []string }`) cancels a character's active buffs by temporary-stat type; used by the SuperGM Heal + Dispel skill handler to purge disease debuffs, and consumed by atlas-buffs.
 
 ### COMMAND_TOPIC_CHARACTER_CHAT
 - Direction: Command

@@ -10,15 +10,16 @@ import (
 	"strings"
 	"testing"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	server "github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	server "github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // --- fake driver whose every query fails with a fixed error ---
@@ -31,14 +32,17 @@ func (failConn) Begin() (driver.Tx, error)           { return nil, errors.New("n
 func (c failConn) QueryContext(context.Context, string, []driver.NamedValue) (driver.Rows, error) {
 	return nil, c.err
 }
+
 func (c failConn) ExecContext(context.Context, string, []driver.NamedValue) (driver.Result, error) {
 	return nil, c.err
 }
 
 type failConnector struct{ err error }
 
-func (f failConnector) Connect(context.Context) (driver.Conn, error) { return failConn{err: f.err}, nil }
-func (f failConnector) Driver() driver.Driver                        { return nil }
+func (f failConnector) Connect(context.Context) (driver.Conn, error) {
+	return failConn(f), nil
+}
+func (f failConnector) Driver() driver.Driver { return nil }
 
 func failingDB(t *testing.T, queryErr error) *gorm.DB {
 	t.Helper()

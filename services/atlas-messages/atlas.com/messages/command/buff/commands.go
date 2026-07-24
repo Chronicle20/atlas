@@ -5,7 +5,7 @@ import (
 	"atlas-messages/character"
 	"atlas-messages/command"
 	"atlas-messages/data/skill"
-	"atlas-messages/map"
+	_map "atlas-messages/map"
 	"atlas-messages/message"
 	"context"
 	"fmt"
@@ -13,9 +13,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/sirupsen/logrus"
 )
 
 func BuffCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {

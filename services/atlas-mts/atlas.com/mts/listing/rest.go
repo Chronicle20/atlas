@@ -43,6 +43,7 @@ type RestModel struct {
 	RingId        uint32 `json:"ringId"`
 	ViciousCount  uint32 `json:"viciousCount"`
 	Flags         uint16 `json:"flags"`
+	Owner         string `json:"owner"`
 
 	ListValue      uint32  `json:"listValue"`
 	BuyNowPrice    *uint32 `json:"buyNowPrice,omitempty"`
@@ -155,6 +156,7 @@ func Transform(m Model) (RestModel, error) {
 		RingId:           m.RingId(),
 		ViciousCount:     m.ViciousCount(),
 		Flags:            m.Flags(),
+		Owner:            m.Owner(),
 		ListValue:        m.ListValue(),
 		BuyNowPrice:      m.BuyNowPrice(),
 		CommissionRate:   m.CommissionRate(),

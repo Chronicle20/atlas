@@ -2,9 +2,9 @@ import { TenantDetailLayout } from "@/components/features/tenants/TenantDetailLa
 import { MtsConfigForm } from "@/pages/tenants-mts-config-form";
 
 export function TenantsMtsConfigPage() {
-    return (
-        <TenantDetailLayout>
-            <MtsConfigForm />
-        </TenantDetailLayout>
-    );
+  return (
+    <TenantDetailLayout>
+      <MtsConfigForm />
+    </TenantDetailLayout>
+  );
 }

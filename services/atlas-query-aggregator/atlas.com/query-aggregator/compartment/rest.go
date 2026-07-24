@@ -4,17 +4,18 @@ import (
 	"atlas-query-aggregator/asset"
 	"strconv"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 type RestModel struct {
-	Id            uuid.UUID          `json:"-"`
-	InventoryType inventory.Type     `json:"type"`
-	Capacity      uint32             `json:"capacity"`
-	Assets        []asset.RestModel  `json:"-"`
+	Id            uuid.UUID         `json:"-"`
+	InventoryType inventory.Type    `json:"type"`
+	Capacity      uint32            `json:"capacity"`
+	Assets        []asset.RestModel `json:"-"`
 }
 
 func (r RestModel) GetName() string {

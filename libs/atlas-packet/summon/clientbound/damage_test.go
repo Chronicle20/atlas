@@ -64,8 +64,11 @@ func TestSummonDamageBytes(t *testing.T) {
 //     monsterIdFrom (v36 → CMobTemplate::GetMobTemplate), Decode1@0x71d6a9 → bLeft
 //     (v32; atlas writes 0). Nothing after — no trailing dir byte (the dir<0 byte
 //     belongs to the SERVERBOUND SetDamaged send).
+//
 // Wire: int cid (upstream) + int oid + byte attackIdx(12) + int damage +
-//       int monsterIdFrom + byte bLeft(0). Damage has no field-level version gate.
+//
+//	int monsterIdFrom + byte bLeft(0). Damage has no field-level version gate.
+//
 // packet-audit:verify packet=summon/clientbound/SummonDamage version=gms_v79 ida=0x71d643
 func TestSummonDamageBytesV79(t *testing.T) {
 	in := NewSummonDamage(42, 1000001, 1234, 9300018)
@@ -86,6 +89,7 @@ func TestSummonDamageBytesV79(t *testing.T) {
 //     Decode4@0x6e987f → damage; if (attackIdx > -2): Decode4@0x6e9891 →
 //     monsterIdFrom (→ CMobTemplate::GetMobTemplate), Decode1@0x6e989f → bLeft
 //     (atlas writes 0). Nothing after — no trailing dir byte.
+//
 // packet-audit:verify packet=summon/clientbound/SummonDamage version=gms_v72 ida=0x6e9839
 func TestSummonDamageBytesV72(t *testing.T) {
 	in := NewSummonDamage(42, 1000001, 1234, 9300018)
@@ -105,15 +109,18 @@ func TestSummonDamageBytesV72(t *testing.T) {
 //   - The damage body lives at 0x7a6ebe (exported FName CSummonedPool::OnHit; the
 //     mangled symbol there is OnSkill — a known naming swap, the body is what
 //     matters). It reads:
-//       Decode1@0x7a6eef → attackIdx (v34=v6=b; atlas writes 12)
-//       Decode4@0x7a6f04 → damage (v38)
-//       if (attackIdx > -2):   // 12 > -2, branch fires
-//         Decode4@0x7a6f16 → monsterIdFrom (v39 → GetMobTemplate)
-//         Decode1@0x7a6f24 → bLeft (v35; atlas writes 0)
+//     Decode1@0x7a6eef → attackIdx (v34=v6=b; atlas writes 12)
+//     Decode4@0x7a6f04 → damage (v38)
+//     if (attackIdx > -2):   // 12 > -2, branch fires
+//     Decode4@0x7a6f16 → monsterIdFrom (v39 → GetMobTemplate)
+//     Decode1@0x7a6f24 → bLeft (v35; atlas writes 0)
 //     and nothing after — no trailing dir byte on any version (the dir<0 byte
 //     belongs to the SERVERBOUND SetDamaged send).
+//
 // Wire: int cid (upstream) + int oid + byte attackIdx(12) + int damage +
-//       int monsterIdFrom + byte bLeft(0).
+//
+//	int monsterIdFrom + byte bLeft(0).
+//
 // packet-audit:verify packet=summon/clientbound/SummonDamage version=gms_v83 ida=0x7a6ebe
 func TestSummonDamageBytesV83(t *testing.T) {
 	in := NewSummonDamage(42, 1000001, 1234, 9300018)
@@ -133,16 +140,19 @@ func TestSummonDamageBytesV83(t *testing.T) {
 //   - The damage body lives at 0x7f969f (exported FName CSummonedPool::OnHit; the
 //     mangled symbol there is OnSkill — the known naming swap, the body is truth).
 //     It reads:
-//       Decode1@0x7f96d0 → attackIdx (v4=v5; atlas writes 12)
-//       Decode4@0x7f96e5 → damage (v37)
-//       if (v5 > -2):   // 12 > -2, branch fires
-//         Decode4@0x7f96f7 → monsterIdFrom (v38 → GetMobTemplate)
-//         Decode1@0x7f9705 → bLeft (v34; atlas writes 0)
+//     Decode1@0x7f96d0 → attackIdx (v4=v5; atlas writes 12)
+//     Decode4@0x7f96e5 → damage (v37)
+//     if (v5 > -2):   // 12 > -2, branch fires
+//     Decode4@0x7f96f7 → monsterIdFrom (v38 → GetMobTemplate)
+//     Decode1@0x7f9705 → bLeft (v34; atlas writes 0)
 //     and nothing after from the packet — no trailing dir byte (the dir<0 byte
 //     belongs to the SERVERBOUND SetDamaged send). Damage has no version gate, so
 //     the v87 path is byte-identical to v83 (off-by-one confirmed clear).
+//
 // Wire: int cid (upstream) + int oid + byte attackIdx(12) + int damage +
-//       int monsterIdFrom + byte bLeft(0).
+//
+//	int monsterIdFrom + byte bLeft(0).
+//
 // packet-audit:verify packet=summon/clientbound/SummonDamage version=gms_v87 ida=0x7f969f
 func TestSummonDamageBytesV87(t *testing.T) {
 	in := NewSummonDamage(42, 1000001, 1234, 9300018)
@@ -162,14 +172,15 @@ func TestSummonDamageBytesV87(t *testing.T) {
 //     case 184 calls the damage leaf sub_7CC984@0x7cc984 (exported FName
 //     CSummonedPool::OnHit — the body that reads attackIdx/damage is what matters).
 //   - sub_7CC984@0x7cc984 reads:
-//       Decode1@0x7cc9b5 → attackIdx (v34=v5; atlas writes 12)
-//       Decode4@0x7cc9ca → damage (v38)
-//       if (v5 > -2):   // 12 > -2, branch fires
-//         Decode4@0x7cc9dc → monsterIdFrom (v39 → sub_6938FA/GetMobTemplate)
-//         Decode1@0x7cc9ea → bLeft (v35; atlas writes 0)
+//     Decode1@0x7cc9b5 → attackIdx (v34=v5; atlas writes 12)
+//     Decode4@0x7cc9ca → damage (v38)
+//     if (v5 > -2):   // 12 > -2, branch fires
+//     Decode4@0x7cc9dc → monsterIdFrom (v39 → sub_6938FA/GetMobTemplate)
+//     Decode1@0x7cc9ea → bLeft (v35; atlas writes 0)
 //     and nothing after from the packet — no trailing dir byte (the dir<0 byte
 //     belongs to the SERVERBOUND SetDamaged send). Damage has no version gate, so
 //     the v84 path is byte-identical to v83 (off-by-one confirmed clear).
+//
 // packet-audit:verify packet=summon/clientbound/SummonDamage version=gms_v84 ida=0x7cc984
 func TestSummonDamageBytesV84(t *testing.T) {
 	in := NewSummonDamage(42, 1000001, 1234, 9300018)
@@ -205,16 +216,19 @@ func TestSummonDamageBytesV95(t *testing.T) {
 //   - The damage body lives at 0x828d16 (exported FName CSummonedPool::OnHit; the
 //     mangled symbol there is OnSkill — the known naming swap, the body is truth).
 //     It reads:
-//       Decode1@0x828d47 → attackIdx (v4=v32; atlas writes 12)
-//       Decode4@0x828d5c → damage (v36)
-//       if (v5 > -2):   // 12 > -2, branch fires
-//         Decode4@0x828d6e → monsterIdFrom (v37 → GetMobTemplate)
-//         Decode1@0x828d7c → bLeft (v33; atlas writes 0)
+//     Decode1@0x828d47 → attackIdx (v4=v32; atlas writes 12)
+//     Decode4@0x828d5c → damage (v36)
+//     if (v5 > -2):   // 12 > -2, branch fires
+//     Decode4@0x828d6e → monsterIdFrom (v37 → GetMobTemplate)
+//     Decode1@0x828d7c → bLeft (v33; atlas writes 0)
 //     and nothing after from the packet — no trailing dir byte (the dir<0 byte
 //     belongs to the SERVERBOUND SetDamaged send). Damage has no version gate, so
 //     the jms185 path is byte-identical to v83.
+//
 // Wire: int cid (upstream) + int oid + byte attackIdx(12) + int damage +
-//       int monsterIdFrom + byte bLeft(0).
+//
+//	int monsterIdFrom + byte bLeft(0).
+//
 // packet-audit:verify packet=summon/clientbound/SummonDamage version=jms_v185 ida=0x828d16
 func TestSummonDamageBytesJMS185(t *testing.T) {
 	in := NewSummonDamage(42, 1000001, 1234, 9300018)

@@ -3,11 +3,12 @@ package monster
 import (
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 type StatusEffectEntry struct {
@@ -17,10 +18,10 @@ type StatusEffectEntry struct {
 	expiresAt        time.Time
 }
 
-func (s StatusEffectEntry) SourceSkillId() uint32       { return s.sourceSkillId }
-func (s StatusEffectEntry) SourceSkillLevel() uint32    { return s.sourceSkillLevel }
-func (s StatusEffectEntry) Statuses() map[string]int32  { return s.statuses }
-func (s StatusEffectEntry) ExpiresAt() time.Time        { return s.expiresAt }
+func (s StatusEffectEntry) SourceSkillId() uint32      { return s.sourceSkillId }
+func (s StatusEffectEntry) SourceSkillLevel() uint32   { return s.sourceSkillLevel }
+func (s StatusEffectEntry) Statuses() map[string]int32 { return s.statuses }
+func (s StatusEffectEntry) ExpiresAt() time.Time       { return s.expiresAt }
 
 type Model struct {
 	field              field.Model

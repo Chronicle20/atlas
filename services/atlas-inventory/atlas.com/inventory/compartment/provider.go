@@ -5,9 +5,10 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 func getById(id uuid.UUID) database.EntityProvider[Entity] {

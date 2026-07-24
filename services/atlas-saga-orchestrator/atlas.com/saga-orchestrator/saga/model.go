@@ -8,12 +8,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
-	"github.com/google/uuid"
 )
 
 // ============================================================
@@ -37,6 +38,9 @@ const (
 	CharacterRespawn     = sharedsaga.CharacterRespawn
 	GachaponTransaction  = sharedsaga.GachaponTransaction
 	PetEvolution         = sharedsaga.PetEvolution
+	ItemTagUse           = sharedsaga.ItemTagUse
+	SealingLockUse       = sharedsaga.SealingLockUse
+	IncubatorUse         = sharedsaga.IncubatorUse
 	PointReset           = sharedsaga.PointReset
 	MtsOperation         = sharedsaga.MtsOperation
 )
@@ -165,6 +169,9 @@ const (
 	SelectGachaponReward = sharedsaga.SelectGachaponReward
 	EmitGachaponWin      = sharedsaga.EmitGachaponWin
 
+	// RPS (rock-paper-scissors NPC minigame) actions
+	StartRPSGame = sharedsaga.StartRPSGame
+
 	// Party quest actions
 	RegisterPartyQuest         = sharedsaga.RegisterPartyQuest
 	WarpPartyQuestMembersToMap = sharedsaga.WarpPartyQuestMembersToMap
@@ -189,6 +196,11 @@ const (
 	RebalanceStatDexterity    = sharedsaga.RebalanceStatDexterity
 	RebalanceStatIntelligence = sharedsaga.RebalanceStatIntelligence
 	RebalanceStatLuck         = sharedsaga.RebalanceStatLuck
+
+	// Item tag / sealing lock / incubator actions
+	SetAssetOwner   = sharedsaga.SetAssetOwner
+	ApplyAssetLock  = sharedsaga.ApplyAssetLock
+	IncubatorResult = sharedsaga.IncubatorResult
 )
 
 // Re-exported payload types from shared library
@@ -270,6 +282,7 @@ type (
 	WarpToSavedLocationPayload          = sharedsaga.WarpToSavedLocationPayload
 	SelectGachaponRewardPayload         = sharedsaga.SelectGachaponRewardPayload
 	EmitGachaponWinPayload              = sharedsaga.EmitGachaponWinPayload
+	StartRPSGamePayload                 = sharedsaga.StartRPSGamePayload
 	RegisterPartyQuestPayload           = sharedsaga.RegisterPartyQuestPayload
 	WarpPartyQuestMembersToMapPayload   = sharedsaga.WarpPartyQuestMembersToMapPayload
 	LeavePartyQuestPayload              = sharedsaga.LeavePartyQuestPayload
@@ -280,7 +293,9 @@ type (
 	StageClearAttemptPqPayload          = sharedsaga.StageClearAttemptPqPayload
 	FieldEffectWeatherPayload           = sharedsaga.FieldEffectWeatherPayload
 	ExperienceDistributions             = sharedsaga.ExperienceDistributions
-
+	SetAssetOwnerPayload                = sharedsaga.SetAssetOwnerPayload
+	ApplyAssetLockPayload               = sharedsaga.ApplyAssetLockPayload
+	IncubatorResultPayload              = sharedsaga.IncubatorResultPayload
 	// Megaphone / world broadcast payload types
 	EmitMegaphonePayload         = sharedsaga.EmitMegaphonePayload
 	EnqueueWorldBroadcastPayload = sharedsaga.EnqueueWorldBroadcastPayload
@@ -1509,6 +1524,30 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case RequestGuildCapacityIncrease:
 		var payload RequestGuildCapacityIncreasePayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case StartRPSGame:
+		var payload StartRPSGamePayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case SetAssetOwner:
+		var payload SetAssetOwnerPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case ApplyAssetLock:
+		var payload ApplyAssetLockPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case IncubatorResult:
+		var payload IncubatorResultPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

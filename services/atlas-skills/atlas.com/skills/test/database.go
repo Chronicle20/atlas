@@ -5,11 +5,12 @@ import (
 	"atlas-skills/skill"
 	"testing"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 )
 
 // SetupTestDB creates an in-memory SQLite database for testing

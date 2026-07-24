@@ -1,0 +1,66 @@
+# coverage-manifest — task-133 miniroom minigames (Omok / Match Cards)
+#
+# Written post-hoc (the task predates the manifest convention) to declare the
+# packet coverage this branch adds/changes, so packet-completeness-critic can
+# diff it against the git + matrix delta. See docs/packets/PROCESS.md.
+
+ops:
+  # Balloon-over-head (UPDATE_CHAR_BOX / CUser::OnMiniRoomBalloon), base + remove
+  - interaction/clientbound/InteractionMiniRoomBalloon
+  - interaction/clientbound/InteractionMiniRoomBalloonRemove
+
+  # Clientbound minigame dispatcher arms (CMiniRoomBaseDlg::OnPacketBase /
+  # PLAYER_INTERACTION). These roll into the PLAYER_INTERACTION op-row rather
+  # than surfacing as distinct status.json rows; the arm codecs are verified on
+  # the reference versions (gms_v83/v95) and their per-version modes are
+  # IDA-derived + config-resolved in character_interaction.yaml.
+  - PLAYER_INTERACTION
+  - interaction/clientbound/InteractionInteractionMiniGameReady
+  - interaction/clientbound/InteractionInteractionMiniGameUnready
+  - interaction/clientbound/InteractionInteractionMiniGameRequestTie
+  - interaction/clientbound/InteractionInteractionMiniGameAnswerTie
+  - interaction/clientbound/InteractionInteractionMiniGameRetreatRequest
+  - interaction/clientbound/InteractionInteractionMiniGameRetreatAnswer
+  - interaction/clientbound/InteractionInteractionMiniGameSkip
+  - interaction/clientbound/InteractionInteractionMiniGameStartOmok
+  - interaction/clientbound/InteractionInteractionMiniGameStartMatchCards
+  - interaction/clientbound/InteractionInteractionMiniGameMoveStone
+  - interaction/clientbound/InteractionInteractionMiniGameCardSelectFirst
+  - interaction/clientbound/InteractionInteractionMiniGameCardSelectSecond
+  - interaction/clientbound/InteractionInteractionMiniGameResult
+  - interaction/clientbound/InteractionInteractionMiniGamePutStoneError   # case-58 (Omok invalid-move)
+  - interaction/clientbound/InteractionInteractionMiniGameEnter
+  - interaction/clientbound/InteractionInteractionMiniGameRoom
+
+  # Serverbound minigame codecs (verified in #971; this task wired the
+  # per-version serverbound handler MEMORY_GAME modes for v48/61/72).
+  - interaction/serverbound/InteractionOperationMemoryGameFlipCard
+  - interaction/serverbound/InteractionOperationMemoryGameMoveStone
+  - interaction/serverbound/InteractionOperationMemoryGameRetreatAnswer
+  - interaction/serverbound/InteractionOperationMemoryGameTieAnswer
+
+versions:
+  - gms_v48
+  - gms_v61
+  - gms_v72
+  - gms_v79
+  - gms_v83
+  - gms_v84
+  - gms_v87
+  - gms_v95
+  - jms_v185
+
+fields:
+  - "InteractionMiniRoomBalloon: read order byte-identical across all versions; no version gate. gms_v48 n-a (feature postdates v48)."
+  - "MEMORY_GAME_* legacy modes: interleaved tie/retreat layout (ASK_TIE lower/shared, ASK_RETREAT higher/Omok-only); v72=v61, v48=v61-1, v79=v83-1."
+  - "PutStoneError: Omok-only invalid-move rejection (mode+errorCode); errorCode is version-specific (v48 60 / v61,v72 61 / v79 66 / v83-95 67 / jms 64)."
+  - "resultType / leaveReason: DOM-25 tenant config tables (not codecs) — WIN/TIE/FORFEIT, MINIGAME_CLOSED/LEFT/EXPELLED."
+
+out_of_scope:
+  # The #905 (Owl-scanner) shop-family refactor that arrived via the merge and
+  # was reconciled here — main's work, not this task's minigame coverage.
+  - interaction/clientbound/InteractionUpdatePersonalShop
+  - interaction/clientbound/InteractionPersonalShopItemSold
+  - interaction/clientbound/InteractionVisitList
+  - interaction/clientbound/InteractionBlackList
+  - model/asset

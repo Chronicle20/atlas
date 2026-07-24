@@ -28,7 +28,9 @@ export function RecipesByNpcCard({ npcId }: RecipesByNpcCardProps) {
           <CardTitle className="text-sm font-medium">Crafts</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">Loading craft recipes...</p>
+          <p className="text-sm text-muted-foreground">
+            Loading craft recipes...
+          </p>
         </CardContent>
       </Card>
     );
@@ -54,7 +56,9 @@ export function RecipesByNpcCard({ npcId }: RecipesByNpcCardProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm font-medium">Crafts ({recipes.length})</CardTitle>
+        <CardTitle className="text-sm font-medium">
+          Crafts ({recipes.length})
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
@@ -70,7 +74,12 @@ export function RecipesByNpcCard({ npcId }: RecipesByNpcCardProps) {
 function CraftedItemRow({ recipe }: { recipe: Recipe }) {
   const { activeTenant } = useTenant();
   const nameQuery = useQuery({
-    queryKey: ["items", "name", activeTenant?.id ?? "no-tenant", String(recipe.itemId)],
+    queryKey: [
+      "items",
+      "name",
+      activeTenant?.id ?? "no-tenant",
+      String(recipe.itemId),
+    ],
     queryFn: () => itemsService.getItemName(String(recipe.itemId)),
     enabled: !!activeTenant && recipe.itemId > 0,
     staleTime: 10 * 60 * 1000,
@@ -118,7 +127,9 @@ function CraftedItemRow({ recipe }: { recipe: Recipe }) {
             </TooltipTrigger>
             <TooltipContent>
               <p>Stimulator item #{recipe.stimulatorId}</p>
-              <p>Fail chance: {Math.round(recipe.stimulatorFailChance * 100)}%</p>
+              <p>
+                Fail chance: {Math.round(recipe.stimulatorFailChance * 100)}%
+              </p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

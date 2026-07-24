@@ -477,12 +477,12 @@ func TestParseDecompileFields_HasMultiwayDispatch(t *testing.T) {
 		fixture string
 		want    bool
 	}{
-		{"leaf_linear.c", false},     // lone optional if
-		{"multiway_if.c", true},      // 2-arm equality chain
+		{"leaf_linear.c", false},      // lone optional if
+		{"multiway_if.c", true},       // 2-arm equality chain
 		{"multiway_compound.c", true}, // 2nd arm compound predicate (else if a && b)
-		{"mode_switch.c", true},      // switch with 2 cases
-		{"switch_emptycase.c", true}, // switch with 3 cases
-		{"linear.c", false},          // no branches at all
+		{"mode_switch.c", true},       // switch with 2 cases
+		{"switch_emptycase.c", true},  // switch with 3 cases
+		{"linear.c", false},           // no branches at all
 	}
 	for _, tc := range cases {
 		f, err := ParseDecompileFields(mustFixture(t, tc.fixture), DirClientbound)

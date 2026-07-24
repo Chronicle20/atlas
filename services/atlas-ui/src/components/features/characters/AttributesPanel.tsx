@@ -26,7 +26,8 @@ const mesoFmt = (n: number) => new Intl.NumberFormat().format(n);
 
 export function AttributesPanel({ character, tenantConfig, tenant }: Props) {
   const a = character.attributes;
-  const worldName = tenantConfig.attributes.worlds[a.worldId]?.name ?? "Unknown";
+  const worldName =
+    tenantConfig.attributes.worlds[a.worldId]?.name ?? "Unknown";
 
   // atlas-effective-stats returns post-equip primary stats and HP/MP caps.
   // While loading or on error we fall through to the raw character record so
@@ -40,7 +41,6 @@ export function AttributesPanel({ character, tenantConfig, tenant }: Props) {
   } = useCharacterEffectiveStats(tenant, a.worldId, character.id);
 
   if (effectiveErrored) {
-    // eslint-disable-next-line no-console
     console.warn(
       "[AttributesPanel] atlas-effective-stats fetch failed; HP/MP and primary-stat bonuses are using the raw character record as a fallback.",
       effectiveError,
@@ -97,9 +97,21 @@ export function AttributesPanel({ character, tenantConfig, tenant }: Props) {
 
         {/* Group C — core stats (base from character + bonus from effective) */}
         <div className="grid grid-cols-4 gap-2 text-sm">
-          <StatCell label="STR" base={a.strength} effective={effective?.strength} />
-          <StatCell label="DEX" base={a.dexterity} effective={effective?.dexterity} />
-          <StatCell label="INT" base={a.intelligence} effective={effective?.intelligence} />
+          <StatCell
+            label="STR"
+            base={a.strength}
+            effective={effective?.strength}
+          />
+          <StatCell
+            label="DEX"
+            base={a.dexterity}
+            effective={effective?.dexterity}
+          />
+          <StatCell
+            label="INT"
+            base={a.intelligence}
+            effective={effective?.intelligence}
+          />
           <StatCell label="LUK" base={a.luck} effective={effective?.luck} />
         </div>
 
@@ -186,7 +198,10 @@ function StatCell({
     <div>
       <strong>{label}:</strong> {base}
       {bonus > 0 && (
-        <span className="text-emerald-600 dark:text-emerald-400"> +{bonus}</span>
+        <span className="text-emerald-600 dark:text-emerald-400">
+          {" "}
+          +{bonus}
+        </span>
       )}
     </div>
   );

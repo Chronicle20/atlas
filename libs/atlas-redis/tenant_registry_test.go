@@ -8,8 +8,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func newTestTenant(t *testing.T, region string) tenant.Model {

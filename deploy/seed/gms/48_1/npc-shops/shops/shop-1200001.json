@@ -1,0 +1,11 @@
+{
+  "data": {
+    "attributes": {
+      "commodities": [],
+      "npcId": 1200001,
+      "recharger": false
+    },
+    "id": "1200001",
+    "type": "npc-shop"
+  }
+}

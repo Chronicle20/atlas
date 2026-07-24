@@ -1,13 +1,14 @@
 package mapimage
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-wz/canvas"
-	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
-	"github.com/Chronicle20/atlas/libs/atlas-wz/wz/property"
 	"fmt"
 	"image"
 	"strconv"
 	"strings"
+
+	"github.com/Chronicle20/atlas/libs/atlas-wz/canvas"
+	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
+	"github.com/Chronicle20/atlas/libs/atlas-wz/wz/property"
 )
 
 // sprite is a decoded canvas, its origin anchor, its per-sprite z, and dims.
@@ -22,9 +23,9 @@ type sprite struct {
 
 // decoder caches decoded canvases + mirrored variants for one render call.
 type decoder struct {
-	f        *wz.File
-	cache    map[int64]*sprite
-	flipped  map[int64]*image.NRGBA
+	f       *wz.File
+	cache   map[int64]*sprite
+	flipped map[int64]*image.NRGBA
 }
 
 func newDecoder(f *wz.File) *decoder {
@@ -44,7 +45,7 @@ func (d *decoder) decode(cp *property.CanvasProperty) (*sprite, error) {
 	if err != nil {
 		return nil, fmt.Errorf("read canvas: %w", err)
 	}
-	nrgba, err := canvas.Decompress(data, cp.Width(), cp.Height(), cp.Format(), d.f.CanvasEncryptionKey())
+	nrgba, err := canvas.Decompress(data, cp.Width(), cp.Height(), cp.Format(), d.f.CanvasEncryptionKeyFor(cp.DataOffset()))
 	if err != nil {
 		return nil, fmt.Errorf("decompress canvas: %w", err)
 	}

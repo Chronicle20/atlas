@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const CharacterMovementWriter = "CharacterMovement"
@@ -21,10 +22,10 @@ func NewCharacterMovement(characterId uint32, movement model.Movement) Character
 	return CharacterMovement{characterId: characterId, movement: movement}
 }
 
-func (m CharacterMovement) CharacterId() uint32    { return m.characterId }
+func (m CharacterMovement) CharacterId() uint32      { return m.characterId }
 func (m CharacterMovement) Movement() model.Movement { return m.movement }
-func (m CharacterMovement) Operation() string       { return CharacterMovementWriter }
-func (m CharacterMovement) String() string          { return fmt.Sprintf("characterId [%d]", m.characterId) }
+func (m CharacterMovement) Operation() string        { return CharacterMovementWriter }
+func (m CharacterMovement) String() string           { return fmt.Sprintf("characterId [%d]", m.characterId) }
 
 func (m CharacterMovement) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)

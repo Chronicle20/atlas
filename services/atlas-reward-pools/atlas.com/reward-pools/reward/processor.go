@@ -1,0 +1,243 @@
+package reward
+
+import (
+	"atlas-reward-pools/gachapon"
+	"atlas-reward-pools/global"
+	"atlas-reward-pools/item"
+	"context"
+	"crypto/rand"
+	"errors"
+	"math/big"
+
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+)
+
+type poolItem struct {
+	ItemId   uint32
+	Quantity uint32
+	// Weight is the optional explicit roll weight for this pool entry. When
+	// every item in a pool has weight 0, selectItem falls back to the
+	// original uniform pick; global-pool items never set a weight and so
+	// always read 0.
+	Weight uint32
+}
+
+type Processor interface {
+	SelectReward(gachaponId string) (Model, error)
+	GetPrizePool(gachaponId string, tier string) ([]Model, error)
+}
+
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+	db  *gorm.DB
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
+	return &ProcessorImpl{l: l, ctx: ctx, db: db}
+}
+
+var _ Processor = (*ProcessorImpl)(nil)
+
+func (p *ProcessorImpl) SelectReward(gachaponId string) (Model, error) {
+	g, err := gachapon.NewProcessor(p.l, p.ctx, p.db).GetById(gachaponId)
+	if err != nil {
+		return Model{}, err
+	}
+
+	var tier string
+	var pool []poolItem
+
+	if g.Kind() == gachapon.KindIncubator {
+		// Incubator machines draw from the whole machine's item set,
+		// across every tier, weighted by item.Weight — never the tiered
+		// selectTier roll, and never the shared global pool.
+		machineItems, err := item.NewProcessor(p.l, p.ctx, p.db).GetByGachaponId(gachaponId)()
+		if err != nil {
+			return Model{}, err
+		}
+		for _, mi := range machineItems {
+			pool = append(pool, poolItem{ItemId: mi.ItemId(), Quantity: mi.Quantity(), Weight: mi.Weight()})
+		}
+		tier = ""
+	} else {
+		tier, err = selectTier(g.CommonWeight(), g.UncommonWeight(), g.RareWeight())
+		if err != nil {
+			return Model{}, err
+		}
+
+		pool, err = p.getMergedPool(gachaponId, tier)
+		if err != nil {
+			return Model{}, err
+		}
+	}
+
+	if len(pool) == 0 {
+		return Model{}, errors.New("no items available in pool for tier: " + tier)
+	}
+
+	selected, err := selectItem(pool)
+	if err != nil {
+		return Model{}, err
+	}
+
+	result := NewBuilder(gachaponId).
+		SetItemId(selected.ItemId).
+		SetQuantity(selected.Quantity).
+		SetTier(tier).
+		Build()
+
+	p.l.WithFields(logrus.Fields{
+		"gachapon_id": gachaponId,
+		"tier":        tier,
+		"item_id":     selected.ItemId,
+		"quantity":    selected.Quantity,
+	}).Infof("Gachapon reward selected.")
+
+	return result, nil
+}
+
+func (p *ProcessorImpl) GetPrizePool(gachaponId string, tier string) ([]Model, error) {
+	g, err := gachapon.NewProcessor(p.l, p.ctx, p.db).GetById(gachaponId)
+	if err != nil {
+		return nil, err
+	}
+
+	if g.Kind() == gachapon.KindIncubator {
+		// Incubator pools roll the whole machine weighted by item.Weight —
+		// they have no tiers and never merge the global pool (SelectReward).
+		machineItems, err := item.NewProcessor(p.l, p.ctx, p.db).GetByGachaponId(gachaponId)()
+		if err != nil {
+			return nil, err
+		}
+		var results []Model
+		for _, mi := range machineItems {
+			results = append(results, NewBuilder(gachaponId).
+				SetItemId(mi.ItemId()).
+				SetQuantity(mi.Quantity()).
+				SetWeight(mi.Weight()).
+				Build())
+		}
+		return results, nil
+	}
+
+	tiers := []string{"common", "uncommon", "rare"}
+	if tier != "" {
+		tiers = []string{tier}
+	}
+
+	var results []Model
+	for _, t := range tiers {
+		pool, err := p.getMergedPool(gachaponId, t)
+		if err != nil {
+			return nil, err
+		}
+		for _, pi := range pool {
+			results = append(results, NewBuilder(gachaponId).
+				SetItemId(pi.ItemId).
+				SetQuantity(pi.Quantity).
+				SetTier(t).
+				SetWeight(pi.Weight).
+				Build())
+		}
+	}
+	return results, nil
+}
+
+func (p *ProcessorImpl) getMergedPool(gachaponId string, tier string) ([]poolItem, error) {
+	machineItems, err := item.NewProcessor(p.l, p.ctx, p.db).GetByGachaponIdAndTier(gachaponId, tier)()
+	if err != nil {
+		return nil, err
+	}
+
+	globalItems, err := global.NewProcessor(p.l, p.ctx, p.db).GetByTier(tier)()
+	if err != nil {
+		return nil, err
+	}
+
+	var pool []poolItem
+	for _, mi := range machineItems {
+		pool = append(pool, poolItem{ItemId: mi.ItemId(), Quantity: mi.Quantity(), Weight: mi.Weight()})
+	}
+	for _, gi := range globalItems {
+		// Global-pool items have no weight concept; they always read 0.
+		pool = append(pool, poolItem{ItemId: gi.ItemId(), Quantity: gi.Quantity(), Weight: 0})
+	}
+	return pool, nil
+}
+
+func selectTier(commonWeight uint32, uncommonWeight uint32, rareWeight uint32) (string, error) {
+	tierTotalWeight := commonWeight + uncommonWeight + rareWeight
+	if tierTotalWeight == 0 {
+		return "", errors.New("total weight cannot be zero")
+	}
+
+	n, err := rand.Int(rand.Reader, big.NewInt(int64(tierTotalWeight)))
+	if err != nil {
+		return "", err
+	}
+	roll := uint32(n.Int64())
+
+	if roll < commonWeight {
+		return "common", nil
+	}
+	if roll < commonWeight+uncommonWeight {
+		return "uncommon", nil
+	}
+	return "rare", nil
+}
+
+// totalWeight sums Weight across the pool. A pool where every item is 0
+// (the classic gachapon case, and any pool whose items never set Weight)
+// sums to 0.
+func totalWeight(pool []poolItem) uint32 {
+	var total uint32
+	for _, pi := range pool {
+		total += pi.Weight
+	}
+	return total
+}
+
+// selectWeightedIndex is a pure helper: given a pool and a roll drawn from
+// [0, totalWeight(pool)), it returns the index of the item whose
+// cumulative-weight range contains roll. A zero-weight item contributes a
+// zero-width range and can never be selected by any roll in range. Extracted
+// as a pure function so the weighting boundary can be tested deterministically
+// without stubbing crypto/rand.
+func selectWeightedIndex(pool []poolItem, roll uint32) int {
+	var cumulative uint32
+	for i, pi := range pool {
+		cumulative += pi.Weight
+		if roll < cumulative {
+			return i
+		}
+	}
+	// Unreachable when roll is drawn from [0, totalWeight(pool)); guards
+	// against float/overflow surprises by returning the last item rather
+	// than panicking.
+	return len(pool) - 1
+}
+
+func selectItem(pool []poolItem) (poolItem, error) {
+	if len(pool) == 0 {
+		return poolItem{}, errors.New("empty pool")
+	}
+
+	if total := totalWeight(pool); total > 0 {
+		n, err := rand.Int(rand.Reader, big.NewInt(int64(total)))
+		if err != nil {
+			return poolItem{}, err
+		}
+		return pool[selectWeightedIndex(pool, uint32(n.Int64()))], nil
+	}
+
+	// No item in the pool declares a weight: fall back to the original
+	// uniform pick, unchanged from before weighting existed. This is what
+	// keeps classic gachapons (weight 0 everywhere) behaviorally identical.
+	n, err := rand.Int(rand.Reader, big.NewInt(int64(len(pool))))
+	if err != nil {
+		return poolItem{}, err
+	}
+	return pool[n.Int64()], nil
+}

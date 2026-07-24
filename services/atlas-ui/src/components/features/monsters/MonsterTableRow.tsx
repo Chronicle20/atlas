@@ -1,7 +1,12 @@
 import { Link } from "react-router-dom";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { NpcImage } from "@/components/features/npc/NpcImage";
 import { useHoverHighlight } from "@/components/features/maps/HoverHighlightContext";
 import { useMobData } from "@/lib/hooks/useMobData";

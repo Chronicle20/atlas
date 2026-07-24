@@ -5,6 +5,8 @@ import (
 	"encoding/binary"
 	"testing"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 )
@@ -25,11 +27,11 @@ func TestIsMobAffectingBuff_PriestDoom(t *testing.T) {
 // (SendSkillUseRequest: `if skillId == 2321006 && bitmap == 0 return 1`).
 func TestDecodeBishopResurrectionReadsPartyBitmap(t *testing.T) {
 	buf := make([]byte, 0, 12)
-	buf = binary.LittleEndian.AppendUint32(buf, 12345)                          // updateTime
+	buf = binary.LittleEndian.AppendUint32(buf, 12345)                              // updateTime
 	buf = binary.LittleEndian.AppendUint32(buf, uint32(skill.BishopResurrectionId)) // skillId
-	buf = append(buf, 10)                                                       // skill level
-	buf = append(buf, 0b010000)                                                 // bitmap: slot-1 member (bit 5-1=4)
-	buf = binary.LittleEndian.AppendUint16(buf, 0)                              // trailing delay (unread)
+	buf = append(buf, 10)                                                           // skill level
+	buf = append(buf, 0b010000)                                                     // bitmap: slot-1 member (bit 5-1=4)
+	buf = binary.LittleEndian.AppendUint16(buf, 0)                                  // trailing delay (unread)
 
 	req := request.Request(buf)
 	reader := request.NewRequestReader(&req, 0)
@@ -41,5 +43,30 @@ func TestDecodeBishopResurrectionReadsPartyBitmap(t *testing.T) {
 	}
 	if m.AffectedPartyMemberBitmap() != 0b010000 {
 		t.Fatalf("AffectedPartyMemberBitmap = %#b, want 0b010000 — 2321006 missing from isPartyBuff drops the bitmap byte", m.AffectedPartyMemberBitmap())
+	}
+}
+
+func TestSkillUsageInfoDecodeSpiritJavelinItemId(t *testing.T) {
+	const (
+		skillId = uint32(4121006) // NightLordShadowStars
+		starId  = uint32(2070006) // Ilbi Throwing Stars
+	)
+	buf := make([]byte, 0, 13)
+	buf = binary.LittleEndian.AppendUint32(buf, 12345) // updateTime
+	buf = binary.LittleEndian.AppendUint32(buf, skillId)
+	buf = append(buf, 30) // skillLevel
+	buf = binary.LittleEndian.AppendUint32(buf, starId)
+
+	req := request.Request(buf)
+	reader := request.NewRequestReader(&req, 0)
+
+	var info SkillUsageInfo
+	info.Decode(logrus.New(), context.Background())(&reader, map[string]interface{}{})
+
+	if got := info.SpiritJavelinItemId(); got != starId {
+		t.Fatalf("SpiritJavelinItemId() = %d, want %d", got, starId)
+	}
+	if reader.Available() > 0 {
+		t.Fatalf("reader has %d unconsumed bytes after decode", reader.Available())
 	}
 }

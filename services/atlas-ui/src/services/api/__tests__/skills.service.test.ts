@@ -21,7 +21,12 @@ describe("skillsService.getSkillById", () => {
         element: "",
         animationTime: 0,
         maxLevel: 20,
-        effects: [{ weaponDefense: 16, statups: [{ type: "WeaponDefense", amount: 16 }] }],
+        effects: [
+          {
+            weaponDefense: 16,
+            statups: [{ type: "WeaponDefense", amount: 16 }],
+          },
+        ],
       },
     });
 
@@ -29,7 +34,10 @@ describe("skillsService.getSkillById", () => {
 
     expect(def.maxLevel).toBe(20);
     expect(def.effects[0]?.weaponDefense).toBe(16);
-    expect(def.effects[0]?.statups?.[0]).toEqual({ type: "WeaponDefense", amount: 16 });
+    expect(def.effects[0]?.statups?.[0]).toEqual({
+      type: "WeaponDefense",
+      amount: 16,
+    });
   });
 
   it("defaults maxLevel to undefined and effects to [] when absent", async () => {

@@ -14,7 +14,7 @@ import (
 // = sub_503956 @0x503956. The Decode1(dialogResult)==1 arm @0x503bb8 builds
 // COutPacket(9): on success (sub_519081 >= 0) Encode1(1)@0x503be0 +
 // EncodeStr(pin)@0x503c21; on failure Encode1(0)@0x503bc9. Matches atlas
-// RegisterPin.Encode. pinInput=true, pin="1234" → 01 04 00 '1''2''3''4'.
+// RegisterPin.Encode. pinInput=true, pin="1234" → 01 04 00 '1”2”3”4'.
 //
 // packet-audit:verify packet=account/serverbound/RegisterPin version=gms_v48 ida=0x503956
 func TestRegisterPinV48Body(t *testing.T) {

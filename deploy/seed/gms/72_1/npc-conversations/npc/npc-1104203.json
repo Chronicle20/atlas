@@ -1,0 +1,30 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1104203,
+      "startState": "start",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "..."
+          },
+          "id": "start",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "1104203",
+    "type": "npc-conversation"
+  }
+}

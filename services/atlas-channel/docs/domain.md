@@ -318,6 +318,15 @@ A door is created, optionally re-slotted, and removed. Removal carries a reason:
 ### Late-join rendering
 - On field entry, the map-status consumer renders existing doors to the arriving session: `spawnDoorsForSession` renders the AREA-side door for doors whose area field is the entered map, and `spawnTownDoorsForSession` renders the TOWN-side door (resolved by owner, de-duplicated across party members) for doors whose town side is the entered map.
 
+### SuperGM Heal + Dispel skill handler
+- `skill/handler/healdispel` registers an `Apply` handler for `SuperGmHealDispelId` (9101000), gated to the SuperGM job (910); a caster without that job is rejected with a warning log and no effect. For every character in the caster's map, it restores HP and MP to full and cancels the 11 disease debuffs (stun, poison, seal, darkness, weaken, curse, seduce, confuse, undead, slow, stop-portion) via a `CANCEL_BY_TYPES` buff command. The skill's WZ recovery fields are zero on every version, so "restore" means heal to the recipient's effective max (falling back to the recipient's base max when the effective-stats lookup fails or returns zero) rather than the flat+ratio Cleric Heal formula. No experience is ever awarded — this is a GM utility, not a combat heal. Per-recipient failures (HP change, MP change, dispel) are logged and skipped; the loop always continues to the remaining recipients and the self-announce still fires.
+- The self skill-use animation is always broadcast. The foreign skill-use animation is broadcast only when the caster is not GM-hidden; if the hidden-state lookup itself errors, the handler fails safe and treats the caster as hidden, suppressing the foreign broadcast rather than risking a position leak.
+
+### SuperGM Hide skill handler
+- `skill/handler/hide` registers an `Apply` handler for `SuperGmHideId` (9101004), gated to the SuperGM job (910). It is a toggle read from the caster's current hide state: Hide ON applies a persistent `DARK_SIGHT` buff sourced from `SuperGmHideId` (duration set to the largest int32, since atlas-buffs rejects a non-positive duration; the canonical way to end it is casting the skill again) and despawns the caster from every other player in the map. Hide OFF cancels that buff and re-spawns the caster to every other player in the map.
+- The despawn/spawn broadcasts route through the map consumer's single character-spawn choke point (`kafka/consumer/map/consumer.go`): a GM-hidden character is refused a spawn to any other viewer there, so a player entering the map while the GM is hidden never sees them either. The reveal (Hide OFF) spawn deliberately bypasses that suppression check — the hide-buff CANCEL command it just produced is Kafka-mediated and eventually consistent, so a gated read could still observe the stale hidden buff and re-suppress the very spawn meant to un-hide the caster.
+- Only the self skill-use animation is broadcast, in both toggle directions — there is no foreign-animation seam at all, since broadcasting it would leak the caster's presence/position regardless of which direction the toggle is going.
+
 ---
 
 ## Messenger

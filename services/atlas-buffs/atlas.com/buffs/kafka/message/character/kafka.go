@@ -3,10 +3,11 @@ package character
 import (
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
@@ -50,8 +51,7 @@ type CancelCommandBody struct {
 	SourceId int32 `json:"sourceId"`
 }
 
-type CancelAllCommandBody struct {
-}
+type CancelAllCommandBody struct{}
 
 type CancelByTypesCommandBody struct {
 	Types []string `json:"types"`
@@ -87,6 +87,25 @@ type ExpiredStatusEventBody struct {
 	Changes   []StatChange `json:"changes"`
 	CreatedAt time.Time    `json:"createdAt"`
 	ExpiresAt time.Time    `json:"expiresAt"`
+}
+
+const (
+	EventStatusTypeBerserk = "BERSERK"
+)
+
+// BerserkStatusEventBody is one broadcast tick of Dark Knight Berserk aura
+// state (task-154). Emitted every BroadcastPeriod per tracked Dark Knight
+// with the state captured at the last re-evaluation; Active=false ticks are
+// intentional — they clear the aura and keep late-joining observers
+// consistent. ChannelId rides in the body because this topic's envelope has
+// no channel; it lets atlas-channel guard with sc.Is(tenant, world, channel).
+type BerserkStatusEventBody struct {
+	TransactionId  uuid.UUID  `json:"transactionId"`
+	ChannelId      channel.Id `json:"channelId"`
+	SkillId        uint32     `json:"skillId"`
+	CharacterLevel byte       `json:"characterLevel"`
+	SkillLevel     byte       `json:"skillLevel"`
+	Active         bool       `json:"active"`
 }
 
 const (

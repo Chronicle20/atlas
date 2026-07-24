@@ -4,13 +4,16 @@ import (
 	"context"
 	"time"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 )
 
-const DefaultCleanupInterval = 6 * time.Hour
-const CleanupAge = 100 * 24 * time.Hour
+const (
+	DefaultCleanupInterval = 6 * time.Hour
+	CleanupAge             = 100 * 24 * time.Hour
+)
 
 type CleanupTask struct {
 	l        logrus.FieldLogger

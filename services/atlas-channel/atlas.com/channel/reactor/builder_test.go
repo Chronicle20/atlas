@@ -29,7 +29,6 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 		SetDelay(1000).
 		SetDirection(1).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -92,7 +91,6 @@ func TestCloneModel(t *testing.T) {
 	cloned, err := reactor.CloneModel(original).
 		SetPosition(300, 400).
 		Build()
-
 	if err != nil {
 		t.Fatalf("CloneModel().Build() unexpected error: %v", err)
 	}

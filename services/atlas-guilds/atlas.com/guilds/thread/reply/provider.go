@@ -1,9 +1,10 @@
 package reply
 
 import (
+	"gorm.io/gorm"
+
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"gorm.io/gorm"
 )
 
 func getByThreadId(threadId uint32) database.EntityProvider[[]Entity] {

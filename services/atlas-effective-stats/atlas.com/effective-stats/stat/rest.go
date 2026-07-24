@@ -39,19 +39,21 @@ func (r *RestModel) SetID(id string) error {
 
 // BonusRestModel is the JSON:API representation of a stat bonus
 type BonusRestModel struct {
-	Source     string  `json:"source"`
-	StatType   string  `json:"statType"`
-	Amount     int32   `json:"amount"`
-	Multiplier float64 `json:"multiplier"`
+	Source      string  `json:"source"`
+	StatType    string  `json:"statType"`
+	Amount      int32   `json:"amount"`
+	Multiplier  float64 `json:"multiplier"`
+	BasePercent int32   `json:"basePercent"`
 }
 
 // TransformBonus converts a Bonus to its REST model
 func TransformBonus(b Bonus) BonusRestModel {
 	return BonusRestModel{
-		Source:     b.source,
-		StatType:   string(b.statType),
-		Amount:     b.amount,
-		Multiplier: b.multiplier,
+		Source:      b.source,
+		StatType:    string(b.statType),
+		Amount:      b.amount,
+		Multiplier:  b.multiplier,
+		BasePercent: b.basePercent,
 	}
 }
 

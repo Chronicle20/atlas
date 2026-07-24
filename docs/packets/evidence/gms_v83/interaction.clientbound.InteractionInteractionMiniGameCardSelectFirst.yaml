@@ -1,0 +1,10 @@
+packet: interaction/clientbound/InteractionInteractionMiniGameCardSelectFirst
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CMiniRoomBaseDlg::OnPacketBase#MemoryGameCardSelectFirst
+    address: "0x64e1c1"
+    decompile_sha256: 57509217f926acc24ca33fc60a4ea9bb6ad355f59d26c19316f412c70c75dfc1
+verifies:
+    - libs/atlas-packet/interaction/clientbound/interaction_minigame_test.go#TestInteractionMiniGameCardSelectFirstRoundTrip

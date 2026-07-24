@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const AuthTemporaryBanWriter = "AuthTemporaryBan"
@@ -23,9 +24,9 @@ func NewAuthTemporaryBan(bannedCode byte, reason byte, until time.Time) AuthTemp
 	return AuthTemporaryBan{bannedCode: bannedCode, reason: reason, until: uint64(msTime(until))}
 }
 
-func (m AuthTemporaryBan) BannedCode() byte { return m.bannedCode }
-func (m AuthTemporaryBan) Reason() byte     { return m.reason }
-func (m AuthTemporaryBan) Until() uint64    { return m.until }
+func (m AuthTemporaryBan) BannedCode() byte  { return m.bannedCode }
+func (m AuthTemporaryBan) Reason() byte      { return m.reason }
+func (m AuthTemporaryBan) Until() uint64     { return m.until }
 func (m AuthTemporaryBan) Operation() string { return AuthTemporaryBanWriter }
 func (m AuthTemporaryBan) String() string {
 	return fmt.Sprintf("reason [%d]", m.reason)

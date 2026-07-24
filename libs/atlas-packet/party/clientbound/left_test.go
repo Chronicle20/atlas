@@ -10,8 +10,10 @@ import (
 // TestLeftByteOutput verifies the byte output of Left across all tenant variants.
 // Wire layout: mode(1)+partyId(4)+targetId(4)+const1(1)+forced(1)+targetName(2+len)+WritePartyData(?).
 // targetName="Player1" → 2+7=9. Fixed prefix: 1+4+4+1+1+9 = 20. Total:
-//   v83/JMS: 20+298 = 318 bytes (JMS uses small PARTYDATA; IDA @0xb297e7 qmemcpy 0x12A)
-//   v95 (GMS only): 20+378 = 398 bytes
+//
+//	v83/JMS: 20+298 = 318 bytes (JMS uses small PARTYDATA; IDA @0xb297e7 qmemcpy 0x12A)
+//	v95 (GMS only): 20+378 = 398 bytes
+//
 // packet-audit:verify packet=party/clientbound/PartyLeft version=jms_v185 ida=0xb297e7
 // packet-audit:verify packet=party/clientbound/PartyLeft version=gms_v83 ida=0xa3e31c
 // packet-audit:verify packet=party/clientbound/PartyLeft version=gms_v87 ida=0xad697a

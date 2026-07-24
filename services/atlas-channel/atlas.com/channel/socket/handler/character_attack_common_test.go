@@ -5,10 +5,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
 )
 
 // TestComputeReflect_InsideRange_ReturnsClampedReflectedDamage exercises the
@@ -158,15 +159,15 @@ func TestReflectFlow_PhysicalInsideRange_EmitsReflect(t *testing.T) {
 
 	uniqueId := uint32(700001)
 	mirror.OnApplied(tm, uniqueId, monster.StatusEffectAppliedBody{
-		EffectId:       uuid.NewString(),
-		Statuses:       map[string]int32{"WEAPON_REFLECT": 1},
-		Duration:       60000,
-		ReflectKind:    monster2.ReflectKindPhysical,
-		ReflectPercent: 30,
-		ReflectLtX:     -100,
-		ReflectLtY:     -100,
-		ReflectRbX:     100,
-		ReflectRbY:     100,
+		EffectId:         uuid.NewString(),
+		Statuses:         map[string]int32{"WEAPON_REFLECT": 1},
+		Duration:         60000,
+		ReflectKind:      monster2.ReflectKindPhysical,
+		ReflectPercent:   30,
+		ReflectLtX:       -100,
+		ReflectLtY:       -100,
+		ReflectRbX:       100,
+		ReflectRbY:       100,
 		ReflectMaxDamage: 9999,
 	}, time.Now())
 	t.Cleanup(func() { mirror.OnMonsterGone(tm, uniqueId) })
@@ -179,7 +180,7 @@ func TestReflectFlow_PhysicalInsideRange_EmitsReflect(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected reflect info for monster %d kind %s", uniqueId, kind)
 	}
-	r, within := computeReflect([]int32{1000}, info, /*charX*/ 50, 0, /*monX*/ 0, 0)
+	r, within := computeReflect([]int32{1000}, info /*charX*/, 50, 0 /*monX*/, 0, 0)
 	if !within {
 		t.Fatalf("expected within range")
 	}

@@ -1,15 +1,16 @@
 package _map
 
 import (
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
-	EnvCommandTopicMap         = "COMMAND_TOPIC_MAP"
-	CommandTypeWeatherStart    = "WEATHER_START"
+	EnvCommandTopicMap      = "COMMAND_TOPIC_MAP"
+	CommandTypeWeatherStart = "WEATHER_START"
 )
 
 type Command[E any] struct {

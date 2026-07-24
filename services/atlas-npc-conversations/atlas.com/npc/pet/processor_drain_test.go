@@ -1,6 +1,7 @@
 package pet_test
 
 import (
+	"atlas-npc-conversations/pet"
 	"context"
 	"fmt"
 	"net/http"
@@ -9,11 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"atlas-npc-conversations/pet"
-
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // petDoc renders a JSON:API document for pets [from, to] owned by a

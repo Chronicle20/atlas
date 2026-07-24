@@ -1,11 +1,15 @@
-
 import { useTenant } from "@/context/tenant-context";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { merchantsService } from "@/services/api/merchants.service";
 import type { MerchantListing } from "@/types/models/merchant";
 import { useTenantConfiguration } from "@/lib/hooks/api/useTenants";
-import { getShopTypeName, getShopTypeBadgeVariant, getShopStateName, getShopStateBadgeVariant } from "@/types/models/merchant";
+import {
+  getShopTypeName,
+  getShopTypeBadgeVariant,
+  getShopStateName,
+  getShopStateBadgeVariant,
+} from "@/types/models/merchant";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageLoader } from "@/components/common/PageLoader";
@@ -36,7 +40,12 @@ export function MerchantDetailPage() {
   });
 
   const listingsQuery = useQuery({
-    queryKey: ["merchants", "listings", activeTenant?.id ?? "no-tenant", shopId],
+    queryKey: [
+      "merchants",
+      "listings",
+      activeTenant?.id ?? "no-tenant",
+      shopId,
+    ],
     queryFn: () => merchantsService.getShopListings(shopId),
     enabled: !!activeTenant && !!shopId,
   });
@@ -46,8 +55,12 @@ export function MerchantDetailPage() {
   const shop = shopQuery.data ?? null;
   const listings: MerchantListing[] = listingsQuery.data ?? [];
   const tenantConfig = tenantConfigQuery.data ?? null;
-  const loading = shopQuery.isLoading || listingsQuery.isLoading || tenantConfigQuery.isLoading;
-  const error = shopQuery.error?.message ?? listingsQuery.error?.message ?? null;
+  const loading =
+    shopQuery.isLoading ||
+    listingsQuery.isLoading ||
+    tenantConfigQuery.isLoading;
+  const error =
+    shopQuery.error?.message ?? listingsQuery.error?.message ?? null;
 
   if (loading) {
     return <PageLoader />;
@@ -56,7 +69,9 @@ export function MerchantDetailPage() {
   if (error || !shop) {
     return (
       <div className="flex flex-col flex-1 min-h-0 space-y-6 p-10 pb-16">
-        <div className="text-center py-8 text-muted-foreground">{error || "Shop not found"}</div>
+        <div className="text-center py-8 text-muted-foreground">
+          {error || "Shop not found"}
+        </div>
       </div>
     );
   }
@@ -69,16 +84,26 @@ export function MerchantDetailPage() {
         <Store className="h-6 w-6" />
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-2xl font-bold tracking-tight">{a.title || "Untitled Shop"}</h2>
-            <Badge variant="secondary" className={getShopTypeBadgeVariant(a.shopType)}>
+            <h2 className="text-2xl font-bold tracking-tight">
+              {a.title || "Untitled Shop"}
+            </h2>
+            <Badge
+              variant="secondary"
+              className={getShopTypeBadgeVariant(a.shopType)}
+            >
               {getShopTypeName(a.shopType)}
             </Badge>
-            <Badge variant="secondary" className={getShopStateBadgeVariant(a.state)}>
+            <Badge
+              variant="secondary"
+              className={getShopStateBadgeVariant(a.state)}
+            >
               {getShopStateName(a.state)}
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground">
-            <Link to="/merchants" className="hover:underline">Merchants</Link>
+            <Link to="/merchants" className="hover:underline">
+              Merchants
+            </Link>
             {" > "}
             <span>{a.title || shopId}</span>
           </p>
@@ -95,7 +120,9 @@ export function MerchantDetailPage() {
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Channel</p>
               <Badge variant="secondary">
-                {tenantConfig?.attributes.worlds[a.worldId]?.name || `World ${a.worldId}`} Ch. {a.channelId + 1}
+                {tenantConfig?.attributes.worlds[a.worldId]?.name ||
+                  `World ${a.worldId}`}{" "}
+                Ch. {a.channelId + 1}
               </Badge>
             </div>
             <div className="space-y-1">
@@ -104,13 +131,22 @@ export function MerchantDetailPage() {
             </div>
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Owner</p>
-              <Link to={`/characters/${a.characterId}`} className="text-sm font-medium text-primary hover:underline">
-                <OwnerNameCell characterId={String(a.characterId)} tenant={activeTenant} />
+              <Link
+                to={`/characters/${a.characterId}`}
+                className="text-sm font-medium text-primary hover:underline"
+              >
+                <OwnerNameCell
+                  characterId={String(a.characterId)}
+                  tenant={activeTenant}
+                />
               </Link>
             </div>
             <InfoField label="Position" value={`(${a.x}, ${a.y})`} />
             {a.shopType === 2 && (
-              <InfoField label="Meso Balance" value={a.mesoBalance.toLocaleString()} />
+              <InfoField
+                label="Meso Balance"
+                value={a.mesoBalance.toLocaleString()}
+              />
             )}
             <InfoField label="Listings" value={a.listingCount} />
           </div>
@@ -126,7 +162,10 @@ export function MerchantDetailPage() {
             <div className="flex flex-wrap gap-2">
               {a.visitors.map((characterId) => (
                 <Link key={characterId} to={`/characters/${characterId}`}>
-                  <Badge variant="secondary" className="cursor-pointer hover:bg-accent">
+                  <Badge
+                    variant="secondary"
+                    className="cursor-pointer hover:bg-accent"
+                  >
                     {characterId}
                   </Badge>
                 </Link>
@@ -176,14 +215,16 @@ function ListingRow({ listing }: { listing: MerchantListing }) {
   const { activeTenant } = useTenant();
   const a = listing.attributes;
 
-  const iconUrl = activeTenant ? getAssetIconUrl(
-    activeTenant.id,
-    activeTenant.attributes.region,
-    activeTenant.attributes.majorVersion,
-    activeTenant.attributes.minorVersion,
-    'item',
-    a.itemId,
-  ) : '';
+  const iconUrl = activeTenant
+    ? getAssetIconUrl(
+        activeTenant.id,
+        activeTenant.attributes.region,
+        activeTenant.attributes.majorVersion,
+        activeTenant.attributes.minorVersion,
+        "item",
+        a.itemId,
+      )
+    : "";
 
   return (
     <TableRow>
@@ -215,12 +256,22 @@ function ListingRow({ listing }: { listing: MerchantListing }) {
   );
 }
 
-function InfoField({ label, value, mono }: { label: string; value: string | number; mono?: boolean }) {
+function InfoField({
+  label,
+  value,
+  mono,
+}: {
+  label: string;
+  value: string | number;
+  mono?: boolean;
+}) {
   const displayValue = String(value);
   return (
     <div className="space-y-1">
       <p className="text-sm text-muted-foreground">{label}</p>
-      <p className={`text-sm font-medium ${mono ? "font-mono" : ""}`}>{displayValue}</p>
+      <p className={`text-sm font-medium ${mono ? "font-mono" : ""}`}>
+        {displayValue}
+      </p>
     </div>
   );
 }

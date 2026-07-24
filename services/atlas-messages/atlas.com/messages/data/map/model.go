@@ -1,4 +1,3 @@
 package _map
 
-type Model struct {
-}
+type Model struct{}

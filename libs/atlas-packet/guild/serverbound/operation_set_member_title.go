@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 // packet-audit:fname CField::SendSetMemberGradeMsg
@@ -16,7 +17,7 @@ type SetMemberTitle struct {
 }
 
 func (m SetMemberTitle) TargetId() uint32 { return m.targetId }
-func (m SetMemberTitle) NewTitle() byte    { return m.newTitle }
+func (m SetMemberTitle) NewTitle() byte   { return m.newTitle }
 
 func (m SetMemberTitle) Operation() string { return "SetMemberTitle" }
 

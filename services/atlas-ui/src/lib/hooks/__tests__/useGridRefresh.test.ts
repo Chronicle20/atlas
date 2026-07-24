@@ -1,14 +1,19 @@
 import { renderHook, act } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as toast from "@/lib/utils/toast";
-import { useGridRefresh, type RefreshableQuery } from "@/lib/hooks/useGridRefresh";
+import {
+  useGridRefresh,
+  type RefreshableQuery,
+} from "@/lib/hooks/useGridRefresh";
 
 vi.mock("@/lib/utils/toast", () => ({
   success: vi.fn(),
   error: vi.fn(),
 }));
 
-function makeQuery(overrides: Partial<RefreshableQuery> = {}): RefreshableQuery {
+function makeQuery(
+  overrides: Partial<RefreshableQuery> = {},
+): RefreshableQuery {
   return {
     isFetching: false,
     refetch: vi.fn().mockResolvedValue({ isError: false, error: null }),
@@ -24,7 +29,10 @@ describe("useGridRefresh", () => {
 
   it("isRefreshing is true when any query is fetching", () => {
     const { result } = renderHook(() =>
-      useGridRefresh([makeQuery({ isFetching: false }), makeQuery({ isFetching: true })]),
+      useGridRefresh([
+        makeQuery({ isFetching: false }),
+        makeQuery({ isFetching: true }),
+      ]),
     );
     expect(result.current.isRefreshing).toBe(true);
   });
@@ -75,7 +83,9 @@ describe("useGridRefresh", () => {
     });
 
     expect(toast.error).toHaveBeenCalledTimes(1);
-    expect(toast.error).toHaveBeenCalledWith(boom, { context: { action: "refresh" } });
+    expect(toast.error).toHaveBeenCalledWith(boom, {
+      context: { action: "refresh" },
+    });
     expect(toast.success).not.toHaveBeenCalled();
   });
 

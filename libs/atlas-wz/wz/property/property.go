@@ -31,10 +31,10 @@ type NullProperty struct {
 	name string
 }
 
-func NewNull(name string) *NullProperty        { return &NullProperty{name: name} }
-func (p *NullProperty) Name() string           { return p.name }
-func (p *NullProperty) Type() Type             { return TypeNull }
-func (p *NullProperty) Children() []Property   { return nil }
+func NewNull(name string) *NullProperty      { return &NullProperty{name: name} }
+func (p *NullProperty) Name() string         { return p.name }
+func (p *NullProperty) Type() Type           { return TypeNull }
+func (p *NullProperty) Children() []Property { return nil }
 
 // ShortProperty represents an int16 property.
 type ShortProperty struct {
@@ -42,11 +42,13 @@ type ShortProperty struct {
 	value int16
 }
 
-func NewShort(name string, value int16) *ShortProperty { return &ShortProperty{name: name, value: value} }
-func (p *ShortProperty) Name() string                  { return p.name }
-func (p *ShortProperty) Type() Type                    { return TypeShort }
-func (p *ShortProperty) Children() []Property          { return nil }
-func (p *ShortProperty) Value() int16                  { return p.value }
+func NewShort(name string, value int16) *ShortProperty {
+	return &ShortProperty{name: name, value: value}
+}
+func (p *ShortProperty) Name() string         { return p.name }
+func (p *ShortProperty) Type() Type           { return TypeShort }
+func (p *ShortProperty) Children() []Property { return nil }
+func (p *ShortProperty) Value() int16         { return p.value }
 
 // IntProperty represents an int32 property.
 type IntProperty struct {
@@ -81,10 +83,10 @@ type FloatProperty struct {
 func NewFloat(name string, value float32) *FloatProperty {
 	return &FloatProperty{name: name, value: value}
 }
-func (p *FloatProperty) Name() string           { return p.name }
-func (p *FloatProperty) Type() Type             { return TypeFloat }
-func (p *FloatProperty) Children() []Property   { return nil }
-func (p *FloatProperty) Value() float32         { return p.value }
+func (p *FloatProperty) Name() string         { return p.name }
+func (p *FloatProperty) Type() Type           { return TypeFloat }
+func (p *FloatProperty) Children() []Property { return nil }
+func (p *FloatProperty) Value() float32       { return p.value }
 
 // DoubleProperty represents a float64 property.
 type DoubleProperty struct {
@@ -95,10 +97,10 @@ type DoubleProperty struct {
 func NewDouble(name string, value float64) *DoubleProperty {
 	return &DoubleProperty{name: name, value: value}
 }
-func (p *DoubleProperty) Name() string           { return p.name }
-func (p *DoubleProperty) Type() Type             { return TypeDouble }
-func (p *DoubleProperty) Children() []Property   { return nil }
-func (p *DoubleProperty) Value() float64         { return p.value }
+func (p *DoubleProperty) Name() string         { return p.name }
+func (p *DoubleProperty) Type() Type           { return TypeDouble }
+func (p *DoubleProperty) Children() []Property { return nil }
+func (p *DoubleProperty) Value() float64       { return p.value }
 
 // StringProperty represents a string property.
 type StringProperty struct {
@@ -121,9 +123,9 @@ type SubProperty struct {
 func NewSub(name string, children []Property) *SubProperty {
 	return &SubProperty{name: name, children: children}
 }
-func (p *SubProperty) Name() string           { return p.name }
-func (p *SubProperty) Type() Type             { return TypeSub }
-func (p *SubProperty) Children() []Property   { return p.children }
+func (p *SubProperty) Name() string         { return p.name }
+func (p *SubProperty) Type() Type           { return TypeSub }
+func (p *SubProperty) Children() []Property { return p.children }
 
 // CanvasProperty represents an image/canvas property.
 type CanvasProperty struct {
@@ -143,14 +145,14 @@ func NewCanvas(name string, width, height, format int, dataOffset int64, dataSiz
 		children: children,
 	}
 }
-func (p *CanvasProperty) Name() string           { return p.name }
-func (p *CanvasProperty) Type() Type             { return TypeCanvas }
-func (p *CanvasProperty) Children() []Property   { return p.children }
-func (p *CanvasProperty) Width() int             { return p.width }
-func (p *CanvasProperty) Height() int            { return p.height }
-func (p *CanvasProperty) Format() int            { return p.format }
-func (p *CanvasProperty) DataOffset() int64      { return p.dataOffset }
-func (p *CanvasProperty) DataSize() int32        { return p.dataSize }
+func (p *CanvasProperty) Name() string         { return p.name }
+func (p *CanvasProperty) Type() Type           { return TypeCanvas }
+func (p *CanvasProperty) Children() []Property { return p.children }
+func (p *CanvasProperty) Width() int           { return p.width }
+func (p *CanvasProperty) Height() int          { return p.height }
+func (p *CanvasProperty) Format() int          { return p.format }
+func (p *CanvasProperty) DataOffset() int64    { return p.dataOffset }
+func (p *CanvasProperty) DataSize() int32      { return p.dataSize }
 
 // VectorProperty represents a 2D vector (x, y).
 type VectorProperty struct {
@@ -161,11 +163,11 @@ type VectorProperty struct {
 func NewVector(name string, x, y int32) *VectorProperty {
 	return &VectorProperty{name: name, x: x, y: y}
 }
-func (p *VectorProperty) Name() string           { return p.name }
-func (p *VectorProperty) Type() Type             { return TypeVector }
-func (p *VectorProperty) Children() []Property   { return nil }
-func (p *VectorProperty) X() int32               { return p.x }
-func (p *VectorProperty) Y() int32               { return p.y }
+func (p *VectorProperty) Name() string         { return p.name }
+func (p *VectorProperty) Type() Type           { return TypeVector }
+func (p *VectorProperty) Children() []Property { return nil }
+func (p *VectorProperty) X() int32             { return p.x }
+func (p *VectorProperty) Y() int32             { return p.y }
 
 // ConvexProperty represents a convex shape (list of child properties).
 type ConvexProperty struct {
@@ -176,19 +178,19 @@ type ConvexProperty struct {
 func NewConvex(name string, children []Property) *ConvexProperty {
 	return &ConvexProperty{name: name, children: children}
 }
-func (p *ConvexProperty) Name() string           { return p.name }
-func (p *ConvexProperty) Type() Type             { return TypeConvex }
-func (p *ConvexProperty) Children() []Property   { return p.children }
+func (p *ConvexProperty) Name() string         { return p.name }
+func (p *ConvexProperty) Type() Type           { return TypeConvex }
+func (p *ConvexProperty) Children() []Property { return p.children }
 
 // SoundProperty represents a sound property (stub).
 type SoundProperty struct {
 	name string
 }
 
-func NewSound(name string) *SoundProperty      { return &SoundProperty{name: name} }
-func (p *SoundProperty) Name() string          { return p.name }
-func (p *SoundProperty) Type() Type            { return TypeSound }
-func (p *SoundProperty) Children() []Property  { return nil }
+func NewSound(name string) *SoundProperty     { return &SoundProperty{name: name} }
+func (p *SoundProperty) Name() string         { return p.name }
+func (p *SoundProperty) Type() Type           { return TypeSound }
+func (p *SoundProperty) Children() []Property { return nil }
 
 // UOLProperty represents a UOL (symbolic link) property.
 type UOLProperty struct {
@@ -196,8 +198,8 @@ type UOLProperty struct {
 	value string
 }
 
-func NewUOL(name, value string) *UOLProperty   { return &UOLProperty{name: name, value: value} }
-func (p *UOLProperty) Name() string            { return p.name }
-func (p *UOLProperty) Type() Type              { return TypeUOL }
-func (p *UOLProperty) Children() []Property    { return nil }
-func (p *UOLProperty) Value() string           { return p.value }
+func NewUOL(name, value string) *UOLProperty { return &UOLProperty{name: name, value: value} }
+func (p *UOLProperty) Name() string          { return p.name }
+func (p *UOLProperty) Type() Type            { return TypeUOL }
+func (p *UOLProperty) Children() []Property  { return nil }
+func (p *UOLProperty) Value() string         { return p.value }

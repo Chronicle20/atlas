@@ -8,10 +8,10 @@ import (
 func buildSampleTree() *FootholdTreeRestModel {
 	tree := NewFootholdTree(-1000, -1000, 1000, 1000)
 	footholds := []FootholdRestModel{
-		{Id: 1, First: &point.RestModel{X: -100, Y: 100}, Second: &point.RestModel{X: 100, Y: 100}},   // flat
-		{Id: 2, First: &point.RestModel{X: 100, Y: 100}, Second: &point.RestModel{X: 300, Y: 200}},    // down-slope
-		{Id: 3, First: &point.RestModel{X: -300, Y: 200}, Second: &point.RestModel{X: -100, Y: 100}},  // up-slope
-		{Id: 4, First: &point.RestModel{X: 500, Y: 0}, Second: &point.RestModel{X: 500, Y: 200}},      // wall
+		{Id: 1, First: &point.RestModel{X: -100, Y: 100}, Second: &point.RestModel{X: 100, Y: 100}},  // flat
+		{Id: 2, First: &point.RestModel{X: 100, Y: 100}, Second: &point.RestModel{X: 300, Y: 200}},   // down-slope
+		{Id: 3, First: &point.RestModel{X: -300, Y: 200}, Second: &point.RestModel{X: -100, Y: 100}}, // up-slope
+		{Id: 4, First: &point.RestModel{X: 500, Y: 0}, Second: &point.RestModel{X: 500, Y: 200}},     // wall
 	}
 	return tree.Insert(footholds)
 }

@@ -9,12 +9,13 @@ import (
 	"os"
 	"testing"
 
+	"github.com/sirupsen/logrus"
+	logtest "github.com/sirupsen/logrus/hooks/test"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/sirupsen/logrus"
-	logtest "github.com/sirupsen/logrus/hooks/test"
 )
 
 // createTestField creates a field.Model for testing
@@ -226,7 +227,6 @@ func TestGetInMapById_Success(t *testing.T) {
 	ctx := test.CreateTestContext()
 
 	model, err := portal.NewProcessor(logger, ctx).GetInMapById(100000000, 42)
-
 	if err != nil {
 		t.Fatalf("GetInMapById() returned unexpected error: %v", err)
 	}
@@ -266,7 +266,6 @@ func TestGetInMapByName_Success(t *testing.T) {
 	ctx := test.CreateTestContext()
 
 	model, err := portal.NewProcessor(logger, ctx).GetInMapByName(100000000, "spawn_portal")
-
 	if err != nil {
 		t.Fatalf("GetInMapByName() returned unexpected error: %v", err)
 	}

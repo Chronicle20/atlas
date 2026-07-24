@@ -8,9 +8,10 @@ import (
 
 	msg "atlas-mounts/kafka/message/mount"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 )
 
 func resolveSingle(t *testing.T, p model.Provider[[]kafka.Message]) kafka.Message {

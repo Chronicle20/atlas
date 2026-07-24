@@ -70,6 +70,7 @@ func (r RestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
 	}
 	return rfs
 }
+
 func (r *RestModel) SetToOneReferenceID(_ string, _ string) error {
 	return nil
 }

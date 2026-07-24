@@ -8,12 +8,13 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 type Processor interface {
@@ -143,7 +144,6 @@ func (p *ProcessorImpl) CreateCommodity(npcId uint32, templateId uint32, mesoPri
 func (p *ProcessorImpl) UpdateCommodity(id uuid.UUID, templateId uint32, mesoPrice uint32, discountRate byte, tokenTemplateId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error) {
 	if p.UpdateFn != nil {
 		return p.UpdateFn(id, templateId, mesoPrice, discountRate, tokenTemplateId, tokenPrice, period, levelLimited)
-
 	}
 	c, err := updateCommodity(p.ctx, p.db.WithContext(p.ctx))(id, templateId, mesoPrice, discountRate, tokenTemplateId, tokenPrice, period, levelLimited)
 	if err != nil {

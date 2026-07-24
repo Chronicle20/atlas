@@ -15,9 +15,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"strconv"
 	"time"
+
+	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
@@ -28,13 +33,12 @@ import (
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
-const MaxListings = 16
-const MaxVisitors = 3
+const (
+	MaxListings = 16
+	MaxVisitors = 3
+)
 
 // MaxSearchResults caps the shop-scanner search (client renders at most
 // 200 rows — SP_3630/3631, task-127 design §1.4).
@@ -130,16 +134,18 @@ type ListingSearchResult struct {
 	State       State
 }
 
-var ErrNotFound = errors.New("not found")
-var ErrInvalidTransition = errors.New("invalid state transition")
-var ErrShopLimitReached = errors.New("active shop limit reached")
-var ErrListingLimitReached = errors.New("listing limit reached")
-var ErrInsufficientBundles = errors.New("insufficient bundles")
-var ErrVersionConflict = errors.New("version conflict")
-var ErrNoListings = errors.New("shop has no listings")
-var ErrShopFull = errors.New("shop is full")
-var ErrFrederickPending = errors.New("items or mesos pending at Frederick")
-var ErrNotOwner = errors.New("character does not own shop")
+var (
+	ErrNotFound            = errors.New("not found")
+	ErrInvalidTransition   = errors.New("invalid state transition")
+	ErrShopLimitReached    = errors.New("active shop limit reached")
+	ErrListingLimitReached = errors.New("listing limit reached")
+	ErrInsufficientBundles = errors.New("insufficient bundles")
+	ErrVersionConflict     = errors.New("version conflict")
+	ErrNoListings          = errors.New("shop has no listings")
+	ErrShopFull            = errors.New("shop is full")
+	ErrFrederickPending    = errors.New("items or mesos pending at Frederick")
+	ErrNotOwner            = errors.New("character does not own shop")
+)
 
 type ProcessorImpl struct {
 	l        logrus.FieldLogger

@@ -14,6 +14,9 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -24,9 +27,7 @@ import (
 	partypkt "github.com/Chronicle20/atlas/libs/atlas-packet/party"
 	partycb "github.com/Chronicle20/atlas/libs/atlas-packet/party/clientbound"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func toPartyMembers(l logrus.FieldLogger, ctx context.Context, p party.Model, forChannel channel.Id) []partypkt.PartyMember {
@@ -220,7 +221,6 @@ func handleLeft(sc server.Model, wp writer.Producer) message.Handler[party2.Stat
 				l.WithError(err).Errorf("Unable to announce character [%d] has left party [%d].", tc.Id(), p.Id())
 			}
 		})
-
 	}
 }
 
@@ -271,7 +271,6 @@ func handleExpel(sc server.Model, wp writer.Producer) message.Handler[party2.Sta
 				l.WithError(err).Errorf("Unable to announce character [%d] was expelled from party [%d].", tc.Id(), p.Id())
 			}
 		})
-
 	}
 }
 
@@ -316,7 +315,6 @@ func handleDisband(sc server.Model, wp writer.Producer) message.Handler[party2.S
 				l.WithError(err).Errorf("Unable to announce character [%d] the party [%d] was disbanded.", e.ActorId, e.PartyId)
 			}
 		})
-
 	}
 }
 
@@ -418,7 +416,6 @@ func handleChangeLeader(sc server.Model, wp writer.Producer) message.Handler[par
 				l.WithError(err).Errorf("Unable to announce change party [%d] leadership to [%d].", e.PartyId, e.Body.CharacterId)
 			}
 		})
-
 	}
 }
 

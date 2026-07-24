@@ -3,7 +3,7 @@
  * Used for character visualization and equipment rendering via MapleStory.io API
  */
 
-import type { Character } from './character';
+import type { Character } from "./character";
 
 /**
  * Weapon type enumeration based on MapleStory item classification.
@@ -29,7 +29,7 @@ export const WeaponType = {
   Gun: 19,
   None: 99,
 } as const;
-export type WeaponType = typeof WeaponType[keyof typeof WeaponType];
+export type WeaponType = (typeof WeaponType)[keyof typeof WeaponType];
 
 /**
  * Equipment data structure mapping inventory slots to item IDs
@@ -38,43 +38,43 @@ export type WeaponType = typeof WeaponType[keyof typeof WeaponType];
 export interface EquipmentData {
   [slot: string]: number | undefined;
   // Standard equipment slots (-1 to -49)
-  '-1'?: number;   // Hat
-  '-5'?: number;   // Top/Overall
-  '-6'?: number;   // Bottom
-  '-7'?: number;   // Shoes
-  '-8'?: number;   // Gloves
-  '-9'?: number;   // Cape
-  '-10'?: number;  // Shield
-  '-11'?: number;  // Weapon
-  '-12'?: number;  // Ring
-  '-13'?: number;  // Ring
-  '-14'?: number;  // Ring
-  '-15'?: number;  // Ring
-  '-16'?: number;  // Pendant
-  '-17'?: number;  // Belt
-  '-18'?: number;  // Medal
-  '-19'?: number;  // Shoulder
-  '-20'?: number;  // Pocket Item
-  '-21'?: number;  // Eye Accessory
-  '-22'?: number;  // Face Accessory
-  '-23'?: number;  // Earrings
-  '-24'?: number;  // Emblem
-  '-25'?: number;  // Badge
+  "-1"?: number; // Hat
+  "-5"?: number; // Top/Overall
+  "-6"?: number; // Bottom
+  "-7"?: number; // Shoes
+  "-8"?: number; // Gloves
+  "-9"?: number; // Cape
+  "-10"?: number; // Shield
+  "-11"?: number; // Weapon
+  "-12"?: number; // Ring
+  "-13"?: number; // Ring
+  "-14"?: number; // Ring
+  "-15"?: number; // Ring
+  "-16"?: number; // Pendant
+  "-17"?: number; // Belt
+  "-18"?: number; // Medal
+  "-19"?: number; // Shoulder
+  "-20"?: number; // Pocket Item
+  "-21"?: number; // Eye Accessory
+  "-22"?: number; // Face Accessory
+  "-23"?: number; // Earrings
+  "-24"?: number; // Emblem
+  "-25"?: number; // Badge
   // Cash equipment slots (-101 to -114)
-  '-101'?: number; // Cash Hat
-  '-102'?: number; // Cash Face
-  '-103'?: number; // Cash Eye
-  '-104'?: number; // Cash Top
-  '-105'?: number; // Cash Overall
-  '-106'?: number; // Cash Bottom
-  '-107'?: number; // Cash Shoes
-  '-108'?: number; // Cash Gloves
-  '-109'?: number; // Cash Cape
-  '-110'?: number; // Cash Shield
-  '-111'?: number; // Cash Weapon
-  '-112'?: number; // Cash Ring
-  '-113'?: number; // Cash Pendant
-  '-114'?: number; // Cash Belt
+  "-101"?: number; // Cash Hat
+  "-102"?: number; // Cash Face
+  "-103"?: number; // Cash Eye
+  "-104"?: number; // Cash Top
+  "-105"?: number; // Cash Overall
+  "-106"?: number; // Cash Bottom
+  "-107"?: number; // Cash Shoes
+  "-108"?: number; // Cash Gloves
+  "-109"?: number; // Cash Cape
+  "-110"?: number; // Cash Shield
+  "-111"?: number; // Cash Weapon
+  "-112"?: number; // Cash Ring
+  "-113"?: number; // Cash Pendant
+  "-114"?: number; // Cash Belt
 }
 
 /**
@@ -85,10 +85,10 @@ export interface CharacterRenderOptions {
   face: number;
   skin: number;
   equipment: EquipmentData;
-  stance?: 'stand1' | 'stand2';
+  stance?: "stand1" | "stand2";
   frame?: number;
   resize?: number;
-  renderMode?: 'default' | 'compact';
+  renderMode?: "default" | "compact";
   flipX?: boolean;
 }
 
@@ -121,7 +121,7 @@ export interface MapleStoryCharacterData {
 export interface EquipmentSlotConfig {
   slot: string;
   name: string;
-  category: 'weapon' | 'armor' | 'accessory' | 'cash';
+  category: "weapon" | "armor" | "accessory" | "cash";
   renderOrder: number;
   twoHanded?: boolean;
 }
@@ -131,8 +131,8 @@ export interface EquipmentSlotConfig {
  */
 export interface StanceConfig {
   weaponId: number;
-  stance: 'stand1' | 'stand2';
-  category: 'one-handed' | 'two-handed';
+  stance: "stand1" | "stand2";
+  category: "one-handed" | "two-handed";
 }
 
 /**
@@ -211,7 +211,7 @@ export interface CharacterRenderingConfig {
   apiVersion: string;
   cacheEnabled: boolean;
   cacheTTL: number;
-  defaultStance: 'stand1' | 'stand2';
+  defaultStance: "stand1" | "stand2";
   defaultResize: number;
   enableErrorLogging: boolean;
   defaultRegion?: string;

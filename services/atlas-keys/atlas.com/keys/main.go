@@ -4,9 +4,10 @@ import (
 	"atlas-keys/character"
 	character2 "atlas-keys/kafka/consumer/character"
 	keymap "atlas-keys/key"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"os"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"

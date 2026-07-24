@@ -1,9 +1,8 @@
 package workers
 
 import (
-	"testing"
-
 	"atlas-data/canonical"
+	"testing"
 
 	"github.com/google/uuid"
 )

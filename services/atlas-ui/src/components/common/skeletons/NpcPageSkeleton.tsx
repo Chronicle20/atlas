@@ -1,5 +1,5 @@
-import { Skeleton } from '@/components/ui/skeleton';
-import { NpcCardSkeleton } from '@/components/features/npc/NpcCardSkeleton';
+import { Skeleton } from "@/components/ui/skeleton";
+import { NpcCardSkeleton } from "@/components/features/npc/NpcCardSkeleton";
 
 /**
  * NpcPageSkeleton provides a loading state specifically for the NPCs page.
@@ -11,7 +11,6 @@ export function NpcPageSkeleton() {
       <div className="flex flex-col space-y-4">
         {/* Page title */}
         <Skeleton className="h-8 w-16" /> {/* "NPCs" title */}
-        
         {/* Header actions */}
         <div className="flex items-center justify-between">
           <div className="flex gap-2 items-center">

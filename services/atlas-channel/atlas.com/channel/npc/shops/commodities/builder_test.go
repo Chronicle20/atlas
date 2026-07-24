@@ -29,7 +29,6 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 		SetUnitPrice(1.5).
 		SetSlotMax(100).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -167,7 +166,6 @@ func TestBuilderFluentChaining(t *testing.T) {
 		SetUnitPrice(1.5).
 		SetSlotMax(100).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}

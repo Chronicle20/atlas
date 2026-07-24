@@ -1,6 +1,7 @@
 package wishlist_test
 
 import (
+	"atlas-channel/cashshop/wishlist"
 	"context"
 	"fmt"
 	"net/http"
@@ -9,11 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"atlas-channel/cashshop/wishlist"
-
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // wishlistDoc renders a JSON:API document for wishlist items [from, to]

@@ -28,9 +28,9 @@ type CreatedSessionStatusEventBody struct {
 }
 
 type ErrorSessionStatusEventBody struct {
-	Code      string `json:"code"`
-	Reason    byte   `json:"reason"`
+	Code      string    `json:"code"`
+	Reason    byte      `json:"reason"`
 	Until     time.Time `json:"until"`
-	IPAddress string `json:"ipAddress"`
-	HWID      string `json:"hwid"`
+	IPAddress string    `json:"ipAddress"`
+	HWID      string    `json:"hwid"`
 }

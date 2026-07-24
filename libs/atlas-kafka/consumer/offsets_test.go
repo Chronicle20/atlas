@@ -7,10 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/segmentio/kafka-go"
 	"github.com/stretchr/testify/require"
 	tckafka "github.com/testcontainers/testcontainers-go/modules/kafka"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 )
 
 func TestReadEndOffsets_ReturnsCurrentEndPerPartition(t *testing.T) {

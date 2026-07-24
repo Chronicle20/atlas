@@ -1,0 +1,631 @@
+# IDA verification notes — task-133 miniroom minigames (gates G1–G5)
+
+Byte-layout source of truth for the Omok / Match Cards packet work (tasks 2–8), the
+gameplay engine (task 15) and the seed templates (task 20). Every claim below cites the
+decompiled client function it was derived from (function name + address + snippet). Two
+IDBs were used:
+
+- **v83** — `MapleStory_dump.exe` (IDA port 13342, imagebase 0x400000). Primary reference.
+- **v95** — `GMS_v95.0_U_DEVM.exe` (IDA port 13341). Cross-check for G3 + G5.
+
+Both instances were matched by binary name via `list_instances` (the port set rotates).
+
+Shared facts used throughout:
+
+- The client uses **one mode enum for both directions** (serverbound + clientbound).
+  A dialog receives via `CMiniRoomBaseDlg::OnPacketBase` (v83 `0x65df4c`) whose `default`
+  arm calls the dialog vtable `OnPacket(nType, pkt)`; the serverbound sends reuse the same
+  numbers. The seeded serverbound table `template_gms_83_1.json:571-584` is therefore
+  authoritative for the clientbound modes too on v83/v84.
+- **Player slot** (`m_nMyPosition`, v83 field `this[50]`): a byte the SERVER assigns to each
+  client in the enter-result. `CMiniRoomBaseDlg::OnEnterResultBase` (v83 `0x65ec3d`) reads
+  `*(this+51)=Decode1` (capacity) then `*(this+50)=Decode1` (that client's own slot). Slot
+  `0` = owner/creator, `1` = visitor. Every "is this me?" test in the handlers compares a
+  decoded slot byte against `this[50]` / `m_nMyPosition`.
+- **Stone/piece color** is a **1-based** value (1 or 2), distinct from the 0-based slot.
+  `COmokDlg::OnUserStart` sets `m_nPlayerColor = 2 - (startByte != mySlot)`.
+
+---
+
+## G1 start-byte
+
+**Resolved rule.** The `START` (mode 61) body's first byte is a **player slot index**
+(0 = owner, 1 = visitor). The client grants the first move to the player whose slot is
+**NOT equal** to the START byte; the player whose slot **equals** the byte becomes the
+second mover (and is assigned `m_nPlayerColor = 2`). Match Cards `START` prepends the same
+first-mover slot byte, then a card count, then `count` little-endian int32 card ids.
+
+Server implication: send `START` byte = the slot of the **second mover** (per Cosmic = the
+previous winner's slot; initial value `1`), and initialise server `currentTurn` (first
+mover) to the **other** slot. With Cosmic's values this yields: first game → owner moves
+first (byte 1 ⇒ first mover = slot 0); after an owner win → visitor moves first (byte 0);
+after a visitor win → owner moves first (byte 1). I.e. the **loser of the previous game
+moves first**, which matches Cosmic's extracted `0`-after-owner-win / `1`-after-visitor-win /
+initial-`1` (design §13/G1). The client is authoritative for the grant direction; Cosmic is
+authoritative for the byte's raw value.
+
+**Evidence — Omok START handler (v83 `COmokDlg::OnUserStart` @ 0x6e469c):**
+```
+v3 = CInPacket::Decode1(a2) != this[50];   // v3 = (startByte != mySlot)
+this[694] = v3;                            // turn flag
+this[692] = !v3 + 1;                       // my color: 2 if startByte==mySlot else 1
+```
+v95 confirms with typed names (`COmokDlg::OnUserStart` @ 0x684a00):
+```
+v3 = CInPacket::Decode1(iPacket) != this->m_nMyPosition;
+this->m_bCurTurn = v3;
+this->m_nPlayerColor = 2 - v3;
+```
+
+**Turn-flag polarity is nailed by the move-send gate.** The board-click handler only
+sends a stone when the turn flag == 1 (v83 `sub_6E4D1F` @ 0x6e4d1f, the caller of the
+move-send `COmokDlg::PutStoneChecker` @ 0x6e8a19):
+```
+if ( this[693] )            // game in progress
+  if ( this[694] == 1 )     // == my turn
+     ... COmokDlg::PutStoneChecker(v6, x, y);   // send MOVE_STONE
+```
+Corroboration from `COmokDlg::OnPutStoneChecker` (v83 @ 0x6e3f5b): receiving a stone of
+**my** color sets `this[694]=0` (I just moved → not my turn); an opponent stone sets
+`this[694]=1` (my turn). Therefore `this[694]==1 ⇔ my turn`, and since START sets
+`this[694] = (startByte != mySlot)`, **first mover = slot ≠ startByte**.
+
+**Match Cards START body (v83 `CMemoryGameDlg::OnUserStart` @ 0x64e632):**
+```
+v3 = CInPacket::Decode1(a2);                 // byte: first-mover slot
+v4 = CInPacket::Decode1(a2);                 // byte: card count (12/20/30)
+this[480] = v4;
+ZArray<long>::_Alloc(this+132, v4, ...);
+CInPacket::DecodeBuffer(a2, this[132], 4*this[480]);  // count × int32 card id
+this[463] = v3 != this[50];                  // same "!= mySlot" first-mover test
+```
+So Match Cards `START` = `byte firstMoverSlot, byte count, count × int32 cardId`.
+
+**v95 confirms** (`CMemoryGameDlg::OnUserStart` @ 0x62f220, resolved via IDA in the
+task-7 packet-audit evidence pass — the mangled symbol
+`?OnUserStart@CMemoryGameDlg@@IAEXAAVCInPacket@@@Z`; the demangled `Class::Method`
+form does not resolve, per the IDA-MCP naming note):
+```
+v4 = CInPacket::Decode1(iPacket);                     // byte: first-mover slot
+v5 = CInPacket::Decode1(v2); this->m_nCount = v5;     // byte: card count
+ZArray<long>::_Alloc(&this->m_anShuffle, v5, ...);
+CInPacket::DecodeBuffer(v2, this->m_anShuffle.a, 4 * this->m_nCount);  // count × int32 card id
+this->m_bCurTurn = v4 != this->m_nMyPosition;         // same "!= mySlot" first-mover test
+```
+Byte-identical read order to v83 (§G5 mode 61 START row for Match Cards is thus
+verified on both tenants). This closes the v95 gap the packet task flagged for
+`InteractionMiniGameStartMatchCards`.
+
+---
+
+## G2 retreat
+
+No Cosmic reference exists (design D10) — the v83/v95 client is the sole authority. Retreat
+uses mode **54 = ASK_RETREAT** and mode **55 = RETREAT_ANSWER** (both directions, single
+enum). Verified on **v83 and v95** (brief required only v83).
+
+**Serverbound ASK_RETREAT (mode 54) is bodyless.** `COmokDlg::SendRetreatRequest`
+(v83 @ 0x6e8bc2), gated on having ≥1 stone placed and no pending request:
+```
+COutPacket::COutPacket(v9, 123);   // opcode 0x7B
+COutPacket::Encode1(v9, 54u);      // mode 54, no body
+```
+
+**Clientbound ASK_RETREAT (mode 54) is bodyless** — the receiver just shows a Yes/No prompt
+and replies serverbound. `COmokDlg::OnRetreatRequest` (v83 @ 0x6e416b):
+```
+COutPacket::COutPacket(v10, 123);
+COutPacket::Encode1(v10, 0x37u);                       // reply mode 0x37 = 55 = RETREAT_ANSWER
+LOBYTE(v9) = CUtilDlg::YesNo(...) == 6;                // accept bool
+COutPacket::Encode1(v10, v9);                          // serverbound body: byte accept
+```
+This matches the existing serverbound decoder
+`libs/atlas-packet/interaction/serverbound/operation_memory_game_retreat_answer.go`
+(reads one `bool`).
+
+v95 confirms (`COmokDlg::OnRetreatRequest` @ 0x6804b0) — reads nothing from `iPacket`,
+shows the SP_0x1DD YesNo prompt, replies serverbound:
+```
+COutPacket::COutPacket(&oPacket, 144);            // v95 MiniRoom serverbound opcode
+COutPacket::Encode1(&oPacket, 0x37u);             // reply mode 0x37 = 55 = RETREAT_ANSWER
+v5 = CUtilDlg::YesNo(v7, v8, p_m_pChildModal, v10, v11);
+COutPacket::Encode1(&oPacket, v5 == 6);           // serverbound body: byte accept
+```
+
+**Clientbound RETREAT_ANSWER (mode 55) — the load-bearing layout.**
+`COmokDlg::OnRetreatResult` (v83 @ 0x6e41f9):
+```
+if ( CInPacket::Decode1(a2) ) {        // byte0: accept (1 = accepted)
+   v4  = CInPacket::Decode1(a2);       // byte1: N = number of stones to pop
+   v19 = CInPacket::Decode1(a2);       // byte2: slot whose turn follows
+   // loop N times: pop the tail stone from the board; decrement my stone count
+   //               when the popped stone's color == my color
+   if ( this[50] == v19 ) this[694] = 1;   // turnSlot==mySlot -> my turn
+   else                   this[694] = 0;
+} else {
+   // decline: show SP_464 "your opponent denied your request"
+}
+```
+v95 confirms (`COmokDlg::OnRetreatResult` @ 0x684620):
+```
+if ( CInPacket::Decode1(iPacket) ) {
+   v5         = CInPacket::Decode1(v3);   // N stones to pop
+   nCurTurnIdx = CInPacket::Decode1(v3);  // turn slot
+   // loop: ZList<STONELAYER>::RemoveAt(tail); if tail color==m_nPlayerColor --m_nMyStoneNo
+   if ( this->m_nMyPosition == nCurTurnIdx ) this->m_bCurTurn = 1;
+   else                                      this->m_bCurTurn = 0;
+} else { AddChatText(SP "opponent denied", red) }
+```
+
+**RETREAT_ANSWER wire layout (clientbound, mode 55):**
+```
+byte accept
+if accept == 1:
+    byte N         # number of stones the client pops from the tail of the move history
+    byte turnSlot  # slot whose turn it is after the pop; client sets my-turn = (turnSlot == mySlot)
+```
+On decline the body is just `byte accept(0)`. **The client pops exactly N stones from the
+tail and honours `turnSlot` verbatim** — N and turnSlot are chosen by the server; the server
+board must mirror the same N-stone pop. (Task 15 decides N and turnSlot; the wire supports
+any values.)
+
+---
+
+## G3 balloon
+
+**Resolved layout — identical on v83 and v95**, and it exactly matches the existing
+`MiniRoomBase.Spawn` writer (`libs/atlas-packet/interaction/mini_room.go:69-85`). The
+handler `CUser::OnMiniRoomBalloon` reads the trailing fields; the leading `int32 characterId`
+is consumed by the dispatcher `CUserPool::OnUserCommonPacket` (v83 @ 0x972401), which
+resolves the target `CUser` before routing opcode 165 (= 0xA5, the v83 UPDATE_CHAR_BOX
+registry opcode) to the balloon handler:
+```
+characterId = CInPacket::Decode4(a2);            // leading int32 characterId
+User = CUserPool::GetUser(this, characterId);
+...
+case 165: CUser::OnMiniRoomBalloon(v7, a2);      // 165 == 0xA5
+```
+(This dispatch also confirms the v83 balloon opcode 0xA5.) There is
+**no per-roomType (4/5 shop) branch** — the read order is uniform for all room types, so
+mapping the `MiniRoom` writer to this packet cannot crash merchant/personal-shop balloons.
+
+**v95 (typed field names, `CUser::OnMiniRoomBalloon` @ 0x8e8d30):**
+```
+v4 = CInPacket::Decode1(iPacket); this->m_nMiniRoomType = v4;   // byte type; 0 => destroy balloon
+if ( v4 ) {
+   this->m_dwMiniRoomSN  = CInPacket::Decode4(v3);              // int32 roomId / serialNumber
+   ... DecodeStr -> this->m_sMiniRoomTitle;                     // string title
+   this->m_bPrivate  = CInPacket::Decode1(v3);                  // byte private
+   this->m_nGameKind = CInPacket::Decode1(v3);                  // byte gameKind / pieceType
+   this->m_nCurUsers = CInPacket::Decode1(v3);                  // byte occupancy (current users)
+   this->m_nMaxUsers = CInPacket::Decode1(v3);                  // byte capacity (max users)
+   this->m_bGameOn   = CInPacket::Decode1(v3);                  // byte inProgress
+} else {
+   CChatBalloon::DestroyMiniRoomBalloon(...);                   // type 0 removes the balloon
+}
+```
+
+**v83 (`CUser::OnMiniRoomBalloon` @ 0x938ba5)** reads the same order (fields land at
+out-of-numeric-order offsets but the read sequence is identical):
+```
+v4 = Decode1; this[1958]=v4;             // type
+if (v4) {
+   this[1959] = Decode4;                 // int32 roomId
+   DecodeStr -> this[1960];              // title
+   this[1961] = Decode1;                 // private
+   this[1962] = Decode1;                 // gameKind
+   this[1964] = Decode1;                 // occupancy   (read 3rd of the trailing bytes)
+   this[1963] = Decode1;                 // capacity    (read 4th)
+   this[1965] = Decode1;                 // inProgress
+} else DestroyMiniRoomBalloon;
+```
+(v83 offset cross-check: `this[1959]`=roomId and `this[1961]`=private are exactly the fields
+the double-click enter path reads back — see G4 — confirming the mapping.)
+
+**Balloon wire layout (clientbound UPDATE_CHAR_BOX):**
+```
+int32  characterId      # consumed by CUserPool::OnUserCommonPacket @ 0x972401 (GetUser lookup), not by OnMiniRoomBalloon
+byte   roomType         # 0 = remove balloon
+if roomType != 0:
+    int32  roomId       # == owner character id (design D2)
+    string title
+    byte   private
+    byte   pieceType    # gameKind
+    byte   occupancy    # current users
+    byte   capacity     # == 2 for games
+    byte   inProgress
+```
+Task 20 note: opcodes already present-but-unverified in the registries — 0x0A5 (v83) /
+0x0B8 (v95). This layout is verified for both.
+
+---
+
+## G4 visit
+
+**Resolved rule.** The serverbound game-room join is **mode 4** (ENTER/VISIT), NOT the
+trade-shaped body that `libs/atlas-packet/interaction/serverbound/operation_visit.go` decodes
+today. The client sends `int32 serialNumber` (the room id from the balloon) + a
+`byte hasPassword` + an optional password string + a trailing constant `byte 0`. Verified on
+v83 (the send path). This confirms Cosmic's "serialNumber + password" shape.
+
+**Evidence — v83 `CUserLocal::HandleLButtonDblClk` @ 0x94fbbf** (double-click on a user's
+miniroom balloon; `CUserPool::FindBalloon` returns the target remote user `v9`):
+```
+v10 = *(Balloon + 7844);                 // byte at +7844 = target's m_bPrivate  (== this[1961], G3)
+v11 = 0;
+if ( v10 ) {                             // private room -> prompt for password
+   StringPool::GetString(..., SP_470_PLEASE_ENTER_THE_PASSWORD);
+   ... CUtilDlgEx::GetInputStr_Result -> v45;   // typed password
+   v11 = 1;
+}
+COutPacket::COutPacket(&v38, 123);       // opcode 0x7B
+COutPacket::Encode1(&v38, 4u);           // mode 4 = ENTER / VISIT
+COutPacket::Encode4(&v38, *(v9 + 7836)); // int32 serialNumber (target's m_dwMiniRoomSN == this[1959], G3)
+COutPacket::Encode1(&v38, v11);          // byte hasPassword (1 if private)
+if ( v11 )
+   COutPacket::EncodeStr(&v38, ...v45);  // string password
+COutPacket::Encode1(&v38, 0);            // byte 0 (constant trailing)
+CClientSocket::SendPacket(...);
+```
+(The employee/merchant-store branch of the same function sends the same mode 4 with
+`Encode4(serial), Encode1(0), Encode1(0)` — no password — so the game and shop visit share
+the ENTER opcode/mode.)
+
+**Serverbound VISIT wire layout (mode 4):**
+```
+byte   mode = 4
+int32  serialNumber        # room id (owner character id)
+byte   hasPassword         # 0 / 1
+if hasPassword: string password
+byte   0                   # constant trailing byte
+```
+Task 6 note: `operation_visit.go` (serialNumber, errorCode, errorMessage, something bool,
+unk1, cashSerial) is the trade-shaped **clientbound EnterResult** decoder, not this send —
+a game-room VISIT decoder is required.
+
+For completeness, the **clientbound EnterResult** (mode 5, `getMiniRoomError`) read order is
+`byte roomType (0 = error); if 0: byte errorCode` (`CMiniRoomBaseDlg::OnEnterResultStatic`
+@ 0x65dff3). The per-code StringPool lookups in that function's switch tie each code to its
+meaning, confirming design §3.4:
+```
+case 1:  SP_394_THE_ROOM_IS_ALREADY_CLOSED
+case 2:  SP_395_YOU_CANT_ENTER_THE_ROOM_DUE_TO_FULL_CAPACITY
+case 4:  SP_397_YOU_CANT_DO_IT_WHILE_YOURE_DEAD
+case 6:  SP_399_THIS_CHARACTER_IS_UNABLE_TO_DO_IT
+case 11: SP_434_YOU_CANT_START_THE_GAME_HERE
+case 13: SP_401_YOU_CANT_ESTABLISH_A_MINIROOM_RIGHT_HERE
+case 22: SP_5567_THE_PASSWORD_IS_INCORRECT
+```
+i.e. 1 = room already closed, 2 = full capacity, 4 = you're dead, 6 = character unable,
+11 = can't start game here, 13 = can't establish miniroom here, 22 = wrong password.
+
+---
+
+## G5 modes+layouts
+
+**Mode values — verified byte-for-byte identical on v83 and v95** (enum is stable across
+versions), and they agree with the seeded serverbound table `template_gms_83_1.json:571-584`.
+
+| Meaning (clientbound handler) | Mode | v83 dispatch | v95 dispatch |
+|---|---|---|---|
+| ASK_TIE (`OnTieRequest`) | **50** | COmokDlg::OnPacket 0x6e37eb | COmokDlg::OnPacket 0x688b70 |
+| TIE_ANSWER / result (`OnTieResult`) | **51** | " | " |
+| GIVE_UP / FORFEIT (serverbound only) | **52** | seed :573 | seed :573 |
+| ASK_RETREAT (`OnRetreatRequest`) | **54** | " | " |
+| RETREAT_ANSWER (`OnRetreatResult`) | **55** | " | " |
+| EXIT_AFTER_GAME (sb) | **56** | seed :576 | seed :576 |
+| CANCEL_EXIT_AFTER_GAME (sb) | **57** | seed :577 | seed :577 |
+| READY (`OnUserReady`) | **58** | " | " |
+| UNREADY (`OnUserCancelReady`) | **59** | " | " |
+| EXPEL (sb) | **60** | seed :580 | seed :580 |
+| START (`OnUserStart`) | **61** | " | " |
+| RESULT / GET_RESULT (`OnGameResult`, clientbound-only) | **62** | " | " |
+| SKIP / time-over (`OnTimeOver`) | **63** | " | " |
+| MOVE_STONE (`OnPutStoneChecker`) | **64** | " (Omok only) | " |
+| MOVE_STONE error (`OnPutStoneCheckerErr`) | **65** | " (Omok only) | " |
+| FLIP_CARD (`OnTurnUpCard`) | **68** | CMemoryGameDlg::OnPacket 0x64db30 (MatchCards only) | 0x634020 |
+
+v83 Omok dispatch (`COmokDlg::OnPacket` @ 0x6e37eb) cases: 50,51,54,55,58,59,61,62,63,64,65.
+v83 MatchCards dispatch (`CMemoryGameDlg::OnPacket` @ 0x64db30) cases: 50,51,58,59,61,62,63,68.
+v95 identical (`COmokDlg::OnPacket` @ 0x688b70, `CMemoryGameDlg::OnPacket` @ 0x634020).
+
+> **Wire-key naming note:** the mode-68 operations-table key is spelled
+> **`MEMORY_GAME_FIP_CARD`** (typo, load-bearing — keep verbatim in configs and consts;
+> `template_gms_83_1.json:584`, design §7). This document uses FLIP_CARD only as the
+> human-readable label.
+
+### START (Omok / Match Cards)
+See §G1: Omok = `byte firstMoverSlot`; Match Cards = `byte firstMoverSlot, byte count,
+count × int32 cardId`.
+
+### MOVE_STONE (mode 64)
+`COmokDlg::OnPutStoneChecker` (v83 @ 0x6e3f5b):
+```
+CInPacket::DecodeBuffer(arg0, this+707, 8);   // 8-byte buffer = int32 x, int32 y
+v4 = CInPacket::Decode1(arg0);                // byte stoneType (== placing player's color 1/2)
+```
+v95 (`@ 0x6866a0`) reads `DecodeBuffer(&m_pt, 8)` (tagPOINT x,y) then `Decode1` stoneType —
+identical. **Wire: `int32 x, int32 y, byte stoneType`.**
+
+### SELECT_CARD / FLIP_CARD (mode 68)
+`CMemoryGameDlg::OnTurnUpCard` (v83 @ 0x64e1c1, v95 @ 0x62f060):
+```
+v3 = Decode1;                 // byte turn: 1 = first flip, 0 = second flip
+v4 = Decode1;                 // byte slot (index of the card being turned up)
+if ( !v3 ) v13 = Decode1;     // byte firstSlot  (second flip only)
+...
+if ( !v3 ) {
+   v5 = Decode1;              // byte type  (second flip only)
+   if ( v5 < 2 )  ... mismatch   // v5 < m_nMaxUsers(=2)
+   else           ... match      // ++score[v5 - 2]  => owner(0)/visitor(1) pair
+}
+```
+`m_nMaxUsers == 2` (v95 typed) is the mismatch/match threshold. **Wire:**
+```
+byte turn                    # 1 = first flip, 0 = second flip
+byte slot
+if turn == 0:
+    byte firstSlot
+    byte type                # 0 owner-mismatch, 1 visitor-mismatch, 2 owner-match, 3 visitor-match
+```
+(First flip is forwarded to the opponent only; second flip to both — design §3.2.)
+
+### RESULT / GET_RESULT (mode 62) — three shapes
+`COmokDlg::OnGameResult` (v83 @ 0x6e4463, **v95 @ 0x680570**) and
+`CMemoryGameDlg::OnGameResult` (v83 @ 0x64e423, **v95 @ 0x627f60**) are
+byte-identical in shape, across both versions. The v95 handler bodies were
+decompiled directly (reached via the mode-62 case of `COmokDlg::OnPacket`
+@ 0x688b70 / `CMemoryGameDlg::OnPacket` @ 0x634020): each reads
+`Decode1` resultType, then (when resultType != 1) `Decode1` winnerSlot, then two
+`GW_MiniGameRecord::Decode` calls (v95 @ 0x4f2ad0, `DecodeBuffer(0x14)` = 20
+bytes = 5 × int32) — identical to the v83 `sub_4E42FC` record blob below. The
+tier-1 fixture is pinned for both versions (evidence gms_v83 + gms_v95):
+```
+v3 = Decode1;                 // byte resultType
+if ( v3 == 1 ) {              // TIE  -> no winner byte
+   ...
+} else {                     // WIN (0) or FORFEIT-win (2)
+   v9 = Decode1;              // byte winnerSlot; "you win" if winnerSlot == mySlot
+}
+sub_4E42FC(pkt);              // record blob A  (20 bytes)
+sub_4E42FC(pkt);              // record blob B  (20 bytes)
+```
+`sub_4E42FC` (v83 @ 0x4e42fc) = `DecodeBuffer(ptr, 0x14)` — exactly **20 bytes = 5 × int32**,
+matching the existing `MiniGameRecord{Unknown, Wins, Ties, Losses, Points}`
+(`mini_room.go:348-366`). **Wire:**
+```
+byte resultType              # 1 = tie; else (win/forfeit) a winnerSlot byte follows
+if resultType != 1: byte winnerSlot
+<20-byte record>             # player A (owner)
+<20-byte record>             # player B (visitor)
+```
+The three "shapes" are: tie (`01 + 2 records`), win (`00 + winnerSlot + 2 records`),
+forfeit (`02 + winnerSlot + 2 records`). resultType is stored raw by the client; only
+`==1` (tie) suppresses the winnerSlot byte.
+
+### SKIP (mode 63) — the byte after the mode
+`COmokDlg::OnTimeOver` (v83 @ 0x6e472e):
+```
+v3 = this[50];                              // my slot
+this[694] = (v3 == CInPacket::Decode1(a2)); // byte = slot whose turn it now becomes
+```
+v95 confirms with typed names (`COmokDlg::OnTimeOver` @ 0x67fac0):
+```
+m_nMyPosition = this->m_nMyPosition;
+v4 = CInPacket::Decode1(iPacket);
+this->m_nTimeLeft = 30000;
+this->m_bCurTurn = m_nMyPosition == v4;     // same next-mover semantics
+```
+The single byte is the **slot whose turn it now is** (i.e. the non-skipper). The client sets
+my-turn = `(byte == mySlot)`. This reconciles with Cosmic's owner 0x01 / visitor 0x00
+(verified in the local checkout: `<cosmic>/src/main/java/tools/PacketCreator.java:4710-4714`
+`getMiniGameSkipOwner` writes `p.writeByte(Action.SKIP.getCode()); p.writeByte(0x01);`, and
+`:4749-4752` `getMiniGameSkipVisitor` writes `p.writeShort(Action.SKIP.getCode());` — a
+little-endian short whose second byte is the `0x00` body byte): when the **owner (slot 0)
+skips**, the turn passes to the visitor, so the byte = `1`; when the **visitor (slot 1)
+skips**, the byte = `0`. **Wire: `byte turnSlot`** (the slot to move next). No contradiction
+with Cosmic once read as "next mover", not "who skipped".
+
+### READY / UNREADY (modes 58 / 59)
+Bodyless (mode only). `COmokDlg::OnUserReady` (v83 @ 0x6e4608) / `OnUserCancelReady`
+(@ 0x6e466e) read no packet fields — they just toggle the ready button UI.
+v95 confirms: `COmokDlg::OnUserReady` @ 0x684930 and `COmokDlg::OnUserCancelReady`
+@ 0x6849c0 likewise never read from `iPacket` — they only set `m_bReady`, toggle the
+owner's start button, and redraw (`DrawReadyOrNot`).
+
+### Room-enter blob (`getMiniGame`) — IMPORTANT: differs from the current model
+The full room snapshot sent to a joiner (clientbound EnterResult success path, mode 5) is
+assembled by `CMiniRoomBaseDlg::OnEnterResultStatic` (0x65dff3) →
+`CMiniRoomBaseDlg::OnEnterResultBase` (0x65ec3d) → the dialog's virtual `OnEnterResult`
+(`COmokDlg::OnEnterResult` 0x6e388e). Read order:
+```
+byte roomType                              # OnEnterResultStatic: nonzero => success; creates the dialog
+byte capacity                              # OnEnterResultBase: *(this+51)
+byte yourSlot                              # OnEnterResultBase: *(this+50) = m_nMyPosition   <-- server tells you your slot
+# --- avatar list (OnEnterResultBase while-loop, 0xFF-terminated) ---
+repeat:
+    byte slot                              # < 0 (0xFF) terminates
+    <avatar blob>                          # CMiniRoomBaseDlg::DecodeAvatar
+    string name
+# --- record list (dialog OnEnterResult while-loop, 0xFF-terminated) ---
+repeat:
+    byte slot                              # 0xFF terminates
+    <20-byte record>                       # sub_4E42FC
+string title
+byte  gameKind                             # 0 for Omok, 2 for Match Cards (MiniRoomType byte-2 note, design §6.1)
+byte  tournament                           # bool
+if tournament: byte round
+```
+**Discrepancies vs the current `GameMiniRoom.Enter` model (`mini_room.go:121-140`) that the
+packet task (2–8) MUST reconcile with a byte fixture:**
+1. There is a **`yourSlot` byte** after `capacity` that the current model does not write.
+2. Avatars+names and the 20-byte records are in **two separate 0xFF-terminated lists**, not
+   interleaved per visitor as the current model encodes them.
+3. For game rooms the owner entry in the avatar loop has a special int32 branch
+   (`OnEnterResultBase` `Decode4` when `!(vtable+92) && slot==0`) that needs a byte fixture to
+   pin down; flagged for tasks 2–8 rather than guessed here.
+This is the "fresh fixture against getMiniGame/getMatchCard" the design (§6.1) called for.
+
+### Room-enter blob — FULL RESOLUTION (task-7b, vtable+92 predicate + int32 branch)
+
+Resolved the three open items (yourSlot, two-list split, vtable+92 int32 branch) on
+**both** v83 (port 13342) and v95 (port 13341). The v95 build carries typed symbols that
+name the two virtuals directly, and the v83 disassembly confirms the same read order
+byte-for-byte (minus one v95-only field, below).
+
+**vtable+92 = `IsEntrusted()`; vtable+96 = `RegisterEmployer(int)`** — resolved by walking
+the COmokDlg primary vtable from its constructor.
+
+- v83 `COmokDlg::COmokDlg` @ 0x6e3124 sets the primary vtable `*this = &off_AFCB90`
+  (0xafcb90). `off_AFCB90[+92]` (0xafcbec) = **sub_48315F = `return 0;`**;
+  `off_AFCB90[+96]` (0xafcbf0) = **nullsub_96** (empty).
+- v83 `CMemoryGameDlg` primary vtable = 0xAF8028; `[+92]` = **sub_48315F (`return 0`)**,
+  `[+96]` = **nullsub_96** — identical to Omok.
+- Contrast `CEntrustedShopDlg` primary vtable 0xAF3928 `[+92]` = **sub_517F68 = `return 1;`**
+  (CPersonalShopDlg/CTradingRoomDlg/CCashTradingRoomDlg all inherit sub_48315F = 0).
+- v95 `CMiniRoomBaseDlg::OnEnterResultBase` @ **0x638e30** decompiles with typed names:
+  the predicate is `this->IsEntrusted(this)` and the setter is `this->RegisterEmployer(this, Decode4())`.
+
+Decompile snippets. The v83 branch in `OnEnterResultBase` @ 0x65ec3d:
+```c
+if ( !(*(*this + 92))(this) || v4 )        /*0x65ec8c*/   // !IsEntrusted() || slot != 0
+    CMiniRoomBaseDlg::DecodeAvatar(this, v4, v2);          /*0x65ecac*/
+else {
+    v9 = *this;                                            /*0x65ec92*/
+    v5 = CInPacket::Decode4(v2);                           /*0x65ec95*/
+    (*(v9 + 96))(this, v5);                                /*0x65eca0*/  // RegisterEmployer(itemId)
+}
+```
+The vtable+92/+96 stubs shared by both game dialogs (also personal-shop / trade / cash-trade):
+```c
+int sub_48315F() { return 0; }             // 0x48315f  vtable+92 for COmokDlg (0xafcbec) & CMemoryGameDlg (0xaf8084)
+void __stdcall nullsub_96(int a1) { ; }    // 0x483162  vtable+96 no-op pair
+```
+The CEntrustedShopDlg override — the ONLY dialog where the int32 branch is live:
+```c
+int sub_517F68() { return 1; }             // 0x517f68  vtable+92 @ 0xaf3928+92
+```
+v95 typed decompile of the same loop (OnEnterResultBase @ 0x638e30), naming both virtuals:
+```c
+if ( !this->IsEntrusted(this) || i ) {
+    v6 = 0;
+    CMiniRoomBaseDlg::DecodeAvatar(this, i, iPacket);
+} else {
+    p_RegisterEmployer = &this->RegisterEmployer;
+    v5 = CInPacket::Decode4(iPacket);
+    (*p_RegisterEmployer)(this, v5);
+    v6 = 1;
+}
+...
+if ( !v6 )
+    this->m_anJobCode[i] = CInPacket::Decode2(iPacket);   // per-avatar jobCode (v84+; see below)
+```
+
+So the branch `if ( !(*(*this+92))(this) || slot )` in OnEnterResultBase (v83 @ 0x65ec3d,
+v95 @ 0x638e30) is: **"if this dialog is NOT an entrusted (hired-merchant) shop, OR
+slot != 0 → read a full avatar; else (entrusted AND slot 0) → read a Decode4 int32
+(employer item id) via RegisterEmployer instead of an avatar."**
+
+**Conclusion for game rooms: `IsEntrusted()` returns 0 for both COmokDlg and
+CMemoryGameDlg, so the predicate is always false → the `Decode4` int32 branch is DEAD for
+Omok/MatchCards. Every visitor, including owner slot 0, is a full avatar.** This matches
+Cosmic `getMiniGame` (PacketCreator.java:4653-4688) and `getMatchCard`
+(PacketCreator.java:4852-4890), both of which `addCharLook()` the owner and write the
+avatar list and record list as two separate 0xFF-terminated blocks.
+
+**Per-avatar jobCode — version-gated, grounded on ALL FIVE audited IDBs:** after each
+visitor's name the loop conditionally reads a 2-byte job code
+(`if (!isEntrusted) m_anJobCode[i] = Decode2();`):
+
+| Version | OnEnterResultBase | jobCode Decode2? |
+|---|---|---|
+| gms v83 (port 13342) | 0x65ec3d | **NO** — disasm-verified: loop tail 0x65ecb7 DecodeStr → 0x65ecd9 `inc m_nCurUsers` → 0x65ecdf `jmp` back; no Decode2; refs list has only Decode1/Decode4/DecodeStr/DecodeAvatar |
+| gms v84 (port 13345) | sub_674AA6 @ 0x674aa6 (reached from OnEnterResultStatic-equivalent 0x673e5c) | **YES** — `if (!v12) *((_WORD*)this + v4 + 158) = CInPacket::Decode2(v2);` |
+| gms v87 (port 13343) | sub_698F32 @ 0x698f32 (reached from OnEnterResultStatic 0x6982f8) | **YES** — `if (!v12) *(this + v4 + 166) = CInPacket::Decode2(v2);` |
+| gms v95 (port 13341) | 0x638e30 | **YES** — typed `m_anJobCode[i] = Decode2()` |
+| jms v185 (port 13344) | sub_6DABDB @ 0x6dabdb (reached from OnEnterResultStatic 0x6da234) | **YES** — `if (!v12) *(this + v4 + 166) = CInPacket::Decode2(v2);` |
+
+Cosmic (v83-era) writes no job code, consistent with the v83 client. **Encoder gate:
+`(GMS && MajorAtLeast(84)) || JMS`** — note this is a field where v84 does NOT follow v83
+(the usual `>=87` heuristic would be wrong here; grounded per-version instead).
+`clientbound.InteractionMiniGameRoom` implements the gate (`enterHasJobCode`).
+
+**DecodeAvatar reads the AvatarLook blob ONLY** (v95 `DecodeAvatar` @ 0x6389d0 →
+`AvatarLook::AvatarLook(&look, iPacket)`; v83 @ 0x65f2b1). slot / name / (v95 jobCode)
+are read in the OnEnterResultBase loop, not inside DecodeAvatar.
+
+**Record list** (dialog `OnEnterResult`): v83 `COmokDlg::OnEnterResult` @ 0x6e388e loops
+`slot = Decode1(); if slot<0 break; sub_4E7FE9(per-slot init); sub_4E42FC(pkt) = 20-byte
+DecodeBuffer record`, then `title = DecodeStr()`, `gameKind = Decode1()`,
+`tournament = Decode1()`, `if tournament: round = Decode1()`. v95 `COmokDlg::OnEnterResult`
+@ 0x680e70, `CMemoryGameDlg::OnEnterResult` v95 @ 0x628610 / v83 @ 0x64db... (same shape).
+
+**Final v83 game room-enter body** (after the outer ROOM dispatcher mode byte; roomType is
+read by `OnEnterResultStatic` @ 0x65dff3, nonzero ⇒ success ⇒ `MiniRoomFactory` builds the
+dialog):
+```
+byte   roomType            # 1 = Omok, 2 = MatchCards
+byte   capacity            # m_nMaxUsers (2 for games)
+byte   yourSlot            # m_nMyPosition (recipient's slot: 0 owner / 1 visitor)
+# avatar list (0xFF-terminated) — OnEnterResultBase:
+repeat: byte slot (<0/0xFF terminates); <AvatarLook blob>; string name; [uint16 jobCode v84+/JMS]
+0xFF
+# record list (0xFF-terminated) — dialog OnEnterResult:
+repeat: byte slot (0xFF terminates); <20-byte record = 5 x int32>
+0xFF
+string title
+byte   gameKind            # piece/sub-type (Cosmic writes `piece`)
+byte   tournament          # bool
+if tournament: byte round
+```
+Addresses: v83 OnEnterResultStatic 0x65dff3, OnEnterResultBase 0x65ec3d, COmokDlg::OnEnterResult
+0x6e388e; v95 OnEnterResultStatic 0x639500, OnEnterResultBase 0x638e30, COmokDlg::OnEnterResult
+0x680e70, CMemoryGameDlg::OnEnterResult 0x628610.
+
+---
+
+### Game ENTER arm (mode 4 GAME shape) — packet-audit ceremony (task-18b)
+
+The shared ENTER arm (mode 4) has a GAME shape distinct from the shop-room
+`#Enter`: where the shop enter stops after the visitor name, the game dialogs
+read a trailing 20-byte win/tie/loss record. Confirmed by decompile this
+session (v95 @13341, v83-dump @13342):
+
+- **CMiniRoomBaseDlg::OnEnterBase** — v83 **0x65ed1c**, v95 **0x638f80**. Reads
+  `Decode1 slot`, `DecodeAvatar(slot)`, `DecodeStr name`, then on v95 (typed)
+  `this->m_anJobCode[v4] = Decode2()`; v83 @0x65ed1c has NO Decode2 (goes
+  straight from `operator=` on m_asUserID to the virtual `OnEnter` at vtable+68).
+  This is the SAME `enterHasJobCode` version gate as the room-enter avatar list
+  (§G5): v83 absent, v84+/JMS present. Then virtual-dispatches `OnEnter`.
+- **COmokDlg::OnEnter** — v83 `sub_6E3BCC` **0x6e3bcc**, v95 **0x6812e0**.
+  First call is the record read: v83 `sub_4E42FC(pkt)` (= DecodeBuffer 20, §G5
+  line ~386); v95 `GW_MiniGameRecord::Decode` **0x4f2ad0** which is literally
+  `CInPacket::DecodeBuffer(iPacket, this, 20u)` = 5 × int32 (Unknown, Wins,
+  Ties, Losses, Points). Followed by the "%s HAVE ENTERED" chat
+  (SP_437__S__HAVE_ENTERED) + `play_minigame_sound` — no further wire reads.
+- **CMemoryGameDlg::OnEnter** — v95 **0x628980**, byte-identical body to
+  COmokDlg::OnEnter (same GW_MiniGameRecord::Decode @0x4f2ad0 then chat/sound).
+
+Encoder `InteractionMiniGameEnter` (owner-notification on ENTERED) models this:
+mode, slot, avatar blob, name, [Decode2 jobCode iff enterHasJobCode], 5×int32
+record. v83 exact-byte fixture `TestInteractionMiniGameEnterBytes`; v95
+`…BytesV95`. The v83 audit report is 🔍/FlatInvalid (the flat differ cannot
+model the version-gated jobCode write in a non-loop context) — the byte fixture
+is the ground truth, per VERIFYING_A_PACKET §10 "confirm per-branch via
+byte-level tests"; v95 report is a clean ✅.
+
+---
+
+## Coverage summary
+
+| Gate | v83 | v95 | Status |
+|---|---|---|---|
+| G1 start-byte | ✔ (OnUserStart + move-send gate) | ✔ (structural) | RESOLVED |
+| G2 retreat | ✔ | ✔ (bonus) | RESOLVED |
+| G3 balloon | ✔ | ✔ | RESOLVED (uniform, no shop branch) |
+| G4 visit | ✔ (HandleLButtonDblClk) | n/a (brief: v83) | RESOLVED |
+| G5 modes+layouts | ✔ | ✔ (modes identical) | RESOLVED (+ room-enter model discrepancy flagged) |
+
+No unresolved fnames. No decompile contradicted both Cosmic and the seed. The one nuance to
+carry forward (client grants first move to slot ≠ START byte; and the room-enter blob differs
+from the current interleaved model) is documented above with citations, not left as a guess.

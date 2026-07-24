@@ -1,0 +1,172 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "checkEligibility",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "1142133",
+                      "type": "inventorySpace",
+                      "value": "1"
+                    },
+                    {
+                      "operator": "<",
+                      "referenceId": "1142133",
+                      "type": "item",
+                      "value": "1"
+                    },
+                    {
+                      "operator": ">=",
+                      "type": "level",
+                      "value": "200"
+                    },
+                    {
+                      "operator": ">=",
+                      "type": "jobId",
+                      "value": "2100"
+                    },
+                    {
+                      "operator": "<=",
+                      "type": "jobId",
+                      "value": "2199"
+                    }
+                  ],
+                  "nextState": "awardReward"
+                },
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "checkEligibility",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "1142133",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {},
+                  "type": "start_quest"
+                },
+                {
+                  "params": {
+                    "force": "true"
+                  },
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "awardReward",
+            "type": "genericAction"
+          }
+        ]
+      },
+      "questId": 29928,
+      "questName": "Aran High Level Reward",
+      "startStateMachine": {
+        "startState": "checkEligibility",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "1142133",
+                      "type": "inventorySpace",
+                      "value": "1"
+                    },
+                    {
+                      "operator": "<",
+                      "referenceId": "1142133",
+                      "type": "item",
+                      "value": "1"
+                    },
+                    {
+                      "operator": ">=",
+                      "type": "level",
+                      "value": "200"
+                    },
+                    {
+                      "operator": ">=",
+                      "type": "jobId",
+                      "value": "2100"
+                    },
+                    {
+                      "operator": "<=",
+                      "type": "jobId",
+                      "value": "2199"
+                    }
+                  ],
+                  "nextState": "awardReward"
+                },
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "checkEligibility",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "1142133",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {},
+                  "type": "start_quest"
+                },
+                {
+                  "params": {
+                    "force": "true"
+                  },
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "awardReward",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "29928",
+    "type": "quest-conversation"
+  }
+}

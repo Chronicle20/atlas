@@ -1,9 +1,10 @@
 package server
 
 import (
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 // Key uniquely identifies a per-(tenant, world, channel) server entry in

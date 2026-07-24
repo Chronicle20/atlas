@@ -30,6 +30,7 @@ const (
 	EventKindAssetDeleted         EventKind = "asset.deleted"
 	EventKindAssetQuantityChanged EventKind = "asset.quantity_changed"
 	EventKindAssetMoved           EventKind = "asset.moved"
+	EventKindAssetUpdated         EventKind = "asset.updated"
 
 	// Quest subsystem.
 	EventKindQuestStarted   EventKind = "quest.started"
@@ -111,6 +112,9 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.EquipAsset:           {EventKindAssetMoved},
 	sharedsaga.UnequipAsset:         {EventKindAssetMoved},
 	sharedsaga.CreateAndEquipAsset:  {EventKindAssetCreated},
+	sharedsaga.SetAssetOwner:        {EventKindAssetUpdated},
+	sharedsaga.ApplyAssetLock:       {EventKindAssetUpdated},
+	sharedsaga.IncubatorResult:      {},
 
 	// Character/stat actions.
 	sharedsaga.AwardExperience:        {EventKindCharacterExperienceChanged},
@@ -188,8 +192,23 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.AwaitCharacterCreated: {EventKindCharacterCreated, EventKindCharacterCreationFailed},
 	sharedsaga.AwaitInventoryCreated: {EventKindInventoryCreated, EventKindInventoryCreationFailed},
 
+	// WarpToRandomPortal advances on the confirmed map change: atlas-character
+	// emits character.map_changed (tagged with the saga transactionId) after the
+	// warp lands, which handleCharacterMapChangedEvent turns into a StepCompleted.
+	// This is required for any saga that chains a step AFTER the warp — e.g. the
+	// teleport-rock consume_rock DestroyAsset (task-124). map_changed is a sound
+	// completion signal HERE because WarpToRandomPortal always targets a different
+	// map (teleport rock rejects same-map with mode 9; transports warp cross-map).
+	//
+	// WarpToPortal and WarpToSavedLocation share the same "handler fires and
+	// returns without StepCompleted" gap, but they can warp WITHIN the current map
+	// (portal-to-portal), where no map_changed fires — so map_changed is NOT a safe
+	// completion signal for them, and they stay self-completing {} below. Nothing
+	// chains a step after them today; when something needs to, complete them in the
+	// handler (or via a warp-ack event) rather than copying this map_changed entry.
+	sharedsaga.WarpToRandomPortal: {EventKindCharacterMapChanged},
+
 	// Fire-and-forget / self-completing actions (no Kafka event advances them).
-	sharedsaga.WarpToRandomPortal:         {},
 	sharedsaga.WarpToPortal:               {},
 	sharedsaga.WarpToSavedLocation:        {},
 	sharedsaga.SaveLocation:               {},
@@ -219,6 +238,7 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.SelectGachaponReward:       {},
 	sharedsaga.EmitGachaponWin:            {},
 	sharedsaga.StartInstanceTransport:     {},
+	sharedsaga.StartRPSGame:               {},
 	sharedsaga.EmitMegaphone:              {},
 	sharedsaga.EnqueueWorldBroadcast:      {},
 }
@@ -267,6 +287,7 @@ var outcomeTable = map[EventKind]EventOutcome{
 
 	// Asset subsystem.
 	EventKindAssetCreated:         OutcomeSuccess,
+	EventKindAssetUpdated:         OutcomeSuccess,
 	EventKindAssetDeleted:         OutcomeSuccess,
 	EventKindAssetQuantityChanged: OutcomeSuccess,
 	EventKindAssetMoved:           OutcomeSuccess,

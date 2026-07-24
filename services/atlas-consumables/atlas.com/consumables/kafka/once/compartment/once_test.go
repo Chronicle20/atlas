@@ -1,10 +1,9 @@
 package compartment
 
 import (
+	"atlas-consumables/kafka/message/compartment"
 	"context"
 	"testing"
-
-	"atlas-consumables/kafka/message/compartment"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"

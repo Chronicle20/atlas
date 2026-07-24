@@ -5,8 +5,10 @@ import (
 	"sync"
 )
 
-var mmReg *document.Registry[string, RestModel]
-var mmOnce sync.Once
+var (
+	mmReg  *document.Registry[string, RestModel]
+	mmOnce sync.Once
+)
 
 func GetModelRegistry() *document.Registry[string, RestModel] {
 	mmOnce.Do(func() {

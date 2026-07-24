@@ -12,7 +12,9 @@ const fakeTenant = {
 
 const getSkillsByJobMock = vi.fn();
 vi.mock("@/services/api/jobs.service", () => ({
-  jobsService: { getSkillsByJobId: (...args: unknown[]) => getSkillsByJobMock(...args) },
+  jobsService: {
+    getSkillsByJobId: (...args: unknown[]) => getSkillsByJobMock(...args),
+  },
 }));
 
 function wrapper({ children }: { children: ReactNode }) {
@@ -25,7 +27,9 @@ describe("useJobSkills", () => {
 
   it("returns the skill list for a job", async () => {
     getSkillsByJobMock.mockResolvedValue([1101000, 1101001]);
-    const { result } = renderHook(() => useJobSkills(fakeTenant, 110), { wrapper });
+    const { result } = renderHook(() => useJobSkills(fakeTenant, 110), {
+      wrapper,
+    });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toEqual([1101000, 1101001]);
   });

@@ -3,8 +3,9 @@ package job
 import (
 	"context"
 
-	constJob "github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	"github.com/sirupsen/logrus"
+
+	constJob "github.com/Chronicle20/atlas/libs/atlas-constants/job"
 )
 
 type Processor interface {

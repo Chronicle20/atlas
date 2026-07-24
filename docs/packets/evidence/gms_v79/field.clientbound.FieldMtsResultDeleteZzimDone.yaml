@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldMtsResultDeleteZzimDone
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnNormalItemResult#DeleteZzimDone
+    address: "0x57fffc"
+    decompile_sha256: c0bd9764143a3de5cfaf3bd1642add6ce3382d0174b026e4f778cf891fa13f91
+verifies:
+  - libs/atlas-packet/field/clientbound/mts_operation_test.go#TestMtsResultDeleteZzimDone

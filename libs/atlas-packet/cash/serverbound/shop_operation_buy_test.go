@@ -5,9 +5,10 @@ import (
 	"encoding/hex"
 	"testing"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
+
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 // packet-audit:verify packet=cash/serverbound/CashShopOperationBuy version=gms_v95 ida=0x48e530

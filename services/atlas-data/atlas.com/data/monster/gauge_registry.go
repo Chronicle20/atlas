@@ -5,7 +5,7 @@ import (
 	"atlas-data/xml"
 	"sync"
 
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Gauge struct {
@@ -21,8 +21,10 @@ func (g Gauge) Exists() bool {
 	return g.exists
 }
 
-var mgReg *document.Registry[string, Gauge]
-var mgOnce sync.Once
+var (
+	mgReg  *document.Registry[string, Gauge]
+	mgOnce sync.Once
+)
 
 func GetMonsterGaugeRegistry() *document.Registry[string, Gauge] {
 	mgOnce.Do(func() {

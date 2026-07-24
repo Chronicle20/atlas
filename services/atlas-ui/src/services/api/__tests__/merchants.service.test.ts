@@ -46,7 +46,10 @@ describe("merchantsService.getShopsPage", () => {
     const result = await merchantsService.getShopsPage({ number: 1, size: 50 });
 
     expect(result.data).toEqual([makeShop("1")]);
-    expect(result.meta).toEqual({ total: 1, page: { number: 1, size: 50, last: 1 } });
+    expect(result.meta).toEqual({
+      total: 1,
+      page: { number: 1, size: 50, last: 1 },
+    });
 
     const [calledUrl] = getMock.mock.calls[0] as [string];
     const params = new URL(calledUrl, "http://example.test").searchParams;

@@ -6,119 +6,158 @@
   "socket": {
     "handlers": [
       {
+        "opCode": "0x06F",
+        "validator": "LoggedInValidator",
+        "handler": "RPSActionHandle",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "START": 0,
+            "SELECT": 1,
+            "UPDATE": 2,
+            "CONTINUE": 3,
+            "EXIT": 4,
+            "RETRY": 5
+          }
+        }
+      },
+      {
         "opCode": "0x01",
         "validator": "NoOpValidator",
-        "handler": "LoginHandle"
+        "handler": "LoginHandle",
+        "services": ["login"]
       },
       {
         "opCode": "0x07",
         "validator": "LoggedInValidator",
-        "handler": "SetGenderHandle"
+        "handler": "SetGenderHandle",
+        "services": ["login"]
       },
       {
         "opCode": "0x03",
         "validator": "LoggedInValidator",
-        "handler": "ServerListRequestHandle"
+        "handler": "ServerListRequestHandle",
+        "services": ["login"]
       },
       {
         "opCode": "0x04",
         "validator": "LoggedInValidator",
-        "handler": "CharacterListWorldHandle"
+        "handler": "CharacterListWorldHandle",
+        "services": ["login"]
       },
       {
         "opCode": "0x05",
         "validator": "LoggedInValidator",
-        "handler": "ServerStatusHandle"
+        "handler": "ServerStatusHandle",
+        "services": ["login"]
       },
       {
         "opCode": "0x06",
         "validator": "LoggedInValidator",
-        "handler": "AcceptTosHandle"
+        "handler": "AcceptTosHandle",
+        "services": ["login"]
       },
       {
         "opCode": "0x08",
         "validator": "LoggedInValidator",
-        "handler": "AfterLoginHandle"
+        "handler": "AfterLoginHandle",
+        "services": ["login"]
       },
       {
         "opCode": "0x09",
         "validator": "LoggedInValidator",
-        "handler": "RegisterPinHandle"
+        "handler": "RegisterPinHandle",
+        "services": ["login"]
       },
       {
         "opCode": "0x0A",
         "validator": "LoggedInValidator",
-        "handler": "ServerListRequestHandle"
+        "handler": "ServerListRequestHandle",
+        "services": ["login"]
       },
       {
         "opCode": "0x0C",
         "validator": "LoggedInValidator",
-        "handler": "CharacterViewAllHandle"
+        "handler": "CharacterViewAllHandle",
+        "services": ["login"]
       },
       {
         "opCode": "0x0D",
         "validator": "LoggedInValidator",
-        "handler": "CharacterViewAllSelectedHandle"
+        "handler": "CharacterViewAllSelectedHandle",
+        "services": ["login"]
       },
       {
         "opCode": "0x0E",
         "validator": "LoggedInValidator",
-        "handler": "CharacterViewAllPongHandle"
+        "handler": "CharacterViewAllPongHandle",
+        "services": ["login"]
       },
       {
         "opCode": "0x0F",
         "validator": "LoggedInValidator",
-        "handler": "CharacterSelectedHandle"
+        "handler": "CharacterSelectedHandle",
+        "services": ["login"]
       },
       {
         "opCode": "0x10",
         "validator": "NoOpValidator",
-        "handler": "CharacterLoggedInHandle"
+        "handler": "CharacterLoggedInHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x11",
         "validator": "LoggedInValidator",
-        "handler": "CharacterCheckNameHandle"
+        "handler": "CharacterCheckNameHandle",
+        "services": ["login"]
       },
       {
         "opCode": "0x15",
         "validator": "LoggedInValidator",
-        "handler": "CreateCharacterHandle"
+        "handler": "CreateCharacterHandle",
+        "services": ["login"]
       },
       {
         "opCode": "0x16",
         "validator": "LoggedInValidator",
-        "handler": "DeleteCharacterHandle"
+        "handler": "DeleteCharacterHandle",
+        "services": ["login"]
       },
       {
         "opCode": "0x17",
         "validator": "NoOpValidator",
-        "handler": "PongHandle"
+        "handler": "PongHandle",
+        "services": ["login","channel"]
       },
       {
         "opCode": "0x18",
         "validator": "NoOpValidator",
-        "handler": "StartErrorHandle"
+        "handler": "StartErrorHandle",
+        "services": ["login"]
       },
       {
         "opCode": "0x1E",
         "validator": "LoggedInValidator",
-        "handler": "MapChangeHandle"
+        "handler": "MapChangeHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x1F",
         "validator": "LoggedInValidator",
-        "handler": "ChannelChangeHandle"
+        "handler": "ChannelChangeHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x20",
         "validator": "LoggedInValidator",
-        "handler": "CashShopEntryHandle"
+        "handler": "CashShopEntryHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x21",
         "validator": "LoggedInValidator",
         "handler": "CharacterMoveHandle",
+        "services": ["channel"],
         "options": {
           "types": [
             {
@@ -219,97 +258,122 @@
       {
         "opCode": "0x22",
         "validator": "LoggedInValidator",
-        "handler": "CharacterChairInteractionHandle"
+        "handler": "CharacterChairInteractionHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x23",
         "validator": "LoggedInValidator",
-        "handler": "CharacterChairPortableHandle"
+        "handler": "CharacterChairPortableHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x24",
         "validator": "LoggedInValidator",
-        "handler": "CharacterMeleeAttackHandle"
+        "handler": "CharacterMeleeAttackHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x25",
         "validator": "LoggedInValidator",
-        "handler": "CharacterRangedAttackHandle"
+        "handler": "CharacterRangedAttackHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x26",
         "validator": "LoggedInValidator",
-        "handler": "CharacterMagicAttackHandle"
+        "handler": "CharacterMagicAttackHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x27",
         "validator": "LoggedInValidator",
-        "handler": "CharacterDamageHandle"
+        "handler": "CharacterDamageHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x2A",
         "validator": "LoggedInValidator",
-        "handler": "CharacterExpressionHandle"
+        "handler": "CharacterExpressionHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x2E",
         "validator": "LoggedInValidator",
-        "handler": "NPCStartConversationHandle"
+        "handler": "NPCStartConversationHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x3E",
         "validator": "LoggedInValidator",
-        "handler": "CharacterCashItemUseHandle"
+        "handler": "CharacterCashItemUseHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x37",
         "validator": "LoggedInValidator",
-        "handler": "CharacterInventoryMoveHandle"
+        "handler": "CharacterInventoryMoveHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x41",
         "validator": "LoggedInValidator",
-        "handler": "CharacterItemUseHandle"
+        "handler": "CharacterItemUseHandle",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x51",
+        "validator": "LoggedInValidator",
+        "handler": "TeleportRockAddMapHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x43",
         "validator": "LoggedInValidator",
-        "handler": "CharacterDistributeApHandle"
+        "handler": "CharacterDistributeApHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x49",
         "validator": "LoggedInValidator",
-        "handler": "CharacterDistributeSpHandle"
+        "handler": "CharacterDistributeSpHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x44",
         "validator": "LoggedInValidator",
-        "handler": "CharacterHealOverTimeHandle"
+        "handler": "CharacterHealOverTimeHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x47",
         "validator": "LoggedInValidator",
-        "handler": "CharacterBuffCancel"
+        "handler": "CharacterBuffCancel",
+        "services": ["channel"]
       },
       {
         "opCode": "0x4C",
         "validator": "LoggedInValidator",
-        "handler": "CharacterInfoRequestHandle"
+        "handler": "CharacterInfoRequestHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x4A",
         "validator": "LoggedInValidator",
-        "handler": "FameChangeHandle"
+        "handler": "FameChangeHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x59",
         "validator": "LoggedInValidator",
-        "handler": "CharacterMultiChatHandle"
+        "handler": "CharacterMultiChatHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x5D",
         "validator": "LoggedInValidator",
         "handler": "CharacterInteractionHandle",
+        "services": ["channel"],
         "options": {
           "operations": {
             "CREATE": 0,
@@ -318,39 +382,75 @@
             "CHAT": 6,
             "TRADE_PUT_ITEM": 14,
             "TRADE_ADD_MESO": 15,
-            "TRADE_CONFIRM": 16
+            "TRADE_CONFIRM": 16,
+            "MEMORY_GAME_ASK_TIE": 43,
+            "MEMORY_GAME_TIE_ANSWER": 44,
+            "MEMORY_GAME_FORFEIT": 45,
+            "MEMORY_GAME_ASK_RETREAT": 47,
+            "MEMORY_GAME_RETREAT_ANSWER": 48,
+            "MEMORY_GAME_EXIT_AFTER_GAME": 49,
+            "MEMORY_GAME_CANCEL_EXIT_AFTER_GAME": 50,
+            "MEMORY_GAME_READY": 51,
+            "MEMORY_GAME_UNREADY": 52,
+            "MEMORY_GAME_EXPEL": 53,
+            "MEMORY_GAME_START": 54,
+            "MEMORY_GAME_SKIP": 56,
+            "MEMORY_GAME_MOVE_STONE": 57,
+            "MEMORY_GAME_FIP_CARD": 61
           }
         }
       },
       {
         "opCode": "0x5B",
         "validator": "LoggedInValidator",
-        "handler": "CharacterSpouseChatHandle"
+        "handler": "CharacterSpouseChatHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x6E",
         "validator": "LoggedInValidator",
-        "handler": "CharacterKeyMapChangeHandle"
+        "handler": "CharacterKeyMapChangeHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x65",
         "validator": "LoggedInValidator",
-        "handler": "NoteOperationHandle"
+        "handler": "NoteOperationHandle",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "SEND": 0,
+            "DISCARD": 1,
+            "REQUEST": 2
+          }
+        }
       },
       {
         "opCode": "0x5A",
         "validator": "LoggedInValidator",
-        "handler": "CharacterChatWhisperHandle"
+        "handler": "CharacterChatWhisperHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x5C",
         "validator": "LoggedInValidator",
-        "handler": "MessengerOperationHandle"
+        "handler": "MessengerOperationHandle",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "ANSWER_INVITE": 0,
+            "CLOSE": 2,
+            "INVITE": 3,
+            "DECLINE_INVITE": 5,
+            "CHAT": 6
+          }
+        }
       },
       {
         "opCode": "0x5E",
         "validator": "LoggedInValidator",
         "handler": "PartyOperationHandle",
+        "services": ["channel"],
         "options": {
           "operations": {
             "CREATE": 1,
@@ -365,122 +465,479 @@
       {
         "opCode": "0x5F",
         "validator": "LoggedInValidator",
-        "handler": "PartyInviteRejectHandle"
+        "handler": "PartyInviteRejectHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x60",
         "validator": "LoggedInValidator",
-        "handler": "GuildOperationHandle"
+        "handler": "GuildOperationHandle",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "REQUEST_CREATE": 2,
+            "INVITE": 5,
+            "JOIN": 6,
+            "WITHDRAW": 7,
+            "KICK": 8,
+            "SET_TITLE_NAMES": 13,
+            "SET_MEMBER_TITLE": 14,
+            "SET_EMBLEM": 15,
+            "SET_NOTICE": 16,
+            "AGREEMENT_RESPONSE": 30
+          }
+        }
       },
       {
         "opCode": "0x64",
         "validator": "LoggedInValidator",
-        "handler": "BuddyOperationHandle"
+        "handler": "BuddyOperationHandle",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "RELOAD": 0,
+            "ADD": 1,
+            "ACCEPT": 2,
+            "DELETE": 3
+          }
+        }
       },
       {
         "opCode": "0x6B",
         "validator": "LoggedInValidator",
-        "handler": "WeddingAction"
+        "handler": "WeddingAction",
+        "services": ["channel"]
       },
       {
         "opCode": "0x6C",
         "validator": "LoggedInValidator",
-        "handler": "WeddingTalk"
+        "handler": "WeddingTalk",
+        "services": ["channel"]
       },
       {
         "opCode": "0x73",
         "validator": "LoggedInValidator",
-        "handler": "PetCommandHandle"
+        "handler": "PetCommandHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x72",
         "validator": "LoggedInValidator",
-        "handler": "PetChatHandle"
+        "handler": "PetChatHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x79",
         "validator": "LoggedInValidator",
-        "handler": "SummonAttackHandle"
+        "handler": "SummonAttackHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x91",
         "validator": "LoggedInValidator",
-        "handler": "ReactorHitHandle"
+        "handler": "ReactorHitHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x95",
         "validator": "LoggedInValidator",
-        "handler": "Snowball"
+        "handler": "Snowball",
+        "services": ["channel"]
       },
       {
         "opCode": "0x96",
         "validator": "LoggedInValidator",
-        "handler": "LeftKnockback"
+        "handler": "LeftKnockback",
+        "services": ["channel"]
       },
       {
         "opCode": "0x99",
         "validator": "LoggedInValidator",
-        "handler": "GuildBoss"
+        "handler": "GuildBoss",
+        "services": ["channel"]
       },
       {
         "opCode": "0xA0",
         "validator": "LoggedInValidator",
-        "handler": "CashShopOperationHandle"
+        "handler": "CashShopOperationHandle",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "BUY": 2,
+            "GIFT": 3,
+            "SET_WISHLIST": 4,
+            "INCREASE_INVENTORY": 5,
+            "INCREASE_STORAGE": 6,
+            "MOVE_FROM_CASH_INVENTORY": 10,
+            "MOVE_TO_CASH_INVENTORY": 11,
+            "BUY_COUPLE": 26,
+            "BUY_OTHER_PACKAGE": 27,
+            "BUY_PACKAGE": 28,
+            "APPLY_WISHLIST": 29,
+            "BUY_NORMAL": 31,
+            "BUY_NAME_CHANGE": 34
+          }
+        }
       },
       {
         "opCode": "0x28",
         "validator": "LoggedInValidator",
-        "handler": "CharacterChatGeneralHandle"
+        "handler": "CharacterChatGeneralHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x74",
         "validator": "LoggedInValidator",
-        "handler": "PetDropPickUpHandle"
+        "handler": "PetDropPickUpHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x78",
         "validator": "LoggedInValidator",
-        "handler": "SummonMoveHandle"
+        "handler": "SummonMoveHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x7A",
         "validator": "LoggedInValidator",
-        "handler": "SummonDamageHandle"
+        "handler": "SummonDamageHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x71",
         "validator": "LoggedInValidator",
-        "handler": "PetMovementHandle"
+        "handler": "PetMovementHandle",
+        "services": ["channel"],
+        "options": {
+          "types": [
+            {
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            }
+          ]
+        }
       },
       {
         "opCode": "0x81",
         "validator": "LoggedInValidator",
-        "handler": "MonsterMovementHandle"
+        "handler": "MonsterMovementHandle",
+        "services": ["channel"],
+        "options": {
+          "types": [
+            {
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            }
+          ]
+        }
+      },
+      {
+        "opCode": "0x8A",
+        "validator": "LoggedInValidator",
+        "handler": "NPCActionHandle",
+        "services": ["channel"],
+        "options": {
+          "types": [
+            {
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            }
+          ]
+        }
       },
       {
         "opCode": "0x8E",
         "validator": "LoggedInValidator",
-        "handler": "DropPickUpHandle"
+        "handler": "DropPickUpHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x55",
         "validator": "LoggedInValidator",
-        "handler": "QuestActionHandle"
+        "handler": "QuestActionHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x67",
         "validator": "LoggedInValidator",
-        "handler": "UseDoor"
+        "handler": "UseDoor",
+        "services": ["channel"]
       },
       {
         "opCode": "0x48",
         "validator": "LoggedInValidator",
-        "handler": "CharacterSkillPrepareHandle"
+        "handler": "CharacterSkillPrepareHandle",
+        "services": ["channel"]
       },
       {
         "opCode": "0x2F",
         "validator": "LoggedInValidator",
         "handler": "NPCContinueConversationHandle",
+        "services": ["channel"],
         "options": {
           "messageType": {
             "SAY": 0,
@@ -498,27 +955,49 @@
       {
         "opCode": "0x30",
         "validator": "LoggedInValidator",
-        "handler": "NPCShopHandle"
+        "handler": "NPCShopHandle",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "BUY": 0,
+            "SELL": 1,
+            "RECHARGE": 2,
+            "LEAVE": 3
+          }
+        }
       },
       {
         "opCode": "0x34",
         "validator": "LoggedInValidator",
-        "handler": "StorageOperationHandle"
+        "handler": "StorageOperationHandle",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "RETRIEVE_ASSET": 4,
+            "STORE_ASSET": 5,
+            "ARRANGE_ASSET": 6,
+            "MESO": 7,
+            "CLOSE": 8
+          }
+        }
       },
       {
         "opCode": "0x39",
         "validator": "LoggedInValidator",
-        "handler": "CharacterItemCancelHandle"
+        "handler": "CharacterItemCancelHandle",
+        "services": ["channel"]
       }
     ],
     "writers": [
       {
         "opCode": "0x01",
-        "writer": "AuthSuccess"
+        "writer": "AuthSuccess",
+        "services": ["login"]
       },
       {
         "opCode": "0x01",
         "writer": "AuthTemporaryBan",
+        "services": ["login"],
         "options": {
           "failedReasonCodes": {
             "BANNED": 2,
@@ -546,6 +1025,7 @@
       {
         "opCode": "0x01",
         "writer": "AuthPermanentBan",
+        "services": ["login"],
         "options": {
           "failedReasonCodes": {
             "BANNED": 2,
@@ -573,6 +1053,7 @@
       {
         "opCode": "0x01",
         "writer": "AuthLoginFailed",
+        "services": ["login"],
         "options": {
           "failedReasonCodes": {
             "BANNED": 2,
@@ -599,15 +1080,18 @@
       },
       {
         "opCode": "0x03",
-        "writer": "ServerStatus"
+        "writer": "ServerStatus",
+        "services": ["login"]
       },
       {
         "opCode": "0x04",
-        "writer": "SetAccountResult"
+        "writer": "SetAccountResult",
+        "services": ["login"]
       },
       {
         "opCode": "0x06",
         "writer": "PinOperation",
+        "services": ["login"],
         "options": {
           "modes": {
             "OK": 0,
@@ -622,6 +1106,7 @@
       {
         "opCode": "0x07",
         "writer": "PinUpdate",
+        "services": ["login"],
         "options": {
           "modes": {
             "OK": 0,
@@ -632,6 +1117,7 @@
       {
         "opCode": "0x08",
         "writer": "CharacterViewAll",
+        "services": ["login"],
         "options": {
           "codes": {
             "NORMAL": 0,
@@ -645,19 +1131,23 @@
       },
       {
         "opCode": "0x0A",
-        "writer": "ServerListEntry"
+        "writer": "ServerListEntry",
+        "services": ["login"]
       },
       {
         "opCode": "0x0A",
-        "writer": "ServerListEnd"
+        "writer": "ServerListEnd",
+        "services": ["login"]
       },
       {
         "opCode": "0x0B",
-        "writer": "CharacterList"
+        "writer": "CharacterList",
+        "services": ["login"]
       },
       {
         "opCode": "0x0C",
         "writer": "ServerIP",
+        "services": ["login"],
         "options": {
           "codes": {
             "OK": 0,
@@ -688,6 +1178,7 @@
       {
         "opCode": "0x0D",
         "writer": "CharacterNameResponse",
+        "services": ["login"],
         "options": {
           "codes": {
             "OK": 0,
@@ -700,6 +1191,7 @@
       {
         "opCode": "0x0E",
         "writer": "AddCharacterEntry",
+        "services": ["login"],
         "options": {
           "codes": {
             "OK": 0,
@@ -713,6 +1205,7 @@
       {
         "opCode": "0x0F",
         "writer": "DeleteCharacterResponse",
+        "services": ["login"],
         "options": {
           "codes": {
             "OK": 0,
@@ -729,19 +1222,23 @@
       },
       {
         "opCode": "0x10",
-        "writer": "ChannelChange"
+        "writer": "ChannelChange",
+        "services": ["channel"]
       },
       {
         "opCode": "0x11",
-        "writer": "Ping"
+        "writer": "Ping",
+        "services": ["login","channel"]
       },
       {
         "opCode": "0x19",
-        "writer": "CharacterInventoryChange"
+        "writer": "CharacterInventoryChange",
+        "services": ["channel"]
       },
       {
         "opCode": "0x1B",
         "writer": "StatChanged",
+        "services": ["channel"],
         "options": {
           "statistics": [
             "SKIN",
@@ -771,19 +1268,23 @@
       },
       {
         "opCode": "0x1C",
-        "writer": "CharacterBuffGive"
+        "writer": "CharacterBuffGive",
+        "services": ["channel"]
       },
       {
         "opCode": "0x1D",
-        "writer": "CharacterBuffCancel"
+        "writer": "CharacterBuffCancel",
+        "services": ["channel"]
       },
       {
         "opCode": "0x1E",
-        "writer": "CharacterSkillChange"
+        "writer": "CharacterSkillChange",
+        "services": ["channel"]
       },
       {
         "opCode": "0x20",
         "writer": "FameResponse",
+        "services": ["channel"],
         "options": {
           "operations": {
             "GIVE": "0x00",
@@ -799,6 +1300,7 @@
       {
         "opCode": "0x21",
         "writer": "CharacterStatusMessage",
+        "services": ["channel"],
         "options": {
           "operations": {
             "DROP_PICK_UP": 0,
@@ -817,6 +1319,7 @@
       {
         "opCode": "0x22",
         "writer": "NoteOperation",
+        "services": ["channel"],
         "options": {
           "operations": {
             "SHOW": 2,
@@ -831,16 +1334,37 @@
         }
       },
       {
+        "opCode": "0x23",
+        "writer": "MapTransferResult",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "DELETE_LIST": "0x02",
+            "REGISTER_LIST": "0x03",
+            "CANNOT_GO": "0x05",
+            "UNABLE_TO_LOCATE": "0x06",
+            "UNABLE_TO_LOCATE_2": "0x07",
+            "CANNOT_GO_CONTINENT": "0x08",
+            "CURRENT_MAP": "0x09",
+            "MAP_NOT_AVAILABLE": "0x0A",
+            "MAPLE_ISLAND_LEVEL7": "0x0B"
+          }
+        }
+      },
+      {
         "opCode": "0x28",
-        "writer": "SetTamingMobInfo"
+        "writer": "SetTamingMobInfo",
+        "services": ["channel"]
       },
       {
         "opCode": "0x31",
-        "writer": "CharacterInfo"
+        "writer": "CharacterInfo",
+        "services": ["channel"]
       },
       {
         "opCode": "0x32",
         "writer": "PartyOperation",
+        "services": ["channel"],
         "options": {
           "operations": {
             "INVITE": 4,
@@ -858,6 +1382,7 @@
       {
         "opCode": "0x35",
         "writer": "GuildOperation",
+        "services": ["channel"],
         "options": {
           "operations": {
             "REQUEST_NAME": 1,
@@ -899,15 +1424,18 @@
       },
       {
         "opCode": "0x36",
-        "writer": "SpawnPortal"
+        "writer": "SpawnPortal",
+        "services": ["channel"]
       },
       {
         "opCode": "0x36",
-        "writer": "RemoveTownDoor"
+        "writer": "RemoveTownDoor",
+        "services": ["channel"]
       },
       {
         "opCode": "0x37",
         "writer": "WorldMessage",
+        "services": ["channel"],
         "options": {
           "operations": {
             "NOTICE": 0,
@@ -923,39 +1451,48 @@
       },
       {
         "opCode": "0x4A",
-        "writer": "CashShopOpen"
+        "writer": "CashShopOpen",
+        "services": ["channel"]
       },
       {
         "opCode": "0x4D",
-        "writer": "BlockedMap"
+        "writer": "BlockedMap",
+        "services": ["channel"]
       },
       {
         "opCode": "0x4E",
-        "writer": "BlockedServer"
+        "writer": "BlockedServer",
+        "services": ["channel"]
       },
       {
         "opCode": "0x4F",
-        "writer": "ForcedMapEquip"
+        "writer": "ForcedMapEquip",
+        "services": ["channel"]
       },
       {
         "opCode": "0x50",
-        "writer": "CharacterMultiChat"
+        "writer": "CharacterMultiChat",
+        "services": ["channel"]
       },
       {
         "opCode": "0x51",
-        "writer": "CharacterChatWhisper"
+        "writer": "CharacterChatWhisper",
+        "services": ["channel"]
       },
       {
         "opCode": "0x52",
-        "writer": "SpouseChat"
+        "writer": "SpouseChat",
+        "services": ["channel"]
       },
       {
         "opCode": "0x53",
-        "writer": "SummonItemUnavailable"
+        "writer": "SummonItemUnavailable",
+        "services": ["channel"]
       },
       {
         "opCode": "0x54",
         "writer": "FieldEffect",
+        "services": ["channel"],
         "options": {
           "operations": {
             "SUMMON": 0,
@@ -970,69 +1507,95 @@
       },
       {
         "opCode": "0x55",
-        "writer": "FieldObstacleOnOffList"
+        "writer": "FieldObstacleOnOffList",
+        "services": ["channel"]
       },
       {
         "opCode": "0x56",
-        "writer": "FieldEffectWeather"
+        "writer": "FieldEffectWeather",
+        "services": ["channel"]
       },
       {
         "opCode": "0x57",
-        "writer": "AdminResult"
+        "writer": "AdminResult",
+        "services": ["channel"]
       },
       {
         "opCode": "0x58",
-        "writer": "OxQuiz"
+        "writer": "OxQuiz",
+        "services": ["channel"]
       },
       {
         "opCode": "0x59",
-        "writer": "GmEventInstructions"
+        "writer": "GmEventInstructions",
+        "services": ["channel"]
       },
       {
         "opCode": "0x5A",
-        "writer": "Clock"
+        "writer": "Clock",
+        "services": ["channel"]
       },
       {
         "opCode": "0x5D",
-        "writer": "SetQuestClear"
+        "writer": "SetQuestClear",
+        "services": ["channel"]
       },
       {
         "opCode": "0x5F",
-        "writer": "SetQuestTime"
+        "writer": "SetQuestTime",
+        "services": ["channel"]
       },
       {
         "opCode": "0x60",
-        "writer": "AriantResult"
+        "writer": "AriantResult",
+        "services": ["channel"]
       },
       {
         "opCode": "0x61",
-        "writer": "SetObjectState"
+        "writer": "SetObjectState",
+        "services": ["channel"]
       },
       {
         "opCode": "0x62",
-        "writer": "StopClock"
+        "writer": "StopClock",
+        "services": ["channel"]
       },
       {
         "opCode": "0x64",
-        "writer": "CharacterSpawn"
+        "writer": "CharacterSpawn",
+        "services": ["channel"]
       },
       {
         "opCode": "0x65",
-        "writer": "CharacterDespawn"
+        "writer": "CharacterDespawn",
+        "services": ["channel"]
       },
       {
         "opCode": "0xEF",
         "writer": "CharacterInteraction",
+        "services": ["channel"],
         "options": {
           "operations": {
             "INVITE": 2,
             "INVITE_RESULT": 3,
             "ENTER": 4,
             "ENTER_RESULT": 5,
-            "LEAVE": 10,
-            "UPDATE_MERCHANT": 22,
             "CHAT": 6,
             "CHAT_THING": 8,
+            "LEAVE": 10,
+            "UPDATE_MERCHANT": 22,
+            "MEMORY_GAME_ASK_TIE": 43,
+            "MEMORY_GAME_TIE_ANSWER": 44,
+            "MEMORY_GAME_ASK_RETREAT": 47,
+            "MEMORY_GAME_RETREAT_ANSWER": 48,
+            "MEMORY_GAME_READY": 51,
+            "MEMORY_GAME_UNREADY": 52,
+            "MEMORY_GAME_START": 54,
+            "MEMORY_GAME_RESULT": 55,
+            "MEMORY_GAME_SKIP": 56,
+            "MEMORY_GAME_MOVE_STONE": 57,
+            "MEMORY_GAME_FIP_CARD": 61,
+            "MEMORY_GAME_PUT_STONE_ERROR": 58,
             "PERSONAL_STORE_ITEM_SOLD": 23
           },
           "enterError": {
@@ -1055,10 +1618,22 @@
             "UNDERGOING_MAINTENANCE": 18,
             "CANNOT_ENTER_TOURNAMENT_ROOM": 19
           },
+          "resultType": {
+            "WIN": 0,
+            "TIE": 1,
+            "FORFEIT": 2
+          },
+          "putStoneError": {
+            "DOUBLE_THREE": 60,
+            "CANNOT_PLACE": 0
+          },
           "leaveReason": {
             "CANNOT_ESTABLISH_HERE": 1,
             "SHOP_CLOSED": 3,
             "USER_BANNED": 5,
+            "MINIGAME_CLOSED": 3,
+            "MINIGAME_LEFT": 4,
+            "MINIGAME_EXPELLED": 5,
             "OUT_OF_STOCK": 10,
             "BANNED_TIME_LIMIT": 11
           }
@@ -1066,11 +1641,26 @@
       },
       {
         "opCode": "0x42",
-        "writer": "SetAvatarMegaphone"
+        "writer": "SetAvatarMegaphone",
+        "services": ["channel"]
       },
       {
         "opCode": "0x43",
-        "writer": "ClearAvatarMegaphone"
+        "writer": "ClearAvatarMegaphone",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xED",
+        "writer": "RPSGame",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "OPEN": 8,
+            "START_SELECT": 9,
+            "RESULT": 11,
+            "END": 13
+          }
+        }
       }
     ]
   },
@@ -1379,14 +1969,14 @@
       {
         "id": "1645f671-a3bd-4ef6-a2a5-a8714e661f74",
         "attributes": {
-          "name": "Hero \u2014 4th job",
-          "description": "Full 4th-job Hero \u2014 branch skills maxed; iconic Stonetooth Sword + Reverse Taragon set.",
+          "name": "Crusader \u2014 3rd job",
+          "description": "Full 3rd-job Crusader \u2014 branch skills maxed; iconic Stonetooth Sword + Reverse Taragon set.",
           "tags": [
-            "4th-job",
+            "3rd-job",
             "warrior",
             "explorer"
           ],
-          "jobId": 112,
+          "jobId": 111,
           "gender": 0,
           "face": 20000,
           "hair": 30030,
@@ -1411,10 +2001,6 @@
               "useAverageStats": true
             },
             {
-              "templateId": 1052160,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1002357,
               "useAverageStats": true
             },
@@ -1423,23 +2009,11 @@
               "useAverageStats": true
             },
             {
-              "templateId": 1122059,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1072344,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1082223,
               "useAverageStats": true
             },
             {
               "templateId": 1032031,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1012098,
               "useAverageStats": true
             }
           ],
@@ -1549,46 +2123,6 @@
             {
               "skillId": 1111008,
               "level": 30
-            },
-            {
-              "skillId": 1120003,
-              "level": 30
-            },
-            {
-              "skillId": 1120004,
-              "level": 30
-            },
-            {
-              "skillId": 1120005,
-              "level": 30
-            },
-            {
-              "skillId": 1121000,
-              "level": 30
-            },
-            {
-              "skillId": 1121001,
-              "level": 30
-            },
-            {
-              "skillId": 1121002,
-              "level": 30
-            },
-            {
-              "skillId": 1121006,
-              "level": 30
-            },
-            {
-              "skillId": 1121008,
-              "level": 30
-            },
-            {
-              "skillId": 1121010,
-              "level": 30
-            },
-            {
-              "skillId": 1121011,
-              "level": 5
             }
           ]
         }
@@ -1596,14 +2130,14 @@
       {
         "id": "97784164-9ff9-4f0c-aef9-5a975c47d2ad",
         "attributes": {
-          "name": "Paladin \u2014 4th job",
-          "description": "Full 4th-job Paladin \u2014 branch skills maxed; iconic Crushed Skull + Maple Warrior Shield + Reverse Taragon set.",
+          "name": "White Knight \u2014 3rd job",
+          "description": "Full 3rd-job White Knight \u2014 branch skills maxed; iconic Crushed Skull + Maple Warrior Shield + Reverse Taragon set.",
           "tags": [
-            "4th-job",
+            "3rd-job",
             "warrior",
             "explorer"
           ],
-          "jobId": 122,
+          "jobId": 121,
           "gender": 0,
           "face": 20000,
           "hair": 30030,
@@ -1624,18 +2158,6 @@
           "defaultName": "AdminPaladin",
           "equipment": [
             {
-              "templateId": 1322062,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1092046,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1052160,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1002357,
               "useAverageStats": true
             },
@@ -1644,23 +2166,11 @@
               "useAverageStats": true
             },
             {
-              "templateId": 1122059,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1072344,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1082223,
               "useAverageStats": true
             },
             {
               "templateId": 1032031,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1012098,
               "useAverageStats": true
             }
           ],
@@ -1774,54 +2284,6 @@
             {
               "skillId": 1211009,
               "level": 20
-            },
-            {
-              "skillId": 1220005,
-              "level": 30
-            },
-            {
-              "skillId": 1220006,
-              "level": 30
-            },
-            {
-              "skillId": 1220010,
-              "level": 10
-            },
-            {
-              "skillId": 1221000,
-              "level": 30
-            },
-            {
-              "skillId": 1221001,
-              "level": 30
-            },
-            {
-              "skillId": 1221002,
-              "level": 30
-            },
-            {
-              "skillId": 1221003,
-              "level": 20
-            },
-            {
-              "skillId": 1221004,
-              "level": 20
-            },
-            {
-              "skillId": 1221007,
-              "level": 30
-            },
-            {
-              "skillId": 1221009,
-              "level": 30
-            },
-            {
-              "skillId": 1221011,
-              "level": 30
-            },
-            {
-              "skillId": 1221012,
-              "level": 5
             }
           ]
         }
@@ -1829,14 +2291,14 @@
       {
         "id": "5d3b41d2-4301-46f6-8b17-0d660dcf4961",
         "attributes": {
-          "name": "Dark Knight \u2014 4th job",
-          "description": "Full 4th-job Dark Knight \u2014 branch skills maxed; iconic Sky Ski + Reverse Taragon set.",
+          "name": "Dragon Knight \u2014 3rd job",
+          "description": "Full 3rd-job Dragon Knight \u2014 branch skills maxed; iconic Sky Ski + Reverse Taragon set.",
           "tags": [
-            "4th-job",
+            "3rd-job",
             "warrior",
             "explorer"
           ],
-          "jobId": 132,
+          "jobId": 131,
           "gender": 0,
           "face": 20000,
           "hair": 30030,
@@ -1861,10 +2323,6 @@
               "useAverageStats": true
             },
             {
-              "templateId": 1052160,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1002357,
               "useAverageStats": true
             },
@@ -1873,23 +2331,11 @@
               "useAverageStats": true
             },
             {
-              "templateId": 1122059,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1072344,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1082223,
               "useAverageStats": true
             },
             {
               "templateId": 1032031,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1012098,
               "useAverageStats": true
             }
           ],
@@ -1999,46 +2445,6 @@
             {
               "skillId": 1311008,
               "level": 20
-            },
-            {
-              "skillId": 1320005,
-              "level": 30
-            },
-            {
-              "skillId": 1320006,
-              "level": 30
-            },
-            {
-              "skillId": 1320008,
-              "level": 25
-            },
-            {
-              "skillId": 1320009,
-              "level": 25
-            },
-            {
-              "skillId": 1321000,
-              "level": 30
-            },
-            {
-              "skillId": 1321001,
-              "level": 30
-            },
-            {
-              "skillId": 1321002,
-              "level": 30
-            },
-            {
-              "skillId": 1321003,
-              "level": 30
-            },
-            {
-              "skillId": 1321007,
-              "level": 10
-            },
-            {
-              "skillId": 1321010,
-              "level": 5
             }
           ]
         }
@@ -2046,14 +2452,14 @@
       {
         "id": "6f177876-36c1-4206-8935-455aa2f95d94",
         "attributes": {
-          "name": "F/P ArchMage \u2014 4th job",
-          "description": "Full 4th-job Fire/Poison ArchMage \u2014 branch skills maxed; Elemental Staff 5 (Fire) + Maple Magician Shield + Reverse Myst Blue set.",
+          "name": "F/P Mage \u2014 3rd job",
+          "description": "Full 3rd-job Fire/Poison ArchMage \u2014 branch skills maxed; Elemental Staff 5 (Fire) + Maple Magician Shield + Reverse Myst Blue set.",
           "tags": [
-            "4th-job",
+            "3rd-job",
             "magician",
             "explorer"
           ],
-          "jobId": 212,
+          "jobId": 211,
           "gender": 0,
           "face": 20000,
           "hair": 30030,
@@ -2074,18 +2480,6 @@
           "defaultName": "AdminFPMage",
           "equipment": [
             {
-              "templateId": 1382049,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1092045,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1052161,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1002357,
               "useAverageStats": true
             },
@@ -2094,23 +2488,11 @@
               "useAverageStats": true
             },
             {
-              "templateId": 1122059,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1072344,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1082223,
               "useAverageStats": true
             },
             {
               "templateId": 1032031,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1012098,
               "useAverageStats": true
             }
           ],
@@ -2204,42 +2586,6 @@
             {
               "skillId": 2111006,
               "level": 30
-            },
-            {
-              "skillId": 2121000,
-              "level": 30
-            },
-            {
-              "skillId": 2121001,
-              "level": 30
-            },
-            {
-              "skillId": 2121002,
-              "level": 30
-            },
-            {
-              "skillId": 2121003,
-              "level": 30
-            },
-            {
-              "skillId": 2121004,
-              "level": 30
-            },
-            {
-              "skillId": 2121005,
-              "level": 30
-            },
-            {
-              "skillId": 2121006,
-              "level": 30
-            },
-            {
-              "skillId": 2121007,
-              "level": 30
-            },
-            {
-              "skillId": 2121008,
-              "level": 5
             }
           ]
         }
@@ -2247,14 +2593,14 @@
       {
         "id": "6b11335d-536d-4184-bf69-8edee94a1f96",
         "attributes": {
-          "name": "I/L ArchMage \u2014 4th job",
-          "description": "Full 4th-job Ice/Lightning ArchMage \u2014 branch skills maxed; Elemental Staff 8 (Lightning) + Maple Magician Shield + Reverse Myst Blue set.",
+          "name": "I/L Mage \u2014 3rd job",
+          "description": "Full 3rd-job Ice/Lightning ArchMage \u2014 branch skills maxed; Elemental Staff 8 (Lightning) + Maple Magician Shield + Reverse Myst Blue set.",
           "tags": [
-            "4th-job",
+            "3rd-job",
             "magician",
             "explorer"
           ],
-          "jobId": 222,
+          "jobId": 221,
           "gender": 0,
           "face": 20000,
           "hair": 30030,
@@ -2275,18 +2621,6 @@
           "defaultName": "AdminILMage",
           "equipment": [
             {
-              "templateId": 1382052,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1092045,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1052161,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1002357,
               "useAverageStats": true
             },
@@ -2295,23 +2629,11 @@
               "useAverageStats": true
             },
             {
-              "templateId": 1122059,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1072344,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1082223,
               "useAverageStats": true
             },
             {
               "templateId": 1032031,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1012098,
               "useAverageStats": true
             }
           ],
@@ -2405,42 +2727,6 @@
             {
               "skillId": 2211006,
               "level": 30
-            },
-            {
-              "skillId": 2221000,
-              "level": 30
-            },
-            {
-              "skillId": 2221001,
-              "level": 30
-            },
-            {
-              "skillId": 2221002,
-              "level": 30
-            },
-            {
-              "skillId": 2221003,
-              "level": 30
-            },
-            {
-              "skillId": 2221004,
-              "level": 30
-            },
-            {
-              "skillId": 2221005,
-              "level": 30
-            },
-            {
-              "skillId": 2221006,
-              "level": 30
-            },
-            {
-              "skillId": 2221007,
-              "level": 30
-            },
-            {
-              "skillId": 2221008,
-              "level": 5
             }
           ]
         }
@@ -2448,14 +2734,14 @@
       {
         "id": "928639cb-ba87-4e6b-b33b-e54520fbd910",
         "attributes": {
-          "name": "Bishop \u2014 4th job",
-          "description": "Full 4th-job Bishop \u2014 branch skills maxed; Elemental Wand 5 + Maple Magician Shield + Reverse Myst Blue set.",
+          "name": "Priest \u2014 3rd job",
+          "description": "Full 3rd-job Priest \u2014 branch skills maxed; Elemental Wand 5 + Maple Magician Shield + Reverse Myst Blue set.",
           "tags": [
-            "4th-job",
+            "3rd-job",
             "magician",
             "explorer"
           ],
-          "jobId": 232,
+          "jobId": 231,
           "gender": 0,
           "face": 20000,
           "hair": 30030,
@@ -2476,18 +2762,6 @@
           "defaultName": "AdminBishop",
           "equipment": [
             {
-              "templateId": 1372039,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1092045,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1052161,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1002357,
               "useAverageStats": true
             },
@@ -2496,23 +2770,11 @@
               "useAverageStats": true
             },
             {
-              "templateId": 1122059,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1072344,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1082223,
               "useAverageStats": true
             },
             {
               "templateId": 1032031,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1012098,
               "useAverageStats": true
             }
           ],
@@ -2606,46 +2868,6 @@
             {
               "skillId": 2311006,
               "level": 30
-            },
-            {
-              "skillId": 2321000,
-              "level": 30
-            },
-            {
-              "skillId": 2321001,
-              "level": 30
-            },
-            {
-              "skillId": 2321002,
-              "level": 30
-            },
-            {
-              "skillId": 2321003,
-              "level": 30
-            },
-            {
-              "skillId": 2321004,
-              "level": 30
-            },
-            {
-              "skillId": 2321005,
-              "level": 30
-            },
-            {
-              "skillId": 2321006,
-              "level": 10
-            },
-            {
-              "skillId": 2321007,
-              "level": 30
-            },
-            {
-              "skillId": 2321008,
-              "level": 30
-            },
-            {
-              "skillId": 2321009,
-              "level": 5
             }
           ]
         }
@@ -2653,14 +2875,14 @@
       {
         "id": "3ab10755-5187-4493-9217-ebddc705067b",
         "attributes": {
-          "name": "Bowmaster \u2014 4th job",
-          "description": "Full 4th-job Bowmaster \u2014 branch skills maxed; Reverse Engaw + Reverse Evernew set + Diamond Arrows.",
+          "name": "Ranger \u2014 3rd job",
+          "description": "Full 3rd-job Ranger \u2014 branch skills maxed; Reverse Engaw + Reverse Evernew set + Diamond Arrows.",
           "tags": [
-            "4th-job",
+            "3rd-job",
             "bowman",
             "explorer"
           ],
-          "jobId": 312,
+          "jobId": 311,
           "gender": 0,
           "face": 20000,
           "hair": 30030,
@@ -2681,14 +2903,6 @@
           "defaultName": "AdminBowmaster",
           "equipment": [
             {
-              "templateId": 1452059,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1052162,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1002357,
               "useAverageStats": true
             },
@@ -2697,23 +2911,11 @@
               "useAverageStats": true
             },
             {
-              "templateId": 1122059,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1072344,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1082223,
               "useAverageStats": true
             },
             {
               "templateId": 1032031,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1012098,
               "useAverageStats": true
             }
           ],
@@ -2811,42 +3013,6 @@
             {
               "skillId": 3111006,
               "level": 30
-            },
-            {
-              "skillId": 3120005,
-              "level": 30
-            },
-            {
-              "skillId": 3121000,
-              "level": 30
-            },
-            {
-              "skillId": 3121002,
-              "level": 30
-            },
-            {
-              "skillId": 3121003,
-              "level": 30
-            },
-            {
-              "skillId": 3121004,
-              "level": 30
-            },
-            {
-              "skillId": 3121006,
-              "level": 30
-            },
-            {
-              "skillId": 3121007,
-              "level": 30
-            },
-            {
-              "skillId": 3121008,
-              "level": 30
-            },
-            {
-              "skillId": 3121009,
-              "level": 5
             }
           ]
         }
@@ -2854,14 +3020,14 @@
       {
         "id": "aa6cbb45-1ef9-4bb0-9368-21297edad68c",
         "attributes": {
-          "name": "Marksman \u2014 4th job",
-          "description": "Full 4th-job Marksman \u2014 branch skills maxed; Reverse Black Beauty + Reverse Evernew set + Diamond Bolts.",
+          "name": "Sniper \u2014 3rd job",
+          "description": "Full 3rd-job Sniper \u2014 branch skills maxed; Reverse Black Beauty + Reverse Evernew set + Diamond Bolts.",
           "tags": [
-            "4th-job",
+            "3rd-job",
             "bowman",
             "explorer"
           ],
-          "jobId": 322,
+          "jobId": 321,
           "gender": 0,
           "face": 20000,
           "hair": 30030,
@@ -2882,14 +3048,6 @@
           "defaultName": "AdminMarksman",
           "equipment": [
             {
-              "templateId": 1462051,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1052162,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1002357,
               "useAverageStats": true
             },
@@ -2898,23 +3056,11 @@
               "useAverageStats": true
             },
             {
-              "templateId": 1122059,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1072344,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1082223,
               "useAverageStats": true
             },
             {
               "templateId": 1032031,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1012098,
               "useAverageStats": true
             }
           ],
@@ -3012,42 +3158,6 @@
             {
               "skillId": 3211006,
               "level": 30
-            },
-            {
-              "skillId": 3220004,
-              "level": 30
-            },
-            {
-              "skillId": 3221000,
-              "level": 30
-            },
-            {
-              "skillId": 3221001,
-              "level": 30
-            },
-            {
-              "skillId": 3221002,
-              "level": 30
-            },
-            {
-              "skillId": 3221003,
-              "level": 30
-            },
-            {
-              "skillId": 3221005,
-              "level": 30
-            },
-            {
-              "skillId": 3221006,
-              "level": 30
-            },
-            {
-              "skillId": 3221007,
-              "level": 30
-            },
-            {
-              "skillId": 3221008,
-              "level": 5
             }
           ]
         }
@@ -3055,14 +3165,14 @@
       {
         "id": "ba0b2a82-1854-4ee0-8740-6cbfa86a65c0",
         "attributes": {
-          "name": "Night Lord \u2014 4th job",
-          "description": "Full 4th-job Night Lord \u2014 branch skills maxed; iconic Maple Kandayo + Reverse Prinsid set + Crystal Ilbi Throwing-Stars.",
+          "name": "Hermit \u2014 3rd job",
+          "description": "Full 3rd-job Hermit \u2014 branch skills maxed; iconic Maple Kandayo + Reverse Prinsid set + Crystal Ilbi Throwing-Stars.",
           "tags": [
-            "4th-job",
+            "3rd-job",
             "thief",
             "explorer"
           ],
-          "jobId": 412,
+          "jobId": 411,
           "gender": 0,
           "face": 20000,
           "hair": 30030,
@@ -3087,10 +3197,6 @@
               "useAverageStats": true
             },
             {
-              "templateId": 1052163,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1002357,
               "useAverageStats": true
             },
@@ -3099,23 +3205,11 @@
               "useAverageStats": true
             },
             {
-              "templateId": 1122059,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1072344,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1082223,
               "useAverageStats": true
             },
             {
               "templateId": 1032031,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1012098,
               "useAverageStats": true
             }
           ],
@@ -3213,42 +3307,6 @@
             {
               "skillId": 4111006,
               "level": 20
-            },
-            {
-              "skillId": 4120002,
-              "level": 30
-            },
-            {
-              "skillId": 4120005,
-              "level": 30
-            },
-            {
-              "skillId": 4121000,
-              "level": 30
-            },
-            {
-              "skillId": 4121003,
-              "level": 30
-            },
-            {
-              "skillId": 4121004,
-              "level": 30
-            },
-            {
-              "skillId": 4121006,
-              "level": 30
-            },
-            {
-              "skillId": 4121007,
-              "level": 30
-            },
-            {
-              "skillId": 4121008,
-              "level": 30
-            },
-            {
-              "skillId": 4121009,
-              "level": 5
             }
           ]
         }
@@ -3256,14 +3314,14 @@
       {
         "id": "8e0d8b65-dff0-4696-a06d-b16317f6ced7",
         "attributes": {
-          "name": "Shadower \u2014 4th job",
-          "description": "Full 4th-job Shadower \u2014 branch skills maxed; iconic Maple Asura Dagger + Maple Thief Shield + Reverse Prinsid set.",
+          "name": "Chief Bandit \u2014 3rd job",
+          "description": "Full 3rd-job Chief Bandit \u2014 branch skills maxed; iconic Maple Asura Dagger + Maple Thief Shield + Reverse Prinsid set.",
           "tags": [
-            "4th-job",
+            "3rd-job",
             "thief",
             "explorer"
           ],
-          "jobId": 422,
+          "jobId": 421,
           "gender": 0,
           "face": 20000,
           "hair": 30030,
@@ -3284,18 +3342,6 @@
           "defaultName": "AdminShadower",
           "equipment": [
             {
-              "templateId": 1332056,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1092047,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1052163,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1002357,
               "useAverageStats": true
             },
@@ -3304,23 +3350,11 @@
               "useAverageStats": true
             },
             {
-              "templateId": 1122059,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1072344,
-              "useAverageStats": true
-            },
-            {
               "templateId": 1082223,
               "useAverageStats": true
             },
             {
               "templateId": 1032031,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1012098,
               "useAverageStats": true
             }
           ],
@@ -3414,448 +3448,6 @@
             {
               "skillId": 4211006,
               "level": 30
-            },
-            {
-              "skillId": 4220002,
-              "level": 30
-            },
-            {
-              "skillId": 4220005,
-              "level": 30
-            },
-            {
-              "skillId": 4221000,
-              "level": 30
-            },
-            {
-              "skillId": 4221001,
-              "level": 30
-            },
-            {
-              "skillId": 4221003,
-              "level": 30
-            },
-            {
-              "skillId": 4221004,
-              "level": 30
-            },
-            {
-              "skillId": 4221006,
-              "level": 30
-            },
-            {
-              "skillId": 4221007,
-              "level": 30
-            },
-            {
-              "skillId": 4221008,
-              "level": 5
-            }
-          ]
-        }
-      },
-      {
-        "id": "525dc913-5988-4599-b12a-a14eb68253e0",
-        "attributes": {
-          "name": "Buccaneer \u2014 4th job",
-          "description": "Full 4th-job Buccaneer \u2014 branch skills maxed; iconic Maple Golden Claw (knuckle) + Reverse Burgunt set.",
-          "tags": [
-            "4th-job",
-            "pirate",
-            "explorer"
-          ],
-          "jobId": 512,
-          "gender": 0,
-          "face": 20000,
-          "hair": 30030,
-          "hairColor": 0,
-          "skinColor": 0,
-          "mapId": 240000000,
-          "level": 200,
-          "meso": 100000000,
-          "gm": 0,
-          "stats": {
-            "str": 999,
-            "dex": 999,
-            "int": 999,
-            "luk": 999,
-            "hp": 30000,
-            "mp": 6000
-          },
-          "defaultName": "AdminBuccaneer",
-          "equipment": [
-            {
-              "templateId": 1482022,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1052164,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1002357,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1102041,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1122059,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1072344,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1082223,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1032031,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1012098,
-              "useAverageStats": true
-            }
-          ],
-          "inventory": [
-            {
-              "templateId": 2000004,
-              "quantity": 200
-            },
-            {
-              "templateId": 2000005,
-              "quantity": 200
-            },
-            {
-              "templateId": 2030019,
-              "quantity": 50
-            }
-          ],
-          "skills": [
-            {
-              "skillId": 5000000,
-              "level": 20
-            },
-            {
-              "skillId": 5001001,
-              "level": 20
-            },
-            {
-              "skillId": 5001002,
-              "level": 20
-            },
-            {
-              "skillId": 5001003,
-              "level": 20
-            },
-            {
-              "skillId": 5001005,
-              "level": 10
-            },
-            {
-              "skillId": 5100000,
-              "level": 10
-            },
-            {
-              "skillId": 5100001,
-              "level": 20
-            },
-            {
-              "skillId": 5101002,
-              "level": 20
-            },
-            {
-              "skillId": 5101003,
-              "level": 20
-            },
-            {
-              "skillId": 5101004,
-              "level": 20
-            },
-            {
-              "skillId": 5101005,
-              "level": 10
-            },
-            {
-              "skillId": 5101006,
-              "level": 20
-            },
-            {
-              "skillId": 5101007,
-              "level": 10
-            },
-            {
-              "skillId": 5110000,
-              "level": 20
-            },
-            {
-              "skillId": 5110001,
-              "level": 40
-            },
-            {
-              "skillId": 5111002,
-              "level": 30
-            },
-            {
-              "skillId": 5111004,
-              "level": 20
-            },
-            {
-              "skillId": 5111005,
-              "level": 20
-            },
-            {
-              "skillId": 5111006,
-              "level": 30
-            },
-            {
-              "skillId": 5121000,
-              "level": 30
-            },
-            {
-              "skillId": 5121001,
-              "level": 30
-            },
-            {
-              "skillId": 5121002,
-              "level": 30
-            },
-            {
-              "skillId": 5121003,
-              "level": 20
-            },
-            {
-              "skillId": 5121004,
-              "level": 30
-            },
-            {
-              "skillId": 5121005,
-              "level": 30
-            },
-            {
-              "skillId": 5121007,
-              "level": 30
-            },
-            {
-              "skillId": 5121008,
-              "level": 5
-            },
-            {
-              "skillId": 5121009,
-              "level": 20
-            },
-            {
-              "skillId": 5121010,
-              "level": 30
-            }
-          ]
-        }
-      },
-      {
-        "id": "1c51eefc-47be-4352-bd75-5cde0200b141",
-        "attributes": {
-          "name": "Corsair \u2014 4th job",
-          "description": "Full 4th-job Corsair \u2014 branch skills maxed; iconic Maple Storm Pistol + Reverse Burgunt set + Eternal Bullets.",
-          "tags": [
-            "4th-job",
-            "pirate",
-            "explorer"
-          ],
-          "jobId": 522,
-          "gender": 0,
-          "face": 20000,
-          "hair": 30030,
-          "hairColor": 0,
-          "skinColor": 0,
-          "mapId": 240000000,
-          "level": 200,
-          "meso": 100000000,
-          "gm": 0,
-          "stats": {
-            "str": 999,
-            "dex": 999,
-            "int": 999,
-            "luk": 999,
-            "hp": 30000,
-            "mp": 6000
-          },
-          "defaultName": "AdminCorsair",
-          "equipment": [
-            {
-              "templateId": 1492021,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1052164,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1002357,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1102041,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1122059,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1072344,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1082223,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1032031,
-              "useAverageStats": true
-            },
-            {
-              "templateId": 1012098,
-              "useAverageStats": true
-            }
-          ],
-          "inventory": [
-            {
-              "templateId": 2000004,
-              "quantity": 200
-            },
-            {
-              "templateId": 2000005,
-              "quantity": 200
-            },
-            {
-              "templateId": 2030019,
-              "quantity": 50
-            },
-            {
-              "templateId": 2330005,
-              "quantity": 200
-            }
-          ],
-          "skills": [
-            {
-              "skillId": 5000000,
-              "level": 20
-            },
-            {
-              "skillId": 5001001,
-              "level": 20
-            },
-            {
-              "skillId": 5001002,
-              "level": 20
-            },
-            {
-              "skillId": 5001003,
-              "level": 20
-            },
-            {
-              "skillId": 5001005,
-              "level": 10
-            },
-            {
-              "skillId": 5200000,
-              "level": 20
-            },
-            {
-              "skillId": 5201001,
-              "level": 20
-            },
-            {
-              "skillId": 5201002,
-              "level": 20
-            },
-            {
-              "skillId": 5201003,
-              "level": 20
-            },
-            {
-              "skillId": 5201004,
-              "level": 20
-            },
-            {
-              "skillId": 5201005,
-              "level": 10
-            },
-            {
-              "skillId": 5201006,
-              "level": 20
-            },
-            {
-              "skillId": 5210000,
-              "level": 20
-            },
-            {
-              "skillId": 5211001,
-              "level": 30
-            },
-            {
-              "skillId": 5211002,
-              "level": 30
-            },
-            {
-              "skillId": 5211004,
-              "level": 30
-            },
-            {
-              "skillId": 5211005,
-              "level": 30
-            },
-            {
-              "skillId": 5211006,
-              "level": 30
-            },
-            {
-              "skillId": 5220001,
-              "level": 30
-            },
-            {
-              "skillId": 5220002,
-              "level": 20
-            },
-            {
-              "skillId": 5220011,
-              "level": 20
-            },
-            {
-              "skillId": 5221000,
-              "level": 30
-            },
-            {
-              "skillId": 5221003,
-              "level": 30
-            },
-            {
-              "skillId": 5221004,
-              "level": 30
-            },
-            {
-              "skillId": 5221006,
-              "level": 10
-            },
-            {
-              "skillId": 5221007,
-              "level": 30
-            },
-            {
-              "skillId": 5221008,
-              "level": 30
-            },
-            {
-              "skillId": 5221009,
-              "level": 20
-            },
-            {
-              "skillId": 5221010,
-              "level": 5
             }
           ]
         }

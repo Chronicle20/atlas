@@ -175,6 +175,41 @@ the production handler keeps decoding the shared model directly.
   locates a send site; structure-match to a named twin in another version. Batch via
   IDA-harvest subagents, ONE IDB at a time (`select_instance` is shared global state).
 
+## Is this cell `n-a`? (proving absence)
+
+Marking a cell `n-a` ("op absent from this version") is a claim, not a default —
+it is held to the **same evidentiary bar as a positive verification**, not a lesser
+one. Absence needs positive proof, not a failed search.
+
+1. **A failed name/region search is absence-of-evidence, not evidence-of-absence.**
+   Searching for a symbol name, or scoping a search to a region the decompiled twin
+   happens to occupy in another version, and finding nothing, proves only that the
+   search was too narrow — see the teleport-rock v48 case (task-124): the first pass
+   scoped its search to `0x700000-0x726000` and concluded `TROCK_ADD_MAP` was
+   absent; a second, wider pass found it at `0x71e7f3`. The op existed; the search
+   didn't.
+2. **Anchor on invariants, never on IDB names or an assumed address range.** The
+   things that must be present if the feature is present: the opcode-construction
+   site (`COutPacket::COutPacket(&pkt, OPCODE)` for a send; the dispatcher's
+   opcode-to-handler jump/switch for a receive), the `itemId`/category gate that
+   selects the feature, the `StringPool`/notice ids the feature's UI reads, and the
+   shared data structure (e.g. a `CharacterData` field) the family reads or writes.
+   An unnamed function is not an absent function (§10's "distrust IDB names").
+3. **MANDATORY sibling cross-check.** Before marking a serverbound op `n-a`, decompile
+   its same-family clientbound receive handler (and vice versa) on that same version.
+   If the receive side decodes/populates the feature's state, the send side exists
+   somewhere — keep looking. This is "the receive side proves the send side": a
+   feature's ops are correlated, not independent coin flips.
+4. **Record a family-inconsistent `n-a`, or `matrix --check` fails.** When a cell is
+   `n-a` for an op while a same-family sibling op (declared in
+   `docs/packets/feature-families.yaml`) is `verified` on the same version, the gate in
+   `packet-audit matrix --check` (task-124) requires a matching entry in
+   `docs/packets/feature-na-evidence.yaml` carrying the positive proof from steps 1-3
+   (non-empty `evidence:` text — an entry with blank/whitespace evidence does not
+   count). Declare new feature families in `feature-families.yaml` as you group
+   related ops; the evidence file only shrinks (an entry is removed only when the
+   cell is later verified, never to silence the gate).
+
 ## Producible prerequisite vs genuine blocker (don't defer what you can produce)
 
 Most reasons a cell "can't" verify are **producible steps, not terminal blockers** —
@@ -205,3 +240,7 @@ blocker by trying — don't infer it from an absence.
   the evidence record nor the audit report; fix the address, never delete the check.
 - Hash drift on an existing record → cosmetic decompile churn (incl. editing the export
   entry after pinning) → re-pin; material change → re-verify from step 3.
+- `matrix --check` "n-a consistency: … is n-a but sibling … is verified" (task-124) →
+  a same-family sibling proves the feature exists on that version; either verify the
+  cell, or — only if genuinely absent per "Is this cell `n-a`?" above — record the
+  positive proof in `docs/packets/feature-na-evidence.yaml`. Never weaken the gate.

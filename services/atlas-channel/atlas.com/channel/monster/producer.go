@@ -3,10 +3,11 @@ package monster
 import (
 	monster2 "atlas-channel/kafka/message/monster"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 )
 
 func ApplyStatusCommandProvider(f field.Model, monsterId uint32, sourceCharacterId uint32, sourceSkillId uint32, sourceSkillLevel uint32, statuses map[string]int32, duration uint32) model.Provider[[]kafka.Message] {

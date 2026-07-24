@@ -7,9 +7,10 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 // Decision is the picker's chosen next skill (or sentinel zero for "no

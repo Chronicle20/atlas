@@ -1,6 +1,9 @@
 package skill_test
 
 import (
+	"atlas-skills/kafka/message"
+	"atlas-skills/skill"
+	"atlas-skills/test"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -8,11 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"atlas-skills/kafka/message"
-	"atlas-skills/skill"
-	"atlas-skills/test"
-
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -23,6 +21,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 type testServerInformation struct{}

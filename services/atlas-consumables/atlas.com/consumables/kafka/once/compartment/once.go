@@ -4,9 +4,10 @@ import (
 	"atlas-consumables/kafka/message/compartment"
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 )
 
 func ReservationValidator(transactionId uuid.UUID, itemId uint32) message.Validator[compartment.StatusEvent[compartment.ReservedEventBody]] {

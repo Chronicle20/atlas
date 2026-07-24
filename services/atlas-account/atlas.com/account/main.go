@@ -1,17 +1,18 @@
 package main
 
 import (
+	"atlas-account/account"
+	"atlas-account/tasks"
 	"context"
+	"os"
+	"time"
 
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 
-	"atlas-account/account"
 	account2 "atlas-account/kafka/consumer/account"
-	"atlas-account/tasks"
+
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
-	"os"
-	"time"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"

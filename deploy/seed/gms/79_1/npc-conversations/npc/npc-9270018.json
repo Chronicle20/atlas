@@ -1,0 +1,170 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 9270018,
+      "startState": "checkMap",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "mapId",
+                    "value": "540010001"
+                  }
+                ],
+                "nextState": "askLeave"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "mapId",
+                    "value": "540010002"
+                  }
+                ],
+                "nextState": "reachingKerning"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "mapId",
+                    "value": "540010101"
+                  }
+                ],
+                "nextState": "reachingSingapore"
+              },
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "checkMap",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "warpToAirport",
+                "text": "Yes"
+              },
+              {
+                "nextState": "pleaseWaitKerning",
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "The plane is taking off soon, are you sure you want to leave now? The ticket is not refundable."
+          },
+          "id": "askLeave",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Please hold on for a sec, and we're reaching Kerning City! Thanks for your patience."
+          },
+          "id": "pleaseWaitKerning",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "We're reaching Kerning City in a minute, please sit down and wait."
+          },
+          "id": "reachingKerning",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "We're reaching Singapore in a minute, please sit down and wait."
+          },
+          "id": "reachingSingapore",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "540010000",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "goodbyeAirport"
+              }
+            ]
+          },
+          "id": "warpToAirport",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Hope to see you again soon!"
+          },
+          "id": "goodbyeAirport",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "9270018",
+    "type": "npc-conversation"
+  }
+}

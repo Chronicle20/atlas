@@ -11,8 +11,10 @@ type Registry struct {
 	tenants map[uuid.UUID]Model
 }
 
-var registry *Registry
-var once sync.Once
+var (
+	registry *Registry
+	once     sync.Once
+)
 
 func getRegistry() *Registry {
 	once.Do(func() {

@@ -3,13 +3,14 @@ package consumable
 import (
 	"atlas-channel/kafka/message/consumable"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 )
 
 func RequestItemConsumeCommandProvider(f field.Model, characterId character.Id, source slot.Position, itemId item.Id, quantity int16) model.Provider[[]kafka.Message] {

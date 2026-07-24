@@ -1,14 +1,14 @@
-import { vi, type Mocked } from 'vitest';
+import { vi, type Mocked } from "vitest";
 /**
  * Tests for account React Query hooks
  */
 
-import { renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act } from 'react';
-import { accountsService } from '@/services/api/accounts.service';
-import type { Account } from '@/types/models/account';
-import type { Tenant } from '@/types/models/tenant';
+import { renderHook, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { act } from "react";
+import { accountsService } from "@/services/api/accounts.service";
+import type { Account } from "@/types/models/account";
+import type { Tenant } from "@/types/models/tenant";
 import {
   useAccounts,
   useAccount,
@@ -20,37 +20,37 @@ import {
   useTerminateMultipleSessions,
   useInvalidateAccounts,
   usePrefetchAccounts,
-} from '../useAccounts';
+} from "../useAccounts";
 
 // Mock the accounts service
-vi.mock('@/services/api/accounts.service');
+vi.mock("@/services/api/accounts.service");
 const mockAccountsService = accountsService as Mocked<typeof accountsService>;
 
 // Test data
 const mockTenant: Tenant = {
-  id: 'tenant-1',
+  id: "tenant-1",
   attributes: {
-    name: 'Test Tenant',
-    region: 'GMS',
+    name: "Test Tenant",
+    region: "GMS",
     majorVersion: 83,
     minorVersion: 1,
   },
 };
 
 const mockAccount: Account = {
-  id: 'account-1',
+  id: "account-1",
   attributes: {
-    name: 'testuser',
-    pin: '1234',
-    pic: '5678',
+    name: "testuser",
+    pin: "1234",
+    pic: "5678",
     pinAttempts: 0,
     picAttempts: 0,
     loggedIn: 1,
     lastLogin: Date.now(),
     gender: 0,
     tos: true,
-    language: 'en',
-    country: 'US',
+    language: "en",
+    country: "US",
     characterSlots: 6,
   },
 };
@@ -58,19 +58,19 @@ const mockAccount: Account = {
 const mockAccounts: Account[] = [
   mockAccount,
   {
-    id: 'account-2',
+    id: "account-2",
     attributes: {
-      name: 'anotheruser',
-      pin: '8765',
-      pic: '4321',
+      name: "anotheruser",
+      pin: "8765",
+      pic: "4321",
       pinAttempts: 0,
       picAttempts: 0,
       loggedIn: 0,
       lastLogin: Date.now() - 86400000,
       gender: 1,
       tos: true,
-      language: 'en',
-      country: 'US',
+      language: "en",
+      country: "US",
       characterSlots: 3,
     },
   },
@@ -101,92 +101,96 @@ function createWrapper() {
   const Wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
-  Wrapper.displayName = 'ReactQueryWrapper';
+  Wrapper.displayName = "ReactQueryWrapper";
   return Wrapper;
 }
 
-describe('useAccounts hooks', () => {
+describe("useAccounts hooks", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('useAccounts', () => {
-    it('should fetch all accounts for a tenant', async () => {
+  describe("useAccounts", () => {
+    it("should fetch all accounts for a tenant", async () => {
       mockAccountsService.getAllAccounts.mockResolvedValue(mockAccounts);
 
-      const { result } = renderHook(
-        () => useAccounts(mockTenant),
-        { wrapper: createWrapper() }
-      );
+      const { result } = renderHook(() => useAccounts(mockTenant), {
+        wrapper: createWrapper(),
+      });
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
       expect(result.current.data).toEqual(mockAccounts);
-      expect(mockAccountsService.getAllAccounts).toHaveBeenCalledWith({ useCache: false });
+      expect(mockAccountsService.getAllAccounts).toHaveBeenCalledWith({
+        useCache: false,
+      });
     });
 
-    it('should not fetch when tenant is not provided', () => {
+    it("should not fetch when tenant is not provided", () => {
       const { result } = renderHook(
         () => useAccounts(null as unknown as Tenant),
-        { wrapper: createWrapper() }
+        { wrapper: createWrapper() },
       );
 
-      expect(result.current.status).toBe('pending');
+      expect(result.current.status).toBe("pending");
       expect(mockAccountsService.getAllAccounts).not.toHaveBeenCalled();
     });
 
-    it('should pass query options to service', async () => {
-      const options = { name: 'test', loggedIn: false };
+    it("should pass query options to service", async () => {
+      const options = { name: "test", loggedIn: false };
       mockAccountsService.getAllAccounts.mockResolvedValue(mockAccounts);
 
-      renderHook(
-        () => useAccounts(mockTenant, options),
-        { wrapper: createWrapper() }
-      );
+      renderHook(() => useAccounts(mockTenant, options), {
+        wrapper: createWrapper(),
+      });
 
       await waitFor(() => {
-        expect(mockAccountsService.getAllAccounts).toHaveBeenCalledWith({ ...options, useCache: false });
+        expect(mockAccountsService.getAllAccounts).toHaveBeenCalledWith({
+          ...options,
+          useCache: false,
+        });
       });
     });
   });
 
-  describe('useAccount', () => {
-    it('should fetch specific account by ID', async () => {
+  describe("useAccount", () => {
+    it("should fetch specific account by ID", async () => {
       mockAccountsService.getAccountById.mockResolvedValue(mockAccount);
 
-      const { result } = renderHook(
-        () => useAccount(mockTenant, 'account-1'),
-        { wrapper: createWrapper() }
-      );
+      const { result } = renderHook(() => useAccount(mockTenant, "account-1"), {
+        wrapper: createWrapper(),
+      });
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
       expect(result.current.data).toEqual(mockAccount);
-      expect(mockAccountsService.getAccountById).toHaveBeenCalledWith('account-1', { useCache: false });
+      expect(mockAccountsService.getAccountById).toHaveBeenCalledWith(
+        "account-1",
+        { useCache: false },
+      );
     });
 
-    it('should not fetch when tenant or ID is not provided', () => {
-      const { result } = renderHook(
-        () => useAccount(mockTenant, ''),
-        { wrapper: createWrapper() }
-      );
+    it("should not fetch when tenant or ID is not provided", () => {
+      const { result } = renderHook(() => useAccount(mockTenant, ""), {
+        wrapper: createWrapper(),
+      });
 
-      expect(result.current.status).toBe('pending');
+      expect(result.current.status).toBe("pending");
       expect(mockAccountsService.getAccountById).not.toHaveBeenCalled();
     });
   });
 
-  describe('useAccountExists', () => {
-    it('should check if account exists', async () => {
+  describe("useAccountExists", () => {
+    it("should check if account exists", async () => {
       mockAccountsService.accountExists.mockResolvedValue(true);
 
       const { result } = renderHook(
-        () => useAccountExists(mockTenant, 'account-1'),
-        { wrapper: createWrapper() }
+        () => useAccountExists(mockTenant, "account-1"),
+        { wrapper: createWrapper() },
       );
 
       await waitFor(() => {
@@ -194,17 +198,20 @@ describe('useAccounts hooks', () => {
       });
 
       expect(result.current.data).toBe(true);
-      expect(mockAccountsService.accountExists).toHaveBeenCalledWith('account-1', { useCache: false });
+      expect(mockAccountsService.accountExists).toHaveBeenCalledWith(
+        "account-1",
+        { useCache: false },
+      );
     });
   });
 
-  describe('useAccountSearch', () => {
-    it('should search accounts by name pattern', async () => {
+  describe("useAccountSearch", () => {
+    it("should search accounts by name pattern", async () => {
       mockAccountsService.searchAccountsByName.mockResolvedValue([mockAccount]);
 
       const { result } = renderHook(
-        () => useAccountSearch(mockTenant, 'test'),
-        { wrapper: createWrapper() }
+        () => useAccountSearch(mockTenant, "test"),
+        { wrapper: createWrapper() },
       );
 
       await waitFor(() => {
@@ -212,70 +219,75 @@ describe('useAccounts hooks', () => {
       });
 
       expect(result.current.data).toEqual([mockAccount]);
-      expect(mockAccountsService.searchAccountsByName).toHaveBeenCalledWith('test', { useCache: false });
+      expect(mockAccountsService.searchAccountsByName).toHaveBeenCalledWith(
+        "test",
+        { useCache: false },
+      );
     });
 
-    it('should not search with empty pattern', () => {
-      const { result } = renderHook(
-        () => useAccountSearch(mockTenant, ''),
-        { wrapper: createWrapper() }
-      );
+    it("should not search with empty pattern", () => {
+      const { result } = renderHook(() => useAccountSearch(mockTenant, ""), {
+        wrapper: createWrapper(),
+      });
 
-      expect(result.current.status).toBe('pending');
+      expect(result.current.status).toBe("pending");
       expect(mockAccountsService.searchAccountsByName).not.toHaveBeenCalled();
     });
   });
 
-  describe('useLoggedInAccounts', () => {
-    it('should fetch logged-in accounts', async () => {
+  describe("useLoggedInAccounts", () => {
+    it("should fetch logged-in accounts", async () => {
       const loggedInAccounts = [mockAccount];
-      mockAccountsService.getLoggedInAccounts.mockResolvedValue(loggedInAccounts);
-
-      const { result } = renderHook(
-        () => useLoggedInAccounts(mockTenant),
-        { wrapper: createWrapper() }
+      mockAccountsService.getLoggedInAccounts.mockResolvedValue(
+        loggedInAccounts,
       );
+
+      const { result } = renderHook(() => useLoggedInAccounts(mockTenant), {
+        wrapper: createWrapper(),
+      });
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
       expect(result.current.data).toEqual(loggedInAccounts);
-      expect(mockAccountsService.getLoggedInAccounts).toHaveBeenCalledWith({ useCache: false });
+      expect(mockAccountsService.getLoggedInAccounts).toHaveBeenCalledWith({
+        useCache: false,
+      });
     });
   });
 
-  describe('useAccountStats', () => {
-    it('should fetch account statistics', async () => {
+  describe("useAccountStats", () => {
+    it("should fetch account statistics", async () => {
       mockAccountsService.getAccountStats.mockResolvedValue(mockStats);
 
-      const { result } = renderHook(
-        () => useAccountStats(mockTenant),
-        { wrapper: createWrapper() }
-      );
+      const { result } = renderHook(() => useAccountStats(mockTenant), {
+        wrapper: createWrapper(),
+      });
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
       expect(result.current.data).toEqual(mockStats);
-      expect(mockAccountsService.getAccountStats).toHaveBeenCalledWith({ useCache: false });
+      expect(mockAccountsService.getAccountStats).toHaveBeenCalledWith({
+        useCache: false,
+      });
     });
   });
 
-  describe('useTerminateAccountSession', () => {
-    it('should terminate account session', async () => {
+  describe("useTerminateAccountSession", () => {
+    it("should terminate account session", async () => {
       mockAccountsService.terminateAccountSession.mockResolvedValue();
 
-      const { result } = renderHook(
-        () => useTerminateAccountSession(),
-        { wrapper: createWrapper() }
-      );
+      const { result } = renderHook(() => useTerminateAccountSession(), {
+        wrapper: createWrapper(),
+      });
 
       await act(async () => {
         result.current.mutate({
           tenant: mockTenant,
-          accountId: 'account-1',
+          accountId: "account-1",
         });
       });
 
@@ -284,24 +296,23 @@ describe('useAccounts hooks', () => {
       });
 
       expect(mockAccountsService.terminateAccountSession).toHaveBeenCalledWith(
-        'account-1',
-        undefined
+        "account-1",
+        undefined,
       );
     });
 
-    it('should handle termination errors', async () => {
-      const error = new Error('Session termination failed');
+    it("should handle termination errors", async () => {
+      const error = new Error("Session termination failed");
       mockAccountsService.terminateAccountSession.mockRejectedValue(error);
 
-      const { result } = renderHook(
-        () => useTerminateAccountSession(),
-        { wrapper: createWrapper() }
-      );
+      const { result } = renderHook(() => useTerminateAccountSession(), {
+        wrapper: createWrapper(),
+      });
 
       await act(async () => {
         result.current.mutate({
           tenant: mockTenant,
-          accountId: 'account-1',
+          accountId: "account-1",
         });
       });
 
@@ -313,23 +324,24 @@ describe('useAccounts hooks', () => {
     });
   });
 
-  describe('useTerminateMultipleSessions', () => {
-    it('should terminate multiple account sessions', async () => {
+  describe("useTerminateMultipleSessions", () => {
+    it("should terminate multiple account sessions", async () => {
       const mockResult = {
-        successful: ['account-1', 'account-2'],
+        successful: ["account-1", "account-2"],
         failed: [],
       };
-      mockAccountsService.terminateMultipleSessions.mockResolvedValue(mockResult);
-
-      const { result } = renderHook(
-        () => useTerminateMultipleSessions(),
-        { wrapper: createWrapper() }
+      mockAccountsService.terminateMultipleSessions.mockResolvedValue(
+        mockResult,
       );
+
+      const { result } = renderHook(() => useTerminateMultipleSessions(), {
+        wrapper: createWrapper(),
+      });
 
       await act(async () => {
         result.current.mutate({
           tenant: mockTenant,
-          accountIds: ['account-1', 'account-2'],
+          accountIds: ["account-1", "account-2"],
         });
       });
 
@@ -338,28 +350,28 @@ describe('useAccounts hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockResult);
-      expect(mockAccountsService.terminateMultipleSessions).toHaveBeenCalledWith(
-        ['account-1', 'account-2'],
-        undefined
-      );
+      expect(
+        mockAccountsService.terminateMultipleSessions,
+      ).toHaveBeenCalledWith(["account-1", "account-2"], undefined);
     });
 
-    it('should handle partial failures', async () => {
+    it("should handle partial failures", async () => {
       const mockResult = {
-        successful: ['account-1'],
-        failed: [{ id: 'account-2', error: 'Already logged out' }],
+        successful: ["account-1"],
+        failed: [{ id: "account-2", error: "Already logged out" }],
       };
-      mockAccountsService.terminateMultipleSessions.mockResolvedValue(mockResult);
-
-      const { result } = renderHook(
-        () => useTerminateMultipleSessions(),
-        { wrapper: createWrapper() }
+      mockAccountsService.terminateMultipleSessions.mockResolvedValue(
+        mockResult,
       );
+
+      const { result } = renderHook(() => useTerminateMultipleSessions(), {
+        wrapper: createWrapper(),
+      });
 
       await act(async () => {
         result.current.mutate({
           tenant: mockTenant,
-          accountIds: ['account-1', 'account-2'],
+          accountIds: ["account-1", "account-2"],
         });
       });
 
@@ -371,34 +383,32 @@ describe('useAccounts hooks', () => {
     });
   });
 
-  describe('useInvalidateAccounts', () => {
-    it('should provide invalidation functions', () => {
-      const { result } = renderHook(
-        () => useInvalidateAccounts(),
-        { wrapper: createWrapper() }
-      );
+  describe("useInvalidateAccounts", () => {
+    it("should provide invalidation functions", () => {
+      const { result } = renderHook(() => useInvalidateAccounts(), {
+        wrapper: createWrapper(),
+      });
 
-      expect(typeof result.current.invalidateAll).toBe('function');
-      expect(typeof result.current.invalidateLists).toBe('function');
-      expect(typeof result.current.invalidateList).toBe('function');
-      expect(typeof result.current.invalidateAccount).toBe('function');
-      expect(typeof result.current.invalidateLoggedIn).toBe('function');
-      expect(typeof result.current.invalidateStats).toBe('function');
-      expect(typeof result.current.invalidateAllForTenant).toBe('function');
+      expect(typeof result.current.invalidateAll).toBe("function");
+      expect(typeof result.current.invalidateLists).toBe("function");
+      expect(typeof result.current.invalidateList).toBe("function");
+      expect(typeof result.current.invalidateAccount).toBe("function");
+      expect(typeof result.current.invalidateLoggedIn).toBe("function");
+      expect(typeof result.current.invalidateStats).toBe("function");
+      expect(typeof result.current.invalidateAllForTenant).toBe("function");
     });
   });
 
-  describe('usePrefetchAccounts', () => {
-    it('should provide prefetch functions', () => {
-      const { result } = renderHook(
-        () => usePrefetchAccounts(),
-        { wrapper: createWrapper() }
-      );
+  describe("usePrefetchAccounts", () => {
+    it("should provide prefetch functions", () => {
+      const { result } = renderHook(() => usePrefetchAccounts(), {
+        wrapper: createWrapper(),
+      });
 
-      expect(typeof result.current.prefetchAccounts).toBe('function');
-      expect(typeof result.current.prefetchAccount).toBe('function');
-      expect(typeof result.current.prefetchLoggedIn).toBe('function');
-      expect(typeof result.current.prefetchStats).toBe('function');
+      expect(typeof result.current.prefetchAccounts).toBe("function");
+      expect(typeof result.current.prefetchAccount).toBe("function");
+      expect(typeof result.current.prefetchLoggedIn).toBe("function");
+      expect(typeof result.current.prefetchStats).toBe("function");
     });
   });
 });

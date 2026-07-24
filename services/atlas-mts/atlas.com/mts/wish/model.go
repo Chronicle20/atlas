@@ -3,8 +3,9 @@ package wish
 import (
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 // Model is the immutable wish-list entry: a character's standing wish for an
@@ -27,8 +28,8 @@ const (
 )
 
 type Model struct {
-	id          uuid.UUID
-	tenantId    uuid.UUID
+	id            uuid.UUID
+	tenantId      uuid.UUID
 	worldId       world.Id
 	serial        uint32
 	characterId   uint32

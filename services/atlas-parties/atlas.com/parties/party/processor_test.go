@@ -6,18 +6,20 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // Minimal mock for invite processor (not core to party leave logic)
@@ -305,7 +307,6 @@ func TestLeaveAndEmit_Integration(t *testing.T) {
 		// LeaveAndEmit should work without explicit buffer
 		// Note: This will fail to emit due to no real Kafka broker, but the Leave logic should work
 		_, err := processor.LeaveAndEmit(party.Id(), leaderId)
-
 		// We expect an error due to Kafka connection failure, but the party leave logic should complete
 		if err != nil {
 			t.Logf("Expected Kafka connection error: %v", err)

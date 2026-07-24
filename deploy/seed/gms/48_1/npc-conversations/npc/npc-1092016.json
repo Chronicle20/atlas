@@ -1,0 +1,92 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1092016,
+      "startState": "checkQuestStatus",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "2166",
+                    "type": "questStatus",
+                    "value": "2"
+                  }
+                ],
+                "nextState": "questStartedMessage"
+              },
+              {
+                "conditions": [],
+                "nextState": "questNotStartedMessage"
+              }
+            ]
+          },
+          "id": "checkQuestStatus",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "completeQuest",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "It's a beautiful, shiny rock. I can feel the mysterious power surrounding it."
+          },
+          "id": "questStartedMessage",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "questId": "2166"
+                },
+                "type": "complete_quest"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "completeQuest",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "I touched the shiny rock with my hand, and I felt a mysterious power flowing into my body."
+          },
+          "id": "questNotStartedMessage",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "1092016",
+    "type": "npc-conversation"
+  }
+}

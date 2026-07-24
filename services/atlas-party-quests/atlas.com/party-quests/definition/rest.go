@@ -41,13 +41,13 @@ type RestModel struct {
 	FieldLock         string                  `json:"fieldLock"`
 	Duration          uint64                  `json:"duration"`
 	Registration      RegistrationRestModel   `json:"registration"`
-	StartRequirements []condition.RestModel    `json:"startRequirements"`
-	StartEvents       []EventTriggerRestModel  `json:"startEvents"`
-	FailRequirements  []condition.RestModel    `json:"failRequirements"`
+	StartRequirements []condition.RestModel   `json:"startRequirements"`
+	StartEvents       []EventTriggerRestModel `json:"startEvents"`
+	FailRequirements  []condition.RestModel   `json:"failRequirements"`
 	Exit              uint32                  `json:"exit"`
-	Bonus             *BonusRestModel          `json:"bonus,omitempty"`
-	Stages            []stage.RestModel        `json:"stages"`
-	Rewards           []reward.RestModel       `json:"rewards"`
+	Bonus             *BonusRestModel         `json:"bonus,omitempty"`
+	Stages            []stage.RestModel       `json:"stages"`
+	Rewards           []reward.RestModel      `json:"rewards"`
 }
 
 func (r RestModel) GetName() string {
@@ -150,9 +150,9 @@ func Transform(m Model) (RestModel, error) {
 
 	reg := m.Registration()
 	return RestModel{
-		Id:      m.Id(),
-		QuestId: m.QuestId(),
-		Name:    m.Name(),
+		Id:        m.Id(),
+		QuestId:   m.QuestId(),
+		Name:      m.Name(),
 		FieldLock: m.FieldLock(),
 		Duration:  m.Duration(),
 		Registration: RegistrationRestModel{

@@ -8,21 +8,26 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	tenant2 "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	tenant2 "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
-var configMu sync.RWMutex
-var tenantConfig map[uuid.UUID]tenant.RestModel
+var (
+	configMu     sync.RWMutex
+	tenantConfig map[uuid.UUID]tenant.RestModel
+)
 
 // readyCh is closed once PublishSnapshot has populated tenantConfig for
 // the first time. Kafka handlers (channel status) may fire before the
 // projection catches up; Get* blocks on readyCh instead of the legacy
 // log.Fatalf path, bounded by readyTimeout.
-var readyCh = make(chan struct{})
-var readyOnce sync.Once
+var (
+	readyCh   = make(chan struct{})
+	readyOnce sync.Once
+)
 
 const readyTimeout = 60 * time.Second
 

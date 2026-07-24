@@ -17,7 +17,9 @@ interface CommodityByItemData {
 
 export const npcShopCommoditiesService = {
   async getByItem(itemId: string | number): Promise<ItemSellerCommodity[]> {
-    const rows = await api.getList<CommodityByItemData>(`/api/commodities/items/${itemId}`);
+    const rows = await api.getList<CommodityByItemData>(
+      `/api/commodities/items/${itemId}`,
+    );
     return rows.map((row) => ({
       id: row.id,
       npcId: row.attributes.npcId,

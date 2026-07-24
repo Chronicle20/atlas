@@ -8,13 +8,14 @@ import (
 	"testing"
 	"time"
 
-	channelConstant "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-	worldConstant "github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
+
+	channelConstant "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	worldConstant "github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 func setupWorldTestRegistry(t *testing.T) {
@@ -189,7 +190,6 @@ func TestGetFlag(t *testing.T) {
 			SetName("Test").
 			SetState(tc.state).
 			Build()
-
 		if err != nil {
 			t.Fatalf("Build() unexpected error: %v", err)
 		}

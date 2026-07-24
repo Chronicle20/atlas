@@ -15,6 +15,7 @@ import (
 	broadcast2 "atlas-saga-orchestrator/kafka/message/broadcast"
 	character2 "atlas-saga-orchestrator/kafka/message/character"
 	gachapon2 "atlas-saga-orchestrator/kafka/message/gachapon"
+	incubator2 "atlas-saga-orchestrator/kafka/message/incubator"
 	megaphone2 "atlas-saga-orchestrator/kafka/message/megaphone"
 	questmessage "atlas-saga-orchestrator/kafka/message/quest"
 	saga2 "atlas-saga-orchestrator/kafka/message/saga"
@@ -29,6 +30,7 @@ import (
 	"atlas-saga-orchestrator/rates"
 	"atlas-saga-orchestrator/reactor"
 	reactorDrop "atlas-saga-orchestrator/reactor/drop"
+	"atlas-saga-orchestrator/rps"
 	"atlas-saga-orchestrator/saved_location"
 	"atlas-saga-orchestrator/skill"
 	"atlas-saga-orchestrator/storage"
@@ -38,15 +40,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 type Handler interface {
@@ -159,6 +163,8 @@ type Handler interface {
 	handleStageClearAttemptPq(s Saga, st Step[any]) error
 	handleEnterPartyQuestBonus(s Saga, st Step[any]) error
 	handleFieldEffectWeather(s Saga, st Step[any]) error
+	handleStartRPSGame(s Saga, st Step[any]) error
+	handleIncubatorResult(s Saga, st Step[any]) error
 	handleEmitMegaphone(s Saga, st Step[any]) error
 	handleEnqueueWorldBroadcast(s Saga, st Step[any]) error
 }
@@ -193,6 +199,7 @@ type HandlerImpl struct {
 	partyQuestP     party_quest.Processor
 	reactorP        reactor.Processor
 	mapCommandP     map_command.Processor
+	rpsP            rps.Processor
 }
 
 func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
@@ -225,6 +232,7 @@ func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 		partyQuestP:     party_quest.NewProcessor(l, ctx),
 		reactorP:        reactor.NewProcessor(l, ctx),
 		mapCommandP:     map_command.NewProcessor(l, ctx),
+		rpsP:            rps.NewProcessor(l, ctx),
 	}
 }
 
@@ -901,6 +909,14 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleEnterPartyQuestBonus, true
 	case FieldEffectWeather:
 		return h.handleFieldEffectWeather, true
+	case StartRPSGame:
+		return h.handleStartRPSGame, true
+	case SetAssetOwner:
+		return h.handleSetAssetOwner, true
+	case ApplyAssetLock:
+		return h.handleApplyAssetLock, true
+	case IncubatorResult:
+		return h.handleIncubatorResult, true
 	case EmitMegaphone:
 		return h.handleEmitMegaphone, true
 	case EnqueueWorldBroadcast:
@@ -927,7 +943,6 @@ func (h *HandlerImpl) handleAwardAsset(s Saga, st Step[any]) error {
 	}
 
 	err := h.compP.RequestCreateItem(s.TransactionId(), payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity, payload.Item.Expiration)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to award asset.")
 		return err
@@ -949,7 +964,6 @@ func (h *HandlerImpl) handleWarpToRandomPortal(s Saga, st Step[any]) error {
 	}
 
 	err := h.charP.WarpRandomAndEmit(s.TransactionId(), payload.CharacterId, f)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to warp to random portal.")
 		return err
@@ -977,7 +991,6 @@ func (h *HandlerImpl) handleWarpToPortal(s Saga, st Step[any]) error {
 	}
 
 	err := h.charP.WarpToPortalAndEmit(s.TransactionId(), payload.CharacterId, f, portalProvider)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to warp to specific portal.")
 		return err
@@ -999,7 +1012,6 @@ func (h *HandlerImpl) handleAwardExperience(s Saga, st Step[any]) error {
 
 	eds := TransformExperienceDistributions(distributions)
 	err := h.charP.AwardExperienceAndEmit(s.TransactionId(), ch, payload.CharacterId, eds, payload.ShowEffect)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to award experience.")
 		return err
@@ -1017,7 +1029,6 @@ func (h *HandlerImpl) handleAwardLevel(s Saga, st Step[any]) error {
 
 	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
 	err := h.charP.AwardLevelAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.Amount)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to award level.")
 		return err
@@ -1035,7 +1046,6 @@ func (h *HandlerImpl) handleAwardMesos(s Saga, st Step[any]) error {
 
 	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
 	err := h.charP.AwardMesosAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.ActorId, payload.ActorType, payload.Amount, payload.ShowEffect)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to award mesos.")
 		return err
@@ -1052,7 +1062,6 @@ func (h *HandlerImpl) handleAwardCurrency(s Saga, st Step[any]) error {
 	}
 
 	err := h.cashshopP.AwardCurrencyAndEmit(s.TransactionId(), payload.AccountId, payload.CurrencyType, payload.Amount)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to award currency.")
 		return err
@@ -1069,11 +1078,60 @@ func (h *HandlerImpl) handleDestroyAsset(s Saga, st Step[any]) error {
 	}
 
 	err := h.compP.RequestDestroyItem(s.TransactionId(), payload.CharacterId, payload.TemplateId, payload.Quantity, payload.RemoveAll)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to destroy asset.")
 		return err
 	}
+
+	return nil
+}
+
+// handleSetAssetOwner handles the SetAssetOwner action
+func (h *HandlerImpl) handleSetAssetOwner(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(SetAssetOwnerPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+	err := h.compP.RequestSetOwner(s.TransactionId(), payload.CharacterId, payload.InventoryType, payload.Slot, payload.Owner)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to set asset owner.")
+		return err
+	}
+	return nil
+}
+
+// handleApplyAssetLock handles the ApplyAssetLock action
+func (h *HandlerImpl) handleApplyAssetLock(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ApplyAssetLockPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+	err := h.compP.RequestApplyLock(s.TransactionId(), payload.CharacterId, payload.InventoryType, payload.Slot, payload.Expiration)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to apply asset lock.")
+		return err
+	}
+	return nil
+}
+
+// handleIncubatorResult handles the IncubatorResult action by emitting the
+// EVENT_TOPIC_INCUBATOR_RESULT event for the channel to announce via packet.
+// Fire-and-forget: the channel consumer only announces a packet, no response
+// event advances the step, so the step is marked complete immediately after
+// the emit succeeds.
+func (h *HandlerImpl) handleIncubatorResult(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(IncubatorResultPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+	err := producer.ProviderImpl(h.l)(h.ctx)(incubator2.EnvEventTopicIncubatorResult)(IncubatorResultEventProvider(payload))
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to emit incubator result event.")
+		return err
+	}
+
+	// Fire-and-forget: mark step complete immediately
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
 
 	return nil
 }
@@ -1086,7 +1144,6 @@ func (h *HandlerImpl) handleDestroyAssetFromSlot(s Saga, st Step[any]) error {
 	}
 
 	err := h.compP.RequestDestroyItemFromSlot(s.TransactionId(), payload.CharacterId, payload.InventoryType, payload.Slot, payload.Quantity)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to destroy asset from slot.")
 		return err
@@ -1103,7 +1160,6 @@ func (h *HandlerImpl) handleEquipAsset(s Saga, st Step[any]) error {
 	}
 
 	err := h.compP.RequestEquipAsset(s.TransactionId(), payload.CharacterId, byte(payload.InventoryType), payload.Source, payload.Destination)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to equip asset.")
 		return err
@@ -1120,7 +1176,6 @@ func (h *HandlerImpl) handleUnequipAsset(s Saga, st Step[any]) error {
 	}
 
 	err := h.compP.RequestUnequipAsset(s.TransactionId(), payload.CharacterId, byte(payload.InventoryType), payload.Source, payload.Destination)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to unequip asset.")
 		return err
@@ -1138,7 +1193,6 @@ func (h *HandlerImpl) handleChangeJob(s Saga, st Step[any]) error {
 
 	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
 	err := h.charP.ChangeJobAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.JobId)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to change job.")
 		return err
@@ -1156,7 +1210,6 @@ func (h *HandlerImpl) handleChangeHair(s Saga, st Step[any]) error {
 
 	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
 	err := h.charP.ChangeHairAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.StyleId)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to change hair.")
 		return err
@@ -1174,7 +1227,6 @@ func (h *HandlerImpl) handleChangeFace(s Saga, st Step[any]) error {
 
 	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
 	err := h.charP.ChangeFaceAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.StyleId)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to change face.")
 		return err
@@ -1192,7 +1244,6 @@ func (h *HandlerImpl) handleChangeSkin(s Saga, st Step[any]) error {
 
 	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
 	err := h.charP.ChangeSkinAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.StyleId)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to change skin.")
 		return err
@@ -1209,7 +1260,6 @@ func (h *HandlerImpl) handleCreateSkill(s Saga, st Step[any]) error {
 	}
 
 	err := h.skillP.RequestCreateAndEmit(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.SkillId, payload.Level, payload.MasterLevel, payload.Expiration)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to create skill.")
 		return err
@@ -1226,7 +1276,6 @@ func (h *HandlerImpl) handleUpdateSkill(s Saga, st Step[any]) error {
 	}
 
 	err := h.skillP.RequestUpdateAndEmit(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.SkillId, payload.Level, payload.MasterLevel, payload.Expiration)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to update skill.")
 		return err
@@ -1242,7 +1291,6 @@ func (h *HandlerImpl) handleIncreaseBuddyCapacity(s Saga, st Step[any]) error {
 	}
 
 	err := h.buddyListP.IncreaseCapacityAndEmit(s.TransactionId(), payload.CharacterId, payload.WorldId, payload.Amount)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to increase buddy capacity.")
 		return err
@@ -1258,7 +1306,6 @@ func (h *HandlerImpl) handleGainCloseness(s Saga, st Step[any]) error {
 	}
 
 	err := h.petP.GainClosenessAndEmit(s.TransactionId(), payload.PetId, payload.Amount)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to gain pet closeness.")
 		return err
@@ -1274,7 +1321,6 @@ func (h *HandlerImpl) handleEvolvePet(s Saga, st Step[any]) error {
 	}
 
 	err := h.petP.EvolveAndEmit(s.TransactionId(), payload.PetId)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to evolve pet.")
 		return err
@@ -1813,7 +1859,6 @@ func (h *HandlerImpl) handleAcceptToStorage(s Saga, st Step[any]) error {
 		payload.TemplateId,
 		payload.AssetData,
 	)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to accept asset to storage.")
 		return err
@@ -1837,7 +1882,6 @@ func (h *HandlerImpl) handleReleaseFromCharacter(s Saga, st Step[any]) error {
 		payload.AssetId,
 		payload.Quantity,
 	)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to release asset from character.")
 		return err
@@ -1864,7 +1908,6 @@ func (h *HandlerImpl) handleAcceptToCharacter(s Saga, st Step[any]) error {
 		payload.TemplateId,
 		payload.AssetData,
 	)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to accept asset to character.")
 		return err
@@ -1889,7 +1932,6 @@ func (h *HandlerImpl) handleReleaseFromStorage(s Saga, st Step[any]) error {
 		asset.Id(payload.AssetId),
 		asset.Quantity(payload.Quantity),
 	)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to release asset from storage.")
 		return err
@@ -1923,7 +1965,6 @@ func (h *HandlerImpl) handleAcceptToCashShop(s Saga, st Step[any]) error {
 		payload.PurchasedBy,
 		payload.Flag,
 	)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to accept asset to cash shop.")
 		return err
@@ -1953,7 +1994,6 @@ func (h *HandlerImpl) handleReleaseFromCashShop(s Saga, st Step[any]) error {
 		payload.CashId,
 		payload.TemplateId,
 	)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to release asset from cash shop.")
 		return err
@@ -2006,6 +2046,7 @@ func (h *HandlerImpl) handleAcceptToMtsListing(s Saga, st Step[any]) error {
 		RingId:           payload.RingId,
 		ViciousCount:     payload.ViciousCount,
 		Flags:            payload.Flags,
+		Owner:            payload.Owner,
 		ListValue:        payload.ListValue,
 		BuyNowPrice:      payload.BuyNowPrice,
 		CommissionRate:   payload.CommissionRate,
@@ -3149,5 +3190,33 @@ func (h *HandlerImpl) handleEnqueueWorldBroadcast(s Saga, st Step[any]) error {
 // This handler exists only to satisfy the dispatcher's unknown-action guard
 // at saga/processor.go:947.
 func (h *HandlerImpl) handleAwaitInventoryCreated(_ Saga, _ Step[any]) error {
+	return nil
+}
+
+// handleStartRPSGame handles the StartRPSGame action: it POSTs to atlas-rps's
+// synchronous POST /rps/games endpoint to open (or re-open) a rock-paper-
+// scissors session for a character at an NPC. Like handleSaveLocation and
+// handleStartInstanceTransport, this is a synchronous REST call - it
+// self-completes the step immediately rather than waiting on an async Kafka
+// event, and does not inject any follow-on step.
+func (h *HandlerImpl) handleStartRPSGame(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(StartRPSGamePayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"character_id":   payload.CharacterId,
+		"npc_id":         payload.NpcId,
+	}).Debug("Starting RPS game.")
+
+	_, err := h.rpsP.StartGame(payload.CharacterId, payload.WorldId, payload.ChannelId, payload.NpcId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to start RPS game.")
+		return err
+	}
+
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
 	return nil
 }

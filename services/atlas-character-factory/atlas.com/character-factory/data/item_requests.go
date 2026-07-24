@@ -30,8 +30,8 @@ func (e *EquipmentRestModel) SetID(id string) error {
 // UnmarshalToManyRelations", which the caller surfaces as ErrNotFound. The
 // relationship payload is irrelevant to existence checks, so the methods are
 // intentionally no-ops.
-func (e *EquipmentRestModel) SetToOneReferenceID(_, _ string) error              { return nil }
-func (e *EquipmentRestModel) SetToManyReferenceIDs(_ string, _ []string) error  { return nil }
+func (e *EquipmentRestModel) SetToOneReferenceID(_, _ string) error            { return nil }
+func (e *EquipmentRestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
 
 func requestEquipmentById(id uint32) requests.Request[EquipmentRestModel] {
 	return requests.GetRequest[EquipmentRestModel](fmt.Sprintf("%s"+equipmentPath, getDataBaseRequest(), id))

@@ -72,14 +72,14 @@ func TestSubStructDispositionedIsNA(t *testing.T) {
 // base name collides with an implemented sibling struct's IDAName.
 func TestResolveUnimplemented(t *testing.T) {
 	idx := map[string]string{
-		"CScriptMan::OnAskPet#AskPet":  "npc/clientbound/NpcAskPetConversationDetail",
+		"CScriptMan::OnAskPet#AskPet":   "npc/clientbound/NpcAskPetConversationDetail",
 		"CLogin::OnCheckPasswordResult": "login/clientbound/AuthSuccess",
 	}
 	refs := []UnimplementedRef{
 		{Packet: "interaction/serverbound/InteractionOperationMerchantAddToBlackList"}, // explicit packet
-		{FName: "CScriptMan::OnAskPet#AskPet"},                                          // suffix-qualified
-		{FName: "CLogin::OnCheckPasswordResult"},                                        // bare base fname -> MUST NOT resolve
-		{FName: "CField::OnFieldEffect"},                                                // bare, not in index
+		{FName: "CScriptMan::OnAskPet#AskPet"},                                         // suffix-qualified
+		{FName: "CLogin::OnCheckPasswordResult"},                                       // bare base fname -> MUST NOT resolve
+		{FName: "CField::OnFieldEffect"},                                               // bare, not in index
 	}
 	got := ResolveUnimplemented(refs, idx)
 	if !got["interaction/serverbound/InteractionOperationMerchantAddToBlackList"] {

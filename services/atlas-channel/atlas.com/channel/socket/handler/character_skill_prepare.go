@@ -8,10 +8,11 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 // CUserLocal::DoActiveSkill_Prepare (serverbound)
@@ -55,4 +56,3 @@ func CharacterSkillPrepareHandleFunc(l logrus.FieldLogger, ctx context.Context, 
 		_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), AnnounceForeignSkillPrepare(l)(ctx)(wp)(s.CharacterId(), *info))
 	}
 }
-

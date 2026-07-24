@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const MonsterCarnivalMessageWriter = "MonsterCarnivalMessage"
@@ -25,10 +26,12 @@ const MonsterCarnivalMessageWriter = "MonsterCarnivalMessage"
 // This is a DISTINCT wire shape from the SUMMON mode (2x Decode1 + DecodeStr) of
 // the same dispatcher function.
 //
-// IDA basis: CField_MonsterCarnival::OnRequestResult — v83 @0x56557d, v84 @0x572284,
-// v87 @0x590303, v95 @0x55a890, jms @0x5b0332. The `bResult == 0` (MESSAGE) branch:
-// `v8 = Decode1(); switch(v8){ ... StringPool::GetString(...) ... }` — exactly one
-// wire byte; the strings are local (SP_4082.. / 0x101B..).
+// IDA basis: CField_MonsterCarnival::OnRequestResult — v79 @0x54850a, v83 @0x56557d,
+// v84 @0x572284, v87 @0x590303, v95 @0x55a890, jms @0x5b0332. The `bResult == 0`
+// (MESSAGE) branch: `v8 = Decode1(); switch(v8){ ... StringPool::GetString(...)
+// ... }` — exactly one wire byte; the strings are local (SP_4082.. / 0x101B..).
+// v79 confirmed against the live OnPacket dispatcher switch: case 271 ->
+// OnRequestResult(0, packet) (arg==0, MESSAGE).
 type MonsterCarnivalMessage struct {
 	message byte
 }

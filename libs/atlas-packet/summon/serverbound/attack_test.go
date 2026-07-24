@@ -3,9 +3,10 @@ package serverbound
 import (
 	"testing"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 // mobBlock builds one 26-byte per-target block as the client SEND emits it:
@@ -15,11 +16,11 @@ func mobBlock(mobOid, templateId uint32, tDelay int16, damage uint32) []byte {
 	b := make([]byte, 0, 26)
 	b = append(b, le32(mobOid)...)
 	b = append(b, le32(templateId)...)
-	b = append(b, 0x01, 0x02, 0x03, 0x04) // hitAction, foreAction|left, frameIdx, calcDamageStatIndex
-	b = append(b, le16(11)...)            // curX
-	b = append(b, le16(22)...)            // curY
-	b = append(b, le16(33)...)            // hitX
-	b = append(b, le16(44)...)            // hitY
+	b = append(b, 0x01, 0x02, 0x03, 0x04)  // hitAction, foreAction|left, frameIdx, calcDamageStatIndex
+	b = append(b, le16(11)...)             // curX
+	b = append(b, le16(22)...)             // curY
+	b = append(b, le16(33)...)             // hitX
+	b = append(b, le16(44)...)             // hitY
 	b = append(b, le16(uint16(tDelay))...) // tDelay
 	b = append(b, le32(damage)...)         // damage
 	return b
@@ -36,11 +37,11 @@ func le32(v uint32) []byte {
 func mobBlockV79(mobOid uint32, tDelay int16, damage uint32) []byte {
 	b := make([]byte, 0, 22)
 	b = append(b, le32(mobOid)...)
-	b = append(b, 0x01, 0x02, 0x03, 0x04) // hitAction, foreAction|left, frameIdx, calcDamageStatIndex
-	b = append(b, le16(11)...)            // curX
-	b = append(b, le16(22)...)            // curY
-	b = append(b, le16(33)...)            // hitX
-	b = append(b, le16(44)...)            // hitY
+	b = append(b, 0x01, 0x02, 0x03, 0x04)  // hitAction, foreAction|left, frameIdx, calcDamageStatIndex
+	b = append(b, le16(11)...)             // curX
+	b = append(b, le16(22)...)             // curY
+	b = append(b, le16(33)...)             // hitX
+	b = append(b, le16(44)...)             // hitY
 	b = append(b, le16(uint16(tDelay))...) // tDelay
 	b = append(b, le32(damage)...)         // damage
 	return b
@@ -77,9 +78,9 @@ func mobBlockV79(mobOid uint32, tDelay int16, damage uint32) []byte {
 func TestSummonAttackByteV72(t *testing.T) {
 	body := []byte{}
 	body = append(body, le32(1000005)...) // summonId
-	body = append(body, le32(123456)...)   // updateTime
-	body = append(body, 0x83)              // action|left (left bit + action 3)
-	body = append(body, 0x02)              // count = 2
+	body = append(body, le32(123456)...)  // updateTime
+	body = append(body, 0x83)             // action|left (left bit + action 3)
+	body = append(body, 0x02)             // count = 2
 	body = append(body, mobBlockV79(2000001, 100, 1234)...)
 	body = append(body, mobBlockV79(2000002, -50, 5678)...)
 	body = append(body, le16(510)...) // summonX (after targets)
@@ -128,9 +129,9 @@ func TestSummonAttackByteV72(t *testing.T) {
 func TestSummonAttackByteV61(t *testing.T) {
 	body := []byte{}
 	body = append(body, le32(1000005)...) // summonId
-	body = append(body, le32(123456)...)   // updateTime
-	body = append(body, 0x83)              // action|left (left bit + action 3)
-	body = append(body, 0x02)              // count = 2
+	body = append(body, le32(123456)...)  // updateTime
+	body = append(body, 0x83)             // action|left (left bit + action 3)
+	body = append(body, 0x02)             // count = 2
 	body = append(body, mobBlockV79(2000001, 100, 1234)...)
 	body = append(body, mobBlockV79(2000002, -50, 5678)...)
 	body = append(body, le16(510)...) // summonX (after targets)
@@ -199,9 +200,9 @@ func TestSummonAttackByteV61(t *testing.T) {
 func TestSummonAttackByteV79(t *testing.T) {
 	body := []byte{}
 	body = append(body, le32(1000005)...) // summonId
-	body = append(body, le32(123456)...)   // updateTime
-	body = append(body, 0x83)              // action|left (left bit + action 3)
-	body = append(body, 0x02)              // count = 2
+	body = append(body, le32(123456)...)  // updateTime
+	body = append(body, 0x83)             // action|left (left bit + action 3)
+	body = append(body, 0x02)             // count = 2
 	body = append(body, mobBlockV79(2000001, 100, 1234)...)
 	body = append(body, mobBlockV79(2000002, -50, 5678)...)
 	body = append(body, le16(510)...)    // summonX (after targets)
@@ -246,16 +247,16 @@ func TestSummonAttackByteV79(t *testing.T) {
 func TestSummonAttackDecodeV83(t *testing.T) {
 	body := []byte{}
 	body = append(body, le32(1000005)...) // summonId (= owner cid on v83)
-	body = append(body, le32(123456)...)   // updateTime
-	body = append(body, 0x83)              // action|left (left bit set, action 3)
-	body = append(body, 0x02)              // count = 2
-	body = append(body, le16(500)...)      // userX
-	body = append(body, le16(600)...)      // userY
-	body = append(body, le16(510)...)      // summonX
-	body = append(body, le16(590)...)      // summonY
+	body = append(body, le32(123456)...)  // updateTime
+	body = append(body, 0x83)             // action|left (left bit set, action 3)
+	body = append(body, 0x02)             // count = 2
+	body = append(body, le16(500)...)     // userX
+	body = append(body, le16(600)...)     // userY
+	body = append(body, le16(510)...)     // summonX
+	body = append(body, le16(590)...)     // summonY
 	body = append(body, mobBlock(2000001, 9300018, 100, 1234)...)
 	body = append(body, mobBlock(2000002, 9300166, -50, 5678)...)
-	body = append(body, le32(0xABCD)...)   // skillCRC
+	body = append(body, le32(0xABCD)...) // skillCRC
 
 	ctx := test.CreateContext("GMS", 83, 1)
 	l, _ := testlog.NewNullLogger()
@@ -478,8 +479,8 @@ func TestSummonAttackByteV48(t *testing.T) {
 	body := []byte{}
 	body = append(body, le32(2121005)...) // summonId (= summon skillId @0x5d9bc0)
 	// NO updateTime int on v48 (absent @ send block; present v61+)
-	body = append(body, 0x84)             // action|left ((left<<7)|4, action fixed 4) @0x5d9bd2
-	body = append(body, 0x02)             // count = 2 @0x5d9bde
+	body = append(body, 0x84) // action|left ((left<<7)|4, action fixed 4) @0x5d9bd2
+	body = append(body, 0x02) // count = 2 @0x5d9bde
 	body = append(body, mobBlockV79(2000001, 100, 1234)...)
 	body = append(body, mobBlockV79(2000002, -50, 5678)...)
 	body = append(body, le16(510)...) // summonX (after targets) @0x5d9ce9

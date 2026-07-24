@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 const MonsterSpawnWriter = "SpawnMonster"
@@ -30,11 +31,11 @@ func NewMonsterSpawn(uniqueId uint32, controlled bool, monsterId uint32, monster
 	}
 }
 
-func (m Spawn) UniqueId() uint32           { return m.uniqueId }
-func (m Spawn) Controlled() bool           { return m.controlled }
-func (m Spawn) MonsterId() uint32          { return m.monsterId }
+func (m Spawn) UniqueId() uint32            { return m.uniqueId }
+func (m Spawn) Controlled() bool            { return m.controlled }
+func (m Spawn) MonsterId() uint32           { return m.monsterId }
 func (m Spawn) Monster() model.MonsterModel { return m.monster }
-func (m Spawn) Operation() string          { return MonsterSpawnWriter }
+func (m Spawn) Operation() string           { return MonsterSpawnWriter }
 func (m Spawn) String() string {
 	return fmt.Sprintf("uniqueId [%d], controlled [%t], monsterId [%d]", m.uniqueId, m.controlled, m.monsterId)
 }

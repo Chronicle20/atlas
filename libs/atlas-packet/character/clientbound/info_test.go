@@ -5,8 +5,9 @@ import (
 	"encoding/hex"
 	"testing"
 
-	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	testlog "github.com/sirupsen/logrus/hooks/test"
+
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 // packet-audit:verify packet=character/clientbound/CharacterInfo version=gms_v83 ida=0xa2370b
@@ -134,14 +135,15 @@ func TestCharacterInfo_CoverCarriesArbitraryValue(t *testing.T) {
 // TestCharacterInfoJMSGolden pins the full jms_v185 wire for a CharacterInfo with
 // a pet, an active mount, a wishlist, and a monster-book block. jms read order is
 // CWvsContext::OnCharacterInfo @0xb0aa6e:
-//   Decode4(charId), Decode1(level), Decode2(job), Decode2(fame), Decode1(married),
-//   DecodeStr(guild), DecodeStr(alliance), Decode4(v32)+Decode4(p) consumed by
-//   SetUserInfo, Decode1(medalInfo byte), Decode1(pet flag)→SetMultiPetInfo (per-pet
-//   Decode4/Str/1/2/1/2/4, bool-terminated @0x9bb959), Decode1(mount flag)+3×Decode4,
-//   Decode1(wish count)+count×int, SomethingMonsterBook @0x70522a (5×Decode4),
-//   MedalAchievementInfo::Decode @0x9bcacf (Decode4 medalId + Decode2 quest count),
-//   then a trailing Decode4 count (jms-only; codec emits 0). The trailing int is the
-//   4-byte jms delta over v83 (99 vs 95 bytes).
+//
+//	Decode4(charId), Decode1(level), Decode2(job), Decode2(fame), Decode1(married),
+//	DecodeStr(guild), DecodeStr(alliance), Decode4(v32)+Decode4(p) consumed by
+//	SetUserInfo, Decode1(medalInfo byte), Decode1(pet flag)→SetMultiPetInfo (per-pet
+//	Decode4/Str/1/2/1/2/4, bool-terminated @0x9bb959), Decode1(mount flag)+3×Decode4,
+//	Decode1(wish count)+count×int, SomethingMonsterBook @0x70522a (5×Decode4),
+//	MedalAchievementInfo::Decode @0x9bcacf (Decode4 medalId + Decode2 quest count),
+//	then a trailing Decode4 count (jms-only; codec emits 0). The trailing int is the
+//	4-byte jms delta over v83 (99 vs 95 bytes).
 func TestCharacterInfoJMSGolden(t *testing.T) {
 	v := pt.Variants[4] // JMS v185
 	ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
@@ -226,17 +228,17 @@ func TestCharacterInfoV48Golden(t *testing.T) {
 	got := in.Encode(nil, ctx)(nil)
 	want := []byte{
 		0x39, 0x30, 0x00, 0x00, // charId 12345          @0x71cb22
-		0x32,                   // level 50               @0x71cb49
-		0x64, 0x00,             // job 100                @0x71cb53
-		0x0a, 0x00,             // fame 10                @0x71cb5d
+		0x32,       // level 50               @0x71cb49
+		0x64, 0x00, // job 100                @0x71cb53
+		0x0a, 0x00, // fame 10                @0x71cb5d
 		0x09, 0x00, 'T', 'e', 's', 't', 'G', 'u', 'i', 'l', 'd', // guild "TestGuild" @0x71cb64
 		0x01,                   // pet flag = 1           @0x71cb6f
 		0x40, 0x4b, 0x4c, 0x00, // pet templateId 5000000 @0x71cbe1
 		0x05, 0x00, 'K', 'i', 't', 't', 'y', // pet name "Kitty" @0x71cbe9
-		0x0f,                   // pet level 15           @0x71cbfb
-		0xc8, 0x00,             // pet closeness 200      @0x71cc05
-		0x50,                   // pet fullness 80        @0x71cc0e
-		0x00, 0x00,             // pet skill 0            @0x71cc18
+		0x0f,       // pet level 15           @0x71cbfb
+		0xc8, 0x00, // pet closeness 200      @0x71cc05
+		0x50,       // pet fullness 80        @0x71cc0e
+		0x00, 0x00, // pet skill 0            @0x71cc18
 		0x00, 0x00, 0x00, 0x00, // pet itemId 0           @0x71cc20
 		0x01,                   // mount flag = 1         @0x71cc62
 		0x07, 0x00, 0x00, 0x00, // mount level 7          @0x71cc77

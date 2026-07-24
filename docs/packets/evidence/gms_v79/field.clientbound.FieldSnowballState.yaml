@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldSnowballState
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CField_SnowBall::OnSnowBallState
+    address: "0x5525bf"
+    decompile_sha256: 183b579733b62ded01cd2236c4d00a1b5a16019124e4fc67fd3550b12183175e

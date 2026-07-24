@@ -5,10 +5,11 @@ import (
 	"image"
 	"image/draw"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-wz/mapimage"
 	"github.com/Chronicle20/atlas/libs/atlas-wz/maplayout"
 	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
-	"github.com/sirupsen/logrus"
 )
 
 // CompositeFromWZ composites a map render directly from a parsed *wz.File
@@ -75,25 +76,49 @@ func CompositeFromWZ(l logrus.FieldLogger, file *wz.File, layout maplayout.Layou
 		byName[lo.Name] = lo.Image
 	}
 
-	order := layout.ZMap
+	order := renderOrder(layout.ZMap, layout.Layers, byName)
 	if len(order) == 0 {
-		order = make([]string, 0, len(layout.Layers))
-		for _, layer := range layout.Layers {
-			order = append(order, layer.Name)
+		// Neither the ZMap nor the layout's Layer records named a produced
+		// layer — fall back to ExtractLayers' own (deterministic) order so a
+		// map still renders.
+		for _, lo := range layers {
+			order = append(order, lo.Name)
 		}
 	}
 	for _, name := range order {
-		img, ok := byName[name]
-		if !ok {
-			// Layout listed this layer but ExtractLayers didn't produce it;
-			// happens when a layer has zero tiles+objs. Skip silently.
-			continue
-		}
-		draw.Draw(canvas, bounds, img, img.Bounds().Min, draw.Over)
+		draw.Draw(canvas, bounds, byName[name], byName[name].Bounds().Min, draw.Over)
 	}
 
 	if l != nil {
 		l.Debugf("composite: map %d stacked %d layer(s)", mapID, len(byName))
 	}
 	return canvas, nil
+}
+
+// renderOrder chooses the stacking order for the extracted map layers. It
+// prefers the layout's ZMap, but keeps ONLY entries that name a layer that was
+// actually produced.
+//
+// A monolithic Data.wz sub-view (task-172 C-3, GMS v12) resolves a map image's
+// File() to the parent archive, whose root holds the CHARACTER zmap
+// (hair/face/body/…) rather than a map-layer order. Those names match no
+// extracted layer, so without this filter every layer is skipped and the map
+// renders empty. When the ZMap yields no usable order, fall back to the
+// layout's Layer-declaration order (also filtered to produced layers).
+func renderOrder(zmap []string, layers []maplayout.Layer, byName map[string]image.Image) []string {
+	order := make([]string, 0, len(byName))
+	for _, name := range zmap {
+		if _, ok := byName[name]; ok {
+			order = append(order, name)
+		}
+	}
+	if len(order) > 0 {
+		return order
+	}
+	for _, layer := range layers {
+		if _, ok := byName[layer.Name]; ok {
+			order = append(order, layer.Name)
+		}
+	}
+	return order
 }

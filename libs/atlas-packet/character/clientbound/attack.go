@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -78,13 +79,13 @@ func NewAttackForDecode(attackType string, skillId uint32, isStrafe bool, isMeso
 	}
 }
 
-func (m Attack) Operation() string    { return m.attackType }
-func (m Attack) CharacterId() uint32   { return m.characterId }
-func (m Attack) Level() byte           { return m.level }
-func (m Attack) SkillLevel() byte      { return m.skillLevel }
-func (m Attack) SkillId() uint32       { return m.skillId }
-func (m Attack) Mastery() byte         { return m.mastery }
-func (m Attack) BulletItemId() uint32  { return m.bulletItemId }
+func (m Attack) Operation() string            { return m.attackType }
+func (m Attack) CharacterId() uint32          { return m.characterId }
+func (m Attack) Level() byte                  { return m.level }
+func (m Attack) SkillLevel() byte             { return m.skillLevel }
+func (m Attack) SkillId() uint32              { return m.skillId }
+func (m Attack) Mastery() byte                { return m.mastery }
+func (m Attack) BulletItemId() uint32         { return m.bulletItemId }
 func (m Attack) AttackInfo() model.AttackInfo { return m.attackInfo }
 func (m Attack) String() string {
 	return fmt.Sprintf("attack type [%s] characterId [%d] skillId [%d]", m.attackType, m.characterId, m.skillId)

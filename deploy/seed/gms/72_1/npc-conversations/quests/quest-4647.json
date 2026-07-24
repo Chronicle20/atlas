@@ -1,0 +1,126 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "checkItem",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "5460000",
+                      "type": "item",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "completeQuest"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "missingItem"
+                }
+              ]
+            },
+            "id": "checkItem",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                },
+                {
+                  "params": {
+                    "level": "1",
+                    "masterLevel": "1",
+                    "skillId": "8"
+                  },
+                  "type": "create_skill"
+                },
+                {
+                  "params": {
+                    "itemId": "5460000",
+                    "quantity": "1"
+                  },
+                  "type": "destroy_item"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "hasItemDialogue"
+                }
+              ]
+            },
+            "id": "completeQuest",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "You got the Pet Snack! Thanks! You can use these to feed multiple pets at once!"
+            },
+            "id": "hasItemDialogue",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Get me the Pet Snack! It can be found in a very big shop...."
+            },
+            "id": "missingItem",
+            "type": "dialogue"
+          }
+        ]
+      },
+      "questId": 4647,
+      "questName": "Pet Snack Quest",
+      "startStateMachine": {
+        "startState": "end",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "end",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "4647",
+    "type": "quest-conversation"
+  }
+}

@@ -5,9 +5,10 @@ import (
 	"atlas-storage/kafka/message/compartment"
 	"atlas-storage/storage"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 type ProcessorMock struct {

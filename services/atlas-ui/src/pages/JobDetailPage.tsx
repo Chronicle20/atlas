@@ -9,23 +9,47 @@ import { getJobNameById } from "@/lib/jobs";
 import { deriveSkillType } from "@/lib/skills/skill-type";
 import { buildLevelTable } from "@/lib/skills/level-table";
 import { resolveSkillName } from "@/lib/skills/beginner-skill-names";
-import { formatSkillDescription, type FormattedDescription } from "@/lib/skills/format-skill-description";
+import {
+  formatSkillDescription,
+  type FormattedDescription,
+} from "@/lib/skills/format-skill-description";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
-  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 
-function SkillIcon({ def, name }: { def: SkillDefinitionWithIcon; name: string }) {
+function SkillIcon({
+  def,
+  name,
+}: {
+  def: SkillDefinitionWithIcon;
+  name: string;
+}) {
   const [failed, setFailed] = useState(false);
   if (failed) {
     return (
-      <span data-testid={`skill-icon-fallback-${def.id}`} className="inline-flex h-8 w-8 items-center justify-center text-muted-foreground">
+      <span
+        data-testid={`skill-icon-fallback-${def.id}`}
+        className="inline-flex h-8 w-8 items-center justify-center text-muted-foreground"
+      >
         <Sparkles className="h-4 w-4" />
       </span>
     );
@@ -45,7 +69,9 @@ function SkillIcon({ def, name }: { def: SkillDefinitionWithIcon; name: string }
 
 function SkillDescription({ formatted }: { formatted: FormattedDescription }) {
   if (formatted.lines.length === 0) {
-    return <p className="text-sm text-muted-foreground">No description available.</p>;
+    return (
+      <p className="text-sm text-muted-foreground">No description available.</p>
+    );
   }
   return (
     <div className="text-sm space-y-1">
@@ -140,14 +166,21 @@ export function JobDetailPage() {
 
   const skillsQuery = useJobSkills(activeTenant, numericJobId);
   const skillIds = skillsQuery.data ?? [];
-  const { definitions, isLoading: defsLoading, isError: defsError } = useJobSkillDefinitions(activeTenant, skillIds);
+  const {
+    definitions,
+    isLoading: defsLoading,
+    isError: defsError,
+  } = useJobSkillDefinitions(activeTenant, skillIds);
 
   const loading = skillsQuery.isLoading || (skillIds.length > 0 && defsLoading);
 
   return (
     <div className="flex flex-col flex-1 min-h-0 space-y-6 overflow-y-auto p-10 pb-16">
       <div className="flex items-center gap-2">
-        <Link to="/jobs" className="text-muted-foreground hover:text-foreground">
+        <Link
+          to="/jobs"
+          className="text-muted-foreground hover:text-foreground"
+        >
           <ChevronLeft className="h-5 w-5" />
         </Link>
         <h2 className="text-2xl font-bold tracking-tight">{jobName}</h2>
@@ -187,11 +220,17 @@ export function JobDetailPage() {
                 ))}
               </div>
             ) : skillsQuery.isError ? (
-              <p className="text-center py-8 text-destructive">Failed to load this job&#39;s skills.</p>
+              <p className="text-center py-8 text-destructive">
+                Failed to load this job&#39;s skills.
+              </p>
             ) : skillIds.length === 0 ? (
-              <p className="text-center py-8 text-muted-foreground">This job grants no skills.</p>
+              <p className="text-center py-8 text-muted-foreground">
+                This job grants no skills.
+              </p>
             ) : definitions.length === 0 && defsError ? (
-              <p className="text-center py-8 text-destructive">Skill details unavailable.</p>
+              <p className="text-center py-8 text-destructive">
+                Skill details unavailable.
+              </p>
             ) : (
               <div>
                 {definitions.map((def) => (

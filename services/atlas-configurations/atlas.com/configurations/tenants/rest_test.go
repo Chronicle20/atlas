@@ -1,15 +1,14 @@
 package tenants
 
 import (
-	"encoding/json"
-	"testing"
-
 	"atlas-configurations/tenants/characters"
 	"atlas-configurations/tenants/npcs"
 	"atlas-configurations/tenants/socket"
 	"atlas-configurations/tenants/socket/handler"
 	"atlas-configurations/tenants/socket/writer"
 	"atlas-configurations/tenants/worlds"
+	"encoding/json"
+	"testing"
 )
 
 func TestRestModel_GetName(t *testing.T) {

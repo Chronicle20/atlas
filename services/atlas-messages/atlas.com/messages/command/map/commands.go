@@ -3,7 +3,7 @@ package _map
 import (
 	"atlas-messages/character"
 	"atlas-messages/command"
-	"atlas-messages/map"
+	_map "atlas-messages/map"
 	"atlas-messages/message"
 	"atlas-messages/rate"
 	"atlas-messages/saga"
@@ -14,12 +14,13 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map2 "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 func WarpCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
@@ -47,7 +48,6 @@ func WarpCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(f 
 			}
 
 			return warpCommandProducer(ch, c.Id(), idProvider, match[2])
-
 		}
 	}
 }

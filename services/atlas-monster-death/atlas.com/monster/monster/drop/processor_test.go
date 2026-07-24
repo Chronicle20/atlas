@@ -12,10 +12,10 @@ func TestDropPositionOffset_EvenIndex(t *testing.T) {
 		baseX    int16
 		expected int16
 	}{
-		{"index 0, type 0", 0, 0, 100, 100},   // (0+1)/2 = 0, factor*0 = 0
-		{"index 2, type 0", 2, 0, 100, 125},   // (2+1)/2 = 1, 25*1 = 25, 100+25 = 125
-		{"index 4, type 0", 4, 0, 100, 150},   // (4+1)/2 = 2, 25*2 = 50, 100+50 = 150
-		{"index 2, type 3", 2, 3, 100, 140},   // factor 40, (2+1)/2 = 1, 40*1 = 40, 100+40 = 140
+		{"index 0, type 0", 0, 0, 100, 100}, // (0+1)/2 = 0, factor*0 = 0
+		{"index 2, type 0", 2, 0, 100, 125}, // (2+1)/2 = 1, 25*1 = 25, 100+25 = 125
+		{"index 4, type 0", 4, 0, 100, 150}, // (4+1)/2 = 2, 25*2 = 50, 100+50 = 150
+		{"index 2, type 3", 2, 3, 100, 140}, // factor 40, (2+1)/2 = 1, 40*1 = 40, 100+40 = 140
 	}
 
 	for _, tc := range testCases {
@@ -56,10 +56,10 @@ func TestDropPositionOffset_OddIndex(t *testing.T) {
 		baseX    int16
 		expected int16
 	}{
-		{"index 1, type 0", 1, 0, 100, 100},  // 1/2 = 0, factor*0 = 0, 100-0 = 100
-		{"index 3, type 0", 3, 0, 100, 75},   // 3/2 = 1, 25*1 = 25, 100-25 = 75
-		{"index 5, type 0", 5, 0, 100, 50},   // 5/2 = 2, 25*2 = 50, 100-50 = 50
-		{"index 3, type 3", 3, 3, 100, 60},   // factor 40, 3/2 = 1, 40*1 = 40, 100-40 = 60
+		{"index 1, type 0", 1, 0, 100, 100}, // 1/2 = 0, factor*0 = 0, 100-0 = 100
+		{"index 3, type 0", 3, 0, 100, 75},  // 3/2 = 1, 25*1 = 25, 100-25 = 75
+		{"index 5, type 0", 5, 0, 100, 50},  // 5/2 = 2, 25*2 = 50, 100-50 = 50
+		{"index 3, type 3", 3, 3, 100, 60},  // factor 40, 3/2 = 1, 40*1 = 40, 100-40 = 60
 	}
 
 	for _, tc := range testCases {
@@ -147,14 +147,14 @@ func TestDropSpreadPattern(t *testing.T) {
 	factor := int16(25)
 
 	expectedOffsets := []int16{
-		0,       // index 0: (0+1)/2 = 0, +0
-		0,       // index 1: 1/2 = 0, -0
-		25,      // index 2: (2+1)/2 = 1, +25
-		-25,     // index 3: 3/2 = 1, -25
-		50,      // index 4: (4+1)/2 = 2, +50
-		-50,     // index 5: 5/2 = 2, -50
-		75,      // index 6: (6+1)/2 = 3, +75
-		-75,     // index 7: 7/2 = 3, -75
+		0,   // index 0: (0+1)/2 = 0, +0
+		0,   // index 1: 1/2 = 0, -0
+		25,  // index 2: (2+1)/2 = 1, +25
+		-25, // index 3: 3/2 = 1, -25
+		50,  // index 4: (4+1)/2 = 2, +50
+		-50, // index 5: 5/2 = 2, -50
+		75,  // index 6: (6+1)/2 = 3, +75
+		-75, // index 7: 7/2 = 3, -75
 	}
 
 	for i, expectedOffset := range expectedOffsets {

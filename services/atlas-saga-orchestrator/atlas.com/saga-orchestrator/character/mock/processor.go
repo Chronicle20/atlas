@@ -4,13 +4,14 @@ import (
 	"atlas-saga-orchestrator/kafka/message"
 	character2 "atlas-saga-orchestrator/kafka/message/character"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
 )
 
 // ProcessorMock is a mock implementation of the character.Processor interface

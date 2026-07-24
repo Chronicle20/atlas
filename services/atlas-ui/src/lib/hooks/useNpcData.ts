@@ -3,11 +3,11 @@
  * Provides name and icon URL data for NPCs using atlas-data API and atlas-assets
  */
 
-import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useMemo, useEffect } from 'react';
-import { useTenant } from '@/context/tenant-context';
-import { npcsService } from '@/services/api/npcs.service';
-import { getAssetIconUrl } from '@/lib/utils/asset-url';
+import { useQuery, useQueries, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useMemo, useEffect } from "react";
+import { useTenant } from "@/context/tenant-context";
+import { npcsService } from "@/services/api/npcs.service";
+import { getAssetIconUrl } from "@/lib/utils/asset-url";
 
 interface NpcDataResult {
   id: number;
@@ -26,7 +26,10 @@ interface UseNpcDataOptions {
   onError?: (error: Error) => void;
 }
 
-interface UseNpcBatchDataOptions extends Omit<UseNpcDataOptions, 'onSuccess' | 'onError'> {
+interface UseNpcBatchDataOptions extends Omit<
+  UseNpcDataOptions,
+  "onSuccess" | "onError"
+> {
   onSuccess?: (data: NpcDataResult[]) => void;
   onError?: (error: Error) => void;
 }
@@ -39,16 +42,13 @@ const DEFAULT_OPTIONS = {
 };
 
 function generateNpcDataQueryKey(npcId: number, tenantId?: string): string[] {
-  return ['npc-data', tenantId || '', npcId.toString()];
+  return ["npc-data", tenantId || "", npcId.toString()];
 }
 
 /**
  * Hook for fetching single NPC data (name and icon)
  */
-export function useNpcData(
-  npcId: number,
-  hookOptions: UseNpcDataOptions = {}
-) {
+export function useNpcData(npcId: number, hookOptions: UseNpcDataOptions = {}) {
   const {
     enabled = DEFAULT_OPTIONS.enabled,
     staleTime = DEFAULT_OPTIONS.staleTime,
@@ -58,9 +58,17 @@ export function useNpcData(
     onError,
   } = hookOptions;
 
-  const options = useMemo(() => ({
-    enabled, staleTime, gcTime, retry, onSuccess, onError,
-  }), [enabled, staleTime, gcTime, retry, onSuccess, onError]);
+  const options = useMemo(
+    () => ({
+      enabled,
+      staleTime,
+      gcTime,
+      retry,
+      onSuccess,
+      onError,
+    }),
+    [enabled, staleTime, gcTime, retry, onSuccess, onError],
+  );
 
   const { activeTenant } = useTenant();
   const queryClient = useQueryClient();
@@ -71,7 +79,7 @@ export function useNpcData(
     queryKey,
     queryFn: async (): Promise<NpcDataResult> => {
       if (!activeTenant) {
-        return { id: npcId, cached: false, error: 'No active tenant' };
+        return { id: npcId, cached: false, error: "No active tenant" };
       }
 
       const iconUrl = getAssetIconUrl(
@@ -79,13 +87,18 @@ export function useNpcData(
         activeTenant.attributes.region,
         activeTenant.attributes.majorVersion,
         activeTenant.attributes.minorVersion,
-        'npc',
+        "npc",
         npcId,
       );
 
       try {
         const name = await npcsService.getNpcName(npcId);
-        const result: NpcDataResult = { id: npcId, name, iconUrl, cached: false };
+        const result: NpcDataResult = {
+          id: npcId,
+          name,
+          iconUrl,
+          cached: false,
+        };
         if (options.onSuccess) options.onSuccess(result);
         return result;
       } catch (error) {
@@ -94,7 +107,8 @@ export function useNpcData(
           id: npcId,
           iconUrl,
           cached: false,
-          error: error instanceof Error ? error.message : 'Unknown error occurred',
+          error:
+            error instanceof Error ? error.message : "Unknown error occurred",
         };
       }
     },
@@ -102,9 +116,13 @@ export function useNpcData(
     staleTime: options.staleTime,
     gcTime: options.gcTime,
     retry: (failureCount, error) => {
-      const errorMessage = error?.message?.toLowerCase() || '';
-      if (errorMessage.includes('404') || errorMessage.includes('not found') ||
-          errorMessage.includes('400') || errorMessage.includes('bad request')) {
+      const errorMessage = error?.message?.toLowerCase() || "";
+      if (
+        errorMessage.includes("404") ||
+        errorMessage.includes("not found") ||
+        errorMessage.includes("400") ||
+        errorMessage.includes("bad request")
+      ) {
         return false;
       }
       return failureCount < options.retry;
@@ -112,7 +130,10 @@ export function useNpcData(
     retryDelay: (attemptIndex) => {
       const baseDelay = 1000;
       const maxDelay = 10000;
-      const exponentialDelay = Math.min(baseDelay * Math.pow(2, attemptIndex), maxDelay);
+      const exponentialDelay = Math.min(
+        baseDelay * Math.pow(2, attemptIndex),
+        maxDelay,
+      );
       return exponentialDelay + Math.random() * 1000;
     },
     refetchOnWindowFocus: false,
@@ -128,30 +149,39 @@ export function useNpcData(
   }, [query.isError, query.error, handleError]);
 
   const invalidate = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['npc-data', npcId.toString()] });
+    queryClient.invalidateQueries({ queryKey: ["npc-data", npcId.toString()] });
   }, [queryClient, npcId]);
 
-  const prefetchNpc = useCallback((prefetchNpcId: number) => {
-    if (!activeTenant) return;
-    const prefetchKey = generateNpcDataQueryKey(prefetchNpcId, activeTenant.id);
-    queryClient.prefetchQuery({
-      queryKey: prefetchKey,
-      queryFn: async () => {
-        const iconUrl = getAssetIconUrl(
-          activeTenant.id, activeTenant.attributes.region,
-          activeTenant.attributes.majorVersion, activeTenant.attributes.minorVersion,
-          'npc', prefetchNpcId,
-        );
-        try {
-          const name = await npcsService.getNpcName(prefetchNpcId);
-          return { id: prefetchNpcId, name, iconUrl, cached: false };
-        } catch {
-          return { id: prefetchNpcId, iconUrl, cached: false };
-        }
-      },
-      staleTime: options.staleTime,
-    });
-  }, [queryClient, activeTenant, options.staleTime]);
+  const prefetchNpc = useCallback(
+    (prefetchNpcId: number) => {
+      if (!activeTenant) return;
+      const prefetchKey = generateNpcDataQueryKey(
+        prefetchNpcId,
+        activeTenant.id,
+      );
+      queryClient.prefetchQuery({
+        queryKey: prefetchKey,
+        queryFn: async () => {
+          const iconUrl = getAssetIconUrl(
+            activeTenant.id,
+            activeTenant.attributes.region,
+            activeTenant.attributes.majorVersion,
+            activeTenant.attributes.minorVersion,
+            "npc",
+            prefetchNpcId,
+          );
+          try {
+            const name = await npcsService.getNpcName(prefetchNpcId);
+            return { id: prefetchNpcId, name, iconUrl, cached: false };
+          } catch {
+            return { id: prefetchNpcId, iconUrl, cached: false };
+          }
+        },
+        staleTime: options.staleTime,
+      });
+    },
+    [queryClient, activeTenant, options.staleTime],
+  );
 
   return {
     ...query,
@@ -171,7 +201,7 @@ export function useNpcData(
  */
 export function useNpcBatchData(
   npcIds: number[],
-  hookOptions: UseNpcBatchDataOptions = {}
+  hookOptions: UseNpcBatchDataOptions = {},
 ) {
   const {
     enabled = DEFAULT_OPTIONS.enabled,
@@ -182,9 +212,17 @@ export function useNpcBatchData(
     onError,
   } = hookOptions;
 
-  const options = useMemo(() => ({
-    enabled, staleTime, gcTime, retry, onSuccess, onError,
-  }), [enabled, staleTime, gcTime, retry, onSuccess, onError]);
+  const options = useMemo(
+    () => ({
+      enabled,
+      staleTime,
+      gcTime,
+      retry,
+      onSuccess,
+      onError,
+    }),
+    [enabled, staleTime, gcTime, retry, onSuccess, onError],
+  );
 
   const { activeTenant } = useTenant();
   const queryClient = useQueryClient();
@@ -194,20 +232,25 @@ export function useNpcBatchData(
       queryKey: generateNpcDataQueryKey(npcId, activeTenant?.id),
       queryFn: async (): Promise<NpcDataResult> => {
         if (!activeTenant) {
-          return { id: npcId, cached: false, error: 'No active tenant' };
+          return { id: npcId, cached: false, error: "No active tenant" };
         }
         const iconUrl = getAssetIconUrl(
-          activeTenant.id, activeTenant.attributes.region,
-          activeTenant.attributes.majorVersion, activeTenant.attributes.minorVersion,
-          'npc', npcId,
+          activeTenant.id,
+          activeTenant.attributes.region,
+          activeTenant.attributes.majorVersion,
+          activeTenant.attributes.minorVersion,
+          "npc",
+          npcId,
         );
         try {
           const name = await npcsService.getNpcName(npcId);
           return { id: npcId, name, iconUrl, cached: false };
         } catch (error) {
           return {
-            id: npcId, iconUrl, cached: false,
-            error: error instanceof Error ? error.message : 'Unknown error',
+            id: npcId,
+            iconUrl,
+            cached: false,
+            error: error instanceof Error ? error.message : "Unknown error",
           };
         }
       },
@@ -215,26 +258,30 @@ export function useNpcBatchData(
       staleTime: options.staleTime,
       gcTime: options.gcTime,
       retry: (failureCount: number, error: Error) => {
-        if (error?.message?.includes('404') || error?.message?.includes('not found')) {
+        if (
+          error?.message?.includes("404") ||
+          error?.message?.includes("not found")
+        ) {
           return false;
         }
         return failureCount < options.retry;
       },
       refetchOnWindowFocus: false,
-      placeholderData: (previousData: NpcDataResult | undefined) => previousData,
+      placeholderData: (previousData: NpcDataResult | undefined) =>
+        previousData,
     })),
   });
 
   const allData = useMemo(
-    () => queries.map(query => query.data).filter(Boolean) as NpcDataResult[],
-    [queries]
+    () => queries.map((query) => query.data).filter(Boolean) as NpcDataResult[],
+    [queries],
   );
-  const isLoading = queries.some(query => query.isLoading);
-  const isError = queries.some(query => query.isError);
-  const isSuccess = queries.every(query => query.isSuccess);
+  const isLoading = queries.some((query) => query.isLoading);
+  const isError = queries.some((query) => query.isError);
+  const isSuccess = queries.every((query) => query.isSuccess);
   const errors = useMemo(
-    () => queries.filter(query => query.error).map(query => query.error),
-    [queries]
+    () => queries.filter((query) => query.error).map((query) => query.error),
+    [queries],
   );
 
   const handleSuccess = options.onSuccess;
@@ -252,8 +299,10 @@ export function useNpcBatchData(
   }, [isError, errors.length, errors, handleError]);
 
   const invalidateAll = useCallback(() => {
-    npcIds.forEach(npcId => {
-      queryClient.invalidateQueries({ queryKey: ['npc-data', npcId.toString()] });
+    npcIds.forEach((npcId) => {
+      queryClient.invalidateQueries({
+        queryKey: ["npc-data", npcId.toString()],
+      });
     });
   }, [queryClient, npcIds]);
 
@@ -276,22 +325,28 @@ export function useNpcDataCache() {
 
   const getCacheStats = useCallback(() => {
     const cache = queryClient.getQueryCache();
-    const npcDataQueries = cache.findAll({ queryKey: ['npc-data'] });
+    const npcDataQueries = cache.findAll({ queryKey: ["npc-data"] });
     return {
       totalQueries: npcDataQueries.length,
-      activeQueries: npcDataQueries.filter(q => q.state.status === 'success').length,
-      errorQueries: npcDataQueries.filter(q => q.state.status === 'error').length,
-      loadingQueries: npcDataQueries.filter(q => q.state.status === 'pending').length,
+      activeQueries: npcDataQueries.filter((q) => q.state.status === "success")
+        .length,
+      errorQueries: npcDataQueries.filter((q) => q.state.status === "error")
+        .length,
+      loadingQueries: npcDataQueries.filter((q) => q.state.status === "pending")
+        .length,
     };
   }, [queryClient]);
 
-  const clearCache = useCallback((npcId?: number) => {
-    if (npcId) {
-      queryClient.removeQueries({ queryKey: ['npc-data', npcId.toString()] });
-    } else {
-      queryClient.removeQueries({ queryKey: ['npc-data'] });
-    }
-  }, [queryClient]);
+  const clearCache = useCallback(
+    (npcId?: number) => {
+      if (npcId) {
+        queryClient.removeQueries({ queryKey: ["npc-data", npcId.toString()] });
+      } else {
+        queryClient.removeQueries({ queryKey: ["npc-data"] });
+      }
+    },
+    [queryClient],
+  );
 
   return { getCacheStats, clearCache };
 }

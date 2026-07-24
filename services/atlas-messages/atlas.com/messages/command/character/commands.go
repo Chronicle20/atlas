@@ -5,16 +5,17 @@ import (
 	"atlas-messages/command"
 	_map "atlas-messages/map"
 	"atlas-messages/saga"
+	"context"
 	"regexp"
 	"strconv"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/sirupsen/logrus"
-	"golang.org/x/net/context"
 )
 
 // buildChangeJobSaga constructs the GM job-change saga. In addition to the

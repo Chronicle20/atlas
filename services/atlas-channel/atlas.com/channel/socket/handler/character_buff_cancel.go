@@ -4,15 +4,17 @@ import (
 	"atlas-channel/character"
 	"atlas-channel/character/buff"
 	"atlas-channel/door"
+	_mapconsumer "atlas-channel/kafka/consumer/map"
 	_map "atlas-channel/map"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	character2 "github.com/Chronicle20/atlas/libs/atlas-packet/character/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 func CharacterBuffCancelHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
@@ -25,6 +27,16 @@ func CharacterBuffCancelHandleFunc(l logrus.FieldLogger, ctx context.Context, wp
 		// Cancelling the Mystic Door buff dismisses the door early.
 		if p.SkillId() == int32(skill.PriestMysticDoorId) {
 			_ = door.NewProcessor(l, ctx).Remove(s.Field(), s.CharacterId(), "CANCELLED")
+		}
+
+		// Cancelling the SuperGM Hide buff reveals the GM to the map again. The
+		// hide-ON path despawned the caster from everyone in the map with a real
+		// CharacterDespawn (skill/handler/hide), and GM Hide toggles OFF via this
+		// CANCEL_BUFF opcode — not a skill re-cast — so this is the only place the
+		// reveal spawn can be re-broadcast to observers already standing in the map.
+		// Symmetric to despawnFromOthers on the ON side.
+		if p.SkillId() == int32(skill.SuperGmHideId) {
+			_ = _mapconsumer.SpawnCharacterInMap(l, ctx, wp)(s.Field(), s.CharacterId())
 		}
 
 		// Keydown-skill keyup shares this (CANCEL_BUFF) opcode: relay the cancel

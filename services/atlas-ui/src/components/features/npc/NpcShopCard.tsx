@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ChevronDown,
@@ -69,7 +69,12 @@ export function NpcShopCard({ npcId, hasShop }: NpcShopCardProps) {
   const { activeTenant } = useTenant();
   const queryClient = useQueryClient();
 
-  const shopKey = ["npcs", "shop", activeTenant?.id ?? "no-tenant", npcId] as const;
+  const shopKey = [
+    "npcs",
+    "shop",
+    activeTenant?.id ?? "no-tenant",
+    npcId,
+  ] as const;
 
   const shopQuery = useQuery({
     queryKey: shopKey,
@@ -81,17 +86,26 @@ export function NpcShopCard({ npcId, hasShop }: NpcShopCardProps) {
   const commodities: Commodity[] = useMemo(() => shop?.included ?? [], [shop]);
   const [recharger, setRecharger] = useState<boolean>(false);
 
-  useEffect(() => {
+  // Sync recharger to the latest shop query result. `recharger` is still
+  // real local state (not a pure derived value) because handleRechargerToggle
+  // below optimistically mutates it ahead of the mutation settling. Adjusted
+  // during render instead of in an effect.
+  const [prevShop, setPrevShop] = useState(shop);
+  if (shop !== prevShop) {
+    setPrevShop(shop);
     setRecharger(shop?.data.attributes.recharger ?? false);
-  }, [shop]);
+  }
 
   const templateIds = useMemo(
-    () => commodities.map(c => c.attributes.templateId),
+    () => commodities.map((c) => c.attributes.templateId),
     [commodities],
   );
   const itemBatch = useItemBatchData(templateIds);
   const itemDataById = useMemo(() => {
-    const m = new Map<number, { name?: string | undefined; iconUrl?: string | undefined }>();
+    const m = new Map<
+      number,
+      { name?: string | undefined; iconUrl?: string | undefined }
+    >();
     for (const entry of itemBatch.data) {
       m.set(entry.id, { name: entry.name, iconUrl: entry.iconUrl });
     }
@@ -208,8 +222,7 @@ export function NpcShopCard({ npcId, hasShop }: NpcShopCardProps) {
       let toUpdate: Commodity[] = [];
       if (parsed.included?.length) toUpdate = parsed.included;
       else if (parsed.data?.included?.length) toUpdate = parsed.data.included;
-      const rechargerValue =
-        parsed.data?.attributes?.recharger ?? recharger;
+      const rechargerValue = parsed.data?.attributes?.recharger ?? recharger;
 
       await npcsService.updateShop(npcId, toUpdate, rechargerValue);
       toast.success("Shop updated");
@@ -232,7 +245,7 @@ export function NpcShopCard({ npcId, hasShop }: NpcShopCardProps) {
         attributes: { npcId, recharger },
         relationships: {
           commodities: {
-            data: commodities.map(c => ({ type: "commodities", id: c.id })),
+            data: commodities.map((c) => ({ type: "commodities", id: c.id })),
           },
         },
       },
@@ -261,7 +274,10 @@ export function NpcShopCard({ npcId, hasShop }: NpcShopCardProps) {
           <CollapsibleTrigger className="group flex items-center gap-2 cursor-pointer text-left">
             <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=closed]:-rotate-90" />
             <CardTitle className="text-sm font-medium">
-              Shop{hasShop && commodities.length > 0 ? ` (${commodities.length})` : ""}
+              Shop
+              {hasShop && commodities.length > 0
+                ? ` (${commodities.length})`
+                : ""}
             </CardTitle>
           </CollapsibleTrigger>
           <CardAction>
@@ -348,8 +364,10 @@ export function NpcShopCard({ npcId, hasShop }: NpcShopCardProps) {
               </p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
-                {commodities.map(commodity => {
-                  const data = itemDataById.get(commodity.attributes.templateId);
+                {commodities.map((commodity) => {
+                  const data = itemDataById.get(
+                    commodity.attributes.templateId,
+                  );
                   return (
                     <NpcShopCommodityWidget
                       key={commodity.id}
@@ -358,7 +376,9 @@ export function NpcShopCard({ npcId, hasShop }: NpcShopCardProps) {
                       tokenPrice={commodity.attributes.tokenPrice}
                       tokenTemplateId={commodity.attributes.tokenTemplateId}
                       {...(data?.name !== undefined && { name: data.name })}
-                      {...(data?.iconUrl !== undefined && { iconUrl: data.iconUrl })}
+                      {...(data?.iconUrl !== undefined && {
+                        iconUrl: data.iconUrl,
+                      })}
                       onEdit={() => setEditing(commodity)}
                       onDelete={() => setDeleteTarget(commodity)}
                     />
@@ -379,7 +399,7 @@ export function NpcShopCard({ npcId, hasShop }: NpcShopCardProps) {
 
       <NpcShopCommodityDialog
         open={editing !== null}
-        onOpenChange={open => {
+        onOpenChange={(open) => {
           if (!open) setEditing(null);
         }}
         mode="edit"
@@ -389,7 +409,7 @@ export function NpcShopCard({ npcId, hasShop }: NpcShopCardProps) {
 
       <AlertDialog
         open={deleteTarget !== null}
-        onOpenChange={open => {
+        onOpenChange={(open) => {
           if (!open) setDeleteTarget(null);
         }}
       >
@@ -397,8 +417,8 @@ export function NpcShopCard({ npcId, hasShop }: NpcShopCardProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete commodity?</AlertDialogTitle>
             <AlertDialogDescription>
-              Removes item #{deleteTarget?.attributes.templateId} from this shop.
-              This action cannot be undone.
+              Removes item #{deleteTarget?.attributes.templateId} from this
+              shop. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -418,7 +438,8 @@ export function NpcShopCard({ npcId, hasShop }: NpcShopCardProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete all commodities?</AlertDialogTitle>
             <AlertDialogDescription>
-              Removes every commodity from this shop. This action cannot be undone.
+              Removes every commodity from this shop. This action cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -442,7 +463,7 @@ export function NpcShopCard({ npcId, hasShop }: NpcShopCardProps) {
             <Textarea
               placeholder="Paste JSON data here..."
               value={bulkJson}
-              onChange={e => setBulkJson(e.target.value)}
+              onChange={(e) => setBulkJson(e.target.value)}
               className="min-h-[300px] font-mono"
             />
           </div>

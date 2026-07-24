@@ -101,7 +101,6 @@ func TestCreateCommandProvider_WithEmptySteps(t *testing.T) {
 
 	provider := CreateCommandProvider(saga)
 	messages, err := provider()
-
 	if err != nil {
 		t.Fatalf("Provider returned error: %v", err)
 	}
@@ -128,7 +127,6 @@ func TestCreateCommandProvider_WithMultipleSteps(t *testing.T) {
 
 	provider := CreateCommandProvider(saga)
 	messages, err := provider()
-
 	if err != nil {
 		t.Fatalf("Provider returned error: %v", err)
 	}

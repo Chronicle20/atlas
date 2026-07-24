@@ -25,14 +25,22 @@ func TestClassifyDiff(t *testing.T) {
 		wantPos    string // "leading" | "trailing" | "interior" | "none"
 		wantDelta  int    // len(live) - len(hand)
 	}{
-		{"leading-extra-live", fc(idasrc.Decode4, idasrc.Decode2),
-			fc(idasrc.Decode1, idasrc.Decode4, idasrc.Decode2), "leading", 1},
-		{"trailing-extra-live", fc(idasrc.Decode4, idasrc.Decode2),
-			fc(idasrc.Decode4, idasrc.Decode2, idasrc.Decode1), "trailing", 1},
-		{"interior", fc(idasrc.Decode4, idasrc.Decode2),
-			fc(idasrc.Decode4, idasrc.Decode1, idasrc.Decode2), "interior", 1},
-		{"identical", fc(idasrc.Decode4, idasrc.Decode2),
-			fc(idasrc.Decode4, idasrc.Decode2), "none", 0},
+		{
+			"leading-extra-live", fc(idasrc.Decode4, idasrc.Decode2),
+			fc(idasrc.Decode1, idasrc.Decode4, idasrc.Decode2), "leading", 1,
+		},
+		{
+			"trailing-extra-live", fc(idasrc.Decode4, idasrc.Decode2),
+			fc(idasrc.Decode4, idasrc.Decode2, idasrc.Decode1), "trailing", 1,
+		},
+		{
+			"interior", fc(idasrc.Decode4, idasrc.Decode2),
+			fc(idasrc.Decode4, idasrc.Decode1, idasrc.Decode2), "interior", 1,
+		},
+		{
+			"identical", fc(idasrc.Decode4, idasrc.Decode2),
+			fc(idasrc.Decode4, idasrc.Decode2), "none", 0,
+		},
 	}
 	for _, tc := range cases {
 		d := classifyDiff(tc.hand, tc.live)

@@ -14,8 +14,8 @@ type Model struct {
 	sentAt      time.Time
 }
 
-func (m Model) Id() uuid.UUID      { return m.id }
-func (m Model) ShopId() uuid.UUID  { return m.shopId }
+func (m Model) Id() uuid.UUID       { return m.id }
+func (m Model) ShopId() uuid.UUID   { return m.shopId }
 func (m Model) CharacterId() uint32 { return m.characterId }
 func (m Model) Content() string     { return m.content }
 func (m Model) SentAt() time.Time   { return m.sentAt }

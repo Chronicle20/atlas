@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"testing"
 
-	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	testlog "github.com/sirupsen/logrus/hooks/test"
+
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 // gms_v72 CONFIRM_SHOP_TRANSACTION (CShopDlg::OnPacket @0x6a912b, op 272;
@@ -17,10 +18,11 @@ import (
 // as v79). GENERIC_ERROR and GENERIC_ERROR_WITH_REASON share mode 14. The mode
 // table is byte-identical to the verified v79 read order and matches the v72
 // tenant template operations map (OK=0..TRADE_LIMIT=16, GENERIC_ERROR=14):
-//   0 OK(tab update) | 1/5/9 OUT_OF_STOCK* (StringPool 853) | 2/10 NOT_ENOUGH_
-//   MONEY* (5092) | 3 INVENTORY_FULL (854) | 13 NEED_MORE_ITEMS (3953) |
-//   16 TRADE_LIMIT (856 default) | 14 GENERIC_ERROR flag=0 (856) /
-//   GENERIC_ERROR_WITH_REASON flag!=0 (DecodeStr).
+//
+//	0 OK(tab update) | 1/5/9 OUT_OF_STOCK* (StringPool 853) | 2/10 NOT_ENOUGH_
+//	MONEY* (5092) | 3 INVENTORY_FULL (854) | 13 NEED_MORE_ITEMS (3953) |
+//	16 TRADE_LIMIT (856 default) | 14 GENERIC_ERROR flag=0 (856) /
+//	GENERIC_ERROR_WITH_REASON flag!=0 (DecodeStr).
 //
 // packet-audit:verify packet=npc/clientbound/NpcShopOperationOk version=gms_v72 ida=0x6a912b
 // packet-audit:verify packet=npc/clientbound/NpcShopOperationOutOfStock version=gms_v72 ida=0x6a912b

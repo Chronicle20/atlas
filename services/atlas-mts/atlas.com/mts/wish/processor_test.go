@@ -5,8 +5,9 @@ import (
 	"atlas-mts/wish"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 // resetWishes clears the wish_entries table. The shared in-memory SQLite DB is

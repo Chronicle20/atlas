@@ -41,28 +41,28 @@ func (r *RestModel) SetID(strId string) error {
 }
 
 type RequirementsRestModel struct {
-	NpcId           uint32                    `json:"npcId,omitempty"`
-	LevelMin        uint16                    `json:"levelMin,omitempty"`
-	LevelMax        uint16                    `json:"levelMax,omitempty"`
-	FameMin         int16                     `json:"fameMin,omitempty"`
-	MesoMin         uint32                    `json:"mesoMin,omitempty"`
-	MesoMax         uint32                    `json:"mesoMax,omitempty"`
-	Jobs            []uint16                  `json:"jobs,omitempty"`
-	Quests          []QuestRequirementRest    `json:"quests,omitempty"`
-	Items           []ItemRequirementRest     `json:"items,omitempty"`
-	Mobs            []MobRequirementRest      `json:"mobs,omitempty"`
-	FieldEnter      []uint32                  `json:"fieldEnter,omitempty"`
-	Pet             []uint32                  `json:"pet,omitempty"`
-	PetTamenessMin  int16                     `json:"petTamenessMin,omitempty"`
-	DayOfWeek       []string                  `json:"dayOfWeek,omitempty"`
-	Start           string                    `json:"start,omitempty"`
-	End             string                    `json:"end,omitempty"`
-	Interval        uint32                    `json:"interval,omitempty"`
-	StartScript     string                    `json:"startScript,omitempty"`
-	EndScript       string                    `json:"endScript,omitempty"`
-	InfoNumber      uint32                    `json:"infoNumber,omitempty"`
-	NormalAutoStart bool                      `json:"normalAutoStart,omitempty"`
-	CompletionCount uint32                    `json:"completionCount,omitempty"`
+	NpcId           uint32                 `json:"npcId,omitempty"`
+	LevelMin        uint16                 `json:"levelMin,omitempty"`
+	LevelMax        uint16                 `json:"levelMax,omitempty"`
+	FameMin         int16                  `json:"fameMin,omitempty"`
+	MesoMin         uint32                 `json:"mesoMin,omitempty"`
+	MesoMax         uint32                 `json:"mesoMax,omitempty"`
+	Jobs            []uint16               `json:"jobs,omitempty"`
+	Quests          []QuestRequirementRest `json:"quests,omitempty"`
+	Items           []ItemRequirementRest  `json:"items,omitempty"`
+	Mobs            []MobRequirementRest   `json:"mobs,omitempty"`
+	FieldEnter      []uint32               `json:"fieldEnter,omitempty"`
+	Pet             []uint32               `json:"pet,omitempty"`
+	PetTamenessMin  int16                  `json:"petTamenessMin,omitempty"`
+	DayOfWeek       []string               `json:"dayOfWeek,omitempty"`
+	Start           string                 `json:"start,omitempty"`
+	End             string                 `json:"end,omitempty"`
+	Interval        uint32                 `json:"interval,omitempty"`
+	StartScript     string                 `json:"startScript,omitempty"`
+	EndScript       string                 `json:"endScript,omitempty"`
+	InfoNumber      uint32                 `json:"infoNumber,omitempty"`
+	NormalAutoStart bool                   `json:"normalAutoStart,omitempty"`
+	CompletionCount uint32                 `json:"completionCount,omitempty"`
 }
 
 type QuestRequirementRest struct {

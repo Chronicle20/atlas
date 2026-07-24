@@ -17,10 +17,14 @@ import (
 	"atlas-maps/tasks"
 	"atlas-maps/visit"
 	"context"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"os"
 	"time"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
+
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
@@ -28,14 +32,14 @@ import (
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 const serviceName = "atlas-maps"
 
-var consumerGroupId = consumergroup.Resolve("Map Service")
-var dataEventsConsumerGroupId = consumergroup.Resolve("Map Spawn Registry Invalidator")
+var (
+	consumerGroupId           = consumergroup.Resolve("Map Service")
+	dataEventsConsumerGroupId = consumergroup.Resolve("Map Spawn Registry Invalidator")
+)
 
 type Server struct {
 	baseUrl string

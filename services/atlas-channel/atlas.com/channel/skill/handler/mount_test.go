@@ -6,11 +6,12 @@ import (
 	"math"
 	"testing"
 
+	"github.com/sirupsen/logrus"
+
 	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -22,10 +23,10 @@ const (
 // recordingDeps captures collaborator invocations so each of the five mount
 // cases can be asserted offline without Kafka, REST, or a session.
 type recordingDeps struct {
-	mounted     bool
-	mountedErr  error
-	equip       map[int16]int32 // slot position -> taming-mob/saddle item id
-	equipErr    map[int16]error
+	mounted      bool
+	mountedErr   error
+	equip        map[int16]int32 // slot position -> taming-mob/saddle item id
+	equipErr     map[int16]error
 	applyCalled  bool
 	applyAmount  int32
 	applyStatups []statup.Model

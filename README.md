@@ -223,7 +223,7 @@ graph LR
 | atlas-asset-expiration | Periodic cleanup of time-limited items across online sessions |
 | atlas-storage | Warehouse/storage system |
 | atlas-cashshop | Cash shop browsing and purchases |
-| atlas-gachapons | Gacha/random reward machines |
+| atlas-reward-pools | Gachapon + incubator (Pigmy Egg) reward pools |
 | atlas-pets | Pet summoning and behavior |
 | atlas-mounts | Tamed-monster mount progression (level/exp/tiredness), tiredness ticker, and revitalizer feeding |
 

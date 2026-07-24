@@ -1,0 +1,81 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2111003,
+      "startState": "checkConditions",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "3335",
+                    "type": "questStatus",
+                    "value": "1"
+                  },
+                  {
+                    "operator": "<",
+                    "referenceId": "4031695",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "warpToSnowRose"
+              },
+              {
+                "conditions": [],
+                "nextState": "showDialogue"
+              }
+            ]
+          },
+          "id": "checkConditions",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "926120300",
+                  "portalName": "out00"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "warpToSnowRose",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Emotion that I feel is real? Or just illusion coming from mechanical error?"
+          },
+          "id": "showDialogue",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "2111003",
+    "type": "npc-conversation"
+  }
+}

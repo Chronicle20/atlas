@@ -69,10 +69,7 @@ export function RequirementGrid({ requirements, phase }: RequirementGridProps) {
 
   if (requirements.jobs && requirements.jobs.length > 0) {
     blocks.push(
-      <Block
-        key="jobs"
-        label={`Jobs (${requirements.jobs.length})`}
-      >
+      <Block key="jobs" label={`Jobs (${requirements.jobs.length})`}>
         <div className="flex flex-wrap gap-1.5">
           {requirements.jobs.map((j) => (
             <Badge
@@ -265,9 +262,7 @@ export function RequirementGrid({ requirements, phase }: RequirementGridProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      {chips.length > 0 && (
-        <div className="flex flex-wrap gap-2">{chips}</div>
-      )}
+      {chips.length > 0 && <div className="flex flex-wrap gap-2">{chips}</div>}
       {blocks}
     </div>
   );
@@ -281,10 +276,7 @@ interface ChipProps {
 
 function Chip({ icon, label, value }: ChipProps) {
   return (
-    <Badge
-      variant="secondary"
-      className="gap-1.5 py-1 pl-1.5 pr-2 font-normal"
-    >
+    <Badge variant="secondary" className="gap-1.5 py-1 pl-1.5 pr-2 font-normal">
       <span className="text-muted-foreground">{icon}</span>
       <span className="font-medium">{label}:</span>
       <span>{value}</span>

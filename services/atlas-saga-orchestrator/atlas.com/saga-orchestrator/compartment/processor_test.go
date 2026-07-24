@@ -6,26 +6,27 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 )
 
 // setupTestProcessor creates a ProcessorImpl with mock dependencies for testing
 func setupTestProcessor() (*ProcessorImpl, *test.Hook) {
 	logger, hook := test.NewNullLogger()
 	logger.SetLevel(logrus.DebugLevel)
-	
+
 	ctx := context.Background()
-	
+
 	processor := &ProcessorImpl{
 		l:   logger,
 		ctx: ctx,
 	}
-	
+
 	return processor, hook
 }
 
@@ -186,7 +187,7 @@ func TestRequestCreateAndEquipAsset_PayloadTransformation(t *testing.T) {
 func TestRequestCreateAndEquipAsset_TransactionIdHandling(t *testing.T) {
 	// Setup
 	processor, hook := setupTestProcessor()
-	
+
 	// Test with different transaction IDs
 	transactionIds := []uuid.UUID{
 		uuid.New(),
@@ -206,7 +207,7 @@ func TestRequestCreateAndEquipAsset_TransactionIdHandling(t *testing.T) {
 		t.Run(fmt.Sprintf("Transaction_%d", i), func(t *testing.T) {
 			// Verify that the transaction ID is valid
 			assert.NotEqual(t, uuid.Nil, txnId)
-			
+
 			// Test that the method can handle the transaction ID
 			done := make(chan error, 1)
 			go func() {
@@ -246,7 +247,7 @@ func TestRequestCreateAndEquipAsset_InternalDelegation(t *testing.T) {
 
 	// Test that the method correctly delegates to RequestCreateItem
 	// We can verify this by testing the same logic that RequestCreateItem uses
-	
+
 	// Verify that the template ID maps to a valid inventory type
 	inventoryType, ok := inventory.TypeFromItemId(item.Id(payload.Item.TemplateId))
 	assert.True(t, ok, "Template ID should map to valid inventory type")

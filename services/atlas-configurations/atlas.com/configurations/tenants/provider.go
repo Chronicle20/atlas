@@ -1,12 +1,14 @@
 package tenants
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 func getAll(ctx context.Context, page model.Page) database.EntityProvider[model.Paged[Entity]] {

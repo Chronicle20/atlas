@@ -49,9 +49,9 @@ type Inputs struct {
 	// raw-opcode-coincidence false conflicts). May be empty; when a key is
 	// absent the routedElsewhere check falls back to opcode-occupancy.
 	RoutedNames map[string]map[RouteKey]string
-	Evidence      map[EvKey]EvidenceStatus
-	Tier1         map[string]bool // packet id -> tier-1
-	Markers       map[EvKey]MarkerStatus
+	Evidence    map[EvKey]EvidenceStatus
+	Tier1       map[string]bool // packet id -> tier-1
+	Markers     map[EvKey]MarkerStatus
 	// Families is the set of base FNames that are mode-prefix DISPATCHERS
 	// (one opcode, a leading mode byte switching to many sub-handlers with
 	// distinct bodies). An op whose registry FName is in this set is capped at

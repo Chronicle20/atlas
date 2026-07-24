@@ -9,12 +9,13 @@ import (
 	"context"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	storage2 "github.com/Chronicle20/atlas/libs/atlas-packet/storage/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 type StorageOperationMode string

@@ -7,10 +7,11 @@ import (
 	"context"
 	"testing"
 
-	channelconst "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	channelconst "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // tamingMobInfoBroadcast captures one invocation of the map-broadcast seam.
@@ -128,7 +129,7 @@ func TestStatusEvent_TickBroadcasts(t *testing.T) {
 		WorldId:     sc.WorldId(),
 		CharacterId: 1002,
 		Type:        mount2.StatusEventTypeTick,
-		Body: mount2.StatusEventBody{Level: 5, Exp: 0, Tiredness: 50},
+		Body:        mount2.StatusEventBody{Level: 5, Exp: 0, Tiredness: 50},
 	})
 
 	if len(*broadcasts) != 1 {
@@ -153,7 +154,7 @@ func TestStatusEvent_FeedBroadcasts(t *testing.T) {
 		WorldId:     sc.WorldId(),
 		CharacterId: 1003,
 		Type:        mount2.StatusEventTypeFeed,
-		Body: mount2.StatusEventBody{Level: 2, Exp: 7, Tiredness: 0},
+		Body:        mount2.StatusEventBody{Level: 2, Exp: 7, Tiredness: 0},
 	})
 
 	if len(*broadcasts) != 1 {
@@ -179,7 +180,7 @@ func TestStatusEvent_TooTiredNoticesRider(t *testing.T) {
 		WorldId:     sc.WorldId(),
 		CharacterId: 1004,
 		Type:        mount2.StatusEventTypeTick,
-		Body: mount2.StatusEventBody{Level: 5, Exp: 0, Tiredness: 99, TooTired: true},
+		Body:        mount2.StatusEventBody{Level: 5, Exp: 0, Tiredness: 99, TooTired: true},
 	})
 
 	if len(*broadcasts) != 1 {

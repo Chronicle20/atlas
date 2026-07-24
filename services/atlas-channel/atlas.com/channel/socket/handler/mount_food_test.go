@@ -4,9 +4,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/sirupsen/logrus"
+
 	mountsb "github.com/Chronicle20/atlas/libs/atlas-packet/mount/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 // TestMountFoodDecode pins the v83 wire format MountFoodHandleFunc consumes:

@@ -1,0 +1,201 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "checkBuff",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": "=",
+                      "referenceId": "2022198",
+                      "type": "buff",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "checkInventory"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "noPillUsed"
+                }
+              ]
+            },
+            "id": "checkBuff",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "You seem pretty normal, don't you? I can't detect any possible effect from my experiment on you. Go take the pill I asked you to take and show me the effects, will you?"
+            },
+            "id": "noPillUsed",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "2050004",
+                      "type": "inventorySpace",
+                      "value": "10"
+                    },
+                    {
+                      "operator": ">=",
+                      "referenceId": "2022224",
+                      "type": "inventorySpace",
+                      "value": "20"
+                    }
+                  ],
+                  "nextState": "giveRewards"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "inventoryFull"
+                }
+              ]
+            },
+            "id": "checkInventory",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Huh, your inventory is full. Free some spaces on your USE first."
+            },
+            "id": "inventoryFull",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "amount": "12500"
+                  },
+                  "type": "award_exp"
+                },
+                {
+                  "params": {
+                    "itemId": "2050004",
+                    "quantity": "10"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {
+                    "items": "2022224,2022225,2022226,2022227,2022228",
+                    "outputContextKey": "randomRewardItem",
+                    "weights": "1,1,1,1,1"
+                  },
+                  "type": "local:select_random_weighted"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "giveRandomReward"
+                }
+              ]
+            },
+            "id": "giveRewards",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "{context.randomRewardItem}",
+                    "quantity": "10"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "rewardMessage"
+                }
+              ]
+            },
+            "id": "giveRandomReward",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "You did take my experiments. Hmm, so THAT is the result of it, hehehehe... Ok, take that as compensation will you? And oh, you can #rspew that#k right away (#bright-click on the pill icon at the top-right corner of the screen#k), no worries."
+            },
+            "id": "rewardMessage",
+            "type": "dialogue"
+          }
+        ]
+      },
+      "questId": 3314,
+      "questName": "Pill Experiment Results",
+      "startStateMachine": {
+        "startState": "noDialogue",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "noDialogue",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "3314",
+    "type": "quest-conversation"
+  }
+}

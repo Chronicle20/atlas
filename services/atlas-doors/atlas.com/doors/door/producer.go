@@ -1,9 +1,10 @@
 package door
 
 import (
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 )
 
 func createdEventProvider(m Model, forCharacterId uint32) model.Provider[[]kafka.Message] {
@@ -32,8 +33,10 @@ func removedEventProvider(m Model, reason string, forCharacterId uint32) model.P
 		PairId: m.PairId(), OwnerCharacterId: m.OwnerCharacterId(), PartyId: m.PartyId(),
 		ForCharacterId: forCharacterId,
 		Type:           EventDoorStatusRemoved,
-		Body: RemovedBody{AreaDoorId: m.AreaDoorId(), TownDoorId: m.TownDoorId(),
-			TownMapId: m.TownMapId(), Slot: m.Slot(), Reason: reason},
+		Body: RemovedBody{
+			AreaDoorId: m.AreaDoorId(), TownDoorId: m.TownDoorId(),
+			TownMapId: m.TownMapId(), Slot: m.Slot(), Reason: reason,
+		},
 	}
 	return producer.SingleMessageProvider(key, &value)
 }
@@ -45,10 +48,12 @@ func slotChangedEventProvider(m Model, oldSlot byte) model.Provider[[]kafka.Mess
 		MapId: m.Field().MapId(), Instance: m.Field().Instance(),
 		PairId: m.PairId(), OwnerCharacterId: m.OwnerCharacterId(), PartyId: m.PartyId(),
 		Type: EventDoorStatusSlotChanged,
-		Body: SlotChangedBody{AreaDoorId: m.AreaDoorId(), TownDoorId: m.TownDoorId(),
+		Body: SlotChangedBody{
+			AreaDoorId: m.AreaDoorId(), TownDoorId: m.TownDoorId(),
 			TownMapId: m.TownMapId(), OldSlot: oldSlot, NewSlot: m.Slot(),
 			TownPortalId: m.TownPortalId(), TownX: m.TownX(), TownY: m.TownY(),
-			AreaX: m.AreaX(), AreaY: m.AreaY()},
+			AreaX: m.AreaX(), AreaY: m.AreaY(),
+		},
 	}
 	return producer.SingleMessageProvider(key, &value)
 }

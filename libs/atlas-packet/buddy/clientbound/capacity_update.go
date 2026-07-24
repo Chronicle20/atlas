@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const BuddyCapacityUpdateWriter = "BuddyCapacityUpdate"
@@ -21,7 +22,7 @@ func NewBuddyCapacityUpdate(mode byte, capacity byte) CapacityUpdate {
 	return CapacityUpdate{mode: mode, capacity: capacity}
 }
 
-func (m CapacityUpdate) Mode() byte       { return m.mode }
+func (m CapacityUpdate) Mode() byte        { return m.mode }
 func (m CapacityUpdate) Capacity() byte    { return m.capacity }
 func (m CapacityUpdate) Operation() string { return BuddyCapacityUpdateWriter }
 

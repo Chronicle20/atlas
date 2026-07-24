@@ -1,0 +1,10 @@
+packet: interaction/clientbound/InteractionMiniRoomBalloon
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CUser::OnMiniRoomBalloon
+    address: "0x96ffb6"
+    decompile_sha256: edb408f062ee55506d1680f3222318d619a929c7f167c80e0ac1ef3e4e04e2fa
+verifies:
+    - libs/atlas-packet/interaction/clientbound/mini_room_balloon_test.go#TestMiniRoomBalloonRoundTrip

@@ -14,9 +14,10 @@ import (
 	"atlas-merchant/visit"
 	"atlas-merchant/visitor"
 	"context"
-	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"os"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"

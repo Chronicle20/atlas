@@ -1,0 +1,37 @@
+{
+  "data": {
+    "attributes": {
+      "duration": 3600,
+      "exit": 240030102,
+      "failRequirements": [],
+      "fieldLock": "channel",
+      "name": "Dragon Rider Party Quest",
+      "questId": "dragon_rider_pq",
+      "registration": {
+        "duration": 0,
+        "mapId": 240030102,
+        "mode": "instant",
+        "type": "party"
+      },
+      "rewards": [],
+      "stages": [],
+      "startEvents": [],
+      "startRequirements": [
+        {
+          "operator": "gte",
+          "referenceId": 0,
+          "type": "party_size",
+          "value": 3
+        },
+        {
+          "operator": "gte",
+          "referenceId": 0,
+          "type": "level_min",
+          "value": 120
+        }
+      ]
+    },
+    "id": "dragon_rider_pq",
+    "type": "party-quest-definition"
+  }
+}

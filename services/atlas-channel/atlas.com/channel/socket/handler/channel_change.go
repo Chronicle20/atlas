@@ -9,14 +9,16 @@ import (
 	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
+
 	producer2 "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	channel3 "github.com/Chronicle20/atlas/libs/atlas-packet/channel/serverbound"
 
-	channel2 "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	channel2 "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 )
 
 func ChannelChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {

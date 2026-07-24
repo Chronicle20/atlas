@@ -5,7 +5,26 @@
   "Variant": "GMS/v83",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/field/clientbound/tournament_match_table.go",
-  "Rows": null,
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 5,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "match table (m_aaMatch; 0x300=768-byte raw blob, PDB-typed unsigned int[32][6]; single bulk memcpy, not per-field reads; read inside ctor helper sub_7DE42C @0x7de42c)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "state (m_nState)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
   "Verdict": 0,
   "FlatInvalid": false
 }

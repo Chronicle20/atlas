@@ -1,20 +1,22 @@
 package family
 
 import (
+	"atlas-family/kafka/message"
 	"context"
 	"errors"
 
-	"atlas-family/kafka/message"
 	familymsg "atlas-family/kafka/message/family"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 // Processor interface defines the core business logic operations
@@ -206,7 +208,6 @@ func (p *ProcessorImpl) AddJunior(buf *message.Buffer) func(worldId world.Id, se
 				result = updatedSenior
 				return nil
 			})
-
 			if err != nil {
 				// Add error event to buffer if provided
 				if buf != nil {
@@ -396,7 +397,6 @@ func (p *ProcessorImpl) BreakLink(buf *message.Buffer) func(characterId uint32, 
 
 				return nil
 			})
-
 			if err != nil {
 				return []FamilyMember{}, err
 			}

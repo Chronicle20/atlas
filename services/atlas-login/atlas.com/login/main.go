@@ -21,7 +21,7 @@ import (
 
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 
-	"github.com/Chronicle20/atlas/libs/atlas-opcodes"
+	opcodes "github.com/Chronicle20/atlas/libs/atlas-opcodes"
 	account3 "github.com/Chronicle20/atlas/libs/atlas-packet/account/serverbound"
 	charcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	charsb "github.com/Chronicle20/atlas/libs/atlas-packet/character/serverbound"
@@ -29,7 +29,10 @@ import (
 	loginSB "github.com/Chronicle20/atlas/libs/atlas-packet/login/serverbound"
 	socketcb "github.com/Chronicle20/atlas/libs/atlas-packet/socket/clientbound"
 	socketsb "github.com/Chronicle20/atlas/libs/atlas-packet/socket/serverbound"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
@@ -37,19 +40,19 @@ import (
 	restserver "github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	socket2 "github.com/Chronicle20/atlas/libs/atlas-socket"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
-const serviceName = "atlas-login"
-const consumerGroupIdTemplate = "ChannelConnect Service - %s"
+const (
+	serviceName             = "atlas-login"
+	consumerGroupIdTemplate = "ChannelConnect Service - %s"
+)
 
 func main() {
 	state := projection.NewState()
 	caughtUp := projection.NewCaughtUp()
 	serviceId := uuid.MustParse(os.Getenv("SERVICE_ID"))
-	var consumerGroupId = consumergroup.Resolve(consumerGroupIdTemplate, serviceId.String())
+	consumerGroupId := consumergroup.Resolve(consumerGroupIdTemplate, serviceId.String())
 
 	rt := service.Bootstrap(serviceName,
 		service.WithConfigProjection(consumerGroupId, func(t service.ProjectionTopics) service.Projection {
@@ -282,7 +285,7 @@ func parseDrainDeadline() time.Duration {
 
 func produceWriterProducer(l logrus.FieldLogger) func(writers []opcodes.WriterConfig, writerList []string, w socket2.OpWriter) writer.Producer {
 	return func(writers []opcodes.WriterConfig, writerList []string, w socket2.OpWriter) writer.Producer {
-		return opcodes.BuildWriterProducer(l, writers, writerList, w)
+		return opcodes.BuildWriterProducer(l, opcodes.ServiceLogin, writers, writerList, w)
 	}
 }
 
@@ -365,7 +368,7 @@ func handlerProducer(l logrus.FieldLogger) func(adapter handler.Adapter) func(ha
 			for k, v := range hm {
 				hmGeneric[k] = v
 			}
-			handlers := opcodes.BuildHandlerMap(l, handlerConfig, vmGeneric, hmGeneric, adapt)
+			handlers := opcodes.BuildHandlerMap(l, opcodes.ServiceLogin, handlerConfig, vmGeneric, hmGeneric, adapt)
 			return func() map[uint16]request.Handler {
 				return handlers
 			}

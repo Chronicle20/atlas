@@ -4,10 +4,12 @@ import (
 	"atlas-saga-orchestrator/kafka/message"
 	buffMsg "atlas-saga-orchestrator/kafka/message/buff"
 	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
 // Processor is the interface for buff operations

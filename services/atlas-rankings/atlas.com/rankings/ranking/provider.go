@@ -3,6 +3,7 @@ package ranking
 import (
 	"gorm.io/gorm"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
@@ -56,5 +57,21 @@ func cycleEntityProvider() database.EntityProvider[CycleEntity] {
 			return model.ErrorProvider[CycleEntity](err)
 		}
 		return model.FixedProvider(result)
+	}
+}
+
+// byWorldPagedEntityProvider reads one page of ranking rows for a world,
+// ordered for a leaderboard: overall_rank ASC for the overall view, or
+// job_rank ASC when a job category filter is supplied. Tenant scoping comes
+// from the GORM query callback on the context-bearing db handle.
+func byWorldPagedEntityProvider(worldId world.Id, jobCategory *uint16, page model.Page) database.EntityProvider[model.Paged[Entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[Entity]] {
+		q := db.Where("world_id = ?", worldId)
+		if jobCategory != nil {
+			q = q.Where("job_category = ?", *jobCategory).Order("job_rank ASC")
+		} else {
+			q = q.Order("overall_rank ASC")
+		}
+		return database.PagedQuery[Entity](q, page)
 	}
 }

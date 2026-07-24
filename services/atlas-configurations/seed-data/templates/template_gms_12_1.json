@@ -648,7 +648,13 @@
       {
         "opCode": "0x80",
         "writer": "SpawnNPCRequestController",
-        "services": ["channel"]
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "GRANT": 1,
+            "REVOKE": 0
+          }
+        }
       },
       {
         "opCode": "0x82",

@@ -12,6 +12,7 @@ import (
 
 type Processor interface {
 	CharacterIdsInFieldProvider(f field.Model) model.Provider[[]uint32]
+	GetCharacterField(characterId uint32) (field.Model, error)
 }
 
 type ProcessorImpl struct {
@@ -35,4 +36,12 @@ var _ Processor = (*ProcessorImpl)(nil)
 // can't see (and can't aggro/attack) players beyond the first page.
 func (p *ProcessorImpl) CharacterIdsInFieldProvider(f field.Model) model.Provider[[]uint32] {
 	return requests.DrainProvider[RestModel, uint32](p.l, p.ctx)(charactersInFieldUrl(f), 250, Extract, model.Filters[uint32]())
+}
+
+// GetCharacterField resolves the character's CURRENT field from atlas-maps —
+// the location authority — at call time. The buff event deliberately carries
+// no field (PRD §8: a hide buff outlives any single map visit, so a field
+// snapshot on the event would be stale by EXPIRED time).
+func (p *ProcessorImpl) GetCharacterField(characterId uint32) (field.Model, error) {
+	return requests.Provider[LocationRestModel, field.Model](p.l, p.ctx)(requestCharacterLocation(characterId), ExtractLocation)()
 }

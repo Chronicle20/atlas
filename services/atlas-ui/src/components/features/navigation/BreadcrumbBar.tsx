@@ -184,6 +184,13 @@ export const BreadcrumbBar = memo<BreadcrumbBarProps>(
                           </span>
                         </span>
                       </BreadcrumbPage>
+                    ) : breadcrumb?.nonNavigable ? (
+                      // Grouping node with no page — a plain label, not a link.
+                      <span className="flex items-center gap-1 sm:gap-2 text-muted-foreground">
+                        <span className="truncate max-w-[100px] sm:max-w-none">
+                          {breadcrumb?.label}
+                        </span>
+                      </span>
                     ) : (
                       <BreadcrumbLink asChild>
                         <Link

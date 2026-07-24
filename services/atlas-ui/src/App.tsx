@@ -71,9 +71,6 @@ const ItemDetailPage = lazy(() =>
 const JobsPage = lazy(() =>
   import("@/pages/JobsPage").then((m) => ({ default: m.JobsPage })),
 );
-const JobDetailPage = lazy(() =>
-  import("@/pages/JobDetailPage").then((m) => ({ default: m.JobDetailPage })),
-);
 const LoginHistoryPage = lazy(() =>
   import("@/pages/LoginHistoryPage").then((m) => ({
     default: m.LoginHistoryPage,
@@ -274,7 +271,7 @@ export function App() {
                     <Route path="/items" element={<ItemsPage />} />
                     <Route path="/items/:id" element={<ItemDetailPage />} />
                     <Route path="/jobs" element={<JobsPage />} />
-                    <Route path="/jobs/:jobId" element={<JobDetailPage />} />
+                    <Route path="/jobs/:jobId" element={<JobsPage />} />
                     <Route
                       path="/login-history"
                       element={<LoginHistoryPage />}

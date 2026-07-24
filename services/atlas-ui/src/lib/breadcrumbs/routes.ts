@@ -18,6 +18,12 @@ export interface RouteConfig {
   hidden?: boolean;
   /** Parent route pattern for hierarchical navigation */
   parent?: string;
+  /**
+   * Grouping-only node with no page of its own — rendered as a plain label,
+   * never a clickable link (e.g. the "Character" node whose only real pages
+   * are its /templates and /presets children).
+   */
+  nonNavigable?: boolean;
   /** Entity type for dynamic routes */
   entityType?: string;
   /** Custom label resolver function */
@@ -241,6 +247,10 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
     pattern: "/templates/[id]/character",
     label: "Character",
     parent: "/templates/[id]",
+    // Grouping node only — no page lives at this path (children are
+    // /character/templates and /character/presets). Render as a label,
+    // never a link.
+    nonNavigable: true,
   },
   {
     pattern: "/templates/[id]/character/templates",
@@ -249,7 +259,7 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
   },
   {
     pattern: "/templates/[id]/character/presets",
-    label: "Character Presets",
+    label: "Presets",
     parent: "/templates/[id]/character",
   },
 
@@ -284,6 +294,10 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
     pattern: "/tenants/[id]/character",
     label: "Character",
     parent: "/tenants/[id]",
+    // Grouping node only — no page lives at this path (children are
+    // /character/templates and /character/presets). Render as a label,
+    // never a link.
+    nonNavigable: true,
   },
   {
     pattern: "/tenants/[id]/character/templates",
@@ -292,7 +306,7 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
   },
   {
     pattern: "/tenants/[id]/character/presets",
-    label: "Character Presets",
+    label: "Presets",
     parent: "/tenants/[id]/character",
   },
 ];
@@ -408,6 +422,10 @@ export function getBreadcrumbsFromRoute(
     if (config.entityType && params.id) {
       breadcrumb.entityId = params.id;
       breadcrumb.entityType = config.entityType;
+    }
+
+    if (config.nonNavigable) {
+      breadcrumb.nonNavigable = true;
     }
 
     return breadcrumb;

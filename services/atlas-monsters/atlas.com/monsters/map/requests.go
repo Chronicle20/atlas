@@ -11,6 +11,7 @@ const (
 	mapResource                   = "worlds/%d/channels/%d/maps/%d"
 	mapInstanceResource           = mapResource + "/instances/%s"
 	mapInstanceCharactersResource = mapInstanceResource + "/characters/"
+	characterLocationResource     = "characters/%d/location"
 )
 
 func getBaseRequest() string {
@@ -24,4 +25,8 @@ func getBaseRequest() string {
 // query params per request.
 func charactersInFieldUrl(f field.Model) string {
 	return fmt.Sprintf(getBaseRequest()+mapInstanceCharactersResource, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String())
+}
+
+func requestCharacterLocation(characterId uint32) requests.Request[LocationRestModel] {
+	return requests.GetRequest[LocationRestModel](fmt.Sprintf(getBaseRequest()+characterLocationResource, characterId))
 }

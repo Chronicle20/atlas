@@ -1,4 +1,5 @@
 import { api } from "@/lib/api/client";
+import { fetchPaged } from "@/services/api/pagination";
 
 export interface SkillEffectStatup {
   type: string;
@@ -74,7 +75,40 @@ interface SkillResource {
 
 const BASE_PATH = "/api/data/skills";
 
+export interface SkillSearchResult {
+  id: number;
+  name: string;
+}
+
+export interface SkillSearchPage {
+  skills: SkillSearchResult[];
+  pageNumber: number;
+  lastPage: number;
+}
+
 export const skillsService = {
+  /**
+   * Case-insensitive name search over atlas-data's skill registry
+   * (`GET /data/skills?name=` — the endpoint 400s without a name/ids filter).
+   */
+  async searchSkills(
+    nameQuery: string,
+    page: { number: number; size: number },
+  ): Promise<SkillSearchPage> {
+    const result = await fetchPaged<SkillResource>(
+      `${BASE_PATH}?name=${encodeURIComponent(nameQuery)}`,
+      page,
+    );
+    return {
+      skills: result.data.map((s) => ({
+        id: parseInt(s.id, 10),
+        name: s.attributes.name,
+      })),
+      pageNumber: result.meta?.page.number ?? page.number,
+      lastPage: result.meta?.page.last ?? 1,
+    };
+  },
+
   async getSkillName(id: string): Promise<string> {
     const skill = await api.getOne<SkillResource>(`${BASE_PATH}/${id}`);
     return skill.attributes.name;

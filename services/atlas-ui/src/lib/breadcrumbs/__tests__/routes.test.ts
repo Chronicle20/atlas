@@ -123,6 +123,26 @@ describe("Route Configuration", () => {
       const lastBreadcrumb = breadcrumbs[breadcrumbs.length - 1];
       expect(lastBreadcrumb!.isCurrentPage).toBe(true);
     });
+
+    it("marks the grouping-only 'Character' node non-navigable (templates)", () => {
+      const breadcrumbs = getBreadcrumbsFromRoute(
+        "/templates/abc-123/character/presets",
+      );
+      const character = breadcrumbs.find((b) => b.label === "Character");
+      expect(character).toBeDefined();
+      expect(character!.nonNavigable).toBe(true);
+      // Real pages in the trail are not flagged.
+      const presets = breadcrumbs.find((b) => b.label === "Presets");
+      expect(presets!.nonNavigable).toBeUndefined();
+    });
+
+    it("marks the grouping-only 'Character' node non-navigable (tenants)", () => {
+      const breadcrumbs = getBreadcrumbsFromRoute(
+        "/tenants/abc-123/character/templates",
+      );
+      const character = breadcrumbs.find((b) => b.label === "Character");
+      expect(character!.nonNavigable).toBe(true);
+    });
   });
 
   describe("buildHrefFromPattern", () => {
@@ -268,6 +288,16 @@ describe("Route Configuration", () => {
       const patterns = ROUTE_CONFIGS.map((c) => c.pattern);
       const uniquePatterns = new Set(patterns);
       expect(patterns.length).toBe(uniquePatterns.size);
+    });
+  });
+
+  describe("Jobs routes (task-182 explorer)", () => {
+    it("resolves /jobs and /jobs/[id] with the job-name label resolver", () => {
+      expect(findRouteConfig("/jobs")?.label).toBe("Jobs");
+      const detail = findRouteConfig("/jobs/110");
+      expect(detail).toBeTruthy();
+      expect(detail?.parent).toBe("/jobs");
+      expect(detail?.labelResolver?.({ id: "110" })).toBe("Fighter");
     });
   });
 });

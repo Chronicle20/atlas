@@ -20,7 +20,7 @@ import { EquipmentPoolSection } from "./EquipmentPoolSection";
 import { StartingKitSection } from "./StartingKitSection";
 import { PreviewCard } from "./PreviewCard";
 import { useRegisterDetailActionBar } from "@/components/DetailActionBarContext";
-import type { EquipmentPoolKey } from "./previewLoadout";
+import { buildVariantLoadout, type EquipmentPoolKey } from "./previewLoadout";
 
 export interface TemplatesEditorAdapter {
   templates: CharacterTemplate[] | undefined;
@@ -236,13 +236,17 @@ export function CharacterTemplatesEditor({
                   renderAddDialog={(open, onOpenChange) => (
                     <AppearanceBrowserDialog
                       dimension={dimension}
-                      template={template}
-                      picks={picks}
+                      gender={template.gender}
+                      variantLoadout={(dim, id) =>
+                        buildVariantLoadout(template, picks, dim, id)
+                      }
                       open={open}
                       onOpenChange={onOpenChange}
-                      onAdd={(id) =>
+                      onSelect={(id) =>
                         dispatch({ type: "addPoolEntry", pool: dimension, id })
                       }
+                      selectMode="add"
+                      markedIds={template[dimension]}
                     />
                   )}
                 />

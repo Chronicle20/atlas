@@ -7,6 +7,7 @@ import (
 	_map2 "atlas-channel/map"
 	"atlas-channel/monster"
 	monsterinfo "atlas-channel/monster/information"
+	controllernpc "atlas-channel/npc/controller"
 	"atlas-channel/pet"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -83,12 +84,23 @@ func (p *ProcessorImpl) ForNPC(f field.Model, characterId uint32, objectId uint3
 			p.l.WithError(err).Errorf("Unable to retrieve npc moving.")
 			return
 		}
+		// Only the elected controller animates an NPC (task-176); drop
+		// non-controller (or stale/spoofed) action packets.
+		if !controllernpc.IsController(p.ctx, p.t, f, characterId, objectId) {
+			p.l.Debugf("Dropping NPC [%d] movement from non-controller [%d].", objectId, characterId)
+			return
+		}
 		op := session.Announce(p.l)(p.ctx)(p.wp)(npcpkt.NpcActionWriter)(npcpkt.NewNpcActionMove(objectId, unk, unk2, movement).Encode)
 		err = p.sp.IfPresentByCharacterId(f.Channel())(characterId, op)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to move npc [%d] for character [%d].", n.Template(), characterId)
 		}
-		return
+		// Relay to every other session (task-176): non-controllers no
+		// longer run NPC AI locally, so the controller's actions are their
+		// only source of NPC motion.
+		if rerr := _map2.NewProcessor(p.l, p.ctx).ForOtherSessionsInMap(f, characterId, op); rerr != nil {
+			p.l.WithError(rerr).Errorf("Unable to relay npc [%d] movement to field [%s].", objectId, f.Id())
+		}
 	})
 	return nil
 }

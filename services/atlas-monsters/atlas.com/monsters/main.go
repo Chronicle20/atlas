@@ -1,6 +1,8 @@
 package main
 
 import (
+	"atlas-monsters/character/hidden"
+	buffconsumer "atlas-monsters/kafka/consumer/buff"
 	data2 "atlas-monsters/kafka/consumer/data"
 	_map "atlas-monsters/kafka/consumer/map"
 	monster2 "atlas-monsters/kafka/consumer/monster"
@@ -62,16 +64,21 @@ func main() {
 	monster.InitMonsterRegistry(rc)
 	monster.InitDropTimerRegistry(rc)
 	monster.InitPuppetRegistry(rc)
+	hidden.InitRegistry(rc)
 	information.InitDataCache(rc)
 
 	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	monster2.InitConsumers(l)(cmf)(consumerGroupId)
 	_map.InitConsumers(l)(cmf)(consumerGroupId)
+	buffconsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	data2.InitConsumers(l)(cmf)(dataEventsConsumerGroupId)
 	if err := monster2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 	if err := _map.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := buffconsumer.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 	if err := data2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
@@ -98,6 +105,7 @@ func main() {
 		tasks.Register(l, ctx)(monster.NewMonsterAggroDecayTask(l, ctx, monster.AggroSweepInterval))
 		tasks.Register(l, ctx)(monster.NewMonsterSkillPickerSweepTask(l, ctx, monster.MonsterSkillPickerSweepInterval))
 		tasks.Register(l, ctx)(monster.NewMonsterRecoveryTask(l, ctx, monster.MonsterRecoveryInterval))
+		tasks.Register(l, ctx)(hidden.NewReconciliationTask(l, ctx, hidden.ReconcileInterval))
 	}
 
 	if leaderEnabled(l) {

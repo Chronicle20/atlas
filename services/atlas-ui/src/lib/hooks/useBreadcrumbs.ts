@@ -160,6 +160,7 @@ export function useBreadcrumbs(
             href: partial.href || "",
             dynamic: partial.dynamic || false,
             isCurrentPage: partial.isCurrentPage || false,
+            ...(partial.nonNavigable && { nonNavigable: true }),
             ...(partial.entityId && { entityId: partial.entityId }),
             ...(partial.entityType && { entityType: partial.entityType }),
           })) as BreadcrumbSegment[],

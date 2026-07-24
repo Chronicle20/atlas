@@ -1,6 +1,7 @@
 package monster
 
 import (
+	"atlas-monsters/character/hidden"
 	mistKafka "atlas-monsters/kafka/message/mist"
 	_map "atlas-monsters/map"
 	"atlas-monsters/monster/information"
@@ -21,6 +22,7 @@ import (
 	map2 "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -43,6 +45,8 @@ type Processor interface {
 	Create(f field.Model, input RestModel) (Model, error)
 	StartControl(uniqueId uint32, controllerId uint32) (Model, error)
 	StopControl(m Model) error
+	RelinquishControlOnHide(characterId uint32) error
+	RestoreCandidacyOnReveal(characterId uint32) error
 	FindNextController(idp model.Provider[[]uint32]) model.Operator[Model]
 	ControlOnEnter(enteringCharacterId uint32, idp model.Provider[[]uint32]) model.Operator[Model]
 	Damage(id uint32, characterId uint32, damages []uint32, attackType byte)
@@ -75,13 +79,21 @@ var testInformationLookup func(monsterId uint32) (information.Model, error)
 // When nil (production), UseSkill calls mobskill.GetByIdAndLevel normally.
 var testMobSkillLookup func(skillId uint16, level uint16) (mobskill.Model, error)
 
+// ErrNoControllerCandidate reports that an election found no eligible
+// controller — a legitimate outcome when the field is empty of visible
+// characters (e.g. only a GM-hidden character remains, FR-4.3). Callers
+// treat it as "leave uncontrolled", not an error.
+var ErrNoControllerCandidate = errors.New("no controller candidate")
+
 // ProcessorImpl implements the Processor interface
 type ProcessorImpl struct {
-	l         logrus.FieldLogger
-	ctx       context.Context
-	t         tenant.Model
-	emit      emitter
-	inFieldFn func(f field.Model) ([]uint32, error)
+	l          logrus.FieldLogger
+	ctx        context.Context
+	t          tenant.Model
+	emit       emitter
+	inFieldFn  func(f field.Model) ([]uint32, error)
+	hiddenFn   func() (map[uint32]struct{}, error)
+	locationFn func(characterId uint32) (field.Model, error)
 }
 
 // NewProcessor creates a new Processor
@@ -96,6 +108,15 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 	p.inFieldFn = func(f field.Model) ([]uint32, error) {
 		return _map.NewProcessor(p.l, p.ctx).CharacterIdsInFieldProvider(f)()
+	}
+	p.hiddenFn = func() (map[uint32]struct{}, error) {
+		if r := hidden.GetRegistry(); r != nil {
+			return r.MemberSet(p.ctx, p.t)
+		}
+		return map[uint32]struct{}{}, nil
+	}
+	p.locationFn = func(characterId uint32) (field.Model, error) {
+		return _map.NewProcessor(p.l, p.ctx).GetCharacterField(characterId)
 	}
 	return p
 }
@@ -253,50 +274,88 @@ func (p *ProcessorImpl) Create(f field.Model, input RestModel) (Model, error) {
 	return m, nil
 }
 
+// hiddenSet reads the shared GM-hidden set. On failure (or when no seam is
+// configured, e.g. tests constructing ProcessorImpl directly without
+// NewProcessor) it returns an empty set: fail-open, election degrades to
+// pre-hide-awareness behavior rather than leaving monsters uncontrolled.
+func (p *ProcessorImpl) hiddenSet() map[uint32]struct{} {
+	if p.hiddenFn == nil {
+		return map[uint32]struct{}{}
+	}
+	hs, err := p.hiddenFn()
+	if err != nil {
+		p.l.WithError(err).Warnf("Unable to read hidden-character set; controller election proceeding unfiltered.")
+		return map[uint32]struct{}{}
+	}
+	return hs
+}
+
 // getControllerCandidate finds the best character to control monsters in a field.
 // monsterX/monsterY are the controlled monster's position; if a player's puppet
 // sits within vicinity of it (distanceSq < 177777), that puppet's owner is preferred as
 // the controller over the default least-controlled candidate. When no in-vicinity
 // puppet exists the selection falls back to the unchanged least-loaded pick.
+// GM-hidden characters (FR-4.1, FR-4.2) are excluded from both the puppet-owner
+// bias and the candidate pool; if that leaves no eligible candidate,
+// ErrNoControllerCandidate is returned (FR-4.3).
 func (p *ProcessorImpl) getControllerCandidate(f field.Model, monsterX int16, monsterY int16, idp model.Provider[[]uint32]) (uint32, error) {
 	p.l.Debugf("Identifying controller candidate for monsters in field [%s].", f.Id())
 
+	hiddenSet := p.hiddenSet()
+
 	// Puppet vicinity bias: prefer the owner of an in-vicinity puppet, but only
-	// when that owner is actually a candidate in the field's character pool.
+	// when that owner is actually a candidate in the field's character pool and
+	// is not GM-hidden (FR-4.2).
 	if pr := GetPuppetRegistry(); pr != nil {
 		if owner, ok := pr.VicinityOwner(p.ctx, p.t, f, monsterX, monsterY); ok {
-			if ids, ierr := idp(); ierr == nil {
-				for _, id := range ids {
-					if id == owner {
-						p.l.Debugf("Controller candidate biased to puppet owner [%d] in field [%s].", owner, f.Id())
-						return owner, nil
+			if _, isHidden := hiddenSet[owner]; !isHidden {
+				if ids, ierr := idp(); ierr == nil {
+					for _, id := range ids {
+						if id == owner {
+							p.l.Debugf("Controller candidate biased to puppet owner [%d] in field [%s].", owner, f.Id())
+							return owner, nil
+						}
 					}
 				}
 			}
 		}
 	}
 
-	controlCounts, err := model.CollectToMap(idp, characterIdKey, zeroValue)()
+	ids, err := idp()
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to initialize controller candidate map.")
 		return 0, err
 	}
+	controlCounts := make(map[uint32]int, len(ids))
+	for _, id := range ids {
+		if _, isHidden := hiddenSet[id]; isHidden {
+			continue
+		}
+		controlCounts[id] = 0
+	}
 	err = model.ForEachSlice(p.ControlledInFieldProvider(f), func(m Model) error {
-		controlCounts[m.ControlCharacterId()] += 1
+		// Only count loads for seeded (in-pool, non-hidden) candidates —
+		// incrementing an unseeded key would insert it and let a character
+		// outside the pool (or a hidden one mid-relinquish) win the election.
+		if _, ok := controlCounts[m.ControlCharacterId()]; ok {
+			controlCounts[m.ControlCharacterId()] += 1
+		}
 		return nil
 	})
 
 	index := uint32(0)
+	first := true
 	for key, val := range controlCounts {
-		if index == 0 {
+		if first {
 			index = key
+			first = false
 		} else if val < controlCounts[index] {
 			index = key
 		}
 	}
 
-	if index == 0 {
-		return 0, errors.New("should not get here")
+	if first {
+		return 0, ErrNoControllerCandidate
 	}
 	p.l.Debugf("Controller candidate has been determined. Character [%d].", index)
 	return index, nil
@@ -306,6 +365,10 @@ func (p *ProcessorImpl) getControllerCandidate(f field.Model, monsterX int16, mo
 func (p *ProcessorImpl) FindNextController(idp model.Provider[[]uint32]) model.Operator[Model] {
 	return func(m Model) error {
 		cid, err := p.getControllerCandidate(m.Field(), m.X(), m.Y(), idp)
+		if errors.Is(err, ErrNoControllerCandidate) {
+			p.l.Debugf("No eligible controller for monster [%d] in field [%s]; leaving uncontrolled.", m.UniqueId(), m.Field().Id())
+			return nil
+		}
 		if err != nil {
 			return err
 		}
@@ -400,6 +463,74 @@ func (p *ProcessorImpl) StopControl(m Model) error {
 		_ = p.emit(EnvEventTopicMonsterStatus, stopControlStatusEventProvider(m, oldControllerId))
 	}
 	return err
+}
+
+// RelinquishControlOnHide handles a SuperGmHide APPLIED event (FR-2): mark
+// the character hidden (ALWAYS first — FR-7.2), resolve their live field,
+// then release and reassign every monster they control there. Location
+// failure (offline / in transition) skips the release; candidacy exclusion
+// still holds via the set, and the next election trigger converges.
+func (p *ProcessorImpl) RelinquishControlOnHide(characterId uint32) error {
+	if r := hidden.GetRegistry(); r != nil {
+		if err := r.Add(p.ctx, p.t, characterId); err != nil {
+			p.l.WithError(err).Warnf("Unable to mark character [%d] hidden; election exclusion degraded until reconciliation.", characterId)
+		}
+	}
+
+	f, err := p.locationFn(characterId)
+	if err != nil {
+		if errors.Is(err, requests.ErrNotFound) {
+			p.l.WithError(err).Debugf("GM-hide: character [%d] offline/absent (not found); skipping monster relinquish (set mutation applied).", characterId)
+		} else {
+			p.l.WithError(err).Warnf("GM-hide: unable to locate character [%d] (non-404); skipping monster relinquish (set mutation applied).", characterId)
+		}
+		return nil
+	}
+
+	// Snapshot ONCE before StopControl mutates registry state — same
+	// provider-re-evaluation race as handleStatusEventCharacterExit.
+	mobs, err := p.ControlledByCharacterInFieldProvider(f, characterId)()
+	if err != nil {
+		p.l.WithError(err).Warnf("GM-hide: unable to fetch mobs controlled by [%d] in field [%s]; skipping relinquish.", characterId, f.Id())
+		return nil
+	}
+	if len(mobs) == 0 {
+		p.l.Debugf("GM-hide: character [%d] controls no monsters in field [%s].", characterId, f.Id())
+		return nil
+	}
+	snapshot := model.FixedProvider(mobs)
+	_ = model.ForEachSlice(snapshot, p.StopControl, model.ParallelExecute())
+	idp := func() ([]uint32, error) { return p.inFieldFn(f) }
+	_ = model.ForEachSlice(snapshot, p.FindNextController(idp), model.ParallelExecute())
+	p.l.Debugf("GM-hide: character [%d] relinquished [%d] monsters in field [%s].", characterId, len(mobs), f.Id())
+	return nil
+}
+
+// RestoreCandidacyOnReveal handles the SuperGmHide EXPIRED event (FR-3):
+// unmark hidden (ALWAYS first), then re-run election for uncontrolled
+// monsters in the character's live field so the revealed character is
+// eligible again. No forced transfer (FR-3.2).
+func (p *ProcessorImpl) RestoreCandidacyOnReveal(characterId uint32) error {
+	if r := hidden.GetRegistry(); r != nil {
+		if err := r.Remove(p.ctx, p.t, characterId); err != nil {
+			p.l.WithError(err).Warnf("Unable to unmark character [%d] hidden; reconciliation will repair.", characterId)
+		}
+	}
+
+	f, err := p.locationFn(characterId)
+	if err != nil {
+		if errors.Is(err, requests.ErrNotFound) {
+			p.l.WithError(err).Debugf("GM-reveal: character [%d] offline/absent (not found); skipping re-election (set mutation applied).", characterId)
+		} else {
+			p.l.WithError(err).Warnf("GM-reveal: unable to locate character [%d] (non-404); skipping re-election (set mutation applied).", characterId)
+		}
+		return nil
+	}
+
+	idp := func() ([]uint32, error) { return p.inFieldFn(f) }
+	_ = model.ForEachSlice(p.NotControlledInFieldProvider(f), p.FindNextController(idp), model.ParallelExecute())
+	p.l.Debugf("GM-reveal: re-ran election for uncontrolled monsters in field [%s] after character [%d] revealed.", f.Id(), characterId)
+	return nil
 }
 
 // Damage applies a sequence of damage lines from a single attack to a monster.
@@ -513,21 +644,25 @@ func (p *ProcessorImpl) Damage(id uint32, characterId uint32, damages []uint32, 
 	// Controller-switch on DPS lead applies to bosses too. Only the decay sweep
 	// (MonsterAggroDecayTask) treats bosses specially.
 	if characterId != last.Monster.ControlCharacterId() && last.Monster.DamageLeader() == characterId {
-		inField, ferr := p.attackerInField(last.Monster.Field(), characterId)
-		if ferr != nil || !inField {
-			p.l.Debugf("FR-10: skipping controller switch for char [%d] not in field of monster [%d].", characterId, last.Monster.UniqueId())
+		if _, isHidden := p.hiddenSet()[characterId]; isHidden {
+			p.l.Debugf("Skipping DPS-leader controller switch to GM-hidden character [%d] for monster [%d].", characterId, last.Monster.UniqueId())
 		} else {
-			p.l.Debugf("Character [%d] has become damage leader for monster [%d].", characterId, last.Monster.UniqueId())
-			// FR-9: only emit STOP_CONTROL when there's actually a previous controller.
-			if last.Monster.ControlCharacterId() != 0 {
-				if err := p.StopControl(last.Monster); err != nil {
-					p.l.WithError(err).Errorf("Unable to stop [%d] from controlling monster [%d].", last.Monster.ControlCharacterId(), last.Monster.UniqueId())
-				}
-			}
-			if _, err := p.StartControl(last.Monster.UniqueId(), characterId); err != nil {
-				p.l.WithError(err).Errorf("Unable to start [%d] controlling monster [%d].", characterId, last.Monster.UniqueId())
+			inField, ferr := p.attackerInField(last.Monster.Field(), characterId)
+			if ferr != nil || !inField {
+				p.l.Debugf("FR-10: skipping controller switch for char [%d] not in field of monster [%d].", characterId, last.Monster.UniqueId())
 			} else {
-				controllerSwitched = true
+				p.l.Debugf("Character [%d] has become damage leader for monster [%d].", characterId, last.Monster.UniqueId())
+				// FR-9: only emit STOP_CONTROL when there's actually a previous controller.
+				if last.Monster.ControlCharacterId() != 0 {
+					if err := p.StopControl(last.Monster); err != nil {
+						p.l.WithError(err).Errorf("Unable to stop [%d] from controlling monster [%d].", last.Monster.ControlCharacterId(), last.Monster.UniqueId())
+					}
+				}
+				if _, err := p.StartControl(last.Monster.UniqueId(), characterId); err != nil {
+					p.l.WithError(err).Errorf("Unable to start [%d] controlling monster [%d].", characterId, last.Monster.UniqueId())
+				} else {
+					controllerSwitched = true
+				}
 			}
 		}
 	}
@@ -1429,14 +1564,6 @@ func (p *ProcessorImpl) attackerInField(f field.Model, characterId uint32) (bool
 }
 
 // Helper functions
-
-func zeroValue(_ uint32) int {
-	return 0
-}
-
-func characterIdKey(id uint32) uint32 {
-	return id
-}
 
 func IdTransformer(m Model) (uint32, error) {
 	return m.UniqueId(), nil

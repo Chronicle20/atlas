@@ -1,6 +1,7 @@
 package monster
 
 import (
+	"atlas-monsters/character/hidden"
 	"context"
 	"os"
 	"strconv"
@@ -38,6 +39,7 @@ func TestMain(m *testing.M) {
 	InitMonsterRegistry(rc)
 	InitDropTimerRegistry(rc)
 	InitPuppetRegistry(rc)
+	hidden.InitRegistry(rc)
 
 	os.Exit(m.Run())
 }

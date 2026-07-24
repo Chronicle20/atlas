@@ -1,6 +1,7 @@
 package monster
 
 import (
+	"atlas-monsters/character/hidden"
 	mistKafka "atlas-monsters/kafka/message/mist"
 	"atlas-monsters/monster/information"
 	"atlas-monsters/monster/mobskill"
@@ -310,6 +311,52 @@ func TestDamageControllerSwitchOnDpsLead(t *testing.T) {
 	}
 	if body.ActorId != 2 {
 		t.Errorf("START_CONTROL ActorId=2 expected, got %d", body.ActorId)
+	}
+}
+
+// TestDamageDPSLeadSwitchSkippedWhenLeaderHidden verifies the DPS-leader
+// controller-switch guard added in processor.go's Damage (~line 531): when
+// the character who just became damage leader is GM-hidden, the switch must
+// be skipped entirely — no STOP_CONTROL/START_CONTROL, and the monster's
+// controller stays unchanged. This is the acceptance-critical assertion
+// ("a hidden GM must NEVER be selected as controller") for the Damage path;
+// every other Damage test leaves hiddenFn nil and only exercises the
+// fail-open branch, so none of them exercise this guard. Mirrors
+// TestDamageControllerSwitchOnDpsLead but with hiddenFn reporting the new
+// leader (character 2) as hidden.
+func TestDamageDPSLeadSwitchSkippedWhenLeaderHidden(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	uniqueId := m.UniqueId()
+	// Pre-populate: character 1 controls and leads damage.
+	if _, err := r.ControlMonster(ten, uniqueId, 1); err != nil {
+		t.Fatalf("ControlMonster: %v", err)
+	}
+	if _, err := r.ApplyDamage(ten, 1, 50, uniqueId, time.Now().UnixMilli()); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	p, events := newRecordingProcessorWithBodies(t, ten)
+	// Character 2 is about to become damage leader — mark it GM-hidden.
+	p.hiddenFn = func() (map[uint32]struct{}, error) { return map[uint32]struct{}{2: {}}, nil }
+	p.Damage(uniqueId, 2, []uint32{500}, 0)
+
+	for _, e := range *events {
+		if e.Type == EventMonsterStatusStopControl || e.Type == EventMonsterStatusStartControl {
+			t.Fatalf("hidden damage leader must not trigger a controller switch, got event %q", e.Type)
+		}
+	}
+
+	got, err := r.GetMonster(ten, uniqueId)
+	if err != nil {
+		t.Fatalf("GetMonster: %v", err)
+	}
+	if got.ControlCharacterId() != 1 {
+		t.Fatalf("expected controller to remain 1 (hidden leader must not gain control), got %d", got.ControlCharacterId())
 	}
 }
 
@@ -2179,5 +2226,317 @@ func TestUseSkill_ZeroMpCon_NoMpChanged(t *testing.T) {
 
 	if len(emitted) != 0 {
 		t.Fatalf("MpCon=0 must not emit MP_CHANGED, got %d", len(emitted))
+	}
+}
+
+// testProcessorWithHidden builds a ProcessorImpl with hiddenFn stubbed to
+// return the given hidden set / error, matching the file's established
+// direct-struct-literal construction convention (see newRecordingProcessor,
+// puppet_test.go) rather than routing through NewProcessor.
+func testProcessorWithHidden(t *testing.T, ten tenant.Model, hidden map[uint32]struct{}, hiddenErr error) *ProcessorImpl {
+	t.Helper()
+	return &ProcessorImpl{
+		l:   logrus.New(),
+		ctx: context.Background(),
+		t:   ten,
+		hiddenFn: func() (map[uint32]struct{}, error) {
+			return hidden, hiddenErr
+		},
+	}
+}
+
+// TestGetControllerCandidateExcludesHidden verifies a hidden character is
+// dropped from the candidate pool (FR-4.1), leaving the visible character.
+func TestGetControllerCandidateExcludesHidden(t *testing.T) {
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	GetMonsterRegistry().Clear(context.Background())
+	GetPuppetRegistry().Clear(context.Background())
+	f := testField()
+
+	p := testProcessorWithHidden(t, ten, map[uint32]struct{}{1: {}}, nil)
+	cid, err := p.getControllerCandidate(f, 0, 0, idsProvider(1, 2))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cid != 2 {
+		t.Fatalf("expected visible character 2, got %d", cid)
+	}
+}
+
+// TestGetControllerCandidateOnlyHiddenIsSentinel verifies an all-hidden pool
+// yields ErrNoControllerCandidate (FR-4.3).
+func TestGetControllerCandidateOnlyHiddenIsSentinel(t *testing.T) {
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	GetMonsterRegistry().Clear(context.Background())
+	GetPuppetRegistry().Clear(context.Background())
+	f := testField()
+
+	p := testProcessorWithHidden(t, ten, map[uint32]struct{}{1: {}}, nil)
+	_, err := p.getControllerCandidate(f, 0, 0, idsProvider(1))
+	if !errors.Is(err, ErrNoControllerCandidate) {
+		t.Fatalf("expected ErrNoControllerCandidate, got %v", err)
+	}
+}
+
+// TestGetControllerCandidateEmptyPoolIsSentinel verifies an empty candidate
+// pool (no characters in field at all) also yields the sentinel.
+func TestGetControllerCandidateEmptyPoolIsSentinel(t *testing.T) {
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	GetMonsterRegistry().Clear(context.Background())
+	GetPuppetRegistry().Clear(context.Background())
+	f := testField()
+
+	p := testProcessorWithHidden(t, ten, map[uint32]struct{}{}, nil)
+	_, err := p.getControllerCandidate(f, 0, 0, idsProvider())
+	if !errors.Is(err, ErrNoControllerCandidate) {
+		t.Fatalf("expected ErrNoControllerCandidate, got %v", err)
+	}
+}
+
+// TestGetControllerCandidateRedisFailureFailsOpen verifies a hiddenFn error
+// degrades to unfiltered election rather than blocking control assignment
+// (design §4.5 fail-open).
+func TestGetControllerCandidateRedisFailureFailsOpen(t *testing.T) {
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	GetMonsterRegistry().Clear(context.Background())
+	GetPuppetRegistry().Clear(context.Background())
+	f := testField()
+
+	p := testProcessorWithHidden(t, ten, nil, errors.New("redis down"))
+	cid, err := p.getControllerCandidate(f, 0, 0, idsProvider(1))
+	if err != nil || cid != 1 {
+		t.Fatalf("fail-open expected candidate 1, got %d err %v", cid, err)
+	}
+}
+
+// TestControlCountsDoNotResurrectNonPoolControllers guards the pool-leak fix:
+// a monster controlled by character 9 (not in the field's candidate pool)
+// must never make 9 eligible, even though the old
+// `controlCounts[m.ControlCharacterId()] += 1` insert-on-increment pattern
+// would have inserted it into the map.
+func TestControlCountsDoNotResurrectNonPoolControllers(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+	GetPuppetRegistry().Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50)
+	if _, err := r.ControlMonster(ten, m.UniqueId(), 9); err != nil {
+		t.Fatalf("ControlMonster: %v", err)
+	}
+
+	p := testProcessorWithHidden(t, ten, map[uint32]struct{}{}, nil)
+	cid, err := p.getControllerCandidate(f, 0, 0, idsProvider(2))
+	if err != nil || cid != 2 {
+		t.Fatalf("expected 2, got %d err %v", cid, err)
+	}
+}
+
+// TestFindNextControllerNoCandidateIsNoop verifies FindNextController treats
+// ErrNoControllerCandidate as a logged no-op success, leaving the monster
+// uncontrolled instead of surfacing an error to the caller (enter/exit/
+// hide/reveal call sites all inherit this via the one choke point).
+func TestFindNextControllerNoCandidateIsNoop(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+	GetPuppetRegistry().Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50)
+
+	p := testProcessorWithHidden(t, ten, map[uint32]struct{}{1: {}}, nil)
+	if err := p.FindNextController(idsProvider(1))(m); err != nil {
+		t.Fatalf("no-candidate must be a no-op success, got %v", err)
+	}
+
+	got, err := p.GetById(m.UniqueId())
+	if err != nil {
+		t.Fatalf("GetById: %v", err)
+	}
+	if got.ControlCharacterId() != 0 {
+		t.Fatalf("mob must stay uncontrolled, controller=%d", got.ControlCharacterId())
+	}
+}
+
+// TestPuppetBiasSkipsHiddenOwner verifies the puppet-vicinity owner bias
+// (FR-4.2) skips a hidden owner, falling back to the least-loaded visible
+// candidate — mirrors puppet_test.go's TestAddPuppetBiasesController.
+func TestPuppetBiasSkipsHiddenOwner(t *testing.T) {
+	r := GetMonsterRegistry()
+	pr := GetPuppetRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+	pr.Clear(ctx)
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 9300018, 100, 100, 0, 5, 0, 100, 50)
+
+	// Puppet owner (char 1) is GM-hidden; in vicinity at (110,110): distanceSq=200 < 177777.
+	hiddenOwner := uint32(1)
+	pr.Add(ctx, ten, f, hiddenOwner, 110, 110)
+
+	p := testProcessorWithHidden(t, ten, map[uint32]struct{}{1: {}}, nil)
+	cid, err := p.getControllerCandidate(f, m.X(), m.Y(), idsProvider(1, 2))
+	if err != nil {
+		t.Fatalf("getControllerCandidate: %v", err)
+	}
+	if cid != 2 {
+		t.Fatalf("expected hidden puppet owner bias skipped, candidate 2, got %d", cid)
+	}
+}
+
+// TestRelinquishOnHideMutatesSetBeforeLocationFailure verifies the hidden-set
+// mutation applies even when the character's live field cannot be resolved
+// (FR-7.2): the set write must never be gated on a successful location
+// lookup, so election exclusion still holds while the location is retried by
+// reconciliation.
+func TestRelinquishOnHideMutatesSetBeforeLocationFailure(t *testing.T) {
+	ten := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), ten)
+	hidden.GetRegistry().Clear(ctx)
+	t.Cleanup(func() { hidden.GetRegistry().Clear(context.Background()) })
+
+	p := NewProcessor(newPickerLogger(), ctx).(*ProcessorImpl)
+	p.locationFn = func(uint32) (field.Model, error) {
+		return field.Model{}, errors.New("maps unavailable")
+	}
+
+	if err := p.RelinquishControlOnHide(77); err != nil {
+		t.Fatalf("location failure must not propagate: %v", err)
+	}
+
+	ms, err := hidden.GetRegistry().MemberSet(context.Background(), ten)
+	if err != nil {
+		t.Fatalf("MemberSet: %v", err)
+	}
+	if _, ok := ms[77]; !ok {
+		t.Fatalf("hidden-set mutation must apply even when location fails (FR-7.2)")
+	}
+}
+
+// TestRelinquishOnHideReassignsControlledMobs verifies that hiding a
+// controlling character releases and reassigns every monster it controls in
+// its field to the remaining eligible (non-hidden) candidate.
+func TestRelinquishOnHideReassignsControlledMobs(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), ten)
+	r.Clear(ctx)
+	GetPuppetRegistry().Clear(ctx)
+	hidden.GetRegistry().Clear(ctx)
+	t.Cleanup(func() { hidden.GetRegistry().Clear(context.Background()) })
+
+	f := testField()
+	mob1 := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50)
+	mob2 := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50)
+	if _, err := r.ControlMonster(ten, mob1.UniqueId(), 1); err != nil {
+		t.Fatalf("ControlMonster mob1: %v", err)
+	}
+	if _, err := r.ControlMonster(ten, mob2.UniqueId(), 1); err != nil {
+		t.Fatalf("ControlMonster mob2: %v", err)
+	}
+
+	p := NewProcessor(newPickerLogger(), ctx).(*ProcessorImpl)
+	p.locationFn = func(uint32) (field.Model, error) { return f, nil }
+	p.inFieldFn = func(field.Model) ([]uint32, error) { return []uint32{1, 2}, nil }
+
+	if err := p.RelinquishControlOnHide(1); err != nil {
+		t.Fatalf("RelinquishControlOnHide: %v", err)
+	}
+
+	for _, id := range []uint32{mob1.UniqueId(), mob2.UniqueId()} {
+		m, err := p.GetById(id)
+		if err != nil {
+			t.Fatalf("GetById(%d): %v", id, err)
+		}
+		if m.ControlCharacterId() != 2 {
+			t.Fatalf("mob [%d] expected controller 2, got %d", id, m.ControlCharacterId())
+		}
+	}
+}
+
+// TestRelinquishOnHideOnlyHiddenLeftLeavesUncontrolled verifies that when the
+// hiding character is the sole occupant of the field, released monsters are
+// left uncontrolled (FR-4.3) rather than erroring.
+func TestRelinquishOnHideOnlyHiddenLeftLeavesUncontrolled(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), ten)
+	r.Clear(ctx)
+	GetPuppetRegistry().Clear(ctx)
+	hidden.GetRegistry().Clear(ctx)
+	t.Cleanup(func() { hidden.GetRegistry().Clear(context.Background()) })
+
+	f := testField()
+	mob := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50)
+	if _, err := r.ControlMonster(ten, mob.UniqueId(), 1); err != nil {
+		t.Fatalf("ControlMonster: %v", err)
+	}
+
+	p := NewProcessor(newPickerLogger(), ctx).(*ProcessorImpl)
+	p.locationFn = func(uint32) (field.Model, error) { return f, nil }
+	p.inFieldFn = func(field.Model) ([]uint32, error) { return []uint32{1}, nil }
+
+	if err := p.RelinquishControlOnHide(1); err != nil {
+		t.Fatalf("RelinquishControlOnHide: %v", err)
+	}
+
+	m, err := p.GetById(mob.UniqueId())
+	if err != nil {
+		t.Fatalf("GetById: %v", err)
+	}
+	if m.ControlCharacterId() != 0 {
+		t.Fatalf("expected uncontrolled, got %d", m.ControlCharacterId())
+	}
+}
+
+// TestRestoreCandidacyOnRevealRemovesFromSetAndSweeps verifies that revealing
+// a character removes it from the hidden set and re-runs election over
+// uncontrolled monsters in its field, electing the now-visible character
+// (FR-3). The Remove-before-sweep ordering closes the SREM-vs-concurrent-
+// election race (design D5).
+func TestRestoreCandidacyOnRevealRemovesFromSetAndSweeps(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), ten)
+	r.Clear(ctx)
+	GetPuppetRegistry().Clear(ctx)
+	hidden.GetRegistry().Clear(ctx)
+	t.Cleanup(func() { hidden.GetRegistry().Clear(context.Background()) })
+
+	if err := hidden.GetRegistry().Add(ctx, ten, 1); err != nil {
+		t.Fatalf("Add: %v", err)
+	}
+
+	f := testField()
+	mob := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50)
+
+	p := NewProcessor(newPickerLogger(), ctx).(*ProcessorImpl)
+	p.locationFn = func(uint32) (field.Model, error) { return f, nil }
+	p.inFieldFn = func(field.Model) ([]uint32, error) { return []uint32{1}, nil }
+
+	if err := p.RestoreCandidacyOnReveal(1); err != nil {
+		t.Fatalf("RestoreCandidacyOnReveal: %v", err)
+	}
+
+	ms, err := hidden.GetRegistry().MemberSet(context.Background(), ten)
+	if err != nil {
+		t.Fatalf("MemberSet: %v", err)
+	}
+	if len(ms) != 0 {
+		t.Fatalf("set entry must be removed on reveal, got %v", ms)
+	}
+
+	m, err := p.GetById(mob.UniqueId())
+	if err != nil {
+		t.Fatalf("GetById: %v", err)
+	}
+	if m.ControlCharacterId() != 1 {
+		t.Fatalf("reveal sweep must elect the revealed character, got %d", m.ControlCharacterId())
 	}
 }

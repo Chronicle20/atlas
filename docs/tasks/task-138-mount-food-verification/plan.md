@@ -2,819 +2,319 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Promote all five serverbound `USE_MOUNT_FOOD` coverage-matrix cells (gms_v83, gms_v84, gms_v87, gms_v95, jms_v185) from ❌ to ✅ with IDA-derived byte-level evidence.
+**Goal:** Promote **all nine** serverbound `USE_MOUNT_FOOD` coverage-matrix cells (gms_v48, gms_v61, gms_v72, gms_v79, gms_v83, gms_v84, gms_v87, gms_v95, jms_v185) from ❌/`n-a` to ✅ with IDA-derived byte-level evidence — and correct the false gms_v48 `n-a`.
 
-**Architecture:** One tooling-linkage change (`candidatesFromFName` case in packet-audit) makes the packet gradeable, then five strictly-serialized per-version verification passes each produce three co-committed artifacts: an export splice, an audit report, and a `packet-audit:verify` byte-fixture marker. The matrix is regenerated (never hand-edited) after each pass.
+**Architecture:** One tooling-linkage change (`candidatesFromFName` case) makes the packet gradeable; one test-context change adds the four legacy tenant variants; then nine strictly-serialized per-version verification passes each produce co-committed artifacts (export splice, audit report, `packet-audit:verify` marker, regenerated matrix). gms_v48 additionally gains a registry op and a seed-template `MountFoodHandle` registration (its cell is currently `n-a` because the op is absent from its registry). The matrix is regenerated (never hand-edited) after each pass.
 
-**Tech Stack:** Go (libs/atlas-packet, tools/packet-audit), ida-pro-mcp (live decompilation), python3 (surgical JSON export splice).
+**Tech Stack:** Go (libs/atlas-packet, tools/packet-audit), ida-pro-mcp (session-based decompilation), python3 (surgical JSON export splice).
+
+**Scope note (2026-07-25):** v1 of this plan covered five columns; main has since brought up the legacy columns, so the row is nine wide. v48/v61/v72/v79 were added per maintainer direction. **gms_12** stays parked (no v12 IDB). **gms_92** mount food is unblocked (IDB exists, opcode `0x54` verified) but gms_92 is **not a matrix column** — closing it is an optional one-line template registration, out of this task's matrix scope unless folded in (see PRD §9).
 
 ## Global Constraints
 
-- **Strict serialization:** Tasks 2–6 run one at a time, in order v83 → v84 → v87 → v95 → jms_v185. `select_instance` is shared global state on the IDA server; all five markers land in one `food_test.go`; matrix regen is global. Never run two versions in parallel.
-- **Grounding:** every opcode and fixture byte must trace to a decompiled function address in the matching IDB. The integer in `COutPacket::COutPacket(&pkt, OPCODE)` is the opcode ground truth — distrust the IDB symbol name and the csv-seeded registry alike. Nothing may be inferred from version-shift patterns or MapleStory memory.
-- **Export hygiene:** committed exports in `docs/packets/ida-exports/` are NOT idempotent. Never regenerate or overwrite one wholesale. Harvest to a temp file, splice surgically (overwrite the one sender entry; add helpers only if absent), strip any `{op: "Delegate", ref: "COutPacket..."}` artifact.
-- **Matrix:** never hand-edit `docs/packets/audits/STATUS.md` or `status.json`; always regenerate via `go run ./tools/packet-audit matrix`. The `matrix --check` bar is **no new problems**: zero new orphan/dangling/stale/drift lines mentioning this packet, conflict count not increased (pre-existing 🟥 backlog may keep exit ≠ 0).
-- **Tier-0 cell:** `USE_MOUNT_FOOD` is `tier1: false`. Do NOT pin evidence records (`packet-audit evidence pin`) — a tier-0 cell promotes on audit report + marker alone, and a pinned record is a standing freshness liability.
-- **Commit unit is the cell:** each version's test marker + export splice + audit report + regenerated STATUS.md/status.json commit together. A marker must never land in a commit without its report (orphan-marker failure).
-- **Hard out-of-scope:** anything v92 (no template edit, no matrix column, no opcode inference); the clientbound `SetTamingMobInfo` writer; handler/processor/Kafka behavior in atlas-channel and atlas-mounts.
-- **Stop-and-ask escalations:** a send function genuinely unlocatable in an IDB after regex + byte-signature attempts; no live v84 IDA instance available. Never substitute a fname, borrow another version's address, or fake a hash.
+- **Serialize the shared mutating steps.** Tasks 3–11 run one at a time, in order v48 → v61 → v72 → v79 → v83 → v84 → v87 → v95 → jms_v185. The session-based IDA API scopes reads per `database` id, but all nine markers land in one `food_test.go`, the matrix regen is global, and v48 mutates the shared registry/template — never run two version passes in parallel.
+- **Grounding:** every opcode and fixture byte must trace to a decompiled function address in the matching IDB. The integer in `COutPacket::COutPacket(&pkt, OPCODE)` is the opcode ground truth — distrust the IDB symbol name and the csv-seeded registry alike. Nothing inferred from version-shift patterns or memory.
+- **Codec is version-invariant:** the send body is `update_time u32 · slot i16 · itemId u32` on every version (v48 decompile confirms it matches v83+). `food.go` needs **no** version gating and is not expected to change (discrepancy branch (b) is a contingency). Every byte-fixture variant asserts the same 10-byte body; the per-version evidence is the marker address, not a differing layout.
+- **Export hygiene:** committed exports in `docs/packets/ida-exports/` are NOT idempotent. Harvest to a temp file, splice surgically, strip any `{op:"Delegate", ref:"COutPacket..."}` artifact. Never regenerate wholesale.
+- **Matrix:** never hand-edit `STATUS.md`/`status.json`; always regenerate via `go run ./tools/packet-audit matrix`. The `matrix --check` bar is **no new problems** (zero new orphan/dangling/stale/drift/n-a-consistency lines mentioning this packet; conflict count not increased).
+- **Tier-0 cell:** `USE_MOUNT_FOOD` is `tier1: false`. Do NOT pin evidence records — a tier-0 cell promotes on audit report + marker alone.
+- **Commit unit is the cell:** each version's test marker + export splice + audit report + regenerated matrix (+ v48's registry/template) commit together.
+- **Parked / out-of-scope:** gms_12 (no IDB, no matrix column, no inference); gms_92 matrix work (not a column); the clientbound `SetTamingMobInfo` writer; handler/processor/Kafka behavior in atlas-channel and atlas-mounts.
+- **Stop-and-ask escalations:** a send function genuinely unlocatable in an IDB after regex + byte-signature attempts. Never substitute a fname, borrow another version's address, or fake a hash.
 - All commands run from the worktree root (`.worktrees/task-138-mount-food-verification`). Committed files must never contain literal home/absolute paths.
 
-## Baseline facts (verified against the repo at planning time)
+## Baseline facts (verified against the repo + IDBs at planning time)
 
-- Codec: `libs/atlas-packet/mount/serverbound/food.go` — `type Food struct` with `updateTime uint32, slot int16, itemId uint32`; Encode/Decode are unconditional `ts(4) LE, slot(2) LE, itemId(4) LE` (no version gates). Existing test: `TestFoodDecode` in `food_test.go` (keep it).
-- Registry rows (`docs/packets/registry/<v>.yaml`): opcode 77 (v83:2181, v84:2844), 80 (v87:2311), 83 (v95:2529), 69 (jms:2306); all `fname: CWvsContext::SendTamingMobFoodItemUseRequest`, `provenance: csv-import`.
-- Seed templates (`services/atlas-configurations/seed-data/templates/`): `MountFoodHandle` registered with `LoggedInValidator` at `0x4D` (template_gms_83_1.json:405, template_gms_84_1.json:409), `0x50` (template_gms_87_1.json:358), `0x53` (template_gms_95_1.json:238), `0x45` (template_jms_185_1.json:325). Registry and templates already agree — discrepancy branch (a) fires only if an IDB contradicts both.
-- `CWvsContext::SendTamingMobFoodItemUseRequest` is absent from all five exports in `docs/packets/ida-exports/` and has no `candidatesFromFName` case in `tools/packet-audit/cmd/run.go` — that missing case is why every cell reads "no audit report".
-- Direct analog: `CWvsContext::SendPetFoodItemUseRequest` (run.go:1069) → `{name: "Food", pkg: "pet", dir: csvpkg.DirServerbound}`; its v83 export entry is `Encode4(get_update_time) + Encode2(nPOS) + Encode4(nItemID)` — the same expected shape.
-- `pt.Variants` indices (`libs/atlas-packet/test/context.go:18`): `[0]`=GMS v28, `[1]`=GMS v83, `[2]`=GMS v87, `[3]`=GMS v95, `[4]`=JMS v185, `[5]`=GMS v84, `[6]`=GMS v86.
-- Export JSON format: top-level keys `binary, md5, generated_at, functions`; 2-space indent; trailing newline; `functions` keys are NOT sorted (append new entries at the end for a minimal diff).
-- jms mapping: version key `gms_jms_185`, export `gms_jms_185.json`, but the audit dir is `jms_v185` — the root report command maps this automatically (root.go:204–208). The jms retail dump is SMC; only the `*_U_DEVM` IDB decompiles.
+- Codec: `libs/atlas-packet/mount/serverbound/food.go` — `type Food struct { updateTime uint32; slot int16; itemId uint32 }`; Encode/Decode unconditional `ts(4) LE, slot(2) LE, itemId(4) LE` (no gates). Existing test `TestFoodDecode` stays.
+- Per-version senders (all symbol-named `has_type:true` in the DEVM IDBs where checked this turn):
+
+  | Version | IDB session (re-enumerate at exec) | Address | Opcode | Template `MountFoodHandle` | Registry op |
+  |---|---|---|---|---|---|
+  | gms_v48 | `0bb5f11a` `GMS_v48_1_DEVM` | `0x70e00b` | **0x3D (61)** decompile-verified | **absent — add at 0x3D** | **absent — add** |
+  | gms_v61 | `965202bf` `GMS_v61.1_U_DEVM` | `0x831f44` | 0x4C (76) | present `0x4C` | present `ida-discovered` |
+  | gms_v72 | `90e36cb0` `GMS_v72.1_U_DEVM` | `0x904419` | 0x4C (76) | present `0x4C` | present `ida-discovered` |
+  | gms_v79 | `9a7d3642` `GMS_v79_1_DEVM` | `0x955781` | 0x4B (75) | present `0x4B` | present `ida-discovered` |
+  | gms_v83 | derive at exec | derive | 0x4D (77) | present `0x4D` | present |
+  | gms_v84 | `79511a2a` `GMS_v84.1_U_DEVM` | derive | 0x4D (77) | present `0x4D` | present |
+  | gms_v87 | derive at exec | derive | 0x50 (80) | present `0x50` | present |
+  | gms_v95 | derive at exec | derive | 0x53 (83) | present `0x53` | present |
+  | jms_v185 | derive at exec | derive | 0x45 (69) | present `0x45` | present |
+
+- v48 decompile (`0x70e00b`): `COutPacket(v9, 61)` → `Encode4(update_time) · Encode2(slot) · Encode4(itemId)`; guard `nItemID/10000 == 226` (taming-mob food category). No collision: `0x3D` is unused in `template_gms_48_1.json` (78 handler entries).
+- `CWvsContext::SendTamingMobFoodItemUseRequest` is absent from all nine exports and has no `candidatesFromFName` case — that missing case is why every cell reads "no audit report".
+- Direct analog: `CWvsContext::SendPetFoodItemUseRequest` (run.go ~1069) → `{name:"Food", pkg:"pet", dir:DirServerbound}`; same expected shape.
+- `pt.Variants` (`test/context.go`): `[0]`v28, `[1]`v83, `[2]`v87, `[3]`v95, `[4]`jms185, `[5]`v84, `[6]`v86. **No legacy variants yet** — Task 2 appends `[7]`v48, `[8]`v61, `[9]`v72, `[10]`v79.
+- Export JSON: keys `binary, md5, generated_at, functions`; 2-space indent; trailing newline; `functions` NOT sorted (append at end).
+- jms mapping: version key `gms_jms_185`, export `gms_jms_185.json`, audit dir `jms_v185`; DEVM IDB only (retail dump is SMC).
+- n-a derivation: a cell is `n-a` (opcode -1) when the op is absent from that version's registry. Adding the op to `gms_v48.yaml` reclassifies the cell to `incomplete`; report + marker then promote it to `verified`.
 
 ---
 
 ### Task 1: Link the fname to the codec in packet-audit
 
-**Files:**
-- Modify: `tools/packet-audit/cmd/run.go` (the `candidatesFromFName` switch — insert near the mount/taming area or beside `CWvsContext::SendPetFoodItemUseRequest` at ~line 1069)
-- Modify: `tools/packet-audit/cmd/disambiguation_test.go` (extend the two existing test tables)
+**Files:** Modify `tools/packet-audit/cmd/run.go` (the `candidatesFromFName` switch, beside `CWvsContext::SendPetFoodItemUseRequest` ~line 1069); modify `tools/packet-audit/cmd/disambiguation_test.go`.
 
-**Interfaces:**
-- Produces: `candidatesFromFName("CWvsContext::SendTamingMobFoodItemUseRequest")` → `[]candidate{{name: "Food", pkg: "mount", dir: csvpkg.DirServerbound}}`. Report/marker name derives as `qualifiedWriterName("mount", "Food")` = `MountFood`, so Tasks 2–6 use report file `MountFood.{json,md}` and marker path `packet=mount/serverbound/MountFood`.
-
-- [ ] **Step 1: Add regression table entries to the existing tests**
-
-In `tools/packet-audit/cmd/disambiguation_test.go`, add to the `TestQualifiedWriterName` cases slice:
-
-```go
-		{"mount", "Food", "MountFood"},
-```
-
-and to the `TestLocateAtlasFileDisambiguatesByPkg` cases slice (this one pins that the pkg hint resolves to the serverbound mount file, not `pet/serverbound/food.go`):
-
-```go
-		{"mount", "Food", csvpkg.DirServerbound, "/mount/serverbound/"},
-```
-
-- [ ] **Step 2: Run the disambiguation tests**
-
-Run: `cd tools/packet-audit && go test ./cmd/ -run 'TestQualifiedWriterName|TestLocateAtlasFileDisambiguatesByPkg' -v`
-Expected: PASS (both helpers are generic — these entries are regression pins, not failing tests; the behavior gap is the missing switch case, which no test enumerates).
-
-- [ ] **Step 3: Add the `candidatesFromFName` case**
-
-In `tools/packet-audit/cmd/run.go`, immediately after the `CWvsContext::SendPetFoodItemUseRequest` case (~line 1069):
-
-```go
-	case "CWvsContext::SendTamingMobFoodItemUseRequest":
-		// USE_MOUNT_FOOD — taming-mob (mount) food. Codec mount/serverbound/Food
-		// (handler MountFoodHandle). ts u32 + slot i16 + itemId u32.
-		return []candidate{{name: "Food", pkg: "mount", dir: csvpkg.DirServerbound}}
-```
-
-- [ ] **Step 4: Build, vet, and full-package test**
-
-Run: `cd tools/packet-audit && go build ./... && go vet ./... && go test ./...`
-Expected: all clean/PASS.
-
-- [ ] **Step 5: Confirm no matrix regression**
-
-Run from worktree root: `go run ./tools/packet-audit matrix --check 2>&1 | grep -i "mount\|MountFood"`
-Expected: no orphan/dangling/stale/drift lines mentioning MountFood (cells stay ❌ "no audit report" until Task 2 — the linkage only takes effect once the fname exists in an export).
-
-- [ ] **Step 6: Commit**
-
-```bash
-git add tools/packet-audit/cmd/run.go tools/packet-audit/cmd/disambiguation_test.go
-git commit -m "feat(packet-audit): link SendTamingMobFoodItemUseRequest to mount/serverbound Food"
-```
+- [ ] **Step 1: Regression table entries.** In `disambiguation_test.go` add `{"mount", "Food", "MountFood"}` to `TestQualifiedWriterName` and `{"mount", "Food", csvpkg.DirServerbound, "/mount/serverbound/"}` to `TestLocateAtlasFileDisambiguatesByPkg`.
+- [ ] **Step 2: Run** `cd tools/packet-audit && go test ./cmd/ -run 'TestQualifiedWriterName|TestLocateAtlasFileDisambiguatesByPkg' -v` → PASS.
+- [ ] **Step 3: Add the case** in `run.go` after `SendPetFoodItemUseRequest`:
+  ```go
+  case "CWvsContext::SendTamingMobFoodItemUseRequest":
+      // USE_MOUNT_FOOD — taming-mob (mount) food. Codec mount/serverbound/Food
+      // (handler MountFoodHandle). update_time u32 + slot i16 + itemId u32.
+      return []candidate{{name: "Food", pkg: "mount", dir: csvpkg.DirServerbound}}
+  ```
+- [ ] **Step 4: Build/vet/test** `cd tools/packet-audit && go build ./... && go vet ./... && go test ./...` → clean/PASS.
+- [ ] **Step 5: Commit.**
+  ```bash
+  git add tools/packet-audit/cmd/run.go tools/packet-audit/cmd/disambiguation_test.go
+  git commit -m "feat(packet-audit): link SendTamingMobFoodItemUseRequest to mount/serverbound Food"
+  ```
 
 ---
 
-### Task 2: Verify gms_v83 (opcode 77 / 0x4D expected)
+### Task 2: Add the four legacy tenant variants to the test context
 
-**Files:**
-- Modify: `docs/packets/ida-exports/gms_v83.json` (splice sender + helpers)
-- Create: `docs/packets/audits/gms_v83/MountFood.json`, `docs/packets/audits/gms_v83/MountFood.md` (copied from report-gen output)
-- Modify: `libs/atlas-packet/mount/serverbound/food_test.go` (new `TestFoodByteFixture` + v83 marker)
-- Modify (regenerated): `docs/packets/audits/STATUS.md`, `docs/packets/audits/status.json`
-- Modify only if branch (b) fires: `libs/atlas-packet/mount/serverbound/food.go`
+**Files:** Modify `libs/atlas-packet/test/context.go`.
 
-**Interfaces:**
-- Consumes: Task 1's `candidatesFromFName` case (report name `MountFood`).
-- Produces: `TestFoodByteFixture` with a `cases []struct{ variant pt.TenantVariant; want []byte }` table that Tasks 3–6 append one case each to, plus the marker block above it that Tasks 3–6 append one marker line each to.
-
-- [ ] **Step 1: Select the v83 IDA instance**
-
-Use `mcp__ida-pro__list_instances`, find the instance whose loaded IDB is GMS v83 (the checked-in export header says `"binary": "MapleStory_dump.exe (v83 Me)"`, md5 `80ff438ced539b831f0d2ed95099275d`), then `mcp__ida-pro__select_instance(port)`. Ports vary by launch order — never hardcode. Quote the instance metadata in your notes before reading anything.
-
-- [ ] **Step 2: Locate the send function**
-
-Run `mcp__ida-pro__func_query` with `name_regex: "SendTamingMobFoodItemUseRequest"`.
-- Found → record the address and go to Step 3.
-- Not found → the sender is unnamed: locate it via `mcp__ida-pro__find_bytes` with signature `6A 4D 8D 8D ?? ?? ?? ?? E8` (push 0x4D; lea ecx; call COutPacket ctor), decompile candidates, structure-match against the pet-food twin shape (`get_update_time` + Encode2 + Encode4), then `mcp__ida-pro__rename` it `CWvsContext::SendTamingMobFoodItemUseRequest` and `mcp__ida-pro__idb_save`. Unnamed ≠ unnameable — naming is producible work.
-- Still unlocatable after both attempts → STOP AND ASK, reporting the exact regex and byte-signature searches attempted. Never substitute a fname.
-
-- [ ] **Step 3: Decompile and record ground truth**
-
-`mcp__ida-pro__decompile` the function (descend into helper writes, address-based). Write down, quoting the actual decompiled lines:
-1. The integer in `COutPacket::COutPacket(&pkt, OPCODE)` — must be 77 (0x4D) to match registry `docs/packets/registry/gms_v83.yaml:2183` and template `template_gms_83_1.json:405`.
-2. The full ordered encode list with widths (expected: `Encode4(update-time), Encode2(slot/nPOS), Encode4(nItemID)`).
-
-Discrepancy branches (handle NOW, in this task, before proceeding):
-- **(a) opcode ≠ 77:** fix `docs/packets/registry/gms_v83.yaml` AND `services/atlas-configurations/seed-data/templates/template_gms_83_1.json` to the IDB value, as their own commit `fix(packets): correct USE_MOUNT_FOOD gms_v83 opcode to 0x<hex> per IDB`, and record in the task notes that the PR must call out that existing v83 tenants need a live config patch (new-opcodes-not-in-live-config incident class).
-- **(b) encode order ≠ ts u32/slot i16/itemId u32:** fix `libs/atlas-packet/mount/serverbound/food.go` Encode+Decode FIRST as its own commit, version-gating via `tenant.MustFromContext(ctx).MajorVersion()` branches per existing atlas-packet patterns. Gate rule: a shape that differs between v83 and v87 gates at `>= 87`, NOT `> 83` (v84 matches v83 unless the v84 IDB says otherwise — Task 3 confirms). Update `TestFoodDecode` in the same commit. atlas-channel handler wiring changes only if the decoded field set changes meaning.
-- **(c) function absent from the IDB entirely:** STOP AND ASK with the search evidence.
-
-- [ ] **Step 4: Harvest the sender to a temp export**
-
-Write the roster file, then run a TARGETED harvest (empty `-prior-export` = harvest only the roster fnames):
-
-```bash
-printf 'CWvsContext::SendTamingMobFoodItemUseRequest\n' > /tmp/mountfood_roster.md
-go run ./tools/packet-audit export \
-  -version gms_v83 \
-  -ida-url http://192.168.20.3:13337/mcp -ida-port <v83 port from Step 1> \
-  -prior-export "" -pending /tmp/mountfood_roster.md \
-  -descent-depth 12 \
-  -output /tmp/harvest_gms_v83.json
-```
-
-Expected: `/tmp/harvest_gms_v83.json` contains a `functions` entry for the fname whose `address` matches Step 2 and whose `calls` match the Step 3 encode order.
-
-- [ ] **Step 5: Surgically splice into the committed export**
-
-```bash
-python3 - <<'EOF'
-import json
-
-COMMITTED = 'docs/packets/ida-exports/gms_v83.json'
-HARVEST = '/tmp/harvest_gms_v83.json'
-FNAME = 'CWvsContext::SendTamingMobFoodItemUseRequest'
-
-c = json.load(open(COMMITTED))
-h = json.load(open(HARVEST))
-
-entry = h['functions'][FNAME]
-# Strip the COutPacket-delegate harvest artifact (report-gen killer): the
-# packet ctor is not a wire write; other versions' sender entries omit it.
-entry['calls'] = [x for x in (entry.get('calls') or [])
-                  if not (x.get('op') == 'Delegate' and 'COutPacket' in (x.get('ref') or ''))]
-c['functions'][FNAME] = entry  # overwrite-or-add the one sender
-
-# Helpers: absent-only (never overwrite an existing committed entry).
-added = [FNAME]
-for k, v in h['functions'].items():
-    if k != FNAME and k not in c['functions']:
-        c['functions'][k] = v
-        added.append(k)
-
-with open(COMMITTED, 'w') as f:
-    f.write(json.dumps(c, indent=2) + '\n')
-print('spliced:', added)
-EOF
-git diff --stat docs/packets/ida-exports/gms_v83.json
-```
-
-Expected: diff shows ONLY additions at the end of the `functions` map (plus the one closing-brace context line). If any existing key changed, `git checkout` the file and redo the splice — that is the export-drift failure mode.
-
-- [ ] **Step 6: Generate the audit report and copy it in**
-
-```bash
-go run ./tools/packet-audit \
-  -csv-clientbound "docs/packets/MapleStory Ops - ClientBound.csv" \
-  -csv-serverbound "docs/packets/MapleStory Ops - ServerBound.csv" \
-  -template services/atlas-configurations/seed-data/templates/template_gms_83_1.json \
-  -ida-source docs/packets/ida-exports/gms_v83.json \
-  -output /tmp/rpt_gms_v83
-grep -o '"verdict": *"[^"]*"' /tmp/rpt_gms_v83/gms_v83/MountFood.json
-cp /tmp/rpt_gms_v83/gms_v83/MountFood.json /tmp/rpt_gms_v83/gms_v83/MountFood.md docs/packets/audits/gms_v83/
-```
-
-Expected: verdict is `Match`. A non-Match is a real divergence — go back to Step 3's discrepancy branches, fix, re-generate. Do not copy a non-Match report in and do not proceed with a non-Match.
-
-- [ ] **Step 7: Write the byte-fixture test with the v83 marker**
-
-In `libs/atlas-packet/mount/serverbound/food_test.go`, add below the existing `TestFoodDecode` (which stays — it pins the handler-facing decode contract). Fill `<v83 addr>` with the Step 2 address (same value the export entry carries — the marker's `ida=` must match the audit report address or `matrix --check` flags an orphan marker). The `want` bytes below assume the expected v83 layout; if branch (b) fired, hand-compute them from the IDB-derived order instead, one comment per field citing its decompile line:
-
-```go
-// TestFoodByteFixture pins the exact serverbound wire bytes per version,
-// hand-computed from each version's decompiled send order (full body, never
-// opcode-only). IDA evidence (COutPacket opcode + encode order):
-//   v83 SendTamingMobFoodItemUseRequest@0x<v83 addr>: op 0x4D;
-//       Encode4(get_update_time) + Encode2(nPOS) + Encode4(nItemID)
-// packet-audit:verify packet=mount/serverbound/MountFood version=gms_v83 ida=0x<v83 addr>
-func TestFoodByteFixture(t *testing.T) {
-	// ts=100 (64 00 00 00), slot=3 (03 00), itemId=2000000 (80 84 1E 00) — LE.
-	cases := []struct {
-		variant pt.TenantVariant
-		want    []byte
-	}{
-		{pt.Variants[1], []byte{0x64, 0x00, 0x00, 0x00, 0x03, 0x00, 0x80, 0x84, 0x1E, 0x00}}, // GMS v83
-	}
-	for _, tc := range cases {
-		t.Run(tc.variant.Name, func(t *testing.T) {
-			ctx := pt.CreateContext(tc.variant.Region, tc.variant.MajorVersion, tc.variant.MinorVersion)
-			input := Food{updateTime: 100, slot: 3, itemId: 2000000}
-			got := input.Encode(logrus.New(), ctx)(nil)
-			if !bytes.Equal(got, tc.want) {
-				t.Errorf("bytes: got % X, want % X", got, tc.want)
-			}
-			output := Food{}
-			req := request.Request(tc.want)
-			reader := request.NewRequestReader(&req, 0)
-			output.Decode(logrus.New(), ctx)(&reader, nil)
-			if output.UpdateTime() != 100 || output.Slot() != 3 || output.ItemId() != 2000000 {
-				t.Errorf("decode round-trip mismatch: %s", output.String())
-			}
-		})
-	}
-}
-```
-
-Add the imports the file doesn't have yet: `bytes` and `pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"` (`context`, `testing`, `request`, `logrus` are already imported).
-
-- [ ] **Step 8: Run the test**
-
-Run: `cd libs/atlas-packet && go test -race ./mount/... -v`
-Expected: `TestFoodByteFixture/GMS_v83` and `TestFoodDecode` PASS.
-
-- [ ] **Step 9: Regenerate the matrix and verify promotion**
-
-```bash
-go run ./tools/packet-audit matrix
-go run ./tools/packet-audit matrix --check 2>&1 | grep -i "mount\|MountFood" || true
-grep "USE_MOUNT_FOOD" docs/packets/audits/STATUS.md
-```
-
-Expected: the gms_v83 cell is ✅ (others still ❌); no orphan/dangling/stale/drift lines mentioning MountFood; conflict count not increased vs before this task (compare `matrix --check` tail summaries).
-
-- [ ] **Step 10: Commit the cell atomically**
-
-```bash
-git add libs/atlas-packet/mount/serverbound/food_test.go \
-  docs/packets/ida-exports/gms_v83.json \
-  docs/packets/audits/gms_v83/MountFood.json docs/packets/audits/gms_v83/MountFood.md \
-  docs/packets/audits/STATUS.md docs/packets/audits/status.json
-git commit -m "verify(packets): USE_MOUNT_FOOD gms_v83 byte-verified (0x4D @<v83 addr>)"
-```
+- [ ] **Step 1:** Append (never insert — positional `Variants[N]` refs must hold) after the existing `[6]`=GMS v86 entry:
+  ```go
+  {Name: "GMS v48", Region: "GMS", MajorVersion: 48, MinorVersion: 1}, // [7]
+  {Name: "GMS v61", Region: "GMS", MajorVersion: 61, MinorVersion: 1}, // [8]
+  {Name: "GMS v72", Region: "GMS", MajorVersion: 72, MinorVersion: 1}, // [9]
+  {Name: "GMS v79", Region: "GMS", MajorVersion: 79, MinorVersion: 1}, // [10]
+  ```
+- [ ] **Step 2: Build** `cd libs/atlas-packet && go build ./... && go vet ./...` → clean. (No behavior yet; existing positional refs unchanged.)
+- [ ] **Step 3: Commit.**
+  ```bash
+  git add libs/atlas-packet/test/context.go
+  git commit -m "test(atlas-packet): add v48/v61/v72/v79 tenant variants for legacy fixtures"
+  ```
 
 ---
 
-### Task 3: Verify gms_v84 (opcode 77 / 0x4D expected)
+## Canonical per-version verify procedure (Tasks 3–11)
 
-**Files:**
-- Modify: `docs/packets/ida-exports/gms_v84.json`
-- Create: `docs/packets/audits/gms_v84/MountFood.json`, `docs/packets/audits/gms_v84/MountFood.md`
-- Modify: `libs/atlas-packet/mount/serverbound/food_test.go` (append v84 case + marker)
-- Modify (regenerated): `docs/packets/audits/STATUS.md`, `docs/packets/audits/status.json`
+Each version task below specifies its **parameters** and any **special steps**, then runs this procedure. Substitute the parameters (`$VER` version key, `$SESSION` IDB session, `$ADDR` send-fn address, `$OP` opcode hex, `$EXPORT` export filename, `$AUDITDIR` audit dir, `$TMPL` template file, `$VARIDX` variant index, `$WANT` fixture bytes).
 
-**Interfaces:**
-- Consumes: Task 2's `TestFoodByteFixture` cases table and marker block.
+**A. Select + verify session.** `mcp__ida-pro__idb_list` → confirm `$SESSION` (or its relaunched equivalent) is the target version; quote metadata before reading. Never hardcode a session id.
 
-- [ ] **Step 1: Select the v84 IDA instance**
+**B. Locate + decompile.** `mcp__ida-pro__func_query` `name_regex:"SendTamingMobFoodItemUseRequest"` on `database:$SESSION`. Legacy four are pre-named at `$ADDR`. If unnamed (only possible for some original-five): `mcp__ida-pro__find` bytes `6A <op> 8D 8D ?? ?? ?? ?? E8`, structure-match to the pet-food twin, `rename` + `idb_save`. Unlocatable → STOP AND ASK. Decompile; record the `COutPacket(&pkt, N)` integer (must equal `$OP`) and the ordered encode list. Handle discrepancy branches (a)/(b)/(c) — see the decision table — before proceeding.
 
-`mcp__ida-pro__list_instances` → find the GMS v84.1 IDB → `mcp__ida-pro__select_instance(port)`. Quote the instance metadata. **If no v84 instance exists and one cannot be brought up, STOP AND ASK — a missing IDB is a genuine blocker.** The v84 cell must be derived from the v84 binary; never copy v83's bytes or address (the PRD forbids assumed byte-identity even if the answer turns out identical).
-
-- [ ] **Step 2: Locate the send function**
-
-`mcp__ida-pro__func_query` with `name_regex: "SendTamingMobFoodItemUseRequest"`. If unnamed: `mcp__ida-pro__find_bytes` signature `6A 4D 8D 8D ?? ?? ?? ?? E8`, decompile candidates, structure-match to the v83 twin from Task 2, `mcp__ida-pro__rename` + `mcp__ida-pro__idb_save`. Still unlocatable → STOP AND ASK with search evidence.
-
-- [ ] **Step 3: Decompile and record ground truth**
-
-Record the `COutPacket` opcode integer (expected 77 per `docs/packets/registry/gms_v84.yaml:2846` / `template_gms_84_1.json:409`) and the ordered encode list, quoting decompiled lines. Discrepancy branches, handled now in this task:
-- **(a) opcode ≠ 77:** fix `docs/packets/registry/gms_v84.yaml` + `template_gms_84_1.json` in their own commit; note the live-tenant config-patch callout for the PR.
-- **(b) order ≠ ts u32/slot i16/itemId u32:** version-gate `food.go` FIRST as its own commit. If v84 diverges from v83 here, the gate is `MajorVersion() >= 84` (the summon-attack precedent), not `>= 87` — the gate boundary is whatever the two IDBs prove.
-- **(c) absent:** STOP AND ASK.
-
-- [ ] **Step 4: Harvest to a temp export**
-
+**C. Harvest to temp.**
 ```bash
 printf 'CWvsContext::SendTamingMobFoodItemUseRequest\n' > /tmp/mountfood_roster.md
-go run ./tools/packet-audit export \
-  -version gms_v84 \
-  -ida-url http://192.168.20.3:13337/mcp -ida-port <v84 port from Step 1> \
-  -prior-export "" -pending /tmp/mountfood_roster.md \
-  -descent-depth 12 \
-  -output /tmp/harvest_gms_v84.json
+go run ./tools/packet-audit export -version $VER \
+  -ida-url http://192.168.20.3:13337/mcp -ida-port <port for $SESSION> \
+  -prior-export "" -pending /tmp/mountfood_roster.md -descent-depth 12 \
+  -output /tmp/harvest_$VER.json
 ```
 
-- [ ] **Step 5: Surgically splice into the committed export**
-
-Same script as Task 2 Step 5 with `COMMITTED = 'docs/packets/ida-exports/gms_v84.json'` and `HARVEST = '/tmp/harvest_gms_v84.json'`:
-
+**D. Surgical splice** (parameterized; strips the COutPacket-delegate artifact, adds absent helpers only):
 ```bash
-python3 - <<'EOF'
-import json
-
-COMMITTED = 'docs/packets/ida-exports/gms_v84.json'
-HARVEST = '/tmp/harvest_gms_v84.json'
+VER=$VER EXPORT=docs/packets/ida-exports/$EXPORT HARVEST=/tmp/harvest_$VER.json python3 - <<'EOF'
+import json, os
+COMMITTED, HARVEST = os.environ['EXPORT'], os.environ['HARVEST']
 FNAME = 'CWvsContext::SendTamingMobFoodItemUseRequest'
-
-c = json.load(open(COMMITTED))
-h = json.load(open(HARVEST))
-
+c = json.load(open(COMMITTED)); h = json.load(open(HARVEST))
 entry = h['functions'][FNAME]
 entry['calls'] = [x for x in (entry.get('calls') or [])
                   if not (x.get('op') == 'Delegate' and 'COutPacket' in (x.get('ref') or ''))]
 c['functions'][FNAME] = entry
-
 added = [FNAME]
 for k, v in h['functions'].items():
     if k != FNAME and k not in c['functions']:
-        c['functions'][k] = v
-        added.append(k)
-
-with open(COMMITTED, 'w') as f:
-    f.write(json.dumps(c, indent=2) + '\n')
+        c['functions'][k] = v; added.append(k)
+open(COMMITTED, 'w').write(json.dumps(c, indent=2) + '\n')
 print('spliced:', added)
 EOF
-git diff --stat docs/packets/ida-exports/gms_v84.json
+git diff --stat docs/packets/ida-exports/$EXPORT   # additions only; if an existing key changed, checkout + redo
 ```
 
-Expected: additions only; existing keys untouched.
-
-- [ ] **Step 6: Generate and copy the report**
-
+**E. Generate + copy report.**
 ```bash
 go run ./tools/packet-audit \
   -csv-clientbound "docs/packets/MapleStory Ops - ClientBound.csv" \
   -csv-serverbound "docs/packets/MapleStory Ops - ServerBound.csv" \
-  -template services/atlas-configurations/seed-data/templates/template_gms_84_1.json \
-  -ida-source docs/packets/ida-exports/gms_v84.json \
-  -output /tmp/rpt_gms_v84
-grep -o '"verdict": *"[^"]*"' /tmp/rpt_gms_v84/gms_v84/MountFood.json
-cp /tmp/rpt_gms_v84/gms_v84/MountFood.json /tmp/rpt_gms_v84/gms_v84/MountFood.md docs/packets/audits/gms_v84/
+  -template $TMPL -ida-source docs/packets/ida-exports/$EXPORT -output /tmp/rpt_$VER
+grep -o '"verdict": *"[^"]*"' /tmp/rpt_$VER/$AUDITDIR/MountFood.json   # expect Match
+cp /tmp/rpt_$VER/$AUDITDIR/MountFood.json /tmp/rpt_$VER/$AUDITDIR/MountFood.md docs/packets/audits/$AUDITDIR/
 ```
+A non-Match is a real divergence → back to step B's branches; do not copy a non-Match in.
 
-Expected: verdict `Match`; non-Match → back to Step 3 branches.
+**F. Fixture case + marker.** In `libs/atlas-packet/mount/serverbound/food_test.go`, add the evidence-comment line `//   $VER ...@0x$ADDR: op $OP; Encode4(update_time)·Encode2(slot)·Encode4(itemId)`, the marker `// packet-audit:verify packet=mount/serverbound/MountFood version=$VER ida=0x$ADDR`, and the `cases` entry `{pt.Variants[$VARIDX], $WANT}, // $VER`. (Task 3 creates `TestFoodByteFixture`; Tasks 4–11 append.)
 
-- [ ] **Step 7: Append the v84 fixture case and marker**
+**G. Test.** `cd libs/atlas-packet && go test -race ./mount/... -v` → the new subtest + `TestFoodDecode` PASS.
 
-In `food_test.go`: add to the evidence comment block a line `//   v84 SendTamingMobFoodItemUseRequest@0x<v84 addr>: op 0x4D; <derived order>`, add below the v83 marker:
-
-```go
-// packet-audit:verify packet=mount/serverbound/MountFood version=gms_v84 ida=0x<v84 addr>
-```
-
-and append to the `cases` slice (bytes per the v84-derived order — identical to v83's only if the v84 decompile says so):
-
-```go
-		{pt.Variants[5], []byte{0x64, 0x00, 0x00, 0x00, 0x03, 0x00, 0x80, 0x84, 0x1E, 0x00}}, // GMS v84
-```
-
-- [ ] **Step 8: Run the test**
-
-Run: `cd libs/atlas-packet && go test -race ./mount/... -v`
-Expected: `TestFoodByteFixture/GMS_v84` PASS (plus v83 still green).
-
-- [ ] **Step 9: Regenerate the matrix and verify promotion**
-
+**H. Regen + verify + commit.**
 ```bash
 go run ./tools/packet-audit matrix
 go run ./tools/packet-audit matrix --check 2>&1 | grep -i "mount\|MountFood" || true
 grep "USE_MOUNT_FOOD" docs/packets/audits/STATUS.md
-```
-
-Expected: gms_v83 ✅ and gms_v84 ✅; no new problem lines; conflict count unchanged.
-
-- [ ] **Step 10: Commit**
-
-```bash
-git add libs/atlas-packet/mount/serverbound/food_test.go \
-  docs/packets/ida-exports/gms_v84.json \
-  docs/packets/audits/gms_v84/MountFood.json docs/packets/audits/gms_v84/MountFood.md \
+git add libs/atlas-packet/mount/serverbound/food_test.go docs/packets/ida-exports/$EXPORT \
+  docs/packets/audits/$AUDITDIR/MountFood.json docs/packets/audits/$AUDITDIR/MountFood.md \
   docs/packets/audits/STATUS.md docs/packets/audits/status.json
-git commit -m "verify(packets): USE_MOUNT_FOOD gms_v84 byte-verified (0x4D @<v84 addr>)"
+git commit -m "verify(packets): USE_MOUNT_FOOD $VER byte-verified ($OP @0x$ADDR)"
 ```
+Expected: the `$VER` cell flips ✅; no new problem lines; conflict count unchanged.
+
+**Discrepancy decision table (step B):**
+
+| Finding | Action (same task, same branch) |
+|---|---|
+| (a) opcode ≠ registry/template | Fix `docs/packets/registry/<v>.yaml` + `$TMPL` to the IDB value as its own commit; note the live-tenant config-patch callout for the PR. |
+| (b) order ≠ update_time u32/slot i16/itemId u32 | Version-gate `food.go` Encode+Decode FIRST as its own commit (`MajorAtLeast(N)` per atlas-packet patterns; update `TestFoodDecode`). **Not expected** (§version-invariant). |
+| (c) function absent from the IDB | STOP AND ASK with the exact search evidence. |
+
+The fixture body is `$WANT = []byte{0x64,0x00,0x00,0x00, 0x03,0x00, 0x80,0x84,0x1E,0x00}` for **every** version (ts=100, slot=3, itemId=2000000, LE) — identical because the codec is version-invariant; only the marker address differs. If branch (b) ever fired, hand-compute `$WANT` from that version's decompile instead.
 
 ---
 
-### Task 4: Verify gms_v87 (opcode 80 / 0x50 expected)
+### Task 3: Verify gms_v48 — **correction pass** (opcode 0x3D)
 
-**Files:**
-- Modify: `docs/packets/ida-exports/gms_v87.json`
-- Create: `docs/packets/audits/gms_v87/MountFood.json`, `docs/packets/audits/gms_v87/MountFood.md`
-- Modify: `libs/atlas-packet/mount/serverbound/food_test.go` (append v87 case + marker)
-- Modify (regenerated): `docs/packets/audits/STATUS.md`, `docs/packets/audits/status.json`
+Parameters: `$VER=gms_v48`, `$SESSION=0bb5f11a`, `$ADDR=70e00b`, `$OP=0x3D`, `$EXPORT=gms_v48.json`, `$AUDITDIR=gms_v48`, `$TMPL=services/atlas-configurations/seed-data/templates/template_gms_48_1.json`, `$VARIDX=7`.
 
-**Interfaces:**
-- Consumes: Task 2's `TestFoodByteFixture` cases table and marker block.
+**Special steps — run these BEFORE procedure step E (report needs the registry op + template registration to grade the cell):**
 
-- [ ] **Step 1: Select the v87 IDA instance**
+- [ ] **S1: Add the registry op.** In `docs/packets/registry/gms_v48.yaml`, add the `USE_MOUNT_FOOD` serverbound op:
+  ```yaml
+  - op: USE_MOUNT_FOOD
+    direction: serverbound
+    opcode: 61
+    fname: CWvsContext::SendTamingMobFoodItemUseRequest
+    provenance: ida-discovered
+    ida:
+      address: 7397387   # 0x70e00b
+    note: 'v48 SendTamingMobFoodItemUseRequest COutPacket(61) @0x70e00b; Encode4(update_time)·Encode2(slot)·Encode4(itemId); guard nItemID/10000==226 (taming-mob food). Corrects prior false n-a (op was absent from registry). task-138.'
+  ```
+  (Match the file's existing op-entry field order/style; place it in opcode order.)
+- [ ] **S2: Register the handler.** In `template_gms_48_1.json`, add to the channel recv-handler list (opcode order; verified `0x3D` is unused):
+  ```json
+  { "opCode": "0x3D", "validator": "LoggedInValidator", "handler": "MountFoodHandle", "services": ["channel"] }
+  ```
+- [ ] **S3: Confirm no collision** before committing: `grep -niE '0x0?3d' template_gms_48_1.json` returns only your new entry.
 
-`mcp__ida-pro__list_instances` → GMS v87 IDB → `mcp__ida-pro__select_instance(port)`. Quote metadata.
-
-- [ ] **Step 2: Locate the send function**
-
-`mcp__ida-pro__func_query` `name_regex: "SendTamingMobFoodItemUseRequest"`. If unnamed: byte-signature `6A 50 8D 8D ?? ?? ?? ?? E8` (0x50 is the expected v87 opcode), structure-match to the v83 twin, rename + `idb_save`. Note: many v87 names came from mangled-symbol demangling (task-085 groundwork) — the function may exist under a mangled name; the byte signature finds it regardless. Still unlocatable → STOP AND ASK.
-
-- [ ] **Step 3: Decompile and record ground truth**
-
-Opcode expected 80 (`docs/packets/registry/gms_v87.yaml:2313` / `template_gms_87_1.json:358`); record the encode order. Branches: **(a)** opcode mismatch → fix registry + template own commit + PR callout; **(b)** order mismatch vs v83 → version-gate `food.go` at `>= 87` (v84 = v83-shaped per Task 3's evidence) as its own commit, update `TestFoodDecode`; **(c)** absent → STOP AND ASK.
-
-- [ ] **Step 4: Harvest to a temp export**
-
-```bash
-printf 'CWvsContext::SendTamingMobFoodItemUseRequest\n' > /tmp/mountfood_roster.md
-go run ./tools/packet-audit export \
-  -version gms_v87 \
-  -ida-url http://192.168.20.3:13337/mcp -ida-port <v87 port from Step 1> \
-  -prior-export "" -pending /tmp/mountfood_roster.md \
-  -descent-depth 12 \
-  -output /tmp/harvest_gms_v87.json
-```
-
-- [ ] **Step 5: Surgically splice into the committed export**
-
-```bash
-python3 - <<'EOF'
-import json
-
-COMMITTED = 'docs/packets/ida-exports/gms_v87.json'
-HARVEST = '/tmp/harvest_gms_v87.json'
-FNAME = 'CWvsContext::SendTamingMobFoodItemUseRequest'
-
-c = json.load(open(COMMITTED))
-h = json.load(open(HARVEST))
-
-entry = h['functions'][FNAME]
-entry['calls'] = [x for x in (entry.get('calls') or [])
-                  if not (x.get('op') == 'Delegate' and 'COutPacket' in (x.get('ref') or ''))]
-c['functions'][FNAME] = entry
-
-added = [FNAME]
-for k, v in h['functions'].items():
-    if k != FNAME and k not in c['functions']:
-        c['functions'][k] = v
-        added.append(k)
-
-with open(COMMITTED, 'w') as f:
-    f.write(json.dumps(c, indent=2) + '\n')
-print('spliced:', added)
-EOF
-git diff --stat docs/packets/ida-exports/gms_v87.json
-```
-
-Expected: additions only.
-
-- [ ] **Step 6: Generate and copy the report**
-
-```bash
-go run ./tools/packet-audit \
-  -csv-clientbound "docs/packets/MapleStory Ops - ClientBound.csv" \
-  -csv-serverbound "docs/packets/MapleStory Ops - ServerBound.csv" \
-  -template services/atlas-configurations/seed-data/templates/template_gms_87_1.json \
-  -ida-source docs/packets/ida-exports/gms_v87.json \
-  -output /tmp/rpt_gms_v87
-grep -o '"verdict": *"[^"]*"' /tmp/rpt_gms_v87/gms_v87/MountFood.json
-cp /tmp/rpt_gms_v87/gms_v87/MountFood.json /tmp/rpt_gms_v87/gms_v87/MountFood.md docs/packets/audits/gms_v87/
-```
-
-Expected: verdict `Match`.
-
-- [ ] **Step 7: Append the v87 fixture case and marker**
-
-Evidence-comment line `//   v87 ...@0x<v87 addr>: op 0x50; <derived order>`, marker:
-
-```go
-// packet-audit:verify packet=mount/serverbound/MountFood version=gms_v87 ida=0x<v87 addr>
-```
-
-case (bytes per the v87-derived order):
-
-```go
-		{pt.Variants[2], []byte{0x64, 0x00, 0x00, 0x00, 0x03, 0x00, 0x80, 0x84, 0x1E, 0x00}}, // GMS v87
-```
-
-- [ ] **Step 8: Run the test**
-
-Run: `cd libs/atlas-packet && go test -race ./mount/... -v`
-Expected: PASS including `TestFoodByteFixture/GMS_v87`.
-
-- [ ] **Step 9: Regenerate the matrix and verify promotion**
-
-```bash
-go run ./tools/packet-audit matrix
-go run ./tools/packet-audit matrix --check 2>&1 | grep -i "mount\|MountFood" || true
-grep "USE_MOUNT_FOOD" docs/packets/audits/STATUS.md
-```
-
-Expected: v83/v84/v87 ✅; no new problem lines.
-
-- [ ] **Step 10: Commit**
-
-```bash
-git add libs/atlas-packet/mount/serverbound/food_test.go \
-  docs/packets/ida-exports/gms_v87.json \
-  docs/packets/audits/gms_v87/MountFood.json docs/packets/audits/gms_v87/MountFood.md \
-  docs/packets/audits/STATUS.md docs/packets/audits/status.json
-git commit -m "verify(packets): USE_MOUNT_FOOD gms_v87 byte-verified (0x50 @<v87 addr>)"
-```
+**Then run the canonical procedure A–H.** Notes:
+- Procedure step D splices `SendTamingMobFoodItemUseRequest` into `gms_v48.json` (currently absent).
+- Procedure step F **creates** `TestFoodByteFixture` (the first version) — include the imports `bytes` and `pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"` if absent, and the full function skeleton:
+  ```go
+  // TestFoodByteFixture pins the exact serverbound wire bytes per version,
+  // hand-computed from each version's decompiled send order (full body, never
+  // opcode-only). Body is version-invariant (update_time u32·slot i16·itemId u32);
+  // only the opcode differs, and it is config-resolved (template), not in the codec.
+  // IDA evidence:
+  //   gms_v48 SendTamingMobFoodItemUseRequest@0x70e00b: op 0x3D; Encode4(update_time)·Encode2(slot)·Encode4(itemId)
+  // packet-audit:verify packet=mount/serverbound/MountFood version=gms_v48 ida=0x70e00b
+  func TestFoodByteFixture(t *testing.T) {
+      cases := []struct {
+          variant pt.TenantVariant
+          want    []byte
+      }{
+          {pt.Variants[7], []byte{0x64, 0x00, 0x00, 0x00, 0x03, 0x00, 0x80, 0x84, 0x1E, 0x00}}, // gms_v48
+      }
+      for _, tc := range cases {
+          t.Run(tc.variant.Name, func(t *testing.T) {
+              ctx := pt.CreateContext(tc.variant.Region, tc.variant.MajorVersion, tc.variant.MinorVersion)
+              input := Food{updateTime: 100, slot: 3, itemId: 2000000}
+              got := input.Encode(logrus.New(), ctx)(nil)
+              if !bytes.Equal(got, tc.want) {
+                  t.Errorf("bytes: got % X, want % X", got, tc.want)
+              }
+              output := Food{}
+              req := request.Request(tc.want)
+              reader := request.NewRequestReader(&req, 0)
+              output.Decode(logrus.New(), ctx)(&reader, nil)
+              if output.UpdateTime() != 100 || output.Slot() != 3 || output.ItemId() != 2000000 {
+                  t.Errorf("decode round-trip mismatch: %s", output.String())
+              }
+          })
+      }
+  }
+  ```
+- Procedure step H additionally `git add`s `docs/packets/registry/gms_v48.yaml` and the template file; expect the gms_v48 cell to go `n-a → ✅`. Commit message: `verify(packets): USE_MOUNT_FOOD gms_v48 registered + byte-verified (0x3D @0x70e00b, corrects false n-a)`.
 
 ---
 
-### Task 5: Verify gms_v95 (opcode 83 / 0x53 expected)
+### Task 4: Verify gms_v61 (opcode 0x4C)
 
-**Files:**
-- Modify: `docs/packets/ida-exports/gms_v95.json`
-- Create: `docs/packets/audits/gms_v95/MountFood.json`, `docs/packets/audits/gms_v95/MountFood.md`
-- Modify: `libs/atlas-packet/mount/serverbound/food_test.go` (append v95 case + marker)
-- Modify (regenerated): `docs/packets/audits/STATUS.md`, `docs/packets/audits/status.json`
-
-**Interfaces:**
-- Consumes: Task 2's `TestFoodByteFixture` cases table and marker block.
-
-- [ ] **Step 1: Select the v95 IDA instance**
-
-`mcp__ida-pro__list_instances` → GMS v95 IDB → `mcp__ida-pro__select_instance(port)`. Quote metadata.
-
-- [ ] **Step 2: Locate the send function**
-
-`mcp__ida-pro__func_query` `name_regex: "SendTamingMobFoodItemUseRequest"`. If unnamed: byte-signature `6A 53 8D 8D ?? ?? ?? ?? E8`, structure-match, rename + `idb_save`. Still unlocatable → STOP AND ASK.
-
-- [ ] **Step 3: Decompile and record ground truth**
-
-Opcode expected 83 (`docs/packets/registry/gms_v95.yaml:2531` / `template_gms_95_1.json:238`); record the encode order. Branches as in Task 4 ((a) registry+template fix own commit + PR callout; (b) version-gated codec fix own commit; (c) STOP AND ASK).
-
-- [ ] **Step 4: Harvest to a temp export**
-
-```bash
-printf 'CWvsContext::SendTamingMobFoodItemUseRequest\n' > /tmp/mountfood_roster.md
-go run ./tools/packet-audit export \
-  -version gms_v95 \
-  -ida-url http://192.168.20.3:13337/mcp -ida-port <v95 port from Step 1> \
-  -prior-export "" -pending /tmp/mountfood_roster.md \
-  -descent-depth 12 \
-  -output /tmp/harvest_gms_v95.json
-```
-
-- [ ] **Step 5: Surgically splice into the committed export**
-
-```bash
-python3 - <<'EOF'
-import json
-
-COMMITTED = 'docs/packets/ida-exports/gms_v95.json'
-HARVEST = '/tmp/harvest_gms_v95.json'
-FNAME = 'CWvsContext::SendTamingMobFoodItemUseRequest'
-
-c = json.load(open(COMMITTED))
-h = json.load(open(HARVEST))
-
-entry = h['functions'][FNAME]
-entry['calls'] = [x for x in (entry.get('calls') or [])
-                  if not (x.get('op') == 'Delegate' and 'COutPacket' in (x.get('ref') or ''))]
-c['functions'][FNAME] = entry
-
-added = [FNAME]
-for k, v in h['functions'].items():
-    if k != FNAME and k not in c['functions']:
-        c['functions'][k] = v
-        added.append(k)
-
-with open(COMMITTED, 'w') as f:
-    f.write(json.dumps(c, indent=2) + '\n')
-print('spliced:', added)
-EOF
-git diff --stat docs/packets/ida-exports/gms_v95.json
-```
-
-Expected: additions only.
-
-- [ ] **Step 6: Generate and copy the report**
-
-```bash
-go run ./tools/packet-audit \
-  -csv-clientbound "docs/packets/MapleStory Ops - ClientBound.csv" \
-  -csv-serverbound "docs/packets/MapleStory Ops - ServerBound.csv" \
-  -template services/atlas-configurations/seed-data/templates/template_gms_95_1.json \
-  -ida-source docs/packets/ida-exports/gms_v95.json \
-  -output /tmp/rpt_gms_v95
-grep -o '"verdict": *"[^"]*"' /tmp/rpt_gms_v95/gms_v95/MountFood.json
-cp /tmp/rpt_gms_v95/gms_v95/MountFood.json /tmp/rpt_gms_v95/gms_v95/MountFood.md docs/packets/audits/gms_v95/
-```
-
-Expected: verdict `Match`.
-
-- [ ] **Step 7: Append the v95 fixture case and marker**
-
-Evidence-comment line `//   v95 ...@0x<v95 addr>: op 0x53; <derived order>`, marker:
-
-```go
-// packet-audit:verify packet=mount/serverbound/MountFood version=gms_v95 ida=0x<v95 addr>
-```
-
-case (bytes per the v95-derived order):
-
-```go
-		{pt.Variants[3], []byte{0x64, 0x00, 0x00, 0x00, 0x03, 0x00, 0x80, 0x84, 0x1E, 0x00}}, // GMS v95
-```
-
-- [ ] **Step 8: Run the test**
-
-Run: `cd libs/atlas-packet && go test -race ./mount/... -v`
-Expected: PASS including `TestFoodByteFixture/GMS_v95`.
-
-- [ ] **Step 9: Regenerate the matrix and verify promotion**
-
-```bash
-go run ./tools/packet-audit matrix
-go run ./tools/packet-audit matrix --check 2>&1 | grep -i "mount\|MountFood" || true
-grep "USE_MOUNT_FOOD" docs/packets/audits/STATUS.md
-```
-
-Expected: v83/v84/v87/v95 ✅; no new problem lines.
-
-- [ ] **Step 10: Commit**
-
-```bash
-git add libs/atlas-packet/mount/serverbound/food_test.go \
-  docs/packets/ida-exports/gms_v95.json \
-  docs/packets/audits/gms_v95/MountFood.json docs/packets/audits/gms_v95/MountFood.md \
-  docs/packets/audits/STATUS.md docs/packets/audits/status.json
-git commit -m "verify(packets): USE_MOUNT_FOOD gms_v95 byte-verified (0x53 @<v95 addr>)"
-```
+Parameters: `$VER=gms_v61`, `$SESSION=965202bf`, `$ADDR=831f44`, `$OP=0x4C`, `$EXPORT=gms_v61.json`, `$AUDITDIR=gms_v61`, `$TMPL=services/atlas-configurations/seed-data/templates/template_gms_61_1.json`, `$VARIDX=8`. Template + registry already carry the op — run canonical procedure A–H; step F **appends** the v61 case + marker to `TestFoodByteFixture`.
 
 ---
 
-### Task 6: Verify jms_v185 (opcode 69 / 0x45 expected)
+### Task 5: Verify gms_v72 (opcode 0x4C)
 
-**Files:**
-- Modify: `docs/packets/ida-exports/gms_jms_185.json` (NOTE: jms's export filename)
-- Create: `docs/packets/audits/jms_v185/MountFood.json`, `docs/packets/audits/jms_v185/MountFood.md`
-- Modify: `libs/atlas-packet/mount/serverbound/food_test.go` (append jms case + marker)
-- Modify (regenerated): `docs/packets/audits/STATUS.md`, `docs/packets/audits/status.json`
-
-**Interfaces:**
-- Consumes: Task 2's `TestFoodByteFixture` cases table and marker block.
-
-- [ ] **Step 1: Select the jms DEVM IDA instance**
-
-`mcp__ida-pro__list_instances` → the JMS v185 **`*_U_DEVM`** build (the retail dump is SMC/control-flow-virtualized — Hex-Rays fails on it; verify the instance metadata names the DEVM binary before decompiling) → `mcp__ida-pro__select_instance(port)`. Quote metadata.
-
-- [ ] **Step 2: Locate the send function**
-
-`mcp__ida-pro__func_query` `name_regex: "SendTamingMobFoodItemUseRequest"`. If unnamed: byte-signature `6A 45 8D 8D ?? ?? ?? ?? E8`, structure-match to the v83 twin, rename + `idb_save`. Still unlocatable → STOP AND ASK.
-
-- [ ] **Step 3: Decompile and record ground truth**
-
-Opcode expected 69 (`docs/packets/registry/jms_v185.yaml:2308` / `template_jms_185_1.json:325`); record the encode order. Branches as in Task 4 ((a) registry+template fix own commit + PR callout; (b) version-gated codec fix own commit — a jms-only divergence gates on `Region == "JMS"` per existing atlas-packet patterns; (c) STOP AND ASK).
-
-- [ ] **Step 4: Harvest to a temp export**
-
-The jms version key is `gms_jms_185` (its committed export is `gms_jms_185.json`):
-
-```bash
-printf 'CWvsContext::SendTamingMobFoodItemUseRequest\n' > /tmp/mountfood_roster.md
-go run ./tools/packet-audit export \
-  -version gms_jms_185 \
-  -ida-url http://192.168.20.3:13337/mcp -ida-port <jms DEVM port from Step 1> \
-  -prior-export "" -pending /tmp/mountfood_roster.md \
-  -descent-depth 12 \
-  -output /tmp/harvest_gms_jms_185.json
-```
-
-- [ ] **Step 5: Surgically splice into the committed export**
-
-```bash
-python3 - <<'EOF'
-import json
-
-COMMITTED = 'docs/packets/ida-exports/gms_jms_185.json'
-HARVEST = '/tmp/harvest_gms_jms_185.json'
-FNAME = 'CWvsContext::SendTamingMobFoodItemUseRequest'
-
-c = json.load(open(COMMITTED))
-h = json.load(open(HARVEST))
-
-entry = h['functions'][FNAME]
-entry['calls'] = [x for x in (entry.get('calls') or [])
-                  if not (x.get('op') == 'Delegate' and 'COutPacket' in (x.get('ref') or ''))]
-c['functions'][FNAME] = entry
-
-added = [FNAME]
-for k, v in h['functions'].items():
-    if k != FNAME and k not in c['functions']:
-        c['functions'][k] = v
-        added.append(k)
-
-with open(COMMITTED, 'w') as f:
-    f.write(json.dumps(c, indent=2) + '\n')
-print('spliced:', added)
-EOF
-git diff --stat docs/packets/ida-exports/gms_jms_185.json
-```
-
-Expected: additions only.
-
-- [ ] **Step 6: Generate and copy the report**
-
-The root command maps version `gms_jms_185` to audit dir `jms_v185` automatically (`tools/packet-audit/cmd/root.go:204-208`) — copy from that subdir explicitly:
-
-```bash
-go run ./tools/packet-audit \
-  -csv-clientbound "docs/packets/MapleStory Ops - ClientBound.csv" \
-  -csv-serverbound "docs/packets/MapleStory Ops - ServerBound.csv" \
-  -template services/atlas-configurations/seed-data/templates/template_jms_185_1.json \
-  -ida-source docs/packets/ida-exports/gms_jms_185.json \
-  -output /tmp/rpt_jms_v185
-grep -o '"verdict": *"[^"]*"' /tmp/rpt_jms_v185/jms_v185/MountFood.json
-cp /tmp/rpt_jms_v185/jms_v185/MountFood.json /tmp/rpt_jms_v185/jms_v185/MountFood.md docs/packets/audits/jms_v185/
-```
-
-Expected: verdict `Match`.
-
-- [ ] **Step 7: Append the jms fixture case and marker**
-
-Evidence-comment line `//   jms185 ...@0x<jms addr>: op 0x45; <derived order>`, marker (the marker version key is `jms_v185`, matching the audit dir — same convention as the pet/storage markers):
-
-```go
-// packet-audit:verify packet=mount/serverbound/MountFood version=jms_v185 ida=0x<jms addr>
-```
-
-case (bytes per the jms-derived order):
-
-```go
-		{pt.Variants[4], []byte{0x64, 0x00, 0x00, 0x00, 0x03, 0x00, 0x80, 0x84, 0x1E, 0x00}}, // JMS v185
-```
-
-- [ ] **Step 8: Run the test**
-
-Run: `cd libs/atlas-packet && go test -race ./mount/... -v`
-Expected: PASS including `TestFoodByteFixture/JMS_v185`.
-
-- [ ] **Step 9: Regenerate the matrix and verify full promotion**
-
-```bash
-go run ./tools/packet-audit matrix
-go run ./tools/packet-audit matrix --check 2>&1 | grep -i "mount\|MountFood" || true
-grep "USE_MOUNT_FOOD" docs/packets/audits/STATUS.md
-```
-
-Expected: the `USE_MOUNT_FOOD` row reads ✅ in all five columns; no new problem lines; conflict count not increased.
-
-- [ ] **Step 10: Commit**
-
-```bash
-git add libs/atlas-packet/mount/serverbound/food_test.go \
-  docs/packets/ida-exports/gms_jms_185.json \
-  docs/packets/audits/jms_v185/MountFood.json docs/packets/audits/jms_v185/MountFood.md \
-  docs/packets/audits/STATUS.md docs/packets/audits/status.json
-git commit -m "verify(packets): USE_MOUNT_FOOD jms_v185 byte-verified (0x45 @<jms addr>)"
-```
+Parameters: `$VER=gms_v72`, `$SESSION=90e36cb0`, `$ADDR=904419`, `$OP=0x4C`, `$EXPORT=gms_v72.json`, `$AUDITDIR=gms_v72`, `$TMPL=services/atlas-configurations/seed-data/templates/template_gms_72_1.json`, `$VARIDX=9`. Run canonical procedure A–H (append case + marker).
 
 ---
 
-### Task 7: Final gates and parked-v92 bookkeeping
+### Task 6: Verify gms_v79 (opcode 0x4B)
 
-**Files:**
-- Modify: `docs/tasks/task-138-mount-food-verification/context.md` (record final per-version addresses/opcodes and the narrowed v92 gap)
-- No code files — verification and bookkeeping only.
+Parameters: `$VER=gms_v79`, `$SESSION=9a7d3642`, `$ADDR=955781`, `$OP=0x4B`, `$EXPORT=gms_v79.json`, `$AUDITDIR=gms_v79`, `$TMPL=services/atlas-configurations/seed-data/templates/template_gms_79_1.json`, `$VARIDX=10`. Run canonical procedure A–H (append case + marker).
 
-**Interfaces:**
-- Consumes: all five ✅ cells and the five per-version commits.
+---
 
-- [ ] **Step 1: Full-module test and vet gates**
+### Task 7: Verify gms_v83 (opcode 0x4D)
 
-```bash
-cd libs/atlas-packet && go test -race ./... && go vet ./...
-cd ../../tools/packet-audit && go test -race ./... && go vet ./...
-```
+Parameters: `$VER=gms_v83`, `$SESSION=ce4ff298` (`MapleStory_dump.exe` v83 Me), `$ADDR=`derive, `$OP=0x4D`, `$EXPORT=gms_v83.json`, `$AUDITDIR=gms_v83`, `$TMPL=services/atlas-configurations/seed-data/templates/template_gms_83_1.json`, `$VARIDX=1`. Send fn may be unnamed → procedure step B naming path (`6A 4D 8D 8D ?? ?? ?? ?? E8`). Run A–H (append case + marker).
 
-Expected: all clean/PASS. (No `docker buildx bake` — no service `go.mod` was touched. If branch (a) fired anywhere, template JSON edits still don't touch `go.mod`; if branch (b) fired, only `libs/atlas-packet` changed.)
+---
 
-- [ ] **Step 2: Repo-root guard + final matrix state**
+### Task 8: Verify gms_v84 (opcode 0x4D)
 
-```bash
-cd ../.. && tools/redis-key-guard.sh
-go run ./tools/packet-audit matrix --check 2>&1 | tail -20
-grep "USE_MOUNT_FOOD" docs/packets/audits/STATUS.md
-grep -A 3 '"op": "USE_MOUNT_FOOD"' docs/packets/audits/status.json | head -20
-```
+Parameters: `$VER=gms_v84`, `$SESSION=79511a2a` (`GMS_v84.1_U_DEVM`), `$ADDR=`derive, `$OP=0x4D`, `$EXPORT=gms_v84.json`, `$AUDITDIR=gms_v84`, `$TMPL=services/atlas-configurations/seed-data/templates/template_gms_84_1.json`, `$VARIDX=5`. **If no v84 instance can be brought up, STOP AND ASK** — a missing IDB is a genuine blocker; never copy v83's bytes/address. Run A–H (append case + marker).
 
-Expected: redis-key-guard clean; STATUS.md row shows ✅×5; the status.json cells no longer read `incomplete`/"no audit report"; `matrix --check` tail shows no orphan/dangling/stale/drift lines for MountFood and the same conflict count as before Task 1.
+---
 
-- [ ] **Step 3: Record the verification summary in context.md**
+### Task 9: Verify gms_v87 (opcode 0x50)
 
-Append to `docs/tasks/task-138-mount-food-verification/context.md` a "Results" section listing, per version: the IDB instance used, the function address, the `COutPacket` opcode as decompiled, the derived encode order, and which (if any) discrepancy branches fired. State explicitly: "The only remaining mount-food gap is the v92 inbound registration (`MountFoodHandle` absent from `template_gms_92_1.json`), still blocked solely on the absence of a v92 IDB. No v92 values were inferred."
+Parameters: `$VER=gms_v87`, `$SESSION=81f32170` (`GMSv87_4GB`), `$ADDR=`derive, `$OP=0x50`, `$EXPORT=gms_v87.json`, `$AUDITDIR=gms_v87`, `$TMPL=services/atlas-configurations/seed-data/templates/template_gms_87_1.json`, `$VARIDX=2`. Send fn may carry a mangled name → byte signature `6A 50 8D 8D ?? ?? ?? ?? E8` finds it. Run A–H (append case + marker).
 
-- [ ] **Step 4: Commit the bookkeeping**
+---
 
-```bash
-git add docs/tasks/task-138-mount-food-verification/context.md
-git commit -m "docs(task-138): record verification results and narrowed v92 gap"
-```
+### Task 10: Verify gms_v95 (opcode 0x53)
 
-- [ ] **Step 5: Orchestrator-only memory update (not a repo commit)**
+Parameters: `$VER=gms_v95`, `$SESSION=e4abcb98` (`GMS_v95.0_U_DEVM`), `$ADDR=`derive, `$OP=0x53`, `$EXPORT=gms_v95.json`, `$AUDITDIR=gms_v95`, `$TMPL=services/atlas-configurations/seed-data/templates/template_gms_95_1.json`, `$VARIDX=3`. Run A–H (append case + marker).
 
-The session orchestrator (not an implementation subagent) updates the project-memory topic `project_v92_mount_food_parked`: all five `USE_MOUNT_FOOD` cells are now byte-verified (task-138); the sole remaining gap is the v92 inbound handler registration, blocked on a v92 IDB.
+---
+
+### Task 11: Verify jms_v185 (opcode 0x45)
+
+Parameters: `$VER=gms_jms_185` (export key), `$SESSION=3c4bb8b1` — **verify it is the `*_U_DEVM` build, not the SMC retail dump** (`MapleStory_dump_SCY` is present as session `3c4bb8b1`; if Hex-Rays fails, the DEVM build is required — STOP AND ASK if only the SMC dump is available), `$ADDR=`derive, `$OP=0x45`, `$EXPORT=gms_jms_185.json`, `$AUDITDIR=jms_v185`, `$TMPL=services/atlas-configurations/seed-data/templates/template_jms_185_1.json`, `$VARIDX=4`. The root command maps `gms_jms_185` → audit dir `jms_v185` automatically. Marker version key is `jms_v185` (matches the audit dir). Run A–H (append case + marker).
+
+---
+
+### Task 12: Final gates and bookkeeping
+
+**Files:** Modify `docs/tasks/task-138-mount-food-verification/context.md`. No code files.
+
+- [ ] **Step 1: Full-module gates.**
+  ```bash
+  cd libs/atlas-packet && go test -race ./... && go vet ./...
+  cd ../../tools/packet-audit && go test -race ./... && go vet ./...
+  cd ../.. && tools/lint.sh --check
+  ```
+  All clean/PASS. No `docker buildx bake` (no `go.mod` touched).
+- [ ] **Step 2: Repo-root guards + final matrix state.**
+  ```bash
+  tools/redis-key-guard.sh
+  go run ./tools/packet-audit matrix --check 2>&1 | tail -20
+  grep "USE_MOUNT_FOOD" docs/packets/audits/STATUS.md
+  grep -A 30 '"op": "USE_MOUNT_FOOD"' docs/packets/audits/status.json | head -40
+  ```
+  Expected: guards clean; STATUS.md row ✅ ×9; status.json has no `incomplete`/`n-a` cells for USE_MOUNT_FOOD; `matrix --check` shows no orphan/dangling/stale/drift/n-a-consistency lines for MountFood and the same conflict count as before Task 1.
+- [ ] **Step 3: Record results in context.md.** Append a "Results" section: per version — IDB session, function address, `COutPacket` opcode as decompiled, derived encode order, and any discrepancy branch that fired. State explicitly: "All nine `USE_MOUNT_FOOD` cells are byte-verified. gms_12 remains parked solely on the absence of a v12 IDB. gms_92 mount food is unblocked (v92 IDB, opcode 0x54 verified) and reduced to a one-line `template_gms_92_1.json` registration that is out of this task's matrix scope (gms_92 is not a matrix column). No opcodes were inferred."
+- [ ] **Step 4: Commit bookkeeping.**
+  ```bash
+  git add docs/tasks/task-138-mount-food-verification/context.md
+  git commit -m "docs(task-138): record 9-version verification results; narrowed v12/v92 gaps"
+  ```
+- [ ] **Step 5: Orchestrator-only memory update (not a repo commit).** Update project memory: all nine `USE_MOUNT_FOOD` matrix cells byte-verified (task-138), v48 false-n-a corrected; gms_12 parked on IDB; gms_92 reduced to a template-registration line (already reflected in `project_v92_mount_food_parked`).
 
 ---
 
 ## Execution notes for the orchestrator
 
-- Dispatch Tasks 2–6 **sequentially, never in parallel** (shared IDA instance selection, shared `food_test.go`, global matrix).
+- Dispatch Tasks 3–11 **sequentially, never in parallel** (shared `food_test.go`, global matrix, and — for v48 — shared registry/template).
 - Every implementer subagent prompt must `cd` into this worktree first and verify `git branch --show-current` = `task-138-mount-food-verification` after each commit.
-- If any task reports a stop-and-ask condition (missing IDB, unlocatable function), halt the campaign at that version and surface it — the earlier versions' commits stand on their own (per-version cell commits keep the tree green).
-- Before the PR: run `superpowers:requesting-code-review` (plan-adherence + backend reviewers), per CLAUDE.md.
+- If any task reports a stop-and-ask condition (missing IDB, unlocatable function), halt at that version and surface it — the earlier per-version commits stand on their own.
+- Before the PR: run `superpowers:requesting-code-review` (plan-adherence + backend reviewers; `packet-completeness-critic` for the coverage-manifest delta), per CLAUDE.md, pinned to the cheaper model per project memory.
+- **gms_92 fold-in** (PRD §9) is deliberately excluded; if the maintainer wants it, add one template line (opcode `0x54`) — no matrix cell results.

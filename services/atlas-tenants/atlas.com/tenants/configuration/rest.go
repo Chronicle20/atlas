@@ -2,6 +2,8 @@ package configuration
 
 import (
 	"encoding/json"
+
+	"github.com/google/uuid"
 )
 
 // RouteRestModel is the JSON:API resource for routes
@@ -474,6 +476,69 @@ func CreateInstanceRouteJsonData(routes []map[string]interface{}) (json.RawMessa
 // CreateSingleInstanceRouteJsonData creates a JSON:API compliant data structure for a single instance route
 func CreateSingleInstanceRouteJsonData(route map[string]interface{}) (json.RawMessage, error) {
 	return CreateInstanceRouteJsonData([]map[string]interface{}{route})
+}
+
+// RankingsRestModel is the JSON:API resource for the per-tenant rankings
+// configuration. It is a single-object resource (no id-scoped sub-routes);
+// the attribute name/type must match what atlas-rankings decodes in
+// services/atlas-rankings/atlas.com/rankings/configuration/rest.go (RestModel).
+type RankingsRestModel struct {
+	Id                       string `json:"-"`
+	RecomputeIntervalMinutes uint32 `json:"recomputeIntervalMinutes"`
+}
+
+// GetID returns the resource ID
+func (r RankingsRestModel) GetID() string {
+	return r.Id
+}
+
+// SetID sets the resource ID
+func (r *RankingsRestModel) SetID(id string) error {
+	r.Id = id
+	return nil
+}
+
+// GetName returns the resource name
+func (r RankingsRestModel) GetName() string {
+	return "rankings"
+}
+
+// TransformRankings converts a map[string]interface{} to a RankingsRestModel
+func TransformRankings(data map[string]interface{}) (RankingsRestModel, error) {
+	id, _ := data["id"].(string)
+
+	attributes, ok := data["attributes"].(map[string]interface{})
+	if !ok {
+		attributes = make(map[string]interface{})
+	}
+
+	interval := uint32(0)
+	if val, ok := attributes["recomputeIntervalMinutes"].(float64); ok {
+		interval = uint32(val)
+	}
+
+	return RankingsRestModel{Id: id, RecomputeIntervalMinutes: interval}, nil
+}
+
+// ExtractRankings converts a RankingsRestModel to a map[string]interface{}
+func ExtractRankings(r RankingsRestModel) (map[string]interface{}, error) {
+	id := r.Id
+	if id == "" {
+		id = uuid.New().String()
+	}
+	return map[string]interface{}{
+		"type": "rankings",
+		"id":   id,
+		"attributes": map[string]interface{}{
+			"recomputeIntervalMinutes": r.RecomputeIntervalMinutes,
+		},
+	}, nil
+}
+
+// CreateSingleRankingsJsonData creates a JSON:API compliant data structure
+// for the single-object rankings configuration
+func CreateSingleRankingsJsonData(rankings map[string]interface{}) (json.RawMessage, error) {
+	return json.Marshal(map[string]interface{}{"data": rankings})
 }
 
 // RpsRewardRungRestModel is the nested JSON attribute shape of a single rung

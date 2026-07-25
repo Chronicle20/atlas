@@ -300,6 +300,8 @@ images:
     newTag: main-bb513ef
   - name: ghcr.io/chronicle20/atlas-quest/atlas-quest
     newTag: main-bb513ef
+  - name: ghcr.io/chronicle20/atlas-rankings/atlas-rankings
+    newTag: main-bb513ef
   - name: ghcr.io/chronicle20/atlas-rates/atlas-rates
     newTag: main-bb513ef
   - name: ghcr.io/chronicle20/atlas-reactor-actions/atlas-reactor-actions

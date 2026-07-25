@@ -50,6 +50,16 @@ type ProcessorMock struct {
 	MtsConfigByIdProviderFunc  func(tenantID uuid.UUID, configID string) model.Provider[map[string]interface{}]
 	AllMtsConfigsProviderFunc  func(tenantID uuid.UUID) model.Provider[[]map[string]interface{}]
 
+	// Rankings operations
+	CreateRankingsFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(rankings map[string]interface{}) (configuration.Model, error)
+	CreateRankingsAndEmitFunc func(tenantID uuid.UUID, rankings map[string]interface{}) (configuration.Model, error)
+	UpdateRankingsFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(rankings map[string]interface{}) (configuration.Model, error)
+	UpdateRankingsAndEmitFunc func(tenantID uuid.UUID, rankings map[string]interface{}) (configuration.Model, error)
+	DeleteRankingsFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) error
+	DeleteRankingsAndEmitFunc func(tenantID uuid.UUID) error
+	GetRankingsFunc           func(tenantID uuid.UUID) (map[string]interface{}, error)
+	RankingsProviderFunc      func(tenantID uuid.UUID) model.Provider[map[string]interface{}]
+
 	// Seed operations
 	SeedRoutesFunc         func(tenantID uuid.UUID) (configuration.SeedResult, error)
 	SeedInstanceRoutesFunc func(tenantID uuid.UUID) (configuration.SeedResult, error)
@@ -610,4 +620,80 @@ func (m *ProcessorMock) SeedMtsConfigs(tenantID uuid.UUID) (configuration.SeedRe
 		return m.SeedMtsConfigsFunc(tenantID)
 	}
 	return configuration.SeedResult{}, nil
+}
+
+// CreateRankings is a mock implementation
+func (m *ProcessorMock) CreateRankings(mb *message.Buffer) func(tenantID uuid.UUID) func(rankings map[string]interface{}) (configuration.Model, error) {
+	if m.CreateRankingsFunc != nil {
+		return m.CreateRankingsFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(rankings map[string]interface{}) (configuration.Model, error) {
+		return func(rankings map[string]interface{}) (configuration.Model, error) {
+			return configuration.Model{}, nil
+		}
+	}
+}
+
+// CreateRankingsAndEmit is a mock implementation
+func (m *ProcessorMock) CreateRankingsAndEmit(tenantID uuid.UUID, rankings map[string]interface{}) (configuration.Model, error) {
+	if m.CreateRankingsAndEmitFunc != nil {
+		return m.CreateRankingsAndEmitFunc(tenantID, rankings)
+	}
+	return configuration.Model{}, nil
+}
+
+// UpdateRankings is a mock implementation
+func (m *ProcessorMock) UpdateRankings(mb *message.Buffer) func(tenantID uuid.UUID) func(rankings map[string]interface{}) (configuration.Model, error) {
+	if m.UpdateRankingsFunc != nil {
+		return m.UpdateRankingsFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(rankings map[string]interface{}) (configuration.Model, error) {
+		return func(rankings map[string]interface{}) (configuration.Model, error) {
+			return configuration.Model{}, nil
+		}
+	}
+}
+
+// UpdateRankingsAndEmit is a mock implementation
+func (m *ProcessorMock) UpdateRankingsAndEmit(tenantID uuid.UUID, rankings map[string]interface{}) (configuration.Model, error) {
+	if m.UpdateRankingsAndEmitFunc != nil {
+		return m.UpdateRankingsAndEmitFunc(tenantID, rankings)
+	}
+	return configuration.Model{}, nil
+}
+
+// DeleteRankings is a mock implementation
+func (m *ProcessorMock) DeleteRankings(mb *message.Buffer) func(tenantID uuid.UUID) error {
+	if m.DeleteRankingsFunc != nil {
+		return m.DeleteRankingsFunc(mb)
+	}
+	return func(tenantID uuid.UUID) error {
+		return nil
+	}
+}
+
+// DeleteRankingsAndEmit is a mock implementation
+func (m *ProcessorMock) DeleteRankingsAndEmit(tenantID uuid.UUID) error {
+	if m.DeleteRankingsAndEmitFunc != nil {
+		return m.DeleteRankingsAndEmitFunc(tenantID)
+	}
+	return nil
+}
+
+// GetRankings is a mock implementation
+func (m *ProcessorMock) GetRankings(tenantID uuid.UUID) (map[string]interface{}, error) {
+	if m.GetRankingsFunc != nil {
+		return m.GetRankingsFunc(tenantID)
+	}
+	return map[string]interface{}{}, nil
+}
+
+// RankingsProvider is a mock implementation
+func (m *ProcessorMock) RankingsProvider(tenantID uuid.UUID) model.Provider[map[string]interface{}] {
+	if m.RankingsProviderFunc != nil {
+		return m.RankingsProviderFunc(tenantID)
+	}
+	return func() (map[string]interface{}, error) {
+		return map[string]interface{}{}, nil
+	}
 }

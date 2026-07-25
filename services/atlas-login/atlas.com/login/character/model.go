@@ -47,6 +47,10 @@ type Model struct {
 	pets               []pet.Model
 	equipment          equipment.Model
 	inventory          inventory.Model
+	rank               uint32
+	rankMove           int32
+	jobRank            uint32
+	jobRankMove        int32
 }
 
 func (m Model) Gm() bool {
@@ -54,19 +58,24 @@ func (m Model) Gm() bool {
 }
 
 func (m Model) Rank() uint32 {
-	return 0
+	return m.rank
 }
 
+// RankMove passes the signed move through as two's complement — the packet
+// lib field is uint32 and the client reinterprets it signed (abs + sign).
 func (m Model) RankMove() uint32 {
-	return 0
+	return uint32(m.rankMove)
 }
 
 func (m Model) JobRank() uint32 {
-	return 0
+	return m.jobRank
 }
 
+// JobRankMove passes the signed move through as two's complement — the
+// packet lib field is uint32 and the client reinterprets it signed (abs +
+// sign).
 func (m Model) JobRankMove() uint32 {
-	return 0
+	return uint32(m.jobRankMove)
 }
 
 func (m Model) Gender() byte {
@@ -296,6 +305,10 @@ func (m Model) ToBuilder() *Builder {
 		pets:               m.pets,
 		equipment:          m.equipment,
 		inventory:          m.inventory,
+		rank:               m.rank,
+		rankMove:           m.rankMove,
+		jobRank:            m.jobRank,
+		jobRankMove:        m.jobRankMove,
 	}
 }
 
@@ -331,6 +344,10 @@ type Builder struct {
 	pets               []pet.Model
 	equipment          equipment.Model
 	inventory          inventory.Model
+	rank               uint32
+	rankMove           int32
+	jobRank            uint32
+	jobRankMove        int32
 }
 
 // NewBuilder creates a new Builder instance
@@ -371,6 +388,10 @@ func (b *Builder) SetMeso(v uint32) *Builder               { b.meso = v; return 
 func (b *Builder) SetPets(v []pet.Model) *Builder          { b.pets = v; return b }
 func (b *Builder) SetEquipment(v equipment.Model) *Builder { b.equipment = v; return b }
 func (b *Builder) SetInventory(v inventory.Model) *Builder { b.inventory = v; return b }
+func (b *Builder) SetRank(v uint32) *Builder               { b.rank = v; return b }
+func (b *Builder) SetRankMove(v int32) *Builder            { b.rankMove = v; return b }
+func (b *Builder) SetJobRank(v uint32) *Builder            { b.jobRank = v; return b }
+func (b *Builder) SetJobRankMove(v int32) *Builder         { b.jobRankMove = v; return b }
 
 func (b *Builder) Build() Model {
 	return Model{
@@ -404,5 +425,9 @@ func (b *Builder) Build() Model {
 		pets:               b.pets,
 		equipment:          b.equipment,
 		inventory:          b.inventory,
+		rank:               b.rank,
+		rankMove:           b.rankMove,
+		jobRank:            b.jobRank,
+		jobRankMove:        b.jobRankMove,
 	}
 }

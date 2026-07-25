@@ -86,7 +86,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 // duration from expiresAt, so callers passing a buff's original timestamps
 // broadcast the remaining duration.
 func announceBuffGive(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, characterId uint32, sourceId int32, level byte, duration int32, statChanges []buff2.StatChange, createdAt time.Time, expiresAt time.Time) {
-	session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(characterId, func(s session.Model) error {
+	_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(characterId, func(s session.Model) error {
 		bs := make([]buff.Model, 0)
 		changes := make([]stat.Model, 0)
 		for _, cm := range statChanges {

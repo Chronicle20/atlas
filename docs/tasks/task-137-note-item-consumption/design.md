@@ -176,7 +176,7 @@ per memo entry:
 | gms_v48 | 0x65 | **2** | reward int32 | 0x534dc4 | ALSO emits a follow-up **0x66** packet for flag==1 notes (0x535001) |
 | gms_v61 | 0x77 | **2** | itemId int32 | 0x5ad50c | — |
 | gms_v72 | 0x81 | **3** | mesos int32 | 0x5fb443 | — |
-| gms_v79 | 0x80 | **3** | value int32 | 0x619fb7 | — |
+| gms_v79 | 0x80 | **3** | value int32 | 0x619f32 | function-entry address (0x619fb7 is the internal `COutPacket` construction call-site within this same function, not the entry — matches the other rows' convention and the committed marker) |
 
 The four legacy `NoteOperationDiscard` cells (all ❌ on main) are promoted in this
 task using these shapes (§6.3). jms_v185's discard body (0x33d bytes vs GMS's
@@ -441,7 +441,9 @@ Standard packet-verifier flow per cell (decompile read order → byte-fixture wi
 - `NoteOperationDiscard` × jms_v185 — `CMemoListDlg::SetRet` @ 0x6c2d43; **0x33d
   bytes vs ~0x26b on GMS — derive the jms read order from scratch.**
 - `NoteOperationDiscard` × gms_v48 (SetRet @ 0x534dc4), × gms_v61 (0x5ad50c),
-  × gms_v72 (0x5fb443), × gms_v79 (0x619fb7) — promote ❌→✅ using the per-version
+  × gms_v72 (0x5fb443), × gms_v79 (0x619f32, function entry — not 0x619fb7,
+  which is the internal `COutPacket` construction call-site inside the same
+  function) — promote ❌→✅ using the per-version
   body shapes in §1.5 (uniform header + special-flag entries; special flag = 2
   on v48/v61, 3 on v72/v79; v48 also emits a follow-up 0x66). Each cell gets its
   own byte fixture derived from its cited SetRet; the shapes are close but the

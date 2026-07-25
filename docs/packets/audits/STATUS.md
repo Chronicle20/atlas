@@ -951,7 +951,7 @@ Tool: `f47087cfb63a2289db015478f35e5c492138f0334213b1b8aaf63d3a803914c4`
 | messenger/serverbound/MessengerOperationInvite (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | monster/carnival/serverbound/MonsterCarnival (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | note/serverbound/NoteOperation (T1) |  |  | ❌ |  | ❌ |  | 🟡ᶠ |  | 🟡ᶠ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| note/serverbound/NoteOperationDiscard (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| note/serverbound/NoteOperationDiscard (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | note/serverbound/NoteOperationSend (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | npc/clientbound/NpcAskAvatarConversationDetail (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | npc/clientbound/NpcAskBoxTextConversationDetail (T1) |  |  | ⬜ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -1001,10 +1001,10 @@ Tool: `f47087cfb63a2289db015478f35e5c492138f0334213b1b8aaf63d3a803914c4`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 173 | 0 | 2 | 161 | 630 | 0 | 51.5% |
-| v61 | 249 | 0 | 60 | 195 | 462 | 0 | 49.4% |
-| v72 | 259 | 0 | 73 | 214 | 420 | 0 | 47.4% |
-| v79 | 303 | 0 | 72 | 210 | 381 | 0 | 51.8% |
+| v48 | 174 | 0 | 2 | 160 | 630 | 0 | 51.8% |
+| v61 | 250 | 0 | 60 | 194 | 462 | 0 | 49.6% |
+| v72 | 260 | 0 | 73 | 213 | 420 | 0 | 47.6% |
+| v79 | 304 | 0 | 72 | 209 | 381 | 0 | 52.0% |
 | v83 | 423 | 0 | 0 | 319 | 224 | 0 | 57.0% |
 | v84 | 397 | 0 | 0 | 325 | 244 | 0 | 55.0% |
 | v87 | 431 | 0 | 0 | 348 | 187 | 0 | 55.3% |

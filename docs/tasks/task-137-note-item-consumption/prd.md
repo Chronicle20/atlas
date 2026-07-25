@@ -1,9 +1,19 @@
 # Note Item Consumption & Memo Packet Verification — Product Requirements Document
 
-Version: v1
+Version: v2
 Status: Draft
 Created: 2026-07-09
+Revised: 2026-07-25 (main-sync: scope expanded from 5 to 9 versions)
 ---
+
+> **Scope revision (v2).** When this PRD was written the coverage matrix tracked
+> five versions (gms_v83/v84/v87/v95, jms_v185). Main has since added four legacy
+> columns — **gms_v48, gms_v61, gms_v72, gms_v79** — which are in scope for this
+> task. All four were IDA-verified to use the same USE_CASH_ITEM note-send path
+> (findings in `legacy-verify/`); the feature and every goal below extend to all
+> nine versions. The additional matrix promotions are the four legacy
+> `NoteOperationDiscard` cells (now ❌/🟡 on main), verified from the per-version
+> `CMemoListDlg::SetRet` bodies. See design.md §1 for the consolidated evidence.
 
 ## 1. Overview
 
@@ -12,15 +22,15 @@ The Notes/memos feature (atlas-notes + `NoteOperationHandle` in atlas-channel) i
 - The memo-operation SEND arm (`services/atlas-channel/atlas.com/channel/socket/handler/note_operation.go:43`) calls `np.SendNote(...)` with **no Note-item ownership check and no consumption**.
 - The cash-item-use handler maps Note items to `CashSlotItemType(21)` (`character_cash_item_use.go:251`) but then **falls through to a warn-log** (`character_cash_item_use.go:110`) — the UseCashItem note-send path is entirely unimplemented.
 
-Which of these two serverbound paths the real client actually uses for note send — per version — is unverified; the coverage matrix's serverbound `NOTE_ACTION` fnames (`CMemoListDlg::SetRet`, `CWvsContext::OnMemoNotify_Receive`) are discard/receive-ack flavored, hinting that send may travel via UseCashItem instead. This task verifies the true path(s) in IDA, implements item consumption so notes can never be created for free, and closes the unverified packet-matrix cells: clientbound `MEMO_RESULT` on **v84** and **JMS185** (❌ in `docs/packets/audits/STATUS.md:63`), plus serverbound `NoteOperationDiscard` on **JMS185** (❌ at `STATUS.md:865`).
+Which of these two serverbound paths the real client actually uses for note send — per version — is unverified; the coverage matrix's serverbound `NOTE_ACTION` fnames (`CMemoListDlg::SetRet`, `CWvsContext::OnMemoNotify_Receive`) are discard/receive-ack flavored, hinting that send may travel via UseCashItem instead. This task verifies the true path(s) in IDA (resolved: USE_CASH_ITEM in all nine versions), implements item consumption so notes can never be created for free, and closes the unverified packet-matrix cells: clientbound `MEMO_RESULT` on **v84** and **JMS185**, plus serverbound `NoteOperationDiscard` on **JMS185** and the four legacy versions **v48/v61/v72/v79** (all ❌/🟡 in `docs/packets/audits/STATUS.md`; line refs shifted with the 9-column matrix — regenerate).
 
 ## 2. Goals
 
 Primary goals:
 - No free notes: every player-initiated note send consumes exactly one Note item (5090000-family, classification 509), or is rejected with a client-visible error.
-- IDA-ground the per-version client send path (UseCashItem vs memo-op SEND) for v83, v84, v87, v95, JMS185, and implement the path(s) each client actually uses.
-- Promote `MEMO_RESULT` (CWvsContext::OnMemoResult → `note/clientbound/NoteDisplay`) matrix cells to ✅ for gms_v84 and jms_v185.
-- Promote `note/serverbound/NoteOperationDiscard` to ✅ for jms_v185 (rides along — same family).
+- IDA-ground the per-version client send path (UseCashItem vs memo-op SEND) for **all nine versions** (gms_v48/v61/v72/v79/v83/v84/v87/v95, jms_v185), and implement the path(s) each client actually uses. (Done at design time — USE_CASH_ITEM in all nine; see design §1.1.)
+- Promote `MEMO_RESULT` (CWvsContext::OnMemoResult → `note/clientbound/NoteDisplay`) matrix cells to ✅ for gms_v84 and jms_v185. (The four legacy MEMO_RESULT cells are already ✅ on main.)
+- Promote `note/serverbound/NoteOperationDiscard` to ✅ for **jms_v185 and the four legacy versions gms_v48/v61/v72/v79** (same family; per-version bodies verified — design §1.5).
 
 Non-goals:
 - Gift memos (notes attached to cash-shop gifts; `CCashShop::OnCashItemResLoadGiftDone`) — excluded per scope decision.
@@ -39,7 +49,7 @@ Non-goals:
 
 ### 4.1 Send-path verification (design-phase gate)
 
-- FR-1: For each version (gms_v83, gms_v84, gms_v87, gms_v95, jms_v185), determine from IDA which serverbound packet(s) the client emits for a player-initiated note send: the UseCashItem opcode carrying item 5090000 (with recipient/message in the arm tail), the memo-operation opcode SEND arm, or both. Cosmic behavior is reference-only; the client binary is the source of truth (Verification Over Memory).
+- FR-1: For each version (gms_v48, gms_v61, gms_v72, gms_v79, gms_v83, gms_v84, gms_v87, gms_v95, jms_v185), determine from IDA which serverbound packet(s) the client emits for a player-initiated note send: the UseCashItem opcode carrying item 5090000 (with recipient/message in the arm tail), the memo-operation opcode SEND arm, or both. Cosmic behavior is reference-only; the client binary is the source of truth (Verification Over Memory). **Resolved:** USE_CASH_ITEM in all nine versions (design §1.1 + `legacy-verify/`).
 - FR-2: Document the verified read order for the note arm of UseCashItem (if that is a real path) per version, following `docs/packets/audits/VERIFYING_A_PACKET.md`.
 
 ### 4.2 Item consumption on send
@@ -102,13 +112,15 @@ No schema changes. atlas-notes' note storage is unchanged. Item consumption uses
 
 ## 10. Acceptance Criteria
 
-- [ ] Per-version send path documented with IDA evidence (fnames + read order) for v83, v84, v87, v95, jms185.
+- [ ] Per-version send path documented with IDA evidence (fnames + read order) for all nine versions: v48, v61, v72, v79, v83, v84, v87, v95, jms185.
 - [ ] Sending a note consumes exactly one Note item (classification 509) on every player-reachable path; verified by handler/processor tests.
 - [ ] Send attempt with no Note item is rejected and the client receives the IDA-verified error packet; no note is created; no item is consumed.
 - [ ] Receiver-unknown rejection consumes no item.
 - [ ] `MEMO_RESULT` × gms_v84 cell ✅: byte-fixture test with `packet-audit:verify` marker, pinned evidence, regenerated matrix.
 - [ ] `MEMO_RESULT` × jms_v185 cell ✅: same artifacts.
 - [ ] `note/serverbound/NoteOperationDiscard` × jms_v185 cell ✅: marker + evidence + REPORT.
+- [ ] `note/serverbound/NoteOperationDiscard` × gms_v48, gms_v61, gms_v72, gms_v79 cells ✅: marker + evidence + REPORT per cell (per-version bodies, design §1.5).
+- [ ] Nine-version templates carry correct MEMO_RESULT `operations`/`errors` tables, including the shifted v48/v61 mode table (SEND_ERROR=4); a v48/v61 tenant's SEND_ERROR path is confirmed to unlock the client.
 - [ ] `packet-audit` matrix/fname-doc checks exit 0; no cell regressions.
 - [ ] Seed templates updated for any new routing/options in all versions, and live-tenant PATCH documented (or explicit statement that no config change was needed).
 - [ ] `go test -race ./...`, `go vet ./...`, `go build ./...` clean in every changed module; `docker buildx bake atlas-channel` (and any other touched service) clean; `tools/redis-key-guard.sh` clean.

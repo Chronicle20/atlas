@@ -2,44 +2,46 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make every player-initiated note send consume exactly one Note item (classification 509) via a destroy-first saga, wire the USE_CASH_ITEM note arm on all five verified versions, and promote three note-family packet-matrix cells to ✅.
+**Goal:** Make every player-initiated note send consume exactly one Note item (classification 509) via a destroy-first saga, wire the USE_CASH_ITEM note arm on **all nine verified versions** (gms_v48/v61/v72/v79/v83/v84/v87/v95, jms_v185), and promote the note-family packet-matrix cells to ✅ (MEMO_RESULT × v84/jms185; NoteOperationDiscard × jms185 **and the four legacy versions v48/v61/v72/v79**).
 
-**Architecture:** The player send path is USE_CASH_ITEM (IDA-verified on all five versions, design §1.1); a new `note_send` saga (`DestroyAsset` → new `CreateNote` action) couples consumption with note creation, with orchestrator compensation re-awarding the item if creation fails after the destroy. atlas-notes threads a transaction id through its command/status events and emits a new `CREATE_FAILED` event; the channel's saga status consumer sends SEND_SUCCESS/SEND_ERROR client feedback. The NOTE_ACTION SEND arm (only legitimately written by the unimplemented cash-shop gift flow) gets the same ownership+consumption gate, closing the free-note cheat path.
+**Architecture:** The player send path is USE_CASH_ITEM (IDA-verified on **all nine** versions, design §1.1 + `legacy-verify/{v48,v61,v72,v79}.md`); a new `note_send` saga (`DestroyAsset` → new `CreateNote` action) couples consumption with note creation, with orchestrator compensation re-awarding the item if creation fails after the destroy. atlas-notes threads a transaction id through its command/status events and emits a new `CREATE_FAILED` event; the channel's saga status consumer sends SEND_SUCCESS/SEND_ERROR client feedback. The NOTE_ACTION SEND arm (only legitimately written by the unimplemented cash-shop gift flow — and NOT written at all on v48/v79) gets the same ownership+consumption gate, closing the free-note cheat path.
+
+> **Scope revision (main-sync):** originally planned for five versions; main added four legacy columns (v48/v61/v72/v79) now in scope. The saga/service core (Tasks 4–13) is entirely version-agnostic and unchanged. The nine-version fan-out touches only the codec (Task 2 fixtures), the codec gate (Task 1), the writer config (Task 14), and the matrix-promotion tasks (15–17). Two legacy divergences are folded in: (a) **v48/v61 use a shifted MEMO_RESULT mode table** (SEND_SUCCESS=3, SEND_ERROR=4 vs the standard 4/5) — resolved via per-version config, NOT a codec change; a hard-coded 5 would wedge those clients; (b) per-version note-discard bodies (design §1.5). The stale "CharacterCashItemUseHandle routed only on gms_83/84, add to 87/95/jms" premise is dead — main routes it in all nine templates.
 
 **Tech Stack:** Go workspace monorepo; Kafka (segmentio/kafka-go via libs/atlas-kafka); JSON seed templates in atlas-configurations; packet-audit tooling + ida-pro-mcp for matrix promotions.
 
 ## Global Constraints
 
 - **Spec:** `docs/tasks/task-137-note-item-consumption/design.md` (all IDA addresses, wire formats, opcodes, and error codes below come from its §1; do NOT re-derive from Cosmic or memory).
-- **DOM-25:** client-interpreted bytes (mode bytes, error codes) resolve from tenant config (`operations`/`errors` tables), never hard-coded.
+- **DOM-25:** client-interpreted bytes (mode bytes, error codes) resolve from tenant config (`operations`/`errors` tables), never hard-coded. **Critical for this task:** the MEMO_RESULT SEND_SUCCESS/SEND_ERROR mode bytes are NOT uniform — v48/v61 use `{SHOW:2, SEND_SUCCESS:3, SEND_ERROR:4}`, v72+ use `{SHOW:3, SEND_SUCCESS:4, SEND_ERROR:5, REFRESH:7}` (design §1.3). A hard-coded `5` silently wedges v48/v61 clients (mode 5 is unhandled there → no unlock, no dialog). The sub-error codes (0/1/2, and the `NO_NOTE_ITEM` sentinel 3) are uniform across all nine.
 - **FR-7:** no item is consumed on any pre-flight rejection (unknown receiver, missing item, malformed request). Pre-flight rejections happen in the channel handler BEFORE any saga is created.
 - **FR-5:** destroy-first ordering is mandatory — `DestroyAsset` is step 1, `CreateNote` is step 2, in every saga this plan creates.
 - **Note flag is `1`** on send (PRD non-goal; design §2.4).
-- **Gift memos are out of scope** (design §2.3): the NOTE_ACTION SEND arm's trailing gift fields (byte/int32/8-byte SN) stay undecoded; the existing `note/serverbound/NoteOperation` matrix row is not a target.
+- **Gift memos are out of scope** (design §2.3): the NOTE_ACTION SEND arm's trailing gift fields (byte/int32/8-byte SN) stay undecoded; `note/serverbound/NoteOperationSend` (the gift-send codec, ❌ on all nine) is not a target.
 - Test setup uses the project's Builder pattern; no `*_testhelpers.go` files.
 - No `// TODO` stubs in landed commits.
 - Every task's commit runs from the worktree root `/…/.worktrees/task-137-note-item-consumption` on branch `task-137-note-item-consumption`.
-- Verification gate (final task): `go test -race ./...`, `go vet ./...`, `go build ./...` per changed module; `docker buildx bake` for atlas-channel, atlas-saga-orchestrator, atlas-notes; `tools/redis-key-guard.sh`; `packet-audit` matrix/fname-doc/operations `--check` exit 0.
+- Verification gate (final task): `go test -race ./...`, `go vet ./...`, `go build ./...` per changed module; `docker buildx bake` for atlas-channel, atlas-saga-orchestrator, atlas-notes; `tools/redis-key-guard.sh`; `tools/goroutine-guard.sh`; `tools/lint.sh --check`; `packet-audit` matrix/fname-doc/operations `--check` exit 0 (these last three guards were added to main after the original plan; they run tree-wide from the repo root).
 
 ## File Structure (what is created/modified where)
 
 | Module | Files |
 |---|---|
-| `libs/atlas-packet` | `cash/serverbound/item_use.go` (gate fix + exported `UpdateTimeFirst`), `cash/serverbound/item_use_note.go` (new arm codec), `note/clientbound/operation_body.go` (SEND_ERROR mode fix + `NO_NOTE_ITEM` key), matching `_test.go` files, fixture tests for the three matrix promotions |
+| `libs/atlas-packet` | `cash/serverbound/item_use.go` (gate fix + exported `UpdateTimeFirst`), `cash/serverbound/item_use_note.go` (new arm codec, nine-version fixtures), `note/clientbound/operation_body.go` (version-resolved SEND_ERROR mode + `NO_NOTE_ITEM` key), matching `_test.go` files, fixture tests for the matrix promotions (MEMO_RESULT × v84/jms185; NoteOperationDiscard × jms185/v48/v61/v72/v79) |
 | `libs/atlas-saga` | `model.go` (`NoteSend` type, `CreateNote` action), `payloads.go` (`CreateNotePayload`), `unmarshal.go` (case), `unmarshal_test.go` |
 | `services/atlas-notes` | `kafka/message/note/kafka.go` (TransactionId + CREATE_FAILED), `note/processor.go` + `note/producer.go` + `note/mock/processor.go` (txn threading), `kafka/consumer/note/consumer.go` (failure event), `note/resource.go` (caller update) |
 | `services/atlas-saga-orchestrator` | `kafka/message/note/kafka.go` (new), `note/processor.go` + `note/producer.go` + `note/mock/processor.go` (new), `saga/model.go` (re-exports + unmarshal case), `saga/handler.go` (`handleCreateNote`), `saga/event_acceptance.go` (kinds + tables), `kafka/consumer/note/consumer.go` (new), `main.go` (registration), `saga/producer.go` (note_send completed Results), `saga/compensator.go` (`compensateNoteSend`) |
 | `services/atlas-channel` | `kafka/message/saga/kafka.go` (completed body fields + `SagaTypeNoteSend`), `kafka/consumer/saga/consumer.go` (note_send branches), `compartment/model.go` (`FindFirstByClassification`), `socket/handler/note_send.go` (new shared helper), `socket/handler/character_cash_item_use.go` (note arm), `socket/handler/note_operation.go` (SEND gate), `note/processor.go` + `note/producer.go` (SendNote removal) |
-| `services/atlas-configurations` | 5 seed templates (`template_gms_83_1.json`, `_84_`, `_87_`, `_95_`, `template_jms_185_1.json`) |
-| `docs` | `docs/tasks/task-137-note-item-consumption/live-tenant-patch.md`; `docs/packets/audits/` evidence + regenerated `STATUS.md` |
+| `services/atlas-configurations` | 9 seed templates (`template_gms_48_1.json`, `_61_`, `_72_`, `_79_`, `_83_`, `_84_`, `_87_`, `_95_`, `template_jms_185_1.json`) — writer `operations`/`errors` config only; handler routing already present |
+| `docs` | `docs/tasks/task-137-note-item-consumption/live-tenant-patch.md`; `docs/tasks/task-137-note-item-consumption/legacy-verify/{v48,v61,v72,v79}.md` (IDA evidence, already committed); `docs/packets/audits/` evidence + regenerated `STATUS.md` |
 
-Dependency order: Tasks 1–4 (shared libs) → 5 (atlas-notes) → 6–9 (orchestrator) → 10–13 (atlas-channel) → 14 (templates) → 15–17 (matrix promotions, independent of 5–14) → 18 (gate).
+Dependency order: Tasks 1–4 (shared libs) → 5 (atlas-notes) → 6–9 (orchestrator) → 10–13 (atlas-channel) → 14 (templates) → 15–17 (matrix promotions, independent of 5–14) → 18 (gate). The matrix promotions now cover MEMO_RESULT × v84/jms185 (Tasks 15–16) and NoteOperationDiscard × jms185 + the four legacy versions (Task 17, expanded).
 
 ---
 
 ### Task 1: `item_use.go` updateTime gate fix (`>=95` → `>=87` + JMS)
 
-The shared USE_CASH_ITEM prefix codec gates the leading updateTime on `Region=="GMS" && MajorVersion>=95`. IDA-verified (design §1.1): v87 (fn 0xa9fef9) already encodes it leading, and JMS185 (0xaef2f5) leads too; only v83/v84 trail. No live regression risk: `CharacterCashItemUseHandle` is currently routed only on gms_83/84 templates, and the predicate is unchanged for both.
+The shared USE_CASH_ITEM prefix codec gates the leading updateTime on `Region=="GMS" && MajorVersion>=95`. IDA-verified (design §1.1): v87 (fn 0xa9fef9) already encodes it leading, and JMS185 (0xaef2f5) leads too; the six versions ≤ v84 (v48/v61/v72/v79/v83/v84) all trail (legacy pass: v48 @0x711d9f, v61 @0x83672e, v72 @0x909123, v79 @0x95a54e). The single predicate `(GMS && >=87) || JMS` classifies all nine correctly. `CharacterCashItemUseHandle` is routed in all nine templates (main wired it), so v87/v95/jms are now live behind this gate — the `>=95` bug would send v87 a trailing decode; the fix is a prerequisite, not just cleanup.
 
 **Files:**
 - Modify: `libs/atlas-packet/cash/serverbound/item_use.go`
@@ -56,9 +58,10 @@ Append to `libs/atlas-packet/cash/serverbound/item_use_test.go`:
 ```go
 // TestItemUseUpdateTimeFirst pins the updateTime position per version.
 // IDA-verified (task-137 design §1.1, CWvsContext::SendConsumeCashItemUseRequest):
-// GMS v83 (0xa0a63f) and v84 (0xa54a2f) encode updateTime TRAILING (shared
-// LABEL_41 epilogue); GMS v87 (0xa9fef9), v95 (0x9eb3e0) and JMS185 (0xaef2f5)
-// encode it LEADING, immediately after the opcode.
+// the six GMS versions <= v84 (v48 0x70e495, v61 0x832a5d, v72 0x904fe2,
+// v79 0x95634a, v83 0xa0a63f, v84 0xa54a2f) encode updateTime TRAILING; GMS
+// v87 (0xa9fef9), v95 (0x9eb3e0) and JMS185 (0xaef2f5) encode it LEADING,
+// immediately after the opcode.
 func TestItemUseUpdateTimeFirst(t *testing.T) {
 	cases := []struct {
 		name    string
@@ -66,6 +69,10 @@ func TestItemUseUpdateTimeFirst(t *testing.T) {
 		major   uint16
 		leading bool
 	}{
+		{"GMS v48 trailing", "GMS", 48, false},
+		{"GMS v61 trailing", "GMS", 61, false},
+		{"GMS v72 trailing", "GMS", 72, false},
+		{"GMS v79 trailing", "GMS", 79, false},
 		{"GMS v83 trailing", "GMS", 83, false},
 		{"GMS v84 trailing", "GMS", 84, false},
 		{"GMS v87 leading", "GMS", 87, true},
@@ -144,8 +151,8 @@ Add after the `CharacterCashItemUseHandle` const:
 // UpdateTimeFirst reports whether the USE_CASH_ITEM request carries its
 // updateTime immediately after the opcode (leading) rather than at the end
 // of the packet (trailing). IDA-verified per version in
-// CWvsContext::SendConsumeCashItemUseRequest: GMS v83/v84 trail (shared
-// LABEL_41 epilogue); GMS v87+ and JMS lead.
+// CWvsContext::SendConsumeCashItemUseRequest: all GMS <= v84 (v48/v61/v72/
+// v79/v83/v84) trail; GMS v87+ and JMS lead.
 func UpdateTimeFirst(t tenant.Model) bool {
 	return (t.Region() == "GMS" && t.MajorVersion() >= 87) || t.Region() == "JMS"
 }
@@ -173,9 +180,11 @@ git commit -m "fix(atlas-packet): USE_CASH_ITEM leading updateTime starts at v87
 
 ---
 
-### Task 2: `ItemUseNote` arm codec + five-version fixtures
+### Task 2: `ItemUseNote` arm codec + nine-version fixtures
 
-New serverbound arm codec for the note body of USE_CASH_ITEM. Wire format (design §1.1): `EncodeStr(toName)`, `EncodeStr(message)`, then trailing `updateTime` iff the version trails (v83/v84). Mirrors `ItemUseChalkboard`.
+New serverbound arm codec for the note body of USE_CASH_ITEM. Wire format (design §1.1): `EncodeStr(toName)`, `EncodeStr(message)`, then trailing `updateTime` iff the version trails (the six GMS versions ≤ v84: v48/v61/v72/v79/v83/v84). Mirrors `ItemUseChalkboard`.
+
+**Coverage note:** the `ItemUseNote` codec has NO per-version-number branch — the ONLY variable is the trailing-vs-leading gate boolean. `pt.Variants` already exercises both sides: GMS v28/v83/v84/v86 (all `<87` ⇒ trailing) and v87/v95/jms (leading). The four legacy versions (v48/v61/v72/v79) are all trailing and behaviorally identical to the v28/v83 trailing leg, so `TestItemUseNoteRoundTrip` covers them without adding entries to the shared `pt.Variants` fixture (which other packets' gates depend on positionally — do not extend it here). `TestItemUseNoteDecodeTrailing` pins the exact trailing byte shape; `TestItemUseNoteDecodeLeading` pins the leading shape. The per-version byte evidence for the four legacy cash-item arms is captured in `legacy-verify/{v48,v61,v72,v79}.md`, not as separate codec tests (there is nothing version-specific to test in the codec).
 
 **Files:**
 - Create: `libs/atlas-packet/cash/serverbound/item_use_note.go`
@@ -351,14 +360,14 @@ Expected: PASS.
 
 ```bash
 git add libs/atlas-packet/cash/serverbound/item_use_note.go libs/atlas-packet/cash/serverbound/item_use_note_test.go
-git commit -m "feat(atlas-packet): USE_CASH_ITEM note arm codec (ItemUseNote), 5-version fixtures"
+git commit -m "feat(atlas-packet): USE_CASH_ITEM note arm codec (ItemUseNote), 9-version fixtures"
 ```
 
 ---
 
 ### Task 3: Fix `NoteSendErrorBody` mode byte + add `NO_NOTE_ITEM` error key
 
-Pre-existing bug found during planning: `NoteSendErrorBody` resolves its mode byte from the `SEND_SUCCESS` operations key (`libs/atlas-packet/note/clientbound/operation_body.go:38`), so every "error" currently goes out as mode 4 (SEND_SUCCESS, which per design §1.3 shows the success notice and never reads the error byte). It must resolve `SEND_ERROR` (mode 5). Also add the `NO_NOTE_ITEM` semantic key (design §5.3: value 3 in tenant config — deliberately outside the client's 0–2 dialog range; IDA-verified silent excl-unlock).
+Pre-existing bug found during planning: `NoteSendErrorBody` resolves its mode byte from the `SEND_SUCCESS` operations key (`libs/atlas-packet/note/clientbound/operation_body.go:38`), so every "error" currently goes out as the success mode (which per design §1.3 shows the success notice and never reads the error byte). It must resolve `SEND_ERROR` instead. **The resolved value is version-dependent and comes from the tenant `operations` table** — mode **5** on v72+/GMS83+/JMS, mode **4** on v48/v61 (design §1.3). The code stays version-agnostic (it reads whatever the tenant config holds); Task 14 populates the shifted v48/v61 value. Also add the `NO_NOTE_ITEM` semantic key (design §5.3: sub-code value 3 in tenant config — deliberately outside the client's 0–2 dialog range; IDA-verified silent excl-unlock in all nine versions).
 
 **Files:**
 - Modify: `libs/atlas-packet/note/clientbound/operation_body.go`
@@ -384,9 +393,10 @@ import (
 )
 
 // TestNoteSendErrorBodyUsesSendErrorMode pins that the error body resolves
-// the SEND_ERROR operations key (mode 5 in every tenant template), not
-// SEND_SUCCESS. Client (CWvsContext::OnMemoResult, all five versions): the
-// mode-5 arm clears the exclusive-request lock then reads one error byte.
+// the SEND_ERROR operations key (mode 5 here — the GMS v83 value; v48/v61
+// tenants resolve 4), not SEND_SUCCESS. Client (CWvsContext::OnMemoResult):
+// the SEND_ERROR arm clears the exclusive-request lock then reads one error
+// byte, in all nine versions.
 func TestNoteSendErrorBodyUsesSendErrorMode(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 83, 1)
 	options := map[string]interface{}{
@@ -432,7 +442,9 @@ Add to the const block (after `NoteSendErrorReceiverInboxFull`):
 	// note_send saga fails mid-flight. Tenant templates map it to code 3 —
 	// outside the client's 0-2 dialog range: the mode-5 arm clears the
 	// exclusive-request lock before decoding the code and shows no dialog
-	// for unknown codes (IDA-verified, all five versions).
+	// for unknown codes (IDA-verified, all nine versions). The SEND_ERROR
+	// mode byte carrying this code is version-resolved (4 on v48/v61,
+	// 5 on v72+) from the tenant operations table.
 	NoteSendErrorNoNoteItem = "NO_NOTE_ITEM"
 ```
 
@@ -2535,17 +2547,30 @@ git commit -m "feat(atlas-channel): gate NOTE_ACTION SEND on Note-item ownership
 
 ---
 
-### Task 14: Seed templates (5 versions) + live-tenant PATCH doc
+### Task 14: Seed templates (9 versions) + live-tenant PATCH doc
 
-Design §5.1 wiring matrix, plus two planning-phase findings: the gms_95 `NoteOperationHandle` entry has NO `validator` (silently dropped by `BuildHandlerMap` — the entire note handler is dead on v95 today), and gms_87/95 `NoteOperation` writers lack the `errors` table entirely. gms_92 has no note wiring and no verified IDB — explicitly out of scope (design covers exactly five versions).
+**Premise correction (main-sync):** the original plan added the `CharacterCashItemUseHandle` route to gms_87/95/jms. That route now **already exists in all nine templates** (main wired it during the version bring-ups — verified: gms_48 0x3E, gms_61 0x49, gms_72 0x4E, gms_79 0x4D, gms_83/84 0x4F, gms_87 0x52, gms_95 0x55, jms_185 0x47). Do NOT add duplicate handler entries. The remaining template work is the **writer config** (the clientbound MEMO_RESULT `operations`/`errors` tables) plus the serverbound `NoteOperationHandle` `operations` table, correct per version — including the **shifted v48/v61 MEMO_RESULT mode table** (design §1.3/§5.1).
+
+Retained planning-phase findings still to verify against the current templates: the gms_95 `NoteOperationHandle` entry historically lacked a `validator` (silently dropped by `BuildHandlerMap`); gms_87/95 `NoteOperation` writers historically lacked the `errors` table. Re-inspect each template's current state before editing — main may have partially fixed these during bring-up. gms_92 and gms_12 have no matrix column and are out of scope.
 
 **Files:**
-- Modify: `services/atlas-configurations/seed-data/templates/template_gms_83_1.json`, `template_gms_84_1.json`, `template_gms_87_1.json`, `template_gms_95_1.json`, `template_jms_185_1.json`
+- Modify (writer/handler `options` only; routing already present): `template_gms_48_1.json`, `template_gms_61_1.json`, `template_gms_72_1.json`, `template_gms_79_1.json`, `template_gms_83_1.json`, `template_gms_84_1.json`, `template_gms_87_1.json`, `template_gms_95_1.json`, `template_jms_185_1.json` (all under `services/atlas-configurations/seed-data/templates/`)
 - Create: `docs/tasks/task-137-note-item-consumption/live-tenant-patch.md`
 
-- [ ] **Step 1: gms_83 + gms_84 — add `NO_NOTE_ITEM` to the writer errors table**
+For every step below: locate the entries by `jq`/grep (`handler == "NoteOperationHandle"`, `writer == "NoteOperation"`), not by hard-coded line numbers — the legacy templates were added after this plan and their layout is unknown here. Every `NoteOperationHandle` entry must carry `"validator": "LoggedInValidator"` (a validator-less entry is silently dropped).
 
-In both files, the `"writer": "NoteOperation"` entry (opCode 0x29; gms_83 line ~1475, gms_84 line ~1497): add `"NO_NOTE_ITEM": 3` to `options.errors`:
+- [ ] **Step 1: Clientbound MEMO_RESULT writer — `operations` table (per version)**
+
+The `NoteOperation` writer's `options.operations` must match the client's mode table (design §1.3). Set/verify:
+
+- **v48, v61 (shifted):** `{ "SHOW": 2, "SEND_SUCCESS": 3, "SEND_ERROR": 4 }` (no `REFRESH`).
+- **v72, v79, v83, v84, v87, v95, jms_185 (standard):** `{ "SHOW": 3, "SEND_SUCCESS": 4, "SEND_ERROR": 5, "REFRESH": 7 }`.
+
+> A hard-coded/standard `SEND_ERROR: 5` on v48/v61 silently wedges those clients (mode 5 is unhandled there → the excl lock never clears). This is the single most important legacy config value in the task.
+
+- [ ] **Step 2: Clientbound MEMO_RESULT writer — `errors` table + `NO_NOTE_ITEM` (all nine)**
+
+On every version's `NoteOperation` writer, ensure `options.errors` contains all four keys (sub-codes are uniform across versions, design §1.3/§5.3):
 
 ```json
           "errors": {
@@ -2556,113 +2581,39 @@ In both files, the `"writer": "NoteOperation"` entry (opCode 0x29; gms_83 line ~
           }
 ```
 
-- [ ] **Step 2: gms_87 — route the cash handler, complete the note wiring**
+(gms_83/84/jms_185 historically have the first three; add `NO_NOTE_ITEM`. gms_87/95 may lack the whole table; add it. Legacy v48/61/72/79 — inspect and add whatever is missing.)
 
-In `template_gms_87_1.json`:
+- [ ] **Step 3: Serverbound `NoteOperationHandle` — `operations` table (per version)**
 
-a. Add to the socket handlers array, in opcode order (IDA: `CWvsContext::SendConsumeCashItemUseRequest` @0xa9fef9 sends opcode 0x52 on v87):
+The inbound dispatch table maps client mode bytes to Atlas operations. DISCARD (mode 1) is the load-bearing one Atlas actually decodes; SEND (mode 0) is the gated arm. Set `options.operations`:
 
-```json
-      {
-        "opCode": "0x52",
-        "validator": "LoggedInValidator",
-        "handler": "CharacterCashItemUseHandle"
-      },
-```
+- **v72, v79, v83, v84, v87, v95, jms_185:** `{ "SEND": 0, "DISCARD": 1, "REQUEST": 2 }`.
+- **v48, v61:** `{ "SEND": 0, "DISCARD": 1 }` — no `REQUEST` writer exists client-side on these versions (design §1.2); include only the modes the client emits. (Adding an unused `REQUEST` key is harmless if it simplifies the fixture, but the client never sends it here.)
 
-b. The `NoteOperationHandle` entry (line ~463) gains the operations table (mode immediates verified at the three v87 writer fns, design §5.1; the discard/request fixtures pin them):
+Mode immediates were confirmed at the writer level per version (SetRet=1, request=2 where present, gift=0) in the legacy pass and design §1.2; the discard fixtures (Task 17) pin them.
 
-```json
-      {
-        "opCode": "0x8B",
-        "validator": "LoggedInValidator",
-        "handler": "NoteOperationHandle",
-        "options": {
-          "operations": {
-            "SEND": 0,
-            "DISCARD": 1,
-            "REQUEST": 2
-          }
-        }
-      },
-```
+- [ ] **Step 4: Validate JSON**
 
-c. The `NoteOperation` writer (opCode 0x29, line ~1090) gains the full errors table:
+Run: `for f in services/atlas-configurations/seed-data/templates/template_gms_48_1.json services/atlas-configurations/seed-data/templates/template_gms_61_1.json services/atlas-configurations/seed-data/templates/template_gms_72_1.json services/atlas-configurations/seed-data/templates/template_gms_79_1.json services/atlas-configurations/seed-data/templates/template_gms_83_1.json services/atlas-configurations/seed-data/templates/template_gms_84_1.json services/atlas-configurations/seed-data/templates/template_gms_87_1.json services/atlas-configurations/seed-data/templates/template_gms_95_1.json services/atlas-configurations/seed-data/templates/template_jms_185_1.json; do jq empty "$f" && echo "OK $f"; done`
+Expected: `OK` ×9. Additionally assert the shifted table where it matters:
+`jq '.. | objects | select(.writer=="NoteOperation") | .options.operations.SEND_ERROR' template_gms_48_1.json` → `4`; same for gms_61; → `5` for the other seven.
 
-```json
-        "options": {
-          "operations": {
-            "SHOW": 3,
-            "SEND_SUCCESS": 4,
-            "SEND_ERROR": 5,
-            "REFRESH": 7
-          },
-          "errors": {
-            "RECEIVER_ONLINE": 0,
-            "RECEIVER_UNKNOWN": 1,
-            "RECEIVER_INBOX_FULL": 2,
-            "NO_NOTE_ITEM": 3
-          }
-        }
-```
+- [ ] **Step 5: Write the live-tenant PATCH doc**
 
-- [ ] **Step 3: gms_95 — same, plus the missing validator**
+Seed templates apply only at tenant creation (known bug pattern) — existing tenants need a config PATCH plus channel restart. Create `docs/tasks/task-137-note-item-consumption/live-tenant-patch.md` documenting, for EACH existing tenant of the **nine** versions:
 
-In `template_gms_95_1.json`:
-
-a. Add handler entry (IDA 0x9eb3e0 → opcode 0x55):
-
-```json
-      {
-        "opCode": "0x55",
-        "validator": "LoggedInValidator",
-        "handler": "CharacterCashItemUseHandle"
-      },
-```
-
-b. `NoteOperationHandle` (line ~331) — add the MISSING `"validator": "LoggedInValidator"` (without it the handler never registers) and the operations table, same shape as Step 2b (opCode stays `0x9A`).
-
-c. `NoteOperation` writer (opCode 0x28, line ~768) — add the errors table as in Step 2c.
-
-- [ ] **Step 4: jms_185**
-
-In `template_jms_185_1.json`:
-
-a. Add handler entry (IDA 0xaef2f5 → opcode 0x47):
-
-```json
-      {
-        "opCode": "0x47",
-        "validator": "LoggedInValidator",
-        "handler": "CharacterCashItemUseHandle"
-      },
-```
-
-b. `NoteOperationHandle` (line ~447, opCode 0x86) — add the operations table (SEND 0 / DISCARD 1 / REQUEST 2), same shape as Step 2b.
-
-c. `NoteOperation` writer (opCode 0x26, line ~1108) — errors table already exists; add `"NO_NOTE_ITEM": 3`.
-
-- [ ] **Step 5: Validate JSON**
-
-Run: `for f in services/atlas-configurations/seed-data/templates/template_gms_83_1.json services/atlas-configurations/seed-data/templates/template_gms_84_1.json services/atlas-configurations/seed-data/templates/template_gms_87_1.json services/atlas-configurations/seed-data/templates/template_gms_95_1.json services/atlas-configurations/seed-data/templates/template_jms_185_1.json; do jq empty "$f" && echo "OK $f"; done`
-Expected: `OK` ×5.
-
-- [ ] **Step 6: Write the live-tenant PATCH doc**
-
-Seed templates apply only at tenant creation (known bug pattern) — existing tenants need a config PATCH plus channel restart. Create `docs/tasks/task-137-note-item-consumption/live-tenant-patch.md` documenting, for EACH existing tenant of the five versions:
-
-1. What to add (exactly the deltas from Steps 1–4, per version — reproduce the JSON fragments).
-2. How: PATCH the tenant's socket configuration resource via the atlas-tenants API (same mechanism as previous live patches — `GET /tenants/{tenantId}/configurations/socket`, edit, PATCH back), or via the atlas-ui configuration editor.
+1. What to add/correct (exactly the deltas from Steps 1–3, per version — reproduce the JSON fragments; call out the v48/v61 `SEND_ERROR: 4` explicitly).
+2. How: PATCH the tenant's socket configuration resource via the atlas-tenants API (`GET /tenants/{tenantId}/configurations/socket`, edit, PATCH back), or via the atlas-ui configuration editor.
 3. Restart note: `kubectl rollout restart deployment atlas-channel` (or per-env equivalent) — handler/writer projections do not hot-reload.
-4. A verification checklist: send a note from a character holding item 5090000 (item consumed, receiver sees note on next login); attempt NOTE_ACTION SEND without the item via packet injection is expected to warn-log + silent-unlock.
+4. A verification checklist: send a note from a character holding item 5090000 (item consumed, receiver sees note on next login); a NOTE_ACTION SEND without the item via packet injection is expected to warn-log + silent-unlock; on a v48/v61 tenant specifically, confirm the SEND_ERROR path actually unlocks the client (regression guard for the shifted mode).
 
 Use repo-relative paths and placeholders only (no literal home paths).
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add services/atlas-configurations/seed-data/templates/ docs/tasks/task-137-note-item-consumption/live-tenant-patch.md
-git commit -m "feat(config): wire USE_CASH_ITEM + note operations/errors across 5 version templates"
+git commit -m "feat(config): note operations/errors across 9 version templates (v48/v61 shifted mode table)"
 ```
 
 ---
@@ -2711,31 +2662,46 @@ git commit -m "verify(packets): MEMO_RESULT x jms_v185 — OnMemoResult 0xb0c6d0
 
 ---
 
-### Task 17: Matrix promotion — `note/serverbound/NoteOperationDiscard` × jms_v185
+### Task 17: Matrix promotion — `note/serverbound/NoteOperationDiscard` × jms_v185 + four legacy versions
 
-Serverbound cell: marker + evidence + REPORT (report via root `-ida-source`), per VERIFYING_A_PACKET.md §9–10. Critical warning from design §6.3: jms `CMemoListDlg::SetRet` @ **0x6c2d43** is 0x33d bytes vs 0x26b/0x273 on GMS — **derive the jms write order from scratch; do not assume the GMS shape**. If the derivation shows extra/reordered fields, the codec needs a version-gated delta in `libs/atlas-packet/note/serverbound/operation_discard.go` (budgeted; add fixtures for both shapes). If the write order matches GMS, a jms fixture leg + marker suffices.
+Five serverbound cells: jms_v185 (❌) plus the four legacy versions v48/v61/v72/v79 (all ❌ or 🟡 on main). Each is a marker + evidence + REPORT cell (report via root `-ida-source`), per VERIFYING_A_PACKET.md §9–10 — one `packet-verifier`-style pass per cell, serialized (shared `operation_discard.go` + matrix). The per-version `CMemoListDlg::SetRet` addresses and body shapes are documented in design §1.5 and the `legacy-verify/` files; use them to derive each read order, but confirm against the IDB (do not paste from the doc without re-verifying the read order in the playbook).
+
+The discard body has a uniform header (`mode=1`, `totalCount u8`, `specialCount u8`, `emptySlots u8`) and a per-entry loop where the "special" (gift/reward) flag and its extra int32 field differ per version:
+
+| cell | IDB | SetRet addr | note-op | special flag | extra field | quirk |
+|---|---|---|---|---|---|---|
+| gms_v48 | v48 | 0x534dc4 | 0x65 | **2** | reward i32 | ALSO emits a follow-up **0x66** packet for flag==1 notes — decide during verification whether that is part of this cell or a separate op |
+| gms_v61 | v61 | 0x5ad50c | 0x77 | **2** | itemId i32 | — |
+| gms_v72 | v72 | 0x5fb443 | 0x81 | **3** | mesos i32 | main shows 🟡; this promotes it to ✅ |
+| gms_v79 | v79 | 0x619fb7 | 0x80 | **3** | value i32 | — |
+| jms_v185 | jms (port 13344, `_SCY` build) | 0x6c2d43 | 0x86 | — | — | **0x33d bytes vs ~0x26b GMS — derive from scratch; do not assume the GMS shape** |
+
+If any version's read order diverges from the existing GMS codec, add a version-gated delta in `libs/atlas-packet/note/serverbound/operation_discard.go` with byte fixtures for each distinct shape. The special-flag value (2 vs 3) and v48's 0x66 tail mean at least two legacy shapes exist — do NOT assume one fixture covers all four.
 
 **Files:**
-- Modify: `libs/atlas-packet/note/serverbound/operation_discard.go` (only if the jms shape differs), `operation_discard_test.go` (marker `packet=note/serverbound/NoteOperationDiscard version=jms_v185 ida=0x6c2d43` + fixture)
-- Create: `docs/packets/audits/jms_v185/NoteOperationDiscard.md`/`.json` evidence + REPORT
+- Modify: `libs/atlas-packet/note/serverbound/operation_discard.go` (version-gated deltas as the derivations demand), `operation_discard_test.go` (one `packet-audit:verify packet=note/serverbound/NoteOperationDiscard version=<v> ida=<addr>` marker + fixture per cell)
+- Create: `docs/packets/audits/{jms_v185,gms_v48,gms_v61,gms_v72,gms_v79}/NoteOperationDiscard.md`/`.json` evidence + REPORT
 - Regenerate: `docs/packets/audits/STATUS.md` + `status.json`
 
-- [ ] **Step 1:** On instance 13344, decompile `CMemoListDlg::SetRet` @0x6c2d43; derive the full write order (mode byte, count, per-entry fields) from the jms binary alone.
-- [ ] **Step 2:** Compare to the codec; implement a version-gated delta if needed (with byte fixtures for GMS and JMS shapes).
+For each of the five cells (jms first, then v48/v61/v72/v79):
+
+- [ ] **Step 1:** Select the correct IDB instance (jms → port 13344, verify the `_SCY` binary; each legacy → its own instance — always list + match the binary NAME before reading). Decompile the cited `SetRet`; derive the full write order from that binary alone (mode byte, the three header counts, per-entry normal/special fields).
+- [ ] **Step 2:** Compare to the codec; implement a version-gated delta if needed (byte fixtures for each distinct shape). For jms, budget for the larger function; for v48, resolve the 0x66-tail question.
 - [ ] **Step 3:** Fixture + `packet-audit:verify` marker; `cd libs/atlas-packet && go test ./note/serverbound/ -v` → PASS.
-- [ ] **Step 4:** Evidence + REPORT (root `-ida-source`), surgical splice (never overwrite the export), regenerate matrix, `--check` exit 0. Expected: `NoteOperationDiscard` jms cell ✅, no regressions.
-- [ ] **Step 5:** Commit:
+- [ ] **Step 4:** Evidence + REPORT (root `-ida-source`; jms needs `--audit-dir docs/packets/audits/jms_v185`), surgical splice (never overwrite the export), regenerate matrix, `--check` exit 0. Expected: the cell ✅, no regressions.
+
+- [ ] **Step 5:** Commit (group the five cells, or commit per cell — either way the codec + fixture + evidence for a cell land together):
 
 ```bash
 git add libs/atlas-packet/note/serverbound/ docs/packets/audits/
-git commit -m "verify(packets): NoteOperationDiscard x jms_v185 — SetRet 0x6c2d43 read order"
+git commit -m "verify(packets): NoteOperationDiscard x jms_v185 + v48/v61/v72/v79 — SetRet read orders"
 ```
 
 ---
 
 ### Task 18: Full verification gate
 
-Per CLAUDE.md Build & Verification — all five checks, every changed module. Changed Go modules: `libs/atlas-packet`, `libs/atlas-saga`, `services/atlas-notes/atlas.com/notes`, `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator`, `services/atlas-channel/atlas.com/channel`.
+Per CLAUDE.md Build & Verification — every check, every changed module. Changed Go modules: `libs/atlas-packet`, `libs/atlas-saga`, `services/atlas-notes/atlas.com/notes`, `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator`, `services/atlas-channel/atlas.com/channel`. Note the guard set grew on main since this plan was written — `tools/goroutine-guard.sh` and `tools/lint.sh --check` are now mandatory alongside `redis-key-guard.sh` (Steps 3a/3b below).
 
 - [ ] **Step 1: Tests + vet per changed module**
 
@@ -2755,22 +2721,24 @@ docker buildx bake atlas-channel atlas-saga-orchestrator atlas-notes
 
 Expected: all three build clean. (Also bake `atlas-configurations` if `.github/config/services.json` lists it as a Go service and its files changed — template JSON edits alone don't require it, but verify with `jq -r '.[]|.name' .github/config/services.json | grep configurations`.)
 
-- [ ] **Step 3: Redis key guard** (from repo root, no global GOWORK=off)
+- [ ] **Step 3: Repo-root guards** (from repo root, no global GOWORK=off)
 
 ```bash
 tools/redis-key-guard.sh
+tools/goroutine-guard.sh
+tools/lint.sh --check
 ```
 
-Expected: clean.
+Expected: all clean. (`tools/lint.sh` with no flags fixes formatting in place — run it before committing if `--check` complains.)
 
 - [ ] **Step 4: packet-audit checks**
 
 Run the matrix / fname-doc / operations `--check` commands used in Tasks 15–17 once more against the final tree (with the jms `--audit-dir` flag where applicable).
-Expected: all exit 0; `docs/packets/audits/STATUS.md` shows the three target cells ✅ with no regressions.
+Expected: all exit 0; `docs/packets/audits/STATUS.md` shows all target cells ✅ (MEMO_RESULT × v84/jms185; NoteOperationDiscard × jms185/v48/v61/v72/v79) with no regressions.
 
 - [ ] **Step 5: Acceptance sweep against the PRD**
 
-Walk PRD §10's checklist and confirm each box has landed evidence (per-version send path documented in design §1.1; consumption on both arms; pre-flight rejections consume nothing; three ✅ cells; templates + PATCH doc; gift flow untouched). Fix anything missing BEFORE declaring done.
+Walk PRD §10's checklist and confirm each box has landed evidence (per-version send path documented in design §1.1 for all nine versions; consumption on both arms; pre-flight rejections consume nothing; MEMO_RESULT × v84/jms185 ✅; NoteOperationDiscard × jms185 + four legacy ✅; nine templates + PATCH doc, incl. the v48/v61 shifted mode table; gift flow untouched). Fix anything missing BEFORE declaring done.
 
 - [ ] **Step 6: Commit any straggler fixes, then request code review**
 
@@ -2780,14 +2748,15 @@ Code review (superpowers:requesting-code-review) is mandatory before the PR — 
 
 ## Self-review notes (spec coverage)
 
-- FR-1/FR-2 (send-path verification): done at design time (design §1.1); Tasks 15–17 add the remaining per-version byte evidence.
-- FR-3 (UseCashItem note arm): Tasks 1, 2, 12, 14.
-- FR-4 (SEND-arm gate): Task 13.
-- FR-5 (atomicity, destroy-first): Tasks 4, 9, 11 (`TestBuildNoteSendSaga` pins step order; compensation re-awards).
-- FR-6 (client error on no item): Task 3 (`NO_NOTE_ITEM`, resolved from config per §5.3 — no client arm exists; silent-unlock semantics IDA-verified) + Tasks 10/12/13 announcements.
+- FR-1/FR-2 (send-path verification): done at design time for all nine versions (design §1.1 + `legacy-verify/{v48,v61,v72,v79}.md`); Tasks 15–17 add the remaining per-version byte evidence.
+- FR-3 (UseCashItem note arm): Tasks 1, 2, 12, 14. Codec is uniform across all nine versions; only opcode (per-template) and updateTime position vary, both handled by the existing `(GMS>=87)||JMS` gate.
+- FR-4 (SEND-arm gate): Task 13. Applies uniformly even on v48/v79 where the client has no NOTE_ACTION mode-0 writer at all (design §1.2).
+- FR-5 (atomicity, destroy-first): Tasks 4, 9, 11 (`TestBuildNoteSendSaga` pins step order; compensation re-awards). Version-agnostic.
+- FR-6 (client error on no item): Task 3 (`NO_NOTE_ITEM`, resolved from config per §5.3 — no client arm exists in any version; silent-unlock semantics IDA-verified across all nine) + Tasks 10/12/13 announcements. The SEND_ERROR *mode* byte is version-resolved (4 on v48/v61, 5 on v72+).
 - FR-7 (no consumption on rejection): pre-flight checks precede saga creation (Task 11 helper); receiver-unknown path retained.
-- FR-8/9/10/11 (matrix): Tasks 15/16/17 + Task 18 Step 4.
-- FR-12 (config wiring): Task 14 (all five templates + live PATCH doc; gms_95 missing-validator fix; gms_92 explicitly out of scope).
-- FR-13 (DOM-25): mode bytes and error codes resolve via `operations`/`errors` tables throughout; no literals added to handlers/writers.
+- FR-8/9/10/11 (matrix): Tasks 15/16 (MEMO_RESULT × v84/jms185) + Task 17 (NoteOperationDiscard × jms185 + v48/v61/v72/v79) + Task 18 Step 4. (Legacy MEMO_RESULT cells are already ✅ — not re-verified.)
+- FR-12 (config wiring): Task 14 (nine templates + live PATCH doc; handler routing already present on main; v48/v61 shifted MEMO_RESULT mode table is the key legacy delta; gms_92/gms_12 out of scope — no matrix column).
+- FR-13 (DOM-25): mode bytes and error codes resolve via `operations`/`errors` tables throughout; the per-version mode-table split (v48/v61 vs v72+) is absorbed entirely by config — no version literals in handlers/writers.
 - Excl-lock risk (design §10): resolved during planning — destroy-driven `NewChangeBatch(false, …)` writes leading byte 1 (`WriteBool(!silent)`, `libs/atlas-packet/inventory/clientbound/change.go`), Task 10 documents it at the announce site.
-- Pre-existing SEND_ERROR mode bug found and fixed (Task 3) — receiver-unknown previously went out as mode 4.
+- Pre-existing SEND_ERROR mode bug found and fixed (Task 3) — errors previously went out under the SEND_SUCCESS mode.
+- **Legacy divergences folded in (main-sync):** all four new versions (v48/v61/v72/v79) IDA-verified to have the cash-item note-send arm (trailing updateTime); the only wire-invisible surprises — the v48/v61 shifted MEMO_RESULT mode table and the per-version discard bodies — are handled by config (Task 14) and the discard verification (Task 17) respectively, with zero change to the version-agnostic saga/service core (Tasks 4–13).

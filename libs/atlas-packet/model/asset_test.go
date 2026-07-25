@@ -371,12 +371,13 @@ func TestAssetPetCashItemSkillMask(t *testing.T) {
 }
 
 // TestAssetPetCashItemTrailerVersionGate pins the version-gated pet trailer
-// (GW_ItemSlotPet::RawDecode, IDA-verified): v61 reads neither remainLife nor
-// the trailing attribute short (@0x4b52f2), v72 adds remainLife only
-// (@0x4d06dd), v79 (@0x4d84c4) and v83 (@0x4e4219) read both. JMS is not a
-// legacy client and keeps the full trailer. This is the regression guard:
-// every version except v61/v72 must stay byte-identical to today's
-// always-full-trailer encode (57 bytes for this fixture).
+// (GW_ItemSlotPet::RawDecode, IDA-verified): v48 (@0x49c77e) and v61
+// (@0x4b52f2) read neither remainLife nor the trailing attribute short, v72
+// adds remainLife only (@0x4d06dd), v79 (@0x4d84c4) and v83 (@0x4e4219) read
+// both. JMS is not a legacy client and keeps the full trailer. This is the
+// regression guard: every version except v48/v61/v72 must stay
+// byte-identical to today's always-full-trailer encode (57 bytes for this
+// fixture).
 func TestAssetPetCashItemTrailerVersionGate(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	expiration := time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -392,6 +393,7 @@ func TestAssetPetCashItemTrailerVersionGate(t *testing.T) {
 		region string
 		major  uint16
 	}{
+		{"v48", "GMS", 48},
 		{"v61", "GMS", 61},
 		{"v72", "GMS", 72},
 		{"v79", "GMS", 79},
@@ -408,6 +410,9 @@ func TestAssetPetCashItemTrailerVersionGate(t *testing.T) {
 
 	if lengths["v83"] != wantV83Len {
 		t.Fatalf("v83 length = %d, want %d (regression baseline)", lengths["v83"], wantV83Len)
+	}
+	if lengths["v48"] != wantV83Len-6 {
+		t.Errorf("v48 length = %d, want %d (6 bytes shorter than v83: no remainLife, no trailing attribute)", lengths["v48"], wantV83Len-6)
 	}
 	if lengths["v61"] != wantV83Len-6 {
 		t.Errorf("v61 length = %d, want %d (6 bytes shorter than v83: no remainLife, no trailing attribute)", lengths["v61"], wantV83Len-6)

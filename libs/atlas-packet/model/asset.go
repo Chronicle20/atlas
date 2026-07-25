@@ -367,9 +367,9 @@ func (m *Asset) encodePetCashItemInfo(l logrus.FieldLogger, ctx context.Context)
 		w.WriteShort(0)                                              // petAttribute
 		w.WriteShort(resolvePetSkillWireMask(l, options, m.petFlag)) // usPetSkill
 		// GW_ItemSlotPet::RawDecode gained remainLife in the v72 revision and the
-		// trailing attribute short in the v79 revision: v61 reads neither
-		// (@0x4b52f2), v72 reads remainLife only (@0x4d06dd), v79 (@0x4d84c4) and
-		// v83 (@0x4e4219) read both. IDA-verified.
+		// trailing attribute short in the v79 revision: v48 (@0x49c77e) and v61
+		// (@0x4b52f2) read neither, v72 reads remainLife only (@0x4d06dd), v79
+		// (@0x4d84c4) and v83 (@0x4e4219) read both. IDA-verified.
 		if (t.IsRegion("GMS") && t.MajorAtLeast(72)) || t.Region() == "JMS" {
 			w.WriteInt(18000) // remaining life
 		}

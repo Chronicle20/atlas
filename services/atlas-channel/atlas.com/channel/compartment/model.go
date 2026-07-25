@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 )
 
 type Model struct {
@@ -66,6 +67,17 @@ func (m Model) FindFirstByItemId(templateId uint32) (*asset.Model, bool) {
 func (m Model) FindByPetId(petId uint32) (*asset.Model, bool) {
 	for _, a := range m.Assets() {
 		if a.PetId() == petId {
+			return &a, true
+		}
+	}
+	return nil, false
+}
+
+// FindFirstByClassification returns the first asset in the compartment whose
+// template resolves to the given item classification (e.g. Note = 509).
+func (m Model) FindFirstByClassification(c item.Classification) (*asset.Model, bool) {
+	for _, a := range m.Assets() {
+		if item.GetClassification(item.Id(a.TemplateId())) == c {
 			return &a, true
 		}
 	}

@@ -90,12 +90,6 @@ func TestHandleCreatedEvent_IgnoresNilTransactionId(t *testing.T) {
 }
 
 func TestHandleCreateFailedEvent_FailsCreateNoteStep(t *testing.T) {
-	// The default compensator branch (saga/compensator.go) has no case for
-	// CreateNote yet — it resets the failed step back to Pending instead of
-	// compensating it. That default-branch behavior is what Task 9 replaces
-	// with compensateCreateNote. Skip until then.
-	t.Skip("compensation lands in Task 9")
-
 	logger, _ := logtest.NewNullLogger()
 	logger.SetLevel(logrus.DebugLevel)
 	ctx := mustTenantCtx(t)

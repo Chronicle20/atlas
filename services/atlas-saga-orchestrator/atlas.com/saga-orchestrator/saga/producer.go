@@ -29,6 +29,12 @@ func CompletedStatusEventProvider(s Saga) model.Provider[[]kafka.Message] {
 		body.Results = extractCharacterCreationResults(s)
 	}
 
+	// For NoteSend sagas, surface the sender's characterId so atlas-channel
+	// can announce MEMO_RESULT SEND_SUCCESS to the sender's session.
+	if s.SagaType() == NoteSend {
+		body.Results = extractNoteSendResults(s)
+	}
+
 	// For a completed take-home (WithdrawFromMts) saga, include the take-home
 	// marker + characterId + templateId so the channel's saga-status COMPLETED
 	// handler can write MoveItcPurchaseItemLtoSDone to the originating session.
@@ -64,6 +70,20 @@ func extractCharacterCreationResults(s Saga) map[string]any {
 		}
 	}
 	return results
+}
+
+// extractNoteSendResults extracts the sending character's id from a
+// NoteSend saga's CreateNote step payload.
+func extractNoteSendResults(s Saga) map[string]any {
+	for _, step := range s.Steps() {
+		if step.Action() != CreateNote {
+			continue
+		}
+		if p, ok := step.Payload().(CreateNotePayload); ok {
+			return map[string]any{"characterId": p.SenderId}
+		}
+	}
+	return nil
 }
 
 // MtsTakeHomeResultKind is the Results["kind"] marker the channel matches to

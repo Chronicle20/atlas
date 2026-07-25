@@ -53,6 +53,7 @@ type Compensator interface {
 	compensateCashItemUse(s Saga, failedStep Step[any]) error
 	compensatePointReset(s Saga, failedStep Step[any]) error
 	compensateMtsOperation(s Saga, failedStep Step[any]) error
+	compensateNoteSend(s Saga, failedStep Step[any]) error
 
 	// DispatchMtsOperationRollbacks reverse-walks the completed steps of an MTS
 	// saga (TransferToMts / WithdrawFromMts / MtsSettlePurchase) and dispatches the
@@ -76,6 +77,13 @@ type Compensator interface {
 	// and the deducted mesos (AwardMesos → inverse credit). No lifecycle
 	// transitions, no Failed emission, no cache eviction — callers handle those.
 	DispatchPetEvolutionRollbacks(s Saga)
+
+	// DispatchNoteSendRollbacks reverse-walks the completed steps of a
+	// note_send saga, refunding the destroyed Note item (DestroyAsset →
+	// CreateItem). A failed consume_note_item (destroy) step has nothing
+	// completed to refund. No lifecycle transitions, no Failed emission, no
+	// cache eviction — callers handle those.
+	DispatchNoteSendRollbacks(s Saga)
 
 	// DispatchCashItemUseRollbacks reverse-walks the completed steps of a
 	// cash-item-use saga (ItemTagUse/SealingLockUse/IncubatorUse), re-creating
@@ -242,6 +250,14 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 	// failed step.
 	if s.SagaType() == MtsOperation {
 		return c.compensateMtsOperation(s, failedStep)
+	}
+
+	// Note-send reverse-walk: a failed create_note must refund the
+	// already-destroyed Note item; a failed consume_note_item has nothing to
+	// refund. Either way the saga terminates with one Failed emission so the
+	// channel can announce SEND_ERROR (unlocking the client).
+	if s.SagaType() == NoteSend {
+		return c.compensateNoteSend(s, failedStep)
 	}
 
 	c.l.WithFields(logrus.Fields{
@@ -1387,6 +1403,105 @@ func pointResetFailureFields(failedStep Step[any]) (string, string) {
 // transfer step produced no committed mutation and has no inverse. An error
 // re-awarding one step does not abort the chain.
 func (c *CompensatorImpl) DispatchPointResetRollbacks(s Saga) {
+	steps := s.Steps()
+	for i := len(steps) - 1; i >= 0; i-- {
+		step := steps[i]
+		if step.Status() != Completed {
+			continue
+		}
+		if step.Action() != DestroyAsset {
+			continue
+		}
+		if payload, ok := step.Payload().(DestroyAssetPayload); ok {
+			qty := payload.Quantity
+			if qty == 0 {
+				qty = 1
+			}
+			if err := c.compP.RequestCreateItem(s.TransactionId(), payload.CharacterId, payload.TemplateId, qty, time.Time{}); err != nil {
+				c.l.WithError(err).WithFields(logrus.Fields{
+					"transaction_id": s.TransactionId().String(),
+					"step_id":        step.StepId(),
+					"template_id":    payload.TemplateId,
+				}).Error("Reverse-walk: DestroyAsset → CreateItem dispatch failed; continuing chain.")
+			}
+		}
+	}
+}
+
+// compensateNoteSend terminates a failing note_send saga: dispatches the
+// item refund, then emits exactly one StatusEventTypeFailed carrying the
+// SENDER's characterId (the channel's saga consumer announces MEMO_RESULT
+// SEND_ERROR to that session, which also releases the client's
+// exclusive-request lock). Double-emission is prevented by
+// TryTransition(Compensating → Failed), mirroring compensatePetEvolution.
+//
+// EmitSagaFailed is not used here: it extracts characterId via
+// ExtractCharacterCreationIds, which only recognizes a CreateCharacter step
+// and would yield 0 for a note_send saga. The sender id is instead read
+// directly off the CreateNote step's payload (falling back to the failed
+// DestroyAsset step's CharacterId when create_note itself never ran).
+func (c *CompensatorImpl) compensateNoteSend(s Saga, failedStep Step[any]) error {
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"failed_step":    failedStep.StepId(),
+		"failed_action":  failedStep.Action(),
+		"tenant_id":      c.t.Id().String(),
+	}).Info("NoteSend saga failing — dispatching compensation.")
+
+	c.DispatchNoteSendRollbacks(s)
+
+	// The sender's characterId rides in the Failed event so the channel can
+	// notify the right session.
+	var senderId uint32
+	for _, step := range s.Steps() {
+		if p, ok := step.Payload().(CreateNotePayload); ok {
+			senderId = p.SenderId
+			break
+		}
+	}
+	if senderId == 0 {
+		if payload, ok := failedStep.Payload().(DestroyAssetPayload); ok {
+			senderId = payload.CharacterId
+		}
+	}
+
+	if !GetCache().TryTransition(c.ctx, s.TransactionId(), SagaLifecycleCompensating, SagaLifecycleFailed) {
+		c.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Info("saga already in terminal Failed state; note-send emission skipped.")
+		SagaTimers().Cancel(s.TransactionId())
+		GetCache().Remove(c.ctx, s.TransactionId())
+		return nil
+	}
+
+	SagaTimers().Cancel(s.TransactionId())
+	GetCache().Remove(c.ctx, s.TransactionId())
+
+	reason := fmt.Sprintf("Note send failed at step [%s] action [%s]", failedStep.StepId(), failedStep.Action())
+	if err := EmitSagaFailedByIds(c.l, c.ctx, s.TransactionId(), string(s.SagaType()), 0, senderId, sagaMsg.ErrorCodeUnknown, reason, failedStep.StepId()); err != nil {
+		c.l.WithError(err).WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Error("Failed to emit saga failed event after note-send compensation.")
+		return err
+	}
+
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"tenant_id":      c.t.Id().String(),
+	}).Info("Note-send compensation complete; saga terminated.")
+	return nil
+}
+
+// DispatchNoteSendRollbacks reverse-walks a note_send saga's completed steps
+// and refunds the destroyed Note item (DestroyAsset → RequestCreateItem).
+// This is the pure "dispatch" half — no lifecycle transitions, no event
+// emission, no cache eviction. Callers are responsible for those. Only
+// Completed destroy steps are inverted; a failed consume_note_item produced
+// no committed mutation and has no inverse. An error refunding does not
+// abort the walk.
+func (c *CompensatorImpl) DispatchNoteSendRollbacks(s Saga) {
 	steps := s.Steps()
 	for i := len(steps) - 1; i >= 0; i-- {
 		step := steps[i]

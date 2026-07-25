@@ -310,6 +310,118 @@ func TestAssetOwnerEncodedStackable(t *testing.T) {
 	}
 }
 
+// TestAssetPetCashItemSkillMask pins the DOM-25 translation: the Atlas-canonical
+// petFlag mask must never reach the wire directly. It only encodes a wire bit
+// when the tenant's petSkill options table configures one for that semantic key.
+func TestAssetPetCashItemSkillMask(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := test.CreateContext("GMS", 83, 1)
+	expiration := time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	base := NewAsset(true, 0, 5000017, expiration).
+		SetCashId(123).
+		SetPetInfo(42, "Mr. Roboto", 3, 100, 50)
+
+	// Layout of encodePetCashItemInfo with zeroPosition=true:
+	// type(1) templateId(4) bool(1) petId(8) time(8) name(13) level(1)
+	// closeness(2) fullness(1) expiration(8) attribute(2) => skill short at offset 49.
+	const skillOffset = 49
+
+	zeroFlag := base.Encode(l, ctx)(map[string]interface{}{})
+
+	// 1. petFlag set but no petSkill table configured -> byte-identical to zero-flag encode.
+	flagged := base.SetPetFlag(2) // FlagConsumeHP (1<<1), Atlas-canonical
+	noTable := flagged.Encode(l, ctx)(map[string]interface{}{})
+	if !bytes.Equal(zeroFlag, noTable) {
+		t.Fatal("petFlag with no petSkill table must encode byte-identical to zero flag")
+	}
+
+	// 2. petFlag set with a configured table -> wire bit at the skill short.
+	withTable := flagged.Encode(l, ctx)(map[string]interface{}{
+		"petSkill": map[string]interface{}{"consumeHP": "0x20"},
+	})
+	if len(withTable) != len(zeroFlag) {
+		t.Fatalf("length changed: got %d, want %d", len(withTable), len(zeroFlag))
+	}
+	if withTable[skillOffset] != 0x20 || withTable[skillOffset+1] != 0x00 {
+		t.Errorf("skill short = %#x %#x, want 0x20 0x00", withTable[skillOffset], withTable[skillOffset+1])
+	}
+	// everything else unchanged
+	for i := range zeroFlag {
+		if i == skillOffset || i == skillOffset+1 {
+			continue
+		}
+		if withTable[i] != zeroFlag[i] {
+			t.Fatalf("byte %d changed: got %#x, want %#x", i, withTable[i], zeroFlag[i])
+		}
+	}
+
+	// 3. multiple flags OR together (autoSpeaking 1<<8 canonical -> 0x100 wire).
+	multiFlags := base.SetPetFlag(2 | 256) // FlagConsumeHP | FlagAutoSpeaking
+	multi := multiFlags.Encode(l, ctx)(map[string]interface{}{
+		"petSkill": map[string]interface{}{"consumeHP": "0x20", "autoSpeaking": "0x100"},
+	})
+	if multi[skillOffset] != 0x20 || multi[skillOffset+1] != 0x01 {
+		t.Errorf("multi skill short = %#x %#x, want 0x20 0x01", multi[skillOffset], multi[skillOffset+1])
+	}
+
+	if got := flagged.PetFlag(); got != 2 {
+		t.Errorf("PetFlag() = %d, want 2", got)
+	}
+}
+
+// TestAssetPetCashItemTrailerVersionGate pins the version-gated pet trailer
+// (GW_ItemSlotPet::RawDecode, IDA-verified): v61 reads neither remainLife nor
+// the trailing attribute short (@0x4b52f2), v72 adds remainLife only
+// (@0x4d06dd), v79 (@0x4d84c4) and v83 (@0x4e4219) read both. JMS is not a
+// legacy client and keeps the full trailer. This is the regression guard:
+// every version except v61/v72 must stay byte-identical to today's
+// always-full-trailer encode (57 bytes for this fixture).
+func TestAssetPetCashItemTrailerVersionGate(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	expiration := time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC)
+	base := NewAsset(true, 0, 5000017, expiration).
+		SetCashId(123).
+		SetPetInfo(42, "Mr. Roboto", 3, 100, 50)
+
+	const wantV83Len = 57 // today's always-full-trailer length; pinned via a pre-change baseline run.
+
+	lengths := map[string]int{}
+	for _, v := range []struct {
+		name   string
+		region string
+		major  uint16
+	}{
+		{"v61", "GMS", 61},
+		{"v72", "GMS", 72},
+		{"v79", "GMS", 79},
+		{"v83", "GMS", 83},
+		{"v84", "GMS", 84},
+		{"v87", "GMS", 87},
+		{"v95", "GMS", 95},
+		{"jms", "JMS", 185},
+	} {
+		ctx := test.CreateContext(v.region, v.major, 1)
+		encoded := base.Encode(l, ctx)(map[string]interface{}{})
+		lengths[v.name] = len(encoded)
+	}
+
+	if lengths["v83"] != wantV83Len {
+		t.Fatalf("v83 length = %d, want %d (regression baseline)", lengths["v83"], wantV83Len)
+	}
+	if lengths["v61"] != wantV83Len-6 {
+		t.Errorf("v61 length = %d, want %d (6 bytes shorter than v83: no remainLife, no trailing attribute)", lengths["v61"], wantV83Len-6)
+	}
+	if lengths["v72"] != wantV83Len-2 {
+		t.Errorf("v72 length = %d, want %d (2 bytes shorter than v83: remainLife present, no trailing attribute)", lengths["v72"], wantV83Len-2)
+	}
+	for _, name := range []string{"v79", "v84", "v87", "v95", "jms"} {
+		if lengths[name] != wantV83Len {
+			t.Errorf("%s length = %d, want %d (unchanged from today)", name, lengths[name], wantV83Len)
+		}
+	}
+}
+
 // Ensure Asset satisfies the Encode signature pattern used by writers.
 func TestAssetEncodeSignature(t *testing.T) {
 	l, _ := testlog.NewNullLogger()

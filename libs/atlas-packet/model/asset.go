@@ -9,6 +9,8 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	petskill "github.com/Chronicle20/atlas/libs/atlas-constants/pet/skill"
+	atlas_packet "github.com/Chronicle20/atlas/libs/atlas-packet"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -53,6 +55,7 @@ type Asset struct {
 	petLevel  byte
 	closeness uint16
 	fullness  byte
+	petFlag   uint16
 }
 
 func NewAsset(zeroPosition bool, slot int16, templateId uint32, expiration time.Time) Asset {
@@ -165,6 +168,16 @@ func (m Asset) SetPetInfo(petId uint32, petName string, petLevel, fullness byte,
 	m.petLevel = petLevel
 	m.fullness = fullness
 	m.closeness = closeness
+	return m
+}
+
+func (m Asset) PetFlag() uint16 { return m.petFlag }
+
+// SetPetFlag sets the Atlas-canonical pet skill mask (see atlas-constants
+// pet/skill). The wire encoding translates it through the tenant's petSkill
+// options table at encode time — canonical bits never hit the wire directly.
+func (m Asset) SetPetFlag(flag uint16) Asset {
+	m.petFlag = flag
 	return m
 }
 
@@ -334,8 +347,9 @@ func (m *Asset) encodeStackableInfo(l logrus.FieldLogger, _ context.Context) fun
 	}
 }
 
-func (m *Asset) encodePetCashItemInfo(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m *Asset) encodePetCashItemInfo(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
+	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
 		if !m.zeroPosition {
 			w.WriteInt8(int8(m.slot))
@@ -350,10 +364,18 @@ func (m *Asset) encodePetCashItemInfo(l logrus.FieldLogger, _ context.Context) f
 		w.WriteShort(m.closeness)
 		w.WriteByte(m.fullness)
 		w.WriteInt64(MsTime(m.expiration))
-		w.WriteShort(0)   // attribute
-		w.WriteShort(0)   // skill
-		w.WriteInt(18000) // remaining life
-		w.WriteShort(0)   // attribute
+		w.WriteShort(0)                                              // petAttribute
+		w.WriteShort(resolvePetSkillWireMask(l, options, m.petFlag)) // usPetSkill
+		// GW_ItemSlotPet::RawDecode gained remainLife in the v72 revision and the
+		// trailing attribute short in the v79 revision: v61 reads neither
+		// (@0x4b52f2), v72 reads remainLife only (@0x4d06dd), v79 (@0x4d84c4) and
+		// v83 (@0x4e4219) read both. IDA-verified.
+		if (t.IsRegion("GMS") && t.MajorAtLeast(72)) || t.Region() == "JMS" {
+			w.WriteInt(18000) // remaining life
+		}
+		if (t.IsRegion("GMS") && t.MajorAtLeast(79)) || t.Region() == "JMS" {
+			w.WriteShort(0) // attribute
+		}
 		return w.Bytes()
 	}
 }
@@ -555,4 +577,26 @@ func (m *Asset) decodePetInfo(r *request.Reader) {
 	_ = r.ReadUint16() // skill
 	_ = r.ReadUint32() // remaining life
 	_ = r.ReadUint16() // attribute
+}
+
+// resolvePetSkillWireMask translates the Atlas-canonical pet skill mask into
+// the tenant's client usPetSkill bits via the writer options "petSkill" table
+// (DOM-25: the wire bit values are client-interpreted and version-dependent).
+// Semantic bits with no table entry encode as absent — never a guessed value.
+func resolvePetSkillWireMask(l logrus.FieldLogger, options map[string]interface{}, petFlag uint16) uint16 {
+	if petFlag == 0 {
+		return 0
+	}
+	var wire uint16
+	for _, k := range petskill.All() {
+		if !petskill.Has(petFlag, k) {
+			continue
+		}
+		if v, ok := atlas_packet.ResolveCode16(l, options, "petSkill", string(k)); ok {
+			wire |= v
+		} else {
+			l.Debugf("Pet skill [%s] set on pet but no petSkill wire bit configured; encoding as absent.", k)
+		}
+	}
+	return wire
 }

@@ -2359,6 +2359,13 @@
   provenance: ida-discovered
   ida:
     address: 9868298
+- op: STATE_CHANGE_BY_PORTABLE_CHAIR_REQUEST
+  direction: serverbound
+  opcode: 72
+  fname: CWvsContext::TryRecovery
+  provenance: ida-discovered
+  ida:
+    address: 9761354
   note: 'COutPacket(87)+Enc4(0x1400)+Enc2(hp)+Enc2(mp)+Enc1; v83 HEAL_OVER_TIME=89 (d-2).'
 - op: CANCEL_BUFF
   direction: serverbound

@@ -322,6 +322,29 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x37",
+        "validator": "LoggedInValidator",
+        "handler": "HiredMerchantOperationHandle",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x3A",
+        "validator": "LoggedInValidator",
+        "handler": "OwlActionHandle",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "OPEN": 5
+          }
+        }
+      },
+      {
+        "opCode": "0x3B",
+        "validator": "LoggedInValidator",
+        "handler": "OwlWarpHandle",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x3D",
         "validator": "LoggedInValidator",
         "handler": "CompartmentMergeHandle",
@@ -346,16 +369,15 @@
         "services": ["channel"]
       },
       {
-        "opCode": "0x6B",
-        "validator": "LoggedInValidator",
-        "handler": "CharacterItemUseLotteryHandle",
-        "services": ["channel"]
-      },
-      {
         "opCode": "0x41",
         "validator": "LoggedInValidator",
         "handler": "CharacterItemCancelHandle",
         "services": ["channel"]
+      },
+      {
+        "opCode": "0x42",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterStateChangeByPortableChairHandle"
       },
       {
         "opCode": "0x44",
@@ -457,6 +479,12 @@
         "opCode": "0x66",
         "validator": "LoggedInValidator",
         "handler": "QuestActionHandle",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x6B",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseLotteryHandle",
         "services": ["channel"]
       },
       {
@@ -579,9 +607,9 @@
         "services": ["channel"]
       },
       {
-        "opCode": "0xED",
+        "opCode": "0x088",
         "validator": "LoggedInValidator",
-        "handler": "RequestFootholdInfo",
+        "handler": "EnterDoorHandle",
         "services": ["channel"]
       },
       {
@@ -591,9 +619,31 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x08B",
+        "validator": "LoggedInValidator",
+        "handler": "RPSActionHandle",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "START": 0,
+            "SELECT": 1,
+            "UPDATE": 2,
+            "CONTINUE": 3,
+            "EXIT": 4,
+            "RETRY": 5
+          }
+        }
+      },
+      {
         "opCode": "0x9E",
         "validator": "LoggedInValidator",
         "handler": "MobCrcKeyChangedReply",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xA6",
+        "validator": "LoggedInValidator",
+        "handler": "EnterMtsHandle",
         "services": ["channel"]
       },
       {
@@ -766,6 +816,160 @@
         "opCode": "0xAF",
         "validator": "LoggedInValidator",
         "handler": "PetItemExcludeHandle",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xB2",
+        "validator": "LoggedInValidator",
+        "handler": "SummonMoveHandle",
+        "services": ["channel"],
+        "options": {
+          "types": [
+            {
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "FLYING_BLOCK",
+              "Type": "FLYING_BLOCK"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_ATK_RUSH",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "MOB_ATK_RUSH_STOP",
+              "Type": "NORMAL"
+            }
+          ]
+        }
+      },
+      {
+        "opCode": "0xB3",
+        "validator": "LoggedInValidator",
+        "handler": "SummonAttackHandle",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xB4",
+        "validator": "LoggedInValidator",
+        "handler": "SummonDamageHandle",
         "services": ["channel"]
       },
       {
@@ -1161,6 +1365,12 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0xED",
+        "validator": "LoggedInValidator",
+        "handler": "RequestFootholdInfo",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0xF4",
         "validator": "LoggedInValidator",
         "handler": "CashShopCheckWalletHandle",
@@ -1180,188 +1390,6 @@
             "BUY_FRIENDSHIP": 36
           }
         }
-      },
-      {
-        "opCode": "0x088",
-        "validator": "LoggedInValidator",
-        "handler": "EnterDoorHandle",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x08B",
-        "validator": "LoggedInValidator",
-        "handler": "RPSActionHandle",
-        "services": ["channel"],
-        "options": {
-          "operations": {
-            "START": 0,
-            "SELECT": 1,
-            "UPDATE": 2,
-            "CONTINUE": 3,
-            "EXIT": 4,
-            "RETRY": 5
-          }
-        }
-      },
-      {
-        "opCode": "0xB2",
-        "validator": "LoggedInValidator",
-        "handler": "SummonMoveHandle",
-        "services": ["channel"],
-        "options": {
-          "types": [
-            {
-              "Name": "NORMAL",
-              "Type": "NORMAL"
-            },
-            {
-              "Name": "JUMP",
-              "Type": "JUMP"
-            },
-            {
-              "Name": "IMPACT",
-              "Type": "JUMP"
-            },
-            {
-              "Name": "IMMEDIATE",
-              "Type": "TELEPORT"
-            },
-            {
-              "Name": "TELEPORT",
-              "Type": "TELEPORT"
-            },
-            {
-              "Name": "HANG_ON_BACK",
-              "Type": "NORMAL"
-            },
-            {
-              "Name": "UNKNOWN",
-              "Type": "JUMP"
-            },
-            {
-              "Name": "ASSAULTER",
-              "Type": "TELEPORT"
-            },
-            {
-              "Name": "ASSASSINATION",
-              "Type": "TELEPORT"
-            },
-            {
-              "Name": "RUSH",
-              "Type": "TELEPORT"
-            },
-            {
-              "Name": "STAT_CHANGE",
-              "Type": "STAT_CHANGE"
-            },
-            {
-              "Name": "SIT_DOWN",
-              "Type": "TELEPORT"
-            },
-            {
-              "Name": "UNKNOWN",
-              "Type": "JUMP"
-            },
-            {
-              "Name": "UNKNOWN",
-              "Type": "JUMP"
-            },
-            {
-              "Name": "START_FALL_DOWN",
-              "Type": "START_FALL_DOWN"
-            },
-            {
-              "Name": "FALL_DOWN",
-              "Type": "NORMAL"
-            },
-            {
-              "Name": "START_WINGS",
-              "Type": "JUMP"
-            },
-            {
-              "Name": "WINGS",
-              "Type": "NORMAL"
-            },
-            {
-              "Name": "ARAN_ADJUST",
-              "Type": "JUMP"
-            },
-            {
-              "Name": "MOB_TOSS",
-              "Type": "JUMP"
-            },
-            {
-              "Name": "DASH_SLIDE",
-              "Type": "JUMP"
-            },
-            {
-              "Name": "UNKNOWN",
-              "Type": "DEFAULT"
-            },
-            {
-              "Name": "UNKNOWN",
-              "Type": "DEFAULT"
-            },
-            {
-              "Name": "UNKNOWN",
-              "Type": "JUMP"
-            },
-            {
-              "Name": "FLYING_BLOCK",
-              "Type": "FLYING_BLOCK"
-            },
-            {
-              "Name": "UNKNOWN",
-              "Type": "JUMP"
-            },
-            {
-              "Name": "UNKNOWN",
-              "Type": "DEFAULT"
-            },
-            {
-              "Name": "UNKNOWN",
-              "Type": "JUMP"
-            },
-            {
-              "Name": "UNKNOWN",
-              "Type": "JUMP"
-            },
-            {
-              "Name": "UNKNOWN",
-              "Type": "JUMP"
-            },
-            {
-              "Name": "UNKNOWN",
-              "Type": "JUMP"
-            },
-            {
-              "Name": "MOB_ATK_RUSH",
-              "Type": "NORMAL"
-            },
-            {
-              "Name": "MOB_ATK_RUSH_STOP",
-              "Type": "NORMAL"
-            }
-          ]
-        }
-      },
-      {
-        "opCode": "0xB3",
-        "validator": "LoggedInValidator",
-        "handler": "SummonAttackHandle",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0xB4",
-        "validator": "LoggedInValidator",
-        "handler": "SummonDamageHandle",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0xA6",
-        "validator": "LoggedInValidator",
-        "handler": "EnterMtsHandle",
-        "services": ["channel"]
       },
       {
         "opCode": "0x10A",
@@ -1401,29 +1429,6 @@
             "BUY_AUCTION_IMM": 20
           }
         }
-      },
-      {
-        "opCode": "0x3A",
-        "validator": "LoggedInValidator",
-        "handler": "OwlActionHandle",
-        "services": ["channel"],
-        "options": {
-          "operations": {
-            "OPEN": 5
-          }
-        }
-      },
-      {
-        "opCode": "0x3B",
-        "validator": "LoggedInValidator",
-        "handler": "OwlWarpHandle",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x37",
-        "validator": "LoggedInValidator",
-        "handler": "HiredMerchantOperationHandle",
-        "services": ["channel"]
       }
     ],
     "writers": [
@@ -1643,6 +1648,31 @@
         }
       },
       {
+        "opCode": "0x25",
+        "writer": "CharacterStatusMessage",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "DROP_PICK_UP": 0,
+            "QUEST_RECORD": 1,
+            "CASH_ITEM_EXPIRE": 2,
+            "INCREASE_EXPERIENCE": 3,
+            "INCREASE_SKILL_POINT": 4,
+            "INCREASE_FAME": 5,
+            "INCREASE_MESO": 6,
+            "INCREASE_GUILD_POINT": 7,
+            "GIVE_BUFF": 8,
+            "GENERAL_ITEM_EXPIRE": 9,
+            "SYSTEM_MESSAGE": 10,
+            "QUEST_RECORD_EX": 11,
+            "ITEM_PROTECT_EXPIRE": 12,
+            "ITEM_EXPIRE_REPLACE": 13,
+            "SKILL_EXPIRE": 14,
+            "JMS_COUNTER_NOTICE": 15
+          }
+        }
+      },
+      {
         "opCode": "0x26",
         "writer": "NoteOperation",
         "services": ["channel"],
@@ -1814,6 +1844,16 @@
         }
       },
       {
+        "opCode": "0x03D",
+        "writer": "SpawnPortal",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x03D",
+        "writer": "RemoveTownDoor",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x3E",
         "writer": "WorldMessage",
         "services": ["channel"],
@@ -1838,6 +1878,40 @@
         }
       },
       {
+        "opCode": "0x3F",
+        "writer": "IncubatorResult",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x40",
+        "writer": "ShopScannerResult",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "RESULT": 6,
+            "HOT_LIST": 7
+          }
+        }
+      },
+      {
+        "opCode": "0x41",
+        "writer": "ShopLinkResult",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "SUCCESS": 0,
+            "CLOSED": 1,
+            "FULL": 2,
+            "BUSY": 3,
+            "DEAD": 4,
+            "NO_TRADE": 7,
+            "DENIED": 17,
+            "MAINTENANCE": 18,
+            "FM_ONLY": 23
+          }
+        }
+      },
+      {
         "opCode": "0x46",
         "writer": "PetCashFoodResult",
         "services": ["channel"]
@@ -1855,6 +1929,16 @@
       {
         "opCode": "0x58",
         "writer": "MonsterBookSetCover",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x5A",
+        "writer": "SetAvatarMegaphone",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x5B",
+        "writer": "ClearAvatarMegaphone",
         "services": ["channel"]
       },
       {
@@ -1888,8 +1972,8 @@
         "services": ["channel"]
       },
       {
-        "opCode": "0x86",
-        "writer": "SummonItemUnavailable",
+        "opCode": "0x82",
+        "writer": "BlockedServer",
         "services": ["channel"]
       },
       {
@@ -1908,8 +1992,8 @@
         "services": ["channel"]
       },
       {
-        "opCode": "0x82",
-        "writer": "BlockedServer",
+        "opCode": "0x86",
+        "writer": "SummonItemUnavailable",
         "services": ["channel"]
       },
       {
@@ -1955,6 +2039,11 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x8D",
+        "writer": "AdminResult",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x8E",
         "writer": "OxQuiz",
         "services": ["channel"]
@@ -1970,18 +2059,23 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x91",
+        "writer": "ContiMove",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x92",
         "writer": "FieldTransportState",
         "services": ["channel"]
       },
       {
-        "opCode": "0x94",
-        "writer": "SetQuestTime",
+        "opCode": "0x93",
+        "writer": "SetQuestClear",
         "services": ["channel"]
       },
       {
-        "opCode": "0x93",
-        "writer": "SetQuestClear",
+        "opCode": "0x94",
+        "writer": "SetQuestTime",
         "services": ["channel"]
       },
       {
@@ -1995,8 +2089,8 @@
         "services": ["channel"]
       },
       {
-        "opCode": "0x8D",
-        "writer": "AdminResult",
+        "opCode": "0x97",
+        "writer": "AriantArenaShowResult",
         "services": ["channel"]
       },
       {
@@ -2005,8 +2099,13 @@
         "services": ["channel"]
       },
       {
-        "opCode": "0x134",
-        "writer": "SnowballTouch",
+        "opCode": "0x99",
+        "writer": "PyramidGauge",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x9A",
+        "writer": "PyramidScore",
         "services": ["channel"]
       },
       {
@@ -2037,6 +2136,17 @@
       {
         "opCode": "0xA2",
         "writer": "ChalkboardUse",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xA3",
+        "writer": "MiniRoom",
+        "services": ["channel"],
+        "options": {}
+      },
+      {
+        "opCode": "0x0A3",
+        "writer": "MiniRoom",
         "services": ["channel"]
       },
       {
@@ -2076,6 +2186,36 @@
       {
         "opCode": "0xB4",
         "writer": "PetCommandResponse",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xB5",
+        "writer": "SummonSpawn",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xB6",
+        "writer": "SummonRemove",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xB7",
+        "writer": "SummonMove",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xB8",
+        "writer": "SummonAttack",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xB9",
+        "writer": "SummonSkill",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xBA",
+        "writer": "SummonDamage",
         "services": ["channel"]
       },
       {
@@ -2417,21 +2557,6 @@
       {
         "opCode": "0xFD",
         "writer": "SpawnMonster",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x11E",
-        "writer": "SpawnHiredMerchant",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x11F",
-        "writer": "DestroyHiredMerchant",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x120",
-        "writer": "UpdateHiredMerchant",
         "services": ["channel"]
       },
       {
@@ -2828,6 +2953,21 @@
         }
       },
       {
+        "opCode": "0x11E",
+        "writer": "SpawnHiredMerchant",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x11F",
+        "writer": "DestroyHiredMerchant",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x120",
+        "writer": "UpdateHiredMerchant",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x121",
         "writer": "DropSpawn",
         "services": ["channel"]
@@ -2835,6 +2975,16 @@
       {
         "opCode": "0x122",
         "writer": "DropDestroy",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x128",
+        "writer": "SpawnDoor",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x129",
+        "writer": "RemoveDoor",
         "services": ["channel"]
       },
       {
@@ -2850,6 +3000,46 @@
       {
         "opCode": "0x130",
         "writer": "ReactorDestroy",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x131",
+        "writer": "SnowballState",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x132",
+        "writer": "SnowballHit",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x133",
+        "writer": "SnowballMessage",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x134",
+        "writer": "SnowballTouch",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x135",
+        "writer": "CoconutHit",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x136",
+        "writer": "CoconutScore",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x137",
+        "writer": "GuildBossHealerMove",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x138",
+        "writer": "GuildBossPulleyStateChange",
         "services": ["channel"]
       },
       {
@@ -2893,8 +3083,28 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x141",
+        "writer": "AriantArenaUserScore",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x143",
+        "writer": "SheepRanchInfo",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x144",
+        "writer": "SheepRanchClothes",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x145",
         "writer": "HorntailCave",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x146",
+        "writer": "WitchTowerScoreUpdate",
         "services": ["channel"]
       },
       {
@@ -2929,6 +3139,37 @@
         }
       },
       {
+        "opCode": "0x14E",
+        "writer": "StorageOperation",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "RETRIEVE_ASSETS": 8,
+            "INVENTORY_FULL": 9,
+            "NOT_ENOUGH_MESOS": 10,
+            "ONE_OF_A_KIND": 11,
+            "STORE_ASSETS": 12,
+            "NOT_ENOUGH_MESOS_2": 15,
+            "UNKNOWN": 16,
+            "UPDATE_MESO": 18,
+            "SHOW": 21
+          }
+        }
+      },
+      {
+        "opCode": "0x151",
+        "writer": "RPSGame",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "OPEN": 8,
+            "START_SELECT": 9,
+            "RESULT": 11,
+            "END": 13
+          }
+        }
+      },
+      {
         "opCode": "0x152",
         "writer": "MessengerOperation",
         "services": ["channel"],
@@ -2944,210 +3185,6 @@
             "UPDATE": 7
           }
         }
-      },
-      {
-        "opCode": "0x154",
-        "writer": "Tournament",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x155",
-        "writer": "TournamentMatchTable",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x156",
-        "writer": "TournamentSetPrize",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x157",
-        "writer": "TournamentUew",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x158",
-        "writer": "TournamentCharacters",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x159",
-        "writer": "WeddingProgress",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x15A",
-        "writer": "WeddingCeremonyEnd",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x146",
-        "writer": "WitchTowerScoreUpdate",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x163",
-        "writer": "CashShopCashQueryResult",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x164",
-        "writer": "CashShopOperation",
-        "services": ["channel"],
-        "options": {
-          "operations": {
-            "LOAD_INVENTORY_SUCCESS": 78,
-            "LOAD_INVENTORY_FAILURE": 79,
-            "LOAD_WISHLIST": 82,
-            "UPDATE_WISHLIST": 86,
-            "PURCHASE_SUCCESS": 88,
-            "INVENTORY_CAPACITY_INCREASE_SUCCESS": 97,
-            "INVENTORY_CAPACITY_INCREASE_FAILED": 98,
-            "CASH_ITEM_MOVED_TO_INVENTORY": 107,
-            "CASH_ITEM_MOVED_TO_CASH_INVENTORY": 109
-          }
-        }
-      },
-      {
-        "opCode": "0x170",
-        "writer": "CharacterKeyMap",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x171",
-        "writer": "CharacterKeyMapAutoHp",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x172",
-        "writer": "CharacterKeyMapAutoMp",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x128",
-        "writer": "SpawnDoor",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x129",
-        "writer": "RemoveDoor",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x03D",
-        "writer": "SpawnPortal",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x03D",
-        "writer": "RemoveTownDoor",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x91",
-        "writer": "ContiMove",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x97",
-        "writer": "AriantArenaShowResult",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x99",
-        "writer": "PyramidGauge",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x9A",
-        "writer": "PyramidScore",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x131",
-        "writer": "SnowballState",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x132",
-        "writer": "SnowballHit",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x133",
-        "writer": "SnowballMessage",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x135",
-        "writer": "CoconutHit",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x136",
-        "writer": "CoconutScore",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x137",
-        "writer": "GuildBossHealerMove",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x138",
-        "writer": "GuildBossPulleyStateChange",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x141",
-        "writer": "AriantArenaUserScore",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x143",
-        "writer": "SheepRanchInfo",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x144",
-        "writer": "SheepRanchClothes",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0xB5",
-        "writer": "SummonSpawn",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0xB6",
-        "writer": "SummonRemove",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0xB7",
-        "writer": "SummonMove",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0xB8",
-        "writer": "SummonAttack",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0xBA",
-        "writer": "SummonDamage",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0xB9",
-        "writer": "SummonSkill",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0xA3",
-        "writer": "MiniRoom",
-        "services": ["channel"],
-        "options": {}
       },
       {
         "opCode": "0x153",
@@ -3202,122 +3239,76 @@
         }
       },
       {
-        "opCode": "0x0A3",
-        "writer": "MiniRoom",
+        "opCode": "0x154",
+        "writer": "Tournament",
         "services": ["channel"]
       },
       {
-        "opCode": "0x14E",
-        "writer": "StorageOperation",
-        "services": ["channel"],
-        "options": {
-          "operations": {
-            "RETRIEVE_ASSETS": 8,
-            "INVENTORY_FULL": 9,
-            "NOT_ENOUGH_MESOS": 10,
-            "ONE_OF_A_KIND": 11,
-            "STORE_ASSETS": 12,
-            "NOT_ENOUGH_MESOS_2": 15,
-            "UNKNOWN": 16,
-            "UPDATE_MESO": 18,
-            "SHOW": 21
-          }
-        }
-      },
-      {
-        "opCode": "0x25",
-        "writer": "CharacterStatusMessage",
-        "services": ["channel"],
-        "options": {
-          "operations": {
-            "DROP_PICK_UP": 0,
-            "QUEST_RECORD": 1,
-            "CASH_ITEM_EXPIRE": 2,
-            "INCREASE_EXPERIENCE": 3,
-            "INCREASE_SKILL_POINT": 4,
-            "INCREASE_FAME": 5,
-            "INCREASE_MESO": 6,
-            "INCREASE_GUILD_POINT": 7,
-            "GIVE_BUFF": 8,
-            "GENERAL_ITEM_EXPIRE": 9,
-            "SYSTEM_MESSAGE": 10,
-            "QUEST_RECORD_EX": 11,
-            "ITEM_PROTECT_EXPIRE": 12,
-            "ITEM_EXPIRE_REPLACE": 13,
-            "SKILL_EXPIRE": 14,
-            "JMS_COUNTER_NOTICE": 15
-          }
-        }
-      },
-      {
-        "opCode": "0x151",
-        "writer": "RPSGame",
-        "services": ["channel"],
-        "options": {
-          "operations": {
-            "OPEN": 8,
-            "START_SELECT": 9,
-            "RESULT": 11,
-            "END": 13
-          }
-        }
-      },
-      {
-        "opCode": "0x3F",
-        "writer": "IncubatorResult",
+        "opCode": "0x155",
+        "writer": "TournamentMatchTable",
         "services": ["channel"]
       },
       {
-        "opCode": "0x183",
-        "writer": "VegaScroll",
-        "services": ["channel"],
-        "options": {
-          "operations": {
-            "START_SUCCESS": 59,
-            "START_FAILURE": 64,
-            "RESULT_SUCCESS": 60,
-            "RESULT_FAILURE": 62,
-            "INVALID": 61
-          }
-        }
-      },
-      {
-        "opCode": "0x40",
-        "writer": "ShopScannerResult",
-        "services": ["channel"],
-        "options": {
-          "operations": {
-            "RESULT": 6,
-            "HOT_LIST": 7
-          }
-        }
-      },
-      {
-        "opCode": "0x41",
-        "writer": "ShopLinkResult",
-        "services": ["channel"],
-        "options": {
-          "operations": {
-            "SUCCESS": 0,
-            "CLOSED": 1,
-            "FULL": 2,
-            "BUSY": 3,
-            "DEAD": 4,
-            "NO_TRADE": 7,
-            "DENIED": 17,
-            "MAINTENANCE": 18,
-            "FM_ONLY": 23
-          }
-        }
-      },
-      {
-        "opCode": "0x5A",
-        "writer": "SetAvatarMegaphone",
+        "opCode": "0x156",
+        "writer": "TournamentSetPrize",
         "services": ["channel"]
       },
       {
-        "opCode": "0x5B",
-        "writer": "ClearAvatarMegaphone",
+        "opCode": "0x157",
+        "writer": "TournamentUew",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x158",
+        "writer": "TournamentCharacters",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x159",
+        "writer": "WeddingProgress",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x15A",
+        "writer": "WeddingCeremonyEnd",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x163",
+        "writer": "CashShopCashQueryResult",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x164",
+        "writer": "CashShopOperation",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "LOAD_INVENTORY_SUCCESS": 78,
+            "LOAD_INVENTORY_FAILURE": 79,
+            "LOAD_WISHLIST": 82,
+            "UPDATE_WISHLIST": 86,
+            "PURCHASE_SUCCESS": 88,
+            "INVENTORY_CAPACITY_INCREASE_SUCCESS": 97,
+            "INVENTORY_CAPACITY_INCREASE_FAILED": 98,
+            "CASH_ITEM_MOVED_TO_INVENTORY": 107,
+            "CASH_ITEM_MOVED_TO_CASH_INVENTORY": 109
+          }
+        }
+      },
+      {
+        "opCode": "0x170",
+        "writer": "CharacterKeyMap",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x171",
+        "writer": "CharacterKeyMapAutoHp",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x172",
+        "writer": "CharacterKeyMapAutoMp",
         "services": ["channel"]
       },
       {
@@ -3346,6 +3337,20 @@
             "GM_MESSAGE": 1,
             "WRONG_USER": 2,
             "QUEUE_TOO_LONG": 3
+          }
+        }
+      },
+      {
+        "opCode": "0x183",
+        "writer": "VegaScroll",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "START_SUCCESS": 59,
+            "START_FAILURE": 64,
+            "RESULT_SUCCESS": 60,
+            "RESULT_FAILURE": 62,
+            "INVALID": 61
           }
         }
       }

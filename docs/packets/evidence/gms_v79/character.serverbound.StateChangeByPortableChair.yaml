@@ -1,0 +1,8 @@
+packet: character/serverbound/StateChangeByPortableChair
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::TryRecovery
+    address: "0x94f24a"
+    decompile_sha256: c9c58d1b5cf67bda52f7cbab39b762f6c0ae19abfb5190c1a0ecf2af37b1bd74

@@ -4,17 +4,17 @@
 > ✅ verified · 🧩 family (mode-prefix dispatcher; sub-arms unverified) · 🟡 partial · ❌ incomplete · ⬜ n-a · 🟥 conflict
 > Partial (🟡) sub-glyphs: 🟡ᶠ tier-1 needs byte-fixture · 🟡ᵈ tool-pass diff-only (no byte-test) · 🟡ᵖ evidence-pinned deferral
 
-Tool: `5013127b62acd8f35e56f8946543908f44845f665276abca9ad3385bb008e095`
+Tool: `66742ddd79b44467dff70f35ef85a805b546820a570d176e53b4c6c3b4a2a97b`
 
-- export gms_v48: `ac3f13621d42e4a2f510fa796e9ab844955e91cb7d8926b39e6d188248f9a4aa`
-- export gms_v61: `35a623f65d120ee0022131862e541342ec6965a7655ed9334cab4b1bdeea2aa6`
-- export gms_v72: `124b5b59b7bfdf0762c89cff319fa9d2e0888be87ee25af423e3ac4d144bf351`
-- export gms_v79: `7cc5ad6a58952c5047e9e740196ae11e86a339faf33b2046f255294fc3387f7f`
-- export gms_v83: `ced1b22b4758608afe731cae1030a9347d9d1c80fde85592ad76e87abba6322b`
-- export gms_v84: `8ef77a3705bc726ad905c0ea248d0ae66c4be330c19fe5670c35f25d59e26f49`
-- export gms_v87: `f73c0b37e2e3bd9895702876dbdb39b14aa1dbd8dbe2b067fc3f3dd5aa1acea7`
-- export gms_v95: `94a95a4918ce26556821987ec3e957328193a5990b5cc583d167fec4e335dc04`
-- export jms_v185: `376156aa4a03b33f8109e663d4aedbdb93484288a880e4bcaa8e7910b21448f1`
+- export gms_v48: `76a945f5ca41e654f5e42aabd243f335a291e904c0cf9490360c93ddeba408d7`
+- export gms_v61: `60b4532a9e35c12cb3b9adfd34a0bf65443b113fd3855df3bfd02bb92f858820`
+- export gms_v72: `ce9a5787ced1dc14cb7de1978be44db77b96be1ad7bba666c41e2c202eec20b6`
+- export gms_v79: `ac755c75dcaf4e8bfde38ffc999489182bdfa8517f46403653bf2ac5a4e44d5e`
+- export gms_v83: `c6a0383a5493fcd8925692ecda956cc67acc0219ab1c59e8f217c8305b4ea861`
+- export gms_v84: `cd0c1b9cde441747031fba62ddd885cf73a18f27f9051977aac943946c4ba10b`
+- export gms_v87: `70071eb8a2d5d2f9db34d1072f2f69a1021a8e758aa1387e97af6e07165183a4`
+- export gms_v95: `995785840ad79f49ea1466062a13e688b0ff779e107423a3f69a418460d5ebcb`
+- export jms_v185: `af16fa5d592e57dbecbcc29010382f82442af1a7e73d27d6bf61c30c6f86a7e7`
 
 ## Clientbound
 
@@ -577,6 +577,7 @@ Tool: `5013127b62acd8f35e56f8946543908f44845f665276abca9ad3385bb008e095`
 | ITEM_MOVE | CWvsContext::SendChangeSlotPositionRequest; sub_70D8DE; sub_831C83 | inventory/serverbound/InventoryMove (T1) | 0x037 | ✅ | 0x046 | ❌ | 0x046 | 🟡ᶠ | 0x045 | 🟡ᶠ | 0x047 | ❌ | 0x047 | ❌ | 0x04A | ✅ | 0x04D | ✅ | 0x03F | ✅ |
 | UNNAMED_R75 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x037 | ❌ | 0x037 | ❌ | 0x03A | ❌ | 0x03C | ❌ | 0x02F | ❌ |
 | CANCEL_ITEM_EFFECT | CWvsContext::SendStatChangeItemCancelRequest; sub_70DD49 | character/serverbound/ItemCancel (T1) | 0x039 | ✅ | 0x044 | ✅ | 0x048 | ✅ | 0x047 | ✅ | 0x049 | ✅ | 0x049 | ✅ | 0x04C | ✅ | 0x04F | ✅ | 0x041 | ✅ |
+| STATE_CHANGE_BY_PORTABLE_CHAIR_REQUEST | CWvsContext::TryRecovery | character/serverbound/StateChangeByPortableChair (T1) | 0x03A | ✅ | 0x045 | ✅ | 0x049 | ✅ | 0x048 | ✅ | 0x04A | ✅ | 0x04A | ✅ | 0x04D | ✅ | 0x050 | ✅ | 0x042 | ✅ |
 | REMOTE_STORE | CWvsContext::SendRemoteShopOpenRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x03B | ❌ | 0x03B | ❌ | 0x03E | ❌ | 0x040 | ❌ | 0x033 | ❌ |
 | USE_MOUNT_FOOD | CWvsContext::SendTamingMobFoodItemUseRequest | mount/serverbound/MountFood | 0x03D | ✅ | 0x048 | ✅ | 0x04C | ✅ | 0x04B | ✅ | 0x04D | ✅ | 0x04D | ✅ | 0x050 | ✅ | 0x053 | ✅ | 0x045 | ✅ |
 | HIRED_MERCHANT_REQUEST | CWvsContext::SendEntrustedShopCheckRequest; sub_715A7B; sub_971BE0 |  |  | ⬜ | 0x03E | ❌ | 0x03E | ❌ | 0x03D | ❌ | 0x03F | ❌ | 0x03F | ❌ | 0x042 | ❌ | 0x044 | ❌ | 0x037 | ❌ |
@@ -596,7 +597,6 @@ Tool: `5013127b62acd8f35e56f8946543908f44845f665276abca9ad3385bb008e095`
 | SKILL_EFFECT | CUserLocal::DoActiveSkill_Prepare; sub_6ADD4C | character/serverbound/CharacterSkillPrepare (T1) | 0x048 | ✅ | 0x055 | ✅ | 0x05C | ✅ | 0x05B | ✅ | 0x05D | ✅ | 0x05D | ✅ | 0x060 | ✅ | 0x069 | ✅ | 0x058 | ✅ |
 | DISTRIBUTE_SP | CWvsContext::SendSkillUpRequest; sub_71CEB3; sub_8458EB | character/serverbound/DistributeSp (T1) | 0x049 | ✅ | 0x052 | ✅ | 0x059 | ✅ | 0x058 | ✅ | 0x05A | ✅ | 0x05A | ✅ | 0x05D | ✅ | 0x066 | ✅ | 0x055 | ✅ |
 | GIVE_FAME | CWvsContext::SendGivePopularityRequest; sub_71CF3B; sub_845A65; sub_96E07F | fame/serverbound/Change | 0x04A | ❌ | 0x057 | ❌ | 0x05E | ❌ | 0x05D | ❌ | 0x05F | ✅ | 0x05F | ✅ | 0x062 | ✅ | 0x06B | ✅ | 0x05A | ✅ |
-| STATE_CHANGE_BY_PORTABLE_CHAIR_REQUEST | CWvsContext::TryRecovery |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x04A | ❌ | 0x04A | ❌ | 0x04D | ❌ | 0x050 | ❌ | 0x042 | ❌ |
 | USE_SUMMON_BAG | CWvsContext::SendMobSummonItemUseRequest; sub_832005; sub_955499 |  |  | ⬜ | 0x04A | ❌ | 0x04A | ❌ | 0x049 | ❌ | 0x04B | ❌ | 0x04B | ❌ | 0x04E | ❌ | 0x051 | ❌ | 0x043 | ❌ |
 | PET_FOOD | CWvsContext::SendPetFoodItemUseRequest; sub_8325D2 | pet/serverbound/PetFood (T1) |  | ⬜ | 0x04B | ❌ | 0x04B | 🟡ᶠ | 0x04A | 🟡ᶠ | 0x04C | ✅ | 0x04C | ✅ | 0x04F | ✅ | 0x052 | ✅ | 0x044 | ✅ |
 | CHAR_INFO_REQUEST | CWvsContext::SendCharacterInfoRequest; sub_71D059; sub_845B68 | character/serverbound/InfoRequest (T1) | 0x04C | ✅ | 0x059 | ✅ | 0x060 | ✅ | 0x05F | ✅ | 0x061 | ✅ | 0x061 | ✅ | 0x064 | ✅ | 0x06D | ✅ | 0x05C | ✅ |
@@ -1001,15 +1001,15 @@ Tool: `5013127b62acd8f35e56f8946543908f44845f665276abca9ad3385bb008e095`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 174 | 0 | 2 | 161 | 629 | 0 | 51.6% |
-| v61 | 250 | 0 | 60 | 194 | 462 | 0 | 49.6% |
-| v72 | 260 | 0 | 73 | 213 | 420 | 0 | 47.6% |
-| v79 | 304 | 0 | 72 | 209 | 381 | 0 | 52.0% |
-| v83 | 424 | 0 | 0 | 318 | 224 | 0 | 57.1% |
-| v84 | 397 | 0 | 0 | 325 | 244 | 0 | 55.0% |
-| v87 | 432 | 0 | 0 | 347 | 187 | 0 | 55.5% |
-| v95 | 457 | 0 | 0 | 406 | 103 | 0 | 53.0% |
-| JMS185 | 409 | 0 | 0 | 363 | 194 | 0 | 53.0% |
+| v48 | 175 | 0 | 2 | 161 | 628 | 0 | 51.8% |
+| v61 | 251 | 0 | 60 | 194 | 461 | 0 | 49.7% |
+| v72 | 261 | 0 | 73 | 213 | 419 | 0 | 47.7% |
+| v79 | 305 | 0 | 72 | 209 | 380 | 0 | 52.0% |
+| v83 | 425 | 0 | 0 | 317 | 224 | 0 | 57.3% |
+| v84 | 398 | 0 | 0 | 324 | 244 | 0 | 55.1% |
+| v87 | 433 | 0 | 0 | 346 | 187 | 0 | 55.6% |
+| v95 | 458 | 0 | 0 | 405 | 103 | 0 | 53.1% |
+| JMS185 | 410 | 0 | 0 | 362 | 194 | 0 | 53.1% |
 
 ## Conflicts
 

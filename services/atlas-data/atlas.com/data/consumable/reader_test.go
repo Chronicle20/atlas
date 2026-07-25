@@ -1072,3 +1072,101 @@ func TestReaderRewardFields(t *testing.T) {
 		t.Errorf("r1.Period = %d, want -1 (default)", r1.Period)
 	}
 }
+
+// TestReaderMorphRandomProp is a regression test for the morphRandom weight
+// field name. Raw WZ (Item.wz/Consume/0221.img.xml) authors the weight as a
+// <string name="prop" value="N"/> node — NOT "prob" — under each numbered
+// morphRandom entry alongside <int name="morph" value="N"/>. The reader
+// previously looked up "prob", which never matched, so every weight ingested
+// as the GetIntegerWithDefault zero default and 2211000/2212000 morph tables
+// came out all-zero in production. This pins the real item 2211000 table
+// (morph->prop, summing to 100) so a future rename regressing "prop" back to
+// "prob" (or any other typo) fails loudly.
+func TestReaderMorphRandomProp(t *testing.T) {
+	l, _ := test.NewNullLogger()
+
+	rms := Read(l)(xml.FromByteArrayProvider([]byte(morphRandomTestXML)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	box, ok := rmm[strconv.Itoa(2211000)]
+	if !ok {
+		t.Fatalf("rmm[2211000] does not exist.")
+	}
+
+	want := map[uint32]uint32{
+		23: 15,
+		24: 10,
+		25: 10,
+		26: 10,
+		27: 15,
+		28: 10,
+		29: 15,
+		30: 15,
+	}
+
+	if len(box.Morphs) != len(want) {
+		t.Fatalf("len(box.Morphs) = %d, want %d (got %v)", len(box.Morphs), len(want), box.Morphs)
+	}
+	for morph, prop := range want {
+		got, ok := box.Morphs[morph]
+		if !ok {
+			t.Fatalf("box.Morphs[%d] missing, want %d", morph, prop)
+		}
+		if got != prop {
+			t.Errorf("box.Morphs[%d] = %d, want %d", morph, got, prop)
+		}
+	}
+
+	// Regression anchor: with the "prob" bug this comes back 0, not 15.
+	if box.Morphs[23] != 15 {
+		t.Fatalf("box.Morphs[23] = %d, want 15 (WZ field is \"prop\", not \"prob\")", box.Morphs[23])
+	}
+}
+
+const morphRandomTestXML = `
+<imgdir name="0221.img">
+  <imgdir name="02211000">
+    <imgdir name="info">
+      <int name="price" value="0"/>
+    </imgdir>
+    <imgdir name="spec">
+      <imgdir name="morphRandom">
+        <imgdir name="0">
+          <int name="morph" value="23"/>
+          <string name="prop" value="15"/>
+        </imgdir>
+        <imgdir name="1">
+          <int name="morph" value="24"/>
+          <string name="prop" value="10"/>
+        </imgdir>
+        <imgdir name="2">
+          <int name="morph" value="25"/>
+          <string name="prop" value="10"/>
+        </imgdir>
+        <imgdir name="3">
+          <int name="morph" value="26"/>
+          <string name="prop" value="10"/>
+        </imgdir>
+        <imgdir name="4">
+          <int name="morph" value="27"/>
+          <string name="prop" value="15"/>
+        </imgdir>
+        <imgdir name="5">
+          <int name="morph" value="28"/>
+          <string name="prop" value="10"/>
+        </imgdir>
+        <imgdir name="6">
+          <int name="morph" value="29"/>
+          <string name="prop" value="15"/>
+        </imgdir>
+        <imgdir name="7">
+          <int name="morph" value="30"/>
+          <string name="prop" value="15"/>
+        </imgdir>
+      </imgdir>
+    </imgdir>
+  </imgdir>
+</imgdir>
+`

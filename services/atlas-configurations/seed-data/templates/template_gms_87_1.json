@@ -18,12 +18,6 @@
         "services": ["login"]
       },
       {
-        "opCode": "0x86",
-        "validator": "LoggedInValidator",
-        "handler": "GuildOperationHandle",
-        "services": ["channel"]
-      },
-      {
         "opCode": "0x05",
         "validator": "LoggedInValidator",
         "handler": "CharacterListWorldHandle",
@@ -332,18 +326,6 @@
         "services": ["channel"]
       },
       {
-        "opCode": "0x7E",
-        "validator": "LoggedInValidator",
-        "handler": "CharacterChatWhisperHandle",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x7F",
-        "validator": "LoggedInValidator",
-        "handler": "CharacterSpouseChatHandle",
-        "services": ["channel"]
-      },
-      {
         "opCode": "0x35",
         "validator": "LoggedInValidator",
         "handler": "ChalkboardCloseHandle",
@@ -365,6 +347,29 @@
         "opCode": "0x3F",
         "validator": "LoggedInValidator",
         "handler": "NPCContinueConversationHandle",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x42",
+        "validator": "LoggedInValidator",
+        "handler": "HiredMerchantOperationHandle",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x45",
+        "validator": "LoggedInValidator",
+        "handler": "OwlActionHandle",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "OPEN": 5
+          }
+        }
+      },
+      {
+        "opCode": "0x46",
+        "validator": "LoggedInValidator",
+        "handler": "OwlWarpHandle",
         "services": ["channel"]
       },
       {
@@ -396,6 +401,11 @@
         "validator": "LoggedInValidator",
         "handler": "CharacterItemCancelHandle",
         "services": ["channel"]
+      },
+      {
+        "opCode": "0x4D",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterStateChangeByPortableChairHandle"
       },
       {
         "opCode": "0x4F",
@@ -518,15 +528,88 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x7E",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterChatWhisperHandle",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x7F",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterSpouseChatHandle",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x80",
         "validator": "LoggedInValidator",
         "handler": "MessengerOperationHandle",
         "services": ["channel"]
       },
       {
+        "opCode": "0x81",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterInteractionHandle",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "CREATE": 0,
+            "INVITE": 2,
+            "INVITE_DECLINE": 3,
+            "VISIT": 4,
+            "CHAT": 6,
+            "EXIT": 10,
+            "OPEN": 11,
+            "CASH_TRADE_OPEN": 14,
+            "TRADE_PUT_ITEM": 15,
+            "TRADE_ADD_MESO": 16,
+            "TRADE_CONFIRM": 17,
+            "TRANSACTION": 20,
+            "PERSONAL_STORE_PUT_ITEM": 22,
+            "PERSONAL_STORE_BUY": 23,
+            "PERSONAL_STORE_REMOVE_ITEM": 27,
+            "PERSONAL_STORE_ADD_TO_BLACKLIST": 28,
+            "PERSONAL_STORE_SET_VISITOR": 29,
+            "PERSONAL_STORE_SET_BLACK_LIST": 30,
+            "FIELD_ADD_TO_BLACK_LIST": 31,
+            "FIELD_REMOVE_FROM_BLACK_LIST": 32,
+            "MERCHANT_PUT_ITEM": 33,
+            "MERCHANT_BUY": 34,
+            "MERCHANT_REMOVE_ITEM": 38,
+            "MERCHANT_MERCHANT_OFF": 39,
+            "MERCHANT_ORGANIZE": 40,
+            "MERCHANT_EXIT": 41,
+            "MERCHANT_WITHDRAW_MESO": 43,
+            "MERCHANT_VIEW_VISIT_LIST": 46,
+            "MERCHANT_VIEW_BLACK_LIST": 47,
+            "MERCHANT_ADD_TO_BLACK_LIST": 48,
+            "MERCHANT_REMOVE_FROM_BLACK_LIST": 49,
+            "MEMORY_GAME_ASK_TIE": 50,
+            "MEMORY_GAME_TIE_ANSWER": 51,
+            "MEMORY_GAME_FORFEIT": 52,
+            "MEMORY_GAME_ASK_RETREAT": 54,
+            "MEMORY_GAME_RETREAT_ANSWER": 55,
+            "MEMORY_GAME_EXIT_AFTER_GAME": 56,
+            "MEMORY_GAME_CANCEL_EXIT_AFTER_GAME": 57,
+            "MEMORY_GAME_READY": 58,
+            "MEMORY_GAME_UNREADY": 59,
+            "MEMORY_GAME_EXPEL": 60,
+            "MEMORY_GAME_START": 61,
+            "MEMORY_GAME_SKIP": 63,
+            "MEMORY_GAME_MOVE_STONE": 64,
+            "MEMORY_GAME_FIP_CARD": 68
+          }
+        }
+      },
+      {
         "opCode": "0x82",
         "validator": "LoggedInValidator",
         "handler": "PartyOperationHandle",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x86",
+        "validator": "LoggedInValidator",
+        "handler": "GuildOperationHandle",
         "services": ["channel"]
       },
       {
@@ -566,6 +649,28 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x08D",
+        "validator": "LoggedInValidator",
+        "handler": "EnterDoorHandle",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x090",
+        "validator": "LoggedInValidator",
+        "handler": "RPSActionHandle",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "START": 0,
+            "SELECT": 1,
+            "UPDATE": 2,
+            "CONTINUE": 3,
+            "EXIT": 4,
+            "RETRY": 5
+          }
+        }
+      },
+      {
         "opCode": "0x93",
         "validator": "LoggedInValidator",
         "handler": "WeddingAction",
@@ -581,6 +686,12 @@
         "opCode": "0xA3",
         "validator": "LoggedInValidator",
         "handler": "GuildBBSHandle",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xA4",
+        "validator": "LoggedInValidator",
+        "handler": "EnterMtsHandle",
         "services": ["channel"]
       },
       {
@@ -727,6 +838,128 @@
         "opCode": "0xB8",
         "validator": "LoggedInValidator",
         "handler": "PetItemExcludeHandle",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xBB",
+        "validator": "LoggedInValidator",
+        "handler": "SummonMoveHandle",
+        "services": ["channel"],
+        "options": {
+          "types": [
+            {
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "FLYING_BLOCK",
+              "Type": "FLYING_BLOCK"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            }
+          ]
+        }
+      },
+      {
+        "opCode": "0xBC",
+        "validator": "LoggedInValidator",
+        "handler": "SummonAttackHandle",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xBD",
+        "validator": "LoggedInValidator",
+        "handler": "SummonDamageHandle",
         "services": ["channel"]
       },
       {
@@ -1046,156 +1279,6 @@
         "services": ["channel"]
       },
       {
-        "opCode": "0x08D",
-        "validator": "LoggedInValidator",
-        "handler": "EnterDoorHandle",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x090",
-        "validator": "LoggedInValidator",
-        "handler": "RPSActionHandle",
-        "services": ["channel"],
-        "options": {
-          "operations": {
-            "START": 0,
-            "SELECT": 1,
-            "UPDATE": 2,
-            "CONTINUE": 3,
-            "EXIT": 4,
-            "RETRY": 5
-          }
-        }
-      },
-      {
-        "opCode": "0xBB",
-        "validator": "LoggedInValidator",
-        "handler": "SummonMoveHandle",
-        "services": ["channel"],
-        "options": {
-          "types": [
-            {
-              "Name": "NORMAL",
-              "Type": "NORMAL"
-            },
-            {
-              "Name": "JUMP",
-              "Type": "JUMP"
-            },
-            {
-              "Name": "IMPACT",
-              "Type": "JUMP"
-            },
-            {
-              "Name": "IMMEDIATE",
-              "Type": "TELEPORT"
-            },
-            {
-              "Name": "TELEPORT",
-              "Type": "TELEPORT"
-            },
-            {
-              "Name": "HANG_ON_BACK",
-              "Type": "NORMAL"
-            },
-            {
-              "Name": "UNKNOWN",
-              "Type": "JUMP"
-            },
-            {
-              "Name": "ASSAULTER",
-              "Type": "TELEPORT"
-            },
-            {
-              "Name": "ASSASSINATION",
-              "Type": "TELEPORT"
-            },
-            {
-              "Name": "RUSH",
-              "Type": "TELEPORT"
-            },
-            {
-              "Name": "STAT_CHANGE",
-              "Type": "STAT_CHANGE"
-            },
-            {
-              "Name": "SIT_DOWN",
-              "Type": "TELEPORT"
-            },
-            {
-              "Name": "UNKNOWN",
-              "Type": "JUMP"
-            },
-            {
-              "Name": "UNKNOWN",
-              "Type": "JUMP"
-            },
-            {
-              "Name": "START_FALL_DOWN",
-              "Type": "START_FALL_DOWN"
-            },
-            {
-              "Name": "FALL_DOWN",
-              "Type": "NORMAL"
-            },
-            {
-              "Name": "START_WINGS",
-              "Type": "JUMP"
-            },
-            {
-              "Name": "WINGS",
-              "Type": "NORMAL"
-            },
-            {
-              "Name": "ARAN_ADJUST",
-              "Type": "JUMP"
-            },
-            {
-              "Name": "MOB_TOSS",
-              "Type": "JUMP"
-            },
-            {
-              "Name": "DASH_SLIDE",
-              "Type": "JUMP"
-            },
-            {
-              "Name": "UNKNOWN",
-              "Type": "DEFAULT"
-            },
-            {
-              "Name": "UNKNOWN",
-              "Type": "JUMP"
-            },
-            {
-              "Name": "FLYING_BLOCK",
-              "Type": "FLYING_BLOCK"
-            },
-            {
-              "Name": "UNKNOWN",
-              "Type": "JUMP"
-            }
-          ]
-        }
-      },
-      {
-        "opCode": "0xBC",
-        "validator": "LoggedInValidator",
-        "handler": "SummonAttackHandle",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0xBD",
-        "validator": "LoggedInValidator",
-        "handler": "SummonDamageHandle",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0xA4",
-        "validator": "LoggedInValidator",
-        "handler": "EnterMtsHandle",
-        "services": ["channel"]
-      },
-      {
         "opCode": "0x109",
         "validator": "NoOpValidator",
         "handler": "ItcStatusChargeHandle",
@@ -1238,84 +1321,6 @@
         "opCode": "0x112",
         "validator": "LoggedInValidator",
         "handler": "ItemUpgradeUpdateHandle",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x45",
-        "validator": "LoggedInValidator",
-        "handler": "OwlActionHandle",
-        "services": ["channel"],
-        "options": {
-          "operations": {
-            "OPEN": 5
-          }
-        }
-      },
-      {
-        "opCode": "0x46",
-        "validator": "LoggedInValidator",
-        "handler": "OwlWarpHandle",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x81",
-        "validator": "LoggedInValidator",
-        "handler": "CharacterInteractionHandle",
-        "services": ["channel"],
-        "options": {
-          "operations": {
-            "CREATE": 0,
-            "INVITE": 2,
-            "INVITE_DECLINE": 3,
-            "VISIT": 4,
-            "CHAT": 6,
-            "EXIT": 10,
-            "OPEN": 11,
-            "CASH_TRADE_OPEN": 14,
-            "TRADE_PUT_ITEM": 15,
-            "TRADE_ADD_MESO": 16,
-            "TRADE_CONFIRM": 17,
-            "TRANSACTION": 20,
-            "PERSONAL_STORE_PUT_ITEM": 22,
-            "PERSONAL_STORE_BUY": 23,
-            "PERSONAL_STORE_REMOVE_ITEM": 27,
-            "PERSONAL_STORE_ADD_TO_BLACKLIST": 28,
-            "PERSONAL_STORE_SET_VISITOR": 29,
-            "PERSONAL_STORE_SET_BLACK_LIST": 30,
-            "FIELD_ADD_TO_BLACK_LIST": 31,
-            "FIELD_REMOVE_FROM_BLACK_LIST": 32,
-            "MERCHANT_PUT_ITEM": 33,
-            "MERCHANT_BUY": 34,
-            "MERCHANT_REMOVE_ITEM": 38,
-            "MERCHANT_MERCHANT_OFF": 39,
-            "MERCHANT_ORGANIZE": 40,
-            "MERCHANT_EXIT": 41,
-            "MERCHANT_WITHDRAW_MESO": 43,
-            "MERCHANT_VIEW_VISIT_LIST": 46,
-            "MERCHANT_VIEW_BLACK_LIST": 47,
-            "MERCHANT_ADD_TO_BLACK_LIST": 48,
-            "MERCHANT_REMOVE_FROM_BLACK_LIST": 49,
-            "MEMORY_GAME_ASK_TIE": 50,
-            "MEMORY_GAME_TIE_ANSWER": 51,
-            "MEMORY_GAME_FORFEIT": 52,
-            "MEMORY_GAME_ASK_RETREAT": 54,
-            "MEMORY_GAME_RETREAT_ANSWER": 55,
-            "MEMORY_GAME_EXIT_AFTER_GAME": 56,
-            "MEMORY_GAME_CANCEL_EXIT_AFTER_GAME": 57,
-            "MEMORY_GAME_READY": 58,
-            "MEMORY_GAME_UNREADY": 59,
-            "MEMORY_GAME_EXPEL": 60,
-            "MEMORY_GAME_START": 61,
-            "MEMORY_GAME_SKIP": 63,
-            "MEMORY_GAME_MOVE_STONE": 64,
-            "MEMORY_GAME_FIP_CARD": 68
-          }
-        }
-      },
-      {
-        "opCode": "0x42",
-        "validator": "LoggedInValidator",
-        "handler": "HiredMerchantOperationHandle",
         "services": ["channel"]
       }
     ],
@@ -1662,6 +1667,18 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x3B",
+        "writer": "GuildBBS",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "BBS_THREAD_LIST": 6,
+            "BBS_THREAD": 7,
+            "BBS_ENTRY_NOT_FOUND": 8
+          }
+        }
+      },
+      {
         "opCode": "0x3D",
         "writer": "CharacterInfo",
         "services": ["channel"]
@@ -1765,6 +1782,16 @@
         }
       },
       {
+        "opCode": "0x045",
+        "writer": "SpawnPortal",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x045",
+        "writer": "RemoveTownDoor",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x46",
         "writer": "WorldMessage",
         "services": ["channel"],
@@ -1791,6 +1818,40 @@
         }
       },
       {
+        "opCode": "0x47",
+        "writer": "IncubatorResult",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x48",
+        "writer": "ShopScannerResult",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "RESULT": 6,
+            "HOT_LIST": 7
+          }
+        }
+      },
+      {
+        "opCode": "0x49",
+        "writer": "ShopLinkResult",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "SUCCESS": 0,
+            "CLOSED": 1,
+            "FULL": 2,
+            "BUSY": 3,
+            "DEAD": 4,
+            "NO_TRADE": 7,
+            "DENIED": 17,
+            "MAINTENANCE": 18,
+            "FM_ONLY": 23
+          }
+        }
+      },
+      {
         "opCode": "0x4E",
         "writer": "PetCashFoodResult",
         "services": ["channel"]
@@ -1808,6 +1869,27 @@
       {
         "opCode": "0x56",
         "writer": "MonsterBookSetCover",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x71",
+        "writer": "AvatarMegaphoneResult",
+        "services": ["channel"],
+        "options": {
+          "errorCodes": {
+            "WAITING_LINE": 88,
+            "LEVEL_GATE": 89
+          }
+        }
+      },
+      {
+        "opCode": "0x72",
+        "writer": "SetAvatarMegaphone",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x73",
+        "writer": "ClearAvatarMegaphone",
         "services": ["channel"]
       },
       {
@@ -1841,33 +1923,13 @@
         "services": ["channel"]
       },
       {
-        "opCode": "0x91",
-        "writer": "SummonItemUnavailable",
+        "opCode": "0x8C",
+        "writer": "BlockedServer",
         "services": ["channel"]
       },
       {
         "opCode": "0x8D",
         "writer": "ForcedMapEquip",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x90",
-        "writer": "SpouseChat",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x98",
-        "writer": "AdminResult",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0xA4",
-        "writer": "StalkResult",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x12D",
-        "writer": "SnowballTouch",
         "services": ["channel"]
       },
       {
@@ -1881,8 +1943,13 @@
         "services": ["channel"]
       },
       {
-        "opCode": "0x8C",
-        "writer": "BlockedServer",
+        "opCode": "0x90",
+        "writer": "SpouseChat",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x91",
+        "writer": "SummonItemUnavailable",
         "services": ["channel"]
       },
       {
@@ -1928,6 +1995,11 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x98",
+        "writer": "AdminResult",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x99",
         "writer": "OxQuiz",
         "services": ["channel"]
@@ -1943,18 +2015,23 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x9C",
+        "writer": "ContiMove",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x9D",
         "writer": "FieldTransportState",
         "services": ["channel"]
       },
       {
-        "opCode": "0x9F",
-        "writer": "SetQuestTime",
+        "opCode": "0x9E",
+        "writer": "SetQuestClear",
         "services": ["channel"]
       },
       {
-        "opCode": "0x9E",
-        "writer": "SetQuestClear",
+        "opCode": "0x9F",
+        "writer": "SetQuestTime",
         "services": ["channel"]
       },
       {
@@ -1970,6 +2047,26 @@
       {
         "opCode": "0xA2",
         "writer": "StopClock",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xA3",
+        "writer": "AriantArenaShowResult",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xA4",
+        "writer": "StalkResult",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xA5",
+        "writer": "PyramidGauge",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xA6",
+        "writer": "PyramidScore",
         "services": ["channel"]
       },
       {
@@ -1995,6 +2092,17 @@
       {
         "opCode": "0xAF",
         "writer": "ChalkboardUse",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xB0",
+        "writer": "MiniRoom",
+        "services": ["channel"],
+        "options": {}
+      },
+      {
+        "opCode": "0x0B0",
+        "writer": "MiniRoom",
         "services": ["channel"]
       },
       {
@@ -2034,6 +2142,36 @@
       {
         "opCode": "0xBB",
         "writer": "PetCommandResponse",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xBC",
+        "writer": "SummonSpawn",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xBD",
+        "writer": "SummonRemove",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xBE",
+        "writer": "SummonMove",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xBF",
+        "writer": "SummonAttack",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xC0",
+        "writer": "SummonSkill",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xC1",
+        "writer": "SummonDamage",
         "services": ["channel"]
       },
       {
@@ -2338,21 +2476,6 @@
       {
         "opCode": "0xFC",
         "writer": "SpawnMonster",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x11A",
-        "writer": "SpawnHiredMerchant",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x11B",
-        "writer": "DestroyHiredMerchant",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x11C",
-        "writer": "UpdateHiredMerchant",
         "services": ["channel"]
       },
       {
@@ -2675,6 +2798,21 @@
         }
       },
       {
+        "opCode": "0x11A",
+        "writer": "SpawnHiredMerchant",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x11B",
+        "writer": "DestroyHiredMerchant",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x11C",
+        "writer": "UpdateHiredMerchant",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x11D",
         "writer": "DropSpawn",
         "services": ["channel"]
@@ -2682,6 +2820,16 @@
       {
         "opCode": "0x11E",
         "writer": "DropDestroy",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x124",
+        "writer": "SpawnDoor",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x125",
+        "writer": "RemoveDoor",
         "services": ["channel"]
       },
       {
@@ -2697,6 +2845,46 @@
       {
         "opCode": "0x129",
         "writer": "ReactorDestroy",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x12A",
+        "writer": "SnowballState",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x12B",
+        "writer": "SnowballHit",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x12C",
+        "writer": "SnowballMessage",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x12D",
+        "writer": "SnowballTouch",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x12E",
+        "writer": "CoconutHit",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x12F",
+        "writer": "CoconutScore",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x130",
+        "writer": "GuildBossHealerMove",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x131",
+        "writer": "GuildBossPulleyStateChange",
         "services": ["channel"]
       },
       {
@@ -2737,6 +2925,26 @@
       {
         "opCode": "0x139",
         "writer": "MonsterCarnivalResult",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x13A",
+        "writer": "AriantArenaUserScore",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x13C",
+        "writer": "SheepRanchInfo",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x13D",
+        "writer": "SheepRanchClothes",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x13E",
+        "writer": "WitchTowerScoreUpdate",
         "services": ["channel"]
       },
       {
@@ -2796,6 +3004,19 @@
         }
       },
       {
+        "opCode": "0x149",
+        "writer": "RPSGame",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "OPEN": 8,
+            "START_SELECT": 9,
+            "RESULT": 11,
+            "END": 13
+          }
+        }
+      },
+      {
         "opCode": "0x14A",
         "writer": "MessengerOperation",
         "services": ["channel"],
@@ -2811,303 +3032,6 @@
             "UPDATE": 7
           }
         }
-      },
-      {
-        "opCode": "0x14C",
-        "writer": "Tournament",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x14D",
-        "writer": "TournamentMatchTable",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x14E",
-        "writer": "TournamentSetPrize",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x14F",
-        "writer": "TournamentUew",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x150",
-        "writer": "TournamentCharacters",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x151",
-        "writer": "WeddingProgress",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x152",
-        "writer": "WeddingCeremonyEnd",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x13E",
-        "writer": "WitchTowerScoreUpdate",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x177",
-        "writer": "ViciousHammer",
-        "services": ["channel"],
-        "options": {
-          "operations": {
-            "OPEN": 0,
-            "SUCCESS": 63,
-            "FAILURE": 64
-          },
-          "errorCodes": {
-            "UNKNOWN": 0,
-            "NOT_UPGRADABLE": 1,
-            "CAP_REACHED": 2,
-            "HORNTAIL": 3
-          }
-        }
-      },
-      {
-        "opCode": "0x155",
-        "writer": "CashShopCashQueryResult",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x156",
-        "writer": "CashShopOperation",
-        "services": ["channel"],
-        "options": {
-          "operations": {
-            "LOAD_INVENTORY_SUCCESS": 80,
-            "LOAD_INVENTORY_FAILURE": 81,
-            "LOAD_WISHLIST": 84,
-            "UPDATE_WISHLIST": 90,
-            "PURCHASE_SUCCESS": 92,
-            "INVENTORY_CAPACITY_INCREASE_SUCCESS": 101,
-            "INVENTORY_CAPACITY_INCREASE_FAILED": 102,
-            "CASH_ITEM_MOVED_TO_INVENTORY": 109,
-            "CASH_ITEM_MOVED_TO_CASH_INVENTORY": 111
-          }
-        }
-      },
-      {
-        "opCode": "0x163",
-        "writer": "CharacterKeyMap",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x164",
-        "writer": "CharacterKeyMapAutoHp",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x165",
-        "writer": "CharacterKeyMapAutoMp",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x124",
-        "writer": "SpawnDoor",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x125",
-        "writer": "RemoveDoor",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x045",
-        "writer": "SpawnPortal",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x045",
-        "writer": "RemoveTownDoor",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x16F",
-        "writer": "MtsChargeParamResult",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x170",
-        "writer": "MtsOperation2",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x171",
-        "writer": "MtsOperation",
-        "services": ["channel"],
-        "options": {
-          "processStatusCodes": {
-            "HISTORY_SOLD": 0,
-            "HISTORY_PURCHASED": 1,
-            "HISTORY_BID_LOST": 2,
-            "HISTORY_CANCELLED": 3,
-            "AUCTION_EXHIBIT": 1,
-            "AUCTION_BID": 2
-          },
-          "noticeFailReasons": {
-            "NOT_ENOUGH_NX": 66,
-            "REGISTER_FAILED": 0,
-            "NOT_ENOUGH_MESOS": 67,
-            "NX_ERROR": 68,
-            "INVENTORY_FULL": 71,
-            "LIST_LOAD_FAILED": 73,
-            "CANCEL_HAS_BID": 78,
-            "MAY_NOT_BE_SOLD": 79,
-            "ITEM_SOLD": 81,
-            "STARS_NOT_TRADABLE": 82,
-            "BELOW_MIN_LEVEL": 83
-          },
-          "operations": {
-            "GET_ITC_LIST_DONE": 21,
-            "GET_ITC_LIST_FAILED": 22,
-            "GET_SEARCH_ITC_LIST_DONE": 23,
-            "GET_SEARCH_ITC_LIST_FAILED": 24,
-            "REGISTER_SALE_ENTRY_DONE": 29,
-            "REGISTER_SALE_ENTRY_FAILED": 30,
-            "SALE_CURRENT_ITEM_TO_WISH_DONE": 31,
-            "SALE_CURRENT_ITEM_TO_WISH_FAILED": 32,
-            "GET_USER_PURCHASE_ITEM_DONE": 33,
-            "GET_USER_PURCHASE_ITEM_FAILED": 34,
-            "GET_USER_SALE_ITEM_DONE": 35,
-            "GET_USER_SALE_ITEM_FAILED": 36,
-            "CANCEL_SALE_ITEM_DONE": 37,
-            "CANCEL_SALE_ITEM_FAILED": 38,
-            "MOVE_ITC_PURCHASE_ITEM_LTOS_DONE": 39,
-            "MOVE_ITC_PURCHASE_ITEM_LTOS_FAILED": 40,
-            "SET_ZZIM_DONE": 41,
-            "SET_ZZIM_FAILED": 42,
-            "DELETE_ZZIM_DONE": 43,
-            "DELETE_ZZIM_FAILED": 44,
-            "LOAD_WISH_SALE_LIST_DONE": 45,
-            "LOAD_WISH_SALE_LIST_FAILED": 46,
-            "BUY_WISH_DONE": 47,
-            "BUY_WISH_FAILED": 48,
-            "CANCEL_WISH_DONE": 49,
-            "CANCEL_WISH_FAILED": 50,
-            "BUY_ITEM_DONE": 51,
-            "BUY_ITEM_FAILED": 52,
-            "BUY_ZZIM_ITEM_DONE": 53,
-            "BUY_ZZIM_ITEM_FAILED": 54,
-            "REGISTER_WISH_ITEM_DONE": 55,
-            "REGISTER_WISH_ITEM_FAILED": 56,
-            "BID_AUCTION_FAILED": 60,
-            "NOTIFY_CANCEL_WISH_RESULT": 61,
-            "SUCCESS_BID_INFO_RESULT": 62
-          }
-        }
-      },
-      {
-        "opCode": "0x9C",
-        "writer": "ContiMove",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0xA3",
-        "writer": "AriantArenaShowResult",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0xA5",
-        "writer": "PyramidGauge",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0xA6",
-        "writer": "PyramidScore",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x12A",
-        "writer": "SnowballState",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x12B",
-        "writer": "SnowballHit",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x12C",
-        "writer": "SnowballMessage",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x12E",
-        "writer": "CoconutHit",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x12F",
-        "writer": "CoconutScore",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x130",
-        "writer": "GuildBossHealerMove",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x131",
-        "writer": "GuildBossPulleyStateChange",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x13A",
-        "writer": "AriantArenaUserScore",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x13C",
-        "writer": "SheepRanchInfo",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x13D",
-        "writer": "SheepRanchClothes",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0xBC",
-        "writer": "SummonSpawn",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0xBD",
-        "writer": "SummonRemove",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0xBE",
-        "writer": "SummonMove",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0xBF",
-        "writer": "SummonAttack",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0xC1",
-        "writer": "SummonDamage",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0xC0",
-        "writer": "SummonSkill",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0xB0",
-        "writer": "MiniRoom",
-        "services": ["channel"],
-        "options": {}
       },
       {
         "opCode": "0x14B",
@@ -3186,103 +3110,77 @@
         }
       },
       {
-        "opCode": "0x0B0",
-        "writer": "MiniRoom",
+        "opCode": "0x14C",
+        "writer": "Tournament",
         "services": ["channel"]
       },
       {
-        "opCode": "0x3B",
-        "writer": "GuildBBS",
-        "services": ["channel"],
-        "options": {
-          "operations": {
-            "BBS_THREAD_LIST": 6,
-            "BBS_THREAD": 7,
-            "BBS_ENTRY_NOT_FOUND": 8
-          }
-        }
-      },
-      {
-        "opCode": "0x149",
-        "writer": "RPSGame",
-        "services": ["channel"],
-        "options": {
-          "operations": {
-            "OPEN": 8,
-            "START_SELECT": 9,
-            "RESULT": 11,
-            "END": 13
-          }
-        }
-      },
-      {
-        "opCode": "0x47",
-        "writer": "IncubatorResult",
+        "opCode": "0x14D",
+        "writer": "TournamentMatchTable",
         "services": ["channel"]
       },
       {
-        "opCode": "0x17B",
-        "writer": "VegaScroll",
-        "services": ["channel"],
-        "options": {
-          "operations": {
-            "START_SUCCESS": 66,
-            "START_FAILURE": 71,
-            "RESULT_SUCCESS": 67,
-            "RESULT_FAILURE": 69,
-            "INVALID": 68
-          }
-        }
-      },
-      {
-        "opCode": "0x48",
-        "writer": "ShopScannerResult",
-        "services": ["channel"],
-        "options": {
-          "operations": {
-            "RESULT": 6,
-            "HOT_LIST": 7
-          }
-        }
-      },
-      {
-        "opCode": "0x49",
-        "writer": "ShopLinkResult",
-        "services": ["channel"],
-        "options": {
-          "operations": {
-            "SUCCESS": 0,
-            "CLOSED": 1,
-            "FULL": 2,
-            "BUSY": 3,
-            "DEAD": 4,
-            "NO_TRADE": 7,
-            "DENIED": 17,
-            "MAINTENANCE": 18,
-            "FM_ONLY": 23
-          }
-        }
-      },
-      {
-        "opCode": "0x72",
-        "writer": "SetAvatarMegaphone",
+        "opCode": "0x14E",
+        "writer": "TournamentSetPrize",
         "services": ["channel"]
       },
       {
-        "opCode": "0x73",
-        "writer": "ClearAvatarMegaphone",
+        "opCode": "0x14F",
+        "writer": "TournamentUew",
         "services": ["channel"]
       },
       {
-        "opCode": "0x71",
-        "writer": "AvatarMegaphoneResult",
+        "opCode": "0x150",
+        "writer": "TournamentCharacters",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x151",
+        "writer": "WeddingProgress",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x152",
+        "writer": "WeddingCeremonyEnd",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x155",
+        "writer": "CashShopCashQueryResult",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x156",
+        "writer": "CashShopOperation",
         "services": ["channel"],
         "options": {
-          "errorCodes": {
-            "WAITING_LINE": 88,
-            "LEVEL_GATE": 89
+          "operations": {
+            "LOAD_INVENTORY_SUCCESS": 80,
+            "LOAD_INVENTORY_FAILURE": 81,
+            "LOAD_WISHLIST": 84,
+            "UPDATE_WISHLIST": 90,
+            "PURCHASE_SUCCESS": 92,
+            "INVENTORY_CAPACITY_INCREASE_SUCCESS": 101,
+            "INVENTORY_CAPACITY_INCREASE_FAILED": 102,
+            "CASH_ITEM_MOVED_TO_INVENTORY": 109,
+            "CASH_ITEM_MOVED_TO_CASH_INVENTORY": 111
           }
         }
+      },
+      {
+        "opCode": "0x163",
+        "writer": "CharacterKeyMap",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x164",
+        "writer": "CharacterKeyMapAutoHp",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x165",
+        "writer": "CharacterKeyMapAutoMp",
+        "services": ["channel"]
       },
       {
         "opCode": "0x16A",
@@ -3310,6 +3208,113 @@
             "GM_MESSAGE": 1,
             "WRONG_USER": 2,
             "QUEUE_TOO_LONG": 3
+          }
+        }
+      },
+      {
+        "opCode": "0x16F",
+        "writer": "MtsChargeParamResult",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x170",
+        "writer": "MtsOperation2",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x171",
+        "writer": "MtsOperation",
+        "services": ["channel"],
+        "options": {
+          "processStatusCodes": {
+            "HISTORY_SOLD": 0,
+            "HISTORY_PURCHASED": 1,
+            "HISTORY_BID_LOST": 2,
+            "HISTORY_CANCELLED": 3,
+            "AUCTION_EXHIBIT": 1,
+            "AUCTION_BID": 2
+          },
+          "noticeFailReasons": {
+            "NOT_ENOUGH_NX": 66,
+            "REGISTER_FAILED": 0,
+            "NOT_ENOUGH_MESOS": 67,
+            "NX_ERROR": 68,
+            "INVENTORY_FULL": 71,
+            "LIST_LOAD_FAILED": 73,
+            "CANCEL_HAS_BID": 78,
+            "MAY_NOT_BE_SOLD": 79,
+            "ITEM_SOLD": 81,
+            "STARS_NOT_TRADABLE": 82,
+            "BELOW_MIN_LEVEL": 83
+          },
+          "operations": {
+            "GET_ITC_LIST_DONE": 21,
+            "GET_ITC_LIST_FAILED": 22,
+            "GET_SEARCH_ITC_LIST_DONE": 23,
+            "GET_SEARCH_ITC_LIST_FAILED": 24,
+            "REGISTER_SALE_ENTRY_DONE": 29,
+            "REGISTER_SALE_ENTRY_FAILED": 30,
+            "SALE_CURRENT_ITEM_TO_WISH_DONE": 31,
+            "SALE_CURRENT_ITEM_TO_WISH_FAILED": 32,
+            "GET_USER_PURCHASE_ITEM_DONE": 33,
+            "GET_USER_PURCHASE_ITEM_FAILED": 34,
+            "GET_USER_SALE_ITEM_DONE": 35,
+            "GET_USER_SALE_ITEM_FAILED": 36,
+            "CANCEL_SALE_ITEM_DONE": 37,
+            "CANCEL_SALE_ITEM_FAILED": 38,
+            "MOVE_ITC_PURCHASE_ITEM_LTOS_DONE": 39,
+            "MOVE_ITC_PURCHASE_ITEM_LTOS_FAILED": 40,
+            "SET_ZZIM_DONE": 41,
+            "SET_ZZIM_FAILED": 42,
+            "DELETE_ZZIM_DONE": 43,
+            "DELETE_ZZIM_FAILED": 44,
+            "LOAD_WISH_SALE_LIST_DONE": 45,
+            "LOAD_WISH_SALE_LIST_FAILED": 46,
+            "BUY_WISH_DONE": 47,
+            "BUY_WISH_FAILED": 48,
+            "CANCEL_WISH_DONE": 49,
+            "CANCEL_WISH_FAILED": 50,
+            "BUY_ITEM_DONE": 51,
+            "BUY_ITEM_FAILED": 52,
+            "BUY_ZZIM_ITEM_DONE": 53,
+            "BUY_ZZIM_ITEM_FAILED": 54,
+            "REGISTER_WISH_ITEM_DONE": 55,
+            "REGISTER_WISH_ITEM_FAILED": 56,
+            "BID_AUCTION_FAILED": 60,
+            "NOTIFY_CANCEL_WISH_RESULT": 61,
+            "SUCCESS_BID_INFO_RESULT": 62
+          }
+        }
+      },
+      {
+        "opCode": "0x177",
+        "writer": "ViciousHammer",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "OPEN": 0,
+            "SUCCESS": 63,
+            "FAILURE": 64
+          },
+          "errorCodes": {
+            "UNKNOWN": 0,
+            "NOT_UPGRADABLE": 1,
+            "CAP_REACHED": 2,
+            "HORNTAIL": 3
+          }
+        }
+      },
+      {
+        "opCode": "0x17B",
+        "writer": "VegaScroll",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "START_SUCCESS": 66,
+            "START_FAILURE": 71,
+            "RESULT_SUCCESS": 67,
+            "RESULT_FAILURE": 69,
+            "INVALID": 68
           }
         }
       }

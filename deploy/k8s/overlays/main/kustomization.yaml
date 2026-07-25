@@ -257,7 +257,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-map-actions/atlas-map-actions
     newTag: main-bb513ef
   - name: ghcr.io/chronicle20/atlas-maps/atlas-maps
-    newTag: main-bb513ef
+    newTag: main-fc12a93
   - name: ghcr.io/chronicle20/atlas-marriages/atlas-marriages
     newTag: main-bb513ef
   - name: ghcr.io/chronicle20/atlas-merchant/atlas-merchant
@@ -301,7 +301,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-quest/atlas-quest
     newTag: main-bb513ef
   - name: ghcr.io/chronicle20/atlas-rankings/atlas-rankings
-    newTag: main-bb513ef
+    newTag: main-ed94ca6
   - name: ghcr.io/chronicle20/atlas-rates/atlas-rates
     newTag: main-bb513ef
   - name: ghcr.io/chronicle20/atlas-reactor-actions/atlas-reactor-actions
@@ -327,6 +327,6 @@ images:
   - name: ghcr.io/chronicle20/atlas-world/atlas-world
     newTag: main-bb513ef
   - name: ghcr.io/chronicle20/atlas-ui/atlas-ui
-    newTag: main-bb513ef
+    newTag: main-1db5db8
 commonLabels:
   atlas.env: main

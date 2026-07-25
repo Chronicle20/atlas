@@ -205,6 +205,12 @@ func (m MobCrcKeyChangedReply) String() string    { return "" }
 Three edits per op: register in `main.go`, add the channel-side
 writer/handler glue, and route the opcode in all nine templates.
 
+> **Insert the template `handlers`/`writers` entry at its sorted opcode
+> position** — both arrays are kept in strictly ascending `opCode` order and
+> `tools/template-opcode-order-guard.sh` (CI) enforces it. Do not append the new
+> entry next to a semantically-related handler. See
+> [`TEMPLATE_CONVENTIONS.md`](TEMPLATE_CONVENTIONS.md).
+
 ### Clientbound
 
 1. Append the writer const to `produceWriters()` in

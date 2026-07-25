@@ -232,3 +232,38 @@ func TestUseSkillBookGoldenBytesV87(t *testing.T) {
 		t.Errorf("golden bytes: got % X, want % X", got, want)
 	}
 }
+
+// Golden bytes, v95: same 10-byte body as v48/v61/v72/v79/v83/v84/v87 (no
+// version gate on this op). updateTime(4 LE) + slot(2 LE) + itemId(4 LE);
+// 12345 = 0x3039; 2 = 0x0002; 2290000 = 0x22F150.
+//
+// IDA evidence (task-125): CWvsContext::SendSkillLearnItemUseRequest
+// @0x9d65e0 (v95 IDB GMS_v95.0_U_DEVM.exe.i64, session e4abcb98 — PDB-backed,
+// real symbol name). Decompile:
+//
+//	if ( (nItemID / 10000 == 228 || is_masterybook_item(nItemID))   -- item-class gate @0x9d666f
+//	  && !this->m_bExclRequestSent
+//	  && ...
+//	  && get_update_time() - this->m_tExclRequestSent >= 200 )
+//	{
+//	  COutPacket::COutPacket(&oPacket, 0x58);                       -- @0x9d6677
+//	  update_time = get_update_time();
+//	  COutPacket::Encode4(&oPacket, update_time);  -> updateTime,   @0x9d668e
+//	  COutPacket::Encode2(&oPacket, nPOS);          -> slot,        @0x9d669c
+//	  COutPacket::Encode4(&oPacket, nItemID);       -> itemId,      @0x9d66a6
+//	  ...
+//	}
+//
+// matches the codec's write order exactly. Opcode 0x58 (88 decimal) ==
+// registry op USE_SKILL_BOOK.
+//
+// packet-audit:verify packet=character/serverbound/CharacterUseSkillBook version=gms_v95 ida=0x9d65e0
+func TestUseSkillBookGoldenBytesV95(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	l, _ := testlog.NewNullLogger()
+	got := UseSkillBook{updateTime: 12345, slot: 2, itemId: 2290000}.Encode(l, ctx)(nil)
+	want := []byte{0x39, 0x30, 0x00, 0x00, 0x02, 0x00, 0x50, 0xF1, 0x22, 0x00}
+	if !bytes.Equal(got, want) {
+		t.Errorf("golden bytes: got % X, want % X", got, want)
+	}
+}

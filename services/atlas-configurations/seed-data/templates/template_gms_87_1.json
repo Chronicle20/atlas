@@ -428,6 +428,11 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x55",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterSkillBookUseHandle"
+      },
+      {
         "opCode": "0x5B",
         "validator": "LoggedInValidator",
         "handler": "CharacterAutoDistributeApHandle",
@@ -2001,6 +2006,10 @@
         "opCode": "0xB2",
         "writer": "CharacterItemUpgrade",
         "services": ["channel"]
+      },
+      {
+        "opCode": "0x33",
+        "writer": "CharacterSkillLearnItemResult"
       },
       {
         "opCode": "0xB4",

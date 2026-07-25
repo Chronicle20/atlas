@@ -288,12 +288,21 @@
         "validator": "LoggedInValidator",
         "handler": "CharacterCashItemUseHandle",
         "services": ["channel"]
+      },
+      {
+        "opCode": "0x59",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterSkillBookUseHandle"
       }
     ],
     "writers": [{
         "opCode": "0x31",
         "writer": "SetTamingMobInfo",
         "services": ["channel"]
+      },
+      {
+        "opCode": "0x34",
+        "writer": "CharacterSkillLearnItemResult"
       },
       {
         "opCode": "0x00",

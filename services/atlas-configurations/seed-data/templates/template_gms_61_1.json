@@ -154,7 +154,7 @@
         "services": ["channel"]
       },
       {
-        "opCode": "0x47",
+        "opCode": "0x43",
         "validator": "LoggedInValidator",
         "handler": "CharacterItemUseHandle",
         "services": ["channel"]
@@ -248,10 +248,15 @@
         "services": ["channel"]
       },
       {
-        "opCode": "0x4B",
+        "opCode": "0x47",
         "validator": "LoggedInValidator",
         "handler": "PetFoodHandle",
         "services": ["channel"]
+      },
+      {
+        "opCode": "0x4B",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterSkillBookUseHandle"
       },
       {
         "opCode": "0x51",
@@ -754,7 +759,7 @@
         "services": ["channel"]
       },
       {
-        "opCode": "0x4C",
+        "opCode": "0x48",
         "validator": "LoggedInValidator",
         "handler": "MountFoodHandle",
         "services": ["channel"]
@@ -796,7 +801,7 @@
         "services": ["channel"]
       },
       {
-        "opCode": "0x5A",
+        "opCode": "0x53",
         "validator": "LoggedInValidator",
         "handler": "CharacterUseSkillHandle",
         "services": ["channel"]
@@ -1346,6 +1351,10 @@
         "opCode": "0x42",
         "writer": "IncubatorResult",
         "services": ["channel"]
+      },
+      {
+        "opCode": "0x30",
+        "writer": "CharacterSkillLearnItemResult"
       },
       {
         "opCode": "0x00",

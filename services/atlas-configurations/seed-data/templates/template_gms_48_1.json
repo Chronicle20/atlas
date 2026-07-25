@@ -322,6 +322,11 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x40",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterSkillBookUseHandle"
+      },
+      {
         "opCode": "0x51",
         "validator": "LoggedInValidator",
         "handler": "TeleportRockAddMapHandle",
@@ -1280,6 +1285,10 @@
         "opCode": "0x1E",
         "writer": "CharacterSkillChange",
         "services": ["channel"]
+      },
+      {
+        "opCode": "0x2B",
+        "writer": "CharacterSkillLearnItemResult"
       },
       {
         "opCode": "0x20",

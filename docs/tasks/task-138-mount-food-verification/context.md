@@ -170,9 +170,15 @@ version gate. No codec was changed; the tests now assert real legacy behavior.
 
 - **gms_12** remains parked solely on the absence of a v12 IDB (no matrix
   column, no opcode inference).
-- **gms_92** mount food is unblocked (v92 IDB present, opcode `0x54` verified)
-  and reduced to a one-line `template_gms_92_1.json` registration that is out
-  of this task's matrix scope (gms_92 is not a matrix column).
+- **gms_92** mount food is now **closed** (folded in per maintainer request):
+  `template_gms_92_1.json` gains the `MountFoodHandle` recv handler at opcode
+  `0x54` (decompile-verified `CWvsContext::SendTamingMobFoodItemUseRequest`
+  @0x9ab430 → `COutPacket(&pkt, 0x54)`; 0x54 was unused, no collision; handler
+  is registered in atlas-channel `handlerMap`). gms_92 remains **not** a
+  coverage-matrix column, so this is a routing/config fix with no matrix cell.
+  **Live-tenant follow-up:** any already-running gms_92 tenant needs the same
+  `0x54` handler PATCHed into its live socket config (seed-template additions
+  do not reach existing tenants automatically).
 - **gms_v61 live-tenant follow-up**: the `0x4C`→`0x48` opcode correction
   (commit `3e9b52cd0`) fixes the seed template only — any already-deployed
   v61 tenant socket config still routing `MountFoodHandle` at `0x4C` needs an

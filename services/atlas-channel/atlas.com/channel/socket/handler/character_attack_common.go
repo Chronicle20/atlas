@@ -215,6 +215,29 @@ func mpEaterAbsorbAmount(maxMp uint32, x int16) uint32 {
 	return uint32(uint64(maxMp) * uint64(x) / 100)
 }
 
+// drainHealAmount computes the drain-family HP gain for one damaged
+// monster: floor(totalDamage * x / 100), capped by the monster's max HP
+// and by half the attacker's effective (buff-inclusive) max HP, then
+// defensively clamped to int16 range for ChangeHP. Returns 0 for
+// non-positive x, zero damage, or zero effectiveMaxHp (fail-safe when
+// the effective-stats fetch failed).
+func drainHealAmount(totalDamage uint32, x int16, monsterMaxHp uint32, effectiveMaxHp uint32) int16 {
+	if totalDamage == 0 || x <= 0 || effectiveMaxHp == 0 {
+		return 0
+	}
+	heal := uint64(totalDamage) * uint64(x) / 100
+	if m := uint64(monsterMaxHp); heal > m {
+		heal = m
+	}
+	if h := uint64(effectiveMaxHp) / 2; heal > h {
+		heal = h
+	}
+	if heal > math.MaxInt16 {
+		return math.MaxInt16
+	}
+	return int16(heal)
+}
+
 // mpEaterTryProc evaluates and (on success) emits MP Eater for one
 // damaged monster. Called once per damaged monster after status apply.
 // Errors are logged at Debugf/Errorf and swallowed — never abort the

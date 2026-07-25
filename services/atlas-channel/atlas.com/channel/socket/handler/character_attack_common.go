@@ -497,7 +497,14 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 
 					// TODO apply cooldown
 					// TODO cancel dark sight / wind walk
-					// TODO apply combo orbs (add or consume)
+					// Combo orb gain/consume: melee only (close-range attacks,
+					// Cosmic CloseRangeDamageHandler parity). Fire-and-forget
+					// beside the projectile emit — failures never abort the
+					// attack. The character was fetched with SkillModelDecorator,
+					// so combo skill levels are already in hand.
+					if ai.AttackType() == packetmodel.AttackTypeMelee {
+						comboOrbTryUpdate(l, c, ai, comboOrbProductionDeps(l, ctx, s.Field(), s.CharacterId()))
+					}
 					// TODO decrease HP from DragonKnight Sacrifice
 					// TODO apply attack effect (heal, mp consumption, dispel, cure all, combo reset, etc)
 					// TODO destroy Chief Bandit exploded mesos

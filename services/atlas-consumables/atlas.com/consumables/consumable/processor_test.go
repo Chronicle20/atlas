@@ -2,15 +2,21 @@ package consumable
 
 import (
 	"atlas-consumables/asset"
+	"atlas-consumables/character"
+	"atlas-consumables/character/buff/stat"
 	"atlas-consumables/equipable"
+	"io"
 	"testing"
 
 	consumable3 "atlas-consumables/data/consumable"
 
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+
+	ts "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 )
 
 func TestIsNotSlotConsumingScroll_SpikeScroll(t *testing.T) {
@@ -449,4 +455,69 @@ func TestBuildScrollChanges_ChaosSuccess(t *testing.T) {
 	if len(changes) != 4 {
 		t.Errorf("expected 4 changes for chaos success on 2 non-zero stats, got %d", len(changes))
 	}
+}
+
+// discardLogger returns a logger for computeEffectPlan tests; the function
+// only logs on the morphRandom roll-failure path.
+func discardLogger() logrus.FieldLogger {
+	l := logrus.New()
+	l.SetOutput(io.Discard)
+	return l
+}
+
+// extractConsumable builds a consumable model the same way production data
+// arrives: a RestModel literal run through the public Extract (design §4.4).
+func extractConsumable(t *testing.T, rm consumable3.RestModel) consumable3.Model {
+	t.Helper()
+	m, err := consumable3.Extract(rm)
+	if err != nil {
+		t.Fatalf("extract failed: %v", err)
+	}
+	return m
+}
+
+// T8: refactor regression — representative pre-existing items produce the same
+// decisions ApplyItemEffects made before the extraction.
+func TestComputeEffectPlan_CurePotWithHp(t *testing.T) {
+	c := character.NewModelBuilder().SetMaxHp(500).SetMaxMp(500).Build()
+	ci := extractConsumable(t, consumable3.RestModel{
+		Spec: map[consumable3.SpecType]int32{
+			consumable3.SpecTypePoison: 1,
+			consumable3.SpecTypeHP:     300,
+		},
+	})
+	plan := computeEffectPlan(discardLogger(), c, ci)
+	assert.Equal(t, []string{"POISON"}, plan.cureTypes)
+	assert.Equal(t, []int16{300}, plan.hpChanges)
+	assert.Empty(t, plan.mpChanges)
+	assert.Empty(t, plan.statups)
+	assert.Equal(t, int32(0), plan.duration)
+}
+
+func TestComputeEffectPlan_StatPotWithTime(t *testing.T) {
+	c := character.NewModelBuilder().SetMaxHp(500).SetMaxMp(500).Build()
+	ci := extractConsumable(t, consumable3.RestModel{
+		Spec: map[consumable3.SpecType]int32{
+			consumable3.SpecTypeWeaponAttack: 12,
+			consumable3.SpecTypeTime:         300000,
+		},
+	})
+	plan := computeEffectPlan(discardLogger(), c, ci)
+	assert.Empty(t, plan.cureTypes)
+	assert.Empty(t, plan.hpChanges)
+	assert.Empty(t, plan.mpChanges)
+	assert.Equal(t, []stat.Model{{Type: ts.TemporaryStatTypeWeaponAttack, Amount: 12}}, plan.statups)
+	assert.Equal(t, int32(300), plan.duration)
+}
+
+func TestComputeEffectPlan_HpRecoveryPercent(t *testing.T) {
+	// Pins the MaxHp * pct floor math: floor(1547 * 0.60) = 928.
+	c := character.NewModelBuilder().SetMaxHp(1547).Build()
+	ci := extractConsumable(t, consumable3.RestModel{
+		Spec: map[consumable3.SpecType]int32{
+			consumable3.SpecTypeHPRecovery: 60,
+		},
+	})
+	plan := computeEffectPlan(discardLogger(), c, ci)
+	assert.Equal(t, []int16{928}, plan.hpChanges)
 }

@@ -93,3 +93,42 @@ func ResolveName(l logrus.FieldLogger, options map[string]interface{}, property 
 	}
 	return "", false
 }
+
+// ResolveCode16 looks up an optional uint16 code from the runtime options map.
+// Unlike ResolveCode — which returns a loud 99 default because a missing mode
+// byte is a fatal misconfiguration — a miss here is soft: the caller decides
+// what absence means. Used for sparse bit tables (e.g. the petSkill usPetSkill
+// table) where an unverified bit must encode as absent, never a guessed value.
+func ResolveCode16(l logrus.FieldLogger, options map[string]interface{}, property string, key string) (uint16, bool) {
+	genericCodes, ok := options[property]
+	if !ok {
+		l.Debugf("Property [%s] missing from options when resolving code [%s].", property, key)
+		return 0, false
+	}
+
+	codes, ok := genericCodes.(map[string]interface{})
+	if !ok {
+		l.Debugf("Property [%s] is not a map when resolving code [%s].", property, key)
+		return 0, false
+	}
+
+	raw, ok := codes[key]
+	if !ok {
+		return 0, false
+	}
+
+	switch v := raw.(type) {
+	case float64:
+		return uint16(v), true
+	case string:
+		n, err := strconv.ParseUint(v, 0, 16)
+		if err != nil {
+			l.WithError(err).Debugf("Code [%s] in property [%s] has unparseable value [%q].", key, property, v)
+			return 0, false
+		}
+		return uint16(n), true
+	default:
+		l.Debugf("Code [%s] in property [%s] has unsupported type %T.", key, property, raw)
+		return 0, false
+	}
+}

@@ -156,3 +156,35 @@ func TestResolveCodeResolveNameRoundTrip(t *testing.T) {
 		assert.Equal(t, key, name)
 	}
 }
+
+func TestResolveCode16(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	options := map[string]interface{}{
+		"petSkill": map[string]interface{}{
+			"consumeHP":    "0x20",
+			"autoSpeaking": "0x100",
+			"asNumber":     float64(64),
+			"bad":          "zzz",
+		},
+	}
+
+	if v, ok := ResolveCode16(l, options, "petSkill", "consumeHP"); !ok || v != 0x20 {
+		t.Errorf("consumeHP = %#x,%v; want 0x20,true", v, ok)
+	}
+	if v, ok := ResolveCode16(l, options, "petSkill", "autoSpeaking"); !ok || v != 0x100 {
+		t.Errorf("autoSpeaking = %#x,%v; want 0x100,true", v, ok)
+	}
+	if v, ok := ResolveCode16(l, options, "petSkill", "asNumber"); !ok || v != 64 {
+		t.Errorf("asNumber = %d,%v; want 64,true", v, ok)
+	}
+	// soft misses: absent key, absent property, unparseable value
+	if _, ok := ResolveCode16(l, options, "petSkill", "recall"); ok {
+		t.Error("absent key resolved ok=true, want false")
+	}
+	if _, ok := ResolveCode16(l, options, "nope", "consumeHP"); ok {
+		t.Error("absent property resolved ok=true, want false")
+	}
+	if _, ok := ResolveCode16(l, options, "petSkill", "bad"); ok {
+		t.Error("unparseable value resolved ok=true, want false")
+	}
+}

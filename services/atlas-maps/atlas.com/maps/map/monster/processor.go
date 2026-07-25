@@ -23,7 +23,6 @@ import (
 	"atlas-maps/monster"
 	"context"
 	"math"
-	"math/rand"
 	"time"
 
 	"github.com/google/uuid"
@@ -33,6 +32,10 @@ import (
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
+
+// defaultSpawnCooldown is the cooldown applied to a spawn point when its
+// MobTime is not positive. Matches the historical default.
+const defaultSpawnCooldown = 5 * time.Second
 
 type Processor interface {
 	SpawnMonsters(transactionId uuid.UUID, field field.Model) error
@@ -93,87 +96,57 @@ func (p *ProcessorImpl) SpawnMonsters(transactionId uuid.UUID, f field.Model) er
 		return nil
 	}
 
-	eligibleSpawnPoints, totalCount, err := registry.GetEligibleSpawnPoints(p.ctx, mapKey)
+	totalCount, err := registry.Count(p.ctx, mapKey)
 	if err != nil {
-		p.l.WithError(err).Errorf("Failed to get eligible spawn points for field [%s].", f.Id())
+		p.l.WithError(err).Errorf("Failed to count spawn points for field [%s].", f.Id())
 		return err
 	}
-
-	if len(eligibleSpawnPoints) == 0 {
-		p.l.Debugf("No eligible spawn points available (all on cooldown) for field [%s].", f.Id())
+	if totalCount == 0 {
 		return nil
 	}
 
 	monstersInMap, err := p.mp.CountInMap(transactionId, f)
 	if err != nil {
-		p.l.WithError(err).Warnf("Assuming no monsters in map.")
+		// Skip this pass rather than assuming zero monsters: a transient count
+		// failure treated as zero would spawn the full deficit and over-populate
+		// the map. Under-spawning for one tick is the safe direction.
+		p.l.WithError(err).Errorf("Unable to count monsters in map; skipping spawn for field [%s] to avoid over-spawn.", f.Id())
+		return err
 	}
 
 	monstersMax := p.getMonsterMax(c, totalCount)
-
 	toSpawn := monstersMax - monstersInMap
 	if toSpawn <= 0 {
 		return nil
 	}
 
-	// Shuffle eligible spawn points
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	r.Shuffle(len(eligibleSpawnPoints), func(i, j int) {
-		eligibleSpawnPoints[i], eligibleSpawnPoints[j] = eligibleSpawnPoints[j], eligibleSpawnPoints[i]
-	})
+	// Atomically select and reserve up to toSpawn eligible spawn points. Folding
+	// selection and cooldown reservation into one Redis operation prevents
+	// concurrent spawn passes (character-enter + periodic task) from reserving
+	// the same points and over-spawning beyond the spawn-point count.
+	// Mask the seed into Lua's exact-integer range (< 2^31) so the in-script LCG
+	// shuffle stays uniform; Lua numbers are float64 and lose precision above 2^53.
+	seed := time.Now().UnixNano() & 0x7fffffff
+	reserved, err := registry.ReserveEligibleSpawnPoints(p.ctx, mapKey, toSpawn, defaultSpawnCooldown, seed)
+	if err != nil {
+		p.l.WithError(err).Errorf("Failed to reserve spawn points for field [%s].", f.Id())
+		return err
+	}
+	if len(reserved) == 0 {
+		p.l.Debugf("No eligible spawn points available (all on cooldown) for field [%s].", f.Id())
+		return nil
+	}
 
-	// Spawn monsters and collect cooldown updates
-	spawned := 0
-	now := time.Now()
-	cooldownUpdates := make(map[uint32]time.Time)
-
-	for _, csp := range eligibleSpawnPoints {
-		if spawned >= toSpawn {
-			break
-		}
-
+	for _, csp := range reserved {
 		sp := csp.SpawnPoint
-
-		cooldown := 5 * time.Second
-		if sp.MobTime > 0 {
-			cooldown = time.Duration(sp.MobTime) * time.Second
-		}
-		cooldownUpdates[sp.Id] = now.Add(cooldown)
-
-		spawned++
 		p.l.Debugf("Spawning monster at spawn point [%d] with template [%d] at position (%d, %d)", sp.Id, sp.Template, sp.X, sp.Y)
-
 		routine.Go(p.l, p.ctx, func(_ context.Context) {
 			p.mp.CreateMonster(transactionId, f, sp.Template, sp.X, sp.Y, sp.Fh, sp.Team)
 		})
 	}
 
-	// Batch update cooldowns in Redis
-	if err := registry.UpdateCooldowns(p.ctx, mapKey, cooldownUpdates); err != nil {
-		p.l.WithError(err).Errorf("Failed to update spawn point cooldowns for field [%s].", f.Id())
-	}
-
-	p.l.Debugf("Spawned %d monsters out of %d needed for field [%s]. %d spawn points were on cooldown.",
-		spawned, toSpawn, f.Id(), totalCount-len(eligibleSpawnPoints))
+	p.l.Debugf("Spawned %d monsters out of %d needed for field [%s].", len(reserved), toSpawn, f.Id())
 	return nil
-}
-
-func (p *ProcessorImpl) shuffle(vals []monster2.SpawnPoint) []monster2.SpawnPoint {
-	r := rand.New(rand.NewSource(time.Now().Unix()))
-	ret := make([]monster2.SpawnPoint, len(vals))
-	perm := r.Perm(len(vals))
-	for i, randIndex := range perm {
-		ret[i] = vals[randIndex]
-	}
-	return ret
-}
-
-func (p *ProcessorImpl) shuffleIndices(indices []int) []int {
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	ret := make([]int, len(indices))
-	perm := r.Perm(len(indices))
-	copy(ret, perm)
-	return ret
 }
 
 func (p *ProcessorImpl) getMonsterMax(characterCount int, spawnPointCount int) int {

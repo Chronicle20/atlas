@@ -4,6 +4,7 @@ import (
 	monster2 "atlas-maps/data/map/monster"
 	"atlas-maps/map/character"
 	"context"
+	"errors"
 	"math"
 	"os"
 	"sync"
@@ -849,6 +850,7 @@ func (m *mockCharacterProcessor) ExitAll(_ uint32) {
 
 type mockMonsterProcessor struct {
 	monstersInMap   map[character.MapKey]int
+	countErr        error
 	createdMonsters []MockCreatedMonster
 	mu              sync.Mutex
 }
@@ -863,6 +865,9 @@ type MockCreatedMonster struct {
 }
 
 func (m *mockMonsterProcessor) CountInMap(_ uuid.UUID, f field.Model) (int, error) {
+	if m.countErr != nil {
+		return 0, m.countErr
+	}
 	for storedMapKey, count := range m.monstersInMap {
 		if storedMapKey.Field.WorldId() == f.WorldId() && storedMapKey.Field.ChannelId() == f.ChannelId() && storedMapKey.Field.MapId() == f.MapId() && storedMapKey.Field.Instance() == f.Instance() {
 			return count, nil
@@ -1049,6 +1054,130 @@ func TestSpawnMonsters_CooldownValidation(t *testing.T) {
 		if !found {
 			t.Errorf("Created monster %+v does not match any spawn point", m)
 		}
+	}
+}
+
+// TestSpawnMonsters_ConcurrentDoesNotOverspawn reproduces the map-40000
+// over-spawn bug: two triggers (character-enter + the periodic respawn task)
+// can invoke SpawnMonsters concurrently for the same field. Because the
+// monstersInMap count lags (CreateMonster is async) and spawn-point
+// reservation was a non-atomic check-then-reserve, concurrent passes each
+// observed all spawn points eligible and each spawned the full deficit,
+// producing more live monsters than the map has spawn points.
+//
+// Invariant: across any burst of concurrent spawn passes, the number of
+// monsters created within a single cooldown window must never exceed the
+// number of spawn points (each point may fire at most once per cooldown).
+func TestSpawnMonsters_ConcurrentDoesNotOverspawn(t *testing.T) {
+	ctx := context.Background()
+	registry := GetRegistry()
+	registry.Reset(ctx)
+
+	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	tctx := tenant.WithContext(ctx, te)
+
+	mockCharProc := &mockCharacterProcessor{
+		charactersInMap: make(map[character.MapKey][]uint32),
+	}
+	mockMonsterProc := &mockMonsterProcessor{
+		monstersInMap: make(map[character.MapKey]int),
+	}
+
+	// Mirror map 40000: 3 spawn points for the same template.
+	mockSpawnPoints := []monster2.SpawnPoint{
+		{Id: 1, Template: 9300018, MobTime: 1, X: 505, Y: 155, Fh: 19, Team: -1},
+		{Id: 2, Template: 9300018, MobTime: 1, X: 322, Y: 155, Fh: 15, Team: -1},
+		{Id: 3, Template: 9300018, MobTime: 1, X: 711, Y: 155, Fh: 5, Team: -1},
+	}
+	spawnPointCount := len(mockSpawnPoints)
+
+	mockDataProc := &mockDataProcessor{mockSpawnPoints: mockSpawnPoints}
+
+	processor := &ProcessorImpl{
+		l:   logrus.New(),
+		ctx: tctx,
+		t:   te,
+		dp:  mockDataProc,
+		cp:  mockCharProc,
+		mp:  mockMonsterProc,
+	}
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	mapKey := character.MapKey{Tenant: te, Field: f}
+
+	mockCharProc.charactersInMap[mapKey] = []uint32{1001}
+	// Count stays 0 for the whole burst: models the real-world lag where
+	// async CreateMonster results are not yet visible to CountInMap.
+	mockMonsterProc.monstersInMap[mapKey] = 0
+
+	// Fire many concurrent spawn passes for the SAME field, as the
+	// enter-trigger and periodic task would.
+	const passes = 12
+	var wg sync.WaitGroup
+	for i := 0; i < passes; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_ = processor.SpawnMonsters(uuid.New(), f)
+		}()
+	}
+	wg.Wait()
+
+	// Allow async CreateMonster goroutines to complete.
+	time.Sleep(500 * time.Millisecond)
+
+	created := len(mockMonsterProc.GetCreatedMonsters())
+	if created > spawnPointCount {
+		t.Errorf("over-spawn: created %d monsters for a map with %d spawn points (want <= %d)",
+			created, spawnPointCount, spawnPointCount)
+	}
+}
+
+// TestSpawnMonsters_CountErrorSkipsSpawn verifies that a transient failure to
+// count monsters already in the map skips the spawn pass rather than assuming
+// zero. Assuming zero would spawn the full deficit and over-populate the map.
+func TestSpawnMonsters_CountErrorSkipsSpawn(t *testing.T) {
+	ctx := context.Background()
+	registry := GetRegistry()
+	registry.Reset(ctx)
+
+	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	tctx := tenant.WithContext(ctx, te)
+
+	mockCharProc := &mockCharacterProcessor{
+		charactersInMap: make(map[character.MapKey][]uint32),
+	}
+	mockMonsterProc := &mockMonsterProcessor{
+		monstersInMap: make(map[character.MapKey]int),
+		countErr:      errors.New("atlas-monsters unavailable"),
+	}
+
+	mockDataProc := &mockDataProcessor{
+		mockSpawnPoints: []monster2.SpawnPoint{
+			{Id: 1, Template: 100100, MobTime: 10, X: 100, Y: 200, Fh: 10, Team: 0},
+			{Id: 2, Template: 100101, MobTime: 10, X: 150, Y: 230, Fh: 11, Team: 0},
+			{Id: 3, Template: 100102, MobTime: 10, X: 200, Y: 260, Fh: 12, Team: 0},
+		},
+	}
+
+	processor := &ProcessorImpl{
+		l: logrus.New(), ctx: tctx, t: te,
+		dp: mockDataProc, cp: mockCharProc, mp: mockMonsterProc,
+	}
+
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	mapKey := character.MapKey{Tenant: te, Field: f}
+	mockCharProc.charactersInMap[mapKey] = []uint32{1001}
+
+	err := processor.SpawnMonsters(uuid.New(), f)
+	if err == nil {
+		t.Error("expected SpawnMonsters to return the count error, got nil")
+	}
+
+	time.Sleep(100 * time.Millisecond)
+
+	if created := len(mockMonsterProc.GetCreatedMonsters()); created != 0 {
+		t.Errorf("expected 0 monsters created when count fails, got %d", created)
 	}
 }
 

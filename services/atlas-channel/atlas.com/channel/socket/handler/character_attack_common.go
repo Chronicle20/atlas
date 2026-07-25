@@ -206,10 +206,11 @@ func processDamageInfoEntry(
 	}
 }
 
-// mpEaterShouldProc returns true when MP Eater should fire given the
-// skill's prop and a single uniform roll in [0,1): fire when
-// `prop == 1.0 || roll < prop`. Defensive against negative props.
-func mpEaterShouldProc(prop float64, roll float64) bool {
+// shouldProc returns true when a prop-gated passive (MP Eater, Pick
+// Pocket) should fire given the effect's prop and a single uniform roll
+// in [0,1). Mirrors Cosmic's `prop == 1.0 || rand() < prop`. Defensive
+// against negative props.
+func shouldProc(prop float64, roll float64) bool {
 	if prop <= 0 {
 		return false
 	}
@@ -296,7 +297,7 @@ func mpEaterTryProc(
 		return
 	}
 
-	if !mpEaterShouldProc(eaterEffect.Prop(), rand.Float64()) {
+	if !shouldProc(eaterEffect.Prop(), rand.Float64()) {
 		return
 	}
 

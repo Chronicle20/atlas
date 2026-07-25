@@ -14,7 +14,7 @@ import (
 
 // DefaultRecomputeInterval applies when a tenant has no rankings
 // configuration (or the read fails) — FR-4.
-const DefaultRecomputeInterval = 60 * time.Minute
+const DefaultRecomputeInterval = 5 * time.Minute
 
 const byTenant = "tenants/%s/configurations/rankings"
 

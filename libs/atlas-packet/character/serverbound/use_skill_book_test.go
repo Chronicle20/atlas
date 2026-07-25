@@ -142,3 +142,33 @@ func TestUseSkillBookGoldenBytesV72(t *testing.T) {
 		t.Errorf("golden bytes: got % X, want % X", got, want)
 	}
 }
+
+// Golden bytes, v79: same 10-byte body as v48/v61/v72/v83 (no version gate on
+// this op). updateTime(4 LE) + slot(2 LE) + itemId(4 LE); 12345 = 0x3039;
+// 2 = 0x0002; 2290000 = 0x22F150.
+//
+// IDA evidence (task-125): CWvsContext::SendSkillLearnItemUseRequest @0x955ebd
+// (v79 IDB GMS_v79_1_DEVM.exe.i64, session 9a7d3642 — already named in the
+// IDB; NOT the mis-ported neighbor sub_95B951). Op was entirely ABSENT from
+// the v79 registry prior to this pass (matrix showed v79 ⬜ n-a) despite
+// v48/v61/v72/v83 all carrying it — a stale n-a, corrected in
+// docs/packets/registry/gms_v79.yaml. item-class gate a3/10000 in {228,229}
+// (skill-book prefix) @0x955ed6/0x955ee4; guard CWvsContext::SetExclRequestSent
+// @0x955f06; COutPacket::COutPacket(&pkt, 0x50) @0x955efd then:
+//
+//	COutPacket::Encode4(&pkt, v6)  -> updateTime, @0x955f0f
+//	COutPacket::Encode2(&pkt, a2)  -> slot, @0x955f1a
+//	COutPacket::Encode4(&pkt, a3)  -> itemId, @0x955f25
+//
+// matches the codec's write order exactly. Opcode 0x50 == registry op 80.
+//
+// packet-audit:verify packet=character/serverbound/CharacterUseSkillBook version=gms_v79 ida=0x955ebd
+func TestUseSkillBookGoldenBytesV79(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 79, 1)
+	l, _ := testlog.NewNullLogger()
+	got := UseSkillBook{updateTime: 12345, slot: 2, itemId: 2290000}.Encode(l, ctx)(nil)
+	want := []byte{0x39, 0x30, 0x00, 0x00, 0x02, 0x00, 0x50, 0xF1, 0x22, 0x00}
+	if !bytes.Equal(got, want) {
+		t.Errorf("golden bytes: got % X, want % X", got, want)
+	}
+}

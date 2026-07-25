@@ -2361,6 +2361,13 @@
   provenance: ida-discovered
   ida:
     address: 9533894
+- op: STATE_CHANGE_BY_PORTABLE_CHAIR_REQUEST
+  direction: serverbound
+  opcode: 73
+  fname: CWvsContext::TryRecovery
+  provenance: ida-discovered
+  ida:
+    address: 9430465
   note: 'v72 COutPacket(88) verified via global COutPacket-ctor harvest @0x9179c6; Δ+1 vs v79 op 87 (mid/field/social Δ+1).'
 - op: DISTRIBUTE_SP
   direction: serverbound

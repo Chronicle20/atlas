@@ -10926,7 +10926,7 @@
     },
     "CWvsContext::TryRecovery": {
       "address": "0x70a977",
-      "direction": "",
+      "direction": "serverbound",
       "calls": null
     },
     "CharacterData::Decode": {

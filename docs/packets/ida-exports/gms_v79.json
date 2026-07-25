@@ -12080,6 +12080,11 @@
         }
       ]
     },
+    "CWvsContext::TryRecovery": {
+      "address": "0x94f24a",
+      "direction": "serverbound",
+      "calls": null
+    },
     "CWvsContext::GetCharacterData": {
       "address": "0x423135",
       "direction": "",

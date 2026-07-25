@@ -17,6 +17,7 @@ const (
 	EnvCommandTopic    = "COMMAND_TOPIC_CHAIR"
 	CommandUseChair    = "USE"
 	CommandCancelChair = "CANCEL"
+	CommandRecovery    = "RECOVERY"
 )
 
 type Command[E any] struct {
@@ -36,6 +37,12 @@ type UseChairCommandBody struct {
 
 type CancelChairCommandBody struct {
 	CharacterId uint32 `json:"characterId"`
+}
+
+type RecoveryCommandBody struct {
+	CharacterId uint32 `json:"characterId"`
+	Hp          int16  `json:"hp"` // client-claimed; trusted only for the natural-regen pass-through
+	Mp          int16  `json:"mp"`
 }
 
 const (

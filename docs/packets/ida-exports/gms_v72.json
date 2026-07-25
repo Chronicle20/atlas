@@ -10932,6 +10932,11 @@
         }
       ]
     },
+    "CWvsContext::TryRecovery": {
+      "address": "0x8fe5c1",
+      "direction": "serverbound",
+      "calls": null
+    },
     "CWvsContext::GetCharacterData": {
       "address": "0x422d30",
       "direction": "",

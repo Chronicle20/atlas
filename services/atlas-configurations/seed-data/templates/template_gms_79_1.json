@@ -410,6 +410,12 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x48",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterStateChangeByPortableChairHandle",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x49",
         "validator": "LoggedInValidator",
         "handler": "CharacterItemUseSummonBagHandle",
@@ -2029,6 +2035,16 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x69",
+        "writer": "SetAvatarMegaphone",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x6A",
+        "writer": "ClearAvatarMegaphone",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x74",
         "writer": "ScriptProgress",
         "services": ["channel"]
@@ -3453,16 +3469,6 @@
             "HORNTAIL": 3
           }
         }
-      },
-      {
-        "opCode": "0x69",
-        "writer": "SetAvatarMegaphone",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x6A",
-        "writer": "ClearAvatarMegaphone",
-        "services": ["channel"]
       }
     ]
   },

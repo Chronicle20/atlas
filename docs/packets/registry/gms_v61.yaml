@@ -2006,6 +2006,13 @@
   provenance: ida-discovered
   ida:
     address: 6291023
+- op: STATE_CHANGE_BY_PORTABLE_CHAIR_REQUEST
+  direction: serverbound
+  opcode: 69
+  fname: CWvsContext::TryRecovery
+  provenance: ida-discovered
+  ida:
+    address: 8572586
   note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): CWvsContext::SendStatChangeRequest. COutPacket(81); Δ-7 vs v72 op88.'
 - op: DISTRIBUTE_SP
   direction: serverbound

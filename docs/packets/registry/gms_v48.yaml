@@ -984,6 +984,13 @@
   provenance: ida-discovered
   ida:
     address: 5748606
+- op: STATE_CHANGE_BY_PORTABLE_CHAIR_REQUEST
+  direction: serverbound
+  opcode: 58
+  fname: CWvsContext::TryRecovery
+  provenance: ida-discovered
+  ida:
+    address: 7383415
   note: 'send-site 0x71a496: COutPacket(68). v61 HEAL_OVER_TIME=81.'
 - op: CANCEL_BUFF
   direction: serverbound

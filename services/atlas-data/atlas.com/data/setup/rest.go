@@ -9,6 +9,7 @@ type RestModel struct {
 	Price          uint32 `json:"price"`
 	SlotMax        uint32 `json:"slotMax"`
 	RecoveryHP     uint32 `json:"recoveryHP"`
+	RecoveryMP     uint32 `json:"recoveryMP"`
 	TradeBlock     bool   `json:"tradeBlock"`
 	NotSale        bool   `json:"notSale"`
 	ReqLevel       uint32 `json:"reqLevel"`

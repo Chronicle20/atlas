@@ -745,6 +745,20 @@ git diff --name-only $(git merge-base HEAD origin/main)..HEAD
 ```
 Expected: every path starts with `services/atlas-consumables/` or `docs/tasks/task-140-morph-potion-routing/`. If `services/atlas-consumables/atlas.com/consumables/go.mod` appears (not expected — no new deps), `docker buildx bake atlas-consumables` from the worktree root becomes mandatory before proceeding.
 
+- [ ] **Step 3b: Legacy-version support verification (read-only; all live versions on main)**
+
+The legacy templates gms_48/61/72/79 landed on main 2026-07-13, after this plan froze; they are in scope. The atlas-consumables change is version-neutral (routing keys off classification; `computeEffectPlan`/`morph.go` carry no version literals), and the wire path already spans legacy — verified against main, NOT owned by this task:
+
+- `CharacterItemUseHandle` is wired in every seed template incl. `template_gms_48_1.json` (the consume request reaches atlas-consumables on all versions).
+- `TemporaryStatTypeMorph` is registered unconditionally at a version-stable bit in `libs/atlas-packet/model/character_temporary_stat.go`, with `legacyGmsMask` covering the pre-v61 8-byte mask.
+
+So no code delta is required for the new versions. Two things are still unverified — check them read-only (no code/template/WZ change):
+
+1. **Legacy WZ 221 data.** Query live atlas-data for a legacy tenant (per `reference_atlas_data_wz_inspection`): run a throwaway curl pod and hit `/api/data/consumables/{itemId}` for a candidate 221 id (e.g. `2210000`) with `REGION: GMS` / `MAJOR_VERSION: 72` (repeat for 48/61/79). Record for each version whether a classification-221 item with a `morph` or `morphRandom` spec exists. If present → feature applies automatically; if absent → record a documented no-op (feature intact, nothing to route on that version). Do NOT invent WZ values — report exactly what the REST call returns, or "unavailable" if no legacy tenant is reachable, and flag it as a blocker rather than assuming.
+2. **Legacy MORPH round-trip.** For at least one legacy version whose data has a 221 item (prefer v72/79, plus one pre-v61 = v48/61 to exercise `legacyGmsMask`), confirm a consume emits a MORPH temporary stat the legacy client reads — via an integration/manual check or by pinning a legacy-tenant `CharacterTemporaryStat` MORPH encode fixture. The bit position is currently asserted only by a code comment; this is what backs the PRD §8 "no client-interpreted wire values" claim for legacy.
+
+Record the per-version result (present / no-op / blocked) in the task folder. This step adds NO code to the branch diff and does not affect the "diff touches only atlas-consumables" acceptance criterion.
+
 - [ ] **Step 4: File the 2212000 follow-up backlog item (acceptance criterion)**
 
 The item-effects backlog research doc lives only in the main repo checkout (untracked), at `../../docs/research/missing-features/items-and-consumables.md` relative to the worktree root. Edit it as follows; do not commit it on this branch.
@@ -783,7 +797,8 @@ Walk PRD §10 and confirm each line, citing the evidence produced above:
 5. 221 no longer routes to `ConsumeBare` — `TestUsesStandardConsumer` new rows.
 6. Diff touches only atlas-consumables — Step 3 output.
 7. test/vet/build/redis-key-guard clean — Steps 1-2 output.
-8. Follow-up backlog item filed — Step 4.
+8. Legacy-version support (gms_48/61/72/79) confirmed present-or-documented-no-op — Step 3b per-version record.
+9. Follow-up backlog item filed — Step 4.
 
 Record the sweep results (pass/fail per criterion with the evidence) in the task folder if any criterion needed manual judgment; otherwise the test names above are the record.
 
@@ -796,5 +811,6 @@ Per project rules, run `superpowers:requesting-code-review` (dispatches `plan-ad
 ## Self-Review Record
 
 - **Spec coverage:** FR-1/FR-2 → Task 5; FR-3 → Tasks 3-4 (T5); FR-4 → Task 1; FR-5/FR-6 → Task 2 (T2/T2b, exhaustive-roll determinism per design §3.2); FR-7 → Task 4 (T7); FR-8 is a verified non-requirement (no task; death cancellation pre-exists via respawn `CancelAllBuffs`). Design test plan T1→Task 5, T2/T3/T4→Task 2, T5/T6/T7→Task 4, T8→Task 3. All PRD §10 acceptance criteria mapped in Task 6 Step 5.
+- **Version coverage:** the change is version-neutral by construction (no version literals in routing/`computeEffectPlan`/`morph.go`), so it needs no code delta for the legacy versions (gms_48/61/72/79) that landed on main 2026-07-13 after this plan froze. The pre-existing wire path (`CharacterItemUseHandle` in every template; unconditional `TemporaryStatTypeMorph` bit with `legacyGmsMask`) covers them. The only added obligation is the read-only legacy verification in Task 6 Step 3b (live atlas-data REST for legacy 221 data + a MORPH round-trip incl. the pre-v61 mask path); it adds no code to the diff and preserves the atlas-consumables-only acceptance criterion.
 - **Placeholder scan:** no TBD/TODO markers; every code step shows complete code; the only conditional instruction (bake on go.mod change, backlog-doc relocation) states its exact trigger and action.
 - **Type consistency:** `selectMorph(map[uint32]uint32, uint32) (uint32, bool)` and `rollMorph(map[uint32]uint32) (uint32, error)` match between Task 2 (definition) and Task 4 (use); `Morphs() map[uint32]uint32` matches between Task 1 and Task 4; `effectPlan` fields and `computeEffectPlan(l logrus.FieldLogger, c character.Model, ci consumable3.Model) effectPlan` match between Task 3 (definition) and Task 4-5 (tests); `stat.Model{Type character.TemporaryStatType; Amount int32}` matches the real `character/buff/stat/model.go`.

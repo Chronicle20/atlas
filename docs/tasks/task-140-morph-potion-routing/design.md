@@ -153,6 +153,16 @@ client use-item → atlas-channel handler → `REQUEST_ITEM_CONSUME` → `Reques
 - Server-side anti-cheat for attacks while morphed.
 - Named constants for classifications 200/201/202/205.
 
+## 9a. Version neutrality (all live versions on main)
+
+This design predates the 2026-07-13 arrival of the legacy templates (gms_48/61/72/79) on main; those versions are in scope. Nothing in parts 1–4 is version-conditional:
+
+- **Routing** keys off classification (`item.ClassificationConsumableTransformation`), not version — 221 routes identically on every tenant.
+- **Selection + effect plan** (`morph.go`, `computeEffectPlan`) carry no version literals; they operate on whatever specs atlas-data serves for that tenant's WZ.
+- **The wire path already spans legacy** (verified against main, no change owned by this task): `CharacterItemUseHandle` is wired in all seed templates incl. gms_48, so the consume request reaches atlas-consumables on every version; `TemporaryStatTypeMorph` is registered unconditionally at a version-stable bit in `libs/atlas-packet/model/character_temporary_stat.go` with `legacyGmsMask` covering the pre-v61 8-byte mask width; death cancellation via the respawn saga is version-independent.
+
+Consequence: **no code delta is needed for the new versions** — the atlas-consumables diff already "supports" them. What is *not* yet proven, and is checked read-only in Task 6, is (a) whether legacy WZ actually contains classification-221 items with morph specs (absent → harmless no-op), and (b) that a MORPH temp stat round-trips on a legacy client including the pre-v61 mask path (today asserted only by a code comment, not pinned by a legacy fixture). Neither check alters the "diff touches only atlas-consumables" acceptance criterion — the verification is a live atlas-data REST read.
+
 ## 10. Verification
 
 `go test -race ./...`, `go vet ./...`, `go build ./...` clean in `services/atlas-consumables/atlas.com/consumables`; `tools/redis-key-guard.sh` clean from repo root. No `go.mod` change is expected, so no bake is required; if one sneaks in, `docker buildx bake atlas-consumables` becomes mandatory. Diff must touch only `atlas-consumables` (acceptance criterion).

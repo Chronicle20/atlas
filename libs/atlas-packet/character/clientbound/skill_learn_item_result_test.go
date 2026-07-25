@@ -201,6 +201,33 @@ func TestSkillLearnItemResultGoldenBytesV83(t *testing.T) {
 // Proves the MajorVersion() >= 84 gate. Same field values as the v83 golden,
 // so the only difference is the extra leading 0x01. (v84 clientbound diverges
 // from v83 despite identical serverbound — the v84≠v83 exception.)
+//
+// IDA evidence (task-125): CWvsContext::OnSkillLearnItemResult @0xa6984e (v84
+// IDB GMS_v84.1_U_DEVM.i64, session 79511a2a — already named in the IDB,
+// func_query confirmed sub_A6984E == CWvsContext::OnSkillLearnItemResult).
+// xrefs_to confirms CWvsContext::OnPacket case 0x33 (51, @0xa51ea6) delegates
+// directly. Body, in decompile order:
+//
+//	if ( CInPacket::Decode1(a2) ) { ... }        -> bOnExclRequest, @0xa6986a
+//	  (this[2091]=0; this[2092]=sub_9C7771(...)  -- clears exclusive-request lock)
+//	v6 = CInPacket::Decode4(v2);                 -> characterId,   @0xa69889
+//
+// CONFIRMED: the leading Decode1 (bOnExclRequest, @0xa6986a) executes and is
+// evaluated BEFORE the Decode4 characterId read (@0xa69889) — this is the
+// v84 MajorVersion()>=84 gate the codec implements; v83 and earlier have no
+// such leading read (15-byte body). Then, under the user-found guard (v27
+// nonzero, from sub_9B1635(characterId)):
+//
+//	v31 = Decode1(v2)  -> isMasteryBook, @0xa698d1
+//	Decode4(v2)        -> skillId (decoded, discarded), @0xa698d4
+//	Decode4(v2)        -> masterLevel (decoded, discarded), @0xa698db
+//	v32 = Decode1(v2)  -> canUse, @0xa698ec
+//	v9  = Decode1(v2)  -> success, @0xa698ef
+//
+// matches the codec's read order exactly. Opcode 0x33 (51 decimal) ==
+// registry op SKILL_LEARN_ITEM_RESULT.
+//
+// packet-audit:verify packet=character/clientbound/CharacterSkillLearnItemResult version=gms_v84 ida=0xa6984e
 func TestSkillLearnItemResultGoldenBytesV84(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 84, 1)
 	l, _ := testlog.NewNullLogger()

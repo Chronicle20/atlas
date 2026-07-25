@@ -27629,6 +27629,46 @@
           "guard": "sub_48903A(200, 0)"
         }
       ]
+    },
+    "CWvsContext::OnSkillLearnItemResult": {
+      "address": "0xa6984e",
+      "direction": "clientbound",
+      "note": "SKILL_LEARN_ITEM_RESULT (task-125). v84 IDA-verified, session 79511a2a, GMS_v84.1_U_DEVM.i64 -- already named in this IDB (func_query name_regex confirms sub_A6984E == CWvsContext::OnSkillLearnItemResult); xrefs_to confirms CWvsContext::OnPacket case 0x33 (51, @0xa51ea6) delegates directly to this function -- opcode 0x33 matches registry op SKILL_LEARN_ITEM_RESULT exactly. v84 body is 16 bytes: HAS the leading bOnExclRequest byte (Decode1 @0xa6986a) BEFORE Decode4 characterId @0xa69889 -- this is the MajorVersion()>=84 gate the codec implements (v83 and earlier have NO leading byte, 15-byte body). Then under an if(user-found) guard (v27 nonzero): Decode1 isMasteryBook, Decode4 skillId (decoded, discarded), Decode4 masterLevel (decoded, discarded), Decode1 canUse, Decode1 success.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "bOnExclRequest (v84+ leading byte, consumed-and-discarded by the codec; clears the requester's exclusive-request lock when true) @0xa6986a"
+        },
+        {
+          "op": "Decode4",
+          "comment": "characterId (CUserPool-style lookup via sub_9B1635) @0xa69889"
+        },
+        {
+          "op": "Decode1",
+          "comment": "isMasteryBook @0xa698d1",
+          "guard": "v27"
+        },
+        {
+          "op": "Decode4",
+          "comment": "skillId (decoded, discarded) @0xa698d4",
+          "guard": "v27"
+        },
+        {
+          "op": "Decode4",
+          "comment": "masterLevel (decoded, discarded) @0xa698db",
+          "guard": "v27"
+        },
+        {
+          "op": "Decode1",
+          "comment": "canUse @0xa698ec",
+          "guard": "v27"
+        },
+        {
+          "op": "Decode1",
+          "comment": "success @0xa698ef",
+          "guard": "v27"
+        }
+      ]
     }
   }
 }

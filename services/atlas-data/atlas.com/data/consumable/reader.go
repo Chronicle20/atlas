@@ -155,8 +155,8 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 				if err == nil && ms != nil {
 					for _, mo := range ms.ChildNodes {
 						id := uint32(mo.GetIntegerWithDefault("morph", 0))
-						prob := uint32(mo.GetIntegerWithDefault("prob", 0))
-						m.Morphs[id] = prob
+						prop := uint32(mo.GetIntegerWithDefault("prop", 0))
+						m.Morphs[id] = prop
 					}
 				}
 				m.Script = s.GetString("script", "")

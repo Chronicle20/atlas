@@ -1407,11 +1407,15 @@ func (p *ProcessorImpl) RequestSkillBookUse(f field.Model, characterId uint32, s
 			l.WithError(err).Errorf("Character [%d] skill book result emission failed; client stays locked until relog.", characterId)
 		}
 	}
-	if _, err := consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(validator, handler))); err != nil {
+	handlerId, err := consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(validator, handler)))
+	if err != nil {
 		return p.rejectSkillBookUse(characterId, itemId, isMasteryBook, targetSkillId, "unable to register saga result handler")
 	}
 
 	if err := saga2.NewProcessor(p.l, p.ctx).Create(s); err != nil {
+		if rErr := consumer.GetManager().RemoveHandler(t, handlerId); rErr != nil {
+			p.l.WithError(rErr).Errorf("Character [%d] unable to deregister orphaned saga result handler [%s] after saga submit failure.", characterId, handlerId)
+		}
 		return p.rejectSkillBookUse(characterId, itemId, isMasteryBook, targetSkillId, "unable to submit saga")
 	}
 	return nil

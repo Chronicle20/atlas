@@ -1,6 +1,6 @@
 # Note Item Consumption & Memo Packet Verification — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Make every player-initiated note send consume exactly one Note item (classification 509) via a destroy-first saga, wire the USE_CASH_ITEM note arm on **all nine verified versions** (gms_v48/v61/v72/v79/v83/v84/v87/v95, jms_v185), and promote the note-family packet-matrix cells to ✅ (MEMO_RESULT × v84/jms185; NoteOperationDiscard × jms185 **and the four legacy versions v48/v61/v72/v79**).
 
@@ -51,7 +51,7 @@ The shared USE_CASH_ITEM prefix codec gates the leading updateTime on `Region=="
 - Consumes: nothing new.
 - Produces: `func UpdateTimeFirst(t tenant.Model) bool` (exported from package `serverbound`, import path `github.com/Chronicle20/atlas/libs/atlas-packet/cash/serverbound`). Task 12 calls it from the channel handler.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `libs/atlas-packet/cash/serverbound/item_use_test.go`:
 
@@ -136,12 +136,12 @@ import (
 )
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run (from worktree root): `cd libs/atlas-packet && go test ./cash/serverbound/ -run TestItemUseUpdateTimeFirst -v`
 Expected: FAIL — compile error `undefined: UpdateTimeFirst` (and, once defined naively, the v87 case would fail on updateTime).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `libs/atlas-packet/cash/serverbound/item_use.go`:
 
@@ -166,12 +166,12 @@ Replace both gate expressions (line 38 in `Encode`, line 50 in `Decode`):
 
 (the old expression in both spots is `if t.Region() == "GMS" && t.MajorVersion() >= 95 {`).
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `cd libs/atlas-packet && go test ./cash/serverbound/ -v`
 Expected: PASS, including the pre-existing `TestItemUseRoundTrip` (round-trip is symmetric across the gate change).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add libs/atlas-packet/cash/serverbound/item_use.go libs/atlas-packet/cash/serverbound/item_use_test.go
@@ -194,7 +194,7 @@ New serverbound arm codec for the note body of USE_CASH_ITEM. Wire format (desig
 - Consumes: nothing new.
 - Produces: `func NewItemUseNote(updateTimeFirst bool) *ItemUseNote` with methods `ToName() string`, `Message() string`, `UpdateTime() uint32`, plus standard `Encode`/`Decode`/`Operation()`/`String()`. Task 12 decodes with it.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `libs/atlas-packet/cash/serverbound/item_use_note_test.go`:
 
@@ -282,12 +282,12 @@ func TestItemUseNoteRoundTrip(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd libs/atlas-packet && go test ./cash/serverbound/ -run TestItemUseNote -v`
 Expected: FAIL — compile error `undefined: NewItemUseNote`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Create `libs/atlas-packet/cash/serverbound/item_use_note.go`:
 
@@ -351,12 +351,12 @@ func (m *ItemUseNote) Decode(_ logrus.FieldLogger, _ context.Context) func(r *re
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `cd libs/atlas-packet && go test ./cash/serverbound/ -v`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add libs/atlas-packet/cash/serverbound/item_use_note.go libs/atlas-packet/cash/serverbound/item_use_note_test.go
@@ -377,7 +377,7 @@ Pre-existing bug found during planning: `NoteSendErrorBody` resolves its mode by
 - Consumes: existing `NewNoteSendError(mode, errorCode byte)`.
 - Produces: const `NoteSendErrorNoNoteItem = "NO_NOTE_ITEM"` (used by Tasks 10, 12, 13); corrected `NoteSendErrorBody(errorKey string)` behavior.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `libs/atlas-packet/note/clientbound/operation_body_test.go`:
 
@@ -425,12 +425,12 @@ func TestNoteSendErrorBodyUsesSendErrorMode(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd libs/atlas-packet && go test ./note/clientbound/ -run TestNoteSendErrorBodyUsesSendErrorMode -v`
 Expected: FAIL — compile error `undefined: NoteSendErrorNoNoteItem`; after adding only the const it would still fail with `got [4 3], want [5 3]`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `libs/atlas-packet/note/clientbound/operation_body.go`:
 
@@ -460,12 +460,12 @@ to:
 			mode := atlas_packet.ResolveCode(l, options, "operations", NoteOperationSendError)
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `cd libs/atlas-packet && go test ./note/... -v`
 Expected: PASS (existing display/operation tests unaffected — they don't exercise `NoteSendErrorBody`).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add libs/atlas-packet/note/clientbound/operation_body.go libs/atlas-packet/note/clientbound/operation_body_test.go
@@ -483,7 +483,7 @@ git commit -m "fix(atlas-packet): NoteSendErrorBody resolves SEND_ERROR mode, ad
 **Interfaces:**
 - Produces: `NoteSend Type = "note_send"`; `CreateNote Action = "create_note"`; `CreateNotePayload{SenderId uint32, ReceiverId uint32, Message string, Flag byte}`. Used by Tasks 6–13.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `libs/atlas-saga/unmarshal_test.go`:
 
@@ -522,12 +522,12 @@ func TestCreateNoteStepUnmarshal(t *testing.T) {
 
 (If `encoding/json` is not already imported in the test file, add it.)
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd libs/atlas-saga && go test -run TestCreateNoteStepUnmarshal -v ./...`
 Expected: FAIL — compile error `undefined: CreateNote` / `undefined: CreateNotePayload`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `libs/atlas-saga/model.go` — add to the `Type` const block (after `PetEvolution`):
 
@@ -567,12 +567,12 @@ type CreateNotePayload struct {
 		s.Payload = any(payload).(T)
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `cd libs/atlas-saga && go test ./... -v`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add libs/atlas-saga/model.go libs/atlas-saga/payloads.go libs/atlas-saga/unmarshal.go libs/atlas-saga/unmarshal_test.go
@@ -599,7 +599,7 @@ atlas-notes today emits `CREATED` with no transaction id and swallows create err
 - Produces (JSON contract Task 6 mirrors): `Command[E]`/`StatusEvent[E]` envelopes gain `TransactionId uuid.UUID \`json:"transactionId,omitempty"\``; new `StatusEventTypeCreateFailed = "CREATE_FAILED"` with `StatusEventCreateFailedBody{SenderId uint32, Reason string}`.
 - Produces (Go): `Processor.Create(mb) func(transactionId uuid.UUID) func(characterId uint32) func(senderId uint32) func(msg string) func(flag byte) (Model, error)`; `CreateAndEmit(transactionId uuid.UUID, characterId uint32, senderId uint32, msg string, flag byte) (Model, error)`; `CreateNoteStatusEventProvider(transactionId uuid.UUID, characterId uint32, noteId uint32, senderId uint32, msg string, flag byte, timestamp time.Time)`; `CreateFailedStatusEventProvider(transactionId uuid.UUID, characterId uint32, senderId uint32, reason string)`.
 
-- [ ] **Step 1: Write the failing producer test**
+- [x] **Step 1: Write the failing producer test**
 
 Create `services/atlas-notes/atlas.com/notes/note/producer_test.go`:
 
@@ -662,12 +662,12 @@ func TestCreateFailedStatusEventProvider(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd services/atlas-notes/atlas.com/notes && go test ./note/ -run "TestCreateNoteStatusEventProviderCarriesTransactionId|TestCreateFailedStatusEventProvider" -v`
 Expected: FAIL — compile errors (provider signatures, missing const/body type).
 
-- [ ] **Step 3: Implement the message contract**
+- [x] **Step 3: Implement the message contract**
 
 `services/atlas-notes/atlas.com/notes/kafka/message/note/kafka.go`:
 
@@ -711,7 +711,7 @@ type StatusEventCreateFailedBody struct {
 }
 ```
 
-- [ ] **Step 4: Implement producer changes**
+- [x] **Step 4: Implement producer changes**
 
 `services/atlas-notes/atlas.com/notes/note/producer.go` — change `CreateNoteStatusEventProvider` to:
 
@@ -760,7 +760,7 @@ func CreateFailedStatusEventProvider(transactionId uuid.UUID, characterId uint32
 
 Add `"github.com/google/uuid"` to the import block.
 
-- [ ] **Step 5: Implement processor changes**
+- [x] **Step 5: Implement processor changes**
 
 `services/atlas-notes/atlas.com/notes/note/processor.go`:
 
@@ -817,7 +817,7 @@ func (p *ProcessorImpl) CreateAndEmit(transactionId uuid.UUID, characterId uint3
 
 Add `"github.com/google/uuid"` to the import block.
 
-- [ ] **Step 6: Update callers and mock**
+- [x] **Step 6: Update callers and mock**
 
 `services/atlas-notes/atlas.com/notes/kafka/consumer/note/consumer.go` — replace `handleNoteCreate` body:
 
@@ -854,12 +854,12 @@ Add `"atlas-notes/kafka/producer"` to the consumer's imports.
 
 Update every existing `Create(`/`CreateAndEmit(` call site in `processor_test.go` (and any other `_test.go` in the module — find them with `grep -rn "CreateAndEmit(\|Create(mb)" services/atlas-notes --include="*_test.go"`) to pass `uuid.Nil` (or a fresh `uuid.New()` where the test then asserts the id round-trips).
 
-- [ ] **Step 7: Run tests to verify they pass**
+- [x] **Step 7: Run tests to verify they pass**
 
 Run: `cd services/atlas-notes/atlas.com/notes && go test -race ./... && go vet ./...`
 Expected: PASS, no vet findings.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add services/atlas-notes/
@@ -881,7 +881,7 @@ git commit -m "feat(atlas-notes): thread saga transaction id through note create
 - Consumes: JSON contract from Task 5 (field-for-field mirror; no Go import of atlas-notes).
 - Produces: `note.Processor` with `CreateNote(transactionId uuid.UUID, receiverId uint32, senderId uint32, message string, flag byte) error`; message types `note.Command[E]`, `note.StatusEvent[E]`, `note.StatusEventCreatedBody`, `note.StatusEventCreateFailedBody`, consts `EnvCommandTopic`, `EnvEventTopicNoteStatus`, `CommandTypeCreate`, `StatusEventTypeCreated`, `StatusEventTypeCreateFailed`. Used by Tasks 7–8.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/note/producer_test.go`:
 
@@ -925,12 +925,12 @@ func TestCreateNoteCommandProvider(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd services/atlas-saga-orchestrator/atlas.com/saga-orchestrator && go test ./note/ -v`
 Expected: FAIL — package does not exist yet.
 
-- [ ] **Step 3: Implement the message defs**
+- [x] **Step 3: Implement the message defs**
 
 Create `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/kafka/message/note/kafka.go` (field-for-field JSON mirror of atlas-notes' `kafka/message/note/kafka.go` as changed in Task 5):
 
@@ -995,7 +995,7 @@ type StatusEventCreateFailedBody struct {
 }
 ```
 
-- [ ] **Step 4: Implement processor, producer, mock**
+- [x] **Step 4: Implement processor, producer, mock**
 
 Create `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/note/producer.go`:
 
@@ -1090,12 +1090,12 @@ func (m *ProcessorMock) CreateNote(transactionId uuid.UUID, receiverId uint32, s
 }
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `cd services/atlas-saga-orchestrator/atlas.com/saga-orchestrator && go test ./note/... -v && go vet ./note/... ./kafka/message/note/`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/kafka/message/note/ services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/note/
@@ -1116,7 +1116,7 @@ git commit -m "feat(atlas-saga-orchestrator): note command message defs + note p
 - Consumes: `note.Processor` / `note/mock.ProcessorMock` (Task 6); `sharedsaga.NoteSend`, `sharedsaga.CreateNote`, `sharedsaga.CreateNotePayload` (Task 4).
 - Produces: saga-package re-exports `NoteSend`, `CreateNote`, `CreateNotePayload`; `EventKindNoteCreated EventKind = "note.created"`, `EventKindNoteCreateFailed EventKind = "note.create_failed"`; `Handler.WithNoteProcessor(note.Processor) Handler`. Used by Tasks 8–9.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/handler_test.go` (same style as `TestHandleDestroyAsset` at line 681; `notemock` import is `notemock "atlas-saga-orchestrator/note/mock"`):
 
@@ -1182,12 +1182,12 @@ func TestHandleCreateNote(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd services/atlas-saga-orchestrator/atlas.com/saga-orchestrator && go test ./saga/ -run TestHandleCreateNote -v`
 Expected: FAIL — compile errors (`NoteSend`, `CreateNotePayload`, `WithNoteProcessor`, `handleCreateNote` undefined).
 
-- [ ] **Step 3: Implement model re-exports + unmarshal case**
+- [x] **Step 3: Implement model re-exports + unmarshal case**
 
 `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/model.go`:
 
@@ -1221,7 +1221,7 @@ Add a case to the step-payload unmarshal switch (next to the `FieldEffectWeather
 		s.payload = any(payload).(T)
 ```
 
-- [ ] **Step 4: Implement event-acceptance entries**
+- [x] **Step 4: Implement event-acceptance entries**
 
 `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/event_acceptance.go`:
 
@@ -1248,7 +1248,7 @@ Add to `outcomeTable`:
 	EventKindNoteCreateFailed: OutcomeFailure,
 ```
 
-- [ ] **Step 5: Implement handler**
+- [x] **Step 5: Implement handler**
 
 `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/handler.go`:
 
@@ -1303,7 +1303,7 @@ func (h *HandlerImpl) handleCreateNote(s Saga, st Step[any]) error {
 }
 ```
 
-- [ ] **Step 6: Run tests to verify they pass**
+- [x] **Step 6: Run tests to verify they pass**
 
 Run: `cd services/atlas-saga-orchestrator/atlas.com/saga-orchestrator && go test ./saga/ -run "TestHandleCreateNote" -v`
 Expected: PASS.
@@ -1313,7 +1313,7 @@ Then run the whole saga package — the completeness/coverage tests (`event_acce
 Run: `go test ./saga/ 2>&1 | tail -5`
 Expected: `ok` (if a completeness test names `create_note`, the missing entry is in this task's scope — fix it here, don't defer).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/
@@ -1333,7 +1333,7 @@ git commit -m "feat(atlas-saga-orchestrator): CreateNote action handler + event 
 - Consumes: `note2.StatusEvent[...]` (Task 6), `saga.AcceptEvent(txnId, EventKind) (AcceptDecision, bool)`, `saga.StepCompleted(txnId, success bool)`, `EventKindNoteCreated`/`EventKindNoteCreateFailed` (Task 7).
 - Produces: `note.InitConsumers` / `note.InitHandlers` registered in `main.go`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 First copy the test bootstrap convention: look at `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/kafka/consumer/pet/testmain_test.go` and create the equivalent `kafka/consumer/note/testmain_test.go` with package name `note` (copy the file, change only the package clause).
 
@@ -1456,14 +1456,14 @@ func TestHandleCreateFailedEvent_FailsCreateNoteStep(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd services/atlas-saga-orchestrator/atlas.com/saga-orchestrator && go test ./kafka/consumer/note/ -v`
 Expected: FAIL — `handleCreatedEvent`/`handleCreateFailedEvent` undefined.
 
 NOTE: `TestHandleCreateFailedEvent_FailsCreateNoteStep` exercises the compensation path, which is implemented in Task 9. If it fails here for a compensation-specific reason (not a compile error), mark it with `t.Skip("compensation lands in Task 9")` and REMOVE the skip in Task 9 Step 4. Do not leave the skip in the final tree.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Create `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/kafka/consumer/note/consumer.go` (pattern: `kafka/consumer/pet/consumer.go`):
 
@@ -1566,12 +1566,12 @@ Register in `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/main.g
 
 (match the exact error-handling phrasing of the adjacent blocks).
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `cd services/atlas-saga-orchestrator/atlas.com/saga-orchestrator && go test ./kafka/consumer/note/ -v && go build ./...`
 Expected: PASS (modulo the possible Task-9 skip), build clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/kafka/consumer/note/ services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/main.go
@@ -1593,7 +1593,7 @@ Two pieces: (a) the COMPLETED status event must carry the sender's characterId s
 - Consumes: `NoteSend`, `CreateNote`, `CreateNotePayload` (Task 7); `c.compP.RequestCreateItem(transactionId, characterId, templateId, quantity, time.Time{})` (existing); `EmitSagaFailedByIds` (existing).
 - Produces: COMPLETED events for note_send sagas carry `Body.Results["characterId"] = <senderId>` (consumed by Task 10).
 
-- [ ] **Step 1: Write the failing completed-results test**
+- [x] **Step 1: Write the failing completed-results test**
 
 Create `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/producer_note_test.go`:
 
@@ -1623,7 +1623,7 @@ func TestCompletedStatusEventProviderNoteSendResults(t *testing.T) {
 
 (`sagaMsg` = the import alias for `atlas-saga-orchestrator/kafka/message/saga` already used in this package — check the existing alias name in `producer.go`/`compensator.go` and reuse it; import `encoding/json`, `github.com/google/uuid`, `github.com/stretchr/testify/assert`, `github.com/stretchr/testify/require`.)
 
-- [ ] **Step 2: Write the failing compensation test**
+- [x] **Step 2: Write the failing compensation test**
 
 The Kafka emission half of compensation is not testable without a broker, so — exactly like pet evolution (`DispatchPetEvolutionRollbacks`, tested by `TestPetEvolutionCompensationRefundsResources` at `compensator_test.go:37`) — the implementation splits into a pure dispatch half (`DispatchNoteSendRollbacks`) and a terminal half (`compensateNoteSend`), and the tests exercise the dispatch half directly with a spy mock.
 
@@ -1744,12 +1744,12 @@ func TestNoteSendCompensationDestroyFailedNoRefund(t *testing.T) {
 }
 ```
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 Run: `cd services/atlas-saga-orchestrator/atlas.com/saga-orchestrator && go test ./saga/ -run "TestCompletedStatusEventProviderNoteSendResults|TestNoteSendCompensation" -v`
 Expected: FAIL — Results empty for note_send; note_send falls into the default "No compensation logic available" branch (which re-marks the step Pending instead of terminating).
 
-- [ ] **Step 4: Implement**
+- [x] **Step 4: Implement**
 
 `saga/producer.go` — in `CompletedStatusEventProvider`, after the CharacterCreation block:
 
@@ -1883,12 +1883,12 @@ func (c *CompensatorImpl) compensateNoteSend(s Saga, failedStep Step[any]) error
 
 If Task 8 skipped `TestHandleCreateFailedEvent_FailsCreateNoteStep`, remove the skip now.
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `cd services/atlas-saga-orchestrator/atlas.com/saga-orchestrator && go test -race ./saga/... ./kafka/... && go vet ./...`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/
@@ -1912,7 +1912,7 @@ The channel's COMPLETED body is an empty struct today; it gains `SagaType`/`Resu
 
 Test-scope decision (recorded for plan adherence): the branch logic that is unit-testable without a live session registry + writer pipeline is the Results extraction; the announce paths follow the storage-failure precedent verbatim (session lookup → channel guard → `session.Announce`) and are exercised end-to-end by the live verification checklist in Task 14's PATCH doc. The channel codebase has no existing behavioral tests for saga-consumer announce paths to pattern-match against.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `services/atlas-channel/atlas.com/channel/kafka/consumer/saga/consumer_test.go`:
 
@@ -1944,12 +1944,12 @@ func TestExtractResultCharacterId(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go test ./kafka/consumer/saga/ -v`
 Expected: FAIL — `extractResultCharacterId` undefined.
 
-- [ ] **Step 3: Implement message fields**
+- [x] **Step 3: Implement message fields**
 
 `services/atlas-channel/atlas.com/channel/kafka/message/saga/kafka.go`:
 
@@ -1968,7 +1968,7 @@ type StatusEventCompletedBody struct {
 }
 ```
 
-- [ ] **Step 4: Implement consumer branches**
+- [x] **Step 4: Implement consumer branches**
 
 `services/atlas-channel/atlas.com/channel/kafka/consumer/saga/consumer.go`:
 
@@ -2064,12 +2064,12 @@ func extractResultCharacterId(results map[string]any) uint32 {
 		}
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go test ./kafka/... -v && go build ./...`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/kafka/
@@ -2092,7 +2092,7 @@ Pure, unit-testable pieces both handler arms share.
 - Consumes: `sharedsaga.NoteSend`/`CreateNote`/`CreateNotePayload` (Task 4); `item.GetClassification` / `item.ClassificationNote` (atlas-constants).
 - Produces: `compartment.Model.FindFirstByClassification(c item.Classification) (*asset.Model, bool)`; handler-package `buildNoteSendSaga(transactionId uuid.UUID, now time.Time, senderId uint32, templateId uint32, receiverId uint32, message string) saga.Saga` and `handleNoteSendRequest(l, ctx, wp) func(s session.Model, templateId uint32, toName string, message string)` (Tasks 12–13 call both).
 
-- [ ] **Step 1: Write the failing compartment test**
+- [x] **Step 1: Write the failing compartment test**
 
 Compartment `Model`/`asset.Model` have private fields — use the existing package builders (`compartment.NewBuilder(id, characterId, inventoryType, capacity)` + `asset.NewModelBuilder(id, compartmentId, templateId)`; Builder-pattern rule, no test-only constructors).
 
@@ -2148,7 +2148,7 @@ func TestFindFirstByClassification(t *testing.T) {
 
 (If `asset.NewModelBuilder(...).Build()` enforces validations that reject these minimal assets, satisfy them with the builder's setters — do not bypass the builder.)
 
-- [ ] **Step 2: Write the failing saga-builder test**
+- [x] **Step 2: Write the failing saga-builder test**
 
 Create `services/atlas-channel/atlas.com/channel/socket/handler/note_send_test.go`:
 
@@ -2205,12 +2205,12 @@ func TestBuildNoteSendSaga(t *testing.T) {
 }
 ```
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go test ./compartment/ ./socket/handler/ -run "TestFindFirstByClassification|TestBuildNoteSendSaga" -v`
 Expected: FAIL — undefined symbols.
 
-- [ ] **Step 4: Implement**
+- [x] **Step 4: Implement**
 
 `services/atlas-channel/atlas.com/channel/compartment/model.go` — append (import `"github.com/Chronicle20/atlas/libs/atlas-constants/item"`):
 
@@ -2334,12 +2334,12 @@ func handleNoteSendRequest(l logrus.FieldLogger, ctx context.Context, wp writer.
 }
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go test ./compartment/ ./socket/handler/ -run "TestFindFirstByClassification|TestBuildNoteSendSaga" -v && go build ./...`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/compartment/ services/atlas-channel/atlas.com/channel/saga/model.go services/atlas-channel/atlas.com/channel/socket/handler/note_send.go services/atlas-channel/atlas.com/channel/socket/handler/note_send_test.go
@@ -2360,7 +2360,7 @@ Wire the note arm into `CharacterCashItemUseHandleFunc`. The slot/template valid
 - Consumes: `cashsb.UpdateTimeFirst` (Task 1), `cashsb.NewItemUseNote` (Task 2), `handleNoteSendRequest` (Task 11).
 - Produces: `CashSlotItemTypeNote = CashSlotItemType(21)` named constant.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `services/atlas-channel/atlas.com/channel/socket/handler/character_cash_item_use_test.go` (decode-pinning style of `mount_food_test.go`):
 
@@ -2410,12 +2410,12 @@ func TestCharacterCashItemUseHandleFuncSymbol(t *testing.T) {
 
 (Add `"context"` and `"github.com/sirupsen/logrus"` to the test file's imports.)
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go test ./socket/handler/ -run "TestCashSlotItemTypeNote" -v`
 Expected: FAIL — `CashSlotItemTypeNote` undefined.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `services/atlas-channel/atlas.com/channel/socket/handler/character_cash_item_use.go`:
 
@@ -2462,12 +2462,12 @@ and in `GetCashSlotItemType`, the 509 branch (line ~251) returns the constant:
 
 5. Delete the stale comment line `// TODO for v83 there is a trailing updateTime.` (line 108) — it is resolved by the arm codec.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go test ./socket/handler/ -v && go build ./...`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/socket/handler/character_cash_item_use.go services/atlas-channel/atlas.com/channel/socket/handler/character_cash_item_use_test.go
@@ -2488,7 +2488,7 @@ Replace the free `np.SendNote(...)` (design §1.2: the only legitimate writer of
 **Interfaces:**
 - Consumes: `compartment.GetByType(characterId, inventory.TypeValueCash)`, `FindFirstByClassification` (Task 11), `handleNoteSendRequest` (Task 11), `notecb.NoteSendErrorNoNoteItem` (Task 3).
 
-- [ ] **Step 1: Replace the SEND arm**
+- [x] **Step 1: Replace the SEND arm**
 
 In `services/atlas-channel/atlas.com/channel/socket/handler/note_operation.go`, replace the SEND block (lines 32–48) with:
 
@@ -2524,7 +2524,7 @@ In `services/atlas-channel/atlas.com/channel/socket/handler/note_operation.go`, 
 
 Imports to add: `"atlas-channel/compartment"`, `"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"`, `"github.com/Chronicle20/atlas/libs/atlas-constants/item"`. The `"atlas-channel/note"` import stays (DISCARD/REQUEST arms still use `np`); if the compiler reports `np` unused because the SEND arm no longer uses it, move `np := note.NewProcessor(l, ctx)` below the SEND block.
 
-- [ ] **Step 2: Remove the dead send path from the note package**
+- [x] **Step 2: Remove the dead send path from the note package**
 
 Verify nothing else calls it: `grep -rn "SendNote\|CreateCommandProvider" services/atlas-channel/ --include="*.go"`
 Expected: only the definitions in `note/processor.go` / `note/producer.go` (the handler call site is gone after Step 1).
@@ -2533,12 +2533,12 @@ Then delete `SendNote` from the `Processor` interface and `ProcessorImpl` in `se
 
 If the grep shows another caller, STOP and re-evaluate (do not delete).
 
-- [ ] **Step 3: Run tests**
+- [x] **Step 3: Run tests**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go test -race ./... && go vet ./...`
 Expected: PASS.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/socket/handler/note_operation.go services/atlas-channel/atlas.com/channel/note/
@@ -2559,7 +2559,7 @@ Retained planning-phase findings still to verify against the current templates: 
 
 For every step below: locate the entries by `jq`/grep (`handler == "NoteOperationHandle"`, `writer == "NoteOperation"`), not by hard-coded line numbers — the legacy templates were added after this plan and their layout is unknown here. Every `NoteOperationHandle` entry must carry `"validator": "LoggedInValidator"` (a validator-less entry is silently dropped).
 
-- [ ] **Step 1: Clientbound MEMO_RESULT writer — `operations` table (per version)**
+- [x] **Step 1: Clientbound MEMO_RESULT writer — `operations` table (per version)**
 
 The `NoteOperation` writer's `options.operations` must match the client's mode table (design §1.3). Set/verify:
 
@@ -2568,7 +2568,7 @@ The `NoteOperation` writer's `options.operations` must match the client's mode t
 
 > A hard-coded/standard `SEND_ERROR: 5` on v48/v61 silently wedges those clients (mode 5 is unhandled there → the excl lock never clears). This is the single most important legacy config value in the task.
 
-- [ ] **Step 2: Clientbound MEMO_RESULT writer — `errors` table + `NO_NOTE_ITEM` (all nine)**
+- [x] **Step 2: Clientbound MEMO_RESULT writer — `errors` table + `NO_NOTE_ITEM` (all nine)**
 
 On every version's `NoteOperation` writer, ensure `options.errors` contains all four keys (sub-codes are uniform across versions, design §1.3/§5.3):
 
@@ -2583,7 +2583,7 @@ On every version's `NoteOperation` writer, ensure `options.errors` contains all 
 
 (gms_83/84/jms_185 historically have the first three; add `NO_NOTE_ITEM`. gms_87/95 may lack the whole table; add it. Legacy v48/61/72/79 — inspect and add whatever is missing.)
 
-- [ ] **Step 3: Serverbound `NoteOperationHandle` — `operations` table (per version)**
+- [x] **Step 3: Serverbound `NoteOperationHandle` — `operations` table (per version)**
 
 The inbound dispatch table maps client mode bytes to Atlas operations. DISCARD (mode 1) is the load-bearing one Atlas actually decodes; SEND (mode 0) is the gated arm. Set `options.operations`:
 
@@ -2592,13 +2592,13 @@ The inbound dispatch table maps client mode bytes to Atlas operations. DISCARD (
 
 Mode immediates were confirmed at the writer level per version (SetRet=1, request=2 where present, gift=0) in the legacy pass and design §1.2; the discard fixtures (Task 17) pin them.
 
-- [ ] **Step 4: Validate JSON**
+- [x] **Step 4: Validate JSON**
 
 Run: `for f in services/atlas-configurations/seed-data/templates/template_gms_48_1.json services/atlas-configurations/seed-data/templates/template_gms_61_1.json services/atlas-configurations/seed-data/templates/template_gms_72_1.json services/atlas-configurations/seed-data/templates/template_gms_79_1.json services/atlas-configurations/seed-data/templates/template_gms_83_1.json services/atlas-configurations/seed-data/templates/template_gms_84_1.json services/atlas-configurations/seed-data/templates/template_gms_87_1.json services/atlas-configurations/seed-data/templates/template_gms_95_1.json services/atlas-configurations/seed-data/templates/template_jms_185_1.json; do jq empty "$f" && echo "OK $f"; done`
 Expected: `OK` ×9. Additionally assert the shifted table where it matters:
 `jq '.. | objects | select(.writer=="NoteOperation") | .options.operations.SEND_ERROR' template_gms_48_1.json` → `4`; same for gms_61; → `5` for the other seven.
 
-- [ ] **Step 5: Write the live-tenant PATCH doc**
+- [x] **Step 5: Write the live-tenant PATCH doc**
 
 Seed templates apply only at tenant creation (known bug pattern) — existing tenants need a config PATCH plus channel restart. Create `docs/tasks/task-137-note-item-consumption/live-tenant-patch.md` documenting, for EACH existing tenant of the **nine** versions:
 
@@ -2609,7 +2609,7 @@ Seed templates apply only at tenant creation (known bug pattern) — existing te
 
 Use repo-relative paths and placeholders only (no literal home paths).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-configurations/seed-data/templates/ docs/tasks/task-137-note-item-consumption/live-tenant-patch.md
@@ -2627,11 +2627,11 @@ Follow `docs/packets/audits/VERIFYING_A_PACKET.md` exactly (or dispatch the `pac
 - Modify/Create: evidence under `docs/packets/audits/gms_v84/` (the stale `NoteDisplay.md`/`.json` get regenerated — surgical splice per the export non-idempotency rule)
 - Regenerate: `docs/packets/audits/STATUS.md` + `status.json`
 
-- [ ] **Step 1:** Confirm the IDA instance is the v84 IDB (`select_instance` to the v84 port; verify the binary name/version before reading). Decompile `CWvsContext::OnMemoResult` @0xa70785 and record the read order per mode (expect: identical to v83 — modes 3/4/5/7 per design §1.3).
-- [ ] **Step 2:** Confirm opcode 0x029 in the v84 clientbound dispatch table.
-- [ ] **Step 3:** Write/extend the byte-fixture test with the `packet-audit:verify packet=note/clientbound/NoteDisplay version=gms_v84 ida=0xa70785` marker; run `cd libs/atlas-packet && go test ./note/clientbound/ -v` → PASS.
-- [ ] **Step 4:** Pin the evidence record and regenerate the matrix per the playbook; run the playbook's matrix `--check` → exit 0; confirm `STATUS.md` shows ✅ for MEMO_RESULT × v84 and NO other cell changed.
-- [ ] **Step 5:** Commit the three artifacts together:
+- [x] **Step 1:** Confirm the IDA instance is the v84 IDB (`select_instance` to the v84 port; verify the binary name/version before reading). Decompile `CWvsContext::OnMemoResult` @0xa70785 and record the read order per mode (expect: identical to v83 — modes 3/4/5/7 per design §1.3).
+- [x] **Step 2:** Confirm opcode 0x029 in the v84 clientbound dispatch table.
+- [x] **Step 3:** Write/extend the byte-fixture test with the `packet-audit:verify packet=note/clientbound/NoteDisplay version=gms_v84 ida=0xa70785` marker; run `cd libs/atlas-packet && go test ./note/clientbound/ -v` → PASS.
+- [x] **Step 4:** Pin the evidence record and regenerate the matrix per the playbook; run the playbook's matrix `--check` → exit 0; confirm `STATUS.md` shows ✅ for MEMO_RESULT × v84 and NO other cell changed.
+- [x] **Step 5:** Commit the three artifacts together:
 
 ```bash
 git add libs/atlas-packet/note/clientbound/ docs/packets/audits/
@@ -2649,11 +2649,11 @@ Same flow as Task 15 with the jms particulars (design §6.3): `OnMemoResult` @ *
 - Create/Modify: evidence under `docs/packets/audits/jms_v185/`
 - Regenerate: `docs/packets/audits/STATUS.md` + `status.json`
 
-- [ ] **Step 1:** `select_instance(13344)`; verify the loaded binary is the `_SCY` jms dump before reading. Decompile 0xb0c6d0; record per-mode read order.
-- [ ] **Step 2:** Confirm opcode 0x026 in the jms dispatch table.
-- [ ] **Step 3:** Byte-fixture test with the verify marker; `go test ./note/clientbound/ -v` → PASS.
-- [ ] **Step 4:** Pin evidence (with `--audit-dir docs/packets/audits/jms_v185`), regenerate matrix, `--check` exit 0, no cell regressions.
-- [ ] **Step 5:** Commit:
+- [x] **Step 1:** `select_instance(13344)`; verify the loaded binary is the `_SCY` jms dump before reading. Decompile 0xb0c6d0; record per-mode read order.
+- [x] **Step 2:** Confirm opcode 0x026 in the jms dispatch table.
+- [x] **Step 3:** Byte-fixture test with the verify marker; `go test ./note/clientbound/ -v` → PASS.
+- [x] **Step 4:** Pin evidence (with `--audit-dir docs/packets/audits/jms_v185`), regenerate matrix, `--check` exit 0, no cell regressions.
+- [x] **Step 5:** Commit:
 
 ```bash
 git add libs/atlas-packet/note/clientbound/ docs/packets/audits/
@@ -2685,12 +2685,12 @@ If any version's read order diverges from the existing GMS codec, add a version-
 
 For each of the five cells (jms first, then v48/v61/v72/v79):
 
-- [ ] **Step 1:** Select the correct IDB instance (jms → port 13344, verify the `_SCY` binary; each legacy → its own instance — always list + match the binary NAME before reading). Decompile the cited `SetRet`; derive the full write order from that binary alone (mode byte, the three header counts, per-entry normal/special fields).
-- [ ] **Step 2:** Compare to the codec; implement a version-gated delta if needed (byte fixtures for each distinct shape). For jms, budget for the larger function; for v48, resolve the 0x66-tail question.
-- [ ] **Step 3:** Fixture + `packet-audit:verify` marker; `cd libs/atlas-packet && go test ./note/serverbound/ -v` → PASS.
-- [ ] **Step 4:** Evidence + REPORT (root `-ida-source`; jms needs `--audit-dir docs/packets/audits/jms_v185`), surgical splice (never overwrite the export), regenerate matrix, `--check` exit 0. Expected: the cell ✅, no regressions.
+- [x] **Step 1:** Select the correct IDB instance (jms → port 13344, verify the `_SCY` binary; each legacy → its own instance — always list + match the binary NAME before reading). Decompile the cited `SetRet`; derive the full write order from that binary alone (mode byte, the three header counts, per-entry normal/special fields).
+- [x] **Step 2:** Compare to the codec; implement a version-gated delta if needed (byte fixtures for each distinct shape). For jms, budget for the larger function; for v48, resolve the 0x66-tail question.
+- [x] **Step 3:** Fixture + `packet-audit:verify` marker; `cd libs/atlas-packet && go test ./note/serverbound/ -v` → PASS.
+- [x] **Step 4:** Evidence + REPORT (root `-ida-source`; jms needs `--audit-dir docs/packets/audits/jms_v185`), surgical splice (never overwrite the export), regenerate matrix, `--check` exit 0. Expected: the cell ✅, no regressions.
 
-- [ ] **Step 5:** Commit (group the five cells, or commit per cell — either way the codec + fixture + evidence for a cell land together):
+- [x] **Step 5:** Commit (group the five cells, or commit per cell — either way the codec + fixture + evidence for a cell land together):
 
 ```bash
 git add libs/atlas-packet/note/serverbound/ docs/packets/audits/
@@ -2703,7 +2703,7 @@ git commit -m "verify(packets): NoteOperationDiscard x jms_v185 + v48/v61/v72/v7
 
 Per CLAUDE.md Build & Verification — every check, every changed module. Changed Go modules: `libs/atlas-packet`, `libs/atlas-saga`, `services/atlas-notes/atlas.com/notes`, `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator`, `services/atlas-channel/atlas.com/channel`. Note the guard set grew on main since this plan was written — `tools/goroutine-guard.sh` and `tools/lint.sh --check` are now mandatory alongside `redis-key-guard.sh` (Steps 3a/3b below).
 
-- [ ] **Step 1: Tests + vet per changed module**
+- [x] **Step 1: Tests + vet per changed module**
 
 ```bash
 for m in libs/atlas-packet libs/atlas-saga services/atlas-notes/atlas.com/notes services/atlas-saga-orchestrator/atlas.com/saga-orchestrator services/atlas-channel/atlas.com/channel; do
@@ -2713,7 +2713,7 @@ done
 
 Expected: no `FAILED:` lines. `go build ./...` in each service module as well.
 
-- [ ] **Step 2: Docker bake for every touched service** (mandatory — catches missing `COPY libs/...` lines that go.work hides)
+- [x] **Step 2: Docker bake for every touched service** (mandatory — catches missing `COPY libs/...` lines that go.work hides)
 
 ```bash
 docker buildx bake atlas-channel atlas-saga-orchestrator atlas-notes
@@ -2721,7 +2721,7 @@ docker buildx bake atlas-channel atlas-saga-orchestrator atlas-notes
 
 Expected: all three build clean. (Also bake `atlas-configurations` if `.github/config/services.json` lists it as a Go service and its files changed — template JSON edits alone don't require it, but verify with `jq -r '.[]|.name' .github/config/services.json | grep configurations`.)
 
-- [ ] **Step 3: Repo-root guards** (from repo root, no global GOWORK=off)
+- [x] **Step 3: Repo-root guards** (from repo root, no global GOWORK=off)
 
 ```bash
 tools/redis-key-guard.sh
@@ -2731,16 +2731,16 @@ tools/lint.sh --check
 
 Expected: all clean. (`tools/lint.sh` with no flags fixes formatting in place — run it before committing if `--check` complains.)
 
-- [ ] **Step 4: packet-audit checks**
+- [x] **Step 4: packet-audit checks**
 
 Run the matrix / fname-doc / operations `--check` commands used in Tasks 15–17 once more against the final tree (with the jms `--audit-dir` flag where applicable).
 Expected: all exit 0; `docs/packets/audits/STATUS.md` shows all target cells ✅ (MEMO_RESULT × v84/jms185; NoteOperationDiscard × jms185/v48/v61/v72/v79) with no regressions.
 
-- [ ] **Step 5: Acceptance sweep against the PRD**
+- [x] **Step 5: Acceptance sweep against the PRD**
 
 Walk PRD §10's checklist and confirm each box has landed evidence (per-version send path documented in design §1.1 for all nine versions; consumption on both arms; pre-flight rejections consume nothing; MEMO_RESULT × v84/jms185 ✅; NoteOperationDiscard × jms185 + four legacy ✅; nine templates + PATCH doc, incl. the v48/v61 shifted mode table; gift flow untouched). Fix anything missing BEFORE declaring done.
 
-- [ ] **Step 6: Commit any straggler fixes, then request code review**
+- [x] **Step 6: Commit any straggler fixes, then request code review**
 
 Code review (superpowers:requesting-code-review) is mandatory before the PR — plan-adherence + backend-guidelines reviewers.
 

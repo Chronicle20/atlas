@@ -14227,37 +14227,38 @@
       "direction": "",
       "calls": null
     },
-    "sub_71A135": {
+    "CWvsContext::OnSkillLearnItemResult": {
       "address": "0x71a135",
-      "direction": "",
+      "direction": "clientbound",
+      "note": "SKILL_LEARN_ITEM_RESULT (task-125). v48 IDA-verified: CWvsContext::OnPacket case 43 (0x2B, @0x70d3aa) delegates directly to CWvsContext::OnSkillLearnItemResult (already named in the v48 IDB, session 0bb5f11a, GMS_v48_1_DEVM.exe.i64). v48 body (no leading byte -- MajorVersion()<84): Decode4 characterId (CUserPool::GetUser lookup), then under an if(user-found) guard (v29): Decode1 isMasteryBook, Decode4 skillId (decoded, discarded), Decode4 masterLevel (decoded, discarded), Decode1 canUse, Decode1 success. Supersedes the prior sub_71A135 placeholder entry (same address, same call sequence, unnamed).",
       "calls": [
         {
           "op": "Decode4",
-          "comment": ""
+          "comment": "characterId"
         },
         {
           "op": "Decode1",
-          "comment": "",
+          "comment": "isMasteryBook",
           "guard": "v29"
         },
         {
           "op": "Decode4",
-          "comment": "",
+          "comment": "skillId (decoded, discarded)",
           "guard": "v29"
         },
         {
           "op": "Decode4",
-          "comment": "",
+          "comment": "masterLevel (decoded, discarded)",
           "guard": "v29"
         },
         {
           "op": "Decode1",
-          "comment": "",
+          "comment": "canUse",
           "guard": "v29"
         },
         {
           "op": "Decode1",
-          "comment": "",
+          "comment": "success",
           "guard": "v29"
         }
       ]

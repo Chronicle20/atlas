@@ -333,14 +333,14 @@
   ida:
     address: 7393813
   note: 'v48 groups incubator early (v61 op 66); reordered. delta doc a.'
-- op: IDA_0X02B
+- op: SKILL_LEARN_ITEM_RESULT
   direction: clientbound
   opcode: 43
-  fname: sub_71A135
+  fname: CWvsContext::OnSkillLearnItemResult
   provenance: ida-discovered
   ida:
     address: 7446837
-  note: 'unnamed CWvsContext sub; delta doc marks SKILL_LEARN_ITEM/entrusted-shop family (v61 47/48). v61 op-identity body-map DEFERRED (see discover_gms_v48.md remaining).'
+  note: 'task-125: named via CWvsContext::OnPacket case 0x2B (0x70d3aa) delegating directly to CWvsContext::OnSkillLearnItemResult (0x71a135), already named in the v48 IDB (session 0bb5f11a, GMS_v48_1_DEVM.exe.i64). Body (no leading bOnExclRequest byte — MajorVersion()<84): Decode4 characterId, then under the user-found guard (v29): Decode1 isMasteryBook, Decode4 skillId (discarded), Decode4 masterLevel (discarded), Decode1 canUse, Decode1 success. Supersedes the prior IDA_0X02B placeholder row (fname sub_71A135), which recorded the same address/call sequence before the function was identified.'
 - op: SUE_CHARACTER_RESULT
   direction: clientbound
   opcode: 44

@@ -42,6 +42,37 @@ func TestSkillLearnItemResultRoundTrip(t *testing.T) {
 // characterId(4 LE) + isMasteryBook(1) + skillId(4 LE) + masterLevel(4 LE) + canUse(1) + success(1).
 // Trivially-readable values: characterId=1, mastery, skillId=2, masterLevel=3, canUse=1, success=0.
 //
+// Golden bytes, v48 — 15-byte body (NO leading bOnExclRequest byte, same as
+// v83; MajorVersion()=48 < 84):
+// characterId(4 LE) + isMasteryBook(1) + skillId(4 LE) + masterLevel(4 LE) + canUse(1) + success(1).
+//
+// IDA evidence (task-125): CWvsContext::OnSkillLearnItemResult @0x71a135 (v48
+// IDB GMS_v48_1_DEVM.exe.i64, session 0bb5f11a — already named in the IDB).
+// CWvsContext::OnPacket case 43 (0x2B, @0x70d3aa) delegates directly. Body:
+// Decode4 characterId (CUserPool::GetUser lookup), then under the
+// user-found guard (v29): Decode1 isMasteryBook, Decode4 skillId (decoded,
+// discarded), Decode4 masterLevel (decoded, discarded), Decode1 canUse,
+// Decode1 success — matches the existing 15-byte golden fixture shape
+// exactly. Opcode 0x2B == registry op 43.
+//
+// packet-audit:verify packet=character/clientbound/CharacterSkillLearnItemResult version=gms_v48 ida=0x71a135
+func TestSkillLearnItemResultGoldenBytesV48(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 48, 1)
+	l, _ := testlog.NewNullLogger()
+	got := NewSkillLearnItemResult(1, true, 2, 3, true, false).Encode(l, ctx)(nil)
+	want := []byte{
+		0x01, 0x00, 0x00, 0x00, // characterId
+		0x01,                   // isMasteryBook
+		0x02, 0x00, 0x00, 0x00, // skillId
+		0x03, 0x00, 0x00, 0x00, // masterLevel
+		0x01, // canUse
+		0x00, // success
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("golden bytes: got % X, want % X", got, want)
+	}
+}
+
 // packet-audit:verify packet=character/clientbound/CharacterSkillLearnItemResult version=gms_v83 ida=0xa1e5af
 func TestSkillLearnItemResultGoldenBytesV83(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 83, 1)

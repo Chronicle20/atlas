@@ -6,7 +6,7 @@
 
 Tool: `b113a576d4c27535d10b42b92fc4d0c1f76aa8f0989992403fb531e45775c26b`
 
-- export gms_v48: `2440d97ff07c153350f274584e6bb9f07f36f780e4104ff58cbd54a073a7476c`
+- export gms_v48: `46a1c15ebc8501e17134a830356a3b0a024ff97e5db322b1f519c95e9ae8b205`
 - export gms_v61: `8e2db04eb4d3afb5effc24cdc06db1c889842f0557f0325ba064f09d153ebe7f`
 - export gms_v72: `e9ab553bcb8b70b4974a3b1ea99d4277feab9be678f891b03636bcbb920dad17`
 - export gms_v79: `a2a0573ccb7f438c6499483c5c9260bd078e3fb0cd90ecc24adaecfbb4592c37`
@@ -77,12 +77,11 @@ Tool: `b113a576d4c27535d10b42b92fc4d0c1f76aa8f0989992403fb531e45775c26b`
 | SET_TAMING_MOB_INFO | CWvsContext::OnSetTamingMobInfo; sub_72032B | character/clientbound/CharacterSetTamingMobInfo (T1) | 0x028 | ✅ | 0x02D | 🟡ᶠ | 0x02D | 🟡ᶠ | 0x02D | 🟡ᶠ | 0x030 | ✅ | 0x030 | ✅ | 0x030 | ✅ | 0x02F | ✅ | 0x02D | ✅ |
 | QUEST_CLEAR | CWvsContext::OnQuestClear |  | 0x029 | ❌ | 0x02E | ❌ | 0x02E | ❌ | 0x02E | ❌ | 0x031 | ❌ | 0x031 | ❌ | 0x031 | ❌ | 0x030 | ❌ | 0x02E | ❌ |
 | INCUBATOR_RESULT | CWvsContext::OnIncubatorResult | incubator/clientbound/IncubatorResult | 0x02A | ❌ | 0x042 | ✅ | 0x042 | ✅ | 0x042 | ✅ | 0x045 | ✅ | 0x047 | ✅ | 0x047 | ✅ | 0x048 | ✅ | 0x03F | ✅ |
-| IDA_0X02B | sub_71A135 |  | 0x02B | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
+| SKILL_LEARN_ITEM_RESULT | CWvsContext::OnSkillLearnItemResult; sub_841E5F; sub_9175E6; sub_969022 | character/clientbound/CharacterSkillLearnItemResult (T1) | 0x02B | ✅ | 0x030 | ❌ | 0x030 | ❌ | 0x030 | ❌ | 0x033 | ✅ | 0x033 | ❌ | 0x033 | ❌ | 0x032 | ❌ | 0x030 | ❌ |
 | SUE_CHARACTER_RESULT | CWvsContext::OnSueCharacterResult |  | 0x02C | ❌ | 0x034 | ❌ | 0x034 | ❌ | 0x034 | ❌ | 0x037 | ❌ | 0x037 | ❌ | 0x037 | ❌ | 0x037 | ❌ |  | ⬜ |
 | IDA_0X02E | sub_71CE62 |  | 0x02E | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | ENTRUSTED_SHOP_CHECK_RESULT | CWvsContext::OnEntrustedShopCheckResult | merchant/clientbound/ConfirmManage |  | ⬜ | 0x02F | ❌ | 0x02F | ❌ | 0x02F | ❌ | 0x032 | ✅ | 0x032 | ❌ | 0x032 | ✅ | 0x031 | ✅ | 0x02F | ❌ |
 | IDA_0X02F | sub_71CE49 |  | 0x02F | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
-| SKILL_LEARN_ITEM_RESULT | CWvsContext::OnSkillLearnItemResult; sub_841E5F; sub_9175E6; sub_969022 | character/clientbound/CharacterSkillLearnItemResult (T1) |  | ⬜ | 0x030 | ❌ | 0x030 | ❌ | 0x030 | ❌ | 0x033 | ✅ | 0x033 | ❌ | 0x033 | ❌ | 0x032 | ❌ | 0x030 | ❌ |
 | CHAR_INFO | CWvsContext::OnCharacterInfo | character/clientbound/CharacterInfo (T1) | 0x031 | ✅ | 0x03A | ✅ | 0x03A | ✅ | 0x03A | ✅ | 0x03D | ✅ | 0x03D | ✅ | 0x03D | ✅ | 0x03D | ✅ | 0x035 | ✅ |
 | GATHER_ITEM_RESULT | CWvsContext::OnGatherItemResult | inventory/clientbound/InventoryCompartmentMerge (T1) |  | ⬜ | 0x031 | 🟡ᶠ | 0x031 | 🟡ᶠ | 0x031 | 🟡ᶠ | 0x034 | ✅ | 0x034 | ✅ | 0x034 | ✅ | 0x034 | ✅ | 0x031 | ✅ |
 | PARTY_OPERATION | CWvsContext::OnPartyResult | party/clientbound/PartyAlreadyJoined1 (T1) | 0x032 | ✅ | 0x03B | ✅ | 0x03B | ✅ | 0x03B | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x036 | ✅ |
@@ -857,7 +856,6 @@ Tool: `b113a576d4c27535d10b42b92fc4d0c1f76aa8f0989992403fb531e45775c26b`
 | cash/serverbound/CashShopOperationRebateLockerItem (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashShopOperationSetWishlist (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | channel/serverbound/ChannelChangeRequest |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| character/clientbound/CharacterSkillLearnItemResult (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ChairPortable (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ChalkboardClose (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ExpressionRequest (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -1002,15 +1000,15 @@ Tool: `b113a576d4c27535d10b42b92fc4d0c1f76aa8f0989992403fb531e45775c26b`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 174 | 0 | 2 | 162 | 629 | 0 | 51.5% |
-| v61 | 249 | 0 | 60 | 196 | 462 | 0 | 49.3% |
-| v72 | 259 | 0 | 73 | 215 | 420 | 0 | 47.3% |
-| v79 | 303 | 0 | 72 | 211 | 381 | 0 | 51.7% |
-| v83 | 425 | 0 | 0 | 318 | 224 | 0 | 57.2% |
-| v84 | 396 | 0 | 0 | 327 | 244 | 0 | 54.8% |
-| v87 | 431 | 0 | 0 | 349 | 187 | 0 | 55.3% |
-| v95 | 456 | 0 | 0 | 408 | 103 | 0 | 52.8% |
-| JMS185 | 408 | 0 | 0 | 365 | 194 | 0 | 52.8% |
+| v48 | 175 | 0 | 2 | 160 | 628 | 0 | 51.9% |
+| v61 | 249 | 0 | 60 | 195 | 461 | 0 | 49.4% |
+| v72 | 259 | 0 | 73 | 214 | 419 | 0 | 47.4% |
+| v79 | 303 | 0 | 72 | 210 | 380 | 0 | 51.8% |
+| v83 | 425 | 0 | 0 | 317 | 223 | 0 | 57.3% |
+| v84 | 396 | 0 | 0 | 326 | 243 | 0 | 54.8% |
+| v87 | 431 | 0 | 0 | 348 | 186 | 0 | 55.3% |
+| v95 | 456 | 0 | 0 | 407 | 102 | 0 | 52.8% |
+| JMS185 | 408 | 0 | 0 | 364 | 193 | 0 | 52.8% |
 
 ## Conflicts
 

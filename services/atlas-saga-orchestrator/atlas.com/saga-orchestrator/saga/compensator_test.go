@@ -722,3 +722,147 @@ func TestCompensateLateStep_MtsMove_RestoresListing(t *testing.T) {
 	assert.Equal(t, listingId, mtsMockP.restoreListingId)
 	assert.Equal(t, uint32(4242), mtsMockP.restoreListingBuyerId)
 }
+
+// TestSkillBookUseCompensationRefundsBook verifies that when a skill_book_use
+// saga fails on the skill step AFTER the book was destroyed, the reverse walk
+// re-awards the book using the destroy step's TemplateId (task-125).
+func TestSkillBookUseCompensationRefundsBook(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+
+	ctx := context.Background()
+	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	tctx := tenant.WithContext(ctx, te)
+
+	const (
+		testCharId = uint32(88001)
+		bookId     = uint32(2290000)
+	)
+
+	type createCall struct {
+		CharacterId uint32
+		TemplateId  uint32
+		Quantity    uint32
+	}
+	var createItemCalls []createCall
+	compP := &compmock.ProcessorMock{
+		RequestCreateItemFunc: func(_ uuid.UUID, characterId uint32, templateId uint32, quantity uint32, _ time.Time) error {
+			createItemCalls = append(createItemCalls, createCall{characterId, templateId, quantity})
+			return nil
+		},
+	}
+
+	transactionId := uuid.New()
+	s, err := NewBuilder().
+		SetTransactionId(transactionId).
+		SetSagaType(SkillBookUse).
+		SetInitiatedBy("skill-book-compensation-test").
+		AddStep("destroy_asset_from_slot", Completed, DestroyAssetFromSlot, DestroyAssetFromSlotPayload{
+			CharacterId:   testCharId,
+			InventoryType: 2,
+			Slot:          5,
+			Quantity:      1,
+			TemplateId:    bookId,
+		}).
+		AddStep("update_skill", Failed, UpdateSkill, UpdateSkillPayload{
+			CharacterId: testCharId,
+			SkillId:     1121001,
+			Level:       9,
+			MasterLevel: 20,
+		}).
+		Build()
+	assert.NoError(t, err, "saga build should not fail")
+
+	compensator := NewCompensator(logger, tctx).WithCompartmentProcessor(compP)
+	compensator.DispatchSkillBookUseRollbacks(s)
+
+	assert.Equal(t, 1, len(createItemCalls), "book should be re-awarded exactly once")
+	if len(createItemCalls) == 1 {
+		assert.Equal(t, testCharId, createItemCalls[0].CharacterId)
+		assert.Equal(t, bookId, createItemCalls[0].TemplateId)
+		assert.Equal(t, uint32(1), createItemCalls[0].Quantity)
+	}
+}
+
+// TestSkillBookUseCompensationDestroyFailedNoRefund verifies that when the
+// destroy step itself fails (nothing completed), the reverse walk re-awards
+// nothing — the book never left the slot.
+func TestSkillBookUseCompensationDestroyFailedNoRefund(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+
+	ctx := context.Background()
+	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	tctx := tenant.WithContext(ctx, te)
+
+	var createItemCalls int
+	compP := &compmock.ProcessorMock{
+		RequestCreateItemFunc: func(_ uuid.UUID, _ uint32, _ uint32, _ uint32, _ time.Time) error {
+			createItemCalls++
+			return nil
+		},
+	}
+
+	s, err := NewBuilder().
+		SetTransactionId(uuid.New()).
+		SetSagaType(SkillBookUse).
+		SetInitiatedBy("skill-book-compensation-test").
+		AddStep("destroy_asset_from_slot", Failed, DestroyAssetFromSlot, DestroyAssetFromSlotPayload{
+			CharacterId:   88002,
+			InventoryType: 2,
+			Slot:          5,
+			Quantity:      1,
+			TemplateId:    2290000,
+		}).
+		AddStep("update_skill", Pending, UpdateSkill, UpdateSkillPayload{
+			CharacterId: 88002,
+			SkillId:     1121001,
+		}).
+		Build()
+	assert.NoError(t, err)
+
+	compensator := NewCompensator(logger, tctx).WithCompartmentProcessor(compP)
+	compensator.DispatchSkillBookUseRollbacks(s)
+
+	assert.Equal(t, 0, createItemCalls, "no refund when the destroy step never completed")
+}
+
+// TestSkillBookUseCompensationMissingTemplateIdSkips verifies a completed
+// destroy step with TemplateId 0 (legacy producer) is skipped rather than
+// re-awarding item 0.
+func TestSkillBookUseCompensationMissingTemplateIdSkips(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+
+	ctx := context.Background()
+	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	tctx := tenant.WithContext(ctx, te)
+
+	var createItemCalls int
+	compP := &compmock.ProcessorMock{
+		RequestCreateItemFunc: func(_ uuid.UUID, _ uint32, _ uint32, _ uint32, _ time.Time) error {
+			createItemCalls++
+			return nil
+		},
+	}
+
+	s, err := NewBuilder().
+		SetTransactionId(uuid.New()).
+		SetSagaType(SkillBookUse).
+		SetInitiatedBy("skill-book-compensation-test").
+		AddStep("destroy_asset_from_slot", Completed, DestroyAssetFromSlot, DestroyAssetFromSlotPayload{
+			CharacterId:   88003,
+			InventoryType: 2,
+			Slot:          5,
+			Quantity:      1,
+		}).
+		AddStep("update_skill", Failed, UpdateSkill, UpdateSkillPayload{
+			CharacterId: 88003,
+			SkillId:     1121001,
+		}).
+		Build()
+	assert.NoError(t, err)
+
+	compensator := NewCompensator(logger, tctx).WithCompartmentProcessor(compP)
+	compensator.DispatchSkillBookUseRollbacks(s)
+
+	assert.Equal(t, 0, createItemCalls, "TemplateId 0 must not re-award item 0")
+}

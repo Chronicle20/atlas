@@ -43,6 +43,7 @@ const (
 	IncubatorUse         = sharedsaga.IncubatorUse
 	PointReset           = sharedsaga.PointReset
 	MtsOperation         = sharedsaga.MtsOperation
+	SkillBookUse         = sharedsaga.SkillBookUse
 )
 
 // Status constants

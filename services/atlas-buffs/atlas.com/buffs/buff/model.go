@@ -47,6 +47,36 @@ func (m Model) ExpiresAt() time.Time {
 	return m.expiresAt
 }
 
+// WithStatAmount returns a copy of the buff with the amount of the stat of
+// the given type replaced, preserving identity (id, sourceId, level,
+// duration), the other stats, and the ORIGINAL createdAt/expiresAt — value
+// updates must not extend the buff's lifetime. The second return is false
+// when the buff has no stat of that type.
+func (m Model) WithStatAmount(statType string, amount int32) (Model, bool) {
+	found := false
+	changes := make([]stat.Model, 0, len(m.changes))
+	for _, c := range m.changes {
+		if c.Type() == statType {
+			changes = append(changes, stat.NewStat(statType, amount))
+			found = true
+		} else {
+			changes = append(changes, c)
+		}
+	}
+	if !found {
+		return Model{}, false
+	}
+	return Model{
+		id:        m.id,
+		sourceId:  m.sourceId,
+		level:     m.level,
+		duration:  m.duration,
+		changes:   changes,
+		createdAt: m.createdAt,
+		expiresAt: m.expiresAt,
+	}, true
+}
+
 func (m Model) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Id        uuid.UUID    `json:"id"`

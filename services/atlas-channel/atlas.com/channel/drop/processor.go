@@ -17,6 +17,7 @@ type Processor interface {
 	InMapModelProvider(f field.Model) model.Provider[[]Model]
 	ForEachInMap(f field.Model, o model.Operator[Model]) error
 	RequestReservation(f field.Model, dropId uint32, characterId uint32, partyId uint32, characterX int16, characterY int16, petSlot int8) error
+	SpawnMeso(f field.Model, mesos uint32, x int16, y int16, ownerId uint32, dropperId uint32, dropperX int16, dropperY int16) error
 }
 
 type ProcessorImpl struct {
@@ -50,4 +51,8 @@ func (p *ProcessorImpl) ForEachInMap(f field.Model, o model.Operator[Model]) err
 
 func (p *ProcessorImpl) RequestReservation(f field.Model, dropId uint32, characterId uint32, partyId uint32, characterX int16, characterY int16, petSlot int8) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(drop2.EnvCommandTopic)(RequestReservationCommandProvider(f, dropId, characterId, partyId, characterX, characterY, petSlot))
+}
+
+func (p *ProcessorImpl) SpawnMeso(f field.Model, mesos uint32, x int16, y int16, ownerId uint32, dropperId uint32, dropperX int16, dropperY int16) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(drop2.EnvCommandTopic)(SpawnMesoCommandProvider(f, mesos, x, y, ownerId, dropperId, dropperX, dropperY))
 }

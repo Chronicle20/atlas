@@ -748,15 +748,15 @@
         "services": ["channel"]
       },
       {
-        "opCode": "0x4A",
+        "opCode": "0x48",
         "validator": "LoggedInValidator",
-        "handler": "CharacterItemUseSummonBagHandle",
+        "handler": "MountFoodHandle",
         "services": ["channel"]
       },
       {
-        "opCode": "0x4C",
+        "opCode": "0x4A",
         "validator": "LoggedInValidator",
-        "handler": "MountFoodHandle",
+        "handler": "CharacterItemUseSummonBagHandle",
         "services": ["channel"]
       },
       {

@@ -90,3 +90,40 @@ atlas-data on this branch / fix in a separate branch / defer as a filed follow-u
 
 The fixed-morph majority (28 items) is unaffected and fully working regardless of
 the decision.
+
+## Post-merge live testing surfaced a second (pre-existing) bug: buff duration off by 1000x
+
+Testing `2210000` on the PR env (`atlas-pr-1085`), the morph lasted ~10-15s instead
+of its WZ `spec.time` = 3600000 ms (60 min). Live atlas-buffs log:
+
+```
+19:14:19.406  APPLY sourceId=-2210000 duration=3600 MORPH amount=1
+19:14:28.992  Expired buff for character [1] from [-2210000]     # ~9.6s later
+```
+
+Root cause — a **unit mismatch that is a task-054 regression**:
+- `consumable/processor.go` computed `plan.duration = val / 1000`, converting the
+  WZ millisecond `time` spec to **seconds** (dates to `765be8b406`, 2026-01-04).
+- atlas-buffs `buff/model.go:112` schedules expiry as
+  `now + time.Duration(duration) * time.Millisecond` — i.e. it expects **ms**.
+  This was `* time.Second` until `197324e40` ("feat(atlas-buffs): interpret
+  Duration as ms (task-054)", 2026-05-03), which updated the skill path (atlas-data
+  `skill/reader.go:169` multiplies WZ seconds by 1000) but MISSED the consumable
+  `/1000` caller.
+- Net since 2026-05-03: every timed consumable buff (attack/defense/speed potions,
+  and now morph) expired ~1000x early, killed by the 10s atlas-buffs expiry sweep.
+
+Fixed on this branch (user-approved): `plan.duration = val` (send the WZ ms value
+as-is), tests updated to pin ms durations (`300000`/`600000`, not `300`/`600`).
+
+## Cancellation semantics (verified, for reference)
+
+A MORPH temporary stat is cancelled by: (1) **timed expiry** (now correct after the
+duration fix) and (2) **death → respawn** (`respawn/processor.go:241` saga
+`cancel_all_buffs` → atlas-buffs `CancelAll`). It is NOT cancelled by attacking
+(`character_attack_*.go` never call `buff.Cancel`), by taking damage
+(`character_damage.go` only changes HP), or by a plain map change (morph is
+re-rendered). Right-click buff-cancel is not server-blocked (the CANCEL_ITEM
+handler cancels by `sourceId = -itemId` with no MORPH filter), but the client
+generally does not offer a cancel for morph icons — so nothing reaches the server.
+These match the design's "morph-cancel-on-hit is a verified non-mechanic" note.

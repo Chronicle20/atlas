@@ -2454,6 +2454,10 @@ encoder being unnamed at harvest time. It is named now
 harvest for that cell against the v48 IDB so the record carries a real address
 and read order; do not hand-edit the JSON.
 
+Target the IDB with **`-ida-database <session-id>`** (from `idb_list`), not
+`-ida-port` — task-138 (#1087, on main) made the session id the preferred
+selector when many IDBs are open on one server, which is the case here.
+
 - [ ] **Step 2: Regenerate and check the matrix**
 
 ```bash

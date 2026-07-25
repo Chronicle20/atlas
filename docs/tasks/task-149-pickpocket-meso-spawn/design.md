@@ -13,6 +13,32 @@ position. No atlas-drops changes are required — the meso-only SPAWN path is
 already exercised in production by atlas-monster-death and
 atlas-saga-orchestrator.
 
+## 1a. Client-version support (all supported versions, no per-version code)
+
+Main now supports GMS v48/v61/v72/v79/v84/v92/v95 and JMS v185. Pick Pocket is
+**version-agnostic by construction** and requires no version gates:
+
+- The serverbound attack decodes through `packetmodel.AttackInfo.Decode`
+  (`libs/atlas-packet/model/attack_info.go`), which owns every version gate
+  (`MajorVersion() >= 84/95`, `legacyGms*`) *internally* and populates
+  `damageInfo[].Damages()` / `MonsterId()` and `SkillId()` uniformly for all
+  nine versions.
+- Pick Pocket runs on that already-decoded model, downstream of every gate, and
+  keys its whitelist off version-independent `libs/atlas-constants/skill` ids.
+  This is exactly how MP Eater and the task-147 drain heal already behave across
+  all versions — they carry no version logic either.
+- What makes the proc *reach* a given version is pre-existing infrastructure:
+  that version's socket-config template routes the melee/ranged/magic/energy
+  attack opcodes to `processAttack`. This task adds no template changes; it
+  inherits whatever routing drain/MP-Eater already rely on.
+
+Consequence for testing: the unit/flow tests are version-independent. The
+manual/integration acceptance check (PRD §10) should be run on **at least one
+legacy version (e.g. GMS v72) in addition to v83** to confirm the whitelisted
+skills that exist in that version proc, and that basic-attack (`skillId == 0`)
+procs everywhere. Whitelisted skills absent from an older client are simply
+never cast there — harmless, no gating required.
+
 ## 2. Resolved PRD Open Questions
 
 All three open questions were resolved by reading source (file:line evidence
@@ -91,13 +117,24 @@ and the saga's `spawnMesoDrop` emit exactly this shape through the identical
   damage and applies no status — it must not pick pockets either) unless the
   reflect decision is recomputed or tracked, duplicating state.
 - **B — widen the existing `onDamageApplied` hook to carry the damage lines
-  (chosen).** `damageInfoEntryDeps.onDamageApplied` currently has signature
-  `func(monsterId uint32)`
-  (`services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go:91`),
-  invoked exactly once per non-reflected, damage-applying entry — precisely the
-  set of entries Pick Pocket should see. Change it to
-  `func(di packetmodel.DamageInfo)` and have the MP Eater call site use
-  `di.MonsterId()`. One hook, two passives, correct reflect semantics for free.
+  (chosen).** `damageInfoEntryDeps.onDamageApplied` is invoked exactly once per
+  non-reflected, damage-applying entry — precisely the set of entries Pick
+  Pocket should see. **As of task-147 (attack-side drain HP gain, merged to
+  main) the hook already carries `func(monsterId uint32, totalDamage uint32)`**
+  (`character_attack_common.go:107-111`, invoked at `:197-206`), where
+  `totalDamage` is the entry's summed damage clamped to `MaxUint32`. Pick
+  Pocket needs the *per-line* breakdown (PRD §4.3 rolls once per line), which
+  the summed total discards. Reconciliation: widen the first parameter from
+  `monsterId uint32` to `di packetmodel.DamageInfo`, giving the signature
+  `func(di packetmodel.DamageInfo, totalDamage uint32)`. Then:
+  - MP Eater uses `di.MonsterId()` (was `monsterId`);
+  - drain keeps `totalDamage` unchanged — the summing + clamp stays in
+    `processDamageInfoEntry`;
+  - Pick Pocket reads `di.Damages()` for its per-line rolls.
+
+  One hook, three passives, correct reflect semantics for free (the hook still
+  fires only on non-reflected entries). This is the minimal-drift change; it
+  does NOT touch drain's `drainTryHeal` signature.
 - **C — add a parallel `onDamageLines` hook next to `onDamageApplied`.**
   Rejected: two hooks with identical firing conditions is boundary noise.
 
@@ -182,21 +219,25 @@ is the monster's field-unique id and is passed as `DropperId`.
 
 Wiring in `processAttack`: resolve `pickPocketState` once before the
 `ai.DamageInfo()` loop; inside the `onDamageApplied` closure (signature now
-`func(di packetmodel.DamageInfo)`):
+`func(di packetmodel.DamageInfo, totalDamage uint32)`, adding the Pick Pocket
+arm alongside the existing MP Eater and drain arms from task-147):
 
 ```go
-onDamageApplied: func(di packetmodel.DamageInfo) {
+onDamageApplied: func(di packetmodel.DamageInfo, totalDamage uint32) {
 	if ai.AttackType() == packetmodel.AttackTypeMagic && ai.SkillId() > 0 {
 		mpEaterTryProc(l, ctx, mp, c, di.MonsterId(), s.Field(), s.CharacterId())
 	}
+	if ai.SkillId() > 0 && isDrainSkill(skill3.Id(ai.SkillId())) {
+		drainTryHeal(l, mp.GetById, cp.ChangeHP, loadEffectiveStats, se.X(), ai.SkillId(), di.MonsterId(), totalDamage, s.Field(), s.CharacterId())
+	}
 	if ppState.enabled {
-		pickPocketTryProc(l, ctx, dp, mp, ppState, di, s.Field(), s.CharacterId())
+		pickPocketTryProc(l, mp.GetById, dp.SpawnMeso, ppState, di, s.Field(), s.CharacterId())
 	}
 },
 ```
 
-The `// TODO apply Pick Pocket` line (character_attack_common.go:408) is
-removed.
+The `// TODO apply Pick Pocket` line (`character_attack_common.go:504` on
+current main) is removed.
 
 Note Pick Pocket has no attack-type gate: the whitelist alone constrains it
 (all whitelisted skills are melee; basic attack `skillId == 0` procs from any
@@ -234,7 +275,10 @@ consumer only reads EquipmentData when `ItemId` is an equip).
 
 Producer + processor (`drop/producer.go`, `drop/processor.go`), following the
 existing `RequestReservationCommandProvider` / `Processor.RequestReservation`
-pattern verbatim:
+pattern verbatim. Note `drop.Processor` is an **interface** (`processor.go:16`)
+whose methods are implemented on `*ProcessorImpl` — so `SpawnMeso` is added to
+BOTH the interface declaration and the `*ProcessorImpl` receiver (exactly as
+`RequestReservation` is), not to a bare `Processor` struct:
 
 ```go
 // SpawnMesoCommandProvider emits a meso-only FFA drop: ItemId=0, Quantity=0,
@@ -242,7 +286,10 @@ pattern verbatim:
 // pickup), OwnerPartyId=0, Mod=0.
 func SpawnMesoCommandProvider(f field.Model, mesos uint32, x, y int16, ownerId uint32, dropperId uint32, dropperX, dropperY int16) model.Provider[[]kafka.Message]
 
-func (p *Processor) SpawnMeso(f field.Model, mesos uint32, x, y int16, ownerId uint32, dropperId uint32, dropperX, dropperY int16) error
+// interface method (processor.go, in the Processor interface):
+//   SpawnMeso(f field.Model, mesos uint32, x, y int16, ownerId uint32, dropperId uint32, dropperX, dropperY int16) error
+// implementation:
+func (p *ProcessorImpl) SpawnMeso(f field.Model, mesos uint32, x, y int16, ownerId uint32, dropperId uint32, dropperX, dropperY int16) error
 ```
 
 Kafka key: `producer.CreateKey(int(dropperId))` — partitions per dropper,
@@ -321,10 +368,13 @@ Handler-level (following `character_attack_mp_eater_test.go` /
   with prop 1.0 → N emissions in line order with correct meso amounts and
   positions; prop 0 → none; monster fetch error → none; emit error → remaining
   lines still attempted.
-- Reflect interaction: existing `processDamageInfoEntry` tests extended to
-  assert the widened `onDamageApplied(di)` hook still fires only on
-  non-reflected entries (signature change is mechanical for the MP Eater
-  tests).
+- Reflect interaction: `character_attack_drain_test.go` (task-147) already
+  covers the hook — `TestOnDamageApplied_ReceivesSummedDamageTotal`,
+  `_NotCalledForZeroDamageEntry`, `_NotCalledForReflectedEntry`. This task does
+  NOT re-add that coverage; widening the first parameter to
+  `packetmodel.DamageInfo` is a mechanical signature change those existing
+  tests (and the MP Eater test) inherit. No new reflect test is needed — adding
+  one would duplicate drain's `_NotCalledForReflectedEntry`.
 
 Verification gate (PRD §10): `go test -race ./...`, `go vet ./...`,
 `go build ./...` in atlas-channel; `docker buildx bake atlas-channel`;

@@ -4,19 +4,21 @@
 
 **Goal:** Implement the Pick Pocket (Chief Bandit 4211003) proc in atlas-channel's common attack pipeline: while the PICK_POCKET buff is active and the attack skill is whitelisted, each damage line rolls the effect's prop; successes emit an atlas-drops `SPAWN` command spawning a meso-only FFA drop at the struck monster's position.
 
-**Architecture:** All new code lives in atlas-channel. Pure helpers (`pickPocketWhitelisted`, `pickPocketMesoAmount`, generalized `shouldProc`) plus a per-attack state resolver and a per-monster proc function in `socket/handler/character_attack_common.go`, hooked through a widened `onDamageApplied(di packetmodel.DamageInfo)` callback that already fires exactly once per non-reflected damage-applying entry. A new `SpawnMeso` producer in the channel `drop` package emits the existing atlas-drops `SPAWN` contract (`Mesos > 0`, `ItemId == 0`). atlas-drops, atlas-buffs, and atlas-data are unchanged.
+**Architecture:** All new code lives in atlas-channel. Pure helpers (`pickPocketWhitelisted`, `pickPocketMesoAmount`, generalized `shouldProc`) plus a per-attack state resolver and a per-monster proc function in `socket/handler/character_attack_common.go`, hooked through the `onDamageApplied` callback that fires exactly once per non-reflected damage-applying entry. Task-147 already widened that callback to `func(monsterId uint32, totalDamage uint32)`; this task widens its first parameter to `func(di packetmodel.DamageInfo, totalDamage uint32)` so Pick Pocket can roll per damage line (MP Eater and drain switch to `di.MonsterId()`). A new `SpawnMeso` producer (interface method + `*ProcessorImpl`) in the channel `drop` package emits the existing atlas-drops `SPAWN` contract (`Mesos > 0`, `ItemId == 0`). The proc is version-agnostic — it runs on the already-decoded `AttackInfo`, so it applies to every supported client version (GMS v48–v95, JMS v185) with no version gating. atlas-drops, atlas-buffs, and atlas-data are unchanged.
 
 **Tech Stack:** Go, Kafka (segmentio/kafka-go via libs/atlas-kafka), logrus, libs/atlas-constants, table-driven Go tests.
 
 ## Global Constraints
 
 - All paths are relative to the worktree root (`.worktrees/task-149-pickpocket-meso-spawn`). The Go module under change is `services/atlas-channel/atlas.com/channel` (module name `atlas-channel`).
-- Verification gate before calling the branch done (PRD §10): `go test -race ./...`, `go vet ./...`, `go build ./...` clean in the atlas-channel module; `docker buildx bake atlas-channel` from the worktree root; `tools/redis-key-guard.sh` clean from the worktree root (run WITHOUT a `GOWORK=off` prefix).
+- Verification gate before calling the branch done (PRD §10 + current CLAUDE.md Build & Verification): `go test -race ./...`, `go vet ./...`, `go build ./...` clean in the atlas-channel module; `docker buildx bake atlas-channel` from the worktree root; and from the worktree root — `tools/redis-key-guard.sh` (run WITHOUT a `GOWORK=off` prefix), `tools/goroutine-guard.sh` (this task adds no bare `go` statements, so trivially clean), and `tools/lint.sh --check` (gofumpt/goimports + linters; run `tools/lint.sh` with no flags first to auto-format before committing). The task touches no services.json / deploy / docker-bake / go.work, so the service-registration and template-opcode guards are N/A.
 - Test conventions: table-driven tests on pure functions; deps-injection fakes via plain func fields/params; NO `*_testhelpers.go` files; handler tests live in `package handler`, drop tests in `package drop_test` (matching existing files).
 - Failure isolation contract (PRD §4.5): every Pick Pocket failure path logs (`Errorf` for real failures, `Debugf` for expected skips) and returns; nothing propagates into the attack pipeline.
 - Skill ids come from `libs/atlas-constants/skill` (`skill3` alias in the handler file); the temporary stat type from `libs/atlas-constants/character` (`charconst` alias). Never hardcode numeric ids in production code.
 - Per-attack I/O budget (PRD §8): at most ONE buff REST call and ONE effect lookup per attack; ZERO lookups when the skill id is not whitelisted (whitelist check is pure and runs first).
 - The `// TODO apply Pick Pocket` line must be gone by the final task; no new TODOs anywhere.
+- **Version-agnostic (all supported versions: GMS v48/61/72/79/84/92/95, JMS v185).** The proc runs on the already-decoded `packetmodel.AttackInfo`, downstream of every version gate in `AttackInfo.Decode`; the whitelist keys off version-independent `libs/atlas-constants/skill` ids. No version gating is written anywhere in this task (design §1a). MP Eater and the task-147 drain heal work the same way. The acceptance check should be run on at least one legacy version (e.g. GMS v72) in addition to v83.
+- **Rebased on main (task-147 landed first).** The `onDamageApplied` hook already has signature `func(monsterId uint32, totalDamage uint32)` and `character_attack_drain_test.go` already exercises it. Line numbers below are the current-main numbers; the drain arm in the `processAttack` closure must be preserved when the Pick Pocket arm is added.
 - Commit after every task. Branch: `task-149-pickpocket-meso-spawn`.
 
 ---
@@ -26,7 +28,7 @@
 Pick Pocket reuses the exact prop-roll semantics MP Eater already has. One name, one function (design §4.1: duplicating it was rejected).
 
 **Files:**
-- Modify: `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go:182-190` (the `mpEaterShouldProc` function) and `:249` (its call site inside `mpEaterTryProc`)
+- Modify: `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go:209-217` (the `mpEaterShouldProc` function) and `:299` (its call site inside `mpEaterTryProc`)
 - Test: `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_mp_eater_test.go` (rename `TestMpEaterShouldProc`)
 
 **Interfaces:**
@@ -70,7 +72,7 @@ Expected: FAIL to build with `undefined: shouldProc`.
 
 - [ ] **Step 3: Rename the function and its call site**
 
-In `character_attack_common.go`, replace the `mpEaterShouldProc` declaration (lines 182–190) with:
+In `character_attack_common.go`, replace the `mpEaterShouldProc` declaration (lines 209–217) with:
 
 ```go
 // shouldProc returns true when a prop-gated passive (MP Eater, Pick
@@ -253,7 +255,7 @@ atlas-channel's drop message contract today only declares `REQUEST_RESERVATION`.
 **Files:**
 - Modify: `services/atlas-channel/atlas.com/channel/kafka/message/drop/kafka.go:12-15` (const block)  and append the body type
 - Modify: `services/atlas-channel/atlas.com/channel/drop/producer.go` (append provider)
-- Modify: `services/atlas-channel/atlas.com/channel/drop/processor.go` (append method)
+- Modify: `services/atlas-channel/atlas.com/channel/drop/processor.go` — add `SpawnMeso` to the `Processor` **interface** (`:16-20`) AND implement it on `*ProcessorImpl` (mirroring `RequestReservation` at `:19`/`:51`)
 - Create (Test): `services/atlas-channel/atlas.com/channel/drop/producer_test.go`
 
 **Interfaces:**
@@ -261,7 +263,7 @@ atlas-channel's drop message contract today only declares `REQUEST_RESERVATION`.
 - Produces:
   - `drop2.CommandTypeSpawn = "SPAWN"` and `drop2.SpawnCommandBody` (kafka message package)
   - `SpawnMesoCommandProvider(f field.Model, mesos uint32, x int16, y int16, ownerId uint32, dropperId uint32, dropperX int16, dropperY int16) model.Provider[[]kafka.Message]`
-  - `func (p *Processor) SpawnMeso(f field.Model, mesos uint32, x int16, y int16, ownerId uint32, dropperId uint32, dropperX int16, dropperY int16) error` — Task 6/7 pass this as the emit func.
+  - `SpawnMeso(...) error` on the `Processor` interface, implemented on `*ProcessorImpl` — Task 6/7 pass `dp.SpawnMeso` as the emit func.
 
 - [ ] **Step 1: Write the failing provider test**
 
@@ -408,10 +410,19 @@ func SpawnMesoCommandProvider(f field.Model, mesos uint32, x int16, y int16, own
 }
 ```
 
-Append to `services/atlas-channel/atlas.com/channel/drop/processor.go`:
+In `services/atlas-channel/atlas.com/channel/drop/processor.go`, add the method to the `Processor` interface (alongside `RequestReservation`):
 
 ```go
-func (p *Processor) SpawnMeso(f field.Model, mesos uint32, x int16, y int16, ownerId uint32, dropperId uint32, dropperX int16, dropperY int16) error {
+type Processor interface {
+	// ... existing methods (InMapModelProvider, ForEachInMap, RequestReservation) ...
+	SpawnMeso(f field.Model, mesos uint32, x int16, y int16, ownerId uint32, dropperId uint32, dropperX int16, dropperY int16) error
+}
+```
+
+and implement it on `*ProcessorImpl` (mirroring `RequestReservation`):
+
+```go
+func (p *ProcessorImpl) SpawnMeso(f field.Model, mesos uint32, x int16, y int16, ownerId uint32, dropperId uint32, dropperX int16, dropperY int16) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(drop2.EnvCommandTopic)(SpawnMesoCommandProvider(f, mesos, x, y, ownerId, dropperId, dropperX, dropperY))
 }
 ```
@@ -740,160 +751,143 @@ git commit -m "feat(channel): resolve Pick Pocket per-attack state"
 
 ### Task 5: Widen the `onDamageApplied` hook to carry the `DamageInfo`
 
-The hook fires exactly once per non-reflected, damage-applying entry — precisely the set Pick Pocket must see (design §3.2, option B). Widening it from `func(monsterId uint32)` to `func(di packetmodel.DamageInfo)` gives Pick Pocket the damage lines without re-deriving reflect state. No test currently exercises the hook, so this task also adds the reflect-semantics coverage the design calls for.
+The hook fires exactly once per non-reflected, damage-applying entry — precisely the set Pick Pocket must see (design §3.2, option B). **Task-147 already widened it to `func(monsterId uint32, totalDamage uint32)`**, and `character_attack_drain_test.go` already pins its firing + reflect semantics. Pick Pocket needs the *per-line* damages (the summed `totalDamage` discards them), so widen the FIRST parameter from `monsterId uint32` to `di packetmodel.DamageInfo`, yielding `func(di packetmodel.DamageInfo, totalDamage uint32)`. MP Eater and drain switch their call sites to `di.MonsterId()`; drain keeps `totalDamage` verbatim.
+
+This signature change **breaks the three existing drain hook tests** (they declare the old `func(monsterId uint32, totalDamage uint32)` shape) — update them mechanically to the new shape, reading `di.MonsterId()`. Do **not** re-add a reflected-entry test: drain's `TestOnDamageApplied_NotCalledForReflectedEntry` already covers it (design §7). Add exactly ONE new test asserting the widened hook carries the per-line `di.Damages()` — the capability Pick Pocket depends on.
 
 **Files:**
-- Modify: `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go:91` (deps field), `:177-179` (invocation), `:351-355` (MP Eater closure in `processAttack`)
-- Test: `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_pick_pocket_test.go` (append)
+- Modify: `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go:107-111` (deps field), `:197-206` (invocation), `:444-451` (MP Eater + drain closure in `processAttack`)
+- Modify: `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_drain_test.go` (update the three `TestOnDamageApplied_*` tests to the new signature)
+- Test: `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_pick_pocket_test.go` (append one per-line-damages test)
 
 **Interfaces:**
-- Consumes: `damageInfoEntryDeps`, `processDamageInfoEntry` (both existing), `packetmodel.NewDamageInfo(hits).SetMonsterId().SetDamages()`, `packetmodel.NewAttackInfo(attackType)`, `monster.NewModelBuilder(uniqueId, field, monsterId).SetX().SetY().MustBuild()`, `monster.ReflectInfo`, the `testField(mapId)` helper from `mystic_door_enter_test.go` (same package).
-- Produces: `damageInfoEntryDeps.onDamageApplied` with signature `func(di packetmodel.DamageInfo)`. Task 7's closure relies on this.
+- Consumes: `damageInfoEntryDeps`, `processDamageInfoEntry` (both existing), `packetmodel.NewDamageInfo(hits).SetMonsterId().SetDamages()`, `packetmodel.NewAttackInfo(attackType)`, the `testDrainField()` / `testTenant(t)` helpers already in `character_attack_drain_test.go` (same package).
+- Produces: `damageInfoEntryDeps.onDamageApplied` with signature `func(di packetmodel.DamageInfo, totalDamage uint32)`. Task 7's closure relies on this.
 
-- [ ] **Step 1: Write the failing tests**
+- [ ] **Step 1: Update the three existing drain hook tests to the new signature**
 
-Append to `character_attack_pick_pocket_test.go` (extend imports with `"atlas-channel/effective_stats"`, `"atlas-channel/monster"`, `"github.com/Chronicle20/atlas/libs/atlas-constants/field"`, `_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"`, `monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"`, `packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"`, `tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"`, `"github.com/google/uuid"`):
+In `character_attack_drain_test.go`, the `onDamageApplied` closures currently take `(monsterId uint32, totalDamage uint32)`. Change each to `(di packetmodel.DamageInfo, totalDamage uint32)` and read `di.MonsterId()` where the old `monsterId` param was used. Three edits:
+
+`TestOnDamageApplied_ReceivesSummedDamageTotal`:
 
 ```go
-// ppEntryDeps builds damageInfoEntryDeps with inert fakes; tests override
-// the fields they care about.
-func ppEntryDeps() damageInfoEntryDeps {
-	return damageInfoEntryDeps{
-		getReflect: func(_ tenant.Model, _ uint32, _ string) (monster.ReflectInfo, bool) {
-			return monster.ReflectInfo{}, false
+		onDamageApplied: func(di packetmodel.DamageInfo, totalDamage uint32) {
+			calls++
+			gotMonsterId = di.MonsterId()
+			gotTotal = totalDamage
 		},
-		getMonster: func(monsterId uint32) (monster.Model, error) {
-			return monster.Model{}, errors.New("no monster")
+```
+
+`TestOnDamageApplied_NotCalledForZeroDamageEntry`:
+
+```go
+		onDamageApplied: func(_ packetmodel.DamageInfo, _ uint32) { called = true },
+```
+
+`TestOnDamageApplied_NotCalledForReflectedEntry`:
+
+```go
+		onDamageApplied:   func(_ packetmodel.DamageInfo, _ uint32) { called = true },
+```
+
+(`packetmodel` is already imported in this file.)
+
+- [ ] **Step 2: Add one new test pinning the per-line damages the widened hook must carry**
+
+Append to `character_attack_pick_pocket_test.go` (extend imports with `packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"`; the `testDrainField()` and `testTenant(t)` helpers live in `character_attack_drain_test.go`, same package):
+
+```go
+// TestOnDamageApplied_CarriesPerLineDamages pins the reason the hook was
+// widened to carry the DamageInfo: Pick Pocket rolls once per damage line,
+// so the per-line breakdown (not just the summed total) must reach the hook.
+func TestOnDamageApplied_CarriesPerLineDamages(t *testing.T) {
+	ai := *packetmodel.NewAttackInfo(packetmodel.AttackTypeMelee)
+	di := *packetmodel.NewDamageInfo(3).SetMonsterId(4101).SetDamages([]uint32{100, 250, 400})
+
+	var gotMonsterId uint32
+	var gotLines []uint32
+	calls := 0
+	deps := damageInfoEntryDeps{
+		applyDamage: func(_ field.Model, _, _ uint32, _ []uint32, _ byte) error { return nil },
+		onDamageApplied: func(di packetmodel.DamageInfo, _ uint32) {
+			calls++
+			gotMonsterId = di.MonsterId()
+			gotLines = di.Damages()
 		},
-		applyDamage: func(_ field.Model, _, _ uint32, _ []uint32, _ byte) error {
-			return nil
-		},
-		emitReflectDamage: func(_ field.Model, _, _, _ uint32, _ uint32, _ string) error {
-			return nil
-		},
-		applyStatus: func(_ field.Model, _, _, _, _ uint32, _ map[string]int32, _ uint32) error {
-			return nil
-		},
-		loadVenomStats: func() effective_stats.RestModel {
-			return effective_stats.RestModel{}
-		},
-	}
-}
-
-func TestOnDamageApplied_FiresWithDamageInfoForNonReflectedEntry(t *testing.T) {
-	tm, err := tenant.Create(uuid.New(), "GMS", 83, 1)
-	if err != nil {
-		t.Fatalf("tenant: %v", err)
-	}
-	f := testField(_map.Id(100000000))
-	ai := packetmodel.NewAttackInfo(packetmodel.AttackTypeMelee)
-	di := packetmodel.NewDamageInfo(2).SetMonsterId(700010).SetDamages([]uint32{100, 250})
-
-	var firedMonsterIds []uint32
-	var firedDamages [][]uint32
-	deps := ppEntryDeps()
-	deps.onDamageApplied = func(di packetmodel.DamageInfo) {
-		firedMonsterIds = append(firedMonsterIds, di.MonsterId())
-		firedDamages = append(firedDamages, di.Damages())
 	}
 
-	processDamageInfoEntry(logrus.New(), *di, *ai, effect.Model{}, 0, 1, 0, 0, f, tm, monster2.ReflectKindPhysical, deps)
+	processDamageInfoEntry(discardLogger(), di, ai, effect.Model{}, 1, 999, 0, 0, testDrainField(), testTenant(t), "", deps)
 
-	if len(firedMonsterIds) != 1 || firedMonsterIds[0] != 700010 {
-		t.Fatalf("onDamageApplied monster ids = %v; want [700010]", firedMonsterIds)
+	if calls != 1 {
+		t.Fatalf("onDamageApplied calls = %d; want 1", calls)
 	}
-	if len(firedDamages) != 1 || len(firedDamages[0]) != 2 || firedDamages[0][0] != 100 || firedDamages[0][1] != 250 {
-		t.Fatalf("onDamageApplied damages = %v; want [[100 250]]", firedDamages)
+	if gotMonsterId != 4101 {
+		t.Errorf("monsterId = %d; want 4101", gotMonsterId)
 	}
-}
-
-func TestOnDamageApplied_NotFiredForReflectedEntry(t *testing.T) {
-	tm, err := tenant.Create(uuid.New(), "GMS", 83, 1)
-	if err != nil {
-		t.Fatalf("tenant: %v", err)
-	}
-	f := testField(_map.Id(100000000))
-	ai := packetmodel.NewAttackInfo(packetmodel.AttackTypeMelee)
-	di := packetmodel.NewDamageInfo(1).SetMonsterId(700011).SetDamages([]uint32{100})
-
-	mon := monster.NewModelBuilder(700011, f, 100100).SetX(0).SetY(0).MustBuild()
-	fired := 0
-	deps := ppEntryDeps()
-	deps.getReflect = func(_ tenant.Model, _ uint32, _ string) (monster.ReflectInfo, bool) {
-		return monster.ReflectInfo{
-			Kind:      monster2.ReflectKindPhysical,
-			Percent:   30,
-			LtX:       -100,
-			LtY:       -100,
-			RbX:       100,
-			RbY:       100,
-			MaxDamage: 9999,
-		}, true
-	}
-	deps.getMonster = func(monsterId uint32) (monster.Model, error) {
-		return mon, nil
-	}
-	deps.onDamageApplied = func(_ packetmodel.DamageInfo) {
-		fired++
-	}
-
-	// caster at (0,0), monster at (0,0) -> inside reflect bounds -> reflected.
-	processDamageInfoEntry(logrus.New(), *di, *ai, effect.Model{}, 0, 1, 0, 0, f, tm, monster2.ReflectKindPhysical, deps)
-
-	if fired != 0 {
-		t.Fatalf("onDamageApplied fired %d times for a reflected entry; want 0", fired)
+	if len(gotLines) != 3 || gotLines[0] != 100 || gotLines[1] != 250 || gotLines[2] != 400 {
+		t.Fatalf("per-line damages = %v; want [100 250 400]", gotLines)
 	}
 }
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [ ] **Step 3: Run the tests to verify they fail**
 
 Run: `(cd services/atlas-channel/atlas.com/channel && go test ./socket/handler/ -run TestOnDamageApplied -v)`
-Expected: FAIL to build — `cannot use func literal (type func(packetmodel.DamageInfo)) as type func(uint32)` on the `onDamageApplied` assignment.
+Expected: FAIL to build — `cannot use func literal (type func(packetmodel.DamageInfo, uint32)) as type func(uint32, uint32)` on the `onDamageApplied` assignments (the hook still takes `func(monsterId uint32, totalDamage uint32)`).
 
-- [ ] **Step 3: Widen the hook**
+- [ ] **Step 4: Widen the hook**
 
 In `character_attack_common.go` make three edits.
 
-The deps field (line 88–91):
+The deps field (lines 107–111):
 
 ```go
 	// onDamageApplied is invoked once per non-reflected DamageInfo after
-	// damage and status apply. Optional; nil-safe. Used by passives that
-	// fire per damaged monster (e.g., MP Eater, Pick Pocket).
-	onDamageApplied func(di packetmodel.DamageInfo)
+	// damage and status apply, with the entry's summed damage (clamped to
+	// MaxUint32). Optional; nil-safe. Used by passives that fire per
+	// damaged monster (MP Eater, drain-family heals, Pick Pocket).
+	onDamageApplied func(di packetmodel.DamageInfo, totalDamage uint32)
 ```
 
-The invocation at the end of `processDamageInfoEntry` (lines 177–179):
+The invocation at the end of `processDamageInfoEntry` (lines 197–206) — pass `di` alongside the existing `total`:
 
 ```go
 	if deps.onDamageApplied != nil {
-		deps.onDamageApplied(di)
+		var total uint64
+		for _, d := range damages {
+			total += uint64(d)
+		}
+		if total > math.MaxUint32 {
+			total = math.MaxUint32
+		}
+		deps.onDamageApplied(di, uint32(total))
 	}
 ```
 
-The MP Eater closure inside `processAttack` (lines 348–355):
+The closure inside `processAttack` (lines 444–451) — **preserve the drain arm added by task-147**; MP Eater and drain now read `di.MonsterId()`:
 
 ```go
-			// MP Eater proc: per-monster, after status apply,
-			// magic attacks only. Failures are swallowed so the
-			// rest of the attack pipeline is unaffected.
-			onDamageApplied: func(di packetmodel.DamageInfo) {
+			onDamageApplied: func(di packetmodel.DamageInfo, totalDamage uint32) {
 				if ai.AttackType() == packetmodel.AttackTypeMagic && ai.SkillId() > 0 {
 					mpEaterTryProc(l, ctx, mp, c, di.MonsterId(), s.Field(), s.CharacterId())
+				}
+				if ai.SkillId() > 0 && isDrainSkill(skill3.Id(ai.SkillId())) {
+					drainTryHeal(l, mp.GetById, cp.ChangeHP, loadEffectiveStats, se.X(), ai.SkillId(), di.MonsterId(), totalDamage, s.Field(), s.CharacterId())
 				}
 			},
 ```
 
-- [ ] **Step 4: Run the handler tests to verify they pass**
+(The Pick Pocket arm is added to this same closure in Task 7.)
+
+- [ ] **Step 5: Run the handler tests to verify they pass**
 
 Run: `(cd services/atlas-channel/atlas.com/channel && go test ./socket/handler/ -v)`
-Expected: PASS — both new `TestOnDamageApplied_*` tests and every pre-existing handler test.
+Expected: PASS — the new `TestOnDamageApplied_CarriesPerLineDamages`, the three updated drain hook tests, and every pre-existing handler test.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go services/atlas-channel/atlas.com/channel/socket/handler/character_attack_pick_pocket_test.go
+git add services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go services/atlas-channel/atlas.com/channel/socket/handler/character_attack_drain_test.go services/atlas-channel/atlas.com/channel/socket/handler/character_attack_pick_pocket_test.go
 git commit -m "refactor(channel): widen onDamageApplied hook to carry DamageInfo"
 ```
 
@@ -1118,7 +1112,7 @@ git commit -m "feat(channel): add Pick Pocket per-monster proc"
 ### Task 7: Wire the proc into `processAttack`, remove the TODO, run the full gate
 
 **Files:**
-- Modify: `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go` — `processAttack` body (state resolution + closure) and the TODO block (line 408 pre-task; shifted by earlier edits)
+- Modify: `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go` — `processAttack` body (state resolution + closure) and the TODO block (`// TODO apply Pick Pocket` at `:504` on current main; shifted by earlier tasks' edits)
 
 **Interfaces:**
 - Consumes: everything produced by Tasks 1–6; `buff.NewProcessor(l, ctx)` (`atlas-channel/character/buff`), `drop.NewProcessor(l, ctx)` (`atlas-channel/drop`), `skill2.NewProcessor(l, ctx).GetEffect`, `mp.GetById`.
@@ -1128,7 +1122,7 @@ git commit -m "feat(channel): add Pick Pocket per-monster proc"
 
 In `character_attack_common.go`, add `"atlas-channel/drop"` to the first import group (`"atlas-channel/character/buff"` was added in Task 4).
 
-In `processAttack`, immediately after the `attackKind := attackKindFromAttackType(ai.AttackType())` line, insert:
+In `processAttack`, immediately before the `deps := damageInfoEntryDeps{` construction (i.e. after the `attackKind := ...` line and the task-147 `loadEffectiveStats` closure block), insert:
 
 ```go
 					// Pick Pocket per-attack state: whitelist gate first
@@ -1145,16 +1139,19 @@ In `processAttack`, immediately after the `attackKind := attackKindFromAttackTyp
 					)
 ```
 
-Replace the `onDamageApplied` closure (Task 5 version) with:
+Replace the `onDamageApplied` closure (the Task 5 version — MP Eater + drain arms) with the version that adds the Pick Pocket arm, **keeping the existing MP Eater and drain arms**:
 
 ```go
 						// Per-monster passives, fired once per non-reflected
 						// entry after damage and status apply. Failures are
 						// swallowed so the rest of the attack pipeline is
 						// unaffected.
-						onDamageApplied: func(di packetmodel.DamageInfo) {
+						onDamageApplied: func(di packetmodel.DamageInfo, totalDamage uint32) {
 							if ai.AttackType() == packetmodel.AttackTypeMagic && ai.SkillId() > 0 {
 								mpEaterTryProc(l, ctx, mp, c, di.MonsterId(), s.Field(), s.CharacterId())
+							}
+							if ai.SkillId() > 0 && isDrainSkill(skill3.Id(ai.SkillId())) {
+								drainTryHeal(l, mp.GetById, cp.ChangeHP, loadEffectiveStats, se.X(), ai.SkillId(), di.MonsterId(), totalDamage, s.Field(), s.CharacterId())
 							}
 							if ppState.enabled {
 								pickPocketTryProc(l, mp.GetById, dp.SpawnMeso, ppState, di, s.Field(), s.CharacterId())
@@ -1162,7 +1159,7 @@ Replace the `onDamageApplied` closure (Task 5 version) with:
 						},
 ```
 
-Delete the line `// TODO apply Pick Pocket` from the TODO block near the end of `processAttack`. Leave every other TODO line untouched.
+Delete the line `// TODO apply Pick Pocket` (`:504` on current main) from the TODO block near the end of `processAttack`. Leave every other TODO line untouched.
 
 - [ ] **Step 2: Verify the TODO is gone and the module compiles**
 
@@ -1182,22 +1179,28 @@ Expected: `ok` for every package, no failures.
 Run: `(cd services/atlas-channel/atlas.com/channel && go vet ./...)`
 Expected: clean exit, no output.
 
-- [ ] **Step 5: Run the redis key guard from the worktree root**
+- [ ] **Step 5: Run the repo-root guards**
 
-Run: `tools/redis-key-guard.sh`
-Expected: PASS/clean (no keyed Redis commands outside libs/atlas-redis; this change adds none).
+Run (from the worktree root):
+- `tools/redis-key-guard.sh` — clean (no keyed Redis commands outside libs/atlas-redis; this change adds none).
+- `tools/goroutine-guard.sh` — clean (no bare `go` statements added).
+- `tools/lint.sh` (no flags) to auto-format, then `tools/lint.sh --check` — clean.
 
 - [ ] **Step 6: Bake the atlas-channel image**
 
 Run: `docker buildx bake atlas-channel` (from the worktree root)
 Expected: build completes successfully. No `go.mod` was touched, but the gate runs regardless (CLAUDE.md Build & Verification rule 4).
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 7: Commit (include any lint auto-format changes)**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go
 git commit -m "feat(channel): wire Pick Pocket meso spawn into attack pipeline"
 ```
+
+- [ ] **Step 8: Version acceptance check (design §1a)**
+
+The proc is version-agnostic (runs on the decoded `AttackInfo`), but confirm it actually fires end-to-end on more than the v83 baseline: exercise a whitelisted melee attack (or basic attack, `skillId == 0`) with Pick Pocket active on a **legacy-version tenant (e.g. GMS v72)** and verify meso drops spawn and are lootable. Whitelisted skills that don't exist in that client are simply never cast — no gating required.
 
 ---
 
@@ -1210,6 +1213,7 @@ git commit -m "feat(channel): wire Pick Pocket meso spawn into attack pipeline"
 | Non-whitelisted skills never proc | Task 2 (`TestPickPocketWhitelisted`), Task 4 (state gate test) |
 | No buff REST call for non-whitelisted skill | Task 4 (`TestPickPocketResolveState_NonWhitelistedSkillMakesNoLookups`) |
 | Without the buff, no emissions | Task 4 (no-buff/expired tests), Task 6 (disabled-state test) |
-| Failures logged and swallowed; attack unaffected | Task 4 (buff/effect error tests), Task 6 (fetch/emit error tests), Task 5 (hook reflect semantics) |
+| Failures logged and swallowed; attack unaffected | Task 4 (buff/effect error tests), Task 6 (fetch/emit error tests); reflect semantics already pinned by task-147's `character_attack_drain_test.go` |
 | `// TODO apply Pick Pocket` removed | Task 7 Step 2 |
-| test -race / vet / build / bake / redis-key-guard clean | Task 7 Steps 2–6 |
+| test -race / vet / build / bake / redis-key-guard / goroutine-guard / lint clean | Task 7 Steps 2–6 |
+| Version-agnostic; fires on legacy versions too | design §1a; Task 5 (`TestOnDamageApplied_CarriesPerLineDamages`), Task 7 Step 8 |

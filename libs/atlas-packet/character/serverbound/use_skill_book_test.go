@@ -31,6 +31,19 @@ func TestUseSkillBookRoundTrip(t *testing.T) {
 
 // Golden bytes, v83: updateTime(4 LE) + slot(2 LE) + itemId(4 LE).
 // 12345 = 0x3039; 2 = 0x0002; 2290000 = 0x22F150.
+//
+// IDA evidence (task-125): CWvsContext::SendSkillLearnItemUseRequest @0xa0a1b2
+// (v83 IDB MapleStory_dump.exe.i64, v83_Me build) — already named in the IDB.
+// COutPacket::COutPacket(&pkt, 0x52); guard CanSendExclRequest(this,200,0);
+// item-class gate a3/10000 in {228,229}; then
+//
+//	COutPacket::Encode4(&pkt, get_update_time())  -> updateTime
+//	COutPacket::Encode2(&pkt, a2)                 -> slot
+//	COutPacket::Encode4(&pkt, a3)                 -> itemId
+//
+// matches the codec's write order exactly. Opcode 0x52 == registry op 82.
+//
+// packet-audit:verify packet=character/serverbound/CharacterUseSkillBook version=gms_v83 ida=0xa0a1b2
 func TestUseSkillBookGoldenBytesV83(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 83, 1)
 	l, _ := testlog.NewNullLogger()

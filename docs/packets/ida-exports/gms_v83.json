@@ -14639,6 +14639,27 @@
           "comment": "whispersOn"
         }
       ]
+    },
+    "CWvsContext::SendSkillLearnItemUseRequest": {
+      "address": "0xa0a1b2",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "updateTime (get_update_time()) — v83 IDA-verified @0xa0a1b2, task-125 (function already named CWvsContext::SendSkillLearnItemUseRequest in the IDB; select_instance() is dead on the live MCP server (\"Method 'select_instance' not found\") so this entry was spliced by hand from a live decompile via the session-based idb tool, database=ce4ff298, filename MapleStory_dump.exe.i64, path ...\\\\GMS\\\\v83_Me\\\\...)",
+          "guard": "CWvsContext::CanSendExclRequest(this, 200, 0)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "slot (a2)",
+          "guard": "CWvsContext::CanSendExclRequest(this, 200, 0)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "itemId (a3); gated a3/10000 in {228,229} (skill-book item prefix)",
+          "guard": "CWvsContext::CanSendExclRequest(this, 200, 0)"
+        }
+      ]
     }
   }
 }

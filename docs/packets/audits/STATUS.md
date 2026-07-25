@@ -10,7 +10,7 @@ Tool: `f47087cfb63a2289db015478f35e5c492138f0334213b1b8aaf63d3a803914c4`
 - export gms_v61: `8e2db04eb4d3afb5effc24cdc06db1c889842f0557f0325ba064f09d153ebe7f`
 - export gms_v72: `e9ab553bcb8b70b4974a3b1ea99d4277feab9be678f891b03636bcbb920dad17`
 - export gms_v79: `a2a0573ccb7f438c6499483c5c9260bd078e3fb0cd90ecc24adaecfbb4592c37`
-- export gms_v83: `035e4e288cb0ff486f7ad1fadbd780b5c80b2440457ca488a3749cdede9fae32`
+- export gms_v83: `53d320ac6aebd83f72527c128c1e63b7a26e14b752823ef0a5db99243b117e06`
 - export gms_v84: `85653c48c25ff422a3d4aa48100382eb220578794699a0fd227e6b5950629c00`
 - export gms_v87: `87124c1dd6e54561d80244f1bb4751849813a72649e61740385bafc68bbaa908`
 - export gms_v95: `2a46bda041feadea38318f09a5a491d2e38861aa12ad6ac0a8d40c333b177e5b`
@@ -607,7 +607,7 @@ Tool: `f47087cfb63a2289db015478f35e5c492138f0334213b1b8aaf63d3a803914c4`
 | DESTROY_PET_ITEM_REQUEST | CWvsContext::SendActivatePetRequest | pet/serverbound/PetSpawn (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x050 | ❌ | 0x050 | ❌ | 0x053 | ✅ | 0x056 | ✅ | 0x048 | ✅ |
 | TROCK_ADD_MAP | CWvsContext::SendMapTransferRequest; sub_71E7F3; sub_8478EA; sub_91E33E; sub_970286 | teleportrock/serverbound/AddMap | 0x051 | ✅ | 0x05E | ✅ | 0x065 | ✅ | 0x064 | ✅ | 0x066 | ✅ | 0x066 | ✅ | 0x069 | ✅ | 0x072 | ✅ | 0x061 | ✅ |
 | USE_CATCH_ITEM | CWvsContext::SendBridleItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x051 | ❌ | 0x051 | ❌ | 0x054 | ❌ | 0x057 | ❌ | 0x049 | ❌ |
-| USE_SKILL_BOOK | CWvsContext::SendSkillLearnItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x052 | ❌ | 0x052 | ❌ | 0x055 | ❌ | 0x058 | ❌ | 0x04A | ❌ |
+| USE_SKILL_BOOK | CWvsContext::SendSkillLearnItemUseRequest | character/serverbound/CharacterUseSkillBook (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x052 | ✅ | 0x052 | ❌ | 0x055 | ❌ | 0x058 | ❌ | 0x04A | ❌ |
 | ANTI_MACRO_RESULT | CUIAdminAntiMacro::SetRet; CUIAntiMacro::SetRet; sub_5F9718; sub_69C480 |  | 0x053 | ❌ | 0x060 | ❌ |  | ⬜ |  | ⬜ | 0x069 | ❌ | 0x069 | ❌ | 0x06C | ❌ | 0x075 | ❌ | 0x064 | ❌ |
 | QUEST_ACTION | CQuest::OnCompleteQuestFailed; CQuest::StartQuest; CWvsContext::ResignQuest; sub_5997EF | quest/serverbound/ActionScriptEnd | 0x055 | ❌ | 0x062 | ❌ | 0x06A | ❌ | 0x069 | ❌ | 0x06B | ✅ | 0x06B | ❌ | 0x06E | ✅ | 0x077 | ✅ | 0x066 | ✅ |
 | MESO_DROP | CWvsContext::SendDropMoneyRequest; sub_8459DD | character/serverbound/DropMeso (T1) |  | ⬜ | 0x056 | ✅ | 0x05D | ✅ | 0x05C | ✅ | 0x05E | ✅ | 0x05E | ✅ | 0x061 | ✅ | 0x06A | ✅ | 0x059 | ✅ |
@@ -1005,7 +1005,7 @@ Tool: `f47087cfb63a2289db015478f35e5c492138f0334213b1b8aaf63d3a803914c4`
 | v61 | 249 | 0 | 60 | 195 | 462 | 0 | 49.4% |
 | v72 | 259 | 0 | 73 | 214 | 420 | 0 | 47.4% |
 | v79 | 303 | 0 | 72 | 210 | 381 | 0 | 51.8% |
-| v83 | 423 | 0 | 0 | 319 | 224 | 0 | 57.0% |
+| v83 | 424 | 0 | 0 | 318 | 224 | 0 | 57.1% |
 | v84 | 396 | 0 | 0 | 326 | 244 | 0 | 54.8% |
 | v87 | 431 | 0 | 0 | 348 | 187 | 0 | 55.3% |
 | v95 | 456 | 0 | 0 | 407 | 103 | 0 | 52.8% |

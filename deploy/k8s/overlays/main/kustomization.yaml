@@ -225,9 +225,9 @@ images:
   - name: ghcr.io/chronicle20/atlas-configurations/atlas-configurations
     newTag: main-bb513ef
   - name: ghcr.io/chronicle20/atlas-consumables/atlas-consumables
-    newTag: main-bb513ef
+    newTag: main-88d270b
   - name: ghcr.io/chronicle20/atlas-data/atlas-data
-    newTag: main-bb513ef
+    newTag: main-88d270b
   - name: ghcr.io/chronicle20/atlas-doors/atlas-doors
     newTag: main-bb513ef
   - name: ghcr.io/chronicle20/atlas-drop-information/atlas-drop-information

@@ -14462,6 +14462,46 @@
           "guard": "CWvsContext::CanSendExclRequest(this, 200, 0)"
         }
       ]
+    },
+    "CWvsContext::OnSkillLearnItemResult": {
+      "address": "0xab58e8",
+      "direction": "clientbound",
+      "note": "SKILL_LEARN_ITEM_RESULT (task-125). v87 IDA-verified, session 81f32170, GMSv87_4GB.exe.i64 -- func_query name_regex confirms 0xab58e8 == ?OnSkillLearnItemResult@CWvsContext@@QAEXAAVCInPacket@@@Z; xrefs_to confirms CWvsContext::OnPacket case 0x33 (51, @0xa9d1e7) delegates directly to this function -- opcode 0x33 matches registry op SKILL_LEARN_ITEM_RESULT exactly. v87 body is 16 bytes: HAS the leading bOnExclRequest byte (Decode1 @0xab5904) BEFORE Decode4 characterId @0xab5923 -- this is the MajorVersion()>=84 gate the codec implements (v83 and earlier have NO leading byte, 15-byte body). Then under an if(user-found) guard (v23 nonzero): Decode1 isMasteryBook, Decode4 skillId (decoded, discarded), Decode4 masterLevel (decoded, discarded), Decode1 canUse, Decode1 success.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "bOnExclRequest (v87 leading byte, consumed-and-discarded by the codec; clears the requester's exclusive-request lock when true -- this[2093]=0, this[2094]=get_update_time()) @0xab5904"
+        },
+        {
+          "op": "Decode4",
+          "comment": "characterId (CUserPool::GetUser lookup) @0xab5923"
+        },
+        {
+          "op": "Decode1",
+          "comment": "isMasteryBook @0xab596b",
+          "guard": "v23"
+        },
+        {
+          "op": "Decode4",
+          "comment": "skillId (decoded, discarded) @0xab596e",
+          "guard": "v23"
+        },
+        {
+          "op": "Decode4",
+          "comment": "masterLevel (decoded, discarded) @0xab5975",
+          "guard": "v23"
+        },
+        {
+          "op": "Decode1",
+          "comment": "canUse @0xab5986",
+          "guard": "v23"
+        },
+        {
+          "op": "Decode1",
+          "comment": "success @0xab5989",
+          "guard": "v23"
+        }
+      ]
     }
   }
 }

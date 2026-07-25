@@ -14,6 +14,7 @@ import (
 	socketHandler "atlas-channel/socket/handler"
 	"atlas-channel/socket/writer"
 	"context"
+	"time"
 
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -53,6 +54,11 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 					return nil, err
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventStatUpdated(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventGmHideApplied(sc, wp))))
 				if err != nil {
 					return nil, err
@@ -74,6 +80,37 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 	}
 }
 
+// announceBuffGive sends the buff stat set to the owner (GIVE_BUFF) and to
+// all other sessions in the owner's map (GIVE_FOREIGN_BUFF). Shared by the
+// APPLIED and STAT_UPDATED handlers — the packet layer derives the client
+// duration from expiresAt, so callers passing a buff's original timestamps
+// broadcast the remaining duration.
+func announceBuffGive(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, characterId uint32, sourceId int32, level byte, duration int32, statChanges []buff2.StatChange, createdAt time.Time, expiresAt time.Time) {
+	session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(characterId, func(s session.Model) error {
+		bs := make([]buff.Model, 0)
+		changes := make([]stat.Model, 0)
+		for _, cm := range statChanges {
+			changes = append(changes, stat.NewStat(cm.Type, cm.Amount))
+		}
+		bs = append(bs, buff.NewBuff(sourceId, level, duration, changes, createdAt, expiresAt))
+
+		err := session.Announce(l)(ctx)(wp)(charpkt.CharacterBuffGiveWriter)(writer.CharacterBuffGiveBody(bs))(s)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to write new character [%d] buffs.", characterId)
+		}
+
+		_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), func(os session.Model) error {
+			err = session.Announce(l)(ctx)(wp)(charpkt.CharacterBuffGiveForeignWriter)(writer.CharacterBuffGiveForeignBody(characterId, bs))(os)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to write new character [%d] buffs.", characterId)
+				return err
+			}
+			return nil
+		})
+		return nil
+	})
+}
+
 func handleStatusEventApplied(sc server.Model, wp writer.Producer) message.Handler[buff2.StatusEvent[buff2.AppliedStatusEventBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e buff2.StatusEvent[buff2.AppliedStatusEventBody]) {
 		if e.Type != buff2.EventStatusTypeBuffApplied {
@@ -84,29 +121,21 @@ func handleStatusEventApplied(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
-			bs := make([]buff.Model, 0)
-			changes := make([]stat.Model, 0)
-			for _, cm := range e.Body.Changes {
-				changes = append(changes, stat.NewStat(cm.Type, cm.Amount))
-			}
-			bs = append(bs, buff.NewBuff(e.Body.SourceId, e.Body.Level, e.Body.Duration, changes, e.Body.CreatedAt, e.Body.ExpiresAt))
+		announceBuffGive(l, ctx, sc, wp, e.CharacterId, e.Body.SourceId, e.Body.Level, e.Body.Duration, e.Body.Changes, e.Body.CreatedAt, e.Body.ExpiresAt)
+	}
+}
 
-			err := session.Announce(l)(ctx)(wp)(charpkt.CharacterBuffGiveWriter)(writer.CharacterBuffGiveBody(bs))(s)
-			if err != nil {
-				l.WithError(err).Errorf("Unable to write new character [%d] buffs.", e.CharacterId)
-			}
+func handleStatusEventStatUpdated(sc server.Model, wp writer.Producer) message.Handler[buff2.StatusEvent[buff2.StatUpdatedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e buff2.StatusEvent[buff2.StatUpdatedStatusEventBody]) {
+		if e.Type != buff2.EventStatusTypeStatUpdated {
+			return
+		}
 
-			_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), func(os session.Model) error {
-				err = session.Announce(l)(ctx)(wp)(charpkt.CharacterBuffGiveForeignWriter)(writer.CharacterBuffGiveForeignBody(e.CharacterId, bs))(os)
-				if err != nil {
-					l.WithError(err).Errorf("Unable to write new character [%d] buffs.", e.CharacterId)
-					return err
-				}
-				return nil
-			})
-			return nil
-		})
+		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
+			return
+		}
+
+		announceBuffGive(l, ctx, sc, wp, e.CharacterId, e.Body.SourceId, e.Body.Level, e.Body.Duration, e.Body.Changes, e.Body.CreatedAt, e.Body.ExpiresAt)
 	}
 }
 

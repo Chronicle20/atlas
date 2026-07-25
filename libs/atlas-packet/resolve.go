@@ -2,6 +2,7 @@ package atlas_packet
 
 import (
 	"context"
+	"math"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
@@ -114,11 +115,16 @@ func ResolveCode16(l logrus.FieldLogger, options map[string]interface{}, propert
 
 	raw, ok := codes[key]
 	if !ok {
+		l.Debugf("Code [%s] not configured in property [%s].", key, property)
 		return 0, false
 	}
 
 	switch v := raw.(type) {
 	case float64:
+		if v < 0 || v > math.MaxUint16 {
+			l.Debugf("Code [%s] in property [%s] has out-of-range value %.0f (valid range 0-%d).", key, property, v, math.MaxUint16)
+			return 0, false
+		}
 		return uint16(v), true
 	case string:
 		n, err := strconv.ParseUint(v, 0, 16)

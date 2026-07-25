@@ -56,12 +56,14 @@ func TestFoodDecode(t *testing.T) {
 //	gms_v72 SendTamingMobFoodItemUseRequest@0x904419: op 0x4C; Encode4(update_time)·Encode2(slot)·Encode4(itemId)
 //	gms_v79 SendTamingMobFoodItemUseRequest@0x955781: op 0x4B; Encode4(update_time)·Encode2(slot)·Encode4(itemId)
 //	gms_v83 SendTamingMobFoodItemUseRequest@0xa09a64: op 0x4D; Encode4(update_time)·Encode2(slot)·Encode4(itemId)
+//	gms_v84 SendTamingMobFoodItemUseRequest@0xa53e46: op 0x4D; Encode4(update_time)·Encode2(slot)·Encode4(itemId)
 //
 // packet-audit:verify packet=mount/serverbound/MountFood version=gms_v48 ida=0x70e00b
 // packet-audit:verify packet=mount/serverbound/MountFood version=gms_v61 ida=0x831f44
 // packet-audit:verify packet=mount/serverbound/MountFood version=gms_v72 ida=0x904419
 // packet-audit:verify packet=mount/serverbound/MountFood version=gms_v79 ida=0x955781
 // packet-audit:verify packet=mount/serverbound/MountFood version=gms_v83 ida=0xa09a64
+// packet-audit:verify packet=mount/serverbound/MountFood version=gms_v84 ida=0xa53e46
 func TestFoodByteFixture(t *testing.T) {
 	cases := []struct {
 		variant pt.TenantVariant
@@ -72,6 +74,7 @@ func TestFoodByteFixture(t *testing.T) {
 		{pt.Variants[9], []byte{0x64, 0x00, 0x00, 0x00, 0x03, 0x00, 0x80, 0x84, 0x1E, 0x00}},  // gms_v72
 		{pt.Variants[10], []byte{0x64, 0x00, 0x00, 0x00, 0x03, 0x00, 0x80, 0x84, 0x1E, 0x00}}, // gms_v79
 		{pt.Variants[1], []byte{0x64, 0x00, 0x00, 0x00, 0x03, 0x00, 0x80, 0x84, 0x1E, 0x00}},  // gms_v83
+		{pt.Variants[5], []byte{0x64, 0x00, 0x00, 0x00, 0x03, 0x00, 0x80, 0x84, 0x1E, 0x00}},  // gms_v84
 	}
 	for _, tc := range cases {
 		t.Run(tc.variant.Name, func(t *testing.T) {

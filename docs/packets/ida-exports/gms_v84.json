@@ -27607,6 +27607,27 @@
           "guard": "hasError"
         }
       ]
+    },
+    "CWvsContext::SendTamingMobFoodItemUseRequest": {
+      "address": "0xa53e46",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result == 190 && a3 / 10000 == 226 && result"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "result == 190 && a3 / 10000 == 226 && result"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result == 190 && a3 / 10000 == 226 && result"
+        }
+      ]
     }
   }
 }

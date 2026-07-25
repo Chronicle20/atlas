@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldBlockedServer
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnTransferChannelReqIgnored
+    address: "0x4c6be7"
+    decompile_sha256: 9cc7a106f528a8979142f26a246f2e075040c0e8e1799a4f3ee266f07f31dd07
+verifies:
+    - libs/atlas-packet/field/clientbound/blocked_server_test.go#TestBlockedServerByteOutputV48

@@ -3,9 +3,10 @@ package character
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
-	"github.com/sirupsen/logrus"
 )
 
 // CharacterSkillPrepareForeignBody returns a packet.Encode that serializes a

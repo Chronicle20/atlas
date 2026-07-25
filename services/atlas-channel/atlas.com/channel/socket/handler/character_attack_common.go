@@ -16,6 +16,8 @@ import (
 	"math"
 	"math/rand"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
@@ -25,7 +27,6 @@ import (
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 // computeReflect computes the damage that should be reflected back to the
@@ -180,8 +181,8 @@ func processDamageInfoEntry(
 }
 
 // mpEaterShouldProc returns true when MP Eater should fire given the
-// skill's prop and a single uniform roll in [0,1). Mirrors Cosmic's
-// `prop == 1.0 || rand() < prop`. Defensive against negative props.
+// skill's prop and a single uniform roll in [0,1): fire when
+// `prop == 1.0 || roll < prop`. Defensive against negative props.
 func mpEaterShouldProc(prop float64, roll float64) bool {
 	if prop <= 0 {
 		return false
@@ -206,7 +207,7 @@ func mpEaterAbsorbAmount(maxMp uint32, x int16) uint32 {
 func mpEaterTryProc(
 	l logrus.FieldLogger,
 	ctx context.Context,
-	mp *monster.Processor,
+	mp monster.Processor,
 	c character.Model,
 	monsterId uint32,
 	f field.Model,

@@ -15,7 +15,8 @@ export function NotFoundPage() {
         </CardHeader>
         <CardContent className="text-center space-y-4">
           <p className="text-muted-foreground">
-            The page you&apos;re looking for doesn&apos;t exist or has been moved.
+            The page you&apos;re looking for doesn&apos;t exist or has been
+            moved.
           </p>
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
             <Button asChild variant="default">
@@ -29,7 +30,9 @@ export function NotFoundPage() {
               Go Back
             </Button>
           </div>
-          <div className="text-xs text-muted-foreground mt-4">Error Code: 404</div>
+          <div className="text-xs text-muted-foreground mt-4">
+            Error Code: 404
+          </div>
         </CardContent>
       </Card>
     </div>

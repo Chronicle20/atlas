@@ -1,0 +1,39 @@
+{
+  "WriterName": "SummonSkill",
+  "IDAName": "CSummonedPool::OnSkill",
+  "Address": "0x67c8d2",
+  "Variant": "GMS/v61",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/summon/clientbound/skill.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "cid/ownerId — CUserPool::OnUserCommonPacket (consumed upstream before dispatch)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "oid — summon cluster dispatcher sub_7922E8 Decode4@0x792327 (read before leaf dispatch)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "newStance — skill leaf sub_67C8D2 Decode1@0x67c921 (masked 0x7F)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

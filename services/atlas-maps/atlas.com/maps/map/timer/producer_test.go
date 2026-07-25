@@ -7,12 +7,13 @@ import (
 	characterKafka "atlas-maps/kafka/message/character"
 	mapKafka "atlas-maps/kafka/message/map"
 
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
 )
 
 func TestMapTimerStartedProvider_BuildsCorrectEvent(t *testing.T) {

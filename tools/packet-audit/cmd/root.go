@@ -47,6 +47,15 @@ func Run(args []string, stderr io.Writer) int {
 	if len(args) > 0 && args[0] == "dispatcher-lint" {
 		return runDispatcherLint(args[1:], stderr)
 	}
+	if len(args) > 0 && args[0] == "doc-freshness" {
+		return runDocFreshness(args[1:], stderr)
+	}
+	if len(args) > 0 && args[0] == "gate-lint" {
+		return runGateLint(args[1:], stderr)
+	}
+	if len(args) > 0 && args[0] == "gate-check" {
+		return runGateCheck(args[1:], stderr)
+	}
 	if len(args) > 0 && args[0] == "fname-doc" {
 		return runFnameDoc(args[1:], stderr)
 	}
@@ -67,6 +76,12 @@ func Run(args []string, stderr io.Writer) int {
 	}
 	if len(args) > 0 && args[0] == "verify-serverbound" {
 		return runVerifyServerbound(args[1:], stderr)
+	}
+	if len(args) > 0 && args[0] == "support-summary" {
+		return runSupportSummary(args[1:], stderr)
+	}
+	if len(args) > 0 && args[0] == "status" {
+		return runStatus(args[1:], os.Stdout, stderr)
 	}
 	fs := flag.NewFlagSet("packet-audit", flag.ContinueOnError)
 	fs.SetOutput(stderr)
@@ -121,6 +136,11 @@ func runExport(args []string, stderr io.Writer) int {
 	// FNames to an export without re-harvesting the existing records.
 	priorOverride := fs.String("prior-export", "", "override prior-export roster path (default: docs/packets/ida-exports/<version>.json; pass \"\" for no prior)")
 	pendingOverride := fs.String("pending", "", "override pending roster path (default: docs/packets/ida-exports/_pending.md; pass \"\" for none)")
+	// Non-destructive-overwrite guard (task-169 FR-3.2). Default refuses to
+	// clobber an existing, differing --output; --force restores the overwrite;
+	// --splice merges a single harvested entry (VERIFYING §10 surgical path).
+	fs.BoolVar(&eo.Force, "force", false, "overwrite an existing --output even if the fresh harvest differs (default: refuse + write <output>.new)")
+	fs.StringVar(&eo.Splice, "splice", "", "merge only this one FName into an existing --output, preserving all other entries")
 
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {

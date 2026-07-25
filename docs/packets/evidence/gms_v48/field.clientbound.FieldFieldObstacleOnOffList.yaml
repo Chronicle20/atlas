@@ -1,0 +1,8 @@
+packet: field/clientbound/FieldFieldObstacleOnOffList
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_4C930A
+    address: "0x4c930a"
+    decompile_sha256: 178895d68641645e64a2ee90d5eacb4b0405562e298734a1141725c198662c9c

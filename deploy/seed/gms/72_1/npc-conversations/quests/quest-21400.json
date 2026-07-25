@@ -1,0 +1,91 @@
+{
+  "data": {
+    "attributes": {
+      "questId": 21400,
+      "questName": "Aran Maha Quest",
+      "startStateMachine": {
+        "startState": "start_0",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "start_1_actions",
+                  "text": "Yes"
+                },
+                {
+                  "nextState": "decline",
+                  "text": "No"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendAcceptDecline",
+              "text": "How is the training going? I know you're busy, but please come to #bRien#k immediately. The #bMaha#k has started to act weird again... But its even weirder now. It's different from before. It's... darker than usual."
+            },
+            "id": "start_0",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "#b(You need to think about this for a second...)#k"
+            },
+            "id": "decline",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "start_1"
+                }
+              ]
+            },
+            "id": "start_1_actions",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "I have a bad feeling about this. Please come back here. I've never seen or herd Maha like this, but I can sense the suffering its going through. #bOnly you, the master of Maha, can do something about it!"
+            },
+            "id": "start_1",
+            "type": "dialogue"
+          }
+        ]
+      }
+    },
+    "id": "21400",
+    "type": "quest-conversation"
+  }
+}

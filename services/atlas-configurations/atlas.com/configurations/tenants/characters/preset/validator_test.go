@@ -8,8 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	tenantlib "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
+
+	tenantlib "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // tenantCtx returns a context carrying a synthetic tenant so the validator's
@@ -27,16 +28,16 @@ func tenantCtx(t *testing.T) context.Context {
 // helpers
 
 var (
-	goodHat   = data.ItemInfo{Id: 1002357, Equipable: true}   // bucket 100
-	goodGlove = data.ItemInfo{Id: 1082000, Equipable: true}   // bucket 108
-	goodHat2  = data.ItemInfo{Id: 1002500, Equipable: true}   // bucket 100 — collides with goodHat
-	badItem   = data.ItemInfo{Id: 1002357, Equipable: false}  // equipable=false
-	goodUsage = data.ItemInfo{Id: 2000000, Equipable: false}  // use item
+	goodHat   = data.ItemInfo{Id: 1002357, Equipable: true}  // bucket 100
+	goodGlove = data.ItemInfo{Id: 1082000, Equipable: true}  // bucket 108
+	goodHat2  = data.ItemInfo{Id: 1002500, Equipable: true}  // bucket 100 — collides with goodHat
+	badItem   = data.ItemInfo{Id: 1002357, Equipable: false} // equipable=false
+	goodUsage = data.ItemInfo{Id: 2000000, Equipable: false} // use item
 	goodSkill = data.SkillInfo{Id: 1121008, Name: "Hero's Will", MaxLevel: 5}
 )
 
-func makeClient() *mock.FakeClient {
-	return &mock.FakeClient{
+func makeClient() *mock.ProcessorMock {
+	return &mock.ProcessorMock{
 		Skills: map[uint32]data.SkillInfo{
 			goodSkill.Id: goodSkill,
 		},

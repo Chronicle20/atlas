@@ -6,14 +6,15 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
@@ -23,6 +24,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r := router.PathPrefix("/characters/{characterId}/inventory/compartments").Subrouter()
 			r.HandleFunc("/{compartmentId}", registerGet("get_compartment", handleGetCompartment(db))).Methods(http.MethodGet)
 			r.HandleFunc("", registerGet("get_compartment_by_type", handleGetCompartmentByType(db))).Methods(http.MethodGet)
+			router.HandleFunc("/characters/{characterId}/inventory/accommodation", rest.RegisterInputHandler[AccommodationInputRestModel](l)(si)("check_accommodation", handleCheckAccommodation(db))).Methods(http.MethodPost)
 		}
 	}
 }
@@ -38,14 +40,14 @@ func handleGetCompartment(db *gorm.DB) rest.GetHandler {
 						return
 					}
 					if err != nil {
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
 					rm, err := model.Map(Transform)(model.FixedProvider(m))()
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Creating REST model.")
-						w.WriteHeader(http.StatusInternalServerError)
+						server.WriteErrorResponse(d.Logger())(w)(err)
 						return
 					}
 
@@ -84,14 +86,14 @@ func handleGetCompartmentByType(db *gorm.DB) rest.GetHandler {
 				}
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Error retrieving compartment by type: %d", inventoryType)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
 				rm, err := model.Map(Transform)(model.FixedProvider(m))()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 

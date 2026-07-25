@@ -68,7 +68,11 @@ const baseCharacter = (overrides: Record<string, unknown> = {}) =>
 describe("AttributesPanel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    useCharacterGuildMock.mockReturnValue({ guild: null, isLoading: false, error: null });
+    useCharacterGuildMock.mockReturnValue({
+      guild: null,
+      isLoading: false,
+      error: null,
+    });
     // Default: hook returns no data (loading) so the panel falls back to the
     // raw character record. Individual tests override when they want to
     // exercise the +bonus rendering.
@@ -85,7 +89,9 @@ describe("AttributesPanel", () => {
     expect(screen.getByText("Male")).toBeInTheDocument();
     rerender(
       <QueryClientProvider
-        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+        client={
+          new QueryClient({ defaultOptions: { queries: { retry: false } } })
+        }
       >
         <MemoryRouter>
           <AttributesPanel
@@ -115,7 +121,11 @@ describe("AttributesPanel", () => {
   });
 
   it('renders "None" for guild when not in a guild', () => {
-    useCharacterGuildMock.mockReturnValue({ guild: null, isLoading: false, error: null });
+    useCharacterGuildMock.mockReturnValue({
+      guild: null,
+      isLoading: false,
+      error: null,
+    });
     renderPanel(baseCharacter());
     expect(screen.getByText(/^None$/i)).toBeInTheDocument();
   });

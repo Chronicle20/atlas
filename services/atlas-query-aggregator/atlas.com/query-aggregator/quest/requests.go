@@ -23,14 +23,22 @@ func requestById(characterId uint32, questId uint32) requests.Request[RestModel]
 	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ByCharacterAndId, characterId, questId))
 }
 
-func requestByCharacter(characterId uint32) requests.Request[[]RestModel] {
-	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+ByCharacter, characterId))
+// byCharacterUrl returns the list URL for a character's quests. It is a
+// bare URL (not a requests.Request) because the list is now paginated
+// server-side (task-117) and consumed via requests.DrainProvider, which
+// appends its own page[number]/page[size] query params per request.
+func byCharacterUrl(characterId uint32) string {
+	return fmt.Sprintf(getBaseRequest()+ByCharacter, characterId)
 }
 
-func requestStartedByCharacter(characterId uint32) requests.Request[[]RestModel] {
-	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+StartedQuests, characterId))
+// startedByCharacterUrl and completedByCharacterUrl are bare URLs (not
+// requests.Request) because both lists are now paginated server-side
+// (task-117) and consumed via requests.DrainProvider, which appends its own
+// page[number]/page[size] query params per request.
+func startedByCharacterUrl(characterId uint32) string {
+	return fmt.Sprintf(getBaseRequest()+StartedQuests, characterId)
 }
 
-func requestCompletedByCharacter(characterId uint32) requests.Request[[]RestModel] {
-	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+CompletedQuests, characterId))
+func completedByCharacterUrl(characterId uint32) string {
+	return fmt.Sprintf(getBaseRequest()+CompletedQuests, characterId)
 }

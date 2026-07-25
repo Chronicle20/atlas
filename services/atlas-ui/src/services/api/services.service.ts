@@ -1,5 +1,9 @@
 import { api } from "@/lib/api/client";
-import { buildQueryString, type ServiceOptions, type QueryOptions } from "@/lib/api/query-params";
+import {
+  buildQueryString,
+  type ServiceOptions,
+  type QueryOptions,
+} from "@/lib/api/query-params";
 import type { ApiSingleResponse } from "@/types/api/responses";
 import type {
   Service,
@@ -62,7 +66,9 @@ function transformServiceResponse(data: Record<string, unknown>): Service {
   } as DropsService;
 }
 
-function buildAttributes(input: CreateServiceInput | UpdateServiceInput): ServiceAttributes {
+function buildAttributes(
+  input: CreateServiceInput | UpdateServiceInput,
+): ServiceAttributes {
   if (input.type === "login-service") {
     return {
       type: "login-service",
@@ -93,28 +99,40 @@ export const servicesService = {
   },
 
   async getServiceById(id: string, options?: ServiceOptions): Promise<Service> {
-    const response = await api.getOne<Record<string, unknown>>(`${BASE_PATH}/${id}`, options);
+    const response = await api.getOne<Record<string, unknown>>(
+      `${BASE_PATH}/${id}`,
+      options,
+    );
     return transformServiceResponse(response);
   },
 
-  async createService(input: CreateServiceInput, options?: ServiceOptions): Promise<Service> {
+  async createService(
+    input: CreateServiceInput,
+    options?: ServiceOptions,
+  ): Promise<Service> {
     const request: CreateServiceRequest = {
       data: { type: "services", attributes: buildAttributes(input) },
     };
     if (input.id) request.data.id = input.id;
-    const response = await api.post<ApiSingleResponse<Record<string, unknown>>>(BASE_PATH, request, options);
-    return transformServiceResponse(response.data);
-  },
-
-  async updateService(id: string, input: UpdateServiceInput, options?: ServiceOptions): Promise<Service> {
-    const request: UpdateServiceRequest = {
-      data: { id, type: "services", attributes: buildAttributes(input) },
-    };
-    const response = await api.patch<ApiSingleResponse<Record<string, unknown>>>(
-      `${BASE_PATH}/${id}`,
+    const response = await api.post<ApiSingleResponse<Record<string, unknown>>>(
+      BASE_PATH,
       request,
       options,
     );
+    return transformServiceResponse(response.data);
+  },
+
+  async updateService(
+    id: string,
+    input: UpdateServiceInput,
+    options?: ServiceOptions,
+  ): Promise<Service> {
+    const request: UpdateServiceRequest = {
+      data: { id, type: "services", attributes: buildAttributes(input) },
+    };
+    const response = await api.patch<
+      ApiSingleResponse<Record<string, unknown>>
+    >(`${BASE_PATH}/${id}`, request, options);
     return transformServiceResponse(response.data);
   },
 

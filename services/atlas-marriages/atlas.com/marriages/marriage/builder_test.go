@@ -32,11 +32,11 @@ func TestMarriageBuilder(t *testing.T) {
 
 	t.Run("Builder validates required fields", func(t *testing.T) {
 		tests := []struct {
-			name           string
-			characterId1   uint32
-			characterId2   uint32
-			tenantId       uuid.UUID
-			expectedError  string
+			name          string
+			characterId1  uint32
+			characterId2  uint32
+			tenantId      uuid.UUID
+			expectedError string
 		}{
 			{
 				name:          "zero character ID 1",
@@ -71,9 +71,9 @@ func TestMarriageBuilder(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				builder := NewBuilder(tt.characterId1, tt.characterId2, tt.tenantId)
-				
+
 				_, err := builder.Build()
-				
+
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tt.expectedError)
 			})
@@ -265,7 +265,7 @@ func TestMarriageBuilder(t *testing.T) {
 			{
 				name:       "valid divorced state",
 				status:     StatusDivorced,
-				engagedAt:  timePtr(time.Now().Add(-2*time.Hour)),
+				engagedAt:  timePtr(time.Now().Add(-2 * time.Hour)),
 				marriedAt:  timePtr(time.Now().Add(-time.Hour)),
 				divorcedAt: timePtr(time.Now()),
 			},
@@ -362,9 +362,9 @@ func TestProposalBuilder(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				builder := NewProposalBuilder(tt.proposerId, tt.targetId, tt.tenantId)
-				
+
 				_, err := builder.Build()
-				
+
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tt.expectedError)
 			})
@@ -373,7 +373,7 @@ func TestProposalBuilder(t *testing.T) {
 
 	t.Run("Builder validates expiry time", func(t *testing.T) {
 		pastTime := time.Now().Add(-time.Hour)
-		
+
 		builder := NewProposalBuilder(proposerId, targetId, testTenantId).
 			SetProposedAt(time.Now()).
 			SetExpiresAt(pastTime)
@@ -421,11 +421,11 @@ func TestProposalBuilder(t *testing.T) {
 
 	t.Run("Proposal state transitions validation", func(t *testing.T) {
 		tests := []struct {
-			name           string
-			status         ProposalStatus
-			respondedAt    *time.Time
-			cooldownUntil  *time.Time
-			expectedError  string
+			name          string
+			status        ProposalStatus
+			respondedAt   *time.Time
+			cooldownUntil *time.Time
+			expectedError string
 		}{
 			{
 				name:          "pending with response timestamp",
@@ -616,9 +616,9 @@ func TestCeremonyBuilder(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				builder := NewCeremonyBuilder(tt.marriageId, tt.characterId1, tt.characterId2, tt.tenantId)
-				
+
 				_, err := builder.Build()
-				
+
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tt.expectedError)
 			})
@@ -907,7 +907,7 @@ func TestCeremonyBuilder(t *testing.T) {
 
 	t.Run("Invitees slice immutability", func(t *testing.T) {
 		originalInvitees := []uint32{uint32(2001), uint32(2002)}
-		
+
 		builder := NewCeremonyBuilder(marriageId, characterId1, characterId2, testTenantId).
 			SetInvitees(originalInvitees)
 

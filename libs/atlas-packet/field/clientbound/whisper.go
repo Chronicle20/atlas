@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const WhisperWriter = "CharacterChatWhisper"
@@ -23,7 +24,7 @@ func NewWhisperSendResult(mode byte, targetName string, success bool) WhisperSen
 	return WhisperSendResult{mode: mode, targetName: targetName, success: success}
 }
 
-func (m WhisperSendResult) Mode() byte        { return m.mode }
+func (m WhisperSendResult) Mode() byte         { return m.mode }
 func (m WhisperSendResult) TargetName() string { return m.targetName }
 func (m WhisperSendResult) Success() bool      { return m.success }
 
@@ -65,10 +66,10 @@ func NewWhisperReceive(mode byte, fromName string, channelId byte, gm bool, mess
 }
 
 func (m WhisperReceive) Mode() byte       { return m.mode }
-func (m WhisperReceive) FromName() string  { return m.fromName }
-func (m WhisperReceive) ChannelId() byte   { return m.channelId }
-func (m WhisperReceive) Gm() bool          { return m.gm }
-func (m WhisperReceive) Message() string   { return m.message }
+func (m WhisperReceive) FromName() string { return m.fromName }
+func (m WhisperReceive) ChannelId() byte  { return m.channelId }
+func (m WhisperReceive) Gm() bool         { return m.gm }
+func (m WhisperReceive) Message() string  { return m.message }
 
 func (m WhisperReceive) Operation() string { return WhisperWriter }
 func (m WhisperReceive) String() string {
@@ -108,7 +109,7 @@ func NewWhisperFindResultCashShop(mode byte, targetName string) WhisperFindResul
 	return WhisperFindResultCashShop{mode: mode, targetName: targetName}
 }
 
-func (m WhisperFindResultCashShop) Mode() byte        { return m.mode }
+func (m WhisperFindResultCashShop) Mode() byte         { return m.mode }
 func (m WhisperFindResultCashShop) TargetName() string { return m.targetName }
 
 func (m WhisperFindResultCashShop) Operation() string { return WhisperWriter }
@@ -155,7 +156,7 @@ func NewWhisperFindResultMapWithXY(mode byte, targetName string, mapId uint32, x
 	return WhisperFindResultMap{mode: mode, targetName: targetName, mapId: mapId, includeXY: true, x: x, y: y}
 }
 
-func (m WhisperFindResultMap) Mode() byte        { return m.mode }
+func (m WhisperFindResultMap) Mode() byte         { return m.mode }
 func (m WhisperFindResultMap) TargetName() string { return m.targetName }
 func (m WhisperFindResultMap) MapId() uint32      { return m.mapId }
 func (m WhisperFindResultMap) IncludeXY() bool    { return m.includeXY }
@@ -207,7 +208,7 @@ func NewWhisperFindResultChannel(mode byte, targetName string, channelId uint32)
 	return WhisperFindResultChannel{mode: mode, targetName: targetName, channelId: channelId}
 }
 
-func (m WhisperFindResultChannel) Mode() byte        { return m.mode }
+func (m WhisperFindResultChannel) Mode() byte         { return m.mode }
 func (m WhisperFindResultChannel) TargetName() string { return m.targetName }
 func (m WhisperFindResultChannel) ChannelId() uint32  { return m.channelId }
 
@@ -247,7 +248,7 @@ func NewWhisperFindResultError(mode byte, targetName string) WhisperFindResultEr
 	return WhisperFindResultError{mode: mode, targetName: targetName}
 }
 
-func (m WhisperFindResultError) Mode() byte        { return m.mode }
+func (m WhisperFindResultError) Mode() byte         { return m.mode }
 func (m WhisperFindResultError) TargetName() string { return m.targetName }
 
 func (m WhisperFindResultError) Operation() string { return WhisperWriter }
@@ -278,18 +279,18 @@ func (m *WhisperFindResultError) Decode(_ logrus.FieldLogger, _ context.Context)
 // WhisperError - whisper blocked/disabled
 // packet-audit:fname CField::OnWhisper#Error
 type WhisperError struct {
-	mode             byte
-	targetName       string
-	whispersEnabled  bool
+	mode            byte
+	targetName      string
+	whispersEnabled bool
 }
 
 func NewWhisperError(mode byte, targetName string, whispersEnabled bool) WhisperError {
 	return WhisperError{mode: mode, targetName: targetName, whispersEnabled: whispersEnabled}
 }
 
-func (m WhisperError) Mode() byte             { return m.mode }
-func (m WhisperError) TargetName() string      { return m.targetName }
-func (m WhisperError) WhispersEnabled() bool   { return m.whispersEnabled }
+func (m WhisperError) Mode() byte            { return m.mode }
+func (m WhisperError) TargetName() string    { return m.targetName }
+func (m WhisperError) WhispersEnabled() bool { return m.whispersEnabled }
 
 func (m WhisperError) Operation() string { return WhisperWriter }
 func (m WhisperError) String() string {
@@ -327,8 +328,8 @@ func NewWhisperWeather(mode byte, fromName string, message string) WhisperWeathe
 }
 
 func (m WhisperWeather) Mode() byte       { return m.mode }
-func (m WhisperWeather) FromName() string  { return m.fromName }
-func (m WhisperWeather) Message() string   { return m.message }
+func (m WhisperWeather) FromName() string { return m.fromName }
+func (m WhisperWeather) Message() string  { return m.message }
 
 func (m WhisperWeather) Operation() string { return WhisperWriter }
 func (m WhisperWeather) String() string {

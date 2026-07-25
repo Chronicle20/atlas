@@ -4,12 +4,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/stretchr/testify/assert"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func TestNewModelBuilder(t *testing.T) {

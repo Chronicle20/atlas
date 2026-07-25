@@ -1,11 +1,10 @@
 package outbox_test
 
 import (
+	"atlas-configurations/outbox"
 	"encoding/json"
 	"testing"
 	"time"
-
-	"atlas-configurations/outbox"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"

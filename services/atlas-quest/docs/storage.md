@@ -31,6 +31,18 @@ Stores progress entries for quest objectives.
 | info_number | uint32 | No | | Objective identifier |
 | progress | string | No | '' | Progress value |
 
+### quest_medal_maps
+
+Stores a visited map for a medal quest.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| id | uint32 | No | auto | Primary key |
+| quest_status_id | uint32 | No | | Quest status identifier |
+| map_id | uint32 | No | | Map identifier |
+
+This table's Migration is defined but is not included in main.go's `SetMigrations` list, and the table is not written to or read from by any Processor.
+
 ## Relationships
 
 | Parent | Child | Type | Constraint |
@@ -42,18 +54,25 @@ Stores progress entries for quest objectives.
 ### quest_statuses
 
 | Name | Columns | Description |
-|------|---------|-------------|
+|------|---------|--------------|
 | idx_quest_tenant_char | tenant_id, character_id | Lookup by tenant and character |
-| idx_entities_quest_id | quest_id | Lookup by quest definition |
+| idx_quest_statuses_quest_id | quest_id | Lookup by quest definition |
 
 ### quest_progress
 
 | Name | Columns | Description |
-|------|---------|-------------|
-| idx_entities_tenant_id | tenant_id | Lookup by tenant |
-| idx_entities_quest_status_id | quest_status_id | Lookup by parent status |
+|------|---------|--------------|
+| idx_quest_progress_tenant_id | tenant_id | Lookup by tenant |
+| idx_quest_progress_quest_status_id | quest_status_id | Lookup by parent status |
+
+### quest_medal_maps
+
+| Name | Columns | Description |
+|------|---------|--------------|
+| idx_medal_quest_map | quest_status_id, map_id | Unique index on quest status and map |
 
 ## Migration Rules
 
 - Tables are auto-migrated via GORM AutoMigrate
+- Only quest_statuses and quest_progress are registered for migration in main.go; quest_medal_maps is not
 - Quest progress entries are deleted when parent quest status is deleted (cascading delete in code)

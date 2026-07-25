@@ -1,14 +1,14 @@
 package services
 
 import (
+	"atlas-configurations/outbox"
 	"os"
 	"time"
 
-	"atlas-configurations/outbox"
-
-	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 )
 
 // Backfill re-publishes every existing service row into the outbox so a

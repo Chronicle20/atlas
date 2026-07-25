@@ -4,38 +4,53 @@ import (
 	"atlas-channel/chalkboard"
 	character2 "atlas-channel/character"
 	"atlas-channel/consumable"
+	cashData "atlas-channel/data/cash"
+	"atlas-channel/incubator"
 	"atlas-channel/saga"
 	"atlas-channel/session"
+	"atlas-channel/shopscanner"
 	"atlas-channel/socket/writer"
 	"context"
 	"math"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	cashsb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/serverbound"
+	chatpkt "github.com/Chronicle20/atlas/libs/atlas-packet/chat/clientbound"
+	fieldpkt "github.com/Chronicle20/atlas/libs/atlas-packet/field"
+	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
+	incubatorcb "github.com/Chronicle20/atlas/libs/atlas-packet/incubator/clientbound"
+	statpkt "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
-func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		p := cashsb.ItemUse{}
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
-		updateTimeFirst := t.Region() == "GMS" && t.MajorVersion() >= 95
+		// update_time is a leading header int32 (updateTimeFirst) from GMS v87
+		// onward and on JMS v185; only the two oldest GMS builds (v83/v84) carry
+		// it as a trailing int32 in the per-type sub-body. IDA-verified via
+		// CWvsContext::SendConsumeCashItemUseRequest: gms_v87 @0xa9fef9 and
+		// jms_v185 @0xaef2f5 both Encode4(update_time) in the header before the
+		// sub-body switch (task-126). Must match ItemUse's header gate.
+		updateTimeFirst := t.MajorVersion() >= 87
 		updateTime := p.UpdateTime()
 		source := slot.Position(p.Source())
 		itemId := item.Id(p.ItemId())
 
-		a, err := character2.NewProcessor(l, ctx).GetItemInSlot(s.CharacterId(), inventory.TypeValueCash, int16(source))()
-		if err != nil || item.Id(a.TemplateId()) != itemId {
+		templateId, err := cashItemInSlotFunc(l, ctx, s.CharacterId(), int16(source))
+		if err != nil || item.Id(templateId) != itemId {
 			l.Warnf("Character [%d] attempted to use cash item [%d] in slot [%d], but item not found or mismatched.", s.CharacterId(), itemId, source)
 			return
 		}
@@ -104,8 +119,461 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 			})
 			return
 		}
+		if it == CashSlotItemTypeTeleportRock {
+			// Enum 12 is shared: teleport rocks (classification 504) AND some
+			// megaphones alias here (GetCashSlotItemType's ClassificationMegaphones
+			// branch, otherCategory==1, above). Only the rocks route into the
+			// use-flow here; aliased megaphones fall through to the warn-and-drop
+			// below, unchanged.
+			if item.GetClassification(itemId) == item.ClassificationTeleportRock {
+				sp := cashsb.NewItemUseTeleportRock(updateTimeFirst)
+				sp.Decode(l, ctx)(r, readerOptions)
+				if !sp.Target().Valid() {
+					l.Warnf("Character [%d] sent cash teleport-rock use without a target payload.", s.CharacterId())
+					return
+				}
+				useRockFunc(l, ctx, wp)(s, itemId, sp.Target())
+				return
+			}
+		}
+		if it == CashSlotItemTypeItemTag {
+			sp := cashsb.NewItemUseItemTag(updateTimeFirst)
+			sp.Decode(l, ctx)(r, readerOptions)
+			targetSlot := sp.Slot()
+			if targetSlot >= 0 {
+				l.Warnf("Character [%d] attempted to use item tag [%d] on non-equipped slot [%d].", s.CharacterId(), itemId, targetSlot)
+				return
+			}
+			target, err := character2.NewProcessor(l, ctx).GetItemInSlot(s.CharacterId(), inventory.TypeValueEquip, targetSlot)()
+			if err != nil {
+				l.Warnf("Character [%d] attempted to use item tag [%d] on empty slot [%d].", s.CharacterId(), itemId, targetSlot)
+				return
+			}
+			if tt, ok := inventory.TypeFromItemId(item.Id(target.TemplateId())); !ok || tt != inventory.TypeValueEquip {
+				l.Warnf("Character [%d] attempted to use item tag [%d] on non-equip item [%d].", s.CharacterId(), itemId, target.TemplateId())
+				return
+			}
+			c, err := character2.NewProcessor(l, ctx).GetById()(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Warnf("Unable to resolve character [%d] name for item tag.", s.CharacterId())
+				return
+			}
+			transactionId := uuid.New()
+			now := time.Now()
+			_ = saga.NewProcessor(l, ctx).Create(saga.Saga{
+				TransactionId: transactionId,
+				SagaType:      saga.ItemTagUse,
+				InitiatedBy:   "CASH_ITEM_USE",
+				Steps: []saga.Step{
+					{
+						StepId: "consume_item_tag",
+						Status: saga.Pending,
+						Action: saga.DestroyAsset,
+						Payload: saga.DestroyAssetPayload{
+							CharacterId: s.CharacterId(),
+							TemplateId:  uint32(itemId),
+							Quantity:    1,
+						},
+						CreatedAt: now,
+						UpdatedAt: now,
+					},
+					{
+						StepId: "set_asset_owner",
+						Status: saga.Pending,
+						Action: saga.SetAssetOwner,
+						Payload: saga.SetAssetOwnerPayload{
+							CharacterId:   s.CharacterId(),
+							InventoryType: byte(inventory.TypeValueEquip),
+							Slot:          targetSlot,
+							Owner:         c.Name(),
+						},
+						CreatedAt: now,
+						UpdatedAt: now,
+					},
+				},
+			})
+			return
+		}
+		sealTimed := CashSlotItemTypeSealTimed
+		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+			sealTimed = CashSlotItemTypeSealTimedV95
+		}
+		if it == CashSlotItemTypeSeal || it == sealTimed {
+			sp := cashsb.NewItemUseSeal(updateTimeFirst)
+			sp.Decode(l, ctx)(r, readerOptions)
+			invType := inventory.Type(sp.InventoryType())
+			targetSlot := int16(sp.Slot())
+			if invType != inventory.TypeValueEquip {
+				l.Warnf("Character [%d] attempted to use sealing lock [%d] on non-equip inventory [%d].", s.CharacterId(), itemId, invType)
+				return
+			}
+			target, err := character2.NewProcessor(l, ctx).GetItemInSlot(s.CharacterId(), invType, targetSlot)()
+			if err != nil {
+				l.Warnf("Character [%d] attempted to use sealing lock [%d] on empty slot [%d].", s.CharacterId(), itemId, targetSlot)
+				return
+			}
+			if !target.Expiration().IsZero() && !target.Locked() {
+				// A genuinely time-limited item must not be laundered into a permanent one.
+				l.Warnf("Character [%d] attempted to seal time-limited item [%d] in slot [%d].", s.CharacterId(), target.TemplateId(), targetSlot)
+				return
+			}
+			expiration := time.Time{}
+			cd, err := cashData.NewProcessor(l, ctx).GetById(uint32(itemId))
+			if err != nil {
+				l.WithError(err).Warnf("Unable to resolve cash item data for sealing lock [%d].", itemId)
+				return
+			}
+			if cd.ProtectTime > 0 {
+				base := time.Now()
+				if target.Locked() && !target.Expiration().IsZero() {
+					base = target.Expiration()
+				}
+				expiration = base.AddDate(0, 0, int(cd.ProtectTime))
+			}
+			transactionId := uuid.New()
+			now := time.Now()
+			_ = saga.NewProcessor(l, ctx).Create(saga.Saga{
+				TransactionId: transactionId,
+				SagaType:      saga.SealingLockUse,
+				InitiatedBy:   "CASH_ITEM_USE",
+				Steps: []saga.Step{
+					{
+						StepId: "consume_sealing_lock",
+						Status: saga.Pending,
+						Action: saga.DestroyAsset,
+						Payload: saga.DestroyAssetPayload{
+							CharacterId: s.CharacterId(),
+							TemplateId:  uint32(itemId),
+							Quantity:    1,
+						},
+						CreatedAt: now,
+						UpdatedAt: now,
+					},
+					{
+						StepId: "apply_asset_lock",
+						Status: saga.Pending,
+						Action: saga.ApplyAssetLock,
+						Payload: saga.ApplyAssetLockPayload{
+							CharacterId:   s.CharacterId(),
+							InventoryType: byte(invType),
+							Slot:          targetSlot,
+							Expiration:    expiration,
+						},
+						CreatedAt: now,
+						UpdatedAt: now,
+					},
+				},
+			})
+			return
+		}
+		if it == CashSlotItemTypeIncubator {
+			sp := cashsb.NewItemUseIncubator(updateTimeFirst)
+			sp.Decode(l, ctx)(r, readerOptions)
+			invType := inventory.Type(sp.InventoryType())
+			targetSlot := int16(sp.Slot())
+			announceFailure := func(egg uint32) {
+				_ = session.Announce(l)(ctx)(wp)(incubatorcb.IncubatorResultWriter)(incubatorcb.NewIncubatorResult(0, 0, egg).Encode)(s)
+			}
+			target, err := character2.NewProcessor(l, ctx).GetItemInSlot(s.CharacterId(), invType, targetSlot)()
+			if err != nil {
+				l.Warnf("Character [%d] attempted to incubate empty slot [%d] of inventory [%d].", s.CharacterId(), targetSlot, invType)
+				announceFailure(0)
+				return
+			}
+			eggId := target.TemplateId()
+			if !isPigmyEgg(item.Id(eggId)) {
+				l.Warnf("Character [%d] attempted to incubate non-egg item [%d].", s.CharacterId(), eggId)
+				announceFailure(0)
+				return
+			}
+			// Gate before rolling/consuming: the client renders the incubation
+			// result via a fixed NPC (incubator.SuccessNpcId) hard-coded in
+			// OnIncubatorResult. GMS never shipped that NPC, so a successful
+			// result would crash the client (CUtilDlgEx::SetNPC ->
+			// STG_E_FILENOTFOUND). If the NPC is absent from the tenant's game
+			// data, block gracefully — consume nothing, and tell the player with
+			// an accurate popup rather than the client's misleading
+			// "inventory is full" INCUBATOR_RESULT(0) message.
+			if available, npcErr := incubator.NewProcessor(l, ctx).SuccessNpcAvailable(); npcErr != nil || !available {
+				l.WithError(npcErr).Warnf("Character [%d] used incubator on egg [%d] but result NPC [%d] is absent from game data; blocking to avoid a client crash.", s.CharacterId(), eggId, incubator.SuccessNpcId)
+				_ = session.Announce(l)(ctx)(wp)(chatpkt.WorldMessageWriter)(writer.WorldMessagePopUpBody("The incubator is currently unavailable."))(s)
+				// The cash-item-use is an exclusive request; without a result the
+				// client stays input-locked. Re-enable actions (empty StatChanged
+				// with ExclRequestSent) as the Vega-scroll rejection arm does.
+				_ = session.Announce(l)(ctx)(wp)(statpkt.StatChangedWriter)(statpkt.NewStatChanged(make([]statpkt.Update, 0), true).Encode)(s)
+				return
+			}
+			reward, err := incubator.NewProcessor(l, ctx).SelectReward(eggId)
+			if err != nil {
+				l.WithError(err).Warnf("Character [%d] used incubator on egg [%d]; no reward selected.", s.CharacterId(), eggId)
+				announceFailure(eggId)
+				return
+			}
+			if _, ok := inventory.TypeFromItemId(item.Id(reward.ItemId())); !ok {
+				l.Warnf("Incubator reward [%d] has no inventory type.", reward.ItemId())
+				announceFailure(eggId)
+				return
+			}
+			// Inventory capacity is enforced by the saga's award_reward (AwardAsset)
+			// step: if the target inventory is full the award fails and the saga
+			// compensates, re-creating the consumed egg + incubator (compensator
+			// reverse-walk DestroyAsset*/->CreateItem). This mirrors the gachapon
+			// reward flow, which likewise has no channel-side capacity pre-check.
+			// The former pre-check here was broken — it fetched the compartment
+			// without its assets (so len(Assets) was always 0 and it never detected
+			// fullness) and reported any GetByType REST error as "inventory full".
+			f := s.Field()
+			transactionId := uuid.New()
+			now := time.Now()
+			_ = saga.NewProcessor(l, ctx).Create(saga.Saga{
+				TransactionId: transactionId,
+				SagaType:      saga.IncubatorUse,
+				InitiatedBy:   "CASH_ITEM_USE",
+				Steps: []saga.Step{
+					{
+						StepId: "consume_sacrifice",
+						Status: saga.Pending,
+						Action: saga.DestroyAssetFromSlot,
+						Payload: saga.DestroyAssetFromSlotPayload{
+							CharacterId:   s.CharacterId(),
+							InventoryType: byte(invType),
+							Slot:          targetSlot,
+							Quantity:      1,
+							TemplateId:    eggId,
+						},
+						CreatedAt: now,
+						UpdatedAt: now,
+					},
+					{
+						StepId: "consume_incubator",
+						Status: saga.Pending,
+						Action: saga.DestroyAsset,
+						Payload: saga.DestroyAssetPayload{
+							CharacterId: s.CharacterId(),
+							TemplateId:  uint32(itemId),
+							Quantity:    1,
+						},
+						CreatedAt: now,
+						UpdatedAt: now,
+					},
+					{
+						StepId: "award_reward",
+						Status: saga.Pending,
+						Action: saga.AwardAsset,
+						Payload: saga.AwardAssetPayload{
+							CharacterId: s.CharacterId(),
+							Item: saga.ItemPayload{
+								TemplateId: reward.ItemId(),
+								Quantity:   reward.Quantity(),
+							},
+						},
+						CreatedAt: now,
+						UpdatedAt: now,
+					},
+					{
+						StepId: "announce_result",
+						Status: saga.Pending,
+						Action: saga.IncubatorResult,
+						Payload: saga.IncubatorResultPayload{
+							CharacterId: s.CharacterId(),
+							WorldId:     f.WorldId(),
+							ChannelId:   f.ChannelId(),
+							ItemId:      reward.ItemId(),
+							Count:       reward.Quantity(),
+							EggId:       eggId,
+						},
+						CreatedAt: now,
+						UpdatedAt: now,
+					},
+				},
+			})
+			return
+		}
+		if it == CashSlotItemTypeCube {
+			// 5062xxx (GMS >= 95) is the Miracle Cube / potential re-roll family — a
+			// separate feature, deliberately not part of task-128 (design.md §11).
+			l.Warnf("Character [%d] attempted to use cube-family item [%d]; not implemented.", s.CharacterId(), itemId)
+			return
+		}
+		if it == CashSlotItemTypeVegasSpellPre95 || it == CashSlotItemTypeVegasSpell95 {
+			sp := cashsb.ItemUseVegaScroll{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("[%s] read vega sub-body [%s]", p.Operation(), sp.String())
+			enableActions := func() {
+				_ = session.Announce(l)(ctx)(wp)(statpkt.StatChangedWriter)(statpkt.NewStatChanged(make([]statpkt.Update, 0), true).Encode)(s)
+			}
+			if !item.IsVegasSpell(itemId) {
+				l.Warnf("Character [%d] attempted vega scroll with non-vega category-561 item [%d]. Rejecting.", s.CharacterId(), itemId)
+				enableActions()
+				return
+			}
+			if sp.EquipTab() != 1 || sp.ScrollTab() != 2 {
+				l.Warnf("Character [%d] vega scroll with unexpected tab markers equip [%d] scroll [%d]. Impossible from a legit client. Rejecting.", s.CharacterId(), sp.EquipTab(), sp.ScrollTab())
+				enableActions()
+				return
+			}
+			_ = consumable.NewProcessor(l, ctx).RequestVegaScrollUse(s.Field(), character.Id(s.CharacterId()), itemId, source, slot.Position(sp.ScrollSlot()), slot.Position(sp.EquipSlot()))
+			return
+		}
 
-		// TODO for v83 there is a trailing updateTime.
+		if it == CashSlotItemTypePointResetTier1 || it == CashSlotItemTypePointResetShared {
+			sp := cashsb.NewItemUsePointReset(updateTimeFirst)
+			sp.Decode(l, ctx)(r, readerOptions)
+			handlePointResetItemUse(l, ctx, wp)(s, itemId, *sp)
+			return
+		}
+
+		if it == viciousHammerCashSlotItemType(t) {
+			sp := cashsb.NewItemUseViciousHammer()
+			sp.Decode(l, ctx)(r, readerOptions)
+			handleViciousHammerOpen(l, ctx, wp)(s, source, *sp)
+			return
+		}
+
+		if it == CashSlotItemTypeStoreSearch {
+			sp := &cashsb.ItemUseStoreSearch{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			_ = shopscanner.NewProcessor(l, ctx).Search(wp)(s, sp.SearchItemId(), sp.Descending(), itemId, source, sp.UpdateTime())
+			return
+		}
+
+		// Classification-FIRST dispatch (design §1.1): cash-slot type 12
+		// collides with teleport rock (task-124), type 42 with pet evolution,
+		// so megaphone/avatar-megaphone routing must branch on classification
+		// before any cash-slot-type sub-switch, never the other way around.
+		category := item.GetClassification(itemId)
+		if category == item.ClassificationMegaphones || category == item.ClassificationAvatarMegaphone {
+			// Legacy GMS (v48/61/72/79, MajorVersion < 83) item-loss guard.
+			// task-123 legacy-phase-1 (.superpowers/sdd/legacy-megaphone-protocol.md)
+			// IDA-verified the following per-tier matrix for these four builds:
+			//   - basic (tier 1) / super (tier 2) megaphone: serverbound codec AND
+			//     clientbound WorldMessage MEGAPHONE(2)/SUPER_MEGAPHONE(3) arms
+			//     verified (spec §2/§3) — legacy-phase-2 wired the writer/handler
+			//     opcodes into template_gms_{48,61,72,79}_1.json, so these two
+			//     tiers now render on legacy clients. ALLOWED.
+			//   - Cheap (tier 0) / Heart (tier 3): task-123 cheap-heart-skull-report
+			//     found NEITHER v83 nor v95's get_cashslot_item_type has an arm for
+			//     these tiers (both fall to the default -> the client's
+			//     SendConsumeCashItemUseRequest dispatcher sends NO sub-body at all
+			//     for them — verified with addresses on v83/v95, not independently
+			//     re-verified per-build on v48/61/72/79). There is therefore no wire
+			//     evidence a legacy client ever emits this op for these item ids.
+			//     ALLOWED anyway per explicit user-confirmed scope (reuses the
+			//     basic(0)/super(3) codec+scope exactly like v83+), since the
+			//     alternative — dropping the item silently — is worse and the
+			//     decode path is a no-op if no packet ever arrives.
+			//   - Skull (tier 4): v83 also has no get_cashslot_item_type arm
+			//     (falls to the same default as 0/3) — genuinely no send path <v95
+			//     (GMS). ALLOWED here as the super-megaphone shape (same "no
+			//     confirmed wire event on legacy" caveat as 0/3 above). Skull is
+			//     NEVER Maple TV on any version — the cheap-heart-skull finalize
+			//     pass (task-123, see character_cash_item_use_megaphone.go case 4)
+			//     removed the earlier (incorrect) GMS>=95 -> handleMapleTVUse
+			//     routing entirely; handleMegaphoneUse's case 4 now always decodes
+			//     the super shape, so this legacy branch inherits that
+			//     unconditionally.
+			//   - avatar megaphone: no legacy build's serverbound send case could be
+			//     reliably located (spec §5a — cash-slot type 42 does not match the
+			//     known 4-line+whisper body on any of the four builds); consuming
+			//     the item would destroy it with no verified broadcast to render.
+			//     BLOCKED on legacy regardless of tier.
+			//   - Item megaphone (tier 6) / triple megaphone (tier 7): legacy
+			//     TV/item/triple gap-fill pass (task-123) IDA-verified the wire
+			//     shape by SHAPE-MATCHING inside each legacy build's
+			//     SendConsumeCashItemUseRequest (byte-fixtures in
+			//     libs/atlas-packet/cash/serverbound/v{61,72,79}_test.go):
+			//       - v61: Item megaphone (case 14 @0x832e37, dedicated dialog
+			//         send fn sub_55DC01) ALLOWED. Triple megaphone (5077000)
+			//         does not exist as an item on v61
+			//         (megaphone-item-availability.md: v72+) — no case found
+			//         either; BLOCKED (tier absent, not merely unverified).
+			//       - v72/v79: Item megaphone (v72 case 14 @0x905609 send fn
+			//         sub_5A7C42 @0x5a7c42; v79 case 14 @0x956975 send fn
+			//         sub_5C2336 @0x5c2336) ALLOWED. Triple megaphone (case 60
+			//         @0x905090/0x9563f8, self-contained: count+lines+whisper)
+			//         ALLOWED.
+			//     Both arms funnel into the SAME shared rate-check-and-send tail
+			//     as basic/super Megaphone (a `call SetExclRequestSent; Encode4;
+			//     SendPacket` epilogue) — update_time IS present (trailing
+			//     uint32) on every arm, matching each codec's existing
+			//     `if !updateTimeFirst { WriteInt(updateTime) }` unconditional
+			//     write (no extra gate needed; this pass also found and fixed a
+			//     bug where Megaphone/SuperMegaphone WRONGLY omitted this same
+			//     trailing field on legacy — see item_use_megaphone.go). Both
+			//     tiers broadcast through the WorldMessage writer, which already
+			//     carries ITEM_MEGAPHONE(8)/MULTI_MEGAPHONE(10) operations
+			//     entries on every legacy template — no new writer wiring
+			//     needed.
+			//   - Maple TV (tier 5): SERVERBOUND wire IS verified on v61/72/79
+			//     (case 45/46 @0x834d1c/0x907702/0x958b2a, first of 6
+			//     consecutive tvType cases, self-contained:
+			//     pad+receiverName+5 lines, same shared send-tail as above) —
+			//     but STAYS BLOCKED anyway: handleMapleTVUse's CLIENTBOUND acks
+			//     (TvSendMessageResult/TvSetMessage/TvClearMessage) have ZERO
+			//     writer entries in ANY of the four legacy templates (confirmed:
+			//     `grep '"writer": "Tv'` template_gms_{48,61,72,79}_1.json is
+			//     empty, vs v83+ which all carry them). Enabling tier 5 would
+			//     still DESTROY the item (the saga's consume step runs before
+			//     any ack) while every TV response packet fails to resolve an
+			//     opcode — a real item-loss-equivalent regression the
+			//     serverbound-only verification bar doesn't catch. Wiring the
+			//     TV writer family into the legacy templates (its own IDA pass
+			//     on the clientbound side) is a separate follow-up; NOT done
+			//     this pass.
+			//     v48: NOT reverified this pass (out of scope) — v48 keeps the
+			//     tier>4 block below regardless.
+			//
+			// jms185 verification (task-123 cheap-heart-skull finalize pass): unlike
+			// v83/v95, JMS's get_cashslot_item_type@0x49a1ee genuinely sends
+			// Cheap(tier0->type12)/Heart(tier3->type47)/Skull(tier4->type48) —
+			// confirmed via CWvsContext::SendConsumeCashItemUseRequest@0xaef2f5,
+			// shared arm @0xaef5b9. Cheap encodes message-only (matches case 0's
+			// basic/channel routing); Heart/Skull encode message+whisper (matches
+			// case 3/4's super/world routing). Byte-fixtures pinned in
+			// libs/atlas-packet/cash/serverbound/{item_use_megaphone,
+			// item_use_super_megaphone}_test.go. jms185 is MajorVersion 185 (>=83)
+			// so it never enters this legacy branch; noted here because it means the
+			// "no confirmed send on GMS<95" reasoning above does NOT generalize to
+			// JMS, where these tiers are real, verified sends.
+			//
+			// v83+/JMS behavior is otherwise unchanged: the MajorVersion < 83 branch
+			// below is never entered for them, so every tier keeps dispatching
+			// exactly as it did before this gate was refined.
+			if t.MajorVersion() < 83 {
+				if category == item.ClassificationAvatarMegaphone {
+					l.Warnf("Character [%d] attempted avatar megaphone item [%d] on unsupported legacy version [major %d]; ignoring without consuming.", s.CharacterId(), itemId, t.MajorVersion())
+					return
+				}
+				// ClassificationMegaphones per-(version,tier) legacy allow-list.
+				// Verified matrix (task-123 legacy TV/item/triple gap-fill):
+				//   v72/v79: tiers 0-4,6,7 (item+triple verified+wired; tier 5/TV
+				//            serverbound-verified but blocked — see the TV
+				//            writer-wiring gap documented above).
+				//   v61:     tiers 0-4,6 (item verified+wired; triple item
+				//            absent; tier 5/TV blocked for the same reason).
+				//   v48/others: tiers 0-4 only (6/7 never reverified; 5 blocked).
+				tier := (uint32(itemId) / 1000) % 10
+				allowed := tier <= 4
+				if t.Region() == "GMS" {
+					switch t.MajorVersion() {
+					case 72, 79:
+						allowed = allowed || tier == 6 || tier == 7
+					case 61:
+						allowed = allowed || tier == 6
+					}
+				}
+				if !allowed {
+					l.Warnf("Character [%d] attempted megaphone item [%d] tier [%d] unsupported on legacy version [major %d]; ignoring without consuming.", s.CharacterId(), itemId, tier, t.MajorVersion())
+					return
+				}
+			}
+			if category == item.ClassificationMegaphones {
+				handleMegaphoneUse(l, ctx, wp)(s, r, readerOptions, t, itemId, source, updateTimeFirst)
+				return
+			}
+			handleAvatarMegaphoneUse(l, ctx, wp)(s, r, readerOptions, t, itemId, source, updateTimeFirst)
+			return
+		}
 
 		l.Warnf("Character [%d] attempting to use cash item [%d] in slot [%d] of type [%d]. updateTime [%d].", s.CharacterId(), itemId, source, it, updateTime)
 	}
@@ -115,9 +583,68 @@ type CashSlotItemType uint32
 
 const (
 	CashSlotItemTypeFieldEffect   = CashSlotItemType(16)
+	CashSlotItemTypeStoreSearch   = CashSlotItemType(29)
 	CashSlotItemTypePetConsumable = CashSlotItemType(30)
 	CashSlotItemTypeChalkboard    = CashSlotItemType(32)
+	CashSlotItemTypeItemTag       = CashSlotItemType(25)
+	CashSlotItemTypeSeal          = CashSlotItemType(26)
+	CashSlotItemTypeIncubator     = CashSlotItemType(27)
+	CashSlotItemTypeSealTimed     = CashSlotItemType(64)
+	CashSlotItemTypeSealTimedV95  = CashSlotItemType(65)
+	CashSlotItemTypeCube          = CashSlotItemType(74)
+
+	// GetCashSlotItemType's ClassificationPointReset branch (above) routes by
+	// itemId%10==1: AP Reset (5050000) and SP Reset tiers 2-4 (5050002-5050004)
+	// collapse onto type 23, while SP Reset tier 1 (5050001) alone lands on
+	// type 24. The type byte therefore CANNOT distinguish AP-vs-SP — the labels
+	// below name only which numeric bucket each is. The arm matches on either
+	// bucket and then dispatches by item id (design §2.4), never by this type.
+	CashSlotItemTypePointResetShared = CashSlotItemType(23) // AP Reset + SP Reset tiers 2-4
+	CashSlotItemTypePointResetTier1  = CashSlotItemType(24) // SP Reset tier 1 only
+	CashSlotItemTypeVegasSpellPre95  = CashSlotItemType(68)
+	CashSlotItemTypeVegasSpell95     = CashSlotItemType(71)
+	CashSlotItemTypeViciousHammer    = CashSlotItemType(66) // GMS < 95
+	CashSlotItemTypeViciousHammerV95 = CashSlotItemType(67) // GMS >= 95
+	// CashSlotItemTypeTeleportRock (enum 12) is shared with some megaphones
+	// (GetCashSlotItemType's ClassificationMegaphones branch, otherCategory==1)
+	// — the handler gates on item.ClassificationTeleportRock (504) before
+	// routing into the use-flow, so aliased megaphones are unaffected.
+	CashSlotItemTypeTeleportRock = CashSlotItemType(12)
 )
+
+// cashItemInSlotFunc is a test seam for the cash-inventory ownership check
+// (package-var injection precedent: itemInSlotFunc in teleport_rock_use.go).
+// Returns the template id of the TypeValueCash item in the slot.
+var cashItemInSlotFunc = func(l logrus.FieldLogger, ctx context.Context, characterId uint32, slot int16) (uint32, error) {
+	a, err := character2.NewProcessor(l, ctx).GetItemInSlot(characterId, inventory.TypeValueCash, slot)()
+	if err != nil {
+		return 0, err
+	}
+	return uint32(a.TemplateId()), nil
+}
+
+const (
+	pigmyEggMinId item.Id = 4170000
+	pigmyEggMaxId item.Id = 4170009
+)
+
+// isPigmyEgg reports whether templateId is an incubatable Pigmy Egg (the client
+// enforces this; the server re-checks so a crafted request can't sacrifice
+// arbitrary items).
+func isPigmyEgg(templateId item.Id) bool {
+	return templateId >= pigmyEggMinId && templateId <= pigmyEggMaxId
+}
+
+// viciousHammerCashSlotItemType returns the version-scoped CashSlotItemType
+// for the Vicious Hammer item. Plain 66 also denotes CharacterCreation on
+// GMS >= 95 (see the category == item.ClassificationCharacterCreation
+// branch below), so this check must remain version-scoped.
+func viciousHammerCashSlotItemType(t tenant.Model) CashSlotItemType {
+	if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+		return CashSlotItemTypeViciousHammerV95
+	}
+	return CashSlotItemTypeViciousHammer
+}
 
 func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {
 	return func(itemId item.Id) CashSlotItemType {
@@ -308,7 +835,7 @@ func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {
 			}
 		}
 		if category == item.ClassificationStoreSearch {
-			return CashSlotItemType(29)
+			return CashSlotItemTypeStoreSearch
 		}
 		if category == item.ClassificationPetConsumable {
 			return CashSlotItemTypePetConsumable
@@ -468,17 +995,16 @@ func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {
 		}
 		if category == 557 {
 			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
-				return CashSlotItemType(67)
+				return CashSlotItemTypeViciousHammerV95
 			} else {
-				return CashSlotItemType(66)
+				return CashSlotItemTypeViciousHammer
 			}
 		}
-		if category == 561 {
+		if category == item.ClassificationVegasSpell {
 			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
-				return CashSlotItemType(71)
-			} else {
-				return CashSlotItemType(68)
+				return CashSlotItemTypeVegasSpell95
 			}
+			return CashSlotItemTypeVegasSpellPre95
 		}
 		if category == 562 {
 			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
@@ -496,5 +1022,44 @@ func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {
 			}
 		}
 		return CashSlotItemType(0)
+	}
+}
+
+// handleViciousHammerOpen performs the cheap pre-check (existence + cap) for
+// the CUIItemUpgrade open-arm gauge. It never mutates state: it either arms
+// the client gauge (mode OPEN) or rejects immediately (mode FAILURE, code 1
+// or 2). WZ eligibility (codes 1/3 from equip data) is left to the
+// authoritative re-validation in atlas-consumables on Packet B (design §4.1)
+// — a gauge that later fails with mode 62 there is correct UX.
+func handleViciousHammerOpen(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, hammerSlot slot.Position, sp cashsb.ItemUseViciousHammer) {
+	return func(s session.Model, hammerSlot slot.Position, sp cashsb.ItemUseViciousHammer) {
+		announce := func(body func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte) {
+			err := session.Announce(l)(ctx)(wp)(fieldcb.ViciousHammerWriter)(body)(s)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to write vicious hammer response to character [%d].", s.CharacterId())
+			}
+		}
+
+		equipSlot := int16(sp.SlotPosition())
+		target, err := character2.NewProcessor(l, ctx).GetEquipableInSlot(s.CharacterId(), equipSlot)()
+		if err != nil {
+			l.Warnf("Character [%d] attempted vicious hammer on missing equip slot [%d].", s.CharacterId(), equipSlot)
+			announce(fieldpkt.ViciousHammerFailureBody(fieldpkt.ViciousHammerReasonNotUpgradable))
+			return
+		}
+		if target.HammersApplied() >= 2 {
+			announce(fieldpkt.ViciousHammerFailureBody(fieldpkt.ViciousHammerReasonCapReached))
+			return
+		}
+
+		token := packViciousHammerToken(int16(hammerSlot), equipSlot)
+		// The client stores this open-arm count and renders the TERMINAL success
+		// notice as "2 - count upgrades are left" (CUIItemUpgrade::OnItemUpgradeResult
+		// success branch — the SUCCESS packet carries no count of its own). That
+		// notice fires AFTER the reservation callback applies +1 to hammersApplied,
+		// so we must send the post-apply count. HammersApplied() here is the
+		// pre-apply value and the arm is only reached when it is < 2 (cap check
+		// above), so +1 always yields the correct 1 or 2 (IDA-verified, task-129).
+		announce(fieldpkt.ViciousHammerOpenBody(token, target.HammersApplied()+1))
 	}
 }

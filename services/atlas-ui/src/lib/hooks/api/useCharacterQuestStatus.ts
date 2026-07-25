@@ -16,7 +16,7 @@ export interface CharacterQuestStatusBundle {
 
 export function useCharacterQuestStatus(
   tenant: Tenant | null | undefined,
-  characterId: string
+  characterId: string,
 ): UseQueryResult<CharacterQuestStatusBundle, Error> {
   return useQuery({
     queryKey: characterQuestStatusKeys.detail(tenant?.id, characterId),

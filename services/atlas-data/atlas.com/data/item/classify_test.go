@@ -3,8 +3,9 @@ package item
 import (
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 )
 
 const compartmentUnknown = inventory.Type(0)

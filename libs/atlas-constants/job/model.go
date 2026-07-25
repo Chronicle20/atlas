@@ -100,7 +100,7 @@ var mpEaterSkillIds = map[Id]skill.Id{
 // Returns ok=false for jobs that have no MP Eater (non-mage jobs, base
 // Magician 200, etc.).
 //
-// An explicit map is used rather than the Cosmic formula
+// An explicit map is used rather than the derivation formula
 // (jobId - jobId%10) * 10000 because that formula produces false
 // positives against the registered skill set: e.g.,
 // MagicianId 200 → 2000000 = MagicianImprovedMpRecoveryId, and
@@ -120,7 +120,7 @@ func FromIndex(jobIndex uint32, subJobIndex uint32) Id {
 		if subJobIndex == 0 {
 			jobId = BeginnerId
 		} else if subJobIndex == 1 {
-			//jobId = job.BladeRecruit TODO
+			// jobId = job.BladeRecruit TODO
 		}
 	} else if jobIndex == 2 {
 		jobId = LegendId

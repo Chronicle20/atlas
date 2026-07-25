@@ -39,16 +39,16 @@ type ListingModel struct {
 	displayOrder     uint16
 }
 
-func (m ListingModel) Id() string                  { return m.id }
-func (m ListingModel) ShopId() string              { return m.shopId }
-func (m ListingModel) ItemId() uint32              { return m.itemId }
-func (m ListingModel) ItemType() byte              { return m.itemType }
-func (m ListingModel) Quantity() uint16            { return m.quantity }
-func (m ListingModel) BundleSize() uint16          { return m.bundleSize }
-func (m ListingModel) BundlesRemaining() uint16    { return m.bundlesRemaining }
-func (m ListingModel) PricePerBundle() uint32      { return m.pricePerBundle }
-func (m ListingModel) ItemSnapshot() AssetData { return m.itemSnapshot }
-func (m ListingModel) DisplayOrder() uint16        { return m.displayOrder }
+func (m ListingModel) Id() string               { return m.id }
+func (m ListingModel) ShopId() string           { return m.shopId }
+func (m ListingModel) ItemId() uint32           { return m.itemId }
+func (m ListingModel) ItemType() byte           { return m.itemType }
+func (m ListingModel) Quantity() uint16         { return m.quantity }
+func (m ListingModel) BundleSize() uint16       { return m.bundleSize }
+func (m ListingModel) BundlesRemaining() uint16 { return m.bundlesRemaining }
+func (m ListingModel) PricePerBundle() uint32   { return m.pricePerBundle }
+func (m ListingModel) ItemSnapshot() AssetData  { return m.itemSnapshot }
+func (m ListingModel) DisplayOrder() uint16     { return m.displayOrder }
 
 func ExtractListing(rm ListingRestModel) (ListingModel, error) {
 	return ListingModel{

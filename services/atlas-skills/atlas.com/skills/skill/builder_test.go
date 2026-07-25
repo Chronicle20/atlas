@@ -25,7 +25,6 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 		SetExpiration(expiration).
 		SetCooldownExpiresAt(cooldown).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -61,7 +60,6 @@ func TestBuild_Success(t *testing.T) {
 		SetId(1001001).
 		SetLevel(5).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -117,7 +115,6 @@ func TestSetCooldownExpiresAt(t *testing.T) {
 		SetId(1001001).
 		SetCooldownExpiresAt(cooldown).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -135,7 +132,6 @@ func TestBuilderFluentChaining(t *testing.T) {
 		SetMasterLevel(30).
 		SetExpiration(expiration).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}

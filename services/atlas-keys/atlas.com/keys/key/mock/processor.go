@@ -3,8 +3,9 @@ package mock
 import (
 	"atlas-keys/key"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // ProcessorMock provides a mock implementation of key.Processor for testing.

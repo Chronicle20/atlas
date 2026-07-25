@@ -9,10 +9,11 @@ import (
 	"atlas-login/socket/writer"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	loginCB "github.com/Chronicle20/atlas/libs/atlas-packet/login/clientbound"
 	loginSB "github.com/Chronicle20/atlas/libs/atlas-packet/login/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 func RegisterPicHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
@@ -24,12 +25,12 @@ func RegisterPicHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.
 		a, err := account.NewProcessor(l, ctx).GetById(s.AccountId())
 		if err != nil {
 			l.WithError(err).Errorf("Failed to get account by id [%d].", s.AccountId())
-			//TODO
+			// TODO
 			return
 		}
 		if a.PIC() != "" {
 			l.Warnf("Account [%d] already has PIC.", s.AccountId())
-			//TODO
+			// TODO
 			return
 		}
 		err = account.NewProcessor(l, ctx).UpdatePic(s.AccountId(), p.Pic())

@@ -2,7 +2,7 @@ import { useTenant } from "@/context/tenant-context";
 import { DataTableWrapper } from "@/components/common/DataTableWrapper";
 import { hiddenColumns, getColumns } from "@/pages/accounts-columns";
 import { useCallback, useEffect, useState } from "react";
-import { useAccounts } from "@/lib/hooks/api/useAccounts";
+import { useAccountsPage } from "@/lib/hooks/api/useAccounts";
 import { useGridRefresh } from "@/lib/hooks/useGridRefresh";
 import { bansService } from "@/services/api/bans.service";
 import type { Account } from "@/types/models/account";
@@ -13,17 +13,40 @@ import { CreateAccountDialog } from "@/components/features/accounts/CreateAccoun
 import { Button } from "@/components/ui/button";
 import { Toaster, toast } from "sonner";
 import { AccountPageSkeleton } from "@/components/common/skeletons/AccountPageSkeleton";
+import { Pager } from "@/components/common/Pager";
+import { useSearchParams } from "react-router-dom";
+
+const PAGE_SIZE = 50;
 
 export function AccountsPage() {
   const { activeTenant } = useTenant();
-  const accountsQuery = useAccounts(activeTenant!);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const pageNumber = Math.max(
+    1,
+    Number.parseInt(searchParams.get("page") ?? "1", 10) || 1,
+  );
+
+  const accountsQuery = useAccountsPage(activeTenant, {
+    number: pageNumber,
+    size: PAGE_SIZE,
+  });
   const { isRefreshing, onRefresh } = useGridRefresh([accountsQuery]);
 
-  const accounts = accountsQuery.data ?? [];
+  const accounts = accountsQuery.data?.data ?? [];
+  const meta = accountsQuery.data?.meta ?? null;
   const loading = accountsQuery.isLoading;
   const error = accountsQuery.error?.message ?? null;
 
-  const [banStatuses, setBanStatuses] = useState<Map<string, CheckBanAttributes>>(new Map());
+  const handlePageChange = (nextPage: number) => {
+    const next = new URLSearchParams(searchParams);
+    if (nextPage > 1) next.set("page", String(nextPage));
+    else next.delete("page");
+    setSearchParams(next, { replace: false });
+  };
+
+  const [banStatuses, setBanStatuses] = useState<
+    Map<string, CheckBanAttributes>
+  >(new Map());
   const [banStatusLoading, setBanStatusLoading] = useState(false);
   const [createBanDialogOpen, setCreateBanDialogOpen] = useState(false);
   const [deleteBanDialogOpen, setDeleteBanDialogOpen] = useState(false);
@@ -46,14 +69,19 @@ export function AccountsPage() {
         const batch = accountList.slice(i, i + concurrency);
         const results = await Promise.allSettled(
           batch.map(async (account) => {
-            const result = await bansService.checkBan({ accountId: Number(account.id) });
+            const result = await bansService.checkBan({
+              accountId: Number(account.id),
+            });
             return { accountId: account.id, result };
-          })
+          }),
         );
 
         for (const result of results) {
           if (result.status === "fulfilled") {
-            statuses.set(result.value.accountId, result.value.result.attributes);
+            statuses.set(
+              result.value.accountId,
+              result.value.result.attributes,
+            );
           }
         }
       }
@@ -61,11 +89,12 @@ export function AccountsPage() {
       setBanStatuses(statuses);
       setBanStatusLoading(false);
     },
-    [activeTenant]
+    [activeTenant],
   );
 
   useEffect(() => {
     if (accounts.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- marks the in-flight async ban-status fetch this effect is about to kick off; the fetch itself must stay in the effect
       fetchBanStatuses(accounts);
     }
   }, [accounts, fetchBanStatuses]);
@@ -80,7 +109,7 @@ export function AccountsPage() {
 
     try {
       const bans = await bansService.getBansByType(BanType.Account);
-      const matchingBan = bans.find(b => b.attributes.value === account.id);
+      const matchingBan = bans.find((b) => b.attributes.value === account.id);
 
       if (matchingBan) {
         setBanToDelete(matchingBan);
@@ -89,7 +118,10 @@ export function AccountsPage() {
         toast.error("Could not find an active ban for this account");
       }
     } catch (err: unknown) {
-      toast.error("Failed to look up ban: " + (err instanceof Error ? err.message : "Unknown error"));
+      toast.error(
+        "Failed to look up ban: " +
+          (err instanceof Error ? err.message : "Unknown error"),
+      );
     }
   };
 
@@ -139,6 +171,15 @@ export function AccountsPage() {
             description: "There are no accounts to display at this time.",
           }}
         />
+        {meta && accounts.length > 0 && (
+          <Pager
+            page={meta.page.number}
+            lastPage={meta.page.last}
+            total={meta.total}
+            pageSize={meta.page.size}
+            onPageChange={handlePageChange}
+          />
+        )}
       </div>
 
       <CreateBanDialog
@@ -146,10 +187,14 @@ export function AccountsPage() {
         onOpenChange={setCreateBanDialogOpen}
         tenant={activeTenant}
         onSuccess={handleBanCreated}
-        prefill={selectedAccount ? {
-          banType: BanType.Account,
-          value: selectedAccount.id,
-        } : undefined}
+        prefill={
+          selectedAccount
+            ? {
+                banType: BanType.Account,
+                value: selectedAccount.id,
+              }
+            : undefined
+        }
       />
 
       <DeleteBanDialog

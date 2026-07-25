@@ -1,9 +1,10 @@
 package visit
 
 import (
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 func recordVisit(db *gorm.DB) func(tenantId uuid.UUID) func(characterId uint32) func(mapId _map.Id) error {

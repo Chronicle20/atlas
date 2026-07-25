@@ -1,0 +1,21 @@
+{
+  "WriterName": "FieldLeftKnockback",
+  "IDAName": "CField_SnowBall::Update#LeftKnockback",
+  "Address": "",
+  "Variant": "GMS/v61",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/serverbound/left_knockback.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 6,
+      "IDAComment": "function not found in IDB",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    }
+  ],
+  "Verdict": 2,
+  "FlatInvalid": false
+}

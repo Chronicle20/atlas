@@ -3,9 +3,10 @@ package buff
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/sirupsen/logrus"
 )
 
 // Processor defines the interface for buff data processing
@@ -30,6 +31,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // HasActiveBuff checks if a character has an active buff with the specified source ID
 // Returns false if the buff is not found or has expired
 func (p *ProcessorImpl) HasActiveBuff(characterId uint32, sourceId int32) model.Provider[bool] {
@@ -49,10 +52,13 @@ func (p *ProcessorImpl) HasActiveBuff(characterId uint32, sourceId int32) model.
 	}
 }
 
-// GetBuffsByCharacter returns all active buffs for a character
+// GetBuffsByCharacter returns all active buffs for a character. The
+// upstream atlas-buffs list is now paginated (task-117); HasActiveBuff
+// (the sole caller) scans every buff for a matching source, so this drains
+// every page rather than fetching just the first.
 func (p *ProcessorImpl) GetBuffsByCharacter(characterId uint32) model.Provider[[]Model] {
 	return func() ([]Model, error) {
-		buffsProvider := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByCharacter(characterId), Extract, model.Filters[Model]())
+		buffsProvider := requests.DrainProvider[RestModel, Model](p.l, p.ctx)(characterBuffsUrl(characterId), 250, Extract, model.Filters[Model]())
 		buffs, err := buffsProvider()
 		if err != nil {
 			// If not found or error, return empty slice (character may have no buffs)

@@ -10,7 +10,6 @@ import (
 	pq "atlas-party-quests/kafka/message/party_quest"
 	reactorMessage "atlas-party-quests/kafka/message/reactor"
 	systemMessage "atlas-party-quests/kafka/message/system_message"
-	"atlas-party-quests/kafka/producer"
 	"atlas-party-quests/monster"
 	"atlas-party-quests/party"
 	"atlas-party-quests/reward"
@@ -22,14 +21,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Processor interface {
@@ -118,6 +120,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		db:  db,
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetById(instanceId uuid.UUID) (Model, error) {
 	return GetRegistry().Get(p.t, instanceId)

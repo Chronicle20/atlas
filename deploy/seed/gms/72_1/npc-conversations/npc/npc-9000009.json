@@ -1,0 +1,30 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 9000009,
+      "startState": "greeting",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Hey hey!!! Find the Treasure Scroll! I lost the map\r\nsomewhere and I can't leave without it."
+          },
+          "id": "greeting",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "9000009",
+    "type": "npc-conversation"
+  }
+}

@@ -1,8 +1,9 @@
 package mapimage
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
 	"strings"
+
+	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
 )
 
 // Index groups the Back/Tile/Obj lookup maps plus per-mapId map images

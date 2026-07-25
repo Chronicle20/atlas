@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashLoadInventoryFailure
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult
+    address: "0x461379"
+    decompile_sha256: 158f4fda8e7541c18a4741a0d29bbc3eda5a16c0b30a6dc3bcaf0d36289b9e15
+verifies:
+    - libs/atlas-packet/cash/clientbound/v61_test.go#TestCashShopOperationArmsV61

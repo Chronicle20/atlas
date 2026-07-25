@@ -6,12 +6,13 @@ import (
 	"encoding/json"
 	"testing"
 
-	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
+
+	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
 )
 
 func setupTestCache(t *testing.T) *ConsumableCache {

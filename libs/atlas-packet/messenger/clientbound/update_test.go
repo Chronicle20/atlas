@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"testing"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
+	"github.com/stretchr/testify/require"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
-	testlog "github.com/sirupsen/logrus/hooks/test"
-	"github.com/stretchr/testify/require"
 )
 
 // updateByteAvatar returns an avatar with a single equipment slot (and no

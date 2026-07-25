@@ -3,13 +3,19 @@ import { formatStatup, formatDurationMs } from "../skill-effect-format";
 
 describe("formatStatup", () => {
   it("formats WeaponAttack with duration", () => {
-    expect(formatStatup({ type: "WeaponAttack", amount: 10 }, 30000)).toBe("+10 Weapon Attack for 30s");
+    expect(formatStatup({ type: "WeaponAttack", amount: 10 }, 30000)).toBe(
+      "+10 Weapon Attack for 30s",
+    );
   });
   it("falls back for unknown types", () => {
-    expect(formatStatup({ type: "UnknownStat", amount: 5 }, 0)).toBe("UnknownStat: +5");
+    expect(formatStatup({ type: "UnknownStat", amount: 5 }, 0)).toBe(
+      "UnknownStat: +5",
+    );
   });
   it("omits duration block when 0", () => {
-    expect(formatStatup({ type: "WeaponDefense", amount: 5 }, 0)).toBe("+5 Weapon Defense");
+    expect(formatStatup({ type: "WeaponDefense", amount: 5 }, 0)).toBe(
+      "+5 Weapon Defense",
+    );
   });
 });
 

@@ -6,8 +6,10 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
-type State byte
-type Status uint16
+type (
+	State  byte
+	Status uint16
+)
 
 const (
 	StateNormal State = 0

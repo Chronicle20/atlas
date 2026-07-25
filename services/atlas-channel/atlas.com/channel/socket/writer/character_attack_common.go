@@ -7,13 +7,14 @@ import (
 	"context"
 	"math"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 func preComputeAttackValues(l logrus.FieldLogger, ctx context.Context, c character.Model, ai packetmodel.AttackInfo) (skillLevel byte, mastery byte, bulletItemId uint32) {
@@ -194,7 +195,7 @@ func computeMasteryForWeapon(l logrus.FieldLogger) func(ctx context.Context) fun
 func getMasteryFromSkill(l logrus.FieldLogger) func(ctx context.Context) func(startingMastery int8, skillId skill2.Id, skills []skill.Model) int8 {
 	return func(ctx context.Context) func(startingMastery int8, skillId skill2.Id, skills []skill.Model) int8 {
 		return func(startingMastery int8, skillId skill2.Id, skills []skill.Model) int8 {
-			var start = int8(15)
+			start := int8(15)
 			if skill2.Is(skillId, skill2.EvanStage9MagicMasteryId, skill2.AranStage4HighMasteryId, skill2.BowmasterBowExpertId) {
 				start = int8(65)
 			}

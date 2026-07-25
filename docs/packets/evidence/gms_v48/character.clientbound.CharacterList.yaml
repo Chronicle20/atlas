@@ -1,0 +1,8 @@
+packet: character/clientbound/CharacterList
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_5013ED
+    address: "0x5013ed"
+    decompile_sha256: d75002261249254d62ff23bc6874de3610964a99f95d8373d82a00930e80fdfa

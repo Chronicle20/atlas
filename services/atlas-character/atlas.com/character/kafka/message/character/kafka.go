@@ -1,12 +1,13 @@
 package character
 
 import (
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/stat"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
@@ -30,6 +31,7 @@ const (
 	CommandDeductExperience    = "DEDUCT_EXPERIENCE"
 	CommandResetStats          = "RESET_STATS"
 	CommandRebalanceAP         = "REBALANCE_AP"
+	CommandTransferAP          = "TRANSFER_AP"
 	CommandClampHP             = "CLAMP_HP"
 	CommandClampMP             = "CLAMP_MP"
 	CommandDeleteCharacter     = "DELETE_CHARACTER"
@@ -60,24 +62,24 @@ type Command[E any] struct {
 }
 
 type CreateCharacterCommandBody struct {
-	AccountId    uint32  `json:"accountId"`
+	AccountId    uint32   `json:"accountId"`
 	WorldId      world.Id `json:"worldId"`
-	Name         string  `json:"name"`
-	Level        byte    `json:"level"`
-	Strength     uint16  `json:"strength"`
-	Dexterity    uint16  `json:"dexterity"`
-	Intelligence uint16  `json:"intelligence"`
-	Luck         uint16  `json:"luck"`
-	MaxHp        uint16  `json:"maxHp"`
-	MaxMp        uint16  `json:"maxMp"`
-	JobId        job.Id  `json:"jobId"`
-	Gender       byte    `json:"gender"`
-	Hair         uint32  `json:"hair"`
-	Face         uint32  `json:"face"`
-	SkinColor    byte    `json:"skinColor"`
-	MapId        _map.Id `json:"mapId"`
-	Gm           int     `json:"gm,omitempty"`
-	Meso         uint32  `json:"meso,omitempty"`
+	Name         string   `json:"name"`
+	Level        byte     `json:"level"`
+	Strength     uint16   `json:"strength"`
+	Dexterity    uint16   `json:"dexterity"`
+	Intelligence uint16   `json:"intelligence"`
+	Luck         uint16   `json:"luck"`
+	MaxHp        uint16   `json:"maxHp"`
+	MaxMp        uint16   `json:"maxMp"`
+	JobId        job.Id   `json:"jobId"`
+	Gender       byte     `json:"gender"`
+	Hair         uint32   `json:"hair"`
+	Face         uint32   `json:"face"`
+	SkinColor    byte     `json:"skinColor"`
+	MapId        _map.Id  `json:"mapId"`
+	Gm           int      `json:"gm,omitempty"`
+	Meso         uint32   `json:"meso,omitempty"`
 }
 
 type ChangeMapBody struct {
@@ -107,7 +109,7 @@ type ChangeSkinCommandBody struct {
 	StyleId   byte       `json:"styleId"`
 }
 
-type AwardExperienceCommandBody struct{
+type AwardExperienceCommandBody struct {
 	ChannelId     channel.Id                `json:"channelId"`
 	Distributions []ExperienceDistributions `json:"distributions"`
 	ShowEffect    bool                      `json:"showEffect"`
@@ -203,6 +205,14 @@ type RebalanceAPTarget struct {
 	Floor uint16 `json:"floor"`
 }
 
+// TransferAPCommandBody moves one already-spent AP From -> To (AP Reset item
+// 5050000). From/To are CommandDistributeApAbility* enum strings.
+type TransferAPCommandBody struct {
+	ChannelId channel.Id `json:"channelId"`
+	From      string     `json:"from"`
+	To        string     `json:"to"`
+}
+
 // DeleteCharacterCommandBody is the saga-correlated delete-character command.
 // All necessary identifiers (transactionId, characterId, worldId) live on the
 // Command[E] envelope; no body fields are needed. Idempotent on missing row —
@@ -235,6 +245,14 @@ const (
 
 	StatusEventTypeError              = "ERROR"
 	StatusEventErrorTypeNotEnoughMeso = "NOT_ENOUGH_MESO"
+
+	// StatusEventErrorType* point-reset (AP transfer) rejection codes. See
+	// StatusEventApTransferErrorBody / TRANSFER_AP (task-126).
+	StatusEventErrorTypeStatAtMinimum           = "STAT_AT_MINIMUM"
+	StatusEventErrorTypeStatAtMaximum           = "STAT_AT_MAXIMUM"
+	StatusEventErrorTypeInsufficientHpMpApUsed  = "INSUFFICIENT_HPMP_AP_USED"
+	StatusEventErrorTypePoolBelowJobMinimum     = "POOL_BELOW_JOB_MINIMUM"
+	StatusEventErrorTypeApTransferInvalidTarget = "INVALID_TARGET"
 
 	KillerTypeMonster     = "MONSTER"
 	KillerTypeCharacter   = "CHARACTER"
@@ -306,8 +324,7 @@ type LevelChangedStatusEventBody struct {
 	Current   byte       `json:"current"`
 }
 
-type StatusEventDeletedBody struct {
-}
+type StatusEventDeletedBody struct{}
 
 type StatusEventErrorBody[F any] struct {
 	Error string `json:"error"`
@@ -330,6 +347,14 @@ type NotEnoughMesoErrorStatusBodyBody struct {
 type StatusEventMesoErrorBody struct {
 	Error  string `json:"error"`
 	Amount int32  `json:"amount"`
+}
+
+// StatusEventApTransferErrorBody reports a rejected TRANSFER_AP. Error is one
+// of the StatusEventErrorType* point-reset constants; Detail names the
+// offending stat (STR/DEX/INT/LUK/HP/MP) where applicable.
+type StatusEventApTransferErrorBody struct {
+	Error  string `json:"error"`
+	Detail string `json:"detail"`
 }
 
 type FameChangedStatusEventBody struct {
@@ -400,5 +425,6 @@ type MovementCommand struct {
 	ObserverId    uint32     `json:"observerId"`
 	X             int16      `json:"x"`
 	Y             int16      `json:"y"`
+	Fh            int16      `json:"fh"`
 	Stance        byte       `json:"stance"`
 }

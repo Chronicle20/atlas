@@ -1,0 +1,10 @@
+packet: teleportrock/serverbound/AddMap
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendMapTransferRequest
+    address: "0x9f3b90"
+    decompile_sha256: 530f5b93507710f73c5179a189a544389228a5732fb5d0bf16a687bee7482c0b
+verifies:
+  - libs/atlas-packet/teleportrock/serverbound/add_map_test.go#TestAddMapDeleteDecode

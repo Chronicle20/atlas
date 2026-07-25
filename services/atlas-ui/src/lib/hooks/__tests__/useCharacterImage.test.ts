@@ -1,16 +1,18 @@
-import { describe, expect, it } from 'vitest';
-import { generateQueryKey } from '../useCharacterImage';
-import { generateCharacterUrl } from '@/services/api/characterRender.service';
-import type { MapleStoryCharacterData } from '@/types/models/maplestory';
+import { describe, expect, it } from "vitest";
+import { generateQueryKey } from "../useCharacterImage";
+import { generateCharacterUrl } from "@/services/api/characterRender.service";
+import type { MapleStoryCharacterData } from "@/types/models/maplestory";
 
-function makeCharacter(overrides: Partial<MapleStoryCharacterData> = {}): MapleStoryCharacterData {
+function makeCharacter(
+  overrides: Partial<MapleStoryCharacterData> = {},
+): MapleStoryCharacterData {
   return {
-    id: '1',
-    name: 'Test',
+    id: "1",
+    name: "Test",
     level: 1,
     jobId: 0,
-    tenant: 'tenant-a',
-    region: 'GMS',
+    tenant: "tenant-a",
+    region: "GMS",
     majorVersion: 83,
     minorVersion: 1,
     skinColor: 0,
@@ -26,12 +28,18 @@ function urlHash(u: string): string | undefined {
   return u.match(/\/([a-f0-9]{16})\.png\?/)?.[1];
 }
 
-describe('useCharacterImage query-key vs URL hash parity', () => {
-  for (const c of [makeCharacter(), makeCharacter({ face: 21000, gender: 1 })]) {
+describe("useCharacterImage query-key vs URL hash parity", () => {
+  for (const c of [
+    makeCharacter(),
+    makeCharacter({ face: 21000, gender: 1 }),
+  ]) {
     it(`gender ${c.gender} face ${c.face} key hash equals URL hash`, () => {
       const keyHash = generateQueryKey(c)[1];
       const url = generateCharacterUrl(
-        c.tenant, c.region, c.majorVersion, c.minorVersion,
+        c.tenant,
+        c.region,
+        c.majorVersion,
+        c.minorVersion,
         {
           skin: c.skinColor,
           hair: c.hair,

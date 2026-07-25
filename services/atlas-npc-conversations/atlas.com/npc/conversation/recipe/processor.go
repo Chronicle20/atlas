@@ -5,11 +5,12 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // SkippedRecipe captures a craftAction state that the rebuild could not
@@ -39,8 +40,8 @@ type ReindexResult struct {
 
 // Processor exposes recipe operations to other packages.
 type Processor interface {
-	ByItemIdProvider(itemId uint32) model.Provider[[]Model]
-	ByNpcIdProvider(npcId uint32) model.Provider[[]Model]
+	ByItemIdProvider(itemId uint32, page model.Page) model.Provider[model.Paged[Model]]
+	ByNpcIdProvider(npcId uint32, page model.Page) model.Provider[model.Paged[Model]]
 	RebuildForConversation(tx *gorm.DB) func(npcId uint32, conversationId uuid.UUID, states []conversation.StateModel) (RebuildResult, error)
 	ClearForTenant(tx *gorm.DB) (int64, error)
 }
@@ -61,12 +62,16 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
-func (p *ProcessorImpl) ByItemIdProvider(itemId uint32) model.Provider[[]Model] {
-	return model.SliceMap[Entity, Model](Make)(getByItemIdProvider(itemId)(p.db.WithContext(p.ctx)))(model.ParallelMap())
+var _ Processor = (*ProcessorImpl)(nil)
+
+func (p *ProcessorImpl) ByItemIdProvider(itemId uint32, page model.Page) model.Provider[model.Paged[Model]] {
+	ep := getByItemIdPagedProvider(itemId, page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(Make)(ep)(model.ParallelMap())
 }
 
-func (p *ProcessorImpl) ByNpcIdProvider(npcId uint32) model.Provider[[]Model] {
-	return model.SliceMap[Entity, Model](Make)(getByNpcIdProvider(npcId)(p.db.WithContext(p.ctx)))(model.ParallelMap())
+func (p *ProcessorImpl) ByNpcIdProvider(npcId uint32, page model.Page) model.Provider[model.Paged[Model]] {
+	ep := getByNpcIdPagedProvider(npcId, page)(p.db.WithContext(p.ctx))
+	return model.MapPaged(Make)(ep)(model.ParallelMap())
 }
 
 // ClearForTenant hard-deletes every recipe row for the active tenant. Returns

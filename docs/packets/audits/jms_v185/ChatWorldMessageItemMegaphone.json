@@ -1,0 +1,66 @@
+{
+  "WriterName": "ChatWorldMessageItemMegaphone",
+  "IDAName": "CWvsContext::OnBroadcastMsg#ItemMegaphone",
+  "Address": "0xb0985b",
+  "Variant": "JMS/v185",
+  "BranchDepth": 1,
+  "AtlasFile": "libs/atlas-packet/chat/clientbound/world_message.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (=8, ITEM_MEGAPHONE)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "message",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "channelId",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "whispersOn",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "hasItem bool",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 0,
+      "AtlasKind": 1,
+      "IDAOp": 5,
+      "IDAComment": "GW_ItemSlotBase::Decode(item) — only when hasItem true; no separate slotPos byte before/around the block",
+      "Verdict": 3,
+      "Note": "opaque type: model.Asset — register boundary (see opaque registry)"
+    }
+  ],
+  "Verdict": 3,
+  "FlatInvalid": false
+}

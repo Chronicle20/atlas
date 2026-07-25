@@ -1,0 +1,10 @@
+packet: character/clientbound/BuffGive
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnTemporaryStatSet
+    address: "0x96a6d1"
+    decompile_sha256: 5001b9d66cd66ffee9ab8ca017a875f74a2486d9452e99b35e45551111dcd708
+verifies:
+  - libs/atlas-packet/character/clientbound/buff_give_test.go#TestBuffGiveV79Mask

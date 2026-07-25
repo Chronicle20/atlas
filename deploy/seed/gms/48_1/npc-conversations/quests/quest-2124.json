@@ -1,0 +1,118 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "checkItems",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": "<",
+                      "referenceId": "4031619",
+                      "type": "item",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "missingItems"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "completeQuest"
+                }
+              ]
+            },
+            "id": "checkItems",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Please bring me the box with the supplies that lies with #b#p2012019##k..."
+            },
+            "id": "missingItems",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "4031619",
+                    "quantity": "1"
+                  },
+                  "type": "destroy_item"
+                },
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "success"
+                }
+              ]
+            },
+            "id": "completeQuest",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Oh, you brought #p2012019#'s box! Thank you."
+            },
+            "id": "success",
+            "type": "dialogue"
+          }
+        ]
+      },
+      "questId": 2124,
+      "questName": "Moppie's Supply Box",
+      "startStateMachine": {
+        "startState": "noDialogue",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "noDialogue",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "2124",
+    "type": "quest-conversation"
+  }
+}

@@ -1,0 +1,10 @@
+packet: stat/clientbound/Changed
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnStatChanged
+    address: "0x842d04"
+    decompile_sha256: 44e6815e24b01d16d3c4d406f6d3eda59e5869041838b98d3faaf1834f25e08d
+verifies:
+    - libs/atlas-packet/stat/clientbound/changed_test.go#TestStatChangedV61

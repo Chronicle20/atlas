@@ -1,14 +1,14 @@
 package job
 
 import (
+	"atlas-data/rest"
 	"net/http"
 
-	"atlas-data/rest"
-
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
@@ -25,7 +25,7 @@ func handleGetJobSkills() func(d *rest.HandlerDependency, c *rest.HandlerContext
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseJobId(d.Logger(), func(jobId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				m, ok := GetSkillsForJob(jobId)
+				m, ok := NewProcessor(d.Logger(), d.Context()).GetSkillsForJob(jobId)
 				if !ok {
 					w.WriteHeader(http.StatusNotFound)
 					return

@@ -3,9 +3,10 @@ package serverbound
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const GuildBossHandle = "GuildBoss"
@@ -13,8 +14,7 @@ const GuildBossHandle = "GuildBoss"
 // GuildBoss - CField_GuildBoss::BasicActionAttack
 // Sent after CPulley::Hit in the guild boss minigame. Empty body (header only).
 // packet-audit:fname CField_GuildBoss::BasicActionAttack#GuildBoss
-type GuildBoss struct {
-}
+type GuildBoss struct{}
 
 func NewGuildBoss() GuildBoss {
 	return GuildBoss{}

@@ -58,7 +58,7 @@ export function TaskConfigForm({
   const handleTaskChange = (
     index: number,
     field: keyof TaskConfig,
-    value: string | number
+    value: string | number,
   ) => {
     const updated = tasks.map((task, i) => {
       if (i !== index) return task;

@@ -6,17 +6,18 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/sirupsen/logrus"
 )
 
 // Error codes for transport failures
 const (
-	ErrorCodeCapacityFull      = "TRANSPORT_CAPACITY_FULL"
-	ErrorCodeAlreadyInTransit  = "TRANSPORT_ALREADY_IN_TRANSIT"
-	ErrorCodeRouteNotFound     = "TRANSPORT_ROUTE_NOT_FOUND"
-	ErrorCodeServiceError      = "TRANSPORT_SERVICE_ERROR"
+	ErrorCodeCapacityFull     = "TRANSPORT_CAPACITY_FULL"
+	ErrorCodeAlreadyInTransit = "TRANSPORT_ALREADY_IN_TRANSIT"
+	ErrorCodeRouteNotFound    = "TRANSPORT_ROUTE_NOT_FOUND"
+	ErrorCodeServiceError     = "TRANSPORT_SERVICE_ERROR"
 )
 
 // TransportError represents an error from the transport service with an error code
@@ -49,6 +50,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		ctx: ctx,
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // StartTransport starts an instance transport for a character
 func (p *ProcessorImpl) StartTransport(routeName string, characterId uint32, worldId world.Id, channelId channel.Id) error {

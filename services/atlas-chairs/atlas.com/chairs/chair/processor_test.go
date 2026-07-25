@@ -4,11 +4,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func testTenant() tenant.Model {
@@ -39,7 +40,6 @@ func TestGetById_Success(t *testing.T) {
 	// Test GetById
 	p := NewProcessor(l, tctx)
 	m, err := p.GetById(characterId)
-
 	if err != nil {
 		t.Fatalf("GetById failed: %v", err)
 	}

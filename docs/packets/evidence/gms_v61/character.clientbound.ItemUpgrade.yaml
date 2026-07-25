@@ -1,0 +1,10 @@
+packet: character/clientbound/ItemUpgrade
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CUser::ShowItemUpgradeEffect
+    address: "0x78dc86"
+    decompile_sha256: 4ed43f78b3b87aae9a99e274be65dd4fc4a59bec486da06c78b461e27ef7c42d
+verifies:
+    - libs/atlas-packet/character/clientbound/v61_test.go#TestItemUpgradeByteOutputV61

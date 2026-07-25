@@ -1,0 +1,30 @@
+{
+  "WriterName": "FieldItemUpgradeUpdate",
+  "IDAName": "CUIItemUpgrade::Update",
+  "Address": "0x82ae28",
+  "Variant": "GMS/v83",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/serverbound/item_upgrade_update.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "m_nReturnResult (v3=this[34]; open-arm mode byte, set by sub_82B2C3's Decode1, widened to int32)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "m_nResult (this[35]; server-chosen round-trip token, set by sub_82B2C3's open-arm Decode4)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

@@ -1,0 +1,10 @@
+packet: chat/serverbound/ChatWhisper
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendChatMsgWhisper
+    address: "0x51a7bc"
+    decompile_sha256: a9838c3f5ebeddbdb324ccd208f9c63283ed60b89e538769cf1efce4e31375e6
+verifies:
+    - libs/atlas-packet/chat/serverbound/whisper_test.go#TestWhisperByteOutputV79

@@ -7,7 +7,10 @@ import type { Recipe } from "@/types/models/recipe";
 
 vi.mock("@/context/tenant-context", () => ({
   useTenant: () => ({
-    activeTenant: { id: "t1", attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 } },
+    activeTenant: {
+      id: "t1",
+      attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 },
+    },
   }),
 }));
 vi.mock("@/lib/hooks/api/useNpcRecipes", () => ({
@@ -38,7 +41,11 @@ const sample: Recipe = {
 
 describe("RecipesByNpcCard", () => {
   it("renders nothing when the NPC crafts nothing", () => {
-    (useNpcRecipes as unknown as ReturnType<typeof vi.fn>).mockReturnValue({ data: [], isLoading: false, error: null });
+    (useNpcRecipes as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: [],
+      isLoading: false,
+      error: null,
+    });
     const { container } = render(wrap(<RecipesByNpcCard npcId={2040020} />));
     expect(container.firstChild).toBeNull();
   });

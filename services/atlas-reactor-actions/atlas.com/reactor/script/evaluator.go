@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/Chronicle20/atlas/libs/atlas-script-core/condition"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
+	"github.com/Chronicle20/atlas/libs/atlas-script-core/condition"
 )
 
 // ConditionEvaluator evaluates conditions for reactor scripts
@@ -152,8 +153,8 @@ type pqStageStateRestModel struct {
 }
 
 type pqInstanceRestModel struct {
-	Id         uuid.UUID              `json:"-"`
-	StageState pqStageStateRestModel  `json:"stageState"`
+	Id         uuid.UUID             `json:"-"`
+	StageState pqStageStateRestModel `json:"stageState"`
 }
 
 func (r pqInstanceRestModel) GetName() string {

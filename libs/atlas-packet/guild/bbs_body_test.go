@@ -3,8 +3,9 @@ package guild
 import (
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-packet/guild/clientbound"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-packet/guild/clientbound"
 )
 
 // bbsOptions mirrors the tenant template's GuildBBS options.operations map

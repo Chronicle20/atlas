@@ -4,10 +4,11 @@ import (
 	"atlas-channel/data/skill/effect/statup"
 	"atlas-channel/kafka/message/buff"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 )
 
 func ApplyCommandProvider(f field.Model, characterId uint32, fromId uint32, sourceId int32, level byte, duration int32, statups []statup.Model) model.Provider[[]kafka.Message] {
@@ -49,6 +50,22 @@ func CancelCommandProvider(f field.Model, characterId uint32, sourceId int32) mo
 		Type:        buff.CommandTypeCancel,
 		Body: buff.CancelCommandBody{
 			SourceId: sourceId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func CancelByTypesCommandProvider(f field.Model, characterId uint32, types []string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &buff.Command[buff.CancelByTypesCommandBody]{
+		WorldId:     f.WorldId(),
+		ChannelId:   f.ChannelId(),
+		MapId:       f.MapId(),
+		Instance:    f.Instance(),
+		CharacterId: characterId,
+		Type:        buff.CommandTypeCancelByTypes,
+		Body: buff.CancelByTypesCommandBody{
+			Types: append([]string(nil), types...),
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

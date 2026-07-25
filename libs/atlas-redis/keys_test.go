@@ -3,8 +3,9 @@ package redis
 import (
 	"testing"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func TestComputeKeyPrefix_envUnset(t *testing.T) {

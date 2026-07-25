@@ -40,7 +40,7 @@ Resource type: `chairs`
 
 ### GET /worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/chairs
 
-Retrieves all chairs in use in a specific map instance.
+Retrieves all chairs in use in a specific map instance. Paginated.
 
 #### Parameters
 
@@ -50,6 +50,10 @@ Retrieves all chairs in use in a specific map instance.
 | channelId | path | channel.Id | yes |
 | mapId | path | map.Id | yes |
 | instanceId | path | uuid.UUID | yes |
+| page[number] | query | int | no (default 1) |
+| page[size] | query | int | no (default 250, max 250) |
+
+The legacy `limit` query parameter is rejected.
 
 #### Request Model
 
@@ -57,11 +61,23 @@ None.
 
 #### Response Model
 
-Array of Chair resources (see GET /chairs/{characterId}).
+Array of Chair resources (see GET /chairs/{characterId}), sorted by characterId ascending.
+
+JSON:API `meta` block:
+
+| Field | Type | Description |
+|-------|------|--------------|
+| total | int | Total count of matching chairs across all pages |
+| page.number | int | Current page number |
+| page.size | int | Current page size |
+| page.last | int | Last page number |
+
+JSON:API `links` block: `self`, `first`, `last`, and `prev`/`next` where applicable.
 
 #### Error Conditions
 
 | Status | Condition |
 |--------|-----------|
 | 200 OK | Chairs retrieved |
+| 400 Bad Request | Invalid page[number]/page[size] (non-integer, out of range, or legacy limit param used) |
 | 500 Internal Server Error | Transformation error |

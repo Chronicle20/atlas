@@ -15,7 +15,6 @@ func TestBuilderValidBuild(t *testing.T) {
 		SetReasonCode(1).
 		SetPermanent(true).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Expected successful build, got error: %v", err)
 	}
@@ -61,7 +60,6 @@ func TestBuilderEmptyValueValidation(t *testing.T) {
 
 func TestBuilderNilTenantAllowed(t *testing.T) {
 	_, err := NewBuilder(uuid.Nil, BanTypeIP, "192.168.1.1").Build()
-
 	if err != nil {
 		t.Fatalf("Expected nil tenant to be allowed, got error: %v", err)
 	}
@@ -81,7 +79,6 @@ func TestBuilderAllSetters(t *testing.T) {
 		SetCreatedAt(now).
 		SetUpdatedAt(now).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build failed: %v", err)
 	}
@@ -130,7 +127,6 @@ func TestBuilderAllSetters(t *testing.T) {
 
 func TestBuilderDefaults(t *testing.T) {
 	m, err := NewBuilder(uuid.New(), BanTypeIP, "10.0.0.1").Build()
-
 	if err != nil {
 		t.Fatalf("Build failed: %v", err)
 	}

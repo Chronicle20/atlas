@@ -1,0 +1,10 @@
+packet: character/clientbound/BuffCancel
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnTemporaryStatReset
+    address: "0x96ab32"
+    decompile_sha256: 8dd1c585fc1748baf2610bbc18df2154aaba6b8b52eb6eee6d396fd33ac29fc8
+verifies:
+  - libs/atlas-packet/character/clientbound/buff_cancel_test.go#TestBuffCancelV79ByteFixture

@@ -20,15 +20,19 @@ func BuildEvidenceInputs(evidenceDir string, exportPaths map[string]string) (map
 		k := EvKey{Packet: r.Packet, Version: r.Version}
 		exp, ok := exportPaths[r.Version]
 		if !ok {
-			out[k] = EvidenceStatus{Exists: true, Fresh: false, Address: r.IDA.Address,
-				Note: "no IDA export for " + r.Version}
+			out[k] = EvidenceStatus{
+				Exists: true, Fresh: false, Address: r.IDA.Address,
+				Note: "no IDA export for " + r.Version,
+			}
 			problems = append(problems, fmt.Sprintf("evidence %s×%s: no export for version", r.Packet, r.Version))
 			continue
 		}
 		h, err := evidence.FunctionHash(exp, r.IDA.Function)
 		if err != nil {
-			out[k] = EvidenceStatus{Exists: true, Fresh: false, Address: r.IDA.Address,
-				Note: "citation unresolvable: " + r.IDA.Function}
+			out[k] = EvidenceStatus{
+				Exists: true, Fresh: false, Address: r.IDA.Address,
+				Note: "citation unresolvable: " + r.IDA.Function,
+			}
 			problems = append(problems, fmt.Sprintf("evidence %s×%s: %v", r.Packet, r.Version, err))
 			continue
 		}

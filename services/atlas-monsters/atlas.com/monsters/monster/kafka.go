@@ -3,11 +3,12 @@ package monster
 import (
 	"encoding/json"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
@@ -33,7 +34,10 @@ const (
 	DamageSourceDamageOverTime  = "DAMAGE_OVER_TIME"
 	DamageSourceHeal            = "HEAL"
 
-	MpChangeReasonMpEater = "MP_EATER"
+	MpChangeReasonMpEater     = "MP_EATER"
+	MpChangeReasonSkillCast   = "SKILL_CAST"
+	MpChangeReasonBasicAttack = "BASIC_ATTACK"
+	MpChangeReasonRecovery    = "RECOVERY"
 )
 
 type statusEvent[E any] struct {

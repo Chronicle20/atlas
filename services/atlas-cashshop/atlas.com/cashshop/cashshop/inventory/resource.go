@@ -5,12 +5,13 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 // InitResource initializes the cash inventory resource
@@ -39,7 +40,7 @@ func handleGetCashInventory(db *gorm.DB) rest.GetHandler {
 				}
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Error retrieving cash inventory for account [%d]", accountId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -47,7 +48,7 @@ func handleGetCashInventory(db *gorm.DB) rest.GetHandler {
 				res, err := model.Map(Transform)(model.FixedProvider(m))()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -69,7 +70,7 @@ func handleCreateCashInventory(db *gorm.DB) rest.InputHandler[RestModel] {
 				m, err := NewProcessor(d.Logger(), d.Context(), db).CreateAndEmit(accountId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Error creating cash inventory for account [%d]", accountId)
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -77,7 +78,7 @@ func handleCreateCashInventory(db *gorm.DB) rest.InputHandler[RestModel] {
 				res, err := model.Map(Transform)(model.FixedProvider(m))()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
-					w.WriteHeader(http.StatusInternalServerError)
+					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 

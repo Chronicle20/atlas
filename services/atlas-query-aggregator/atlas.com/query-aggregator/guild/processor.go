@@ -3,9 +3,10 @@ package guild
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/sirupsen/logrus"
 )
 
 // Processor defines the interface for guild operations
@@ -33,6 +34,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		ctx: ctx,
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // GetByMemberId retrieves a guild by member ID
 func (p *ProcessorImpl) GetByMemberId(decorators ...model.Decorator[Model]) func(memberId uint32) (Model, error) {

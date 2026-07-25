@@ -2,16 +2,20 @@ package main
 
 import (
 	"atlas-doors/character"
-	character2 "atlas-doors/kafka/consumer/character"
-	door2 "atlas-doors/kafka/consumer/door"
-	party2 "atlas-doors/kafka/consumer/party"
 	"atlas-doors/door"
-	"atlas-doors/logger"
 	"atlas-doors/tasks"
 	"atlas-doors/world"
 	"context"
 	"os"
 	"time"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+
+	character2 "atlas-doors/kafka/consumer/character"
+	door2 "atlas-doors/kafka/consumer/door"
+	party2 "atlas-doors/kafka/consumer/party"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
@@ -19,10 +23,7 @@ import (
 	lock "github.com/Chronicle20/atlas/libs/atlas-lock"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/sirupsen/logrus"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 )
 
 const serviceName = "atlas-doors"
@@ -50,21 +51,14 @@ func GetServer() Server {
 }
 
 func main() {
-	l := logger.CreateLogger(serviceName)
-	l.Infoln("Starting main service.")
+	rt := service.Bootstrap(serviceName)
+	l := rt.Logger()
 
 	rc := atlas.Connect(l)
 	door.InitIdAllocator(rc)
 	door.InitRegistry(rc)
 
-	tdm := service.GetTeardownManager()
-
-	tc, err := tracing.InitTracer(serviceName)
-	if err != nil {
-		l.WithError(err).Fatal("Unable to initialize tracer.")
-	}
-
-	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	door2.InitConsumers(l)(cmf)(consumerGroupId)
 	character2.InitConsumers(l)(cmf)(consumerGroupId)
 	party2.InitConsumers(l)(cmf)(consumerGroupId)
@@ -78,18 +72,18 @@ func main() {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 
-	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
+	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 	server.New(l).
-		WithContext(tdm.Context()).
-		WithWaitGroup(tdm.WaitGroup()).
+		WithContext(rt.Context()).
+		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(door.InitResource(GetServer())).
 		AddRouteInitializer(world.InitResource(GetServer())).
 		AddRouteInitializer(character.InitResource(GetServer())).
-		AddRouteInitializer(server.MountHandler("/metrics", promhttp.Handler())).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
+		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
 	registerSweepTasks := func(l logrus.FieldLogger, ctx context.Context) {
@@ -107,23 +101,19 @@ func main() {
 		if err != nil {
 			l.WithError(err).Fatal("Unable to construct LeaderElection.")
 		}
-		go func() {
-			err := le.Run(tdm.Context(), func(leaderCtx context.Context) {
+		routine.Go(l, rt.Context(), func(_ context.Context) {
+			err := le.Run(rt.Context(), func(leaderCtx context.Context) {
 				registerSweepTasks(l, leaderCtx)
 				<-leaderCtx.Done()
 			})
 			if err != nil {
 				l.WithError(err).Errorf("LeaderElection.Run exited with error.")
 			}
-		}()
+		})
 	} else {
 		l.Warnf("DOOR_LEADER_ELECTION_ENABLED=false — sweep tasks run unconditionally on this pod.")
-		registerSweepTasks(l, tdm.Context())
+		registerSweepTasks(l, rt.Context())
 	}
 
-	tdm.TeardownFunc(tracing.Teardown(l)(tc))
-
-	tdm.Wait()
-
-	l.Infoln("Service shutdown.")
+	rt.Wait()
 }

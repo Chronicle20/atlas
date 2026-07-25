@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const BuddyListUpdateWriter = "BuddyListUpdate"
@@ -31,9 +32,9 @@ func NewBuddyListUpdate(mode byte, buddies []BuddyEntry) ListUpdate {
 	return ListUpdate{mode: mode, buddies: buddies}
 }
 
-func (m ListUpdate) Mode() byte          { return m.mode }
+func (m ListUpdate) Mode() byte            { return m.mode }
 func (m ListUpdate) Buddies() []BuddyEntry { return m.buddies }
-func (m ListUpdate) Operation() string    { return BuddyListUpdateWriter }
+func (m ListUpdate) Operation() string     { return BuddyListUpdateWriter }
 
 func (m ListUpdate) String() string {
 	return fmt.Sprintf("list update with [%d] buddies", len(m.buddies))
@@ -65,7 +66,8 @@ func (m ListUpdate) Encode(l logrus.FieldLogger, ctx context.Context) func(optio
 	}
 }
 
-func (m *ListUpdate) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *ListUpdate) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	hasGroup := model.BuddyHasFriendGroup(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
 		count := r.ReadByte()
@@ -75,7 +77,9 @@ func (m *ListUpdate) Decode(_ logrus.FieldLogger, _ context.Context) func(r *req
 			m.buddies[i].Name = model.ReadPaddedString(r, 13)
 			_ = r.ReadByte() // flag
 			m.buddies[i].ChannelId = channel.Id(r.ReadInt32())
-			m.buddies[i].Group = model.ReadPaddedString(r, 17)
+			if hasGroup {
+				m.buddies[i].Group = model.ReadPaddedString(r, 17) // absent in GMS < 72, e.g. v61
+			}
 		}
 		for i := range m.buddies {
 			m.buddies[i].InShop = r.ReadUint32() != 0

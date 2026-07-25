@@ -148,7 +148,6 @@ func TestBuilder_FluentInterface(t *testing.T) {
 	model, err := NewBuilder(tenantId, partyId, leaderId).
 		SetMembers(members).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
 	}

@@ -7,6 +7,10 @@ import (
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/opregistry"
 )
 
+// dispositionNote annotates a sub-struct cell graded n-a because the version
+// deliberately disposes the sub-struct as version-absent (_unimplemented.json).
+const dispositionNote = "disposition: version-absent (n-a, see _unimplemented.json)"
+
 // contains reports whether s is present in xs.
 func contains(xs []string, s string) bool {
 	for _, x := range xs {
@@ -105,9 +109,9 @@ func Build(in Inputs, versionKeys []string) Matrix {
 			// Prefer this version's registry entry; fall back to any version so
 			// absent ops still get an opcode for routing-conflict checks.
 			if e, ok := lookupVersion(in.Registry, od.Op, od.Dir, vk); ok {
-				ref.Opcode, ref.FName = e.Opcode, e.FName
+				ref.Opcode, ref.FName, ref.Packet = e.Opcode, e.FName, e.Packet
 			} else if e, ok := lookupAnyVersion(in.Registry, od.Op, od.Dir); ok {
-				ref.Opcode, ref.FName = e.Opcode, e.FName
+				ref.Opcode, ref.FName, ref.Packet = e.Opcode, e.FName, e.Packet
 			}
 			// routedElsewhere: the op is routed in at least one OTHER version's
 			// template by that version's own opcode.
@@ -175,7 +179,15 @@ func Build(in Inputs, versionKeys []string) Matrix {
 		mr := sub[k]
 		for _, vk := range versionKeys { // fill gaps so columns align
 			if _, ok := mr.Cells[vk]; !ok {
-				mr.Cells[vk] = Cell{State: StateIncomplete, Note: "no audit report", Opcode: -1}
+				// A gap-filled sub-struct cell (this version has no audit report)
+				// is n-a when the (packetID, version) is dispositioned as
+				// version-absent in _unimplemented.json; otherwise it is an
+				// un-audited gap (FR-4.1, task-169).
+				if in.Unimplemented[vk][k] {
+					mr.Cells[vk] = Cell{State: StateNA, Note: dispositionNote, Opcode: -1}
+				} else {
+					mr.Cells[vk] = Cell{State: StateIncomplete, Note: "no audit report", Opcode: -1}
+				}
 			}
 		}
 		rows = append(rows, mr)
@@ -290,6 +302,13 @@ func worstCandidateCell(in Inputs, fw map[string]map[string][]string, ref opEntr
 // applicability=Present, routed=true, routedElsewhere=false (sub-structs have
 // no opcode so the cross-version routing signal never fires).
 func gradeSubStructCell(in Inputs, r LoadedReport, pkt, vk string) Cell {
+	// A version that explicitly disposes this sub-struct as version-absent grades
+	// n-a even if a stray report exists (FR-4.1, task-169). In practice a
+	// dispositioned version has no report (the flip happens in the gap-fill
+	// branch), so this is a defensive guard that keeps the two paths consistent.
+	if in.Unimplemented[vk][pkt] {
+		return Cell{State: StateNA, Note: dispositionNote}
+	}
 	ev, hasEv := in.Evidence[EvKey{pkt, vk}]
 	mk := in.Markers[EvKey{pkt, vk}]
 	tier1 := in.Tier1[pkt] || r.FlatInvalid

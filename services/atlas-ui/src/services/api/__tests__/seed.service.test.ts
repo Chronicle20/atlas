@@ -1,12 +1,12 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { seedService } from '@/services/api/seed.service';
-import type { Tenant } from '@/types/models/tenant';
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { seedService } from "@/services/api/seed.service";
+import type { Tenant } from "@/types/models/tenant";
 
 const mockTenant: Tenant = {
-  id: '11111111-1111-1111-1111-111111111111',
+  id: "11111111-1111-1111-1111-111111111111",
   attributes: {
-    name: 'Test Tenant',
-    region: 'GMS',
+    name: "Test Tenant",
+    region: "GMS",
     majorVersion: 83,
     minorVersion: 1,
   },
@@ -19,67 +19,70 @@ const mockTenant: Tenant = {
  */
 function seedStatusBody(subdomains: Record<string, number>) {
   return {
-    groupName: 'group',
+    groupName: "group",
     subdomains: Object.fromEntries(
-      Object.entries(subdomains).map(([k, c]) => [k, { count: c, updatedAt: null }]),
+      Object.entries(subdomains).map(([k, c]) => [
+        k,
+        { count: c, updatedAt: null },
+      ]),
     ),
     updatedAt: null,
-    catalogRevision: 'rev-abc',
-    tenantSeededRevision: 'rev-abc',
-    tenantSeededAt: '2026-05-27T16:35:00Z',
+    catalogRevision: "rev-abc",
+    tenantSeededRevision: "rev-abc",
+    tenantSeededAt: "2026-05-27T16:35:00Z",
   };
 }
 
-describe('seedService status projections', () => {
+describe("seedService status projections", () => {
   let fetchMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     fetchMock = vi.fn();
-    vi.stubGlobal('fetch', fetchMock);
+    vi.stubGlobal("fetch", fetchMock);
   });
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  it('sends tenant headers and does NOT request JSON:API for /seed/status', async () => {
+  it("sends tenant headers and does NOT request JSON:API for /seed/status", async () => {
     fetchMock.mockResolvedValue({
       ok: true,
-      json: async () => seedStatusBody({ 'monster-drop': 0 }),
+      json: async () => seedStatusBody({ "monster-drop": 0 }),
     });
     await seedService.getDropsSeedStatus(mockTenant);
     const call = fetchMock.mock.calls[0];
-    if (!call) throw new Error('fetch was not called');
-    expect(call[0]).toBe('/api/drops/seed/status');
+    if (!call) throw new Error("fetch was not called");
+    expect(call[0]).toBe("/api/drops/seed/status");
     const init = call[1] as RequestInit;
     const headers = init.headers as Headers;
-    expect(headers.get('TENANT_ID')).toBe(mockTenant.id);
-    expect(headers.get('REGION')).toBe('GMS');
-    expect(headers.get('MAJOR_VERSION')).toBe('83');
-    expect(headers.get('MINOR_VERSION')).toBe('1');
+    expect(headers.get("TENANT_ID")).toBe(mockTenant.id);
+    expect(headers.get("REGION")).toBe("GMS");
+    expect(headers.get("MAJOR_VERSION")).toBe("83");
+    expect(headers.get("MINOR_VERSION")).toBe("1");
     // The seeder lib emits plain `application/json` — explicitly do NOT
     // request a JSON:API envelope, which would have caused the previous
     // fetcher to dereference `body.data.attributes` and crash.
-    expect(headers.get('Accept')).toBeNull();
+    expect(headers.get("Accept")).toBeNull();
   });
 
-  it('projects drops subdomain map to monster/continent/reactor fields', async () => {
+  it("projects drops subdomain map to monster/continent/reactor fields", async () => {
     fetchMock.mockResolvedValue({
       ok: true,
       json: async () =>
         seedStatusBody({
-          'monster-drop': 22640,
-          'continent-drop': 4,
-          'reactor-drop': 1116,
+          "monster-drop": 22640,
+          "continent-drop": 4,
+          "reactor-drop": 1116,
         }),
     });
     const s = await seedService.getDropsSeedStatus(mockTenant);
     expect(s.monsterDropCount).toBe(22640);
     expect(s.continentDropCount).toBe(4);
     expect(s.reactorDropCount).toBe(1116);
-    expect(s.updatedAt).toBe('2026-05-27T16:35:00Z');
+    expect(s.updatedAt).toBe("2026-05-27T16:35:00Z");
   });
 
-  it('returns 0 for missing subdomains rather than NaN/undefined', async () => {
+  it("returns 0 for missing subdomains rather than NaN/undefined", async () => {
     // Regression for the bug that prompted this rewrite: the old
     // fetcher dereferenced body.data.attributes which is undefined on
     // the new server response, throwing and rendering the badge as "—"
@@ -94,7 +97,7 @@ describe('seedService status projections', () => {
     expect(s.reactorDropCount).toBe(0);
   });
 
-  it('projects gachapons subdomain map to gachapon/item/globalItem fields', async () => {
+  it("projects gachapons subdomain map to gachapon/item/globalItem fields", async () => {
     fetchMock.mockResolvedValue({
       ok: true,
       json: async () =>
@@ -110,69 +113,69 @@ describe('seedService status projections', () => {
     expect(s.globalItemCount).toBe(44);
   });
 
-  it('reads npc-conversations from npc.conversation key', async () => {
+  it("reads npc-conversations from npc.conversation key", async () => {
     fetchMock.mockResolvedValue({
       ok: true,
-      json: async () => seedStatusBody({ 'npc.conversation': 462 }),
+      json: async () => seedStatusBody({ "npc.conversation": 462 }),
     });
     const s = await seedService.getNpcConversationsSeedStatus(mockTenant);
     expect(s.conversationCount).toBe(462);
   });
 
-  it('reads quest-conversations from quest.conversation key', async () => {
+  it("reads quest-conversations from quest.conversation key", async () => {
     fetchMock.mockResolvedValue({
       ok: true,
-      json: async () => seedStatusBody({ 'quest.conversation': 214 }),
+      json: async () => seedStatusBody({ "quest.conversation": 214 }),
     });
     const s = await seedService.getQuestConversationsSeedStatus(mockTenant);
     expect(s.conversationCount).toBe(214);
   });
 
-  it('reads npc-shops + auxiliary commodities from subdomain map', async () => {
+  it("reads npc-shops + auxiliary commodities from subdomain map", async () => {
     // ShopSubdomain implements seeder.SubdomainAuxiliary, so the
     // status response carries a "commodities" entry alongside the
     // primary "npc-shops" entry. The UI projects both.
     fetchMock.mockResolvedValue({
       ok: true,
-      json: async () => seedStatusBody({ 'npc-shops': 99, commodities: 3194 }),
+      json: async () => seedStatusBody({ "npc-shops": 99, commodities: 3194 }),
     });
     const s = await seedService.getNpcShopsSeedStatus(mockTenant);
     expect(s.shopCount).toBe(99);
     expect(s.commodityCount).toBe(3194);
   });
 
-  it('defaults commodity count to 0 when auxiliary key is absent', async () => {
+  it("defaults commodity count to 0 when auxiliary key is absent", async () => {
     // Backward-compat case: a deployment running an older atlas-npc-shops
     // image that does not yet implement SubdomainAuxiliary returns
     // only the primary subdomain. The projection must not blow up.
     fetchMock.mockResolvedValue({
       ok: true,
-      json: async () => seedStatusBody({ 'npc-shops': 99 }),
+      json: async () => seedStatusBody({ "npc-shops": 99 }),
     });
     const s = await seedService.getNpcShopsSeedStatus(mockTenant);
     expect(s.shopCount).toBe(99);
     expect(s.commodityCount).toBe(0);
   });
 
-  it('reads portal-actions from portal-actions key', async () => {
+  it("reads portal-actions from portal-actions key", async () => {
     fetchMock.mockResolvedValue({
       ok: true,
-      json: async () => seedStatusBody({ 'portal-actions': 81 }),
+      json: async () => seedStatusBody({ "portal-actions": 81 }),
     });
     const s = await seedService.getPortalScriptsSeedStatus(mockTenant);
     expect(s.scriptCount).toBe(81);
   });
 
-  it('reads reactor-actions from reactor-actions key', async () => {
+  it("reads reactor-actions from reactor-actions key", async () => {
     fetchMock.mockResolvedValue({
       ok: true,
-      json: async () => seedStatusBody({ 'reactor-actions': 13 }),
+      json: async () => seedStatusBody({ "reactor-actions": 13 }),
     });
     const s = await seedService.getReactorScriptsSeedStatus(mockTenant);
     expect(s.scriptCount).toBe(13);
   });
 
-  it('sums onUserEnter + onFirstUserEnter for map-action scripts', async () => {
+  it("sums onUserEnter + onFirstUserEnter for map-action scripts", async () => {
     // map-actions exposes two seeder subdomains, but the UI displays a
     // single scriptCount; the projector must sum them so the badge
     // shows the full file count.
@@ -188,27 +191,27 @@ describe('seedService status projections', () => {
     expect(s.scriptCount).toBe(9);
   });
 
-  it('falls back to updatedAt when tenantSeededAt is null', async () => {
+  it("falls back to updatedAt when tenantSeededAt is null", async () => {
     fetchMock.mockResolvedValue({
       ok: true,
       json: async () => ({
-        ...seedStatusBody({ 'monster-drop': 1 }),
+        ...seedStatusBody({ "monster-drop": 1 }),
         tenantSeededAt: null,
-        updatedAt: '2026-05-27T17:00:00Z',
+        updatedAt: "2026-05-27T17:00:00Z",
       }),
     });
     const s = await seedService.getDropsSeedStatus(mockTenant);
-    expect(s.updatedAt).toBe('2026-05-27T17:00:00Z');
+    expect(s.updatedAt).toBe("2026-05-27T17:00:00Z");
   });
 
-  it('falls back to 0 when subdomains map is absent entirely', async () => {
+  it("falls back to 0 when subdomains map is absent entirely", async () => {
     // Defensive guard: a malformed response missing the subdomains
     // map itself (vs. just missing a specific key) should not throw.
     fetchMock.mockResolvedValue({
       ok: true,
       json: async () => ({
-        groupName: 'drops',
-        catalogRevision: '',
+        groupName: "drops",
+        catalogRevision: "",
         tenantSeededRevision: null,
         tenantSeededAt: null,
         updatedAt: null,
@@ -220,22 +223,24 @@ describe('seedService status projections', () => {
     expect(s.reactorDropCount).toBe(0);
   });
 
-  it('throws on non-2xx', async () => {
+  it("throws on non-2xx", async () => {
     fetchMock.mockResolvedValue({
       ok: false,
       status: 500,
-      statusText: 'Internal Server Error',
+      statusText: "Internal Server Error",
     });
-    await expect(seedService.getDropsSeedStatus(mockTenant)).rejects.toThrow(/500/);
+    await expect(seedService.getDropsSeedStatus(mockTenant)).rejects.toThrow(
+      /500/,
+    );
   });
 });
 
-describe('seedService tenant-scope data status reads', () => {
+describe("seedService tenant-scope data status reads", () => {
   let fetchMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     fetchMock = vi.fn();
-    vi.stubGlobal('fetch', fetchMock);
+    vi.stubGlobal("fetch", fetchMock);
   });
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -244,146 +249,183 @@ describe('seedService tenant-scope data status reads', () => {
   function jsonApi(attributes: Record<string, unknown>) {
     return {
       ok: true,
-      json: async () => ({ data: { type: 't', id: 'current', attributes } }),
+      json: async () => ({ data: { type: "t", id: "current", attributes } }),
     };
   }
 
-  it('requests getWzInputStatus at scope=tenant without the operator header', async () => {
-    fetchMock.mockResolvedValue(jsonApi({ fileCount: 0, totalBytes: 0, updatedAt: null }));
+  it("requests getWzInputStatus at scope=tenant without the operator header", async () => {
+    fetchMock.mockResolvedValue(
+      jsonApi({ fileCount: 0, totalBytes: 0, updatedAt: null }),
+    );
     await seedService.getWzInputStatus(mockTenant);
     const call = fetchMock.mock.calls[0];
-    if (!call) throw new Error('fetch was not called');
-    expect(call[0]).toBe('/api/data/wz?scope=tenant');
+    if (!call) throw new Error("fetch was not called");
+    expect(call[0]).toBe("/api/data/wz?scope=tenant");
     // Tenant path is structurally incapable of shared scope.
-    expect(fetchMock.mock.calls[0]![0]).toContain('scope=tenant');
-    const headers = (fetchMock.mock.calls[0]![1] as RequestInit).headers as Headers;
-    expect(headers.get('X-Atlas-Operator')).toBeNull();
+    expect(fetchMock.mock.calls[0]![0]).toContain("scope=tenant");
+    const headers = (fetchMock.mock.calls[0]![1] as RequestInit)
+      .headers as Headers;
+    expect(headers.get("X-Atlas-Operator")).toBeNull();
   });
 
-  it('requests getDataStatus at scope=tenant without the operator header', async () => {
+  it("requests getDataStatus at scope=tenant without the operator header", async () => {
     fetchMock.mockResolvedValue(
-      jsonApi({ documentCount: 5, updatedAt: null, baselineRestoredAt: null, baselineSha256: null }),
+      jsonApi({
+        documentCount: 5,
+        updatedAt: null,
+        baselineRestoredAt: null,
+        baselineSha256: null,
+      }),
     );
     await seedService.getDataStatus(mockTenant);
     // Tenant path is structurally incapable of shared scope.
-    expect(fetchMock.mock.calls[0]![0]).toContain('scope=tenant');
-    const headers = (fetchMock.mock.calls[0]![1] as RequestInit).headers as Headers;
-    expect(headers.get('X-Atlas-Operator')).toBeNull();
+    expect(fetchMock.mock.calls[0]![0]).toContain("scope=tenant");
+    const headers = (fetchMock.mock.calls[0]![1] as RequestInit)
+      .headers as Headers;
+    expect(headers.get("X-Atlas-Operator")).toBeNull();
   });
 
-  it('PATCHes uploadWzFiles at scope=tenant without the operator header', async () => {
+  it("PATCHes uploadWzFiles at scope=tenant without the operator header", async () => {
     fetchMock.mockResolvedValue({ ok: true, status: 202 });
-    const file = new File(['zipbytes'], 'Data.zip', { type: 'application/zip' });
+    const file = new File(["zipbytes"], "Data.zip", {
+      type: "application/zip",
+    });
     await seedService.uploadWzFiles(mockTenant, file);
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/data/wz?scope=tenant',
-      expect.objectContaining({ method: 'PATCH' }),
+      "/api/data/wz?scope=tenant",
+      expect.objectContaining({ method: "PATCH" }),
     );
     // Tenant path is structurally incapable of shared scope.
-    expect(fetchMock.mock.calls[0]![0]).toContain('scope=tenant');
-    const headers = (fetchMock.mock.calls[0]![1] as RequestInit).headers as Headers;
-    expect(headers.get('X-Atlas-Operator')).toBeNull();
+    expect(fetchMock.mock.calls[0]![0]).toContain("scope=tenant");
+    const headers = (fetchMock.mock.calls[0]![1] as RequestInit)
+      .headers as Headers;
+    expect(headers.get("X-Atlas-Operator")).toBeNull();
   });
 
-  it('POSTs runDataProcessing at scope=tenant without the operator header', async () => {
+  it("POSTs runDataProcessing at scope=tenant without the operator header", async () => {
     fetchMock.mockResolvedValue({ ok: true, status: 202 });
     await seedService.runDataProcessing(mockTenant);
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/data/process?scope=tenant',
-      expect.objectContaining({ method: 'POST' }),
+      "/api/data/process?scope=tenant",
+      expect.objectContaining({ method: "POST" }),
     );
     // Tenant path is structurally incapable of shared scope.
-    expect(fetchMock.mock.calls[0]![0]).toContain('scope=tenant');
-    const headers = (fetchMock.mock.calls[0]![1] as RequestInit).headers as Headers;
-    expect(headers.get('X-Atlas-Operator')).toBeNull();
+    expect(fetchMock.mock.calls[0]![0]).toContain("scope=tenant");
+    const headers = (fetchMock.mock.calls[0]![1] as RequestInit)
+      .headers as Headers;
+    expect(headers.get("X-Atlas-Operator")).toBeNull();
   });
 });
 
-describe('canonical (shared-scope) functions', () => {
+describe("canonical (shared-scope) functions", () => {
   let fetchMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     fetchMock = vi.fn();
-    vi.stubGlobal('fetch', fetchMock);
+    vi.stubGlobal("fetch", fetchMock);
   });
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  const sel = { region: 'GMS', majorVersion: 83, minorVersion: 1 };
-  const NIL_UUID = '00000000-0000-0000-0000-000000000000';
+  const sel = { region: "GMS", majorVersion: 83, minorVersion: 1 };
+  const NIL_UUID = "00000000-0000-0000-0000-000000000000";
 
-  it('uploadCanonicalWzFiles PATCHes scope=shared with synthetic canonical headers', async () => {
+  it("uploadCanonicalWzFiles PATCHes scope=shared with synthetic canonical headers", async () => {
     fetchMock.mockResolvedValue({ ok: true, status: 202 });
-    const file = new File(['zipbytes'], 'Data.zip', { type: 'application/zip' });
+    const file = new File(["zipbytes"], "Data.zip", {
+      type: "application/zip",
+    });
     await seedService.uploadCanonicalWzFiles(sel, file);
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/data/wz?scope=shared',
-      expect.objectContaining({ method: 'PATCH' }),
+      "/api/data/wz?scope=shared",
+      expect.objectContaining({ method: "PATCH" }),
     );
-    const headers = (fetchMock.mock.calls[0]![1] as RequestInit).headers as Headers;
-    expect(headers.get('TENANT_ID')).toBe(NIL_UUID);
-    expect(headers.get('REGION')).toBe('GMS');
-    expect(headers.get('MAJOR_VERSION')).toBe('83');
-    expect(headers.get('MINOR_VERSION')).toBe('1');
-    expect(headers.get('X-Atlas-Operator')).toBe('1');
+    const headers = (fetchMock.mock.calls[0]![1] as RequestInit)
+      .headers as Headers;
+    expect(headers.get("TENANT_ID")).toBe(NIL_UUID);
+    expect(headers.get("REGION")).toBe("GMS");
+    expect(headers.get("MAJOR_VERSION")).toBe("83");
+    expect(headers.get("MINOR_VERSION")).toBe("1");
+    expect(headers.get("X-Atlas-Operator")).toBe("1");
   });
 
-  it('uploadCanonicalWzFiles surfaces status on the thrown error', async () => {
+  it("uploadCanonicalWzFiles surfaces status on the thrown error", async () => {
     fetchMock.mockResolvedValue({
       ok: false,
       status: 409,
-      statusText: 'Conflict',
-      json: async () => ({ error: 'busy' }),
+      statusText: "Conflict",
+      json: async () => ({ error: "busy" }),
     });
-    const file = new File(['zipbytes'], 'Data.zip', { type: 'application/zip' });
-    await expect(seedService.uploadCanonicalWzFiles(sel, file)).rejects.toMatchObject({
-      message: 'busy',
+    const file = new File(["zipbytes"], "Data.zip", {
+      type: "application/zip",
+    });
+    await expect(
+      seedService.uploadCanonicalWzFiles(sel, file),
+    ).rejects.toMatchObject({
+      message: "busy",
       status: 409,
     });
   });
 
-  it('runCanonicalDataProcessing POSTs scope=shared with canonical headers', async () => {
+  it("runCanonicalDataProcessing POSTs scope=shared with canonical headers", async () => {
     fetchMock.mockResolvedValue({ ok: true, status: 202 });
     await seedService.runCanonicalDataProcessing(sel);
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/data/process?scope=shared',
-      expect.objectContaining({ method: 'POST' }),
+      "/api/data/process?scope=shared",
+      expect.objectContaining({ method: "POST" }),
     );
-    const headers = (fetchMock.mock.calls[0]![1] as RequestInit).headers as Headers;
-    expect(headers.get('TENANT_ID')).toBe(NIL_UUID);
-    expect(headers.get('X-Atlas-Operator')).toBe('1');
+    const headers = (fetchMock.mock.calls[0]![1] as RequestInit)
+      .headers as Headers;
+    expect(headers.get("TENANT_ID")).toBe(NIL_UUID);
+    expect(headers.get("X-Atlas-Operator")).toBe("1");
   });
 
-  it('getCanonicalWzInputStatus GETs scope=shared and unwraps attributes', async () => {
-    fetchMock.mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => ({
-        data: { type: 'wzInputStatus', id: 'current', attributes: { fileCount: 3, totalBytes: 999, updatedAt: null } },
-      }),
-    });
-    const status = await seedService.getCanonicalWzInputStatus(sel);
-    expect(fetchMock).toHaveBeenCalledWith('/api/data/wz?scope=shared', expect.objectContaining({ method: 'GET' }));
-    expect(status.fileCount).toBe(3);
-    const headers = (fetchMock.mock.calls[0]![1] as RequestInit).headers as Headers;
-    expect(headers.get('TENANT_ID')).toBe(NIL_UUID);
-  });
-
-  it('getCanonicalDataStatus GETs scope=shared and unwraps attributes', async () => {
+  it("getCanonicalWzInputStatus GETs scope=shared and unwraps attributes", async () => {
     fetchMock.mockResolvedValue({
       ok: true,
       status: 200,
       json: async () => ({
         data: {
-          type: 'dataStatus',
-          id: 'current',
-          attributes: { documentCount: 42, updatedAt: null, baselineRestoredAt: null, baselineSha256: null },
+          type: "wzInputStatus",
+          id: "current",
+          attributes: { fileCount: 3, totalBytes: 999, updatedAt: null },
+        },
+      }),
+    });
+    const status = await seedService.getCanonicalWzInputStatus(sel);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/data/wz?scope=shared",
+      expect.objectContaining({ method: "GET" }),
+    );
+    expect(status.fileCount).toBe(3);
+    const headers = (fetchMock.mock.calls[0]![1] as RequestInit)
+      .headers as Headers;
+    expect(headers.get("TENANT_ID")).toBe(NIL_UUID);
+  });
+
+  it("getCanonicalDataStatus GETs scope=shared and unwraps attributes", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        data: {
+          type: "dataStatus",
+          id: "current",
+          attributes: {
+            documentCount: 42,
+            updatedAt: null,
+            baselineRestoredAt: null,
+            baselineSha256: null,
+          },
         },
       }),
     });
     const status = await seedService.getCanonicalDataStatus(sel);
-    expect(fetchMock).toHaveBeenCalledWith('/api/data/status?scope=shared', expect.objectContaining({ method: 'GET' }));
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/data/status?scope=shared",
+      expect.objectContaining({ method: "GET" }),
+    );
     expect(status.documentCount).toBe(42);
   });
 });

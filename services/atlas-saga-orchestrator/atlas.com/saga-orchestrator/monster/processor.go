@@ -3,8 +3,9 @@ package monster
 import (
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
 // Processor provides monster spawning functionality.
@@ -24,6 +25,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		ctx: ctx,
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) SpawnMonster(f field.Model, monsterId uint32, x, y, fh int16, team int8) error {
 	req := SpawnRequest{

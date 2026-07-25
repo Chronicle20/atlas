@@ -1,0 +1,10 @@
+packet: pet/clientbound/PetMovement
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CPet::OnMove
+    address: "0x66c083"
+    decompile_sha256: 34034686c3dc20363c2795408c517f2e207b9e72c58a0d77528f35da514e021d
+verifies:
+  - libs/atlas-packet/pet/clientbound/movement_test.go#TestPetMovementBytesV72

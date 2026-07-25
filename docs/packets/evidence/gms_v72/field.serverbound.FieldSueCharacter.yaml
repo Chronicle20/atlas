@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldSueCharacter
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendChatMsgSlash#SueCharacter
+    address: "0x50c2c3"
+    decompile_sha256: c9e5234b4e1ca60c776d5e6bba772f419a617303fc03ecaa84dcd87e402fcddb
+verifies:
+    - libs/atlas-packet/field/serverbound/sue_character_test.go#TestSueCharacterByteOutputV72

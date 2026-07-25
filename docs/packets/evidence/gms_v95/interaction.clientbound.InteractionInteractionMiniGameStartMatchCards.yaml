@@ -1,0 +1,10 @@
+packet: interaction/clientbound/InteractionInteractionMiniGameStartMatchCards
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CMiniRoomBaseDlg::OnPacketBase#MemoryGameStartMatchCards
+    address: "0x62f220"
+    decompile_sha256: 1672bc731cc4ca29833938616499aec315c6545953bf89c354076e238dff10bd
+verifies:
+    - libs/atlas-packet/interaction/clientbound/interaction_minigame_test.go#TestInteractionMiniGameStartMatchCardsRoundTrip

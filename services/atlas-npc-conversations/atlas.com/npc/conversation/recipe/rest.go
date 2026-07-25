@@ -31,8 +31,8 @@ type RestModel struct {
 	StimulatorFailChance float64        `json:"stimulatorFailChance"`
 }
 
-func (r RestModel) GetName() string  { return Resource }
-func (r RestModel) GetID() string    { return r.Id.String() }
+func (r RestModel) GetName() string { return Resource }
+func (r RestModel) GetID() string   { return r.Id.String() }
 func (r *RestModel) SetID(idStr string) error {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
@@ -41,9 +41,11 @@ func (r *RestModel) SetID(idStr string) error {
 	r.Id = id
 	return nil
 }
-func (r RestModel) GetReferences() []jsonapi.Reference                { return []jsonapi.Reference{} }
-func (r RestModel) GetReferencedIDs() []jsonapi.ReferenceID           { return []jsonapi.ReferenceID{} }
-func (r RestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier { return []jsonapi.MarshalIdentifier{} }
+func (r RestModel) GetReferences() []jsonapi.Reference      { return []jsonapi.Reference{} }
+func (r RestModel) GetReferencedIDs() []jsonapi.ReferenceID { return []jsonapi.ReferenceID{} }
+func (r RestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
+	return []jsonapi.MarshalIdentifier{}
+}
 func (r *RestModel) SetToOneReferenceID(_, _ string) error            { return nil }
 func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
 func (r *RestModel) SetReferencedStructs(_ map[string]map[string]jsonapi.Data) error {
@@ -79,12 +81,14 @@ type RestReindexResult struct {
 	ConversationsScanned int             `json:"conversationsScanned"`
 }
 
-func (r RestReindexResult) GetName() string  { return ReindexResource }
-func (r RestReindexResult) GetID() string    { return r.Id }
-func (r *RestReindexResult) SetID(id string) error { r.Id = id; return nil }
-func (r RestReindexResult) GetReferences() []jsonapi.Reference                { return []jsonapi.Reference{} }
-func (r RestReindexResult) GetReferencedIDs() []jsonapi.ReferenceID           { return []jsonapi.ReferenceID{} }
-func (r RestReindexResult) GetReferencedStructs() []jsonapi.MarshalIdentifier { return []jsonapi.MarshalIdentifier{} }
+func (r RestReindexResult) GetName() string                         { return ReindexResource }
+func (r RestReindexResult) GetID() string                           { return r.Id }
+func (r *RestReindexResult) SetID(id string) error                  { r.Id = id; return nil }
+func (r RestReindexResult) GetReferences() []jsonapi.Reference      { return []jsonapi.Reference{} }
+func (r RestReindexResult) GetReferencedIDs() []jsonapi.ReferenceID { return []jsonapi.ReferenceID{} }
+func (r RestReindexResult) GetReferencedStructs() []jsonapi.MarshalIdentifier {
+	return []jsonapi.MarshalIdentifier{}
+}
 func (r *RestReindexResult) SetToOneReferenceID(_, _ string) error            { return nil }
 func (r *RestReindexResult) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
 func (r *RestReindexResult) SetReferencedStructs(_ map[string]map[string]jsonapi.Data) error {

@@ -30,7 +30,6 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 		MustBuild()
 
 	model, err := asset.NewModelBuilder(id, compartmentId, testItem).Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}

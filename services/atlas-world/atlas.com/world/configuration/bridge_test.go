@@ -1,9 +1,8 @@
 package configuration
 
 import (
-	"testing"
-
 	"atlas-world/configuration/tenant"
+	"testing"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -19,7 +18,7 @@ func TestChangedTenants(t *testing.T) {
 
 	prev := map[uuid.UUID]tenant.RestModel{id1: a}
 	next := map[uuid.UUID]tenant.RestModel{
-		id1: aChanged,                           // changed
+		id1: aChanged,                          // changed
 		id2: {Id: id2.String(), Region: "GMS"}, // new
 	}
 

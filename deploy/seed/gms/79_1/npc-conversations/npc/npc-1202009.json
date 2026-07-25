@@ -1,0 +1,76 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1202009,
+      "startState": "checkItem",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "includeEquipped": true,
+                    "operator": ">=",
+                    "referenceId": "1902016",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "warpToWolves"
+              },
+              {
+                "conditions": [],
+                "nextState": "noItem"
+              }
+            ]
+          },
+          "id": "checkItem",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "140010210",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "warpToWolves",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "What is it? If you you're here to waste my time, get lost!"
+          },
+          "id": "noItem",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "1202009",
+    "type": "npc-conversation"
+  }
+}

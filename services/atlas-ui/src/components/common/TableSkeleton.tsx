@@ -1,5 +1,12 @@
-import { Skeleton } from '@/components/ui/skeleton';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface TableSkeletonProps {
   rows?: number;
@@ -13,13 +20,13 @@ interface TableSkeletonProps {
    * - 'wave': Shimmer wave animation
    * - 'none': No animation
    */
-  animation?: 'pulse' | 'wave' | 'none';
+  animation?: "pulse" | "wave" | "none";
 }
 
 /**
  * TableSkeleton component provides a loading state for data tables
  * that matches the structure of the main DataTable component.
- * 
+ *
  * @param rows - Number of skeleton rows to display (default: 5)
  * @param columns - Number of skeleton columns to display (default: 4)
  * @param showHeader - Whether to show the header skeleton (default: true)
@@ -27,24 +34,29 @@ interface TableSkeletonProps {
  * @param className - Additional CSS classes to apply
  * @param animation - Animation type for skeleton elements (default: 'pulse')
  */
-export function TableSkeleton({ 
-  rows = 5, 
-  columns = 4, 
-  showHeader = true, 
+export function TableSkeleton({
+  rows = 5,
+  columns = 4,
+  showHeader = true,
   showActions = true,
   className,
-  animation = 'pulse'
+  animation = "pulse",
 }: TableSkeletonProps) {
   return (
-    <div className={`w-full space-y-4 ${className || ''}`} data-testid="table-skeleton">
+    <div
+      className={`w-full space-y-4 ${className || ""}`}
+      data-testid="table-skeleton"
+    >
       {/* Header actions skeleton */}
       {showActions && (
         <div className="flex items-center justify-between">
           <div className="flex gap-2 items-center">
-            <Skeleton animation={animation} className="h-10 w-10" /> {/* Refresh button */}
+            <Skeleton animation={animation} className="h-10 w-10" />{" "}
+            {/* Refresh button */}
           </div>
           <div className="flex items-center gap-2">
-            <Skeleton animation={animation} className="h-8 w-20" /> {/* Actions dropdown */}
+            <Skeleton animation={animation} className="h-8 w-20" />{" "}
+            {/* Actions dropdown */}
           </div>
         </div>
       )}
@@ -61,7 +73,10 @@ export function TableSkeleton({
                     <TableRow>
                       {Array.from({ length: columns }).map((_, index) => (
                         <TableHead key={`header-${index}`}>
-                          <Skeleton animation={animation} className="h-4 w-full" />
+                          <Skeleton
+                            animation={animation}
+                            className="h-4 w-full"
+                          />
                         </TableHead>
                       ))}
                     </TableRow>
@@ -69,7 +84,7 @@ export function TableSkeleton({
                 </Table>
               </div>
             )}
-            
+
             {/* Table body skeleton */}
             <div className="overflow-auto max-h-[calc(100vh-20rem)]">
               <Table className="[&>div]:overflow-visible table-fixed w-full">
@@ -78,7 +93,10 @@ export function TableSkeleton({
                     <TableRow key={`row-${rowIndex}`}>
                       {Array.from({ length: columns }).map((_, colIndex) => (
                         <TableCell key={`cell-${rowIndex}-${colIndex}`}>
-                          <Skeleton animation={animation} className="h-4 w-full" />
+                          <Skeleton
+                            animation={animation}
+                            className="h-4 w-full"
+                          />
                         </TableCell>
                       ))}
                     </TableRow>

@@ -1,5 +1,9 @@
-import { tenantHeaders, canonicalHeaders, type CanonicalSelection } from '@/lib/headers';
-import type { Tenant } from '@/types/models/tenant';
+import {
+  tenantHeaders,
+  canonicalHeaders,
+  type CanonicalSelection,
+} from "@/lib/headers";
+import type { Tenant } from "@/types/models/tenant";
 
 export interface BaselineRestoreInput {
   region: string;
@@ -24,9 +28,16 @@ interface JsonApiCollection<A> {
 // GET /data/baselines needs tenant headers only to clear the shared REST
 // middleware; the server ignores their values. A fixed dummy selection keeps
 // the call signature tenant-free.
-const LIST_HEADER_SELECTION: CanonicalSelection = { region: 'NONE', majorVersion: 0, minorVersion: 0 };
+const LIST_HEADER_SELECTION: CanonicalSelection = {
+  region: "NONE",
+  majorVersion: 0,
+  minorVersion: 0,
+};
 
-async function decodeErrorMessage(response: Response, fallback: string): Promise<string> {
+async function decodeErrorMessage(
+  response: Response,
+  fallback: string,
+): Promise<string> {
   try {
     const parsed = (await response.json()) as { error?: string };
     if (parsed.error) return parsed.error;
@@ -43,20 +54,29 @@ async function decodeErrorMessage(response: Response, fallback: string): Promise
 // is rejected with 400 "Source JSON is empty and has no attributes payload object".
 export class BaselineService {
   async restore(tenant: Tenant, body: BaselineRestoreInput): Promise<void> {
+    // Restore targets a specific tenant (body.tenantId), so it carries that
+    // tenant's headers — but it is also an operator-scoped action: atlas-data's
+    // restore handler gates on X-Atlas-Operator and returns 403 "operator
+    // required" without it (baseline/handler.go). tenantHeaders alone omits the
+    // flag (only canonicalHeaders bakes it in), so set it explicitly here.
     const headers = tenantHeaders(tenant);
-    headers.set('Content-Type', 'application/json');
-    const r = await fetch('/api/data/baseline/restore', {
-      method: 'POST',
+    headers.set("X-Atlas-Operator", "1");
+    headers.set("Content-Type", "application/json");
+    const r = await fetch("/api/data/baseline/restore", {
+      method: "POST",
       headers,
       body: JSON.stringify({
         data: {
-          type: 'baselineRestores',
+          type: "baselineRestores",
           attributes: body,
         },
       }),
     });
     if (!r.ok) {
-      const message = await decodeErrorMessage(r, `restore failed: ${r.status}`);
+      const message = await decodeErrorMessage(
+        r,
+        `restore failed: ${r.status}`,
+      );
       throw new Error(message);
     }
   }
@@ -65,13 +85,13 @@ export class BaselineService {
   // only fed headers. It now takes the explicit canonical selection.
   async publish(sel: CanonicalSelection): Promise<void> {
     const headers = canonicalHeaders(sel);
-    headers.set('Content-Type', 'application/json');
-    const r = await fetch('/api/data/baseline/publish', {
-      method: 'POST',
+    headers.set("Content-Type", "application/json");
+    const r = await fetch("/api/data/baseline/publish", {
+      method: "POST",
       headers,
       body: JSON.stringify({
         data: {
-          type: 'baselinePublishes',
+          type: "baselinePublishes",
           attributes: {
             region: sel.region,
             majorVersion: sel.majorVersion,
@@ -81,17 +101,23 @@ export class BaselineService {
       }),
     });
     if (!r.ok) {
-      const message = await decodeErrorMessage(r, `publish failed: ${r.status}`);
+      const message = await decodeErrorMessage(
+        r,
+        `publish failed: ${r.status}`,
+      );
       throw new Error(message);
     }
   }
 
   async listBaselines(): Promise<Baseline[]> {
     const headers = canonicalHeaders(LIST_HEADER_SELECTION);
-    headers.set('Accept', 'application/vnd.api+json');
-    const r = await fetch('/api/data/baselines', { method: 'GET', headers });
+    headers.set("Accept", "application/vnd.api+json");
+    const r = await fetch("/api/data/baselines", { method: "GET", headers });
     if (!r.ok) {
-      const message = await decodeErrorMessage(r, `baselines list failed: ${r.status}`);
+      const message = await decodeErrorMessage(
+        r,
+        `baselines list failed: ${r.status}`,
+      );
       throw new Error(message);
     }
     const body = (await r.json()) as JsonApiCollection<Baseline>;

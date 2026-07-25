@@ -1,0 +1,10 @@
+packet: character/serverbound/CharacterMonsterDamageFriendly
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CMob::Update
+    address: "0x5c71b7"
+    decompile_sha256: 45da692772b4f3013bd7159666e52c8f9cd8a3c769130e54adf0d50e2ba5ae9c
+verifies:
+  - libs/atlas-packet/character/serverbound/v61_test.go#TestMonsterDamageFriendlyByteOutputV61

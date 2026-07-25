@@ -1,0 +1,43 @@
+{
+  "service": "atlas-rankings",
+  "path": "services/atlas-rankings/atlas.com/rankings",
+  "date": "2026-07-24",
+  "gitRange": "aacbd6569..aba3d894b",
+  "build": "pass",
+  "testsPassed": 3,
+  "testsFailed": 0,
+  "testsNote": "targeted go test ./ranking/... ./character/... ./tasks/... -count=1 (3 packages ok); full -race suite already run upstream per task brief",
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "ranking",
+      "type": "domain",
+      "checks": [
+        {"id": "immutable-model", "name": "Private fields + getters + Builder", "status": "pass", "evidence": "ranking/model.go:9-30; ranking/builder.go:10-54"},
+        {"id": "processor-shape", "name": "Interface+Impl, NewProcessor(l,ctx,db)", "status": "pass", "evidence": "ranking/processor.go:21,46,54"},
+        {"id": "DOM-06", "name": "Processor accepts FieldLogger", "status": "pass", "evidence": "ranking/processor.go:54"},
+        {"id": "DOM-10", "name": "Test DB registers tenant callbacks", "status": "pass", "evidence": "ranking/entity_test.go:22"},
+        {"id": "multitenancy-leaderboard-read", "name": "Leaderboard read path relies on GORM tenant callback via db.WithContext(ctx)", "status": "pass", "evidence": "ranking/processor.go:87-90; ranking/provider.go:67-77; ranking/provider_test.go:565-590 TestByWorldPagedTenantIsolation"},
+        {"id": "multitenancy-single-char-unchanged", "name": "Single-character lookup path and RestModel unchanged", "status": "pass", "evidence": "ranking/resource.go:144-170, ranking/rest.go untouched by diff"},
+        {"id": "DOM-21", "name": "Shared atlas-constants types used, none reinvented", "status": "pass", "evidence": "ranking/builder.go:6-7; ranking/entity.go:233-234; job.Id/world.Id used directly"},
+        {"id": "pagination-shared-helpers", "name": "paginate.ParseParams + server.MarshalPaginatedResponse used", "status": "pass", "evidence": "ranking/resource.go:62,83"},
+        {"id": "pagination-400-missing-worldid", "name": "400 on missing/invalid filter[worldId]", "status": "pass", "evidence": "ranking/resource.go:39-49; resource_test.go:740-749 TestLeaderboardRequiresWorldId"},
+        {"id": "pagination-empty-world-200", "name": "Empty world returns 200 empty page", "status": "pass", "evidence": "resource_test.go:755-779 TestLeaderboardEmptyWorldReturnsEmptyPage"},
+        {"id": "DOM-09", "name": "Transform errors handled, none swallowed", "status": "pass", "evidence": "ranking/resource.go:75-80 and all other error branches checked"},
+        {"id": "DOM-27", "name": "Transient DB errors mapped via WriteErrorResponse, not bare 500", "status": "pass", "evidence": "ranking/resource.go:69-73,76-80; main.go:48-54 classifier registration (pre-existing, unmodified)"},
+        {"id": "DOM-14-DOM-15", "name": "Handler delegates to processor only", "status": "pass", "evidence": "ranking/resource.go:68"},
+        {"id": "DOM-18", "name": "JSON:API interface on new REST model", "status": "pass", "evidence": "ranking/leaderboard_rest.go (diff lines 314-324): GetName/GetID/SetID"},
+        {"id": "shared-resource-type-name", "name": "RestModel and LeaderboardRestModel share GetName()==\"rankings\"", "status": "info", "evidence": "ranking/rest.go:20-22; ranking/leaderboard_rest.go GetName() -- plan-mandated per task brief, not scored"},
+        {"id": "no-todo-stub-501", "name": "No TODO/stub/501 in landed code", "status": "pass", "evidence": "grep over changed files: no matches; tasks/recompute_test.go:34-36 fakeProcessor method is a legitimate test double"},
+        {"id": "FILE-02", "name": "RestModel + Transform live in rest.go", "status": "fail", "severity": "important", "evidence": "ranking/leaderboard_rest.go (new file) defines LeaderboardRestModel + TransformLeaderboard instead of ranking/rest.go, which file-responsibilities.md designates as the sole home for these responsibilities; no documented exception for a rest-file split (unlike the permitted processor_<group>.go split)."}
+      ]
+    }
+  ],
+  "blocking": [
+    "FILE-02: services/atlas-rankings/atlas.com/rankings/ranking/leaderboard_rest.go defines LeaderboardRestModel and TransformLeaderboard outside ranking/rest.go, violating file-responsibilities.md's RestModel/Transform placement rule with no documented split exception."
+  ],
+  "nonBlocking": [
+    "ranking/resource.go wraps TransformLeaderboard in an unnecessary anonymous closure passed to model.SliceMap instead of passing TransformLeaderboard directly (cosmetic).",
+    "Two RestModel types in the ranking package share GetName()==\"rankings\" (plan-mandated per task brief); worth a second look for api2go disambiguation if/when LeaderboardRestModel is folded into rest.go to fix FILE-02."
+  ]
+}

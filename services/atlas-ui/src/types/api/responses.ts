@@ -1,6 +1,6 @@
 /**
  * Generic API response wrapper for all Atlas API endpoints.
- * 
+ *
  * The Atlas API follows JSON:API-like conventions with responses containing
  * a 'data' field for successful responses.
  */
@@ -48,37 +48,50 @@ export interface ApiSimpleErrorResponse {
 /**
  * Union type for all possible API responses
  */
-export type ApiResult<T = unknown> = ApiResponse<T> | ApiErrorResponse | ApiSimpleErrorResponse;
+export type ApiResult<T = unknown> =
+  ApiResponse<T> | ApiErrorResponse | ApiSimpleErrorResponse;
 
 /**
  * Type guard to check if a response is an error response
  */
-export function isApiErrorResponse(response: unknown): response is ApiErrorResponse {
-  return typeof response === 'object' && 
-         response !== null && 
-         'error' in response &&
-         typeof (response as ApiErrorResponse).error === 'object';
+export function isApiErrorResponse(
+  response: unknown,
+): response is ApiErrorResponse {
+  return (
+    typeof response === "object" &&
+    response !== null &&
+    "error" in response &&
+    typeof (response as ApiErrorResponse).error === "object"
+  );
 }
 
 /**
  * Type guard to check if a response is a simple error response
  */
-export function isApiSimpleErrorResponse(response: unknown): response is ApiSimpleErrorResponse {
-  return typeof response === 'object' && 
-         response !== null && 
-         'message' in response &&
-         typeof (response as ApiSimpleErrorResponse).message === 'string';
+export function isApiSimpleErrorResponse(
+  response: unknown,
+): response is ApiSimpleErrorResponse {
+  return (
+    typeof response === "object" &&
+    response !== null &&
+    "message" in response &&
+    typeof (response as ApiSimpleErrorResponse).message === "string"
+  );
 }
 
 /**
  * Type guard to check if a response is a successful API response
  */
-export function isApiSuccessResponse<T>(response: unknown): response is ApiResponse<T> {
-  return typeof response === 'object' && 
-         response !== null && 
-         'data' in response &&
-         !isApiErrorResponse(response) &&
-         !isApiSimpleErrorResponse(response);
+export function isApiSuccessResponse<T>(
+  response: unknown,
+): response is ApiResponse<T> {
+  return (
+    typeof response === "object" &&
+    response !== null &&
+    "data" in response &&
+    !isApiErrorResponse(response) &&
+    !isApiSimpleErrorResponse(response)
+  );
 }
 
 /**

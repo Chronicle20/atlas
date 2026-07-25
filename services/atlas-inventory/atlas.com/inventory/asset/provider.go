@@ -3,14 +3,21 @@ package asset
 import (
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 func getByCompartmentId(compartmentId uuid.UUID) database.EntityProvider[[]Entity] {
 	return func(db *gorm.DB) model.Provider[[]Entity] {
 		return database.SliceQuery[Entity](db, &Entity{CompartmentId: compartmentId})
+	}
+}
+
+func getByCompartmentIdPaged(compartmentId uuid.UUID, page model.Page) database.EntityProvider[model.Paged[Entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[Entity]] {
+		return database.PagedQuery[Entity](db.Where(&Entity{CompartmentId: compartmentId}), page)
 	}
 }
 

@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const ReactorSpawnWriter = "ReactorSpawn"
@@ -26,14 +27,14 @@ func NewReactorSpawn(id uint32, classification uint32, state int8, x int16, y in
 	return Spawn{id: id, classification: classification, state: state, x: x, y: y, direction: direction, name: name}
 }
 
-func (m Spawn) Id() uint32              { return m.id }
-func (m Spawn) Classification() uint32  { return m.classification }
-func (m Spawn) State() int8             { return m.state }
-func (m Spawn) X() int16                { return m.x }
-func (m Spawn) Y() int16                { return m.y }
-func (m Spawn) Direction() byte         { return m.direction }
-func (m Spawn) Name() string            { return m.name }
-func (m Spawn) Operation() string       { return ReactorSpawnWriter }
+func (m Spawn) Id() uint32             { return m.id }
+func (m Spawn) Classification() uint32 { return m.classification }
+func (m Spawn) State() int8            { return m.state }
+func (m Spawn) X() int16               { return m.x }
+func (m Spawn) Y() int16               { return m.y }
+func (m Spawn) Direction() byte        { return m.direction }
+func (m Spawn) Name() string           { return m.name }
+func (m Spawn) Operation() string      { return ReactorSpawnWriter }
 func (m Spawn) String() string {
 	return fmt.Sprintf("id [%d], classification [%d], state [%d]", m.id, m.classification, m.state)
 }

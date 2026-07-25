@@ -9,9 +9,11 @@ import (
 	"github.com/google/uuid"
 )
 
-var configMu sync.RWMutex
-var serviceConfig *RestModel
-var tenantConfig map[uuid.UUID]tenant.RestModel
+var (
+	configMu      sync.RWMutex
+	serviceConfig *RestModel
+	tenantConfig  map[uuid.UUID]tenant.RestModel
+)
 
 // readyCh is closed once PublishSnapshot has populated serviceConfig for the
 // first time. main.go registers Kafka consumers (account, account/session,
@@ -19,8 +21,10 @@ var tenantConfig map[uuid.UUID]tenant.RestModel
 // and the handler calls GetServiceConfig / GetTenantConfig, the legacy
 // log.Fatalf path used to crash the pod. Get* now blocks on readyCh
 // instead, bounded by readyTimeout.
-var readyCh = make(chan struct{})
-var readyOnce sync.Once
+var (
+	readyCh   = make(chan struct{})
+	readyOnce sync.Once
+)
 
 // readyTimeout caps how long a Get* call waits for the projection's first
 // PublishSnapshot. Long enough to outlast the catch-up window in a fresh PR

@@ -5,7 +5,11 @@ import type {
   DialogueChoice,
   DialogueType,
 } from "@/types/models/conversation";
-import { getTransitions, buildStateIndex, type Transition } from "./transitions";
+import {
+  getTransitions,
+  buildStateIndex,
+  type Transition,
+} from "./transitions";
 
 export function replaceState(
   conversation: Conversation,
@@ -16,7 +20,7 @@ export function replaceState(
     ...conversation,
     attributes: {
       ...conversation.attributes,
-      states: conversation.attributes.states.map(s =>
+      states: conversation.attributes.states.map((s) =>
         s.id === id ? next : s,
       ),
     },
@@ -29,49 +33,58 @@ function rewireStateRefs(
 ): ConversationState {
   const next: ConversationState = JSON.parse(JSON.stringify(state));
   if (next.dialogue) {
-    next.dialogue.choices = (next.dialogue.choices ?? []).map(c => ({
+    next.dialogue.choices = (next.dialogue.choices ?? []).map((c) => ({
       ...c,
       nextState: rewire(c.nextState) ?? null,
     }));
   }
   if (next.listSelection) {
-    next.listSelection.choices = (next.listSelection.choices ?? []).map(c => ({
-      ...c,
-      nextState: rewire(c.nextState) ?? null,
-    }));
+    next.listSelection.choices = (next.listSelection.choices ?? []).map(
+      (c) => ({
+        ...c,
+        nextState: rewire(c.nextState) ?? null,
+      }),
+    );
   }
   if (next.askSlideMenu) {
-    next.askSlideMenu.choices = (next.askSlideMenu.choices ?? []).map(c => ({
+    next.askSlideMenu.choices = (next.askSlideMenu.choices ?? []).map((c) => ({
       ...c,
       nextState: rewire(c.nextState) ?? null,
     }));
   }
   if (next.askNumber) {
-    next.askNumber.nextState = rewire(next.askNumber.nextState) ?? next.askNumber.nextState;
+    next.askNumber.nextState =
+      rewire(next.askNumber.nextState) ?? next.askNumber.nextState;
   }
   if (next.askStyle) {
-    next.askStyle.nextState = rewire(next.askStyle.nextState) ?? next.askStyle.nextState;
+    next.askStyle.nextState =
+      rewire(next.askStyle.nextState) ?? next.askStyle.nextState;
   }
   if (next.craftAction) {
     const ca = next.craftAction;
     ca.successState = rewire(ca.successState) ?? ca.successState;
     ca.failureState = rewire(ca.failureState) ?? ca.failureState;
-    ca.missingMaterialsState = rewire(ca.missingMaterialsState) ?? ca.missingMaterialsState;
+    ca.missingMaterialsState =
+      rewire(ca.missingMaterialsState) ?? ca.missingMaterialsState;
   }
   if (next.transportAction) {
     const ta = next.transportAction;
     ta.failureState = rewire(ta.failureState) ?? ta.failureState;
     if (ta.capacityFullState !== undefined) {
-      ta.capacityFullState = rewire(ta.capacityFullState) ?? ta.capacityFullState;
+      ta.capacityFullState =
+        rewire(ta.capacityFullState) ?? ta.capacityFullState;
     }
     if (ta.alreadyInTransitState !== undefined) {
-      ta.alreadyInTransitState = rewire(ta.alreadyInTransitState) ?? ta.alreadyInTransitState;
+      ta.alreadyInTransitState =
+        rewire(ta.alreadyInTransitState) ?? ta.alreadyInTransitState;
     }
     if (ta.routeNotFoundState !== undefined) {
-      ta.routeNotFoundState = rewire(ta.routeNotFoundState) ?? ta.routeNotFoundState;
+      ta.routeNotFoundState =
+        rewire(ta.routeNotFoundState) ?? ta.routeNotFoundState;
     }
     if (ta.serviceErrorState !== undefined) {
-      ta.serviceErrorState = rewire(ta.serviceErrorState) ?? ta.serviceErrorState;
+      ta.serviceErrorState =
+        rewire(ta.serviceErrorState) ?? ta.serviceErrorState;
     }
   }
   if (next.partyQuestAction) {
@@ -91,10 +104,11 @@ function rewireStateRefs(
   }
   if (next.gachaponAction) {
     next.gachaponAction.failureState =
-      rewire(next.gachaponAction.failureState) ?? next.gachaponAction.failureState;
+      rewire(next.gachaponAction.failureState) ??
+      next.gachaponAction.failureState;
   }
   if (next.genericAction?.outcomes) {
-    next.genericAction.outcomes = next.genericAction.outcomes.map(o => ({
+    next.genericAction.outcomes = next.genericAction.outcomes.map((o) => ({
       ...o,
       nextState: rewire(o.nextState) ?? o.nextState,
     }));
@@ -110,7 +124,7 @@ export function renameState(
   if (oldId === newId) return conversation;
   const rewire = (id: string | null | undefined) =>
     id === oldId ? newId : (id ?? null);
-  const states = conversation.attributes.states.map(state => {
+  const states = conversation.attributes.states.map((state) => {
     const rewired = rewireStateRefs(state, rewire);
     if (rewired.id === oldId) return { ...rewired, id: newId };
     return rewired;
@@ -143,7 +157,8 @@ export function previewDelete(
   for (const state of conversation.attributes.states) {
     if (state.id === targetId) continue;
     for (const t of getTransitions(state)) {
-      if (t.target === targetId) incoming.push({ source: state.id, label: t.label });
+      if (t.target === targetId)
+        incoming.push({ source: state.id, label: t.label });
     }
   }
   const byId = new Map<string, ConversationState>();
@@ -221,8 +236,8 @@ export function deleteState(
     id && toRemove.has(id) ? null : (id ?? null);
 
   const states = conversation.attributes.states
-    .filter(s => !toRemove.has(s.id))
-    .map(s => rewireStateRefs(s, rewireNull));
+    .filter((s) => !toRemove.has(s.id))
+    .map((s) => rewireStateRefs(s, rewireNull));
 
   return {
     ...conversation,
@@ -239,7 +254,7 @@ export function idIsTaken(
   exceptId?: string,
 ): boolean {
   return conversation.attributes.states.some(
-    s => s.id === id && s.id !== exceptId,
+    (s) => s.id === id && s.id !== exceptId,
   );
 }
 
@@ -250,7 +265,7 @@ export function deriveUniqueId(
   const taken =
     existing instanceof Set
       ? existing
-      : new Set(existing.attributes.states.map(s => s.id));
+      : new Set(existing.attributes.states.map((s) => s.id));
   if (!taken.has(seed)) return seed;
   for (let i = 2; i < 10_000; i++) {
     const candidate = `${seed}${i}`;
@@ -325,7 +340,7 @@ export function switchStateType(
   stateId: string,
   nextType: ConversationStateType,
 ): Conversation {
-  const state = conversation.attributes.states.find(s => s.id === stateId);
+  const state = conversation.attributes.states.find((s) => s.id === stateId);
   if (!state || state.type === nextType) return conversation;
   const replacement = emptyStateOfType(nextType, state.id);
   return replaceState(conversation, stateId, replacement);
@@ -340,7 +355,7 @@ export function addChildState(
   conversation: Conversation,
   sourceId: string,
 ): AddChildResult | null {
-  const source = conversation.attributes.states.find(s => s.id === sourceId);
+  const source = conversation.attributes.states.find((s) => s.id === sourceId);
   if (!source) return null;
 
   const newId = deriveUniqueId(conversation);
@@ -391,7 +406,7 @@ export function addChildState(
       return null;
   }
 
-  const states = conversation.attributes.states.map(s =>
+  const states = conversation.attributes.states.map((s) =>
     s.id === sourceId ? updatedSource! : s,
   );
   states.push(newState);
@@ -456,7 +471,7 @@ export function clearTransition(
   kind: Transition["kind"],
   ordinal: number,
 ): { conversation: Conversation; cascadedDeletedIds: string[] } | null {
-  const source = conversation.attributes.states.find(s => s.id === sourceId);
+  const source = conversation.attributes.states.find((s) => s.id === sourceId);
   if (!source) return null;
 
   const updatedSource = setTransitionTarget(source, kind, ordinal, null);
@@ -464,7 +479,7 @@ export function clearTransition(
     ...conversation,
     attributes: {
       ...conversation.attributes,
-      states: conversation.attributes.states.map(s =>
+      states: conversation.attributes.states.map((s) =>
         s.id === sourceId ? updatedSource : s,
       ),
     },
@@ -502,8 +517,8 @@ export function clearTransition(
   const rewireNull = (id: string | null | undefined): string | null =>
     id && toRemove.has(id) ? null : (id ?? null);
   const states = intermediate.attributes.states
-    .filter(s => !toRemove.has(s.id))
-    .map(s => rewireStateRefs(s, rewireNull));
+    .filter((s) => !toRemove.has(s.id))
+    .map((s) => rewireStateRefs(s, rewireNull));
 
   return {
     conversation: {
@@ -566,31 +581,42 @@ function setTransitionTarget(
       break;
     case "failure":
       if (clone.craftAction) clone.craftAction.failureState = stringTarget;
-      else if (clone.transportAction) clone.transportAction.failureState = stringTarget;
-      else if (clone.partyQuestAction) clone.partyQuestAction.failureState = stringTarget;
-      else if (clone.partyQuestBonusAction) clone.partyQuestBonusAction.failureState = stringTarget;
-      else if (clone.gachaponAction) clone.gachaponAction.failureState = stringTarget;
+      else if (clone.transportAction)
+        clone.transportAction.failureState = stringTarget;
+      else if (clone.partyQuestAction)
+        clone.partyQuestAction.failureState = stringTarget;
+      else if (clone.partyQuestBonusAction)
+        clone.partyQuestBonusAction.failureState = stringTarget;
+      else if (clone.gachaponAction)
+        clone.gachaponAction.failureState = stringTarget;
       break;
     case "missing":
-      if (clone.craftAction) clone.craftAction.missingMaterialsState = stringTarget;
+      if (clone.craftAction)
+        clone.craftAction.missingMaterialsState = stringTarget;
       break;
     case "capacityFull":
-      if (clone.transportAction) clone.transportAction.capacityFullState = stringTarget;
+      if (clone.transportAction)
+        clone.transportAction.capacityFullState = stringTarget;
       break;
     case "alreadyInTransit":
-      if (clone.transportAction) clone.transportAction.alreadyInTransitState = stringTarget;
+      if (clone.transportAction)
+        clone.transportAction.alreadyInTransitState = stringTarget;
       break;
     case "routeNotFound":
-      if (clone.transportAction) clone.transportAction.routeNotFoundState = stringTarget;
+      if (clone.transportAction)
+        clone.transportAction.routeNotFoundState = stringTarget;
       break;
     case "serviceError":
-      if (clone.transportAction) clone.transportAction.serviceErrorState = stringTarget;
+      if (clone.transportAction)
+        clone.transportAction.serviceErrorState = stringTarget;
       break;
     case "notInParty":
-      if (clone.partyQuestAction) clone.partyQuestAction.notInPartyState = stringTarget;
+      if (clone.partyQuestAction)
+        clone.partyQuestAction.notInPartyState = stringTarget;
       break;
     case "notLeader":
-      if (clone.partyQuestAction) clone.partyQuestAction.notLeaderState = stringTarget;
+      if (clone.partyQuestAction)
+        clone.partyQuestAction.notLeaderState = stringTarget;
       break;
   }
   return clone;
@@ -602,12 +628,12 @@ export function insertBetween(
   kind: Transition["kind"],
   ordinal: number,
 ): AddChildResult | null {
-  const source = conversation.attributes.states.find(s => s.id === sourceId);
+  const source = conversation.attributes.states.find((s) => s.id === sourceId);
   if (!source) return null;
 
   const transitions = getTransitions(source);
   const trans = transitions.find(
-    t => t.kind === kind && t.ordinal === ordinal,
+    (t) => t.kind === kind && t.ordinal === ordinal,
   );
   if (!trans) return null;
 
@@ -626,7 +652,7 @@ export function insertBetween(
 
   const updatedSource = setTransitionTarget(source, kind, ordinal, newId);
 
-  const states = conversation.attributes.states.map(s =>
+  const states = conversation.attributes.states.map((s) =>
     s.id === sourceId ? updatedSource : s,
   );
   states.push(newState);
@@ -644,7 +670,9 @@ export function insertBefore(
   conversation: Conversation,
   existingId: string,
 ): AddChildResult | null {
-  const existing = conversation.attributes.states.find(s => s.id === existingId);
+  const existing = conversation.attributes.states.find(
+    (s) => s.id === existingId,
+  );
   if (!existing) return null;
 
   const newId = deriveUniqueId(conversation);
@@ -661,7 +689,7 @@ export function insertBefore(
   const rewire = (id: string | null | undefined) =>
     id === existingId ? newId : (id ?? null);
 
-  const states = conversation.attributes.states.map(s =>
+  const states = conversation.attributes.states.map((s) =>
     rewireStateRefs(s, rewire),
   );
   states.push(newState);

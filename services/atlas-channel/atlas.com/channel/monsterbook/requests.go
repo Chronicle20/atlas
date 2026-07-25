@@ -27,8 +27,13 @@ func requestByCharacterId(characterId character.Id) requests.Request[CollectionR
 	return requests.GetRequest[CollectionRestModel](fmt.Sprintf(getBaseRequest()+Resource, characterId))
 }
 
-func requestCardsByCharacterId(characterId character.Id) requests.Request[[]CardRestModel] {
-	return requests.GetRequest[[]CardRestModel](fmt.Sprintf(getBaseRequest()+CardsResource, characterId))
+// cardsByCharacterIdUrl returns the list URL for a character's owned
+// monster-book cards. It is a bare URL (not a requests.Request) because
+// the list is now paginated server-side (task-117) and consumed via
+// requests.DrainProvider, which appends its own page[number]/page[size]
+// query params per request.
+func cardsByCharacterIdUrl(characterId character.Id) string {
+	return fmt.Sprintf(getBaseRequest()+CardsResource, characterId)
 }
 
 // SetBaseURLForTest swaps the base URL for tests using httptest. Only

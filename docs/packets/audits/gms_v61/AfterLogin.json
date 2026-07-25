@@ -1,0 +1,48 @@
+{
+  "WriterName": "AfterLogin",
+  "IDAName": "CLogin::OnSetAccountResult#AfterLogin",
+  "Address": "0x56874d",
+  "Variant": "GMS/v61",
+  "BranchDepth": 3,
+  "AtlasFile": "libs/atlas-packet/login/serverbound/after_login.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "pinMode @0x5687bb (OnSetAccountResult literal 1u; OnCheckPinCodeResult Encode1(pin-result) @0x568a69/@0x568979)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "opt2 @0x5687c5 (literal 1u; 0 in OnCheckPinCodeResult @0x568a85/@0x568995)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "accountId @0x5687d8 (*(g_pWvsContext+8232); OnCheckPinCodeResult @0x568a98/@0x5689a8) - LEGACY-ONLY int, absent in v83+",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "pin @0x5687f5 (EncodeStr; empty ZXString in OnSetAccountResult)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

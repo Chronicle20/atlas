@@ -1,24 +1,25 @@
 package monster
 
 import (
+	"atlas-maps/map/character"
 	"context"
 	"fmt"
 	"testing"
 	"time"
 
 	monster2 "atlas-maps/data/map/monster"
-	"atlas-maps/map/character"
+
+	"github.com/alicebob/miniredis/v2"
+	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/alicebob/miniredis/v2"
-	"github.com/google/uuid"
-	goredis "github.com/redis/go-redis/v9"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func setupSpawnTestRedis(t *testing.T) (*goredis.Client, *miniredis.Miniredis) {

@@ -1,0 +1,11 @@
+meta {
+  name: Get Rankings For Characters
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/rankings/characters?ids=1,2,3
+  body: none
+  auth: inherit
+}

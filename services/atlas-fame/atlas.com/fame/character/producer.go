@@ -3,11 +3,12 @@ package character
 import (
 	messageCharacter "atlas-fame/kafka/message/character"
 
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
 )
 
 func requestChangeFameCommandProvider(transactionId uuid.UUID, characterId uint32, worldId world.Id, actorId uint32, amount int8) model.Provider[[]kafka.Message] {

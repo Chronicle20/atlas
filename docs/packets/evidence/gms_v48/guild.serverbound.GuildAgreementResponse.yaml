@@ -1,0 +1,8 @@
+packet: guild/serverbound/GuildAgreementResponse
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendCreateGuildAgreeMsg
+    address: "0x4c5a18"
+    decompile_sha256: c3ec5e39a0283f8d9528b61250a6494fb2a8f0532d93f5df99f540e6de4d057e

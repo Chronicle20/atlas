@@ -1,8 +1,9 @@
 package transport
 
 import (
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/google/uuid"
+
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 // Model is the domain model for a transport route

@@ -1,0 +1,10 @@
+packet: cash/serverbound/CashItemUseSuperMegaphone
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendConsumeCashItemUseRequest
+    address: "0x70e495"
+    decompile_sha256: eb7b3b1ad238f7ae8dc8b772cfcbec04836644372db86603f5aaa72a31f984ee
+verifies:
+    - libs/atlas-packet/cash/serverbound/v48_test.go#TestItemUseSuperMegaphoneBytesV48

@@ -1,0 +1,79 @@
+{
+  "data": {
+    "attributes": {
+      "questId": 20405,
+      "questName": "Knight's Note",
+      "startStateMachine": {
+        "startState": "readNote1",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "readNote2",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "endChat": false,
+              "speaker": "CHARACTER",
+              "text": "There's a note on the wall: 'The source of the curse still goes missing, but a strange device, that I suppose has been used by #rthem#k was found here.'"
+            },
+            "id": "readNote1",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "readNote1",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "completeQuest",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "endChat": false,
+              "speaker": "CHARACTER",
+              "text": "'The machine was sent to #rEreve#k for avaliation, I'll now set out to continue my mission. Let the Empress bless me on my journey.'"
+            },
+            "id": "readNote2",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "force": "true"
+                  },
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "completeQuest",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "20405",
+    "type": "quest-conversation"
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "data": {
+    "type": "monster-drop",
+    "id": "9300289",
+    "attributes": {
+      "drops": [
+        {
+          "itemId": 4032120,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 20601,
+          "chance": 999999
+        },
+        {
+          "itemId": 4032121,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 20602,
+          "chance": 999999
+        },
+        {
+          "itemId": 4032122,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 20603,
+          "chance": 999999
+        },
+        {
+          "itemId": 4032123,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 20604,
+          "chance": 999999
+        },
+        {
+          "itemId": 4032124,
+          "minimumQuantity": 1,
+          "maximumQuantity": 1,
+          "questId": 20605,
+          "chance": 999999
+        }
+      ]
+    }
+  }
+}

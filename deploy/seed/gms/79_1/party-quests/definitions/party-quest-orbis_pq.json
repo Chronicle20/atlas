@@ -1,0 +1,304 @@
+{
+  "data": {
+    "attributes": {
+      "bonus": {
+        "duration": 60,
+        "entry": "auto",
+        "mapId": 920011100,
+        "properties": {
+          "boxReactors": [
+            2002014
+          ]
+        }
+      },
+      "duration": 3600,
+      "exit": 920011200,
+      "failRequirements": [],
+      "fieldLock": "channel",
+      "name": "Orbis Party Quest",
+      "questId": "orbis_pq",
+      "registration": {
+        "duration": 0,
+        "mapId": 200080101,
+        "mode": "instant",
+        "type": "party"
+      },
+      "rewards": [],
+      "stages": [
+        {
+          "clearConditions": [
+            {
+              "operator": ">=",
+              "referenceId": 4001063,
+              "type": "item_count",
+              "value": 1
+            }
+          ],
+          "duration": 0,
+          "index": 0,
+          "mapIds": [
+            920010000
+          ],
+          "name": "Cloud Piece Collection",
+          "properties": {
+            "cloudReactors": [
+              2002001
+            ],
+            "collectItemId": 4001063,
+            "npcId": 2013001,
+            "pedestalReactor": 2006000
+          },
+          "rewards": [
+            {
+              "amount": 5000,
+              "type": "experience"
+            }
+          ],
+          "type": "reactor_trigger",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [],
+          "duration": 0,
+          "index": 1,
+          "mapIds": [
+            920010400
+          ],
+          "name": "LP Record Collection",
+          "properties": {
+            "daySpecificItems": {
+              "friday": 4001061,
+              "monday": 4001057,
+              "saturday": 4001062,
+              "sunday": 4001056,
+              "thursday": 4001060,
+              "tuesday": 4001058,
+              "wednesday": 4001059
+            },
+            "npcId": 2013001,
+            "recordPlayerReactor": 2008006
+          },
+          "rewards": [
+            {
+              "amount": 7500,
+              "type": "experience"
+            }
+          ],
+          "type": "item_collection",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [],
+          "duration": 0,
+          "index": 2,
+          "mapIds": [
+            920010500
+          ],
+          "name": "Sealed Room Combination",
+          "properties": {
+            "combinationLength": 3,
+            "combinationSum": 5,
+            "maxAttempts": 7,
+            "npcId": 2013001
+          },
+          "rewards": [
+            {
+              "amount": 7500,
+              "type": "experience"
+            }
+          ],
+          "type": "combination_puzzle",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [
+            {
+              "operator": ">=",
+              "referenceId": 9300040,
+              "type": "monster_kill",
+              "value": 15
+            }
+          ],
+          "duration": 0,
+          "index": 3,
+          "mapIds": [
+            920010300
+          ],
+          "name": "Cellion Puzzle",
+          "properties": {
+            "monsters": [
+              9300040
+            ]
+          },
+          "rewards": [],
+          "type": "monster_killing",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [
+            {
+              "operator": ">=",
+              "referenceId": 4001052,
+              "type": "item",
+              "value": 40
+            }
+          ],
+          "duration": 0,
+          "index": 4,
+          "mapIds": [
+            920010600,
+            920010601,
+            920010602,
+            920010603,
+            920010604
+          ],
+          "name": "Small Piece Item Collection",
+          "properties": {
+            "boxReactor": 2002002,
+            "collectItemId": 4001052,
+            "npcId": 2013001,
+            "roomMonsters": {
+              "920010601": 9300041,
+              "920010602": 9300042,
+              "920010603": 9300043
+            }
+          },
+          "rewards": [
+            {
+              "amount": 7500,
+              "type": "experience"
+            }
+          ],
+          "type": "item_collection",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [
+            {
+              "operator": ">=",
+              "referenceId": 4001051,
+              "type": "item",
+              "value": 40
+            }
+          ],
+          "duration": 0,
+          "index": 5,
+          "mapIds": [
+            920010200
+          ],
+          "name": "Kill Forty Pixies",
+          "properties": {
+            "collectItemId": 4001051,
+            "npcId": 2013001
+          },
+          "rewards": [
+            {
+              "amount": 7500,
+              "type": "experience"
+            }
+          ],
+          "type": "item_collection",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [],
+          "duration": 0,
+          "index": 6,
+          "mapIds": [
+            920010700
+          ],
+          "name": "Warp and Lever Combination",
+          "properties": {
+            "combinationLength": 5,
+            "leverReactor": 2008007,
+            "npcId": 2013001
+          },
+          "rewards": [],
+          "type": "warp_puzzle",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [],
+          "duration": 0,
+          "index": 7,
+          "mapIds": [
+            920010100
+          ],
+          "name": "Statue Repair",
+          "properties": {
+            "npcId": 2013001,
+            "statueReactors": [
+              2008000,
+              2008001,
+              2008002,
+              2008003,
+              2008004,
+              2008005
+            ]
+          },
+          "rewards": [],
+          "type": "reactor_trigger",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [
+            {
+              "operator": ">=",
+              "referenceId": 4001055,
+              "type": "item",
+              "value": 1
+            }
+          ],
+          "duration": 0,
+          "index": 8,
+          "mapIds": [
+            920010800
+          ],
+          "name": "Boss Stage",
+          "properties": {
+            "bossMonsters": [
+              9500351
+            ],
+            "evenStrangerSeedId": 4001054,
+            "grassOfLifeId": 4001055,
+            "nependeath": 9300048,
+            "royalNependeath": 9300049,
+            "strangeSeedId": 4001053
+          },
+          "rewards": [],
+          "type": "boss",
+          "warpType": "all"
+        }
+      ],
+      "startEvents": [
+        {
+          "target": "party",
+          "type": "warp",
+          "value": "920010000"
+        }
+      ],
+      "startRequirements": [
+        {
+          "operator": "eq",
+          "referenceId": 0,
+          "type": "party_size",
+          "value": 6
+        },
+        {
+          "operator": "gte",
+          "referenceId": 0,
+          "type": "level_min",
+          "value": 51
+        },
+        {
+          "operator": "lte",
+          "referenceId": 0,
+          "type": "level_max",
+          "value": 70
+        }
+      ]
+    },
+    "id": "orbis_pq",
+    "type": "party-quest-definition"
+  }
+}

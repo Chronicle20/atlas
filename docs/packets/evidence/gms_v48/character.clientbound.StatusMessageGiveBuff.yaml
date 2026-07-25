@@ -1,0 +1,8 @@
+packet: character/clientbound/StatusMessageGiveBuff
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_71BF70
+    address: "0x71bf70"
+    decompile_sha256: 8ffcd39f2510098bf1a4ebae265529ab482f93b7a38d7a7a4667f817308457dc

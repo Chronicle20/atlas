@@ -1,11 +1,13 @@
 package food
 
 import (
+	"atlas-consumables/consumable"
 	"context"
 
-	"atlas-consumables/consumable"
 	consumer2 "atlas-consumables/kafka/consumer"
 	foodmsg "atlas-consumables/kafka/message/food"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -13,7 +15,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/sirupsen/logrus"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {

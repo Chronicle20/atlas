@@ -1,0 +1,965 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1032001,
+      "startState": "start",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "jobId",
+                    "value": "0"
+                  }
+                ],
+                "nextState": "firstJobIntro"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "type": "level",
+                    "value": "30"
+                  },
+                  {
+                    "operator": "=",
+                    "type": "jobId",
+                    "value": "200"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "4031012",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "secondJobWithProof"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "type": "level",
+                    "value": "30"
+                  },
+                  {
+                    "operator": "=",
+                    "type": "jobId",
+                    "value": "200"
+                  },
+                  {
+                    "operator": ">=",
+                    "referenceId": "4031009",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "secondJobWithLetter"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "type": "level",
+                    "value": "30"
+                  },
+                  {
+                    "operator": "=",
+                    "type": "jobId",
+                    "value": "200"
+                  }
+                ],
+                "nextState": "secondJobStart"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "100100",
+                    "type": "questStatus",
+                    "value": "2"
+                  },
+                  {
+                    "operator": ">=",
+                    "type": "level",
+                    "value": "70"
+                  },
+                  {
+                    "operator": "<",
+                    "referenceId": "100101",
+                    "type": "questStatus",
+                    "value": "2"
+                  }
+                ],
+                "nextState": "thirdJobIntro"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "100101",
+                    "type": "questStatus",
+                    "value": "2"
+                  },
+                  {
+                    "operator": "<",
+                    "referenceId": "4031059",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "thirdJobNeedNecklace"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "4031059",
+                    "type": "item",
+                    "value": "1"
+                  },
+                  {
+                    "operator": "=",
+                    "referenceId": "100101",
+                    "type": "questStatus",
+                    "value": "2"
+                  }
+                ],
+                "nextState": "thirdJobComplete"
+              },
+              {
+                "conditions": [],
+                "nextState": "defaultResponse"
+              }
+            ]
+          },
+          "id": "start",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "checkFirstJobRequirements",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Want to be a #rmagician#k? There are some standards to meet. because we can't just accept EVERYONE in... #bYour level should be at least 8#k, with getting INT as your top priority. Let's see."
+          },
+          "id": "firstJobIntro",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "<",
+                    "type": "level",
+                    "value": "8"
+                  }
+                ],
+                "nextState": "firstJobInsufficientLevel"
+              },
+              {
+                "conditions": [],
+                "nextState": "firstJobConfirm"
+              }
+            ]
+          },
+          "id": "checkFirstJobRequirements",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Train a bit more until you reach the base requirements and I can show you the way of the #rMagician#k."
+          },
+          "id": "firstJobInsufficientLevel",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "checkFirstJobInventory",
+                "text": "Yes"
+              },
+              {
+                "nextState": "firstJobDecline",
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "Oh...! You look like someone that can definitely be a part of us... all you need is a little sinister mind, and... yeah... so, what do you think? Wanna be the Magician?"
+          },
+          "id": "firstJobConfirm",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "You know there is no other choice..."
+          },
+          "id": "firstJobDecline",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "1372043",
+                    "type": "inventorySpace",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "performFirstJobAdvancement"
+              },
+              {
+                "conditions": [],
+                "nextState": "firstJobNoSpace"
+              }
+            ]
+          },
+          "id": "checkFirstJobInventory",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Make some room in your inventory and talk back to me."
+          },
+          "id": "firstJobNoSpace",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "targets": "[{\"stat\":\"intelligence\",\"floor\":20}]"
+                },
+                "type": "rebalance_ap"
+              },
+              {
+                "params": {
+                  "jobId": "200"
+                },
+                "type": "change_job"
+              },
+              {
+                "params": {
+                  "itemId": "1372043",
+                  "quantity": "1"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "firstJobSuccess1"
+              }
+            ]
+          },
+          "id": "performFirstJobAdvancement",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "firstJobSuccess2",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Alright, from here out, you are a part of us! You'll be living the life of a wanderer at ..., but just be patient as soon, you'll be living the high life. Alright, it ain't much, but I'll give you some of my abilities... HAAAHHH!!!"
+          },
+          "id": "firstJobSuccess1",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "firstJobSuccess1",
+                "text": "Previous"
+              },
+              {
+                "nextState": "firstJobSuccess3",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNextPrev",
+            "text": "You've gotten much stronger now. Plus every single one of your inventories have added slots. A whole row, to be exact. Go see for it yourself. I just gave you a little bit of #bSP#k. When you open up the #bSkill#k menu on the lower left corner of the screen, there are skills you can learn by using SP's. One warning, though: You can't raise it all together all at once. There are also skills you can acquire only after having learned a couple of skills first."
+          },
+          "id": "firstJobSuccess2",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "firstJobSuccess2",
+                "text": "Previous"
+              },
+              {
+                "nextState": "firstJobSuccess4",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNextPrev",
+            "text": "But remember, skills aren't everything. Your stats should support your skills as a Magician, also. Magicians use INT as their main stat, and LUK as their secondary stat. If raising stats is difficult, just use #bAuto-Assign#k"
+          },
+          "id": "firstJobSuccess3",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "firstJobSuccess3",
+                "text": "Previous"
+              },
+              {
+                "nextState": "firstJobSuccess5",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNextPrev",
+            "text": "Now, one more word of warning to you. If you fail in battle from this point on, you will lose a portion of your total EXP. Be extra mindful of this, since you have less HP than most."
+          },
+          "id": "firstJobSuccess4",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "firstJobSuccess4",
+                "text": "Previous"
+              },
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNextPrev",
+            "text": "This is all I can teach you. Good luck on your journey, young Magician."
+          },
+          "id": "firstJobSuccess5",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "secondJobChoiceMenu",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "I see you have done well. I will allow you to take the next step on your long road."
+          },
+          "id": "secondJobWithProof",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Go and see the #b#p1072001##k."
+          },
+          "id": "secondJobWithLetter",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "secondJobGiveLetter",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "The progress you have made is astonishing."
+          },
+          "id": "secondJobStart",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "startSecondJobQuest",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Good decision. You look strong, but I need to see if you really are strong enough to pass the test, it's not a difficult test, so you'll do just fine. Here, take my letter first... make sure you don't lose it!"
+          },
+          "id": "secondJobGiveLetter",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "questId": "100006"
+                },
+                "type": "start_quest"
+              },
+              {
+                "params": {
+                  "itemId": "4031009",
+                  "quantity": "1"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "secondJobInstructions"
+              }
+            ]
+          },
+          "id": "startSecondJobQuest",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "secondJobGiveLetter",
+                "text": "Previous"
+              },
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNextPrev",
+            "text": "Please get this letter to #b#p1072001##k who's around #b#m101020000##k near Ellinia. He is taking care of the job of an instructor in place of me. Give him the letter and he'll test you in place of me. Best of luck to you."
+          },
+          "id": "secondJobInstructions",
+          "type": "dialogue"
+        },
+        {
+          "id": "secondJobChoiceMenu",
+          "listSelection": {
+            "choices": [
+              {
+                "nextState": "explainFirePoison",
+                "text": "Please explain to me what being the Wizard (Fire / Poison) is all about."
+              },
+              {
+                "nextState": "explainIceLightning",
+                "text": "Please explain to me what being the Wizard (Ice / Lighting) is all about."
+              },
+              {
+                "nextState": "explainCleric",
+                "text": "Please explain to me what being the Cleric is all about."
+              },
+              {
+                "nextState": "chooseJob",
+                "text": "I'll choose my occupation!"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "Alright, when you have made your decision, click on [I'll choose my occupation] at the bottom."
+          },
+          "type": "listSelection"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "secondJobChoiceMenu",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Magicians that master #rFire/Poison-based magic#k.\r\n\r\n#bWizards#k are a active class that deal magical, elemental damage. These abilities grants them a significant advantage against enemies weak to their element. With their skills #rMeditation#k and #rSlow#k, #bWizards#k can increase their magic attack and reduce the opponent's mobility. #bFire/Poison Wizards#k contains a powerful flame arrow attack and poison attack."
+          },
+          "id": "explainFirePoison",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "secondJobChoiceMenu",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Magicians that master #rIce/Lightning-based magic#k.\r\n\r\n#bWizards#k are a active class that deal magical, elemental damage. These abilities grants them a significant advantage against enemies weak to their element. With their skills #rMeditation#k and #rSlow#k, #bWizards#k can increase their magic attack and reduce the opponent's mobility. #bIce/Lightning Wizards#k have a freezing ice attack and a striking lightning attack."
+          },
+          "id": "explainIceLightning",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "secondJobChoiceMenu",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Magicians that master #rHoly magic#k.\r\n\r\n#bClerics#k are a powerful supportive class, bound to be accepted into any Party. That's because the have the power to #rHeal#k themselves and others in their party. Using #rBless#k, #bClerics#k can buff the attributes and reduce the amount of damage taken. This class is on worth going for if you find it hard to survive. #bClerics#k are especially effective against undead monsters."
+          },
+          "id": "explainCleric",
+          "type": "dialogue"
+        },
+        {
+          "id": "chooseJob",
+          "listSelection": {
+            "choices": [
+              {
+                "context": {
+                  "jobId": "210",
+                  "jobName": "#bWizard (Fire / Poison)#k"
+                },
+                "nextState": "confirmJobChoice",
+                "text": "Wizard (Fire / Poison)"
+              },
+              {
+                "context": {
+                  "jobId": "220",
+                  "jobName": "#bWizard (Ice / Lighting)#k"
+                },
+                "nextState": "confirmJobChoice",
+                "text": "Wizard (Ice / Lighting)"
+              },
+              {
+                "context": {
+                  "jobId": "230",
+                  "jobName": "#bCleric#k"
+                },
+                "nextState": "confirmJobChoice",
+                "text": "Cleric"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "Now... have you made up your mind? Please choose the job you'd like to select for your 2nd job advancement."
+          },
+          "type": "listSelection"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "performSecondJobAdvancement",
+                "text": "Yes"
+              },
+              {
+                "nextState": "chooseJob",
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "So you want to make the second job advancement as the {context.jobName}? You know you won't be able to choose a different job for the 2nd job advancement once you make your desicion here, right?"
+          },
+          "id": "confirmJobChoice",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "4031012",
+                  "quantity": "1"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "force": "true",
+                  "questId": "100008"
+                },
+                "type": "complete_quest"
+              },
+              {
+                "params": {
+                  "jobId": "{context.jobId}"
+                },
+                "type": "change_job"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "secondJobComplete1"
+              }
+            ]
+          },
+          "id": "performSecondJobAdvancement",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "secondJobComplete2",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Alright, you're the {context.jobName} from here on out. Mages and wizards are the intelligent bunch with incredible magical prowess, able to pierce the mind and the psychological structure of the monsters with ease... please train yourself each and everyday. I'll help you become even stronger than you already are."
+          },
+          "id": "secondJobComplete1",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "secondJobComplete1",
+                "text": "Previous"
+              },
+              {
+                "nextState": "secondJobComplete3",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNextPrev",
+            "text": "I have just given you a book that gives you the list of skills you can acquire as a {context.jobName}. Also your etc inventory has expanded by adding another row to it. Your max HP and MP have increased, too. Go check and see for it yourself."
+          },
+          "id": "secondJobComplete2",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "secondJobComplete2",
+                "text": "Previous"
+              },
+              {
+                "nextState": "secondJobComplete4",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNextPrev",
+            "text": "I have also given you a little bit of #bSP#k. Open the #bSkill Menu#k located at the bottomleft corner. you'll be able to boost up the newer acquired 2nd level skills. A word of warning, though. You can't boost them up all at once. Some of the skills are only available after you have learned other skills. Make sure you remember that."
+          },
+          "id": "secondJobComplete3",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "secondJobComplete3",
+                "text": "Previous"
+              },
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNextPrev",
+            "text": "{context.jobName} need to be strong. But remember that you can't abuse that power and use it on a weakling. Please use your enormous power the right way, because... for you to use that the right way, that is much harden than just getting stronger. Please find me after you have advanced much further. I'll be waiting for you."
+          },
+          "id": "secondJobComplete4",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "thirdJobBriefing",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "There you are. A few days ago, #b#p2020009##k of Ossyria talked to me about you. I see that you are interested in making the leap to the enlightened of the third job advancement for magicians. To archieve that goal, I will have to test your strength in order to see whether you are worthy of the advancement. There is an opening in the middle of a deep forest of evil in Victoria Island, where it'll lead you to a secret passage. Once inside, you'll face a clone of myself. Your task is to defeat him and bring #b#t4031059##k back with you."
+          },
+          "id": "thirdJobIntro",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "force": "true",
+                  "questId": "100100"
+                },
+                "type": "complete_quest"
+              },
+              {
+                "params": {
+                  "questId": "100101"
+                },
+                "type": "start_quest"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "thirdJobBriefingDialogue"
+              }
+            ]
+          },
+          "id": "thirdJobBriefing",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "thirdJobIntro",
+                "text": "Previous"
+              },
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNextPrev",
+            "text": "Since he is a clone of myself, you can expect a tough battle ahead. He uses a number of special attacking skills unlike any you have ever seen, and it is your task to successfully take him one on one. There is a time limit in the secret passage, so it is crucial that you defeat him within the time limit. I wish you the best of luck, and I hope you bring the #b#t4031059##k with you."
+          },
+          "id": "thirdJobBriefingDialogue",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Please, bring me the #b#t4031059##k from my clone. You can find him inside a hole in space which is deep in a forest of evil."
+          },
+          "id": "thirdJobNeedNecklace",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "giveThirdJobItems",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Nice work. You have defeated my clone and brought #b#t4031059##k back safely. You have now proven yourself worthy of the 3rd job advancement from the physical standpoint. Now you should give this necklace to #b#p2020011##k in Ossyria to take on the second part of the test. Good luck. You'll need it."
+          },
+          "id": "thirdJobComplete",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "force": "true",
+                  "questId": "100101"
+                },
+                "type": "complete_quest"
+              },
+              {
+                "params": {
+                  "itemId": "4031059",
+                  "quantity": "1"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "itemId": "4031057",
+                  "quantity": "1"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "giveThirdJobItems",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "You have chosen wisely."
+          },
+          "id": "defaultResponse",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "1032001",
+    "type": "npc-conversation"
+  }
+}

@@ -4,15 +4,17 @@ import (
 	"atlas-messages/character"
 	"atlas-messages/command"
 	pq "atlas-messages/kafka/message/party_quest"
-	"atlas-messages/kafka/producer"
 	"atlas-messages/message"
 	party_quest "atlas-messages/party_quest"
 	"context"
 	"fmt"
 	"regexp"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
 func PQRegisterCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {

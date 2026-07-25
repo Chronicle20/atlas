@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcAskQuizConversationDetail
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CScriptMan::OnAskQuiz#AskQuiz
+    address: "0x970baa"
+    decompile_sha256: b81478d105e33853cbde091996e6dc133c92410b297a3ecf9fb86c1aee7c0d73
+verifies:
+  - libs/atlas-packet/npc/clientbound/conversation_v79_details_test.go#TestNpcConversationAskQuizV79

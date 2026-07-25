@@ -1,0 +1,10 @@
+packet: npc/serverbound/NpcShopSell
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CShopDlg::SendSellRequest
+    address: "0x6d6b1d"
+    decompile_sha256: 68d5ca4f71f6445954a95452e391f5431732f400bfd42c33207b0396248884a4
+verifies:
+    - libs/atlas-packet/npc/serverbound/shop_sell_test.go#TestShopSellByteV79

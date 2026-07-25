@@ -10,16 +10,17 @@ import (
 	"testing"
 	"time"
 
+	"github.com/alicebob/miniredis/v2"
+	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/alicebob/miniredis/v2"
-	"github.com/google/uuid"
-	goredis "github.com/redis/go-redis/v9"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func TestMain(m *testing.M) {
@@ -1099,7 +1100,6 @@ func TestSpawnMonsters_NoCharacters(t *testing.T) {
 
 	transactionId := uuid.New()
 	err := processor.SpawnMonsters(transactionId, f)
-
 	if err != nil {
 		t.Errorf("SpawnMonsters should not return error, got: %v", err)
 	}
@@ -1177,7 +1177,6 @@ func TestSpawnMonsters_AllSpawnPointsOnCooldown(t *testing.T) {
 
 	transactionId := uuid.New()
 	err := processor.SpawnMonsters(transactionId, f)
-
 	if err != nil {
 		t.Errorf("SpawnMonsters should not return error, got: %v", err)
 	}

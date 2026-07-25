@@ -1,0 +1,21 @@
+{
+  "WriterName": "GuildJoinErrorMaxMembers",
+  "IDAName": "CWvsContext::OnGuildResult#JoinErrorMaxMembers",
+  "Address": "",
+  "Variant": "GMS/v72",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/guild/clientbound/operation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 6,
+      "IDAComment": "function not found in IDB",
+      "Verdict": 4,
+      "Note": "IDA read-order unresolved: function not found in IDB"
+    }
+  ],
+  "Verdict": 4,
+  "FlatInvalid": false
+}

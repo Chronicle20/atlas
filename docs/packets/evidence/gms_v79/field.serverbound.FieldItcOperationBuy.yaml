@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldItcOperationBuy
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnBuy
+    address: "0x57ac34"
+    decompile_sha256: dfa7b695fad7d541204766329bcb633f0a0fc06fce07bf76af0b6028682df123

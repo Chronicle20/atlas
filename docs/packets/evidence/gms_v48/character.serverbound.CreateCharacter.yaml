@@ -1,0 +1,10 @@
+packet: character/serverbound/CreateCharacter
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_500545
+    address: "0x500545"
+    decompile_sha256: e373e7daf16ea9847329c151714121abbbce6ec2df3d4ca22d5f2a33425a01ec
+verifies:
+    - libs/atlas-packet/character/serverbound/create_test.go#TestCreateCharacterV48ByteOutput

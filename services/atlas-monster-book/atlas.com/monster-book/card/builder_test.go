@@ -3,8 +3,9 @@ package card
 import (
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 )
 
 func TestBuilderRejectsZeroCharacter(t *testing.T) {

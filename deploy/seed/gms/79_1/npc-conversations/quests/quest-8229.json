@@ -1,0 +1,247 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "checkHasItem",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "4032018",
+                      "type": "item",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "hasItem"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "missingItem"
+                }
+              ]
+            },
+            "id": "checkHasItem",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "completeQuest",
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Oh, you brought it. Nicely done, the countermeasure process will be much easier now.\r\n\r\n#fUI/UIWindow.img/QuestIcon/4/0# \r\n\r\n#fUI/UIWindow.img/QuestIcon/8/0# 50000 EXP"
+            },
+            "id": "hasItem",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "What's wrong? Why you didn't retrieved the translated message yet? Please bring me the letter's content for me to strategize a countermeasure ASAP."
+            },
+            "id": "missingItem",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "4032018",
+                    "quantity": "1"
+                  },
+                  "type": "destroy_item"
+                },
+                {
+                  "params": {
+                    "amount": "50000"
+                  },
+                  "type": "award_exp"
+                },
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "completeQuest",
+            "type": "genericAction"
+          }
+        ]
+      },
+      "questId": 8229,
+      "questName": "Lost in Translation",
+      "startStateMachine": {
+        "startState": "askAccept",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "checkItemOrGive",
+                  "text": "Accept"
+                },
+                {
+                  "nextState": "decline",
+                  "text": "Decline"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendAcceptDecline",
+              "text": "I knew we could rely on the outsider on this matter! Now that we have the letter translated by him, head it to Jack, he knows what to do."
+            },
+            "id": "askAccept",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Come on, the city really needs you cooperating on this one!"
+            },
+            "id": "decline",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "4032018",
+                      "type": "item",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "alreadyHaveItem"
+                },
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "4032018",
+                      "type": "inventorySpace",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "giveItemAndStart"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "noSpace"
+                }
+              ]
+            },
+            "id": "checkItemOrGive",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "alreadyHaveItem",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "4032018",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "giveItemAndStart",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Oy, you need a slot in your ETC to get the communique."
+            },
+            "id": "noSpace",
+            "type": "dialogue"
+          }
+        ]
+      }
+    },
+    "id": "8229",
+    "type": "quest-conversation"
+  }
+}

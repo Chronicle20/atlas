@@ -34,7 +34,6 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 		SetMaxMp(50).
 		SetMeso(1000).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -175,7 +174,6 @@ func TestBuilderFluentChaining(t *testing.T) {
 		SetFame(0).
 		SetMeso(0).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}

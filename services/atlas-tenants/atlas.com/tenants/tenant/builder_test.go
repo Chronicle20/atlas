@@ -25,7 +25,6 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 		SetMajorVersion(83).
 		SetMinorVersion(1).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -77,7 +76,6 @@ func TestBuild_Success(t *testing.T) {
 		SetMajorVersion(83).
 		SetMinorVersion(1).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -135,7 +133,6 @@ func TestBuilderFluentChaining(t *testing.T) {
 		SetMajorVersion(90).
 		SetMinorVersion(2).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}

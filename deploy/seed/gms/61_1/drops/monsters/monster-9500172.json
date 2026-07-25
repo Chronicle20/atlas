@@ -1,0 +1,94 @@
+{
+  "data": {
+    "type": "monster-drop",
+    "id": "9500172",
+    "attributes": {
+      "drops": [
+        {
+          "itemId": 0,
+          "minimumQuantity": 500,
+          "maximumQuantity": 800,
+          "questId": 0,
+          "chance": 400000
+        },
+        {
+          "itemId": 2002001,
+          "minimumQuantity": 1,
+          "maximumQuantity": 4,
+          "questId": 0,
+          "chance": 700000
+        },
+        {
+          "itemId": 2002003,
+          "minimumQuantity": 1,
+          "maximumQuantity": 4,
+          "questId": 0,
+          "chance": 700000
+        },
+        {
+          "itemId": 2002005,
+          "minimumQuantity": 1,
+          "maximumQuantity": 4,
+          "questId": 0,
+          "chance": 700000
+        },
+        {
+          "itemId": 2020014,
+          "minimumQuantity": 1,
+          "maximumQuantity": 4,
+          "questId": 0,
+          "chance": 700000
+        },
+        {
+          "itemId": 2020015,
+          "minimumQuantity": 1,
+          "maximumQuantity": 4,
+          "questId": 0,
+          "chance": 700000
+        },
+        {
+          "itemId": 2020017,
+          "minimumQuantity": 1,
+          "maximumQuantity": 4,
+          "questId": 0,
+          "chance": 700000
+        },
+        {
+          "itemId": 2020018,
+          "minimumQuantity": 1,
+          "maximumQuantity": 4,
+          "questId": 0,
+          "chance": 700000
+        },
+        {
+          "itemId": 2022310,
+          "minimumQuantity": 1,
+          "maximumQuantity": 4,
+          "questId": 0,
+          "chance": 700000
+        },
+        {
+          "itemId": 2022311,
+          "minimumQuantity": 1,
+          "maximumQuantity": 4,
+          "questId": 0,
+          "chance": 700000
+        },
+        {
+          "itemId": 2022456,
+          "minimumQuantity": 1,
+          "maximumQuantity": 4,
+          "questId": 0,
+          "chance": 700000
+        },
+        {
+          "itemId": 2388004,
+          "minimumQuantity": 1,
+          "maximumQuantity": 4,
+          "questId": 0,
+          "chance": 24000
+        }
+      ]
+    }
+  }
+}

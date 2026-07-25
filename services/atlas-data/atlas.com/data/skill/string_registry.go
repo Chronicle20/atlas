@@ -6,7 +6,8 @@ import (
 	"sync"
 
 	"github.com/sirupsen/logrus"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type SkillString struct {
@@ -27,8 +28,10 @@ func (s SkillString) Desc() string {
 	return s.desc
 }
 
-var ssReg *document.Registry[string, SkillString]
-var ssOnce sync.Once
+var (
+	ssReg  *document.Registry[string, SkillString]
+	ssOnce sync.Once
+)
 
 func GetSkillStringRegistry() *document.Registry[string, SkillString] {
 	ssOnce.Do(func() {

@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldWeddingTalk
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CField_Wedding::OnWeddingProgress#Talk
+    address: "0x55dfbb"
+    decompile_sha256: a9c12481350c37b3ef472a53672f7301ca459efb21767dceb5d1d7450f5ebb8c
+verifies:
+    - libs/atlas-packet/field/serverbound/wedding_talk_test.go#TestWeddingTalkByteOutputV79

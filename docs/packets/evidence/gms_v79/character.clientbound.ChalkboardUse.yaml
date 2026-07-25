@@ -1,0 +1,10 @@
+packet: character/clientbound/ChalkboardUse
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CUser::OnADBoard
+    address: "0x890f5a"
+    decompile_sha256: 38d6667e51ad5b15e28256113443d4b11df8b91c5e92c9a331d097c7ca1233bd
+verifies:
+  - libs/atlas-packet/character/clientbound/chalkboard_test.go#TestChalkboardUseByteFixtureV79

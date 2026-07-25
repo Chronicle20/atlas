@@ -4,8 +4,9 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 var ErrNotFound = errors.New("instance not found")
@@ -21,8 +22,10 @@ type Registry struct {
 	tenants map[tenant.Model]*tenantData
 }
 
-var registry *Registry
-var once sync.Once
+var (
+	registry *Registry
+	once     sync.Once
+)
 
 func GetRegistry() *Registry {
 	once.Do(func() {

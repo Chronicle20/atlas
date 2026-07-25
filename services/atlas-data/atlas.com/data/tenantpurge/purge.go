@@ -1,11 +1,11 @@
 package tenantpurge
 
 import (
+	"atlas-data/canonical"
 	"context"
 	"errors"
 	"fmt"
 
-	"atlas-data/canonical"
 	minio "atlas-data/storage/minio"
 
 	"github.com/google/uuid"

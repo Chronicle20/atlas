@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldSnowballMessage
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CField_SnowBall::OnSnowBallMsg
+    address: "0x5526e8"
+    decompile_sha256: 548596f428d32e26c2d93401119a4cc9daefa96cd0835b82b025878d279f45aa
+verifies:
+    - libs/atlas-packet/field/clientbound/snowball_message_test.go#TestSnowballMessageByteOutputV79

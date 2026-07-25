@@ -19,6 +19,7 @@ const (
 	CommandRequestItemReward    = "REQUEST_ITEM_REWARD"
 	CommandRequestVegaScroll    = "REQUEST_VEGA_SCROLL"
 	CommandRequestViciousHammer = "REQUEST_VICIOUS_HAMMER"
+	CommandRequestSkillBookUse  = "REQUEST_SKILL_BOOK_USE"
 )
 
 type Command[E any] struct {
@@ -47,6 +48,11 @@ type RequestScrollBody struct {
 	EquipSlot       slot.Position `json:"equipSlot"`
 	WhiteScroll     bool          `json:"whiteScroll"`
 	LegendarySpirit bool          `json:"legendarySpirit"`
+}
+
+type RequestSkillBookUseBody struct {
+	Slot   slot.Position `json:"slot"`
+	ItemId item.Id       `json:"itemId"`
 }
 
 type RequestVegaScrollBody struct {

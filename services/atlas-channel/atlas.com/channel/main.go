@@ -697,6 +697,7 @@ func produceWriters() []string {
 		petcb.PetCommandResponseWriter,
 		petcb.PetChatWriter,
 		charcb.CharacterItemUpgradeWriter,
+		charcb.CharacterSkillLearnItemResultWriter,
 		character2.CharacterSkillMacroWriter,
 		petcb.PetExcludeResponseWriter,
 		petcb.PetCashFoodResultWriter,
@@ -914,6 +915,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[reactorsb.ReactorHitHandle] = handler.ReactorHitHandleFunc
 	handlerMap[socketsb.PongHandle] = handler.PongHandleFunc
 	handlerMap[charsb.MonsterDamageFriendlyHandle] = handler.MonsterDamageFriendlyHandleFunc
+	handlerMap[charsb.CharacterSkillBookUseHandle] = handler.CharacterSkillBookUseHandleFunc
 	handlerMap[interactionsb.CharacterInteractionHandle] = handler.CharacterInteractionHandleFunc
 	handlerMap[merchantsb.HiredMerchantOperationHandle] = handler.HiredMerchantOperationHandleFunc
 	handlerMap[merchantsb.OwlActionHandle] = handler.OwlActionHandleFunc

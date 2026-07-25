@@ -4,11 +4,11 @@
 > ✅ verified · 🧩 family (mode-prefix dispatcher; sub-arms unverified) · 🟡 partial · ❌ incomplete · ⬜ n-a · 🟥 conflict
 > Partial (🟡) sub-glyphs: 🟡ᶠ tier-1 needs byte-fixture · 🟡ᵈ tool-pass diff-only (no byte-test) · 🟡ᵖ evidence-pinned deferral
 
-Tool: `79ea9d97cf2059579978bb159c24a4fb258b52c4e2e77ec86d6476e6d9b914e6`
+Tool: `5013127b62acd8f35e56f8946543908f44845f665276abca9ad3385bb008e095`
 
 - export gms_v48: `ac3f13621d42e4a2f510fa796e9ab844955e91cb7d8926b39e6d188248f9a4aa`
 - export gms_v61: `35a623f65d120ee0022131862e541342ec6965a7655ed9334cab4b1bdeea2aa6`
-- export gms_v72: `e9ab553bcb8b70b4974a3b1ea99d4277feab9be678f891b03636bcbb920dad17`
+- export gms_v72: `124b5b59b7bfdf0762c89cff319fa9d2e0888be87ee25af423e3ac4d144bf351`
 - export gms_v79: `a2a0573ccb7f438c6499483c5c9260bd078e3fb0cd90ecc24adaecfbb4592c37`
 - export gms_v83: `035e4e288cb0ff486f7ad1fadbd780b5c80b2440457ca488a3749cdede9fae32`
 - export gms_v84: `85653c48c25ff422a3d4aa48100382eb220578794699a0fd227e6b5950629c00`
@@ -578,7 +578,7 @@ Tool: `79ea9d97cf2059579978bb159c24a4fb258b52c4e2e77ec86d6476e6d9b914e6`
 | UNNAMED_R75 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x037 | ❌ | 0x037 | ❌ | 0x03A | ❌ | 0x03C | ❌ | 0x02F | ❌ |
 | CANCEL_ITEM_EFFECT | CWvsContext::SendStatChangeItemCancelRequest; sub_70DD49 | character/serverbound/ItemCancel (T1) | 0x039 | ✅ | 0x044 | ✅ | 0x048 | ✅ | 0x047 | ✅ | 0x049 | ✅ | 0x049 | ✅ | 0x04C | ✅ | 0x04F | ✅ | 0x041 | ✅ |
 | REMOTE_STORE | CWvsContext::SendRemoteShopOpenRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x03B | ❌ | 0x03B | ❌ | 0x03E | ❌ | 0x040 | ❌ | 0x033 | ❌ |
-| USE_MOUNT_FOOD | CWvsContext::SendTamingMobFoodItemUseRequest; sub_955781 | mount/serverbound/MountFood | 0x03D | ✅ | 0x048 | ✅ | 0x04C | ❌ | 0x04B | ❌ | 0x04D | ❌ | 0x04D | ❌ | 0x050 | ❌ | 0x053 | ❌ | 0x045 | ❌ |
+| USE_MOUNT_FOOD | CWvsContext::SendTamingMobFoodItemUseRequest; sub_955781 | mount/serverbound/MountFood | 0x03D | ✅ | 0x048 | ✅ | 0x04C | ✅ | 0x04B | ❌ | 0x04D | ❌ | 0x04D | ❌ | 0x050 | ❌ | 0x053 | ❌ | 0x045 | ❌ |
 | HIRED_MERCHANT_REQUEST | CWvsContext::SendEntrustedShopCheckRequest; sub_715A7B; sub_971BE0 |  |  | ⬜ | 0x03E | ❌ | 0x03E | ❌ | 0x03D | ❌ | 0x03F | ❌ | 0x03F | ❌ | 0x042 | ❌ | 0x044 | ❌ | 0x037 | ❌ |
 | USE_CASH_ITEM | CItemSpeakerDlg::_SendConsumeCashItemUseRequest; CUICharacterSaleDlg::SendCreateNewCharacter; CUIIncubator::OnButtonClicked; CUIKarmaDlg::_SendConsumeCashItemUseRequest; CUIUnreleaseDlg::UnreleaseEquipItem; CWvsContext::SendConsumeCashItemUseRequest | cash/serverbound/CashItemUseMegaphone (T1) | 0x03E | ✅ | 0x049 | ✅ | 0x04E | ✅ | 0x04D | ✅ | 0x04F | ❌ | 0x04F | ❌ | 0x052 | ✅ | 0x055 | ✅ | 0x047 | ✅ |
 | OWL_WARP | CUIShopScanResult::OnButtonClicked | merchant/serverbound/OwlWarp (T1) |  | ⬜ | 0x03F | ✅ | 0x042 | ✅ | 0x041 | ✅ | 0x043 | ✅ | 0x043 | ❌ | 0x046 | ❌ | 0x049 | ✅ | 0x03B | ❌ |
@@ -1003,7 +1003,7 @@ Tool: `79ea9d97cf2059579978bb159c24a4fb258b52c4e2e77ec86d6476e6d9b914e6`
 |---------|----|----|----|----|----|----|-----------|
 | v48 | 174 | 0 | 2 | 161 | 629 | 0 | 51.6% |
 | v61 | 250 | 0 | 60 | 194 | 462 | 0 | 49.6% |
-| v72 | 259 | 0 | 73 | 214 | 420 | 0 | 47.4% |
+| v72 | 260 | 0 | 73 | 213 | 420 | 0 | 47.6% |
 | v79 | 303 | 0 | 72 | 210 | 381 | 0 | 51.8% |
 | v83 | 423 | 0 | 0 | 319 | 224 | 0 | 57.0% |
 | v84 | 396 | 0 | 0 | 326 | 244 | 0 | 54.8% |

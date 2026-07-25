@@ -53,8 +53,11 @@ func TestFoodDecode(t *testing.T) {
 //	registry/template op76→sub_832680 was a mislabel of a distinct 2-field packet, see
 //	docs/packets/registry/gms_v61.yaml USE_MOUNT_FOOD note)
 //
+//	gms_v72 SendTamingMobFoodItemUseRequest@0x904419: op 0x4C; Encode4(update_time)·Encode2(slot)·Encode4(itemId)
+//
 // packet-audit:verify packet=mount/serverbound/MountFood version=gms_v48 ida=0x70e00b
 // packet-audit:verify packet=mount/serverbound/MountFood version=gms_v61 ida=0x831f44
+// packet-audit:verify packet=mount/serverbound/MountFood version=gms_v72 ida=0x904419
 func TestFoodByteFixture(t *testing.T) {
 	cases := []struct {
 		variant pt.TenantVariant
@@ -62,6 +65,7 @@ func TestFoodByteFixture(t *testing.T) {
 	}{
 		{pt.Variants[7], []byte{0x64, 0x00, 0x00, 0x00, 0x03, 0x00, 0x80, 0x84, 0x1E, 0x00}}, // gms_v48
 		{pt.Variants[8], []byte{0x64, 0x00, 0x00, 0x00, 0x03, 0x00, 0x80, 0x84, 0x1E, 0x00}}, // gms_v61
+		{pt.Variants[9], []byte{0x64, 0x00, 0x00, 0x00, 0x03, 0x00, 0x80, 0x84, 0x1E, 0x00}}, // gms_v72
 	}
 	for _, tc := range cases {
 		t.Run(tc.variant.Name, func(t *testing.T) {

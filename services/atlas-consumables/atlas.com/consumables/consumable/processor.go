@@ -141,7 +141,7 @@ type effectPlan struct {
 	hpChanges []int16      // ordered ChangeHP calls (hp, then hpR-derived)
 	mpChanges []int16      // ordered ChangeMP calls (mp, then mpR-derived)
 	statups   []stat.Model // includes the resolved morph statup, if any
-	duration  int32        // time spec / 1000
+	duration  int32        // WZ `time` spec in ms; atlas-buffs expiry = now + duration*time.Millisecond
 }
 
 // computeEffectPlan interprets a consumable's specs against a character with
@@ -204,7 +204,11 @@ func computeEffectPlan(l logrus.FieldLogger, c character.Model, ci consumable3.M
 		}
 	}
 	if val, ok := ci.GetSpec(consumable3.SpecTypeTime); ok && val > 0 {
-		plan.duration = val / 1000
+		// The consumable `time` spec is already in milliseconds, which is the
+		// unit atlas-buffs expects (expiry = now + duration*time.Millisecond,
+		// since task-054). Passing it as-is; a prior `/1000` made every timed
+		// consumable buff expire ~1000x too early.
+		plan.duration = val
 	}
 
 	return plan

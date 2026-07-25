@@ -510,7 +510,9 @@ func TestComputeEffectPlan_StatPotWithTime(t *testing.T) {
 	assert.Empty(t, plan.hpChanges)
 	assert.Empty(t, plan.mpChanges)
 	assert.Equal(t, []stat.Model{{Type: ts.TemporaryStatTypeWeaponAttack, Amount: 12}}, plan.statups)
-	assert.Equal(t, int32(300), plan.duration)
+	// duration is the WZ `time` spec in milliseconds, passed to atlas-buffs
+	// as-is (atlas-buffs schedules expiry as now + duration*time.Millisecond).
+	assert.Equal(t, int32(300000), plan.duration)
 }
 
 func TestComputeEffectPlan_HpRecoveryPercent(t *testing.T) {
@@ -526,7 +528,7 @@ func TestComputeEffectPlan_HpRecoveryPercent(t *testing.T) {
 }
 
 // T5 (FR-3 + hp-alongside): fixed-morph 221 item applies MORPH statup with the
-// morph id, duration = time/1000, and the coexisting hp spec still heals.
+// morph id, duration = the WZ time spec (ms), and the coexisting hp spec still heals.
 func TestComputeEffectPlan_FixedMorphWithHp(t *testing.T) {
 	c := character.NewModelBuilder().SetMaxHp(100).Build()
 	ci := extractConsumable(t, consumable3.RestModel{
@@ -538,7 +540,7 @@ func TestComputeEffectPlan_FixedMorphWithHp(t *testing.T) {
 	})
 	plan := computeEffectPlan(discardLogger(), c, ci)
 	assert.Equal(t, []stat.Model{{Type: ts.TemporaryStatTypeMorph, Amount: 2}}, plan.statups)
-	assert.Equal(t, int32(600), plan.duration)
+	assert.Equal(t, int32(600000), plan.duration)
 	assert.Equal(t, []int16{50}, plan.hpChanges)
 }
 
@@ -562,7 +564,7 @@ func TestComputeEffectPlan_RandomMorphOnly(t *testing.T) {
 		assert.True(t, present, "morph amount %d is not a table key", s.Amount)
 	}
 	assert.Equal(t, []int16{50}, plan.hpChanges)
-	assert.Equal(t, int32(600), plan.duration)
+	assert.Equal(t, int32(600000), plan.duration)
 }
 
 // T7 (FR-7): fixed morph wins over a table that deliberately does not contain it.

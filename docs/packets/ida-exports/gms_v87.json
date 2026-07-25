@@ -14440,6 +14440,27 @@
           "comment": ""
         }
       ]
+    },
+    "CWvsContext::SendTamingMobFoodItemUseRequest": {
+      "address": "0xa9f310",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CWvsContext::CanSendExclRequest(this, 200, 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "CWvsContext::CanSendExclRequest(this, 200, 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CWvsContext::CanSendExclRequest(this, 200, 0)"
+        }
+      ]
     }
   }
 }

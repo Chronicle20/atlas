@@ -7,7 +7,7 @@
     "gms_v79": "7cc5ad6a58952c5047e9e740196ae11e86a339faf33b2046f255294fc3387f7f",
     "gms_v83": "ced1b22b4758608afe731cae1030a9347d9d1c80fde85592ad76e87abba6322b",
     "gms_v84": "8ef77a3705bc726ad905c0ea248d0ae66c4be330c19fe5670c35f25d59e26f49",
-    "gms_v87": "87124c1dd6e54561d80244f1bb4751849813a72649e61740385bafc68bbaa908",
+    "gms_v87": "f73c0b37e2e3bd9895702876dbdb39b14aa1dbd8dbe2b067fc3f3dd5aa1acea7",
     "gms_v95": "2a46bda041feadea38318f09a5a491d2e38861aa12ad6ac0a8d40c333b177e5b",
     "jms_v185": "416136060adee3cb38e345359265bb599da58b19bb61960c99d93bbf2a507683"
   },
@@ -7984,8 +7984,7 @@
           "opcode": 77
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 80
         },
         "gms_v95": {

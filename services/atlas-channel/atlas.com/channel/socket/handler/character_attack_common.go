@@ -107,10 +107,10 @@ type damageInfoEntryDeps struct {
 	// DPT snapshot and by the drain-family heal cap.
 	loadEffectiveStats func() effective_stats.RestModel
 	// onDamageApplied is invoked once per non-reflected DamageInfo after
-	// damage and status apply, with the summed damage of that entry.
-	// Optional; nil-safe. Used by passives that fire per damaged
-	// monster (e.g., MP Eater, drain-family heals).
-	onDamageApplied func(monsterId uint32, totalDamage uint32)
+	// damage and status apply, with the entry's summed damage (clamped to
+	// MaxUint32). Optional; nil-safe. Used by passives that fire per
+	// damaged monster (MP Eater, drain-family heals, Pick Pocket).
+	onDamageApplied func(di packetmodel.DamageInfo, totalDamage uint32)
 }
 
 // processDamageInfoEntry handles one DamageInfo from a magic/melee/ranged
@@ -204,7 +204,7 @@ func processDamageInfoEntry(
 		if total > math.MaxUint32 {
 			total = math.MaxUint32
 		}
-		deps.onDamageApplied(di.MonsterId(), uint32(total))
+		deps.onDamageApplied(di, uint32(total))
 	}
 }
 
@@ -551,12 +551,12 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 						// skills span melee/ranged/energy). Failures are
 						// swallowed so the rest of the attack pipeline is
 						// unaffected.
-						onDamageApplied: func(monsterId uint32, totalDamage uint32) {
+						onDamageApplied: func(di packetmodel.DamageInfo, totalDamage uint32) {
 							if ai.AttackType() == packetmodel.AttackTypeMagic && ai.SkillId() > 0 {
-								mpEaterTryProc(l, ctx, mp, c, monsterId, s.Field(), s.CharacterId())
+								mpEaterTryProc(l, ctx, mp, c, di.MonsterId(), s.Field(), s.CharacterId())
 							}
 							if ai.SkillId() > 0 && isDrainSkill(skill3.Id(ai.SkillId())) {
-								drainTryHeal(l, mp.GetById, cp.ChangeHP, loadEffectiveStats, se.X(), ai.SkillId(), monsterId, totalDamage, s.Field(), s.CharacterId())
+								drainTryHeal(l, mp.GetById, cp.ChangeHP, loadEffectiveStats, se.X(), ai.SkillId(), di.MonsterId(), totalDamage, s.Field(), s.CharacterId())
 							}
 						},
 					}

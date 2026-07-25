@@ -11,7 +11,9 @@ import (
 	"github.com/sirupsen/logrus"
 
 	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	skill3 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 )
 
 func TestPickPocketWhitelisted(t *testing.T) {
@@ -239,5 +241,37 @@ func TestPickPocketResolveState_HappyPath(t *testing.T) {
 	}
 	if gotLevel != 15 {
 		t.Fatalf("effect looked up level %d; want 15 (buff-captured level)", gotLevel)
+	}
+}
+
+// TestOnDamageApplied_CarriesPerLineDamages pins the reason the hook was
+// widened to carry the DamageInfo: Pick Pocket rolls once per damage line,
+// so the per-line breakdown (not just the summed total) must reach the hook.
+func TestOnDamageApplied_CarriesPerLineDamages(t *testing.T) {
+	ai := *packetmodel.NewAttackInfo(packetmodel.AttackTypeMelee)
+	di := *packetmodel.NewDamageInfo(3).SetMonsterId(4101).SetDamages([]uint32{100, 250, 400})
+
+	var gotMonsterId uint32
+	var gotLines []uint32
+	calls := 0
+	deps := damageInfoEntryDeps{
+		applyDamage: func(_ field.Model, _, _ uint32, _ []uint32, _ byte) error { return nil },
+		onDamageApplied: func(di packetmodel.DamageInfo, _ uint32) {
+			calls++
+			gotMonsterId = di.MonsterId()
+			gotLines = di.Damages()
+		},
+	}
+
+	processDamageInfoEntry(discardLogger(), di, ai, effect.Model{}, 1, 999, 0, 0, testDrainField(), testTenant(t), "", deps)
+
+	if calls != 1 {
+		t.Fatalf("onDamageApplied calls = %d; want 1", calls)
+	}
+	if gotMonsterId != 4101 {
+		t.Errorf("monsterId = %d; want 4101", gotMonsterId)
+	}
+	if len(gotLines) != 3 || gotLines[0] != 100 || gotLines[1] != 250 || gotLines[2] != 400 {
+		t.Fatalf("per-line damages = %v; want [100 250 400]", gotLines)
 	}
 }

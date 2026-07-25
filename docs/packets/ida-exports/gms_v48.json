@@ -15132,6 +15132,28 @@
           "comment": "whispersOn"
         }
       ]
+    },
+    "CWvsContext::SendSkillLearnItemUseRequest": {
+      "address": "0x70e3e7",
+      "direction": "serverbound",
+      "note": "USE_SKILL_BOOK (task-125). v48 IDA-verified, session 0bb5f11a, GMS_v48_1_DEVM.exe.i64 -- already named in the IDB. Caller sub_4A1DDC (UI skill-book use handler) at 0x4a2396. item-class gate a3/10000 in {228,229} (skill-book prefix); guard sub_4A2518(this,200,0) (CanSendExclRequest twin); COutPacket::COutPacket(&pkt, 64); SetExclRequestSent before+after send.",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "updateTime (sub_4A2518(this,200,0) result)",
+          "guard": "sub_4A2518(this, 200, 0)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "slot (a2)",
+          "guard": "sub_4A2518(this, 200, 0)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "itemId (a3); gated a3/10000 in {228,229} (skill-book item prefix)",
+          "guard": "sub_4A2518(this, 200, 0)"
+        }
+      ]
     }
   }
 }

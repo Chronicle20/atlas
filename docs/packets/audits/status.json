@@ -1,7 +1,7 @@
 {
-  "toolSha": "4f69154ea220eae344ede0ceefc099282a9759f380f70bc4b37c754156d0b935",
+  "toolSha": "b113a576d4c27535d10b42b92fc4d0c1f76aa8f0989992403fb531e45775c26b",
   "exportHashes": {
-    "gms_v48": "e72dbeee0a05d37a3dfc69711a739ffc2f4d874483ec2f8447908aa11da04fdb",
+    "gms_v48": "2440d97ff07c153350f274584e6bb9f07f36f780e4104ff58cbd54a073a7476c",
     "gms_v61": "8e2db04eb4d3afb5effc24cdc06db1c889842f0557f0325ba064f09d153ebe7f",
     "gms_v72": "e9ab553bcb8b70b4974a3b1ea99d4277feab9be678f891b03636bcbb920dad17",
     "gms_v79": "a2a0573ccb7f438c6499483c5c9260bd078e3fb0cd90ecc24adaecfbb4592c37",
@@ -8417,6 +8417,58 @@
     },
     {
       "kind": "op",
+      "op": "USE_SKILL_BOOK",
+      "packet": "character/serverbound/CharacterUseSkillBook",
+      "direction": "serverbound",
+      "tier1": true,
+      "fnames": [
+        "CWvsContext::SendSkillLearnItemUseRequest"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "verified",
+          "opcode": 64
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 82
+        },
+        "gms_v84": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 82
+        },
+        "gms_v87": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 85
+        },
+        "gms_v95": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 88
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 74
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "AVATAR_MEGAPHONE_RESULT",
       "packet": "chat/clientbound/ChatAvatarMegaphoneResult",
       "direction": "clientbound",
@@ -11602,58 +11654,6 @@
         "jms_v185": {
           "state": "n-a",
           "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "USE_SKILL_BOOK",
-      "packet": "character/serverbound/CharacterUseSkillBook",
-      "direction": "serverbound",
-      "tier1": true,
-      "fnames": [
-        "CWvsContext::SendSkillLearnItemUseRequest"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 82
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 82
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 85
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 88
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 74
         }
       }
     },
@@ -41581,6 +41581,58 @@
         "gms_v48": {
           "state": "incomplete",
           "note": "verdict ❌",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v83": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v84": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v87": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v95": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "sub-struct",
+      "packet": "character/clientbound/CharacterSkillLearnItemResult",
+      "tier1": true,
+      "cells": {
+        "gms_v48": {
+          "state": "incomplete",
+          "note": "byte-test marker present but no fresh evidence record",
           "opcode": -1
         },
         "gms_v61": {

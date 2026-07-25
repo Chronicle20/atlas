@@ -931,6 +931,14 @@
   ida:
     address: 5748606
   note: 'send-site 0x70e4fe: COutPacket(62). v61 USE_CASH_ITEM=73.'
+- op: USE_SKILL_BOOK
+  direction: serverbound
+  opcode: 64
+  fname: CWvsContext::SendSkillLearnItemUseRequest
+  provenance: ida-discovered
+  ida:
+    address: 7398375
+  note: 'task-125: already named in the v48 IDB (session 0bb5f11a, GMS_v48_1_DEVM.exe.i64). send-site 0x70e3e7: item-class gate a3/10000 in {228,229} (skill-book prefix); guard sub_4A2518(this,200,0) (CanSendExclRequest twin); COutPacket::COutPacket(&pkt, 64); then Encode4(updateTime)+Encode2(slot=a2)+Encode4(itemId=a3); SetExclRequestSent. Byte-identical shape to v83 (0xa0a1b2, opcode 0x52).'
 - op: ITEM_MOVE
   direction: serverbound
   opcode: 55

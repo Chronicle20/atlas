@@ -4,9 +4,9 @@
 > ✅ verified · 🧩 family (mode-prefix dispatcher; sub-arms unverified) · 🟡 partial · ❌ incomplete · ⬜ n-a · 🟥 conflict
 > Partial (🟡) sub-glyphs: 🟡ᶠ tier-1 needs byte-fixture · 🟡ᵈ tool-pass diff-only (no byte-test) · 🟡ᵖ evidence-pinned deferral
 
-Tool: `4f69154ea220eae344ede0ceefc099282a9759f380f70bc4b37c754156d0b935`
+Tool: `b113a576d4c27535d10b42b92fc4d0c1f76aa8f0989992403fb531e45775c26b`
 
-- export gms_v48: `e72dbeee0a05d37a3dfc69711a739ffc2f4d874483ec2f8447908aa11da04fdb`
+- export gms_v48: `2440d97ff07c153350f274584e6bb9f07f36f780e4104ff58cbd54a073a7476c`
 - export gms_v61: `8e2db04eb4d3afb5effc24cdc06db1c889842f0557f0325ba064f09d153ebe7f`
 - export gms_v72: `e9ab553bcb8b70b4974a3b1ea99d4277feab9be678f891b03636bcbb920dad17`
 - export gms_v79: `a2a0573ccb7f438c6499483c5c9260bd078e3fb0cd90ecc24adaecfbb4592c37`
@@ -583,6 +583,7 @@ Tool: `4f69154ea220eae344ede0ceefc099282a9759f380f70bc4b37c754156d0b935`
 | OWL_WARP | CUIShopScanResult::OnButtonClicked | merchant/serverbound/OwlWarp (T1) |  | ⬜ | 0x03F | ✅ | 0x042 | ✅ | 0x041 | ✅ | 0x043 | ✅ | 0x043 | ❌ | 0x046 | ❌ | 0x049 | ✅ | 0x03B | ❌ |
 | FREDRICK_ACTION | CStoreBankDlg::SendCalculateFeeRequest; CStoreBankDlg::SendGetAllRequest; CStoreBankDlg::SetRet |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x040 | ❌ | 0x040 | ❌ | 0x043 | ❌ | 0x045 | ❌ | 0x038 | ❌ |
 | ITEM_SORT | CWvsContext::SendGatherItemRequest; sub_954C6B | inventory/serverbound/InventoryCompartmentMergeRequest (T1) |  | ⬜ | 0x040 | ✅ | 0x044 | ✅ | 0x043 | ✅ | 0x045 | ✅ | 0x045 | ✅ | 0x048 | ✅ | 0x04B | ✅ | 0x03D | ✅ |
+| USE_SKILL_BOOK | CWvsContext::SendSkillLearnItemUseRequest | character/serverbound/CharacterUseSkillBook (T1) | 0x040 | ✅ |  | ⬜ |  | ⬜ |  | ⬜ | 0x052 | ✅ | 0x052 | ❌ | 0x055 | ❌ | 0x058 | ❌ | 0x04A | ❌ |
 | DUEY_ACTION | CParcelDlg::CloseParcelDlg; CTabQuickSend::SendQuickDelivery; CTabReceive::DiscardParcel; CTabReceive::ReceiveParcel; CTabSend::SendParcel; CUIFadeYesNo::OnButtonClicked |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x041 | ❌ | 0x041 | ❌ | 0x044 | ❌ | 0x046 | ❌ | 0x039 | ❌ |
 | ITEM_SORT2 | CWvsContext::SendSortItemRequest; sub_954CFD | inventory/serverbound/InventoryCompartmentSortRequest (T1) |  | ⬜ | 0x041 | ✅ | 0x045 | ✅ | 0x044 | ✅ | 0x046 | ❌ | 0x046 | ❌ | 0x049 | ✅ | 0x04C | ✅ | 0x03E | ✅ |
 | USE_ITEM | CWvsContext::SendStatChangeItemUseRequest; sub_719DD9; sub_831DE9 | inventory/serverbound/InventoryItemUse (T1) | 0x041 | ✅ | 0x047 | ❌ | 0x047 | 🟡ᶠ | 0x046 | 🟡ᶠ | 0x048 | ✅ | 0x048 | ✅ | 0x04B | ✅ | 0x04E | ✅ | 0x040 | ✅ |
@@ -607,7 +608,6 @@ Tool: `4f69154ea220eae344ede0ceefc099282a9759f380f70bc4b37c754156d0b935`
 | DESTROY_PET_ITEM_REQUEST | CWvsContext::SendActivatePetRequest | pet/serverbound/PetSpawn (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x050 | ❌ | 0x050 | ❌ | 0x053 | ✅ | 0x056 | ✅ | 0x048 | ✅ |
 | TROCK_ADD_MAP | CWvsContext::SendMapTransferRequest; sub_71E7F3; sub_8478EA; sub_91E33E; sub_970286 | teleportrock/serverbound/AddMap | 0x051 | ✅ | 0x05E | ✅ | 0x065 | ✅ | 0x064 | ✅ | 0x066 | ✅ | 0x066 | ✅ | 0x069 | ✅ | 0x072 | ✅ | 0x061 | ✅ |
 | USE_CATCH_ITEM | CWvsContext::SendBridleItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x051 | ❌ | 0x051 | ❌ | 0x054 | ❌ | 0x057 | ❌ | 0x049 | ❌ |
-| USE_SKILL_BOOK | CWvsContext::SendSkillLearnItemUseRequest | character/serverbound/CharacterUseSkillBook (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x052 | ✅ | 0x052 | ❌ | 0x055 | ❌ | 0x058 | ❌ | 0x04A | ❌ |
 | ANTI_MACRO_RESULT | CUIAdminAntiMacro::SetRet; CUIAntiMacro::SetRet; sub_5F9718; sub_69C480 |  | 0x053 | ❌ | 0x060 | ❌ |  | ⬜ |  | ⬜ | 0x069 | ❌ | 0x069 | ❌ | 0x06C | ❌ | 0x075 | ❌ | 0x064 | ❌ |
 | QUEST_ACTION | CQuest::OnCompleteQuestFailed; CQuest::StartQuest; CWvsContext::ResignQuest; sub_5997EF | quest/serverbound/ActionScriptEnd | 0x055 | ❌ | 0x062 | ❌ | 0x06A | ❌ | 0x069 | ❌ | 0x06B | ✅ | 0x06B | ❌ | 0x06E | ✅ | 0x077 | ✅ | 0x066 | ✅ |
 | MESO_DROP | CWvsContext::SendDropMoneyRequest; sub_8459DD | character/serverbound/DropMeso (T1) |  | ⬜ | 0x056 | ✅ | 0x05D | ✅ | 0x05C | ✅ | 0x05E | ✅ | 0x05E | ✅ | 0x061 | ✅ | 0x06A | ✅ | 0x059 | ✅ |
@@ -857,6 +857,7 @@ Tool: `4f69154ea220eae344ede0ceefc099282a9759f380f70bc4b37c754156d0b935`
 | cash/serverbound/CashShopOperationRebateLockerItem (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashShopOperationSetWishlist (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | channel/serverbound/ChannelChangeRequest |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
+| character/clientbound/CharacterSkillLearnItemResult (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ChairPortable (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ChalkboardClose (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | character/serverbound/ExpressionRequest (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -1001,15 +1002,15 @@ Tool: `4f69154ea220eae344ede0ceefc099282a9759f380f70bc4b37c754156d0b935`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 173 | 0 | 2 | 161 | 630 | 0 | 51.5% |
-| v61 | 249 | 0 | 60 | 195 | 462 | 0 | 49.4% |
-| v72 | 259 | 0 | 73 | 214 | 420 | 0 | 47.4% |
-| v79 | 303 | 0 | 72 | 210 | 381 | 0 | 51.8% |
-| v83 | 425 | 0 | 0 | 317 | 224 | 0 | 57.3% |
-| v84 | 396 | 0 | 0 | 326 | 244 | 0 | 54.8% |
-| v87 | 431 | 0 | 0 | 348 | 187 | 0 | 55.3% |
-| v95 | 456 | 0 | 0 | 407 | 103 | 0 | 52.8% |
-| JMS185 | 408 | 0 | 0 | 364 | 194 | 0 | 52.8% |
+| v48 | 174 | 0 | 2 | 162 | 629 | 0 | 51.5% |
+| v61 | 249 | 0 | 60 | 196 | 462 | 0 | 49.3% |
+| v72 | 259 | 0 | 73 | 215 | 420 | 0 | 47.3% |
+| v79 | 303 | 0 | 72 | 211 | 381 | 0 | 51.7% |
+| v83 | 425 | 0 | 0 | 318 | 224 | 0 | 57.2% |
+| v84 | 396 | 0 | 0 | 327 | 244 | 0 | 54.8% |
+| v87 | 431 | 0 | 0 | 349 | 187 | 0 | 55.3% |
+| v95 | 456 | 0 | 0 | 408 | 103 | 0 | 52.8% |
+| JMS185 | 408 | 0 | 0 | 365 | 194 | 0 | 52.8% |
 
 ## Conflicts
 

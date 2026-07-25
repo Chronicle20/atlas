@@ -4,12 +4,14 @@ import (
 	"atlas-notes/kafka/message"
 	"atlas-notes/note"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 type ProcessorMock struct {
-	CreateFunc              func(mb *message.Buffer) func(characterId uint32) func(senderId uint32) func(msg string) func(flag byte) (note.Model, error)
-	CreateAndEmitFunc       func(characterId uint32, senderId uint32, msg string, flag byte) (note.Model, error)
+	CreateFunc              func(mb *message.Buffer) func(transactionId uuid.UUID) func(characterId uint32) func(senderId uint32) func(msg string) func(flag byte) (note.Model, error)
+	CreateAndEmitFunc       func(transactionId uuid.UUID, characterId uint32, senderId uint32, msg string, flag byte) (note.Model, error)
 	UpdateFunc              func(mb *message.Buffer) func(id uint32) func(characterId uint32) func(senderId uint32) func(msg string) func(flag byte) (note.Model, error)
 	UpdateAndEmitFunc       func(id uint32, characterId uint32, senderId uint32, msg string, flag byte) (note.Model, error)
 	DeleteFunc              func(mb *message.Buffer) func(id uint32) error
@@ -23,24 +25,26 @@ type ProcessorMock struct {
 	AllProviderFunc         func(page model.Page) model.Provider[model.Paged[note.Model]]
 }
 
-func (m *ProcessorMock) Create(mb *message.Buffer) func(characterId uint32) func(senderId uint32) func(msg string) func(flag byte) (note.Model, error) {
+func (m *ProcessorMock) Create(mb *message.Buffer) func(transactionId uuid.UUID) func(characterId uint32) func(senderId uint32) func(msg string) func(flag byte) (note.Model, error) {
 	if m.CreateFunc != nil {
 		return m.CreateFunc(mb)
 	}
-	return func(uint32) func(uint32) func(string) func(byte) (note.Model, error) {
-		return func(uint32) func(string) func(byte) (note.Model, error) {
-			return func(string) func(byte) (note.Model, error) {
-				return func(byte) (note.Model, error) {
-					return note.Model{}, nil
+	return func(uuid.UUID) func(uint32) func(uint32) func(string) func(byte) (note.Model, error) {
+		return func(uint32) func(uint32) func(string) func(byte) (note.Model, error) {
+			return func(uint32) func(string) func(byte) (note.Model, error) {
+				return func(string) func(byte) (note.Model, error) {
+					return func(byte) (note.Model, error) {
+						return note.Model{}, nil
+					}
 				}
 			}
 		}
 	}
 }
 
-func (m *ProcessorMock) CreateAndEmit(characterId uint32, senderId uint32, msg string, flag byte) (note.Model, error) {
+func (m *ProcessorMock) CreateAndEmit(transactionId uuid.UUID, characterId uint32, senderId uint32, msg string, flag byte) (note.Model, error) {
 	if m.CreateAndEmitFunc != nil {
-		return m.CreateAndEmitFunc(characterId, senderId, msg, flag)
+		return m.CreateAndEmitFunc(transactionId, characterId, senderId, msg, flag)
 	}
 	return note.Model{}, nil
 }

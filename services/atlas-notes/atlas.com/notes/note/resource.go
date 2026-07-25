@@ -4,6 +4,7 @@ import (
 	"atlas-notes/rest"
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -148,7 +149,7 @@ func CreateNoteHandler(d *rest.HandlerDependency, c *rest.HandlerContext, i Rest
 			return
 		}
 
-		m, err := NewProcessor(d.Logger(), d.Context(), d.DB()).CreateAndEmit(im.CharacterId(), im.SenderId(), im.Message(), im.Flag())
+		m, err := NewProcessor(d.Logger(), d.Context(), d.DB()).CreateAndEmit(uuid.Nil, im.CharacterId(), im.SenderId(), im.Message(), im.Flag())
 		if err != nil {
 			d.Logger().WithError(err).Errorln("Error creating note")
 			server.WriteErrorResponse(d.Logger())(w)(err)

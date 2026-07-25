@@ -338,3 +338,53 @@ func TestSkillLearnItemResultGoldenBytesV95(t *testing.T) {
 		t.Errorf("golden bytes: got % X, want % X", got, want)
 	}
 }
+
+// Golden bytes, jms_v185 — 16-byte body (LEADING bOnExclRequest byte = 0x01).
+// Same field values as the v83/v84/v87/v95 golden; only difference from v83 is
+// the extra leading 0x01 (MajorVersion()=185 >= 84 gate).
+//
+// IDA evidence (task-125): CWvsContext::OnSkillLearnItemResult @0xb05116 (JMS
+// v185 IDB MapleStory_dump_SCY.exe.i64, session 3c4bb8b1 — already named in
+// the IDB). xrefs_to confirms CWvsContext::OnPacket case 0x30 (48,
+// @0xaec1a3, dispatcher fn @0xaebfe7) delegates directly. Body, in decompile
+// order:
+//
+//	if ( CInPacket::Decode1(iPacket) )   -- bOnExclRequest, @0xb05132 (LEADING)
+//	{
+//	  this[...] = 0; this[...] = get_update_time();  -- clears exclusive-request lock
+//	}
+//	v4 = CInPacket::Decode4(v2);         -> characterId,   @0xb05151
+//	User = CUserPool::GetUser(..., v4);
+//
+// CONFIRMED: the leading Decode1 (bOnExclRequest, @0xb05132) executes and is
+// evaluated BEFORE the Decode4 characterId read (@0xb05151) — the v84+ gate
+// the codec implements; 16-byte body. Then, under the user-found guard (v31
+// nonzero, from CUserPool::GetUser):
+//
+//	v35 = Decode1(v2)  -> isMasteryBook, @0xb05199
+//	Decode4(v2)        -> skillId (decoded, discarded), @0xb0519c
+//	Decode4(v2)        -> masterLevel (decoded, discarded), @0xb051a3
+//	v36 = Decode1(v2)  -> canUse, @0xb051b4
+//	v7  = Decode1(v2)  -> success, @0xb051b7
+//
+// matches the codec's read order exactly. Opcode 0x30 (48 decimal) ==
+// registry op SKILL_LEARN_ITEM_RESULT.
+//
+// packet-audit:verify packet=character/clientbound/CharacterSkillLearnItemResult version=jms_v185 ida=0xb05116
+func TestSkillLearnItemResultGoldenBytesJMS185(t *testing.T) {
+	ctx := pt.CreateContext("JMS", 185, 1)
+	l, _ := testlog.NewNullLogger()
+	got := NewSkillLearnItemResult(1, true, 2, 3, true, false).Encode(l, ctx)(nil)
+	want := []byte{
+		0x01,                   // bOnExclRequest (v84+ leading byte, present at jms_v185)
+		0x01, 0x00, 0x00, 0x00, // characterId
+		0x01,                   // isMasteryBook
+		0x02, 0x00, 0x00, 0x00, // skillId
+		0x03, 0x00, 0x00, 0x00, // masterLevel
+		0x01, // canUse
+		0x00, // success
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("golden bytes: got % X, want % X", got, want)
+	}
+}

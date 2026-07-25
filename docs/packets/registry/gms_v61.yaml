@@ -329,11 +329,22 @@
 - op: SKILL_LEARN_ITEM_RESULT
   direction: clientbound
   opcode: 48
-  fname: sub_841E5F
+  fname: CWvsContext::OnSkillLearnItemResult
   provenance: ida-discovered
   ida:
     address: 8658527
-  note: 'v61 IDB unnamed sub_841E5F = CWvsContext::OnSkillLearnItemResult (delta doc a).'
+  note: 'task-125 correction: prior note claimed sub_841E5F was unnamed; func_query
+    (session 965202bf, GMS_v61.1_U_DEVM.exe.i64) shows the IDB already carries the
+    mangled symbol ?OnSkillLearnItemResult@CWvsContext@@QAEXAAVCInPacket@@@Z at this
+    address — it was named, just displayed as sub_841E5F in Hex-Rays pseudocode.
+    Decompile confirms CWvsContext::OnPacket case 48 (0x30, @0x8305b4) delegates
+    directly; body (15-byte, no leading bOnExclRequest — MajorVersion 61<84):
+    Decode4 characterId (CUserPool::GetUser lookup), Decode1 isMasteryBook (v34,
+    gates mastery-specific StringPool ids 3765/3766/3769/3770), Decode4 skillId
+    (decoded, discarded), Decode4 masterLevel (decoded, discarded), Decode1 canUse
+    (v4/v31, gates CAnimationDisplayer::Effect_Quest on-avatar glow), Decode1
+    success (v8/v10/v30, gates success/fail sound 1248/1249). Matches the codec
+    read order exactly.'
 - op: GATHER_ITEM_RESULT
   direction: clientbound
   opcode: 49

@@ -73,6 +73,41 @@ func TestSkillLearnItemResultGoldenBytesV48(t *testing.T) {
 	}
 }
 
+// Golden bytes, v61 — 15-byte body (NO leading bOnExclRequest byte, same as
+// v48/v83; MajorVersion()=61 < 84):
+// characterId(4 LE) + isMasteryBook(1) + skillId(4 LE) + masterLevel(4 LE) + canUse(1) + success(1).
+//
+// IDA evidence (task-125): CWvsContext::OnSkillLearnItemResult @0x841e5f (v61
+// IDB GMS_v61.1_U_DEVM.exe.i64, session 965202bf). The IDB already carries the
+// mangled symbol ?OnSkillLearnItemResult@CWvsContext@@QAEXAAVCInPacket@@@Z at
+// this address (func_query confirms it — Hex-Rays merely displayed
+// sub_841E5F in the pseudocode; the prior registry note claiming it was
+// unnamed was stale, corrected in docs/packets/registry/gms_v61.yaml,
+// task-125). CWvsContext::OnPacket case 48 (0x30, @0x8305b4) delegates
+// directly. Body: Decode4 characterId (CUserPool::GetUser lookup), then under
+// the user-found guard (v28): Decode1 isMasteryBook, Decode4 skillId
+// (decoded, discarded), Decode4 masterLevel (decoded, discarded), Decode1
+// canUse, Decode1 success — matches the existing 15-byte golden fixture shape
+// exactly. Opcode 0x30 == registry op 48.
+//
+// packet-audit:verify packet=character/clientbound/CharacterSkillLearnItemResult version=gms_v61 ida=0x841e5f
+func TestSkillLearnItemResultGoldenBytesV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	l, _ := testlog.NewNullLogger()
+	got := NewSkillLearnItemResult(1, true, 2, 3, true, false).Encode(l, ctx)(nil)
+	want := []byte{
+		0x01, 0x00, 0x00, 0x00, // characterId
+		0x01,                   // isMasteryBook
+		0x02, 0x00, 0x00, 0x00, // skillId
+		0x03, 0x00, 0x00, 0x00, // masterLevel
+		0x01, // canUse
+		0x00, // success
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("golden bytes: got % X, want % X", got, want)
+	}
+}
+
 // packet-audit:verify packet=character/clientbound/CharacterSkillLearnItemResult version=gms_v83 ida=0xa1e5af
 func TestSkillLearnItemResultGoldenBytesV83(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 83, 1)

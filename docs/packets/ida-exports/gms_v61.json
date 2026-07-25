@@ -13407,6 +13407,42 @@
       "direction": "",
       "calls": null
     },
+    "CWvsContext::OnSkillLearnItemResult": {
+      "address": "0x841e5f",
+      "direction": "clientbound",
+      "note": "SKILL_LEARN_ITEM_RESULT (task-125). v61 IDA-verified, session 965202bf, GMS_v61.1_U_DEVM.exe.i64. IDB already carries the mangled symbol ?OnSkillLearnItemResult@CWvsContext@@QAEXAAVCInPacket@@@Z at this address (Hex-Rays displayed sub_841E5F in pseudocode; func_query confirms the real name). CWvsContext::OnPacket case 48 (0x30, @0x8305b4) delegates directly. v61 body (no leading byte -- MajorVersion()<84): Decode4 characterId (CUserPool::GetUser lookup), then under an if(user-found) guard (v28): Decode1 isMasteryBook, Decode4 skillId (decoded, discarded), Decode4 masterLevel (decoded, discarded), Decode1 canUse, Decode1 success.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "isMasteryBook",
+          "guard": "v28"
+        },
+        {
+          "op": "Decode4",
+          "comment": "skillId (decoded, discarded)",
+          "guard": "v28"
+        },
+        {
+          "op": "Decode4",
+          "comment": "masterLevel (decoded, discarded)",
+          "guard": "v28"
+        },
+        {
+          "op": "Decode1",
+          "comment": "canUse",
+          "guard": "v28"
+        },
+        {
+          "op": "Decode1",
+          "comment": "success",
+          "guard": "v28"
+        }
+      ]
+    },
     "CWvsContext::OnSkillUseResult": {
       "address": "0x8437cd",
       "direction": "",

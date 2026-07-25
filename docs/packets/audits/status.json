@@ -2,7 +2,7 @@
   "toolSha": "b113a576d4c27535d10b42b92fc4d0c1f76aa8f0989992403fb531e45775c26b",
   "exportHashes": {
     "gms_v48": "46a1c15ebc8501e17134a830356a3b0a024ff97e5db322b1f519c95e9ae8b205",
-    "gms_v61": "9f4f8a973177a031f3b2a8ba02349a153bd2059a3b9dcb5b84676172d26c8b5c",
+    "gms_v61": "6e11e82eb718fae11b37ddb7091d99fce4516ef62113bfa395835ecb8089db86",
     "gms_v72": "e9ab553bcb8b70b4974a3b1ea99d4277feab9be678f891b03636bcbb920dad17",
     "gms_v79": "a2a0573ccb7f438c6499483c5c9260bd078e3fb0cd90ecc24adaecfbb4592c37",
     "gms_v83": "698d163f374d527a34cc6360641e3abe0ecfc6a3dd9275f7cc2f8577a703ea1e",
@@ -5795,7 +5795,6 @@
       "tier1": true,
       "fnames": [
         "CWvsContext::OnSkillLearnItemResult",
-        "sub_841E5F",
         "sub_9175E6",
         "sub_969022"
       ],
@@ -5805,8 +5804,7 @@
           "opcode": 43
         },
         "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 48
         },
         "gms_v72": {

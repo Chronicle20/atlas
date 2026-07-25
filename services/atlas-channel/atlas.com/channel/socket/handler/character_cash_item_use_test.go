@@ -310,3 +310,29 @@ func TestGetCashSlotItemTypeVegasSpell(t *testing.T) {
 		})
 	}
 }
+
+// TestCashSlotItemTypeNote pins that Note items (5090000-family,
+// classification 509) map to the named note slot type on every version.
+func TestCashSlotItemTypeNote(t *testing.T) {
+	for _, v := range []struct {
+		region string
+		major  uint16
+	}{{"GMS", 83}, {"GMS", 84}, {"GMS", 87}, {"GMS", 95}, {"JMS", 185}} {
+		tn := mustTenant(t, v.region, v.major, 1)
+		if got := GetCashSlotItemType(tn)(item.Id(5090000)); got != CashSlotItemTypeNote {
+			t.Errorf("%s v%d: got %d, want %d", v.region, v.major, got, CashSlotItemTypeNote)
+		}
+	}
+}
+
+// TestCharacterCashItemUseHandleFuncSymbol verifies the handler constructor
+// returns a non-nil closure. The constructor calls tenant.MustFromContext,
+// so a tenant context is required; a nil writer.Producer is acceptable for
+// the symbol check only.
+func TestCharacterCashItemUseHandleFuncSymbol(t *testing.T) {
+	ten := mustTenant(t, "GMS", 83, 1)
+	ctx := tenant.WithContext(context.Background(), ten)
+	if got := CharacterCashItemUseHandleFunc(logrus.New(), ctx, nil); got == nil {
+		t.Fatal("nil closure")
+	}
+}

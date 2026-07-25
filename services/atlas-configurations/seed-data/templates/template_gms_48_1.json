@@ -304,6 +304,12 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x3D",
+        "validator": "LoggedInValidator",
+        "handler": "MountFoodHandle",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x3E",
         "validator": "LoggedInValidator",
         "handler": "CharacterCashItemUseHandle",

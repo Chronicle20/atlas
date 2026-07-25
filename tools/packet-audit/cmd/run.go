@@ -1177,6 +1177,10 @@ func candidatesFromFName(fname string) []candidate {
 	case "CWvsContext::SendPetFoodItemUseRequest":
 		// CSV: PET_FOOD — atlas Food.
 		return []candidate{{name: "Food", pkg: "pet", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::SendTamingMobFoodItemUseRequest":
+		// USE_MOUNT_FOOD — taming-mob (mount) food. Codec mount/serverbound/Food
+		// (handler MountFoodHandle). update_time u32 + slot i16 + itemId u32.
+		return []candidate{{name: "Food", pkg: "mount", dir: csvpkg.DirServerbound}}
 	case "CWvsContext::SendStatChangeItemUseRequestByPetQ":
 		// CSV: PET_AUTO_POT — atlas ItemUse.
 		return []candidate{{name: "ItemUse", pkg: "pet", dir: csvpkg.DirServerbound}}

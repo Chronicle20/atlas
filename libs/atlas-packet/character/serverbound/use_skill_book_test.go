@@ -267,3 +267,38 @@ func TestUseSkillBookGoldenBytesV95(t *testing.T) {
 		t.Errorf("golden bytes: got % X, want % X", got, want)
 	}
 }
+
+// Golden bytes, jms_v185: same 10-byte body as all GMS versions (no version
+// gate on this op). updateTime(4 LE) + slot(2 LE) + itemId(4 LE); 12345 =
+// 0x3039; 2 = 0x0002; 2290000 = 0x22F150.
+//
+// IDA evidence (task-125): CWvsContext::SendSkillLearnItemUseRequest @0xaeee61
+// (JMS v185 IDB MapleStory_dump_SCY.exe.i64, session 3c4bb8b1 — already named
+// in the IDB). Decompile:
+//
+//	v4 = nItemID / 10000;                                        -- @0xaeee7a
+//	if ( nItemID / 10000 == 228 || v4 == 229 || v4 == 562 )       -- item-class gate, @0xaeee8f
+//	{
+//	  if ( CWvsContext::CanSendExclRequest(this, 200, 0) )        -- @0xaeee9a
+//	  {
+//	    COutPacket::COutPacket(v8, 0x4A);                         -- @0xaeeea8
+//	    update_time = get_update_time();
+//	    COutPacket::Encode4(v8, update_time);  -> updateTime,     @0xaeeeba
+//	    COutPacket::Encode2(v8, nPOS);          -> slot,          @0xaeeec5
+//	    COutPacket::Encode4(v8, nItemID);       -> itemId,        @0xaeeed0
+//	  }
+//	}
+//
+// matches the codec's write order exactly. Opcode 0x4A (74 decimal) ==
+// registry op USE_SKILL_BOOK.
+//
+// packet-audit:verify packet=character/serverbound/CharacterUseSkillBook version=jms_v185 ida=0xaeee61
+func TestUseSkillBookGoldenBytesJMS185(t *testing.T) {
+	ctx := pt.CreateContext("JMS", 185, 1)
+	l, _ := testlog.NewNullLogger()
+	got := UseSkillBook{updateTime: 12345, slot: 2, itemId: 2290000}.Encode(l, ctx)(nil)
+	want := []byte{0x39, 0x30, 0x00, 0x00, 0x02, 0x00, 0x50, 0xF1, 0x22, 0x00}
+	if !bytes.Equal(got, want) {
+		t.Errorf("golden bytes: got % X, want % X", got, want)
+	}
+}

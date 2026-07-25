@@ -13676,6 +13676,25 @@
           "comment": ""
         }
       ]
+    },
+    "CWvsContext::SendSkillLearnItemUseRequest": {
+      "address": "0xaeee61",
+      "direction": "serverbound",
+      "note": "USE_SKILL_BOOK (task-125). jms_v185 IDA-verified, session 3c4bb8b1, MapleStory_dump_SCY.exe.i64 (JMS v185, U_DEVM-equivalent, already named in the IDB). Item-class gate nItemID/10000 == 228 || v4==229 || v4==562 @0xaeee8f (skill/mastery-book class check, extended with an extra class 562 vs earlier builds); guard CWvsContext::CanSendExclRequest(this,200,0) @0xaeee9a; COutPacket::COutPacket(v8, 0x4A) @0xaeeea8 -- opcode 0x4A (74) matches registry op USE_SKILL_BOOK exactly. Byte-identical body to all other versions (no version gate on this op).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "updateTime (get_update_time()) @0xaeeeba"
+        },
+        {
+          "op": "Encode2",
+          "comment": "slot (nPOS) @0xaeeec5"
+        },
+        {
+          "op": "Encode4",
+          "comment": "itemId (nItemID); gated nItemID/10000 == 228 || v4==229 || v4==562 @0xaeeed0"
+        }
+      ]
     }
   }
 }

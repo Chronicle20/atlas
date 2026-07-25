@@ -202,3 +202,33 @@ func TestUseSkillBookGoldenBytesV84(t *testing.T) {
 		t.Errorf("golden bytes: got % X, want % X", got, want)
 	}
 }
+
+// Golden bytes, v87: same 10-byte body as v48/v61/v72/v79/v83/v84 (no version
+// gate on this op). updateTime(4 LE) + slot(2 LE) + itemId(4 LE); 12345 =
+// 0x3039; 2 = 0x0002; 2290000 = 0x22F150.
+//
+// IDA evidence (task-125): CWvsContext::SendSkillLearnItemUseRequest @0xa9fa66
+// (v87 IDB GMSv87_4GB.exe.i64, session 81f32170 — func_query name_regex
+// confirms 0xa9fa66 == ?SendSkillLearnItemUseRequest@CWvsContext@@QAEXJJ@Z).
+// item-class gate arg4/10000 == 228 || sub_512125(arg4) (skill/mastery-book
+// class twin of the {228,229} gate); guard
+// CWvsContext::CanSendExclRequest(this, 200, 0); COutPacket::COutPacket(&a3,
+// 0x55) @0xa9faac then:
+//
+//	COutPacket::Encode4(&a3, get_update_time())  -> updateTime, @0xa9fabe
+//	COutPacket::Encode2(&a3, a2)                 -> slot,       @0xa9fac9
+//	COutPacket::Encode4(&a3, arg4)                -> itemId,     @0xa9fad4
+//
+// matches the codec's write order exactly. Opcode 0x55 (85 decimal) ==
+// registry op USE_SKILL_BOOK.
+//
+// packet-audit:verify packet=character/serverbound/CharacterUseSkillBook version=gms_v87 ida=0xa9fa66
+func TestUseSkillBookGoldenBytesV87(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 87, 1)
+	l, _ := testlog.NewNullLogger()
+	got := UseSkillBook{updateTime: 12345, slot: 2, itemId: 2290000}.Encode(l, ctx)(nil)
+	want := []byte{0x39, 0x30, 0x00, 0x00, 0x02, 0x00, 0x50, 0xF1, 0x22, 0x00}
+	if !bytes.Equal(got, want) {
+		t.Errorf("golden bytes: got % X, want % X", got, want)
+	}
+}

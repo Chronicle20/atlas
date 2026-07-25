@@ -570,7 +570,14 @@
         "opCode": "0x86",
         "validator": "LoggedInValidator",
         "handler": "NoteOperationHandle",
-        "services": ["channel"]
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "SEND": 0,
+            "DISCARD": 1,
+            "REQUEST": 2
+          }
+        }
       },
       {
         "opCode": "0x88",
@@ -1656,7 +1663,8 @@
           "errors": {
             "RECEIVER_ONLINE": 0,
             "RECEIVER_UNKNOWN": 1,
-            "RECEIVER_INBOX_FULL": 2
+            "RECEIVER_INBOX_FULL": 2,
+            "NO_NOTE_ITEM": 3
           }
         }
       },

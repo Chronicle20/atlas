@@ -63,3 +63,27 @@ func TestMtsFailureArm_UnknownKind(t *testing.T) {
 		}
 	}
 }
+
+// TestExtractResultCharacterId proves the note_send completion branch reads
+// Results["characterId"] safely: a nil map, a missing key, and a wrong-typed
+// value all resolve to 0 (no panic, no bogus announce), while a JSON-decoded
+// float64 (what the orchestrator's Results map actually contains) resolves.
+func TestExtractResultCharacterId(t *testing.T) {
+	cases := []struct {
+		name    string
+		results map[string]any
+		want    uint32
+	}{
+		{"nil results", nil, 0},
+		{"missing key", map[string]any{"other": float64(5)}, 0},
+		{"json float64", map[string]any{"characterId": float64(100)}, 100},
+		{"wrong type", map[string]any{"characterId": "100"}, 0},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := extractResultCharacterId(tc.results); got != tc.want {
+				t.Errorf("got %d, want %d", got, tc.want)
+			}
+		})
+	}
+}

@@ -4,6 +4,7 @@ import (
 	"atlas-channel/character/buff"
 	"atlas-channel/character/buff/stat"
 	"atlas-channel/data/skill/effect"
+	"atlas-channel/monster"
 	"errors"
 	"testing"
 	"time"
@@ -12,6 +13,7 @@ import (
 
 	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	skill3 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 )
@@ -273,5 +275,128 @@ func TestOnDamageApplied_CarriesPerLineDamages(t *testing.T) {
 	}
 	if len(gotLines) != 3 || gotLines[0] != 100 || gotLines[1] != 250 || gotLines[2] != 400 {
 		t.Fatalf("per-line damages = %v; want [100 250 400]", gotLines)
+	}
+}
+
+type ppSpawnCall struct {
+	mesos              uint32
+	x, y               int16
+	ownerId, dropperId uint32
+	dropperX, dropperY int16
+}
+
+func TestPickPocketTryProc_PropOneEmitsPerDamageLine(t *testing.T) {
+	f := testField(_map.Id(100000000))
+	di := packetmodel.NewDamageInfo(3).SetMonsterId(700020).SetDamages([]uint32{0, 10000, 2000000})
+	mon := monster.NewModelBuilder(700020, f, 100100).SetX(100).SetY(-30).MustBuild()
+
+	var calls []ppSpawnCall
+	getMonster := func(monsterId uint32) (monster.Model, error) {
+		if monsterId != 700020 {
+			t.Fatalf("getMonster(%d); want 700020", monsterId)
+		}
+		return mon, nil
+	}
+	spawnMeso := func(_ field.Model, mesos uint32, x int16, y int16, ownerId uint32, dropperId uint32, dropperX int16, dropperY int16) error {
+		calls = append(calls, ppSpawnCall{mesos, x, y, ownerId, dropperId, dropperX, dropperY})
+		return nil
+	}
+
+	state := pickPocketState{enabled: true, maxmeso: 60, prop: 1.0}
+	pickPocketTryProc(logrus.New(), getMonster, spawnMeso, state, *di, f, 42)
+
+	if len(calls) != 3 {
+		t.Fatalf("spawn calls = %d; want 3 (one per damage line at prop 1.0)", len(calls))
+	}
+	// Damage-line order: 0 -> floor 1; 10000 -> 30; 2000000 -> clamp 60.
+	wantMesos := []uint32{1, 30, 60}
+	for i, c := range calls {
+		if c.mesos != wantMesos[i] {
+			t.Fatalf("call %d mesos = %d; want %d", i, c.mesos, wantMesos[i])
+		}
+		if c.x < mon.X()-50 || c.x > mon.X()+49 {
+			t.Fatalf("call %d x = %d; want within [%d, %d]", i, c.x, mon.X()-50, mon.X()+49)
+		}
+		if c.y != mon.Y() {
+			t.Fatalf("call %d y = %d; want monster y %d", i, c.y, mon.Y())
+		}
+		if c.ownerId != 42 {
+			t.Fatalf("call %d ownerId = %d; want 42", i, c.ownerId)
+		}
+		if c.dropperId != 700020 || c.dropperX != mon.X() || c.dropperY != mon.Y() {
+			t.Fatalf("call %d dropper = %d@(%d,%d); want 700020@(%d,%d)", i, c.dropperId, c.dropperX, c.dropperY, mon.X(), mon.Y())
+		}
+	}
+}
+
+func TestPickPocketTryProc_PropZeroEmitsNothing(t *testing.T) {
+	f := testField(_map.Id(100000000))
+	di := packetmodel.NewDamageInfo(2).SetMonsterId(700021).SetDamages([]uint32{100, 200})
+	mon := monster.NewModelBuilder(700021, f, 100100).SetX(0).SetY(0).MustBuild()
+
+	emitted := 0
+	getMonster := func(_ uint32) (monster.Model, error) { return mon, nil }
+	spawnMeso := func(_ field.Model, _ uint32, _ int16, _ int16, _ uint32, _ uint32, _ int16, _ int16) error {
+		emitted++
+		return nil
+	}
+
+	state := pickPocketState{enabled: true, maxmeso: 60, prop: 0}
+	pickPocketTryProc(logrus.New(), getMonster, spawnMeso, state, *di, f, 42)
+
+	if emitted != 0 {
+		t.Fatalf("spawn calls = %d; want 0 at prop 0", emitted)
+	}
+}
+
+func TestPickPocketTryProc_DisabledStateMakesNoLookups(t *testing.T) {
+	f := testField(_map.Id(100000000))
+	di := packetmodel.NewDamageInfo(1).SetMonsterId(700022).SetDamages([]uint32{100})
+
+	getMonster := func(_ uint32) (monster.Model, error) {
+		t.Fatal("getMonster must not run for a disabled state")
+		return monster.Model{}, nil
+	}
+	spawnMeso := func(_ field.Model, _ uint32, _ int16, _ int16, _ uint32, _ uint32, _ int16, _ int16) error {
+		t.Fatal("spawnMeso must not run for a disabled state")
+		return nil
+	}
+
+	pickPocketTryProc(logrus.New(), getMonster, spawnMeso, pickPocketState{}, *di, f, 42)
+}
+
+func TestPickPocketTryProc_MonsterFetchErrorSkipsMonster(t *testing.T) {
+	f := testField(_map.Id(100000000))
+	di := packetmodel.NewDamageInfo(2).SetMonsterId(700023).SetDamages([]uint32{100, 200})
+
+	getMonster := func(_ uint32) (monster.Model, error) {
+		return monster.Model{}, errors.New("snapshot gone")
+	}
+	spawnMeso := func(_ field.Model, _ uint32, _ int16, _ int16, _ uint32, _ uint32, _ int16, _ int16) error {
+		t.Fatal("spawnMeso must not run when the monster fetch fails")
+		return nil
+	}
+
+	state := pickPocketState{enabled: true, maxmeso: 60, prop: 1.0}
+	pickPocketTryProc(logrus.New(), getMonster, spawnMeso, state, *di, f, 42)
+}
+
+func TestPickPocketTryProc_EmitErrorContinuesRemainingLines(t *testing.T) {
+	f := testField(_map.Id(100000000))
+	di := packetmodel.NewDamageInfo(3).SetMonsterId(700024).SetDamages([]uint32{100, 200, 300})
+	mon := monster.NewModelBuilder(700024, f, 100100).SetX(0).SetY(0).MustBuild()
+
+	attempts := 0
+	getMonster := func(_ uint32) (monster.Model, error) { return mon, nil }
+	spawnMeso := func(_ field.Model, _ uint32, _ int16, _ int16, _ uint32, _ uint32, _ int16, _ int16) error {
+		attempts++
+		return errors.New("kafka down")
+	}
+
+	state := pickPocketState{enabled: true, maxmeso: 60, prop: 1.0}
+	pickPocketTryProc(logrus.New(), getMonster, spawnMeso, state, *di, f, 42)
+
+	if attempts != 3 {
+		t.Fatalf("spawn attempts = %d; want 3 (emit errors must not stop remaining lines)", attempts)
 	}
 }

@@ -326,6 +326,42 @@ func pickPocketResolveState(
 	return pickPocketState{enabled: true, maxmeso: maxmeso, prop: se.Prop()}
 }
 
+// pickPocketTryProc rolls each damage line of one non-reflected
+// DamageInfo and emits one meso SPAWN per success. Monster snapshot
+// fetch failure skips this monster's procs (Debugf); emit failures are
+// logged (Errorf) and swallowed, continuing with the remaining lines.
+func pickPocketTryProc(
+	l logrus.FieldLogger,
+	getMonster func(monsterId uint32) (monster.Model, error),
+	spawnMeso func(f field.Model, mesos uint32, x int16, y int16, ownerId uint32, dropperId uint32, dropperX int16, dropperY int16) error,
+	state pickPocketState,
+	di packetmodel.DamageInfo,
+	f field.Model,
+	characterId uint32,
+) {
+	if !state.enabled {
+		return
+	}
+
+	mon, err := getMonster(di.MonsterId())
+	if err != nil {
+		l.WithError(err).Debugf("Pick Pocket: monster [%d] snapshot fetch failed; skipping its procs.", di.MonsterId())
+		return
+	}
+
+	for _, d := range di.Damages() {
+		if !shouldProc(state.prop, rand.Float64()) {
+			continue
+		}
+		mesos := pickPocketMesoAmount(d, state.maxmeso)
+		l.Debugf("Pick Pocket proc: character=[%d] monster=[%d] mesos=[%d].", characterId, di.MonsterId(), mesos)
+		x := mon.X() + int16(rand.Intn(100)-50)
+		if sErr := spawnMeso(f, mesos, x, mon.Y(), characterId, di.MonsterId(), mon.X(), mon.Y()); sErr != nil {
+			l.WithError(sErr).Errorf("Pick Pocket: SPAWN emit failed for monster [%d] character [%d].", di.MonsterId(), characterId)
+		}
+	}
+}
+
 // mpEaterAbsorbAmount computes the requested drain from monster MaxMp
 // and the skill's X (absorb percent). Returns 0 when MaxMp is 0 or X is
 // non-positive. atlas-monsters re-clamps to the monster's current MP.

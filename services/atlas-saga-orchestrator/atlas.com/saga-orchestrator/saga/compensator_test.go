@@ -866,3 +866,137 @@ func TestSkillBookUseCompensationMissingTemplateIdSkips(t *testing.T) {
 
 	assert.Equal(t, 0, createItemCalls, "TemplateId 0 must not re-award item 0")
 }
+
+// TestCompensateLateStep_SkillBookUse_DestroyAssetFromSlot_ReAwardsBook pins
+// the task-125 review fix: a skill_book_use saga's destroy_asset_from_slot
+// step (always step 0) that becomes late-successful is re-awarded via
+// CreateItem using the payload's TemplateId, exactly once, and the late-step
+// entry point reports compensated=true.
+func TestCompensateLateStep_SkillBookUse_DestroyAssetFromSlot_ReAwardsBook(t *testing.T) {
+	ResetCache()
+	logger, _ := test.NewNullLogger()
+	ctx := lateStepTestCtx(t)
+
+	const (
+		testCharId = uint32(88010)
+		bookId     = uint32(2290000)
+	)
+
+	type createCall struct {
+		CharacterId uint32
+		TemplateId  uint32
+		Quantity    uint32
+	}
+	var createItemCalls []createCall
+	compP := &compmock.ProcessorMock{
+		RequestCreateItemFunc: func(_ uuid.UUID, characterId uint32, templateId uint32, quantity uint32, _ time.Time) error {
+			createItemCalls = append(createItemCalls, createCall{characterId, templateId, quantity})
+			return nil
+		},
+	}
+
+	s, err := NewBuilder().
+		SetSagaType(SkillBookUse).
+		SetInitiatedBy("test").
+		AddStep("destroy_asset_from_slot", Pending, DestroyAssetFromSlot, DestroyAssetFromSlotPayload{
+			CharacterId:   testCharId,
+			InventoryType: 2,
+			Slot:          5,
+			Quantity:      1,
+			TemplateId:    bookId,
+		}).
+		AddStep("update_skill", Pending, UpdateSkill, UpdateSkillPayload{
+			CharacterId: testCharId,
+			SkillId:     1121001,
+		}).
+		Build()
+	require.NoError(t, err)
+	require.NoError(t, GetCache().Put(ctx, s))
+
+	c := NewCompensator(logger, ctx).WithCompartmentProcessor(compP)
+
+	step, ok := s.GetCurrentStep()
+	require.True(t, ok)
+	require.Equal(t, DestroyAssetFromSlot, step.Action())
+
+	compensated, err := c.CompensateLateStep(s, step)
+	require.NoError(t, err)
+	assert.True(t, compensated)
+
+	require.Equal(t, 1, len(createItemCalls), "book should be re-awarded exactly once")
+	assert.Equal(t, testCharId, createItemCalls[0].CharacterId)
+	assert.Equal(t, bookId, createItemCalls[0].TemplateId)
+	assert.Equal(t, uint32(1), createItemCalls[0].Quantity)
+
+	// Duplicate delivery: marker claimed — no second re-award.
+	fresh, ok := GetCache().GetById(ctx, s.TransactionId())
+	require.True(t, ok)
+	freshStep, _ := fresh.StepAt(0)
+	assert.True(t, freshStep.LateCompensated())
+	compensated, err = c.CompensateLateStep(fresh, freshStep)
+	require.NoError(t, err)
+	assert.False(t, compensated)
+	assert.Equal(t, 1, len(createItemCalls))
+}
+
+// TestCompensateLateStep_SkillBookUse_DestroyAssetFromSlot_NoTemplateIdAbsorbs
+// pins the legacy-producer guard: a late-successful destroy_asset_from_slot
+// step with TemplateId==0 has no recoverable quantity, so it must absorb-only
+// (no RequestCreateItem call, compensated=false) rather than award item 0.
+func TestCompensateLateStep_SkillBookUse_DestroyAssetFromSlot_NoTemplateIdAbsorbs(t *testing.T) {
+	ResetCache()
+	logger, hook := test.NewNullLogger()
+	ctx := lateStepTestCtx(t)
+
+	const testCharId = uint32(88011)
+
+	var createItemCalls int
+	compP := &compmock.ProcessorMock{
+		RequestCreateItemFunc: func(_ uuid.UUID, _ uint32, _ uint32, _ uint32, _ time.Time) error {
+			createItemCalls++
+			return nil
+		},
+	}
+
+	s, err := NewBuilder().
+		SetSagaType(SkillBookUse).
+		SetInitiatedBy("test").
+		AddStep("destroy_asset_from_slot", Pending, DestroyAssetFromSlot, DestroyAssetFromSlotPayload{
+			CharacterId:   testCharId,
+			InventoryType: 2,
+			Slot:          5,
+			Quantity:      1,
+		}).
+		AddStep("update_skill", Pending, UpdateSkill, UpdateSkillPayload{
+			CharacterId: testCharId,
+			SkillId:     1121001,
+		}).
+		Build()
+	require.NoError(t, err)
+	require.NoError(t, GetCache().Put(ctx, s))
+
+	c := NewCompensator(logger, ctx).WithCompartmentProcessor(compP)
+
+	step, ok := s.GetCurrentStep()
+	require.True(t, ok)
+	require.Equal(t, DestroyAssetFromSlot, step.Action())
+
+	compensated, err := c.CompensateLateStep(s, step)
+	require.NoError(t, err)
+	assert.False(t, compensated)
+	assert.Equal(t, 0, createItemCalls, "TemplateId 0 must not re-award item 0")
+
+	var warned bool
+	for _, e := range hook.AllEntries() {
+		if e.Level == logrus.WarnLevel && e.Data["reason"] == "late_effect_unrecoverable" {
+			warned = true
+		}
+	}
+	assert.True(t, warned, "expected late_effect_unrecoverable WARN")
+
+	// Marker must NOT be claimed for an unrecoverable destroy.
+	fresh, ok := GetCache().GetById(ctx, s.TransactionId())
+	require.True(t, ok)
+	freshStep, _ := fresh.StepAt(0)
+	assert.False(t, freshStep.LateCompensated())
+}

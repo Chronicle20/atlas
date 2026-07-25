@@ -1705,8 +1705,12 @@ func extractCharacterCreationWorldId(s Saga) world.Id {
 // lateCompensableActions is the v1 compensable set (design §3.4): the full
 // value-transfer class that broke the task-102 invariant. Everything else is
 // absorb-only and logged as late_effect_unrecoverable when hit.
-// DestroyAssetFromSlot is deliberately absent: its payload carries no
-// TemplateId, so the destroyed item cannot be recreated from the step alone.
+// DestroyAssetFromSlot is included: since task-128 its payload carries a
+// TemplateId, so a late-successful destroy can be recreated via CreateItem
+// (see the payload-level guard in CompensateLateStep and the
+// DestroyAssetFromSlot case in dispatchLateInverse). A payload with
+// TemplateId==0 (legacy producer) still has no recoverable quantity and is
+// routed into the same absorb-only path as DestroyAsset+RemoveAll.
 //
 // MTS custody actions (task-102) all have late inverses:
 //   - ReleaseFromMtsHolding (take-home): RestoreMtsHolding un-soft-deletes the
@@ -1728,6 +1732,7 @@ var lateCompensableActions = map[Action]struct{}{
 	CreateCharacter:         {},
 	AwaitCharacterCreated:   {},
 	DestroyAsset:            {},
+	DestroyAssetFromSlot:    {},
 	AwardMesos:              {},
 	AwardCurrency:           {},
 	AwardExperience:         {},
@@ -1765,6 +1770,17 @@ func (c *CompensatorImpl) CompensateLateStep(s Saga, step Step[any]) (bool, erro
 		if payload, ok := step.Payload().(DestroyAssetPayload); ok && payload.RemoveAll {
 			fields["reason"] = "late_effect_unrecoverable"
 			c.l.WithFields(fields).Warn("Late-successful DestroyAsset used RemoveAll; destroyed quantity is not recoverable from the step payload, its effect is orphaned.")
+			return false, nil
+		}
+	}
+
+	// DestroyAssetFromSlot with TemplateId==0 is a legacy-producer payload:
+	// there is nothing to recreate, so absorb-only (same shape as the
+	// DestroyAsset+RemoveAll guard above) rather than awarding item 0.
+	if step.Action() == DestroyAssetFromSlot {
+		if payload, ok := step.Payload().(DestroyAssetFromSlotPayload); ok && payload.TemplateId == 0 {
+			fields["reason"] = "late_effect_unrecoverable"
+			c.l.WithFields(fields).Warn("Late-successful DestroyAssetFromSlot carries no TemplateId; destroyed item is not recoverable from the step payload, its effect is orphaned.")
 			return false, nil
 		}
 	}
@@ -1868,6 +1884,19 @@ func (c *CompensatorImpl) dispatchLateInverse(s Saga, step Step[any]) error {
 			return fmt.Errorf("invalid payload for late DestroyAsset compensation")
 		}
 		return c.compP.RequestCreateItem(s.TransactionId(), payload.CharacterId, payload.TemplateId, payload.Quantity, time.Time{})
+	case DestroyAssetFromSlot:
+		// TemplateId==0 is excluded upstream in CompensateLateStep (legacy
+		// producer, no recoverable quantity), so only payloads carrying a
+		// TemplateId reach here — recreate the destroyed book/item.
+		payload, ok := step.Payload().(DestroyAssetFromSlotPayload)
+		if !ok {
+			return fmt.Errorf("invalid payload for late DestroyAssetFromSlot compensation")
+		}
+		qty := payload.Quantity
+		if qty == 0 {
+			qty = 1
+		}
+		return c.compP.RequestCreateItem(s.TransactionId(), payload.CharacterId, payload.TemplateId, qty, time.Time{})
 	case AwardMesos:
 		payload, ok := step.Payload().(AwardMesosPayload)
 		if !ok {

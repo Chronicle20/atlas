@@ -15481,6 +15481,46 @@
           "comment": "itemId (nItemID); gated nItemID/10000 == 228 || is_masterybook_item(nItemID) @0x9d66a6"
         }
       ]
+    },
+    "CWvsContext::OnSkillLearnItemResult": {
+      "address": "0x9f7af0",
+      "direction": "clientbound",
+      "note": "SKILL_LEARN_ITEM_RESULT (task-125). v95 IDA-verified, session e4abcb98, GMS_v95.0_U_DEVM.exe.i64 -- PDB-backed IDB, real symbol name. xrefs_to confirms CWvsContext::OnPacket case 50 (0x32, @0x9e5a13, fn @0x9e5830) delegates directly to this function -- opcode 0x32 matches registry op SKILL_LEARN_ITEM_RESULT exactly. v95 body is 16 bytes: HAS the leading bOnExclRequest byte (Decode1 @0x9f7b31) BEFORE Decode4 characterId @0x9f7b35 -- this is the MajorVersion()>=84 gate the codec implements (v83 and earlier have NO leading byte, 15-byte body). Then under an if(user-found) guard (v6 nonzero): Decode1 isMasteryBook, Decode4 skillId (decoded, discarded), Decode4 masterLevel (decoded, discarded), Decode1 canUse, Decode1 success.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "bOnExclRequest (v95 leading byte, consumed-and-discarded by the codec; clears the requester's exclusive-request lock when true) @0x9f7b31"
+        },
+        {
+          "op": "Decode4",
+          "comment": "characterId (CUserPool::GetUser lookup) @0x9f7b35"
+        },
+        {
+          "op": "Decode1",
+          "comment": "isMasteryBook @0x9f7b86",
+          "guard": "v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "skillId (decoded, discarded) @0x9f7b8a",
+          "guard": "v6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "masterLevel (decoded, discarded) @0x9f7b91",
+          "guard": "v6"
+        },
+        {
+          "op": "Decode1",
+          "comment": "canUse @0x9f7ba2",
+          "guard": "v6"
+        },
+        {
+          "op": "Decode1",
+          "comment": "success @0x9f7ba6",
+          "guard": "v6"
+        }
+      ]
     }
   }
 }

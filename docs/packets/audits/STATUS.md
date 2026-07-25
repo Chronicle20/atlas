@@ -13,7 +13,7 @@ Tool: `b113a576d4c27535d10b42b92fc4d0c1f76aa8f0989992403fb531e45775c26b`
 - export gms_v83: `698d163f374d527a34cc6360641e3abe0ecfc6a3dd9275f7cc2f8577a703ea1e`
 - export gms_v84: `c53085b2c4ba43f4537b4bc64ae5eff0be1e0039d94adfacff6a93a9980a4ae9`
 - export gms_v87: `0676d390afb6d5c55c1ca0d207b47738c454fe3d35f49e1c4f4595cb7c24cf43`
-- export gms_v95: `6b92894ff78891941dfa170b45409831f6246c6bd102347502be9d6c7baefc6b`
+- export gms_v95: `6193a950e87fcd671573b2100fcba2bd6f39199fd8bc20834c983083fb97e96a`
 - export jms_v185: `416136060adee3cb38e345359265bb599da58b19bb61960c99d93bbf2a507683`
 
 ## Clientbound
@@ -77,7 +77,7 @@ Tool: `b113a576d4c27535d10b42b92fc4d0c1f76aa8f0989992403fb531e45775c26b`
 | SET_TAMING_MOB_INFO | CWvsContext::OnSetTamingMobInfo; sub_72032B | character/clientbound/CharacterSetTamingMobInfo (T1) | 0x028 | ✅ | 0x02D | 🟡ᶠ | 0x02D | 🟡ᶠ | 0x02D | 🟡ᶠ | 0x030 | ✅ | 0x030 | ✅ | 0x030 | ✅ | 0x02F | ✅ | 0x02D | ✅ |
 | QUEST_CLEAR | CWvsContext::OnQuestClear |  | 0x029 | ❌ | 0x02E | ❌ | 0x02E | ❌ | 0x02E | ❌ | 0x031 | ❌ | 0x031 | ❌ | 0x031 | ❌ | 0x030 | ❌ | 0x02E | ❌ |
 | INCUBATOR_RESULT | CWvsContext::OnIncubatorResult | incubator/clientbound/IncubatorResult | 0x02A | ❌ | 0x042 | ✅ | 0x042 | ✅ | 0x042 | ✅ | 0x045 | ✅ | 0x047 | ✅ | 0x047 | ✅ | 0x048 | ✅ | 0x03F | ✅ |
-| SKILL_LEARN_ITEM_RESULT | CWvsContext::OnSkillLearnItemResult; sub_9175E6; sub_969022 | character/clientbound/CharacterSkillLearnItemResult (T1) | 0x02B | ✅ | 0x030 | ✅ | 0x030 | ✅ | 0x030 | ✅ | 0x033 | ✅ | 0x033 | ✅ | 0x033 | ✅ | 0x032 | ❌ | 0x030 | ❌ |
+| SKILL_LEARN_ITEM_RESULT | CWvsContext::OnSkillLearnItemResult; sub_9175E6; sub_969022 | character/clientbound/CharacterSkillLearnItemResult (T1) | 0x02B | ✅ | 0x030 | ✅ | 0x030 | ✅ | 0x030 | ✅ | 0x033 | ✅ | 0x033 | ✅ | 0x033 | ✅ | 0x032 | ✅ | 0x030 | ❌ |
 | SUE_CHARACTER_RESULT | CWvsContext::OnSueCharacterResult |  | 0x02C | ❌ | 0x034 | ❌ | 0x034 | ❌ | 0x034 | ❌ | 0x037 | ❌ | 0x037 | ❌ | 0x037 | ❌ | 0x037 | ❌ |  | ⬜ |
 | IDA_0X02E | sub_71CE62 |  | 0x02E | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | ENTRUSTED_SHOP_CHECK_RESULT | CWvsContext::OnEntrustedShopCheckResult | merchant/clientbound/ConfirmManage |  | ⬜ | 0x02F | ❌ | 0x02F | ❌ | 0x02F | ❌ | 0x032 | ✅ | 0x032 | ❌ | 0x032 | ✅ | 0x031 | ✅ | 0x02F | ❌ |
@@ -1005,7 +1005,7 @@ Tool: `b113a576d4c27535d10b42b92fc4d0c1f76aa8f0989992403fb531e45775c26b`
 | v83 | 425 | 0 | 0 | 315 | 223 | 0 | 57.4% |
 | v84 | 398 | 0 | 0 | 322 | 243 | 0 | 55.3% |
 | v87 | 433 | 0 | 0 | 344 | 186 | 0 | 55.7% |
-| v95 | 457 | 0 | 0 | 404 | 102 | 0 | 53.1% |
+| v95 | 458 | 0 | 0 | 403 | 102 | 0 | 53.2% |
 | JMS185 | 408 | 0 | 0 | 362 | 193 | 0 | 53.0% |
 
 ## Conflicts

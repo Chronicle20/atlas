@@ -292,3 +292,49 @@ func TestSkillLearnItemResultGoldenBytesV87(t *testing.T) {
 		t.Errorf("golden bytes: got % X, want % X", got, want)
 	}
 }
+
+// Golden bytes, v95 — 16-byte body (LEADING bOnExclRequest byte = 0x01).
+// Same field values as the v83/v84/v87 golden; only difference from v83 is
+// the extra leading 0x01 (MajorVersion()=95 >= 84 gate).
+//
+// IDA evidence (task-125): CWvsContext::OnSkillLearnItemResult @0x9f7af0 (v95
+// IDB GMS_v95.0_U_DEVM.exe.i64, session e4abcb98 — PDB-backed, real symbol
+// name). xrefs_to confirms CWvsContext::OnPacket case 50 (0x32, @0x9e5a13,
+// fn @0x9e5830) delegates directly. Body, in decompile order:
+//
+//	bOnExclRequest = CInPacket::Decode1(iPacket);  -> bOnExclRequest, @0x9f7b31 (LEADING)
+//	v3 = CInPacket::Decode4(v2);                   -> characterId,    @0x9f7b35
+//	User = CUserPool::GetUser(..., v3);
+//
+// CONFIRMED: the leading Decode1 (bOnExclRequest, @0x9f7b31) executes and is
+// evaluated BEFORE the Decode4 characterId read (@0x9f7b35) — the v84+ gate
+// the codec implements; 16-byte body. Then, under the user-found guard (v6
+// nonzero):
+//
+//	bIsMaterbook = CInPacket::Decode1(v2);  -> isMasteryBook, @0x9f7b86
+//	CInPacket::Decode4(v2);                 -> skillId (decoded, discarded), @0x9f7b8a
+//	CInPacket::Decode4(v2);                 -> masterLevel (decoded, discarded), @0x9f7b91
+//	bUsed[0] = CInPacket::Decode1(v2);       -> canUse, @0x9f7ba2
+//	v7 = CInPacket::Decode1(v2); bSucceed = v7; -> success, @0x9f7ba6
+//
+// matches the codec's read order exactly. Opcode 0x32 (50 decimal) ==
+// registry op SKILL_LEARN_ITEM_RESULT.
+//
+// packet-audit:verify packet=character/clientbound/CharacterSkillLearnItemResult version=gms_v95 ida=0x9f7af0
+func TestSkillLearnItemResultGoldenBytesV95(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	l, _ := testlog.NewNullLogger()
+	got := NewSkillLearnItemResult(1, true, 2, 3, true, false).Encode(l, ctx)(nil)
+	want := []byte{
+		0x01,                   // bOnExclRequest (v84+ leading byte, present at v95)
+		0x01, 0x00, 0x00, 0x00, // characterId
+		0x01,                   // isMasteryBook
+		0x02, 0x00, 0x00, 0x00, // skillId
+		0x03, 0x00, 0x00, 0x00, // masterLevel
+		0x01, // canUse
+		0x00, // success
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("golden bytes: got % X, want % X", got, want)
+	}
+}

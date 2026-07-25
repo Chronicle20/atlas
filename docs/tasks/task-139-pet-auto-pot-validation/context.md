@@ -43,7 +43,7 @@ Companion to `plan.md`. Key files, decisions, dependencies, and rollout notes fo
 - `data/workers/character.go:70` — equipment registration walks all Character.wz subdirs, PetEquip included; no ingestion wiring needed, but **existing tenants need a re-ingest** for the new fields.
 
 ### atlas-configurations
-- `seed-data/templates/template_*.json` — `PetItemUseHandle` entries: gms_83 `0xAB`, gms_84 `0xB0`, gms_87 `0xB7`, gms_95 `0xCB` (**no validator — dead**, along with the seven other pet handlers 0x52/0x6E/0xC7-0xCC), jms_185 `0xAE`.
+- `seed-data/templates/template_*.json` — `PetItemUseHandle` entries on **eight** templates: gms_61 `0x8E`, gms_72 `0xA5`, gms_79 `0xA7`, gms_83 `0xAB`, gms_84 `0xB0`, gms_87 `0xB7`, gms_95 `0xCB`, jms_185 `0xAE`. All eight already carry `LoggedInValidator` (the gms_95 gap was fixed on main). No entry in gms_48 (four other pet handlers only) or in the partial gms_12 / gms_92 templates (no pet handlers at all).
 - Writer entries needing the `petSkill` options table: `"CharacterInventoryChange"`, `"SetField"` (both encode pet cash assets).
 - Handler `options` flow: `HandlerConfig.Options` (`libs/atlas-opcodes/config.go:8`) → `BuildHandlerMap` → adapter → the handler's `readerOptions` param. So `readerOptions["skillGate"]` works with zero new plumbing.
 
@@ -67,7 +67,15 @@ Companion to `plan.md`. Key files, decisions, dependencies, and rollout notes fo
 - atlas-channel had no `data/consumable`/`data/equipment` clients — they are created, not extended.
 - `ResolveCode` returns a byte; autoSpeaking's verified wire bit is 0x100 → new `ResolveCode16`.
 - The worn-equip position question (design §9 item 3) resolved during planning: raw equip compartment stores worn cash equips at `position − 100`; the gate normalizes rather than assuming.
-- gms_95's validator gap covers **eight** pet handlers, not five.
+- ~~gms_95's validator gap covers **eight** pet handlers~~ — fixed on main before the rebase; the repair left this task's scope.
+
+## Rebase revision (branch updated onto main)
+
+- **Eight routed versions, not five.** gms_61/72/79 route `PetItemUseHandle` too. All three use the *same* worn-equip ability gate as v83 — verified this pass in `TryConsumePetHP` (v61 `0x7ad8e4`, v72 `0x86805e`, v79 `0x8b3a06`) and in v61's previously-unnamed `CPet::UpdatePetAbility` (`0x614b60`, named `CPet__UpdatePetAbility`), whose slot list and `0x01..0x80` ability-bit map are identical to v83's. So `skillGate: equipAbility` extends unchanged; no new gate mode.
+- **Legacy serverbound layout already matches the codec** — encoders v61 `0x831ab9` (op 0x8E), v72 `0x903f8b` (0xA5), v79 `0x9552d0` (0xA7) all emit `petSN(8) · byte · updateTime(4) · slot(2) · itemId(4)`. The 🟡ᶠ cells need fixtures, not codec work (new Task 15).
+- **`GW_ItemSlotPet::RawDecode` is not uniform**: v61 (`0x4b52f2`) reads no `remainLife`/trailing `attribute`, v72 (`0x4d06dd`) reads `remainLife` only, v79 (`0x4d84c4`) and v83 (`0x4e4219`) read both. `encodePetCashItemInfo` has no version gates on main and over-encodes 6 bytes on v61 / 2 on v72 — corrected in Task 3 Step 3b because this task edits that exact function.
+- **Open, cannot be closed from this workspace:** whether legacy tenant WZ carries the `consumeHP`/`consumeMP` pet-equip attributes at all (only v83 dumps exist locally). Task 15 Step 3 checks it against a live legacy tenant; if absent, the gate choice for that version is a user decision, not a silent default.
+- `character_cash_item_use.go` grew on main — the `category == 519` site is now `:824`; locate by symbol, not by the line numbers recorded above.
 
 ## Remaining IDA-blocking items (in-plan, not deferred)
 
@@ -87,7 +95,7 @@ T2 resolve16 ─┘   T8 jms packet ──── T9 channel cash arm ───�
 
 ## Rollout notes (for the eventual deploy — record in the PR)
 
-1. **Seed templates apply only to newly-created tenants.** Existing envs need a live config PATCH: `skillGate` handler options ×5 versions, gms_95 pet-block validators, `petSkill` writer tables on `CharacterInventoryChange`/`SetField` — then an atlas-channel restart (projection does not hot-reload handlers/writers).
+1. **Seed templates apply only to newly-created tenants.** Existing envs need a live config PATCH: `skillGate` handler options **×8 versions** (legacy included — an unpatched version rejects all auto-pot, because the gate fails closed) and `petSkill` writer tables on `CharacterInventoryChange`/`SetField` — then an atlas-channel restart (projection does not hot-reload handlers/writers). The gms_95 validator PATCH is no longer needed.
 2. **atlas-data re-ingest before the channel gate goes live on GMS tenants**, or every GMS auto-pot rejects with `equip_data_missing` (fail-closed by design, diagnosable in logs). Deploy order: atlas-data + re-ingest → atlas-pets/consumables → atlas-channel → config PATCH.
 3. **No player-visible change for legitimate clients** (server now enforces the same gate the client already enforces). The new observable is warn logs on forged traffic.
 4. Two acceptance items are runtime-only (pouch use end-to-end on a jms tenant; auto-pot pass-after-pouch): verify in a deployed env, not claimable from unit tests.

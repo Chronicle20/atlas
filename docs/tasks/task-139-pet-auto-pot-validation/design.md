@@ -1,8 +1,18 @@
 # Pet Auto-Pot Validation & Pet Skill Pouches — Design
 
 Task: task-139-pet-auto-pot-validation
-Status: Draft for review
-Inputs: `prd.md` (approved), IDA investigation (gms_v83 / gms_v84 / gms_v87 / gms_v95 / jms_v185), v83 WZ data, repo source.
+Status: Draft for review — revised after rebase onto main (legacy version columns added)
+Inputs: `prd.md` (approved), IDA investigation (gms_v48 / gms_v61 / gms_v72 / gms_v79 / gms_v83 / gms_v84 / gms_v87 / gms_v95 / jms_v185), v83 WZ data, repo source.
+
+> **Revision note (rebase onto main).** This design was written when the branch
+> was based on a main that supported five client versions. Main now routes
+> `PetItemUseHandle` on **eight**: gms_61 (0x8E), gms_72 (0xA5), gms_79 (0xA7),
+> gms_83 (0xAB), gms_84 (0xB0), gms_87 (0xB7), gms_95 (0xCB), jms_185 (0xAE).
+> Sections 1.1, 1.5, 1.6, 3.2, 3.6 and 7 are revised accordingly; every legacy
+> claim below is IDA-verified in this pass, not inferred from the v83 result.
+> Out of scope by evidence, not omission: gms_48 (no `PetItemUseHandle` entry;
+> matrix cell ⬜ n-a — see §1.7) and the gms_12 / gms_92 templates (partial
+> bring-up templates with **no** pet handlers at all).
 
 ---
 
@@ -16,11 +26,26 @@ The auto-pot send path is `CUserLocal::TryConsumePetHP` / `TryConsumePetMP` (cal
 
 | Version | `TryConsumePetHP` | Gate |
 |---|---|---|
+| gms_v61 | `0x7ad8e4` | Worn pet-equip ability bit (secured `CPet+340/+348` pair = consumeHP tear) |
+| gms_v72 | `0x86805e` | Same mechanism, secured `CPet+348/+356` pair |
+| gms_v79 | `0x8b3a06` | Same mechanism, secured `CPet+356/+364` (= `+0x164/+0x16C`, the v83 offsets) |
 | gms_v83 | `0x95b9a4` | Worn pet-equip ability bit (secured `CPet+0x164/+0x16C` pair = consumeHP tear) |
 | gms_v84 | `0x999c8d` (named this session) | Identical to v83 (same `+0x164/+0x16C` tears, byte-identical size `0x23c`) |
 | gms_v87 | `0x9de089` | Identical to v83 (same tears, same size) |
 | gms_v95 | `0x90d8a0` | `CPet::m_bConsumeHP` (named field, same mechanism) |
 | jms_v185 | `0xa26d8a` | **`CPet::GetUpgradePetSkill(pet) & 0x20`** — the pouch-taught `usPetSkill` |
+
+**Legacy GMS is the same gate, verified not assumed.** `CPet::UpdatePetAbility`
+was unnamed in the v61 IDB; it is `0x614b60` (named `CPet__UpdatePetAbility`
+this pass). Its body is structurally identical to the v83 function: it walks the
+equipped-slot list honoring **24/25 for every pet index**, plus 21–29/46 (pet 0),
+31–37/47 (pet 1), 39–45/48 (pet 2); ORs each worn item's `dwPetAbilityFlag`
+(`EQUIPITEM+108`); and tears the result bit-by-bit into the secured `CPet`
+fields in the same order — `0x01→+288, 0x02→+300, 0x04→+312, 0x08→+324,
+0x10→+336, 0x20→+348, 0x40→+360, 0x80→+372`. The `0x20→+348` tear is exactly
+the pair `TryConsumePetHP` fuses at `+340/+348`. So the v83 ability-bit map in
+the table below holds unchanged for v61, and the slot list the design's equip
+gate mirrors is the same list across the whole GMS family.
 
 The GMS ability bits are computed in `CPet::UpdatePetAbility` (v83 `0x705fc3`, v95 `0x6a0a40`) **exclusively by OR-ing the `dwPetAbilityFlag` attribute word of the character's WORN pet-equip items** (equipped-slot list `g_anPetAbilBodyPart`: slots 24/25 for every pet, plus 21–29/46 for pet index 0, 31–37/47 for index 1, 39–45/48 for index 2). The pouch-taught `usPetSkill` is *never* consulted by GMS auto-pot; in GMS clients it only feeds `CPet::AutoSpeakingByEvent` and a slash-command path.
 
@@ -45,7 +70,7 @@ WZ (v83, `Character.wz/PetEquip`): only `1812002` carries `consumeHP=1` and only
 
 ### 1.2 Packet semantics (`SendStatChangeItemUseRequestByPetQ`) — OQ1, OQ5
 
-Encoder verified at v83 `0xa0955c`, v84 `0xa5393e`, v95 `0x9de400`, jms `0xaee1d4` (layout already byte-fixtured in `libs/atlas-packet/pet/serverbound/item_use_test.go` for all five versions):
+Encoder verified at v83 `0xa0955c`, v84 `0xa5393e`, v95 `0x9de400`, jms `0xaee1d4` (layout already byte-fixtured in `libs/atlas-packet/pet/serverbound/item_use_test.go` for those five versions), and — this pass — at **v61 `0x831ab9` (opcode 142 = 0x8E), v72 `0x903f8b` (165 = 0xA5), v79 `0x9552d0` (167 = 0xA7)**. All three legacy encoders emit the identical sequence `EncodeBuffer(petSN, 8) · Encode1(mitigation byte) · Encode4(updateTime) · Encode2(slot) · Encode4(itemId)` — byte-for-byte the layout the existing `pet/serverbound.ItemUse` codec already decodes, and their opcodes match the routed template entries. The v61/v72/v79 matrix cells are therefore 🟡ᶠ purely for want of a fixture, not for a layout question (see plan Task 15).
 
 - `petId` (u64) — the pet's **cash-locker SN** (`CPet::m_liPetLockerSN`). Atlas encodes the pet item's SN as `uint64(pet game id)` (`libs/atlas-packet/model/asset.go:305`), so **the wire petId round-trips as the Atlas pet id**. Existing precedent for resolving it: `pet_chat.go:20-26` (`pet.GetById(uint32(pk.PetId()))`).
 - `buffSkill` (byte, misnamed in Atlas) — **damage-mitigation context, log-only**. It is `0` on every trigger path except `SetDamaged`, where (v95 stack-var names, call site `0x9364e2`): `1` = Power Guard reflected damage, `2` = Meso Guard absorbed damage, `4` / `8` (v95+ only for `8`) = other mitigation arms. v83 emits only `{0,1,2,4}` (`0x95965a-0x959675`). It carries no validation-relevant information; the design logs it and nothing else (satisfies FR-6).
@@ -55,7 +80,7 @@ Encoder verified at v83 `0xa0955c`, v84 `0xa5393e`, v95 `0x9de400`, jms `0xaee1d
 ### 1.3 The 0519 "charge skill" use packet exists only in the JMS client — OQ4
 
 - **jms_v185**: `CWvsContext::SendConsumeCashItemUseRequest` (`0xaef2f5`) jump-table **case 28** (matching Atlas's existing `category 519 → CashSlotItemType 28` mapping at `character_cash_item_use.go:294-299`): opens the pet-selection dialog, then encodes the chosen pet's 8-byte SN into the request (`EncodeBuffer(pet+0x18, 8)` at `0xaf1a42`). Payload = common cash-item-use prefix + `petId u64`. This answers FR-11: the client designates the target pet explicitly.
-- **gms_v83 (`0xa0a63f`) and gms_v95 (`0x9eb3e0`)**: the entire function contains **no 8-byte encode and no 519/type-28 arm** — GMS clients cannot use 0519 items at all. (The v83 pet-selection dialog found at `CDraggableItem::OnDoubleClicked 0x4f0aeb` belongs to the *wearable* flow: it leads to `WearEquipItem` + `to_petabil_item_bodypart`, i.e. equipping 1812xxx, not consuming 0519.) gms_v84/v87 senders were not exhaustively swept; they are bracketed by v83/v95 and their auto-pot gates are byte-identical to v83, so they are presumed pouch-inert — treated as "reject as forged if received" (same handling as v83/v95, see §3.2).
+- **gms_v83 (`0xa0a63f`) and gms_v95 (`0x9eb3e0`)**: the entire function contains **no 8-byte encode and no 519/type-28 arm** — GMS clients cannot use 0519 items at all. (The v83 pet-selection dialog found at `CDraggableItem::OnDoubleClicked 0x4f0aeb` belongs to the *wearable* flow: it leads to `WearEquipItem` + `to_petabil_item_bodypart`, i.e. equipping 1812xxx, not consuming 0519.) gms_v84/v87 senders were not exhaustively swept; they are bracketed by v83/v95 and their auto-pot gates are byte-identical to v83, so they are presumed pouch-inert — treated as "reject as forged if received" (same handling as v83/v95, see §3.2). The same holds a fortiori for gms_v61/v72/v79, which predate v83: they are treated as pouch-inert with no version-specific code, and the pouch arm is wired only where the client can reach it (jms_185). No legacy behaviour depends on this being true — a 0519 use that somehow arrives still runs the owner/spawned validation and the standard consume-error path.
 
 WZ (v83 `Item.wz/Cash/0519.img.xml`) confirms the full item set: `5190000-5190008` (`add=1`) with one skill key each — `pickupItem, consumeHP, longRange, dropSweep, pickupAll, ignorePickup, consumeMP, recall, autoSpeaking` — and removers `5191000-5191004` (`add=0`: `pickupItem, consumeHP, longRange, dropSweep, pickupAll`). **OQ7 confirmed: no consumeMP remover exists in v83 data.** (Note: 0519 uses key `dropSweep` where the equip family calls the same ability `sweepForDrop`.)
 
@@ -68,10 +93,51 @@ Verified `usPetSkill` wire bits: `0x20 = consumeHP` (jms `0xa26d8a`), `0x100 = a
 ### 1.5 Repo premise corrections
 
 - **The pet `flag` column already exists and persists** (`services/atlas-pets/.../pet/entity.go:30`, `gorm:"not null;default:0"`, hydrated in `Make`, exposed in REST). The PRD's "no column" claim is wrong. The real gaps: no updater (`administrator.go` has no `updateFlag`), no Kafka command/event for it, no consumer of `Flag()` in atlas-channel, not encoded to the client.
-- **`PetItemUseHandle` is dead on gms_95-seeded tenants**: the seed entry (`template_gms_95_1.json:391-393`) has no `validator` key, and `BuildHandlerMap` silently skips validator-less handlers (`libs/atlas-opcodes/producer.go:47-51` — the known task-085 bug pattern). The pet handler block (`:380-398`) is affected. Fixing the template is in-scope (§3.6).
+- ~~**`PetItemUseHandle` is dead on gms_95-seeded tenants**~~ — **no longer true; fixed on main.** All eight gms_95 pet handlers now carry `"validator": "LoggedInValidator"` (`template_gms_95_1.json` opCodes 0x52, 0x6E, 0xC7–0xCC; `PetItemUseHandle` at `:636-640`). The `BuildHandlerMap` silent-skip behaviour itself is unchanged (`libs/atlas-opcodes/producer.go:65-69`), so the *rule* still binds every template entry this task adds — but the repair is no longer in scope. Plan Task 13 Step 2 is dropped.
 - `character_cash_item_use.go` already validates slot↔item identity for cash items (`GetItemInSlot` + templateId compare, `:25-112`) and already maps `519 → CashSlotItemType 28` but has **no arm** for it — 0519 use is currently a warn-and-stuck no-op (`:110`).
 - atlas-data parses neither the 0519 spec skill keys (cash reader keeps only `inc`, `0-9`, `expR`, `drpR`, `time` — `cash/reader.go:99-124`) nor the pet-equip ability attributes (equipment reader has no `consumeHP` etc.).
 - The channel has no pet/character cache; both resolve via REST (`CH/pet/processor.go:27-33`, `CH/character/processor.go:65-70`). The canonical unstick is `StatChanged(empty, exclRequestSent=true)` — helper currently local to `character_skill_use.go:131-137`.
+- `character_cash_item_use.go` has grown substantially on main; the `category == 519` mapping now sits at `:824`. Plan Task 9's line citations are stale — locate by symbol, not line.
+
+### 1.6 The pet item trailer is NOT uniform across versions (new, blocking for §3.5)
+
+`GW_ItemSlotPet::RawDecode` was decompiled per version this pass. The four
+trailer fields Atlas encodes unconditionally are **not** all read by the legacy
+clients:
+
+| Version | `petAttribute` i16 | **`usPetSkill` i16** | `remainLife` i32 | `attribute` i16 | Address |
+|---|---|---|---|---|---|
+| gms_v61 | ✔ | ✔ | ✘ | ✘ | `0x4b52f2` |
+| gms_v72 | ✔ | ✔ | ✔ | ✘ | `0x4d06dd` (named this pass) |
+| gms_v79 | ✔ | ✔ | ✔ | ✔ | `0x4d84c4` (named this pass) |
+| gms_v83 | ✔ | ✔ | ✔ | ✔ | `0x4e4219` |
+
+Two consequences:
+
+1. **Good news for the feature:** the `usPetSkill` short exists on every routed
+   version at the same relative position, so the §3.5 config-resolved encode
+   works unchanged for v61/v72/v79 — the sparse-table rule covers them (no
+   verified legacy bit ⇒ encodes 0 ⇒ byte-identical to today).
+2. **Pre-existing main defect, in this task's blast radius:**
+   `model.Asset.encodePetCashItemInfo` (`libs/atlas-packet/model/asset.go:337-359`)
+   has **no version gates** — it always writes `attribute, skill, remainLife(18000),
+   attribute`. Against a v61 client that is **6 bytes** of overrun, against v72
+   **2 bytes**. This task edits that exact function to insert the skill mask, so
+   the gates go in here (plan Task 3) rather than being left as a landmine the
+   next reader assumes was considered. The gate idiom is `t.IsRegion("GMS") &&
+   t.MajorAtLeast(N)` per the house rule — never a raw `> N` comparison.
+
+### 1.7 gms_48 is out of scope on evidence
+
+The v48 template routes four pet handlers (chat/command/move/drop-pickup) but no
+`PetItemUseHandle`, and the matrix cell is ⬜ n-a. The only `TryConsumePet*`
+symbol in the v48 IDB (`0x7204db`, labelled `TryConsumePetMP`) is a **mis-named
+port**: it tests job 132 and skill 1320006 and sends a bodyless opcode 86 — a
+Dark Knight HP-recovery path, not pet auto-pot, and it never calls
+`SendStatChangeItemUseRequestByPetQ` (no such encoder is named in that IDB).
+That is consistent with ⬜, but "no symbol" is not proof of absence
+(`unnamed ≠ absent`), so plan Task 15 Step 4 records one positive check before
+the n-a is treated as settled.
 
 ---
 
@@ -120,7 +186,7 @@ Two gate implementations, selected per tenant version via the handler's existing
   "options": { "skillGate": "equipAbility" } }
 ```
 
-- `skillGate: "equipAbility"` (gms_83, gms_84, gms_87, gms_95 templates) — **worn-equip gate**: fetch the character's equipped assets and pass if any equipped item at the pet-ability positions carries the matching ability attribute in its equip data (atlas-data, §3.4). Positions checked mirror `UpdatePetAbility` exactly: shared `petHP`(-24)/`petMP`(-25) for any pet, plus the pet-index ability range (`petRing1..petRing2, petItemIgnore` families at -21..-29/-46, -31..-37/-47, -39..-45/-48 — all already named in `libs/atlas-constants/inventory/slot/constants.go:41-68`) with the pet's `Slot()` selecting the range. The check is attribute-driven (equip data has `consumeHP`), never item-id-hardcoded.
+- `skillGate: "equipAbility"` (gms_61, gms_72, gms_79, gms_83, gms_84, gms_87, gms_95 templates — §1.1 verifies the legacy three use the same worn-equip mechanism) — **worn-equip gate**: fetch the character's equipped assets and pass if any equipped item at the pet-ability positions carries the matching ability attribute in its equip data (atlas-data, §3.4). Positions checked mirror `UpdatePetAbility` exactly: shared `petHP`(-24)/`petMP`(-25) for any pet, plus the pet-index ability range (`petRing1..petRing2, petItemIgnore` families at -21..-29/-46, -31..-37/-47, -39..-45/-48 — all already named in `libs/atlas-constants/inventory/slot/constants.go:41-68`) with the pet's `Slot()` selecting the range. The check is attribute-driven (equip data has `consumeHP`), never item-id-hardcoded.
 - `skillGate: "petSkillFlag"` (jms_185 template) — **flag gate**: the resolved pet's `Flag()` must contain the matching semantic skill bit (§3.5).
 - Missing/unknown option value → fail closed with a startup-visible warn (reject all FR-3 checks, log `skill_gate_unconfigured`) so a template gap is loud, not permissive.
 
@@ -179,10 +245,13 @@ Only the JMS auto-pot gate and autoSpeaking behavior actually read these bits in
 
 ### 3.6 Template/config changes
 
-Per-version seed template updates (`services/atlas-configurations/seed-data/templates/`):
-- Add `options.skillGate` to the `PetItemUseHandle` entry: `equipAbility` (gms_83_1, gms_84_1, gms_87_1, gms_95_1), `petSkillFlag` (jms_185_1).
-- **Fix gms_95_1**: add `"validator": "LoggedInValidator"` to `PetItemUseHandle` — and, since the same defect makes the four sibling pet handlers dead too (`template_gms_95_1.json:380-398`), add validators to that whole pet block while touching the file (bounded, same root cause; the broader 110-vs-75 validator audit stays out of scope).
-- Add the `petSkill` writer code table for the pet-item-encoding writers (sparse per §3.5).
+Per-version seed template updates (`services/atlas-configurations/seed-data/templates/`), covering **every template that routes `PetItemUseHandle`** — eight, not five:
+- Add `options.skillGate` to the `PetItemUseHandle` entry: `equipAbility` (gms_61_1, gms_72_1, gms_79_1, gms_83_1, gms_84_1, gms_87_1, gms_95_1), `petSkillFlag` (jms_185_1).
+  A missing entry is not benign: §3.2 fails closed, so a template left unedited turns **every** auto-pot on that version into a rejection. The three legacy templates are the whole reason this section changed after the rebase.
+- ~~Fix gms_95_1 validators~~ — already fixed on main (§1.5).
+- Excluded, deliberately: `template_gms_48_1.json` (no `PetItemUseHandle`, §1.7) and `template_gms_12_1.json` / `template_gms_92_1.json` (partial bring-up templates carrying no pet handlers at all — 24 and 43 handler entries respectively, none of them `Pet*`). This is the DOM "config table → all version templates" rule satisfied by evidence, not by skipping.
+- Add the `petSkill` writer code table for the pet-item-encoding writers (sparse per §3.5) in every template that carries those writers.
+- Editing any template means `tools/template-opcode-order-guard.sh` must pass (new CLAUDE.md gate item 9) — options are added to existing entries here, so ordering is untouched, but the guard still runs.
 
 Live tenants do not pick up template changes (seed-at-creation only — known pattern `bug_new_opcodes_not_in_live_tenant_config`); §7 covers rollout.
 
@@ -211,14 +280,15 @@ Live tenants do not pick up template changes (seed-at-creation only — known pa
 
 ## 7. Rollout notes
 
-1. Template changes apply only to newly-created tenants; existing envs need the equivalent live config PATCH (handler options + v95 validators + writer petSkill tables) and a channel restart.
+1. Template changes apply only to newly-created tenants; existing envs need the equivalent live config PATCH (handler options + writer petSkill tables) and a channel restart — for **all eight** routed versions, legacy included.
 2. The GMS equip gate needs atlas-data re-ingest (or fresh env) for the new equip attributes; until then the gate would fail closed on GMS tenants — deploy data change first, or ship the handler defaulting `equipAbility` lookups that find *no attribute data at all* to reject-with-distinct-reason (`equip_data_missing`) so the misordering is diagnosable in logs.
+2a. **Legacy WZ availability is unverified and is the one genuine unknown this rebase opens.** Only v83 WZ dumps exist locally (`tmp/<tenant>/GMS/83.1`), so whether a v61/v72/v79 tenant's `Character.wz/PetEquip` carries the `consumeHP`/`consumeMP` attributes at all could not be checked from this workspace. If a legacy version's data lacks them, `equipAbility` would reject every legacy auto-pot — which is why `equip_data_missing` must be a *distinct* logged reason rather than folded into `missing_pet_skill`, and why plan Task 15 Step 3 checks a live legacy tenant's equip data before the branch is called done. The client-side gate is verified present on all three (§1.1); it is only the server's data mirror that is open.
 3. No player-visible behavior change for legitimate clients (server now enforces exactly what clients already enforce); the only new observable is warn logs on forged traffic (OQ6 answered: yes, clients gate the send — per family per §1.1).
 
 ## 8. Testing strategy
 
 - **Unit (channel)**: validation chain table tests via the project Builder pattern — each rejection reason, the pass-through, dual-recovery either-rule, petId narrowing, both gate modes, unconfigured gate. Mock processors per existing handler-test conventions.
-- **Byte fixtures (packet-verifier flow)**: the jms_185 cash-item-use type-28 arm (prefix + petId u64) with `packet-audit:verify` markers; the modified `encodePetCashItemInfo` (flag short) fixtures per version — including the zero-flag case proving byte-identical output to today for petless-of-flag tenants (regression guard).
+- **Byte fixtures (packet-verifier flow)**: the jms_185 cash-item-use type-28 arm (prefix + petId u64) with `packet-audit:verify` markers; the modified `encodePetCashItemInfo` (flag short) fixtures per version — including the zero-flag case proving byte-identical output to today for flagless pets (regression guard) **and the §1.6 trailer gates (v61 short by 6 bytes, v72 by 2)**; and the three legacy `PetItemUse` serverbound fixtures (v61/v72/v79) that promote those matrix cells off 🟡ᶠ, pinned to the encoder addresses in §1.2.
 - **Unit (consumables)**: `ConsumePetSkillPouch` — owner/spawned/data-missing failure paths emit `ConsumeError`; success emits `SET_SKILL` + `ConsumeItem` with `TypeValueCash`.
 - **Unit (pets)**: `SetSkill` add/remove idempotency, unknown key, event emission, persistence round-trip (`Make`).
 - **Unit (data)**: cash + equipment readers against checked-in fixture XML for 5190001/5191001/1812002.

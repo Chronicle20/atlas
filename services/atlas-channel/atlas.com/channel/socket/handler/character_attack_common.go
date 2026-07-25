@@ -217,6 +217,43 @@ func shouldProc(prop float64, roll float64) bool {
 	return prop >= 1.0 || roll < prop
 }
 
+// pickPocketWhitelist is the fixed set of skills that can proc Pick
+// Pocket (Cosmic AbstractDealDamageHandler parity). Basic attack
+// (skillId == 0) is handled in pickPocketWhitelisted.
+var pickPocketWhitelist = map[uint32]struct{}{
+	uint32(skill3.RogueDoubleStabId):          {},
+	uint32(skill3.BanditSavageBlowId):         {},
+	uint32(skill3.ChiefBanditAssaulterId):     {},
+	uint32(skill3.ChiefBanditBandOfThievesId): {},
+	uint32(skill3.ShadowerAssassinateId):      {},
+	uint32(skill3.ShadowerTauntId):            {},
+	uint32(skill3.ShadowerBoomerangStepId):    {},
+}
+
+// pickPocketWhitelisted reports whether skillId can proc Pick Pocket.
+func pickPocketWhitelisted(skillId uint32) bool {
+	if skillId == 0 {
+		return true
+	}
+	_, ok := pickPocketWhitelist[skillId]
+	return ok
+}
+
+// pickPocketMesoAmount computes the meso payout for one damage line:
+// min(max(damage/20000 * maxmeso, 1), maxmeso), float math then
+// truncation, matching Cosmic. Returns 0 when maxmeso <= 0. A 0-damage
+// line still yields 1 on a successful roll.
+func pickPocketMesoAmount(damage uint32, maxmeso int32) uint32 {
+	if maxmeso <= 0 {
+		return 0
+	}
+	v := math.Max(float64(damage)/20000.0*float64(maxmeso), 1)
+	if v > float64(maxmeso) {
+		return uint32(maxmeso)
+	}
+	return uint32(v)
+}
+
 // mpEaterAbsorbAmount computes the requested drain from monster MaxMp
 // and the skill's X (absorb percent). Returns 0 when MaxMp is 0 or X is
 // non-positive. atlas-monsters re-clamps to the monster's current MP.

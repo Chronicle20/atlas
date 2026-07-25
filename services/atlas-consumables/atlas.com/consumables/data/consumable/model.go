@@ -119,6 +119,18 @@ func (m Model) SuccessRate() uint32 {
 	return m.success
 }
 
+func (m Model) MasterLevel() uint32 {
+	return m.masterLevel
+}
+
+func (m Model) ReqSkillLevel() uint32 {
+	return m.reqSkillLevel
+}
+
+func (m Model) Skills() []uint32 {
+	return m.skills
+}
+
 func (m Model) StrengthIncrease() uint32 {
 	return m.incSTR
 }

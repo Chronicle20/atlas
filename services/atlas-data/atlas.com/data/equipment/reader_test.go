@@ -615,3 +615,31 @@ func TestReader_StringTypedReqLUK(t *testing.T) {
 		t.Fatalf("reqInt = %d, want 355", rm.ReqInt)
 	}
 }
+
+const testPetEquipXML = `
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="01812002.img">
+  <imgdir name="info">
+    <int name="reqLevel" value="0"/>
+    <int name="cash" value="1"/>
+    <string name="pickupMeso" value="0"/>
+    <string name="pickupItem" value="0"/>
+    <string name="pickupOthers" value="0"/>
+    <string name="sweepForDrop" value="0"/>
+    <string name="longRange" value="0"/>
+    <string name="consumeHP" value="1"/>
+  </imgdir>
+</imgdir>
+`
+
+func TestReaderPetAbilities(t *testing.T) {
+	l, _ := test.NewNullLogger()
+
+	rm, err := Read(l)(xml.FromByteArrayProvider([]byte(testPetEquipXML)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rm.PetAbilities) != 1 || rm.PetAbilities[0] != "consumeHP" {
+		t.Errorf("PetAbilities = %v, want [consumeHP]", rm.PetAbilities)
+	}
+}

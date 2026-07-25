@@ -15,7 +15,7 @@
 - No hard-coded opcodes anywhere; opcodes resolve from tenant config (handler/writer names only in code).
 - Every seed-template handler entry MUST carry a `validator` (`LoggedInValidator` here) — a validator-less entry is silently dropped (`libs/atlas-opcodes/producer.go:47-51`).
 - Success roll uses strictly-less-than: `roll < int32(successRate)` — `success=0` never passes, `success=100` always passes. Do NOT copy the scroll path's `<=` (deliberate; design §2 D-3).
-- Version gates (if any fixture work reveals divergence) use `MajorVersion() >= 87`, never `> 83` (v84 ≡ v83).
+- **Clientbound codec version gate (IDB-verified): prepend the `bOnExclRequest` byte when `MajorVersion() >= 84`.** v48/61/72/79/83 = 15-byte body (no leading byte); v84/87/92/95/jms = 16-byte body (leading `bOnExclRequest`, value 1). This is a real `v84 ≠ v83` exception — do NOT gate at `>= 87`, and do NOT treat v84 as v83 for this packet (v84 serverbound IS identical to v83, but its clientbound diverges). Serverbound codec has NO version gate (uniform body all versions).
 - Immutable models: private fields + getters. No `*_testhelpers.go` files; table-driven tests.
 - Multi-tenancy: producers/consumers use span+tenant header decorators/parsers (existing `producer.ProviderImpl` / `consumer.SetHeaderParsers` patterns).
 - Verification gates before "done": `go test -race ./...`, `go vet ./...`, `go build ./...` in every changed module; `docker buildx bake` for every touched service (libs changes ⇒ `all-go-services`); `tools/redis-key-guard.sh` clean.
@@ -26,14 +26,29 @@
 
 - **WZ `success` sweep (design §2 D-3 verification item): CLEAN.** All 26 items in v83 `Item.wz/Consume/0228.img.xml` and all 139 in `0229.img.xml` carry explicit `success` (none 0), `masterLevel`, and non-empty `skill[]` nodes. Verified against the local v83 XML dump (`tmp/<tenant-uuid>/GMS/83.1/`). No unusable-at-0% books ship.
 - **Sample fixture values (v83 WZ):** 2280000 (skill book): success 100, masterLevel 10, no reqSkillLevel node (→0), skills `[2121003]`. 2290000 (mastery book): success 70, masterLevel 20, reqSkillLevel 5, skills `[1121001, 1221001, 1321001]`. 2280002: multi-job skills `[1121011, 1221012, …, 21121008]`.
-- **Registry opcodes (decimal → hex):** `USE_SKILL_BOOK` v83/v84: 82 (0x52), v87: 85 (0x55), v95: 88 (0x58), jms: 74 (0x4A). `SKILL_LEARN_ITEM_RESULT` v83/v84/v87: 51 (0x33), v95: 50 (0x32), jms: 48 (0x30).
-- **Template collision check: all 10 slots FREE** in the five templates (checked case-insensitively).
-- **gms_92 is EXCLUDED** (deviation from PRD FR-5.1's six-template list, resolving design §5.6's "derive at plan time"): the gms_92 template has only 37 handlers / 47 writers — a minimal login/field tenant with NO item-use family at all (no `CharacterItemUseHandle`, no consumable flow). Its known opcodes shift non-uniformly vs v95 (ITEM_MOVE sits at v95+1, CHAR_INFO at v95−1), so interpolation cannot produce a trustworthy value, and there is no v92 registry or IDB. Deriving would be invention. Follows the parked v92 mount-food precedent. Must be bannered in the PR description.
+- **Opcodes (IDB-verified 2026-07-25, all 10 versions — hex).** Derived directly from each IDB by decompiling the send (`COutPacket(op)` ctor arg) and the receive (`CWvsContext::OnPacket` switch case; dispatch is base-0 in every version, so switch-case == raw wire opcode). **The audit CSV / `docs/packets/audits/support/*.md` are WRONG for several cells** (legacy serverbound marked `n-a`; `gms_48` clientbound `n-a`/delta "47/48") — trust the decompile.
+
+  | version | `USE_SKILL_BOOK` (serverbound) | `SKILL_LEARN_ITEM_RESULT` (clientbound) | clientbound body |
+  |---|---|---|---|
+  | gms_48  | 0x40 | 0x2B | 15-byte |
+  | gms_61  | 0x4B | 0x30 | 15-byte |
+  | gms_72  | 0x51 | 0x30 | 15-byte |
+  | gms_79  | 0x50 | 0x30 | 15-byte |
+  | gms_83  | 0x52 | 0x33 | 15-byte |
+  | gms_84  | 0x52 | 0x33 | 16-byte (bOnExclRequest) |
+  | gms_87  | 0x55 | 0x33 | 16-byte |
+  | gms_92  | 0x59 | 0x34 | 16-byte |
+  | gms_95  | 0x58 | 0x32 | 16-byte |
+  | jms_185 | 0x4A | 0x30 | 16-byte |
+
+- **Template collision check: all 20 slots FREE** across the ten templates (re-check case-insensitively in Task 11).
+- **`gms_12` is the ONLY excluded template** — the feature is genuinely absent (no `CWvsContext::SendSkillLearnItemUseRequest`, no result opcode in that client). Evidence-backed, not a deferral. The v1 plan's "gms_92 EXCLUDED" decision is **REVERSED**: gms_92 has IDB-verified opcodes (0x59 / 0x34) and a loaded IDB; its minimal template (only `CharacterCashItemUseHandle`) is irrelevant because the skill-book handler is a dedicated standalone opcode.
+- **Every version uses the dedicated `CWvsContext::Send…`/`On…Result` pair** — there is NO generic item-use routing to build (legacy included). The mid-design "legacy = generic" hypothesis was disproved by decompiling the send in every IDB (v48 `sub_70E3E7`→0x40, v61 0x4B, v72 `sub_904B55`→0x51, v79 `0x955EBD`→0x50).
 - **No deployment/env changes needed:** `COMMAND_TOPIC_SAGA` (line 66) and `EVENT_TOPIC_SAGA_STATUS` (line 138) are already in the shared `deploy/k8s/base/env-configmap.yaml` consumed via `envFrom: atlas-env`; `requests.RootUrl("SKILLS")` falls back to `BASE_SERVICE_URL` (`libs/atlas-rest/requests/url.go:14-19`) — do NOT add a `SKILLS_SERVICE_URL` override (see bug_service_url_hardcoded_base_namespace).
 - **atlas-skills needs no code change:** `RequestUpdateBody` already carries `SkillId/Level/MasterLevel/Expiration`; clobber semantics handled caller-side by passing current Level/Expiration.
 - **Skill saga payload precedent:** all existing producers (atlas-messages, npc-conversations, portal-actions) emit the shared `sharedsaga.UpdateSkillPayload`/`CreateSkillPayload` (no WorldId field; the orchestrator's local mirror unmarshals worldId=0). Follow that precedent — do not add WorldId.
 - **No new saga Action** is introduced, so the orchestrator's `Step[any].UnmarshalJSON` switch and `event_acceptance.go` need no changes (`DestroyAssetFromSlot → {AssetDeleted, AssetQuantityChanged}`, `CreateSkill → {SkillCreated}`, `UpdateSkill → {SkillUpdated}` acceptances already exist).
-- **IDB availability (2026-07-02):** loaded instances cover v83 (dump) and v95; v84/v87/jms IDBs are NOT loaded. Fixture cells for v84/v87/jms are blocked on IDB reload (genuine external blocker — surface, don't fake). Always `list_instances` and match binary NAME first.
+- **IDB availability (2026-07-25): ALL loaded** — v48, v61, v72, v79, v83 (dump), v84, v87, v92, v95, jms. Every send/receive function is already located and named in its IDB (the derivation pass renamed the real `Send…`/`On…Result` and neutralized the v72 `0x90A591` / v79 `0x95B951` mis-ports). The v1 "IDB-blocked" constraint is VOID — Task 13 can promote every cell. Always `idb_list` and match binary NAME first (sessions/ports rotate).
 - **Pre-existing issue observed, NOT in scope:** `template_gms_95_1.json` has 35 validator-less handler entries (silently dropped at runtime). Surface to the owner; do not fix here.
 
 ---
@@ -124,13 +139,14 @@ const CharacterSkillBookUseHandle = "CharacterSkillBookUseHandle"
 // UseSkillBook - CWvsContext::SendSkillLearnItemUseRequest
 // packet-audit:fname CWvsContext::SendSkillLearnItemUseRequest
 //
-// Wire layout — IDA v95 CWvsContext::SendSkillLearnItemUseRequest@0x9d65e0:
+// Wire layout — IDB-verified byte-identical in all 10 versions
+// (v48 0x70E3E7 … v95 0x9d65e0 … jms 0xAEEE61):
 //
 //	Encode4 updateTime
 //	Encode2 slot
 //	Encode4 itemId
 //
-// Per-version body assumed identical pending fixture verification (task-125 design §5.1).
+// No version gate — only the per-tenant opcode differs (task-125 design §5.1).
 type UseSkillBook struct {
 	updateTime uint32
 	slot       int16
@@ -243,7 +259,7 @@ func TestSkillLearnItemResultRoundTrip(t *testing.T) {
 	}
 }
 
-// Golden bytes, v83 (IDA decode order @0xa1e5af):
+// Golden bytes, v83 — 15-byte body (NO leading bOnExclRequest byte):
 // characterId(4 LE) + isMasteryBook(1) + skillId(4 LE) + masterLevel(4 LE) + canUse(1) + success(1).
 // Trivially-readable values: characterId=1, mastery, skillId=2, masterLevel=3, canUse=1, success=0.
 func TestSkillLearnItemResultGoldenBytesV83(t *testing.T) {
@@ -262,7 +278,31 @@ func TestSkillLearnItemResultGoldenBytesV83(t *testing.T) {
 		t.Errorf("golden bytes: got % X, want % X", got, want)
 	}
 }
+
+// Golden bytes, v84 — 16-byte body (LEADING bOnExclRequest byte = 0x01).
+// Proves the MajorVersion() >= 84 gate. Same field values as the v83 golden,
+// so the only difference is the extra leading 0x01. (v84 clientbound diverges
+// from v83 despite identical serverbound — the v84≠v83 exception.)
+func TestSkillLearnItemResultGoldenBytesV84(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 84, 1)
+	l, _ := testlog.NewNullLogger()
+	got := NewSkillLearnItemResult(1, true, 2, 3, true, false).Encode(l, ctx)(nil)
+	want := []byte{
+		0x01,                   // bOnExclRequest (v84+ leading byte)
+		0x01, 0x00, 0x00, 0x00, // characterId
+		0x01,                   // isMasteryBook
+		0x02, 0x00, 0x00, 0x00, // skillId
+		0x03, 0x00, 0x00, 0x00, // masterLevel
+		0x01, // canUse
+		0x00, // success
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("golden bytes: got % X, want % X", got, want)
+	}
+}
 ```
+
+The round-trip test above (`pt.Variants`) exercises Encode→Decode with a consistent ctx per variant, so both the 15- and 16-byte paths round-trip as long as `pt.Variants` spans versions on both sides of the v84 boundary; if it does not, add explicit v83 and v84 sub-cases so both codec paths are covered.
 
 - [ ] **Step 2: Run the test to verify it fails**
 
@@ -282,6 +322,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -290,19 +331,27 @@ const CharacterSkillLearnItemResultWriter = "CharacterSkillLearnItemResult"
 // SkillLearnItemResult - CWvsContext::OnSkillLearnItemResult
 // packet-audit:fname CWvsContext::OnSkillLearnItemResult
 //
-// Wire layout — IDA v83 decode order @0xa1e5af:
+// Wire layout (IDB-verified all 10 versions):
 //
-//	Decode4 characterId   — resolved via CUserPool::GetUser; glow effect renders on that avatar for any observer
+//	Decode1 bOnExclRequest — v84+ ONLY (leading byte); server sends 1 so the
+//	                         requesting/local client clears its exclusive-request
+//	                         lock. Observers ignore it.
+//	Decode4 characterId    — resolved via CUserPool::GetUser; glow renders on that avatar for any observer
 //	Decode1 isMasteryBook
-//	Decode4 skillId       — decoded-then-discarded by the v83 client
-//	Decode4 masterLevel   — decoded-then-discarded by the v83 client
-//	Decode1 canUse        — clears the client's exclusive-request lock; effect renders only when 1
-//	Decode1 success       — success vs failure sound/message (local user only)
+//	Decode4 skillId        — decoded-then-discarded by the client (every version)
+//	Decode4 masterLevel    — decoded-then-discarded by the client (every version)
+//	Decode1 canUse         — gates the on-avatar glow; effect renders only when 1
+//	Decode1 success        — success vs failure sound/message (local user only)
 //
-// Atlas sends the real skillId/masterLevel even though v83 discards them
-// (task-125 design §2 D-4 — later clients may read them; do not copy Cosmic's
-// hardcoded zeros). No version gates expected; if fixture work reveals
-// divergence, gate with MajorVersion() >= 87, never > 83 (v84 ≡ v83).
+// Atlas sends the real skillId/masterLevel even though the client discards them
+// (task-125 design §D-4 — do not copy Cosmic's hardcoded zeros).
+//
+// VERSION GATE (IDB-verified, NOT speculative): the leading bOnExclRequest byte
+// is present iff MajorVersion() >= 84. 15-byte body: gms_48/61/72/79/83.
+// 16-byte body: gms_84/87/92/95/jms_185. This is a real v84≠v83 exception — v84
+// serverbound is byte-identical to v83 but its clientbound diverges. Do NOT gate
+// at >=87. bOnExclRequest is NOT domain data (server always sends 1), so it is
+// not a struct field: Encode writes it, Decode consumes-and-discards it.
 type SkillLearnItemResult struct {
 	characterId   uint32
 	isMasteryBook bool
@@ -310,6 +359,12 @@ type SkillLearnItemResult struct {
 	masterLevel   uint32
 	canUse        bool
 	success       bool
+}
+
+// skillLearnResultHasExclByte reports whether this tenant's client reads the
+// leading bOnExclRequest byte (GMS v84+; JMS v185 satisfies >=84 naturally).
+func skillLearnResultHasExclByte(t tenant.Model) bool {
+	return t.MajorVersion() >= 84
 }
 
 func NewSkillLearnItemResult(characterId uint32, isMasteryBook bool, skillId uint32, masterLevel uint32, canUse bool, success bool) SkillLearnItemResult {
@@ -336,9 +391,13 @@ func (m SkillLearnItemResult) String() string {
 		m.characterId, m.isMasteryBook, m.skillId, m.masterLevel, m.canUse, m.success)
 }
 
-func (m SkillLearnItemResult) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m SkillLearnItemResult) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
+	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
+		if skillLearnResultHasExclByte(t) {
+			w.WriteBool(true) // bOnExclRequest — clears the requester's exclusive-request lock (v84+)
+		}
 		w.WriteInt(m.characterId)
 		w.WriteBool(m.isMasteryBook)
 		w.WriteInt(m.skillId)
@@ -349,8 +408,12 @@ func (m SkillLearnItemResult) Encode(l logrus.FieldLogger, _ context.Context) fu
 	}
 }
 
-func (m *SkillLearnItemResult) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *SkillLearnItemResult) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
+		if skillLearnResultHasExclByte(t) {
+			_ = r.ReadBool() // bOnExclRequest — consumed then discarded (not domain data)
+		}
 		m.characterId = r.ReadUint32()
 		m.isMasteryBook = r.ReadBool()
 		m.skillId = r.ReadUint32()
@@ -1950,129 +2013,87 @@ git commit -m "feat(atlas-channel): USE_SKILL_BOOK handler and SKILL_LEARN_ITEM_
 
 ---
 
-### Task 11: atlas-configurations — seed templates (5 versions) + gms_92 exclusion record
+### Task 11: atlas-configurations — seed templates (10 versions)
 
-**Files:**
-- Modify: `services/atlas-configurations/seed-data/templates/template_gms_83_1.json`
-- Modify: `services/atlas-configurations/seed-data/templates/template_gms_84_1.json`
-- Modify: `services/atlas-configurations/seed-data/templates/template_gms_87_1.json`
-- Modify: `services/atlas-configurations/seed-data/templates/template_gms_95_1.json`
-- Modify: `services/atlas-configurations/seed-data/templates/template_jms_185_1.json`
+**Files (modify — 10 templates; `template_gms_12_1.json` is intentionally NOT touched):**
+- `template_gms_48_1.json`, `template_gms_61_1.json`, `template_gms_72_1.json`, `template_gms_79_1.json`, `template_gms_83_1.json`, `template_gms_84_1.json`, `template_gms_87_1.json`, `template_gms_92_1.json`, `template_gms_95_1.json`, `template_jms_185_1.json`
 
 **Interfaces:**
 - Consumes: handler name `CharacterSkillBookUseHandle` (Task 1), writer name `CharacterSkillLearnItemResult` (Task 2), validator `LoggedInValidator`.
-- Opcodes (registry-verified; collision-checked FREE at plan time):
+- **Opcodes (IDB-verified; collision-checked FREE at plan time — re-check in Step 3):**
 
 | Template | handler opCode | writer opCode |
 |---|---|---|
-| gms_83 | 0x52 | 0x33 |
-| gms_84 | 0x52 | 0x33 |
-| gms_87 | 0x55 | 0x33 |
-| gms_95 | 0x58 | 0x32 |
+| gms_48  | 0x40 | 0x2B |
+| gms_61  | 0x4B | 0x30 |
+| gms_72  | 0x51 | 0x30 |
+| gms_79  | 0x50 | 0x30 |
+| gms_83  | 0x52 | 0x33 |
+| gms_84  | 0x52 | 0x33 |
+| gms_87  | 0x55 | 0x33 |
+| gms_92  | 0x59 | 0x34 |
+| gms_95  | 0x58 | 0x32 |
 | jms_185 | 0x4A | 0x30 |
 
-- **gms_92 is EXCLUDED** — see "Pre-verified facts". Do NOT add entries to `template_gms_92_1.json`. The PR description MUST banner: "gms_92 excluded: its template is a minimal login/field tenant with no item-use family; no v92 registry/IDB exists and local shifts vs v95 are contradictory (ITEM_MOVE v95+1, CHAR_INFO v95−1), so any opcode would be invented. Parked like v92 mount-food; unblocks when a v92 IDB exists."
+- **`gms_12` is EXCLUDED** — the feature is genuinely absent in that client (no send/result opcode). This is the only exclusion; it is evidence-backed, not a deferral. The PR description should note it in one line.
 
-- [ ] **Step 1: Insert handler entries**
+- [ ] **Step 1: Insert handler entries (one per template, 10 total)**
 
-Use the Edit tool with the `CharacterItemUseScrollHandle` block as the anchor in each template (JSON entry order is irrelevant — `BuildHandlerMap` builds a map). For **gms_83** (anchor at lines ~419-423), change:
-
-```json
-      {
-        "opCode": "0x56",
-        "validator": "LoggedInValidator",
-        "handler": "CharacterItemUseScrollHandle"
-      },
-```
-
-to:
+JSON entry order is irrelevant (`BuildHandlerMap` builds a map), so the exact anchor does not matter — insert the new handler object adjacent to an existing item-use handler in that template's `socket.handlers` array. Use `CharacterItemUseScrollHandle` as the anchor where present; where it is absent use `CharacterItemUseHandle`; for **gms_92** (minimal template — only `CharacterCashItemUseHandle`) anchor on `CharacterCashItemUseHandle`. The inserted object is always:
 
 ```json
       {
-        "opCode": "0x56",
-        "validator": "LoggedInValidator",
-        "handler": "CharacterItemUseScrollHandle"
-      },
-      {
-        "opCode": "0x52",
+        "opCode": "<handler opCode from table>",
         "validator": "LoggedInValidator",
         "handler": "CharacterSkillBookUseHandle"
-      },
+      }
 ```
 
-Repeat per template with its own opCode from the table and its own anchor text (anchor opCodes: gms_84 `0x56`, gms_87 `0x59`, jms_185 `0x4E` — all with the validator line; **gms_95's anchor block at lines ~242-245 has NO validator line** — match it exactly as-is, but the NEW entry must still include `"validator": "LoggedInValidator"`):
+Every entry MUST carry `"validator": "LoggedInValidator"` even when the anchor block lacks a validator line (e.g. gms_95's `CharacterItemUseScrollHandle` has none) — a validator-less handler is silently dropped at runtime. Do per-file Edits (no shell patch loop); preserve each file's existing line endings.
 
-gms_95 anchor (exact):
+- [ ] **Step 2: Insert writer entries (one per template, 10 total)**
+
+Insert the new writer object adjacent to any existing writer entry in that template's `socket.writers` array (e.g. `CharacterItemUpgrade` where present; otherwise any writer object):
 
 ```json
       {
-        "opCode": "0x5D",
-        "handler": "CharacterItemUseScrollHandle"
-      },
-```
-
-new gms_95 insertion after it:
-
-```json
-      {
-        "opCode": "0x58",
-        "validator": "LoggedInValidator",
-        "handler": "CharacterSkillBookUseHandle"
-      },
-```
-
-- [ ] **Step 2: Insert writer entries**
-
-Anchor on the `CharacterItemUpgrade` writer block in each template. For **gms_83** (lines ~1822-1825):
-
-```json
-      {
-        "opCode": "0xA7",
-        "writer": "CharacterItemUpgrade"
-      },
-```
-
-becomes:
-
-```json
-      {
-        "opCode": "0xA7",
-        "writer": "CharacterItemUpgrade"
-      },
-      {
-        "opCode": "0x33",
+        "opCode": "<writer opCode from table>",
         "writer": "CharacterSkillLearnItemResult"
-      },
+      }
 ```
 
-Per-template `CharacterItemUpgrade` anchor opCodes: gms_84 `0xAA`, gms_87 `0xB2`, gms_95 `0xBA`, jms_185 `0xA5`. New writer opCodes from the table above.
-
-- [ ] **Step 3: Validate JSON + re-run the collision check**
+- [ ] **Step 3: Validate JSON + collision check (all 10 templates)**
 
 ```bash
 python3 - <<'EOF'
 import json
 base="services/atlas-configurations/seed-data/templates"
-specs=[("template_gms_83_1.json","0x52","0x33"),("template_gms_84_1.json","0x52","0x33"),("template_gms_87_1.json","0x55","0x33"),("template_gms_95_1.json","0x58","0x32"),("template_jms_185_1.json","0x4A","0x30")]
+specs=[("template_gms_48_1.json","0x40","0x2B"),("template_gms_61_1.json","0x4B","0x30"),
+       ("template_gms_72_1.json","0x51","0x30"),("template_gms_79_1.json","0x50","0x30"),
+       ("template_gms_83_1.json","0x52","0x33"),("template_gms_84_1.json","0x52","0x33"),
+       ("template_gms_87_1.json","0x55","0x33"),("template_gms_92_1.json","0x59","0x34"),
+       ("template_gms_95_1.json","0x58","0x32"),("template_jms_185_1.json","0x4A","0x30")]
 for f,h,w in specs:
     d=json.load(open(f"{base}/{f}"))
     hs=[e for e in d["socket"]["handlers"] if int(e["opCode"],16)==int(h,16)]
     ws=[e for e in d["socket"]["writers"] if int(e["opCode"],16)==int(w,16)]
-    assert len(hs)==1 and hs[0]["handler"]=="CharacterSkillBookUseHandle" and hs[0].get("validator")=="LoggedInValidator", (f,hs)
-    assert len(ws)==1 and ws[0]["writer"]=="CharacterSkillLearnItemResult", (f,ws)
+    assert len(hs)==1 and hs[0]["handler"]=="CharacterSkillBookUseHandle" and hs[0].get("validator")=="LoggedInValidator", (f,"handler",hs)
+    assert len(ws)==1 and ws[0]["writer"]=="CharacterSkillLearnItemResult", (f,"writer",ws)
     print(f, "OK")
+# gms_12 must NOT have been touched
+d12=json.load(open(f"{base}/template_gms_12_1.json"))
+assert not any(e.get("handler")=="CharacterSkillBookUseHandle" for e in d12["socket"]["handlers"]), "gms_12 must stay excluded"
+print("template_gms_12_1.json untouched OK")
 EOF
 ```
 
-Expected: five `OK` lines (also proves each file still parses).
+Expected: ten `OK` lines + the gms_12 assertion (also proves each file still parses).
 
-- [ ] **Step 4: Build atlas-configurations and commit**
-
-Run (from `services/atlas-configurations/atlas.com/configurations` if a Go module exists there, else skip Go steps — seed JSON is data): `go build ./...` if applicable.
+- [ ] **Step 4: Commit**
 
 ```bash
 git add services/atlas-configurations/seed-data/templates/
-git commit -m "feat(atlas-configurations): seed USE_SKILL_BOOK handler + SKILL_LEARN_ITEM_RESULT writer for 5 versions (task-125)"
+git commit -m "feat(atlas-configurations): seed USE_SKILL_BOOK handler + SKILL_LEARN_ITEM_RESULT writer for 10 versions (task-125)"
 ```
 
 ---
@@ -2114,28 +2135,44 @@ git add -A && git commit -m "fix(task-125): verification-gate fixes" # only if f
 
 ---
 
-### Task 13: Fixture campaign — promote STATUS.md cells for v83 and v95
+### Task 13: Fixture campaign — promote all 20 cells (10 versions × 2 packets)
 
 **Files:**
-- Modify: `libs/atlas-packet/character/serverbound/use_skill_book_test.go` (markers)
-- Modify: `libs/atlas-packet/character/clientbound/skill_learn_item_result_test.go` (markers)
-- Create: per-fname audit reports under `docs/packets/audits/gms_v83/` and `docs/packets/audits/gms_v95/` (surgical splice — the exports currently contain NEITHER `SendSkillLearnItemUseRequest` NOR `OnSkillLearnItemResult` for any version)
+- Modify: `libs/atlas-packet/character/serverbound/use_skill_book_test.go` (per-version markers)
+- Modify: `libs/atlas-packet/character/clientbound/skill_learn_item_result_test.go` (per-version markers)
+- Create: per-fname audit reports under `docs/packets/audits/gms_v48/`, `gms_v61/`, `gms_v72/`, `gms_v79/`, `gms_v83/`, `gms_v84/`, `gms_v87/`, `gms_v92/`, `gms_v95/`, `jms_v185/` (surgical splice per cell — never a full re-export)
 - Modify: evidence records + regenerated `docs/packets/audits/STATUS.md` (rows 72, 570)
+- **Correct** the stale audit artifacts (see below).
 
-**Process — follow `docs/packets/audits/VERIFYING_A_PACKET.md` exactly, one packet × version cell at a time** (dispatch the `packet-verifier` agent per cell, serialized). This plan does not restate the playbook; the binding constraints:
+**All IDBs are loaded and every function is located + named** (the derivation pass in this task already did this). **No cell is IDB-blocked.** Dispatch the `packet-verifier` agent per cell, serialized (shared run.go / matrix / global IDA instance). Follow `docs/packets/audits/VERIFYING_A_PACKET.md` exactly; this plan does not restate the playbook.
 
-- [ ] **Step 1: Confirm IDB availability.** `mcp__ida-pro__list_instances` and match by binary NAME (instances rotate; as of 2026-07-02 the loaded set covers a v83 dump and v95 — ports may differ at execution time). v84/v87/jms IDBs are NOT loaded: those cells are blocked on an external prerequisite (reloading the IDBs) — record them as pending in the task notes and STOP there for those versions; do not substitute, do not fake evidence.
-- [ ] **Step 2: v83 cells** (`USE_SKILL_BOOK` × gms_v83, `SKILL_LEARN_ITEM_RESULT` × gms_v83): decompile the client read/build order (`CWvsContext::OnSkillLearnItemResult` — design pins v83 @0xa1e5af; serverbound send site `CWvsContext::SendSkillLearnItemUseRequest`), splice per-fname reports into `docs/packets/audits/gms_v83/` (surgical — never a full re-export), add `// packet-audit:verify packet=... version=gms_v83 ida=0x...` markers to the two test files, pin evidence, regenerate the matrix.
-- [ ] **Step 3: v95 cells**: same (design pins the serverbound body @0x9d65e0; clientbound v95 `OnSkillLearnItemResult` is 0x456 bytes — decompile and pin what v95 actually reads per D-4; if the read order diverges from the v83 body, STOP and surface before changing the codec — a divergence means a version gate discussion, not silent divergence).
-- [ ] **Step 4: If any fname fails to resolve in the IDB — STOP and escalate** (never substitute a name or fake a hash; per feedback_unresolved_fname_escalate).
-- [ ] **Step 5: Commit per cell** (test marker + evidence + matrix together, as the playbook requires), e.g.:
+**IDB-verified addresses + opcodes (do NOT re-derive from the CSV/support-docs — they are wrong for several cells):**
+
+| version | serverbound `Send…` @addr → op | clientbound `On…Result` @addr → op | body |
+|---|---|---|---|
+| gms_48  | 0x70E3E7 → 0x40 | 0x71A135 → 0x2B | 15-byte |
+| gms_61  | 0x8325D2 → 0x4B | 0x841E5F → 0x30 | 15-byte |
+| gms_72  | 0x904B55 → 0x51 | 0x9175E6 → 0x30 | 15-byte |
+| gms_79  | 0x955EBD → 0x50 | 0x969022 → 0x30 | 15-byte |
+| gms_83  | 0xA0A1B2 → 0x52 | 0xA1E5AF → 0x33 | 15-byte |
+| gms_84  | 0xA5459C → 0x52 | 0xA6984E → 0x33 | 16-byte |
+| gms_87  | 0xA9FA66 → 0x55 | 0xAB58E8 → 0x33 | 16-byte |
+| gms_92  | 0x9AB570 → 0x59 | 0x9CC640 → 0x34 | 16-byte |
+| gms_95  | 0x9D65E0 → 0x58 | 0x9F7AF0 → 0x32 | 16-byte |
+| jms_185 | 0xAEEE61 → 0x4A | 0xB05116 → 0x30 | 16-byte |
+
+- [ ] **Step 1: Serverbound cells (10).** For each version, splice the per-fname `CWvsContext::SendSkillLearnItemUseRequest` report from the address above into `docs/packets/audits/<ver>/` (surgical), add `// packet-audit:verify packet=USE_SKILL_BOOK version=<ver> ida=0x...` to `use_skill_book_test.go`, pin evidence, regenerate the matrix. Body is uniform (updateTime/slot/itemId) — the golden already asserts it.
+- [ ] **Step 2: Clientbound cells (10).** Same for `CWvsContext::OnSkillLearnItemResult`. **Split by body shape:** v48/61/72/79/83 fixtures assert the 15-byte body; v84/87/92/95/jms fixtures assert the 16-byte body (leading `bOnExclRequest`). This confirms the codec's `MajorVersion() >= 84` gate against real client reads.
+- [ ] **Step 3: Correct the stale audit artifacts.** As part of the campaign, fix the wrong cells in `docs/packets/audits/support/gms_v48.md` (serverbound + clientbound were `n-a`), `gms_v61/72/79.md` (serverbound `n-a`), and the `MapleStory Ops - *.csv` where they disagree with the verified opcodes. Note the corrections in the commit message so future version passes are not re-poisoned.
+- [ ] **Step 4: If any fname fails to resolve — STOP and escalate** (not expected; all are named). Never substitute or fake.
+- [ ] **Step 5: Commit per cell** (test marker + evidence + matrix together), e.g.:
 
 ```bash
 git add libs/atlas-packet/character/serverbound/use_skill_book_test.go docs/packets/audits/
-git commit -m "verify(packets): USE_SKILL_BOOK gms_v83 byte fixture + evidence (task-125)"
+git commit -m "verify(packets): USE_SKILL_BOOK gms_v48 byte fixture + evidence (task-125)"
 ```
 
-Exit state: v83 + v95 cells for both rows promoted (4 cells); v84/v87/jms cells explicitly recorded as IDB-blocked; gms_92 has no matrix column (nothing to record).
+Exit state: all 20 cells (2 rows × 10 versions) promoted; `gms_12` has no column for either row (feature absent; nothing to record).
 
 ---
 
@@ -2151,7 +2188,7 @@ Exit state: v83 + v95 cells for both rows promoted (4 cells); v84/v87/jms cells 
 
 Seed templates only apply at tenant creation — existing tenants need a live PATCH + channel restart (new-opcodes gotcha: handlers/writers do not hot-reload).
 
-- [ ] **Step 1:** For each live tenant on gms_83/84/87/95/jms lineages: PATCH the tenant's socket configuration (via atlas-tenants configurations REST, same procedure as prior opcode rollouts) adding the handler entry (with `LoggedInValidator`) and writer entry using the Task 11 opcode table. Full sweep — every tenant, not a spot-check.
+- [ ] **Step 1:** For each live tenant on **any of the 10 lineages (gms_48/61/72/79/83/84/87/92/95/jms)**: PATCH the tenant's socket configuration (via atlas-tenants configurations REST, same procedure as prior opcode rollouts) adding the handler entry (with `LoggedInValidator`) and writer entry using the Task 11 opcode table. Full sweep — every tenant, not a spot-check. (gms_12 tenants: skip — feature absent.)
 - [ ] **Step 2:** Restart atlas-channel pods for the affected tenants.
 - [ ] **Step 3:** Live acceptance on a v83 tenant (PRD §10):
   - Mastery book (e.g. 2290000, success 70): use with an eligible character → on success master level rises (verify via skills REST/UI), book consumed, map-broadcast glow + local sound/message; on failure book still consumed, failure effect shown.
@@ -2164,7 +2201,8 @@ Seed templates only apply at tenant creation — existing tenants need a live PA
 
 ## Self-review checklist (ran at plan time)
 
-- **Spec coverage:** FR-1 → Tasks 1, 10, 11; FR-2 → Tasks 7, 8; FR-3 → Tasks 3, 4, 7, 8; FR-4 → Tasks 2, 9, 11; FR-5 → Tasks 11, 15 (gms_92 exclusion documented — deliberate, evidence-backed deviation from the FR-5.1 six-template list); FR-6 → Task 13 (v83/v95 now; v84/v87/jms IDB-blocked; gms_92 n/a). Design §5.1-§5.6, §6 error matrix, §7 testing, §8 fixtures, §9 risks all mapped.
-- **Design deviations (intentional):** (1) no `socket/writer/` file in atlas-channel — current codebase pattern announces lib codecs directly by writer name (see `CharacterItemUpgradeWriter`); a thin writer file would be dead code. (2) gms_92 excluded rather than derived (evidence above). (3) Skill saga payloads follow the shared-library precedent (no WorldId) used by all three existing producers.
+- **Spec coverage:** FR-1 → Tasks 1, 10, 11; FR-2 → Tasks 7, 8; FR-3 → Tasks 3, 4, 7, 8; FR-4 → Tasks 2, 9, 11; FR-5 → Tasks 11, 15 (10 versions wired; only gms_12 excluded — evidence-backed feature-absence, exceeds the original FR-5.1 six-template list); FR-6 → Task 13 (all 20 cells promotable now — every IDB loaded; gms_12 has no column). Design §5.1-§5.6, §6 error matrix, §7 testing, §8 fixtures, §9 risks all mapped.
+- **v2 scope change (post-`main` merge, 2026-07-25):** version set 5 → 10 (all but gms_12), all opcodes IDB-verified, clientbound codec gains a `bOnExclRequest` byte gated at `MajorVersion() >= 84` (a v84≠v83 exception). The "gms_92 excluded / IDB-blocked" v1 assumptions are void. See design §0.
+- **Design deviations (intentional):** (1) no `socket/writer/` file in atlas-channel — current codebase pattern announces lib codecs directly by writer name (see `CharacterItemUpgradeWriter`); a thin writer file would be dead code. (2) Skill saga payloads follow the shared-library precedent (no WorldId) used by all three existing producers.
 - **Type consistency:** `CharacterSkillBookUseHandle` / `CharacterSkillLearnItemResultWriter` / `NewSkillLearnItemResult(uint32, bool, uint32, uint32, bool, bool)` / `RequestSkillBookUse(field.Model, character.Id, slot.Position, item.Id, uint32)` (channel) vs `RequestSkillBookUse(field.Model, uint32, int16, item2.Id)` (consumables) — names verified consistent across Tasks 1-11.
 - **Placeholders:** none — every code step carries the actual code.

@@ -2,6 +2,7 @@ package character
 
 import (
 	"atlas-login/inventory"
+	"atlas-login/ranking"
 	"context"
 	"errors"
 	"regexp"
@@ -27,16 +28,19 @@ type Processor interface {
 }
 
 type ProcessorImpl struct {
-	l   logrus.FieldLogger
-	ctx context.Context
-	ip  inventory.Processor
+	l        logrus.FieldLogger
+	ctx      context.Context
+	ip       inventory.Processor
+	rankings func(ids []uint32) ([]ranking.Model, error)
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	rp := ranking.NewProcessor(l, ctx)
 	p := &ProcessorImpl{
-		l:   l,
-		ctx: ctx,
-		ip:  inventory.NewProcessor(l, ctx),
+		l:        l,
+		ctx:      ctx,
+		ip:       inventory.NewProcessor(l, ctx),
+		rankings: rp.GetByCharacterIds,
 	}
 	return p
 }
@@ -84,8 +88,62 @@ func (p *ProcessorImpl) GetForWorld(decorators ...model.Decorator[Model]) func(a
 		if errors.Is(err, requests.ErrNotFound) {
 			return make([]Model, 0), nil
 		}
-		return cs, err
+		if err != nil {
+			return cs, err
+		}
+		return p.decorateRankings(cs), nil
 	}
+}
+
+// decorateRankings applies the slice-level rankings decoration: one bulk
+// call for the whole character list (FR-8), failing open to zero-valued
+// rank fields on any error, timeout, or missing entry so the character
+// select screen always renders. This must never turn a successful
+// character-list fetch into a failure.
+func (p *ProcessorImpl) decorateRankings(cs []Model) []Model {
+	if len(cs) == 0 {
+		return cs
+	}
+	ids := make([]uint32, len(cs))
+	for i, c := range cs {
+		ids[i] = c.Id()
+	}
+	rs, err := p.rankings(ids)
+	if err != nil {
+		p.l.WithError(err).Warnf("Unable to fetch character rankings, character select will render without ranks.")
+		// This decoration is slice-level (one bulk call for the whole
+		// character list), not per-model like InventoryDecorator, so there
+		// is no single entity to attribute the failure to; entityId=0
+		// signals a list-wide degradation rather than a specific character.
+		degrade.Observe(p.l, "login.character.rankings", 0, err)
+		return cs
+	}
+	return MergeRankings(cs, rs)
+}
+
+// MergeRankings rebuilds each character with its ranking values merged in;
+// characters without a corresponding ranking entry keep zero-valued rank
+// fields. Exported for tests.
+func MergeRankings(cs []Model, rs []ranking.Model) []Model {
+	byId := make(map[uint32]ranking.Model, len(rs))
+	for _, r := range rs {
+		byId[r.CharacterId()] = r
+	}
+	out := make([]Model, len(cs))
+	for i, c := range cs {
+		r, ok := byId[c.Id()]
+		if !ok {
+			out[i] = c
+			continue
+		}
+		out[i] = c.ToBuilder().
+			SetRank(r.Rank()).
+			SetRankMove(r.RankMove()).
+			SetJobRank(r.JobRank()).
+			SetJobRankMove(r.JobRankMove()).
+			Build()
+	}
+	return out
 }
 
 func (p *ProcessorImpl) ByNameProvider(decorators ...model.Decorator[Model]) func(name string) model.Provider[[]Model] {

@@ -1,0 +1,10 @@
+packet: chat/clientbound/ChatClearAvatarMegaphone
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnClearAvatarMegaphone
+    address: "0xa2a65b"
+    decompile_sha256: a36c13e1ac51f55abfbe722525e2d194b569f69c63861cc2fad97746a695ca50
+verifies:
+    - libs/atlas-packet/chat/clientbound/avatar_megaphone_test.go#TestClearAvatarMegaphoneByteOutput

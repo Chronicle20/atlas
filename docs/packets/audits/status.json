@@ -1,15 +1,15 @@
 {
   "toolSha": "c5c7e0775745003aa573cd3469955936da18275f7f216113cc87b6a5871e3f6d",
   "exportHashes": {
-    "gms_v48": "5e7051fa58f8b8a3824ffe1d43e603f53cadada7ee0da46372e20ac7779c1d14",
-    "gms_v61": "5b7b0ccf57c4d10352c9ed5900a807dacd5f72d58d7f10aa3a606e7a1565e3ce",
-    "gms_v72": "030791f68f22af13541a8bdadabf0333c7b3da617891217fbaf2754723e7f2ca",
-    "gms_v79": "43cf21ac8839057d6ef9f956ab3048e7fa30e1a92e04daa70464ac8eab65ffa7",
-    "gms_v83": "c03e07d7684bda9e4b3c26089bbfd1ce7f3fbef9fe02579b13074f2d5afc7ad0",
-    "gms_v84": "85e830a95ced8cb22a1be907d30b3978c8de788d9fd281db8d3d85cc92401d01",
-    "gms_v87": "fb1db908a7290361a6bc18fe34df5473fb710fe4090a32d8b2c38a14c1311979",
-    "gms_v95": "5339d3834788e552615fd18567704c62812c0999e4d67e1bf9b52c72ebcefbf3",
-    "jms_v185": "d0ec1adb9fcd4b8c17de3216911930e511c80526b999f394cc8ed44e3f6049fb"
+    "gms_v48": "372f584a3f5ce23999e7013775e2d856ad6afde26fa3a418d1fb5ae1070381dc",
+    "gms_v61": "d3c5524f9b31c62a767f6e9c678a8ba73948707290baac88d93ed31f1ea276e8",
+    "gms_v72": "5a69eae9feac2c103e4102cb259cee55640894c1ffa934237d7345f86aff78ad",
+    "gms_v79": "54d6b7e4b810b279ccb970e202a5c61f547197eab93c4788d59f48c0ae11431a",
+    "gms_v83": "4b8efb755e82867c32bf91f7e755b824325d4d1770565d04addaf47da6fa234a",
+    "gms_v84": "d4be67adab9c5f656536ca7500a9ce073a21f2ab55437f7b2cc48c17e742f4dc",
+    "gms_v87": "fe99990ffbda1b57762a995922a003e749b3bb534bb57be1f825bc107783d509",
+    "gms_v95": "61542beb1c51de2587517ed77656870ddd320b22b6324b09b180a09a6721fb98",
+    "jms_v185": "c441ec57bbbd83f6cdce7817b5ae4776bba7bd1d0c5d9bb5acd2a546ce67de54"
   },
   "rows": [
     {
@@ -7264,9 +7264,9 @@
     {
       "kind": "op",
       "op": "SERVERMESSAGE",
-      "packet": "chat/clientbound/ChatWorldMessageSimple",
+      "packet": "chat/clientbound/ChatWorldMessageMegaphone",
       "direction": "clientbound",
-      "tier1": true,
+      "tier1": false,
       "fnames": [
         "CWvsContext::OnBroadcastMsg"
       ],
@@ -7288,28 +7288,23 @@
           "opcode": 65
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 68
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 68
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 70
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 71
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 62
         }
       }
@@ -8110,8 +8105,9 @@
     {
       "kind": "op",
       "op": "USE_CASH_ITEM",
+      "packet": "cash/serverbound/CashItemUseMegaphone",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CItemSpeakerDlg::_SendConsumeCashItemUseRequest",
         "CUICharacterSaleDlg::SendCreateNewCharacter",
@@ -8122,23 +8118,19 @@
       ],
       "cells": {
         "gms_v48": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 62
         },
         "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 73
         },
         "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 78
         },
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 77
         },
         "gms_v83": {
@@ -8152,18 +8144,15 @@
           "opcode": 79
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 82
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 85
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 71
         }
       }
@@ -8477,6 +8466,7 @@
     {
       "kind": "op",
       "op": "AVATAR_MEGAPHONE_RESULT",
+      "packet": "chat/clientbound/ChatAvatarMegaphoneResult",
       "direction": "clientbound",
       "tier1": false,
       "fnames": [
@@ -8504,23 +8494,19 @@
           "opcode": 104
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 110
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 113
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 113
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 114
         },
         "jms_v185": {
@@ -8744,55 +8730,47 @@
     {
       "kind": "op",
       "op": "SET_AVATAR_MEGAPHONE",
+      "packet": "chat/clientbound/ChatSetAvatarMegaphone",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CWvsContext::OnSetAvatarMegaphone"
       ],
       "cells": {
         "gms_v48": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 66
         },
         "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 84
         },
         "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 103
         },
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 105
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 111
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 114
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 114
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 115
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 90
         }
       }
@@ -12094,6 +12072,7 @@
     {
       "kind": "op",
       "op": "CLEAR_AVATAR_MEGAPHONE",
+      "packet": "chat/clientbound/ChatClearAvatarMegaphone",
       "direction": "clientbound",
       "tier1": false,
       "fnames": [
@@ -12120,28 +12099,23 @@
           "opcode": 106
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 112
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 115
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 115
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 116
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 91
         }
       }
@@ -35752,8 +35726,9 @@
     {
       "kind": "op",
       "op": "SEND_TV",
+      "packet": "tv/clientbound/TvTvSetMessage",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CMapleTVMan::OnSetMessage",
         "sub_59BD98"
@@ -35779,23 +35754,19 @@
           "opcode": 317
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 341
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 351
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 362
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 405
         },
         "jms_v185": {
@@ -35951,6 +35922,7 @@
     {
       "kind": "op",
       "op": "REMOVE_TV",
+      "packet": "tv/clientbound/TvTvClearMessage",
       "direction": "clientbound",
       "tier1": false,
       "fnames": [
@@ -35978,28 +35950,23 @@
           "opcode": 318
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 342
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 352
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 363
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 406
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 379
         }
       }
@@ -36104,6 +36071,7 @@
     {
       "kind": "op",
       "op": "ENABLE_TV",
+      "packet": "tv/clientbound/TvTvSendMessageResult",
       "direction": "clientbound",
       "tier1": false,
       "fnames": [
@@ -36131,28 +36099,23 @@
           "opcode": 319
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 343
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 353
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 364
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 407
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 380
         }
       }
@@ -40497,6 +40460,199 @@
     },
     {
       "kind": "sub-struct",
+      "packet": "cash/serverbound/CashItemUseAvatarMegaphone",
+      "tier1": true,
+      "cells": {
+        "gms_v48": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v83": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "sub-struct",
+      "packet": "cash/serverbound/CashItemUseItemMegaphone",
+      "tier1": true,
+      "cells": {
+        "gms_v48": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v83": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v84": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v87": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v95": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "sub-struct",
+      "packet": "cash/serverbound/CashItemUseMapleTV",
+      "tier1": true,
+      "cells": {
+        "gms_v48": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "sub-struct",
+      "packet": "cash/serverbound/CashItemUseMegaphone",
+      "tier1": true,
+      "cells": {
+        "gms_v48": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "sub-struct",
       "packet": "cash/serverbound/CashItemUsePointReset",
       "tier1": true,
       "cells": {
@@ -40548,7 +40704,101 @@
     },
     {
       "kind": "sub-struct",
+      "packet": "cash/serverbound/CashItemUseSuperMegaphone",
+      "tier1": true,
+      "cells": {
+        "gms_v48": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "sub-struct",
       "packet": "cash/serverbound/CashItemUseTeleportRock",
+      "tier1": true,
+      "cells": {
+        "gms_v48": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "sub-struct",
+      "packet": "cash/serverbound/CashItemUseTripleMegaphone",
       "tier1": true,
       "cells": {
         "gms_v48": {

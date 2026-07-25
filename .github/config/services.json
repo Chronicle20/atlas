@@ -405,6 +405,14 @@
       "docker_context": "."
     },
     {
+      "name": "atlas-rankings",
+      "type": "go-service",
+      "path": "services/atlas-rankings",
+      "module_path": "services/atlas-rankings/atlas.com/rankings",
+      "docker_image": "ghcr.io/chronicle20/atlas-rankings/atlas-rankings",
+      "docker_context": "."
+    },
+    {
       "name": "atlas-rates",
       "type": "go-service",
       "path": "services/atlas-rates",

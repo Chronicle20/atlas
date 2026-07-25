@@ -59,6 +59,28 @@ packet_prefixes:
 
 # Explicit tier-1 packets (reviewed per-packet additions).
 packets:
+  # SetAvatarMegaphone (task-123 phase 19) embeds a trailing model.Avatar
+  # (AvatarLook) block after four variable-length message-line strings. The
+  # TypeRegistry's opaque-type recursion (which correctly promotes
+  # tv/clientbound/TvSetMessage's near-identical AvatarLook-trailer shape to
+  # FlatInvalid) does not pick up this struct — WriterName
+  # "ChatSetAvatarMegaphone" vs Operation() "SetAvatarMegaphone" mismatch
+  # (a documented TypeRegistry limitation, see the header comment above).
+  # The flat differ instead attempts a raw per-field walk and misaligns on
+  # the string-run boundary (false per-field width mismatches, not a real
+  # wire-shape bug — the byte-fixture test is the ground truth). Pinned here
+  # so the cell promotes via the linked byte-fixture + evidence, never via
+  # the advisory diff.
+  - chat/clientbound/ChatSetAvatarMegaphone
+  # WorldMessageItemMegaphone (task-123 phase 19) carries a conditional
+  # (hasItem) opaque model.Asset (GW_ItemSlotBase) trailer. The TypeRegistry's
+  # opaque-type recursion misses it for the same WriterName-vs-Operation()
+  # mismatch reason as ChatSetAvatarMegaphone above ("ChatWorldMessageItemMegaphone"
+  # vs Operation() "WorldMessageItemMegaphone"); the flat differ correctly
+  # isolates the mismatch to the single opaque row ("register boundary") but
+  # that alone doesn't earn tier-1 auto-promotion. Pinned here so the cell
+  # promotes via the linked byte-fixture + evidence.
+  - chat/clientbound/ChatWorldMessageItemMegaphone
   # SummonSpawn branches on spawnHasAvatarLook (a version-gated trailing avatar
   # byte: present GMS>=95 / JMS>=185, absent on GMS v83/v84/v87), so the flat
   # diff is advisory and only a linked byte-fixture promotes. Once its IDA leaf

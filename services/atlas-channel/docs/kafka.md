@@ -158,6 +158,14 @@
 - Type Discriminators: `CHARACTER_ENTER`, `CHARACTER_EXIT`, `WEATHER_START`, `WEATHER_END`, `MAP_TIMER_STARTED`
 - Purpose: Receives character map entry/exit, weather start/end, and map timer started events. MAP_TIMER_STARTED body contains CharacterId (uint32) and Seconds (uint32); the handler targets the single character via `IfPresentByCharacterId` and sends a `ClockWriter` packet built from `NewTimerClock(seconds)`.
 
+### EVENT_TOPIC_MEGAPHONE
+- Direction: Event
+- Message Type: `BroadcastEvent`
+- Type Discriminators (Tier): `MEGAPHONE`, `SUPER`, `ITEM`, `TRIPLE`
+- Scope Values: `CHANNEL`, `WORLD`
+- Start Offset: last
+- Purpose: Receives megaphone broadcast events for the stateless megaphone tiers. CHANNEL scope renders the WorldMessage only to the sender's channel; any other scope (WORLD) renders to every channel in the world. Builds the tier-specific WorldMessage mode body (MEGAPHONE/SUPER/ITEM/TRIPLE, sender name decorated with medal) and announces it via `WorldMessageWriter` to every session on the pod's channel.
+
 ### EVENT_TOPIC_MERCHANT_STATUS
 - Direction: Event
 - Message Type: `StatusEvent[StatusEventShopOpenedBody]`, `StatusEvent[StatusEventShopClosedBody]`, `StatusEvent[StatusEventVisitorBody]`, `StatusEvent[StatusEventCapacityFullBody]`, `StatusEvent[StatusEventShopCreateFailedBody]`, `StatusEvent[StatusEventPurchaseFailedBody]`, `StatusEvent[StatusEventFrederickNotificationBody]`, `StatusEvent[StatusEventMessageSentBody]`, `StatusEvent[StatusEventShopUpdatedBody]`, `StatusEvent[StatusEventEnterFailedBody]`
@@ -330,6 +338,14 @@
 - Type Discriminators: `UPDATED`
 - Body Fields: credit, points, prepaid, transactionId
 - Purpose: Receives NX wallet balance-updated events. Refreshes the on-screen NX/points counter for whichever cash scene (MTS or the regular cash shop) the character currently occupies, using the balances carried on the event itself; a character in neither scene has nothing refreshed.
+
+### EVENT_TOPIC_WORLD_BROADCAST_STATUS
+- Direction: Event
+- Message Type: `StatusEvent` (`worldbroadcast` message package; a flat struct, not the generic `StatusEvent[E]` envelope used elsewhere on this topic list)
+- Type Discriminators (Type): `QUEUED`, `STARTED`, `ENDED`
+- Family Values: `TV`, `AVATAR`
+- Start Offset: last
+- Purpose: Receives world-broadcast queue status events for the Maple TV and avatar megaphone families, gated by `sc.IsWorld` (fans out to every channel in the world). QUEUED sends a `TvSendMessageResultWriter` success ack to the sender, TV family only. STARTED renders and announces to every session on the pod's channel: `TvSetMessageWriter` (TV family; message type resolved from the tenant `messageTypes` writer table) or the SetAvatarMegaphone writer (AVATAR family). ENDED announces the TvClearMessage or ClearAvatarMegaphone writer to every session on the pod's channel.
 
 ### COMMAND_TOPIC_CHANNEL_STATUS
 - Direction: Command (inbound)
@@ -614,6 +630,12 @@ Quest-specific command envelope used for quest operations (start, complete, forf
 
 ### ListingEvent
 Merchant listing event envelope with ShopId, Type discriminator, and typed body. Used for the merchant listing topic.
+
+### BroadcastEvent
+Flat event (not envelope-wrapped) for the stateless megaphone tiers (MEGAPHONE/SUPER/ITEM/TRIPLE), containing tier, scope, worldId, channelId, characterId, senderName, senderMedal, messages, whispersOn, and an optional item snapshot. Used for `EVENT_TOPIC_MEGAPHONE`.
+
+### StatusEvent (World Broadcast)
+Flat event (not envelope-wrapped; distinct from the generic `StatusEvent[E]` envelope above), defined in the `worldbroadcast` message package. Contains type, family, worldId, characterId, waitSeconds, totalWaitSeconds, channelId, senderName, senderMedal, messages, whispersOn, itemId, tvMessageType (semantic key, not a wire byte), senderLook, receiverName, and receiverLook. Used for `EVENT_TOPIC_WORLD_BROADCAST_STATUS`.
 
 ---
 

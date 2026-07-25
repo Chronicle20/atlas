@@ -257,7 +257,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-map-actions/atlas-map-actions
     newTag: main-bb513ef
   - name: ghcr.io/chronicle20/atlas-maps/atlas-maps
-    newTag: main-bb513ef
+    newTag: main-fc12a93
   - name: ghcr.io/chronicle20/atlas-marriages/atlas-marriages
     newTag: main-bb513ef
   - name: ghcr.io/chronicle20/atlas-merchant/atlas-merchant

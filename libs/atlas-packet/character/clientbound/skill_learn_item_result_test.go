@@ -41,6 +41,8 @@ func TestSkillLearnItemResultRoundTrip(t *testing.T) {
 // Golden bytes, v83 — 15-byte body (NO leading bOnExclRequest byte):
 // characterId(4 LE) + isMasteryBook(1) + skillId(4 LE) + masterLevel(4 LE) + canUse(1) + success(1).
 // Trivially-readable values: characterId=1, mastery, skillId=2, masterLevel=3, canUse=1, success=0.
+//
+// packet-audit:verify packet=character/clientbound/CharacterSkillLearnItemResult version=gms_v83 ida=0xa1e5af
 func TestSkillLearnItemResultGoldenBytesV83(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 83, 1)
 	l, _ := testlog.NewNullLogger()

@@ -1,11 +1,11 @@
 {
-  "toolSha": "f47087cfb63a2289db015478f35e5c492138f0334213b1b8aaf63d3a803914c4",
+  "toolSha": "4f69154ea220eae344ede0ceefc099282a9759f380f70bc4b37c754156d0b935",
   "exportHashes": {
     "gms_v48": "e72dbeee0a05d37a3dfc69711a739ffc2f4d874483ec2f8447908aa11da04fdb",
     "gms_v61": "8e2db04eb4d3afb5effc24cdc06db1c889842f0557f0325ba064f09d153ebe7f",
     "gms_v72": "e9ab553bcb8b70b4974a3b1ea99d4277feab9be678f891b03636bcbb920dad17",
     "gms_v79": "a2a0573ccb7f438c6499483c5c9260bd078e3fb0cd90ecc24adaecfbb4592c37",
-    "gms_v83": "53d320ac6aebd83f72527c128c1e63b7a26e14b752823ef0a5db99243b117e06",
+    "gms_v83": "698d163f374d527a34cc6360641e3abe0ecfc6a3dd9275f7cc2f8577a703ea1e",
     "gms_v84": "85653c48c25ff422a3d4aa48100382eb220578794699a0fd227e6b5950629c00",
     "gms_v87": "87124c1dd6e54561d80244f1bb4751849813a72649e61740385bafc68bbaa908",
     "gms_v95": "2a46bda041feadea38318f09a5a491d2e38861aa12ad6ac0a8d40c333b177e5b",
@@ -6329,8 +6329,9 @@
     {
       "kind": "op",
       "op": "SKILL_LEARN_ITEM_RESULT",
+      "packet": "character/clientbound/CharacterSkillLearnItemResult",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CWvsContext::OnSkillLearnItemResult",
         "sub_841E5F",
@@ -6358,8 +6359,7 @@
           "opcode": 48
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 51
         },
         "gms_v84": {

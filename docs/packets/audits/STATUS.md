@@ -4,13 +4,13 @@
 > ✅ verified · 🧩 family (mode-prefix dispatcher; sub-arms unverified) · 🟡 partial · ❌ incomplete · ⬜ n-a · 🟥 conflict
 > Partial (🟡) sub-glyphs: 🟡ᶠ tier-1 needs byte-fixture · 🟡ᵈ tool-pass diff-only (no byte-test) · 🟡ᵖ evidence-pinned deferral
 
-Tool: `f47087cfb63a2289db015478f35e5c492138f0334213b1b8aaf63d3a803914c4`
+Tool: `4f69154ea220eae344ede0ceefc099282a9759f380f70bc4b37c754156d0b935`
 
 - export gms_v48: `e72dbeee0a05d37a3dfc69711a739ffc2f4d874483ec2f8447908aa11da04fdb`
 - export gms_v61: `8e2db04eb4d3afb5effc24cdc06db1c889842f0557f0325ba064f09d153ebe7f`
 - export gms_v72: `e9ab553bcb8b70b4974a3b1ea99d4277feab9be678f891b03636bcbb920dad17`
 - export gms_v79: `a2a0573ccb7f438c6499483c5c9260bd078e3fb0cd90ecc24adaecfbb4592c37`
-- export gms_v83: `53d320ac6aebd83f72527c128c1e63b7a26e14b752823ef0a5db99243b117e06`
+- export gms_v83: `698d163f374d527a34cc6360641e3abe0ecfc6a3dd9275f7cc2f8577a703ea1e`
 - export gms_v84: `85653c48c25ff422a3d4aa48100382eb220578794699a0fd227e6b5950629c00`
 - export gms_v87: `87124c1dd6e54561d80244f1bb4751849813a72649e61740385bafc68bbaa908`
 - export gms_v95: `2a46bda041feadea38318f09a5a491d2e38861aa12ad6ac0a8d40c333b177e5b`
@@ -82,7 +82,7 @@ Tool: `f47087cfb63a2289db015478f35e5c492138f0334213b1b8aaf63d3a803914c4`
 | IDA_0X02E | sub_71CE62 |  | 0x02E | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | ENTRUSTED_SHOP_CHECK_RESULT | CWvsContext::OnEntrustedShopCheckResult | merchant/clientbound/ConfirmManage |  | ⬜ | 0x02F | ❌ | 0x02F | ❌ | 0x02F | ❌ | 0x032 | ✅ | 0x032 | ❌ | 0x032 | ✅ | 0x031 | ✅ | 0x02F | ❌ |
 | IDA_0X02F | sub_71CE49 |  | 0x02F | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
-| SKILL_LEARN_ITEM_RESULT | CWvsContext::OnSkillLearnItemResult; sub_841E5F; sub_9175E6; sub_969022 |  |  | ⬜ | 0x030 | ❌ | 0x030 | ❌ | 0x030 | ❌ | 0x033 | ❌ | 0x033 | ❌ | 0x033 | ❌ | 0x032 | ❌ | 0x030 | ❌ |
+| SKILL_LEARN_ITEM_RESULT | CWvsContext::OnSkillLearnItemResult; sub_841E5F; sub_9175E6; sub_969022 | character/clientbound/CharacterSkillLearnItemResult (T1) |  | ⬜ | 0x030 | ❌ | 0x030 | ❌ | 0x030 | ❌ | 0x033 | ✅ | 0x033 | ❌ | 0x033 | ❌ | 0x032 | ❌ | 0x030 | ❌ |
 | CHAR_INFO | CWvsContext::OnCharacterInfo | character/clientbound/CharacterInfo (T1) | 0x031 | ✅ | 0x03A | ✅ | 0x03A | ✅ | 0x03A | ✅ | 0x03D | ✅ | 0x03D | ✅ | 0x03D | ✅ | 0x03D | ✅ | 0x035 | ✅ |
 | GATHER_ITEM_RESULT | CWvsContext::OnGatherItemResult | inventory/clientbound/InventoryCompartmentMerge (T1) |  | ⬜ | 0x031 | 🟡ᶠ | 0x031 | 🟡ᶠ | 0x031 | 🟡ᶠ | 0x034 | ✅ | 0x034 | ✅ | 0x034 | ✅ | 0x034 | ✅ | 0x031 | ✅ |
 | PARTY_OPERATION | CWvsContext::OnPartyResult | party/clientbound/PartyAlreadyJoined1 (T1) | 0x032 | ✅ | 0x03B | ✅ | 0x03B | ✅ | 0x03B | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x036 | ✅ |
@@ -1005,7 +1005,7 @@ Tool: `f47087cfb63a2289db015478f35e5c492138f0334213b1b8aaf63d3a803914c4`
 | v61 | 249 | 0 | 60 | 195 | 462 | 0 | 49.4% |
 | v72 | 259 | 0 | 73 | 214 | 420 | 0 | 47.4% |
 | v79 | 303 | 0 | 72 | 210 | 381 | 0 | 51.8% |
-| v83 | 424 | 0 | 0 | 318 | 224 | 0 | 57.1% |
+| v83 | 425 | 0 | 0 | 317 | 224 | 0 | 57.3% |
 | v84 | 396 | 0 | 0 | 326 | 244 | 0 | 54.8% |
 | v87 | 431 | 0 | 0 | 348 | 187 | 0 | 55.3% |
 | v95 | 456 | 0 | 0 | 407 | 103 | 0 | 52.8% |

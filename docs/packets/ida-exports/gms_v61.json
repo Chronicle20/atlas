@@ -13777,6 +13777,25 @@
         }
       ]
     },
+    "CWvsContext::SendSkillLearnItemUseRequest": {
+      "address": "0x8325d2",
+      "direction": "serverbound",
+      "note": "USE_SKILL_BOOK (task-125). v61 IDA-verified, session 965202bf, GMS_v61.1_U_DEVM.exe.i64 -- already named in the IDB. item-class gate a3/10000 in {228,229} (skill-book prefix); guard sub_4BDB9F(200,0) (CanSendExclRequest twin); COutPacket::COutPacket(&pkt, 75); SetExclRequestSent before+after send. Supersedes the prior batch-harvest entry that mislabeled this address as PET_FOOD (shared placeholder ctor-site address 0x5ffc4f).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "updateTime"
+        },
+        {
+          "op": "Encode2",
+          "comment": "slot (a2)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "itemId (a3); gated a3/10000 in {228,229} (skill-book item prefix)"
+        }
+      ]
+    },
     "CWvsContext::SendSkillUpRequest": {
       "address": "0x8458eb",
       "direction": "serverbound",

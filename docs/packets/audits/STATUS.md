@@ -10,7 +10,7 @@ Tool: `5013127b62acd8f35e56f8946543908f44845f665276abca9ad3385bb008e095`
 - export gms_v61: `35a623f65d120ee0022131862e541342ec6965a7655ed9334cab4b1bdeea2aa6`
 - export gms_v72: `124b5b59b7bfdf0762c89cff319fa9d2e0888be87ee25af423e3ac4d144bf351`
 - export gms_v79: `7cc5ad6a58952c5047e9e740196ae11e86a339faf33b2046f255294fc3387f7f`
-- export gms_v83: `035e4e288cb0ff486f7ad1fadbd780b5c80b2440457ca488a3749cdede9fae32`
+- export gms_v83: `ced1b22b4758608afe731cae1030a9347d9d1c80fde85592ad76e87abba6322b`
 - export gms_v84: `85653c48c25ff422a3d4aa48100382eb220578794699a0fd227e6b5950629c00`
 - export gms_v87: `87124c1dd6e54561d80244f1bb4751849813a72649e61740385bafc68bbaa908`
 - export gms_v95: `2a46bda041feadea38318f09a5a491d2e38861aa12ad6ac0a8d40c333b177e5b`
@@ -578,7 +578,7 @@ Tool: `5013127b62acd8f35e56f8946543908f44845f665276abca9ad3385bb008e095`
 | UNNAMED_R75 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x037 | ❌ | 0x037 | ❌ | 0x03A | ❌ | 0x03C | ❌ | 0x02F | ❌ |
 | CANCEL_ITEM_EFFECT | CWvsContext::SendStatChangeItemCancelRequest; sub_70DD49 | character/serverbound/ItemCancel (T1) | 0x039 | ✅ | 0x044 | ✅ | 0x048 | ✅ | 0x047 | ✅ | 0x049 | ✅ | 0x049 | ✅ | 0x04C | ✅ | 0x04F | ✅ | 0x041 | ✅ |
 | REMOTE_STORE | CWvsContext::SendRemoteShopOpenRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x03B | ❌ | 0x03B | ❌ | 0x03E | ❌ | 0x040 | ❌ | 0x033 | ❌ |
-| USE_MOUNT_FOOD | CWvsContext::SendTamingMobFoodItemUseRequest | mount/serverbound/MountFood | 0x03D | ✅ | 0x048 | ✅ | 0x04C | ✅ | 0x04B | ✅ | 0x04D | ❌ | 0x04D | ❌ | 0x050 | ❌ | 0x053 | ❌ | 0x045 | ❌ |
+| USE_MOUNT_FOOD | CWvsContext::SendTamingMobFoodItemUseRequest | mount/serverbound/MountFood | 0x03D | ✅ | 0x048 | ✅ | 0x04C | ✅ | 0x04B | ✅ | 0x04D | ✅ | 0x04D | ❌ | 0x050 | ❌ | 0x053 | ❌ | 0x045 | ❌ |
 | HIRED_MERCHANT_REQUEST | CWvsContext::SendEntrustedShopCheckRequest; sub_715A7B; sub_971BE0 |  |  | ⬜ | 0x03E | ❌ | 0x03E | ❌ | 0x03D | ❌ | 0x03F | ❌ | 0x03F | ❌ | 0x042 | ❌ | 0x044 | ❌ | 0x037 | ❌ |
 | USE_CASH_ITEM | CItemSpeakerDlg::_SendConsumeCashItemUseRequest; CUICharacterSaleDlg::SendCreateNewCharacter; CUIIncubator::OnButtonClicked; CUIKarmaDlg::_SendConsumeCashItemUseRequest; CUIUnreleaseDlg::UnreleaseEquipItem; CWvsContext::SendConsumeCashItemUseRequest | cash/serverbound/CashItemUseMegaphone (T1) | 0x03E | ✅ | 0x049 | ✅ | 0x04E | ✅ | 0x04D | ✅ | 0x04F | ❌ | 0x04F | ❌ | 0x052 | ✅ | 0x055 | ✅ | 0x047 | ✅ |
 | OWL_WARP | CUIShopScanResult::OnButtonClicked | merchant/serverbound/OwlWarp (T1) |  | ⬜ | 0x03F | ✅ | 0x042 | ✅ | 0x041 | ✅ | 0x043 | ✅ | 0x043 | ❌ | 0x046 | ❌ | 0x049 | ✅ | 0x03B | ❌ |
@@ -1005,7 +1005,7 @@ Tool: `5013127b62acd8f35e56f8946543908f44845f665276abca9ad3385bb008e095`
 | v61 | 250 | 0 | 60 | 194 | 462 | 0 | 49.6% |
 | v72 | 260 | 0 | 73 | 213 | 420 | 0 | 47.6% |
 | v79 | 304 | 0 | 72 | 209 | 381 | 0 | 52.0% |
-| v83 | 423 | 0 | 0 | 319 | 224 | 0 | 57.0% |
+| v83 | 424 | 0 | 0 | 318 | 224 | 0 | 57.1% |
 | v84 | 396 | 0 | 0 | 326 | 244 | 0 | 54.8% |
 | v87 | 431 | 0 | 0 | 348 | 187 | 0 | 55.3% |
 | v95 | 456 | 0 | 0 | 407 | 103 | 0 | 52.8% |

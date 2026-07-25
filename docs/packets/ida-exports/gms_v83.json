@@ -14639,6 +14639,27 @@
           "comment": "whispersOn"
         }
       ]
+    },
+    "CWvsContext::SendTamingMobFoodItemUseRequest": {
+      "address": "0xa09a64",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CWvsContext::CanSendExclRequest(this, 200, 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "CWvsContext::CanSendExclRequest(this, 200, 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CWvsContext::CanSendExclRequest(this, 200, 0)"
+        }
+      ]
     }
   }
 }

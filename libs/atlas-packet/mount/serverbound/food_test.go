@@ -48,14 +48,20 @@ func TestFoodDecode(t *testing.T) {
 // IDA evidence:
 //
 //	gms_v48 SendTamingMobFoodItemUseRequest@0x70e00b: op 0x3D; Encode4(update_time)·Encode2(slot)·Encode4(itemId)
+//	gms_v61 SendTamingMobFoodItemUseRequest@0x831f44: op 0x48; Encode4(update_time)·Encode2(slot)·Encode4(itemId)
+//	(corrected from assumed 0x4C: decompile+disasm confirmed push 48h into COutPacket ctor;
+//	registry/template op76→sub_832680 was a mislabel of a distinct 2-field packet, see
+//	docs/packets/registry/gms_v61.yaml USE_MOUNT_FOOD note)
 //
 // packet-audit:verify packet=mount/serverbound/MountFood version=gms_v48 ida=0x70e00b
+// packet-audit:verify packet=mount/serverbound/MountFood version=gms_v61 ida=0x831f44
 func TestFoodByteFixture(t *testing.T) {
 	cases := []struct {
 		variant pt.TenantVariant
 		want    []byte
 	}{
 		{pt.Variants[7], []byte{0x64, 0x00, 0x00, 0x00, 0x03, 0x00, 0x80, 0x84, 0x1E, 0x00}}, // gms_v48
+		{pt.Variants[8], []byte{0x64, 0x00, 0x00, 0x00, 0x03, 0x00, 0x80, 0x84, 0x1E, 0x00}}, // gms_v61
 	}
 	for _, tc := range cases {
 		t.Run(tc.variant.Name, func(t *testing.T) {

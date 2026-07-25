@@ -94,6 +94,37 @@ func TestNoteOperationArmsV84(t *testing.T) {
 	}
 }
 
+// TestNoteOperationArmsJMS185 pins the jms_v185 MEMO_RESULT (op 0x026/38)
+// non-Display arms. IDA-verified — CWvsContext::OnMemoResult @0xb0c6d0,
+// switch on `v3 = Decode1(mode) - 3` @0xb0c6eb:
+//
+//	raw mode 4 (v5==0) @0xb0c755 → else-block StringPool(2866)+Notice, NO
+//	  further read → SendSuccess, mode-only.
+//	raw mode 5 (v6==0) @0xb0c736 → Decode1(errorCode) then 0/1/2 → StringPool
+//	  2865/2866/2867 → SendError, mode + 1 errorCode byte. errorCode>=3 falls
+//	  through to `return` @0xb0c73e — silent no-op (byte still consumed).
+//	raw mode 7 (v6==2) @0xb0c700 → tail-calls
+//	  CWvsContext::OnMemoNotify_Receive(this) @0xb0c708 with no CInPacket
+//	  arg — NO further wire read → Refresh, mode-only.
+//
+// jms_v185 mode bytes match the standard table (SendSuccess=4, SendError=5,
+// Refresh=7) — identical to v72/v79/v83/v84/v87/v95.
+//
+// packet-audit:verify packet=note/clientbound/NoteSendSuccess version=jms_v185 ida=0xb0c6d0
+// packet-audit:verify packet=note/clientbound/NoteSendError version=jms_v185 ida=0xb0c6d0
+// packet-audit:verify packet=note/clientbound/NoteRefresh version=jms_v185 ida=0xb0c6d0
+func TestNoteOperationArmsJMS185(t *testing.T) {
+	if got := NewNoteSendSuccess(4).Encode(nil, nil)(nil); !bytes.Equal(got, []byte{0x04}) {
+		t.Errorf("jms_v185 NoteSendSuccess: got % x want 04", got)
+	}
+	if got := NewNoteSendError(5, 1).Encode(nil, nil)(nil); !bytes.Equal(got, []byte{0x05, 0x01}) {
+		t.Errorf("jms_v185 NoteSendError: got % x want 05 01", got)
+	}
+	if got := NewNoteRefresh(7).Encode(nil, nil)(nil); !bytes.Equal(got, []byte{0x07}) {
+		t.Errorf("jms_v185 NoteRefresh: got % x want 07", got)
+	}
+}
+
 // packet-audit:verify packet=note/clientbound/NoteRefresh version=gms_v87 ida=0xabccc2
 // packet-audit:verify packet=note/clientbound/NoteSendError version=gms_v87 ida=0xabccc2
 // packet-audit:verify packet=note/clientbound/NoteSendSuccess version=gms_v87 ida=0xabccc2

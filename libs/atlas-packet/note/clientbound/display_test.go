@@ -197,6 +197,67 @@ func TestNoteDisplayV84(t *testing.T) {
 	}
 }
 
+// TestNoteDisplayJMS185 pins the jms_v185 MEMO_RESULT (op 0x026/38)
+// Display-mode wire.
+//
+// IDA-verified client decode (MapleStory_dump_SCY.exe.i64, session 3c4bb8b1,
+// the _SCY build) — CWvsContext::OnMemoResult @0xb0c6d0:
+//
+//	Decode1 @0xb0c6eb → mode; `v3 = mode - 3`, `v3 == 0` selects the Display
+//	  path (the else-branch at the bottom of the function; nonzero routes to
+//	  the SendSuccess(4)/SendError(5) StringPool-notice paths or, at mode==7,
+//	  tail-calls CWvsContext::OnMemoNotify_Receive @0xb0c708/0xb0c700 — no
+//	  further wire read).
+//	sub_55C3E4(this+3511) @0xb0c7aa → clears the existing memo list (not a
+//	  wire read).
+//	Decode1 @0xb0c7b2 → count (v12/v23).
+//	loop count× :
+//	  sub_55C3A6(this+3511) @0xb0c7c8 → append list node (not a wire read).
+//	  sub_510E70(v14, iPacket) @0xb0c7cf → one GW_Memo entry:
+//	    Decode4      @0x510e82 → id.
+//	    DecodeStr    @0x510e8a → sender.
+//	    DecodeStr    @0x510ead → message.
+//	    DecodeBuffer(8) @0x510ed2 → 8-byte FILETIME timestamp (opaque blob).
+//	    Decode1      @0x510ede → flag.
+//
+// Read order is byte-identical to the verified v72/v79/v83/v84/v87/v95
+// Display wire. Opcode confirmed end-to-end: CClientSocket::ProcessPacket
+// @0x4b17eb does `v3 = Decode2(iPacket)` @0x4b1819 (the raw 2-byte wire
+// opcode, no offset) and for 0x1B..0x7A tail-calls
+// `CWvsContext::OnPacket(v3, iPacket)` @0x4b1891; CWvsContext::OnPacket
+// @0xaebfe7 switches on that same value and `case 0x26:` @0xaec0fa calls
+// `CWvsContext::OnMemoResult(this, iPacket)` — opcode 0x026 (38 decimal),
+// matching registry jms_v185.yaml MEMO_RESULT opcode: 38.
+//
+// The Display-mode mode byte (3) is written first by atlas Display.Encode
+// (WriteByte(mode), WriteByte(count), entries). atlas NoteEntry.Encode appends
+// a trailing space to the sender (WriteAsciiString(sender+" ")) — the client
+// DecodeStr copies verbatim; the space is cosmetic padding on the wire. The
+// 8-byte timestamp is the DecodeBuffer(8) opaque field; its bytes are derived
+// from atlas model.MsTime (the FILETIME encoder) per the opaque-field
+// discipline. Fixture: 2020-01-01T00:00:00Z → MsTime 132223104000000000.
+//
+// packet-audit:verify packet=note/clientbound/NoteDisplay version=jms_v185 ida=0xb0c6d0
+func TestNoteDisplayJMS185(t *testing.T) {
+	ctx := pt.CreateContext("JMS", 185, 1)
+	ts := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
+	input := NewNoteDisplay(3, []note.NoteEntry{
+		{Id: 1, SenderName: "Alice", Message: "Hi", Timestamp: ts, Flag: 1},
+	})
+	want := []byte{
+		0x03,                   // WriteByte mode = 3 (Display) (@0xb0c6eb)
+		0x01,                   // WriteByte count = 1 (@0xb0c7b2)
+		0x01, 0x00, 0x00, 0x00, // Decode4 id = 1 (@0x510e82)
+		0x06, 0x00, 0x41, 0x6C, 0x69, 0x63, 0x65, 0x20, // DecodeStr sender "Alice " (len 6) (@0x510e8a)
+		0x02, 0x00, 0x48, 0x69, // DecodeStr message "Hi" (len 2) (@0x510ead)
+		0x00, 0x00, 0x05, 0x69, 0x36, 0xC0, 0xD5, 0x01, // DecodeBuffer(8) FILETIME = MsTime(2020-01-01) (@0x510ed2)
+		0x01, // Decode1 flag = 1 (@0x510ede)
+	}
+	if got := pt.Encode(t, ctx, input.Encode, nil); !bytes.Equal(got, want) {
+		t.Errorf("jms_v185 NoteDisplay golden mismatch\n got: % x\nwant: % x", got, want)
+	}
+}
+
 func TestNoteDisplayEmptyRoundTrip(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 83, 1)
 	input := NewNoteDisplay(3, nil)

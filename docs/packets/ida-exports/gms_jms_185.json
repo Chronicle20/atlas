@@ -2944,6 +2944,87 @@
         }
       ]
     },
+    "CWvsContext::OnMemoResult#Display": {
+      "address": "0xb0c6d0",
+      "region": "JMS",
+      "direction": "clientbound",
+      "note": "mode=3 (Display), raw v3==0 branch @0xb0c7aa. sub_55C3E4(this+3511) clears the existing memo list (not a wire read); Decode1(count) @0xb0c7b2 then loop count×: sub_55C3A6 (list append, not a wire read) + sub_510E70(entry, iPacket) @0xb0c7cf which decodes one GW_Memo: Decode4(id)@0x510e82 + DecodeStr(sender)@0x510e8a + DecodeStr(message)@0x510ead + DecodeBuffer(timestamp,8)@0x510ed2 + Decode1(flag)@0x510ede. Wire identical to GMS v79/v72/v83/v84/v87/v95.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (3 = Display)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "note count (loop)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "note.id",
+          "guard": "loop count"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "note.senderName",
+          "guard": "loop count"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "note.message",
+          "guard": "loop count"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "note.timestamp FILETIME (8 bytes)",
+          "guard": "loop count"
+        },
+        {
+          "op": "Decode1",
+          "comment": "note.flag",
+          "guard": "loop count"
+        }
+      ]
+    },
+    "CWvsContext::OnMemoResult#SendSuccess": {
+      "address": "0xb0c6d0",
+      "region": "JMS",
+      "direction": "clientbound",
+      "note": "mode=4 (SendSuccess), raw v5==0 branch @0xb0c755 (StringPool 2866 notice). No further Decode1 call after the mode byte. Wire identical to GMS v79/v72/v83/v84/v87/v95 (mode-only).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (4 = SendSuccess)"
+        }
+      ]
+    },
+    "CWvsContext::OnMemoResult#SendError": {
+      "address": "0xb0c6d0",
+      "region": "JMS",
+      "direction": "clientbound",
+      "note": "mode=5 (SendError), raw v6==0 branch @0xb0c736. Decode1(errorCode) @0xb0c736 then 0/1/2 selects StringPool 2865/2866/2867; errorCode>=3 falls through the if/else chain to `return` @0xb0c73e (silent no-op, dialog only, but the byte is still consumed off the wire). Wire identical to GMS v79/v72/v83/v84/v87/v95 (mode + 1 errorCode byte).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (5 = SendError)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode"
+        }
+      ]
+    },
+    "CWvsContext::OnMemoResult#Refresh": {
+      "address": "0xb0c6d0",
+      "region": "JMS",
+      "direction": "clientbound",
+      "note": "mode=7 (Refresh), raw v6==2 branch @0xb0c700 tail-calls CWvsContext::OnMemoNotify_Receive(this) @0xb0c708 with no CInPacket argument — no further wire reads beyond the mode byte. Mode number matches GMS v72/v79/v83/v84/v87/v95's REFRESH=7. Wire shape (mode-only) identical across all versions.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (7 = Refresh)"
+        }
+      ]
+    },
     "CMemoListDlg::SetRet": {
       "address": "0x6c2d43",
       "region": "JMS",

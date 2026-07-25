@@ -95,13 +95,16 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 // usesStandardConsumer reports whether an item routes through ConsumeStandard
-// (which invokes ApplyItemEffects for HP/MP recovery, status buffs, and status
-// cure). Anything not matched here falls through to ConsumeBare and silently
-// skips effect application. Cure pots (classification 205) belong here because
-// their disease cure flags are read inside ApplyItemEffects.
+// (which invokes ApplyItemEffects for HP/MP recovery, status buffs, status
+// cure, and morph). Anything not matched here falls through to ConsumeBare and
+// silently skips effect application. Cure pots (classification 205) belong
+// here because their disease cure flags are read inside ApplyItemEffects;
+// transformation potions (classification 221) because their morph/morphRandom
+// specs are applied there.
 func usesStandardConsumer(itemId item2.Id) bool {
 	switch item2.GetClassification(itemId) {
-	case item2.Classification(200), item2.Classification(201), item2.Classification(202), item2.Classification(205):
+	case item2.Classification(200), item2.Classification(201), item2.Classification(202), item2.Classification(205),
+		item2.ClassificationConsumableTransformation:
 		return true
 	}
 	return false

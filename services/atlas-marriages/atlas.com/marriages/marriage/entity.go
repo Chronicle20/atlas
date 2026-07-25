@@ -205,12 +205,12 @@ func parseInvitees(inviteesJSON string) ([]uint32, error) {
 	if inviteesJSON == "" {
 		return []uint32{}, nil
 	}
-	
+
 	var invitees []uint32
 	if err := json.Unmarshal([]byte(inviteesJSON), &invitees); err != nil {
 		return nil, err
 	}
-	
+
 	return invitees, nil
 }
 
@@ -219,11 +219,11 @@ func inviteesToJSON(invitees []uint32) (string, error) {
 	if len(invitees) == 0 {
 		return "[]", nil
 	}
-	
+
 	data, err := json.Marshal(invitees)
 	if err != nil {
 		return "", err
 	}
-	
+
 	return string(data), nil
 }

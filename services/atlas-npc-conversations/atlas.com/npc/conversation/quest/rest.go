@@ -602,7 +602,6 @@ func ExtractOutcome(r RestOutcomeModel) (conversation.OutcomeModel, error) {
 			SetStep(c.Step).
 			SetIncludeEquipped(c.IncludeEquipped).
 			Build()
-
 		if err != nil {
 			return conversation.OutcomeModel{}, err
 		}

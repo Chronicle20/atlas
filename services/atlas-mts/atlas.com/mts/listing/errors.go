@@ -1,0 +1,53 @@
+package listing
+
+import "errors"
+
+// Typed failure sentinels for the buy/bid validation paths. The Kafka command
+// consumer maps these (via errors.Is) to the client's CITC::NoticeFailReason
+// codes so the player sees a specific message instead of the generic
+// "Failed to purchase the item" (design: task-102 descriptive failure
+// notices; codes IDA-verified identical across gms v83/v84/v87/v95).
+var (
+	// ErrInsufficientPrepaid — the buyer/bidder's prepaid NX cannot cover the
+	// marked-up amount (client reason 'B' = 66, "You do not have enough NX").
+	ErrInsufficientPrepaid = errors.New("insufficient prepaid NX")
+
+	// ErrListingUnavailable — the listing is not active (already sold,
+	// cancelled, expired, or lost a race) or is the wrong sale type for the
+	// attempted operation (client reason 'Q' = 81, "The item has been sold").
+	ErrListingUnavailable = errors.New("listing unavailable")
+
+	// ErrConsecutiveBid — the bidder is already the current high bidder, so bidding
+	// again against themselves is rejected. It maps to the generic bid-failure reason
+	// so the channel writes the client's bare BidAuctionFailed arm ("you cannot make
+	// a consecutive bid").
+	ErrConsecutiveBid = errors.New("consecutive bid by the current high bidder")
+
+	// ErrNotOwner — a cancel was attempted by someone who is not the listing's
+	// seller. The REST handler maps it to 403; the Kafka cancel consumer to the
+	// generic cancel-failed notice.
+	ErrNotOwner = errors.New("listing not owned by the requesting seller")
+
+	// ErrMoveLostRace is returned by SettleMove when the listing was claimed by a
+	// concurrent cancel/expire (the active->sold transition affected 0 rows and
+	// there is no prior buyer holding). It forces an ERROR ack so the
+	// MtsSettlePurchase saga compensates the buyer's prepaid debit instead of
+	// silently completing a purchase the buyer never received.
+	ErrMoveLostRace = errors.New("mts: settle move lost the race to a concurrent cancel/expire; listing no longer active")
+
+	// ErrThrowingStarNotTradable — the seller tried to list a throwing star.
+	// Rechargeables cannot be sold on the MTS (client reason 'R' = 82, "Throwing
+	// Stars are not tradable"). The create-listing consumer maps it to
+	// FailReasonThrowingStarsNotTradable.
+	ErrThrowingStarNotTradable = errors.New("throwing stars are not tradable on the mts")
+
+	// ErrItemNotSellable — the seller tried to list an item that may not be sold
+	// (currently bullets/other rechargeables; client reason 'O' = 79, "This item
+	// may not be sold"). Maps to FailReasonItemNotSellable.
+	ErrItemNotSellable = errors.New("item may not be sold on the mts")
+
+	// ErrBelowSellLevel — the seller is not over the minimum level required to sell
+	// (client reason 'S' = 83, "You must be over level 10 to sell..."). Maps to
+	// FailReasonBelowSellLevel.
+	ErrBelowSellLevel = errors.New("seller is not over the minimum level to sell on the mts")
+)

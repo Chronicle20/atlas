@@ -1,0 +1,30 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2096000,
+      "startState": "info",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Amateurs train on this map. Adepts train on the next. Professionals train on the last, where the boss will be awaiting."
+          },
+          "id": "info",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "2096000",
+    "type": "npc-conversation"
+  }
+}

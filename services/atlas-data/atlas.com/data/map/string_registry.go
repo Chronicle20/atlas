@@ -5,7 +5,7 @@ import (
 	"atlas-data/xml"
 	"sync"
 
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type MapString struct {
@@ -26,8 +26,10 @@ func (m MapString) StreetName() string {
 	return m.streetName
 }
 
-var msRg *document.Registry[string, MapString]
-var msOnce sync.Once
+var (
+	msRg   *document.Registry[string, MapString]
+	msOnce sync.Once
+)
 
 func GetMapStringRegistry() *document.Registry[string, MapString] {
 	msOnce.Do(func() {

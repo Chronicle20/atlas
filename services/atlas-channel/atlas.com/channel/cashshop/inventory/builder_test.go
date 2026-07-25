@@ -26,7 +26,6 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 		SetCygnus(cygnusCompartment).
 		SetLegend(legendCompartment).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -109,7 +108,6 @@ func TestSetCompartment(t *testing.T) {
 	model, err := inventory.NewModelBuilder(100).
 		SetCompartment(explorerCompartment).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -125,7 +123,6 @@ func TestCompartmentByType(t *testing.T) {
 	model, err := inventory.NewModelBuilder(100).
 		SetExplorer(explorerCompartment).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}

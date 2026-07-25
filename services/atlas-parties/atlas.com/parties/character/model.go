@@ -1,12 +1,13 @@
 package character
 
 import (
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 type Model struct {
@@ -130,6 +131,20 @@ func (m Model) ChangeJob(jobId job.Id) Model {
 		partyId:  m.partyId,
 		online:   m.online,
 		gm:       m.gm,
+	}
+}
+
+func (m Model) ChangeGm(gm int) Model {
+	return Model{
+		tenantId: m.tenantId,
+		id:       m.id,
+		name:     m.name,
+		level:    m.level,
+		jobId:    m.jobId,
+		field:    m.field,
+		partyId:  m.partyId,
+		online:   m.online,
+		gm:       gm,
 	}
 }
 

@@ -1,20 +1,24 @@
 package consumable
 
 import (
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
 	EnvCommandTopic = "COMMAND_TOPIC_CONSUMABLE"
 
-	CommandRequestItemConsume = "REQUEST_ITEM_CONSUME"
-	CommandRequestScroll      = "REQUEST_SCROLL"
+	CommandRequestItemConsume   = "REQUEST_ITEM_CONSUME"
+	CommandRequestScroll        = "REQUEST_SCROLL"
+	CommandRequestItemReward    = "REQUEST_ITEM_REWARD"
+	CommandRequestVegaScroll    = "REQUEST_VEGA_SCROLL"
+	CommandRequestViciousHammer = "REQUEST_VICIOUS_HAMMER"
 )
 
 type Command[E any] struct {
@@ -33,6 +37,11 @@ type RequestItemConsumeBody struct {
 	Quantity int16         `json:"quantity"`
 }
 
+type RequestItemRewardBody struct {
+	Source slot.Position `json:"source"`
+	ItemId item.Id       `json:"itemId"`
+}
+
 type RequestScrollBody struct {
 	ScrollSlot      slot.Position `json:"scrollSlot"`
 	EquipSlot       slot.Position `json:"equipSlot"`
@@ -40,12 +49,31 @@ type RequestScrollBody struct {
 	LegendarySpirit bool          `json:"legendarySpirit"`
 }
 
+type RequestVegaScrollBody struct {
+	VegaSlot   slot.Position `json:"vegaSlot"`
+	VegaItemId item.Id       `json:"vegaItemId"`
+	ScrollSlot slot.Position `json:"scrollSlot"`
+	EquipSlot  slot.Position `json:"equipSlot"`
+}
+
+type RequestViciousHammerBody struct {
+	HammerSlot slot.Position `json:"hammerSlot"`
+	EquipSlot  slot.Position `json:"equipSlot"`
+}
+
 const (
-	EnvEventTopic   = "EVENT_TOPIC_CONSUMABLE_STATUS"
-	EventTypeError  = "ERROR"
-	EventTypeScroll = "SCROLL"
+	EnvEventTopic          = "EVENT_TOPIC_CONSUMABLE_STATUS"
+	EventTypeError         = "ERROR"
+	EventTypeScroll        = "SCROLL"
+	EventTypeVegaScroll    = "VEGA_SCROLL"
+	EventTypeViciousHammer = "VICIOUS_HAMMER"
+
+	EventTypeRewardEffect = "REWARD_EFFECT"
+	EventTypeRewardWon    = "REWARD_WON"
 
 	ErrorTypePetCannotConsume = "PET_CANNOT_CONSUME"
+	ErrorTypeInventoryFull    = "INVENTORY_FULL"
+	ErrorTypeVegaInvalid      = "VEGA_INVALID"
 )
 
 type Event[E any] struct {
@@ -63,4 +91,25 @@ type ScrollBody struct {
 	Cursed          bool `json:"cursed"`
 	LegendarySpirit bool `json:"legendarySpirit"`
 	WhiteScroll     bool `json:"whiteScroll"`
+}
+
+type RewardEffectBody struct {
+	BoxItemId uint32 `json:"boxItemId"`
+	Effect    string `json:"effect"`
+}
+
+type RewardWonBody struct {
+	BoxItemId uint32 `json:"boxItemId"`
+	ItemId    uint32 `json:"itemId"`
+	Message   string `json:"message"`
+}
+
+type VegaScrollBody struct {
+	Success bool `json:"success"`
+	Cursed  bool `json:"cursed"`
+}
+
+type ViciousHammerBody struct {
+	Success bool   `json:"success"`
+	Reason  string `json:"reason"`
 }

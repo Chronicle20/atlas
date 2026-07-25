@@ -1,12 +1,14 @@
 package commodities
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"context"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func createCommodity(ctx context.Context, db *gorm.DB) func(npcId uint32, templateId uint32, mesoPrice uint32, discountRate byte, tokenTemplateId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error) {

@@ -6,13 +6,13 @@ import (
 
 // Re-export types from atlas-saga shared library
 type (
-	Saga                    = sharedsaga.Saga
-	Step                    = sharedsaga.Step[any]
-	AwardExperiencePayload  = sharedsaga.AwardExperiencePayload
-	AwardMesosPayload       = sharedsaga.AwardMesosPayload
-	AwardFamePayload        = sharedsaga.AwardFamePayload
-	CreateSkillPayload      = sharedsaga.CreateSkillPayload
-	ExperienceDistribution  = sharedsaga.ExperienceDistributions
+	Saga                   = sharedsaga.Saga
+	Step                   = sharedsaga.Step[any]
+	AwardExperiencePayload = sharedsaga.AwardExperiencePayload
+	AwardMesosPayload      = sharedsaga.AwardMesosPayload
+	AwardFamePayload       = sharedsaga.AwardFamePayload
+	CreateSkillPayload     = sharedsaga.CreateSkillPayload
+	ExperienceDistribution = sharedsaga.ExperienceDistributions
 
 	// Backward-compatible aliases for quest-specific naming
 	AwardItemPayload   = sharedsaga.AwardItemActionPayload

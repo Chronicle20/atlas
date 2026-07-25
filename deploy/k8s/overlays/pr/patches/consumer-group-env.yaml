@@ -200,6 +200,21 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: atlas-doors
+spec:
+  template:
+    spec:
+      containers:
+        - name: doors
+          env:
+            - name: KAFKA_CONSUMER_GROUP
+              value: "Door Registry Service [PLACEHOLDER_ATLAS_ENV]"
+            - name: ATLAS_ENV
+              value: "PLACEHOLDER_ATLAS_ENV"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: atlas-drops
 spec:
   template:
@@ -410,6 +425,21 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: atlas-mini-games
+spec:
+  template:
+    spec:
+      containers:
+        - name: mini-games
+          env:
+            - name: KAFKA_CONSUMER_GROUP
+              value: "Mini Game Service [PLACEHOLDER_ATLAS_ENV]"
+            - name: ATLAS_ENV
+              value: "PLACEHOLDER_ATLAS_ENV"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: atlas-monster-book
 spec:
   template:
@@ -464,6 +494,21 @@ spec:
           env:
             - name: KAFKA_CONSUMER_GROUP
               value: "Mounts Service [PLACEHOLDER_ATLAS_ENV]"
+            - name: ATLAS_ENV
+              value: "PLACEHOLDER_ATLAS_ENV"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-mts
+spec:
+  template:
+    spec:
+      containers:
+        - name: mts
+          env:
+            - name: KAFKA_CONSUMER_GROUP
+              value: "MTS Service [PLACEHOLDER_ATLAS_ENV]"
             - name: ATLAS_ENV
               value: "PLACEHOLDER_ATLAS_ENV"
 ---
@@ -644,6 +689,21 @@ spec:
           env:
             - name: KAFKA_CONSUMER_GROUP
               value: "Reactors Service [PLACEHOLDER_ATLAS_ENV]"
+            - name: ATLAS_ENV
+              value: "PLACEHOLDER_ATLAS_ENV"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-rps
+spec:
+  template:
+    spec:
+      containers:
+        - name: rps
+          env:
+            - name: KAFKA_CONSUMER_GROUP
+              value: "RPS Service [PLACEHOLDER_ATLAS_ENV]"
             - name: ATLAS_ENV
               value: "PLACEHOLDER_ATLAS_ENV"
 ---

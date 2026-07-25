@@ -11,8 +11,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 type Processor interface {
@@ -50,6 +51,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		partyProcessor:     party.NewProcessor(l, ctx),
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // ValidateStructured validates a list of structured condition inputs against a character
 func (p *ProcessorImpl) ValidateStructured(resultDecorators ...model.Decorator[ValidationResult]) func(characterId uint32, conditionInputs []ConditionInput) (ValidationResult, error) {

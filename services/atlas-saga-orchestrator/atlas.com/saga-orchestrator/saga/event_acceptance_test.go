@@ -3,6 +3,8 @@ package saga
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 )
 
@@ -30,6 +32,9 @@ var allActions = []sharedsaga.Action{
 	sharedsaga.ReleaseFromCharacter, sharedsaga.AcceptToCharacter, sharedsaga.ReleaseFromStorage,
 	sharedsaga.TransferToCashShop, sharedsaga.WithdrawFromCashShop, sharedsaga.AcceptToCashShop,
 	sharedsaga.ReleaseFromCashShop,
+	sharedsaga.TransferToMts, sharedsaga.WithdrawFromMts, sharedsaga.AcceptToMtsListing,
+	sharedsaga.ReleaseFromMtsHolding, sharedsaga.MtsSettlePurchase, sharedsaga.MtsMoveListingToHolding,
+	sharedsaga.MtsBidEscrow,
 	sharedsaga.RequestGuildName, sharedsaga.RequestGuildEmblem, sharedsaga.RequestGuildDisband,
 	sharedsaga.RequestGuildCapacityIncrease, sharedsaga.CreateInvite,
 	sharedsaga.CreateCharacter, sharedsaga.AwaitCharacterCreated, sharedsaga.AwaitInventoryCreated,
@@ -38,6 +43,10 @@ var allActions = []sharedsaga.Action{
 	sharedsaga.RegisterPartyQuest, sharedsaga.WarpPartyQuestMembersToMap, sharedsaga.LeavePartyQuest,
 	sharedsaga.EnterPartyQuestBonus, sharedsaga.UpdatePqCustomData, sharedsaga.HitReactor,
 	sharedsaga.BroadcastPqMessage, sharedsaga.StageClearAttemptPq, sharedsaga.FieldEffectWeather,
+	sharedsaga.StartRPSGame,
+	sharedsaga.SetAssetOwner, sharedsaga.ApplyAssetLock, sharedsaga.IncubatorResult,
+	sharedsaga.TransferAP, sharedsaga.TransferSP,
+	sharedsaga.EmitMegaphone, sharedsaga.EnqueueWorldBroadcast,
 }
 
 // TestAcceptanceTable_EveryActionRepresented asserts every Action constant
@@ -96,6 +105,11 @@ func TestStepAcceptsEvent_KnownSuccessKinds(t *testing.T) {
 		{sharedsaga.RequestGuildDisband, EventKindGuildDisbanded},
 		{sharedsaga.RequestGuildCapacityIncrease, EventKindGuildCapacityUpdated},
 		{sharedsaga.CreateInvite, EventKindInviteCreated},
+		// A warp step advances only once the character's map change is confirmed
+		// (character.map_changed), so a step chained after the warp — e.g. the
+		// teleport-rock consume_rock DestroyAsset (task-124) — actually runs.
+		// Without this the warp step never completes and the next step is stranded.
+		{sharedsaga.WarpToRandomPortal, EventKindCharacterMapChanged},
 	}
 	for _, tc := range cases {
 		if !StepAcceptsEvent(tc.action, tc.kind) {
@@ -174,4 +188,39 @@ func TestStepAcceptsEvent_AwaitInventoryCreated(t *testing.T) {
 	if StepAcceptsEvent(sharedsaga.AwaitInventoryCreated, EventKindCompartmentCreated) {
 		t.Errorf("StepAcceptsEvent(AwaitInventoryCreated, EventKindCompartmentCreated) = true; want false (compartment.created is a sub-event, not the rollup)")
 	}
+}
+
+// TestOutcomeTableCompleteness asserts every EventKind referenced anywhere in
+// acceptanceTable has an outcome classification. Adding a kind without
+// classifying it must fail CI (design §3.1).
+func TestOutcomeTableCompleteness(t *testing.T) {
+	for action, kinds := range acceptanceTable {
+		for _, k := range kinds {
+			if _, ok := EventOutcomeOf(k); !ok {
+				t.Errorf("EventKind %q (action %q) has no outcomeTable entry", k, action)
+			}
+		}
+	}
+}
+
+func TestEventOutcomeOf_FailureKinds(t *testing.T) {
+	failures := []EventKind{
+		EventKindCharacterCreationFailed,
+		EventKindCharacterMesoError,
+		EventKindCompartmentCreationFailed,
+		EventKindCompartmentError,
+		EventKindInventoryCreationFailed,
+		EventKindStorageError,
+		EventKindStorageCompartmentError,
+		EventKindCashShopCompartmentError,
+		EventKindInviteRejected,
+	}
+	for _, k := range failures {
+		o, ok := EventOutcomeOf(k)
+		assert.True(t, ok, string(k))
+		assert.Equal(t, OutcomeFailure, o, string(k))
+	}
+	o, ok := EventOutcomeOf(EventKindCashShopWalletUpdated)
+	assert.True(t, ok)
+	assert.Equal(t, OutcomeSuccess, o)
 }

@@ -42,6 +42,10 @@
 | type | string | `WARP` |
 | body.characterId | uint32 | Character identifier |
 | body.targetMapId | uint32 | Target map identifier |
+| body.targetPortalId | uint32 | Target portal identifier |
+| body.useTargetPosition | bool | Use exact target position flag |
+| body.targetX | int16 | Target X coordinate |
+| body.targetY | int16 | Target Y coordinate |
 
 **commandEvent[blockBody]** (Portal Commands)
 
@@ -103,6 +107,9 @@
 | body.mapId | uint32 | Target map identifier |
 | body.instance | uuid.UUID | Map instance identifier |
 | body.portalId | uint32 | Target portal identifier |
+| body.useTargetPosition | bool | Use exact target position flag |
+| body.targetX | int16 | Target X coordinate |
+| body.targetY | int16 | Target Y coordinate |
 
 **commandEvent[enterBody]** (Portal Actions Commands)
 

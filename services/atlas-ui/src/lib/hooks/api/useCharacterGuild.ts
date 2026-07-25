@@ -24,7 +24,7 @@ export interface UseCharacterGuildResult {
 
 export function useCharacterGuild(
   tenant: Tenant | null | undefined,
-  characterId: string
+  characterId: string,
 ): UseCharacterGuildResult {
   const query = useQuery({
     queryKey: characterGuildKeys.detail(tenant?.id, characterId),

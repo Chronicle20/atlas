@@ -23,7 +23,6 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 		SetOwner(1001, 0).
 		SetDropper(2001, 50, 150).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -84,7 +83,6 @@ func TestCloneModel(t *testing.T) {
 	cloned, err := drop.CloneModel(original).
 		SetPosition(300, 400).
 		Build()
-
 	if err != nil {
 		t.Fatalf("CloneModel().Build() unexpected error: %v", err)
 	}

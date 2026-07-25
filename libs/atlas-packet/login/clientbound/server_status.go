@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const ServerStatusWriter = "ServerStatus"
@@ -19,9 +20,9 @@ func NewServerStatus(status uint16) ServerStatus {
 	return ServerStatus{status: status}
 }
 
-func (m ServerStatus) Status() uint16      { return m.status }
-func (m ServerStatus) Operation() string   { return ServerStatusWriter }
-func (m ServerStatus) String() string      { return fmt.Sprintf("status [%d]", m.status) }
+func (m ServerStatus) Status() uint16    { return m.status }
+func (m ServerStatus) Operation() string { return ServerStatusWriter }
+func (m ServerStatus) String() string    { return fmt.Sprintf("status [%d]", m.status) }
 
 func (m ServerStatus) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)

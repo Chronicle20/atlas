@@ -5,9 +5,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
 vi.mock("@/components/features/characters/CharacterRenderer", () => ({
-  CharacterRenderer: ({ character }: { character: { attributes: { name: string } } }) => (
-    <div data-testid="renderer">{character.attributes.name}</div>
-  ),
+  CharacterRenderer: ({
+    character,
+  }: {
+    character: { attributes: { name: string } };
+  }) => <div data-testid="renderer">{character.attributes.name}</div>,
 }));
 
 vi.mock("../FilledSlotTile", () => ({
@@ -15,9 +17,7 @@ vi.mock("../FilledSlotTile", () => ({
     character,
   }: {
     character: { id: string; attributes: { name: string } };
-  }) => (
-    <a href={`/characters/${character.id}`}>{character.attributes.name}</a>
-  ),
+  }) => <a href={`/characters/${character.id}`}>{character.attributes.name}</a>,
 }));
 
 const useCharactersMock = vi.fn();
@@ -43,36 +43,44 @@ const tenant = {
   attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 },
 } as never;
 
-const account = (slots: number) => ({
-  id: "1",
-  type: "accounts",
-  attributes: {
-    name: "Acct",
-    characterSlots: slots,
-    gender: 0,
-    loggedIn: 0,
-    lastLogin: 0,
-    pinAttempts: 0,
-    picAttempts: 0,
-    tos: false,
-  },
-}) as never;
+const account = (slots: number) =>
+  ({
+    id: "1",
+    type: "accounts",
+    attributes: {
+      name: "Acct",
+      characterSlots: slots,
+      gender: 0,
+      loggedIn: 0,
+      lastLogin: 0,
+      pinAttempts: 0,
+      picAttempts: 0,
+      tos: false,
+    },
+  }) as never;
 
-const character = (id: string, accountId: number, name = "Foo") => ({
-  id,
-  type: "characters",
-  attributes: { accountId, worldId: 0, name },
-}) as never;
+const character = (id: string, accountId: number, name = "Foo") =>
+  ({
+    id,
+    type: "characters",
+    attributes: { accountId, worldId: 0, name },
+  }) as never;
 
 const worldsConfig = [
-  { name: "Scania", flag: "", serverMessage: "", eventMessage: "", whyAmIRecommended: "" },
+  {
+    name: "Scania",
+    flag: "",
+    serverMessage: "",
+    eventMessage: "",
+    whyAmIRecommended: "",
+  },
 ];
 
 function renderPanel(slots: number) {
   return render(
     <MemoryRouter>
       <CharactersPanel tenant={tenant} account={account(slots)} />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 }
 
@@ -81,7 +89,9 @@ describe("CharactersPanel", () => {
     useTenantConfigurationMock.mockReturnValue({
       data: {
         attributes: {
-          characters: { presets: [{ id: "p1", attributes: { name: "Warrior" } }] },
+          characters: {
+            presets: [{ id: "p1", attributes: { name: "Warrior" } }],
+          },
           worlds: worldsConfig,
         },
       },
@@ -107,7 +117,9 @@ describe("CharactersPanel", () => {
     });
     renderPanel(5);
     expect(screen.getAllByRole("link").length).toBe(3);
-    expect(screen.getAllByRole("button", { name: /add character to slot/i }).length).toBe(2);
+    expect(
+      screen.getAllByRole("button", { name: /add character to slot/i }).length,
+    ).toBe(2);
   });
 
   it("shows over-capacity hint and no empty tiles when characters exceed slots", () => {
@@ -123,7 +135,9 @@ describe("CharactersPanel", () => {
     });
     renderPanel(2);
     expect(screen.getByText(/over capacity/i)).toBeInTheDocument();
-    expect(screen.queryAllByRole("button", { name: /add character to slot/i })).toHaveLength(0);
+    expect(
+      screen.queryAllByRole("button", { name: /add character to slot/i }),
+    ).toHaveLength(0);
   });
 
   it("opens the apply preset dialog when an empty tile is clicked", async () => {
@@ -156,7 +170,9 @@ describe("CharactersPanel", () => {
       error: null,
     });
     renderPanel(2);
-    const emptyBtn = screen.getAllByRole("button", { name: /add character to slot/i })[0];
+    const emptyBtn = screen.getAllByRole("button", {
+      name: /add character to slot/i,
+    })[0];
     expect(emptyBtn).toBeDisabled();
   });
 

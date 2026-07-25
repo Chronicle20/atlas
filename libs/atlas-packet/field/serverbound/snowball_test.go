@@ -7,6 +7,7 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=field/serverbound/FieldSnowball version=gms_v79 ida=0x5528a3
 // packet-audit:verify packet=field/serverbound/FieldSnowball version=gms_v83 ida=0x575387
 // packet-audit:verify packet=field/serverbound/FieldSnowball version=gms_v84 ida=0x584d00
 // packet-audit:verify packet=field/serverbound/FieldSnowball version=gms_v87 ida=0x5a360c
@@ -19,6 +20,70 @@ func TestSnowballGolden(t *testing.T) {
 	actual := pt.Encode(t, ctx, input.Encode, nil)
 	if !bytes.Equal(actual, expected) {
 		t.Errorf("golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// TestSnowballByteOutputV79 pins the gms_v79 SNOWBALL (op 0xCB) serverbound wire.
+// IDA: CField_SnowBall::BasicActionAttack @0x5528a3 (GMS_v79_1_DEVM.exe) —
+// COutPacket(203) @0x552988, Encode1(attack v8) @0x552995, Encode2(damage v9)
+// @0x55299e, Encode2(x v13) @0x5529a9. Body = attack(1) + damage(2 LE) + x(2 LE).
+func TestSnowballByteOutputV79(t *testing.T) {
+	input := NewSnowball(0x01, 0x0203, 0x0405)
+	ctx := pt.CreateContext("GMS", 79, 1)
+	expected := []byte{0x01, 0x03, 0x02, 0x05, 0x04}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v79 snowball golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// TestSnowballByteOutputV72 pins the gms_v72 SNOWBALL (op 0xC9 = 201)
+// serverbound wire. IDA: CField_SnowBall::BasicActionAttack @0x5404cc
+// (GMS_v72.1_U_DEVM.exe) — COutPacket(201) @0x5405b1, Encode1(attack v8)
+// @0x5405be, Encode2(damage v9) @0x5405c7, Encode2(x v13) @0x5405d2, then
+// SendPacket. Body = attack(1) + damage(2 LE) + x(2 LE) — identical to the v79
+// golden (op 203).
+// packet-audit:verify packet=field/serverbound/FieldSnowball version=gms_v72 ida=0x5404cc
+func TestSnowballByteOutputV72(t *testing.T) {
+	input := NewSnowball(0x01, 0x0203, 0x0405)
+	ctx := pt.CreateContext("GMS", 72, 1)
+	expected := []byte{0x01, 0x03, 0x02, 0x05, 0x04}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v72 snowball golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// TestSnowballByteOutputV61 pins the gms_v61 SNOWBALL (op 0xB0 = 176)
+// serverbound wire. IDA: CField_SnowBall::BasicActionAttack @0x50c0dd
+// (GMS_v61.1_U_DEVM.exe) — COutPacket(176), Encode1(attack v8), Encode2(damage
+// v9), Encode2(x v13), then SendPacket. Body = attack(1) + damage(2 LE) +
+// x(2 LE) — identical to the v72 golden (op 201).
+// packet-audit:verify packet=field/serverbound/FieldSnowball version=gms_v61 ida=0x50c0dd
+func TestSnowballByteOutputV61(t *testing.T) {
+	input := NewSnowball(0x01, 0x0203, 0x0405)
+	ctx := pt.CreateContext("GMS", 61, 1)
+	expected := []byte{0x01, 0x03, 0x02, 0x05, 0x04}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v61 snowball golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// TestSnowballByteOutputV48 pins the gms_v48 SNOWBALL (op 0x95 = 149)
+// serverbound wire. IDA: CField_SnowBall::BasicActionAttack @0x4dcb14
+// (GMS_v48_1_DEVM.exe) — COutPacket(149) @0x4dcbff, Encode1(attack v8)
+// @0x4dcc0c, Encode2(damage v9) @0x4dcc15, Encode2(x v13) @0x4dcc20, then
+// SendPacket. Body = attack(1) + damage(2 LE) + x(2 LE) — identical to the v61
+// golden (op 176); only the opcode shifts.
+// packet-audit:verify packet=field/serverbound/FieldSnowball version=gms_v48 ida=0x4dcb14
+func TestSnowballByteOutputV48(t *testing.T) {
+	input := NewSnowball(0x01, 0x0203, 0x0405)
+	ctx := pt.CreateContext("GMS", 48, 1)
+	expected := []byte{0x01, 0x03, 0x02, 0x05, 0x04}
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v48 snowball golden mismatch: got %v want %v", actual, expected)
 	}
 }
 

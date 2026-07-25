@@ -112,12 +112,16 @@ JSON:API resource type: `wallets`
 
 ### GET /api/characters/{characterId}/cash-shop/wishlist
 
-Retrieves wishlist items for a character.
+Retrieves wishlist items for a character. Paginated.
 
 #### Parameters
 | Name | Location | Type | Required | Description |
 |------|----------|------|----------|-------------|
 | characterId | path | uint32 | yes | Character ID |
+| page[number] | query | int | no | Page number, default 1, must be >= 1 |
+| page[size] | query | int | no | Page size, default 250, must be between 1 and 250 |
+
+`limit` is rejected outright; paging is expressed only via `page[number]`/`page[size]`.
 
 #### Request Model
 None.
@@ -136,14 +140,24 @@ JSON:API resource type: `items`
         "serialNumber": 67890
       }
     }
-  ]
+  ],
+  "meta": {
+    "total": 3,
+    "page": { "number": 1, "size": 2, "last": 2 }
+  },
+  "links": {
+    "self": "...",
+    "first": "...",
+    "last": "...",
+    "next": "..."
+  }
 }
 ```
 
 #### Error Conditions
 | Status | Condition |
 |--------|-----------|
-| 404 Not Found | No wishlist found |
+| 400 Bad Request | Invalid `page[number]`/`page[size]`, or `limit` supplied |
 | 500 Internal Server Error | Database error |
 
 ---
@@ -310,13 +324,17 @@ JSON:API resource type: `cash-inventories`
 
 ### GET /api/accounts/{accountId}/cash-shop/inventory/compartments
 
-Retrieves cash compartments for an account. When a `type` query parameter is provided, returns a single compartment matching the specified type. When omitted, returns all compartments for the account.
+Retrieves cash compartments for an account. The route requires a `type` query parameter to be present (a request with `type` entirely absent does not match this route). When `type` has a non-empty value, returns a single compartment matching that type. When `type` is present with an empty value (`type=`), returns all compartments for the account, paginated.
 
 #### Parameters
 | Name | Location | Type | Required | Description |
 |------|----------|------|----------|-------------|
 | accountId | path | uint32 | yes | Account ID |
-| type | query | int | no | Compartment type (1=Explorer, 2=Cygnus, 3=Legend). If omitted, returns all compartments. |
+| type | query | int | yes | Compartment type (1=Explorer, 2=Cygnus, 3=Legend). Empty value (`type=`) returns all compartments instead of one. |
+| page[number] | query | int | no | Page number, default 1, must be >= 1. Only applies when `type` is empty. |
+| page[size] | query | int | no | Page size, default 250, must be between 1 and 250. Only applies when `type` is empty. |
+
+`limit` is rejected outright when listing all compartments; paging is expressed only via `page[number]`/`page[size]`.
 
 #### Request Model
 None.
@@ -324,7 +342,7 @@ None.
 #### Response Model
 JSON:API resource type: `compartments`
 
-When `type` is provided, returns a single compartment:
+When `type` has a non-empty value, returns a single compartment:
 
 ```json
 {
@@ -355,6 +373,7 @@ When `type` is provided, returns a single compartment:
         "commodityId": 100,
         "quantity": 1,
         "flag": 0,
+        "petId": 0,
         "purchasedBy": 67890,
         "expiration": "2025-06-01T00:00:00Z",
         "createdAt": "2025-05-01T00:00:00Z"
@@ -364,19 +383,20 @@ When `type` is provided, returns a single compartment:
 }
 ```
 
-When `type` is omitted, returns an array of compartments.
+When `type` is empty, returns a paginated array of compartments, with `meta.total`/`meta.page` and JSON:API pagination `links`, matching the shape of the wishlist list response above.
 
 #### Error Conditions
 | Status | Condition |
 |--------|-----------|
-| 400 Bad Request | Invalid type parameter |
+| 400 Bad Request | Invalid (non-integer) type parameter |
+| 400 Bad Request | Invalid `page[number]`/`page[size]`, or `limit` supplied (when `type` is empty) |
 | 500 Internal Server Error | Database error |
 
 ---
 
 ### GET /api/accounts/{accountId}/cash-shop/inventory/compartments/{compartmentId}/assets/{assetId}
 
-Retrieves a specific asset by ID within a compartment context.
+Retrieves a specific asset by ID. `accountId` and `compartmentId` are parsed and validated as well-formed but are not used to scope the lookup; the asset is fetched by `assetId` alone.
 
 #### Parameters
 | Name | Location | Type | Required | Description |
@@ -403,6 +423,7 @@ JSON:API resource type: `assets`
       "commodityId": 100,
       "quantity": 1,
       "flag": 0,
+      "petId": 0,
       "purchasedBy": 67890,
       "expiration": "2025-06-01T00:00:00Z",
       "createdAt": "2025-05-01T00:00:00Z"
@@ -445,6 +466,7 @@ JSON:API resource type: `assets`
       "commodityId": 100,
       "quantity": 1,
       "flag": 0,
+      "petId": 0,
       "purchasedBy": 67890,
       "expiration": "2025-06-01T00:00:00Z",
       "createdAt": "2025-05-01T00:00:00Z"
@@ -480,6 +502,7 @@ JSON:API resource type: `assets`
       "templateId": 5000,
       "commodityId": 100,
       "quantity": 1,
+      "petId": 0,
       "purchasedBy": 67890
     }
   }

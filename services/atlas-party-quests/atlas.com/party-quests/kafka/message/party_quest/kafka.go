@@ -1,34 +1,35 @@
 package party_quest
 
 import (
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
 	EnvCommandTopic = "COMMAND_TOPIC_PARTY_QUEST"
 
-	CommandTypeRegister         = "REGISTER"
-	CommandTypeStart            = "START"
+	CommandTypeRegister          = "REGISTER"
+	CommandTypeStart             = "START"
 	CommandTypeStageClearAttempt = "STAGE_CLEAR_ATTEMPT"
-	CommandTypeStageAdvance     = "STAGE_ADVANCE"
-	CommandTypeForfeit          = "FORFEIT"
-	CommandTypeLeave            = "LEAVE"
+	CommandTypeStageAdvance      = "STAGE_ADVANCE"
+	CommandTypeForfeit           = "FORFEIT"
+	CommandTypeLeave             = "LEAVE"
 	CommandTypeUpdateStageState  = "UPDATE_STAGE_STATE"
-	CommandTypeUpdateCustomData = "UPDATE_CUSTOM_DATA"
-	CommandTypeBroadcastMessage = "BROADCAST_MESSAGE"
-	CommandTypeEnterBonus       = "ENTER_BONUS"
+	CommandTypeUpdateCustomData  = "UPDATE_CUSTOM_DATA"
+	CommandTypeBroadcastMessage  = "BROADCAST_MESSAGE"
+	CommandTypeEnterBonus        = "ENTER_BONUS"
 
 	EnvEventStatusTopic = "EVENT_TOPIC_PARTY_QUEST_STATUS"
 
-	EventTypeInstanceCreated    = "INSTANCE_CREATED"
-	EventTypeRegistrationOpened = "REGISTRATION_OPENED"
-	EventTypeStarted            = "STARTED"
-	EventTypeStageCleared       = "STAGE_CLEARED"
-	EventTypeStageAdvanced      = "STAGE_ADVANCED"
-	EventTypeCompleted          = "COMPLETED"
-	EventTypeFailed             = "FAILED"
+	EventTypeInstanceCreated     = "INSTANCE_CREATED"
+	EventTypeRegistrationOpened  = "REGISTRATION_OPENED"
+	EventTypeStarted             = "STARTED"
+	EventTypeStageCleared        = "STAGE_CLEARED"
+	EventTypeStageAdvanced       = "STAGE_ADVANCED"
+	EventTypeCompleted           = "COMPLETED"
+	EventTypeFailed              = "FAILED"
 	EventTypeCharacterRegistered = "CHARACTER_REGISTERED"
 	EventTypeCharacterLeft       = "CHARACTER_LEFT"
 	EventTypeBonusEntered        = "BONUS_ENTERED"
@@ -65,8 +66,7 @@ type ForfeitCommandBody struct {
 	InstanceId uuid.UUID `json:"instanceId"`
 }
 
-type LeaveCommandBody struct {
-}
+type LeaveCommandBody struct{}
 
 type UpdateStageStateCommandBody struct {
 	InstanceId   uuid.UUID         `json:"instanceId"`
@@ -124,8 +124,7 @@ type StageAdvancedEventBody struct {
 	MapIds     []uint32 `json:"mapIds"`
 }
 
-type CompletedEventBody struct {
-}
+type CompletedEventBody struct{}
 
 type FailedEventBody struct {
 	Reason string `json:"reason"`
@@ -145,5 +144,4 @@ type BonusEnteredEventBody struct {
 	MapId uint32 `json:"mapId"`
 }
 
-type InstanceDestroyedEventBody struct {
-}
+type InstanceDestroyedEventBody struct{}

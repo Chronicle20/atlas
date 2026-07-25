@@ -6,11 +6,12 @@ import (
 	"testing"
 	"time"
 
-	lock "github.com/Chronicle20/atlas/libs/atlas-lock"
 	"github.com/alicebob/miniredis/v2"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
+
+	lock "github.com/Chronicle20/atlas/libs/atlas-lock"
 )
 
 func newTestRedis(t *testing.T) *goredis.Client {

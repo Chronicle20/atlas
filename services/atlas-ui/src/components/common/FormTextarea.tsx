@@ -1,5 +1,9 @@
-import * as React from "react"
-import { type Control, type FieldPath, type FieldValues } from "react-hook-form"
+import * as React from "react";
+import {
+  type Control,
+  type FieldPath,
+  type FieldValues,
+} from "react-hook-form";
 import {
   FormControl,
   FormDescription,
@@ -7,30 +11,30 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { Textarea } from "@/components/ui/textarea"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
 interface FormTextareaProps<
   TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 > {
-  control: Control<TFieldValues>
-  name: TName
-  label: string
-  description?: string
-  placeholder?: string
-  className?: string
-  disabled?: boolean
-  rows?: number
-  maxLength?: number
-  textareaProps?: React.ComponentPropsWithoutRef<typeof Textarea>
+  control: Control<TFieldValues>;
+  name: TName;
+  label: string;
+  description?: string;
+  placeholder?: string;
+  className?: string;
+  disabled?: boolean;
+  rows?: number;
+  maxLength?: number;
+  textareaProps?: React.ComponentPropsWithoutRef<typeof Textarea>;
 }
 
 /**
  * A reusable form textarea component that wraps the shadcn/ui Textarea with FormField pattern.
  * Reduces boilerplate by handling the common FormItem -> FormLabel -> FormControl -> FormMessage structure.
- * 
+ *
  * @example Basic textarea:
  * <FormTextarea
  *   control={form.control}
@@ -39,7 +43,7 @@ interface FormTextareaProps<
  *   placeholder="Enter a description"
  *   description="Provide a detailed description"
  * />
- * 
+ *
  * @example With character limit:
  * <FormTextarea
  *   control={form.control}
@@ -49,7 +53,7 @@ interface FormTextareaProps<
  *   maxLength={500}
  *   rows={5}
  * />
- * 
+ *
  * @example With custom styling:
  * <FormTextarea
  *   control={form.control}
@@ -61,7 +65,7 @@ interface FormTextareaProps<
  */
 export function FormTextarea<
   TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 >({
   control,
   name,
@@ -72,7 +76,7 @@ export function FormTextarea<
   disabled,
   rows,
   maxLength,
-  textareaProps
+  textareaProps,
 }: FormTextareaProps<TFieldValues, TName>) {
   return (
     <ShadcnFormField
@@ -95,14 +99,14 @@ export function FormTextarea<
           {description && <FormDescription>{description}</FormDescription>}
           {maxLength && (
             <FormDescription className="text-right text-xs">
-              {(field.value?.length ?? 0)}/{maxLength}
+              {field.value?.length ?? 0}/{maxLength}
             </FormDescription>
           )}
           <FormMessage />
         </FormItem>
       )}
     />
-  )
+  );
 }
 
-FormTextarea.displayName = "FormTextarea"
+FormTextarea.displayName = "FormTextarea";

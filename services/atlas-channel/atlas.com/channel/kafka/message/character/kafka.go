@@ -1,11 +1,12 @@
 package character
 
 import (
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/stat"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
@@ -15,6 +16,7 @@ const (
 	CommandRequestDropMeso     = "REQUEST_DROP_MESO"
 	CommandChangeHP            = "CHANGE_HP"
 	CommandChangeMP            = "CHANGE_MP"
+	CommandSetHP               = "SET_HP"
 	CommandAwardExperience     = "AWARD_EXPERIENCE"
 
 	CommandDistributeApAbilityStrength     = "STRENGTH"
@@ -60,6 +62,11 @@ type ChangeHPCommandBody struct {
 type ChangeMPCommandBody struct {
 	ChannelId channel.Id `json:"channelId"`
 	Amount    int16      `json:"amount"`
+}
+
+type SetHPCommandBody struct {
+	ChannelId channel.Id `json:"channelId"`
+	Amount    uint16     `json:"amount"`
 }
 
 type AwardExperienceCommandBody struct {

@@ -2,15 +2,17 @@ package compartment
 
 import (
 	"atlas-channel/kafka/message/compartment"
-	"atlas-channel/kafka/producer"
 	"context"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {
@@ -37,6 +39,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		ctx: ctx,
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) ByCharacterIdAndTypeProvider(characterId uint32, inventoryType inventory.Type) model.Provider[Model] {
 	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestByType(characterId, inventoryType), Extract)

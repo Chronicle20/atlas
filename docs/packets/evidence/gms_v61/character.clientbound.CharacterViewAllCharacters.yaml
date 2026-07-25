@@ -1,0 +1,10 @@
+packet: character/clientbound/CharacterViewAllCharacters
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnViewAllCharResult
+    address: "0x5671b1"
+    decompile_sha256: 2d6754b9c643ed53f71921b77c72eeafd583f0028e6d4a7fcc30465b4ebe267c
+verifies:
+    - libs/atlas-packet/character/clientbound/v61_test.go#TestCharacterViewAllCharactersByteOutputV61

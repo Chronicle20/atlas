@@ -1,17 +1,18 @@
 package baseline
 
 import (
+	"atlas-data/rest"
 	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"atlas-data/rest"
 	minio "atlas-data/storage/minio"
 
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 // nonNilSentinelClient returns a non-nil *minio.Client used to bypass the
@@ -112,5 +113,45 @@ func TestRestoreInputModelJsonApiIdentity(t *testing.T) {
 func TestPublishOutputModelIdShape(t *testing.T) {
 	if got := PublishOutputId("GMS", 83, 1); got != "GMS/83.1" {
 		t.Fatalf("PublishOutputId = %s", got)
+	}
+}
+
+func TestListNilMcReturns503(t *testing.T) {
+	d, c := newDeps()
+	h := listInner(nil)(&d, &c)
+	req := httptest.NewRequest(http.MethodGet, "/api/data/baselines", nil)
+	rr := httptest.NewRecorder()
+	h(rr, req)
+	if rr.Code != http.StatusServiceUnavailable {
+		t.Fatalf("expected 503, got %d", rr.Code)
+	}
+}
+
+// TestListRefusesNonOperator mirrors TestPublishRefusesNonOperator: the
+// sentinel non-nil client bypasses the 503 gate; without X-Atlas-Operator: 1
+// the handler must 403 BEFORE dereferencing the client (listInner only
+// touches mc.Cfg() after the operator gate).
+func TestListRefusesNonOperator(t *testing.T) {
+	d, c := newDeps()
+	mc := nonNilSentinelClient()
+	h := listInner(mc)(&d, &c)
+	req := httptest.NewRequest(http.MethodGet, "/api/data/baselines", nil)
+	rr := httptest.NewRecorder()
+	h(rr, req)
+	if rr.Code != http.StatusForbidden {
+		t.Fatalf("expected 403, got %d", rr.Code)
+	}
+}
+
+func TestListItemModelJsonApiIdentity(t *testing.T) {
+	var m ListItemModel
+	if m.GetName() != "baselines" {
+		t.Fatalf("GetName = %s", m.GetName())
+	}
+	if err := m.SetID("GMS/83.1"); err != nil {
+		t.Fatalf("SetID: %v", err)
+	}
+	if m.GetID() != "GMS/83.1" {
+		t.Fatalf("GetID = %s", m.GetID())
 	}
 }

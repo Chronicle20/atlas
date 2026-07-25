@@ -12,14 +12,17 @@ import (
 	"atlas-saga-orchestrator/gachapon"
 	"atlas-saga-orchestrator/guild"
 	"atlas-saga-orchestrator/invite"
+	broadcast2 "atlas-saga-orchestrator/kafka/message/broadcast"
 	character2 "atlas-saga-orchestrator/kafka/message/character"
 	gachapon2 "atlas-saga-orchestrator/kafka/message/gachapon"
+	incubator2 "atlas-saga-orchestrator/kafka/message/incubator"
+	megaphone2 "atlas-saga-orchestrator/kafka/message/megaphone"
 	questmessage "atlas-saga-orchestrator/kafka/message/quest"
 	saga2 "atlas-saga-orchestrator/kafka/message/saga"
 	storage2 "atlas-saga-orchestrator/kafka/message/storage"
-	"atlas-saga-orchestrator/kafka/producer"
 	"atlas-saga-orchestrator/map_command"
 	"atlas-saga-orchestrator/monster"
+	"atlas-saga-orchestrator/mts"
 	party_quest "atlas-saga-orchestrator/party_quest"
 	"atlas-saga-orchestrator/pet"
 	portalBlocking "atlas-saga-orchestrator/portal"
@@ -27,6 +30,7 @@ import (
 	"atlas-saga-orchestrator/rates"
 	"atlas-saga-orchestrator/reactor"
 	reactorDrop "atlas-saga-orchestrator/reactor/drop"
+	"atlas-saga-orchestrator/rps"
 	"atlas-saga-orchestrator/saved_location"
 	"atlas-saga-orchestrator/skill"
 	"atlas-saga-orchestrator/storage"
@@ -37,13 +41,16 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 type Handler interface {
@@ -61,6 +68,7 @@ type Handler interface {
 	WithPortalProcessor(portal.Processor) Handler
 	WithPortalBlockingProcessor(portalBlocking.Processor) Handler
 	WithCashshopProcessor(cashshop.Processor) Handler
+	WithMtsProcessor(mts.Processor) Handler
 	WithSystemMessageProcessor(system_message.Processor) Handler
 	WithQuestProcessor(quest.Processor) Handler
 	WithStorageProcessor(storage.Processor) Handler
@@ -120,6 +128,10 @@ type Handler interface {
 	handleReleaseFromStorage(s Saga, st Step[any]) error
 	handleAcceptToCashShop(s Saga, st Step[any]) error
 	handleReleaseFromCashShop(s Saga, st Step[any]) error
+	handleAcceptToMtsListing(s Saga, st Step[any]) error
+	handleReleaseFromMtsHolding(s Saga, st Step[any]) error
+	handleMtsMoveListingToHolding(s Saga, st Step[any]) error
+	handleMtsBidEscrow(s Saga, st Step[any]) error
 	handlePlayPortalSound(s Saga, st Step[any]) error
 	handleShowInfo(s Saga, st Step[any]) error
 	handleShowInfoText(s Saga, st Step[any]) error
@@ -136,6 +148,8 @@ type Handler interface {
 	handleCancelConsumableEffect(s Saga, st Step[any]) error
 	handleResetStats(s Saga, st Step[any]) error
 	handleRebalanceAP(s Saga, st Step[any]) error
+	handleTransferAP(s Saga, st Step[any]) error
+	handleTransferSP(s Saga, st Step[any]) error
 	handleStartInstanceTransport(s Saga, st Step[any]) error
 	handleSaveLocation(s Saga, st Step[any]) error
 	handleWarpToSavedLocation(s Saga, st Step[any]) error
@@ -149,6 +163,10 @@ type Handler interface {
 	handleStageClearAttemptPq(s Saga, st Step[any]) error
 	handleEnterPartyQuestBonus(s Saga, st Step[any]) error
 	handleFieldEffectWeather(s Saga, st Step[any]) error
+	handleStartRPSGame(s Saga, st Step[any]) error
+	handleIncubatorResult(s Saga, st Step[any]) error
+	handleEmitMegaphone(s Saga, st Step[any]) error
+	handleEnqueueWorldBroadcast(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
@@ -170,6 +188,7 @@ type HandlerImpl struct {
 	portalP         portal.Processor
 	portalBlockingP portalBlocking.Processor
 	cashshopP       cashshop.Processor
+	mtsP            mts.Processor
 	systemMessageP  system_message.Processor
 	questP          quest.Processor
 	storageP        storage.Processor
@@ -180,6 +199,7 @@ type HandlerImpl struct {
 	partyQuestP     party_quest.Processor
 	reactorP        reactor.Processor
 	mapCommandP     map_command.Processor
+	rpsP            rps.Processor
 }
 
 func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
@@ -201,6 +221,7 @@ func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 		consumableP:     consumable.NewProcessor(l, ctx),
 		portalBlockingP: portalBlocking.NewProcessor(l, ctx),
 		cashshopP:       cashshop.NewProcessor(l, ctx),
+		mtsP:            mts.NewProcessor(l, ctx),
 		systemMessageP:  system_message.NewProcessor(l, ctx),
 		questP:          quest.NewProcessor(l, ctx),
 		storageP:        storage.NewProcessor(l, ctx),
@@ -211,6 +232,7 @@ func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 		partyQuestP:     party_quest.NewProcessor(l, ctx),
 		reactorP:        reactor.NewProcessor(l, ctx),
 		mapCommandP:     map_command.NewProcessor(l, ctx),
+		rpsP:            rps.NewProcessor(l, ctx),
 	}
 }
 
@@ -455,6 +477,18 @@ func (h *HandlerImpl) WithCashshopProcessor(cashshopP cashshop.Processor) Handle
 		cashshopP:      cashshopP,
 		systemMessageP: h.systemMessageP,
 	}
+}
+
+func (h *HandlerImpl) WithMtsProcessor(mtsP mts.Processor) Handler {
+	// Clone ALL fields, then override mtsP. The explicit field-by-field form the
+	// sibling With* methods use silently drops any HandlerImpl field it forgets to
+	// list (it currently omits 11 of 29 — reactorDropP, portalBlockingP, questP,
+	// storageP, buffP, transportP, savedLocationP, gachaponP, partyQuestP, reactorP,
+	// mapCommandP), nil-ing them on the returned Handler. A shallow struct copy can
+	// never drop a field as HandlerImpl grows — the same pattern the compensator uses.
+	c := *h
+	c.mtsP = mtsP
+	return &c
 }
 
 func (h *HandlerImpl) WithSystemMessageProcessor(systemMessageP system_message.Processor) Handler {
@@ -797,6 +831,18 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleAcceptToCashShop, true
 	case ReleaseFromCashShop:
 		return h.handleReleaseFromCashShop, true
+	case AcceptToMtsListing:
+		return h.handleAcceptToMtsListing, true
+	case ReleaseFromMtsHolding:
+		return h.handleReleaseFromMtsHolding, true
+	case MtsMoveListingToHolding:
+		return h.handleMtsMoveListingToHolding, true
+	case MtsBidEscrow:
+		// MtsBidEscrow is a single-step wallet adjust — reuse the cash-shop
+		// wallet AwardCurrency dispatch (no duplicate). The composites
+		// TransferToMts / WithdrawFromMts / MtsSettlePurchase are expanded, not
+		// dispatched through GetHandler (see expandAndProcessStep).
+		return h.handleMtsBidEscrow, true
 	case PlayPortalSound:
 		return h.handlePlayPortalSound, true
 	case ShowInfo:
@@ -831,6 +877,10 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleResetStats, true
 	case RebalanceAP:
 		return h.handleRebalanceAP, true
+	case TransferAP:
+		return h.handleTransferAP, true
+	case TransferSP:
+		return h.handleTransferSP, true
 	case StartInstanceTransport:
 		return h.handleStartInstanceTransport, true
 	case SaveLocation:
@@ -859,6 +909,18 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleEnterPartyQuestBonus, true
 	case FieldEffectWeather:
 		return h.handleFieldEffectWeather, true
+	case StartRPSGame:
+		return h.handleStartRPSGame, true
+	case SetAssetOwner:
+		return h.handleSetAssetOwner, true
+	case ApplyAssetLock:
+		return h.handleApplyAssetLock, true
+	case IncubatorResult:
+		return h.handleIncubatorResult, true
+	case EmitMegaphone:
+		return h.handleEmitMegaphone, true
+	case EnqueueWorldBroadcast:
+		return h.handleEnqueueWorldBroadcast, true
 	}
 	return nil, false
 }
@@ -881,7 +943,6 @@ func (h *HandlerImpl) handleAwardAsset(s Saga, st Step[any]) error {
 	}
 
 	err := h.compP.RequestCreateItem(s.TransactionId(), payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity, payload.Item.Expiration)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to award asset.")
 		return err
@@ -903,7 +964,6 @@ func (h *HandlerImpl) handleWarpToRandomPortal(s Saga, st Step[any]) error {
 	}
 
 	err := h.charP.WarpRandomAndEmit(s.TransactionId(), payload.CharacterId, f)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to warp to random portal.")
 		return err
@@ -931,7 +991,6 @@ func (h *HandlerImpl) handleWarpToPortal(s Saga, st Step[any]) error {
 	}
 
 	err := h.charP.WarpToPortalAndEmit(s.TransactionId(), payload.CharacterId, f, portalProvider)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to warp to specific portal.")
 		return err
@@ -953,7 +1012,6 @@ func (h *HandlerImpl) handleAwardExperience(s Saga, st Step[any]) error {
 
 	eds := TransformExperienceDistributions(distributions)
 	err := h.charP.AwardExperienceAndEmit(s.TransactionId(), ch, payload.CharacterId, eds, payload.ShowEffect)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to award experience.")
 		return err
@@ -971,7 +1029,6 @@ func (h *HandlerImpl) handleAwardLevel(s Saga, st Step[any]) error {
 
 	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
 	err := h.charP.AwardLevelAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.Amount)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to award level.")
 		return err
@@ -989,7 +1046,6 @@ func (h *HandlerImpl) handleAwardMesos(s Saga, st Step[any]) error {
 
 	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
 	err := h.charP.AwardMesosAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.ActorId, payload.ActorType, payload.Amount, payload.ShowEffect)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to award mesos.")
 		return err
@@ -1006,7 +1062,6 @@ func (h *HandlerImpl) handleAwardCurrency(s Saga, st Step[any]) error {
 	}
 
 	err := h.cashshopP.AwardCurrencyAndEmit(s.TransactionId(), payload.AccountId, payload.CurrencyType, payload.Amount)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to award currency.")
 		return err
@@ -1023,11 +1078,60 @@ func (h *HandlerImpl) handleDestroyAsset(s Saga, st Step[any]) error {
 	}
 
 	err := h.compP.RequestDestroyItem(s.TransactionId(), payload.CharacterId, payload.TemplateId, payload.Quantity, payload.RemoveAll)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to destroy asset.")
 		return err
 	}
+
+	return nil
+}
+
+// handleSetAssetOwner handles the SetAssetOwner action
+func (h *HandlerImpl) handleSetAssetOwner(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(SetAssetOwnerPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+	err := h.compP.RequestSetOwner(s.TransactionId(), payload.CharacterId, payload.InventoryType, payload.Slot, payload.Owner)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to set asset owner.")
+		return err
+	}
+	return nil
+}
+
+// handleApplyAssetLock handles the ApplyAssetLock action
+func (h *HandlerImpl) handleApplyAssetLock(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ApplyAssetLockPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+	err := h.compP.RequestApplyLock(s.TransactionId(), payload.CharacterId, payload.InventoryType, payload.Slot, payload.Expiration)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to apply asset lock.")
+		return err
+	}
+	return nil
+}
+
+// handleIncubatorResult handles the IncubatorResult action by emitting the
+// EVENT_TOPIC_INCUBATOR_RESULT event for the channel to announce via packet.
+// Fire-and-forget: the channel consumer only announces a packet, no response
+// event advances the step, so the step is marked complete immediately after
+// the emit succeeds.
+func (h *HandlerImpl) handleIncubatorResult(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(IncubatorResultPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+	err := producer.ProviderImpl(h.l)(h.ctx)(incubator2.EnvEventTopicIncubatorResult)(IncubatorResultEventProvider(payload))
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to emit incubator result event.")
+		return err
+	}
+
+	// Fire-and-forget: mark step complete immediately
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
 
 	return nil
 }
@@ -1040,7 +1144,6 @@ func (h *HandlerImpl) handleDestroyAssetFromSlot(s Saga, st Step[any]) error {
 	}
 
 	err := h.compP.RequestDestroyItemFromSlot(s.TransactionId(), payload.CharacterId, payload.InventoryType, payload.Slot, payload.Quantity)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to destroy asset from slot.")
 		return err
@@ -1057,7 +1160,6 @@ func (h *HandlerImpl) handleEquipAsset(s Saga, st Step[any]) error {
 	}
 
 	err := h.compP.RequestEquipAsset(s.TransactionId(), payload.CharacterId, byte(payload.InventoryType), payload.Source, payload.Destination)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to equip asset.")
 		return err
@@ -1074,7 +1176,6 @@ func (h *HandlerImpl) handleUnequipAsset(s Saga, st Step[any]) error {
 	}
 
 	err := h.compP.RequestUnequipAsset(s.TransactionId(), payload.CharacterId, byte(payload.InventoryType), payload.Source, payload.Destination)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to unequip asset.")
 		return err
@@ -1092,7 +1193,6 @@ func (h *HandlerImpl) handleChangeJob(s Saga, st Step[any]) error {
 
 	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
 	err := h.charP.ChangeJobAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.JobId)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to change job.")
 		return err
@@ -1110,7 +1210,6 @@ func (h *HandlerImpl) handleChangeHair(s Saga, st Step[any]) error {
 
 	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
 	err := h.charP.ChangeHairAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.StyleId)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to change hair.")
 		return err
@@ -1128,7 +1227,6 @@ func (h *HandlerImpl) handleChangeFace(s Saga, st Step[any]) error {
 
 	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
 	err := h.charP.ChangeFaceAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.StyleId)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to change face.")
 		return err
@@ -1146,7 +1244,6 @@ func (h *HandlerImpl) handleChangeSkin(s Saga, st Step[any]) error {
 
 	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
 	err := h.charP.ChangeSkinAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.StyleId)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to change skin.")
 		return err
@@ -1163,7 +1260,6 @@ func (h *HandlerImpl) handleCreateSkill(s Saga, st Step[any]) error {
 	}
 
 	err := h.skillP.RequestCreateAndEmit(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.SkillId, payload.Level, payload.MasterLevel, payload.Expiration)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to create skill.")
 		return err
@@ -1180,7 +1276,6 @@ func (h *HandlerImpl) handleUpdateSkill(s Saga, st Step[any]) error {
 	}
 
 	err := h.skillP.RequestUpdateAndEmit(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.SkillId, payload.Level, payload.MasterLevel, payload.Expiration)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to update skill.")
 		return err
@@ -1196,7 +1291,6 @@ func (h *HandlerImpl) handleIncreaseBuddyCapacity(s Saga, st Step[any]) error {
 	}
 
 	err := h.buddyListP.IncreaseCapacityAndEmit(s.TransactionId(), payload.CharacterId, payload.WorldId, payload.Amount)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to increase buddy capacity.")
 		return err
@@ -1212,7 +1306,6 @@ func (h *HandlerImpl) handleGainCloseness(s Saga, st Step[any]) error {
 	}
 
 	err := h.petP.GainClosenessAndEmit(s.TransactionId(), payload.PetId, payload.Amount)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to gain pet closeness.")
 		return err
@@ -1228,7 +1321,6 @@ func (h *HandlerImpl) handleEvolvePet(s Saga, st Step[any]) error {
 	}
 
 	err := h.petP.EvolveAndEmit(s.TransactionId(), payload.PetId)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to evolve pet.")
 		return err
@@ -1767,7 +1859,6 @@ func (h *HandlerImpl) handleAcceptToStorage(s Saga, st Step[any]) error {
 		payload.TemplateId,
 		payload.AssetData,
 	)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to accept asset to storage.")
 		return err
@@ -1791,7 +1882,6 @@ func (h *HandlerImpl) handleReleaseFromCharacter(s Saga, st Step[any]) error {
 		payload.AssetId,
 		payload.Quantity,
 	)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to release asset from character.")
 		return err
@@ -1818,7 +1908,6 @@ func (h *HandlerImpl) handleAcceptToCharacter(s Saga, st Step[any]) error {
 		payload.TemplateId,
 		payload.AssetData,
 	)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to accept asset to character.")
 		return err
@@ -1843,7 +1932,6 @@ func (h *HandlerImpl) handleReleaseFromStorage(s Saga, st Step[any]) error {
 		asset.Id(payload.AssetId),
 		asset.Quantity(payload.Quantity),
 	)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to release asset from storage.")
 		return err
@@ -1877,7 +1965,6 @@ func (h *HandlerImpl) handleAcceptToCashShop(s Saga, st Step[any]) error {
 		payload.PurchasedBy,
 		payload.Flag,
 	)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to accept asset to cash shop.")
 		return err
@@ -1907,9 +1994,132 @@ func (h *HandlerImpl) handleReleaseFromCashShop(s Saga, st Step[any]) error {
 		payload.CashId,
 		payload.TemplateId,
 	)
-
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to release asset from cash shop.")
+		return err
+	}
+
+	return nil
+}
+
+// handleAcceptToMtsListing handles the AcceptToMtsListing action.
+// Dispatches an ACCEPT_TO_MTS_LISTING command to atlas-mts's custody consumer
+// (COMMAND_TOPIC_MTS_CUSTODY); atlas-mts CREATEs the listing row from the
+// carried snapshot (the item has already left inventory via ReleaseFromCharacter).
+func (h *HandlerImpl) handleAcceptToMtsListing(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(AcceptToMtsListingPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.Debugf("Accepting item template [%d] to MTS listing [%s] for seller [%d]",
+		payload.TemplateId, payload.ListingId, payload.SellerId)
+
+	err := h.mtsP.AcceptToMtsListingAndEmit(payload.TransactionId, mts.AcceptToMtsListingParams{
+		ListingId:        payload.ListingId,
+		WorldId:          byte(payload.WorldId),
+		SellerId:         payload.SellerId,
+		SellerAccountId:  payload.SellerAccountId,
+		SellerName:       payload.SellerName,
+		SaleType:         payload.SaleType,
+		TemplateId:       payload.TemplateId,
+		Quantity:         payload.Quantity,
+		Strength:         payload.Strength,
+		Dexterity:        payload.Dexterity,
+		Intelligence:     payload.Intelligence,
+		Luck:             payload.Luck,
+		HP:               payload.HP,
+		MP:               payload.MP,
+		WeaponAttack:     payload.WeaponAttack,
+		MagicAttack:      payload.MagicAttack,
+		WeaponDefense:    payload.WeaponDefense,
+		MagicDefense:     payload.MagicDefense,
+		Accuracy:         payload.Accuracy,
+		Avoidability:     payload.Avoidability,
+		Hands:            payload.Hands,
+		Speed:            payload.Speed,
+		Jump:             payload.Jump,
+		Slots:            payload.Slots,
+		Level:            payload.Level,
+		ItemLevel:        payload.ItemLevel,
+		ItemExp:          payload.ItemExp,
+		RingId:           payload.RingId,
+		ViciousCount:     payload.ViciousCount,
+		Flags:            payload.Flags,
+		Owner:            payload.Owner,
+		ListValue:        payload.ListValue,
+		BuyNowPrice:      payload.BuyNowPrice,
+		CommissionRate:   payload.CommissionRate,
+		Category:         payload.Category,
+		SubCategory:      payload.SubCategory,
+		EndsAt:           payload.EndsAt,
+		MinIncrement:     payload.MinIncrement,
+		OfferWishSerial:  payload.OfferWishSerial,
+		OfferWishOwnerId: payload.OfferWishOwnerId,
+	})
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to accept item to MTS listing.")
+		return err
+	}
+
+	return nil
+}
+
+// handleReleaseFromMtsHolding handles the ReleaseFromMtsHolding action.
+// Dispatches a RELEASE_FROM_MTS_HOLDING command to atlas-mts (soft-delete the
+// holding row) before the item is re-granted to the character.
+func (h *HandlerImpl) handleReleaseFromMtsHolding(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ReleaseFromMtsHoldingPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.Debugf("Releasing MTS holding [%s]", payload.HoldingId)
+
+	err := h.mtsP.ReleaseFromMtsHoldingAndEmit(payload.TransactionId, payload.HoldingId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to release MTS holding.")
+		return err
+	}
+
+	return nil
+}
+
+// handleMtsMoveListingToHolding handles the MtsMoveListingToHolding action — the
+// final settlement custody step. atlas-mts marks the listing sold and creates the
+// buyer's holding from the listing snapshot in one local tx.
+func (h *HandlerImpl) handleMtsMoveListingToHolding(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(MtsMoveListingToHoldingPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.Debugf("Moving MTS listing [%s] to holding for buyer [%d]", payload.ListingId, payload.BuyerId)
+
+	err := h.mtsP.MoveListingToHoldingAndEmit(payload.TransactionId, payload.ListingId, payload.BuyerId, byte(payload.WorldId), payload.ResultKind, payload.Price)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to move MTS listing to holding.")
+		return err
+	}
+
+	return nil
+}
+
+// handleMtsBidEscrow handles the MtsBidEscrow action. It is a single-step cash
+// wallet adjust (escrow a bid by debiting NX Prepaid, or release by crediting),
+// so it REUSES the cash-shop wallet AwardCurrency dispatch — no duplicate
+// command. Prepaid (currencyType 3) is the bid-escrow bucket; Amount is signed
+// (negative to hold, positive to release).
+func (h *HandlerImpl) handleMtsBidEscrow(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(MtsBidEscrowPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	const currencyTypePrepaid = uint32(3)
+	err := h.cashshopP.AwardCurrencyAndEmit(payload.TransactionId, payload.BidderAccountId, currencyTypePrepaid, payload.Amount)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to escrow MTS bid.")
 		return err
 	}
 
@@ -2252,6 +2462,43 @@ func (h *HandlerImpl) handleRebalanceAP(s Saga, st Step[any]) error {
 	err := h.charP.RebalanceAPAndEmit(s.TransactionId(), ch, payload.CharacterId, kafkaTargets)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to rebalance AP.")
+		return err
+	}
+	return nil
+}
+
+// handleTransferAP handles the TransferAP action (AP Reset item 5050000).
+// Moves one already-spent ability point From -> To; atlas-character performs
+// the authoritative validation and emits STAT_CHANGED on success or an ERROR
+// (StatusEventApTransferErrorBody) on rejection.
+func (h *HandlerImpl) handleTransferAP(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(TransferAPPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.charP.TransferAPAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.From, payload.To)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to transfer AP.")
+		return err
+	}
+	return nil
+}
+
+// handleTransferSP handles the TransferSP action (SP Reset items 5050001-5050004).
+// Moves one skill point FromSkillId -> ToSkillId; atlas-skills re-validates the
+// tier/job/level and emits SP_TRANSFERRED on success or an ERROR
+// (StatusEventErrorBody) on rejection.
+func (h *HandlerImpl) handleTransferSP(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(TransferSPPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.skillP.TransferSPAndEmit(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.JobId, uint32(payload.FromSkillId), uint32(payload.ToSkillId), payload.ItemTier, payload.TargetMaxLevel)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to transfer SP.")
 		return err
 	}
 	return nil
@@ -2879,11 +3126,97 @@ func (h *HandlerImpl) handleFieldEffectWeather(s Saga, st Step[any]) error {
 	return nil
 }
 
+// handleEmitMegaphone handles the EmitMegaphone action.
+// Produces a BroadcastEvent to EVENT_TOPIC_MEGAPHONE for the stateless
+// megaphone tiers (MEGAPHONE/SUPER/ITEM/TRIPLE). Fire-and-forget — no Kafka
+// event advances this step, so it is marked complete immediately after the
+// event is produced.
+func (h *HandlerImpl) handleEmitMegaphone(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(EmitMegaphonePayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"character_id":   payload.CharacterId,
+		"tier":           payload.Tier,
+		"world_id":       payload.WorldId,
+	}).Info("Emitting megaphone broadcast event.")
+
+	err := producer.ProviderImpl(h.l)(h.ctx)(megaphone2.EnvEventTopicMegaphone)(MegaphoneBroadcastEventProvider(payload))
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to emit megaphone broadcast event.")
+		return err
+	}
+
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+	return nil
+}
+
+// handleEnqueueWorldBroadcast handles the EnqueueWorldBroadcast action.
+// Produces an EnqueueCommand to COMMAND_TOPIC_WORLD_BROADCAST for the
+// serialized world broadcast tiers (TV/AVATAR); atlas-world appends it to
+// the (WorldId, Family) queue. Fire-and-forget — no Kafka event advances
+// this step, so it is marked complete immediately after the command is
+// produced.
+func (h *HandlerImpl) handleEnqueueWorldBroadcast(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(EnqueueWorldBroadcastPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id":   s.TransactionId().String(),
+		"character_id":     payload.CharacterId,
+		"family":           payload.Family,
+		"world_id":         payload.WorldId,
+		"duration_seconds": payload.DurationSeconds,
+	}).Info("Enqueuing world broadcast command.")
+
+	err := producer.ProviderImpl(h.l)(h.ctx)(broadcast2.EnvCommandTopicWorldBroadcast)(WorldBroadcastEnqueueCommandProvider(payload))
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to enqueue world broadcast command.")
+		return err
+	}
+
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+	return nil
+}
+
 // handleAwaitInventoryCreated is a no-op handler. The AwaitInventoryCreated
 // step is passive: it is advanced by handleInventoryCreatedEvent (or failed by
 // handleInventoryCreationFailedEvent) in kafka/consumer/inventory/consumer.go.
 // This handler exists only to satisfy the dispatcher's unknown-action guard
 // at saga/processor.go:947.
 func (h *HandlerImpl) handleAwaitInventoryCreated(_ Saga, _ Step[any]) error {
+	return nil
+}
+
+// handleStartRPSGame handles the StartRPSGame action: it POSTs to atlas-rps's
+// synchronous POST /rps/games endpoint to open (or re-open) a rock-paper-
+// scissors session for a character at an NPC. Like handleSaveLocation and
+// handleStartInstanceTransport, this is a synchronous REST call - it
+// self-completes the step immediately rather than waiting on an async Kafka
+// event, and does not inject any follow-on step.
+func (h *HandlerImpl) handleStartRPSGame(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(StartRPSGamePayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"character_id":   payload.CharacterId,
+		"npc_id":         payload.NpcId,
+	}).Debug("Starting RPS game.")
+
+	_, err := h.rpsP.StartGame(payload.CharacterId, payload.WorldId, payload.ChannelId, payload.NpcId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to start RPS game.")
+		return err
+	}
+
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
 	return nil
 }

@@ -1,24 +1,25 @@
 package character
 
 import (
+	"atlas-maps/character/location"
+	"atlas-maps/visit"
 	"context"
 	"testing"
 
-	"atlas-maps/character/location"
 	characterKafka "atlas-maps/kafka/message/character"
 	mapcharacter "atlas-maps/map/character"
-	"atlas-maps/visit"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/test"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
-	"github.com/sirupsen/logrus/hooks/test"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 )
 
 func newTestDB(t *testing.T) *gorm.DB {

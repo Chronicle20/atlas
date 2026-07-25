@@ -1,0 +1,10 @@
+packet: interaction/clientbound/InteractionMiniRoomBalloonRemove
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CUser::OnMiniRoomBalloon#Remove
+    address: "0x7920b9"
+    decompile_sha256: f6801ff5ecd4cab0e73aa9eda1e8a02ccb9413149ee7f1a7fc69b3ef3bd58a00
+verifies:
+    - libs/atlas-packet/interaction/clientbound/mini_room_balloon_test.go#TestMiniRoomBalloonRemoveRoundTrip

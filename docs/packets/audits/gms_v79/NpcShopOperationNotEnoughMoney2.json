@@ -1,0 +1,21 @@
+{
+  "WriterName": "NpcShopOperationNotEnoughMoney2",
+  "IDAName": "CShopDlg::OnPacket#NotEnoughMoney2",
+  "Address": "0x6d6eb9",
+  "Variant": "GMS/v79",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/npc/clientbound/shop_operation.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (NOT_ENOUGH_MONEY_2 mode-only notice arm: v79 mode 10)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

@@ -3,8 +3,9 @@ package account
 import (
 	"sync"
 
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Key struct {
@@ -23,8 +24,10 @@ type Registry struct {
 	accounts map[Key]bool
 }
 
-var registry *Registry
-var once sync.Once
+var (
+	registry *Registry
+	once     sync.Once
+)
 
 func GetRegistry() *Registry {
 	once.Do(func() {

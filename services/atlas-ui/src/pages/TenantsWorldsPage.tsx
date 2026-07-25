@@ -2,9 +2,9 @@ import { TenantDetailLayout } from "@/components/features/tenants/TenantDetailLa
 import { WorldsForm } from "@/pages/tenants-worlds-form";
 
 export function TenantsWorldsPage() {
-    return (
-        <TenantDetailLayout>
-            <WorldsForm />
-        </TenantDetailLayout>
-    );
+  return (
+    <TenantDetailLayout>
+      <WorldsForm />
+    </TenantDetailLayout>
+  );
 }

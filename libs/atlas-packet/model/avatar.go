@@ -3,11 +3,12 @@ package model
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Avatar struct {
@@ -34,14 +35,14 @@ func NewAvatar(gender byte, skinColor byte, face uint32, mega bool, hair uint32,
 	}
 }
 
-func (m Avatar) Gender() byte                          { return m.gender }
-func (m Avatar) SkinColor() byte                       { return m.skinColor }
-func (m Avatar) Face() uint32                          { return m.face }
-func (m Avatar) Mega() bool                            { return m.mega }
-func (m Avatar) Hair() uint32                          { return m.hair }
-func (m Avatar) Equipment() map[slot.Position]uint32   { return m.equipment }
+func (m Avatar) Gender() byte                              { return m.gender }
+func (m Avatar) SkinColor() byte                           { return m.skinColor }
+func (m Avatar) Face() uint32                              { return m.face }
+func (m Avatar) Mega() bool                                { return m.mega }
+func (m Avatar) Hair() uint32                              { return m.hair }
+func (m Avatar) Equipment() map[slot.Position]uint32       { return m.equipment }
 func (m Avatar) MaskedEquipment() map[slot.Position]uint32 { return m.maskedEquipment }
-func (m Avatar) Pets() map[int8]uint32                 { return m.pets }
+func (m Avatar) Pets() map[int8]uint32                     { return m.pets }
 
 func (m Avatar) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
@@ -75,7 +76,10 @@ func (m Avatar) Encode(l logrus.FieldLogger, ctx context.Context) func(options m
 
 		w.WriteInt(0)
 
-		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+		// Pet template ids in AvatarLook: 3 ints (DecodeBuffer(12)) is the v61+ shape
+		// (v61 AvatarLook::Decode @0x4b77b1). Legacy GMS v29..v60 (v48, sub_49E1E0
+		// @0x49e2b9) reads a SINGLE 4-byte pet int; v28 and below read one 8-byte long.
+		if (t.Region() == "GMS" && t.MajorVersion() >= 61) || t.Region() == "JMS" {
 			for i := int8(0); i < 3; i++ {
 				if m.pets == nil {
 					w.WriteInt(0)
@@ -86,6 +90,13 @@ func (m Avatar) Encode(l logrus.FieldLogger, ctx context.Context) func(options m
 				} else {
 					w.WriteInt(0)
 				}
+			}
+		} else if t.Region() == "GMS" && t.MajorVersion() > 28 {
+			// v48 legacy single pet: one 4-byte int (IDA sub_49E1E0 @0x49e2b9).
+			if len(m.pets) > 0 {
+				w.WriteInt(m.pets[0])
+			} else {
+				w.WriteInt(0)
 			}
 		} else {
 			if len(m.pets) > 0 {
@@ -138,12 +149,18 @@ func (m *Avatar) Decode(l logrus.FieldLogger, ctx context.Context) func(r *reque
 		_ = r.ReadUint32() // cash weapon
 
 		m.pets = make(map[int8]uint32)
-		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+		if (t.Region() == "GMS" && t.MajorVersion() >= 61) || t.Region() == "JMS" {
 			for i := int8(0); i < 3; i++ {
 				petId := r.ReadUint32()
 				if petId != 0 {
 					m.pets[i] = petId
 				}
+			}
+		} else if t.Region() == "GMS" && t.MajorVersion() > 28 {
+			// v48 legacy single pet: one 4-byte int.
+			petId := r.ReadUint32()
+			if petId != 0 {
+				m.pets[0] = petId
 			}
 		} else {
 			petId := r.ReadUint64()

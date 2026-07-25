@@ -1,15 +1,16 @@
 package wzinput
 
 import (
+	"atlas-data/rest"
 	"fmt"
 	"net/http"
 
-	"atlas-data/rest"
 	minio "atlas-data/storage/minio"
+
+	"github.com/jtumidanski/api2go/jsonapi"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 // Status represents the aggregate status of WZ uploads in a scope.
@@ -71,7 +72,7 @@ func statusHandler(mc *minio.Client) func(d *rest.HandlerDependency, c *rest.Han
 			prefix := fmt.Sprintf("%s/regions/%s/versions/%d.%d/", scope.Key, t.Region(), t.MajorVersion(), t.MinorVersion())
 			s, err := mc.PrefixStats(r.Context(), mc.Cfg().BucketWZ, prefix)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			query := r.URL.Query()

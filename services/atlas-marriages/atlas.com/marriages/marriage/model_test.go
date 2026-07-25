@@ -207,54 +207,54 @@ func TestProposal_StateTransitionValidation(t *testing.T) {
 	now := time.Now()
 
 	tests := []struct {
-		name        string
-		status      ProposalStatus
-		respondedAt *time.Time
+		name          string
+		status        ProposalStatus
+		respondedAt   *time.Time
 		cooldownUntil *time.Time
-		expectError bool
+		expectError   bool
 		errorContains string
 	}{
 		{
-			name:        "pending proposal with response timestamp",
-			status:      ProposalStatusPending,
-			respondedAt: &now,
-			expectError: true,
+			name:          "pending proposal with response timestamp",
+			status:        ProposalStatusPending,
+			respondedAt:   &now,
+			expectError:   true,
 			errorContains: "pending proposal cannot have response timestamp",
 		},
 		{
-			name:        "accepted proposal without response timestamp",
-			status:      ProposalStatusAccepted,
-			respondedAt: nil,
-			expectError: true,
+			name:          "accepted proposal without response timestamp",
+			status:        ProposalStatusAccepted,
+			respondedAt:   nil,
+			expectError:   true,
 			errorContains: "accepted proposal must have response timestamp",
 		},
 		{
-			name:        "rejected proposal without response timestamp",
-			status:      ProposalStatusRejected,
-			respondedAt: nil,
-			expectError: true,
+			name:          "rejected proposal without response timestamp",
+			status:        ProposalStatusRejected,
+			respondedAt:   nil,
+			expectError:   true,
 			errorContains: "rejected proposal must have response timestamp",
 		},
 		{
-			name:        "rejected proposal without cooldown timestamp",
-			status:      ProposalStatusRejected,
-			respondedAt: &now,
+			name:          "rejected proposal without cooldown timestamp",
+			status:        ProposalStatusRejected,
+			respondedAt:   &now,
 			cooldownUntil: nil,
-			expectError: true,
+			expectError:   true,
 			errorContains: "rejected proposal must have cooldown timestamp",
 		},
 		{
-			name:        "expired proposal with response timestamp",
-			status:      ProposalStatusExpired,
-			respondedAt: &now,
-			expectError: true,
+			name:          "expired proposal with response timestamp",
+			status:        ProposalStatusExpired,
+			respondedAt:   &now,
+			expectError:   true,
 			errorContains: "expired proposal cannot have response timestamp",
 		},
 		{
-			name:        "cancelled proposal with response timestamp",
-			status:      ProposalStatusCancelled,
-			respondedAt: &now,
-			expectError: true,
+			name:          "cancelled proposal with response timestamp",
+			status:        ProposalStatusCancelled,
+			respondedAt:   &now,
+			expectError:   true,
 			errorContains: "cancelled proposal cannot have response timestamp",
 		},
 		{
@@ -270,11 +270,11 @@ func TestProposal_StateTransitionValidation(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:        "valid rejected proposal",
-			status:      ProposalStatusRejected,
-			respondedAt: &now,
+			name:          "valid rejected proposal",
+			status:        ProposalStatusRejected,
+			respondedAt:   &now,
 			cooldownUntil: &now,
-			expectError: false,
+			expectError:   false,
 		},
 	}
 
@@ -409,129 +409,129 @@ func TestMarriage_StateTransitionValidation(t *testing.T) {
 	now := time.Now()
 
 	tests := []struct {
-		name        string
-		status      MarriageStatus
-		engagedAt   *time.Time
-		marriedAt   *time.Time
-		divorcedAt  *time.Time
-		expectError bool
+		name          string
+		status        MarriageStatus
+		engagedAt     *time.Time
+		marriedAt     *time.Time
+		divorcedAt    *time.Time
+		expectError   bool
 		errorContains string
 	}{
 		{
-			name:        "proposed marriage with engagement timestamp",
-			status:      StatusProposed,
-			engagedAt:   &now,
-			expectError: true,
+			name:          "proposed marriage with engagement timestamp",
+			status:        StatusProposed,
+			engagedAt:     &now,
+			expectError:   true,
 			errorContains: "proposed marriage cannot have engagement timestamp",
 		},
 		{
-			name:        "proposed marriage with marriage timestamp",
-			status:      StatusProposed,
-			marriedAt:   &now,
-			expectError: true,
+			name:          "proposed marriage with marriage timestamp",
+			status:        StatusProposed,
+			marriedAt:     &now,
+			expectError:   true,
 			errorContains: "proposed marriage cannot have marriage timestamp",
 		},
 		{
-			name:        "proposed marriage with divorce timestamp",
-			status:      StatusProposed,
-			divorcedAt:  &now,
-			expectError: true,
+			name:          "proposed marriage with divorce timestamp",
+			status:        StatusProposed,
+			divorcedAt:    &now,
+			expectError:   true,
 			errorContains: "proposed marriage cannot have divorce timestamp",
 		},
 		{
-			name:        "engaged marriage without engagement timestamp",
-			status:      StatusEngaged,
-			engagedAt:   nil,
-			expectError: true,
+			name:          "engaged marriage without engagement timestamp",
+			status:        StatusEngaged,
+			engagedAt:     nil,
+			expectError:   true,
 			errorContains: "engaged marriage must have engagement timestamp",
 		},
 		{
-			name:        "engaged marriage with marriage timestamp",
-			status:      StatusEngaged,
-			engagedAt:   &now,
-			marriedAt:   &now,
-			expectError: true,
+			name:          "engaged marriage with marriage timestamp",
+			status:        StatusEngaged,
+			engagedAt:     &now,
+			marriedAt:     &now,
+			expectError:   true,
 			errorContains: "engaged marriage cannot have marriage timestamp",
 		},
 		{
-			name:        "engaged marriage with divorce timestamp",
-			status:      StatusEngaged,
-			engagedAt:   &now,
-			divorcedAt:  &now,
-			expectError: true,
+			name:          "engaged marriage with divorce timestamp",
+			status:        StatusEngaged,
+			engagedAt:     &now,
+			divorcedAt:    &now,
+			expectError:   true,
 			errorContains: "engaged marriage cannot have divorce timestamp",
 		},
 		{
-			name:        "married marriage without engagement timestamp",
-			status:      StatusMarried,
-			engagedAt:   nil,
-			marriedAt:   &now,
-			expectError: true,
+			name:          "married marriage without engagement timestamp",
+			status:        StatusMarried,
+			engagedAt:     nil,
+			marriedAt:     &now,
+			expectError:   true,
 			errorContains: "married marriage must have engagement timestamp",
 		},
 		{
-			name:        "married marriage without marriage timestamp",
-			status:      StatusMarried,
-			engagedAt:   &now,
-			marriedAt:   nil,
-			expectError: true,
+			name:          "married marriage without marriage timestamp",
+			status:        StatusMarried,
+			engagedAt:     &now,
+			marriedAt:     nil,
+			expectError:   true,
 			errorContains: "married marriage must have marriage timestamp",
 		},
 		{
-			name:        "married marriage with divorce timestamp",
-			status:      StatusMarried,
-			engagedAt:   &now,
-			marriedAt:   &now,
-			divorcedAt:  &now,
-			expectError: true,
+			name:          "married marriage with divorce timestamp",
+			status:        StatusMarried,
+			engagedAt:     &now,
+			marriedAt:     &now,
+			divorcedAt:    &now,
+			expectError:   true,
 			errorContains: "married marriage cannot have divorce timestamp",
 		},
 		{
-			name:        "divorced marriage without engagement timestamp",
-			status:      StatusDivorced,
-			engagedAt:   nil,
-			marriedAt:   &now,
-			divorcedAt:  &now,
-			expectError: true,
+			name:          "divorced marriage without engagement timestamp",
+			status:        StatusDivorced,
+			engagedAt:     nil,
+			marriedAt:     &now,
+			divorcedAt:    &now,
+			expectError:   true,
 			errorContains: "divorced marriage must have engagement timestamp",
 		},
 		{
-			name:        "divorced marriage without marriage timestamp",
-			status:      StatusDivorced,
-			engagedAt:   &now,
-			marriedAt:   nil,
-			divorcedAt:  &now,
-			expectError: true,
+			name:          "divorced marriage without marriage timestamp",
+			status:        StatusDivorced,
+			engagedAt:     &now,
+			marriedAt:     nil,
+			divorcedAt:    &now,
+			expectError:   true,
 			errorContains: "divorced marriage must have marriage timestamp",
 		},
 		{
-			name:        "divorced marriage without divorce timestamp",
-			status:      StatusDivorced,
-			engagedAt:   &now,
-			marriedAt:   &now,
-			divorcedAt:  nil,
-			expectError: true,
+			name:          "divorced marriage without divorce timestamp",
+			status:        StatusDivorced,
+			engagedAt:     &now,
+			marriedAt:     &now,
+			divorcedAt:    nil,
+			expectError:   true,
 			errorContains: "divorced marriage must have divorce timestamp",
 		},
 		{
-			name:        "expired marriage with engagement timestamp",
-			status:      StatusExpired,
-			engagedAt:   &now,
-			expectError: true,
+			name:          "expired marriage with engagement timestamp",
+			status:        StatusExpired,
+			engagedAt:     &now,
+			expectError:   true,
 			errorContains: "expired marriage cannot have engagement timestamp",
 		},
 		{
-			name:        "expired marriage with marriage timestamp",
-			status:      StatusExpired,
-			marriedAt:   &now,
-			expectError: true,
+			name:          "expired marriage with marriage timestamp",
+			status:        StatusExpired,
+			marriedAt:     &now,
+			expectError:   true,
 			errorContains: "expired marriage cannot have marriage timestamp",
 		},
 		{
-			name:        "expired marriage with divorce timestamp",
-			status:      StatusExpired,
-			divorcedAt:  &now,
-			expectError: true,
+			name:          "expired marriage with divorce timestamp",
+			status:        StatusExpired,
+			divorcedAt:    &now,
+			expectError:   true,
 			errorContains: "expired marriage cannot have divorce timestamp",
 		},
 		{
@@ -830,127 +830,127 @@ func TestCeremony_StateTransitionValidation(t *testing.T) {
 	now := time.Now()
 
 	tests := []struct {
-		name        string
-		status      CeremonyStatus
-		startedAt   *time.Time
-		completedAt *time.Time
-		cancelledAt *time.Time
-		postponedAt *time.Time
-		expectError bool
+		name          string
+		status        CeremonyStatus
+		startedAt     *time.Time
+		completedAt   *time.Time
+		cancelledAt   *time.Time
+		postponedAt   *time.Time
+		expectError   bool
 		errorContains string
 	}{
 		{
-			name:        "scheduled ceremony with started timestamp",
-			status:      CeremonyStatusScheduled,
-			startedAt:   &now,
-			expectError: true,
+			name:          "scheduled ceremony with started timestamp",
+			status:        CeremonyStatusScheduled,
+			startedAt:     &now,
+			expectError:   true,
 			errorContains: "scheduled ceremony cannot have started timestamp",
 		},
 		{
-			name:        "scheduled ceremony with completed timestamp",
-			status:      CeremonyStatusScheduled,
-			completedAt: &now,
-			expectError: true,
+			name:          "scheduled ceremony with completed timestamp",
+			status:        CeremonyStatusScheduled,
+			completedAt:   &now,
+			expectError:   true,
 			errorContains: "scheduled ceremony cannot have completed timestamp",
 		},
 		{
-			name:        "scheduled ceremony with cancelled timestamp",
-			status:      CeremonyStatusScheduled,
-			cancelledAt: &now,
-			expectError: true,
+			name:          "scheduled ceremony with cancelled timestamp",
+			status:        CeremonyStatusScheduled,
+			cancelledAt:   &now,
+			expectError:   true,
 			errorContains: "scheduled ceremony cannot have cancelled timestamp",
 		},
 		{
-			name:        "scheduled ceremony with postponed timestamp",
-			status:      CeremonyStatusScheduled,
-			postponedAt: &now,
-			expectError: true,
+			name:          "scheduled ceremony with postponed timestamp",
+			status:        CeremonyStatusScheduled,
+			postponedAt:   &now,
+			expectError:   true,
 			errorContains: "scheduled ceremony cannot have postponed timestamp",
 		},
 		{
-			name:        "active ceremony without started timestamp",
-			status:      CeremonyStatusActive,
-			startedAt:   nil,
-			expectError: true,
+			name:          "active ceremony without started timestamp",
+			status:        CeremonyStatusActive,
+			startedAt:     nil,
+			expectError:   true,
 			errorContains: "active ceremony must have started timestamp",
 		},
 		{
-			name:        "active ceremony with completed timestamp",
-			status:      CeremonyStatusActive,
-			startedAt:   &now,
-			completedAt: &now,
-			expectError: true,
+			name:          "active ceremony with completed timestamp",
+			status:        CeremonyStatusActive,
+			startedAt:     &now,
+			completedAt:   &now,
+			expectError:   true,
 			errorContains: "active ceremony cannot have completed timestamp",
 		},
 		{
-			name:        "active ceremony with cancelled timestamp",
-			status:      CeremonyStatusActive,
-			startedAt:   &now,
-			cancelledAt: &now,
-			expectError: true,
+			name:          "active ceremony with cancelled timestamp",
+			status:        CeremonyStatusActive,
+			startedAt:     &now,
+			cancelledAt:   &now,
+			expectError:   true,
 			errorContains: "active ceremony cannot have cancelled timestamp",
 		},
 		{
-			name:        "completed ceremony without started timestamp",
-			status:      CeremonyStatusCompleted,
-			startedAt:   nil,
-			completedAt: &now,
-			expectError: true,
+			name:          "completed ceremony without started timestamp",
+			status:        CeremonyStatusCompleted,
+			startedAt:     nil,
+			completedAt:   &now,
+			expectError:   true,
 			errorContains: "completed ceremony must have started timestamp",
 		},
 		{
-			name:        "completed ceremony without completed timestamp",
-			status:      CeremonyStatusCompleted,
-			startedAt:   &now,
-			completedAt: nil,
-			expectError: true,
+			name:          "completed ceremony without completed timestamp",
+			status:        CeremonyStatusCompleted,
+			startedAt:     &now,
+			completedAt:   nil,
+			expectError:   true,
 			errorContains: "completed ceremony must have completed timestamp",
 		},
 		{
-			name:        "completed ceremony with cancelled timestamp",
-			status:      CeremonyStatusCompleted,
-			startedAt:   &now,
-			completedAt: &now,
-			cancelledAt: &now,
-			expectError: true,
+			name:          "completed ceremony with cancelled timestamp",
+			status:        CeremonyStatusCompleted,
+			startedAt:     &now,
+			completedAt:   &now,
+			cancelledAt:   &now,
+			expectError:   true,
 			errorContains: "completed ceremony cannot have cancelled timestamp",
 		},
 		{
-			name:        "cancelled ceremony without cancelled timestamp",
-			status:      CeremonyStatusCancelled,
-			cancelledAt: nil,
-			expectError: true,
+			name:          "cancelled ceremony without cancelled timestamp",
+			status:        CeremonyStatusCancelled,
+			cancelledAt:   nil,
+			expectError:   true,
 			errorContains: "cancelled ceremony must have cancelled timestamp",
 		},
 		{
-			name:        "cancelled ceremony with completed timestamp",
-			status:      CeremonyStatusCancelled,
-			cancelledAt: &now,
-			completedAt: &now,
-			expectError: true,
+			name:          "cancelled ceremony with completed timestamp",
+			status:        CeremonyStatusCancelled,
+			cancelledAt:   &now,
+			completedAt:   &now,
+			expectError:   true,
 			errorContains: "cancelled ceremony cannot have completed timestamp",
 		},
 		{
-			name:        "postponed ceremony without postponed timestamp",
-			status:      CeremonyStatusPostponed,
-			postponedAt: nil,
-			expectError: true,
+			name:          "postponed ceremony without postponed timestamp",
+			status:        CeremonyStatusPostponed,
+			postponedAt:   nil,
+			expectError:   true,
 			errorContains: "postponed ceremony must have postponed timestamp",
 		},
 		{
-			name:        "postponed ceremony with completed timestamp",
-			status:      CeremonyStatusPostponed,
-			postponedAt: &now,
-			completedAt: &now,
-			expectError: true,
+			name:          "postponed ceremony with completed timestamp",
+			status:        CeremonyStatusPostponed,
+			postponedAt:   &now,
+			completedAt:   &now,
+			expectError:   true,
 			errorContains: "postponed ceremony cannot have completed timestamp",
 		},
 		{
-			name:        "postponed ceremony with cancelled timestamp",
-			status:      CeremonyStatusPostponed,
-			postponedAt: &now,
-			cancelledAt: &now,
-			expectError: true,
+			name:          "postponed ceremony with cancelled timestamp",
+			status:        CeremonyStatusPostponed,
+			postponedAt:   &now,
+			cancelledAt:   &now,
+			expectError:   true,
 			errorContains: "postponed ceremony cannot have cancelled timestamp",
 		},
 		{
@@ -1196,7 +1196,7 @@ func TestMarriage_LevelRequirementBusinessRule(t *testing.T) {
 	if EligibilityRequirement != 10 {
 		t.Errorf("Business rule violation: Eligibility requirement should be 10, got %d", EligibilityRequirement)
 	}
-	
+
 	// This validates the core business rule from specification:
 	// "Characters must be level 10 or higher to marry"
 }
@@ -1228,11 +1228,11 @@ func TestProposal_CooldownBusinessRules(t *testing.T) {
 			rule:     "Starts at 24 hours after rejection or expiry, doubles on each successive rejection",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.constant != tt.expected {
-				t.Errorf("Business rule violation for %s: Expected %v, got %v. Rule: %s", 
+				t.Errorf("Business rule violation for %s: Expected %v, got %v. Rule: %s",
 					tt.name, tt.expected, tt.constant, tt.rule)
 			}
 		})
@@ -1266,11 +1266,11 @@ func TestCeremony_BusinessRuleConstants(t *testing.T) {
 			rule:     "Default duration is unlimited (instance-based)",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.constant != tt.expected {
-				t.Errorf("Business rule violation for %s: Expected %v, got %v. Rule: %s", 
+				t.Errorf("Business rule violation for %s: Expected %v, got %v. Rule: %s",
 					tt.name, tt.expected, tt.constant, tt.rule)
 			}
 		})
@@ -1282,19 +1282,19 @@ func TestProposal_ExponentialBackoffBusinessRule(t *testing.T) {
 	tenantId := uuid.New()
 	proposerId := uint32(1)
 	targetId := uint32(2)
-	
+
 	// Test exponential backoff: 24h, 48h, 96h, 192h, etc.
 	tests := []struct {
 		rejectionCount uint32
 		expectedHours  int
 	}{
-		{0, 24},   // Initial: 24 hours
-		{1, 48},   // After 1 rejection: 48 hours  
-		{2, 96},   // After 2 rejections: 96 hours
-		{3, 192},  // After 3 rejections: 192 hours
-		{4, 384},  // After 4 rejections: 384 hours
+		{0, 24},  // Initial: 24 hours
+		{1, 48},  // After 1 rejection: 48 hours
+		{2, 96},  // After 2 rejections: 96 hours
+		{3, 192}, // After 3 rejections: 192 hours
+		{4, 384}, // After 4 rejections: 384 hours
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("rejection_count_%d", tt.rejectionCount), func(t *testing.T) {
 			proposal, err := NewProposalBuilder(proposerId, targetId, tenantId).
@@ -1303,12 +1303,12 @@ func TestProposal_ExponentialBackoffBusinessRule(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to create proposal: %v", err)
 			}
-			
+
 			actualCooldown := proposal.CalculateNextCooldown()
 			expectedCooldown := time.Duration(tt.expectedHours) * time.Hour
-			
+
 			if actualCooldown != expectedCooldown {
-				t.Errorf("Business rule violation: Expected cooldown %v after %d rejections, got %v", 
+				t.Errorf("Business rule violation: Expected cooldown %v after %d rejections, got %v",
 					expectedCooldown, tt.rejectionCount, actualCooldown)
 			}
 		})
@@ -1321,20 +1321,20 @@ func TestMarriage_OneRelationshipBusinessRule(t *testing.T) {
 	characterId1 := uint32(1)
 	characterId2 := uint32(2)
 	characterId3 := uint32(3)
-	
+
 	// Create first marriage
 	marriage1, err := NewBuilder(characterId1, characterId2, tenantId).Build()
 	if err != nil {
 		t.Fatalf("Failed to create first marriage: %v", err)
 	}
-	
+
 	// Test that same characters cannot be in multiple relationships
 	validationTests := []struct {
-		name         string
-		char1        uint32
-		char2        uint32
-		expectValid  bool
-		description  string
+		name        string
+		char1       uint32
+		char2       uint32
+		expectValid bool
+		description string
 	}{
 		{
 			name:        "character1_in_second_relationship",
@@ -1347,7 +1347,7 @@ func TestMarriage_OneRelationshipBusinessRule(t *testing.T) {
 			name:        "character2_in_second_relationship",
 			char1:       characterId3,
 			char2:       characterId2, // Already in marriage1
-			expectValid: false, // This would be validated at processor level
+			expectValid: false,        // This would be validated at processor level
 			description: "Character 2 cannot be in second relationship",
 		},
 		{
@@ -1358,7 +1358,7 @@ func TestMarriage_OneRelationshipBusinessRule(t *testing.T) {
 			description: "New characters can start relationship",
 		},
 	}
-	
+
 	for _, tt := range validationTests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Model level doesn't enforce this rule (it's enforced at processor level)
@@ -1384,60 +1384,60 @@ func TestCeremony_InviteeBusinessRules(t *testing.T) {
 	marriageId := uint32(1)
 	characterId1 := uint32(1)
 	characterId2 := uint32(2)
-	
+
 	ceremony, err := NewCeremonyBuilder(marriageId, characterId1, characterId2, tenantId).Build()
 	if err != nil {
 		t.Fatalf("Failed to create ceremony: %v", err)
 	}
-	
+
 	t.Run("max_invitees_business_rule", func(t *testing.T) {
 		// Test the rule: "Up to 15 invitees may be included"
 		currentCeremony := ceremony
-		
+
 		// Add exactly 15 invitees (should succeed)
 		for i := 0; i < MaxInvitees; i++ {
 			inviteeId := uint32(i + 10) // Start from 10 to avoid conflicts
 			if !currentCeremony.CanAddInvitee(inviteeId) {
 				t.Errorf("Should be able to add invitee %d (within limit of %d)", i+1, MaxInvitees)
 			}
-			
+
 			currentCeremony, err = currentCeremony.AddInvitee(inviteeId)
 			if err != nil {
 				t.Fatalf("Failed to add invitee %d: %v", i+1, err)
 			}
 		}
-		
+
 		// Verify exactly at limit
 		if currentCeremony.InviteeCount() != MaxInvitees {
 			t.Errorf("Expected exactly %d invitees, got %d", MaxInvitees, currentCeremony.InviteeCount())
 		}
-		
+
 		// Try to add 16th invitee (should fail per business rule)
 		if currentCeremony.CanAddInvitee(uint32(100)) {
 			t.Error("Business rule violation: Should not be able to add 16th invitee (limit is 15)")
 		}
 	})
-	
+
 	t.Run("partners_cannot_be_invitees", func(t *testing.T) {
 		// Test the implicit rule: partners cannot be invitees
 		if ceremony.CanAddInvitee(characterId1) {
 			t.Error("Business rule violation: Partner 1 should not be addable as invitee")
 		}
-		
+
 		if ceremony.CanAddInvitee(characterId2) {
 			t.Error("Business rule violation: Partner 2 should not be addable as invitee")
 		}
 	})
-	
+
 	t.Run("duplicate_invitees_not_allowed", func(t *testing.T) {
 		// Test the implicit rule: no duplicate invitees
 		inviteeId := uint32(50)
-		
+
 		ceremonywithInvitee, err := ceremony.AddInvitee(inviteeId)
 		if err != nil {
 			t.Fatalf("Failed to add invitee: %v", err)
 		}
-		
+
 		if ceremonywithInvitee.CanAddInvitee(inviteeId) {
 			t.Error("Business rule violation: Should not be able to add duplicate invitee")
 		}
@@ -1450,93 +1450,93 @@ func TestCeremony_StateTransitionBusinessRules(t *testing.T) {
 	marriageId := uint32(1)
 	characterId1 := uint32(1)
 	characterId2 := uint32(2)
-	
+
 	ceremony, err := NewCeremonyBuilder(marriageId, characterId1, characterId2, tenantId).Build()
 	if err != nil {
 		t.Fatalf("Failed to create ceremony: %v", err)
 	}
-	
+
 	t.Run("ceremony_lifecycle_states", func(t *testing.T) {
 		// Test the state transition rule: Scheduled → Active → Completed | Cancelled | Postponed
-		
+
 		// Initial state should be Scheduled
 		if !ceremony.IsScheduled() {
 			t.Error("Business rule violation: New ceremony should be in Scheduled state")
 		}
-		
+
 		// Should be able to start from Scheduled
 		if !ceremony.CanStart() {
 			t.Error("Business rule violation: Scheduled ceremony should be startable")
 		}
-		
+
 		// Start ceremony
 		activeCeremony, err := ceremony.Start()
 		if err != nil {
 			t.Fatalf("Failed to start ceremony: %v", err)
 		}
-		
+
 		// Should be active
 		if !activeCeremony.IsActive() {
 			t.Error("Business rule violation: Started ceremony should be Active")
 		}
-		
+
 		// Should be able to complete from Active
 		if !activeCeremony.CanComplete() {
 			t.Error("Business rule violation: Active ceremony should be completable")
 		}
-		
+
 		// Should be able to postpone from Active
 		if !activeCeremony.CanPostpone() {
 			t.Error("Business rule violation: Active ceremony should be postponable")
 		}
-		
+
 		// Should be able to cancel from Active
 		if !activeCeremony.CanCancel() {
 			t.Error("Business rule violation: Active ceremony should be cancellable")
 		}
 	})
-	
+
 	t.Run("postponed_ceremony_restart", func(t *testing.T) {
 		// Test rule: "Must be restarted after rejoining"
 		activeCeremony, err := ceremony.Start()
 		if err != nil {
 			t.Fatalf("Failed to start ceremony: %v", err)
 		}
-		
+
 		// Postpone ceremony
 		postponedCeremony, err := activeCeremony.Postpone()
 		if err != nil {
 			t.Fatalf("Failed to postpone ceremony: %v", err)
 		}
-		
+
 		// Should be able to restart (can start from postponed)
 		if !postponedCeremony.CanStart() {
 			t.Error("Business rule violation: Postponed ceremony should be restartable")
 		}
-		
+
 		// Should be able to reschedule
 		if !postponedCeremony.CanReschedule() {
 			t.Error("Business rule violation: Postponed ceremony should be reschedulable")
 		}
 	})
-	
+
 	t.Run("completed_ceremony_terminal", func(t *testing.T) {
 		// Test rule: Completed ceremonies are terminal
 		activeCeremony, err := ceremony.Start()
 		if err != nil {
 			t.Fatalf("Failed to start ceremony: %v", err)
 		}
-		
+
 		completedCeremony, err := activeCeremony.Complete()
 		if err != nil {
 			t.Fatalf("Failed to complete ceremony: %v", err)
 		}
-		
+
 		// Should be finished (terminal state)
 		if !completedCeremony.IsFinished() {
 			t.Error("Business rule violation: Completed ceremony should be in terminal state")
 		}
-		
+
 		// Should not be able to perform any further actions
 		if completedCeremony.CanStart() {
 			t.Error("Business rule violation: Completed ceremony should not be startable")
@@ -1554,7 +1554,7 @@ func TestCeremony_StateTransitionBusinessRules(t *testing.T) {
 func contains(s, substr string) bool {
 	for i := 0; i <= len(s)-len(substr); i++ {
 		if s[i:i+len(substr)] == substr {
-				return true
+			return true
 		}
 	}
 	return false

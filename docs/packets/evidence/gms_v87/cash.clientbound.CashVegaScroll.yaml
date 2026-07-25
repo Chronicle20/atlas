@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashVegaScroll
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CUIVega::OnVegaResult
+    address: "0x8919b6"
+    decompile_sha256: d0cc20930611298b910ab2979d7724869cfe13d98da2a159f0c739a0e52684d6
+verifies:
+    - libs/atlas-packet/cash/clientbound/vega_scroll_test.go#TestVegaScrollByteOutput

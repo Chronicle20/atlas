@@ -6,7 +6,6 @@ import (
 	"atlas-messages/data/foothold"
 	monsterdata "atlas-messages/data/monster"
 	"atlas-messages/kafka/message/monster"
-	"atlas-messages/kafka/producer"
 	"atlas-messages/message"
 	"context"
 	"errors"
@@ -15,10 +14,13 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/sirupsen/logrus"
 )
 
 var validStatuses = []string{

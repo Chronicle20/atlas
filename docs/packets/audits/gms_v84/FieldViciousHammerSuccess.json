@@ -1,0 +1,30 @@
+{
+  "WriterName": "FieldViciousHammerSuccess",
+  "IDAName": "CField::OnItemUpgrade#Success",
+  "Address": "0x5443af",
+  "Variant": "GMS/v84",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/vicious_hammer.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (= 61; success) — sub_85676C a1[34]=v6",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "flag (0 = success -\u003e \"Increased available upgrade by 1. N upgrades are left\" StringPool 5059 where N = 2-a1[36]; non-0 -\u003e \"Unknown error %d\" StringPool 5757 using a1[35])",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

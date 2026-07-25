@@ -1,6 +1,11 @@
-
-import { useRef, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useRef } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Loader2,
@@ -16,7 +21,6 @@ import {
   FileArchive,
   FileText,
   RotateCcw,
-  Send,
 } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import {
@@ -41,30 +45,18 @@ import {
   useReactorScriptsSeedStatus,
   useMapActionScriptsSeedStatus,
 } from "@/lib/hooks/api/useSeed";
-import { SetupRow, formatCount, pluralize } from "@/components/features/setup/SetupRow";
-import { ScopeToggle, type Scope } from "@/components/features/setup/ScopeToggle";
-import { useRestoreBaseline, usePublishBaseline } from "@/lib/hooks/api/useBaseline";
+import { SetupRow } from "@/components/features/setup/SetupRow";
+import {
+  formatCount,
+  pluralize,
+} from "@/components/features/setup/setup-format";
+import { useRestoreBaseline } from "@/lib/hooks/api/useBaseline";
 import { useTenant } from "@/context/tenant-context";
-
-function formatBytes(bytes: number): string {
-  if (!bytes) return "0 B";
-  const units = ["B", "KB", "MB", "GB", "TB"];
-  let value = bytes;
-  let unit = 0;
-  while (value >= 1024 && unit < units.length - 1) {
-    value /= 1024;
-    unit++;
-  }
-  const formatted = new Intl.NumberFormat(undefined, {
-    maximumFractionDigits: value >= 10 || unit === 0 ? 0 : 1,
-  }).format(value);
-  return `${formatted} ${units[unit]}`;
-}
+import { formatBytes } from "@/lib/format";
 
 export function SetupPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { activeTenant } = useTenant();
-  const [scope, setScope] = useState<Scope>('tenant');
 
   const seedDrops = useSeedDrops();
   const seedGachapons = useSeedGachapons();
@@ -78,8 +70,8 @@ export function SetupPage() {
   const uploadWz = useUploadWzFiles();
   const runProcessing = useRunDataProcessing();
 
-  const wzInput = useWzInputStatus(scope);
-  const dataStatus = useDataStatus(scope);
+  const wzInput = useWzInputStatus();
+  const dataStatus = useDataStatus();
 
   const dropsSeed = useDropsSeedStatus();
   const gachaponsSeed = useGachaponsSeedStatus();
@@ -91,7 +83,6 @@ export function SetupPage() {
   const mapActionScriptsSeed = useMapActionScriptsSeedStatus();
 
   const restoreMutation = useRestoreBaseline(activeTenant);
-  const publishMutation = usePublishBaseline(activeTenant);
 
   const wzInputData = wzInput.data;
   const dataStatusData = dataStatus.data;
@@ -106,7 +97,7 @@ export function SetupPage() {
   const ingestDisabled =
     !wzInputData || wzInputData.fileCount === 0 || anyMutationPending;
 
-  const handleSeed = (mutation: { mutate: () => void; }, label: string) => {
+  const handleSeed = (mutation: { mutate: () => void }, label: string) => {
     mutation.mutate();
     toast.info(`Seeding ${label}...`);
   };
@@ -115,35 +106,28 @@ export function SetupPage() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (!file.name.toLowerCase().endsWith('.zip')) {
+    if (!file.name.toLowerCase().endsWith(".zip")) {
       toast.error("Please select a .zip file");
       return;
     }
 
     const size = file.size;
-    uploadWz.mutate({ file, scope }, {
-      onSuccess: () => {
-        toast.success(`WZ files uploaded (${formatBytes(size)})`);
+    uploadWz.mutate(
+      { file },
+      {
+        onSuccess: () => {
+          toast.success(`WZ files uploaded (${formatBytes(size)})`);
+        },
       },
-      onError: (error) => {
-        const err = error as Error & { status?: number };
-        if (err.status === 409) {
-          toast.error("Another upload or processing job is in progress for this tenant. Try again in a moment.");
-        } else if (err.status === 400) {
-          toast.error(`Upload rejected: ${err.message}`);
-        } else {
-          toast.error(`Upload failed: ${err.message}`);
-        }
-      },
-    });
+    );
 
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
   const handleRunProcessing = () => {
-    runProcessing.mutate(scope, {
+    runProcessing.mutate(undefined, {
       onSuccess: () => {
         toast.success("Data processing started");
       },
@@ -173,45 +157,17 @@ export function SetupPage() {
     );
   };
 
-  const handlePublishBaseline = () => {
-    if (!activeTenant) return;
-    publishMutation.mutate(
-      {
-        region: activeTenant.attributes.region,
-        majorVersion: activeTenant.attributes.majorVersion,
-        minorVersion: activeTenant.attributes.minorVersion,
-      },
-      {
-        onSuccess: () => {
-          toast.success("Canonical baseline published");
-        },
-        onError: (error) => {
-          toast.error(`Baseline publish failed: ${error.message}`);
-        },
-      },
-    );
-  };
-
-  const wzInputBadge = !wzInputData ? (
-    "—"
-  ) : wzInputData.fileCount === 0 ? (
-    "0 .wz files"
-  ) : (
-    `${formatCount(wzInputData.fileCount)} ${pluralize(wzInputData.fileCount, ".wz file", ".wz files")}, ${formatBytes(wzInputData.totalBytes)}`
-  );
+  const wzInputBadge = !wzInputData
+    ? "—"
+    : wzInputData.fileCount === 0
+      ? "0 .wz files"
+      : `${formatCount(wzInputData.fileCount)} ${pluralize(wzInputData.fileCount, ".wz file", ".wz files")}, ${formatBytes(wzInputData.totalBytes)}`;
 
   const dataStatusBadge = !dataStatusData
     ? "—"
     : `${formatCount(dataStatusData.documentCount)} ${pluralize(dataStatusData.documentCount, "document loaded", "documents loaded")}`;
 
   const showRestoreRow = dataStatusData?.documentCount === 0;
-  const showPublishRow =
-    scope === 'shared' && !!dataStatusData && dataStatusData.documentCount > 0;
-
-  const tenantRegion = activeTenant?.attributes.region ?? "";
-  const tenantVersion = activeTenant
-    ? `${activeTenant.attributes.majorVersion}.${activeTenant.attributes.minorVersion}`
-    : "";
 
   // formatBadge is a thunk that closes over its own status.data so the
   // map() loop below can render every row uniformly without an array
@@ -237,7 +193,7 @@ export function SetupPage() {
       },
     },
     {
-      label: "Gachapons",
+      label: "Reward Pools",
       icon: <Package className="h-5 w-5" />,
       mutation: seedGachapons,
       formatBadge: () => {
@@ -253,7 +209,9 @@ export function SetupPage() {
       mutation: seedNpcConversations,
       formatBadge: () => {
         const d = npcConversationsSeed.data;
-        return !d ? "—" : `${formatCount(d.conversationCount)} ${pluralize(d.conversationCount, "conversation", "conversations")}`;
+        return !d
+          ? "—"
+          : `${formatCount(d.conversationCount)} ${pluralize(d.conversationCount, "conversation", "conversations")}`;
       },
     },
     {
@@ -262,7 +220,9 @@ export function SetupPage() {
       mutation: seedQuestConversations,
       formatBadge: () => {
         const d = questConversationsSeed.data;
-        return !d ? "—" : `${formatCount(d.conversationCount)} ${pluralize(d.conversationCount, "conversation", "conversations")}`;
+        return !d
+          ? "—"
+          : `${formatCount(d.conversationCount)} ${pluralize(d.conversationCount, "conversation", "conversations")}`;
       },
     },
     {
@@ -282,7 +242,9 @@ export function SetupPage() {
       mutation: seedPortalScripts,
       formatBadge: () => {
         const d = portalScriptsSeed.data;
-        return !d ? "—" : `${formatCount(d.scriptCount)} ${pluralize(d.scriptCount, "script", "scripts")}`;
+        return !d
+          ? "—"
+          : `${formatCount(d.scriptCount)} ${pluralize(d.scriptCount, "script", "scripts")}`;
       },
     },
     {
@@ -291,7 +253,9 @@ export function SetupPage() {
       mutation: seedReactorScripts,
       formatBadge: () => {
         const d = reactorScriptsSeed.data;
-        return !d ? "—" : `${formatCount(d.scriptCount)} ${pluralize(d.scriptCount, "script", "scripts")}`;
+        return !d
+          ? "—"
+          : `${formatCount(d.scriptCount)} ${pluralize(d.scriptCount, "script", "scripts")}`;
       },
     },
     {
@@ -300,7 +264,9 @@ export function SetupPage() {
       mutation: seedMapActionScripts,
       formatBadge: () => {
         const d = mapActionScriptsSeed.data;
-        return !d ? "—" : `${formatCount(d.scriptCount)} ${pluralize(d.scriptCount, "map action", "map actions")}`;
+        return !d
+          ? "—"
+          : `${formatCount(d.scriptCount)} ${pluralize(d.scriptCount, "map action", "map actions")}`;
       },
     },
   ];
@@ -308,15 +274,18 @@ export function SetupPage() {
   return (
     <div className="flex flex-col space-y-6 p-10 pb-16 overflow-y-auto">
       <div className="items-center justify-between space-y-2">
-        <h2 className="text-2xl font-bold tracking-tight">Bootstrap</h2>
-        <p className="text-muted-foreground">Upload a WZ zip and process it into atlas-data, then seed service databases.</p>
+        <h2 className="text-2xl font-bold tracking-tight">Setup</h2>
+        <p className="text-muted-foreground">
+          Prepare the selected tenant&apos;s game data and seeded services.
+        </p>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Game Data</CardTitle>
           <CardDescription>
-            Upload a WZ zip and process it into atlas-data. Choose the tenant scope, or canonical (shared) when publishing a baseline.
+            Upload a WZ zip and process it into atlas-data for the selected
+            tenant.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -328,15 +297,6 @@ export function SetupPage() {
             onChange={handleFileUpload}
             aria-label="Upload WZ zip archive"
           />
-
-          <div className="mb-4">
-            <ScopeToggle
-              value={scope}
-              onChange={setScope}
-              region={tenantRegion}
-              version={tenantVersion}
-            />
-          </div>
 
           <SetupRow
             icon={<FileArchive className="h-5 w-5" />}
@@ -373,7 +333,10 @@ export function SetupPage() {
                 variant="outline"
                 onClick={handleRunProcessing}
                 disabled={ingestDisabled || !activeTenant}
-                title={ingestDisabledReason ?? (runProcessing.isPending ? "Processing…" : undefined)}
+                title={
+                  ingestDisabledReason ??
+                  (runProcessing.isPending ? "Processing…" : undefined)
+                }
               >
                 {runProcessing.isPending ? (
                   <>
@@ -386,35 +349,6 @@ export function SetupPage() {
               </Button>
             }
           />
-
-          {showPublishRow && (
-            <SetupRow
-              icon={<Send className="h-5 w-5" />}
-              label="Publish Canonical Baseline"
-              badge={
-                dataStatusData?.baselineSha256
-                  ? `sha256:${dataStatusData.baselineSha256.slice(0, 12)}…`
-                  : "—"
-              }
-              action={
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handlePublishBaseline}
-                  disabled={publishMutation.isPending || !activeTenant}
-                >
-                  {publishMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Publishing…
-                    </>
-                  ) : (
-                    "Publish Baseline"
-                  )}
-                </Button>
-              }
-            />
-          )}
 
           {showRestoreRow && (
             <SetupRow
@@ -450,7 +384,8 @@ export function SetupPage() {
       <div>
         <h3 className="text-lg font-semibold mb-3">Seed Data</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Populate individual service databases from their configured data sources.
+          Populate individual service databases from their configured data
+          sources.
         </p>
         <div className="grid gap-0">
           {seedRows.map((row) => (
@@ -466,7 +401,11 @@ export function SetupPage() {
                   onClick={() => handleSeed(row.mutation, row.label)}
                   disabled={row.mutation.isPending}
                 >
-                  {row.mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Seed"}
+                  {row.mutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "Seed"
+                  )}
                 </Button>
               }
             />

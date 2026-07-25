@@ -5,7 +5,10 @@ import type { ReactNode } from "react";
 import type { Tenant } from "@/services/api/tenants.service";
 import { useCharacterQuestStatus } from "../useCharacterQuestStatus";
 
-const fakeTenant = { id: "t1", attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 } } as unknown as Tenant;
+const fakeTenant = {
+  id: "t1",
+  attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 },
+} as unknown as Tenant;
 const getStartedMock = vi.fn();
 const getCompletedMock = vi.fn();
 vi.mock("@/services/api/quest-status.service", () => ({
@@ -26,7 +29,10 @@ describe("useCharacterQuestStatus", () => {
   it("issues both fetches in parallel and groups results", async () => {
     getStartedMock.mockResolvedValue([{ id: "100100" }]);
     getCompletedMock.mockResolvedValue([{ id: "100200" }, { id: "100201" }]);
-    const { result } = renderHook(() => useCharacterQuestStatus(fakeTenant, "42"), { wrapper });
+    const { result } = renderHook(
+      () => useCharacterQuestStatus(fakeTenant, "42"),
+      { wrapper },
+    );
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.started).toHaveLength(1);
     expect(result.current.data?.completed).toHaveLength(2);

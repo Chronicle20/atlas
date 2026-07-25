@@ -16,6 +16,7 @@
 | Topic | Environment Variable | Direction |
 |-------|---------------------|-----------|
 | Character Status Event | EVENT_TOPIC_CHARACTER_STATUS | Event |
+| Character Command | COMMAND_TOPIC_CHARACTER | Command |
 | Skill Command | COMMAND_TOPIC_SKILL | Command |
 | Drop Command | COMMAND_TOPIC_DROP | Command |
 
@@ -28,7 +29,6 @@
 | Type | Message Struct | Description |
 |------|---------------|-------------|
 | CREATE_CHARACTER | Command[CreateCharacterCommandBody] | Create new character |
-| CHANGE_MAP | Command[ChangeMapBody] | Change character map |
 | CHANGE_JOB | Command[ChangeJobCommandBody] | Change character job |
 | CHANGE_HAIR | Command[ChangeHairCommandBody] | Change hair style |
 | CHANGE_FACE | Command[ChangeFaceCommandBody] | Change face |
@@ -45,8 +45,13 @@
 | SET_HP | Command[SetHPBody] | Set HP to specific value |
 | DEDUCT_EXPERIENCE | Command[DeductExperienceCommandBody] | Deduct experience |
 | RESET_STATS | Command[ResetStatsCommandBody] | Reset character stats |
+| REBALANCE_AP | Command[RebalanceAPCommandBody] | Rebalance primary stat AP |
+| TRANSFER_AP | Command[TransferAPCommandBody] | Transfer AP between stats/pools (AP Reset) |
 | CLAMP_HP | Command[ClampHPBody] | Clamp HP to max value |
 | CLAMP_MP | Command[ClampMPBody] | Clamp MP to max value |
+| DELETE_CHARACTER | Command[DeleteCharacterCommandBody] | Saga-correlated delete (idempotent on missing rows) |
+
+`CHANGE_MAP` (Command[ChangeMapBody]) is defined on the wire but has no registered consumer handler.
 
 #### Character Movement Command Topic
 
@@ -93,15 +98,12 @@
 | DELETED | StatusEvent[StatusEventDeletedBody] | Character deleted |
 | LOGIN | StatusEvent[StatusEventLoginBody] | Character logged in |
 | LOGOUT | StatusEvent[StatusEventLogoutBody] | Character logged out |
-| CHANNEL_CHANGED | StatusEvent[ChangeChannelEventLoginBody] | Channel changed |
-| MAP_CHANGED | StatusEvent[StatusEventMapChangedBody] | Map changed |
 | JOB_CHANGED | StatusEvent[JobChangedStatusEventBody] | Job changed |
 | EXPERIENCE_CHANGED | StatusEvent[ExperienceChangedStatusEventBody] | Experience changed |
 | LEVEL_CHANGED | StatusEvent[LevelChangedStatusEventBody] | Level changed |
 | MESO_CHANGED | StatusEvent[MesoChangedStatusEventBody] | Meso changed |
 | FAME_CHANGED | StatusEvent[FameChangedStatusEventBody] | Fame changed |
 | STAT_CHANGED | StatusEvent[StatusEventStatChangedBody] | Stats changed |
-| UPDATED | StatusEvent[StatusEventUpdatedBody] | Character updated |
 | NAME_CHANGED | StatusEvent[StatusEventNameChangedBody] | Name changed |
 | HAIR_CHANGED | StatusEvent[StatusEventHairChangedBody] | Hair changed |
 | FACE_CHANGED | StatusEvent[StatusEventFaceChangedBody] | Face changed |
@@ -110,8 +112,17 @@
 | GM_CHANGED | StatusEvent[StatusEventGmChangedBody] | GM status changed |
 | DIED | StatusEvent[StatusEventDiedBody] | Character died |
 | ERROR | StatusEvent[StatusEventMesoErrorBody] | Not enough meso error |
+| ERROR | StatusEvent[StatusEventApTransferErrorBody] | AP transfer (point reset) rejected |
+
+`CHANNEL_CHANGED` (StatusEvent[ChangeChannelEventLoginBody]), `MAP_CHANGED` (StatusEvent[StatusEventMapChangedBody]), and `UPDATED` (StatusEvent[StatusEventUpdatedBody]) are defined on the wire but are never emitted by any processor path.
 
 ### Commands Produced
+
+#### Character Command Topic
+
+| Type | Message Struct | Description |
+|------|---------------|-------------|
+| AWARD_LEVEL | Command[AwardLevelCommandBody] | Emitted back onto the Character Command topic when experience award crosses a level threshold |
 
 #### Skill Command Topic
 
@@ -132,7 +143,7 @@
 
 **StatusEvent**
 ```
-accountId: uint32
+account_id: uint32
 name: string
 status: string
 ```
@@ -144,3 +155,5 @@ status: string
 - Drop commands are keyed by mapId for ordering
 - Headers include tenant context and trace span
 - Account deletion events trigger cascade deletion of all characters for the account
+- The Character Command topic is both consumed and produced by this service (AWARD_LEVEL is self-produced when AWARD_EXPERIENCE crosses a level threshold)
+- Most database-mutating character operations emit through a transactional outbox (atlas-outbox): the status event is committed in the same database transaction as the row mutation and drained to Kafka asynchronously. LOGIN, LOGOUT, and TRANSFER_AP's resulting events are produced directly (not outbox-backed)

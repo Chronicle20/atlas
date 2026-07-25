@@ -52,6 +52,7 @@ Generic command envelope.
 | questId | uint32 | Quest identifier |
 | npcId | uint32 | NPC identifier (optional) |
 | force | bool | Skip requirement validation |
+| rewards | []ItemReward | Item rewards granted alongside start by the calling saga (optional; overrides WZ-derived items on the STARTED event when present) |
 
 #### CompleteCommandBody
 
@@ -61,6 +62,7 @@ Generic command envelope.
 | npcId | uint32 | NPC identifier (optional) |
 | selection | int32 | Reward selection (optional) |
 | force | bool | Skip requirement validation |
+| rewards | []ItemReward | Item rewards granted alongside completion by the calling saga (optional; overrides WZ-derived items on the COMPLETED event when present) |
 
 #### ForfeitCommandBody
 
@@ -113,6 +115,7 @@ Generic event envelope.
 |-------|------|-------------|
 | questId | uint32 | Quest identifier |
 | progress | string | Initial progress string |
+| items | []ItemReward | Awarded/consumed items from start actions (optional) |
 
 #### QuestCompletedEventBody
 
@@ -238,6 +241,7 @@ Consumed from EVENT_TOPIC_CHARACTER_STATUS. Processes MAP_CHANGED events to:
 | transactionId | uuid.UUID | Unique transaction identifier |
 | sagaType | Type | Saga type |
 | initiatedBy | string | Originating identifier |
+| timeout | int64 | Per-saga timeout in milliseconds (optional; 0 = orchestrator default) |
 | steps | []Step | Saga steps |
 
 #### Saga Types
@@ -256,6 +260,8 @@ Consumed from EVENT_TOPIC_CHARACTER_STATUS. Processes MAP_CHANGED events to:
 | status | Status | Step status (pending/completed/failed) |
 | action | Action | Action type |
 | payload | object | Action-specific payload |
+| createdAt | time.Time | When the step was created |
+| updatedAt | time.Time | When the step was last updated |
 
 #### Actions
 
@@ -274,6 +280,7 @@ Consumed from EVENT_TOPIC_CHARACTER_STATUS. Processes MAP_CHANGED events to:
 |-------|------|-------------|
 | characterId | uint32 | Character identifier |
 | item | ItemDetail | Item details |
+| showEffect | bool | Render a client-visible item-gain effect/chat line when true |
 
 #### ItemDetail
 
@@ -292,6 +299,7 @@ Consumed from EVENT_TOPIC_CHARACTER_STATUS. Processes MAP_CHANGED events to:
 | worldId | byte | World identifier |
 | channelId | byte | Channel identifier |
 | distributions | []ExperienceDistribution | Experience distributions |
+| showEffect | bool | Render a client-visible EXP chat line when true |
 
 #### ExperienceDistribution
 
@@ -311,6 +319,7 @@ Consumed from EVENT_TOPIC_CHARACTER_STATUS. Processes MAP_CHANGED events to:
 | actorId | uint32 | Quest identifier |
 | actorType | string | Actor type (quest) |
 | amount | int32 | Meso amount |
+| showEffect | bool | Render the meso chat line on the client when true |
 
 #### AwardFamePayload
 
@@ -340,6 +349,8 @@ Consumed from EVENT_TOPIC_CHARACTER_STATUS. Processes MAP_CHANGED events to:
 | characterId | uint32 | Character identifier |
 | templateId | uint32 | Item template identifier |
 | quantity | uint32 | Quantity to consume |
+| removeAll | bool | If true, remove all instances of the item regardless of quantity |
+| showEffect | bool | Render the item-loss chat line on the client when true |
 
 ## Transaction Semantics
 
@@ -347,3 +358,4 @@ Consumed from EVENT_TOPIC_CHARACTER_STATUS. Processes MAP_CHANGED events to:
 - Status events include the originating transactionId
 - Saga commands generate a new transactionId for reward processing
 - Message ordering is guaranteed per character (partitioned by characterId)
+- Quest Status Events and Saga Commands are written to a transactional outbox table inside the same database transaction as the domain writes that trigger them; a background drainer publishes outbox rows to Kafka after the transaction commits

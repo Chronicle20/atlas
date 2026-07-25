@@ -1,4 +1,3 @@
-
 import { type ColumnDef } from "@tanstack/react-table";
 import type { MonsterData } from "@/types/models/monster";
 import { Link } from "react-router-dom";
@@ -9,7 +8,10 @@ export const columns: ColumnDef<MonsterData>[] = [
     accessorKey: "id",
     header: "ID",
     cell: ({ row }) => (
-      <Link to={`/monsters/${row.original.id}`} className="font-mono text-primary hover:underline">
+      <Link
+        to={`/monsters/${row.original.id}`}
+        className="font-mono text-primary hover:underline"
+      >
         {row.original.id}
       </Link>
     ),
@@ -18,7 +20,10 @@ export const columns: ColumnDef<MonsterData>[] = [
     accessorKey: "attributes.name",
     header: "Name",
     cell: ({ row }) => (
-      <Link to={`/monsters/${row.original.id}`} className="font-medium hover:underline">
+      <Link
+        to={`/monsters/${row.original.id}`}
+        className="font-medium hover:underline"
+      >
         {row.original.attributes.name}
       </Link>
     ),
@@ -66,4 +71,8 @@ export const columns: ColumnDef<MonsterData>[] = [
   },
 ];
 
-export const hiddenColumns = ["attributes.mp", "attributes.weapon_attack", "attributes.magic_attack"];
+export const hiddenColumns = [
+  "attributes.mp",
+  "attributes.weapon_attack",
+  "attributes.magic_attack",
+];

@@ -3,8 +3,9 @@ package serverbound
 import (
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 )
 
 const CashShopCheckWalletHandle = "CashShopCheckWalletHandle"

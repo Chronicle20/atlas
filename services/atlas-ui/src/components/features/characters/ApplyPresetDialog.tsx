@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -51,10 +51,10 @@ interface ApplyPresetDialogProps {
   accountId: number;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialPresetId?: string;
 }
 
-type CharacterPreset =
-  TenantConfigAttributes["characters"]["presets"][number];
+type CharacterPreset = TenantConfigAttributes["characters"]["presets"][number];
 
 type PresetWithId = CharacterPreset & { id: string };
 
@@ -100,6 +100,7 @@ export function ApplyPresetDialog({
   accountId,
   open,
   onOpenChange,
+  initialPresetId,
 }: ApplyPresetDialogProps) {
   const tenantConfigQuery = useTenantConfiguration(tenant.id);
   const servicesQuery = useServices();
@@ -126,9 +127,13 @@ export function ApplyPresetDialog({
       .filter(({ worldId }) => serviceableWorldIds.has(worldId));
   }, [tenantConfigQuery.data, serviceableWorldIds]);
 
-  const presets = (
-    tenantConfigQuery.data?.attributes?.characters?.presets ?? []
-  ).filter((p): p is PresetWithId => !!p.id);
+  const presets = useMemo(
+    () =>
+      (tenantConfigQuery.data?.attributes?.characters?.presets ?? []).filter(
+        (p): p is PresetWithId => !!p.id,
+      ),
+    [tenantConfigQuery.data],
+  );
   const mutation = useCreateCharacterFromPreset(tenant);
 
   const form = useForm<FormValues>({
@@ -145,19 +150,37 @@ export function ApplyPresetDialog({
   });
   const validity = validityQuery.data;
 
-  // Reset form on open/close
+  // Seed the form exactly once per dialog open (mirrors the pre-task
+  // behavior of one reset per `open` transition). If an `initialPresetId`
+  // was supplied and it matches a saved preset, pre-select it; otherwise
+  // fall back to no selection. `presets` is memoized above, but its
+  // identity can still change while the dialog stays open (e.g. the
+  // sibling character-presets editor invalidates the same tenant-config
+  // query on save) — `seededRef` guards against that later change
+  // re-running `form.reset` and clobbering whatever the user has since
+  // typed or picked. If the dialog opens before `presets` has loaded
+  // (empty array) and `initialPresetId` can't resolve yet, we deliberately
+  // skip marking as seeded so a later presets-load can still land the
+  // pre-selection exactly once.
+  const seededRef = useRef(false);
   useEffect(() => {
-    if (open) {
-      form.reset({ presetId: "", worldId: 0, name: "" });
+    if (!open) {
+      seededRef.current = false;
+      return;
     }
-  }, [open, form]);
+    if (seededRef.current) return;
 
-  // Read isValid unconditionally (not inside the short-circuiting `||` chain
-  // below) so react-hook-form's formState proxy subscribes to it from mount.
-  // Otherwise, while `validity` is undefined the `||` short-circuits before
-  // reaching `form.formState.isValid`, RHF never tracks/recomputes isValid, and
-  // by the time the async name check resolves it reads a stale `false` — leaving
-  // Apply permanently disabled.
+    const resolvesNow =
+      !!initialPresetId && presets.some((p) => p.id === initialPresetId);
+    const stillWaitingForPresets =
+      !!initialPresetId && !resolvesNow && presets.length === 0;
+    if (stillWaitingForPresets) return;
+
+    const preset = resolvesNow ? initialPresetId : "";
+    form.reset({ presetId: preset, worldId: 0, name: "" });
+    seededRef.current = true;
+  }, [open, form, initialPresetId, presets]);
+
   // Read isValid unconditionally (not inside the short-circuiting `||` chain
   // below) so react-hook-form's formState proxy subscribes to it from mount.
   // Otherwise, while `validity` is undefined the `||` short-circuits before
@@ -167,21 +190,26 @@ export function ApplyPresetDialog({
   const isFormValid = form.formState.isValid;
 
   const submitDisabled =
-    mutation.isPending ||
-    !validity ||
-    !validity.valid ||
-    !isFormValid;
+    mutation.isPending || !validity || !validity.valid || !isFormValid;
 
   const onSubmit = form.handleSubmit((values) => {
     mutation.mutate(
-      { presetId: values.presetId, accountId, worldId: values.worldId, name: values.name },
+      {
+        presetId: values.presetId,
+        accountId,
+        worldId: values.worldId,
+        name: values.name,
+      },
       {
         onSuccess: () => {
           toast.success("Character creation started.");
           onOpenChange(false);
         },
         onError: (err: unknown) => {
-          const error = err as { status?: number; response?: { status?: number } };
+          const error = err as {
+            status?: number;
+            response?: { status?: number };
+          };
           const status = error?.status ?? error?.response?.status;
           if (status === 409) {
             form.setError("name", { message: "Name already taken." });
@@ -216,9 +244,10 @@ export function ApplyPresetDialog({
                       {presets.map((p) => {
                         const selected = field.value === p.id;
                         const character = presetToCharacter(p);
-                        const inventory = synthesizeEquippedAssetsFromTemplateIds(
-                          p.attributes.equipment.map((e) => e.templateId),
-                        );
+                        const inventory =
+                          synthesizeEquippedAssetsFromTemplateIds(
+                            p.attributes.equipment.map((e) => e.templateId),
+                          );
                         return (
                           <button
                             key={p.id}
@@ -228,7 +257,8 @@ export function ApplyPresetDialog({
                             onClick={() => field.onChange(p.id)}
                             className={cn(
                               "flex cursor-pointer flex-col items-center gap-1 rounded-md border p-2 transition-colors hover:bg-accent/50 hover:border-accent-foreground/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                              selected && "ring-2 ring-primary border-primary hover:bg-primary/10",
+                              selected &&
+                                "ring-2 ring-primary border-primary hover:bg-primary/10",
                             )}
                           >
                             <div className="aspect-square w-full flex items-end justify-center bg-muted/30 rounded overflow-hidden">
@@ -256,7 +286,8 @@ export function ApplyPresetDialog({
                   </FormControl>
                   {presets.length === 0 && (
                     <FormDescription className="text-muted-foreground">
-                      No presets configured. Configure them under Tenant Details &rarr; Character Presets.
+                      No presets configured. Configure them under Tenant Details
+                      &rarr; Character Presets.
                     </FormDescription>
                   )}
                   <FormMessage />
@@ -290,8 +321,9 @@ export function ApplyPresetDialog({
                   </Select>
                   {worlds.length === 0 && (
                     <FormDescription className="text-muted-foreground">
-                      No worlds are serviced for this tenant. Configure a channel
-                      service for this tenant under Services to enable a world.
+                      No worlds are serviced for this tenant. Configure a
+                      channel service for this tenant under Services to enable a
+                      world.
                     </FormDescription>
                   )}
                   <FormMessage />
@@ -322,7 +354,11 @@ export function ApplyPresetDialog({
             />
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={submitDisabled}>
@@ -335,4 +371,3 @@ export function ApplyPresetDialog({
     </Dialog>
   );
 }
-

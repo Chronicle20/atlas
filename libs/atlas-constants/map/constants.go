@@ -688,8 +688,8 @@ const (
 	EmpressRoadToEreveFromElliniaBase2Id                   = Id(200090052)
 	SnowIslandToRienBaseId                                 = Id(200090060)
 	SnowIslandToLithHarborBaseId                           = Id(200090070)
-	//Id                                                     = Id(200090080) // not fully present in v83 some sort of evan transport map
-	//Id                                                     = Id(200090090) // not fully present in v83 some sort of evan transport map
+	// Id                                                     = Id(200090080) // not fully present in v83 some sort of evan transport map
+	// Id                                                     = Id(200090090) // not fully present in v83 some sort of evan transport map
 	OnAVoyageLudibriumId                               = Id(200090100)
 	OnAVoyageOrbisId                                   = Id(200090110)
 	DuringTheRideToLeafreId                            = Id(200090200)
@@ -2265,4 +2265,12 @@ const (
 	SharenianReturningPathId                           = Id(990001100)
 	SharenianGuildUnionCampId                          = Id(990001101)
 	EmptyMapId                                         = Id(999999999)
+)
+
+// Free Market interior maps (entrance + rooms 1-22). Range verified against
+// RunShopScanner in GMS v83 (0xa0a2dc) and v95 (0x9deb50) — the client
+// hard-blocks the shop scanner outside this range (task-127).
+const (
+	FreeMarketEntranceId = Id(910000000)
+	FreeMarketRoomLastId = Id(910000022)
 )

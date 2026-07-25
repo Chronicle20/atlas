@@ -5,8 +5,9 @@ import (
 	"errors"
 	"sort"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 )
 
 // ErrNoFreeSlots is returned by Model.NextFreeSlot when the compartment is at

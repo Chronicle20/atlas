@@ -1,12 +1,14 @@
 package character
 
 import (
+	"atlas-effective-stats/external/data/equipment"
 	"atlas-effective-stats/stat"
 	"testing"
 
 	character2 "atlas-effective-stats/character"
-	"atlas-effective-stats/external/data/equipment"
+
 	character3 "atlas-effective-stats/kafka/message/character"
+
 	conststat "github.com/Chronicle20/atlas/libs/atlas-constants/stat"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"

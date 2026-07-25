@@ -254,7 +254,6 @@ func TestHarvestDecompileSoftFail(t *testing.T) {
 
 	ef, err := Harvest(context.Background(), fc,
 		[]string{"sub_4E4427", "CWvsContext::f"}, HarvestOpts{DescentDepth: 4})
-
 	// The export must NOT return an error — soft decompile failure is not fatal.
 	if err != nil {
 		t.Fatalf("Harvest must not abort on decompile soft-fail; got error: %v", err)

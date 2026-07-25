@@ -4,10 +4,11 @@ import (
 	"atlas-inventory/kafka/message/asset"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 func makeAssetData(a Model) asset.AssetData {
@@ -16,6 +17,7 @@ func makeAssetData(a Model) asset.AssetData {
 		CreatedAt:      a.createdAt,
 		Quantity:       a.quantity,
 		OwnerId:        a.ownerId,
+		Owner:          a.owner,
 		Flag:           a.flag,
 		Rechargeable:   a.rechargeable,
 		Strength:       a.strength,
@@ -33,8 +35,8 @@ func makeAssetData(a Model) asset.AssetData {
 		Hands:          a.hands,
 		Speed:          a.speed,
 		Jump:           a.jump,
-		Slots:     a.slots,
-		LevelType: a.levelType,
+		Slots:          a.slots,
+		LevelType:      a.levelType,
 		Level:          a.level,
 		Experience:     a.experience,
 		HammersApplied: a.hammersApplied,

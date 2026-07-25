@@ -22,6 +22,7 @@ const (
 	EventKindCharacterCreationFailed    EventKind = "character.creation_failed"
 	EventKindCharacterStatChanged       EventKind = "character.stat_changed"
 	EventKindCharacterMesoError         EventKind = "character.meso_error"
+	EventKindCharacterApTransferError   EventKind = "character.ap_transfer_error"
 	EventKindCharacterDeleted           EventKind = "character.deleted"
 
 	// Asset subsystem.
@@ -29,6 +30,7 @@ const (
 	EventKindAssetDeleted         EventKind = "asset.deleted"
 	EventKindAssetQuantityChanged EventKind = "asset.quantity_changed"
 	EventKindAssetMoved           EventKind = "asset.moved"
+	EventKindAssetUpdated         EventKind = "asset.updated"
 
 	// Quest subsystem.
 	EventKindQuestStarted   EventKind = "quest.started"
@@ -36,9 +38,11 @@ const (
 	EventKindQuestForfeited EventKind = "quest.forfeited"
 
 	// Skill subsystem.
-	EventKindSkillCreated EventKind = "skill.created"
-	EventKindSkillUpdated EventKind = "skill.updated"
-	EventKindSkillDeleted EventKind = "skill.deleted"
+	EventKindSkillCreated         EventKind = "skill.created"
+	EventKindSkillUpdated         EventKind = "skill.updated"
+	EventKindSkillDeleted         EventKind = "skill.deleted"
+	EventKindSkillSpTransferred   EventKind = "skill.sp_transferred"
+	EventKindSkillSpTransferError EventKind = "skill.sp_transfer_error"
 
 	// Buddy list.
 	EventKindBuddyCapacityChanged EventKind = "buddy.capacity_changed"
@@ -52,9 +56,16 @@ const (
 
 	// Cash shop.
 	EventKindCashShopWalletUpdated       EventKind = "cashshop.wallet_updated"
+	EventKindCashShopWalletError         EventKind = "cashshop.wallet_error"
 	EventKindCashShopCompartmentAccepted EventKind = "cashshop.compartment_accepted"
 	EventKindCashShopCompartmentReleased EventKind = "cashshop.compartment_released"
 	EventKindCashShopCompartmentError    EventKind = "cashshop.compartment_error"
+
+	// MTS custody (atlas-mts custody acks on EVENT_TOPIC_MTS_CUSTODY_STATUS).
+	EventKindMtsCustodyAccepted EventKind = "mts.custody_accepted"
+	EventKindMtsCustodyReleased EventKind = "mts.custody_released"
+	EventKindMtsCustodyMoved    EventKind = "mts.custody_moved"
+	EventKindMtsCustodyError    EventKind = "mts.custody_error"
 
 	// Compartment (character inventory).
 	EventKindCompartmentCreated        EventKind = "compartment.created"
@@ -101,12 +112,15 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.EquipAsset:           {EventKindAssetMoved},
 	sharedsaga.UnequipAsset:         {EventKindAssetMoved},
 	sharedsaga.CreateAndEquipAsset:  {EventKindAssetCreated},
+	sharedsaga.SetAssetOwner:        {EventKindAssetUpdated},
+	sharedsaga.ApplyAssetLock:       {EventKindAssetUpdated},
+	sharedsaga.IncubatorResult:      {},
 
 	// Character/stat actions.
 	sharedsaga.AwardExperience:        {EventKindCharacterExperienceChanged},
 	sharedsaga.AwardLevel:             {EventKindCharacterLevelChanged},
 	sharedsaga.AwardMesos:             {EventKindCharacterMesoChanged, EventKindCharacterMesoError},
-	sharedsaga.AwardCurrency:          {EventKindCashShopWalletUpdated},
+	sharedsaga.AwardCurrency:          {EventKindCashShopWalletUpdated, EventKindCashShopWalletError},
 	sharedsaga.AwardFame:              {EventKindCharacterStatChanged},
 	sharedsaga.ChangeJob:              {EventKindCharacterJobChanged},
 	sharedsaga.ChangeHair:             {EventKindCharacterStatChanged},
@@ -117,6 +131,8 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.CancelAllBuffs:         {EventKindCharacterStatChanged},
 	sharedsaga.ResetStats:             {EventKindCharacterStatChanged},
 	sharedsaga.RebalanceAP:            {EventKindCharacterStatChanged},
+	sharedsaga.TransferAP:             {EventKindCharacterStatChanged, EventKindCharacterApTransferError},
+	sharedsaga.TransferSP:             {EventKindSkillSpTransferred, EventKindSkillSpTransferError},
 	sharedsaga.ValidateCharacterState: {},
 	sharedsaga.IncreaseBuddyCapacity:  {EventKindBuddyCapacityChanged},
 	sharedsaga.GainCloseness:          {EventKindPetClosenessChanged},
@@ -153,6 +169,15 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.AcceptToCashShop:     {EventKindCashShopCompartmentAccepted, EventKindCashShopCompartmentError},
 	sharedsaga.ReleaseFromCashShop:  {EventKindCashShopCompartmentReleased, EventKindCashShopCompartmentError},
 
+	// MTS.
+	sharedsaga.TransferToMts:           {}, // composite: expanded into release_from_character + accept_to_mts_listing
+	sharedsaga.WithdrawFromMts:         {}, // composite: expanded into release_from_mts_holding + accept_to_character
+	sharedsaga.MtsSettlePurchase:       {}, // composite: expanded into award_currency×2 + mts_move_listing_to_holding
+	sharedsaga.AcceptToMtsListing:      {EventKindMtsCustodyAccepted, EventKindMtsCustodyError},
+	sharedsaga.ReleaseFromMtsHolding:   {EventKindMtsCustodyReleased, EventKindMtsCustodyError},
+	sharedsaga.MtsMoveListingToHolding: {EventKindMtsCustodyMoved, EventKindMtsCustodyError},
+	sharedsaga.MtsBidEscrow:            {EventKindCashShopWalletUpdated, EventKindCashShopWalletError}, // reuses the cash-shop wallet ack
+
 	// Guild.
 	sharedsaga.RequestGuildName:             {EventKindGuildRequestAgreement, EventKindGuildCreated},
 	sharedsaga.RequestGuildEmblem:           {EventKindGuildEmblemUpdated},
@@ -167,8 +192,23 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.AwaitCharacterCreated: {EventKindCharacterCreated, EventKindCharacterCreationFailed},
 	sharedsaga.AwaitInventoryCreated: {EventKindInventoryCreated, EventKindInventoryCreationFailed},
 
+	// WarpToRandomPortal advances on the confirmed map change: atlas-character
+	// emits character.map_changed (tagged with the saga transactionId) after the
+	// warp lands, which handleCharacterMapChangedEvent turns into a StepCompleted.
+	// This is required for any saga that chains a step AFTER the warp — e.g. the
+	// teleport-rock consume_rock DestroyAsset (task-124). map_changed is a sound
+	// completion signal HERE because WarpToRandomPortal always targets a different
+	// map (teleport rock rejects same-map with mode 9; transports warp cross-map).
+	//
+	// WarpToPortal and WarpToSavedLocation share the same "handler fires and
+	// returns without StepCompleted" gap, but they can warp WITHIN the current map
+	// (portal-to-portal), where no map_changed fires — so map_changed is NOT a safe
+	// completion signal for them, and they stay self-completing {} below. Nothing
+	// chains a step after them today; when something needs to, complete them in the
+	// handler (or via a warp-ack event) rather than copying this map_changed entry.
+	sharedsaga.WarpToRandomPortal: {EventKindCharacterMapChanged},
+
 	// Fire-and-forget / self-completing actions (no Kafka event advances them).
-	sharedsaga.WarpToRandomPortal:         {},
 	sharedsaga.WarpToPortal:               {},
 	sharedsaga.WarpToSavedLocation:        {},
 	sharedsaga.SaveLocation:               {},
@@ -198,6 +238,9 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.SelectGachaponReward:       {},
 	sharedsaga.EmitGachaponWin:            {},
 	sharedsaga.StartInstanceTransport:     {},
+	sharedsaga.StartRPSGame:               {},
+	sharedsaga.EmitMegaphone:              {},
+	sharedsaga.EnqueueWorldBroadcast:      {},
 }
 
 // StepAcceptsEvent reports whether a saga step's Action can be legitimately
@@ -215,6 +258,116 @@ func StepAcceptsEvent(action sharedsaga.Action, kind EventKind) bool {
 	return false
 }
 
+// EventOutcome classifies an EventKind as a success signal (the step's side
+// effect landed downstream) or a failure signal (it did not). Late-after-
+// terminal routing (design §3.2/§3.4) uses this to decide whether a rollback
+// must be dispatched for an absorbed event.
+type EventOutcome string
+
+const (
+	OutcomeSuccess EventOutcome = "success"
+	OutcomeFailure EventOutcome = "failure"
+)
+
+// outcomeTable classifies every declared EventKind. invite.rejected is a
+// failure deliberately: a rejected invite left no side effect to roll back.
+var outcomeTable = map[EventKind]EventOutcome{
+	// Character subsystem.
+	EventKindCharacterMapChanged:        OutcomeSuccess,
+	EventKindCharacterExperienceChanged: OutcomeSuccess,
+	EventKindCharacterLevelChanged:      OutcomeSuccess,
+	EventKindCharacterMesoChanged:       OutcomeSuccess,
+	EventKindCharacterJobChanged:        OutcomeSuccess,
+	EventKindCharacterCreated:           OutcomeSuccess,
+	EventKindCharacterCreationFailed:    OutcomeFailure,
+	EventKindCharacterStatChanged:       OutcomeSuccess,
+	EventKindCharacterApTransferError:   OutcomeFailure,
+	EventKindCharacterMesoError:         OutcomeFailure,
+	EventKindCharacterDeleted:           OutcomeSuccess,
+
+	// Asset subsystem.
+	EventKindAssetCreated:         OutcomeSuccess,
+	EventKindAssetUpdated:         OutcomeSuccess,
+	EventKindAssetDeleted:         OutcomeSuccess,
+	EventKindAssetQuantityChanged: OutcomeSuccess,
+	EventKindAssetMoved:           OutcomeSuccess,
+
+	// Quest subsystem.
+	EventKindQuestStarted:   OutcomeSuccess,
+	EventKindQuestCompleted: OutcomeSuccess,
+	EventKindQuestForfeited: OutcomeSuccess,
+
+	// Skill subsystem.
+	EventKindSkillCreated:         OutcomeSuccess,
+	EventKindSkillUpdated:         OutcomeSuccess,
+	EventKindSkillDeleted:         OutcomeSuccess,
+	EventKindSkillSpTransferred:   OutcomeSuccess,
+	EventKindSkillSpTransferError: OutcomeFailure,
+
+	// Buddy list.
+	EventKindBuddyCapacityChanged: OutcomeSuccess,
+
+	// Consumable.
+	EventKindConsumableEffectApplied: OutcomeSuccess,
+
+	// Pet.
+	EventKindPetClosenessChanged: OutcomeSuccess,
+	EventKindPetEvolved:          OutcomeSuccess,
+
+	// Cash shop.
+	EventKindCashShopWalletUpdated:       OutcomeSuccess,
+	EventKindCashShopWalletError:         OutcomeFailure,
+	EventKindCashShopCompartmentAccepted: OutcomeSuccess,
+	EventKindCashShopCompartmentReleased: OutcomeSuccess,
+	EventKindCashShopCompartmentError:    OutcomeFailure,
+
+	// MTS custody (atlas-mts custody acks). A late success after a timeout must
+	// be classified so the terminal-race late-compensation path can roll back
+	// the custody move/accept/release; the *_error ack is a failure (no effect
+	// landed, absorb only).
+	EventKindMtsCustodyAccepted: OutcomeSuccess,
+	EventKindMtsCustodyReleased: OutcomeSuccess,
+	EventKindMtsCustodyMoved:    OutcomeSuccess,
+	EventKindMtsCustodyError:    OutcomeFailure,
+
+	// Compartment (character inventory).
+	EventKindCompartmentCreated:        OutcomeSuccess,
+	EventKindCompartmentCreationFailed: OutcomeFailure,
+	EventKindCompartmentDeleted:        OutcomeSuccess,
+	EventKindCompartmentAccepted:       OutcomeSuccess,
+	EventKindCompartmentReleased:       OutcomeSuccess,
+	EventKindCompartmentError:          OutcomeFailure,
+
+	// Inventory.
+	EventKindInventoryCreated:        OutcomeSuccess,
+	EventKindInventoryCreationFailed: OutcomeFailure,
+
+	// Storage.
+	EventKindStorageMesosUpdated:        OutcomeSuccess,
+	EventKindStorageError:               OutcomeFailure,
+	EventKindStorageCompartmentAccepted: OutcomeSuccess,
+	EventKindStorageCompartmentReleased: OutcomeSuccess,
+	EventKindStorageCompartmentError:    OutcomeFailure,
+
+	// Guild.
+	EventKindGuildRequestAgreement: OutcomeSuccess,
+	EventKindGuildCreated:          OutcomeSuccess,
+	EventKindGuildDisbanded:        OutcomeSuccess,
+	EventKindGuildEmblemUpdated:    OutcomeSuccess,
+	EventKindGuildCapacityUpdated:  OutcomeSuccess,
+
+	// Invite.
+	EventKindInviteCreated:  OutcomeSuccess,
+	EventKindInviteAccepted: OutcomeSuccess,
+	EventKindInviteRejected: OutcomeFailure,
+}
+
+// EventOutcomeOf returns the outcome classification for kind.
+func EventOutcomeOf(kind EventKind) (EventOutcome, bool) {
+	o, ok := outcomeTable[kind]
+	return o, ok
+}
+
 // SkipReason* constants are the `reason` field values on structured debug
 // logs emitted when AcceptEvent (or a handler-level guard) refuses to
 // complete a step. Centralised so per-consumer drift is impossible.
@@ -225,6 +378,7 @@ const (
 	SkipReasonTemplateIdMismatch = "template_id_mismatch"
 	SkipReasonUnmatchedEvent     = "unmatched_event"
 	SkipReasonNilTransactionId   = "nil_transaction_id"
+	SkipReasonSagaTerminal       = "saga_terminal"
 )
 
 // LogSkip emits a debug-level structured log with a `reason` field.

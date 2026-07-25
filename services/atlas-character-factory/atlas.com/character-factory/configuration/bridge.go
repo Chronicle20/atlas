@@ -1,10 +1,9 @@
 package configuration
 
 import (
+	"atlas-character-factory/configuration/tenant"
 	"context"
 	"time"
-
-	"atlas-character-factory/configuration/tenant"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"

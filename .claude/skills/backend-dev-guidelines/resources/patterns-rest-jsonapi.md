@@ -12,6 +12,7 @@ description: Handler and transport conventions for JSON:API-compliant endpoints 
 - **Handlers are thin - delegate ALL business logic to processors**
 - **NEVER call provider functions directly from handlers** - always go through processor layer
 - Use `server.MarshalResponse` for success responses
+- **Collection endpoints (`GET` returning a list) MUST paginate** - use `paginate.ParseParams` + a paged processor method (`AllProvider(page, decorators...)`) + `server.MarshalPaginatedResponse`, never `server.MarshalResponse[[]RestModel]` on a bare or filtered list. See [docs/rest-pagination.md](../../../../docs/rest-pagination.md) (repo root) for param names/defaults, the envelope shape, the `database.PagedQuery` vs `paginate.Slice` adapter-choice rule, and the internal-consumer drain rule (`requests.DrainProvider`).
 - Map domain errors to HTTP status codes explicitly
 
 ---

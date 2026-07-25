@@ -21,6 +21,8 @@ func NewProcessor() Processor {
 	return &ProcessorImpl{}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) RequestCreateItem(mb *message.Buffer) func(characterId uint32, templateId uint32, quantity uint32) error {
 	return func(characterId uint32, templateId uint32, quantity uint32) error {
 		inventoryType, ok := inventory.TypeFromItemId(item.Id(templateId))

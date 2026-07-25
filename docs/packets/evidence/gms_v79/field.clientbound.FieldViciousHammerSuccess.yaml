@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldViciousHammerSuccess
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnItemUpgrade#Success
+    address: "0x799d61"
+    decompile_sha256: 5bc3baa6538076472c316b86e92913843fe415ad91a0e3d12b20a64942afe3e1
+verifies:
+  - libs/atlas-packet/field/clientbound/vicious_hammer_test.go#TestViciousHammerSuccessByteOutput

@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldItcOperationBuyZzim
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnBuyZzim
+    address: "0x57aead"
+    decompile_sha256: 77133798d14a07a5042f1a0ef16371c227868d0c677fa49ca1bed07cfa4757f1

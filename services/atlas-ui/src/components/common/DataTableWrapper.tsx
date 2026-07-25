@@ -1,11 +1,11 @@
-import * as React from 'react';
-import { type ColumnDef } from '@tanstack/react-table';
-import { DataTable } from '@/components/data-table';
-import { PageLoader } from './PageLoader';
-import { ErrorDisplay } from './ErrorDisplay';
-import { EmptyState } from './EmptyState';
-import { cn } from '@/lib/utils';
-import { Database } from 'lucide-react';
+import * as React from "react";
+import { type ColumnDef } from "@tanstack/react-table";
+import { DataTable } from "@/components/data-table";
+import { PageLoader } from "./PageLoader";
+import { ErrorDisplay } from "./ErrorDisplay";
+import { EmptyState } from "./EmptyState";
+import { cn } from "@/lib/utils";
+import { Database } from "lucide-react";
 
 interface DataTableWrapperProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -47,7 +47,7 @@ export function DataTableWrapper<TData, TValue>({
   // Show loading state
   if (loading) {
     return (
-      <div className={cn('w-full', className)}>
+      <div className={cn("w-full", className)}>
         <PageLoader />
       </div>
     );
@@ -56,11 +56,8 @@ export function DataTableWrapper<TData, TValue>({
   // Show error state
   if (error) {
     return (
-      <div className={cn('w-full', className)}>
-        <ErrorDisplay 
-          error={error} 
-          {...(onRefresh && { retry: onRefresh })}
-        />
+      <div className={cn("w-full", className)}>
+        <ErrorDisplay error={error} {...(onRefresh && { retry: onRefresh })} />
       </div>
     );
   }
@@ -68,14 +65,14 @@ export function DataTableWrapper<TData, TValue>({
   // Show empty state when no data
   if (!data.length) {
     const defaultEmptyState = {
-      title: 'No data available',
-      description: 'There are no items to display at this time.',
+      title: "No data available",
+      description: "There are no items to display at this time.",
       icon: <Database className="h-12 w-12" />,
       ...emptyState,
     };
 
     return (
-      <div className={cn('w-full', className)}>
+      <div className={cn("w-full", className)}>
         <EmptyState {...defaultEmptyState} />
       </div>
     );
@@ -83,7 +80,7 @@ export function DataTableWrapper<TData, TValue>({
 
   // Show data table with data
   return (
-    <div className={cn('w-full', className)}>
+    <div className={cn("w-full", className)}>
       <DataTable
         columns={columns}
         data={data}

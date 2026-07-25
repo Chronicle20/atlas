@@ -3,9 +3,10 @@ package effective_stats
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/sirupsen/logrus"
 )
 
 // Processor wraps the effective-stats REST client so callers can fetch a
@@ -22,6 +23,8 @@ type ProcessorImpl struct {
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{l: l, ctx: ctx}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetByCharacterId(worldId world.Id, channelId channel.Id, characterId uint32) (RestModel, error) {
 	return requestByCharacter(worldId, channelId, characterId)(p.l, p.ctx)

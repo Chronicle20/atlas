@@ -1,21 +1,23 @@
-import { useQuery, type UseQueryResult } from '@tanstack/react-query';
-import { useTenant } from '@/context/tenant-context';
+import { useQuery, type UseQueryResult } from "@tanstack/react-query";
+import { useTenant } from "@/context/tenant-context";
 import {
   mapEntitiesService,
   type MapPortalData,
   type MapNpcData,
   type MapReactorData,
   type MapMonsterData,
-} from '@/services/api/map-entities.service';
+} from "@/services/api/map-entities.service";
 
 export const mapEntityKeys = {
-  portals: (mapId: string) => ['maps', mapId, 'portals'] as const,
-  npcs: (mapId: string) => ['maps', mapId, 'npcs'] as const,
-  reactors: (mapId: string) => ['maps', mapId, 'reactors'] as const,
-  monsters: (mapId: string) => ['maps', mapId, 'monsters'] as const,
+  portals: (mapId: string) => ["maps", mapId, "portals"] as const,
+  npcs: (mapId: string) => ["maps", mapId, "npcs"] as const,
+  reactors: (mapId: string) => ["maps", mapId, "reactors"] as const,
+  monsters: (mapId: string) => ["maps", mapId, "monsters"] as const,
 };
 
-export function useMapPortals(mapId: string): UseQueryResult<MapPortalData[], Error> {
+export function useMapPortals(
+  mapId: string,
+): UseQueryResult<MapPortalData[], Error> {
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: mapEntityKeys.portals(mapId),
@@ -37,7 +39,9 @@ export function useMapNpcs(mapId: string): UseQueryResult<MapNpcData[], Error> {
   });
 }
 
-export function useMapReactors(mapId: string): UseQueryResult<MapReactorData[], Error> {
+export function useMapReactors(
+  mapId: string,
+): UseQueryResult<MapReactorData[], Error> {
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: mapEntityKeys.reactors(mapId),
@@ -48,7 +52,9 @@ export function useMapReactors(mapId: string): UseQueryResult<MapReactorData[], 
   });
 }
 
-export function useMapMonsters(mapId: string): UseQueryResult<MapMonsterData[], Error> {
+export function useMapMonsters(
+  mapId: string,
+): UseQueryResult<MapMonsterData[], Error> {
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: mapEntityKeys.monsters(mapId),

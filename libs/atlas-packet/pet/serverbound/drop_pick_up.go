@@ -4,46 +4,47 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const PetDropPickUpHandle = "PetDropPickUpHandle"
 
 // packet-audit:fname CPet::SendDropPickUpRequest
 type DropPickUp struct {
-	petId          uint64
-	fieldKey       byte
-	updateTime     uint32
-	x              int16
-	y              int16
-	dropId         uint32
-	crc            uint32
-	bPickupOthers  bool
-	bSweepForDrop  bool
-	bLongRange     bool
-	ownerX         int16
-	ownerY         int16
-	posCrc         uint32
-	rectCrc        uint32
+	petId         uint64
+	fieldKey      byte
+	updateTime    uint32
+	x             int16
+	y             int16
+	dropId        uint32
+	crc           uint32
+	bPickupOthers bool
+	bSweepForDrop bool
+	bLongRange    bool
+	ownerX        int16
+	ownerY        int16
+	posCrc        uint32
+	rectCrc       uint32
 }
 
-func (m DropPickUp) PetId() uint64        { return m.petId }
-func (m DropPickUp) FieldKey() byte        { return m.fieldKey }
-func (m DropPickUp) UpdateTime() uint32    { return m.updateTime }
-func (m DropPickUp) X() int16              { return m.x }
-func (m DropPickUp) Y() int16              { return m.y }
-func (m DropPickUp) DropId() uint32        { return m.dropId }
-func (m DropPickUp) Crc() uint32           { return m.crc }
-func (m DropPickUp) BPickupOthers() bool   { return m.bPickupOthers }
-func (m DropPickUp) BSweepForDrop() bool   { return m.bSweepForDrop }
-func (m DropPickUp) BLongRange() bool      { return m.bLongRange }
-func (m DropPickUp) OwnerX() int16         { return m.ownerX }
-func (m DropPickUp) OwnerY() int16         { return m.ownerY }
-func (m DropPickUp) PosCrc() uint32        { return m.posCrc }
-func (m DropPickUp) RectCrc() uint32       { return m.rectCrc }
+func (m DropPickUp) PetId() uint64       { return m.petId }
+func (m DropPickUp) FieldKey() byte      { return m.fieldKey }
+func (m DropPickUp) UpdateTime() uint32  { return m.updateTime }
+func (m DropPickUp) X() int16            { return m.x }
+func (m DropPickUp) Y() int16            { return m.y }
+func (m DropPickUp) DropId() uint32      { return m.dropId }
+func (m DropPickUp) Crc() uint32         { return m.crc }
+func (m DropPickUp) BPickupOthers() bool { return m.bPickupOthers }
+func (m DropPickUp) BSweepForDrop() bool { return m.bSweepForDrop }
+func (m DropPickUp) BLongRange() bool    { return m.bLongRange }
+func (m DropPickUp) OwnerX() int16       { return m.ownerX }
+func (m DropPickUp) OwnerY() int16       { return m.ownerY }
+func (m DropPickUp) PosCrc() uint32      { return m.posCrc }
+func (m DropPickUp) RectCrc() uint32     { return m.rectCrc }
 
 func (m DropPickUp) Operation() string {
 	return PetDropPickUpHandle
@@ -57,13 +58,22 @@ func (m DropPickUp) Encode(l logrus.FieldLogger, ctx context.Context) func(optio
 	t := tenant.MustFromContext(ctx)
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
-		w.WriteLong(m.petId)
+		if hasLeadingPetId(t) {
+			w.WriteLong(m.petId) // absent on GMS v48 (single-pet; @0x58edb0 leads with fieldKey)
+		}
 		w.WriteByte(m.fieldKey)
 		w.WriteInt(m.updateTime)
 		w.WriteInt16(m.x)
 		w.WriteInt16(m.y)
 		w.WriteInt(m.dropId)
-		w.WriteInt(m.crc)
+		// crc is a v83+ field. v79 CPet::SendDropPickUpRequest (sub_6923af) encodes
+		// a single Encode4(dropId)@0x692451 then goes straight to the 3 bool bytes —
+		// no crc. v83 CPet::SendDropPickUpRequest@0x705c7c adds Encode4(a5=crc)@0x705d29
+		// after Encode4(a4=dropId)@0x705d1e. Gate to GMS>=83 || JMS so legacy v79 omits
+		// it; v83/84/87/95/jms keep their verified layout.
+		if (t.IsRegion("GMS") && t.MajorAtLeast(83)) || t.IsRegion("JMS") {
+			w.WriteInt(m.crc)
+		}
 		w.WriteBool(m.bPickupOthers)
 		w.WriteBool(m.bSweepForDrop)
 		w.WriteBool(m.bLongRange)
@@ -83,13 +93,18 @@ func (m DropPickUp) Encode(l logrus.FieldLogger, ctx context.Context) func(optio
 func (m *DropPickUp) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		m.petId = r.ReadUint64()
+		if hasLeadingPetId(t) {
+			m.petId = r.ReadUint64() // absent on GMS v48 (single-pet)
+		}
 		m.fieldKey = r.ReadByte()
 		m.updateTime = r.ReadUint32()
 		m.x = r.ReadInt16()
 		m.y = r.ReadInt16()
 		m.dropId = r.ReadUint32()
-		m.crc = r.ReadUint32()
+		// crc is a v83+ field (see Encode): legacy v79 omits it.
+		if (t.IsRegion("GMS") && t.MajorAtLeast(83)) || t.IsRegion("JMS") {
+			m.crc = r.ReadUint32()
+		}
 		m.bPickupOthers = r.ReadBool()
 		m.bSweepForDrop = r.ReadBool()
 		m.bLongRange = r.ReadBool()

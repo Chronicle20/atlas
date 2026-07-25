@@ -5,8 +5,9 @@ import (
 	"atlas-guilds/guild/title"
 	"errors"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 // Builder provides fluent construction of guild models

@@ -4,13 +4,16 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
-const BuddyOperationHandle = "BuddyOperationHandle"
-const BuddyOperationWriter = "BuddyOperation"
+const (
+	BuddyOperationHandle = "BuddyOperationHandle"
+	BuddyOperationWriter = "BuddyOperation"
+)
 
 type Operation struct {
 	op byte

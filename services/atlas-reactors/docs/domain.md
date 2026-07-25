@@ -40,6 +40,7 @@ Represents reactor game data retrieved from atlas-data service.
 | br          | point.Model               | Bottom-right bounding point          |
 | stateInfo   | map[int8][]state.Model    | State transition definitions         |
 | timeoutInfo | map[int8]int32            | Timeout per state                    |
+| timeoutNextStateInfo | map[int8]int8    | State to transition to when a state's timer fires |
 
 ### state.Model
 
@@ -84,9 +85,9 @@ Composite key for map-scoped operations.
 ## Invariants
 
 - Classification is required when building a reactor model
-- Reactor IDs are assigned via atomic Redis increment starting at 1000000001
-- Reactor IDs wrap around to 1000000001 if they exceed 2000000000
+- Reactor IDs are obtained from a shared cross-service allocator (see storage.md)
 - A reactor cannot be created at the same location (classification, x, y) while on cooldown
+- A reactor cannot be created at the same location while a create is already in flight for that location (spatial slot reservation dedupes concurrent CREATE commands)
 - Cooldown is recorded when a reactor is destroyed, based on its delay value
 - Cooldowns expire automatically via Redis TTL
 - Cooldowns are cleared when a reactor is successfully created at that location
@@ -150,21 +151,24 @@ Retrieves all reactors in a specific field (world/channel/map/instance combinati
 ### Create
 
 Creates a new reactor instance:
-1. Checks cooldown status for the location
-2. Retrieves reactor game data from atlas-data service
-3. Sets reactor name from game data if not provided
-4. Registers reactor in the registry
-5. Clears any cooldown for that location
-6. Arms state-timeout timer for the initial state if applicable
-7. Emits CREATED status event
+1. Checks cooldown status for the location; no-ops if on cooldown
+2. Attempts to reserve a spatial slot for the location; no-ops if already claimed by a concurrent create
+3. Retrieves reactor game data from atlas-data service; releases the slot and returns an error on failure
+4. Sets reactor name from game data if not provided
+5. Registers reactor in the registry; releases the slot and returns an error on failure
+6. Clears any cooldown for that location
+7. Arms state-timeout timer for the initial state if applicable
+8. Emits CREATED status event
 
 ### Destroy
 
 Destroys a reactor instance:
 1. Cancels any pending item-reactor activation
-2. Records cooldown based on reactor delay
-3. Removes reactor from registry
-4. Emits DESTROYED status event
+2. Cancels any pending state-timeout timer
+3. Records cooldown based on reactor delay
+4. Removes reactor from registry
+5. Releases the spatial slot for the reactor's location
+6. Emits DESTROYED status event
 
 ### Hit
 
@@ -193,8 +197,9 @@ Triggers reactor script execution and destroys the reactor:
 
 Destroys all reactors in a specific field (world/channel/map/instance combination):
 1. Retrieves all reactors in the field
-2. For each reactor: cancels pending item-reactor activation, removes from registry, emits DESTROYED status event
+2. For each reactor: cancels pending item-reactor activation, cancels pending state-timeout timer, removes from registry, releases its spatial slot, emits DESTROYED status event
 3. Clears all cooldowns for that map/instance
+4. Clears all spatial slots for that map/instance
 
 ### DestroyAll
 

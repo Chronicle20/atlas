@@ -3,8 +3,9 @@ package list
 import (
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 func byCharacterIdEntityProvider(characterId uint32) database.EntityProvider[Entity] {

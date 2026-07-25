@@ -1,11 +1,12 @@
 module github.com/Chronicle20/atlas/libs/atlas-socket
 
-go 1.25.0
+go 1.25.5
 
 require (
+	github.com/Chronicle20/atlas/libs/atlas-routine v0.0.0-00010101000000-000000000000
 	github.com/google/uuid v1.6.0
 	github.com/sirupsen/logrus v1.9.4
-	golang.org/x/text v0.38.0
+	golang.org/x/text v0.40.0
 )
 
 require (
@@ -14,3 +15,5 @@ require (
 	github.com/stretchr/testify v1.11.1 // indirect
 	golang.org/x/sys v0.45.0 // indirect
 )
+
+replace github.com/Chronicle20/atlas/libs/atlas-routine => ../atlas-routine

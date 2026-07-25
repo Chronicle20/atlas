@@ -89,3 +89,42 @@ func (c *Client) PrefixStats(ctx context.Context, bucket, prefix string) (Stats,
 	}
 	return s, nil
 }
+
+// ObjectInfo is the per-object subset of MinIO metadata returned by List.
+type ObjectInfo struct {
+	Key          string
+	Size         int64
+	LastModified time.Time
+}
+
+// List returns every object under bucket/prefix (recursive), one entry per
+// object. Mirrors PrefixStats but preserves per-object keys for callers that
+// need to enumerate rather than aggregate.
+func (c *Client) List(ctx context.Context, bucket, prefix string) ([]ObjectInfo, error) {
+	ch := c.mc.ListObjects(ctx, bucket, miniogo.ListObjectsOptions{Prefix: prefix, Recursive: true})
+	out := make([]ObjectInfo, 0)
+	for obj := range ch {
+		if obj.Err != nil {
+			return nil, obj.Err
+		}
+		out = append(out, ObjectInfo{Key: obj.Key, Size: obj.Size, LastModified: obj.LastModified})
+	}
+	return out, nil
+}
+
+// ListTenantPrefixes returns the immediate child prefixes under "tenants/"
+// (one per tenant uuid) using a delimiter listing, so it does not walk every
+// object. Each returned key has the form "tenants/<uuid>/".
+func (c *Client) ListTenantPrefixes(ctx context.Context, bucket string) ([]string, error) {
+	ch := c.mc.ListObjects(ctx, bucket, miniogo.ListObjectsOptions{Prefix: "tenants/", Recursive: false})
+	out := make([]string, 0)
+	for obj := range ch {
+		if obj.Err != nil {
+			return nil, obj.Err
+		}
+		if obj.Key != "tenants/" { // skip the self entry if returned
+			out = append(out, obj.Key)
+		}
+	}
+	return out, nil
+}

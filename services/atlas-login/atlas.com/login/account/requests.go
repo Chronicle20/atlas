@@ -7,20 +7,16 @@ import (
 )
 
 const (
-	AccountsResource   = "accounts"
-	AccountsByName     = AccountsResource + "?name=%s"
-	AccountsById       = AccountsResource + "/%d"
-	Update             = AccountsResource + "/%d"
-	PinAttempts        = AccountsResource + "/%d/pin-attempts"
-	PicAttempts        = AccountsResource + "/%d/pic-attempts"
+	AccountsResource = "accounts"
+	AccountsByName   = AccountsResource + "?name=%s"
+	AccountsById     = AccountsResource + "/%d"
+	Update           = AccountsResource + "/%d"
+	PinAttempts      = AccountsResource + "/%d/pin-attempts"
+	PicAttempts      = AccountsResource + "/%d/pic-attempts"
 )
 
 func getBaseRequest() string {
 	return requests.RootUrl("ACCOUNTS")
-}
-
-func requestAccounts() requests.Request[[]RestModel] {
-	return requests.GetRequest[[]RestModel](getBaseRequest() + AccountsResource)
 }
 
 func requestAccountByName(name string) requests.Request[RestModel] {

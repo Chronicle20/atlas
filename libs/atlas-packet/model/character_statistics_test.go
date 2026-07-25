@@ -73,7 +73,7 @@ func TestCharacterStatisticsRoundTrip(t *testing.T) {
 			if output.PetIds()[0] != input.PetIds()[0] {
 				t.Errorf("petIds[0]: got %v, want %v", output.PetIds()[0], input.PetIds()[0])
 			}
-			if v.MajorVersion > 28 || v.Region == "JMS" {
+			if v.MajorVersion >= 61 || v.Region == "JMS" {
 				if output.PetIds()[1] != input.PetIds()[1] {
 					t.Errorf("petIds[1]: got %v, want %v", output.PetIds()[1], input.PetIds()[1])
 				}

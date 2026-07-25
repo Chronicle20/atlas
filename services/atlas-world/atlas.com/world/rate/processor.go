@@ -3,13 +3,15 @@ package rate
 import (
 	"atlas-world/kafka/message"
 	rateMessage "atlas-world/kafka/message/rate"
-	"atlas-world/kafka/producer"
 	rateProducer "atlas-world/kafka/producer/rate"
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Processor interface {
@@ -30,6 +32,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		t:   tenant.MustFromContext(ctx),
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetWorldRates(worldId world.Id) Model {
 	return GetRegistry().GetWorldRates(p.ctx, worldId)

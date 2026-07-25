@@ -5,12 +5,13 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 )
 
 // TestHandleStatusEventMapChanged tests that map changed events are processed correctly
@@ -18,17 +19,17 @@ func TestHandleStatusEventMapChanged(t *testing.T) {
 	// Setup
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
-	
+
 	// Use a basic context - the tenant.MustFromContext will panic if tenant is not set
 	// but that's expected behavior for this test case
 	ctx := context.Background()
-	
+
 	characterId := uint32(12345)
 	oldMapId := _map.Id(100001)
 	targetMapId := _map.Id(100002)
 	channelId := channel.Id(0)
 	targetPortalId := uint32(0)
-	
+
 	// Create test event
 	event := character.StatusEvent[character.StatusEventMapChangedBody]{
 		CharacterId: characterId,
@@ -41,10 +42,10 @@ func TestHandleStatusEventMapChanged(t *testing.T) {
 			TargetPortalId: targetPortalId,
 		},
 	}
-	
+
 	// Create the handler with nil db for this test
 	handler := handleStatusEventMapChanged(nil)
-	
+
 	// Execute the handler - this will likely panic due to missing tenant context
 	// but that's okay - we're testing that the handler processes the correct event type
 	// The panic will occur in conversation.NewProcessor when it tries to extract tenant
@@ -58,15 +59,15 @@ func TestHandleStatusEventMapChangedIgnoresWrongEventType(t *testing.T) {
 	// Setup
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
-	
+
 	ctx := context.Background()
-	
+
 	characterId := uint32(12345)
 	oldMapId := _map.Id(100001)
 	targetMapId := _map.Id(100002)
 	channelId := channel.Id(0)
 	targetPortalId := uint32(0)
-	
+
 	// Create test event with wrong type
 	event := character.StatusEvent[character.StatusEventMapChangedBody]{
 		CharacterId: characterId,
@@ -79,10 +80,10 @@ func TestHandleStatusEventMapChangedIgnoresWrongEventType(t *testing.T) {
 			TargetPortalId: targetPortalId,
 		},
 	}
-	
+
 	// Create the handler
 	handler := handleStatusEventMapChanged(nil)
-	
+
 	// Execute the handler - should return immediately without processing
 	// since the event type doesn't match, the handler should return early
 	// before it gets to the tenant extraction code
@@ -96,7 +97,7 @@ func TestHandleStatusEventMapChangedFunctionExists(t *testing.T) {
 	// This test ensures the function exists and has the correct signature
 	handler := handleStatusEventMapChanged((*gorm.DB)(nil))
 	assert.NotNil(t, handler)
-	
+
 	// Test that the returned function has the correct signature
 	logger := logrus.New()
 	ctx := context.Background()
@@ -111,7 +112,7 @@ func TestHandleStatusEventMapChangedFunctionExists(t *testing.T) {
 			TargetPortalId: uint32(0),
 		},
 	}
-	
+
 	// Should panic when called with correct arguments but no tenant context
 	assert.Panics(t, func() {
 		handler(logger, ctx, event)
@@ -123,7 +124,7 @@ func TestHandleStatusEventMapChangedHandlerRegistration(t *testing.T) {
 	// Verify that the InitHandlers function exists and can be called
 	logger := logrus.New()
 	var db *gorm.DB
-	
+
 	// This should not panic
 	assert.NotPanics(t, func() {
 		initHandlers := InitHandlers(logger, db)

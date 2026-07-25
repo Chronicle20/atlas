@@ -1,0 +1,39 @@
+{
+  "service": "task-130-vegas-spell (atlas-consumables, atlas-channel, libs/atlas-constants, libs/atlas-packet)",
+  "path": "services/atlas-consumables, services/atlas-channel, libs/atlas-constants/item, libs/atlas-packet/cash",
+  "date": "2026-07-03",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "domains": [
+    {
+      "name": "consumables/consumable (Kafka-driven processor)",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-06", "name": "Processor accepts FieldLogger", "status": "pass", "evidence": "processor.go:60"},
+        {"id": "DOM-07", "name": "Handlers pass logger", "status": "pass", "evidence": "kafka/consumer/consumable/consumer.go:71-79"},
+        {"id": "DOM-12", "name": "No os.Getenv in handlers", "status": "pass", "evidence": "topics via topic.EnvProvider"},
+        {"id": "DOM-13", "name": "No cross-domain logic in handlers", "status": "pass", "evidence": "socket handler delegates to processor character_cash_item_use.go:125"},
+        {"id": "DOM-15", "name": "No direct DB in handlers", "status": "pass", "evidence": "writes via compartment processor reserve/consume/destroy"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "vega_test.go:18; processor_test.go:321"},
+        {"id": "DOM-21", "name": "No duplicated atlas-constants types", "status": "pass", "evidence": "libs/atlas-constants/item/vegas_spell.go sole home; consumers use item.VegasSpell10/60"},
+        {"id": "DOM-23", "name": "Kafka topic naming", "status": "pass", "evidence": "no new topics; existing COMMAND_TOPIC_CONSUMABLE/EVENT_TOPIC_CONSUMABLE_STATUS kafka.go:14,71"},
+        {"id": "DOM-24", "name": "Kafka producer stubbed in emitting tests", "status": "pass", "evidence": "emit paths not exercised; pkg tests complete in 0.012s"}
+      ]
+    },
+    {
+      "name": "channel/consumable + kafka + socket/handler (mirror/dispatch)",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-06", "name": "Processor accepts FieldLogger", "status": "pass", "evidence": "channel consumable/processor.go:20"},
+        {"id": "MT", "name": "Tenant gating in event handlers", "status": "pass", "evidence": "consumer.go:69-72,112-115,132-135"},
+        {"id": "KAFKA-COMPAT", "name": "Command/Event mirror field parity", "status": "pass", "evidence": "channel kafka.go:44-49,78-81 matches consumables kafka.go:51-56,102-105"}
+      ]
+    }
+  ],
+  "blocking": [],
+  "nonBlocking": [
+    "Pre-existing TODO at services/atlas-channel/atlas.com/channel/socket/handler/character_cash_item_use.go:129 (commit b8475413f) — not task-130, out of scope"
+  ]
+}

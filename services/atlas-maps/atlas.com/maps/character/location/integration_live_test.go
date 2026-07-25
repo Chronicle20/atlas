@@ -18,7 +18,8 @@ import "testing"
 
 // TestI2_DisconnectOnTransitMap — design.md §8 row I2.
 // "Disconnect on transit map 200090000 → Login lands at 200000100 (Orbis dock).
-//  HandleLogin no-op."
+//
+//	HandleLogin no-op."
 //
 // Why live infra: the transit map redirect lives in atlas-transports (the
 // in-flight route table) and atlas-channel's HandleLogin no-op path. Verifying
@@ -30,7 +31,8 @@ func TestI2_DisconnectOnTransitMap(t *testing.T) {
 
 // TestI7_ConcurrentDisconnectDuringChannelChange — design.md §8 row I7.
 // "Concurrent disconnect during channel-change → character_locations final
-//  value matches disconnect's resolution."
+//
+//	value matches disconnect's resolution."
 //
 // Why live infra: this exercises a race between two services (atlas-channel
 // emitting CHANGE_CHANNEL_REQUEST while the socket simultaneously closes,
@@ -43,7 +45,8 @@ func TestI7_ConcurrentDisconnectDuringChannelChange(t *testing.T) {
 
 // TestI8_AtlasMapsUnreachableDuringSessionBootstrap — design.md §8 row I8.
 // "atlas-maps unreachable during session bootstrap → atlas-channel returns
-//  error to client; player at character-select."
+//
+//	error to client; player at character-select."
 //
 // Why live infra: this scenario asserts atlas-channel's behavior when its
 // HTTP call to atlas-maps fails. Reproducing requires the atlas-channel binary,

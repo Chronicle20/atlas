@@ -1,0 +1,88 @@
+{
+  "service": "atlas-channel",
+  "path": "services/atlas-channel/atlas.com/channel",
+  "gitRange": "43894c25bfc368d743a5434c4537c112f8a85b14..d5d2e104d",
+  "date": "2026-07-17",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "testsNote": "go test -race ./... -count=1 clean across all packages; go vet clean; tools/goroutine-guard.sh exit 0",
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "character/buff",
+      "type": "domain (pre-existing, model.go untouched this range)",
+      "checks": [
+        {"id": "DOM-06", "name": "Processor accepts FieldLogger", "status": "pass", "evidence": "character/buff/processor.go:30"},
+        {"id": "DOM-21", "name": "No duplication of atlas-constants types", "status": "pass", "evidence": "character/buff/hidden.go:4,15 uses skill2.SuperGmHideId (libs/atlas-constants/skill/constants.go:3253); healdispel.go:33-42 diseaseTypes uses charconst.TemporaryStatType* constants"},
+        {"id": "DOM-24", "name": "Kafka producer stubbed in emit-path tests", "status": "pass", "evidence": "producer_test.go tests only the pure CancelByTypesCommandProvider builder, never ProcessorImpl.CancelByTypes; no test invokes a real emit path"},
+        {"id": "FILE-06", "name": "No package-named catch-all file", "status": "pass", "evidence": "hidden.go:1-20 is a single-purpose predicate file"}
+      ]
+    },
+    {
+      "name": "data/skill/effect",
+      "type": "domain (pre-existing)",
+      "checks": [
+        {"id": "-", "name": "Dead-code cleanup after accessor removal", "status": "pass", "evidence": "d5d2e104d removes MP()/HpR()/MpR() from model.go + model_test.go in the same commit that stops referencing them; net diff vs base is empty"}
+      ]
+    },
+    {
+      "name": "skill/handler/healdispel",
+      "type": "support (skill-cast orchestrator, no model.go/resource.go)",
+      "checks": [
+        {"id": "-", "name": "Per-recipient failure isolation", "status": "pass", "evidence": "healdispel.go:120-132 log-and-continue; verified by TestPerRecipientIsolation healdispel_test.go:118-150"},
+        {"id": "-", "name": "SuperGM job gate fails closed", "status": "pass", "evidence": "healdispel.go:95-103"},
+        {"id": "DOM-21", "name": "Job constant sourced from atlas-constants", "status": "pass", "evidence": "job.SuperGmId = libs/atlas-constants/job/constants.go:1190; job.IsA = libs/atlas-constants/job/model.go:31"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "healdispel_test.go: 5 separate Test functions, none using tests := []struct{...}{} + t.Run"},
+        {"id": "-", "name": "Fail-open default on isGmHidden error leaks position via foreign announce", "status": "fail", "evidence": "healdispel.go:105-109 defaults hidden=false on error; :138-142 fires announceForeign when !hidden; contradicts design.md:70 (OQ-3) and hide.go:37-39 anti-leak rationale"}
+      ]
+    },
+    {
+      "name": "skill/handler/hide",
+      "type": "support (skill-cast orchestrator, no model.go/resource.go)",
+      "checks": [
+        {"id": "-", "name": "No foreign skill-use leak on toggle", "status": "pass", "evidence": "hide.go:38-39,89-92 — no foreign-announce seam exists"},
+        {"id": "DOM-21", "name": "DARK_SIGHT stat sourced from atlas-constants", "status": "pass", "evidence": "hide.go:17,125 charconst.TemporaryStatTypeDarkSight -> libs/atlas-constants/character/temporary_stat.go:16"},
+        {"id": "-", "name": "Layering: imports kafka/consumer/map directly", "status": "warn", "evidence": "hide.go:11,131-136 imports _mapconsumer kafka/consumer/map; no circular import, but unusual dependency direction (skill handler -> Kafka consumer package)"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "hide_test.go: 3 separate Test functions, no t.Run table"}
+      ]
+    },
+    {
+      "name": "kafka/consumer/map",
+      "type": "support (Kafka consumer / broadcast, pre-existing file, ~100 new lines)",
+      "checks": [
+        {"id": "-", "name": "Single wire-emit choke point claim", "status": "pass", "evidence": "grep confirms exactly one CharacterSpawnBody( call site, consumer.go:439, inside emitCharacterSpawn; both spawn variants route through it"},
+        {"id": "DOM-26", "name": "Goroutines via routine.Go", "status": "pass", "evidence": "consumer.go SpawnForSelf uses routine.Go throughout; zero bare go statements; tools/goroutine-guard.sh exit 0"},
+        {"id": "-", "name": "Concurrency of buff read under ParallelExecute fan-out", "status": "pass-with-note", "evidence": "map/processor.go:102-105 -> session/processor.go:227-231 ParallelExecute; no data race (go test -race clean) but N redundant identical REST calls per broadcast, inherited pattern"},
+        {"id": "-", "name": "Untested new suppression/reveal logic", "status": "fail", "evidence": "consumer.go:456-467 (IsGmHidden gate), :434-444 (emitCharacterSpawn), :497-512 (spawnCharacterForSessionRevealed), :517-521 (DespawnCharacterInMap), :533-543 (SpawnCharacterInMap) have zero direct unit tests; consumer_test.go gained no new Test functions in range"}
+      ]
+    },
+    {
+      "name": "skill/handler (recipients.go)",
+      "type": "support (shared selector library)",
+      "checks": [
+        {"id": "-", "name": "SelectAllCharactersInMap matches documented contract", "status": "pass", "evidence": "recipients.go:203-223 no bitmap/rect/HP filter, matches doc comment; recipients_map_test.go:36-40 asserts HP-0 recipient kept"},
+        {"id": "DOM-20", "name": "Table-driven test", "status": "fail", "evidence": "recipients_map_test.go single Test function, not t.Run table"}
+      ]
+    },
+    {
+      "name": "documentation",
+      "type": "cross-cutting",
+      "checks": [
+        {"id": "-", "name": "docs/kafka.md documents new CANCEL_BY_TYPES command", "status": "fail", "evidence": "docs/kafka.md:394-398 lists only Command[ApplyBody], Command[CancelBody]; CancelByTypesCommandBody absent; file untouched in range"},
+        {"id": "-", "name": "docs/domain.md documents new Hide/HealDispel skill handlers", "status": "fail", "evidence": "grep -in 'hide|healdispel' docs/domain.md returns nothing; file untouched in range; precedent section exists for Mystic Door (domain.md:308-313)"}
+      ]
+    }
+  ],
+  "blocking": [
+    "Untested GM-hide suppression/reveal choke point in kafka/consumer/map/consumer.go (IsGmHidden gate, emitCharacterSpawn, spawnCharacterForSessionRevealed, DespawnCharacterInMap, SpawnCharacterInMap)",
+    "healdispel.go:105-109,138-142 fail-open default on isGmHidden resolution error broadcasts foreign skill-use animation, leaking a potentially-hidden GM's position — contradicts design.md:70 (OQ-3)",
+    "docs/kafka.md not updated for new CancelByTypesCommandBody command type on COMMAND_TOPIC_CHARACTER_BUFF",
+    "docs/domain.md not updated with sections for the new Hide / Heal+Dispel skill handlers"
+  ],
+  "nonBlocking": [
+    "DOM-20: none of healdispel_test.go, hide_test.go, hidden_test.go, producer_test.go, recipients_map_test.go use the table-driven t.Run pattern",
+    "spawnCharacterForSessionRevealed repeats the pre-existing per-session redundant buff.GetByCharacterId REST call pattern under ParallelExecute fan-out instead of fetching once",
+    "skill/handler/hide imports kafka/consumer/map directly for broadcast helpers — unusual dependency direction, no circular import, not blocking"
+  ]
+}

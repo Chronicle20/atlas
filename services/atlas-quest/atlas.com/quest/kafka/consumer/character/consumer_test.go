@@ -7,10 +7,11 @@ import (
 	"atlas-quest/test"
 	"testing"
 
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
+
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 // TestHandleMapChangedEvent_IgnoresWrongType tests that non-MAP_CHANGED events are ignored

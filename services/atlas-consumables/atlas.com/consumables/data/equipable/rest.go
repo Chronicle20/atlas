@@ -69,6 +69,7 @@ func (r RestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
 	}
 	return rfs
 }
+
 func (r *RestModel) SetToOneReferenceID(_ string, _ string) error {
 	return nil
 }
@@ -146,5 +147,6 @@ func Extract(m RestModel) (Model, error) {
 		speed:         m.Speed,
 		jump:          m.Jump,
 		slots:         m.Slots,
+		cash:          m.Cash,
 	}, nil
 }

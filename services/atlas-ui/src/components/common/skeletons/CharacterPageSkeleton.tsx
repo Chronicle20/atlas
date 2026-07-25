@@ -1,5 +1,5 @@
-import { Skeleton } from '@/components/ui/skeleton';
-import { TableSkeleton } from '../TableSkeleton';
+import { Skeleton } from "@/components/ui/skeleton";
+import { TableSkeleton } from "../TableSkeleton";
 
 /**
  * CharacterPageSkeleton provides a loading state specifically for the Characters page.
@@ -14,13 +14,13 @@ export function CharacterPageSkeleton() {
           <Skeleton className="h-8 w-32" /> {/* "Characters" title */}
         </div>
       </div>
-      
+
       {/* Table content */}
       <div className="mt-4">
-        <TableSkeleton 
-          rows={12} 
-          columns={7} 
-          showHeader={true} 
+        <TableSkeleton
+          rows={12}
+          columns={7}
+          showHeader={true}
           showActions={true}
         />
       </div>

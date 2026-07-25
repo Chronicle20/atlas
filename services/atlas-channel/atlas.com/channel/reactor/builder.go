@@ -7,9 +7,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
-var (
-	ErrInvalidId = errors.New("reactor id must be greater than 0")
-)
+var ErrInvalidId = errors.New("reactor id must be greater than 0")
 
 type modelBuilder struct {
 	id             uint32

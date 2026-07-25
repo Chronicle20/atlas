@@ -12,7 +12,7 @@ func createDefault(db *gorm.DB, tenantId uuid.UUID, guildId uint32) ([]Model, er
 }
 
 func createTitles(db *gorm.DB, tenantId uuid.UUID, guildId uint32, titles []string) ([]Model, error) {
-	var results = make([]Model, 0)
+	results := make([]Model, 0)
 	for i, v := range titles {
 		e := Entity{
 			TenantId: tenantId,

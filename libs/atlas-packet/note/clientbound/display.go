@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/note"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 // Display - mode, notes
@@ -21,9 +22,9 @@ func NewNoteDisplay(mode byte, notes []note.NoteEntry) Display {
 	return Display{mode: mode, notes: notes}
 }
 
-func (m Display) Mode() byte          { return m.mode }
-func (m Display) Notes() []note.NoteEntry  { return m.notes }
-func (m Display) Operation() string   { return NoteOperationWriter }
+func (m Display) Mode() byte              { return m.mode }
+func (m Display) Notes() []note.NoteEntry { return m.notes }
+func (m Display) Operation() string       { return NoteOperationWriter }
 
 func (m Display) String() string {
 	return fmt.Sprintf("note display entries [%d]", len(m.notes))

@@ -6,9 +6,10 @@ import (
 	compartment2 "atlas-cashshop/kafka/producer/character/compartment"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	inventory3 "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {
@@ -29,6 +30,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 	return p
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) IncreaseCapacity(mb *message.Buffer) func(characterId uint32, inventoryType inventory3.Type, amount uint32) error {
 	return func(characterId uint32, inventoryType inventory3.Type, amount uint32) error {

@@ -32,23 +32,9 @@ func TestBaseVisitorRoundTrip(t *testing.T) {
 	}
 }
 
-func TestGameVisitorRoundTrip(t *testing.T) {
-	for _, v := range pt.Variants {
-		t.Run(v.Name, func(t *testing.T) {
-			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-			record := GameRecord{Unknown: 0, Wins: 10, Ties: 2, Losses: 5, Points: 100}
-			input := NewGameVisitor(0, testAvatar(), "Gamer", record)
-			output := Visitor{visitorType: GameVisitorType}
-			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
-			if output.Name() != "Gamer" {
-				t.Errorf("name: got %q, want %q", output.Name(), "Gamer")
-			}
-			if output.Record().Wins != 10 {
-				t.Errorf("wins: got %v, want 10", output.Record().Wins)
-			}
-		})
-	}
-}
+// Game visitors are intentionally NOT modelled by Visitor — the game
+// room-enter snapshot (avatars and records in two separate lists) is
+// clientbound.InteractionMiniGameRoom.
 
 func TestMerchantVisitorRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {

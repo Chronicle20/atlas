@@ -5,13 +5,14 @@ import (
 	consumer2 "atlas-portals/kafka/consumer"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/sirupsen/logrus"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -48,7 +49,7 @@ func handleEnterCommand(l logrus.FieldLogger, ctx context.Context, command comma
 	}
 	f := field.NewBuilder(command.WorldId, command.ChannelId, command.MapId).SetInstance(command.Instance).Build()
 	l.Debugf("Received command for Character [%d] to enter portal [%d] in map [%d].", command.Body.CharacterId, command.PortalId, command.MapId)
-	Enter(l)(ctx)(f, command.PortalId, command.Body.CharacterId)
+	NewProcessor(l, ctx).Enter(f, command.PortalId, command.Body.CharacterId)
 }
 
 func handleWarpCommand(l logrus.FieldLogger, ctx context.Context, command warpEvent) {
@@ -58,16 +59,16 @@ func handleWarpCommand(l logrus.FieldLogger, ctx context.Context, command warpEv
 	f := field.NewBuilder(command.WorldId, command.ChannelId, command.MapId).SetInstance(command.Instance).Build()
 	if command.Body.UseTargetPosition {
 		l.Debugf("Received command for Character [%d] to warp to map [%d] position (%d,%d) from map [%d].", command.Body.CharacterId, command.Body.TargetMapId, command.Body.TargetX, command.Body.TargetY, command.MapId)
-		WarpToPosition(l)(ctx)(f, command.Body.CharacterId, command.Body.TargetMapId, command.Body.TargetX, command.Body.TargetY)
+		NewProcessor(l, ctx).WarpToPosition(f, command.Body.CharacterId, command.Body.TargetMapId, command.Body.TargetX, command.Body.TargetY)
 		return
 	}
 	if command.Body.TargetPortalId != 0 {
 		l.Debugf("Received command for Character [%d] to warp to map [%d] portal [%d] from map [%d].", command.Body.CharacterId, command.Body.TargetMapId, command.Body.TargetPortalId, command.MapId)
-		WarpById(l)(ctx)(f, command.Body.CharacterId, command.Body.TargetMapId, command.Body.TargetPortalId)
+		NewProcessor(l, ctx).WarpById(f, command.Body.CharacterId, command.Body.TargetMapId, command.Body.TargetPortalId)
 		return
 	}
 	l.Debugf("Received command for Character [%d] to warp to map [%d] from map [%d].", command.Body.CharacterId, command.Body.TargetMapId, command.MapId)
-	Warp(l)(ctx)(f, command.Body.CharacterId, command.Body.TargetMapId)
+	NewProcessor(l, ctx).Warp(f, command.Body.CharacterId, command.Body.TargetMapId)
 }
 
 func handleBlockCommand(l logrus.FieldLogger, ctx context.Context, command commandEvent[blockBody]) {

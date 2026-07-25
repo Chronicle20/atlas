@@ -1,10 +1,11 @@
 package character
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 // Migration runs AutoMigrate for the entity, then explicitly drops the

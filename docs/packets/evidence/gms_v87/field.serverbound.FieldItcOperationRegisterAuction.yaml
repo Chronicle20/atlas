@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldItcOperationRegisterAuction
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnRegisterSaleEntry#RegisterAuction
+    address: "0x5cea89"
+    decompile_sha256: a9fa6707c7ce8cd7f67ff1869bc5526d94246eda1474c707e89b7eb4a9267a89
+verifies:
+    - libs/atlas-packet/field/serverbound/itc_operation_test.go#TestItcOperationRegisterAuctionByteOutput_v87

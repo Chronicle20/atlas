@@ -17,11 +17,11 @@ type PublishInputModel struct {
 	MinorVersion int    `json:"minorVersion"`
 }
 
-func (PublishInputModel) GetName() string                                       { return "baselinePublishes" }
-func (m PublishInputModel) GetID() string                                       { return m.Id }
-func (m *PublishInputModel) SetID(id string) error                              { m.Id = id; return nil }
-func (m *PublishInputModel) SetToOneReferenceID(_, _ string) error              { return nil }
-func (m *PublishInputModel) SetToManyReferenceIDs(_ string, _ []string) error   { return nil }
+func (PublishInputModel) GetName() string                                     { return "baselinePublishes" }
+func (m PublishInputModel) GetID() string                                     { return m.Id }
+func (m *PublishInputModel) SetID(id string) error                            { m.Id = id; return nil }
+func (m *PublishInputModel) SetToOneReferenceID(_, _ string) error            { return nil }
+func (m *PublishInputModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
 
 // PublishOutputModel is what gets returned on success as a JSON:API document.
 type PublishOutputModel struct {
@@ -29,11 +29,11 @@ type PublishOutputModel struct {
 	Sha256 string `json:"sha256"`
 }
 
-func (PublishOutputModel) GetName() string                                       { return "baselinePublishes" }
-func (m PublishOutputModel) GetID() string                                       { return m.Id }
-func (m *PublishOutputModel) SetID(id string) error                              { m.Id = id; return nil }
-func (m *PublishOutputModel) SetToOneReferenceID(_, _ string) error              { return nil }
-func (m *PublishOutputModel) SetToManyReferenceIDs(_ string, _ []string) error   { return nil }
+func (PublishOutputModel) GetName() string                                     { return "baselinePublishes" }
+func (m PublishOutputModel) GetID() string                                     { return m.Id }
+func (m *PublishOutputModel) SetID(id string) error                            { m.Id = id; return nil }
+func (m *PublishOutputModel) SetToOneReferenceID(_, _ string) error            { return nil }
+func (m *PublishOutputModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
 
 // PublishOutputId composes the canonical id used in the JSON:API response.
 func PublishOutputId(region string, major, minor int) string {
@@ -49,8 +49,27 @@ type RestoreInputModel struct {
 	TenantID     uuid.UUID `json:"tenantId"`
 }
 
-func (RestoreInputModel) GetName() string                                       { return "baselineRestores" }
-func (m RestoreInputModel) GetID() string                                       { return m.Id }
-func (m *RestoreInputModel) SetID(id string) error                              { m.Id = id; return nil }
-func (m *RestoreInputModel) SetToOneReferenceID(_, _ string) error              { return nil }
-func (m *RestoreInputModel) SetToManyReferenceIDs(_ string, _ []string) error   { return nil }
+func (RestoreInputModel) GetName() string                                     { return "baselineRestores" }
+func (m RestoreInputModel) GetID() string                                     { return m.Id }
+func (m *RestoreInputModel) SetID(id string) error                            { m.Id = id; return nil }
+func (m *RestoreInputModel) SetToOneReferenceID(_, _ string) error            { return nil }
+func (m *RestoreInputModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
+
+// ListItemModel is one published baseline in the GET /data/baselines
+// JSON:API collection. PublishedAt is RFC3339 (the MinIO object's
+// LastModified — the tar header's internal publishedAt is epoch-zero by
+// design and is never read). Sha256 is "" when the sidecar is missing or
+// unreadable so a partially-published baseline stays visible.
+type ListItemModel struct {
+	Id           string `json:"-"`
+	Region       string `json:"region"`
+	MajorVersion int    `json:"majorVersion"`
+	MinorVersion int    `json:"minorVersion"`
+	Sha256       string `json:"sha256"`
+	PublishedAt  string `json:"publishedAt"`
+	SizeBytes    int64  `json:"sizeBytes"`
+}
+
+func (ListItemModel) GetName() string          { return "baselines" }
+func (m ListItemModel) GetID() string          { return m.Id }
+func (m *ListItemModel) SetID(id string) error { m.Id = id; return nil }

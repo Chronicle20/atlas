@@ -3,13 +3,16 @@ package character
 import (
 	"errors"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
-var ErrMissingId = errors.New("character id is required")
-var ErrMissingName = errors.New("character name is required")
+var (
+	ErrMissingId   = errors.New("character id is required")
+	ErrMissingName = errors.New("character name is required")
+)
 
 type builder struct {
 	tenantId    uuid.UUID

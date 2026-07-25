@@ -4,13 +4,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
-func mkRegEntry(t *testing.T, tenantA interface{ /* placeholder */ }) Entry {
+func mkRegEntry(t *testing.T, tenantA interface { /* placeholder */
+},
+) Entry {
 	t.Helper()
 	f := field.NewBuilder(0, 0, 100000000).SetInstance(uuid.Nil).Build()
 	return NewEntryBuilder().

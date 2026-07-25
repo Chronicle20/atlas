@@ -1,0 +1,8 @@
+packet: guild/serverbound/GuildBBSDeleteThread
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CUIGuildBBS::OnDelete
+    address: "0x608f31"
+    decompile_sha256: 4567cf809a5fe817e2d2b3dd90b2d12c0f9826bf413b3e18d61927c8fa6f43d6

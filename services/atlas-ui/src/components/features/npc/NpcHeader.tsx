@@ -31,7 +31,9 @@ export function NpcHeader({ npcId, name, iconUrl }: NpcHeaderProps) {
                   className="object-contain"
                 />
               )}
-              <h2 className="text-2xl font-bold tracking-tight">{displayName}</h2>
+              <h2 className="text-2xl font-bold tracking-tight">
+                {displayName}
+              </h2>
             </span>
           </TooltipTrigger>
           <TooltipContent copyable>

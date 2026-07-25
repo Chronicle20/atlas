@@ -4,8 +4,9 @@ import (
 	"encoding/binary"
 	"testing"
 
-	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	testlog "github.com/sirupsen/logrus/hooks/test"
+
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 // packet-audit:verify packet=quest/serverbound/Action version=gms_v83 ida=0xa26ea7

@@ -1,0 +1,21 @@
+{
+  "WriterName": "InteractionInteractionMiniGameUnready",
+  "IDAName": "CMiniRoomBaseDlg::OnPacketBase#MemoryGameUnready",
+  "Address": "0x6849c0",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/interaction/clientbound/interaction_minigame.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (59 UNREADY; dispatch byte; OnUserCancelReady reads no body)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

@@ -9,12 +9,13 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	invite2 "github.com/Chronicle20/atlas/libs/atlas-constants/invite"
 	messengerpkt "github.com/Chronicle20/atlas/libs/atlas-packet/messenger"
 	messengercb "github.com/Chronicle20/atlas/libs/atlas-packet/messenger/clientbound"
 	messengersb "github.com/Chronicle20/atlas/libs/atlas-packet/messenger/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 type MessengerOperation byte

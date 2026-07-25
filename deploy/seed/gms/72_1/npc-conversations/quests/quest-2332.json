@@ -1,0 +1,87 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "noDialogue",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "noDialogue",
+            "type": "genericAction"
+          }
+        ]
+      },
+      "questId": 2332,
+      "questName": "Where's Violetta?",
+      "startStateMachine": {
+        "startState": "checkConditions",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "4032388",
+                      "type": "item",
+                      "value": "1"
+                    },
+                    {
+                      "operator": "=",
+                      "referenceId": "2332",
+                      "type": "questStatus",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "startQuestAndShowHint"
+                },
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "checkConditions",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                },
+                {
+                  "params": {
+                    "hint": "I must find Violetta!! (#bquest started#k)"
+                  },
+                  "type": "show_hint"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "startQuestAndShowHint",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "2332",
+    "type": "quest-conversation"
+  }
+}

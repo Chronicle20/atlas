@@ -223,7 +223,6 @@ func TestAsyncRaceConditionThreadSafety(t *testing.T) {
 			SetContext(ctx),
 			SetTimeout(time.Second*5),
 		)()
-
 		if err != nil {
 			t.Errorf("Expected no error, got %s", err)
 		}
@@ -358,11 +357,15 @@ func TestAsyncRaceConditionThreadSafety(t *testing.T) {
 
 		cancellableProvider := func(m uint32) (Provider[uint32], error) {
 			return func(ctx context.Context, rchan chan uint32, echan chan error) {
-				// Wait for cancellation or send result
+				// Wait for cancellation or send result. The send delay is far
+				// longer than the 5ms cancel (and the 1s AwaitSlice timeout)
+				// below, so cancellation/timeout is guaranteed to win — a short,
+				// comparable delay made this test flaky under -race scheduling
+				// (providers could finish before cancel fired -> no error).
 				select {
 				case <-ctx.Done():
 					return
-				case <-time.After(time.Millisecond * time.Duration(m%10+1)):
+				case <-time.After(10 * time.Second):
 					select {
 					case <-ctx.Done():
 						return
@@ -444,7 +447,6 @@ func TestAsyncRaceConditionThreadSafety(t *testing.T) {
 			SetContext(ctx),
 			SetTimeout(time.Second*10),
 		)()
-
 		if err != nil {
 			t.Errorf("Expected no error, got %s", err)
 		}
@@ -561,7 +563,6 @@ func TestAsyncRaceConditionThreadSafety(t *testing.T) {
 			SetContext(ctx),
 			SetTimeout(time.Second*15),
 		)()
-
 		if err != nil {
 			t.Errorf("Expected no error, got %s", err)
 		}
@@ -983,7 +984,6 @@ func TestAsyncProviderErrorPropagation(t *testing.T) {
 			SetContext(ctx),
 			SetTimeout(time.Second),
 		)()
-
 		if err != nil {
 			t.Fatalf("First transformation should not error: %v", err)
 		}
@@ -1456,7 +1456,6 @@ func BenchmarkAwaitSlice(b *testing.B) {
 				SetContext(ctx),
 				SetTimeout(time.Second*10),
 			)()
-
 			if err != nil {
 				b.Fatalf("Unexpected error: %v", err)
 			}
@@ -1581,7 +1580,6 @@ func BenchmarkAwaitSliceConcurrentLoad(b *testing.B) {
 				SetContext(ctx),
 				SetTimeout(time.Second*30),
 			)()
-
 			if err != nil {
 				b.Fatalf("Unexpected error: %v", err)
 			}
@@ -1848,7 +1846,6 @@ func TestChannelCleanup(t *testing.T) {
 		}
 
 		results, err := AwaitSlice(FixedProvider(providers))()
-
 		if err != nil {
 			t.Errorf("Expected no error, got: %v", err)
 		}
@@ -1914,7 +1911,6 @@ func TestChannelCleanup(t *testing.T) {
 			}
 
 			results, err := AwaitSlice(FixedProvider(providers))()
-
 			if err != nil {
 				t.Errorf("Iteration %d: expected no error, got: %v", iteration, err)
 			}
@@ -3115,7 +3111,6 @@ func TestEmptySliceOperations(t *testing.T) {
 
 		ctx := context.Background()
 		result, err := AwaitSlice(providerSlice, SetContext(ctx))()
-
 		if err != nil {
 			t.Errorf("Expected no error with empty async slice, got: %s", err)
 		}
@@ -3136,7 +3131,6 @@ func TestEmptySliceOperations(t *testing.T) {
 
 		ctx := context.Background()
 		result, err := AwaitSlice(providerSlice, SetContext(ctx), SetTimeout(100*time.Millisecond))()
-
 		if err != nil {
 			t.Errorf("Expected no error with empty async slice and timeout, got: %s", err)
 		}
@@ -3201,7 +3195,6 @@ func TestEmptySliceOperations(t *testing.T) {
 
 		ctx := context.Background()
 		result, err := AwaitSlice(asyncProviders, SetContext(ctx))()
-
 		if err != nil {
 			t.Errorf("Expected no error with empty slice from SliceMap, got: %s", err)
 		}
@@ -3222,7 +3215,6 @@ func TestEmptySliceOperations(t *testing.T) {
 
 		ctx := context.Background()
 		result, err := AwaitSlice(providerSlice, SetContext(ctx), SetTimeout(100*time.Millisecond))()
-
 		if err != nil {
 			t.Errorf("Expected no error with empty slice and multiple configurators, got: %s", err)
 		}
@@ -3246,7 +3238,6 @@ func TestEmptySliceOperations(t *testing.T) {
 		// Run multiple times to check for memory/goroutine leaks
 		for i := 0; i < 100; i++ {
 			result, err := AwaitSlice(providerSlice, SetContext(ctx))()
-
 			if err != nil {
 				t.Errorf("Iteration %d: Expected no error, got: %s", i, err)
 			}

@@ -4,13 +4,13 @@ import (
 	"atlas-login/character"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
-	"github.com/sirupsen/logrus"
 )
-
 
 type CharacterViewAllCode string
 

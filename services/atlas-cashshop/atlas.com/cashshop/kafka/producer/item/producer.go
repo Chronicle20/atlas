@@ -3,9 +3,10 @@ package item
 import (
 	"atlas-cashshop/kafka/message/item"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 )
 
 func CreateStatusEventProvider(id uint32, cashId int64, templateId uint32, quantity uint32, purchasedBy uint32, flag uint16) model.Provider[[]kafka.Message] {

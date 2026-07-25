@@ -2,15 +2,17 @@ package mount
 
 import (
 	mountmessage "atlas-mounts/kafka/message"
-	"atlas-mounts/kafka/producer"
 	"context"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const TirednessTaskName = "tiredness"
@@ -27,9 +29,11 @@ var getActive = func(ctx context.Context) ([]ActiveEntry, error) {
 // tests override it to record the (tenant-via-ctx, worldId, characterId) it was
 // called with, exercising the loop without a database or Kafka.
 var applyTick = func(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, worldId world.Id, characterId uint32) error {
-	p := NewProcessor(l, ctx, db)
-	return mountmessage.Emit(producer.ProviderImpl(l)(ctx))(func(mb *mountmessage.Buffer) error {
-		return p.ApplyTick(mb)(worldId, characterId)
+	return database.ExecuteTransaction(db.WithContext(ctx), func(tx *gorm.DB) error {
+		p := NewProcessor(l, ctx, tx)
+		return mountmessage.Emit(outbox.EmitProvider(l, ctx, tx))(func(mb *mountmessage.Buffer) error {
+			return p.ApplyTick(mb)(worldId, characterId)
+		})
 	})
 }
 

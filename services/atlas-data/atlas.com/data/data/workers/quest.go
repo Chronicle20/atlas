@@ -1,15 +1,16 @@
 package workers
 
 import (
+	"atlas-data/quest"
 	"context"
 	"fmt"
 	"path/filepath"
 
-	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
-	"atlas-data/quest"
+	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
+
 	minio "atlas-data/storage/minio"
 )
 
@@ -29,5 +30,5 @@ func (Quest) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *min
 	}
 	// quest.RegisterQuest reads QuestInfo.img.xml + Check.img.xml + Act.img.xml
 	// out of the given directory.
-	return quest.RegisterQuest(db)(l)(ctx)(filepath.Join(root, "Quest.wz"))
+	return quest.NewProcessor(l, ctx, db).RegisterQuest(filepath.Join(root, "Quest.wz"))
 }

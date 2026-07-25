@@ -3,9 +3,10 @@ package inventory
 import (
 	compartment2 "atlas-consumables/compartment"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 )
 
 type RestModel struct {
@@ -93,6 +94,44 @@ func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonap
 		}
 		r.Compartments = compartments
 	}
+	return nil
+}
+
+type accommodationInputRestModel struct {
+	Id    string                       `json:"-"`
+	Items []accommodationItemRestModel `json:"items"`
+}
+
+type accommodationItemRestModel struct {
+	ItemId   uint32 `json:"itemId"`
+	Quantity uint32 `json:"quantity"`
+}
+
+func (accommodationInputRestModel) GetName() string                          { return "inventoryAccommodations" }
+func (r accommodationInputRestModel) GetID() string                          { return r.Id }
+func (r *accommodationInputRestModel) SetID(id string) error                 { r.Id = id; return nil }
+func (r *accommodationInputRestModel) SetToOneReferenceID(_, _ string) error { return nil }
+func (r *accommodationInputRestModel) SetToManyReferenceIDs(_ string, _ []string) error {
+	return nil
+}
+
+type accommodationOutputRestModel struct {
+	Id           string                         `json:"-"`
+	Accommodated bool                           `json:"accommodated"`
+	Results      []accommodationResultRestModel `json:"results"`
+}
+
+type accommodationResultRestModel struct {
+	ItemId       uint32 `json:"itemId"`
+	Quantity     uint32 `json:"quantity"`
+	Accommodated bool   `json:"accommodated"`
+}
+
+func (accommodationOutputRestModel) GetName() string                          { return "inventoryAccommodations" }
+func (r accommodationOutputRestModel) GetID() string                          { return r.Id }
+func (r *accommodationOutputRestModel) SetID(id string) error                 { r.Id = id; return nil }
+func (r *accommodationOutputRestModel) SetToOneReferenceID(_, _ string) error { return nil }
+func (r *accommodationOutputRestModel) SetToManyReferenceIDs(_ string, _ []string) error {
 	return nil
 }
 

@@ -1,0 +1,146 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1101000,
+      "questId": 20020,
+      "questName": "Cygnus movie Intro",
+      "startStateMachine": {
+        "startState": "intro1",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "intro2",
+                  "text": "Next"
+                },
+                {
+                  "nextState": "declined",
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "I can tell you've worked really hard by seeing that you're already at Level 10. I think it's time now for you to break out as a Nobless and officially become the Knight-in-Training. Before doing that, however, I want to ask you one thing. Have you decided which Knight you'd want to beome?"
+            },
+            "id": "intro1",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "intro1",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "offerChoice",
+                  "text": "Next"
+                },
+                {
+                  "nextState": "declined",
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "There isn't a single path to becoming a Knight. In fact, there are five of them laid out for you. It's up to you to choose which path you'd like to take, but it should definitely be something you will not regret. That's why... I am offering to show you what you'll look like once you become a Knight."
+            },
+            "id": "intro2",
+            "type": "dialogue"
+          },
+          {
+            "id": "offerChoice",
+            "listSelection": {
+              "choices": [
+                {
+                  "nextState": "confirmView",
+                  "text": "Show me how I'd look like as the leader of the Knights."
+                },
+                {
+                  "nextState": "declined",
+                  "text": "No, I'm okay."
+                },
+                {
+                  "nextState": "declined",
+                  "text": "Exit"
+                }
+              ],
+              "title": "What do you think? Are you interested in seeing yourself as the leader of the Knights? If you have already decided what kind of Knight you'd like to become, then you won't necessarily have to look at it...\r\n\r\n"
+            },
+            "type": "listSelection"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "executeActions",
+                  "text": "Yes"
+                },
+                {
+                  "nextState": "declined",
+                  "text": "No"
+                },
+                {
+                  "nextState": "declined",
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendYesNo",
+              "text": "Would you like to see for it yourself right now? A short clip will come out soon. Be prepared for what you are about to witness."
+            },
+            "id": "confirmView",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                },
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                },
+                {
+                  "params": {
+                    "mapId": "913040100",
+                    "portalId": "0"
+                  },
+                  "type": "warp_to_map"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "executeActions",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Talk to me after you have decided what you really want to do. Whatever you choose, you will not miss out or lose privileges, so don't take this too seriously..."
+            },
+            "id": "declined",
+            "type": "dialogue"
+          }
+        ]
+      }
+    },
+    "id": "20020",
+    "type": "quest-conversation"
+  }
+}

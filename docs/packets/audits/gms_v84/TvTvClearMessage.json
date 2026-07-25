@@ -1,0 +1,11 @@
+{
+  "WriterName": "TvTvClearMessage",
+  "IDAName": "CMapleTVMan::OnClearMessage",
+  "Address": "0x64c7d7",
+  "Variant": "GMS/v84",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/tv/clientbound/clear_message.go",
+  "Rows": null,
+  "Verdict": 0,
+  "FlatInvalid": false
+}

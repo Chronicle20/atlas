@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldSetObjectState
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnSetObjectState
+    address: "0x4cbe02"
+    decompile_sha256: 1572646549ec68069ab430ce1a9831f6c140848e9c7e7b20760ab988a550c024
+verifies:
+    - libs/atlas-packet/field/clientbound/set_object_state_test.go#TestSetObjectStateByteOutputV48

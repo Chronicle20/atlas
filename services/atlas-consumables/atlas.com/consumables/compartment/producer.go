@@ -2,12 +2,14 @@ package compartment
 
 import (
 	"atlas-consumables/kafka/message/compartment"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
 )
 
 func requestReserveCommandProvider(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, reserves []Reserves) model.Provider[[]kafka.Message] {
@@ -69,6 +71,22 @@ func cancelReservationCommandProvider(characterId uint32, inventoryType inventor
 		Body: compartment.CancelReservationCommandBody{
 			TransactionId: transactionId,
 			Slot:          slot,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func requestCreateAssetCommandProvider(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &compartment.Command[compartment.CreateAssetCommandBody]{
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		InventoryType: byte(inventoryType),
+		Type:          compartment.CommandCreateAsset,
+		Body: compartment.CreateAssetCommandBody{
+			TemplateId: templateId,
+			Quantity:   quantity,
+			Expiration: expiration,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

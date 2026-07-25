@@ -15,8 +15,7 @@ type commandEvent[E any] struct {
 	Body    E      `json:"body"`
 }
 
-type createCommandBody struct {
-}
+type createCommandBody struct{}
 
 type joinCommandBody struct {
 	PartyId uint32 `json:"partyId"`

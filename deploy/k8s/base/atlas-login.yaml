@@ -19,6 +19,10 @@ spec:
         ports:
         # BEGIN generated:container-ports (tools/gen-lb-ports.sh — edit deploy/k8s/base/versions.json)
         - containerPort: 1200
+        - containerPort: 4800
+        - containerPort: 6100
+        - containerPort: 7200
+        - containerPort: 7900
         - containerPort: 8300
         - containerPort: 8400
         - containerPort: 8700
@@ -56,6 +60,22 @@ spec:
     targetPort: 1200
     protocol: TCP
     name: atlas-login-gms-12
+  - port: 4800
+    targetPort: 4800
+    protocol: TCP
+    name: atlas-login-gms-48
+  - port: 6100
+    targetPort: 6100
+    protocol: TCP
+    name: atlas-login-gms-61
+  - port: 7200
+    targetPort: 7200
+    protocol: TCP
+    name: atlas-login-gms-72
+  - port: 7900
+    targetPort: 7900
+    protocol: TCP
+    name: atlas-login-gms-79
   - port: 8300
     targetPort: 8300
     protocol: TCP

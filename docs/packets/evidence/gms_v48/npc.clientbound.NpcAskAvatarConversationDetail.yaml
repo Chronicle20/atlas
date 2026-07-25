@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcAskAvatarConversationDetail
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_5B12E8
+    address: "0x5b12e8"
+    decompile_sha256: 5ad0fa9501a0037c741fccd9e7cf91142ba475016b86eadf71a9232e53f4e66a
+verifies:
+  - libs/atlas-packet/npc/clientbound/conversation_v48_details_test.go#TestNpcConversationAskAvatarV48

@@ -1,6 +1,7 @@
 package mock
 
 import (
+	"atlas-saga-orchestrator/cashshop"
 	"atlas-saga-orchestrator/character"
 	"atlas-saga-orchestrator/compartment"
 	"atlas-saga-orchestrator/guild"
@@ -9,8 +10,9 @@ import (
 	"atlas-saga-orchestrator/skill"
 	"atlas-saga-orchestrator/validation"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // ProcessorMock is a mock implementation of the saga.Processor interface
@@ -21,22 +23,23 @@ type ProcessorMock struct {
 	WithValidationProcessorFunc  func(validation.Processor) saga.Processor
 	WithGuildProcessorFunc       func(guild.Processor) saga.Processor
 	WithInviteProcessorFunc      func(invite.Processor) saga.Processor
+	WithCashshopProcessorFunc    func(cashshop.Processor) saga.Processor
 
-	GetAllFunc      func() ([]saga.Saga, error)
-	AllProviderFunc func() model.Provider[[]saga.Saga]
-	GetByIdFunc     func(transactionId uuid.UUID) (saga.Saga, error)
+	GetAllFunc       func() ([]saga.Saga, error)
+	AllProviderFunc  func() model.Provider[[]saga.Saga]
+	GetByIdFunc      func(transactionId uuid.UUID) (saga.Saga, error)
 	ByIdProviderFunc func(transactionId uuid.UUID) model.Provider[saga.Saga]
 
-	PutFunc                             func(s saga.Saga) error
-	MarkFurthestCompletedStepFailedFunc func(transactionId uuid.UUID) error
-	MarkEarliestPendingStepFunc         func(transactionId uuid.UUID, status saga.Status) error
+	PutFunc                              func(s saga.Saga) error
+	MarkFurthestCompletedStepFailedFunc  func(transactionId uuid.UUID) error
+	MarkEarliestPendingStepFunc          func(transactionId uuid.UUID, status saga.Status) error
 	MarkEarliestPendingStepCompletedFunc func(transactionId uuid.UUID) error
-	StepCompletedFunc                   func(transactionId uuid.UUID, success bool) error
-	StepCompletedWithResultFunc         func(transactionId uuid.UUID, success bool, result map[string]any) error
-	AddStepFunc                         func(transactionId uuid.UUID, step saga.Step[any]) error
-	AddStepAfterCurrentFunc             func(transactionId uuid.UUID, step saga.Step[any]) error
-	StepFunc                            func(transactionId uuid.UUID) error
-	AcceptEventFunc                     func(transactionId uuid.UUID, kind saga.EventKind) (saga.AcceptDecision, bool)
+	StepCompletedFunc                    func(transactionId uuid.UUID, success bool) error
+	StepCompletedWithResultFunc          func(transactionId uuid.UUID, success bool, result map[string]any) error
+	AddStepFunc                          func(transactionId uuid.UUID, step saga.Step[any]) error
+	AddStepAfterCurrentFunc              func(transactionId uuid.UUID, step saga.Step[any]) error
+	StepFunc                             func(transactionId uuid.UUID) error
+	AcceptEventFunc                      func(transactionId uuid.UUID, kind saga.EventKind) (saga.AcceptDecision, bool)
 }
 
 // WithCharacterProcessor is a mock implementation
@@ -83,6 +86,14 @@ func (m *ProcessorMock) WithGuildProcessor(p guild.Processor) saga.Processor {
 func (m *ProcessorMock) WithInviteProcessor(p invite.Processor) saga.Processor {
 	if m.WithInviteProcessorFunc != nil {
 		return m.WithInviteProcessorFunc(p)
+	}
+	return m
+}
+
+// WithCashshopProcessor is a mock implementation
+func (m *ProcessorMock) WithCashshopProcessor(p cashshop.Processor) saga.Processor {
+	if m.WithCashshopProcessorFunc != nil {
+		return m.WithCashshopProcessorFunc(p)
 	}
 	return m
 }

@@ -1,4 +1,5 @@
 import { api } from "@/lib/api/client";
+import { fetchPaged } from "@/services/api/pagination";
 
 interface MobSkillSummary {
   id: string;
@@ -37,12 +38,20 @@ const BASE_PATH = "/api/data/mob-skills";
 
 export const mobSkillsService = {
   async getMobSkillName(skillId: number): Promise<string> {
-    const rows = await api.getList<MobSkillSummary>(`${BASE_PATH}/${skillId}`);
-    return rows[0]?.attributes.name ?? "";
+    const result = await fetchPaged<MobSkillSummary>(
+      `${BASE_PATH}/${skillId}`,
+      { number: 1, size: 1 },
+    );
+    return result.data[0]?.attributes.name ?? "";
   },
 
-  async getMobSkillDetail(skillId: number, level: number): Promise<MobSkillDetailAttributes> {
-    const data = await api.getOne<MobSkillDetailData>(`${BASE_PATH}/${skillId}/${level}`);
+  async getMobSkillDetail(
+    skillId: number,
+    level: number,
+  ): Promise<MobSkillDetailAttributes> {
+    const data = await api.getOne<MobSkillDetailData>(
+      `${BASE_PATH}/${skillId}/${level}`,
+    );
     return data.attributes;
   },
 };

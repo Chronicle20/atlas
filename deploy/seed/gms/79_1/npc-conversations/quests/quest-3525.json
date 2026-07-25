@@ -1,0 +1,63 @@
+{
+  "data": {
+    "attributes": {
+      "questId": 3525,
+      "questName": "In search for the lost memory - bowman",
+      "startStateMachine": {
+        "startState": "performActions",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                },
+                {
+                  "params": {
+                    "infoNumber": "7081",
+                    "progress": "1",
+                    "questId": "3507"
+                  },
+                  "type": "set_quest_progress"
+                },
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "confirmComplete"
+                }
+              ]
+            },
+            "id": "performActions",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "You have regained your memories, talk to #b#p2140001##k to get the pass."
+            },
+            "id": "confirmComplete",
+            "type": "dialogue"
+          }
+        ]
+      }
+    },
+    "id": "3525",
+    "type": "quest-conversation"
+  }
+}

@@ -3,10 +3,11 @@ package mount
 import (
 	"atlas-mounts/kafka/message/mount"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 )
 
 func setEventProvider(worldId world.Id, characterId uint32, body mount.StatusEventBody) model.Provider[[]kafka.Message] {

@@ -3,10 +3,11 @@ package tenant
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 // Processor defines the interface for tenant operations
@@ -32,9 +33,14 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
-// AllProvider returns a provider for all tenants
+var _ Processor = (*ProcessorImpl)(nil)
+
+// AllProvider fetches every tenant. atlas-tenants' GET /tenants is now
+// paginated (task-117); this drives the startup per-tenant route-config
+// load and ticker loop in main.go, a genuine semantic-all consumer, so it
+// drains every page rather than fetching just the first.
 func (p *ProcessorImpl) AllProvider() model.Provider[[]tenant.Model] {
-	return requests.SliceProvider[RestModel, tenant.Model](p.l, p.ctx)(requestAll(), Extract, model.Filters[tenant.Model]())
+	return requests.DrainProvider[RestModel, tenant.Model](p.l, p.ctx)(allTenantsUrl(), 250, Extract, model.Filters[tenant.Model]())
 }
 
 // GetAll returns all tenants

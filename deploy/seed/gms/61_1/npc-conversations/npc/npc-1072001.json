@@ -1,0 +1,268 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1072001,
+      "startState": "checkQuestStatus",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "100007",
+                    "type": "questStatus",
+                    "value": "3"
+                  }
+                ],
+                "nextState": "alreadyCompleted"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "100006",
+                    "type": "questStatus",
+                    "value": "3"
+                  }
+                ],
+                "nextState": "quest100006Completed"
+              },
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "100006",
+                    "type": "questStatus",
+                    "value": "2"
+                  }
+                ],
+                "nextState": "explainTest"
+              },
+              {
+                "conditions": [],
+                "nextState": "notReady"
+              }
+            ]
+          },
+          "id": "checkQuestStatus",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "You're truly a hero!"
+          },
+          "id": "alreadyCompleted",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "completeAndStartQuest",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Alright I'll let you in! Defeat the monsters inside, collect 30 Dark Marbles, then strike up a conversation with a colleague of mine inside. He'll give you #bThe Proof of a Hero#k, the proof that you've passed the test. Best of luck to you."
+          },
+          "id": "quest100006Completed",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "explainHiddenMap",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Hmmm...it is definitely the letter from #bGrendell the Really Old#k...so you came all the way here to take the test and make the 2nd job advancement as a magician. Alright, I'll explain the test to you. Don't sweat it too much, it's not that complicated."
+          },
+          "id": "explainTest",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "I can show you the way once your ready for it."
+          },
+          "id": "notReady",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "explainTest",
+                "text": "Previous"
+              },
+              {
+                "nextState": "explainMarbles",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNextPrev",
+            "text": "I'll send you to a hidden map. You'll see monsters you don't normally see. They look the same like the regular ones, but with a totally different attitude. They neither boost your experience level nor provide you with item."
+          },
+          "id": "explainHiddenMap",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "explainHiddenMap",
+                "text": "Previous"
+              },
+              {
+                "nextState": "askConfirmation",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNextPrev",
+            "text": "You'll be able to acquire a marble called #b#t4031013##k while knocking down those monsters. It is a special marble made out of their sinister, evil minds. Collect 30 of those, and then go talk to a colleague of mine in there. That's how you pass the test."
+          },
+          "id": "explainMarbles",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "confirmEntry",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "Once you go inside, you can't leave until you take care of your mission. If you die, your experience level will decrease.. So you better really buckle up and get ready...well, do you want to go for it now?"
+          },
+          "id": "askConfirmation",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "completeAndStartQuest",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Alright I'll let you in! Defeat the monsters inside, collect 30 Dark Marbles, then strike up a conversation with a colleague of mine inside. He'll give you #bThe Proof of a Hero#k, the proof that you've passed the test. Best of luck to you."
+          },
+          "id": "confirmEntry",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "questId": "100006"
+                },
+                "type": "complete_quest"
+              },
+              {
+                "params": {
+                  "questId": "100007"
+                },
+                "type": "start_quest"
+              },
+              {
+                "params": {
+                  "itemId": "4031009",
+                  "quantity": "1"
+                },
+                "type": "destroy_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "warpToDungeon"
+              }
+            ]
+          },
+          "id": "completeAndStartQuest",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "108000200",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "warpToDungeon",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "1072001",
+    "type": "npc-conversation"
+  }
+}

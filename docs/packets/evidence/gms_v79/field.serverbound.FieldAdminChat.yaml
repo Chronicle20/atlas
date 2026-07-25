@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldAdminChat
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendChatMsgSlash#AdminChat
+    address: "0x5194ac"
+    decompile_sha256: 1388362be2c1b2c0820fcb25021898f3993ec241bccb789e1c84d931abce8b09
+verifies:
+    - libs/atlas-packet/field/serverbound/admin_chat_test.go#TestAdminChatByteOutputV79

@@ -96,4 +96,3 @@ func (m Model) Flag() uint16 {
 func (m Model) PurchaseBy() uint32 {
 	return m.purchaseBy
 }
-

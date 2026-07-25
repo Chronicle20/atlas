@@ -26,10 +26,12 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Processor interface {
@@ -56,6 +58,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		mp:  monster.NewProcessor(l, ctx),
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // SpawnMonsters implements the core spawn logic with cooldown enforcement.
 //
@@ -139,9 +143,9 @@ func (p *ProcessorImpl) SpawnMonsters(transactionId uuid.UUID, f field.Model) er
 		spawned++
 		p.l.Debugf("Spawning monster at spawn point [%d] with template [%d] at position (%d, %d)", sp.Id, sp.Template, sp.X, sp.Y)
 
-		go func(sp monster2.SpawnPoint) {
+		routine.Go(p.l, p.ctx, func(_ context.Context) {
 			p.mp.CreateMonster(transactionId, f, sp.Template, sp.X, sp.Y, sp.Fh, sp.Team)
-		}(sp)
+		})
 	}
 
 	// Batch update cooldowns in Redis

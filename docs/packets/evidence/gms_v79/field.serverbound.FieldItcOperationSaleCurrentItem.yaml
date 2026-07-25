@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldItcOperationSaleCurrentItem
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnSaleCurrentItem
+    address: "0x57a415"
+    decompile_sha256: b066f4a24234befda28c895b46537273500991aeee9d1381ad974f03153c3293

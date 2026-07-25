@@ -4,9 +4,10 @@ import (
 	"atlas-rates/rate"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func createTestTenant() tenant.Model {

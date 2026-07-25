@@ -94,9 +94,7 @@ export function RewardGrid({
     const guaranteed = actions.items.filter(
       (i) => i.count > 0 && i.prop === -1,
     );
-    const pool = actions.items.filter(
-      (i) => i.count > 0 && (i.prop ?? 0) >= 0,
-    );
+    const pool = actions.items.filter((i) => i.count > 0 && (i.prop ?? 0) >= 0);
     const totalWeight = pool.reduce(
       (sum, i) => sum + Math.max(i.prop ?? 0, 1),
       0,
@@ -223,9 +221,7 @@ export function RewardGrid({
 
   return (
     <div className="flex flex-col gap-4">
-      {chips.length > 0 && (
-        <div className="flex flex-wrap gap-2">{chips}</div>
-      )}
+      {chips.length > 0 && <div className="flex flex-wrap gap-2">{chips}</div>}
       {blocks}
     </div>
   );
@@ -240,7 +236,11 @@ interface ChipProps {
 
 function Chip({ icon, label, value, tone = "neutral" }: ChipProps) {
   const variant =
-    tone === "negative" ? "destructive" : tone === "positive" ? "default" : "secondary";
+    tone === "negative"
+      ? "destructive"
+      : tone === "positive"
+        ? "default"
+        : "secondary";
   return (
     <Badge variant={variant} className="gap-1.5 py-1 pl-1.5 pr-2 font-normal">
       <span className="opacity-80">{icon}</span>

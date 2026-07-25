@@ -1,0 +1,142 @@
+{
+  "data": {
+    "attributes": {
+      "questId": 2338,
+      "questName": "Replacement Teleport Rock",
+      "startStateMachine": {
+        "startState": "checkAlreadyHasItem",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "2430014",
+                      "type": "item",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "alreadyHaveItem"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "usedItem"
+                }
+              ]
+            },
+            "id": "checkAlreadyHasItem",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "It looks like you already have one #b#t2430014##k on your inventory."
+            },
+            "id": "alreadyHaveItem",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "checkCanHoldItem",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "You've used the #b#t2430014##k? Oh well, good thing I have a spare one right here."
+            },
+            "id": "usedItem",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "2430014",
+                      "type": "inventorySpace",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "giveItemAndComplete"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "noInventorySpace"
+                }
+              ]
+            },
+            "id": "checkCanHoldItem",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Please make a USE slot available to get it, alright?"
+            },
+            "id": "noInventorySpace",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "2430014",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "giveItemAndComplete",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "2338",
+    "type": "quest-conversation"
+  }
+}

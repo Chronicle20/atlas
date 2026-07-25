@@ -1,0 +1,10 @@
+packet: note/serverbound/NoteOperationDiscard
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CMemoListDlg::SetRet
+    address: "0x5fb443"
+    decompile_sha256: 4c282c1d2626dcac45151204bc9a116223af992744f65cc7fb85320726e7612f
+verifies:
+    - libs/atlas-packet/note/serverbound/operation_discard_test.go#TestOperationDiscardRoundTrip

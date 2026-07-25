@@ -215,7 +215,8 @@ func TestWalkCharacterRoutesPartClassByDirectory(t *testing.T) {
 	}
 
 	wantKeys := []key{
-		{"Body", 2000}, {"Body", 12000},
+		{"Body", 2000},
+		{"Body", 12000},
 		{"Cap", 1002},
 		{"Coat", 1040000},
 		{"Longcoat", 1050000},

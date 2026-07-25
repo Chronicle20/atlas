@@ -4,26 +4,27 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const PetActivatedWriter = "PetActivated"
 
 // packet-audit:fname CUserRemote::OnPetActivated
 type Activated struct {
-	ownerId    uint32
-	slot       int8
-	active     bool
-	templateId uint32
-	name       string
-	petId      uint64
-	x          int16
-	y          int16
-	stance     byte
-	foothold   uint16
-	nameTag    byte
+	ownerId     uint32
+	slot        int8
+	active      bool
+	templateId  uint32
+	name        string
+	petId       uint64
+	x           int16
+	y           int16
+	stance      byte
+	foothold    uint16
+	nameTag     byte
 	chatBalloon byte
 	despawnMode byte
 }

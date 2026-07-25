@@ -1,0 +1,10 @@
+packet: messenger/serverbound/MessengerOperationDeclineInvite
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: sub_6D3765
+    address: "0x6d3765"
+    decompile_sha256: df575a300bb0ea48ac2e7f521ff834c1b72200f673e0999d5d505aee8d7b360b
+verifies:
+    - libs/atlas-packet/messenger/serverbound/v61_test.go#TestOperationDeclineInviteV61Body

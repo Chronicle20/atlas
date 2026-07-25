@@ -1,0 +1,21 @@
+{
+  "WriterName": "InteractionInteractionMiniGameAnswerTie",
+  "IDAName": "CMiniRoomBaseDlg::OnPacketBase#MemoryGameAnswerTie",
+  "Address": "0x688b70",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/interaction/clientbound/interaction_minigame.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (51 TIE_ANSWER deny; dispatch byte)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

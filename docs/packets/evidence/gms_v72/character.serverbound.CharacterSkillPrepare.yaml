@@ -1,0 +1,10 @@
+packet: character/serverbound/CharacterSkillPrepare
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CUserLocal::DoActiveSkill_Prepare
+    address: "0x874c8f"
+    decompile_sha256: ab7d577d0b914d723f5ce388d811a936ec52db295e3ffaac8c25c8d230b815fe
+verifies:
+  - libs/atlas-packet/character/serverbound/skill_prepare_test.go#TestSkillPrepareByteFixtureV72

@@ -188,8 +188,12 @@ func TestComboOrbTryUpdate(t *testing.T) {
 		var emitted []comboEmitRecord
 		dw := comboTestCharacter(t, comboTestSkill(t, skill3.DawnWarriorStage3ComboAttackId, 15))
 		comboOrbTryUpdate(l, dw, comboTestAttack(uint32(skill3.DawnWarriorStage3PanicId), 1), comboTestDeps(t, comboTestEffect(t, 3, 0), 0.99, &emitted))
-		if len(emitted) != 1 || emitted[0].sourceId != int32(skill3.DawnWarriorStage3ComboAttackId) {
-			t.Fatalf("got %+v, want SET on DawnWarrior Combo sourceId", emitted)
+		if len(emitted) != 1 {
+			t.Fatalf("emitted %d, want 1", len(emitted))
+		}
+		e := emitted[0]
+		if e.operation != buff2.StatOperationSet || e.amount != 1 || e.sourceId != int32(skill3.DawnWarriorStage3ComboAttackId) {
+			t.Fatalf("got %+v, want SET 1 on DawnWarrior Combo sourceId", e)
 		}
 	})
 
@@ -253,5 +257,15 @@ func TestComboOrbTryUpdate(t *testing.T) {
 		}
 		// must not panic
 		comboOrbTryUpdate(l, crusader, comboTestAttack(0, 1), deps)
+	})
+
+	t.Run("finisher emit error is swallowed", func(t *testing.T) {
+		var emitted []comboEmitRecord
+		deps := comboTestDeps(t, comboTestEffect(t, 5, 0), 0.99, &emitted)
+		deps.emitUpdate = func(sourceId int32, operation string, amount int32, capValue int32) error {
+			return errors.New("kafka down")
+		}
+		// must not panic
+		comboOrbTryUpdate(l, crusader, comboTestAttack(uint32(skill3.CrusaderPanicSwordId), 0), deps)
 	})
 }

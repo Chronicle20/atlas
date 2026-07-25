@@ -70,7 +70,7 @@ The two facts that matter here:
 - Consumes: `skill3` = `github.com/Chronicle20/atlas/libs/atlas-constants/skill` (already imported in the file).
 - Produces: `func isDrainSkill(id skill3.Id) bool` — used by Task 5's wiring.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_drain_test.go`:
 
@@ -107,7 +107,7 @@ func TestIsDrainSkill(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run (from `services/atlas-channel/atlas.com/channel`):
 ```bash
@@ -115,7 +115,7 @@ go test ./socket/handler/ -run TestIsDrainSkill -v
 ```
 Expected: FAIL to build with `undefined: isDrainSkill`.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 In `character_attack_common.go`, after `attackKindFromAttackType` (line 76):
 
@@ -136,14 +136,14 @@ func isDrainSkill(id skill3.Id) bool {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 ```bash
 go test ./socket/handler/ -run TestIsDrainSkill -v
 ```
 Expected: PASS (7 subtests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go services/atlas-channel/atlas.com/channel/socket/handler/character_attack_drain_test.go
@@ -162,7 +162,7 @@ git commit -m "feat(channel): add isDrainSkill membership helper for drain-famil
 - Consumes: `math` (already imported in `character_attack_common.go`).
 - Produces: `func drainHealAmount(totalDamage uint32, x int16, monsterMaxHp uint32, effectiveMaxHp uint32) int16` — used by Task 4's `drainTryHeal`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `character_attack_drain_test.go`:
 
@@ -210,14 +210,14 @@ func TestDrainHealAmount(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 go test ./socket/handler/ -run TestDrainHealAmount -v
 ```
 Expected: FAIL to build with `undefined: drainHealAmount`.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 In `character_attack_common.go`, after `mpEaterAbsorbAmount`:
 
@@ -246,14 +246,14 @@ func drainHealAmount(totalDamage uint32, x int16, monsterMaxHp uint32, effective
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 ```bash
 go test ./socket/handler/ -run TestDrainHealAmount -v
 ```
 Expected: PASS (15 subtests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go services/atlas-channel/atlas.com/channel/socket/handler/character_attack_drain_test.go
@@ -278,7 +278,7 @@ git commit -m "feat(channel): add drainHealAmount pure cap math for drain-family
   - `damageInfoEntryDeps.onDamageApplied func(monsterId uint32, totalDamage uint32)` — invoked once per non-reflected, damage-carrying `DamageInfo`, with `totalDamage` = sum of that entry's damage lines (uint64-summed, clamped to `math.MaxUint32`)
   - `loadEffectiveStats` closure in `processAttack` — lazy, once-per-attack, returns zero `effective_stats.RestModel` on fetch failure
 
-- [ ] **Step 1: Write the failing hook-behavior tests**
+- [x] **Step 1: Write the failing hook-behavior tests**
 
 Append to `character_attack_drain_test.go` (new imports on the existing import block: `io`, `"atlas-channel/monster"`, `"atlas-channel/data/skill/effect"`, `"github.com/Chronicle20/atlas/libs/atlas-constants/channel"`, `"github.com/Chronicle20/atlas/libs/atlas-constants/field"`, `_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"`, `monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"`, `"github.com/Chronicle20/atlas/libs/atlas-constants/world"`, `packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"`, `tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"`, `"github.com/google/uuid"`, `"github.com/sirupsen/logrus"`; `monster.ReflectInfo` field names verified at `monster/status_mirror.go:38-47`):
 
@@ -395,14 +395,14 @@ func TestOnDamageApplied_NotCalledForReflectedEntry(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 go test ./socket/handler/ -run 'TestOnDamageApplied' -v
 ```
 Expected: FAIL to build — `onDamageApplied` in the deps literal has the wrong signature (`func(uint32, uint32)` vs. current `func(uint32)`).
 
-- [ ] **Step 3: Widen the hook and rename the loader in production code**
+- [x] **Step 3: Widen the hook and rename the loader in production code**
 
 In `character_attack_common.go`:
 
@@ -484,14 +484,14 @@ type damageInfoEntryDeps struct {
 					}
 ```
 
-- [ ] **Step 4: Run the package tests to verify everything passes**
+- [x] **Step 4: Run the package tests to verify everything passes**
 
 ```bash
 go build ./... && go test ./socket/handler/ -v -run 'TestOnDamageApplied|TestReflectFlow|TestMpEater'
 ```
 Expected: build clean; the 3 new tests plus all existing reflect/MP Eater tests PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go services/atlas-channel/atlas.com/channel/socket/handler/character_attack_drain_test.go
@@ -527,7 +527,7 @@ func drainTryHeal(
 
 Production wiring passes `mp.GetById` and `cp.ChangeHP` (both signatures verified above).
 
-- [ ] **Step 1: Write the failing flow tests**
+- [x] **Step 1: Write the failing flow tests**
 
 Append to `character_attack_drain_test.go` (new imports: `"errors"`, `"atlas-channel/effective_stats"`):
 
@@ -659,14 +659,14 @@ func TestDrainTryHeal_PerMonsterCaps(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 go test ./socket/handler/ -run TestDrainTryHeal -v
 ```
 Expected: FAIL to build with `undefined: drainTryHeal`.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 In `character_attack_common.go`, after `mpEaterTryProc`:
 
@@ -711,14 +711,14 @@ func drainTryHeal(
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 ```bash
 go test ./socket/handler/ -run TestDrainTryHeal -v
 ```
 Expected: PASS (5 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go services/atlas-channel/atlas.com/channel/socket/handler/character_attack_drain_test.go
@@ -738,7 +738,7 @@ git commit -m "feat(channel): add drainTryHeal orchestrator for drain-family HP 
 - Consumes: `isDrainSkill` (Task 1), `drainTryHeal` (Task 4), `loadEffectiveStats` closure (Task 3), plus in-scope `processAttack` locals: `ai`, `se`, `mp`, `cp`, `s`, `l`.
 - Produces: the complete feature; nothing downstream.
 
-- [ ] **Step 1: Wire the drain branch into the hook closure**
+- [x] **Step 1: Wire the drain branch into the hook closure**
 
 In `processAttack`'s `deps` literal, replace the `onDamageApplied` closure with:
 
@@ -759,7 +759,7 @@ In `processAttack`'s `deps` literal, replace the `onDamageApplied` closure with:
 						},
 ```
 
-- [ ] **Step 2: Remove the drain TODO line**
+- [x] **Step 2: Remove the drain TODO line**
 
 Delete exactly this line from the TODO block near the end of `processAttack` (leave every other TODO, including `// TODO Combo Drain`):
 
@@ -777,7 +777,7 @@ grep -c "TODO" services/atlas-channel/atlas.com/channel/socket/handler/character
 ```
 Expected: exactly one fewer than before the edit (the block had 24 TODO lines; 23 remain).
 
-- [ ] **Step 3: Full module verification**
+- [x] **Step 3: Full module verification**
 
 From `services/atlas-channel/atlas.com/channel`:
 ```bash
@@ -805,7 +805,7 @@ git diff --stat -- services/atlas-channel/atlas.com/channel/go.mod
 ```
 Expected: no output.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go

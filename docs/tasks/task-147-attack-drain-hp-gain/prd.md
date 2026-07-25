@@ -187,13 +187,13 @@ None blocking. One design-phase verification: confirm the tenant skill-effect pi
 
 ## 10. Acceptance Criteria
 
-- [ ] Attacking with each of the four skill ids heals the attacker; attacks with any other skill id produce no drain heal (no behavior change).
-- [ ] Heal per damaged monster equals `min(monsterMaxHp, floor(totalDamage × X / 100), effectiveMaxHp/2)`, with `X` matching the FR-3 table for a spot-checked level of each skill.
-- [ ] Multi-target Vampire attack heals once per damaged monster, each individually capped.
-- [ ] A monster killed by the attack still contributes its heal.
-- [ ] Zero-damage entries, effect-lookup failures, and effective-stats failures produce no heal and never abort the attack (attack broadcast still goes out).
-- [ ] Heal amount defensively clamped to `int16` before `ChangeHP`.
-- [ ] Table-driven unit tests cover: X-percentage math, monster-max-HP cap, half-effective-max-HP cap, zero damage, and floor/truncation semantics.
-- [ ] The TODO line for drain heal is removed; adjacent TODOs untouched.
-- [ ] No per-version code branching is introduced; the feature relies on the skill-ownership gate for version applicability (§8.1).
-- [ ] `go test -race ./...`, `go vet ./...`, `go build ./...` clean in atlas-channel; `tools/redis-key-guard.sh`, `tools/goroutine-guard.sh`, and `tools/lint.sh --check` clean from the repo root; `docker buildx bake atlas-channel` if `go.mod` is touched (not expected).
+- [x] Attacking with each of the four skill ids heals the attacker; attacks with any other skill id produce no drain heal (no behavior change).
+- [x] Heal per damaged monster equals `min(monsterMaxHp, floor(totalDamage × X / 100), effectiveMaxHp/2)`, with `X` matching the FR-3 table for a spot-checked level of each skill.
+- [x] Multi-target Vampire attack heals once per damaged monster, each individually capped.
+- [x] A monster killed by the attack still contributes its heal.
+- [x] Zero-damage entries, effect-lookup failures, and effective-stats failures produce no heal and never abort the attack (attack broadcast still goes out).
+- [x] Heal amount defensively clamped to `int16` before `ChangeHP`.
+- [x] Table-driven unit tests cover: X-percentage math, monster-max-HP cap, half-effective-max-HP cap, zero damage, and floor/truncation semantics.
+- [x] The TODO line for drain heal is removed; adjacent TODOs untouched.
+- [x] No per-version code branching is introduced; the feature relies on the skill-ownership gate for version applicability (§8.1).
+- [x] `go test -race ./...`, `go vet ./...`, `go build ./...` clean in atlas-channel; `tools/redis-key-guard.sh`, `tools/goroutine-guard.sh`, and `tools/lint.sh --check` clean from the repo root; `docker buildx bake atlas-channel` if `go.mod` is touched (not expected).

@@ -6,6 +6,7 @@ import (
 	"atlas-channel/character/skill"
 	skill2 "atlas-channel/data/skill"
 	"atlas-channel/data/skill/effect"
+	"atlas-channel/drop"
 	"atlas-channel/effective_stats"
 	_map "atlas-channel/map"
 	"atlas-channel/monster"
@@ -574,6 +575,19 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 						return effectiveStats
 					}
 
+					// Pick Pocket per-attack state: whitelist gate first
+					// (pure, no I/O), then at most one buff REST call and
+					// one effect lookup. Failures disable the proc and
+					// never abort the attack.
+					dp := drop.NewProcessor(l, ctx)
+					ppState := pickPocketResolveState(
+						l,
+						buff.NewProcessor(l, ctx).GetByCharacterId,
+						skill2.NewProcessor(l, ctx).GetEffect,
+						ai.SkillId(),
+						s.CharacterId(),
+					)
+
 					deps := damageInfoEntryDeps{
 						getReflect:         mirror.GetReflect,
 						getMonster:         mp.GetById,
@@ -581,10 +595,8 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 						emitReflectDamage:  mp.EmitDamageReflected,
 						applyStatus:        mp.ApplyStatus,
 						loadEffectiveStats: loadEffectiveStats,
-						// MP Eater proc: per-monster, after status apply,
-						// magic attacks only. Drain-family heal: per-monster,
-						// skill-id gated (no attack-type gate — the four
-						// skills span melee/ranged/energy). Failures are
+						// Per-monster passives, fired once per non-reflected
+						// entry after damage and status apply. Failures are
 						// swallowed so the rest of the attack pipeline is
 						// unaffected.
 						onDamageApplied: func(di packetmodel.DamageInfo, totalDamage uint32) {
@@ -593,6 +605,9 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 							}
 							if ai.SkillId() > 0 && isDrainSkill(skill3.Id(ai.SkillId())) {
 								drainTryHeal(l, mp.GetById, cp.ChangeHP, loadEffectiveStats, se.X(), ai.SkillId(), di.MonsterId(), totalDamage, s.Field(), s.CharacterId())
+							}
+							if ppState.enabled {
+								pickPocketTryProc(l, mp.GetById, dp.SpawnMeso, ppState, di, s.Field(), s.CharacterId())
 							}
 						},
 					}
@@ -647,7 +662,6 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					// TODO decrease HP from DragonKnight Sacrifice
 					// TODO apply attack effect (heal, mp consumption, dispel, cure all, combo reset, etc)
 					// TODO destroy Chief Bandit exploded mesos
-					// TODO apply Pick Pocket
 					// TODO apply Bandit Steal
 					// TODO Fire Demon ice weaken
 					// TODO Ice Demon fire weaken

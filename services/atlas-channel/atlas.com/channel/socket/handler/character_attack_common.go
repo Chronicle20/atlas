@@ -100,11 +100,15 @@ type damageInfoEntryDeps struct {
 	applyDamage       func(f field.Model, monsterId, characterId uint32, damages []uint32, attackType byte) error
 	emitReflectDamage func(f field.Model, uniqueId, templateId, characterId uint32, reflectDamage uint32, reflectType string) error
 	applyStatus       func(f field.Model, monsterId, characterId, skillId, skillLevel uint32, statuses map[string]int32, duration uint32) error
-	loadVenomStats    func() effective_stats.RestModel
+	// loadEffectiveStats lazily fetches the caster's buff-inclusive
+	// effective stats, at most once per attack. Consumed by the venom
+	// DPT snapshot and by the drain-family heal cap.
+	loadEffectiveStats func() effective_stats.RestModel
 	// onDamageApplied is invoked once per non-reflected DamageInfo after
-	// damage and status apply. Optional; nil-safe. Used by passives that
-	// fire per damaged monster (e.g., MP Eater).
-	onDamageApplied func(monsterId uint32)
+	// damage and status apply, with the summed damage of that entry.
+	// Optional; nil-safe. Used by passives that fire per damaged
+	// monster (e.g., MP Eater, drain-family heals).
+	onDamageApplied func(monsterId uint32, totalDamage uint32)
 }
 
 // processDamageInfoEntry handles one DamageInfo from a magic/melee/ranged
@@ -136,7 +140,7 @@ func processDamageInfoEntry(
 			ms[k] = int32(v)
 		}
 		if _, isVenom := ms["VENOM"]; isVenom {
-			stats := deps.loadVenomStats()
+			stats := deps.loadEffectiveStats()
 			coef := 0.1 + rand.Float64()*0.1
 			ms["VENOM"] = snapshotVenomDamagePerTick(int(stats.Luck), int(stats.MagicAttack), coef)
 		}
@@ -183,7 +187,7 @@ func processDamageInfoEntry(
 			ms[k] = int32(v)
 		}
 		if _, isVenom := ms["VENOM"]; isVenom {
-			stats := deps.loadVenomStats()
+			stats := deps.loadEffectiveStats()
 			coef := 0.1 + rand.Float64()*0.1
 			ms["VENOM"] = snapshotVenomDamagePerTick(int(stats.Luck), int(stats.MagicAttack), coef)
 		}
@@ -191,7 +195,14 @@ func processDamageInfoEntry(
 	}
 
 	if deps.onDamageApplied != nil {
-		deps.onDamageApplied(di.MonsterId())
+		var total uint64
+		for _, d := range damages {
+			total += uint64(d)
+		}
+		if total > math.MaxUint32 {
+			total = math.MaxUint32
+		}
+		deps.onDamageApplied(di.MonsterId(), uint32(total))
 	}
 }
 
@@ -359,35 +370,36 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					t := tenant.MustFromContext(ctx)
 					attackKind := attackKindFromAttackType(ai.AttackType())
 
-					// Lazy effective-stats fetch: only needed when a damage entry
-					// produces a VENOM apply. Cached for the duration of one attack.
-					var venomStats effective_stats.RestModel
-					venomStatsLoaded := false
-					loadVenomStats := func() effective_stats.RestModel {
-						if venomStatsLoaded {
-							return venomStats
+					// Lazy effective-stats fetch: needed when a damage entry
+					// produces a VENOM apply and by drain-family heals.
+					// Cached for the duration of one attack.
+					var effectiveStats effective_stats.RestModel
+					effectiveStatsLoaded := false
+					loadEffectiveStats := func() effective_stats.RestModel {
+						if effectiveStatsLoaded {
+							return effectiveStats
 						}
-						venomStatsLoaded = true
+						effectiveStatsLoaded = true
 						stats, sErr := effective_stats.NewProcessor(l, ctx).GetByCharacterId(s.WorldId(), s.ChannelId(), s.CharacterId())
 						if sErr != nil {
-							l.WithError(sErr).Errorf("Unable to fetch effective stats for character [%d]; venom DPT will fall back to zero.", s.CharacterId())
+							l.WithError(sErr).Errorf("Unable to fetch effective stats for character [%d]; venom DPT and drain heal will fall back to zero.", s.CharacterId())
 							return effective_stats.RestModel{}
 						}
-						venomStats = stats
-						return venomStats
+						effectiveStats = stats
+						return effectiveStats
 					}
 
 					deps := damageInfoEntryDeps{
-						getReflect:        mirror.GetReflect,
-						getMonster:        mp.GetById,
-						applyDamage:       mp.Damage,
-						emitReflectDamage: mp.EmitDamageReflected,
-						applyStatus:       mp.ApplyStatus,
-						loadVenomStats:    loadVenomStats,
+						getReflect:         mirror.GetReflect,
+						getMonster:         mp.GetById,
+						applyDamage:        mp.Damage,
+						emitReflectDamage:  mp.EmitDamageReflected,
+						applyStatus:        mp.ApplyStatus,
+						loadEffectiveStats: loadEffectiveStats,
 						// MP Eater proc: per-monster, after status apply,
 						// magic attacks only. Failures are swallowed so the
 						// rest of the attack pipeline is unaffected.
-						onDamageApplied: func(monsterId uint32) {
+						onDamageApplied: func(monsterId uint32, totalDamage uint32) {
 							if ai.AttackType() == packetmodel.AttackTypeMagic && ai.SkillId() > 0 {
 								mpEaterTryProc(l, ctx, mp, c, monsterId, s.Field(), s.CharacterId())
 							}

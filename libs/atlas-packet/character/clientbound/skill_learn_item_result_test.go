@@ -108,6 +108,43 @@ func TestSkillLearnItemResultGoldenBytesV61(t *testing.T) {
 	}
 }
 
+// Golden bytes, v72 — 15-byte body (NO leading bOnExclRequest byte, same as
+// v48/v61/v83; MajorVersion()=72 < 84):
+// characterId(4 LE) + isMasteryBook(1) + skillId(4 LE) + masterLevel(4 LE) + canUse(1) + success(1).
+//
+// IDA evidence (task-125): sub_9175E6 @0x9175e6 (v72 IDB
+// GMS_v72.1_U_DEVM.exe.i64, session 90e36cb0). Hex-Rays displays the
+// pseudocode under the sub_ label, but xrefs_to the dispatch call site
+// resolves this address to the mangled symbol
+// CWvsContext::OnSkillLearnItemResult — already named in the IDB (the prior
+// registry note claiming it was unnamed was stale, corrected in
+// docs/packets/registry/gms_v72.yaml, same class as the v61 correction).
+// CWvsContext::OnPacket case 48 (0x30, @0x902791) delegates directly. Body:
+// Decode4 characterId (CUserPool::GetUser lookup, @0x917602/0x91760e), then
+// under the user-found guard (v28): Decode1 isMasteryBook @0x91764a, Decode4
+// skillId (decoded, discarded) @0x91764d, Decode4 masterLevel (decoded,
+// discarded) @0x917654, Decode1 canUse @0x917665, Decode1 success @0x917668 —
+// matches the existing 15-byte golden fixture shape exactly. Opcode 0x30 ==
+// registry op 48.
+//
+// packet-audit:verify packet=character/clientbound/CharacterSkillLearnItemResult version=gms_v72 ida=0x9175e6
+func TestSkillLearnItemResultGoldenBytesV72(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+	l, _ := testlog.NewNullLogger()
+	got := NewSkillLearnItemResult(1, true, 2, 3, true, false).Encode(l, ctx)(nil)
+	want := []byte{
+		0x01, 0x00, 0x00, 0x00, // characterId
+		0x01,                   // isMasteryBook
+		0x02, 0x00, 0x00, 0x00, // skillId
+		0x03, 0x00, 0x00, 0x00, // masterLevel
+		0x01, // canUse
+		0x00, // success
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("golden bytes: got % X, want % X", got, want)
+	}
+}
+
 // packet-audit:verify packet=character/clientbound/CharacterSkillLearnItemResult version=gms_v83 ida=0xa1e5af
 func TestSkillLearnItemResultGoldenBytesV83(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 83, 1)

@@ -321,11 +321,27 @@
 - op: SKILL_LEARN_ITEM_RESULT
   direction: clientbound
   opcode: 48
-  fname: sub_9175E6
+  fname: CWvsContext::OnSkillLearnItemResult
+  fname_alts:
+  - sub_9175E6
   provenance: ida-discovered
   ida:
     address: 9532902
-  note: 'v72 IDB unnamed sub_9175E6 = CWvsContext::OnSkillLearnItemResult (delta doc a).'
+  note: 'task-125 verify pass (session 90e36cb0, GMS_v72.1_U_DEVM.exe.i64):
+    Hex-Rays displays sub_9175E6 in the pseudocode, but xrefs_to resolves the
+    dispatch caller''s reference at this address to the mangled symbol
+    CWvsContext::OnSkillLearnItemResult (already named in the IDB; Hex-Rays
+    merely showed the sub_ label — the "unnamed" note below was stale, same
+    class as the v61 correction). CWvsContext::OnPacket case 48 (0x30,
+    @0x902791) dispatches directly, confirming opcode 0x30 == registry op 48.
+    Body (15-byte, NO leading bOnExclRequest): Decode4 characterId
+    (CUserPool::GetUser lookup, @0x917602/0x91760e), then under the
+    user-found guard (v28): Decode1 isMasteryBook @0x91764a, Decode4 skillId
+    (decoded, discarded) @0x91764d, Decode4 masterLevel (decoded, discarded)
+    @0x917654, Decode1 canUse @0x917665 (gates the on-avatar glow effect block
+    @0x917673), Decode1 success @0x917668 (selects success/failure game sound
+    @0x917710) — matches the Atlas codec read order exactly. v72 IDB unnamed
+    sub_9175E6 = CWvsContext::OnSkillLearnItemResult (delta doc a).'
 - op: GATHER_ITEM_RESULT
   direction: clientbound
   opcode: 49

@@ -118,7 +118,65 @@ None. No new entities, fields, or migrations. All inputs (skill `x` values) alre
 
 ## 8. Non-Functional Requirements
 
-- **Multi-tenancy / versions:** the logic is version-independent server arithmetic; `X` values resolve per tenant from that tenant's skill data. No per-version branching, no opcode/template changes.
+- **Multi-tenancy / versions:** the logic is version-independent server arithmetic; `X` values resolve per tenant from that tenant's skill data. No per-version branching, no opcode/template changes. See §8.1 for the supported-version matrix.
+
+### 8.1 Version support (added post-rebase onto main, 2026-07-25)
+
+This PRD was written 2026-07-09. GMS legacy versions **48.1 / 61.1 / 72.1 / 79.1** landed on main
+2026-07-13 (`3d77511d0`, plus `8100ce299` task-178 and `e14765d7d` task-181), so they are in scope
+for this task.
+
+**The attack pipeline is wired for nine versions.** `CharacterMeleeAttack` / `CharacterRangedAttack`
+/ `CharacterMagicAttack` handlers are present in the seed templates for gms 48, 61, 72, 79, 83, 84,
+87, 95 and jms 185. They are **absent** from `template_gms_12_1.json` and `template_gms_92_1.json`,
+so the feature is simply unreachable on those two — no work required.
+
+**No per-version branching is required.** `processAttack` gates on skill ownership before anything
+else: `character_attack_common.go:283-291` scans `c.Skills()` and destroys the session if the
+character does not own the cast skill. A skill that does not exist in a given version's data can
+never be owned, so the drain branch is structurally unreachable there. Version applicability is
+therefore a *test-and-documentation* matter, not a code-gating one.
+
+`libs/atlas-packet/model/attack_info.go` **is** now heavily version-gated (v61/v72/v79/v84/v95
+gates at lines 31-61 and throughout `Decode`), but those gates govern head/trailer *framing* only —
+`skillId` and `damageInfo` are plain struct fields (`attack_info.go:73,93`) populated on every
+version. Nothing this feature consumes is version-dependent.
+
+Skill availability by job-branch introduction floor (repo source:
+`services/atlas-ui/src/lib/jobs/job-advancement-tree.ts:130-145` — Adventurer floor 1, Pirate node
+floor 62, Cygnus branch floor 83):
+
+| Version | 4101005 Drain | 5111004 Energy Drain | 15111001 TB Energy Drain | 14101006 Vampire |
+|---|---|---|---|---|
+| gms_48 | applicable | n-a (Pirate is v62+) | n-a | n-a |
+| gms_61 | applicable | n-a (Pirate is v62+) | n-a | n-a |
+| gms_72 | applicable | applicable | **unverified** | **unverified** |
+| gms_79 | applicable | applicable | **unverified** | **unverified** |
+| gms_83 | applicable | applicable | applicable | applicable |
+| gms_84 | applicable | applicable | applicable | applicable |
+| gms_87 | applicable | applicable | applicable | applicable |
+| gms_95 | applicable | applicable | applicable | applicable |
+| jms_185 | applicable | applicable | applicable | applicable |
+| gms_12, gms_92 | attack handlers not wired — feature unreachable on these templates | | | |
+
+**Unverified cells — honest status.** Whether Knights of Cygnus (and therefore Thunder Breaker /
+Night Walker) exist in GMS v72/v79 is **not established** from artifacts available locally. The
+repo's Cygnus floor of 83 is explicitly documented as a *display-curation* choice, not a data gate
+(`job-advancement-tree.ts:112-116`), and the memory it cites only establishes that KoC exist *at*
+v83 — an upper bound, not an introduction point. Two verification attempts were made and both were
+inconclusive:
+
+- Local WZ dumps cover only v83 (`Cosmic/wz`) and ms_1172. There is no v72/v79 `Skill.wz` /
+  `String.wz` to read.
+- An IDB string probe for `Cygnus` / `Noblesse` returned zero hits on v72 and v79 — but the
+  **control run returned zero hits on v83 and v87 too**, where Cygnus definitively exists. Those
+  names live in WZ, not the binary, so the probe is uninformative. It is recorded here so the test
+  is not repeated.
+
+To settle it: query atlas-data for skill `15111001` under a live v72/v79 tenant and see whether that
+tenant's ingested skill data carries it. **This does not block implementation** — the ownership gate
+makes both outcomes behaviourally identical. It only decides whether the v72/v79 Cygnus cells are
+labelled `applicable` or `n-a` in the acceptance matrix.
 - **Performance:** no new per-monster REST calls. Effective stats at most one (lazy) fetch per attack; monster snapshots reuse the pipeline's existing fetch path. The heal emit is one Kafka command per damaged monster, same order of magnitude as the existing damage emits.
 - **Concurrency:** no new shared state; all computation is per-attack local. Tests must pass `go test -race`.
 - **Determinism/testability:** the cap math is a pure function (damage, x, monsterMaxHp, effectiveMaxHp → heal) with table-driven unit tests using the project Builder pattern — no `*_testhelpers.go` files.
@@ -137,4 +195,5 @@ None blocking. One design-phase verification: confirm the tenant skill-effect pi
 - [ ] Heal amount defensively clamped to `int16` before `ChangeHP`.
 - [ ] Table-driven unit tests cover: X-percentage math, monster-max-HP cap, half-effective-max-HP cap, zero damage, and floor/truncation semantics.
 - [ ] The TODO line for drain heal is removed; adjacent TODOs untouched.
-- [ ] `go test -race ./...`, `go vet ./...`, `go build ./...` clean in atlas-channel; `tools/redis-key-guard.sh` clean; `docker buildx bake atlas-channel` if `go.mod` is touched (not expected).
+- [ ] No per-version code branching is introduced; the feature relies on the skill-ownership gate for version applicability (§8.1).
+- [ ] `go test -race ./...`, `go vet ./...`, `go build ./...` clean in atlas-channel; `tools/redis-key-guard.sh`, `tools/goroutine-guard.sh`, and `tools/lint.sh --check` clean from the repo root; `docker buildx bake atlas-channel` if `go.mod` is touched (not expected).

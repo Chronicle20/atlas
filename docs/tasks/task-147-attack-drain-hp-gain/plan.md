@@ -16,22 +16,47 @@
 - Effective stats fetched at most once per attack, lazily (PRD FR-4).
 - Floor semantics for the percentage: integer division after the multiply, matching Cosmic's `(int)` cast (PRD FR-2).
 - Tests use the project Builder pattern; NO `*_testhelpers.go` files.
+- NO `MajorVersion` / version gating in this feature. Version applicability is enforced structurally by the skill-ownership check in `processAttack` — see "Version scope" below and PRD §8.1.
 - Aran Combo Drain (21100005) is explicitly NOT a drain skill here; its TODO line stays (PRD non-goal).
 - Only the `// TODO increase HP from Energy Drain, Vampire, or Drain` line is removed; all adjacent TODOs untouched (PRD FR-7).
 - The Go module root is `services/atlas-channel/atlas.com/channel` (module name `atlas-channel`); run all `go` commands from there unless stated otherwise.
-- `go test -race ./...`, `go vet ./...`, `go build ./...` clean in atlas-channel; `tools/redis-key-guard.sh` clean from repo root. `go.mod` is not touched, so no `docker buildx bake` is expected (if any task somehow touches `go.mod`, bake `atlas-channel`).
+- `go test -race ./...`, `go vet ./...`, `go build ./...` clean in atlas-channel; `tools/redis-key-guard.sh`, `tools/goroutine-guard.sh` and `tools/lint.sh --check` clean from repo root. `go.mod` is not touched, so no `docker buildx bake` is expected (if any task somehow touches `go.mod`, bake `atlas-channel`).
 
 ## Verified reference facts (do not re-derive)
 
-- `ai.SkillId()` returns `uint32` (`libs/atlas-packet/model/attack_info.go:321`).
-- `effect.Model.X()` returns `int16` (`services/atlas-channel/atlas.com/channel/data/skill/effect/model.go:144`).
-- `monster.Model.MaxHp()` returns `uint32` (`services/atlas-channel/atlas.com/channel/monster/model.go:119`); build test monsters with `monster.NewModelBuilder(uniqueId, f, monsterId).SetMaxHp(n).Build()` (`monster/builder.go:31,59`).
+> **Re-verified 2026-07-25** after rebasing this branch onto main. Line numbers below were refreshed:
+> `e15b343b1` (task-116 Gen3 processor convergence), `e0321f319` (task-171 lint/format baseline
+> reformat), `be0c94338` (task-158 Shadow Stars) and the legacy-version work all moved lines in
+> these files. **Every signature and builder method the plan depends on survived unchanged** — only
+> the line numbers shifted.
+
+- `ai.SkillId()` returns `uint32`, pointer receiver `*AttackInfo` (`libs/atlas-packet/model/attack_info.go:397`).
+- `effect.Model.X()` returns `int16` (`services/atlas-channel/atlas.com/channel/data/skill/effect/model.go:154`).
+- `monster.Model.MaxHp()` returns `uint32` (`services/atlas-channel/atlas.com/channel/monster/model.go:120`); build test monsters with `monster.NewModelBuilder(uniqueId, f, monsterId).SetMaxHp(n).Build()` (`monster/builder.go:30,59` — the builder type is unexported `*modelBuilder`).
 - `effective_stats.RestModel.MaxHp` is `uint32` (`services/atlas-channel/atlas.com/channel/effective_stats/rest.go:12`).
-- `character.Processor.ChangeHP(f field.Model, characterId uint32, amount int16) error` (`services/atlas-channel/atlas.com/channel/character/processor.go:41,271`).
-- `monster.Processor.GetById(uniqueId uint32) (Model, error)` (`services/atlas-channel/atlas.com/channel/monster/processor.go:28`).
-- `se` in `processAttack` is only populated inside the `ai.SkillId() > 0` block (`character_attack_common.go:280-311`), so a zero-value `se` can never feed the drain branch (which also gates on `ai.SkillId() > 0`).
+- `character.Processor.ChangeHP(f field.Model, characterId uint32, amount int16) error` (`services/atlas-channel/atlas.com/channel/character/processor.go:43` iface, `:276` impl).
+- `monster.Processor.GetById(uniqueId uint32) (Model, error)` (`services/atlas-channel/atlas.com/channel/monster/processor.go:18` iface, `:49` impl).
+- `packetmodel` DamageInfo builders used by the tests: `NewDamageInfo` (`libs/atlas-packet/model/damage_info.go:13`), `Damages()` (`:90`), `SetMonsterId` (`:104`), `SetDamages` (`:114`).
+- `se` in `processAttack` is only populated inside the `ai.SkillId() > 0` block (`character_attack_common.go:281-312`), so a zero-value `se` can never feed the drain branch (which also gates on `ai.SkillId() > 0`). `se` is fetched at `sk.Level()` — the character's **owned** level, not the level claimed in the packet (`character_attack_common.go:293`).
 - FR-3 spot X values (verified against local WZ): Drain L1 X=16, L30 X=45; Energy Drain (both) L20 X=20; Vampire L20 X=10.
 - No existing test constructs `damageInfoEntryDeps` — the hook-signature change touches only production code plus the new tests written in this plan.
+- The TODO block in `processAttack` still holds exactly **24** `TODO` lines (`character_attack_common.go:403-426`), so Task 5's 24→23 grep check is unchanged. The drain TODO is now at **line 410**.
+- `"math"` is already imported (`character_attack_common.go:16`) — Task 2 needs no import change.
+- `monster.ReflectInfo` field names for Task 3's reflect test: `Kind`, `Percent`, `LtX`, `LtY`, `RbX`, `RbY`, `MaxDamage` (`monster/status_mirror.go:39-47`).
+
+## Version scope (added post-rebase)
+
+GMS legacy versions **48.1 / 61.1 / 72.1 / 79.1** landed on main after this plan was written and are
+in scope. **This changes no task in this plan** — see PRD §8.1 for the full matrix and reasoning.
+The two facts that matter here:
+
+- The attack pipeline is wired for gms 48/61/72/79/83/84/87/95 + jms185 (not gms_12, not gms_92).
+- **No per-version branching is needed.** `processAttack` destroys the session if the character does
+  not own the cast skill (`character_attack_common.go:283-291`), so a drain skill absent from a
+  version's data can never reach the drain branch. Do **not** add `MajorVersion` gates to this
+  feature; if you find yourself reaching for one, re-read PRD §8.1 first.
+- `attack_info.go` version gates affect head/trailer framing only — `skillId` and `damageInfo` are
+  populated on every version, so `drainHealAmount`'s inputs are version-independent.
 
 ---
 
@@ -240,10 +265,10 @@ git commit -m "feat(channel): add drainHealAmount pure cap math for drain-family
 ### Task 3: Widen `onDamageApplied` hook and rename `loadVenomStats` → `loadEffectiveStats`
 
 **Files:**
-- Modify: `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go`:
-  - `damageInfoEntryDeps` struct (lines 81-92): rename field `loadVenomStats` → `loadEffectiveStats`; widen `onDamageApplied` to `func(monsterId uint32, totalDamage uint32)`
-  - `processDamageInfoEntry` (lines 99-180): two `deps.loadVenomStats()` call sites (lines 123, 170); hook invocation (lines 177-179) gains the damage sum
-  - `processAttack` (lines 325-355): rename closure `loadVenomStats` → `loadEffectiveStats` and its cache vars; generalize its error log; update the `deps` literal and the MP Eater closure signature
+- Modify: `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go` (line numbers re-verified 2026-07-25 post-rebase):
+  - `damageInfoEntryDeps` struct (lines 82-93): rename field `loadVenomStats` → `loadEffectiveStats`; widen `onDamageApplied` to `func(monsterId uint32, totalDamage uint32)`
+  - `processDamageInfoEntry` (lines 100-181): two `deps.loadVenomStats()` call sites (lines 124, 171); hook invocation (lines 178-180) gains the damage sum
+  - `processAttack`: the lazy `loadVenomStats` closure (lines 324-340) is renamed `loadEffectiveStats` along with its cache vars and its error log generalized; the `deps` literal (lines 342-357) is updated together with the MP Eater closure signature
 - Test (modify): `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_drain_test.go`
 
 **Interfaces:**
@@ -419,7 +444,7 @@ type damageInfoEntryDeps struct {
 	}
 ```
 
-3d. In `processAttack` (lines 323-356), rename the lazy loader and its cache, generalize the log line, and update the deps literal (MP Eater ignores the new argument for now — drain wiring is Task 5):
+3d. In `processAttack` (lines 324-357), rename the lazy loader and its cache, generalize the log line, and update the deps literal (MP Eater ignores the new argument for now — drain wiring is Task 5):
 
 ```go
 					// Lazy effective-stats fetch: needed when a damage entry
@@ -707,7 +732,7 @@ git commit -m "feat(channel): add drainTryHeal orchestrator for drain-family HP 
 **Files:**
 - Modify: `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go`:
   - the `onDamageApplied` closure in the `deps` literal (as rewritten in Task 3, Step 3d)
-  - delete the line `// TODO increase HP from Energy Drain, Vampire, or Drain` (line 409 pre-change; renumbered by earlier tasks — locate it by content)
+  - delete the line `// TODO increase HP from Energy Drain, Vampire, or Drain` (line 410 pre-change; renumbered by earlier tasks — locate it by content)
 
 **Interfaces:**
 - Consumes: `isDrainSkill` (Task 1), `drainTryHeal` (Task 4), `loadEffectiveStats` closure (Task 3), plus in-scope `processAttack` locals: `ai`, `se`, `mp`, `cp`, `s`, `l`.
@@ -760,11 +785,19 @@ go build ./... && go vet ./... && go test -race ./...
 ```
 Expected: all clean, all tests PASS.
 
-From the repo root (worktree root):
+From the repo root (worktree root) — the guard set grew after this plan was first written
+(`tools/goroutine-guard.sh` from task-115, `tools/lint.sh` from task-171):
 ```bash
 tools/redis-key-guard.sh
+tools/goroutine-guard.sh
+tools/lint.sh --check
 ```
-Expected: clean (exit 0). Do NOT prefix with a global `GOWORK=off`.
+Expected: all clean (exit 0). Do NOT prefix with a global `GOWORK=off`.
+
+`tools/lint.sh --check` is the one most likely to fail on first run: it enforces gofumpt +
+goimports tree-wide. Run `tools/lint.sh` (no flags) to auto-fix in place before committing.
+This branch was created before task-171's baseline reformat landed, so run the fix mode once
+after the first code edit rather than debugging individual format diffs.
 
 Confirm `go.mod` untouched (no bake needed):
 ```bash
@@ -798,4 +831,5 @@ emitted via the existing ChangeHP command path. Removes the drain TODO."
 | int16 defensive clamp | Task 2 (`int16 clamp on pathological damage`) |
 | Table-driven unit tests for math/caps/zero/floor | Task 2 |
 | TODO removed, adjacent TODOs untouched | Task 5 Step 2 (grep-verified) |
-| `go test -race` / `go vet` / `go build` / redis-key-guard clean | Task 5 Step 3 |
+| No per-version branching introduced (PRD §8.1) | Global Constraints; enforced by the ownership gate, not by code in this plan |
+| `go test -race` / `go vet` / `go build` / redis-key-guard / goroutine-guard / lint.sh clean | Task 5 Step 3 |

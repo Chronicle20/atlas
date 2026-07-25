@@ -110,3 +110,35 @@ func TestUseSkillBookGoldenBytesV61(t *testing.T) {
 		t.Errorf("golden bytes: got % X, want % X", got, want)
 	}
 }
+
+// Golden bytes, v72: same 10-byte body as v48/v61/v83 (no version gate on this op).
+// updateTime(4 LE) + slot(2 LE) + itemId(4 LE); 12345 = 0x3039; 2 = 0x0002;
+// 2290000 = 0x22F150.
+//
+// IDA evidence (task-125): sub_904B55 @0x904b55 (v72 IDB
+// GMS_v72.1_U_DEVM.exe.i64, session 90e36cb0 — was unnamed in this IDB;
+// renamed live this pass to CWvsContext::SendSkillLearnItemUseRequest,
+// cross-checked against caller CDraggableItem::OnDoubleClicked @0x4db880, a
+// skill-book item double-click handler). Op was entirely ABSENT from the v72
+// registry prior to this pass (matrix showed v72 ⬜ n-a) despite v48/v61/v83
+// all carrying it — a stale n-a, corrected in docs/packets/registry/gms_v72.yaml.
+// item-class gate a3/10000 in {228,229} (skill-book prefix, @0x904b6e/0x904b7c);
+// guard sub_4DBE16(200,0) (CanSendExclRequest twin, @0x904b87);
+// COutPacket::COutPacket(&pkt, 81) @0x904b95 then:
+//
+//	COutPacket::Encode4(&pkt, get_update_time())  -> updateTime, @0x904ba7
+//	COutPacket::Encode2(&pkt, a2)                 -> slot, @0x904bb2
+//	COutPacket::Encode4(&pkt, a3)                 -> itemId, @0x904bbd
+//
+// matches the codec's write order exactly. Opcode 0x51 == registry op 81.
+//
+// packet-audit:verify packet=character/serverbound/CharacterUseSkillBook version=gms_v72 ida=0x904b55
+func TestUseSkillBookGoldenBytesV72(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+	l, _ := testlog.NewNullLogger()
+	got := UseSkillBook{updateTime: 12345, slot: 2, itemId: 2290000}.Encode(l, ctx)(nil)
+	want := []byte{0x39, 0x30, 0x00, 0x00, 0x02, 0x00, 0x50, 0xF1, 0x22, 0x00}
+	if !bytes.Equal(got, want) {
+		t.Errorf("golden bytes: got % X, want % X", got, want)
+	}
+}

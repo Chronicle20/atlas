@@ -19154,6 +19154,28 @@
           "comment": "whispersOn"
         }
       ]
+    },
+    "CWvsContext::SendSkillLearnItemUseRequest": {
+      "address": "0x904b55",
+      "direction": "serverbound",
+      "note": "USE_SKILL_BOOK (task-125). v72 IDA-verified, session 90e36cb0, GMS_v72.1_U_DEVM.exe.i64 -- was unnamed (sub_904B55) in this IDB, renamed live this pass; cross-checked against caller CDraggableItem::OnDoubleClicked @0x4db880, a skill-book item double-click handler. Op was entirely ABSENT from the v72 registry prior to this pass (matrix showed v72 n-a) despite v48/v61/v83 all carrying it -- a stale n-a, corrected in docs/packets/registry/gms_v72.yaml. item-class gate a3/10000 in {228,229} (skill-book prefix); guard sub_4DBE16(200,0) (CanSendExclRequest twin); COutPacket::COutPacket(&pkt, 81).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "updateTime (get_update_time())",
+          "guard": "sub_4DBE16(200, 0)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "slot (a2)",
+          "guard": "sub_4DBE16(200, 0)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "itemId (a3); gated a3/10000 in {228,229} (skill-book item prefix)",
+          "guard": "sub_4DBE16(200, 0)"
+        }
+      ]
     }
   }
 }

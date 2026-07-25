@@ -416,6 +416,12 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x48",
+        "validator": "LoggedInValidator",
+        "handler": "MountFoodHandle",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x49",
         "validator": "LoggedInValidator",
         "handler": "CharacterCashItemUseHandle",
@@ -431,12 +437,6 @@
         "opCode": "0x4B",
         "validator": "LoggedInValidator",
         "handler": "PetFoodHandle",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x4C",
-        "validator": "LoggedInValidator",
-        "handler": "MountFoodHandle",
         "services": ["channel"]
       },
       {

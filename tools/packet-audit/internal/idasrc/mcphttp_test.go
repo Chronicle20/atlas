@@ -370,6 +370,81 @@ func TestMCPHTTPGetCalleesArgs(t *testing.T) {
 	}
 }
 
+// TestMCPHTTPDatabaseInjectedInArgs asserts the session-based Database
+// targeting (the successor to select_instance/port): a configured Database is
+// injected as the "database" tools/call argument on a session-scoped call
+// (decompile), an empty Database leaves the request with no "database" key at
+// all (legacy behaviour preserved), and an args map that already carries a
+// "database" key is left untouched (callStructured only sets it when absent).
+func TestMCPHTTPDatabaseInjectedInArgs(t *testing.T) {
+	decompileRT := func(capture *json.RawMessage) http.RoundTripper {
+		return rtFunc(func(r *http.Request) (*http.Response, error) {
+			method, name, args := readMethodAndArgs(r)
+			if resp, ok := handshakeOK(method); ok {
+				return resp, nil
+			}
+			if name == "decompile" {
+				*capture = args
+			}
+			return structuredResp(map[string]any{
+				"addr":  "0xa3f2e8",
+				"code":  "int f(void) { return 0; }",
+				"error": nil,
+			}), nil
+		})
+	}
+
+	t.Run("database set is injected", func(t *testing.T) {
+		var gotArgs json.RawMessage
+		c := NewMCPHTTPClientWithDatabase("http://test/mcp", &http.Client{Transport: decompileRT(&gotArgs)}, "sess123")
+		if _, err := c.DecompileFunction(context.Background(), "0xa3f2e8"); err != nil {
+			t.Fatalf("DecompileFunction: %v", err)
+		}
+		var a map[string]any
+		if err := json.Unmarshal(gotArgs, &a); err != nil {
+			t.Fatalf("unmarshal args: %v", err)
+		}
+		if got, ok := a["database"]; !ok || got != "sess123" {
+			t.Errorf(`args["database"] = %v (present=%v), want "sess123"`, got, ok)
+		}
+	})
+
+	t.Run("database empty omits key", func(t *testing.T) {
+		var gotArgs json.RawMessage
+		c := NewMCPHTTPClient("http://test/mcp", &http.Client{Transport: decompileRT(&gotArgs)})
+		if _, err := c.DecompileFunction(context.Background(), "0xa3f2e8"); err != nil {
+			t.Fatalf("DecompileFunction: %v", err)
+		}
+		var a map[string]any
+		if err := json.Unmarshal(gotArgs, &a); err != nil {
+			t.Fatalf("unmarshal args: %v", err)
+		}
+		if got, ok := a["database"]; ok {
+			t.Errorf(`args["database"] = %v, want absent (legacy behaviour)`, got)
+		}
+	})
+
+	t.Run("preexisting database key is not overwritten", func(t *testing.T) {
+		var gotArgs json.RawMessage
+		c := NewMCPHTTPClientWithDatabase("http://test/mcp", &http.Client{Transport: decompileRT(&gotArgs)}, "sess123")
+		// Exercise callStructured directly (same package) with an args map that
+		// already carries a "database" key, since no production call site does
+		// this today — this is the only way to drive the "already present" branch.
+		if _, err := c.callStructured(context.Background(), "decompile", map[string]any{
+			"addr": "0xa3f2e8", "database": "preset",
+		}); err != nil {
+			t.Fatalf("callStructured: %v", err)
+		}
+		var a map[string]any
+		if err := json.Unmarshal(gotArgs, &a); err != nil {
+			t.Fatalf("unmarshal args: %v", err)
+		}
+		if got, ok := a["database"]; !ok || got != "preset" {
+			t.Errorf(`args["database"] = %v (present=%v), want "preset" (must not be overwritten)`, got, ok)
+		}
+	})
+}
+
 // TestMCPHTTPSelectInstance asserts SelectInstance issues select_instance with
 // {port:N}.
 func TestMCPHTTPSelectInstance(t *testing.T) {

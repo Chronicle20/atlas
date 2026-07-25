@@ -2290,12 +2290,12 @@
   note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): sub_8325D2 COutPacket(75), CWvsContext item region; Δ0 vs v72.'
 - op: USE_MOUNT_FOOD
   direction: serverbound
-  opcode: 76
-  fname: sub_832680
+  opcode: 72
+  fname: CWvsContext::SendTamingMobFoodItemUseRequest
   provenance: ida-discovered
   ida:
-    address: 6291023
-  note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): sub_832680 COutPacket(76), CWvsContext item region; Δ0 vs v72.'
+    address: 8593220
+  note: 'v61 correction (task-138 verify pass): prior entry (opcode 76/sub_832680) was a mislabel -- sub_832680 guards itemId/10000==231 (not 226) and encodes only [Encode2(slot),Encode4(itemId)] (no update_time), a distinct 2-field packet, not mount food. True CWvsContext::SendTamingMobFoodItemUseRequest@0x831f44 (has_type name in IDB) guards CAvatar::IsRidingTamedMob + itemId/10000==226, COutPacket(72)+[Encode4(update_time),Encode2(slot),Encode4(itemId)] -- matches version-invariant codec. Corroborated by the neighboring CANCEL_ITEM_EFFECT note, which already flagged 831F44 as COutPacket(72)+[E4,E2,E4], distinct from the cancel packet.'
 - op: USE_TELEPORT_ROCK
   direction: serverbound
   opcode: 77

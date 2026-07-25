@@ -2,6 +2,7 @@ package handler
 
 import (
 	"atlas-channel/character"
+	"atlas-channel/character/buff"
 	"atlas-channel/character/skill"
 	skill2 "atlas-channel/data/skill"
 	"atlas-channel/data/skill/effect"
@@ -18,6 +19,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
@@ -252,6 +254,76 @@ func pickPocketMesoAmount(damage uint32, maxmeso int32) uint32 {
 		return uint32(maxmeso)
 	}
 	return uint32(v)
+}
+
+// pickPocketState is the per-attack Pick Pocket context, resolved once
+// before the DamageInfo loop (design §3.3): whitelist gate first (pure,
+// no I/O), then at most one buff REST call and one effect lookup.
+type pickPocketState struct {
+	enabled bool
+	maxmeso int32   // PICK_POCKET stat Amount() captured at buff time
+	prop    float64 // effect prop at the buff's captured Level()
+}
+
+// pickPocketResolveState gates and resolves Pick Pocket for one attack.
+// Any failure (buff REST error, effect lookup error) or non-positive
+// maxmeso/prop yields a disabled state; errors are logged and swallowed,
+// never propagated into the attack pipeline.
+func pickPocketResolveState(
+	l logrus.FieldLogger,
+	getBuffs func(characterId uint32) ([]buff.Model, error),
+	getEffect func(uniqueId uint32, level byte) (effect.Model, error),
+	skillId uint32,
+	characterId uint32,
+) pickPocketState {
+	if !pickPocketWhitelisted(skillId) {
+		return pickPocketState{}
+	}
+
+	buffs, err := getBuffs(characterId)
+	if err != nil {
+		l.WithError(err).Errorf("Pick Pocket: buff lookup failed for character [%d].", characterId)
+		return pickPocketState{}
+	}
+
+	var maxmeso int32
+	var level byte
+	found := false
+	for _, b := range buffs {
+		if b.Expired() {
+			continue
+		}
+		for _, ch := range b.Changes() {
+			if ch.Type() == string(charconst.TemporaryStatTypePickPocket) {
+				maxmeso = ch.Amount()
+				level = b.Level()
+				found = true
+				break
+			}
+		}
+		if found {
+			break
+		}
+	}
+	if !found {
+		return pickPocketState{}
+	}
+	if maxmeso <= 0 {
+		l.Debugf("Pick Pocket: non-positive maxmeso [%d] for character [%d]; proc disabled.", maxmeso, characterId)
+		return pickPocketState{}
+	}
+
+	se, err := getEffect(uint32(skill3.ChiefBanditPickpocketId), level)
+	if err != nil {
+		l.WithError(err).Errorf("Pick Pocket: effect lookup failed at level [%d] for character [%d].", level, characterId)
+		return pickPocketState{}
+	}
+	if se.Prop() <= 0 {
+		l.Debugf("Pick Pocket: non-positive prop at level [%d] for character [%d]; proc disabled.", level, characterId)
+		return pickPocketState{}
+	}
+
+	return pickPocketState{enabled: true, maxmeso: maxmeso, prop: se.Prop()}
 }
 
 // mpEaterAbsorbAmount computes the requested drain from monster MaxMp

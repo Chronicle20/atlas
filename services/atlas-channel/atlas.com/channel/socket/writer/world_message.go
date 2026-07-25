@@ -8,7 +8,9 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	atlas_packet "github.com/Chronicle20/atlas/libs/atlas-packet"
+	chat "github.com/Chronicle20/atlas/libs/atlas-packet/chat"
 	chatpkt "github.com/Chronicle20/atlas/libs/atlas-packet/chat/clientbound"
+	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 )
 
@@ -39,11 +41,11 @@ const (
 )
 
 func WorldMessageNoticeBody(message string) packet.Encode {
-	return worldMessageBody(WorldMessageNotice, []string{message}, 0, false, "", 0, 0)
+	return worldMessageBody(WorldMessageNotice, []string{message}, 0, false, "", 0)
 }
 
 func WorldMessagePopUpBody(message string) packet.Encode {
-	return worldMessageBody(WorldMessagePopUp, []string{message}, 0, false, "", 0, 0)
+	return worldMessageBody(WorldMessagePopUp, []string{message}, 0, false, "", 0)
 }
 
 func decorateNameForMessage(medal string, characterName string) string {
@@ -51,6 +53,17 @@ func decorateNameForMessage(medal string, characterName string) string {
 		return characterName
 	}
 	return fmt.Sprintf("<%s> %s", medal, characterName)
+}
+
+// DecorateNameForMessage exports decorateNameForMessage for consumers outside
+// this package that need to prefix a sender name with their medal (e.g. the
+// world-broadcast status consumer, task-123 Task 14, which renders a bare
+// sender name onto TV / avatar megaphone packets rather than a full "name :
+// message" line). Kept as the single name-decoration helper — the megaphone
+// broadcast consumer (Task 13) reaches the same logic indirectly via
+// decorateMegaphoneMessage above.
+func DecorateNameForMessage(medal string, characterName string) string {
+	return decorateNameForMessage(medal, characterName)
 }
 
 func decorateMegaphoneMessage(medal string, characterName string, message string) string {
@@ -61,31 +74,57 @@ func decorateMegaphoneMessage(medal string, characterName string, message string
 	return fmt.Sprintf("%s : %s", name, message)
 }
 
+// WorldMessageMegaphoneBody, WorldMessageSuperMegaphoneBody,
+// WorldMessageItemMegaphoneBody, and WorldMessageMultiMegaphoneBody
+// (task-123 Task 13) decorate the message text with the sender's medal/name
+// prefix and delegate mode-byte resolution to the Task 4 chat.*Body
+// functions, which are consumed by the megaphone broadcast consumer
+// (kafka/consumer/megaphone/consumer.go).
+func WorldMessageMegaphoneBody(medal string, characterName string, message string) packet.Encode {
+	return chat.WorldMessageMegaphoneBody(decorateMegaphoneMessage(medal, characterName, message))
+}
+
+func WorldMessageSuperMegaphoneBody(medal string, characterName string, message string, channelId channel.Id, whispersOn bool) packet.Encode {
+	return chat.WorldMessageSuperMegaphoneBody(decorateMegaphoneMessage(medal, characterName, message), byte(channelId), whispersOn)
+}
+
+func WorldMessageItemMegaphoneBody(medal string, characterName string, message string, channelId channel.Id, whispersOn bool, item *packetmodel.Asset) packet.Encode {
+	return chat.WorldMessageItemMegaphoneBody(decorateMegaphoneMessage(medal, characterName, message), byte(channelId), whispersOn, item)
+}
+
+func WorldMessageMultiMegaphoneBody(medal string, characterName string, messages []string, channelId channel.Id, whispersOn bool) packet.Encode {
+	decorated := make([]string, 0, len(messages))
+	for _, m := range messages {
+		decorated = append(decorated, decorateMegaphoneMessage(medal, characterName, m))
+	}
+	return chat.WorldMessageMultiMegaphoneBody(decorated, byte(channelId), whispersOn)
+}
+
 func WorldMessageTopScrollBody(message string) packet.Encode {
-	return worldMessageBody(WorldMessageTopScroll, []string{message}, 0, false, "", 0, 0)
+	return worldMessageBody(WorldMessageTopScroll, []string{message}, 0, false, "", 0)
 }
 
 func WorldMessagePinkTextBody(medal string, characterName string, message string) packet.Encode {
 	actualMessage := decorateMegaphoneMessage(medal, characterName, message)
-	return worldMessageBody(WorldMessagePinkText, []string{actualMessage}, 0, false, "", 0, 0)
+	return worldMessageBody(WorldMessagePinkText, []string{actualMessage}, 0, false, "", 0)
 }
 
 func WorldMessageBlueTextBody(medal string, characterName string, message string) packet.Encode {
 	actualMessage := decorateMegaphoneMessage(medal, characterName, message)
-	return worldMessageBody(WorldMessageBlueText, []string{actualMessage}, 0, false, "", 0, 0)
+	return worldMessageBody(WorldMessageBlueText, []string{actualMessage}, 0, false, "", 0)
 }
 
 func WorldMessageBlueTextItemBody(medal string, characterName string, message string, itemId uint32) packet.Encode {
 	actualMessage := decorateMegaphoneMessage(medal, characterName, message)
-	return worldMessageBody(WorldMessageBlueText, []string{actualMessage}, 0, false, "", itemId, 0)
+	return worldMessageBody(WorldMessageBlueText, []string{actualMessage}, 0, false, "", itemId)
 }
 
 func WorldMessageGachaponMegaphoneBody(medal string, characterName string, channelId channel.Id, townName string, itemId uint32) packet.Encode {
 	actualMessage := decorateNameForMessage(medal, characterName)
-	return worldMessageBody(WorldMessageGachapon, []string{actualMessage}, channelId, false, townName, itemId, 0)
+	return worldMessageBody(WorldMessageGachapon, []string{actualMessage}, channelId, false, townName, itemId)
 }
 
-func worldMessageBody(mode WorldMessageMode, messages []string, channel channel.Id, whispersOn bool, townName string, itemId uint32, slot int32) packet.Encode {
+func worldMessageBody(mode WorldMessageMode, messages []string, channel channel.Id, whispersOn bool, townName string, itemId uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
 			modeByte := getWorldMessageMode(l)(options, mode)
@@ -100,8 +139,6 @@ func worldMessageBody(mode WorldMessageMode, messages []string, channel channel.
 				return chatpkt.NewWorldMessageSuperMegaphone(modeByte, messages[0], byte(channel), whispersOn).Encode(l, ctx)(options)
 			case WorldMessageBlueText, WorldMessageNPC:
 				return chatpkt.NewWorldMessageBlueText(modeByte, messages[0], itemId).Encode(l, ctx)(options)
-			case WorldMessageItemMegaphone:
-				return chatpkt.NewWorldMessageItemMegaphone(modeByte, messages[0], byte(channel), whispersOn, slot).Encode(l, ctx)(options)
 			case WorldMessageYellowMegaphone:
 				return chatpkt.NewWorldMessageYellowMegaphone(modeByte, messages[0], byte(channel)).Encode(l, ctx)(options)
 			case WorldMessageMultiMegaphone:

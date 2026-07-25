@@ -437,6 +437,144 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			return
 		}
 
+		// Classification-FIRST dispatch (design §1.1): cash-slot type 12
+		// collides with teleport rock (task-124), type 42 with pet evolution,
+		// so megaphone/avatar-megaphone routing must branch on classification
+		// before any cash-slot-type sub-switch, never the other way around.
+		category := item.GetClassification(itemId)
+		if category == item.ClassificationMegaphones || category == item.ClassificationAvatarMegaphone {
+			// Legacy GMS (v48/61/72/79, MajorVersion < 83) item-loss guard.
+			// task-123 legacy-phase-1 (.superpowers/sdd/legacy-megaphone-protocol.md)
+			// IDA-verified the following per-tier matrix for these four builds:
+			//   - basic (tier 1) / super (tier 2) megaphone: serverbound codec AND
+			//     clientbound WorldMessage MEGAPHONE(2)/SUPER_MEGAPHONE(3) arms
+			//     verified (spec §2/§3) — legacy-phase-2 wired the writer/handler
+			//     opcodes into template_gms_{48,61,72,79}_1.json, so these two
+			//     tiers now render on legacy clients. ALLOWED.
+			//   - Cheap (tier 0) / Heart (tier 3): task-123 cheap-heart-skull-report
+			//     found NEITHER v83 nor v95's get_cashslot_item_type has an arm for
+			//     these tiers (both fall to the default -> the client's
+			//     SendConsumeCashItemUseRequest dispatcher sends NO sub-body at all
+			//     for them — verified with addresses on v83/v95, not independently
+			//     re-verified per-build on v48/61/72/79). There is therefore no wire
+			//     evidence a legacy client ever emits this op for these item ids.
+			//     ALLOWED anyway per explicit user-confirmed scope (reuses the
+			//     basic(0)/super(3) codec+scope exactly like v83+), since the
+			//     alternative — dropping the item silently — is worse and the
+			//     decode path is a no-op if no packet ever arrives.
+			//   - Skull (tier 4): v83 also has no get_cashslot_item_type arm
+			//     (falls to the same default as 0/3) — genuinely no send path <v95
+			//     (GMS). ALLOWED here as the super-megaphone shape (same "no
+			//     confirmed wire event on legacy" caveat as 0/3 above). Skull is
+			//     NEVER Maple TV on any version — the cheap-heart-skull finalize
+			//     pass (task-123, see character_cash_item_use_megaphone.go case 4)
+			//     removed the earlier (incorrect) GMS>=95 -> handleMapleTVUse
+			//     routing entirely; handleMegaphoneUse's case 4 now always decodes
+			//     the super shape, so this legacy branch inherits that
+			//     unconditionally.
+			//   - avatar megaphone: no legacy build's serverbound send case could be
+			//     reliably located (spec §5a — cash-slot type 42 does not match the
+			//     known 4-line+whisper body on any of the four builds); consuming
+			//     the item would destroy it with no verified broadcast to render.
+			//     BLOCKED on legacy regardless of tier.
+			//   - Item megaphone (tier 6) / triple megaphone (tier 7): legacy
+			//     TV/item/triple gap-fill pass (task-123) IDA-verified the wire
+			//     shape by SHAPE-MATCHING inside each legacy build's
+			//     SendConsumeCashItemUseRequest (byte-fixtures in
+			//     libs/atlas-packet/cash/serverbound/v{61,72,79}_test.go):
+			//       - v61: Item megaphone (case 14 @0x832e37, dedicated dialog
+			//         send fn sub_55DC01) ALLOWED. Triple megaphone (5077000)
+			//         does not exist as an item on v61
+			//         (megaphone-item-availability.md: v72+) — no case found
+			//         either; BLOCKED (tier absent, not merely unverified).
+			//       - v72/v79: Item megaphone (v72 case 14 @0x905609 send fn
+			//         sub_5A7C42 @0x5a7c42; v79 case 14 @0x956975 send fn
+			//         sub_5C2336 @0x5c2336) ALLOWED. Triple megaphone (case 60
+			//         @0x905090/0x9563f8, self-contained: count+lines+whisper)
+			//         ALLOWED.
+			//     Both arms funnel into the SAME shared rate-check-and-send tail
+			//     as basic/super Megaphone (a `call SetExclRequestSent; Encode4;
+			//     SendPacket` epilogue) — update_time IS present (trailing
+			//     uint32) on every arm, matching each codec's existing
+			//     `if !updateTimeFirst { WriteInt(updateTime) }` unconditional
+			//     write (no extra gate needed; this pass also found and fixed a
+			//     bug where Megaphone/SuperMegaphone WRONGLY omitted this same
+			//     trailing field on legacy — see item_use_megaphone.go). Both
+			//     tiers broadcast through the WorldMessage writer, which already
+			//     carries ITEM_MEGAPHONE(8)/MULTI_MEGAPHONE(10) operations
+			//     entries on every legacy template — no new writer wiring
+			//     needed.
+			//   - Maple TV (tier 5): SERVERBOUND wire IS verified on v61/72/79
+			//     (case 45/46 @0x834d1c/0x907702/0x958b2a, first of 6
+			//     consecutive tvType cases, self-contained:
+			//     pad+receiverName+5 lines, same shared send-tail as above) —
+			//     but STAYS BLOCKED anyway: handleMapleTVUse's CLIENTBOUND acks
+			//     (TvSendMessageResult/TvSetMessage/TvClearMessage) have ZERO
+			//     writer entries in ANY of the four legacy templates (confirmed:
+			//     `grep '"writer": "Tv'` template_gms_{48,61,72,79}_1.json is
+			//     empty, vs v83+ which all carry them). Enabling tier 5 would
+			//     still DESTROY the item (the saga's consume step runs before
+			//     any ack) while every TV response packet fails to resolve an
+			//     opcode — a real item-loss-equivalent regression the
+			//     serverbound-only verification bar doesn't catch. Wiring the
+			//     TV writer family into the legacy templates (its own IDA pass
+			//     on the clientbound side) is a separate follow-up; NOT done
+			//     this pass.
+			//     v48: NOT reverified this pass (out of scope) — v48 keeps the
+			//     tier>4 block below regardless.
+			//
+			// jms185 verification (task-123 cheap-heart-skull finalize pass): unlike
+			// v83/v95, JMS's get_cashslot_item_type@0x49a1ee genuinely sends
+			// Cheap(tier0->type12)/Heart(tier3->type47)/Skull(tier4->type48) —
+			// confirmed via CWvsContext::SendConsumeCashItemUseRequest@0xaef2f5,
+			// shared arm @0xaef5b9. Cheap encodes message-only (matches case 0's
+			// basic/channel routing); Heart/Skull encode message+whisper (matches
+			// case 3/4's super/world routing). Byte-fixtures pinned in
+			// libs/atlas-packet/cash/serverbound/{item_use_megaphone,
+			// item_use_super_megaphone}_test.go. jms185 is MajorVersion 185 (>=83)
+			// so it never enters this legacy branch; noted here because it means the
+			// "no confirmed send on GMS<95" reasoning above does NOT generalize to
+			// JMS, where these tiers are real, verified sends.
+			//
+			// v83+/JMS behavior is otherwise unchanged: the MajorVersion < 83 branch
+			// below is never entered for them, so every tier keeps dispatching
+			// exactly as it did before this gate was refined.
+			if t.MajorVersion() < 83 {
+				if category == item.ClassificationAvatarMegaphone {
+					l.Warnf("Character [%d] attempted avatar megaphone item [%d] on unsupported legacy version [major %d]; ignoring without consuming.", s.CharacterId(), itemId, t.MajorVersion())
+					return
+				}
+				// ClassificationMegaphones per-(version,tier) legacy allow-list.
+				// Verified matrix (task-123 legacy TV/item/triple gap-fill):
+				//   v72/v79: tiers 0-4,6,7 (item+triple verified+wired; tier 5/TV
+				//            serverbound-verified but blocked — see the TV
+				//            writer-wiring gap documented above).
+				//   v61:     tiers 0-4,6 (item verified+wired; triple item
+				//            absent; tier 5/TV blocked for the same reason).
+				//   v48/others: tiers 0-4 only (6/7 never reverified; 5 blocked).
+				tier := (uint32(itemId) / 1000) % 10
+				allowed := tier <= 4
+				if t.Region() == "GMS" {
+					switch t.MajorVersion() {
+					case 72, 79:
+						allowed = allowed || tier == 6 || tier == 7
+					case 61:
+						allowed = allowed || tier == 6
+					}
+				}
+				if !allowed {
+					l.Warnf("Character [%d] attempted megaphone item [%d] tier [%d] unsupported on legacy version [major %d]; ignoring without consuming.", s.CharacterId(), itemId, tier, t.MajorVersion())
+					return
+				}
+			}
+			if category == item.ClassificationMegaphones {
+				handleMegaphoneUse(l, ctx, wp)(s, r, readerOptions, t, itemId, source, updateTimeFirst)
+				return
+			}
+			handleAvatarMegaphoneUse(l, ctx, wp)(s, r, readerOptions, t, itemId, source, updateTimeFirst)
+			return
+		}
+
 		l.Warnf("Character [%d] attempting to use cash item [%d] in slot [%d] of type [%d]. updateTime [%d].", s.CharacterId(), itemId, source, it, updateTime)
 	}
 }

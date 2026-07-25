@@ -66,3 +66,34 @@ func TestWorldMessageSimpleV61Body(t *testing.T) {
 		}
 	})
 }
+
+// TestWorldMessageMegaphoneByteOutputV61 — CWvsContext::OnBroadcastMsg
+// @0x844d49: mode==2 has no header-extras arm (the `if v3==3 ... else if
+// v3==8` chain @0x844dd1-0x844df2 skips mode 2 entirely), so the wire is
+// exactly Decode1(mode) + DecodeStr(message), byte-identical to v72/v83/v95.
+// packet-audit:verify packet=chat/clientbound/ChatWorldMessageMegaphone version=gms_v61 ida=0x844d49
+func TestWorldMessageMegaphoneByteOutputV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	input := NewWorldMessageMegaphone(2, "hi")
+	want := []byte{0x02, 0x02, 0x00, 0x68, 0x69}
+	got := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(got, want) {
+		t.Errorf("v61 megaphone: got % x want % x", got, want)
+	}
+}
+
+// TestWorldMessageSuperMegaphoneByteOutputV61 — CWvsContext::OnBroadcastMsg
+// @0x844d49, `if ( v3 == 3 ) { v73=Decode1(v2); v72=Decode1(v2); }`
+// @0x844dd1-0x844dea (channelId then whispersOn), AFTER the unconditional
+// DecodeStr(message). Wire: mode(1) + message(str) + channelId(1) +
+// whispersOn(1).
+// packet-audit:verify packet=chat/clientbound/ChatWorldMessageSuperMegaphone version=gms_v61 ida=0x844d49
+func TestWorldMessageSuperMegaphoneByteOutputV61(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 61, 1)
+	input := WorldMessageSuperMegaphone{mode: 3, message: "hi", channelId: 5, whispersOn: true}
+	want := []byte{0x03, 0x02, 0x00, 0x68, 0x69, 0x05, 0x01}
+	got := pt.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(got, want) {
+		t.Errorf("v61 super megaphone: got % x want % x", got, want)
+	}
+}

@@ -9,11 +9,11 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": "resultType/outcome (sub_573E1D @0x573e1d Omok / sub_537DD9 @0x537dd9 MemoryGame; ==1 draw path shows tie strings 438/1441, else win 437/1442 or lose 439/1443 AND updates the win-loss record +669 — this is the RESULT arm, mode 55)"
+          "comment": "resultType/outcome (sub_573E1D @0x573e1d Omok / sub_537DD9 @0x537dd9 MemoryGame; ==1 draw path shows tie strings 438/1441, else win 437/1442 or lose 439/1443 AND updates the win-loss record +669 \u2014 this is the RESULT arm, mode 55)"
         },
         {
           "op": "Decode1",
-          "comment": "winnerSlot (who won; read only when resultType!=1). v48 stops here — the modern v83+ struct then writes 2x GW_MiniGameRecord (40 bytes) that the v48 client does not read (harmless trailing over-write)."
+          "comment": "winnerSlot (who won; read only when resultType!=1). v48 stops here \u2014 the modern v83+ struct then writes 2x GW_MiniGameRecord (40 bytes) that the v48 client does not read (harmless trailing over-write)."
         }
       ]
     },
@@ -23,7 +23,7 @@
       "calls": [
         {
           "op": "Decode1",
-          "comment": "who (sub_5740DF @0x5740df Omok / sub_5380C8 @0x5380c8 MemoryGame): turn passes to this slot and sets the 30000ms move timer (this[678]=30000) — the SKIP/turn-advance arm, mode 56, distinct from RESULT(55) which updates the win-loss record. No result strings."
+          "comment": "who (sub_5740DF @0x5740df Omok / sub_5380C8 @0x5380c8 MemoryGame): turn passes to this slot and sets the 30000ms move timer (this[678]=30000) \u2014 the SKIP/turn-advance arm, mode 56, distinct from RESULT(55) which updates the win-loss record. No result strings."
         }
       ]
     },
@@ -15094,6 +15094,42 @@
         {
           "op": "Decode1",
           "comment": "throw (0=Rock/1=Paper/2=Scissors, RAW passthrough; CRPSGameDlg::SendSelection @0x5ae13a, COutPacket(111)+Encode1(1)+Encode1(throw) @0x5ae16c; sub-op mode byte 1 written earlier by the same sender, excluded here per the storage OperationMeso/StoreAsset/RetrieveAsset convention; live IDA port 13337 2026-07-16)"
+        }
+      ]
+    },
+    "CWvsContext::OnBroadcastMsg#Megaphone": {
+      "address": "0x71c356",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=2, MEGAPHONE)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message - mode 2 has no case in the body switch, falls straight to the display switch with no further wire reads (task-123 legacy phase 1, IDA-verified)"
+        }
+      ]
+    },
+    "CWvsContext::OnBroadcastMsg#SuperMegaphone": {
+      "address": "0x71c356",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=3, SUPER_MEGAPHONE)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message"
+        },
+        {
+          "op": "Decode1",
+          "comment": "channelId (task-123 legacy phase 1, IDA-verified)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "whispersOn"
         }
       ]
     }

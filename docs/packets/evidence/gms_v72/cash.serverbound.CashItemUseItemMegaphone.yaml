@@ -1,0 +1,8 @@
+packet: cash/serverbound/CashItemUseItemMegaphone
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CItemSpeakerDlg::_SendConsumeCashItemUseRequest
+    address: "0x5a7c42"
+    decompile_sha256: 12143fa9bf86ab62a7565fc4296571c444a586d49c42deaa0b68d2ba7a5de0cc

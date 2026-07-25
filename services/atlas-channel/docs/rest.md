@@ -763,3 +763,9 @@ Base URL: `BASE_SERVICE_URL` + WORLDS root
 - Request Model: None
 - Response Model: `RestModel` - World details (id, name, state, message, eventMessage, recommended, recommendedMessage, capacityStatus, channels, expRate, mesoRate, itemDropRate, questExpRate)
 - Error Conditions: 404 if not found
+
+#### GET /worlds/{worldId}/broadcast-queues/{family}
+- Parameters: worldId, family (string - `TV` or `AVATAR`)
+- Request Model: None
+- Response Model: `RestModel` - Broadcast queue status (family, activeRemainingSeconds, pendingCount, waitSeconds). Resource type: "broadcast-queues".
+- Error Conditions: A fetch error is returned to the caller, which rejects the megaphone/Maple TV use conservatively (no consume, no broadcast) rather than defaulting to allow

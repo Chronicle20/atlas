@@ -657,10 +657,11 @@ Handles distributed transaction orchestration for multi-step operations. Re-expo
 
 ### Core Models
 - `Saga` - Re-exported from shared library with Type, Status, Actions, Steps
-- Payload types: AwardMesosPayload, AwardAssetPayload, DestroyAssetPayload, SetHPPayload, and others from the shared library
+- Payload types: AwardMesosPayload, AwardAssetPayload, DestroyAssetPayload, SetHPPayload, EmitMegaphonePayload, EnqueueWorldBroadcastPayload, AssetSnapshot, AvatarSnapshot, and others from the shared library
 - Local `TransferToCashShopPayload` - Contains CashId (uint64), overriding the shared library's int64 type
 - Status constants: Pending, Completed, Failed
-- Action constants: AwardMesos, DestroyAsset, DepositToStorage, WithdrawFromStorage, and others
+- Saga Type constants: InventoryTransaction, StorageOperation, CashShopOperation, CharacterRespawn, FieldEffectUse, PointReset, MegaphoneUse, and others
+- Action constants: AwardMesos, DestroyAsset, DepositToStorage, WithdrawFromStorage, EmitMegaphone, EnqueueWorldBroadcast, and others
 
 ### Processors
 - `Processor` - Create(s Saga) emits saga commands via Kafka
@@ -796,6 +797,47 @@ Represents kite/balloon display items in the game world.
 
 ### Processors
 None. Model-only domain.
+
+---
+
+## Megaphone / World Broadcast
+
+### Responsibility
+Renders megaphone and Maple TV / avatar megaphone cash-item broadcasts to sessions. The stateless megaphone tiers (MEGAPHONE/SUPER/ITEM/TRIPLE) render immediately from a Kafka broadcast event. The queued Maple TV and avatar megaphone families render from a separate world-broadcast status event (QUEUED/STARTED/ENDED) and are gated by a wait-time cap read from atlas-world's broadcast queue via REST. The channel service does not own broadcast queue state; it renders, gates on wait time, and emits the consume+broadcast saga.
+
+### Core Models
+- `worldbroadcast.RestModel` - JSON:API representation of one (worldId, family) broadcast queue read from atlas-world (id=family, activeRemainingSeconds, pendingCount, waitSeconds). Resource type: "broadcast-queues".
+- Family constants (`worldbroadcast` package): `FamilyTV`, `FamilyAvatar`
+
+### Invariants
+- Cash-item USE dispatch is classification-first: `item.ClassificationMegaphones` and `item.ClassificationAvatarMegaphone` are checked before the cash-slot-type sub-switch (avoids collision with cash-slot type 12 teleport rock and type 42 pet evolution).
+- The wait-cap guard runs before item consumption: Maple TV rejects when the atlas-world TV queue wait exceeds 3600 seconds; avatar megaphone rejects when the avatar queue wait exceeds 15 seconds. A REST error rejects conservatively (no consume, no broadcast) rather than defaulting to allow.
+- Avatar megaphone display duration is fixed at 10 seconds (client auto-clear constant).
+- Maple TV display duration is derived from the TV item's type byte: type 4 = 30s, type 5 = 60s, else 15s.
+- Maple TV message type is resolved to a semantic key (NORMAL/STAR/HEART), never a client wire byte; the wire byte is resolved at the packet layer from the tenant `messageTypes` writer table.
+- Maple TV item type byte >= 3 (Megassenger tiers) additionally emits a super megaphone broadcast with the concatenated TV lines and the TV "ear" flag mapped to the megaphone's whispersOn.
+- Item megaphone (tier ITEM) rejects the use (no consume, no broadcast) when the referenced inventory slot is empty or mismatched.
+- Triple megaphone requires between 1 and 3 lines; other line counts reject the use.
+- On GMS with majorVersion >= 95, the Skull Megaphone item routes to the Maple TV handler; on all other regions/versions it has no send path.
+
+### Processors
+- `worldbroadcast.Processor` - `GetWaitSeconds(worldId, family)` fetches the atlas-world broadcast queue for the given world and family and returns its waitSeconds.
+- `saga.Processor` - `Create(s Saga)` emits the consume+broadcast saga (`saga.MegaphoneUse` type; see Saga domain section) for every megaphone/TV/avatar-megaphone use.
+
+### Cash item use handler
+- `socket/handler/character_cash_item_use_megaphone.go` dispatches on `(itemId / 1000) % 10` after classification routing: 1 = basic megaphone (channel scope), 2 = super megaphone (world scope), 4 = Skull Megaphone (Maple TV family, GMS majorVersion>=95 only), 5 = Maple TV / Megassenger group, 6 = item megaphone (world scope, optional item snapshot), 7 = triple megaphone (1-3 lines, world scope). Basic/super/item/triple tiers each build a two-step saga (`consume_megaphone_item` DestroyAsset + `emit_megaphone_broadcast` EmitMegaphone). Maple TV and avatar megaphone each build a two-step saga (consume + EnqueueWorldBroadcast), with Maple TV Megassenger tiers appending a third EmitMegaphone step.
+- Avatar megaphone rejection (wait-cap exceeded, or REST error) announces `AvatarMegaphoneResultWriter` with the `AvatarMegaphoneWaitingLine` reason, except on JMS where the AVATAR_MEGAPHONE_RESULT op does not exist and no packet is sent.
+- Maple TV rejection announces `TvSendMessageResultWriter` with the `TvResultQueueTooLong` reason.
+
+### Megaphone broadcast consumer
+- `kafka/consumer/megaphone` consumes `EVENT_TOPIC_MEGAPHONE` (`kafka.LastOffset`, fire-and-forget). CHANNEL scope renders only to the sender's channel (gated by `sc.Is`); any other scope (WORLD) renders to every channel in the world (gated by `sc.IsWorld`). Builds the tier-specific WorldMessage mode body (MEGAPHONE/SUPER/ITEM/TRIPLE) and announces it via the WorldMessage writer to every session on the pod's channel.
+
+### World broadcast status consumer
+- `kafka/consumer/worldbroadcast` consumes `EVENT_TOPIC_WORLD_BROADCAST_STATUS` (`kafka.LastOffset`, fire-and-forget), gated by `sc.IsWorld`. QUEUED sends the TV send-message-result success ack to the sender, TV family only. STARTED builds and announces to every session on the pod's channel the SetMessage packet (TV family) or the SetAvatarMegaphone packet (AVATAR family). ENDED announces the ClearMessage packet or the ClearAvatarMegaphone packet to every session on the pod's channel.
+
+### Clientbound writers
+- `chat/clientbound`: `SetAvatarMegaphoneWriter`, `ClearAvatarMegaphoneWriter`, `AvatarMegaphoneResultWriter`
+- `tv/clientbound`: `TvSetMessageWriter`, `TvClearMessageWriter`, `TvSendMessageResultWriter`
 
 ---
 

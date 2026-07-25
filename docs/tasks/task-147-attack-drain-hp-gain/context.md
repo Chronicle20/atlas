@@ -13,11 +13,11 @@ The four drain-family attack skills (Assassin Drain 4101005, Marauder Energy Dra
 |---|---|
 | `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go` | The ONLY production file changed. Gains `isDrainSkill`, `drainHealAmount`, `drainTryHeal`; hook widened; loader renamed; TODO removed. |
 | `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_drain_test.go` | New test file (all tasks append to it). |
-| `libs/atlas-constants/skill/constants.go` | Read-only: `AssassinDrainId` (:3145), `MarauderEnergyDrainId` (:3200), `ThunderBreakerStage3EnergyDrainId` (:3283), `NightWalkerStage2VampireId` (:3361), `AranStage2ComboDrainId` (:3394, excluded). |
-| `services/atlas-channel/atlas.com/channel/monster/model.go` + `builder.go` | `Model.MaxHp() uint32`; tests build via `NewModelBuilder(uniqueId, field, monsterId).SetMaxHp(n).Build()`. |
-| `services/atlas-channel/atlas.com/channel/monster/status_mirror.go:38-47` | `ReflectInfo` exported fields (Kind/Percent/LtX/LtY/RbX/RbY/MaxDamage) used by the reflect-path hook test. |
+| `libs/atlas-constants/skill/constants.go` | Read-only: `AssassinDrainId` (:3150), `MarauderEnergyDrainId` (:3205), `ThunderBreakerStage3EnergyDrainId` (:3289), `NightWalkerStage2VampireId` (:3367), `AranStage2ComboDrainId` (:3400, excluded). |
+| `services/atlas-channel/atlas.com/channel/monster/model.go` + `builder.go` | `Model.MaxHp() uint32` (model.go:120); tests build via `NewModelBuilder(uniqueId, field, monsterId).SetMaxHp(n).Build()` (builder.go:30,59). |
+| `services/atlas-channel/atlas.com/channel/monster/status_mirror.go:39-47` | `ReflectInfo` exported fields (Kind/Percent/LtX/LtY/RbX/RbY/MaxDamage) used by the reflect-path hook test. |
 | `services/atlas-channel/atlas.com/channel/effective_stats/rest.go:12` | `RestModel.MaxHp uint32` — the buff-inclusive cap source. |
-| `services/atlas-channel/atlas.com/channel/character/processor.go:271` | `ChangeHP(f field.Model, characterId uint32, amount int16) error` — existing emit path, unchanged. |
+| `services/atlas-channel/atlas.com/channel/character/processor.go:43,276` | `ChangeHP(f field.Model, characterId uint32, amount int16) error` — existing emit path, unchanged. |
 
 ## Key decisions (from design.md — do not relitigate)
 
@@ -32,12 +32,14 @@ The four drain-family attack skills (Assassin Drain 4101005, Marauder Energy Dra
 ## Gotchas discovered during planning
 
 - **No existing test constructs `damageInfoEntryDeps`** — existing "flow" tests (`TestReflectFlow_*`) compose pieces manually. The design's mention of updating "existing tests that construct the deps struct" is moot; the hook widening touches production code + new tests only.
-- `ai.SkillId()` returns `uint32` (`attack_info.go:321`); the `uint32(ai.SkillId())` cast at `character_attack_common.go:127` is redundant legacy. Pass `ai.SkillId()` straight into `drainTryHeal`.
+- `ai.SkillId()` returns `uint32` (`attack_info.go:397`); the `uint32(ai.SkillId())` cast at `character_attack_common.go:128` is redundant legacy. Pass `ai.SkillId()` straight into `drainTryHeal`.
 - `se` is a zero `effect.Model` when `ai.SkillId() == 0`; the drain branch gates on `ai.SkillId() > 0 && isDrainSkill(...)`, so zero-`se` X can't leak in.
 - Damage sum: `di.Damages()` is `[]uint32`; sum in `uint64` and clamp to `math.MaxUint32` before passing as `uint32` (v83 legit max ≈ 999,999 × 15 lines, far below).
 - Test fixtures: `packetmodel.NewAttackInfo(type).SetSkillId(id)`, `packetmodel.NewDamageInfo(hits).SetMonsterId(id).SetDamages([]uint32{...})` — deref to values (`*ptr`) for `processDamageInfoEntry`. Field: `field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(...)).SetInstance(uuid.Nil).Build()`. Tenant: `tenant.Create(uuid.New(), "GMS", 83, 1)`.
-- The module root is `services/atlas-channel/atlas.com/channel` (module `atlas-channel`). Run `go test/vet/build` there; run `tools/redis-key-guard.sh` from the worktree root WITHOUT a global `GOWORK=off` prefix.
-- The TODO block sits near the end of `processAttack` (pre-change line 409); earlier tasks shift line numbers — locate the drain TODO by content, delete only that line.
+- The module root is `services/atlas-channel/atlas.com/channel` (module `atlas-channel`). Run `go test/vet/build` there; run `tools/redis-key-guard.sh`, `tools/goroutine-guard.sh` and `tools/lint.sh --check` from the worktree root WITHOUT a global `GOWORK=off` prefix.
+- The TODO block sits near the end of `processAttack` (pre-change line 410, block spans 403-426, 24 TODO lines); earlier tasks shift line numbers — locate the drain TODO by content, delete only that line.
+- **No `MajorVersion` gating in this feature.** GMS 48/61/72/79 are supported on main, but `processAttack` destroys the session when the character does not own the cast skill (`character_attack_common.go:283-291`), so a version-absent drain skill is structurally unreachable. See PRD §8.1.
+- This branch predates task-171's lint baseline. Run `tools/lint.sh` (fix mode) once after the first code edit rather than debugging individual gofumpt/goimports diffs.
 
 ## Dependencies / ordering
 

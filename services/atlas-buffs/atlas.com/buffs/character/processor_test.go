@@ -2,6 +2,7 @@ package character
 
 import (
 	"atlas-buffs/buff/stat"
+	character2 "atlas-buffs/kafka/message/character"
 	"context"
 	"testing"
 
@@ -248,4 +249,39 @@ func TestProcessor_TenantContext(t *testing.T) {
 
 	_, err = processor2.GetById(uint32(1000))
 	assert.ErrorIs(t, err, ErrNotFound)
+}
+
+func TestProcessor_UpdateStatValue_Increment(t *testing.T) {
+	processor, _, ctx := setupProcessorTest(t)
+
+	changes := []stat.Model{stat.NewStat("COMBO", 1)}
+	_ = processor.Apply(world.Id(0), channel.Id(0), 1000, 1000, 1111002, byte(20), int32(150000), changes, false)
+
+	_ = processor.UpdateStatValue(world.Id(0), 1000, 1111002, "COMBO", character2.StatOperationIncrement, 2, 6)
+
+	m, err := GetRegistry().Get(ctx, 1000)
+	assert.NoError(t, err)
+	b := m.Buffs()[srcKey(1111002)]
+	assert.Equal(t, int32(3), b.Changes()[0].Amount())
+}
+
+func TestProcessor_UpdateStatValue_UnknownOperationIsNoOp(t *testing.T) {
+	processor, _, ctx := setupProcessorTest(t)
+
+	changes := []stat.Model{stat.NewStat("COMBO", 1)}
+	_ = processor.Apply(world.Id(0), channel.Id(0), 1000, 1000, 1111002, byte(20), int32(150000), changes, false)
+
+	err := processor.UpdateStatValue(world.Id(0), 1000, 1111002, "COMBO", "MULTIPLY", 2, 6)
+	assert.NoError(t, err, "unknown operation is a logged no-op, not an error")
+
+	m, err := GetRegistry().Get(ctx, 1000)
+	assert.NoError(t, err)
+	b := m.Buffs()[srcKey(1111002)]
+	assert.Equal(t, int32(1), b.Changes()[0].Amount())
+}
+
+func TestProcessor_UpdateStatValue_MissingBuffIsNoOp(t *testing.T) {
+	processor, _, _ := setupProcessorTest(t)
+	err := processor.UpdateStatValue(world.Id(0), 1000, 1111002, "COMBO", character2.StatOperationIncrement, 1, 6)
+	assert.NoError(t, err, "missing buff is a logged no-op, not an error")
 }

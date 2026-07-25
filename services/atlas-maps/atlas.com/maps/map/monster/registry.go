@@ -107,41 +107,6 @@ end
 return 1
 `)
 
-// eligibleScript returns total spawn point count and eligible entries (NextSpawnAt <= now).
-// Returns: [totalCount, field1, value1, field2, value2, ...]
-var eligibleScript = goredis.NewScript(`
-local entries = redis.call('HGETALL', KEYS[1])
-local now = tonumber(ARGV[1])
-local total = math.floor(#entries / 2)
-local result = {tostring(total)}
-for i = 1, #entries, 2 do
-    local field = entries[i]
-    local value = entries[i+1]
-    local data = cjson.decode(value)
-    if data.nextSpawnAt <= now then
-        result[#result + 1] = field
-        result[#result + 1] = value
-    end
-end
-return result
-`)
-
-// updateCooldownsScript atomically updates NextSpawnAt for multiple spawn points.
-// ARGV: pairs of (spawnPointId, newNextSpawnAtMilli)
-var updateCooldownsScript = goredis.NewScript(`
-for i = 1, #ARGV, 2 do
-    local field = ARGV[i]
-    local newNextSpawnAt = tonumber(ARGV[i+1])
-    local value = redis.call('HGET', KEYS[1], field)
-    if value then
-        local data = cjson.decode(value)
-        data.nextSpawnAt = newNextSpawnAt
-        redis.call('HSET', KEYS[1], field, cjson.encode(data))
-    end
-end
-return 1
-`)
-
 // reserveEligibleScript atomically selects up to `limit` eligible spawn points
 // (NextSpawnAt <= now), stamps each selected point's cooldown, and returns only
 // the reserved points. Folding eligibility selection and cooldown reservation
@@ -266,47 +231,6 @@ func (r *SpawnPointRegistry) InitializeForMap(ctx context.Context, mapKey charac
 	return nil
 }
 
-// GetEligibleSpawnPoints returns eligible spawn points and total count via Lua script.
-// A spawn point is eligible if its NextSpawnAt <= now.
-func (r *SpawnPointRegistry) GetEligibleSpawnPoints(ctx context.Context, mapKey character.MapKey) ([]*CooldownSpawnPoint, int, error) {
-	key := spawnHashKey(mapKey)
-	nowMilli := time.Now().UnixMilli()
-
-	result, err := eligibleScript.Run(ctx, r.client, []string{key}, nowMilli).Result()
-	if err != nil {
-		return nil, 0, err
-	}
-
-	arr, ok := result.([]interface{})
-	if !ok || len(arr) == 0 {
-		return nil, 0, nil
-	}
-
-	totalStr, ok := arr[0].(string)
-	if !ok {
-		return nil, 0, fmt.Errorf("unexpected total count type")
-	}
-	totalCount, err := strconv.Atoi(totalStr)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	var eligible []*CooldownSpawnPoint
-	for i := 1; i+1 < len(arr); i += 2 {
-		valueStr, ok := arr[i+1].(string)
-		if !ok {
-			continue
-		}
-		var stored storedSpawnPoint
-		if err := json.Unmarshal([]byte(valueStr), &stored); err != nil {
-			continue
-		}
-		eligible = append(eligible, fromStored(stored))
-	}
-
-	return eligible, totalCount, nil
-}
-
 // Count returns the number of spawn points registered for a map. The spawn
 // point set is fixed after initialization, so this count is stable and is not
 // subject to the spawn-time eligibility race.
@@ -355,20 +279,6 @@ func (r *SpawnPointRegistry) ReserveEligibleSpawnPoints(ctx context.Context, map
 	}
 
 	return reserved, nil
-}
-
-// UpdateCooldowns atomically updates NextSpawnAt for multiple spawn points.
-func (r *SpawnPointRegistry) UpdateCooldowns(ctx context.Context, mapKey character.MapKey, updates map[uint32]time.Time) error {
-	if len(updates) == 0 {
-		return nil
-	}
-	key := spawnHashKey(mapKey)
-	args := make([]interface{}, 0, len(updates)*2)
-	for spId, nextSpawnAt := range updates {
-		args = append(args, strconv.FormatUint(uint64(spId), 10), nextSpawnAt.UnixMilli())
-	}
-	_, err := updateCooldownsScript.Run(ctx, r.client, []string{key}, args...).Result()
-	return err
 }
 
 // ResetCooldown resets the cooldown for all spawn points matching the given template ID with MobTime > 0.

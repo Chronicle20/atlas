@@ -23,7 +23,6 @@ import (
 	"atlas-maps/monster"
 	"context"
 	"math"
-	"math/rand"
 	"time"
 
 	"github.com/google/uuid"
@@ -125,7 +124,10 @@ func (p *ProcessorImpl) SpawnMonsters(transactionId uuid.UUID, f field.Model) er
 	// selection and cooldown reservation into one Redis operation prevents
 	// concurrent spawn passes (character-enter + periodic task) from reserving
 	// the same points and over-spawning beyond the spawn-point count.
-	reserved, err := registry.ReserveEligibleSpawnPoints(p.ctx, mapKey, toSpawn, defaultSpawnCooldown, time.Now().UnixNano())
+	// Mask the seed into Lua's exact-integer range (< 2^31) so the in-script LCG
+	// shuffle stays uniform; Lua numbers are float64 and lose precision above 2^53.
+	seed := time.Now().UnixNano() & 0x7fffffff
+	reserved, err := registry.ReserveEligibleSpawnPoints(p.ctx, mapKey, toSpawn, defaultSpawnCooldown, seed)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to reserve spawn points for field [%s].", f.Id())
 		return err
@@ -145,24 +147,6 @@ func (p *ProcessorImpl) SpawnMonsters(transactionId uuid.UUID, f field.Model) er
 
 	p.l.Debugf("Spawned %d monsters out of %d needed for field [%s].", len(reserved), toSpawn, f.Id())
 	return nil
-}
-
-func (p *ProcessorImpl) shuffle(vals []monster2.SpawnPoint) []monster2.SpawnPoint {
-	r := rand.New(rand.NewSource(time.Now().Unix()))
-	ret := make([]monster2.SpawnPoint, len(vals))
-	perm := r.Perm(len(vals))
-	for i, randIndex := range perm {
-		ret[i] = vals[randIndex]
-	}
-	return ret
-}
-
-func (p *ProcessorImpl) shuffleIndices(indices []int) []int {
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	ret := make([]int, len(indices))
-	perm := r.Perm(len(indices))
-	copy(ret, perm)
-	return ret
 }
 
 func (p *ProcessorImpl) getMonsterMax(characterCount int, spawnPointCount int) int {

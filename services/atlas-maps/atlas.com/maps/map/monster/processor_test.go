@@ -132,70 +132,6 @@ func TestCooldownUpdate(t *testing.T) {
 	}
 }
 
-func TestProcessorImpl_shuffleIndices(t *testing.T) {
-	processor := &ProcessorImpl{}
-
-	indices := []int{0, 1, 2, 3, 4}
-	shuffled := processor.shuffleIndices(indices)
-
-	if len(shuffled) != len(indices) {
-		t.Errorf("Expected shuffled length %d, got %d", len(indices), len(shuffled))
-	}
-
-	for _, idx := range shuffled {
-		if idx < 0 || idx >= len(indices) {
-			t.Errorf("Invalid index %d in shuffled result", idx)
-		}
-	}
-
-	results := make([][]int, 10)
-	for i := 0; i < 10; i++ {
-		results[i] = processor.shuffleIndices(indices)
-	}
-
-	allSame := true
-	for i := 1; i < len(results); i++ {
-		if !sliceEqual(results[0], results[i]) {
-			allSame = false
-			break
-		}
-	}
-
-	if allSame {
-		t.Error("All shuffle results are identical - randomization may not be working")
-	}
-}
-
-func TestProcessorImpl_shuffle(t *testing.T) {
-	processor := &ProcessorImpl{}
-
-	originalSpawnPoints := []monster2.SpawnPoint{
-		{Id: 1, Template: 100},
-		{Id: 2, Template: 200},
-		{Id: 3, Template: 300},
-		{Id: 4, Template: 400},
-	}
-
-	shuffled := processor.shuffle(originalSpawnPoints)
-
-	if len(shuffled) != len(originalSpawnPoints) {
-		t.Errorf("Expected shuffled length %d, got %d", len(originalSpawnPoints), len(shuffled))
-	}
-
-	for _, original := range originalSpawnPoints {
-		found := false
-		for _, shuffledSp := range shuffled {
-			if shuffledSp.Id == original.Id && shuffledSp.Template == original.Template {
-				found = true
-				break
-			}
-		}
-		if !found {
-			t.Errorf("Original spawn point with Id %d not found in shuffled result", original.Id)
-		}
-	}
-}
-
 func TestSpawnPointCooldownMechanism(t *testing.T) {
 	now := time.Now()
 
@@ -305,68 +241,6 @@ func TestThreadSafety(t *testing.T) {
 	}
 }
 
-func TestConcurrentSpawningAcrossMultipleMaps(t *testing.T) {
-	ctx := context.Background()
-	registry := GetRegistry()
-	registry.Reset(ctx)
-
-	f1 := field.NewBuilder(1, 1, 100000000).Build()
-	f2 := field.NewBuilder(1, 1, 100000001).Build()
-	f3 := field.NewBuilder(1, 2, 100000000).Build()
-	f4 := field.NewBuilder(2, 1, 100000000).Build()
-	f5 := field.NewBuilder(1, 1, 100000002).Build()
-	mapKeys := []character.MapKey{
-		{Field: f1}, {Field: f2}, {Field: f3}, {Field: f4}, {Field: f5},
-	}
-
-	now := time.Now()
-
-	for i, mapKey := range mapKeys {
-		spawnPoints := []*CooldownSpawnPoint{
-			{SpawnPoint: monster2.SpawnPoint{Id: uint32(i*10 + 1)}, NextSpawnAt: now},
-			{SpawnPoint: monster2.SpawnPoint{Id: uint32(i*10 + 2)}, NextSpawnAt: now},
-			{SpawnPoint: monster2.SpawnPoint{Id: uint32(i*10 + 3)}, NextSpawnAt: now},
-		}
-		if err := registry.SetSpawnPointsForMap(ctx, mapKey, spawnPoints); err != nil {
-			t.Fatalf("Failed to set spawn points: %v", err)
-		}
-	}
-
-	var wg sync.WaitGroup
-
-	for _, mapKey := range mapKeys {
-		for i := 0; i < 10; i++ {
-			wg.Add(1)
-			go func(mk character.MapKey) {
-				defer wg.Done()
-				_, _, _ = registry.GetEligibleSpawnPoints(ctx, mk)
-			}(mapKey)
-		}
-	}
-
-	done := make(chan bool)
-	go func() {
-		wg.Wait()
-		done <- true
-	}()
-
-	select {
-	case <-done:
-	case <-time.After(10 * time.Second):
-		t.Error("Test timed out - possible deadlock in concurrent spawning")
-	}
-
-	for _, mapKey := range mapKeys {
-		spawnPoints, exists := registry.GetSpawnPointsForMap(ctx, mapKey)
-		if !exists {
-			t.Errorf("Registry for map %s should exist", mapKeyToString(mapKey))
-		}
-		if len(spawnPoints) != 3 {
-			t.Errorf("Expected 3 spawn points, got %d", len(spawnPoints))
-		}
-	}
-}
-
 func TestMapKeyIsolation(t *testing.T) {
 	ctx := context.Background()
 	registry := GetRegistry()
@@ -424,9 +298,10 @@ func TestMapKeyIsolation(t *testing.T) {
 		t.Errorf("MapKey4 should have 4 spawn points, got %d", len(spawnPoints4))
 	}
 
-	// Update mapKey1 cooldown
-	updates := map[uint32]time.Time{spawnPoints1[0].SpawnPoint.Id: now.Add(10 * time.Second)}
-	_ = registry.UpdateCooldowns(ctx, mapKey1, updates)
+	// Reserve mapKey1's spawn point, stamping its cooldown.
+	if _, err := registry.ReserveEligibleSpawnPoints(ctx, mapKey1, 1, defaultSpawnCooldown, 1); err != nil {
+		t.Fatalf("ReserveEligibleSpawnPoints failed: %v", err)
+	}
 
 	// Verify other maps are unaffected
 	spawnPoints2After, _ := registry.GetSpawnPointsForMap(ctx, mapKey2)
@@ -451,260 +326,214 @@ func TestMapKeyIsolation(t *testing.T) {
 	}
 }
 
-func TestMultiMapConcurrentAccess(t *testing.T) {
+func TestCount(t *testing.T) {
 	ctx := context.Background()
 	registry := GetRegistry()
 	registry.Reset(ctx)
 
 	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
-
-	numMaps := 5
-	mapKeys := make([]character.MapKey, numMaps)
-	for i := 0; i < numMaps; i++ {
-		f := field.NewBuilder(1, 1, _map.Id(100000000+i)).Build()
-		mapKeys[i] = character.MapKey{
-			Tenant: te,
-			Field:  f,
-		}
-	}
+	f := field.NewBuilder(1, 1, 100000000).Build()
+	mapKey := character.MapKey{Tenant: te, Field: f}
 
 	now := time.Now()
+	_ = registry.SetSpawnPointsForMap(ctx, mapKey, []*CooldownSpawnPoint{
+		{SpawnPoint: monster2.SpawnPoint{Id: 1}, NextSpawnAt: now},
+		{SpawnPoint: monster2.SpawnPoint{Id: 2}, NextSpawnAt: now},
+		{SpawnPoint: monster2.SpawnPoint{Id: 3}, NextSpawnAt: now},
+	})
 
-	for i, mapKey := range mapKeys {
-		_ = registry.SetSpawnPointsForMap(ctx, mapKey, []*CooldownSpawnPoint{
-			{SpawnPoint: monster2.SpawnPoint{Id: uint32(i*10 + 1)}, NextSpawnAt: now},
-			{SpawnPoint: monster2.SpawnPoint{Id: uint32(i*10 + 2)}, NextSpawnAt: now},
-		})
+	n, err := registry.Count(ctx, mapKey)
+	if err != nil {
+		t.Fatalf("Count failed: %v", err)
 	}
+	if n != 3 {
+		t.Errorf("expected 3 spawn points, got %d", n)
+	}
+
+	empty := character.MapKey{Tenant: te, Field: field.NewBuilder(2, 2, 999).Build()}
+	n2, err := registry.Count(ctx, empty)
+	if err != nil {
+		t.Fatalf("Count failed for empty map: %v", err)
+	}
+	if n2 != 0 {
+		t.Errorf("expected 0 spawn points for uninitialized map, got %d", n2)
+	}
+}
+
+func TestReserveEligibleSpawnPoints_ReservesAndStamps(t *testing.T) {
+	ctx := context.Background()
+	registry := GetRegistry()
+	registry.Reset(ctx)
+
+	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	f := field.NewBuilder(1, 1, 100000000).Build()
+	mapKey := character.MapKey{Tenant: te, Field: f}
+
+	now := time.Now()
+	_ = registry.SetSpawnPointsForMap(ctx, mapKey, []*CooldownSpawnPoint{
+		{SpawnPoint: monster2.SpawnPoint{Id: 1, Template: 100100, MobTime: 10}, NextSpawnAt: now},
+		{SpawnPoint: monster2.SpawnPoint{Id: 2, Template: 100101, MobTime: 10}, NextSpawnAt: now},
+		{SpawnPoint: monster2.SpawnPoint{Id: 3, Template: 100102, MobTime: 10}, NextSpawnAt: now},
+	})
+
+	// Reserve up to 2 of 3 eligible points; a reserved point is stamped on cooldown.
+	reserved, err := registry.ReserveEligibleSpawnPoints(ctx, mapKey, 2, defaultSpawnCooldown, 12345)
+	if err != nil {
+		t.Fatalf("ReserveEligibleSpawnPoints failed: %v", err)
+	}
+	if len(reserved) != 2 {
+		t.Fatalf("expected 2 reserved, got %d", len(reserved))
+	}
+
+	// Only 1 remains eligible; asking for 5 returns just that 1.
+	reserved2, err := registry.ReserveEligibleSpawnPoints(ctx, mapKey, 5, defaultSpawnCooldown, 999)
+	if err != nil {
+		t.Fatalf("ReserveEligibleSpawnPoints failed: %v", err)
+	}
+	if len(reserved2) != 1 {
+		t.Fatalf("expected 1 remaining eligible, got %d", len(reserved2))
+	}
+
+	// All now on cooldown; further reservation returns none.
+	reserved3, err := registry.ReserveEligibleSpawnPoints(ctx, mapKey, 5, defaultSpawnCooldown, 42)
+	if err != nil {
+		t.Fatalf("ReserveEligibleSpawnPoints failed: %v", err)
+	}
+	if len(reserved3) != 0 {
+		t.Errorf("expected 0 eligible after all reserved, got %d", len(reserved3))
+	}
+}
+
+func TestReserveEligibleSpawnPoints_CooldownDuration(t *testing.T) {
+	ctx := context.Background()
+	registry := GetRegistry()
+	registry.Reset(ctx)
+
+	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	f := field.NewBuilder(1, 1, 100000000).Build()
+	mapKey := character.MapKey{Tenant: te, Field: f}
+
+	now := time.Now()
+	_ = registry.SetSpawnPointsForMap(ctx, mapKey, []*CooldownSpawnPoint{
+		{SpawnPoint: monster2.SpawnPoint{Id: 1, Template: 100100, MobTime: 30}, NextSpawnAt: now},
+		{SpawnPoint: monster2.SpawnPoint{Id: 2, Template: 100101, MobTime: 0}, NextSpawnAt: now},
+	})
+
+	reserved, err := registry.ReserveEligibleSpawnPoints(ctx, mapKey, 2, defaultSpawnCooldown, 7)
+	if err != nil {
+		t.Fatalf("ReserveEligibleSpawnPoints failed: %v", err)
+	}
+	if len(reserved) != 2 {
+		t.Fatalf("expected 2 reserved, got %d", len(reserved))
+	}
+
+	sps, exists := registry.GetSpawnPointsForMap(ctx, mapKey)
+	if !exists || len(sps) != 2 {
+		t.Fatalf("expected 2 spawn points in registry, got %d", len(sps))
+	}
+
+	for _, sp := range sps {
+		switch sp.Id {
+		case 1: // MobTime > 0 -> MobTime seconds
+			want := now.Add(30 * time.Second)
+			if sp.NextSpawnAt.Before(want.Add(-time.Second)) || sp.NextSpawnAt.After(want.Add(time.Second)) {
+				t.Errorf("point 1 (MobTime 30): expected cooldown near %v, got %v", want, sp.NextSpawnAt)
+			}
+		case 2: // MobTime <= 0 -> default cooldown
+			want := now.Add(defaultSpawnCooldown)
+			if sp.NextSpawnAt.Before(want.Add(-time.Second)) || sp.NextSpawnAt.After(want.Add(time.Second)) {
+				t.Errorf("point 2 (MobTime 0): expected default cooldown near %v, got %v", want, sp.NextSpawnAt)
+			}
+		}
+	}
+}
+
+func TestReserveEligibleSpawnPoints_NonPositiveLimit(t *testing.T) {
+	ctx := context.Background()
+	registry := GetRegistry()
+	registry.Reset(ctx)
+
+	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	f := field.NewBuilder(1, 1, 100000000).Build()
+	mapKey := character.MapKey{Tenant: te, Field: f}
+
+	now := time.Now()
+	_ = registry.SetSpawnPointsForMap(ctx, mapKey, []*CooldownSpawnPoint{
+		{SpawnPoint: monster2.SpawnPoint{Id: 1, Template: 100100, MobTime: 10}, NextSpawnAt: now},
+		{SpawnPoint: monster2.SpawnPoint{Id: 2, Template: 100101, MobTime: 10}, NextSpawnAt: now},
+	})
+
+	reserved, err := registry.ReserveEligibleSpawnPoints(ctx, mapKey, 0, defaultSpawnCooldown, 1)
+	if err != nil {
+		t.Fatalf("ReserveEligibleSpawnPoints failed: %v", err)
+	}
+	if len(reserved) != 0 {
+		t.Errorf("expected 0 reserved for limit 0, got %d", len(reserved))
+	}
+
+	// A non-positive limit must not touch any cooldowns: both points still eligible.
+	after, err := registry.ReserveEligibleSpawnPoints(ctx, mapKey, 2, defaultSpawnCooldown, 1)
+	if err != nil {
+		t.Fatalf("ReserveEligibleSpawnPoints failed: %v", err)
+	}
+	if len(after) != 2 {
+		t.Errorf("expected both points still eligible after no-op reserve, got %d", len(after))
+	}
+}
+
+// TestReserveEligibleSpawnPoints_ConcurrentNoDoubleReserve is the direct
+// registry-level guarantee behind the SpawnMonsters over-spawn fix: no matter
+// how many callers race, each spawn point is reserved at most once per cooldown
+// window and the total reserved never exceeds the number of eligible points.
+func TestReserveEligibleSpawnPoints_ConcurrentNoDoubleReserve(t *testing.T) {
+	ctx := context.Background()
+	registry := GetRegistry()
+	registry.Reset(ctx)
+
+	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	f := field.NewBuilder(1, 1, 100000000).Build()
+	mapKey := character.MapKey{Tenant: te, Field: f}
+
+	now := time.Now()
+	const points = 5
+	sps := make([]*CooldownSpawnPoint, points)
+	for i := 0; i < points; i++ {
+		sps[i] = &CooldownSpawnPoint{
+			SpawnPoint:  monster2.SpawnPoint{Id: uint32(i + 1), Template: 100100, MobTime: 10},
+			NextSpawnAt: now,
+		}
+	}
+	_ = registry.SetSpawnPointsForMap(ctx, mapKey, sps)
+
+	var mu sync.Mutex
+	seen := make(map[uint32]int)
+	total := 0
 
 	var wg sync.WaitGroup
-	const iterations = 50
-
-	for _, mapKey := range mapKeys {
+	for i := 0; i < 20; i++ {
 		wg.Add(1)
-		go func(mk character.MapKey) {
+		go func(seed int64) {
 			defer wg.Done()
-
-			for i := 0; i < iterations; i++ {
-				// Read operations
-				_, _, _ = registry.GetEligibleSpawnPoints(ctx, mk)
-
-				// Write operations
-				if i%5 == 0 {
-					updates := map[uint32]time.Time{1: time.Now().Add(5 * time.Second)}
-					_ = registry.UpdateCooldowns(ctx, mk, updates)
-				}
-
-				time.Sleep(time.Microsecond)
+			res, err := registry.ReserveEligibleSpawnPoints(ctx, mapKey, points, defaultSpawnCooldown, seed)
+			if err != nil {
+				return
 			}
-		}(mapKey)
+			mu.Lock()
+			for _, r := range res {
+				seen[r.Id]++
+			}
+			total += len(res)
+			mu.Unlock()
+		}(int64(i + 1))
 	}
+	wg.Wait()
 
-	done := make(chan bool)
-	go func() {
-		wg.Wait()
-		done <- true
-	}()
-
-	select {
-	case <-done:
-	case <-time.After(10 * time.Second):
-		t.Error("Test timed out - possible deadlock in multi-map concurrent access")
+	if total != points {
+		t.Errorf("expected exactly %d total reservations across concurrent callers, got %d", points, total)
 	}
-
-	for _, mapKey := range mapKeys {
-		spawnPoints, exists := registry.GetSpawnPointsForMap(ctx, mapKey)
-		if !exists || len(spawnPoints) != 2 {
-			t.Errorf("Map should have 2 spawn points after concurrent access, got %d", len(spawnPoints))
-		}
-	}
-}
-
-func TestCooldownEnforcementPreventsImmediateRespawn(t *testing.T) {
-	ctx := context.Background()
-	registry := GetRegistry()
-	registry.Reset(ctx)
-
-	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
-
-	f := field.NewBuilder(1, 1, 100000000).Build()
-	mapKey := character.MapKey{
-		Tenant: te,
-		Field:  f,
-	}
-
-	now := time.Now()
-
-	_ = registry.SetSpawnPointsForMap(ctx, mapKey, []*CooldownSpawnPoint{
-		{SpawnPoint: monster2.SpawnPoint{Id: 1, Template: 100100}, NextSpawnAt: now},
-		{SpawnPoint: monster2.SpawnPoint{Id: 2, Template: 100101}, NextSpawnAt: now},
-		{SpawnPoint: monster2.SpawnPoint{Id: 3, Template: 100102}, NextSpawnAt: now},
-	})
-
-	// All 3 should be eligible initially
-	eligible, total, err := registry.GetEligibleSpawnPoints(ctx, mapKey)
-	if err != nil {
-		t.Fatalf("GetEligibleSpawnPoints failed: %v", err)
-	}
-	if total != 3 {
-		t.Errorf("Expected 3 total spawn points, got %d", total)
-	}
-	if len(eligible) != 3 {
-		t.Errorf("Expected 3 eligible spawn points initially, got %d", len(eligible))
-	}
-
-	// Simulate spawning from first spawn point (update cooldown)
-	updates := map[uint32]time.Time{eligible[0].SpawnPoint.Id: now.Add(5 * time.Second)}
-	_ = registry.UpdateCooldowns(ctx, mapKey, updates)
-
-	// Should have 2 eligible after one is on cooldown
-	eligibleAfter, _, err := registry.GetEligibleSpawnPoints(ctx, mapKey)
-	if err != nil {
-		t.Fatalf("GetEligibleSpawnPoints failed: %v", err)
-	}
-	if len(eligibleAfter) != 2 {
-		t.Errorf("Expected 2 eligible spawn points after first spawn, got %d", len(eligibleAfter))
-	}
-
-	// Put all remaining on cooldown
-	allUpdates := make(map[uint32]time.Time)
-	for _, csp := range eligibleAfter {
-		allUpdates[csp.SpawnPoint.Id] = now.Add(5 * time.Second)
-	}
-	_ = registry.UpdateCooldowns(ctx, mapKey, allUpdates)
-
-	// Should have 0 eligible
-	eligibleFinal, _, err := registry.GetEligibleSpawnPoints(ctx, mapKey)
-	if err != nil {
-		t.Fatalf("GetEligibleSpawnPoints failed: %v", err)
-	}
-	if len(eligibleFinal) != 0 {
-		t.Errorf("Expected 0 eligible spawn points after all spawns, got %d", len(eligibleFinal))
-	}
-}
-
-func TestCooldownTimingAccuracy(t *testing.T) {
-	ctx := context.Background()
-	registry := GetRegistry()
-	registry.Reset(ctx)
-
-	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
-
-	f := field.NewBuilder(1, 1, 100000000).Build()
-	mapKey := character.MapKey{
-		Tenant: te,
-		Field:  f,
-	}
-
-	now := time.Now()
-
-	_ = registry.SetSpawnPointsForMap(ctx, mapKey, []*CooldownSpawnPoint{
-		{SpawnPoint: monster2.SpawnPoint{Id: 1, Template: 100100}, NextSpawnAt: now},
-	})
-
-	// Set cooldown to 5 seconds from now
-	cooldownTime := now.Add(5 * time.Second)
-	_ = registry.UpdateCooldowns(ctx, mapKey, map[uint32]time.Time{1: cooldownTime})
-
-	// Verify spawn point is on cooldown (not eligible now)
-	eligible, _, err := registry.GetEligibleSpawnPoints(ctx, mapKey)
-	if err != nil {
-		t.Fatalf("GetEligibleSpawnPoints failed: %v", err)
-	}
-	if len(eligible) != 0 {
-		t.Error("Spawn point should not be eligible while on cooldown")
-	}
-
-	// Verify the stored cooldown time
-	spawnPoints, exists := registry.GetSpawnPointsForMap(ctx, mapKey)
-	if !exists || len(spawnPoints) != 1 {
-		t.Fatal("Expected 1 spawn point in registry")
-	}
-
-	// NextSpawnAt should be approximately cooldownTime (within 1 second tolerance for serialization)
-	if spawnPoints[0].NextSpawnAt.Before(cooldownTime.Add(-time.Second)) || spawnPoints[0].NextSpawnAt.After(cooldownTime.Add(time.Second)) {
-		t.Errorf("Expected NextSpawnAt near %v, got %v", cooldownTime, spawnPoints[0].NextSpawnAt)
-	}
-}
-
-func TestSequentialSpawnAttempts(t *testing.T) {
-	ctx := context.Background()
-	registry := GetRegistry()
-	registry.Reset(ctx)
-
-	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
-
-	f := field.NewBuilder(1, 1, 100000000).Build()
-	mapKey := character.MapKey{
-		Tenant: te,
-		Field:  f,
-	}
-
-	now := time.Now()
-
-	_ = registry.SetSpawnPointsForMap(ctx, mapKey, []*CooldownSpawnPoint{
-		{SpawnPoint: monster2.SpawnPoint{Id: 1, Template: 100100}, NextSpawnAt: now},
-		{SpawnPoint: monster2.SpawnPoint{Id: 2, Template: 100101}, NextSpawnAt: now},
-	})
-
-	// Both eligible initially
-	eligible, _, _ := registry.GetEligibleSpawnPoints(ctx, mapKey)
-	if len(eligible) != 2 {
-		t.Errorf("Expected 2 eligible spawn points initially, got %d", len(eligible))
-	}
-
-	// Simulate spawning from first spawn point
-	_ = registry.UpdateCooldowns(ctx, mapKey, map[uint32]time.Time{1: now.Add(5 * time.Second)})
-
-	// One eligible
-	eligible, _, _ = registry.GetEligibleSpawnPoints(ctx, mapKey)
-	if len(eligible) != 1 {
-		t.Errorf("Expected 1 eligible spawn point after first spawn, got %d", len(eligible))
-	}
-
-	// Simulate spawning from second spawn point
-	_ = registry.UpdateCooldowns(ctx, mapKey, map[uint32]time.Time{2: now.Add(5 * time.Second)})
-
-	// None eligible
-	eligible, _, _ = registry.GetEligibleSpawnPoints(ctx, mapKey)
-	if len(eligible) != 0 {
-		t.Errorf("Expected 0 eligible spawn points after all spawns, got %d", len(eligible))
-	}
-}
-
-func TestRapidSpawnAttempts(t *testing.T) {
-	ctx := context.Background()
-	registry := GetRegistry()
-	registry.Reset(ctx)
-
-	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
-
-	f := field.NewBuilder(1, 1, 100000000).Build()
-	mapKey := character.MapKey{
-		Tenant: te,
-		Field:  f,
-	}
-
-	now := time.Now()
-
-	_ = registry.SetSpawnPointsForMap(ctx, mapKey, []*CooldownSpawnPoint{
-		{SpawnPoint: monster2.SpawnPoint{Id: 1, Template: 100100}, NextSpawnAt: now},
-	})
-
-	// First check - should be eligible
-	eligible, _, _ := registry.GetEligibleSpawnPoints(ctx, mapKey)
-	if len(eligible) != 1 {
-		t.Error("First spawn should be eligible")
-	}
-
-	// Simulate spawn and set cooldown
-	_ = registry.UpdateCooldowns(ctx, mapKey, map[uint32]time.Time{1: now.Add(5 * time.Second)})
-
-	// Rapid checks should all show not eligible
-	for i := 0; i < 10; i++ {
-		eligible, _, _ = registry.GetEligibleSpawnPoints(ctx, mapKey)
-		if len(eligible) != 0 {
-			t.Errorf("Rapid spawn attempt %d should be blocked by cooldown", i)
+	for id, cnt := range seen {
+		if cnt != 1 {
+			t.Errorf("spawn point %d reserved %d times (want exactly 1)", id, cnt)
 		}
 	}
 }
@@ -731,22 +560,28 @@ func TestResetCooldown(t *testing.T) {
 		{SpawnPoint: monster2.SpawnPoint{Id: 3, Template: 1001, MobTime: 0}, NextSpawnAt: now},
 	})
 
-	// All eligible initially
-	eligible, _, _ := registry.GetEligibleSpawnPoints(ctx, mapKey)
-	if len(eligible) != 3 {
-		t.Errorf("Expected 3 eligible, got %d", len(eligible))
-	}
-
 	// Reset cooldown for template 9001 (boss) - should set NextSpawnAt = now + 30s
 	registry.ResetCooldown(ctx, mapKey, 9001)
 
-	// Boss spawn points should now be on cooldown, normal should still be eligible
-	eligible, _, _ = registry.GetEligibleSpawnPoints(ctx, mapKey)
-	if len(eligible) != 1 {
-		t.Errorf("Expected 1 eligible (normal monster only) after boss cooldown reset, got %d", len(eligible))
+	// Boss spawn points should now be on cooldown, normal should still be eligible.
+	sps, exists := registry.GetSpawnPointsForMap(ctx, mapKey)
+	if !exists || len(sps) != 3 {
+		t.Fatalf("expected 3 spawn points, got %d", len(sps))
 	}
-	if eligible[0].SpawnPoint.Template != 1001 {
-		t.Errorf("Expected eligible spawn point to be template 1001, got %d", eligible[0].SpawnPoint.Template)
+	checkNow := time.Now()
+	eligibleCount := 0
+	var eligibleTemplate uint32
+	for _, sp := range sps {
+		if !sp.NextSpawnAt.After(checkNow) {
+			eligibleCount++
+			eligibleTemplate = sp.Template
+		}
+	}
+	if eligibleCount != 1 {
+		t.Errorf("Expected 1 eligible (normal monster only) after boss cooldown reset, got %d", eligibleCount)
+	}
+	if eligibleTemplate != 1001 {
+		t.Errorf("Expected eligible spawn point to be template 1001, got %d", eligibleTemplate)
 	}
 }
 
@@ -793,24 +628,6 @@ func TestInitializeForMap(t *testing.T) {
 	if len(spawnPoints) != 2 {
 		t.Errorf("Expected 2 spawn points after second init, got %d", len(spawnPoints))
 	}
-}
-
-// Helper function to convert MapKey to string for testing
-func mapKeyToString(mk character.MapKey) string {
-	return string(mk.Field.Id())
-}
-
-// Helper function to compare slices
-func sliceEqual(a, b []int) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
 }
 
 // Mock implementations for testing

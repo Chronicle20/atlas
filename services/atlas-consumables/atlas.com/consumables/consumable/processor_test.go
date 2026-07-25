@@ -521,3 +521,65 @@ func TestComputeEffectPlan_HpRecoveryPercent(t *testing.T) {
 	plan := computeEffectPlan(discardLogger(), c, ci)
 	assert.Equal(t, []int16{928}, plan.hpChanges)
 }
+
+// T5 (FR-3 + hp-alongside): fixed-morph 221 item applies MORPH statup with the
+// morph id, duration = time/1000, and the coexisting hp spec still heals.
+func TestComputeEffectPlan_FixedMorphWithHp(t *testing.T) {
+	c := character.NewModelBuilder().SetMaxHp(100).Build()
+	ci := extractConsumable(t, consumable3.RestModel{
+		Spec: map[consumable3.SpecType]int32{
+			consumable3.SpecTypeMorph: 2,
+			consumable3.SpecTypeTime:  600000,
+			consumable3.SpecTypeHP:    50,
+		},
+	})
+	plan := computeEffectPlan(discardLogger(), c, ci)
+	assert.Equal(t, []stat.Model{{Type: ts.TemporaryStatTypeMorph, Amount: 2}}, plan.statups)
+	assert.Equal(t, int32(600), plan.duration)
+	assert.Equal(t, []int16{50}, plan.hpChanges)
+}
+
+// T6: 2211000-shaped item — no fixed morph spec, non-empty morphRandom table.
+// Exactly one MORPH statup whose amount is a table key; hp still applies.
+func TestComputeEffectPlan_RandomMorphOnly(t *testing.T) {
+	c := character.NewModelBuilder().SetMaxHp(100).Build()
+	morphs := map[uint32]uint32{20: 50, 21: 30, 22: 20}
+	ci := extractConsumable(t, consumable3.RestModel{
+		Spec: map[consumable3.SpecType]int32{
+			consumable3.SpecTypeTime: 600000,
+			consumable3.SpecTypeHP:   50,
+		},
+		Morphs: morphs,
+	})
+	plan := computeEffectPlan(discardLogger(), c, ci)
+	if assert.Len(t, plan.statups, 1) {
+		s := plan.statups[0]
+		assert.Equal(t, ts.TemporaryStatTypeMorph, s.Type)
+		_, present := morphs[uint32(s.Amount)]
+		assert.True(t, present, "morph amount %d is not a table key", s.Amount)
+	}
+	assert.Equal(t, []int16{50}, plan.hpChanges)
+	assert.Equal(t, int32(600), plan.duration)
+}
+
+// T7 (FR-7): fixed morph wins over a table that deliberately does not contain it.
+func TestComputeEffectPlan_FixedMorphPrecedence(t *testing.T) {
+	ci := extractConsumable(t, consumable3.RestModel{
+		Spec:   map[consumable3.SpecType]int32{consumable3.SpecTypeMorph: 2},
+		Morphs: map[uint32]uint32{20: 100},
+	})
+	plan := computeEffectPlan(discardLogger(), character.NewModelBuilder().Build(), ci)
+	assert.Equal(t, []stat.Model{{Type: ts.TemporaryStatTypeMorph, Amount: 2}}, plan.statups)
+}
+
+// Design §6: an unusable (zero-total) table skips only the morph statup;
+// other specs still apply.
+func TestComputeEffectPlan_ZeroWeightMorphTableSkipsMorphOnly(t *testing.T) {
+	ci := extractConsumable(t, consumable3.RestModel{
+		Spec:   map[consumable3.SpecType]int32{consumable3.SpecTypeHP: 50},
+		Morphs: map[uint32]uint32{20: 0},
+	})
+	plan := computeEffectPlan(discardLogger(), character.NewModelBuilder().Build(), ci)
+	assert.Empty(t, plan.statups)
+	assert.Equal(t, []int16{50}, plan.hpChanges)
+}

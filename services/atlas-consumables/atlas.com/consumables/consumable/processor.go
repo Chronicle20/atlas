@@ -193,6 +193,12 @@ func computeEffectPlan(l logrus.FieldLogger, c character.Model, ci consumable3.M
 	}
 	if val, ok := ci.GetSpec(consumable3.SpecTypeMorph); ok && val > 0 {
 		plan.statups = append(plan.statups, stat.Model{Type: ts.TemporaryStatTypeMorph, Amount: val})
+	} else if len(ci.Morphs()) > 0 {
+		if morphId, err := rollMorph(ci.Morphs()); err == nil {
+			plan.statups = append(plan.statups, stat.Model{Type: ts.TemporaryStatTypeMorph, Amount: int32(morphId)})
+		} else {
+			l.WithError(err).Warnf("Skipping morph for item [%d]: unusable morphRandom table.", ci.Id())
+		}
 	}
 	if val, ok := ci.GetSpec(consumable3.SpecTypeTime); ok && val > 0 {
 		plan.duration = val / 1000

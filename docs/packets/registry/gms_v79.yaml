@@ -313,11 +313,22 @@
 - op: SKILL_LEARN_ITEM_RESULT
   direction: clientbound
   opcode: 48
-  fname: sub_969022
+  fname: CWvsContext::OnSkillLearnItemResult
+  fname_alts:
+    - sub_969022
   provenance: ida-discovered
   ida:
     address: 9867298
-  note: 'v79 IDB unnamed sub_969022 = CWvsContext::OnSkillLearnItemResult (delta doc a).'
+  note: 'task-125 correction: prior note claimed sub_969022 was unnamed; xrefs_to
+    (session 9a7d3642, GMS_v79_1_DEVM.exe.i64) resolves the CWvsContext::OnPacket
+    case 48 (0x30, @0x9539c9) dispatch caller''s reference at this address to the
+    mangled symbol CWvsContext::OnSkillLearnItemResult — already named in the IDB,
+    just displayed as sub_969022 in Hex-Rays pseudocode (same class as the
+    v61/v72 corrections). Decompile confirms body (15-byte, no leading
+    bOnExclRequest — MajorVersion 79<84): Decode4 characterId, then under a
+    user-found guard: Decode1 isMasteryBook, Decode4 skillId (decoded,
+    discarded), Decode4 masterLevel (decoded, discarded), Decode1 canUse,
+    Decode1 success — matches the existing codec exactly.'
 - op: GATHER_ITEM_RESULT
   direction: clientbound
   opcode: 49

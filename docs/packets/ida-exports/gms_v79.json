@@ -16113,6 +16113,42 @@
       "direction": "",
       "calls": null
     },
+    "CWvsContext::OnSkillLearnItemResult": {
+      "address": "0x969022",
+      "direction": "clientbound",
+      "note": "SKILL_LEARN_ITEM_RESULT (task-125). v79 IDA-verified, session 9a7d3642, GMS_v79_1_DEVM.exe.i64. Hex-Rays displays sub_969022 in the pseudocode, but xrefs_to the CWvsContext::OnPacket case 48 (0x30, @0x9539c9) dispatch call resolves this address to the mangled symbol CWvsContext::OnSkillLearnItemResult -- already named in the IDB. v79 body (no leading byte -- MajorVersion()<84): Decode4 characterId (CUserPool::GetUser lookup), then under an if(user-found) guard (v27): Decode1 isMasteryBook, Decode4 skillId (decoded, discarded), Decode4 masterLevel (decoded, discarded), Decode1 canUse, Decode1 success.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "isMasteryBook",
+          "guard": "v27"
+        },
+        {
+          "op": "Decode4",
+          "comment": "skillId (decoded, discarded)",
+          "guard": "v27"
+        },
+        {
+          "op": "Decode4",
+          "comment": "masterLevel (decoded, discarded)",
+          "guard": "v27"
+        },
+        {
+          "op": "Decode1",
+          "comment": "canUse",
+          "guard": "v27"
+        },
+        {
+          "op": "Decode1",
+          "comment": "success",
+          "guard": "v27"
+        }
+      ]
+    },
     "CWvsContext::OnSkillUseResult": {
       "address": "0x96adc5",
       "direction": "",

@@ -145,6 +145,40 @@ func TestSkillLearnItemResultGoldenBytesV72(t *testing.T) {
 	}
 }
 
+// Golden bytes, v79 — 15-byte body (NO leading bOnExclRequest byte, same as
+// v48/v61/v72/v83; MajorVersion()=79 < 84):
+// characterId(4 LE) + isMasteryBook(1) + skillId(4 LE) + masterLevel(4 LE) + canUse(1) + success(1).
+//
+// IDA evidence (task-125): sub_969022 @0x969022 (v79 IDB
+// GMS_v79_1_DEVM.exe.i64, session 9a7d3642). Hex-Rays displays the pseudocode
+// under the sub_ label, but xrefs_to the CWvsContext::OnPacket case 48 (0x30,
+// @0x9539c9) dispatch call resolves this address to the mangled symbol
+// CWvsContext::OnSkillLearnItemResult — already named in the IDB. Body:
+// Decode4 characterId (CUserPool::GetUser lookup) @0x96903e, then under the
+// user-found guard (v27): Decode1 isMasteryBook @0x969086, Decode4 skillId
+// (decoded, discarded) @0x969089, Decode4 masterLevel (decoded, discarded)
+// @0x969090, Decode1 canUse @0x9690a1, Decode1 success @0x9690a4 — matches
+// the existing 15-byte golden fixture shape exactly. Opcode 0x30 == registry
+// op 48.
+//
+// packet-audit:verify packet=character/clientbound/CharacterSkillLearnItemResult version=gms_v79 ida=0x969022
+func TestSkillLearnItemResultGoldenBytesV79(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 79, 1)
+	l, _ := testlog.NewNullLogger()
+	got := NewSkillLearnItemResult(1, true, 2, 3, true, false).Encode(l, ctx)(nil)
+	want := []byte{
+		0x01, 0x00, 0x00, 0x00, // characterId
+		0x01,                   // isMasteryBook
+		0x02, 0x00, 0x00, 0x00, // skillId
+		0x03, 0x00, 0x00, 0x00, // masterLevel
+		0x01, // canUse
+		0x00, // success
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("golden bytes: got % X, want % X", got, want)
+	}
+}
+
 // packet-audit:verify packet=character/clientbound/CharacterSkillLearnItemResult version=gms_v83 ida=0xa1e5af
 func TestSkillLearnItemResultGoldenBytesV83(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 83, 1)

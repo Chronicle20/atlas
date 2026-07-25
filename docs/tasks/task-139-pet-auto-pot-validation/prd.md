@@ -7,7 +7,7 @@ Created: 2026-07-09
 
 ## 1. Overview
 
-The `PET_AUTO_POT` serverbound packet (`CWvsContext::SendStatChangeItemUseRequestByPetQ`, STATUS.md row 691) is routed on **eight** of the nine matrix versions — gms_61 (0x8E), gms_72 (0xA5), gms_79 (0xA7), gms_83 (0xAB), gms_84 (0xB0), gms_87 (0xB7), gms_95 (0xCB), jms_185 (0xAE); the last five are ✅ and the three legacy columns are 🟡ᶠ (fixture-pending, layout confirmed identical — design §1.2). gms_48 is ⬜ n-a. It is handled by `PetItemUseHandle` in `services/atlas-channel/atlas.com/channel/socket/handler/pet_item_use.go`. Today the handler decodes the packet and forwards blindly to the generic `consumable.RequestItemConsume` flow. It ignores the packet's `petId` and `buffSkill` fields entirely and performs no pet-side validation: any client can trigger a pet auto-pot consume with no spawned pet, with a pet it does not own, while dead, or without the pet skill that legitimately enables auto-pot. The potion still applies — this is an abuse/validation gap, not a functional break.
+The `PET_AUTO_POT` serverbound packet (`CWvsContext::SendStatChangeItemUseRequestByPetQ`, STATUS.md row 691) is routed on **eight** of the nine matrix versions — gms_61 (0x8E), gms_72 (0xA5), gms_79 (0xA7), gms_83 (0xAB), gms_84 (0xB0), gms_87 (0xB7), gms_95 (0xCB), jms_185 (0xAE); the last five are ✅ and the three legacy columns are 🟡ᶠ (fixture-pending, layout confirmed identical — design §1.2). **gms_48 is the ninth**: the matrix shows ⬜ n-a, but that is an audit artifact — the client sends this packet at opcode 0x75 with a petId-less layout, and the harvest simply could not find the then-unnamed encoder (design §1.7). It is handled by `PetItemUseHandle` in `services/atlas-channel/atlas.com/channel/socket/handler/pet_item_use.go`. Today the handler decodes the packet and forwards blindly to the generic `consumable.RequestItemConsume` flow. It ignores the packet's `petId` and `buffSkill` fields entirely and performs no pet-side validation: any client can trigger a pet auto-pot consume with no spawned pet, with a pet it does not own, while dead, or without the pet skill that legitimately enables auto-pot. The potion still applies — this is an abuse/validation gap, not a functional break.
 
 Closing the gap requires more than a spawned-pet check. Legitimate auto-pot in GMS is gated by pet skill pouch items — WZ-verified in v83 (`Item.wz/Cash/0519.img.xml`): `5190001` grants `consumeHP` (Auto HP), `5190006` grants `consumeMP` (Auto MP), `5191001` removes `consumeHP` (`add=0`; no `consumeMP` remover exists in v83 data). Atlas has a `flag uint16` field on the pet model (atlas-pets and the atlas-channel projection, exposed in the pets REST model) intended to hold these skill bits, but **nothing ever sets it, and it is not persisted** (no column in `pet/entity.go`). This task therefore includes a minimal pet-skill pouch implementation — applying/removing skill flags via 0519 item use, persisting them — as the prerequisite for enforcing the pouch check.
 
@@ -42,6 +42,8 @@ Non-goals:
 
 FR-1 **Specific pet validation.** `PetItemUseHandle` MUST resolve the packet's `petId` (currently ignored) and reject the request unless: the pet exists, `OwnerId()` equals the requesting character id, and the pet is currently spawned (`Slot() >= 0`; spawned-slot semantics per `atlas-pets pet/processor.go:210`). "Character has some spawned pet" is NOT sufficient.
 
+FR-1a **Single-pet versions.** On gms_48 the packet carries no `petId` at all (design §1.7 — the client holds one pet, not an array), so there is nothing to identify. There the handler MUST resolve the character's spawned pet and apply the identical ownership/spawn/skill checks; no spawned pet still rejects. This is not a relaxation of FR-1 — with at most one pet the two rules coincide. The petId-bearing versions MUST NOT fall back to this lookup.
+
 FR-2 **Alive check.** The request MUST be rejected when the requesting character's HP is 0.
 
 FR-3 **Pet skill gate.** The identified pet MUST have the matching skill flag: `consumeHP` when the consumed item recovers HP, `consumeMP` when it recovers MP. For items that recover both, possession of either flag is sufficient (design may tighten this if IDA shows the client gates differently — see Open Questions).
@@ -68,16 +70,21 @@ FR-12 **Client synchronization.** The design phase MUST determine (IDA) how the 
 
 ### B2. Version coverage (added after the rebase onto main)
 
-FR-14 **Every routed version is configured.** The validation gate MUST be wired
-for all eight versions that route `PetItemUseHandle` — the three legacy GMS
-columns (v61/v72/v79) included. Because the gate fails closed when unconfigured,
-a version left out of the seed templates is a regression (all auto-pot rejected),
-not a no-op. gms_48 (unrouted) and the partial gms_12 / gms_92 templates (no pet
-handlers) are excluded on evidence, documented in design §1.7 / §3.6.
+FR-14 **Every version whose client speaks this packet is configured.** Nine:
+the five original + v61/v72/v79 + **gms_48, which additionally needs its
+`PetItemUseHandle` entry created** (opcode 0x75 — the client has the feature, the
+template never routed it). Because the gate fails closed when unconfigured, a
+version left out of the seed templates is a regression (all auto-pot rejected),
+not a no-op. Only the partial gms_12 / gms_92 templates are excluded, on evidence
+(design §3.6).
 
-FR-15 **Legacy fixtures.** The v61/v72/v79 `PET_AUTO_POT` matrix cells MUST be
-promoted off 🟡ᶠ with byte fixtures pinned to the verified encoders, so the
-version set this task claims to support is the version set the matrix shows.
+FR-15 **Legacy fixtures and codec gate.** The v61/v72/v79 `PET_AUTO_POT` matrix
+cells MUST be promoted off 🟡ᶠ with byte fixtures pinned to the verified
+encoders, and the gms_48 cell MUST be re-harvested off ⬜ now that its encoder is
+named. The codec MUST version-gate the leading `petId u64` — present for
+`(GMS && MajorAtLeast(61)) || JMS`, absent on v48 — with a fixture per version,
+so the version set this task claims to support is the version set the matrix
+shows.
 
 FR-16 **Pet-item trailer gates.** The pet cash-asset encode this task modifies
 MUST be version-gated to the layout each client actually reads (design §1.6:
@@ -137,7 +144,8 @@ FR-13 A character with a spawned, owned pet holding the matching pouch flag expe
 - [ ] After applying the matching pouch, the same auto-pot request that was rejected now passes and the potion applies exactly as before this task.
 - [ ] `buffSkill` handling is specified and implemented per the design-phase IDA finding (or explicitly documented as ignored with the IDA evidence cited).
 - [ ] Client-interpreted wire values introduced by this task (if any) are config-resolved per tenant version (DOM-25).
-- [ ] Auto-pot behaves identically on all eight routed versions: a legitimate v61/v72/v79 player with the matching worn pet-ability equip is not rejected (FR-14), and no version's `PetItemUseHandle` entry is left without `skillGate`.
-- [ ] v61/v72/v79 `PET_AUTO_POT` cells are ✅ in the regenerated matrix (FR-15).
+- [ ] Auto-pot behaves identically on all nine versions: a legitimate v48/v61/v72/v79 player with the matching worn pet-ability equip is not rejected (FR-14), and no version's `PetItemUseHandle` entry is left without `skillGate`.
+- [ ] gms_48 routes `PetItemUseHandle` at 0x75 and its auto-pot validates via the spawned-pet lookup (FR-1a), with no `petId` read from the wire.
+- [ ] v48/v61/v72/v79 `PET_AUTO_POT` cells are ✅ in the regenerated matrix (FR-15); no cell is left ⬜ on the strength of a "function not found in IDB" note.
 - [ ] The pet cash-asset encode emits exactly the trailer each client reads (FR-16), proven by per-version byte fixtures.
 - [ ] `go test -race ./...`, `go vet ./...`, `go build ./...` clean in every changed module; `docker buildx bake` clean for every touched service; `tools/redis-key-guard.sh`, `tools/goroutine-guard.sh`, `tools/lint.sh --check` and (templates changed) `tools/template-opcode-order-guard.sh` clean.

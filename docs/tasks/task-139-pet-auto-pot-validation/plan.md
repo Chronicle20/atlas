@@ -13,13 +13,15 @@
 > **Rebase revision (branch updated onto main).** Main now routes
 > `PetItemUseHandle` on **eight** versions — gms_61 (0x8E), gms_72 (0xA5),
 > gms_79 (0xA7), gms_83 (0xAB), gms_84 (0xB0), gms_87 (0xB7), gms_95 (0xCB),
-> jms_185 (0xAE) — not the five this plan was written against. All three legacy
-> GMS clients use the **same** worn-equip ability gate as v83 (design §1.1,
-> IDA-verified per version), so no new gate mode is needed; what changes is
-> coverage: Task 3 (per-version pet trailer), Task 13 (eight templates, gms_95
-> validator step dropped — already fixed on main) and the new Task 15 (legacy
-> fixtures + matrix). gms_48 and the partial gms_12/gms_92 templates are out of
-> scope on evidence (design §1.7, §3.6).
+> jms_185 (0xAE) — not the five this plan was written against, and **gms_48 is a
+> ninth** whose client speaks the packet (opcode 0x75) but whose template never
+> routed it (design §1.7). All legacy GMS clients use the **same** worn-equip
+> ability gate as v83 (design §1.1, IDA-verified per version), so no new gate
+> mode is needed. What changes is coverage: Task 3 (per-version pet trailer),
+> Task 12 (petId-less pet resolution on v48), Task 13 (nine templates, one of
+> them a new entry; gms_95 validator step dropped — already fixed on main) and
+> the new Task 15 (codec version gate, fixtures, matrix). Only the partial
+> gms_12/gms_92 templates are out of scope, on evidence (design §3.6).
 
 - **Verification gates (CLAUDE.md):** `go test -race ./...`, `go vet ./...`, `go build ./...` clean in every changed module; `docker buildx bake atlas-<svc>` for every service whose `go.mod` was touched; `tools/redis-key-guard.sh`, `tools/goroutine-guard.sh` and `tools/lint.sh --check` clean from repo root; `tools/template-opcode-order-guard.sh` clean once Task 13 touches the seed templates. (The last three gates postdate the original plan — see the updated CLAUDE.md build section.)
 - **Every routed version gets configured.** The FR-3 gate fails closed, so a template left without `skillGate` rejects all auto-pot on that version. "Five versions" anywhere in this plan means eight; treat any per-version list below as authoritative only where it was revised in this pass.
@@ -1842,8 +1844,27 @@ git commit -m "feat(atlas-channel): sync pet skill flag to clients via FLAG_CHAN
 - Consumes: channel `pet.NewProcessor(l,ctx).GetById(uint32)` (`Model.OwnerId()/Slot()/Flag()`), `character.NewProcessor(l,ctx).GetById()(id)` (`Model.Hp()`), `compartment.NewProcessor(l,ctx).GetByType(characterId, inventory.TypeValueEquip)`, `data/consumable` + `data/equipment` (Task 10), `pet/skill.Has` (Task 1), `slot` constants.
 - Produces: the validated handler. Rejection = shared `enableActions` unstick + one structured warn. Reasons: `pet_not_found`, `pet_not_owned`, `pet_not_spawned`, `character_dead`, `missing_pet_skill`, `not_consumable`, `skill_gate_unconfigured`, `equip_data_missing`, `fetch_failed` (character/transport fetch error — fail closed).
 
-**Version note (rebase revision).** The handler stays version-uniform: the legacy
-GMS clients use the same worn-equip gate and the same pet-ability slot list
+**gms_48 pet resolution (rebase revision).** The v48 packet has no `petId`
+(design §1.7), so `evaluateAutoPot` keeps its signature but the *lookup* in front
+of it branches on whether the decoded packet carried one:
+
+```go
+// petId on the wire (GMS >= 61, JMS) -> resolve that pet, narrowing-guard it.
+// No petId (gms_48, single-pet client) -> resolve the character's spawned pet.
+// Never fall back from the first to the second: that reopens the FR-1 hole.
+```
+
+Add `pet.NewProcessor(l, ctx).GetByOwner(characterId)`-style spawned lookup (the
+channel pet processor already exposes an owner-scoped fetch; filter `Slot() >= 0`
+— check the exact method name before writing) and two table cases:
+`{"v48 no petId, spawned pet", …, wantOk: true}` and
+`{"v48 no petId, no spawned pet", …, wantReason: "pet_not_found"}`. The decoded
+`ItemUse` needs a way to say "absent" — have the Task 15 codec gate leave
+`petId` zero when the version does not read it, and treat `petId == 0` as the
+absent case (a real Atlas pet id is never 0).
+
+**Version note (rebase revision).** Otherwise the handler stays version-uniform:
+every GMS client uses the same worn-equip gate and the same pet-ability slot list
 (design §1.1, verified in `CPet__UpdatePetAbility` v61 `0x614b60`), so
 `petAbilityPositions` needs no per-version branch and no new gate mode is added.
 The only version-dependent input remains the config-resolved `skillGate` option.
@@ -2298,6 +2319,7 @@ git commit -m "feat(atlas-channel): validate pet auto-pot (ownership, spawn, ali
 ### Task 13: atlas-configurations — seed template wiring (+ per-version IDA bit verification)
 
 **Files:**
+- Modify: `services/atlas-configurations/seed-data/templates/template_gms_48_1.json` (**new entry**, not just options)
 - Modify: `services/atlas-configurations/seed-data/templates/template_gms_61_1.json`
 - Modify: `services/atlas-configurations/seed-data/templates/template_gms_72_1.json`
 - Modify: `services/atlas-configurations/seed-data/templates/template_gms_79_1.json`
@@ -2306,7 +2328,7 @@ git commit -m "feat(atlas-channel): validate pet auto-pot (ownership, spawn, ali
 - Modify: `services/atlas-configurations/seed-data/templates/template_gms_87_1.json`
 - Modify: `services/atlas-configurations/seed-data/templates/template_gms_95_1.json`
 - Modify: `services/atlas-configurations/seed-data/templates/template_jms_185_1.json`
-- Not modified (documented exclusions, design §1.7/§3.6): `template_gms_48_1.json` (routes four pet handlers but no `PetItemUseHandle`), `template_gms_12_1.json` / `template_gms_92_1.json` (partial bring-up templates, no pet handlers at all).
+- Not modified (documented exclusion, design §3.6): `template_gms_12_1.json` / `template_gms_92_1.json` (partial bring-up templates, no pet handlers at all).
 
 **Interfaces:**
 - Consumes: handler option key `skillGate` (Task 12), writer options property `petSkill` (Task 3).
@@ -2314,8 +2336,9 @@ git commit -m "feat(atlas-channel): validate pet auto-pot (ownership, spawn, ali
 
 - [ ] **Step 1: skillGate handler options**
 
-Update the `PetItemUseHandle` entry in each template (opCodes below are the ones on main; all eight entries already carry `"validator": "LoggedInValidator"` — only `options` is added):
+Update the `PetItemUseHandle` entry in each template (opCodes below are the ones on main; the eight existing entries already carry `"validator": "LoggedInValidator"` — only `options` is added):
 
+- `template_gms_48_1.json`: **create** the entry — `{"opCode": "0x75", "validator": "LoggedInValidator", "handler": "PetItemUseHandle", "services": ["channel"], "options": {"skillGate": "equipAbility"}}`. Insert at its sorted position, immediately after `PetDropPickUpHandle` 0x74 (which is also where it belongs semantically — the guard enforces ascending opCode, so sorted position and semantic position agree here). Mirror the `services` key from the sibling pet entries in that file. Verified: 0x75 is unused in this template, and v48's `CPet::SendDropPickUpRequest` (`0x58ed98`) emits 116 = 0x74, confirming this IDB's raw opcode values are the template opCodes.
 - `template_gms_61_1.json` (`:877-882`): `{"opCode": "0x8E", "validator": "LoggedInValidator", "handler": "PetItemUseHandle", "options": {"skillGate": "equipAbility"}}`
 - `template_gms_72_1.json` (`:925-930`): `{"opCode": "0xA5", ... "options": {"skillGate": "equipAbility"}}`
 - `template_gms_79_1.json` (`:936-941`): `{"opCode": "0xA7", ... "options": {"skillGate": "equipAbility"}}`
@@ -2363,11 +2386,11 @@ Run, from the worktree root:
 ```bash
 python3 -c "import json,glob; [json.load(open(f)) for f in glob.glob('services/atlas-configurations/seed-data/templates/template_*.json')]"
 tools/template-opcode-order-guard.sh
-grep -c '"skillGate"' services/atlas-configurations/seed-data/templates/template_*.json   # expect 1 for the eight routed templates, 0 for gms_12/48/92
+grep -c '"skillGate"' services/atlas-configurations/seed-data/templates/template_*.json   # expect 1 for the nine routed templates (gms_48 included), 0 for gms_12/92
 (cd services/atlas-configurations && go test -race ./... && go build ./...)
 ```
 
-Expected: JSON parses; opcode-order guard clean; exactly eight templates carry `skillGate`; configurations tests/build clean.
+Expected: JSON parses; opcode-order guard clean; exactly nine templates carry `skillGate`; configurations tests/build clean.
 
 ```bash
 git add services/atlas-configurations/seed-data/templates/
@@ -2378,31 +2401,58 @@ git commit -m "feat(configurations): skillGate options, petSkill writer tables, 
 
 ---
 
-### Task 15: legacy version coverage (v61/v72/v79) — fixtures, matrix, data check
+### Task 15: legacy version coverage (v48/v61/v72/v79) — codec gate, fixtures, matrix, data check
 
 *(Added by the rebase revision. Runs after Task 13 and before Task 14's sweep.)*
 
 **Files:**
+- Modify: `libs/atlas-packet/pet/serverbound/item_use.go` (version-gate the leading `petId`)
 - Modify: `libs/atlas-packet/pet/serverbound/item_use_test.go`
-- Modify: `docs/packets/audits/gms_v61/*.json`, `gms_v72/*.json`, `gms_v79/*.json` (evidence records, written by the tooling — never hand-edited)
+- Modify: `docs/packets/audits/gms_v48/PetItemUse.json`, `gms_v61/*.json`, `gms_v72/*.json`, `gms_v79/*.json` (evidence records, written by the tooling — never hand-edited)
 - Regenerate: `docs/packets/audits/STATUS.md` + `status.json`
 - Create: `docs/tasks/task-139-pet-auto-pot-validation/coverage-manifest.yaml`
 
 **Interfaces:**
-- Consumes: the existing `pet/serverbound.ItemUse` codec (unchanged — design §1.2 confirms the legacy layout already matches).
-- Produces: `PET_AUTO_POT` ✅ on gms_v61/v72/v79.
+- Consumes: the `pet/serverbound.ItemUse` codec.
+- Produces: `PET_AUTO_POT` ✅ on gms_v48/v61/v72/v79; a codec whose `PetId()` is zero exactly when the client sent no pet id (Task 12 depends on this).
 
-- [ ] **Step 1: Byte fixtures for the three legacy cells**
+- [ ] **Step 1: Version-gate the leading `petId` (v48 only)**
 
-Follow `docs/packets/audits/VERIFYING_A_PACKET.md` (or dispatch `/verify-packet` once per cell). The read order is already derived — re-derive it in-tool rather than trusting this plan, then confirm it matches:
+v61/v72/v79 match the current codec byte-for-byte; **v48 does not** — it omits the 8-byte locker SN entirely (design §1.7, encoder `0x70dc8d`). Gate both directions:
+
+```go
+// The pet locker SN leads this packet from the v61 revision onward; the v48
+// client is single-pet and sends none (encoder @0x70dc8d writes only the
+// mitigation byte, updateTime, slot and itemId). IDA-verified. Boundary pinned
+// at 61 — the verified edge of the available IDB set.
+if (t.IsRegion("GMS") && t.MajorAtLeast(61)) || t.Region() == "JMS" {
+	m.petId = r.ReadUint64()
+}
+```
+
+`Decode`/`Encode` currently ignore the context — thread `ctx` through both and take `t := tenant.MustFromContext(ctx)`. Leaving `petId` at zero on v48 is what Task 12 reads as "absent" (a real Atlas pet id is never 0). **The five already-verified cells must not move**: assert their fixtures byte-for-byte.
+
+- [ ] **Step 2: Byte fixtures for the four legacy cells**
+
+Follow `docs/packets/audits/VERIFYING_A_PACKET.md` (or dispatch `/verify-packet` once per cell). Re-derive each read order in-tool rather than trusting this plan, then confirm it matches:
 
 | Version | Encoder | Opcode | Layout |
 |---|---|---|---|
+| gms_v48 | `0x70dc8d` | 117 (0x75) | `Encode1(byte) · Encode4(updateTime) · Encode2(slot) · Encode4(itemId)` — **no petSN** |
 | gms_v61 | `0x831ab9` | 142 (0x8E) | `buffer(petSN,8) · Encode1(byte) · Encode4(updateTime) · Encode2(slot) · Encode4(itemId)` |
-| gms_v72 | `0x903f8b` | 165 (0xA5) | identical |
-| gms_v79 | `0x9552d0` | 167 (0xA7) | identical |
+| gms_v72 | `0x903f8b` | 165 (0xA5) | identical to v61 |
+| gms_v79 | `0x9552d0` | 167 (0xA7) | identical to v61 |
 
-Add three `// packet-audit:verify packet=pet/serverbound/PetItemUse version=gms_vNN ida=0x…` markers alongside the five existing ones and extend the round-trip table with the legacy contexts. **No codec change is expected** — if a fixture forces one, stop: that means the layout claim is wrong and the design §1.2 finding needs revisiting, not the test relaxing.
+Add four `// packet-audit:verify packet=pet/serverbound/PetItemUse version=gms_vNN ida=0x…` markers alongside the five existing ones and extend the round-trip table with the legacy contexts. For v61/v72/v79 **no codec change is expected** — if a fixture forces one there, stop: the layout claim is wrong and design §1.2 needs revisiting, not the test relaxing.
+
+- [ ] **Step 2a: Re-harvest the gms_48 evidence record**
+
+`docs/packets/audits/gms_v48/PetItemUse.json` currently records
+`"IDAComment": "function not found in IDB"` and a ⬜ verdict — an artifact of the
+encoder being unnamed at harvest time. It is named now
+(`CWvsContext__SendStatChangeItemUseRequestByPetQ` @ `0x70dc8d`). Re-run the
+harvest for that cell against the v48 IDB so the record carries a real address
+and read order; do not hand-edit the JSON.
 
 - [ ] **Step 2: Regenerate and check the matrix**
 
@@ -2413,7 +2463,7 @@ packet-audit fname-doc --check
 packet-audit operations --check
 ```
 
-Expected: the three `PET_AUTO_POT` cells move 🟡ᶠ → ✅; all four commands exit 0. Regenerate the matrix **after** any merge from main (`bug_packet_matrix_toolsha_reads_git_head`).
+Expected: the three legacy cells move 🟡ᶠ → ✅ and gms_48 moves ⬜ → ✅; all four commands exit 0. Note `matrix --check` bans a stale n-a while the feature family is present, so the v48 cell must actually promote — a lingering ⬜ fails the gate. Regenerate the matrix **after** any merge from main (`bug_packet_matrix_toolsha_reads_git_head`).
 
 - [ ] **Step 3: Legacy equip-attribute data check (design §7 note 2a — the one open unknown)**
 
@@ -2422,9 +2472,17 @@ The `equipAbility` gate reads pet-ability attributes that atlas-data must expose
 - If present: nothing further; the gate is satisfiable on legacy.
 - If the legacy WZ has no such attributes (or no `1812002`-equivalent item): **do not** guess a fallback. Record the finding in `context.md`, keep `equip_data_missing` as a distinct rejection reason so it is diagnosable in logs, and raise the gate choice for that version with the user — a version where no player can satisfy the gate needs an explicit decision, not a silent permissive default.
 
-- [ ] **Step 4: Confirm the gms_48 n-a**
+- [ ] **Step 4: ~~Confirm the gms_48 n-a~~ — DONE during the rebase revision; v48 is in scope**
 
-Positive check, not an argument from a missing symbol: search the v48 IDB for any `SendStatChangeItemUseRequestByPetQ`-shaped encoder (a `COutPacket` ctor followed by an 8-byte `EncodeBuffer` on a pet locker SN) reachable from the pet/keymap code. `0x7204db` is *not* it — it tests job 132 / skill 1320006 and sends a bodyless opcode 86 (design §1.7). Record the result in `context.md`; if an encoder does exist, v48 becomes a routed version and Tasks 12/13/15 gain a ninth column.
+Resolved, not deferred: v48 has the feature. Encoder `0x70dc8d` (opcode 0x75, no
+petSN), senders `TryConsumePetHP` `0x6a840c` / `TryConsumePetMP` `0x6a8596`,
+keymap ids at `CFuncKeyMappedMan+896/+900` via `OnPetConsumeItemInit`
+`0x4e5eb7`, same worn-equip gate (`CPet+264/+272`). All six symbols plus the
+three `GW_ItemSlot*::RawDecode` functions are named in the v48 IDB now. The
+`?TryConsumePetMP@CUserLocal@@` label at `0x7204db` was a mis-port (job 132 /
+`DarkKnightBerserkId` 1320006 / bodyless opcode 86) and is renamed
+`CUserLocal__TryDoBerserk_job132_skill1320006`. See design §1.7. This step
+survives only as the record of *why* the matrix disagreed.
 
 - [ ] **Step 5: Coverage manifest + commit**
 
@@ -2511,8 +2569,9 @@ Then run the code-review step (`superpowers:requesting-code-review`) before any 
 - FR-11 target pet → Tasks 8, 9 (jms pet-selection petId on the wire, threaded via `PetId` command field).
 - FR-12 client sync, DOM-25 → Tasks 3, 11, 13 (usPetSkill via config-resolved sparse tables; verified bits only).
 - FR-13 non-regression → Task 3 zero-flag byte-identical test; Task 12 identical forward; server enforces exactly the client family's own gate.
-- FR-14 all eight routed versions configured → Task 13 Step 1 (eight templates) + Step 5 grep assertion; exclusions evidenced in design §1.7/§3.6.
-- FR-15 legacy fixtures → Task 15 Steps 1–2 (matrix promotion is the machine check; a prose claim is not acceptance).
+- FR-1a single-pet (v48) pet resolution → Task 12 (spawned-pet lookup when the decoded `petId` is 0, never as a fallback for petId-bearing versions).
+- FR-14 all nine versions configured → Task 13 Step 1 (nine templates, gms_48 a new entry) + Step 5 grep assertion; exclusions evidenced in design §3.6.
+- FR-15 codec gate + legacy fixtures → Task 15 Steps 1–2a (matrix promotion is the machine check; a prose claim is not acceptance).
 - FR-16 pet-item trailer version gates → Task 3 Step 3b + per-version length assertions.
 - ~~gms_95 dead handler fix~~ → dropped, already fixed on main (Task 13 Step 2 records the re-check).
 - Consumables `PetId` type alignment (design §6) → Task 7 Step 3.

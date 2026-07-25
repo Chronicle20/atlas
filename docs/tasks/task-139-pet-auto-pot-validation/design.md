@@ -10,9 +10,12 @@ Inputs: `prd.md` (approved), IDA investigation (gms_v48 / gms_v61 / gms_v72 / gm
 > gms_83 (0xAB), gms_84 (0xB0), gms_87 (0xB7), gms_95 (0xCB), jms_185 (0xAE).
 > Sections 1.1, 1.5, 1.6, 3.2, 3.6 and 7 are revised accordingly; every legacy
 > claim below is IDA-verified in this pass, not inferred from the v83 result.
-> Out of scope by evidence, not omission: gms_48 (no `PetItemUseHandle` entry;
-> matrix cell ⬜ n-a — see §1.7) and the gms_12 / gms_92 templates (partial
-> bring-up templates with **no** pet handlers at all).
+> **gms_48 is a ninth version, not an exclusion.** Its `PetItemUseHandle` is
+> simply unrouted: the client has the feature at opcode 0x75 with a
+> **petId-less** wire layout, and the matrix ⬜ traces to an audit harvest that
+> could not find an unnamed function (§1.7). Wiring it is in scope.
+> Out of scope by evidence: the gms_12 / gms_92 templates (partial bring-up
+> templates with **no** pet handlers at all).
 
 ---
 
@@ -26,6 +29,7 @@ The auto-pot send path is `CUserLocal::TryConsumePetHP` / `TryConsumePetMP` (cal
 
 | Version | `TryConsumePetHP` | Gate |
 |---|---|---|
+| gms_v48 | `0x6a840c` (named this pass) | Worn pet-equip ability bit (secured `CPet+264/+272` pair); single pet, no pet array |
 | gms_v61 | `0x7ad8e4` | Worn pet-equip ability bit (secured `CPet+340/+348` pair = consumeHP tear) |
 | gms_v72 | `0x86805e` | Same mechanism, secured `CPet+348/+356` pair |
 | gms_v79 | `0x8b3a06` | Same mechanism, secured `CPet+356/+364` (= `+0x164/+0x16C`, the v83 offsets) |
@@ -107,6 +111,7 @@ clients:
 
 | Version | `petAttribute` i16 | **`usPetSkill` i16** | `remainLife` i32 | `attribute` i16 | Address |
 |---|---|---|---|---|---|
+| gms_v48 | ✔ | ✔ | ✘ | ✘ | `0x49c77e` (named this pass) |
 | gms_v61 | ✔ | ✔ | ✘ | ✘ | `0x4b52f2` |
 | gms_v72 | ✔ | ✔ | ✔ | ✘ | `0x4d06dd` (named this pass) |
 | gms_v79 | ✔ | ✔ | ✔ | ✔ | `0x4d84c4` (named this pass) |
@@ -127,17 +132,56 @@ Two consequences:
    next reader assumes was considered. The gate idiom is `t.IsRegion("GMS") &&
    t.MajorAtLeast(N)` per the house rule — never a raw `> N` comparison.
 
-### 1.7 gms_48 is out of scope on evidence
+### 1.7 gms_48 HAS pet auto-pot — the matrix ⬜ is wrong, and v48 is in scope
 
-The v48 template routes four pet handlers (chat/command/move/drop-pickup) but no
-`PetItemUseHandle`, and the matrix cell is ⬜ n-a. The only `TryConsumePet*`
-symbol in the v48 IDB (`0x7204db`, labelled `TryConsumePetMP`) is a **mis-named
-port**: it tests job 132 and skill 1320006 and sends a bodyless opcode 86 — a
-Dark Knight HP-recovery path, not pet auto-pot, and it never calls
-`SendStatChangeItemUseRequestByPetQ` (no such encoder is named in that IDB).
-That is consistent with ⬜, but "no symbol" is not proof of absence
-(`unnamed ≠ absent`), so plan Task 15 Step 4 records one positive check before
-the n-a is treated as settled.
+The first pass through this section reasoned from a missing symbol and reached
+the wrong answer. Re-done positively, v48 has the whole feature:
+
+- **Encoder:** `CWvsContext::SendStatChangeItemUseRequestByPetQ` = `0x70dc8d`
+  (unnamed until this pass; named now). Opcode **117 = 0x75**.
+- **Senders:** `CUserLocal::TryConsumePetHP` `0x6a840c` and
+  `TryConsumePetMP` `0x6a8596` (both previously `sub_…`).
+- **Gate:** the same worn-equip ability tear as every other GMS version —
+  secured `CPet+264/+272` (consumeHP) and `+276/+284` (consumeMP).
+- **Keymap ids:** `CFuncKeyMappedMan+896/+900`, populated by
+  `OnPetConsumeItemInit` `0x4e5eb7` — which reads **both** ids from one packet,
+  where v61 split them across two (`0x51ab0b` / `0x51ab31`). The class is 904
+  bytes, so those two dwords are its last fields.
+
+Why the matrix says n-a: the audit record
+`docs/packets/audits/gms_v48/PetItemUse.json` carries
+`"IDAComment": "function not found in IDB"` — the harvest could not find an
+*unnamed* function. Textbook `unnamed ≠ absent`. Re-harvest after this naming
+pass and the cell becomes real.
+
+The mis-named `?TryConsumePetMP@CUserLocal@@` at `0x7204db` is unrelated: it
+tests job 132 and skill **1320006 = `DarkKnightBerserkId`**
+(`libs/atlas-constants/skill/constants.go:3011`) against an HP ratio and sends a
+bodyless opcode 86 — Berserk, not auto-pot. Renamed
+`CUserLocal__TryDoBerserk_job132_skill1320006`.
+
+**The v48 wire layout diverges — no `petId`.** `0x70dc8d` encodes only
+`Encode1(mitigation) · Encode4(updateTime) · Encode2(slot) · Encode4(itemId)`;
+there is no leading 8-byte locker SN, because v48 `CUserLocal` holds a **single**
+pet (`this[890]`, a lone pointer — v61+ index a 3-slot array). Two consequences:
+
+1. `pet/serverbound.ItemUse` needs a version gate on the leading `petId u64`:
+   present for `(GMS && MajorAtLeast(61)) || JMS`, absent below that. The 48↔61
+   boundary is where our IDB set changes; no client between them is available,
+   so the gate is pinned at the verified edge.
+2. **FR-1 cannot be satisfied from the packet on v48.** There is no pet id to
+   validate. With one possible pet the packet is unambiguous, so the handler
+   resolves the character's single spawned pet and runs the identical
+   ownership/spawn/skill checks against it. The PRD's "some spawned pet is NOT
+   sufficient" rule stands where the client *can* have several; on a single-pet
+   client it is the same statement. See §3.1.
+
+Opcode 0x75 is unoccupied in `template_gms_48_1.json`, and it lands exactly in
+the GMS pet block's usual order — Movement 0x71, Chat 0x72, Command 0x73,
+DropPickUp 0x74, **ItemUse 0x75**. Independently corroborated: v48
+`CPet::SendDropPickUpRequest` (`0x58ed98`) emits opcode 116 = 0x74, matching that
+template entry, so this IDB's raw `COutPacket` ctor values are the template
+opCodes directly.
 
 ---
 
@@ -163,6 +207,14 @@ decode → resolve inputs (parallel) → validate → forward | reject(unstick+w
 ```
 
 1. **Decode** as today (`pet2.ItemUse`). Narrowing guard: `p.PetId() > math.MaxUint32` → reject (Atlas pet ids are uint32; anything else is forged).
+   **Pet resolution has two sources** (§1.7): where the wire carries a `petId`
+   (GMS ≥61, JMS) the handler resolves that id and the narrowing guard applies;
+   on gms_48 the packet has no pet id, so it resolves the character's spawned
+   pet — of which a v48 client can have exactly one. Both paths then run the
+   *same* ownership/spawn/skill checks; only the lookup differs. A v48 character
+   with no spawned pet still rejects (`pet_not_found`), which is the abuse case
+   the task exists for. The petId-bearing path never falls back to "any spawned
+   pet" — that would re-open the hole FR-1 closes.
 2. **Parallel fetch** (mirrors `ConsumeStandard`'s `model.NewGroup` pattern, `atlas-consumables consumable/processor.go:319-344` — one round-trip of latency, not three):
    - `pet.NewProcessor(l, ctx).GetById(uint32(p.PetId()))` — channel pet model already carries `OwnerId()`, `Slot()`, `Flag()`.
    - `character.NewProcessor(l, ctx).GetById(s.CharacterId())` — bare, no decorators; provides `Hp()`.
@@ -245,11 +297,12 @@ Only the JMS auto-pot gate and autoSpeaking behavior actually read these bits in
 
 ### 3.6 Template/config changes
 
-Per-version seed template updates (`services/atlas-configurations/seed-data/templates/`), covering **every template that routes `PetItemUseHandle`** — eight, not five:
-- Add `options.skillGate` to the `PetItemUseHandle` entry: `equipAbility` (gms_61_1, gms_72_1, gms_79_1, gms_83_1, gms_84_1, gms_87_1, gms_95_1), `petSkillFlag` (jms_185_1).
+Per-version seed template updates (`services/atlas-configurations/seed-data/templates/`), covering **every template whose client speaks this packet** — nine, not five:
+- **Add a new `PetItemUseHandle` entry to `template_gms_48_1.json`**: `{"opCode": "0x75", "validator": "LoggedInValidator", "handler": "PetItemUseHandle", "services": ["channel"], "options": {"skillGate": "equipAbility"}}`, inserted at its sorted position (after `PetDropPickUpHandle` 0x74) per the opcode-order guard. This is the only template gaining a *new* entry rather than an option.
+- Add `options.skillGate` to the existing `PetItemUseHandle` entry: `equipAbility` (gms_61_1, gms_72_1, gms_79_1, gms_83_1, gms_84_1, gms_87_1, gms_95_1), `petSkillFlag` (jms_185_1).
   A missing entry is not benign: §3.2 fails closed, so a template left unedited turns **every** auto-pot on that version into a rejection. The three legacy templates are the whole reason this section changed after the rebase.
 - ~~Fix gms_95_1 validators~~ — already fixed on main (§1.5).
-- Excluded, deliberately: `template_gms_48_1.json` (no `PetItemUseHandle`, §1.7) and `template_gms_12_1.json` / `template_gms_92_1.json` (partial bring-up templates carrying no pet handlers at all — 24 and 43 handler entries respectively, none of them `Pet*`). This is the DOM "config table → all version templates" rule satisfied by evidence, not by skipping.
+- Excluded, deliberately: `template_gms_12_1.json` / `template_gms_92_1.json` (partial bring-up templates carrying no pet handlers at all — 24 and 43 handler entries respectively, none of them `Pet*`). This is the DOM "config table → all version templates" rule satisfied by evidence, not by skipping.
 - Add the `petSkill` writer code table for the pet-item-encoding writers (sparse per §3.5) in every template that carries those writers.
 - Editing any template means `tools/template-opcode-order-guard.sh` must pass (new CLAUDE.md gate item 9) — options are added to existing entries here, so ordering is untouched, but the guard still runs.
 

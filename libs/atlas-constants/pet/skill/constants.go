@@ -6,8 +6,9 @@
 package skill
 
 // Key is the semantic identifier of a pet skill, spelled exactly as the 0519
-// item WZ keys. The pet-equip family spells DropSweep as "sweepForDrop"; the
-// 0519 pouch family calls the same ability "dropSweep".
+// item WZ keys. The pet-equip family (Character.wz/PetEquip) spells DropSweep
+// as "sweepForDrop"; the 0519 pouch family (Item.wz/Cash/0519.img) calls the
+// same ability "dropSweep".
 type Key string
 
 const (

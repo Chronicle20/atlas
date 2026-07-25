@@ -436,11 +436,17 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 						applyStatus:        mp.ApplyStatus,
 						loadEffectiveStats: loadEffectiveStats,
 						// MP Eater proc: per-monster, after status apply,
-						// magic attacks only. Failures are swallowed so the
-						// rest of the attack pipeline is unaffected.
+						// magic attacks only. Drain-family heal: per-monster,
+						// skill-id gated (no attack-type gate — the four
+						// skills span melee/ranged/energy). Failures are
+						// swallowed so the rest of the attack pipeline is
+						// unaffected.
 						onDamageApplied: func(monsterId uint32, totalDamage uint32) {
 							if ai.AttackType() == packetmodel.AttackTypeMagic && ai.SkillId() > 0 {
 								mpEaterTryProc(l, ctx, mp, c, monsterId, s.Field(), s.CharacterId())
+							}
+							if ai.SkillId() > 0 && isDrainSkill(skill3.Id(ai.SkillId())) {
+								drainTryHeal(l, mp.GetById, cp.ChangeHP, loadEffectiveStats, se.X(), ai.SkillId(), monsterId, totalDamage, s.Field(), s.CharacterId())
 							}
 						},
 					}
@@ -496,7 +502,6 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					// TODO apply attack effect (heal, mp consumption, dispel, cure all, combo reset, etc)
 					// TODO destroy Chief Bandit exploded mesos
 					// TODO apply Pick Pocket
-					// TODO increase HP from Energy Drain, Vampire, or Drain
 					// TODO apply Bandit Steal
 					// TODO Fire Demon ice weaken
 					// TODO Ice Demon fire weaken

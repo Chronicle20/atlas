@@ -27607,6 +27607,28 @@
           "guard": "hasError"
         }
       ]
+    },
+    "CWvsContext::SendSkillLearnItemUseRequest": {
+      "address": "0xa5459c",
+      "direction": "serverbound",
+      "note": "USE_SKILL_BOOK (task-125). v84 IDA-verified, session 79511a2a, GMS_v84.1_U_DEVM.i64 -- already named in this IDB (func_query name_regex confirms sub_A5459C == CWvsContext::SendSkillLearnItemUseRequest). item-class gate a3/10000 == 228 || sub_4F959A(a3) (skill-book/mastery-book class check, twin of the {228,229} gate seen in earlier versions); guard sub_48903A(200, 0) (CanSendExclRequest twin); COutPacket::COutPacket(&pkt, 82) @0xa545e2 -- opcode 82 (0x52) matches registry op USE_SKILL_BOOK exactly. Byte-identical body to v83/v79/v72/v61/v48 (no version gate on this op).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "updateTime (sub_9C7771(v6,v5) -- get_update_time() twin)",
+          "guard": "sub_48903A(200, 0)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "slot (a2)",
+          "guard": "sub_48903A(200, 0)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "itemId (a3); gated a3/10000 == 228 || sub_4F959A(a3) (skill-book/mastery-book class check)",
+          "guard": "sub_48903A(200, 0)"
+        }
+      ]
     }
   }
 }

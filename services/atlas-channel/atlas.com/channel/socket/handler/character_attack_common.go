@@ -76,6 +76,21 @@ func attackKindFromAttackType(at packetmodel.AttackType) string {
 	return ""
 }
 
+// isDrainSkill reports whether id is one of the four attack-side
+// drain-family skills that heal the attacker from damage dealt
+// (Assassin Drain, Marauder/Thunder Breaker Energy Drain, Night
+// Walker Vampire). Aran Combo Drain is buff-driven and excluded.
+func isDrainSkill(id skill3.Id) bool {
+	switch id {
+	case skill3.AssassinDrainId,
+		skill3.MarauderEnergyDrainId,
+		skill3.ThunderBreakerStage3EnergyDrainId,
+		skill3.NightWalkerStage2VampireId:
+		return true
+	}
+	return false
+}
+
 // damageInfoEntryDeps groups the per-attack closures and lookups that
 // processDamageInfoEntry needs. Wrapping them keeps the helper signature
 // readable and lets tests construct fakes with a single struct.

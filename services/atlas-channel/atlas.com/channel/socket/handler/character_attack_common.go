@@ -313,6 +313,45 @@ func mpEaterTryProc(
 	}
 }
 
+// drainTryHeal computes and emits the drain-family heal for one damaged
+// monster: floor(totalDamage * x / 100), capped by the monster's max HP
+// and half the caster's effective max HP. Called once per damaged
+// monster after damage apply. All collaborators are injected so flow
+// tests can drive every branch; production passes mp.GetById and
+// cp.ChangeHP. Errors are logged and swallowed — never abort the
+// surrounding attack pipeline.
+func drainTryHeal(
+	l logrus.FieldLogger,
+	getMonster func(monsterId uint32) (monster.Model, error),
+	changeHP func(f field.Model, characterId uint32, amount int16) error,
+	loadEffectiveStats func() effective_stats.RestModel,
+	x int16,
+	skillId uint32,
+	monsterId uint32,
+	totalDamage uint32,
+	f field.Model,
+	characterId uint32,
+) {
+	mon, err := getMonster(monsterId)
+	if err != nil {
+		l.WithError(err).Debugf("Drain heal: monster [%d] snapshot fetch failed; skipping heal for caster [%d].", monsterId, characterId)
+		return
+	}
+
+	stats := loadEffectiveStats()
+	heal := drainHealAmount(totalDamage, x, mon.MaxHp(), stats.MaxHp)
+	if heal <= 0 {
+		return
+	}
+
+	l.Debugf("Drain heal: caster=[%d] skill=[%d] monster=[%d] damage=[%d] x=[%d] heal=[%d].",
+		characterId, skillId, monsterId, totalDamage, x, heal)
+
+	if err := changeHP(f, characterId, heal); err != nil {
+		l.WithError(err).Errorf("Drain heal: CHANGE_HP emit failed for character [%d] (skill [%d], monster [%d]).", characterId, skillId, monsterId)
+	}
+}
+
 func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(ai packetmodel.AttackInfo) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(ai packetmodel.AttackInfo) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(ai packetmodel.AttackInfo) model.Operator[session.Model] {

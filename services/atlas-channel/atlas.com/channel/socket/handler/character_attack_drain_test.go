@@ -2,7 +2,9 @@ package handler
 
 import (
 	"atlas-channel/data/skill/effect"
+	"atlas-channel/effective_stats"
 	"atlas-channel/monster"
+	"errors"
 	"io"
 	"testing"
 
@@ -192,5 +194,141 @@ func TestOnDamageApplied_NotCalledForReflectedEntry(t *testing.T) {
 	}
 	if called {
 		t.Fatalf("onDamageApplied fired for a reflected entry")
+	}
+}
+
+type changeHPCall struct {
+	characterId uint32
+	amount      int16
+}
+
+// TestDrainTryHeal_EmitsCappedHeal: happy path — heal computed from the
+// damage total and X, capped, emitted with a positive amount.
+func TestDrainTryHeal_EmitsCappedHeal(t *testing.T) {
+	f := testDrainField()
+	var calls []changeHPCall
+
+	drainTryHeal(
+		discardLogger(),
+		func(monsterId uint32) (monster.Model, error) {
+			return monster.NewModelBuilder(monsterId, f, 100100).SetMaxHp(6000).Build()
+		},
+		func(_ field.Model, characterId uint32, amount int16) error {
+			calls = append(calls, changeHPCall{characterId, amount})
+			return nil
+		},
+		func() effective_stats.RestModel { return effective_stats.RestModel{MaxHp: 3000} },
+		45, // x (Drain L30)
+		4101005,
+		7001, // monsterId
+		1000, // totalDamage -> raw heal 450, under both caps (6000, 1500)
+		f,
+		999,
+	)
+
+	if len(calls) != 1 {
+		t.Fatalf("ChangeHP calls = %d, want 1", len(calls))
+	}
+	if calls[0].characterId != 999 || calls[0].amount != 450 {
+		t.Errorf("ChangeHP(%d, %d), want (999, 450)", calls[0].characterId, calls[0].amount)
+	}
+}
+
+// TestDrainTryHeal_MonsterFetchError_SkipsHeal: FR-4 — snapshot failure
+// skips the heal for that monster, never errors out.
+func TestDrainTryHeal_MonsterFetchError_SkipsHeal(t *testing.T) {
+	called := false
+	drainTryHeal(
+		discardLogger(),
+		func(_ uint32) (monster.Model, error) { return monster.Model{}, errors.New("gone") },
+		func(_ field.Model, _ uint32, _ int16) error { called = true; return nil },
+		func() effective_stats.RestModel { return effective_stats.RestModel{MaxHp: 3000} },
+		45, 4101005, 7002, 1000, testDrainField(), 999,
+	)
+	if called {
+		t.Fatalf("ChangeHP fired despite monster fetch error")
+	}
+}
+
+// TestDrainTryHeal_ZeroEffectiveStats_SkipsHeal: FR-4 fail-safe — a failed
+// effective-stats fetch (zero RestModel) yields no heal, not an uncapped one.
+func TestDrainTryHeal_ZeroEffectiveStats_SkipsHeal(t *testing.T) {
+	f := testDrainField()
+	called := false
+	drainTryHeal(
+		discardLogger(),
+		func(monsterId uint32) (monster.Model, error) {
+			return monster.NewModelBuilder(monsterId, f, 100100).SetMaxHp(6000).Build()
+		},
+		func(_ field.Model, _ uint32, _ int16) error { called = true; return nil },
+		func() effective_stats.RestModel { return effective_stats.RestModel{} },
+		45, 4101005, 7003, 1000, f, 999,
+	)
+	if called {
+		t.Fatalf("ChangeHP fired despite zero effective stats")
+	}
+}
+
+// TestDrainTryHeal_EmitErrorSwallowed: FR-6 — a ChangeHP emit failure is
+// logged and swallowed (no panic, no propagation). Asserts the failing
+// changeHP was actually invoked (proving the error path was exercised, not
+// skipped) and that drainTryHeal returned normally afterward.
+func TestDrainTryHeal_EmitErrorSwallowed(t *testing.T) {
+	f := testDrainField()
+	changeHPCalls := 0
+
+	drainTryHeal(
+		discardLogger(),
+		func(monsterId uint32) (monster.Model, error) {
+			return monster.NewModelBuilder(monsterId, f, 100100).SetMaxHp(6000).Build()
+		},
+		func(_ field.Model, _ uint32, _ int16) error {
+			changeHPCalls++
+			return errors.New("kafka down")
+		},
+		func() effective_stats.RestModel { return effective_stats.RestModel{MaxHp: 3000} },
+		45, 4101005, 7004, 1000, f, 999,
+	)
+
+	if changeHPCalls != 1 {
+		t.Fatalf("changeHP calls = %d, want 1 (error path must be exercised, not skipped)", changeHPCalls)
+	}
+}
+
+// TestDrainTryHeal_PerMonsterCaps: two monsters, individually capped —
+// multi-target Vampire semantics (one call per damaged monster).
+func TestDrainTryHeal_PerMonsterCaps(t *testing.T) {
+	f := testDrainField()
+	maxHpByMonster := map[uint32]uint32{8001: 6000, 8002: 200}
+	var calls []changeHPCall
+
+	for _, monsterId := range []uint32{8001, 8002} {
+		drainTryHeal(
+			discardLogger(),
+			func(id uint32) (monster.Model, error) {
+				return monster.NewModelBuilder(id, f, 100100).SetMaxHp(maxHpByMonster[id]).Build()
+			},
+			func(_ field.Model, characterId uint32, amount int16) error {
+				calls = append(calls, changeHPCall{characterId, amount})
+				return nil
+			},
+			func() effective_stats.RestModel { return effective_stats.RestModel{MaxHp: 3000} },
+			10, // x (Vampire L20)
+			14101006,
+			monsterId,
+			5000, // raw heal 500; monster 8002 caps it at 200
+			f,
+			999,
+		)
+	}
+
+	if len(calls) != 2 {
+		t.Fatalf("ChangeHP calls = %d, want 2", len(calls))
+	}
+	if calls[0].amount != 500 {
+		t.Errorf("monster 8001 heal = %d, want 500 (under caps)", calls[0].amount)
+	}
+	if calls[1].amount != 200 {
+		t.Errorf("monster 8002 heal = %d, want 200 (monster max HP cap)", calls[1].amount)
 	}
 }

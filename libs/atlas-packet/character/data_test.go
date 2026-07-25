@@ -377,11 +377,25 @@ func TestCharacterDataMonsterBookRoundTrip(t *testing.T) {
 			// RoundTrip fails if any byte is left unconsumed — the gate-alignment guard.
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 
-			bookPresent := (v.Region == "GMS" && v.MajorVersion > 28 && v.MajorVersion <= 87) || v.Region == "JMS"
-			if bookPresent {
+			// Codec (character/data.go:165-176,238-243): COVER (flag 0x20000) arrived in
+			// the v61 revision; CARD list (flag 0x10000) arrived in the v72 revision; both
+			// gone by GMS v95+. v48's 16-bit dbcharFlag cannot express either bit (verified
+			// v48 CharacterData::Decode @0x49d320 ends at teleport rocks; v61 @0x4b654d has
+			// cover only @0x4b70fd; v72 @0x4d1c60 has cover @0x4d2845 + cards @0x4d2869).
+			coverPresent := (v.Region == "GMS" && v.MajorVersion >= 61 && v.MajorVersion <= 87) || v.Region == "JMS"
+			cardsPresent := (v.Region == "GMS" && v.MajorVersion >= 72 && v.MajorVersion <= 87) || v.Region == "JMS"
+
+			if coverPresent {
 				if output.MonsterBook.CoverCardId != input.MonsterBook.CoverCardId {
 					t.Errorf("cover: got %d, want %d", output.MonsterBook.CoverCardId, input.MonsterBook.CoverCardId)
 				}
+			} else {
+				if output.MonsterBook.CoverCardId != 0 {
+					t.Errorf("expected empty cover for %s, got cover=%d", v.Name, output.MonsterBook.CoverCardId)
+				}
+			}
+
+			if cardsPresent {
 				if len(output.MonsterBook.Cards) != len(input.MonsterBook.Cards) {
 					t.Fatalf("card count: got %d, want %d", len(output.MonsterBook.Cards), len(input.MonsterBook.Cards))
 				}
@@ -391,10 +405,8 @@ func TestCharacterDataMonsterBookRoundTrip(t *testing.T) {
 					}
 				}
 			} else {
-				// v95: monster book absent — encoder wrote nothing, decoder read nothing.
-				if output.MonsterBook.CoverCardId != 0 || len(output.MonsterBook.Cards) != 0 {
-					t.Errorf("expected empty monster book for %s, got cover=%d cards=%d",
-						v.Name, output.MonsterBook.CoverCardId, len(output.MonsterBook.Cards))
+				if len(output.MonsterBook.Cards) != 0 {
+					t.Errorf("expected empty cards for %s, got cards=%d", v.Name, len(output.MonsterBook.Cards))
 				}
 			}
 		})

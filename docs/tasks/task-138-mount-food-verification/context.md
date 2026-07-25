@@ -119,5 +119,57 @@ symbol-named — no rename needed):
 
 ## Results
 
-(Filled in by Task 12 at execution time: per-version instance, function
-address, decompiled opcode, encode order, and any discrepancy branches fired.)
+All nine `USE_MOUNT_FOOD` coverage-matrix cells are byte-verified (✅) against
+live IDA decompiles read via the **session-based** IDA-MCP server
+(`http://192.168.20.3:8745/mcp`, `-ida-database <session>`). The IDA setup
+changed since planning: the old per-port / `select_instance` model
+(`-ida-port`) is gone; each IDB is now addressed by a `database` session id.
+
+Per-version verification facts (opcode = the integer in
+`COutPacket::COutPacket(&pkt, N)`; body is version-invariant
+`Encode4(update_time)·Encode2(slot)·Encode4(itemId)`, guarded by
+`itemId/10000 == 226`):
+
+| Version | IDB session | Func address | Opcode | Notes |
+|---|---|---|---|---|
+| gms_v48 | 0bb5f11a | 0x70e00b | 0x3D (61) | registry op + template `MountFoodHandle` ADDED — corrects the false `n-a` (op was absent from `gms_v48.yaml`) |
+| gms_v61 | 965202bf | 0x831f44 | **0x48 (72)** | **opcode CORRECTED 0x4C→0x48** — the plan/registry/template `0x4C` was a stale mislabel of a distinct function (`sub_832680`, category 231, 2-field). Registry + template fixed (branch a), with a live-tenant config-patch callout in the fix commit |
+| gms_v72 | 90e36cb0 | 0x904419 | 0x4C (76) | registry `fname` fixed (stale `sub_955781` placeholder → canonical) so the matrix could resolve the report |
+| gms_v79 | 9a7d3642 | 0x955781 | 0x4B (75) | registry `fname` fixed (un-demangled `sub_955781` → canonical) |
+| gms_v83 | ce4ff298 | 0xa09a64 | 0x4D (77) | pure verify |
+| gms_v84 | 79511a2a | 0xa53e46 | 0x4D (77) | IDB function was UNNAMED (`sub_A53E46`) → renamed to the mangled `CWvsContext::SendTamingMobFoodItemUseRequest` + `idb_save`; own address used (no borrow from v83) |
+| gms_v87 | 81f32170 | 0xa9f310 | 0x50 (80) | pure verify |
+| gms_v95 | e4abcb98 | 0x9d63a0 | 0x53 (83) | pure verify |
+| jms_v185 | 3c4bb8b1 | 0xaee70c | 0x45 (69) | SMC dump (`MapleStory_dump_SCY`) decompiled fine — no DEVM build needed; pure verify |
+
+**No opcodes were inferred** — every value traces to a decompiled `COutPacket`
+integer. The only opcode change (gms_v61) was a decompile-driven correction of
+a pre-existing mislabel, not an inference.
+
+### Tooling enabler added (this branch)
+
+`packet-audit export` gained an `-ida-database <session>` flag that injects the
+`database` argument on every session-scoped MCP tool call
+(`lookup_funcs`/`func_query`/`decompile`/`callees`) via the single
+`callStructured` chokepoint, so a harvest targets the intended IDB
+deterministically on the session-based server. The dead `-ida-port` /
+`select_instance` path is left intact but unused.
+
+### Canonical variant set expanded
+
+Task 2 added GMS v48/v61/v72/v79 to the shared `libs/atlas-packet/test`
+`Variants` slice. Per maintainer decision these four legacy versions are now
+first-class members of the canonical set, so six pre-existing byte-fixture
+tests that range over `Variants` (npc/StartConversation, party/TownPortal,
+field/WarpToMap, character/CharacterData monster-book, character/clientbound
+CharacterInfo pets, model/CharacterStatistics gachaponExp) had their
+legacy-variant expectations aligned to each codec's already-IDA-grounded
+version gate. No codec was changed; the tests now assert real legacy behavior.
+
+### Remaining narrowed gaps
+
+- **gms_12** remains parked solely on the absence of a v12 IDB (no matrix
+  column, no opcode inference).
+- **gms_92** mount food is unblocked (v92 IDB present, opcode `0x54` verified)
+  and reduced to a one-line `template_gms_92_1.json` registration that is out
+  of this task's matrix scope (gms_92 is not a matrix column).

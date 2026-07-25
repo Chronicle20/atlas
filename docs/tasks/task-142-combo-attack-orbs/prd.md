@@ -11,6 +11,8 @@ Crusader/Hero (and the Dawn Warrior mirror) Combo Attack is currently display-on
 
 This task implements orb-count truth on the server and its broadcast to the owner and observers. The client renders orbs from the `ComboCounter` temporary stat value carried by the existing GIVE_BUFF / GIVE_FOREIGN_BUFF packets (verified in the v83 client: the `CTS_ComboCounter` temporary stat drives orb display; no dedicated orb packet exists for Crusaders). The client also computes combo-scaled damage itself from its local orb count, so no server-side damage multiplier is needed — Atlas accepts client damage via `DamageInfo` as it does today.
 
+> **Note (line references drift):** the placeholder cited above as `character_attack_common.go:404` is at `:500` on current `main` (the file grew since this PRD was written); the unique marker text `// TODO apply combo orbs (add or consume)` still resolves it. Skill-constant citations elsewhere in this doc have likewise shifted by a few lines but all resolve by name.
+
 Orb state lives where all other temporary-stat state lives: in atlas-buffs, as the value of the COMBO stat on the active Combo Attack buff. atlas-buffs gains a new capability to update a stat value on an existing buff (today it only supports Apply/Cancel), and atlas-channel re-broadcasts the buff on every change.
 
 ### Verified reference semantics (Cosmic, `CloseRangeDamageHandler.java:83-141`, `Character.java:6046-6053`)
@@ -44,7 +46,7 @@ Primary goals:
 - Advanced Combo raises the orb cap and adds the chance-based double-orb proc.
 - Finisher skills reset the orb count to zero (stat value 1) and the reset is broadcast.
 - atlas-buffs owns orb state as the COMBO stat value on the existing buff, updated via a new stat-value-update capability.
-- Works on all supported tenant versions (GMS v83, v84, v87, v92, v95, JMS) — achievable because no new packets are introduced; the existing per-version buff writers carry the value.
+- Works on all supported tenant versions — achievable because no new packets are introduced; the existing per-version buff writers carry the value. The current runtime set (`deploy/k8s/base/versions.json`) is **GMS v12, v48, v61, v72, v79, v83, v84, v87, v92, v95, and JMS v185** — the pre-Big-Bang legacy columns (v12/v48/v61/v72/v79) were added to `main` after this PRD's first draft and are in scope for this task. Version-independence is grounded, not assumed: the COMBO temporary stat registers unconditionally at bit21 of `mask.L` (bits 0–46), which every client reads, IDA-verified down to `GMS_v48` (`libs/atlas-packet/model/character_temporary_stat.go:101`, `legacyGmsMask` `:560-577`). See §8 for the per-version caveats.
 
 Non-goals:
 - Server-side combo damage multiplier or damage validation (client computes combo-scaled damage; Atlas continues to accept client `DamageInfo`).
@@ -142,7 +144,10 @@ No database changes. Orb count is in-memory state in the atlas-buffs registry (b
 - **Multi-tenancy**: commands/events carry tenant headers as per existing atlas-buffs message flow; registry keys already tenant-scoped.
 - **Concurrency**: rapid attacks may race (channel reads value N, emits set N+1, twice). The design must ensure atlas-buffs serializes mutations per character (its registry is already `sync.RWMutex`-guarded); acceptable residual: a lost single increment under same-millisecond attacks, unacceptable: value exceeding cap or going below 1.
 - **Failure isolation**: buff-command emission failures are logged and swallowed — the attack pipeline must not fail or retry because orb bookkeeping failed (same pattern as MP Eater / projectile emits in the same function).
-- **Version coverage**: all supported tenant versions. Since only existing writers are used, this is a verification obligation (test on v83 at minimum, confirm writer version-handling covers the rest), not new per-version code.
+- **Version coverage**: all supported tenant versions (GMS v12/v48/v61/v72/v79/v83/v84/v87/v92/v95, JMS v185). Since only existing writers are used, this is a verification obligation, not new per-version code. Grounding for the legacy columns added after first draft:
+  - **Wire encoding is version-safe.** COMBO is at bit21 of `mask.L`, read by all clients including v48 (IDA-verified); the re-broadcast's "remaining duration" (FR-5) holds on legacy too because the legacy duration path (`legacyDurationUnits`, `character_temporary_stat.go:688`) and the modern path (`:666`) both compute the value relative to `time.Now()`.
+  - **The gain gate is self-protecting.** Emission is gated channel-side on *owning Combo Attack at level > 0*; on any version where the class/skill does not exist (e.g. Dawn Warrior on pre-Cygnus v48/v61), the path is a no-op with no commands and no errors. Safe by construction, not by per-version code.
+  - **Two items are unverified for legacy and must not be assumed working:** (a) whether the legacy clients (v12/v48/v61/v72/v79) actually *render* orbs from the COMBO stat (only the v83 client was reverse-verified), and (b) Dawn Warrior does not exist pre-Cygnus (v48/v61) — its absence is a safe no-op, not coverage. Verify (a) in-game per legacy column, or explicitly record it as deferred client-render verification.
 - **No polling**: the channel must not query atlas-buffs REST per attack; current buff state should come from whatever cached/local view the channel already maintains, or the value computation moves into atlas-buffs (design decision).
 
 ## 9. Open Questions
@@ -166,3 +171,4 @@ No database changes. Orb count is in-memory state in the atlas-buffs registry (b
 - [ ] The re-broadcast carries remaining duration — the buff does not extend its lifetime on each orb gain.
 - [ ] `go test -race ./...`, `go vet ./...`, `go build ./...` clean in atlas-channel and atlas-buffs; `docker buildx bake atlas-channel atlas-buffs` clean; `tools/redis-key-guard.sh` clean.
 - [ ] Verified in-game on a v83 tenant (orb gain, double proc, finisher consume, foreign visibility).
+- [ ] On each supported version, a combo-capable attacker with the buff active either shows orbs updating **or** the version is recorded as deferred client-render verification — no version silently assumed working. Pre-Cygnus columns (v48/v61) confirmed no-op for Dawn Warrior IDs (no commands, no errors).

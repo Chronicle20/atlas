@@ -585,6 +585,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}
 		s.Payload = any(payload).(T)
+	case CreateNote:
+		var payload CreateNotePayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
 	default:
 		// For actions with orchestrator-internal payloads (AcceptToStorage, AcceptToCharacter,
 		// AcceptToCashShop, ReleaseFromCashShop) or unknown actions, unmarshal to a generic map.

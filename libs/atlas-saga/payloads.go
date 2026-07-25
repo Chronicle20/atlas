@@ -956,6 +956,16 @@ type IncubatorResultPayload struct {
 	EggId       uint32     `json:"eggId"`       // EggId of the sacrificed Pigmy Egg (v95 client uses it to pick the region success NPC)
 }
 
+// CreateNotePayload represents the payload required to create a note (memo)
+// for a receiving character. Emitted by the orchestrator as a note CREATE
+// command carrying the saga transaction id.
+type CreateNotePayload struct {
+	SenderId   uint32 `json:"senderId"`   // Character sending the note
+	ReceiverId uint32 `json:"receiverId"` // Character receiving the note
+	Message    string `json:"message"`    // Note message text
+	Flag       byte   `json:"flag"`       // Note flag (always 1 for player sends)
+}
+
 // AssetSnapshot captures one inventory asset at decode time (item megaphone).
 // Snapshot DTO shared by saga payloads AND the kafka message structs of
 // channel/world/orchestrator (single source of truth; PRD Q6: snapshot at

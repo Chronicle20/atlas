@@ -1002,3 +1002,34 @@ func TestUnmarshalEnqueueWorldBroadcastStep(t *testing.T) {
 		t.Errorf("senderLook.equips[-5]: expected 1040002, got %d", p.SenderLook.Equips[-5])
 	}
 }
+
+func TestCreateNoteStepUnmarshal(t *testing.T) {
+	in := Step[any]{
+		StepId: "create_note",
+		Status: Pending,
+		Action: CreateNote,
+		Payload: CreateNotePayload{
+			SenderId:   100,
+			ReceiverId: 200,
+			Message:    "hello",
+			Flag:       1,
+		},
+	}
+	b, err := json.Marshal(in)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+
+	var out Step[any]
+	if err := json.Unmarshal(b, &out); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+
+	p, ok := out.Payload.(CreateNotePayload)
+	if !ok {
+		t.Fatalf("payload type: got %T, want CreateNotePayload", out.Payload)
+	}
+	if p.SenderId != 100 || p.ReceiverId != 200 || p.Message != "hello" || p.Flag != 1 {
+		t.Errorf("payload round-trip mismatch: %+v", p)
+	}
+}

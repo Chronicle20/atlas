@@ -14,6 +14,9 @@ vi.mock("@/context/tenant-context", () => ({
 vi.mock("@/lib/hooks/api/useCharacters", () => ({
   useCharacter: () => ({ data: undefined, isLoading: false, isError: true }),
 }));
+vi.mock("@/lib/hooks/api/useInventory", () => ({
+  useInventory: () => ({ data: undefined, isLoading: false, isError: false }),
+}));
 vi.mock("@/components/features/characters/OptimizedCharacterRenderer", () => ({
   OptimizedCharacterRenderer: () => <div data-testid="renderer" />,
 }));
@@ -87,6 +90,19 @@ describe("LeaderboardRow", () => {
       </table>,
     );
     expect(screen.getByLabelText("no change")).toBeInTheDocument();
+  });
+
+  it("renders the job as a human-readable name badge, not the raw id", () => {
+    render(
+      <table>
+        <tbody>
+          <LeaderboardRow entry={row(1, 0)} view="overall" />
+        </tbody>
+      </table>,
+    );
+    // jobId 110 -> "Fighter" via jobLabel; the raw id must not be shown.
+    expect(screen.getByText("Fighter")).toBeInTheDocument();
+    expect(screen.queryByText("110")).not.toBeInTheDocument();
   });
 
   it("uses jobRank/jobRankMove instead of rank/rankMove when view is job", () => {

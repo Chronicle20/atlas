@@ -1,0 +1,30 @@
+{
+  "WriterName": "ChatAvatarMegaphoneResult",
+  "IDAName": "CWvsContext::OnAvatarMegaphoneRes",
+  "Address": "0xa75b7f",
+  "Variant": "GMS/v84",
+  "BranchDepth": 1,
+  "AtlasFile": "libs/atlas-packet/chat/clientbound/avatar_megaphone.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "code — v = code - 86; v==0 (code 86 WAITING_LINE) and v==1 (code 87 LEVEL_GATE) skip the DecodeStr below; any other code reads it",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "message — only when code is neither 86 nor 87",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

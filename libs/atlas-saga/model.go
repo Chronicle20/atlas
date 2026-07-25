@@ -30,6 +30,7 @@ const (
 	SealingLockUse       Type = "sealing_lock_use"
 	IncubatorUse         Type = "incubator_use"
 	PointReset           Type = "point_reset"
+	MegaphoneUse         Type = "megaphone_use"
 )
 
 // Status represents the status of a saga step
@@ -183,6 +184,10 @@ const (
 	SetAssetOwner   Action = "set_asset_owner"
 	ApplyAssetLock  Action = "apply_asset_lock"
 	IncubatorResult Action = "incubator_result"
+
+	// Megaphone / world broadcast actions
+	EmitMegaphone         Action = "emit_megaphone"
+	EnqueueWorldBroadcast Action = "enqueue_world_broadcast"
 )
 
 // Saga represents the entire saga transaction.

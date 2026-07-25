@@ -46,6 +46,7 @@ var allActions = []sharedsaga.Action{
 	sharedsaga.StartRPSGame,
 	sharedsaga.SetAssetOwner, sharedsaga.ApplyAssetLock, sharedsaga.IncubatorResult,
 	sharedsaga.TransferAP, sharedsaga.TransferSP,
+	sharedsaga.EmitMegaphone, sharedsaga.EnqueueWorldBroadcast,
 }
 
 // TestAcceptanceTable_EveryActionRepresented asserts every Action constant

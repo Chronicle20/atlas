@@ -1457,6 +1457,45 @@ func candidatesFromFName(fname string) []candidate {
 		// Use WorldMessageSimple as the representative struct (covers the common Notice/PopUp/Megaphone modes).
 		return []candidate{{name: "WorldMessageSimple", pkg: "chat", dir: csvpkg.DirClientbound}}
 
+	// WorldMessage dispatcher family (task-123 Task 18): CWvsContext::OnBroadcastMsg
+	// dispatches on a leading mode byte (Decode1); modelled via #-suffixed synthetic
+	// IDA entries, one per enrolled megaphone arm (docs/packets/dispatchers/worldmessage.yaml,
+	// design D5 — only these four arms enroll; the other 15 modes stay outside the
+	// family lint surface for this task). Mode-value evidence (IDA decompile,
+	// task-18-report.md): the case-3/8/9/10 group sharing one code block is
+	// byte-identical across gms_v83 (0xa22785), gms_v84 (0xa6dc97), gms_v87
+	// (0xab9fd5), gms_v95 (0xa04160), and jms_v185 (0xb0985b) — MEGAPHONE=2,
+	// SUPER_MEGAPHONE=3, ITEM_MEGAPHONE=8, MULTI_MEGAPHONE=10 in all five.
+	case "CWvsContext::OnBroadcastMsg#Megaphone":
+		// mode 2: curse-filtered "name : msg" chat line, no extra fields.
+		return []candidate{{name: "WorldMessageMegaphone", pkg: "chat", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnBroadcastMsg#SuperMegaphone":
+		// mode 3: shared megaphone-family pre-decode (channel + whisper only).
+		return []candidate{{name: "WorldMessageSuperMegaphone", pkg: "chat", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnBroadcastMsg#ItemMegaphone":
+		// mode 8: pre-decode channel + whisper + conditional GW_ItemSlotBase.
+		return []candidate{{name: "WorldMessageItemMegaphone", pkg: "chat", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnBroadcastMsg#MultiMegaphone":
+		// mode 10: pre-decode line count + up to 2 extra strings + channel + whisper.
+		return []candidate{{name: "WorldMessageMultiMegaphone", pkg: "chat", dir: csvpkg.DirClientbound}}
+
+	// Avatar megaphone family (task-123 phase 19, gms_v83 IDA-verified). Each op
+	// is a dedicated (non-dispatched) fname.
+	case "CWvsContext::OnSetAvatarMegaphone":
+		return []candidate{{name: "SetAvatarMegaphone", pkg: "chat", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnClearAvatarMegaphone":
+		return []candidate{{name: "ClearAvatarMegaphone", pkg: "chat", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnAvatarMegaphoneRes":
+		return []candidate{{name: "AvatarMegaphoneResult", pkg: "chat", dir: csvpkg.DirClientbound}}
+
+	// Maple TV family (task-123 phase 19, gms_v83 IDA-verified).
+	case "CMapleTVMan::OnSetMessage":
+		return []candidate{{name: "TvSetMessage", pkg: "tv", dir: csvpkg.DirClientbound}}
+	case "CMapleTVMan::OnClearMessage":
+		return []candidate{{name: "TvClearMessage", pkg: "tv", dir: csvpkg.DirClientbound}}
+	case "CMapleTVMan::OnSendMessageResult":
+		return []candidate{{name: "TvSendMessageResult", pkg: "tv", dir: csvpkg.DirClientbound}}
+
 	// --- Social: chat (serverbound) ---
 	// CSV: GENERAL_CHAT (0x36 / 54) → CField::SendChatMsg.
 	// Wire: Encode4(update_time) + EncodeStr(sText) + Encode1(bOnlyBalloon).
@@ -2050,11 +2089,42 @@ func candidatesFromFName(fname string) []candidate {
 	// the cash-item-use sender fname with task-126's AP/SP point-reset arm and
 	// task-124's teleport-rock arm. All candidates are keyed to the same fname,
 	// so return them together.
-	case "CWvsContext::SendConsumeCashItemUseRequest", "CItemSpeakerDlg::_SendConsumeCashItemUseRequest":
+	// Megaphone family (task-123 phase 19, gms_v83+gms_v95 IDA-verified):
+	// cash-slot type 12 (Megaphone) and type 13 (SuperMegaphone) are sent
+	// INLINE by this function (shared jumptable body @0x9eb811 for v95).
+	// Avatar Megaphone (cash-slot type 43, item classification 539xxxx) is
+	// ALSO sent inline — SendConsumeCashItemUseRequest's jumptable case 43
+	// @0x9ebd1d (CUIAvatarMegaphone::GetText -> 4x EncodeStr +
+	// IsCheckWhisper -> Encode1). Item Megaphone (cash-slot type 14) is
+	// deliberately NOT listed here: this dispatcher's case 14 @0x9ebca1 only
+	// constructs+shows the CItemSpeakerDlg; the ACTUAL send happens in the
+	// separate CItemSpeakerDlg::_SendConsumeCashItemUseRequest function
+	// below (own case arm — do not merge, the two fnames are genuinely
+	// different senders and must not share a candidate list or the
+	// report-generator's last-write-wins file collision mispairs the
+	// wrong (fname, struct) combination). Triple Megaphone (CSpeakerWorldDlgEx,
+	// GetResult@0x9eb5c8) and Maple TV (CUIMapleTV, six ctor sites @0x780fc0)
+	// are ALSO sent inline by this same dispatcher — task-123 phase 20/task-19
+	// IDA-verified (gms_v95): count/flag-byte(s) + line strings, no separate
+	// send function needed (unlike Item Megaphone above).
+	case "CWvsContext::SendConsumeCashItemUseRequest":
 		return []candidate{
 			{name: "ItemUsePointReset", dir: csvpkg.DirServerbound, pkg: "cash"},
 			{name: "ItemUseVegaScroll", dir: csvpkg.DirServerbound, pkg: "cash"},
+			{name: "ItemUseMegaphone", dir: csvpkg.DirServerbound, pkg: "cash"},
+			{name: "ItemUseSuperMegaphone", dir: csvpkg.DirServerbound, pkg: "cash"},
+			{name: "ItemUseAvatarMegaphone", dir: csvpkg.DirServerbound, pkg: "cash"},
+			{name: "ItemUseTripleMegaphone", dir: csvpkg.DirServerbound, pkg: "cash"},
+			{name: "ItemUseMapleTV", dir: csvpkg.DirServerbound, pkg: "cash"},
 			{name: "ItemUseTeleportRock", dir: csvpkg.DirServerbound, pkg: "cash"},
+		}
+	// Item Megaphone (cash-slot type 14): the REAL send function, separate
+	// from the main dispatcher above (task-123 phase 19, gms_v95
+	// IDA-verified @0x5c9e70). See the comment on the case above for why
+	// this is its own arm.
+	case "CItemSpeakerDlg::_SendConsumeCashItemUseRequest":
+		return []candidate{
+			{name: "ItemUseItemMegaphone", dir: csvpkg.DirServerbound, pkg: "cash"},
 		}
 	// Teleport-rock family (task-124). USE_TELEPORT_ROCK (serverbound) sends
 	// slot+itemId then delegates the target payload to the shared

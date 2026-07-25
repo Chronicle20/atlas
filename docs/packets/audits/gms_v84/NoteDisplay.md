@@ -1,20 +1,20 @@
 # NoteDisplay (← `CWvsContext::OnMemoResult#Display`)
 
-- **IDA:** 
+- **IDA:** 0xa70785
 - **Atlas file:** `libs/atlas-packet/note/clientbound/display.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
-| 1 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | string | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | string | byte `` | ❌ | atlas: extra — client never reads this field |
-| 5 | int64 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 6 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `mode byte (3 = Display)` | ✅ |  |
+| 1 | byte | byte `note count (loop)` | ✅ |  |
+| 2 | int32 | int32 `note.id` | ✅ |  |
+| 3 | string | string `note.senderName` | ✅ |  |
+| 4 | string | string `note.message` | ✅ |  |
+| 5 | int64 | bytes `note.timestamp FILETIME (8 bytes)` | ✅ |  |
+| 6 | byte | byte `note.flag` | ✅ |  |
 

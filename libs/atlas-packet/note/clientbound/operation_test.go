@@ -63,6 +63,37 @@ func TestNoteOperationArmsV72(t *testing.T) {
 	}
 }
 
+// TestNoteOperationArmsV84 pins the gms_v84 MEMO_RESULT (op 41 / 0x029)
+// non-Display arms. IDA-verified — CWvsContext::OnMemoResult @0xa70785,
+// switch on (Decode1(mode) - 3) @0xa707a0:
+//
+//	raw mode 4 (v6==0) @0xa707aa → else-block StringPool(2714)+Notice, NO
+//	  further read @0xa7080a-0xa70814 → SendSuccess, mode-only.
+//	raw mode 5 (v7==0) @0xa707b1 → Decode1(errorCode) @0xa707eb then 0/1/2 →
+//	  StringPool 2652/2653/2654 → SendError, mode + 1 errorCode byte.
+//	raw mode 7 (result==0, result=v7-2) @0xa707b4 → tail-calls
+//	  CWvsContext::OnMemoNotify_Receive(this) @0xa707bd/0xa708ea with no
+//	  CInPacket arg — NO further wire read → Refresh, mode-only.
+//
+// v84's Refresh mode number (7) diverges from v79/v72/v83/v87/v95 (6/8) —
+// SendSuccess(4)/SendError(5) are unchanged. Wire SHAPE for every arm
+// (mode-only / mode+errorCode / mode-only) is identical across all versions.
+//
+// packet-audit:verify packet=note/clientbound/NoteSendSuccess version=gms_v84 ida=0xa70785
+// packet-audit:verify packet=note/clientbound/NoteSendError version=gms_v84 ida=0xa70785
+// packet-audit:verify packet=note/clientbound/NoteRefresh version=gms_v84 ida=0xa70785
+func TestNoteOperationArmsV84(t *testing.T) {
+	if got := NewNoteSendSuccess(4).Encode(nil, nil)(nil); !bytes.Equal(got, []byte{0x04}) {
+		t.Errorf("v84 NoteSendSuccess: got % x want 04", got)
+	}
+	if got := NewNoteSendError(5, 1).Encode(nil, nil)(nil); !bytes.Equal(got, []byte{0x05, 0x01}) {
+		t.Errorf("v84 NoteSendError: got % x want 05 01", got)
+	}
+	if got := NewNoteRefresh(7).Encode(nil, nil)(nil); !bytes.Equal(got, []byte{0x07}) {
+		t.Errorf("v84 NoteRefresh: got % x want 07", got)
+	}
+}
+
 // packet-audit:verify packet=note/clientbound/NoteRefresh version=gms_v87 ida=0xabccc2
 // packet-audit:verify packet=note/clientbound/NoteSendError version=gms_v87 ida=0xabccc2
 // packet-audit:verify packet=note/clientbound/NoteSendSuccess version=gms_v87 ida=0xabccc2

@@ -66,6 +66,17 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.Field(), character.Id(s.CharacterId()), itemId, source, updateTime)
 			return
 		}
+		if it == CashSlotItemTypePetSkill {
+			// Case-28 sub-body carries a bare 8-byte petId and nothing else --
+			// update_time is already decoded once from the common ItemUse header
+			// above (jms_v185 IDA-verified, task-139 task-8/9; see
+			// libs/atlas-packet/cash/serverbound/item_use_pet_skill.go). There is
+			// no per-type trailing/leading updateTime to re-derive here.
+			sp := cashsb.NewItemUsePetSkill()
+			sp.Decode(l, ctx)(r, readerOptions)
+			_ = consumable.NewProcessor(l, ctx).RequestItemConsumeWithPet(s.Field(), character.Id(s.CharacterId()), itemId, source, updateTime, sp.PetId())
+			return
+		}
 		if it == CashSlotItemTypeChalkboard {
 			sp := cashsb.NewItemUseChalkboard(updateTimeFirst)
 			sp.Decode(l, ctx)(r, readerOptions)
@@ -585,6 +596,7 @@ const (
 	CashSlotItemTypeFieldEffect   = CashSlotItemType(16)
 	CashSlotItemTypeStoreSearch   = CashSlotItemType(29)
 	CashSlotItemTypePetConsumable = CashSlotItemType(30)
+	CashSlotItemTypePetSkill      = CashSlotItemType(28)
 	CashSlotItemTypeChalkboard    = CashSlotItemType(32)
 	CashSlotItemTypeItemTag       = CashSlotItemType(25)
 	CashSlotItemTypeSeal          = CashSlotItemType(26)
@@ -821,8 +833,8 @@ func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {
 		if category == 518 {
 			return CashSlotItemType(5)
 		}
-		if category == 519 {
-			return CashSlotItemType(28)
+		if category == item.ClassificationPetSkill {
+			return CashSlotItemTypePetSkill
 		}
 		if category == item.ClassificationCurrencySack {
 			return CashSlotItemType(19)

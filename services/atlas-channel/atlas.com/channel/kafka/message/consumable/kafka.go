@@ -35,6 +35,7 @@ type RequestItemConsumeBody struct {
 	Source   slot.Position `json:"source"`
 	ItemId   item.Id       `json:"itemId"`
 	Quantity int16         `json:"quantity"`
+	PetId    uint64        `json:"petId,omitempty"`
 }
 
 type RequestItemRewardBody struct {

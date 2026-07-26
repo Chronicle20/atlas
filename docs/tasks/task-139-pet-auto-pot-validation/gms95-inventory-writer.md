@@ -1,4 +1,4 @@
-# gms_95 `CharacterInventoryChange` writer — resolved (PicResult moved 0x1C → 0x1B)
+# gms_95 `CharacterInventoryChange` writer — resolved (PicResult removed, not relocated)
 
 ## Summary
 
@@ -6,13 +6,25 @@
 (`InventoryChangeWriter`, `libs/atlas-packet/inventory/clientbound/change.go:16`), leaving every
 gms_95 inventory-operation announcement (including task-139's `FLAG_CHANGED` pet re-announce) an
 unroutable, silently-dropped writer. The apparent "gap" between `PicResult` (0x1C) and
-`StatChanged` (0x1E) was a false lead: `PicResult`'s opcode was itself wrong (off by one), and
-`0x1C` genuinely belongs to `CharacterInventoryChange`. An earlier pass in this session stopped
-at that mismatch and reported it rather than guessing; this pass resolves it. Both are now fixed:
+`StatChanged` (0x1E) was a false lead: `PicResult`'s presence in the gms_95 template at all was
+the defect, and `0x1C` genuinely belongs to `CharacterInventoryChange`.
 
-- `PicResult` moved `0x1C` → `0x1B`
-- `CharacterInventoryChange` added at `0x1C` with `services: ["channel"]` and
-  `options.petSkill.autoSpeaking: "0x100"`
+**Amendment:** an earlier pass in this review chain relocated `PicResult` to `0x1B` instead of
+removing it, reasoning from a positional coincidence with `CLogin::OnCheckSPWResult` (case 27) in
+the older v83/v87/v92 templates. Code review caught that this was an unverified inference — no
+source ties the Atlas op name `PicResult` to the fname `CLogin::OnCheckSPWResult`, and
+`docs/packets/ida-exports/_pending.md` §7 (line 183) already, frozen, classifies `PicResult` as
+**version-absent for v95** in the same row as `ServerLoad`/`ServerSelect` (both of which are
+correctly absent from `template_gms_95_1.json` already — confirmed by grep, neither string
+appears in the file). That relocation has been reverted; `PicResult` is now removed from
+`template_gms_95_1.json` entirely, matching the frozen registry. `CharacterInventoryChange`
+remains wired at `0x1C` exactly as originally derived — that half of the work was independently
+re-verified by the reviewer and stands unchanged.
+
+- `PicResult` — **removed** from `template_gms_95_1.json` (version-absent for v95, per
+  `_pending.md` §7 line 183)
+- `CharacterInventoryChange` — added at `0x1C` with `services: ["channel"]` and
+  `options.petSkill.autoSpeaking: "0x100"` (unchanged from the original fix)
 
 ## Step A — is the gms_95 writer table broadly trustworthy?
 
@@ -49,8 +61,10 @@ the 15): `CharacterAttackMelee/Ranged/Magic/Energy` (0xD3–0xD6) → `OnAttack`
 `0xE5` — essentially the entire low-to-mid opcode range. Combined with the original
 `StatChanged` (0x1E, MATCH) and `PicResult` (0x1C, MISMATCH) pair, that's **16 matches out of 17
 checked cells**. The one mismatch is isolated to a single entry, not a run — the table is
-broadly trustworthy; `PicResult` was a standalone defect, not a version-wide shift. Proceeding to
-a targeted fix was safe.
+broadly trustworthy; the `PicResult` conflict was a standalone defect, not a version-wide shift.
+Code review independently re-decompiled `CWvsContext::OnPacket` and re-checked this sample against
+`CField::OnPacket`, `CStage::OnPacket`, `CUserPool::OnPacket`, and `CUserPool::OnUserRemotePacket`,
+confirming every entry — this section stands as originally reported.
 
 ## Step B — what is `PicResult`, and does v95 have it?
 
@@ -62,34 +76,38 @@ the codec file itself — **no handler in `atlas-login` ever calls
 `services/atlas-login/atlas.com/login/socket/handler/character_selected_pic.go`
 (`CharacterSelectedPicHandleFunc`, the PIC-check handler): on failure it announces `ServerIPWriter`
 with an error code, on success it just calls `UpdateState` — it never emits `PicResult` either.
-So in the CURRENT atlas-login implementation, `PicResultWriter` is declared-but-dead: this
-diagnosis is about the wire opcode assignment being wrong, not about atlas actually sending a
-broken packet today.
+So in the current atlas-login implementation, `PicResultWriter` is declared-but-dead code; there is
+also a `// TODO` in `character_selected_register_pic.go` for a future PIC-registration emit path,
+which is exactly why getting the wire fact right (rather than leaving an unverified inference in
+the template) matters — a future wiring of that TODO must not silently land on the wrong opcode.
 
-For the client-side identity, the decisive evidence turned out to be **already sitting in the
-coverage matrix** (`docs/packets/audits/status.json`, read-only — not modified per the
-coordinator's instruction):
+**Corrected finding (superseding the original relocation to `0x1B`):**
 
-| op | fname | gms_v83 | gms_v87 | gms_v95 |
-|---|---|---|---|---|
-| `CHECK_SPW_RESULT` | `CLogin::OnCheckSPWResult` | opcode 28 | opcode 28 | **opcode 27** |
-| `inventory/clientbound/InventoryAdd` | `CWvsContext::OnInventoryOperation` | opcode 29 (verified) | opcode 29 | **opcode 28 (verified)** |
+`docs/packets/ida-exports/_pending.md` §7, line 183 — a frozen, live-IDB-validated
+VERSION-ABSENT registry — reads:
 
-This is an independent, pre-existing, separately-derived record (not created by me) that
-confirms exactly what my own IDA trace found in this session:
-- For v83/v87, `OnCheckSPWResult` sits at 28 (0x1C) — the *same* slot the templates label
-  `PicResult` — and `OnInventoryOperation` sits one slot higher, at 29 (0x1D), matching those
-  templates' `CharacterInventoryChange` entries exactly.
-- For v95, both shifted down by exactly one slot: `OnCheckSPWResult` → 27 (0x1B),
-  `OnInventoryOperation` → 28 (0x1C) — matching my IDA trace of `CWvsContext::OnPacket` case 28 in
-  session `e4abcb98` precisely, and explaining the mismatch found in the original stop: `PicResult`
-  kept its v83-era opcode (0x1C) instead of shifting down with `OnCheckSPWResult` to 0x1B when
-  v95's opcode table moved the inventory packet into 0x1C.
+> `ServerLoad`, `ServerSelect`, `PicResult` (GMS v12-era / state-machine-routed) | v95 | Pre-v95 or
+> non-`CLogin`-dispatched; trivial shapes manually cross-checked.
 
-**Outcome: `PicResult` exists in v95, at a different opcode — 0x1B (27), not 0x1C (28).** This is
-outcome (a) from the three offered: fixed to the correct value, backed by both my own IDA trace
-of the v95 dispatch (`CLogin::OnPacket` @ `0x5df940`, and the CHECK_SPW_RESULT/InventoryAdd pair
-in `status.json`) and the pre-existing matrix record for the same fname across three versions.
+This classifies `PicResult` as **absent from v95** in the same row, and by the same reasoning, as
+`ServerLoad` and `ServerSelect` — both of which are already correctly absent from
+`template_gms_95_1.json` (confirmed: neither string appears in the file). The pattern is
+meaningful, not coincidental: all three are pre-v95/state-machine-routed features that the
+frozen registry says v95 does not have.
+
+Code review additionally decompiled `CLogin::OnPacket` @ `0x5df940` in full: case 27 (`0x1B`)
+dispatches to `CLogin::OnCheckSPWResult`, a real, distinct client function — but nothing in
+`status.json`, the ops CSVs, or any support doc ties that fname to Atlas's `PicResult` writer. My
+earlier "0x1B" conclusion rested only on the two op names sharing a slot number in the older
+v83/v87/v92 templates — a positional coincidence, not an established wire fact. Asserting `0x1B`
+would have written an unverified inference into a live tenant config; if the `character_selected_
+register_pic.go` TODO is ever wired up, that guess would have silently routed the emit into
+`OnCheckSPWResult`'s handler instead of failing loudly.
+
+**Outcome: `PicResult` does not exist in v95** (frozen-registry classification, corroborated by
+the absence of any `OnPicResult`-shaped function anywhere in the v95 IDB found during the original
+IDA trace). Per the three offered outcomes, this is outcome (b): the entry is dead for v95 —
+removed from `template_gms_95_1.json` rather than relocated to an unverified opcode.
 
 ## Step C — wired
 
@@ -97,8 +115,8 @@ in `status.json`) and the pre-existing matrix record for the same fname across t
 
 ```
       {
-        "opCode": "0x1B",
-        "writer": "PicResult",
+        "opCode": "0x19",
+        "writer": "ServerListRecommendations",
         "services": ["login"]
       },
       {
@@ -118,11 +136,11 @@ in `status.json`) and the pre-existing matrix record for the same fname across t
       },
 ```
 
-Sorted order preserved: `0x19 → 0x1B → 0x1C → 0x1E`. `PicResult`'s shape (`services: ["login"]`,
-no `options`) is unchanged from before — only its `opCode` moved. `CharacterInventoryChange`
-matches the key set used by `template_gms_87_1.json`/`template_gms_92_1.json`'s
-`CharacterInventoryChange` entries, with the `options.petSkill.autoSpeaking: "0x100"` bit
-task-139 IDA-verified for every GMS version.
+Sorted order preserved: `0x19 → 0x1C → 0x1E` (no `0x1B` entry — `PicResult` is gone, not moved).
+`CharacterInventoryChange` matches the key set used by `template_gms_87_1.json`'s
+`CharacterInventoryChange` entry (`opCode`/`writer`/`services`/`options.petSkill.autoSpeaking`).
+**Correction to the original report:** `template_gms_92_1.json`'s `CharacterInventoryChange` entry
+has no `options` block at all — only gms_87 matches the full key set; gms_92 does not.
 
 ## Verification (foreground, worktree root)
 
@@ -149,23 +167,16 @@ ok      atlas-configurations/tenants/characters/preset ...
 (build: clean, no output)
 ```
 
-**Absent-writer note count: unchanged (0 → 0).** Confirmed by stashing the template change and
-re-running the same check: baseline was already `0 absent-writer note(s)`, and it's still `0`
-after the fix. `packet-audit operations --check`'s "absent-writer" tracking is scoped to
-dispatcher-family `operations` mode tables (per-arm sub-dispatch), not top-level template writer
-completeness — `CharacterInventoryChange` is a plain writer entry, not part of an `operations`
-mode table, so its prior absence was never counted there, and the fix doesn't change that
-metric's denominator either.
+**Absent-writer note count: unchanged (0 → 0)**, same as after the original fix.
+`packet-audit operations --check`'s "absent-writer" tracking is scoped to dispatcher-family
+`operations` mode tables, not top-level template writer completeness, so removing `PicResult` (a
+plain writer, not part of an `operations` mode table) doesn't move that counter either.
 
-**Matrix regeneration: not required, and not touched.** `docs/packets/audits/status.json` already
-records `inventory/clientbound/InventoryAdd × gms_v95 = verified, opcode 28` and
-`CHECK_SPW_RESULT × gms_v95 = incomplete, opcode 27` — both predate this change and both already
-match the corrected template. This template fix brings the tenant socket config into agreement
-with an already-pinned matrix record; it doesn't add, remove, or alter any matrix cell. Per
-instructions, `docs/packets/feature-na-evidence.yaml`, `docs/packets/audits/STATUS.md`, and
-`status.json` were not touched.
+**Matrix regeneration: not required, and not touched.** This change only edits
+`template_gms_95_1.json`. `docs/packets/feature-na-evidence.yaml`, `docs/packets/audits/STATUS.md`,
+and `status.json` were not touched, per instructions (another agent owns those concurrently).
 
 ## Files changed
 
-- `services/atlas-configurations/seed-data/templates/template_gms_95_1.json` — `PicResult`
-  0x1C→0x1B; `CharacterInventoryChange` added at 0x1C.
+- `services/atlas-configurations/seed-data/templates/template_gms_95_1.json` — `PicResult` entry
+  removed entirely (version-absent for v95); `CharacterInventoryChange` added at `0x1C`.

@@ -33,23 +33,22 @@ func (r *RestModel) SetID(strId string) error {
 	return nil
 }
 
+// SetToOneReferenceID / SetToManyReferenceIDs are required by api2go's unmarshal
+// even though the consumable resource carries no relationships this client
+// cares about (see libs/atlas-rest gotcha): a target struct must implement them
+// or unmarshal errors whenever the upstream response includes a relationships
+// block.
+func (r *RestModel) SetToOneReferenceID(_, _ string) error {
+	return nil
+}
+
+func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
+	return nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	return Model{
 		id:   rm.Id,
 		spec: rm.Spec,
 	}, nil
-}
-
-type Model struct {
-	id   uint32
-	spec map[SpecType]int32
-}
-
-func (m Model) Id() uint32 {
-	return m.id
-}
-
-func (m Model) GetSpec(specType SpecType) (int32, bool) {
-	val, ok := m.spec[specType]
-	return val, ok
 }

@@ -42,18 +42,34 @@ ops:
   # Request's case-28 body, wrapped as its own audit-only struct
   # (cash/serverbound/CashItemUsePetSkill) alongside its megaphone/teleport-
   # rock/etc. siblings that already share this same dispatcher fname. Bare
-  # 8-byte pet locker SN, no separate matrix row (rolls into the shared
-  # CWvsContext::SendConsumeCashItemUseRequest dispatcher, jms_v185-only
-  # sender). Task 15 fixed this struct's `packet-audit:verify` marker (it was
-  # prose, not the `packet=/version=/ida=` k=v form matrix --check requires),
-  # pinned its evidence record, added the missing candidatesFromFName
-  # linkage in tools/packet-audit/cmd/run.go (without which no audit report
-  # could ever be generated for it — "dangling evidence" until this task),
-  # generated its report, and added its packet-audit:fname comment
-  # (fname-doc --check was failing on it) — none of that was Task 15's
-  # nominal scope, but it was blocking a clean matrix --check exit 0, which
-  # is a required Task 15 gate.
+  # 8-byte pet locker SN. It DOES have its own row in status.json (kind:
+  # sub-struct, packet: cash/serverbound/CashItemUsePetSkill) — the row is
+  # what carries the jms_v185 verified cell; only the shared dispatcher
+  # (CWvsContext::SendConsumeCashItemUseRequest) is common, not the matrix
+  # row itself. (Final-review correction: an earlier draft of this note said
+  # "no separate matrix row," which was wrong.) Task 15 fixed this struct's
+  # `packet-audit:verify` marker (it was prose, not the
+  # `packet=/version=/ida=` k=v form matrix --check requires), pinned its
+  # evidence record, added the missing candidatesFromFName linkage in
+  # tools/packet-audit/cmd/run.go (without which no audit report could ever
+  # be generated for it — "dangling evidence" until this task), generated
+  # its report, and added its packet-audit:fname comment (fname-doc --check
+  # was failing on it) — none of that was Task 15's nominal scope, but it
+  # was blocking a clean matrix --check exit 0, which is a required Task 15
+  # gate.
   - cash/serverbound/CashItemUsePetSkill
+
+  # libs/atlas-packet/resolve.go (root package atlas_packet, no subdir): adds
+  # ResolveCode16, a soft-miss config lookup helper called from model/asset's
+  # resolvePetSkillWireMask. Not a packet codec in its own right (no version
+  # gate lives here — the version-dependent behavior is entirely in
+  # model/asset.go's call sites, which are claimed above) and carries no
+  # independent status.json row. Declared here as its own entry (rather than
+  # left to the model/asset `fields` prose) so packet-completeness-critic's
+  # directory-match rule doesn't fall back to prose (final-review fix,
+  # flagged by the completeness critic as a cosmetic CHANGED-BUT-UNCLAIMED
+  # gap).
+  - libs/atlas-packet/resolve.go
 
 versions:
   - gms_v48
@@ -70,6 +86,7 @@ fields:
   - "pet/serverbound/PetItemUse: leading petId u64 gated (GMS && MajorAtLeast(61)) || JMS==Region(); absent (decodes as 0) on gms_v48 only. Body order buffSkill(bool)+updateTime(u32)+source(i16)+itemId(u32) is unconditional and byte-identical on every version."
   - "model/asset Asset.encodePetCashItemInfo: remainLife (Encode4) gated GMS>=72||JMS; trailing attribute (Encode2) gated GMS>=79||JMS. gms_v48/v61 write neither trailer field; gms_v72 writes remainLife only; gms_v79+ and jms write both."
   - "cash/serverbound/CashItemUsePetSkill: single 8-byte pet locker SN, no update_time in this arm (already consumed once in the shared SendConsumeCashItemUseRequest header). jms_v185 only — sender does not exist pre-v87 (task-8 finding)."
+  - "OPEN QUESTION (final-review, unresolved — do not treat as settled): re-verifying the 'inapplicable to GMS' claim above via IDA found the type-28 switch arm explicitly defaults (no case) on gms_v83 (0xa0a6e0, cases-in-default list includes 28) and gms_v87 (0xa9ffa8, ditto), matching the claim. But gms_v95 (0x9eb4fd / dispatch target 0x9f06be) has a REAL, uniquely-dispatched case-28 arm — not merged into default — that runs ZArray<unsigned char>::RemoveAll() + a string destructor then jumps to the common exit, i.e. it writes zero additional payload bytes (no Encode2/Encode4/EncodeBuffer call). So gms_v95 is not identical to 'no case at all'; it has a no-op arm. Whether that no-op counts as 'the feature exists on GMS' (contradicting this manifest) or is irrelevant at the wire level (nothing to decode, so n-a is still the right matrix state) is a design call for a human, not something this fix wave should resolve unilaterally. No n-a evidence was recorded for any GMS version as a result — the matrix cells remain at their pre-existing `incomplete` state pending that decision."
 
 out_of_scope:
   # Pre-existing on main before this branch (not touched by task-139): the

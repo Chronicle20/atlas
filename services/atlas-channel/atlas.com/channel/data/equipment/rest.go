@@ -24,24 +24,22 @@ func (r *RestModel) SetID(strId string) error {
 	return nil
 }
 
+// SetToOneReferenceID / SetToManyReferenceIDs are required by api2go's unmarshal
+// even though this client doesn't care about the equipment resource's
+// relationships (see libs/atlas-rest gotcha): a target struct must implement
+// them or unmarshal errors whenever the upstream response includes a
+// relationships block.
+func (r *RestModel) SetToOneReferenceID(_, _ string) error {
+	return nil
+}
+
+func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
+	return nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	return Model{
 		id:           rm.Id,
 		petAbilities: rm.PetAbilities,
 	}, nil
-}
-
-type Model struct {
-	id           uint32
-	petAbilities []string
-}
-
-func (m Model) Id() uint32 {
-	return m.id
-}
-
-// PetAbilities lists the equip's truthy pet-ability attributes (equip-family
-// spelling: consumeHP, consumeMP, sweepForDrop, ...).
-func (m Model) PetAbilities() []string {
-	return m.petAbilities
 }

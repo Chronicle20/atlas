@@ -22,6 +22,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	pet2 "github.com/Chronicle20/atlas/libs/atlas-packet/pet/serverbound"
 	statpkt "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/degrade"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 )
 
@@ -232,6 +233,7 @@ func resolveSkillSources(l logrus.FieldLogger, ctx context.Context) func(gate st
 
 		cm, err := compartment.NewProcessor(l, ctx).GetByType(characterId, inventory2.TypeValueEquip)
 		if err != nil {
+			degrade.Observe(l, "channel.pet_auto_pot.equip_compartment", characterId, err)
 			return false, false, true // no worn equips resolvable -> plain missing_pet_skill
 		}
 		positions := petAbilityPositions(pm.Slot())
@@ -244,6 +246,7 @@ func resolveSkillSources(l logrus.FieldLogger, ctx context.Context) func(gate st
 			}
 			em, err := ep.GetById(a.TemplateId())
 			if err != nil {
+				degrade.Observe(l.WithFields(logrus.Fields{"characterId": characterId, "slot": a.Slot()}), "channel.pet_auto_pot.equip_data", a.TemplateId(), err)
 				worn = append(worn, wornEquip{position: slot.Position(a.Slot())})
 				continue
 			}

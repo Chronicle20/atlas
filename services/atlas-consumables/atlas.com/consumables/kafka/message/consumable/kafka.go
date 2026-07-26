@@ -38,6 +38,7 @@ type RequestItemConsumeBody struct {
 	Source   slot.Position `json:"source"`
 	ItemId   item.Id       `json:"itemId"`
 	Quantity int16         `json:"quantity"`
+	PetId    uint64        `json:"petId,omitempty"`
 }
 
 type RequestItemRewardBody struct {
@@ -94,6 +95,7 @@ const (
 	EventTypeViciousHammer = "VICIOUS_HAMMER"
 
 	ErrorTypePetCannotConsume = "PET_CANNOT_CONSUME"
+	ErrorTypePetCannotLearn   = "PET_CANNOT_LEARN"
 	ErrorTypeInventoryFull    = "INVENTORY_FULL"
 	ErrorTypeVegaInvalid      = "VEGA_INVALID"
 )

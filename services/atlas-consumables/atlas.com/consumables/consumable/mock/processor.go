@@ -14,7 +14,7 @@ import (
 )
 
 type ProcessorMock struct {
-	RequestItemConsumeFunc     func(c channel.Model, characterId uint32, slot int16, itemId item2.Id, quantity int16) error
+	RequestItemConsumeFunc     func(c channel.Model, characterId uint32, slot int16, itemId item2.Id, quantity int16, petId uint64) error
 	RequestFeedFunc            func(worldId world.Id, characterId uint32, slot int16, itemId item2.Id) error
 	ConsumeErrorFunc           func(characterId uint32, transactionId uuid.UUID, inventoryType inventory2.Type, slot int16, err error) error
 	RequestScrollFunc          func(characterId uint32, scrollSlot int16, equipSlot int16, whiteScroll bool, legendarySpirit bool) error
@@ -31,9 +31,9 @@ type ProcessorMock struct {
 
 var _ consumable.Processor = (*ProcessorMock)(nil)
 
-func (m *ProcessorMock) RequestItemConsume(c channel.Model, characterId uint32, slot int16, itemId item2.Id, quantity int16) error {
+func (m *ProcessorMock) RequestItemConsume(c channel.Model, characterId uint32, slot int16, itemId item2.Id, quantity int16, petId uint64) error {
 	if m.RequestItemConsumeFunc != nil {
-		return m.RequestItemConsumeFunc(c, characterId, slot, itemId, quantity)
+		return m.RequestItemConsumeFunc(c, characterId, slot, itemId, quantity, petId)
 	}
 	return nil
 }

@@ -588,3 +588,15 @@ func TestComputeEffectPlan_ZeroWeightMorphTableSkipsMorphOnly(t *testing.T) {
 	assert.Empty(t, plan.statups)
 	assert.Equal(t, []int16{50}, plan.hpChanges)
 }
+
+func TestPetSkillPouchClassification(t *testing.T) {
+	// 0519 items route to the pet-skill branch, not the standard consumer.
+	for _, id := range []item.Id{5190001, 5190006, 5191001} {
+		if item.GetClassification(id) != item.ClassificationPetSkill {
+			t.Errorf("GetClassification(%d) = %d, want 519", id, item.GetClassification(id))
+		}
+		if usesStandardConsumer(id) {
+			t.Errorf("usesStandardConsumer(%d) = true, want false", id)
+		}
+	}
+}

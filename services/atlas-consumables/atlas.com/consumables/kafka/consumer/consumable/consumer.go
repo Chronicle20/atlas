@@ -59,7 +59,7 @@ func handleRequestItemConsume(l logrus.FieldLogger, ctx context.Context, c consu
 		return
 	}
 	ch := channel.NewModel(c.WorldId, c.ChannelId)
-	err := consumable.NewProcessor(l, ctx).RequestItemConsume(ch, uint32(c.CharacterId), int16(c.Body.Source), c.Body.ItemId, c.Body.Quantity)
+	err := consumable.NewProcessor(l, ctx).RequestItemConsume(ch, uint32(c.CharacterId), int16(c.Body.Source), c.Body.ItemId, c.Body.Quantity, c.Body.PetId)
 	if err != nil {
 		l.WithError(err).Errorf("Character [%d] unable to consume item in slot [%d] as expected.", c.CharacterId, c.Body.Source)
 	}

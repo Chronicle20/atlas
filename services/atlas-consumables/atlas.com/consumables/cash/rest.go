@@ -23,9 +23,11 @@ const (
 var SpecTypeIndexes = []SpecType{SpecTypeIndexZero, SpecTypeIndexOne, SpecTypeIndexTwo, SpecTypeIndexThree, SpecTypeIndexFour, SpecTypeIndexFive, SpecTypeIndexSix, SpecTypeIndexSeven, SpecTypeIndexEight, SpecTypeIndexNine}
 
 type RestModel struct {
-	Id      uint32             `json:"-"`
-	SlotMax uint32             `json:"slotMax"`
-	Spec    map[SpecType]int32 `json:"spec"`
+	Id          uint32             `json:"-"`
+	SlotMax     uint32             `json:"slotMax"`
+	Spec        map[SpecType]int32 `json:"spec"`
+	PetSkills   []string           `json:"petSkills,omitempty"`
+	PetSkillAdd bool               `json:"petSkillAdd,omitempty"`
 }
 
 func (r RestModel) GetName() string {
@@ -47,8 +49,10 @@ func (r *RestModel) SetID(strId string) error {
 
 func Extract(rm RestModel) (Model, error) {
 	return Model{
-		id:      rm.Id,
-		slotMax: rm.SlotMax,
-		spec:    rm.Spec,
+		id:          rm.Id,
+		slotMax:     rm.SlotMax,
+		spec:        rm.Spec,
+		petSkills:   rm.PetSkills,
+		petSkillAdd: rm.PetSkillAdd,
 	}, nil
 }

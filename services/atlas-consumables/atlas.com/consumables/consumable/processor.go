@@ -101,13 +101,16 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 // usesStandardConsumer reports whether an item routes through ConsumeStandard
-// (which invokes ApplyItemEffects for HP/MP recovery, status buffs, and status
-// cure). Anything not matched here falls through to ConsumeBare and silently
-// skips effect application. Cure pots (classification 205) belong here because
-// their disease cure flags are read inside ApplyItemEffects.
+// (which invokes ApplyItemEffects for HP/MP recovery, status buffs, status
+// cure, and morph). Anything not matched here falls through to ConsumeBare and
+// silently skips effect application. Cure pots (classification 205) belong
+// here because their disease cure flags are read inside ApplyItemEffects;
+// transformation potions (classification 221) because their morph/morphRandom
+// specs are applied there.
 func usesStandardConsumer(itemId item2.Id) bool {
 	switch item2.GetClassification(itemId) {
-	case item2.Classification(200), item2.Classification(201), item2.Classification(202), item2.Classification(205):
+	case item2.Classification(200), item2.Classification(201), item2.Classification(202), item2.Classification(205),
+		item2.ClassificationConsumableTransformation:
 		return true
 	}
 	return false
@@ -137,6 +140,86 @@ func collectCureTypes(ci consumable3.Model) []string {
 	return out
 }
 
+// effectPlan is the pure result of interpreting a consumable's specs against a
+// character: everything ApplyItemEffects will do, decided before any side effect.
+type effectPlan struct {
+	cureTypes []string     // ordered; from collectCureTypes
+	hpChanges []int16      // ordered ChangeHP calls (hp, then hpR-derived)
+	mpChanges []int16      // ordered ChangeMP calls (mp, then mpR-derived)
+	statups   []stat.Model // includes the resolved morph statup, if any
+	duration  int32        // WZ `time` spec in ms; atlas-buffs expiry = now + duration*time.Millisecond
+}
+
+// computeEffectPlan interprets a consumable's specs against a character with
+// no side effects. ApplyItemEffects executes the plan; keeping the decision
+// pure is what makes the morph/hp paths pinnable by plain unit tests.
+func computeEffectPlan(l logrus.FieldLogger, c character.Model, ci consumable3.Model) effectPlan {
+	plan := effectPlan{
+		cureTypes: collectCureTypes(ci),
+		hpChanges: make([]int16, 0, 2),
+		mpChanges: make([]int16, 0, 2),
+		statups:   make([]stat.Model, 0),
+	}
+
+	if val, ok := ci.GetSpec(consumable3.SpecTypeHP); ok && val > 0 {
+		plan.hpChanges = append(plan.hpChanges, int16(val))
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeHPRecovery); ok && val > 0 {
+		pct := float64(val) / float64(100)
+		plan.hpChanges = append(plan.hpChanges, int16(math.Floor(float64(c.MaxHp())*pct)))
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeMP); ok && val > 0 {
+		plan.mpChanges = append(plan.mpChanges, int16(val))
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeMPRecovery); ok && val > 0 {
+		pct := float64(val) / float64(100)
+		plan.mpChanges = append(plan.mpChanges, int16(math.Floor(float64(c.MaxMp())*pct)))
+	}
+
+	if val, ok := ci.GetSpec(consumable3.SpecTypeAccuracy); ok && val > 0 {
+		plan.statups = append(plan.statups, stat.Model{Type: ts.TemporaryStatTypeAccuracy, Amount: val})
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeEvasion); ok && val > 0 {
+		plan.statups = append(plan.statups, stat.Model{Type: ts.TemporaryStatTypeAvoidability, Amount: val})
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeJump); ok && val > 0 {
+		plan.statups = append(plan.statups, stat.Model{Type: ts.TemporaryStatTypeJump, Amount: val})
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeMagicAttack); ok && val > 0 {
+		plan.statups = append(plan.statups, stat.Model{Type: ts.TemporaryStatTypeMagicAttack, Amount: val})
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeMagicDefense); ok && val > 0 {
+		plan.statups = append(plan.statups, stat.Model{Type: ts.TemporaryStatTypeMagicDefense, Amount: val})
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeWeaponAttack); ok && val > 0 {
+		plan.statups = append(plan.statups, stat.Model{Type: ts.TemporaryStatTypeWeaponAttack, Amount: val})
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeWeaponDefense); ok && val > 0 {
+		plan.statups = append(plan.statups, stat.Model{Type: ts.TemporaryStatTypeWeaponDefense, Amount: val})
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeSpeed); ok && val > 0 {
+		plan.statups = append(plan.statups, stat.Model{Type: ts.TemporaryStatTypeSpeed, Amount: val})
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeMorph); ok && val > 0 {
+		plan.statups = append(plan.statups, stat.Model{Type: ts.TemporaryStatTypeMorph, Amount: val})
+	} else if len(ci.Morphs()) > 0 {
+		if morphId, err := rollMorph(ci.Morphs()); err == nil {
+			plan.statups = append(plan.statups, stat.Model{Type: ts.TemporaryStatTypeMorph, Amount: int32(morphId)})
+		} else {
+			l.WithError(err).Warnf("Skipping morph for item [%d]: unusable morphRandom table.", ci.Id())
+		}
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeTime); ok && val > 0 {
+		// The consumable `time` spec is already in milliseconds, which is the
+		// unit atlas-buffs expects (expiry = now + duration*time.Millisecond,
+		// since task-054). Passing it as-is; a prior `/1000` made every timed
+		// consumable buff expire ~1000x too early.
+		plan.duration = val
+	}
+
+	return plan
+}
+
 // ApplyItemEffects applies the effects of a consumable item to a character.
 // This is the shared logic used by both regular item consumption and NPC-initiated item use.
 // It handles stat buffs (accuracy, evasion, attack, defense, speed, jump) and HP/MP recovery.
@@ -144,71 +227,29 @@ func ApplyItemEffects(l logrus.FieldLogger, ctx context.Context, c character.Mod
 	bp := buff.NewProcessor(l, ctx)
 	cp := character.NewProcessor(l, ctx)
 
+	plan := computeEffectPlan(l, c, ci)
+
 	// 1. Cure first. Cure runs before HP/MP recovery so a queued poison tick
 	// (also routed through atlas-buffs's per-character partition) lands behind
 	// the cancel and cannot eat part of the heal between drink-time and
 	// cancel-commit-time. See task-051 D3.
-	if cureTypes := collectCureTypes(ci); len(cureTypes) > 0 {
-		if err := bp.CancelByTypes(f, characterId, cureTypes); err != nil {
+	if len(plan.cureTypes) > 0 {
+		if err := bp.CancelByTypes(f, characterId, plan.cureTypes); err != nil {
 			l.WithError(err).Errorf("Unable to dispatch cure-by-types for character [%d] item [%d].", characterId, itemId)
 		}
 	}
 
 	// 2. HP/MP recovery.
-	if val, ok := ci.GetSpec(consumable3.SpecTypeHP); ok && val > 0 {
-		_ = cp.ChangeHP(f, characterId, int16(val))
+	for _, amount := range plan.hpChanges {
+		_ = cp.ChangeHP(f, characterId, amount)
 	}
-	if val, ok := ci.GetSpec(consumable3.SpecTypeHPRecovery); ok && val > 0 {
-		pct := float64(val) / float64(100)
-		res := int16(math.Floor(float64(c.MaxHp()) * pct))
-		_ = cp.ChangeHP(f, characterId, res)
-	}
-	if val, ok := ci.GetSpec(consumable3.SpecTypeMP); ok && val > 0 {
-		_ = cp.ChangeMP(f, characterId, int16(val))
-	}
-	if val, ok := ci.GetSpec(consumable3.SpecTypeMPRecovery); ok && val > 0 {
-		pct := float64(val) / float64(100)
-		res := int16(math.Floor(float64(c.MaxMp()) * pct))
-		_ = cp.ChangeMP(f, characterId, res)
+	for _, amount := range plan.mpChanges {
+		_ = cp.ChangeMP(f, characterId, amount)
 	}
 
 	// 3. Status-up buffs.
-	statups := make([]stat.Model, 0)
-	duration := int32(0)
-
-	if val, ok := ci.GetSpec(consumable3.SpecTypeAccuracy); ok && val > 0 {
-		statups = append(statups, stat.Model{Type: ts.TemporaryStatTypeAccuracy, Amount: val})
-	}
-	if val, ok := ci.GetSpec(consumable3.SpecTypeEvasion); ok && val > 0 {
-		statups = append(statups, stat.Model{Type: ts.TemporaryStatTypeAvoidability, Amount: val})
-	}
-	if val, ok := ci.GetSpec(consumable3.SpecTypeJump); ok && val > 0 {
-		statups = append(statups, stat.Model{Type: ts.TemporaryStatTypeJump, Amount: val})
-	}
-	if val, ok := ci.GetSpec(consumable3.SpecTypeMagicAttack); ok && val > 0 {
-		statups = append(statups, stat.Model{Type: ts.TemporaryStatTypeMagicAttack, Amount: val})
-	}
-	if val, ok := ci.GetSpec(consumable3.SpecTypeMagicDefense); ok && val > 0 {
-		statups = append(statups, stat.Model{Type: ts.TemporaryStatTypeMagicDefense, Amount: val})
-	}
-	if val, ok := ci.GetSpec(consumable3.SpecTypeWeaponAttack); ok && val > 0 {
-		statups = append(statups, stat.Model{Type: ts.TemporaryStatTypeWeaponAttack, Amount: val})
-	}
-	if val, ok := ci.GetSpec(consumable3.SpecTypeWeaponDefense); ok && val > 0 {
-		statups = append(statups, stat.Model{Type: ts.TemporaryStatTypeWeaponDefense, Amount: val})
-	}
-	if val, ok := ci.GetSpec(consumable3.SpecTypeSpeed); ok && val > 0 {
-		statups = append(statups, stat.Model{Type: ts.TemporaryStatTypeSpeed, Amount: val})
-	}
-	if val, ok := ci.GetSpec(consumable3.SpecTypeMorph); ok && val > 0 {
-		statups = append(statups, stat.Model{Type: ts.TemporaryStatTypeMorph, Amount: val})
-	}
-	if val, ok := ci.GetSpec(consumable3.SpecTypeTime); ok && val > 0 {
-		duration = val / 1000
-	}
-
-	if len(statups) > 0 {
-		_ = bp.Apply(f, characterId, -int32(itemId), byte(0), duration, statups)(characterId)
+	if len(plan.statups) > 0 {
+		_ = bp.Apply(f, characterId, -int32(itemId), byte(0), plan.duration, plan.statups)(characterId)
 	}
 }
 

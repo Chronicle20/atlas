@@ -37,6 +37,7 @@ const CharacterSkillLearnItemResultWriter = "CharacterSkillLearnItemResult"
 // serverbound is byte-identical to v83 but its clientbound diverges. Do NOT gate
 // at >=87. bOnExclRequest is NOT domain data (server always sends 1), so it is
 // not a struct field: Encode writes it, Decode consumes-and-discards it.
+// packet-audit:fname CWvsContext::OnSkillLearnItemResult
 type SkillLearnItemResult struct {
 	characterId   uint32
 	isMasteryBook bool

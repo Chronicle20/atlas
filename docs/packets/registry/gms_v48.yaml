@@ -992,6 +992,13 @@
   provenance: ida-discovered
   ida:
     address: 5748606
+- op: STATE_CHANGE_BY_PORTABLE_CHAIR_REQUEST
+  direction: serverbound
+  opcode: 58
+  fname: CWvsContext::TryRecovery
+  provenance: ida-discovered
+  ida:
+    address: 7383415
   note: 'send-site 0x71a496: COutPacket(68). v61 HEAL_OVER_TIME=81.'
 - op: CANCEL_BUFF
   direction: serverbound
@@ -1545,3 +1552,11 @@
   ida:
     address: 5955898
   note: 'Dedicated RPS serverbound opcode 111 (0x6F). MODERN 6-helper send set (sub-ops 0-5); the player throw is Encode1(1)+Encode1(throw) at sub-op 1 (SendSelection @0x5AE13A). Corrected 2026-07-16 (prior 0x33/51 was the mislabeled channel dialog). See ida-rps-legacy-reaudit.md.'
+- op: USE_MOUNT_FOOD
+  direction: serverbound
+  opcode: 61
+  fname: CWvsContext::SendTamingMobFoodItemUseRequest
+  provenance: ida-discovered
+  ida:
+    address: 7397387   # 0x70e00b
+  note: 'v48 SendTamingMobFoodItemUseRequest COutPacket(61) @0x70e00b; Encode4(update_time)·Encode2(slot)·Encode4(itemId); guard nItemID/10000==226 (taming-mob food). Corrects prior false n-a (op was absent from registry). task-138.'

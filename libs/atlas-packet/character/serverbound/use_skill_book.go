@@ -23,6 +23,7 @@ const CharacterSkillBookUseHandle = "CharacterSkillBookUseHandle"
 //	Encode4 itemId
 //
 // No version gate — only the per-tenant opcode differs (task-125 design §5.1).
+// packet-audit:fname CWvsContext::SendSkillLearnItemUseRequest
 type UseSkillBook struct {
 	updateTime uint32
 	slot       int16

@@ -789,6 +789,13 @@ func candidatesFromFName(fname string) []candidate {
 		// Struct is ChairPortable; handler constant = "CharacterChairPortableHandle".
 		// Client sends opcode 0x2E (46) with Encode4(nItemID).
 		return []candidate{{name: "ChairPortable", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::TryRecovery":
+		// Struct is StateChangeByPortableChair; handler constant =
+		// "CharacterStateChangeByPortableChairHandle".
+		// Empty body in all five versions: COutPacket(ctor, opcode) ->
+		// SendPacket with zero Encode calls (once per sit, >=20 s, portable
+		// chair without a spec node). task-141.
+		return []candidate{{name: "StateChangeByPortableChair", dir: csvpkg.DirServerbound}}
 	case "CUserLocal::HandleLButtonClk":
 		// Struct is ChalkboardClose; handler constant = "ChalkboardCloseHandle".
 		// Client sends opcode 0x37 (55) with no payload (empty body).
@@ -1177,6 +1184,10 @@ func candidatesFromFName(fname string) []candidate {
 	case "CWvsContext::SendPetFoodItemUseRequest":
 		// CSV: PET_FOOD — atlas Food.
 		return []candidate{{name: "Food", pkg: "pet", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::SendTamingMobFoodItemUseRequest":
+		// USE_MOUNT_FOOD — taming-mob (mount) food. Codec mount/serverbound/Food
+		// (handler MountFoodHandle). update_time u32 + slot i16 + itemId u32.
+		return []candidate{{name: "Food", pkg: "mount", dir: csvpkg.DirServerbound}}
 	case "CWvsContext::SendStatChangeItemUseRequestByPetQ":
 		// CSV: PET_AUTO_POT — atlas ItemUse.
 		return []candidate{{name: "ItemUse", pkg: "pet", dir: csvpkg.DirServerbound}}

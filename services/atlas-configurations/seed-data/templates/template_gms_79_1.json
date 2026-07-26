@@ -410,6 +410,12 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x48",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterStateChangeByPortableChairHandle",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x49",
         "validator": "LoggedInValidator",
         "handler": "CharacterItemUseSummonBagHandle",
@@ -434,6 +440,11 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x50",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterSkillBookUseHandle"
+      },
+      {
         "opCode": "0x52",
         "validator": "LoggedInValidator",
         "handler": "TeleportRockUseHandle",
@@ -450,11 +461,6 @@
         "validator": "LoggedInValidator",
         "handler": "CharacterItemUseScrollHandle",
         "services": ["channel"]
-      },
-      {
-        "opCode": "0x50",
-        "validator": "LoggedInValidator",
-        "handler": "CharacterSkillBookUseHandle"
       },
       {
         "opCode": "0x55",
@@ -1813,6 +1819,10 @@
         }
       },
       {
+        "opCode": "0x30",
+        "writer": "CharacterSkillLearnItemResult"
+      },
+      {
         "opCode": "0x31",
         "writer": "CompartmentMerge",
         "services": ["channel"]
@@ -2034,6 +2044,16 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x69",
+        "writer": "SetAvatarMegaphone",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0x6A",
+        "writer": "ClearAvatarMegaphone",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x74",
         "writer": "ScriptProgress",
         "services": ["channel"]
@@ -2235,10 +2255,6 @@
         "opCode": "0x9C",
         "writer": "CharacterItemUpgrade",
         "services": ["channel"]
-      },
-      {
-        "opCode": "0x30",
-        "writer": "CharacterSkillLearnItemResult"
       },
       {
         "opCode": "0x9D",
@@ -3462,16 +3478,6 @@
             "HORNTAIL": 3
           }
         }
-      },
-      {
-        "opCode": "0x69",
-        "writer": "SetAvatarMegaphone",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x6A",
-        "writer": "ClearAvatarMegaphone",
-        "services": ["channel"]
       }
     ]
   },

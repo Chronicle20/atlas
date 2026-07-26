@@ -114,6 +114,11 @@ const NpcsPage = lazy(() =>
 const NpcDetailPage = lazy(() =>
   import("@/pages/NpcDetailPage").then((m) => ({ default: m.NpcDetailPage })),
 );
+const RankingsPage = lazy(() =>
+  import("@/pages/RankingsPage").then((m) => ({
+    default: m.RankingsPage,
+  })),
+);
 const QuestsPage = lazy(() =>
   import("@/pages/QuestsPage").then((m) => ({ default: m.QuestsPage })),
 );
@@ -295,6 +300,7 @@ export function App() {
                     />
                     <Route path="/npcs" element={<NpcsPage />} />
                     <Route path="/npcs/:id" element={<NpcDetailPage />} />
+                    <Route path="/rankings" element={<RankingsPage />} />
                     <Route path="/quests" element={<QuestsPage />} />
                     <Route path="/quests/:id" element={<QuestDetailPage />} />
                     <Route path="/reactors" element={<ReactorsPage />} />

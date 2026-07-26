@@ -18011,6 +18011,11 @@
         }
       ]
     },
+    "CWvsContext::TryRecovery": {
+      "address": "0xa4d05a",
+      "direction": "serverbound",
+      "calls": null
+    },
     "CWvsContext::SendSitOnPortableChairRequest": {
       "address": "0xa59e1f",
       "direction": "serverbound",
@@ -27667,6 +27672,27 @@
           "op": "Decode1",
           "comment": "success @0xa698ef",
           "guard": "v27"
+        }
+      ]
+    },
+    "CWvsContext::SendTamingMobFoodItemUseRequest": {
+      "address": "0xa53e46",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result == 190 && a3 / 10000 == 226 && result"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "result == 190 && a3 / 10000 == 226 && result"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result == 190 && a3 / 10000 == 226 && result"
         }
       ]
     }

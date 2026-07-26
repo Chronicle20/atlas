@@ -4,17 +4,17 @@
 > ✅ verified · 🧩 family (mode-prefix dispatcher; sub-arms unverified) · 🟡 partial · ❌ incomplete · ⬜ n-a · 🟥 conflict
 > Partial (🟡) sub-glyphs: 🟡ᶠ tier-1 needs byte-fixture · 🟡ᵈ tool-pass diff-only (no byte-test) · 🟡ᵖ evidence-pinned deferral
 
-Tool: `b113a576d4c27535d10b42b92fc4d0c1f76aa8f0989992403fb531e45775c26b`
+Tool: `7e28990a2f5a4234e192a313aee264555ded4e050b5243250618e0c9361e76c0`
 
-- export gms_v48: `46a1c15ebc8501e17134a830356a3b0a024ff97e5db322b1f519c95e9ae8b205`
-- export gms_v61: `6e11e82eb718fae11b37ddb7091d99fce4516ef62113bfa395835ecb8089db86`
-- export gms_v72: `066e6face2a80bf82aaebd78b3bb2bc03d1adf7af8230383187f249a741a0115`
-- export gms_v79: `50b1b66be74c78f7e30de8830b825c2cb4d31ef7cffdf515efc1ced78b273184`
-- export gms_v83: `698d163f374d527a34cc6360641e3abe0ecfc6a3dd9275f7cc2f8577a703ea1e`
-- export gms_v84: `c53085b2c4ba43f4537b4bc64ae5eff0be1e0039d94adfacff6a93a9980a4ae9`
-- export gms_v87: `0676d390afb6d5c55c1ca0d207b47738c454fe3d35f49e1c4f4595cb7c24cf43`
-- export gms_v95: `6193a950e87fcd671573b2100fcba2bd6f39199fd8bc20834c983083fb97e96a`
-- export jms_v185: `a1e984f415da2508ae00a8a2c67da05fc4942b8aa8dcdde825ab41d86d6c12d2`
+- export gms_v48: `0f41bff36a13ec9ffbecffaaacd08c70225e5a306558410fbb03aa3abc787771`
+- export gms_v61: `7d75a30019ccda4137f0586e127946b4ae64eeffa08a4c71319ad7d8bee76007`
+- export gms_v72: `ae88cf97d8b60ac757f01423a7d66bc2d53e645835ece106466f817e78c6663a`
+- export gms_v79: `a140abb396e3f499408ff45076102c77c3d46a89ca2d2fbe7466e05c243d93cc`
+- export gms_v83: `aff0ebcf18fb42301b5b81f076e1c8456e23a6933a0c6fb35b04dbd02812716e`
+- export gms_v84: `b1e0b1949917f5d99ad8ef3532c8bee1c0c05e48d35bb8579992f05da8af0ec0`
+- export gms_v87: `b35393b15346115a52f189703fb598c000e33a2c605c28b764dd576e26c9adba`
+- export gms_v95: `6e93c93bb275e468f5c352fa7e4198bc52996d2e4a8b49957b01365b4a797f25`
+- export jms_v185: `735e8c67cbac3774a4fc3eab6927439f056841a5bd5c9eb18fc9e8615eefa4f5`
 
 ## Clientbound
 
@@ -576,7 +576,9 @@ Tool: `b113a576d4c27535d10b42b92fc4d0c1f76aa8f0989992403fb531e45775c26b`
 | ITEM_MOVE | CWvsContext::SendChangeSlotPositionRequest; sub_70D8DE; sub_831C83 | inventory/serverbound/InventoryMove (T1) | 0x037 | ✅ | 0x046 | ❌ | 0x046 | 🟡ᶠ | 0x045 | 🟡ᶠ | 0x047 | ❌ | 0x047 | ❌ | 0x04A | ✅ | 0x04D | ✅ | 0x03F | ✅ |
 | UNNAMED_R75 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x037 | ❌ | 0x037 | ❌ | 0x03A | ❌ | 0x03C | ❌ | 0x02F | ❌ |
 | CANCEL_ITEM_EFFECT | CWvsContext::SendStatChangeItemCancelRequest; sub_70DD49 | character/serverbound/ItemCancel (T1) | 0x039 | ✅ | 0x044 | ✅ | 0x048 | ✅ | 0x047 | ✅ | 0x049 | ✅ | 0x049 | ✅ | 0x04C | ✅ | 0x04F | ✅ | 0x041 | ✅ |
+| STATE_CHANGE_BY_PORTABLE_CHAIR_REQUEST | CWvsContext::TryRecovery | character/serverbound/StateChangeByPortableChair (T1) | 0x03A | ✅ | 0x045 | ✅ | 0x049 | ✅ | 0x048 | ✅ | 0x04A | ✅ | 0x04A | ✅ | 0x04D | ✅ | 0x050 | ✅ | 0x042 | ✅ |
 | REMOTE_STORE | CWvsContext::SendRemoteShopOpenRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x03B | ❌ | 0x03B | ❌ | 0x03E | ❌ | 0x040 | ❌ | 0x033 | ❌ |
+| USE_MOUNT_FOOD | CWvsContext::SendTamingMobFoodItemUseRequest | mount/serverbound/MountFood | 0x03D | ✅ | 0x048 | ✅ | 0x04C | ✅ | 0x04B | ✅ | 0x04D | ✅ | 0x04D | ✅ | 0x050 | ✅ | 0x053 | ✅ | 0x045 | ✅ |
 | HIRED_MERCHANT_REQUEST | CWvsContext::SendEntrustedShopCheckRequest; sub_715A7B; sub_971BE0 |  |  | ⬜ | 0x03E | ❌ | 0x03E | ❌ | 0x03D | ❌ | 0x03F | ❌ | 0x03F | ❌ | 0x042 | ❌ | 0x044 | ❌ | 0x037 | ❌ |
 | USE_CASH_ITEM | CItemSpeakerDlg::_SendConsumeCashItemUseRequest; CUICharacterSaleDlg::SendCreateNewCharacter; CUIIncubator::OnButtonClicked; CUIKarmaDlg::_SendConsumeCashItemUseRequest; CUIUnreleaseDlg::UnreleaseEquipItem; CWvsContext::SendConsumeCashItemUseRequest | cash/serverbound/CashItemUseMegaphone (T1) | 0x03E | ✅ | 0x049 | ✅ | 0x04E | ✅ | 0x04D | ✅ | 0x04F | ❌ | 0x04F | ❌ | 0x052 | ✅ | 0x055 | ✅ | 0x047 | ✅ |
 | OWL_WARP | CUIShopScanResult::OnButtonClicked | merchant/serverbound/OwlWarp (T1) |  | ⬜ | 0x03F | ✅ | 0x042 | ✅ | 0x041 | ✅ | 0x043 | ✅ | 0x043 | ❌ | 0x046 | ❌ | 0x049 | ✅ | 0x03B | ❌ |
@@ -596,10 +598,8 @@ Tool: `b113a576d4c27535d10b42b92fc4d0c1f76aa8f0989992403fb531e45775c26b`
 | SKILL_EFFECT | CUserLocal::DoActiveSkill_Prepare; sub_6ADD4C | character/serverbound/CharacterSkillPrepare (T1) | 0x048 | ✅ | 0x055 | ✅ | 0x05C | ✅ | 0x05B | ✅ | 0x05D | ✅ | 0x05D | ✅ | 0x060 | ✅ | 0x069 | ✅ | 0x058 | ✅ |
 | DISTRIBUTE_SP | CWvsContext::SendSkillUpRequest; sub_71CEB3; sub_8458EB | character/serverbound/DistributeSp (T1) | 0x049 | ✅ | 0x052 | ✅ | 0x059 | ✅ | 0x058 | ✅ | 0x05A | ✅ | 0x05A | ✅ | 0x05D | ✅ | 0x066 | ✅ | 0x055 | ✅ |
 | GIVE_FAME | CWvsContext::SendGivePopularityRequest; sub_71CF3B; sub_845A65; sub_96E07F | fame/serverbound/Change | 0x04A | ❌ | 0x057 | ❌ | 0x05E | ❌ | 0x05D | ❌ | 0x05F | ✅ | 0x05F | ✅ | 0x062 | ✅ | 0x06B | ✅ | 0x05A | ✅ |
-| STATE_CHANGE_BY_PORTABLE_CHAIR_REQUEST | CWvsContext::TryRecovery |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x04A | ❌ | 0x04A | ❌ | 0x04D | ❌ | 0x050 | ❌ | 0x042 | ❌ |
 | USE_SUMMON_BAG | CWvsContext::SendMobSummonItemUseRequest; sub_832005; sub_955499 |  |  | ⬜ | 0x04A | ❌ | 0x04A | ❌ | 0x049 | ❌ | 0x04B | ❌ | 0x04B | ❌ | 0x04E | ❌ | 0x051 | ❌ | 0x043 | ❌ |
 | CHAR_INFO_REQUEST | CWvsContext::SendCharacterInfoRequest; sub_71D059; sub_845B68 | character/serverbound/InfoRequest (T1) | 0x04C | ✅ | 0x059 | ✅ | 0x060 | ✅ | 0x05F | ✅ | 0x061 | ✅ | 0x061 | ✅ | 0x064 | ✅ | 0x06D | ✅ | 0x05C | ✅ |
-| USE_MOUNT_FOOD | CWvsContext::SendTamingMobFoodItemUseRequest; sub_832680; sub_955781 |  |  | ⬜ | 0x04C | ❌ | 0x04C | ❌ | 0x04B | ❌ | 0x04D | ❌ | 0x04D | ❌ | 0x050 | ❌ | 0x053 | ❌ | 0x045 | ❌ |
 | USE_TELEPORT_ROCK | CWvsContext::SendMapTransferItemUseRequest; sub_8327DB; sub_904D5E; sub_9560C6 | teleportrock/serverbound/Use (T1) |  | ⬜ | 0x04D | ✅ | 0x053 | ✅ | 0x052 | ✅ | 0x054 | ✅ | 0x054 | ✅ | 0x057 | ✅ | 0x05B | ✅ | 0x04C | ✅ |
 | SCRIPTED_ITEM | CWvsContext::SendScriptRunItemRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x04E | ❌ | 0x04E | ❌ | 0x051 | ❌ | 0x054 | ❌ | 0x046 | ❌ |
 | USE_RETURN_SCROLL | CWvsContext::SendPortalScrollUseRequest; CWvsContext::SendReturnScrollUseRequest; sub_841AA5 |  |  | ⬜ | 0x04E | ❌ | 0x054 | ❌ | 0x053 | ❌ | 0x055 | ❌ | 0x055 | ❌ | 0x058 | ❌ | 0x05C | ❌ | 0x04D | ❌ |
@@ -998,15 +998,15 @@ Tool: `b113a576d4c27535d10b42b92fc4d0c1f76aa8f0989992403fb531e45775c26b`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 175 | 0 | 2 | 158 | 628 | 0 | 52.2% |
-| v61 | 251 | 0 | 60 | 192 | 460 | 0 | 49.9% |
-| v72 | 261 | 0 | 73 | 211 | 418 | 0 | 47.9% |
-| v79 | 305 | 0 | 72 | 207 | 379 | 0 | 52.2% |
-| v83 | 425 | 0 | 0 | 315 | 223 | 0 | 57.4% |
-| v84 | 398 | 0 | 0 | 322 | 243 | 0 | 55.3% |
-| v87 | 433 | 0 | 0 | 344 | 186 | 0 | 55.7% |
-| v95 | 458 | 0 | 0 | 403 | 102 | 0 | 53.2% |
-| JMS185 | 410 | 0 | 0 | 360 | 193 | 0 | 53.2% |
+| v48 | 177 | 0 | 2 | 158 | 626 | 0 | 52.5% |
+| v61 | 253 | 0 | 60 | 191 | 459 | 0 | 50.2% |
+| v72 | 263 | 0 | 73 | 210 | 417 | 0 | 48.2% |
+| v79 | 307 | 0 | 72 | 206 | 378 | 0 | 52.5% |
+| v83 | 427 | 0 | 0 | 313 | 223 | 0 | 57.7% |
+| v84 | 400 | 0 | 0 | 320 | 243 | 0 | 55.6% |
+| v87 | 435 | 0 | 0 | 342 | 186 | 0 | 56.0% |
+| v95 | 460 | 0 | 0 | 401 | 102 | 0 | 53.4% |
+| JMS185 | 412 | 0 | 0 | 358 | 193 | 0 | 53.5% |
 
 ## Conflicts
 

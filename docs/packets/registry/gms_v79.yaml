@@ -2370,6 +2370,13 @@
   provenance: ida-discovered
   ida:
     address: 9868298
+- op: STATE_CHANGE_BY_PORTABLE_CHAIR_REQUEST
+  direction: serverbound
+  opcode: 72
+  fname: CWvsContext::TryRecovery
+  provenance: ida-discovered
+  ida:
+    address: 9761354
   note: 'COutPacket(87)+Enc4(0x1400)+Enc2(hp)+Enc2(mp)+Enc1; v83 HEAL_OVER_TIME=89 (d-2).'
 - op: CANCEL_BUFF
   direction: serverbound
@@ -2826,11 +2833,11 @@
 - op: USE_MOUNT_FOOD
   direction: serverbound
   opcode: 75
-  fname: sub_955781
+  fname: CWvsContext::SendTamingMobFoodItemUseRequest
   provenance: ida-discovered
   ida:
     address: 9787265
-  note: 'v79 sub_955781 COutPacket(75); push 4Bh;a2 @0x9557cf (taming-mob food). v83 USE_MOUNT_FOOD=0x4d=77 (d-2). delta doc serverbound (ida-read).'
+  note: 'v79 sub_955781 COutPacket(75); push 4Bh;a2 @0x9557cf (taming-mob food). v83 USE_MOUNT_FOOD=0x4d=77 (d-2). delta doc serverbound (ida-read). fname corrected from un-demangled placeholder "sub_955781" (which was v79''s own address, not mismatched) to the confirmed-named symbol CWvsContext::SendTamingMobFoodItemUseRequest so the matrix can resolve the audit report to this op (task-138 Task 6 re-verification).'
 - op: USE_CASH_ITEM
   direction: serverbound
   opcode: 77

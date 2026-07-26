@@ -1,15 +1,15 @@
 {
-  "toolSha": "b113a576d4c27535d10b42b92fc4d0c1f76aa8f0989992403fb531e45775c26b",
+  "toolSha": "7e28990a2f5a4234e192a313aee264555ded4e050b5243250618e0c9361e76c0",
   "exportHashes": {
-    "gms_v48": "46a1c15ebc8501e17134a830356a3b0a024ff97e5db322b1f519c95e9ae8b205",
-    "gms_v61": "6e11e82eb718fae11b37ddb7091d99fce4516ef62113bfa395835ecb8089db86",
-    "gms_v72": "066e6face2a80bf82aaebd78b3bb2bc03d1adf7af8230383187f249a741a0115",
-    "gms_v79": "50b1b66be74c78f7e30de8830b825c2cb4d31ef7cffdf515efc1ced78b273184",
-    "gms_v83": "698d163f374d527a34cc6360641e3abe0ecfc6a3dd9275f7cc2f8577a703ea1e",
-    "gms_v84": "c53085b2c4ba43f4537b4bc64ae5eff0be1e0039d94adfacff6a93a9980a4ae9",
-    "gms_v87": "0676d390afb6d5c55c1ca0d207b47738c454fe3d35f49e1c4f4595cb7c24cf43",
-    "gms_v95": "6193a950e87fcd671573b2100fcba2bd6f39199fd8bc20834c983083fb97e96a",
-    "jms_v185": "a1e984f415da2508ae00a8a2c67da05fc4942b8aa8dcdde825ab41d86d6c12d2"
+    "gms_v48": "0f41bff36a13ec9ffbecffaaacd08c70225e5a306558410fbb03aa3abc787771",
+    "gms_v61": "7d75a30019ccda4137f0586e127946b4ae64eeffa08a4c71319ad7d8bee76007",
+    "gms_v72": "ae88cf97d8b60ac757f01423a7d66bc2d53e645835ece106466f817e78c6663a",
+    "gms_v79": "a140abb396e3f499408ff45076102c77c3d46a89ca2d2fbe7466e05c243d93cc",
+    "gms_v83": "aff0ebcf18fb42301b5b81f076e1c8456e23a6933a0c6fb35b04dbd02812716e",
+    "gms_v84": "b1e0b1949917f5d99ad8ef3532c8bee1c0c05e48d35bb8579992f05da8af0ec0",
+    "gms_v87": "b35393b15346115a52f189703fb598c000e33a2c605c28b764dd576e26c9adba",
+    "gms_v95": "6e93c93bb275e468f5c352fa7e4198bc52996d2e4a8b49957b01365b4a797f25",
+    "jms_v185": "735e8c67cbac3774a4fc3eab6927439f056841a5bd5c9eb18fc9e8615eefa4f5"
   },
   "rows": [
     {
@@ -7651,6 +7651,54 @@
     },
     {
       "kind": "op",
+      "op": "STATE_CHANGE_BY_PORTABLE_CHAIR_REQUEST",
+      "packet": "character/serverbound/StateChangeByPortableChair",
+      "direction": "serverbound",
+      "tier1": true,
+      "fnames": [
+        "CWvsContext::TryRecovery"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "verified",
+          "opcode": 58
+        },
+        "gms_v61": {
+          "state": "verified",
+          "opcode": 69
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": 73
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 72
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 74
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 74
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 77
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 80
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 66
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "IDA_0X03B",
       "direction": "clientbound",
       "tier1": false,
@@ -7890,6 +7938,54 @@
         "jms_v185": {
           "state": "n-a",
           "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "USE_MOUNT_FOOD",
+      "packet": "mount/serverbound/MountFood",
+      "direction": "serverbound",
+      "tier1": false,
+      "fnames": [
+        "CWvsContext::SendTamingMobFoodItemUseRequest"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "verified",
+          "opcode": 61
+        },
+        "gms_v61": {
+          "state": "verified",
+          "opcode": 72
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": 76
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 75
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 77
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 77
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 80
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 83
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 69
         }
       }
     },
@@ -9848,58 +9944,6 @@
     },
     {
       "kind": "op",
-      "op": "STATE_CHANGE_BY_PORTABLE_CHAIR_REQUEST",
-      "direction": "serverbound",
-      "tier1": false,
-      "fnames": [
-        "CWvsContext::TryRecovery"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 74
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 74
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 77
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 80
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 66
-        }
-      }
-    },
-    {
-      "kind": "op",
       "op": "USE_SUMMON_BAG",
       "direction": "serverbound",
       "tier1": false,
@@ -10206,63 +10250,6 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 76
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "USE_MOUNT_FOOD",
-      "direction": "serverbound",
-      "tier1": false,
-      "fnames": [
-        "CWvsContext::SendTamingMobFoodItemUseRequest",
-        "sub_832680",
-        "sub_955781"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 76
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 76
-        },
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 75
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 77
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 77
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 80
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 83
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 69
         }
       }
     },

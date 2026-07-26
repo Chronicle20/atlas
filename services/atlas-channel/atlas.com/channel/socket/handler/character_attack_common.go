@@ -76,6 +76,21 @@ func attackKindFromAttackType(at packetmodel.AttackType) string {
 	return ""
 }
 
+// isDrainSkill reports whether id is one of the four attack-side
+// drain-family skills that heal the attacker from damage dealt
+// (Assassin Drain, Marauder/Thunder Breaker Energy Drain, Night
+// Walker Vampire). Aran Combo Drain is buff-driven and excluded.
+func isDrainSkill(id skill3.Id) bool {
+	switch id {
+	case skill3.AssassinDrainId,
+		skill3.MarauderEnergyDrainId,
+		skill3.ThunderBreakerStage3EnergyDrainId,
+		skill3.NightWalkerStage2VampireId:
+		return true
+	}
+	return false
+}
+
 // damageInfoEntryDeps groups the per-attack closures and lookups that
 // processDamageInfoEntry needs. Wrapping them keeps the helper signature
 // readable and lets tests construct fakes with a single struct.
@@ -85,11 +100,15 @@ type damageInfoEntryDeps struct {
 	applyDamage       func(f field.Model, monsterId, characterId uint32, damages []uint32, attackType byte) error
 	emitReflectDamage func(f field.Model, uniqueId, templateId, characterId uint32, reflectDamage uint32, reflectType string) error
 	applyStatus       func(f field.Model, monsterId, characterId, skillId, skillLevel uint32, statuses map[string]int32, duration uint32) error
-	loadVenomStats    func() effective_stats.RestModel
+	// loadEffectiveStats lazily fetches the caster's buff-inclusive
+	// effective stats, at most once per attack. Consumed by the venom
+	// DPT snapshot and by the drain-family heal cap.
+	loadEffectiveStats func() effective_stats.RestModel
 	// onDamageApplied is invoked once per non-reflected DamageInfo after
-	// damage and status apply. Optional; nil-safe. Used by passives that
-	// fire per damaged monster (e.g., MP Eater).
-	onDamageApplied func(monsterId uint32)
+	// damage and status apply, with the summed damage of that entry.
+	// Optional; nil-safe. Used by passives that fire per damaged
+	// monster (e.g., MP Eater, drain-family heals).
+	onDamageApplied func(monsterId uint32, totalDamage uint32)
 }
 
 // processDamageInfoEntry handles one DamageInfo from a magic/melee/ranged
@@ -121,7 +140,7 @@ func processDamageInfoEntry(
 			ms[k] = int32(v)
 		}
 		if _, isVenom := ms["VENOM"]; isVenom {
-			stats := deps.loadVenomStats()
+			stats := deps.loadEffectiveStats()
 			coef := 0.1 + rand.Float64()*0.1
 			ms["VENOM"] = snapshotVenomDamagePerTick(int(stats.Luck), int(stats.MagicAttack), coef)
 		}
@@ -168,7 +187,7 @@ func processDamageInfoEntry(
 			ms[k] = int32(v)
 		}
 		if _, isVenom := ms["VENOM"]; isVenom {
-			stats := deps.loadVenomStats()
+			stats := deps.loadEffectiveStats()
 			coef := 0.1 + rand.Float64()*0.1
 			ms["VENOM"] = snapshotVenomDamagePerTick(int(stats.Luck), int(stats.MagicAttack), coef)
 		}
@@ -176,7 +195,14 @@ func processDamageInfoEntry(
 	}
 
 	if deps.onDamageApplied != nil {
-		deps.onDamageApplied(di.MonsterId())
+		var total uint64
+		for _, d := range damages {
+			total += uint64(d)
+		}
+		if total > math.MaxUint32 {
+			total = math.MaxUint32
+		}
+		deps.onDamageApplied(di.MonsterId(), uint32(total))
 	}
 }
 
@@ -198,6 +224,29 @@ func mpEaterAbsorbAmount(maxMp uint32, x int16) uint32 {
 		return 0
 	}
 	return uint32(uint64(maxMp) * uint64(x) / 100)
+}
+
+// drainHealAmount computes the drain-family HP gain for one damaged
+// monster: floor(totalDamage * x / 100), capped by the monster's max HP
+// and by half the attacker's effective (buff-inclusive) max HP, then
+// defensively clamped to int16 range for ChangeHP. Returns 0 for
+// non-positive x, zero damage, or zero effectiveMaxHp (fail-safe when
+// the effective-stats fetch failed).
+func drainHealAmount(totalDamage uint32, x int16, monsterMaxHp uint32, effectiveMaxHp uint32) int16 {
+	if totalDamage == 0 || x <= 0 || effectiveMaxHp == 0 {
+		return 0
+	}
+	heal := uint64(totalDamage) * uint64(x) / 100
+	if m := uint64(monsterMaxHp); heal > m {
+		heal = m
+	}
+	if h := uint64(effectiveMaxHp) / 2; heal > h {
+		heal = h
+	}
+	if heal > math.MaxInt16 {
+		return math.MaxInt16
+	}
+	return int16(heal)
 }
 
 // mpEaterTryProc evaluates and (on success) emits MP Eater for one
@@ -264,6 +313,45 @@ func mpEaterTryProc(
 	}
 }
 
+// drainTryHeal computes and emits the drain-family heal for one damaged
+// monster: floor(totalDamage * x / 100), capped by the monster's max HP
+// and half the caster's effective max HP. Called once per damaged
+// monster after damage apply. All collaborators are injected so flow
+// tests can drive every branch; production passes mp.GetById and
+// cp.ChangeHP. Errors are logged and swallowed — never abort the
+// surrounding attack pipeline.
+func drainTryHeal(
+	l logrus.FieldLogger,
+	getMonster func(monsterId uint32) (monster.Model, error),
+	changeHP func(f field.Model, characterId uint32, amount int16) error,
+	loadEffectiveStats func() effective_stats.RestModel,
+	x int16,
+	skillId uint32,
+	monsterId uint32,
+	totalDamage uint32,
+	f field.Model,
+	characterId uint32,
+) {
+	mon, err := getMonster(monsterId)
+	if err != nil {
+		l.WithError(err).Debugf("Drain heal: monster [%d] snapshot fetch failed; skipping heal for caster [%d].", monsterId, characterId)
+		return
+	}
+
+	stats := loadEffectiveStats()
+	heal := drainHealAmount(totalDamage, x, mon.MaxHp(), stats.MaxHp)
+	if heal <= 0 {
+		return
+	}
+
+	l.Debugf("Drain heal: caster=[%d] skill=[%d] monster=[%d] damage=[%d] x=[%d] heal=[%d].",
+		characterId, skillId, monsterId, totalDamage, x, heal)
+
+	if err := changeHP(f, characterId, heal); err != nil {
+		l.WithError(err).Errorf("Drain heal: CHANGE_HP emit failed for character [%d] (skill [%d], monster [%d]).", characterId, skillId, monsterId)
+	}
+}
+
 func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(ai packetmodel.AttackInfo) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(ai packetmodel.AttackInfo) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(ai packetmodel.AttackInfo) model.Operator[session.Model] {
@@ -321,37 +409,44 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					t := tenant.MustFromContext(ctx)
 					attackKind := attackKindFromAttackType(ai.AttackType())
 
-					// Lazy effective-stats fetch: only needed when a damage entry
-					// produces a VENOM apply. Cached for the duration of one attack.
-					var venomStats effective_stats.RestModel
-					venomStatsLoaded := false
-					loadVenomStats := func() effective_stats.RestModel {
-						if venomStatsLoaded {
-							return venomStats
+					// Lazy effective-stats fetch: needed when a damage entry
+					// produces a VENOM apply and by drain-family heals.
+					// Cached for the duration of one attack.
+					var effectiveStats effective_stats.RestModel
+					effectiveStatsLoaded := false
+					loadEffectiveStats := func() effective_stats.RestModel {
+						if effectiveStatsLoaded {
+							return effectiveStats
 						}
-						venomStatsLoaded = true
+						effectiveStatsLoaded = true
 						stats, sErr := effective_stats.NewProcessor(l, ctx).GetByCharacterId(s.WorldId(), s.ChannelId(), s.CharacterId())
 						if sErr != nil {
-							l.WithError(sErr).Errorf("Unable to fetch effective stats for character [%d]; venom DPT will fall back to zero.", s.CharacterId())
+							l.WithError(sErr).Errorf("Unable to fetch effective stats for character [%d]; venom DPT and drain heal will fall back to zero.", s.CharacterId())
 							return effective_stats.RestModel{}
 						}
-						venomStats = stats
-						return venomStats
+						effectiveStats = stats
+						return effectiveStats
 					}
 
 					deps := damageInfoEntryDeps{
-						getReflect:        mirror.GetReflect,
-						getMonster:        mp.GetById,
-						applyDamage:       mp.Damage,
-						emitReflectDamage: mp.EmitDamageReflected,
-						applyStatus:       mp.ApplyStatus,
-						loadVenomStats:    loadVenomStats,
+						getReflect:         mirror.GetReflect,
+						getMonster:         mp.GetById,
+						applyDamage:        mp.Damage,
+						emitReflectDamage:  mp.EmitDamageReflected,
+						applyStatus:        mp.ApplyStatus,
+						loadEffectiveStats: loadEffectiveStats,
 						// MP Eater proc: per-monster, after status apply,
-						// magic attacks only. Failures are swallowed so the
-						// rest of the attack pipeline is unaffected.
-						onDamageApplied: func(monsterId uint32) {
+						// magic attacks only. Drain-family heal: per-monster,
+						// skill-id gated (no attack-type gate — the four
+						// skills span melee/ranged/energy). Failures are
+						// swallowed so the rest of the attack pipeline is
+						// unaffected.
+						onDamageApplied: func(monsterId uint32, totalDamage uint32) {
 							if ai.AttackType() == packetmodel.AttackTypeMagic && ai.SkillId() > 0 {
 								mpEaterTryProc(l, ctx, mp, c, monsterId, s.Field(), s.CharacterId())
+							}
+							if ai.SkillId() > 0 && isDrainSkill(skill3.Id(ai.SkillId())) {
+								drainTryHeal(l, mp.GetById, cp.ChangeHP, loadEffectiveStats, se.X(), ai.SkillId(), monsterId, totalDamage, s.Field(), s.CharacterId())
 							}
 						},
 					}
@@ -407,7 +502,6 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					// TODO apply attack effect (heal, mp consumption, dispel, cure all, combo reset, etc)
 					// TODO destroy Chief Bandit exploded mesos
 					// TODO apply Pick Pocket
-					// TODO increase HP from Energy Drain, Vampire, or Drain
 					// TODO apply Bandit Steal
 					// TODO Fire Demon ice weaken
 					// TODO Ice Demon fire weaken

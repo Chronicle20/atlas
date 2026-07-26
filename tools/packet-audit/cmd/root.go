@@ -129,6 +129,8 @@ func runExport(args []string, stderr io.Writer) int {
 	fs.StringVar(&generatedAt, "generated-at", "", "fixed provenance timestamp (default: now / $PACKET_AUDIT_GENERATED_AT)")
 	var idaPort int
 	fs.IntVar(&idaPort, "ida-port", 0, "IDA-MCP instance port to select (0 = default active instance; e.g. 13338 for a second loaded IDB)")
+	var idaDatabase string
+	fs.StringVar(&idaDatabase, "ida-database", "", "IDA-MCP session id (database) from idb_list to target directly — the session-based successor to -ida-port; preferred when many IDBs are open on one server")
 	// Roster-source overrides (additive; default behaviour is unchanged when the
 	// flags are absent). Pass an empty value (e.g. --prior-export "") to harvest a
 	// TARGETED roster — only the FNames listed in --pending — instead of the full
@@ -179,9 +181,12 @@ func runExport(args []string, stderr io.Writer) int {
 
 	hc := &http.Client{Timeout: eo.IDATimeout}
 	var client idasrc.MCPClient
-	if idaPort != 0 {
+	switch {
+	case idaDatabase != "":
+		client = idasrc.NewMCPHTTPClientWithDatabase(eo.IDAURL, hc, idaDatabase)
+	case idaPort != 0:
 		client = idasrc.NewMCPHTTPClientWithInstance(eo.IDAURL, hc, idaPort)
-	} else {
+	default:
 		client = idasrc.NewMCPHTTPClient(eo.IDAURL, hc)
 	}
 	return exportRun(eo, client, os.Stdout, stderr)

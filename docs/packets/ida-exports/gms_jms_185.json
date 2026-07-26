@@ -8298,6 +8298,11 @@
         }
       ]
     },
+    "CWvsContext::TryRecovery": {
+      "address": "0xae6f5a",
+      "direction": "serverbound",
+      "calls": null
+    },
     "CWvsContext::SendSitOnPortableChairRequest": {
       "address": "0xaf3ee8",
       "direction": "serverbound",
@@ -13733,6 +13738,27 @@
           "op": "Decode1",
           "comment": "success @0xb051b7",
           "guard": "v31"
+        }
+      ]
+    },
+    "CWvsContext::SendTamingMobFoodItemUseRequest": {
+      "address": "0xaee70c",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CWvsContext::CanSendExclRequest(this, 200, 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "CWvsContext::CanSendExclRequest(this, 200, 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CWvsContext::CanSendExclRequest(this, 200, 0)"
         }
       ]
     }

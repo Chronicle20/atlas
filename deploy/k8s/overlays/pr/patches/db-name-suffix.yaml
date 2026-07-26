@@ -356,6 +356,19 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: atlas-rankings
+spec:
+  template:
+    spec:
+      containers:
+        - name: rankings
+          env:
+            - name: DB_NAME
+              value: "atlas-rankings-PLACEHOLDER_ATLAS_ENV"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: atlas-reactor-actions
 spec:
   template:

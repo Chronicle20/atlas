@@ -1,0 +1,55 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-rankings
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: atlas-rankings
+  template:
+    metadata:
+      labels:
+        app: atlas-rankings
+    spec:
+      containers:
+      - name: rankings
+        image: ghcr.io/chronicle20/atlas-rankings/atlas-rankings:latest
+        ports:
+        - containerPort: 8080
+        readinessProbe:
+          httpGet:
+            path: /api/readyz
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        envFrom:
+        - configMapRef:
+            name: atlas-env
+        env:
+        - name: LOG_LEVEL
+          value: "debug"
+        - name: DB_NAME
+          value: "atlas-rankings"
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: DB_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: DB_PASSWORD
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-rankings
+spec:
+  selector:
+    app: atlas-rankings
+  ports:
+  - protocol: TCP
+    port: 8080

@@ -12080,6 +12080,11 @@
         }
       ]
     },
+    "CWvsContext::TryRecovery": {
+      "address": "0x94f24a",
+      "direction": "serverbound",
+      "calls": null
+    },
     "CWvsContext::GetCharacterData": {
       "address": "0x423135",
       "direction": "",
@@ -20551,6 +20556,27 @@
         {
           "op": "Decode1",
           "comment": "whispersOn"
+        }
+      ]
+    },
+    "CWvsContext::SendTamingMobFoodItemUseRequest": {
+      "address": "0x955781",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && a3 / 10000 == 226 && result"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "result && a3 / 10000 == 226 && result"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && a3 / 10000 == 226 && result"
         }
       ]
     }

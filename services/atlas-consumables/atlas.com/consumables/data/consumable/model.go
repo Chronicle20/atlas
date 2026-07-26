@@ -199,6 +199,13 @@ func (m Model) MonsterSummons() []SummonModel {
 	return m.monsterSummons
 }
 
+// Morphs returns the item's morphRandom table (morph id -> weight). The
+// returned map is the internal reference, matching the MonsterSummons()
+// accessor convention; callers are read-only.
+func (m Model) Morphs() map[uint32]uint32 {
+	return m.morphs
+}
+
 func (m Model) Rewards() []RewardModel {
 	return m.rewards
 }

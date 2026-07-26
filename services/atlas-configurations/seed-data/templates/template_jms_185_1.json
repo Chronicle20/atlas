@@ -810,7 +810,10 @@
         "opCode": "0xAE",
         "validator": "LoggedInValidator",
         "handler": "PetItemUseHandle",
-        "services": ["channel"]
+        "services": ["channel"],
+        "options": {
+          "skillGate": "petSkillFlag"
+        }
       },
       {
         "opCode": "0xAF",
@@ -1609,7 +1612,14 @@
       {
         "opCode": "0x1B",
         "writer": "CharacterInventoryChange",
-        "services": ["channel"]
+        "services": ["channel"],
+        "options": {
+          "petSkill": {
+            "consumeHP": "0x20",
+            "consumeMP": "0x40",
+            "autoSpeaking": "0x100"
+          }
+        }
       },
       {
         "opCode": "0x1D",
@@ -1954,7 +1964,14 @@
       {
         "opCode": "0x7B",
         "writer": "SetField",
-        "services": ["channel"]
+        "services": ["channel"],
+        "options": {
+          "petSkill": {
+            "consumeHP": "0x20",
+            "consumeMP": "0x40",
+            "autoSpeaking": "0x100"
+          }
+        }
       },
       {
         "opCode": "0x7C",

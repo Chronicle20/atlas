@@ -725,6 +725,15 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x75",
+        "validator": "LoggedInValidator",
+        "handler": "PetItemUseHandle",
+        "services": ["channel"],
+        "options": {
+          "skillGate": "equipAbility"
+        }
+      },
+      {
         "opCode": "0x78",
         "validator": "LoggedInValidator",
         "handler": "SummonMoveHandle",

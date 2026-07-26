@@ -53,6 +53,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSetExcludeCommand(db)))); err != nil {
 				return err
 			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSetSkillCommand(db)))); err != nil {
+				return err
+			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleEvolveCommand(db)))); err != nil {
 				return err
 			}
@@ -134,6 +137,18 @@ func handleSetExcludeCommand(db *gorm.DB) message.Handler[pet2.Command[pet2.SetE
 			return
 		}
 		_ = pet.NewProcessor(l, ctx, db).SetExcludeAndEmit(c.PetId, c.Body.Items)
+	}
+}
+
+func handleSetSkillCommand(db *gorm.DB) message.Handler[pet2.Command[pet2.SetSkillCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c pet2.Command[pet2.SetSkillCommandBody]) {
+		if c.Type != pet2.CommandSetSkill {
+			return
+		}
+		err := pet.NewProcessor(l, ctx, db).SetSkillAndEmit(c.PetId, c.Body.Skill, c.Body.Enabled)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to set skill [%s] for pet [%d].", c.Body.Skill, c.PetId)
+		}
 	}
 }
 

@@ -1645,3 +1645,62 @@ func TestProcessor_DespawnAndEmit_RidesOuterTransaction(t *testing.T) {
 		t.Fatalf("Despawn's pet-slot write escaped the outer transaction and survived its rollback: expected slot 0 (unchanged), got %d", after.Slot())
 	}
 }
+
+func TestProcessor_SetSkill(t *testing.T) {
+	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t))
+
+	mb := message.NewBuffer()
+	i := mustBuild(t, pet.NewModelBuilder(0, 7000001, 5000017, "Skiller", 1))
+	o, err := p.Create(mb)(i)
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+
+	// enable consumeHP (canonical bit 1<<1)
+	if err := p.SetSkill(message.NewBuffer())(o.Id())("consumeHP")(true); err != nil {
+		t.Fatalf("SetSkill enable: %v", err)
+	}
+	m, err := p.GetById(o.Id())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m.Flag() != 2 {
+		t.Errorf("Flag = %d, want 2", m.Flag())
+	}
+
+	// idempotent re-enable: no error, unchanged
+	if err := p.SetSkill(message.NewBuffer())(o.Id())("consumeHP")(true); err != nil {
+		t.Fatalf("SetSkill idempotent enable: %v", err)
+	}
+	m, _ = p.GetById(o.Id())
+	if m.Flag() != 2 {
+		t.Errorf("Flag after idempotent enable = %d, want 2", m.Flag())
+	}
+
+	// enable a second skill; both bits present
+	if err := p.SetSkill(message.NewBuffer())(o.Id())("autoSpeaking")(true); err != nil {
+		t.Fatalf("SetSkill autoSpeaking: %v", err)
+	}
+	m, _ = p.GetById(o.Id())
+	if m.Flag() != 2|256 {
+		t.Errorf("Flag = %d, want %d", m.Flag(), 2|256)
+	}
+
+	// disable consumeHP
+	if err := p.SetSkill(message.NewBuffer())(o.Id())("consumeHP")(false); err != nil {
+		t.Fatalf("SetSkill disable: %v", err)
+	}
+	m, _ = p.GetById(o.Id())
+	if m.Flag() != 256 {
+		t.Errorf("Flag after disable = %d, want 256", m.Flag())
+	}
+
+	// unknown key: warn + drop, no error, no change
+	if err := p.SetSkill(message.NewBuffer())(o.Id())("bogus")(true); err != nil {
+		t.Fatalf("SetSkill unknown key returned error: %v", err)
+	}
+	m, _ = p.GetById(o.Id())
+	if m.Flag() != 256 {
+		t.Errorf("Flag after unknown key = %d, want 256", m.Flag())
+	}
+}

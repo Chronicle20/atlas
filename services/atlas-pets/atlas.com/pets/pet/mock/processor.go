@@ -49,6 +49,8 @@ type ProcessorMock struct {
 	EvolveFunc                               func(mb *message.Buffer) func(transactionId uuid.UUID, petId uint32) error
 	SetExcludeAndEmitFunc                    func(petId uint32, items []uint32) error
 	SetExcludeFunc                           func(mb *message.Buffer) func(petId uint32) func(items []uint32) error
+	SetSkillAndEmitFunc                      func(petId uint32, skillKey string, enabled bool) error
+	SetSkillFunc                             func(mb *message.Buffer) func(petId uint32) func(skillKey string) func(enabled bool) error
 }
 
 var _ pet.Processor = (*ProcessorMock)(nil)
@@ -369,6 +371,26 @@ func (m *ProcessorMock) SetExclude(mb *message.Buffer) func(petId uint32) func(i
 	return func(petId uint32) func(items []uint32) error {
 		return func(items []uint32) error {
 			return nil
+		}
+	}
+}
+
+func (m *ProcessorMock) SetSkillAndEmit(petId uint32, skillKey string, enabled bool) error {
+	if m.SetSkillAndEmitFunc != nil {
+		return m.SetSkillAndEmitFunc(petId, skillKey, enabled)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) SetSkill(mb *message.Buffer) func(petId uint32) func(skillKey string) func(enabled bool) error {
+	if m.SetSkillFunc != nil {
+		return m.SetSkillFunc(mb)
+	}
+	return func(petId uint32) func(skillKey string) func(enabled bool) error {
+		return func(skillKey string) func(enabled bool) error {
+			return func(enabled bool) error {
+				return nil
+			}
 		}
 	}
 }

@@ -18,6 +18,7 @@ const (
 	CommandAwardLevel        = "AWARD_LEVEL"
 	CommandSetExclude        = "EXCLUDE"
 	CommandPetEvolve         = "EVOLVE"
+	CommandSetSkill          = "SET_SKILL"
 )
 
 type Command[E any] struct {
@@ -57,6 +58,13 @@ type SetExcludeCommandBody struct {
 
 type EvolveCommandBody struct{}
 
+// SetSkillCommandBody carries a semantic pet skill key (atlas-constants
+// pet/skill spelling) — never a client wire bit.
+type SetSkillCommandBody struct {
+	Skill   string `json:"skill"`
+	Enabled bool   `json:"enabled"`
+}
+
 const (
 	EnvCommandTopicMovement = "COMMAND_TOPIC_PET_MOVEMENT"
 )
@@ -86,6 +94,7 @@ const (
 	StatusEventTypeSlotChanged      = "SLOT_CHANGED"
 	StatusEventTypeExcludeChanged   = "EXCLUDE_CHANGED"
 	StatusEventTypeEvolved          = "EVOLVED"
+	StatusEventTypeFlagChanged      = "FLAG_CHANGED"
 
 	DespawnReasonNormal  = "NORMAL"
 	DespawnReasonHunger  = "HUNGER"
@@ -161,6 +170,11 @@ type SlotChangedStatusEventBody struct {
 
 type ExcludeChangedStatusEventBody struct {
 	Items []uint32 `json:"items"`
+}
+
+type FlagChangedStatusEventBody struct {
+	Slot int8   `json:"slot"`
+	Flag uint16 `json:"flag"`
 }
 
 type EvolvedStatusEventBody struct {

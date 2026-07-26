@@ -1656,8 +1656,11 @@ func TestProcessor_SetSkill(t *testing.T) {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
 
-	// enable consumeHP (canonical bit 1<<1)
-	if err := p.SetSkill(message.NewBuffer())(o.Id())("consumeHP")(true); err != nil {
+	// enable consumeHP (canonical bit 1<<1); a non-idempotent write must emit
+	// FLAG_CHANGED — asserted here for contrast with the idempotent case
+	// below, so an always-empty-buffer bug in SetSkill can't pass silently.
+	enableBuf := message.NewBuffer()
+	if err := p.SetSkill(enableBuf)(o.Id())("consumeHP")(true); err != nil {
 		t.Fatalf("SetSkill enable: %v", err)
 	}
 	m, err := p.GetById(o.Id())
@@ -1667,21 +1670,34 @@ func TestProcessor_SetSkill(t *testing.T) {
 	if m.Flag() != 2 {
 		t.Errorf("Flag = %d, want 2", m.Flag())
 	}
+	if se, ok := enableBuf.GetAll()[pet2.EnvStatusEventTopic]; !ok || len(se) != 1 {
+		t.Fatalf("Expected 1 FLAG_CHANGED event from a non-idempotent SetSkill call, got %v", enableBuf.GetAll())
+	}
 
-	// idempotent re-enable: no error, unchanged
-	if err := p.SetSkill(message.NewBuffer())(o.Id())("consumeHP")(true); err != nil {
+	// idempotent re-enable: no error, unchanged flag, AND no event emitted.
+	idempotentBuf := message.NewBuffer()
+	if err := p.SetSkill(idempotentBuf)(o.Id())("consumeHP")(true); err != nil {
 		t.Fatalf("SetSkill idempotent enable: %v", err)
 	}
-	m, _ = p.GetById(o.Id())
+	m, err = p.GetById(o.Id())
+	if err != nil {
+		t.Fatal(err)
+	}
 	if m.Flag() != 2 {
 		t.Errorf("Flag after idempotent enable = %d, want 2", m.Flag())
+	}
+	if ke := idempotentBuf.GetAll(); len(ke) != 0 {
+		t.Errorf("Idempotent SetSkill emitted events, want none: %v", ke)
 	}
 
 	// enable a second skill; both bits present
 	if err := p.SetSkill(message.NewBuffer())(o.Id())("autoSpeaking")(true); err != nil {
 		t.Fatalf("SetSkill autoSpeaking: %v", err)
 	}
-	m, _ = p.GetById(o.Id())
+	m, err = p.GetById(o.Id())
+	if err != nil {
+		t.Fatal(err)
+	}
 	if m.Flag() != 2|256 {
 		t.Errorf("Flag = %d, want %d", m.Flag(), 2|256)
 	}
@@ -1690,7 +1706,10 @@ func TestProcessor_SetSkill(t *testing.T) {
 	if err := p.SetSkill(message.NewBuffer())(o.Id())("consumeHP")(false); err != nil {
 		t.Fatalf("SetSkill disable: %v", err)
 	}
-	m, _ = p.GetById(o.Id())
+	m, err = p.GetById(o.Id())
+	if err != nil {
+		t.Fatal(err)
+	}
 	if m.Flag() != 256 {
 		t.Errorf("Flag after disable = %d, want 256", m.Flag())
 	}
@@ -1699,7 +1718,10 @@ func TestProcessor_SetSkill(t *testing.T) {
 	if err := p.SetSkill(message.NewBuffer())(o.Id())("bogus")(true); err != nil {
 		t.Fatalf("SetSkill unknown key returned error: %v", err)
 	}
-	m, _ = p.GetById(o.Id())
+	m, err = p.GetById(o.Id())
+	if err != nil {
+		t.Fatal(err)
+	}
 	if m.Flag() != 256 {
 		t.Errorf("Flag after unknown key = %d, want 256", m.Flag())
 	}

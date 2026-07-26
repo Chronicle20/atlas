@@ -1,0 +1,56 @@
+{
+  "service": "multi-service (task-137 note-item-consumption)",
+  "path": "libs/atlas-packet, libs/atlas-saga, services/atlas-notes, services/atlas-saga-orchestrator, services/atlas-channel, tools/packet-audit",
+  "date": "2026-07-25",
+  "build": "pass",
+  "testsPassed": null,
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "domains": [
+    {
+      "name": "atlas-notes/note",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-06", "name": "Processor accepts FieldLogger", "status": "pass", "evidence": "note/processor.go constructor (unchanged, pre-existing)"},
+        {"id": "DOM-08", "name": "POST uses RegisterInputHandler", "status": "pass", "evidence": "note/resource.go CreateNoteHandler (pre-existing, unaffected)"},
+        {"id": "DOM-15", "name": "No direct entity creation in handlers", "status": "pass", "evidence": "note/resource.go:152"},
+        {"id": "DOM-17", "name": "Error to HTTP status mapping", "status": "pass", "evidence": "note/resource.go:153 server.WriteErrorResponse"},
+        {"id": "DOM-24", "name": "Kafka producer stubbed in tests that emit", "status": "pass", "evidence": "note/testmain_test.go:11 producertest.InstallNoop(), no ResetInstance cleanup"},
+        {"id": "DOM-27", "name": "Transient DB errors map to 503", "status": "pass", "evidence": "main.go:64-65 RegisterTransientErrorClassifier"}
+      ]
+    },
+    {
+      "name": "saga-orchestrator/note",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor in processor.go", "status": "pass", "evidence": "note/processor.go:14-38"},
+        {"id": "FILE-03", "name": "Cross-service requests in requests.go", "status": "n/a", "evidence": "no REST client, Kafka-only package"},
+        {"id": "FILE-06", "name": "No package-named catch-all file", "status": "pass", "evidence": "processor.go, producer.go, mock/processor.go, producer_test.go each single-purpose"},
+        {"id": "DOM-24", "name": "Kafka producer stubbed in tests that emit", "status": "pass", "evidence": "kafka/consumer/note/testmain_test.go:11; saga/testmain_test.go (pre-existing, still present)"}
+      ]
+    },
+    {
+      "name": "atlas-channel socket/handler + compartment + note",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-21", "name": "Use atlas-constants types", "status": "pass", "evidence": "note_operation.go:47,53 inventory.TypeValueCash / item.ClassificationNote"},
+        {"id": "DOM-25", "name": "Client wire values config-resolved", "status": "pass", "evidence": "character_cash_item_use.go:47 cashsb.UpdateTimeFirst(t); operation_body.go:46-54 ResolveCode for SEND_ERROR keys"},
+        {"id": "dead-code", "name": "No dead code after saga re-architecture", "status": "pass", "evidence": "note/processor.go SendNote removed, note/producer.go CreateCommandProvider removed"},
+        {"id": "DOM-24", "name": "Kafka producer stubbed in tests that emit", "status": "pass", "evidence": "note_send_test.go / consumer_test.go additions are pure-function tests, no emit path exercised"}
+      ]
+    },
+    {
+      "name": "libs/atlas-saga, libs/atlas-packet (note, cash/serverbound)",
+      "type": "support",
+      "checks": [
+        {"id": "wiring", "name": "CreateNote action registered end-to-end (model/payloads/unmarshal)", "status": "pass", "evidence": "model.go:184-185, payloads.go:962-967, unmarshal.go:588-593"},
+        {"id": "DOM-25", "name": "No client wire byte as Go literal outside codec/layout gates", "status": "pass", "evidence": "operation_discard.go isJMS wire-shape gate and ItemUseNote UpdateTimeFirst gate are documented wire-layout decisions, not client-interpreted mode/error codes"}
+      ]
+    }
+  ],
+  "blocking": [],
+  "nonBlocking": [
+    "Note (not filed as finding): producer.ProviderImpl called directly (no AndEmit/buffer) for CREATE_FAILED notification in atlas-notes/kafka/consumer/note/consumer.go:54 and saga-orchestrator/note/processor.go:38 - matches established fleet-wide idiom (atlas-cashshop, atlas-messengers) for post-transaction-failure notification; no DB transaction exists on that branch to keep atomic with the emit.",
+    "Note (pre-vetted by requester, Minor at most): transactionId,omitempty on uuid.UUID fields is a no-op omitempty (array kind), kept for cross-service wire-contract mirroring."
+  ]
+}

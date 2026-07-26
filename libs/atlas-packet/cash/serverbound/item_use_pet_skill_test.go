@@ -11,7 +11,9 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
-// packet-audit:verify CWvsContext::SendConsumeCashItemUseRequest (case 28, jms_v185 @0xaef2f5)
+// packet-audit:verify packet=cash/serverbound/CashItemUsePetSkill version=jms_v185 ida=0xaef2f5
+//
+// FName CWvsContext::SendConsumeCashItemUseRequest, case 28.
 //
 // Verified via IDA jms_v185 (session 3c4bb8b1, MapleStory_dump_SCY.exe.i64):
 // the jump-table case-28 arm (entry at 0xaf16df) contains exactly ONE encode

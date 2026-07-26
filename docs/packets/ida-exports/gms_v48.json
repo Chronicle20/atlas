@@ -10881,13 +10881,28 @@
       ]
     },
     "CWvsContext::SendStatChangeItemUseRequestByPetQ": {
-      "address": "",
+      "address": "0x70dc8d",
       "direction": "serverbound",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "",
+          "guard": "result && result"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && result"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "result && result"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && result"
         }
       ]
     },

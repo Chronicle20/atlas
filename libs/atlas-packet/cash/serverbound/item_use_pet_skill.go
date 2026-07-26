@@ -31,6 +31,7 @@ import (
 // decodes for MajorVersion()>=87 (jms_v185 included). So the sub-body here
 // is nothing but the raw 8-byte pet locker SN, which round-trips as the
 // Atlas pet id.
+// packet-audit:fname CWvsContext::SendConsumeCashItemUseRequest
 type ItemUsePetSkill struct {
 	petId uint64
 }

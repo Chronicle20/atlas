@@ -6,7 +6,7 @@
 
 Tool: `f92b9a9e4faf9df06b35df8c0e40387e2df8b37114fcb8105b0850fb241c1c7e`
 
-- export gms_v48: `76a945f5ca41e654f5e42aabd243f335a291e904c0cf9490360c93ddeba408d7`
+- export gms_v48: `884e2d5f908f818b929e55ac16e01eb78be10e8769d976f42ff00e02bb6cdeff`
 - export gms_v61: `60b4532a9e35c12cb3b9adfd34a0bf65443b113fd3855df3bfd02bb92f858820`
 - export gms_v72: `ce9a5787ced1dc14cb7de1978be44db77b96be1ad7bba666c41e2c202eec20b6`
 - export gms_v79: `ac755c75dcaf4e8bfde38ffc999489182bdfa8517f46403653bf2ac5a4e44d5e`
@@ -659,6 +659,7 @@ Tool: `f92b9a9e4faf9df06b35df8c0e40387e2df8b37114fcb8105b0850fb241c1c7e`
 | PET_LOOT | CPet::SendDropPickUpRequest; sub_58ED98 | pet/serverbound/PetDropPickUp (T1) | 0x074 | ✅ | 0x08D | ✅ | 0x0A4 | ✅ | 0x0A6 | ✅ | 0x0AA | ✅ | 0x0AF | ✅ | 0x0B6 | ✅ | 0x0CA | ✅ | 0x0AD | ✅ |
 | USE_REMOTE | CWvsContext::SendUseGachaponRemoteRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x074 | ❌ | 0x074 | ❌ | 0x077 | ❌ | 0x080 | ❌ |  | ⬜ |
 | FOLLOW_CHARACTER_WITHRDAW |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x075 | ❌ |
+| PET_AUTO_POT | CWvsContext::SendStatChangeItemUseRequestByPetQ | pet/serverbound/PetItemUse (T1) | 0x075 | ✅ | 0x08E | ✅ | 0x0A5 | ✅ | 0x0A7 | ✅ | 0x0AB | ✅ | 0x0B0 | ✅ | 0x0B7 | ✅ | 0x0CB | ✅ | 0x0AE | ✅ |
 | WATER_OF_LIFE | CWvsContext::SendWaterOfLife |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x075 | ❌ | 0x075 | ❌ | 0x078 | ❌ | 0x081 | ❌ |  | ⬜ |
 | MOVE_SUMMON | CVecCtrlSummoned::EndUpdateActive; sub_6E7CF8; sub_7FE86B; sub_9184E5 | summon/serverbound/SummonMoveHandle | 0x078 | ❌ | 0x092 | ❌ | 0x0A9 | ❌ | 0x0AB | ❌ | 0x0AF | ✅ | 0x0B2 | ✅ | 0x0BB | ✅ | 0x0CF | ✅ | 0x0B2 | ✅ |
 | REPAIR_DURABILITY_ALL | CRepairDurabilityDlg::SendRepairDurabilityAll |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x079 | ❌ | 0x082 | ❌ | 0x06D | ❌ |
@@ -688,7 +689,6 @@ Tool: `f92b9a9e4faf9df06b35df8c0e40387e2df8b37114fcb8105b0850fb241c1c7e`
 | BOOBY_TRAP_ALERT | CWvsContext::SendBoobyTrapAlert |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x08D | ❌ | 0x091 | ❌ | 0x095 | ❌ | 0x0A5 | ❌ | 0x08F | ❌ |
 | ALLIANCE_REQUEST | CTabGuildAlliance::OnChangeMaster; CTabGuildAlliance::OnGradeChange; CTabGuildAlliance::OnInvite; CTabGuildAlliance::OnKick; CTabGuildAlliance::OnSetNotice; CTabGuildAlliance::OnWithdraw; CUIFadeYesNo::OnButtonClicked; CWndAllianceGrade::OnSaveGradeName; CWvsContext::OnAllianceResult; CWvsContext::OnGuildResult | guild/serverbound/GuildJoin (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x08E | ✅ |  | ⬜ | 0x096 | ✅ | 0x0A7 | ✅ | 0x091 | ✅ |
 | ITEM_PICKUP | CWvsContext::SendDropPickUpRequest; sub_70D987; sub_8316B8 | drop/serverbound/DropPickUp (T1) | 0x08E | ✅ | 0x0A9 | ✅ | 0x0C0 | ✅ | 0x0C2 | ✅ | 0x0CA | ✅ | 0x0D0 | ✅ | 0x0D7 | ✅ | 0x0F6 | ✅ | 0x0D5 | ✅ |
-| PET_AUTO_POT | CWvsContext::SendStatChangeItemUseRequestByPetQ | pet/serverbound/PetItemUse (T1) |  | ⬜ | 0x08E | 🟡ᶠ | 0x0A5 | 🟡ᶠ | 0x0A7 | 🟡ᶠ | 0x0AB | ✅ | 0x0B0 | ✅ | 0x0B7 | ✅ | 0x0CB | ✅ | 0x0AE | ✅ |
 | ALLIANCE_OPERATION | CFadeWnd::SendCloseMessage; CUIFadeYesNo::OnButtonClicked; CWvsContext::OnAllianceResult | messenger/serverbound/MessengerOperationDeclineInvite (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x08F | ✅ | 0x093 | ✅ | 0x097 | ✅ | 0x0A8 | ✅ | 0x092 | ✅ |
 | PET_EXCLUDE_ITEMS | CPet::SendUpdateExceptionListRequest | pet/serverbound/PetExcludeItem (T1) |  | ⬜ | 0x08F | ✅ | 0x0A6 | ✅ | 0x0A8 | ✅ | 0x0AC | ✅ | 0x0B1 | ✅ | 0x0B8 | ✅ | 0x0CC | ✅ | 0x0AF | ✅ |
 | DENY_ALLIANCE_REQUEST | CFadeWnd::SendCloseMessage; CWvsContext::OnAllianceResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x090 | ❌ | 0x094 | ❌ | 0x098 | ❌ |  | ⬜ |  | ⬜ |
@@ -836,6 +836,7 @@ Tool: `f92b9a9e4faf9df06b35df8c0e40387e2df8b37114fcb8105b0850fb241c1c7e`
 | cash/serverbound/CashItemUseItemMegaphone (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | cash/serverbound/CashItemUseMapleTV (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
 | cash/serverbound/CashItemUseMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| cash/serverbound/CashItemUsePetSkill (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |
 | cash/serverbound/CashItemUsePointReset (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | cash/serverbound/CashItemUseSuperMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashItemUseTeleportRock (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -1001,15 +1002,15 @@ Tool: `f92b9a9e4faf9df06b35df8c0e40387e2df8b37114fcb8105b0850fb241c1c7e`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 175 | 0 | 2 | 161 | 628 | 0 | 51.8% |
-| v61 | 251 | 0 | 60 | 194 | 461 | 0 | 49.7% |
-| v72 | 261 | 0 | 73 | 213 | 419 | 0 | 47.7% |
-| v79 | 305 | 0 | 72 | 209 | 380 | 0 | 52.0% |
-| v83 | 425 | 0 | 0 | 317 | 224 | 0 | 57.3% |
-| v84 | 398 | 0 | 0 | 324 | 244 | 0 | 55.1% |
-| v87 | 433 | 0 | 0 | 346 | 187 | 0 | 55.6% |
-| v95 | 458 | 0 | 0 | 405 | 103 | 0 | 53.1% |
-| JMS185 | 410 | 0 | 0 | 362 | 194 | 0 | 53.1% |
+| v48 | 176 | 0 | 2 | 162 | 627 | 0 | 51.8% |
+| v61 | 252 | 0 | 59 | 195 | 461 | 0 | 49.8% |
+| v72 | 262 | 0 | 72 | 214 | 419 | 0 | 47.8% |
+| v79 | 306 | 0 | 71 | 210 | 380 | 0 | 52.1% |
+| v83 | 425 | 0 | 0 | 318 | 224 | 0 | 57.2% |
+| v84 | 398 | 0 | 0 | 325 | 244 | 0 | 55.0% |
+| v87 | 433 | 0 | 0 | 347 | 187 | 0 | 55.5% |
+| v95 | 458 | 0 | 0 | 406 | 103 | 0 | 53.0% |
+| JMS185 | 411 | 0 | 0 | 362 | 194 | 0 | 53.2% |
 
 ## Conflicts
 

@@ -209,7 +209,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-buddies/atlas-buddies
     newTag: main-bb513ef
   - name: ghcr.io/chronicle20/atlas-buffs/atlas-buffs
-    newTag: main-bb513ef
+    newTag: main-d532450
   - name: ghcr.io/chronicle20/atlas-cashshop/atlas-cashshop
     newTag: main-bb513ef
   - name: ghcr.io/chronicle20/atlas-chairs/atlas-chairs
@@ -217,7 +217,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-chalkboards/atlas-chalkboards
     newTag: main-bb513ef
   - name: ghcr.io/chronicle20/atlas-channel/atlas-channel
-    newTag: main-dd0fde1
+    newTag: main-d532450
   - name: ghcr.io/chronicle20/atlas-character/atlas-character
     newTag: main-bb513ef
   - name: ghcr.io/chronicle20/atlas-character-factory/atlas-character-factory

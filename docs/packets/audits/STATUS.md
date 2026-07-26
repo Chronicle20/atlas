@@ -836,7 +836,7 @@ Tool: `b81d0aff4d60fdfd6aaefc8e0398a19ee4bd9eabafc04df358f080859914fef9`
 | cash/serverbound/CashItemUseItemMegaphone (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | cash/serverbound/CashItemUseMapleTV (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
 | cash/serverbound/CashItemUseMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| cash/serverbound/CashItemUsePetSkill (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |
+| cash/serverbound/CashItemUsePetSkill (T1) |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ✅ |
 | cash/serverbound/CashItemUsePointReset (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | cash/serverbound/CashItemUseSuperMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashItemUseTeleportRock (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
@@ -1002,14 +1002,14 @@ Tool: `b81d0aff4d60fdfd6aaefc8e0398a19ee4bd9eabafc04df358f080859914fef9`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 176 | 0 | 2 | 162 | 627 | 0 | 51.8% |
-| v61 | 252 | 0 | 59 | 195 | 461 | 0 | 49.8% |
-| v72 | 262 | 0 | 72 | 214 | 419 | 0 | 47.8% |
-| v79 | 306 | 0 | 71 | 210 | 380 | 0 | 52.1% |
-| v83 | 425 | 0 | 0 | 318 | 224 | 0 | 57.2% |
-| v84 | 398 | 0 | 0 | 325 | 244 | 0 | 55.0% |
-| v87 | 433 | 0 | 0 | 347 | 187 | 0 | 55.5% |
-| v95 | 458 | 0 | 0 | 406 | 103 | 0 | 53.0% |
+| v48 | 176 | 0 | 2 | 161 | 628 | 0 | 51.9% |
+| v61 | 252 | 0 | 59 | 194 | 462 | 0 | 49.9% |
+| v72 | 262 | 0 | 72 | 213 | 420 | 0 | 47.9% |
+| v79 | 306 | 0 | 71 | 209 | 381 | 0 | 52.2% |
+| v83 | 425 | 0 | 0 | 317 | 225 | 0 | 57.3% |
+| v84 | 398 | 0 | 0 | 324 | 245 | 0 | 55.1% |
+| v87 | 433 | 0 | 0 | 346 | 188 | 0 | 55.6% |
+| v95 | 458 | 0 | 0 | 405 | 104 | 0 | 53.1% |
 | JMS185 | 411 | 0 | 0 | 362 | 194 | 0 | 53.2% |
 
 ## Conflicts

@@ -2,9 +2,11 @@ package handler
 
 import (
 	"atlas-channel/character"
+	"atlas-channel/character/buff"
 	"atlas-channel/character/skill"
 	skill2 "atlas-channel/data/skill"
 	"atlas-channel/data/skill/effect"
+	"atlas-channel/drop"
 	"atlas-channel/effective_stats"
 	_map "atlas-channel/map"
 	"atlas-channel/monster"
@@ -18,6 +20,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
@@ -105,10 +108,10 @@ type damageInfoEntryDeps struct {
 	// DPT snapshot and by the drain-family heal cap.
 	loadEffectiveStats func() effective_stats.RestModel
 	// onDamageApplied is invoked once per non-reflected DamageInfo after
-	// damage and status apply, with the summed damage of that entry.
-	// Optional; nil-safe. Used by passives that fire per damaged
-	// monster (e.g., MP Eater, drain-family heals).
-	onDamageApplied func(monsterId uint32, totalDamage uint32)
+	// damage and status apply, with the entry's summed damage (clamped to
+	// MaxUint32). Optional; nil-safe. Used by passives that fire per
+	// damaged monster (MP Eater, drain-family heals, Pick Pocket).
+	onDamageApplied func(di packetmodel.DamageInfo, totalDamage uint32)
 }
 
 // processDamageInfoEntry handles one DamageInfo from a magic/melee/ranged
@@ -202,18 +205,162 @@ func processDamageInfoEntry(
 		if total > math.MaxUint32 {
 			total = math.MaxUint32
 		}
-		deps.onDamageApplied(di.MonsterId(), uint32(total))
+		deps.onDamageApplied(di, uint32(total))
 	}
 }
 
-// mpEaterShouldProc returns true when MP Eater should fire given the
-// skill's prop and a single uniform roll in [0,1): fire when
-// `prop == 1.0 || roll < prop`. Defensive against negative props.
-func mpEaterShouldProc(prop float64, roll float64) bool {
+// shouldProc returns true when a prop-gated passive (MP Eater, Pick
+// Pocket) should fire given the effect's prop and a single uniform roll
+// in [0,1). Mirrors Cosmic's `prop == 1.0 || rand() < prop`. Defensive
+// against negative props.
+func shouldProc(prop float64, roll float64) bool {
 	if prop <= 0 {
 		return false
 	}
 	return prop >= 1.0 || roll < prop
+}
+
+// pickPocketWhitelist is the fixed set of skills that can proc Pick
+// Pocket (Cosmic AbstractDealDamageHandler parity). Basic attack
+// (skillId == 0) is handled in pickPocketWhitelisted.
+var pickPocketWhitelist = map[uint32]struct{}{
+	uint32(skill3.RogueDoubleStabId):          {},
+	uint32(skill3.BanditSavageBlowId):         {},
+	uint32(skill3.ChiefBanditAssaulterId):     {},
+	uint32(skill3.ChiefBanditBandOfThievesId): {},
+	uint32(skill3.ShadowerAssassinateId):      {},
+	uint32(skill3.ShadowerTauntId):            {},
+	uint32(skill3.ShadowerBoomerangStepId):    {},
+}
+
+// pickPocketWhitelisted reports whether skillId can proc Pick Pocket.
+func pickPocketWhitelisted(skillId uint32) bool {
+	if skillId == 0 {
+		return true
+	}
+	_, ok := pickPocketWhitelist[skillId]
+	return ok
+}
+
+// pickPocketMesoAmount computes the meso payout for one damage line:
+// min(max(damage/20000 * maxmeso, 1), maxmeso), float math then
+// truncation, matching Cosmic. Returns 0 when maxmeso <= 0. A 0-damage
+// line still yields 1 on a successful roll.
+func pickPocketMesoAmount(damage uint32, maxmeso int32) uint32 {
+	if maxmeso <= 0 {
+		return 0
+	}
+	v := math.Max(float64(damage)/20000.0*float64(maxmeso), 1)
+	if v > float64(maxmeso) {
+		return uint32(maxmeso)
+	}
+	return uint32(v)
+}
+
+// pickPocketState is the per-attack Pick Pocket context, resolved once
+// before the DamageInfo loop (design §3.3): whitelist gate first (pure,
+// no I/O), then at most one buff REST call and one effect lookup.
+type pickPocketState struct {
+	enabled bool
+	maxmeso int32   // PICK_POCKET stat Amount() captured at buff time
+	prop    float64 // effect prop at the buff's captured Level()
+}
+
+// pickPocketResolveState gates and resolves Pick Pocket for one attack.
+// Any failure (buff REST error, effect lookup error) or non-positive
+// maxmeso/prop yields a disabled state; errors are logged and swallowed,
+// never propagated into the attack pipeline.
+func pickPocketResolveState(
+	l logrus.FieldLogger,
+	getBuffs func(characterId uint32) ([]buff.Model, error),
+	getEffect func(uniqueId uint32, level byte) (effect.Model, error),
+	skillId uint32,
+	characterId uint32,
+) pickPocketState {
+	if !pickPocketWhitelisted(skillId) {
+		return pickPocketState{}
+	}
+
+	buffs, err := getBuffs(characterId)
+	if err != nil {
+		l.WithError(err).Errorf("Pick Pocket: buff lookup failed for character [%d].", characterId)
+		return pickPocketState{}
+	}
+
+	var maxmeso int32
+	var level byte
+	found := false
+	for _, b := range buffs {
+		if b.Expired() {
+			continue
+		}
+		for _, ch := range b.Changes() {
+			if ch.Type() == string(charconst.TemporaryStatTypePickPocket) {
+				maxmeso = ch.Amount()
+				level = b.Level()
+				found = true
+				break
+			}
+		}
+		if found {
+			break
+		}
+	}
+	if !found {
+		return pickPocketState{}
+	}
+	if maxmeso <= 0 {
+		l.Debugf("Pick Pocket: non-positive maxmeso [%d] for character [%d]; proc disabled.", maxmeso, characterId)
+		return pickPocketState{}
+	}
+
+	se, err := getEffect(uint32(skill3.ChiefBanditPickpocketId), level)
+	if err != nil {
+		l.WithError(err).Errorf("Pick Pocket: effect lookup failed at level [%d] for character [%d].", level, characterId)
+		return pickPocketState{}
+	}
+	if se.Prop() <= 0 {
+		l.Debugf("Pick Pocket: non-positive prop at level [%d] for character [%d]; proc disabled.", level, characterId)
+		return pickPocketState{}
+	}
+
+	return pickPocketState{enabled: true, maxmeso: maxmeso, prop: se.Prop()}
+}
+
+// pickPocketTryProc rolls each damage line of one non-reflected
+// DamageInfo and emits one meso SPAWN per success. Monster snapshot
+// fetch failure skips this monster's procs (Debugf); emit failures are
+// logged (Errorf) and swallowed, continuing with the remaining lines.
+func pickPocketTryProc(
+	l logrus.FieldLogger,
+	getMonster func(monsterId uint32) (monster.Model, error),
+	spawnMeso func(f field.Model, mesos uint32, x int16, y int16, ownerId uint32, dropperId uint32, dropperX int16, dropperY int16) error,
+	state pickPocketState,
+	di packetmodel.DamageInfo,
+	f field.Model,
+	characterId uint32,
+) {
+	if !state.enabled {
+		return
+	}
+
+	mon, err := getMonster(di.MonsterId())
+	if err != nil {
+		l.WithError(err).Debugf("Pick Pocket: monster [%d] snapshot fetch failed; skipping its procs.", di.MonsterId())
+		return
+	}
+
+	for _, d := range di.Damages() {
+		if !shouldProc(state.prop, rand.Float64()) {
+			continue
+		}
+		mesos := pickPocketMesoAmount(d, state.maxmeso)
+		l.Debugf("Pick Pocket proc: character=[%d] monster=[%d] mesos=[%d].", characterId, di.MonsterId(), mesos)
+		x := mon.X() + int16(rand.Intn(100)-50)
+		if sErr := spawnMeso(f, mesos, x, mon.Y(), characterId, di.MonsterId(), mon.X(), mon.Y()); sErr != nil {
+			l.WithError(sErr).Errorf("Pick Pocket: SPAWN emit failed for monster [%d] character [%d].", di.MonsterId(), characterId)
+		}
+	}
 }
 
 // mpEaterAbsorbAmount computes the requested drain from monster MaxMp
@@ -296,7 +443,7 @@ func mpEaterTryProc(
 		return
 	}
 
-	if !mpEaterShouldProc(eaterEffect.Prop(), rand.Float64()) {
+	if !shouldProc(eaterEffect.Prop(), rand.Float64()) {
 		return
 	}
 
@@ -428,6 +575,19 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 						return effectiveStats
 					}
 
+					// Pick Pocket per-attack state: whitelist gate first
+					// (pure, no I/O), then at most one buff REST call and
+					// one effect lookup. Failures disable the proc and
+					// never abort the attack.
+					dp := drop.NewProcessor(l, ctx)
+					ppState := pickPocketResolveState(
+						l,
+						buff.NewProcessor(l, ctx).GetByCharacterId,
+						skill2.NewProcessor(l, ctx).GetEffect,
+						ai.SkillId(),
+						s.CharacterId(),
+					)
+
 					deps := damageInfoEntryDeps{
 						getReflect:         mirror.GetReflect,
 						getMonster:         mp.GetById,
@@ -435,18 +595,19 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 						emitReflectDamage:  mp.EmitDamageReflected,
 						applyStatus:        mp.ApplyStatus,
 						loadEffectiveStats: loadEffectiveStats,
-						// MP Eater proc: per-monster, after status apply,
-						// magic attacks only. Drain-family heal: per-monster,
-						// skill-id gated (no attack-type gate — the four
-						// skills span melee/ranged/energy). Failures are
+						// Per-monster passives, fired once per non-reflected
+						// entry after damage and status apply. Failures are
 						// swallowed so the rest of the attack pipeline is
 						// unaffected.
-						onDamageApplied: func(monsterId uint32, totalDamage uint32) {
+						onDamageApplied: func(di packetmodel.DamageInfo, totalDamage uint32) {
 							if ai.AttackType() == packetmodel.AttackTypeMagic && ai.SkillId() > 0 {
-								mpEaterTryProc(l, ctx, mp, c, monsterId, s.Field(), s.CharacterId())
+								mpEaterTryProc(l, ctx, mp, c, di.MonsterId(), s.Field(), s.CharacterId())
 							}
 							if ai.SkillId() > 0 && isDrainSkill(skill3.Id(ai.SkillId())) {
-								drainTryHeal(l, mp.GetById, cp.ChangeHP, loadEffectiveStats, se.X(), ai.SkillId(), monsterId, totalDamage, s.Field(), s.CharacterId())
+								drainTryHeal(l, mp.GetById, cp.ChangeHP, loadEffectiveStats, se.X(), ai.SkillId(), di.MonsterId(), totalDamage, s.Field(), s.CharacterId())
+							}
+							if ppState.enabled {
+								pickPocketTryProc(l, mp.GetById, dp.SpawnMeso, ppState, di, s.Field(), s.CharacterId())
 							}
 						},
 					}
@@ -508,7 +669,6 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					// TODO decrease HP from DragonKnight Sacrifice
 					// TODO apply attack effect (heal, mp consumption, dispel, cure all, combo reset, etc)
 					// TODO destroy Chief Bandit exploded mesos
-					// TODO apply Pick Pocket
 					// TODO apply Bandit Steal
 					// TODO Fire Demon ice weaken
 					// TODO Ice Demon fire weaken

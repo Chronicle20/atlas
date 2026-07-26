@@ -116,9 +116,9 @@ func TestOnDamageApplied_ReceivesSummedDamageTotal(t *testing.T) {
 	calls := 0
 	deps := damageInfoEntryDeps{
 		applyDamage: func(_ field.Model, _, _ uint32, _ []uint32, _ byte) error { return nil },
-		onDamageApplied: func(monsterId uint32, totalDamage uint32) {
+		onDamageApplied: func(di packetmodel.DamageInfo, totalDamage uint32) {
 			calls++
-			gotMonsterId = monsterId
+			gotMonsterId = di.MonsterId()
 			gotTotal = totalDamage
 		},
 	}
@@ -145,7 +145,7 @@ func TestOnDamageApplied_NotCalledForZeroDamageEntry(t *testing.T) {
 	called := false
 	deps := damageInfoEntryDeps{
 		applyDamage:     func(_ field.Model, _, _ uint32, _ []uint32, _ byte) error { return nil },
-		onDamageApplied: func(_ uint32, _ uint32) { called = true },
+		onDamageApplied: func(_ packetmodel.DamageInfo, _ uint32) { called = true },
 	}
 
 	processDamageInfoEntry(discardLogger(), di, ai, effect.Model{}, 1, 999, 0, 0, testDrainField(), testTenant(t), "", deps)
@@ -184,7 +184,7 @@ func TestOnDamageApplied_NotCalledForReflectedEntry(t *testing.T) {
 			return nil
 		},
 		emitReflectDamage: func(_ field.Model, _, _, _ uint32, _ uint32, _ string) error { return nil },
-		onDamageApplied:   func(_ uint32, _ uint32) { called = true },
+		onDamageApplied:   func(_ packetmodel.DamageInfo, _ uint32) { called = true },
 	}
 
 	processDamageInfoEntry(discardLogger(), di, ai, effect.Model{}, 1, 999, 0, 0, f, testTenant(t), monster2.ReflectKindPhysical, deps)

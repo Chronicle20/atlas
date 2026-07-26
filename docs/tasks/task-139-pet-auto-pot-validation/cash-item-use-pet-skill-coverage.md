@@ -9,7 +9,7 @@ payload? All eight GMS versions were IDA-swept read-only this pass (no `rename`,
 
 | Version | Function @ addr | Case-28 dispatch | What it does | Decision |
 |---|---|---|---|---|
-| gms_v48 | `SendConsumeCashItemUseRequest` @0x70e495 (session 0bb5f11a) | Unique arm @0x7103aa (not in default list `26,29,32,33,35,44-46`) | `Encode1(flag)`@0x710852 + **six** `EncodeStr` calls @0x710869/0x710880/0x710897/0x7108ae/0x7108c5/0x7108dc — a multi-line broadcast message, matching the already-verified `cash/serverbound/CashItemUseMegaphone` shape (registry: tier0/Cheap = type 12). Guard helpers `sub_71370B` (bare global-flag check) / `sub_711EEB` (bare `CField` member read) are not pet-related. | **n-a** — different feature (megaphone tier), not pet |
+| gms_v48 | `SendConsumeCashItemUseRequest` @0x70e495 (session 0bb5f11a) | Unique arm @0x7103aa (not in default list `26,29,32,33,35,44-46`; `xrefs_to` confirms its sole code xref is the switch dispatch @0x70e53c) | **Corrected this pass** (see note below) — case 28's own body is: `sub_71370B()` (bare `dword_80D398 != 0` global-flag check) → either a resource-0x91 string + jump to the shared 13-way cleanup @0x711c47 (no encode), or `get_field()`+`sub_711EEB` (bare `this[65]` `CField` member read, not pet-related) → a resource-0x10E notice + shared exit (no encode) OR a `CUtilDlgEx` confirm-dialog build that, on exactly one path, calls `COutPacket::EncodeStr` **once** @0x710571 (a formatted confirm value, most likely a price/description string) before jumping to the case-34-shared tail. Neither guard helper references a pet object. | **n-a** — no petId/locker-SN encode, not pet-related |
 | gms_v61 | `SendConsumeCashItemUseRequest` @0x832a5d (session 965202bf) | Unique arm @0x834a4e (not in default list `27,34,35,37,38,40,42-44`) | 5 instructions total: calls `sub_832700` (checks a global flag then `field+252` against `[910000000,910000022]`, an event-map-id band; unrelated helper `sub_715A69` on match, chat-log otherwise) then jumps straight to the shared default cleanup. **Zero** `Encode*` calls. | **n-a** — zero payload, unrelated (map-gate) guard logic |
 | gms_v72 | `SendConsumeCashItemUseRequest` @0x904fe2 (session 90e36cb0) | **No arm** — compiler comment at 0x905083 (`ja def_905089`) and 13 more jump-into-default sites lists `default case, cases 28,35,36,38,39,41,43-45,54-59,62` | n/a | **n-a** — case absent |
 | gms_v79 | `SendConsumeCashItemUseRequest` @0x95634a (session 9a7d3642) | **No arm** — compiler comment at 0x9563eb and 13 more sites lists `default case, cases 28,35,36,38,39,41,43-45,54-59,62,67` | n/a | **n-a** — case absent |
@@ -22,6 +22,27 @@ payload? All eight GMS versions were IDA-swept read-only this pass (no `rename`,
 Every GMS-version claim above was independently re-derived from IDA this pass,
 including v83/v87/v95 (previously only noted in prose by the final review) — none
 were taken on faith.
+
+## Correction: gms_v48's original evidence attributed the wrong case's code
+
+The first pass of this sweep committed (`75acfbfcc`) misattributed case-37's payload
+to case 28 on gms_v48. The `Encode1(flag)`@0x710852 + six-`EncodeStr` block
+(@0x710869/0x710880/0x710897/0x7108ae/0x7108c5/0x7108dc) is **case 37's** body (label
+`loc_71059E` @0x71059e, its own independent switch-dispatch target — `xrefs_to`
+confirms its sole code xref is the same switch jump @0x70e53c that dispatches case 28,
+and the two are non-overlapping ranges: case 28 ends at the unconditional
+`jmp loc_711D60` @0x710599, five bytes before case 37's entry at 0x71059e). Re-tracing
+case 28 from `0x7103aa` end-to-end (both exit paths: the resource-0x91 early-out via the
+shared cleanup @0x711c47 confirmed by `xrefs_to` to have 13 distinct callers across the
+function, and the `sub_711EEB`-gated notice/confirm-dialog path) found its real, exclusive
+body contains **exactly one** `COutPacket::EncodeStr` call @0x710571 and no other `Encode*`
+call — not the megaphone-tier shape originally claimed. The two guard-helper
+characterizations (`sub_71370B` = bare `dword_80D398 != 0`; `sub_711EEB` = bare `this[65]`
+read) were correct in the original entry and are unchanged. **The disposition does not
+change** — case 28 still contains no petId/locker-SN payload and no pet reference, so
+`n-a` remains the correct grading — but the evidence text in both this report and
+`docs/packets/audits/gms_v48/_unimplemented.json` has been rewritten to describe only
+what case 28 actually contains. No other version's entry was touched.
 
 ## Recommendation on the v95 zero-payload arm
 

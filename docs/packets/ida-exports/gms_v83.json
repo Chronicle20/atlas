@@ -14645,6 +14645,63 @@
         }
       ]
     },
+    "CWvsContext::SendSkillLearnItemUseRequest": {
+      "address": "0xa0a1b2",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "updateTime (get_update_time()) — v83 IDA-verified @0xa0a1b2, task-125 (function already named CWvsContext::SendSkillLearnItemUseRequest in the IDB; select_instance() is dead on the live MCP server (\"Method 'select_instance' not found\") so this entry was spliced by hand from a live decompile via the session-based idb tool, database=ce4ff298, filename MapleStory_dump.exe.i64, path ...\\\\GMS\\\\v83_Me\\\\...)",
+          "guard": "CWvsContext::CanSendExclRequest(this, 200, 0)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "slot (a2)",
+          "guard": "CWvsContext::CanSendExclRequest(this, 200, 0)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "itemId (a3); gated a3/10000 in {228,229} (skill-book item prefix)",
+          "guard": "CWvsContext::CanSendExclRequest(this, 200, 0)"
+        }
+      ]
+    },
+    "CWvsContext::OnSkillLearnItemResult": {
+      "address": "0xa1e5af",
+      "direction": "clientbound",
+      "note": "SKILL_LEARN_ITEM_RESULT (task-125). v83 IDA-verified: CWvsContext::OnPacket case 0x33 (51) delegates directly. v83 body (no leading byte — MajorVersion()<84): Decode4 characterId (CUserPool::GetUser lookup), then under an if(user-found) guard (v36): Decode1 isMasteryBook (gates MASTERY_BOOK vs SKILL_BOOK message), Decode4 skillId (decoded, discarded), Decode4 masterLevel (decoded, discarded), Decode1 canUse (gates avatar glow effect + \"cannot use\" message), Decode1 success (gates success/failure sound+message). select_instance() is dead on the live MCP server, so this entry was spliced by hand from a live decompile via the session-based idb tool, database=ce4ff298, filename MapleStory_dump.exe.i64, path ...\\\\GMS\\\\v83_Me\\\\...",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "isMasteryBook",
+          "guard": "v36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "skillId (decoded, discarded)",
+          "guard": "v36"
+        },
+        {
+          "op": "Decode4",
+          "comment": "masterLevel (decoded, discarded)",
+          "guard": "v36"
+        },
+        {
+          "op": "Decode1",
+          "comment": "canUse",
+          "guard": "v36"
+        },
+        {
+          "op": "Decode1",
+          "comment": "success",
+          "guard": "v36"
+        }
+      ]
+    },
     "CWvsContext::SendTamingMobFoodItemUseRequest": {
       "address": "0xa09a64",
       "direction": "serverbound",

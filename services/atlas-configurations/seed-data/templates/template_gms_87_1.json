@@ -426,6 +426,11 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x55",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterSkillBookUseHandle"
+      },
+      {
         "opCode": "0x57",
         "validator": "LoggedInValidator",
         "handler": "TeleportRockUseHandle",
@@ -1668,6 +1673,10 @@
             "FREE_FORM_NOTICE": 18
           }
         }
+      },
+      {
+        "opCode": "0x33",
+        "writer": "CharacterSkillLearnItemResult"
       },
       {
         "opCode": "0x34",

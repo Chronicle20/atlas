@@ -44,6 +44,7 @@ const (
 	PointReset           = sharedsaga.PointReset
 	MtsOperation         = sharedsaga.MtsOperation
 	NoteSend             = sharedsaga.NoteSend
+	SkillBookUse         = sharedsaga.SkillBookUse
 )
 
 // Status constants

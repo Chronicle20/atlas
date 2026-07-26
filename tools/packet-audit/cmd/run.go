@@ -2096,6 +2096,21 @@ func candidatesFromFName(fname string) []candidate {
 	// exist from v72 up; v48/v61 lack the opcode (generic item-use path).
 	case "CWvsContext::SendLotteryItemUseRequest":
 		return []candidate{{name: "LotteryItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	// USE_SKILL_BOOK (task-125): CWvsContext::SendSkillLearnItemUseRequest,
+	// v83 @0xa0a1b2 IDA-verified (already named in the IDB, opcode 0x52 via
+	// COutPacket::COutPacket(&pkt, 0x52)). Body: Encode4 updateTime +
+	// Encode2 slot + Encode4 itemId; item-class gate a3/10000 in {228,229}
+	// (skill-book item prefix). Struct is UseSkillBook (character/serverbound).
+	case "CWvsContext::SendSkillLearnItemUseRequest":
+		return []candidate{{name: "UseSkillBook", pkg: "character", dir: csvpkg.DirServerbound}}
+	// SKILL_LEARN_ITEM_RESULT (task-125): CWvsContext::OnSkillLearnItemResult,
+	// v83 @0xa1e5af IDA-verified. CWvsContext::OnPacket (case 0x33) delegates
+	// directly. Body (v83, no leading byte — MajorVersion()<84): Decode4
+	// characterId + Decode1 isMasteryBook + Decode4 skillId (discarded) +
+	// Decode4 masterLevel (discarded) + Decode1 canUse + Decode1 success.
+	// Struct is SkillLearnItemResult (character/clientbound).
+	case "CWvsContext::OnSkillLearnItemResult":
+		return []candidate{{name: "SkillLearnItemResult", pkg: "character", dir: csvpkg.DirClientbound}}
 	// Vega's Spell (category 561) USE_CASH_ITEM sub-body (task-130 §2.1) shares
 	// the cash-item-use sender fname with task-126's AP/SP point-reset arm and
 	// task-124's teleport-rock arm. All candidates are keyed to the same fname,

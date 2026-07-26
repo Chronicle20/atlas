@@ -321,11 +321,27 @@
 - op: SKILL_LEARN_ITEM_RESULT
   direction: clientbound
   opcode: 48
-  fname: sub_9175E6
+  fname: CWvsContext::OnSkillLearnItemResult
+  fname_alts:
+  - sub_9175E6
   provenance: ida-discovered
   ida:
     address: 9532902
-  note: 'v72 IDB unnamed sub_9175E6 = CWvsContext::OnSkillLearnItemResult (delta doc a).'
+  note: 'task-125 verify pass (session 90e36cb0, GMS_v72.1_U_DEVM.exe.i64):
+    Hex-Rays displays sub_9175E6 in the pseudocode, but xrefs_to resolves the
+    dispatch caller''s reference at this address to the mangled symbol
+    CWvsContext::OnSkillLearnItemResult (already named in the IDB; Hex-Rays
+    merely showed the sub_ label — the "unnamed" note below was stale, same
+    class as the v61 correction). CWvsContext::OnPacket case 48 (0x30,
+    @0x902791) dispatches directly, confirming opcode 0x30 == registry op 48.
+    Body (15-byte, NO leading bOnExclRequest): Decode4 characterId
+    (CUserPool::GetUser lookup, @0x917602/0x91760e), then under the
+    user-found guard (v28): Decode1 isMasteryBook @0x91764a, Decode4 skillId
+    (decoded, discarded) @0x91764d, Decode4 masterLevel (decoded, discarded)
+    @0x917654, Decode1 canUse @0x917665 (gates the on-avatar glow effect block
+    @0x917673), Decode1 success @0x917668 (selects success/failure game sound
+    @0x917710) — matches the Atlas codec read order exactly. v72 IDB unnamed
+    sub_9175E6 = CWvsContext::OnSkillLearnItemResult (delta doc a).'
 - op: GATHER_ITEM_RESULT
   direction: clientbound
   opcode: 49
@@ -2310,6 +2326,26 @@
   ida:
     address: 9457634
   note: 'v72 COutPacket(78) verified via global COutPacket-ctor harvest @0x904fe2; Δ+1 vs v79 op 77 (mid/field/social Δ+1).'
+- op: USE_SKILL_BOOK
+  direction: serverbound
+  opcode: 81
+  fname: CWvsContext::SendSkillLearnItemUseRequest
+  provenance: ida-discovered
+  ida:
+    address: 9456469
+  note: 'task-125: stale n-a corrected — op was entirely absent from this registry
+    (matrix showed v72 ⬜) despite being present in v48/v61/v83/v84/v87/v95/jms.
+    Live decompile (session 90e36cb0, GMS_v72.1_U_DEVM.exe.i64) confirms
+    sub_904B55 @0x904b55 is genuinely SendSkillLearnItemUseRequest (unnamed in
+    this IDB, per §10 "distrust IDB names" — cross-checked against the caller
+    CDraggableItem::OnDoubleClicked @0x4db880, a skill-book item double-click
+    handler): item-class gate a3/10000 in {228,229} (skill-book prefix,
+    @0x904b6e/0x904b7c); guard sub_4DBE16(200,0) (CanSendExclRequest twin,
+    @0x904b87); COutPacket::COutPacket(&pkt, 81) @0x904b95 (opcode 81 decimal =
+    0x51); then Encode4(get_update_time()) @0x904ba7 -> updateTime,
+    Encode2(a2) @0x904bb2 -> slot, Encode4(a3) @0x904bbd -> itemId; matches the
+    Atlas codec write order exactly. Byte-identical shape to v48 (0x70e3e7,
+    opcode 0x40), v61 (0x8325d2, opcode 0x4B), v83 (0xa0a1b2, opcode 0x52).'
 - op: USE_TELEPORT_ROCK
   direction: serverbound
   opcode: 83

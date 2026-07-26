@@ -392,6 +392,12 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x43",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseHandle",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x44",
         "validator": "LoggedInValidator",
         "handler": "CharacterItemCancelHandle",
@@ -412,7 +418,7 @@
       {
         "opCode": "0x47",
         "validator": "LoggedInValidator",
-        "handler": "CharacterItemUseHandle",
+        "handler": "PetFoodHandle",
         "services": ["channel"]
       },
       {
@@ -436,8 +442,7 @@
       {
         "opCode": "0x4B",
         "validator": "LoggedInValidator",
-        "handler": "PetFoodHandle",
-        "services": ["channel"]
+        "handler": "CharacterSkillBookUseHandle"
       },
       {
         "opCode": "0x4D",
@@ -476,6 +481,12 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x53",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterUseSkillHandle",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x54",
         "validator": "LoggedInValidator",
         "handler": "CharacterBuffCancel",
@@ -503,12 +514,6 @@
         "opCode": "0x59",
         "validator": "LoggedInValidator",
         "handler": "CharacterInfoRequestHandle",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0x5A",
-        "validator": "LoggedInValidator",
-        "handler": "CharacterUseSkillHandle",
         "services": ["channel"]
       },
       {
@@ -1735,6 +1740,10 @@
             "FREE_FORM_NOTICE": 18
           }
         }
+      },
+      {
+        "opCode": "0x30",
+        "writer": "CharacterSkillLearnItemResult"
       },
       {
         "opCode": "0x31",

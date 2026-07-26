@@ -27646,6 +27646,68 @@
         }
       ]
     },
+    "CWvsContext::SendSkillLearnItemUseRequest": {
+      "address": "0xa5459c",
+      "direction": "serverbound",
+      "note": "USE_SKILL_BOOK (task-125). v84 IDA-verified, session 79511a2a, GMS_v84.1_U_DEVM.i64 -- already named in this IDB (func_query name_regex confirms sub_A5459C == CWvsContext::SendSkillLearnItemUseRequest). item-class gate a3/10000 == 228 || sub_4F959A(a3) (skill-book/mastery-book class check, twin of the {228,229} gate seen in earlier versions); guard sub_48903A(200, 0) (CanSendExclRequest twin); COutPacket::COutPacket(&pkt, 82) @0xa545e2 -- opcode 82 (0x52) matches registry op USE_SKILL_BOOK exactly. Byte-identical body to v83/v79/v72/v61/v48 (no version gate on this op).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "updateTime (sub_9C7771(v6,v5) -- get_update_time() twin)",
+          "guard": "sub_48903A(200, 0)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "slot (a2)",
+          "guard": "sub_48903A(200, 0)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "itemId (a3); gated a3/10000 == 228 || sub_4F959A(a3) (skill-book/mastery-book class check)",
+          "guard": "sub_48903A(200, 0)"
+        }
+      ]
+    },
+    "CWvsContext::OnSkillLearnItemResult": {
+      "address": "0xa6984e",
+      "direction": "clientbound",
+      "note": "SKILL_LEARN_ITEM_RESULT (task-125). v84 IDA-verified, session 79511a2a, GMS_v84.1_U_DEVM.i64 -- already named in this IDB (func_query name_regex confirms sub_A6984E == CWvsContext::OnSkillLearnItemResult); xrefs_to confirms CWvsContext::OnPacket case 0x33 (51, @0xa51ea6) delegates directly to this function -- opcode 0x33 matches registry op SKILL_LEARN_ITEM_RESULT exactly. v84 body is 16 bytes: HAS the leading bOnExclRequest byte (Decode1 @0xa6986a) BEFORE Decode4 characterId @0xa69889 -- this is the MajorVersion()>=84 gate the codec implements (v83 and earlier have NO leading byte, 15-byte body). Then under an if(user-found) guard (v27 nonzero): Decode1 isMasteryBook, Decode4 skillId (decoded, discarded), Decode4 masterLevel (decoded, discarded), Decode1 canUse, Decode1 success.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "bOnExclRequest (v84+ leading byte, consumed-and-discarded by the codec; clears the requester's exclusive-request lock when true) @0xa6986a"
+        },
+        {
+          "op": "Decode4",
+          "comment": "characterId (CUserPool-style lookup via sub_9B1635) @0xa69889"
+        },
+        {
+          "op": "Decode1",
+          "comment": "isMasteryBook @0xa698d1",
+          "guard": "v27"
+        },
+        {
+          "op": "Decode4",
+          "comment": "skillId (decoded, discarded) @0xa698d4",
+          "guard": "v27"
+        },
+        {
+          "op": "Decode4",
+          "comment": "masterLevel (decoded, discarded) @0xa698db",
+          "guard": "v27"
+        },
+        {
+          "op": "Decode1",
+          "comment": "canUse @0xa698ec",
+          "guard": "v27"
+        },
+        {
+          "op": "Decode1",
+          "comment": "success @0xa698ef",
+          "guard": "v27"
+        }
+      ]
+    },
     "CWvsContext::SendTamingMobFoodItemUseRequest": {
       "address": "0xa53e46",
       "direction": "serverbound",

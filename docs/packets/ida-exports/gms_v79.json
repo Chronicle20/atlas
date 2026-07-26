@@ -16118,6 +16118,42 @@
       "direction": "",
       "calls": null
     },
+    "CWvsContext::OnSkillLearnItemResult": {
+      "address": "0x969022",
+      "direction": "clientbound",
+      "note": "SKILL_LEARN_ITEM_RESULT (task-125). v79 IDA-verified, session 9a7d3642, GMS_v79_1_DEVM.exe.i64. Hex-Rays displays sub_969022 in the pseudocode, but xrefs_to the CWvsContext::OnPacket case 48 (0x30, @0x9539c9) dispatch call resolves this address to the mangled symbol CWvsContext::OnSkillLearnItemResult -- already named in the IDB. v79 body (no leading byte -- MajorVersion()<84): Decode4 characterId (CUserPool::GetUser lookup), then under an if(user-found) guard (v27): Decode1 isMasteryBook, Decode4 skillId (decoded, discarded), Decode4 masterLevel (decoded, discarded), Decode1 canUse, Decode1 success.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "isMasteryBook",
+          "guard": "v27"
+        },
+        {
+          "op": "Decode4",
+          "comment": "skillId (decoded, discarded)",
+          "guard": "v27"
+        },
+        {
+          "op": "Decode4",
+          "comment": "masterLevel (decoded, discarded)",
+          "guard": "v27"
+        },
+        {
+          "op": "Decode1",
+          "comment": "canUse",
+          "guard": "v27"
+        },
+        {
+          "op": "Decode1",
+          "comment": "success",
+          "guard": "v27"
+        }
+      ]
+    },
     "CWvsContext::OnSkillUseResult": {
       "address": "0x96adc5",
       "direction": "",
@@ -16566,6 +16602,25 @@
           "op": "Decode4",
           "comment": "",
           "guard": "get_update_time() && !_ZtlSecureFuse<int>(dword_B0BECC + 10476, *(_DWORD *)(dword_B0BECC + 10484) && <default> && CWvsContext::IsAbleToConsume((CWvsContext *)dword_B07808, a3) <= (int)v6"
+        }
+      ]
+    },
+    "CWvsContext::SendSkillLearnItemUseRequest": {
+      "address": "0x955ebd",
+      "direction": "serverbound",
+      "note": "USE_SKILL_BOOK (task-125). v79 IDA-verified, session 9a7d3642, GMS_v79_1_DEVM.exe.i64 -- already named in this IDB (no rename needed); cross-checked against caller CDraggableItem::OnDoubleClicked @0x4e401d, a skill-book item double-click handler. Op was entirely ABSENT from the v79 registry prior to this pass (matrix showed v79 n-a) despite v48/v61/v72/v83 all carrying it -- a stale n-a, corrected in docs/packets/registry/gms_v79.yaml. item-class gate a3/10000 in {228,229} (skill-book prefix); guard CWvsContext::SetExclRequestSent; COutPacket::COutPacket(&pkt, 0x50).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "updateTime (get_update_time())"
+        },
+        {
+          "op": "Encode2",
+          "comment": "slot (a2)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "itemId (a3); gated a3/10000 in {228,229} (skill-book item prefix)"
         }
       ]
     },

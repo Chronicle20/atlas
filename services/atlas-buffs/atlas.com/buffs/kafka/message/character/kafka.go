@@ -11,11 +11,17 @@ import (
 )
 
 const (
-	EnvCommandTopic          = "COMMAND_TOPIC_CHARACTER_BUFF"
-	CommandTypeApply         = "APPLY"
-	CommandTypeCancel        = "CANCEL"
-	CommandTypeCancelAll     = "CANCEL_ALL"
-	CommandTypeCancelByTypes = "CANCEL_BY_TYPES"
+	EnvCommandTopic            = "COMMAND_TOPIC_CHARACTER_BUFF"
+	CommandTypeApply           = "APPLY"
+	CommandTypeCancel          = "CANCEL"
+	CommandTypeCancelAll       = "CANCEL_ALL"
+	CommandTypeCancelByTypes   = "CANCEL_BY_TYPES"
+	CommandTypeUpdateStatValue = "UPDATE_STAT_VALUE"
+
+	// Operations for UPDATE_STAT_VALUE. INCREMENT adds Amount clamped to Cap;
+	// SET replaces the stat amount outright (finisher consume = SET 1).
+	StatOperationIncrement = "INCREMENT"
+	StatOperationSet       = "SET"
 )
 
 type Command[E any] struct {
@@ -57,10 +63,22 @@ type CancelByTypesCommandBody struct {
 	Types []string `json:"types"`
 }
 
+// UpdateStatValueCommandBody changes the amount of one stat on a character's
+// existing buff (identified by SourceId). The body is stat-generic; task-142
+// uses it for COMBO orb bookkeeping. Cap applies to INCREMENT only.
+type UpdateStatValueCommandBody struct {
+	SourceId  int32  `json:"sourceId"`
+	StatType  string `json:"statType"`
+	Operation string `json:"operation"`
+	Amount    int32  `json:"amount"`
+	Cap       int32  `json:"cap"`
+}
+
 const (
 	EnvEventStatusTopic        = "EVENT_TOPIC_CHARACTER_BUFF_STATUS"
 	EventStatusTypeBuffApplied = "APPLIED"
 	EventStatusTypeBuffExpired = "EXPIRED"
+	EventStatusTypeStatUpdated = "STAT_UPDATED"
 )
 
 type StatusEvent[E any] struct {
@@ -81,6 +99,19 @@ type AppliedStatusEventBody struct {
 }
 
 type ExpiredStatusEventBody struct {
+	SourceId  int32        `json:"sourceId"`
+	Level     byte         `json:"level"`
+	Duration  int32        `json:"duration"`
+	Changes   []StatChange `json:"changes"`
+	CreatedAt time.Time    `json:"createdAt"`
+	ExpiresAt time.Time    `json:"expiresAt"`
+}
+
+// StatUpdatedStatusEventBody is emitted when a stat value on an existing buff
+// changed (not a new buff — consumers that react to APPLIED as "a buff came
+// into existence" must ignore this type). CreatedAt/ExpiresAt are the buff's
+// ORIGINAL timestamps so re-broadcast carries the remaining duration.
+type StatUpdatedStatusEventBody struct {
 	SourceId  int32        `json:"sourceId"`
 	Level     byte         `json:"level"`
 	Duration  int32        `json:"duration"`

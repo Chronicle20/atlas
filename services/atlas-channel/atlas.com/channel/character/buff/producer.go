@@ -70,3 +70,23 @@ func CancelByTypesCommandProvider(f field.Model, characterId uint32, types []str
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func UpdateStatValueCommandProvider(f field.Model, characterId uint32, sourceId int32, statType string, operation string, amount int32, capValue int32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &buff.Command[buff.UpdateStatValueCommandBody]{
+		WorldId:     f.WorldId(),
+		ChannelId:   f.ChannelId(),
+		MapId:       f.MapId(),
+		Instance:    f.Instance(),
+		CharacterId: characterId,
+		Type:        buff.CommandTypeUpdateStatValue,
+		Body: buff.UpdateStatValueCommandBody{
+			SourceId:  sourceId,
+			StatType:  statType,
+			Operation: operation,
+			Amount:    amount,
+			Cap:       capValue,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

@@ -372,6 +372,11 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x40",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterSkillBookUseHandle"
+      },
+      {
         "opCode": "0x41",
         "validator": "LoggedInValidator",
         "handler": "CharacterItemUseHandle",
@@ -1368,6 +1373,10 @@
         "opCode": "0x28",
         "writer": "SetTamingMobInfo",
         "services": ["channel"]
+      },
+      {
+        "opCode": "0x2B",
+        "writer": "CharacterSkillLearnItemResult"
       },
       {
         "opCode": "0x31",

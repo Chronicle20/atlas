@@ -13809,6 +13809,65 @@
         }
       ]
     },
+    "CWvsContext::SendSkillLearnItemUseRequest": {
+      "address": "0xaeee61",
+      "direction": "serverbound",
+      "note": "USE_SKILL_BOOK (task-125). jms_v185 IDA-verified, session 3c4bb8b1, MapleStory_dump_SCY.exe.i64 (JMS v185, U_DEVM-equivalent, already named in the IDB). Item-class gate nItemID/10000 == 228 || v4==229 || v4==562 @0xaeee8f (skill/mastery-book class check, extended with an extra class 562 vs earlier builds); guard CWvsContext::CanSendExclRequest(this,200,0) @0xaeee9a; COutPacket::COutPacket(v8, 0x4A) @0xaeeea8 -- opcode 0x4A (74) matches registry op USE_SKILL_BOOK exactly. Byte-identical body to all other versions (no version gate on this op).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "updateTime (get_update_time()) @0xaeeeba"
+        },
+        {
+          "op": "Encode2",
+          "comment": "slot (nPOS) @0xaeeec5"
+        },
+        {
+          "op": "Encode4",
+          "comment": "itemId (nItemID); gated nItemID/10000 == 228 || v4==229 || v4==562 @0xaeeed0"
+        }
+      ]
+    },
+    "CWvsContext::OnSkillLearnItemResult": {
+      "address": "0xb05116",
+      "direction": "clientbound",
+      "note": "SKILL_LEARN_ITEM_RESULT (task-125). jms_v185 IDA-verified, session 3c4bb8b1, MapleStory_dump_SCY.exe.i64. xrefs_to confirms CWvsContext::OnPacket case 0x30 @0xaec1a3 (dispatcher fn @0xaebfe7) delegates directly to this function -- opcode 0x30 (48) matches registry op SKILL_LEARN_ITEM_RESULT exactly. jms_v185 body is 16 bytes: HAS the leading bOnExclRequest byte (Decode1 @0xb05132) BEFORE Decode4 characterId @0xb05151 -- the MajorVersion()>=84 gate the codec implements (jms_v185 MajorVersion()=185 satisfies >=84). Then under an if(user-found) guard (v31 nonzero, from CUserPool::GetUser): Decode1 isMasteryBook @0xb05199, Decode4 skillId (decoded, discarded) @0xb0519c, Decode4 masterLevel (decoded, discarded) @0xb051a3, Decode1 canUse @0xb051b4, Decode1 success @0xb051b7.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "bOnExclRequest (jms_v185 leading byte, consumed-and-discarded by the codec; clears the requester's exclusive-request lock when true) @0xb05132"
+        },
+        {
+          "op": "Decode4",
+          "comment": "characterId (CUserPool::GetUser lookup) @0xb05151"
+        },
+        {
+          "op": "Decode1",
+          "comment": "isMasteryBook @0xb05199",
+          "guard": "v31"
+        },
+        {
+          "op": "Decode4",
+          "comment": "skillId (decoded, discarded) @0xb0519c",
+          "guard": "v31"
+        },
+        {
+          "op": "Decode4",
+          "comment": "masterLevel (decoded, discarded) @0xb051a3",
+          "guard": "v31"
+        },
+        {
+          "op": "Decode1",
+          "comment": "canUse @0xb051b4",
+          "guard": "v31"
+        },
+        {
+          "op": "Decode1",
+          "comment": "success @0xb051b7",
+          "guard": "v31"
+        }
+      ]
+    },
     "CWvsContext::SendTamingMobFoodItemUseRequest": {
       "address": "0xaee70c",
       "direction": "serverbound",

@@ -82,6 +82,51 @@ func comboGainAmount(advLearned bool, prop float64, roll float64) int32 {
 	return 1
 }
 
+// comboGoverningEffect returns the effect that governs orb gain and cap for the
+// character's combo line: Advanced Combo's effect when learned, else Combo
+// Attack's effect at the character's level. Its X() is the orb-cap basis
+// (cap = X()+1) and its Prop() is the double-orb chance.
+func comboGoverningEffect(line comboLine, getEffect func(skillId uint32, level byte) (effect.Model, error)) (effect.Model, error) {
+	effectId, effectLevel := uint32(line.comboId), line.comboLevel
+	if line.advLevel > 0 {
+		effectId, effectLevel = uint32(line.advId), line.advLevel
+	}
+	return getEffect(effectId, effectLevel)
+}
+
+// comboCurrentOrbValue returns the COMBO stat value (orb count + 1) on the
+// character's active, unexpired Combo Attack buff and whether such a buff was
+// found. Used to gate Enrage on the caster being at their orb cap.
+func comboCurrentOrbValue(line comboLine, buffs []buff.Model) (int32, bool) {
+	for _, b := range buffs {
+		if b.SourceId() != int32(line.comboId) || b.Expired() {
+			continue
+		}
+		for _, c := range b.Changes() {
+			if c.Type() == string(constants.TemporaryStatTypeCombo) {
+				return c.Amount(), true
+			}
+		}
+	}
+	return 0, false
+}
+
+// comboAtOrbCap reports whether the character's active COMBO buff is at the orb
+// cap (value >= governing effect X()+1) — i.e. "max combo orbs", the Enrage
+// cast requirement. False when there is no active COMBO buff, the effect lookup
+// fails, or the value is below cap.
+func comboAtOrbCap(line comboLine, buffs []buff.Model, getEffect func(skillId uint32, level byte) (effect.Model, error)) bool {
+	value, ok := comboCurrentOrbValue(line, buffs)
+	if !ok {
+		return false
+	}
+	se, err := comboGoverningEffect(line, getEffect)
+	if err != nil {
+		return false
+	}
+	return value >= int32(se.X())+1
+}
+
 // comboOrbDeps groups the side-effecting lookups comboOrbTryUpdate needs so
 // tests can drive every branch without a real processor or Kafka producer.
 type comboOrbDeps struct {
@@ -129,13 +174,9 @@ func comboOrbTryUpdate(l logrus.FieldLogger, c character.Model, ai packetmodel.A
 		return
 	}
 
-	effectId, effectLevel := uint32(line.comboId), line.comboLevel
-	if line.advLevel > 0 {
-		effectId, effectLevel = uint32(line.advId), line.advLevel
-	}
-	se, err := deps.getEffect(effectId, effectLevel)
+	se, err := comboGoverningEffect(line, deps.getEffect)
 	if err != nil {
-		l.WithError(err).Errorf("Combo orbs: effect lookup failed for skill [%d] level [%d].", effectId, effectLevel)
+		l.WithError(err).Errorf("Combo orbs: effect lookup failed for character [%d] combo line [%d].", c.Id(), line.comboId)
 		return
 	}
 

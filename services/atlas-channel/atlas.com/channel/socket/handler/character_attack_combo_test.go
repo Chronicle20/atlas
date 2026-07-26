@@ -2,17 +2,113 @@ package handler
 
 import (
 	"atlas-channel/character"
+	"atlas-channel/character/buff"
+	"atlas-channel/character/buff/stat"
 	"atlas-channel/character/skill"
 	"atlas-channel/data/skill/effect"
 	buff2 "atlas-channel/kafka/message/buff"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
 	skill3 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 )
+
+// comboTestBuff builds an active (or expired) COMBO buff carrying the given
+// stat value (orb count + 1) under the given source id, for the Enrage
+// orb-cap gate tests.
+func comboTestBuff(sourceId int32, comboValue int32, expired bool) buff.Model {
+	exp := time.Now().Add(time.Hour)
+	if expired {
+		exp = time.Now().Add(-time.Hour)
+	}
+	return buff.NewBuff(sourceId, 20, 150000, []stat.Model{stat.NewStat("COMBO", comboValue)}, time.Now().Add(-time.Minute), exp)
+}
+
+func comboTestLine(t *testing.T, advanced bool) comboLine {
+	t.Helper()
+	skills := []skill.Model{comboTestSkill(t, skill3.CrusaderComboAttackId, 30)}
+	if advanced {
+		skills = append(skills, comboTestSkill(t, skill3.HeroAdvancedComboAttackId, 30))
+	}
+	line, ok := comboSkillIds(skills)
+	if !ok {
+		t.Fatal("comboSkillIds: expected a combo line")
+	}
+	return line
+}
+
+func comboTestEffectLookup(t *testing.T, x int16) func(uint32, byte) (effect.Model, error) {
+	return func(uint32, byte) (effect.Model, error) { return comboTestEffect(t, x, 0), nil }
+}
+
+func TestComboCurrentOrbValue(t *testing.T) {
+	line := comboTestLine(t, false)
+	src := int32(skill3.CrusaderComboAttackId)
+
+	t.Run("returns value from active combo buff", func(t *testing.T) {
+		v, ok := comboCurrentOrbValue(line, []buff.Model{comboTestBuff(src, 7, false)})
+		if !ok || v != 7 {
+			t.Fatalf("got (%d,%v), want (7,true)", v, ok)
+		}
+	})
+	t.Run("ignores expired combo buff", func(t *testing.T) {
+		if _, ok := comboCurrentOrbValue(line, []buff.Model{comboTestBuff(src, 7, true)}); ok {
+			t.Fatal("expected ok=false for expired buff")
+		}
+	})
+	t.Run("ignores other-source buff", func(t *testing.T) {
+		if _, ok := comboCurrentOrbValue(line, []buff.Model{comboTestBuff(int32(skill3.HeroEnrageId), 7, false)}); ok {
+			t.Fatal("expected ok=false when no buff under the combo source")
+		}
+	})
+	t.Run("false when no buffs", func(t *testing.T) {
+		if _, ok := comboCurrentOrbValue(line, nil); ok {
+			t.Fatal("expected ok=false with no buffs")
+		}
+	})
+}
+
+func TestComboAtOrbCap(t *testing.T) {
+	// Advanced line: governing effect is Advanced Combo (x=10 -> cap 11 = 10 orbs).
+	line := comboTestLine(t, true)
+	src := int32(skill3.CrusaderComboAttackId)
+
+	t.Run("at cap is eligible", func(t *testing.T) {
+		if !comboAtOrbCap(line, []buff.Model{comboTestBuff(src, 11, false)}, comboTestEffectLookup(t, 10)) {
+			t.Fatal("expected eligible at value == x+1")
+		}
+	})
+	t.Run("below cap is ineligible", func(t *testing.T) {
+		if comboAtOrbCap(line, []buff.Model{comboTestBuff(src, 10, false)}, comboTestEffectLookup(t, 10)) {
+			t.Fatal("expected ineligible below cap")
+		}
+	})
+	t.Run("no combo buff is ineligible", func(t *testing.T) {
+		if comboAtOrbCap(line, nil, comboTestEffectLookup(t, 10)) {
+			t.Fatal("expected ineligible with no active combo buff")
+		}
+	})
+	t.Run("effect lookup error is ineligible", func(t *testing.T) {
+		bad := func(uint32, byte) (effect.Model, error) { return effect.Model{}, errors.New("boom") }
+		if comboAtOrbCap(line, []buff.Model{comboTestBuff(src, 11, false)}, bad) {
+			t.Fatal("expected ineligible on effect lookup error")
+		}
+	})
+	t.Run("non-advanced line caps lower", func(t *testing.T) {
+		// Combo-only line: governing effect is Combo Attack (x=5 -> cap 6 = 5 orbs).
+		plain := comboTestLine(t, false)
+		if !comboAtOrbCap(plain, []buff.Model{comboTestBuff(src, 6, false)}, comboTestEffectLookup(t, 5)) {
+			t.Fatal("expected eligible at value 6 with x=5")
+		}
+		if comboAtOrbCap(plain, []buff.Model{comboTestBuff(src, 6, false)}, comboTestEffectLookup(t, 10)) {
+			t.Fatal("expected ineligible at value 6 when x=10 (cap 11)")
+		}
+	})
+}
 
 func comboTestSkill(t *testing.T, id skill3.Id, level byte) skill.Model {
 	t.Helper()

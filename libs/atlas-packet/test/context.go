@@ -29,6 +29,12 @@ var Variants = []TenantVariant{
 	// so existing positional Variants[N] references stay valid.
 	{Name: "GMS v84", Region: "GMS", MajorVersion: 84, MinorVersion: 1},
 	{Name: "GMS v86", Region: "GMS", MajorVersion: 86, MinorVersion: 1},
+	// Legacy tenant variants for mount-food packet verification (task-138).
+	// Appended (not inserted) so existing positional Variants[N] references stay valid.
+	{Name: "GMS v48", Region: "GMS", MajorVersion: 48, MinorVersion: 1}, // [7]
+	{Name: "GMS v61", Region: "GMS", MajorVersion: 61, MinorVersion: 1}, // [8]
+	{Name: "GMS v72", Region: "GMS", MajorVersion: 72, MinorVersion: 1}, // [9]
+	{Name: "GMS v79", Region: "GMS", MajorVersion: 79, MinorVersion: 1}, // [10]
 }
 
 func CreateContext(region string, majorVersion uint16, minorVersion uint16) context.Context {

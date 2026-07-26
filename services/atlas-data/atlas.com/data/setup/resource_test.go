@@ -115,6 +115,7 @@ func setupTestSetupData(t *testing.T, db *gorm.DB, tenantId uuid.UUID) {
 			Price:      100,
 			SlotMax:    1,
 			RecoveryHP: 50,
+			RecoveryMP: 60,
 		},
 		{
 			Id:         3010001,
@@ -206,6 +207,7 @@ func testGetSetupEndpoint(t *testing.T, testServer *httptest.Server, tenantId uu
 		attributes := data["attributes"].(map[string]interface{})
 		assert.Equal(t, float64(100), attributes["price"])
 		assert.Equal(t, float64(50), attributes["recoveryHP"])
+		assert.Equal(t, float64(60), attributes["recoveryMP"])
 	})
 
 	t.Run("GetSetupNotFound", func(t *testing.T) {

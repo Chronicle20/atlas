@@ -140,6 +140,18 @@ func TestWarpToMapWireLength(t *testing.T) {
 		"GMS v87":  27, // v83 + DecodeOpt(2); still no oldDriverID (gated >=95), hp 2
 		"GMS v95":  33, // v87 + oldDriverID(4); hp widened 2->4
 		"JMS v185": 31, // v83(25) - chase(1) + DecodeOpt(2)+JMSpair(5); no oldDriverID (GMS-only); hp stays 2 (JMS185 @0x7eec9d Decode2)
+		// v48/v61/v72/v79: all >28 (nNotifierCheck(2)+chase(1) present) and <83 (no
+		// revive byte, gated GMS>=83) and <87 (no DecodeOpt, gated GMS>=87) and <95
+		// (hp stays 2 bytes, no oldDriverID). v28 envelope(21) + nNotifierCheck(2) +
+		// chase(1) = 24; byte-identical to the TestWarpToMapByteOutputV61/V72/V79
+		// golden fixtures above (IDA-verified @0x659fd3/@0x6c0c9b/@0x6f07d9 — no
+		// revive, no DecodeOpt, hp Decode2). v48 is the same shape (no IDA fixture
+		// pinning v48 bytes exactly here, but no gate in the codec distinguishes it
+		// from v61/v72/v79 in this range).
+		"GMS v48": 24,
+		"GMS v61": 24,
+		"GMS v72": 24,
+		"GMS v79": 24,
 	}
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

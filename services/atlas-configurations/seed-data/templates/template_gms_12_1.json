@@ -53,6 +53,12 @@
         "services": ["login"]
       },
       {
+        "opCode": "0x0A",
+        "validator": "NoOpValidator",
+        "handler": "CharacterLoggedInHandle",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0x0B",
         "validator": "LoggedInValidator",
         "handler": "CharacterCheckNameHandle",
@@ -69,12 +75,6 @@
         "validator": "LoggedInValidator",
         "handler": "DeleteCharacterHandle",
         "services": ["login"]
-      },
-      {
-        "opCode": "0x0A",
-        "validator": "NoOpValidator",
-        "handler": "CharacterLoggedInHandle",
-        "services": ["channel"]
       },
       {
         "opCode": "0x13",
@@ -701,16 +701,6 @@
         }
       },
       {
-        "opCode": "0xBD",
-        "writer": "CashShopCashQueryResult",
-        "services": ["channel"]
-      },
-      {
-        "opCode": "0xBE",
-        "writer": "CashShopOperation",
-        "services": ["channel"]
-      },
-      {
         "opCode": "0xAF",
         "writer": "SummonSpawn",
         "services": ["channel"]
@@ -731,13 +721,23 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0xB3",
+        "writer": "SummonSkill",
+        "services": ["channel"]
+      },
+      {
         "opCode": "0xB4",
         "writer": "SummonDamage",
         "services": ["channel"]
       },
       {
-        "opCode": "0xB3",
-        "writer": "SummonSkill",
+        "opCode": "0xBD",
+        "writer": "CashShopCashQueryResult",
+        "services": ["channel"]
+      },
+      {
+        "opCode": "0xBE",
+        "writer": "CashShopOperation",
         "services": ["channel"]
       }
     ]

@@ -10926,7 +10926,7 @@
     },
     "CWvsContext::TryRecovery": {
       "address": "0x70a977",
-      "direction": "",
+      "direction": "serverbound",
       "calls": null
     },
     "CharacterData::Decode": {
@@ -15130,6 +15130,27 @@
         {
           "op": "Decode1",
           "comment": "whispersOn"
+        }
+      ]
+    },
+    "CWvsContext::SendTamingMobFoodItemUseRequest": {
+      "address": "0x70e00b",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && a3 / 10000 == 226 && result"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "result && a3 / 10000 == 226 && result"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && a3 / 10000 == 226 && result"
         }
       ]
     }

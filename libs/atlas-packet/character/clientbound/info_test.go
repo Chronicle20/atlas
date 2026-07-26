@@ -80,15 +80,23 @@ func TestCharacterInfoRoundTrip(t *testing.T) {
 			if output.GuildName() != input.GuildName() {
 				t.Errorf("guildName: got %v, want %v", output.GuildName(), input.GuildName())
 			}
-			if len(output.Pets()) != len(input.Pets()) {
-				t.Errorf("pets count: got %v, want %v", len(output.Pets()), len(input.Pets()))
+			// Legacy GMS v29..v60 (v48) writes a SINGLE flag-gated pet (codec:
+			// character/clientbound/info.go:88-108, IDA @0x71cb6f/@0x71cbe1); only
+			// pets[0] survives the round-trip there. v61+/JMS/v83+ write the
+			// bool-terminated multi-pet loop (@0x8455ed) and round-trip the full list.
+			wantPets := pets
+			if v.Region == "GMS" && v.MajorVersion > 28 && v.MajorVersion < 61 {
+				wantPets = pets[:1]
+			}
+			if len(output.Pets()) != len(wantPets) {
+				t.Errorf("pets count: got %v, want %v", len(output.Pets()), len(wantPets))
 			} else {
 				for i, p := range output.Pets() {
-					if p.TemplateId != pets[i].TemplateId {
-						t.Errorf("pet[%d] templateId: got %v, want %v", i, p.TemplateId, pets[i].TemplateId)
+					if p.TemplateId != wantPets[i].TemplateId {
+						t.Errorf("pet[%d] templateId: got %v, want %v", i, p.TemplateId, wantPets[i].TemplateId)
 					}
-					if p.Name != pets[i].Name {
-						t.Errorf("pet[%d] name: got %v, want %v", i, p.Name, pets[i].Name)
+					if p.Name != wantPets[i].Name {
+						t.Errorf("pet[%d] name: got %v, want %v", i, p.Name, wantPets[i].Name)
 					}
 				}
 			}

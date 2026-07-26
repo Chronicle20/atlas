@@ -646,6 +646,11 @@
         }
       ]
     },
+    "CWvsContext::TryRecovery": {
+      "address": "0x9d4020",
+      "direction": "serverbound",
+      "calls": null
+    },
     "CWvsContext::SendSitOnPortableChairRequest": {
       "address": "0x9da100",
       "direction": "serverbound",
@@ -15460,6 +15465,24 @@
           "op": "Decode4",
           "comment": "slot (this->_nTargetPOS) - Encode4 @0x5ca04d",
           "guard": "hasItem"
+        }
+      ]
+    },
+    "CWvsContext::SendTamingMobFoodItemUseRequest": {
+      "address": "0x9d63a0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
         }
       ]
     }

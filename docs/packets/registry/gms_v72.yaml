@@ -2297,11 +2297,11 @@
 - op: USE_MOUNT_FOOD
   direction: serverbound
   opcode: 76
-  fname: sub_955781
+  fname: CWvsContext::SendTamingMobFoodItemUseRequest
   provenance: ida-discovered
   ida:
     address: 9454617
-  note: 'v72 COutPacket(76) verified via global COutPacket-ctor harvest @0x904419; Δ+1 vs v79 op 75 (mid/field/social Δ+1).'
+  note: 'v72 COutPacket(76) verified via global COutPacket-ctor harvest @0x904419; Δ+1 vs v79 op 75 (mid/field/social Δ+1). fname corrected from stale placeholder "sub_955781" (mismatched an unrelated address) to the confirmed-named symbol CWvsContext::SendTamingMobFoodItemUseRequest (task-138 Task 5 re-verification).'
 - op: USE_CASH_ITEM
   direction: serverbound
   opcode: 78
@@ -2361,6 +2361,13 @@
   provenance: ida-discovered
   ida:
     address: 9533894
+- op: STATE_CHANGE_BY_PORTABLE_CHAIR_REQUEST
+  direction: serverbound
+  opcode: 73
+  fname: CWvsContext::TryRecovery
+  provenance: ida-discovered
+  ida:
+    address: 9430465
   note: 'v72 COutPacket(88) verified via global COutPacket-ctor harvest @0x9179c6; Δ+1 vs v79 op 87 (mid/field/social Δ+1).'
 - op: DISTRIBUTE_SP
   direction: serverbound

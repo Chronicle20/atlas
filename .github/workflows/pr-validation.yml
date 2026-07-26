@@ -268,6 +268,24 @@ jobs:
         run: ./tools/service-registration-guard.sh
 
   # ============================================
+  # Enforces ascending opCode order for the
+  # handlers/writers arrays in every tenant
+  # socket-config template. See
+  # docs/packets/TEMPLATE_CONVENTIONS.md.
+  # Pure shell + python3, no Go setup.
+  # ============================================
+  template-opcode-order-guard:
+    name: Template Opcode Order Guard
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: template opcode order guard
+        run: ./tools/template-opcode-order-guard.sh
+
+  # ============================================
   # Test Go Libraries
   # ============================================
   test-go-libraries:
@@ -632,7 +650,7 @@ jobs:
   # ============================================
   pr-validation-complete:
     name: PR Validation Complete
-    needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker, update-pr-overlay, redis-key-guard, outbox-guard, goroutine-guard, gen-lb-ports, service-registration-guard, lint-go, lint-ui]
+    needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker, update-pr-overlay, redis-key-guard, outbox-guard, goroutine-guard, gen-lb-ports, service-registration-guard, template-opcode-order-guard, lint-go, lint-ui]
     if: always()
     runs-on: ubuntu-latest
 
@@ -653,6 +671,7 @@ jobs:
           GOROUTINE_GUARD_RESULT="${{ needs.goroutine-guard.result }}"
           LBPORTS_RESULT="${{ needs.gen-lb-ports.result }}"
           SVC_REG_GUARD_RESULT="${{ needs.service-registration-guard.result }}"
+          TMPL_ORDER_GUARD_RESULT="${{ needs.template-opcode-order-guard.result }}"
           LINT_GO_RESULT="${{ needs.lint-go.result }}"
           LINT_UI_RESULT="${{ needs.lint-ui.result }}"
 
@@ -668,13 +687,14 @@ jobs:
           echo "| Goroutine Guard | $GOROUTINE_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| LB Port Drift Guard | $LBPORTS_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Service Registration Guard | $SVC_REG_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
+          echo "| Template Opcode Order Guard | $TMPL_ORDER_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Lint & Format Guard (Go) | $LINT_GO_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Lint & Format Guard (UI) | $LINT_UI_RESULT |" >> $GITHUB_STEP_SUMMARY
 
           # Fail if any required job failed. update-pr-overlay is allowed
           # to be skipped (e.g., when the deploy-env label is absent) but
           # not to fail outright.
-          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$OVERLAY_RESULT" == "failure" ] || [ "$GUARD_RESULT" == "failure" ] || [ "$OUTBOX_GUARD_RESULT" == "failure" ] || [ "$GOROUTINE_GUARD_RESULT" == "failure" ] || [ "$LBPORTS_RESULT" == "failure" ] || [ "$SVC_REG_GUARD_RESULT" == "failure" ] || [ "$LINT_GO_RESULT" == "failure" ] || [ "$LINT_UI_RESULT" == "failure" ]; then
+          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$OVERLAY_RESULT" == "failure" ] || [ "$GUARD_RESULT" == "failure" ] || [ "$OUTBOX_GUARD_RESULT" == "failure" ] || [ "$GOROUTINE_GUARD_RESULT" == "failure" ] || [ "$LBPORTS_RESULT" == "failure" ] || [ "$SVC_REG_GUARD_RESULT" == "failure" ] || [ "$TMPL_ORDER_GUARD_RESULT" == "failure" ] || [ "$LINT_GO_RESULT" == "failure" ] || [ "$LINT_UI_RESULT" == "failure" ]; then
             echo ""
             echo "One or more jobs failed!"
             exit 1

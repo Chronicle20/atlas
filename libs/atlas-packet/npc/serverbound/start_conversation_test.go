@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // packet-audit:verify packet=npc/serverbound/NpcStartConversation version=gms_v83 ida=0x95fe9e
@@ -21,11 +22,12 @@ func TestStartConversationRoundTrip(t *testing.T) {
 			if output.Oid() != input.Oid() {
 				t.Errorf("oid: got %v, want %v", output.Oid(), input.Oid())
 			}
-			// Every IDA-verified GMS build (v48/v61/v72/v79/v83+) and JMS carries
-			// the user-position x/y shorts after the npc oid; only pre-v48 GMS with
-			// no IDB (e.g. the v28 variant below) is oid-only, so its x/y stay zero
-			// after the round trip. This test's variants are all v79+ or JMS or v28.
-			hasXY := (v.Region == "GMS" && v.MajorVersion >= 79) || v.Region == "JMS"
+			// Mirror the codec's exact gate (start_conversation.go:39-44,
+			// startConversationHasXY): MajorAtLeast(72) || ==61 || ==48 for GMS, true
+			// for all other regions. IDA-verified per-version: v48 @0x568a2a,
+			// v61 @0x7b1403, v72 @0x63fd91, v79 @0x8b7e10, v83+/JMS likewise carry x/y;
+			// only pre-v48 GMS with no IDB (e.g. the v28 variant) is oid-only.
+			hasXY := startConversationHasXY(tenant.MustFromContext(ctx))
 			if hasXY {
 				if output.X() != input.X() {
 					t.Errorf("x: got %v, want %v", output.X(), input.X())

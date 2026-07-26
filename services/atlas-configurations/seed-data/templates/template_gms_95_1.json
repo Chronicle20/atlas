@@ -1056,9 +1056,19 @@
         "services": ["login"]
       },
       {
-        "opCode": "0x1C",
+        "opCode": "0x1B",
         "writer": "PicResult",
         "services": ["login"]
+      },
+      {
+        "opCode": "0x1C",
+        "writer": "CharacterInventoryChange",
+        "services": ["channel"],
+        "options": {
+          "petSkill": {
+            "autoSpeaking": "0x100"
+          }
+        }
       },
       {
         "opCode": "0x1E",

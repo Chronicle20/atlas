@@ -166,3 +166,64 @@ func TestBuff_DurationInMilliseconds(t *testing.T) {
 	assert.True(t, diff <= tolerance,
 		"expected ExpiresAt-CreatedAt within %v of %v, got %v (diff %v)", tolerance, expected, gap, diff)
 }
+
+func TestModel_WithStatAmount_ReplacesTargetStat(t *testing.T) {
+	changes := []stat.Model{stat.NewStat("COMBO", 1), stat.NewStat("WATK", 20)}
+	m, err := NewBuff(1111002, 20, 150000, changes)
+	if err != nil {
+		t.Fatalf("NewBuff: %v", err)
+	}
+
+	updated, ok := m.WithStatAmount("COMBO", 3)
+	if !ok {
+		t.Fatal("expected ok=true for present stat type")
+	}
+
+	var combo, watk int32
+	for _, c := range updated.Changes() {
+		switch c.Type() {
+		case "COMBO":
+			combo = c.Amount()
+		case "WATK":
+			watk = c.Amount()
+		}
+	}
+	if combo != 3 {
+		t.Fatalf("COMBO amount = %d, want 3", combo)
+	}
+	if watk != 20 {
+		t.Fatalf("WATK amount = %d, want 20 (other stats preserved)", watk)
+	}
+}
+
+func TestModel_WithStatAmount_PreservesIdentityAndExpiry(t *testing.T) {
+	m, err := NewBuff(1111002, 20, 150000, []stat.Model{stat.NewStat("COMBO", 1)})
+	if err != nil {
+		t.Fatalf("NewBuff: %v", err)
+	}
+
+	updated, ok := m.WithStatAmount("COMBO", 2)
+	if !ok {
+		t.Fatal("expected ok=true")
+	}
+	if updated.SourceId() != m.SourceId() || updated.Level() != m.Level() || updated.Duration() != m.Duration() {
+		t.Fatal("identity fields must be preserved")
+	}
+	if !updated.CreatedAt().Equal(m.CreatedAt()) || !updated.ExpiresAt().Equal(m.ExpiresAt()) {
+		t.Fatal("createdAt/expiresAt must be preserved (remaining-duration contract)")
+	}
+	// original untouched (immutability)
+	if m.Changes()[0].Amount() != 1 {
+		t.Fatalf("original buff mutated: COMBO = %d, want 1", m.Changes()[0].Amount())
+	}
+}
+
+func TestModel_WithStatAmount_MissingStatType(t *testing.T) {
+	m, err := NewBuff(1111002, 20, 150000, []stat.Model{stat.NewStat("WATK", 20)})
+	if err != nil {
+		t.Fatalf("NewBuff: %v", err)
+	}
+	if _, ok := m.WithStatAmount("COMBO", 3); ok {
+		t.Fatal("expected ok=false for absent stat type")
+	}
+}

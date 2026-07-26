@@ -11,10 +11,16 @@ import (
 )
 
 const (
-	EnvCommandTopic          = "COMMAND_TOPIC_CHARACTER_BUFF"
-	CommandTypeApply         = "APPLY"
-	CommandTypeCancel        = "CANCEL"
-	CommandTypeCancelByTypes = "CANCEL_BY_TYPES"
+	EnvCommandTopic            = "COMMAND_TOPIC_CHARACTER_BUFF"
+	CommandTypeApply           = "APPLY"
+	CommandTypeCancel          = "CANCEL"
+	CommandTypeCancelByTypes   = "CANCEL_BY_TYPES"
+	CommandTypeUpdateStatValue = "UPDATE_STAT_VALUE"
+
+	// Operations for UPDATE_STAT_VALUE. INCREMENT adds Amount clamped to Cap;
+	// SET replaces the stat amount outright (finisher consume = SET 1).
+	StatOperationIncrement = "INCREMENT"
+	StatOperationSet       = "SET"
 )
 
 type Command[E any] struct {
@@ -48,10 +54,22 @@ type CancelByTypesCommandBody struct {
 	Types []string `json:"types"`
 }
 
+// UpdateStatValueCommandBody changes the amount of one stat on a character's
+// existing buff (identified by SourceId). Owned by atlas-buffs; this is the
+// channel-side mirror. Cap applies to INCREMENT only.
+type UpdateStatValueCommandBody struct {
+	SourceId  int32  `json:"sourceId"`
+	StatType  string `json:"statType"`
+	Operation string `json:"operation"`
+	Amount    int32  `json:"amount"`
+	Cap       int32  `json:"cap"`
+}
+
 const (
 	EnvEventStatusTopic        = "EVENT_TOPIC_CHARACTER_BUFF_STATUS"
 	EventStatusTypeBuffApplied = "APPLIED"
 	EventStatusTypeBuffExpired = "EXPIRED"
+	EventStatusTypeStatUpdated = "STAT_UPDATED"
 )
 
 type StatusEvent[E any] struct {
@@ -72,6 +90,19 @@ type AppliedStatusEventBody struct {
 }
 
 type ExpiredStatusEventBody struct {
+	SourceId  int32        `json:"sourceId"`
+	Level     byte         `json:"level"`
+	Duration  int32        `json:"duration"`
+	Changes   []StatChange `json:"changes"`
+	CreatedAt time.Time    `json:"createdAt"`
+	ExpiresAt time.Time    `json:"expiresAt"`
+}
+
+// StatUpdatedStatusEventBody signals a stat value change on an EXISTING buff.
+// CreatedAt/ExpiresAt are the buff's original timestamps — the give writers
+// encode duration as expiresAt − now, so re-broadcast carries the remaining
+// duration and never extends the buff.
+type StatUpdatedStatusEventBody struct {
 	SourceId  int32        `json:"sourceId"`
 	Level     byte         `json:"level"`
 	Duration  int32        `json:"duration"`

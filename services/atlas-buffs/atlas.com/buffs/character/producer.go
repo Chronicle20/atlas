@@ -79,3 +79,29 @@ func expiredStatusEventProvider(worldId world.Id, characterId uint32, sourceId i
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func statUpdatedStatusEventProvider(worldId world.Id, characterId uint32, sourceId int32, level byte, duration int32, changes []stat.Model, createdAt time.Time, expiresAt time.Time) model.Provider[[]kafka.Message] {
+	statups := make([]character2.StatChange, 0)
+	for _, su := range changes {
+		statups = append(statups, character2.StatChange{
+			Type:   su.Type(),
+			Amount: su.Amount(),
+		})
+	}
+
+	key := producer.CreateKey(int(characterId))
+	value := &character2.StatusEvent[character2.StatUpdatedStatusEventBody]{
+		WorldId:     worldId,
+		CharacterId: characterId,
+		Type:        character2.EventStatusTypeStatUpdated,
+		Body: character2.StatUpdatedStatusEventBody{
+			SourceId:  sourceId,
+			Level:     level,
+			Duration:  duration,
+			Changes:   statups,
+			CreatedAt: createdAt,
+			ExpiresAt: expiresAt,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

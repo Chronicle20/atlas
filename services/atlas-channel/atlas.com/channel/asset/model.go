@@ -53,6 +53,7 @@ type Model struct {
 	petId     uint32
 	petName   string
 	petLevel  byte
+	petFlag   uint16
 	closeness uint16
 	fullness  byte
 	petSlot   int8
@@ -100,6 +101,7 @@ func (m Model) PurchaseBy() uint32        { return m.purchaseBy }
 func (m Model) PetId() uint32             { return m.petId }
 func (m Model) PetName() string           { return m.petName }
 func (m Model) PetLevel() byte            { return m.petLevel }
+func (m Model) PetFlag() uint16           { return m.petFlag }
 func (m Model) Closeness() uint16         { return m.closeness }
 func (m Model) Fullness() byte            { return m.fullness }
 func (m Model) PetSlot() int8             { return m.petSlot }

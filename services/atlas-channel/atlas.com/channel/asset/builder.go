@@ -51,6 +51,7 @@ func Clone(m Model) *ModelBuilder {
 		petId:          m.petId,
 		petName:        m.petName,
 		petLevel:       m.petLevel,
+		petFlag:        m.petFlag,
 		closeness:      m.closeness,
 		fullness:       m.fullness,
 		petSlot:        m.petSlot,
@@ -105,6 +106,7 @@ type ModelBuilder struct {
 	petId     uint32
 	petName   string
 	petLevel  byte
+	petFlag   uint16
 	closeness uint16
 	fullness  byte
 	petSlot   int8
@@ -218,6 +220,7 @@ func (b *ModelBuilder) SetPurchaseBy(v uint32) *ModelBuilder        { b.purchase
 func (b *ModelBuilder) SetPetId(v uint32) *ModelBuilder             { b.petId = v; return b }
 func (b *ModelBuilder) SetPetName(v string) *ModelBuilder           { b.petName = v; return b }
 func (b *ModelBuilder) SetPetLevel(v byte) *ModelBuilder            { b.petLevel = v; return b }
+func (b *ModelBuilder) SetPetFlag(v uint16) *ModelBuilder           { b.petFlag = v; return b }
 func (b *ModelBuilder) SetCloseness(v uint16) *ModelBuilder         { b.closeness = v; return b }
 func (b *ModelBuilder) SetFullness(v byte) *ModelBuilder            { b.fullness = v; return b }
 func (b *ModelBuilder) SetPetSlot(v int8) *ModelBuilder             { b.petSlot = v; return b }
@@ -265,6 +268,7 @@ func (b *ModelBuilder) Build() (Model, error) {
 		petId:          b.petId,
 		petName:        b.petName,
 		petLevel:       b.petLevel,
+		petFlag:        b.petFlag,
 		closeness:      b.closeness,
 		fullness:       b.fullness,
 		petSlot:        b.petSlot,

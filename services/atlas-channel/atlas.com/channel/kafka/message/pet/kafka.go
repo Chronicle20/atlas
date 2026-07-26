@@ -42,6 +42,7 @@ const (
 	StatusEventTypeLevelChanged     = "LEVEL_CHANGED"
 	StatusEventTypeSlotChanged      = "SLOT_CHANGED"
 	StatusEventTypeExcludeChanged   = "EXCLUDE_CHANGED"
+	StatusEventTypeFlagChanged      = "FLAG_CHANGED"
 )
 
 type StatusEvent[E any] struct {
@@ -112,4 +113,9 @@ type SlotChangedStatusEventBody struct {
 
 type ExcludeChangedStatusEventBody struct {
 	Items []uint32 `json:"items"`
+}
+
+type FlagChangedStatusEventBody struct {
+	Slot int8   `json:"slot"`
+	Flag uint16 `json:"flag"`
 }

@@ -89,6 +89,11 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 					return nil, err
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleFlagChanged(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				return handles, nil
 			}
 		}
@@ -439,5 +444,22 @@ func handleExcludeChanged(sc server.Model, wp writer.Producer) message.Handler[p
 			}
 			return session.Announce(l)(ctx)(wp)(petpkt.PetExcludeResponseWriter)(petpkt.NewPetExcludeResponse(p.OwnerId(), p.Slot(), uint64(p.Id()), excludeIds).Encode)(s)
 		})
+	}
+}
+
+func handleFlagChanged(sc server.Model, wp writer.Producer) message.Handler[pet2.StatusEvent[pet2.FlagChangedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e pet2.StatusEvent[pet2.FlagChangedStatusEventBody]) {
+		if e.Type != pet2.StatusEventTypeFlagChanged {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		// Re-announce the pet's cash asset so the client's GW_ItemSlotPet
+		// usPetSkill short refreshes — there is no dedicated skill packet.
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.OwnerId, announcePetStatUpdate(l)(ctx)(wp)(e.PetId, e.OwnerId))
 	}
 }

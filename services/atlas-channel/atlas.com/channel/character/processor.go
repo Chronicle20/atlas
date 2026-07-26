@@ -132,6 +132,7 @@ func (p *ProcessorImpl) PetAssetEnrichmentDecorator(m Model) Model {
 				a = asset.Clone(a).
 					SetPetName(pm.Name()).
 					SetPetLevel(pm.Level()).
+					SetPetFlag(pm.Flag()).
 					SetCloseness(pm.Closeness()).
 					SetFullness(pm.Fullness()).
 					SetPetSlot(pm.Slot()).

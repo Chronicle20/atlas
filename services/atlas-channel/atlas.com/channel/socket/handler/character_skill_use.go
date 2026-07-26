@@ -128,11 +128,3 @@ func skillLevelOf(skills []skill2.Model, id skill.Id) byte {
 	}
 	return 0
 }
-
-func enableActions(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(s session.Model) error {
-	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) error {
-		return func(wp writer.Producer) func(s session.Model) error {
-			return session.Announce(l)(ctx)(wp)(statpkt.StatChangedWriter)(statpkt.NewStatChanged(make([]statpkt.Update, 0), true).Encode)
-		}
-	}
-}

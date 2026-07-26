@@ -7,6 +7,7 @@ import (
 	"atlas-consumables/kafka/consumer/consumable"
 	"atlas-consumables/kafka/consumer/food"
 	pickupconsumer "atlas-consumables/kafka/consumer/pickup"
+	sagaconsumer "atlas-consumables/kafka/consumer/saga"
 	mapCharacter "atlas-consumables/map/character"
 	"os"
 
@@ -37,6 +38,7 @@ func main() {
 	consumable.InitConsumers(l)(cmf)(consumerGroupId)
 	food.InitConsumers(l)(cmf)(consumerGroupId)
 	pickupconsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	sagaconsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := character.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}

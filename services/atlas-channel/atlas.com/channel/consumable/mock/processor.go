@@ -15,6 +15,7 @@ type ProcessorMock struct {
 	RequestScrollUseFunc        func(f field.Model, characterId character.Id, scrollSlot slot.Position, equipSlot slot.Position, whiteScroll bool, legendarySpirit bool, updateTime uint32) error
 	RequestVegaScrollUseFunc    func(f field.Model, characterId character.Id, vegaItemId item.Id, vegaSlot slot.Position, scrollSlot slot.Position, equipSlot slot.Position) error
 	RequestViciousHammerUseFunc func(f field.Model, characterId character.Id, hammerSlot slot.Position, equipSlot slot.Position) error
+	RequestSkillBookUseFunc     func(f field.Model, characterId character.Id, slot slot.Position, itemId item.Id, updateTime uint32) error
 }
 
 var _ consumable.Processor = (*ProcessorMock)(nil)
@@ -50,6 +51,13 @@ func (m *ProcessorMock) RequestVegaScrollUse(f field.Model, characterId characte
 func (m *ProcessorMock) RequestViciousHammerUse(f field.Model, characterId character.Id, hammerSlot slot.Position, equipSlot slot.Position) error {
 	if m.RequestViciousHammerUseFunc != nil {
 		return m.RequestViciousHammerUseFunc(f, characterId, hammerSlot, equipSlot)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) RequestSkillBookUse(f field.Model, characterId character.Id, slot slot.Position, itemId item.Id, updateTime uint32) error {
+	if m.RequestSkillBookUseFunc != nil {
+		return m.RequestSkillBookUseFunc(f, characterId, slot, itemId, updateTime)
 	}
 	return nil
 }

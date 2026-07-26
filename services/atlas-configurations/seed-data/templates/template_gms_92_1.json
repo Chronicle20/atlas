@@ -214,6 +214,11 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x59",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterSkillBookUseHandle"
+      },
+      {
         "opCode": "0x5B",
         "validator": "LoggedInValidator",
         "handler": "TeleportRockUseHandle",
@@ -533,6 +538,10 @@
         "opCode": "0x31",
         "writer": "SetTamingMobInfo",
         "services": ["channel"]
+      },
+      {
+        "opCode": "0x34",
+        "writer": "CharacterSkillLearnItemResult"
       },
       {
         "opCode": "0x3E",

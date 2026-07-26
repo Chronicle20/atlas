@@ -322,6 +322,11 @@
         "services": ["channel"]
       },
       {
+        "opCode": "0x58",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterSkillBookUseHandle"
+      },
+      {
         "opCode": "0x5A",
         "validator": "LoggedInValidator",
         "handler": "ShopScannerItemUseHandle",
@@ -1172,6 +1177,10 @@
             "FREE_FORM_NOTICE": 18
           }
         }
+      },
+      {
+        "opCode": "0x32",
+        "writer": "CharacterSkillLearnItemResult"
       },
       {
         "opCode": "0x34",

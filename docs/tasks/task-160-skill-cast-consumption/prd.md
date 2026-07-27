@@ -1,9 +1,19 @@
 # Skill Cast Consumption Fidelity (itemConNo + cast-time bulletConsume) — Product Requirements Document
 
 Version: v1
-Status: Draft
+Status: Descoped (see note)
 Created: 2026-07-10
 ---
+
+> **Scope note (2026-07-27):** `task-158` (PR #1003, "Shadow Stars") landed on
+> main and independently implemented the Shadow Stars half of this PRD — the
+> cast-time `bulletConsume` cost, the SHADOW_CLAW star-id encoding, and the claw
+> attack-path skip (**FR-2, FR-3, and the resolved open question §9.1**). Those
+> requirements are DONE on main and are NOT re-implemented here. The remaining
+> in-scope work is **FR-1 only (`itemConNo` quantity plumbing)**. The FR-2/FR-3
+> sections below are retained for historical context; `plan.md` and `context.md`
+> reflect the actual (FR-1-only) delivery and list where each superseded item
+> now lives.
 
 ## 1. Overview
 

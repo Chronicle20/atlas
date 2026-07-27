@@ -1682,6 +1682,55 @@
             "BANNED_TIME_LIMIT": 11
           }
         }
+      },
+      {
+        "opCode": "0x100",
+        "writer": "CashShopOperation",
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "LIMIT_GOODS_COUNT_CHANGED": 41,
+            "LOAD_INVENTORY_SUCCESS": 42,
+            "LOAD_INVENTORY_FAILURE": 43,
+            "LOAD_WISHLIST": 44,
+            "LOAD_WISH_FAILED": 45,
+            "UPDATE_WISHLIST": 50,
+            "SET_WISH_FAILED": 51,
+            "PURCHASE_SUCCESS": 52,
+            "BUY_FAILED": 53,
+            "USE_COUPON_SUCCESS": 54,
+            "GIFT_COUPON_SUCCESS": 56,
+            "USE_COUPON_FAILED": 57,
+            "GIFT_SUCCESS": 59,
+            "GIFT_FAILED": 60,
+            "INVENTORY_CAPACITY_INCREASE_SUCCESS": 61,
+            "INVENTORY_CAPACITY_INCREASE_FAILED": 62,
+            "INC_CHARACTER_SLOT_COUNT_SUCCESS": 63,
+            "INC_CHARACTER_SLOT_COUNT_FAILED": 64,
+            "CASH_ITEM_MOVED_TO_INVENTORY": 65,
+            "MOVE_L_TO_S_FAILED": 66,
+            "CASH_ITEM_MOVED_TO_CASH_INVENTORY": 67,
+            "MOVE_S_TO_L_FAILED": 68,
+            "DESTROY_SUCCESS": 69,
+            "DESTROY_FAILED": 70,
+            "EXPIRE_DONE": 71,
+            "REBATE_SUCCESS": 92,
+            "REBATE_FAILED": 93,
+            "COUPLE_SUCCESS": 94,
+            "COUPLE_FAILED": 95,
+            "BUY_PACKAGE_SUCCESS": 96,
+            "BUY_PACKAGE_FAILED": 97,
+            "GIFT_PACKAGE_SUCCESS": 98,
+            "GIFT_PACKAGE_FAILED": 99,
+            "BUY_NORMAL_SUCCESS": 100,
+            "BUY_NORMAL_FAILED": 101,
+            "FRIENDSHIP_SUCCESS": 104,
+            "FRIENDSHIP_FAILED": 105,
+            "NAME_CHANGE_BUY_DONE": 108,
+            "TRANSFER_WORLD_SUCCESS": 110,
+            "TRANSFER_WORLD_FAILED": 111
+          }
+        }
       }
     ]
   },

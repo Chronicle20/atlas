@@ -94,4 +94,36 @@ describe("jobsService.getJobs", () => {
     const result = await jobsService.getJobs({ includeSkills: true });
     expect(result.skillsById.size).toBe(0);
   });
+
+  it("aborts instead of looping forever on a self-referential links.next", async () => {
+    // A malformed backend response that points `next` back at the URL that
+    // was just fetched. Without a visited-URL guard this would fetch forever.
+    getListDocumentMock.mockImplementation((url: string) =>
+      Promise.resolve({
+        data: [{ id: "100", type: "jobs", attributes: { skills: [] } }],
+        links: { next: url },
+      }),
+    );
+
+    await expect(jobsService.getJobs()).rejects.toThrow(/aborting pagination/);
+    // Caught on the second fetch (the repeat of the first URL), not looped.
+    expect(getListDocumentMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("aborts once the page-count backstop is reached even without an exact repeat", async () => {
+    // Every page advances to a distinct URL (so the visited-Set repeat check
+    // never fires) but never terminates. The MAX_PAGES ceiling must still
+    // stop it rather than requesting forever.
+    let page = 0;
+    getListDocumentMock.mockImplementation(() => {
+      page += 1;
+      return Promise.resolve({
+        data: [{ id: String(page), type: "jobs", attributes: { skills: [] } }],
+        links: { next: `/api/data/jobs?page%5Bnumber%5D=${page + 1}` },
+      });
+    });
+
+    await expect(jobsService.getJobs()).rejects.toThrow(/aborting pagination/);
+    expect(getListDocumentMock.mock.calls.length).toBeLessThan(100);
+  });
 });

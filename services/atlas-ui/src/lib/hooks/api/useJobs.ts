@@ -4,7 +4,9 @@ import { jobsService, type JobsResult } from "@/services/api/jobs.service";
 
 export const jobsKeys = {
   all: ["jobs"] as const,
-  list: (tenantId: string | undefined) => ["jobs", tenantId] as const,
+  lists: () => [...jobsKeys.all, "list"] as const,
+  list: (tenantId: string | undefined) =>
+    [...jobsKeys.lists(), tenantId ?? "no-tenant"] as const,
 };
 
 /**

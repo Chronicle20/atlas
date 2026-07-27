@@ -20,6 +20,11 @@ const BASE_PATH = "/api/data/jobs";
 // load-bearing.
 const PAGE_SIZE = 250;
 
+// Defensive ceiling on links.next pagination. At PAGE_SIZE=250 with ~82 jobs
+// a real response is one page; this is only a backstop against a malformed
+// or self-referential `next` link from the backend.
+const MAX_PAGES = 50;
+
 export const jobsService = {
   async getSkillsByJobId(jobId: number): Promise<number[]> {
     const job = await api.getOne<JobResource>(`${BASE_PATH}/${jobId}/skills`);
@@ -40,8 +45,17 @@ export const jobsService = {
     let url: string | undefined = `${BASE_PATH}?${params.toString()}`;
     const jobs: JobResource[] = [];
     const skillsById = new Map<number, JsonApiResource>();
+    const visited = new Set<string>();
 
     while (url) {
+      if (visited.has(url) || visited.size >= MAX_PAGES) {
+        throw new Error(
+          `jobsService.getJobs: aborting pagination after ${visited.size} page(s) — ` +
+            `links.next did not advance (url: ${url}). The backend is misbehaving.`,
+        );
+      }
+      visited.add(url);
+
       const doc: ApiPagedResponse<JobResource> & {
         included?: JsonApiResource[];
       } = await api.getListDocument<JobResource>(url);

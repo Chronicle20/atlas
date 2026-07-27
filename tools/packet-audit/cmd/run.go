@@ -2430,6 +2430,29 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "IncBuyCharacterCountSuccess", dir: csvpkg.DirClientbound, pkg: "cash"}}
 	case "CCashShop::OnCashItemResult#ENABLE_EQUIP_SLOT_EXT_SUCCESS":
 		return []candidate{{name: "EnableEquipSlotExtSuccess", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	// Gift/coupon/package item-blob arm family (task-183 Wave 1.3). GIFT_SUCCESS
+	// resolves the legacy 0x4D gift TODO (real shape is scalar, not item-blob —
+	// see arm-catalog.md + task-0.3e report).
+	case "CCashShop::OnCashItemResult#GIFT_SUCCESS":
+		return []candidate{{name: "GiftDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#LOAD_GIFT_SUCCESS":
+		return []candidate{{name: "LoadGiftDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#USE_COUPON_SUCCESS":
+		return []candidate{{name: "UseCouponDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#GIFT_COUPON_SUCCESS":
+		return []candidate{{name: "GiftCouponDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#BUY_PACKAGE_SUCCESS":
+		return []candidate{{name: "BuyPackageDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#GIFT_PACKAGE_SUCCESS":
+		return []candidate{{name: "GiftPackageDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#BUY_NORMAL_SUCCESS":
+		return []candidate{{name: "BuyNormalDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#FRIENDSHIP_SUCCESS":
+		return []candidate{{name: "FriendshipDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#REBATE_SUCCESS":
+		return []candidate{{name: "RebateDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#COUPLE_SUCCESS":
+		return []candidate{{name: "CoupleDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
 	// Serverbound CCashShop senders (op-byte owned by the ShopOperation dispatcher; bodies below).
 	case "CCashShop::TrySendQueryCashRequest":
 		return []candidate{{name: "CheckWallet", dir: csvpkg.DirServerbound, pkg: "cash"}}

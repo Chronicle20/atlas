@@ -53,6 +53,18 @@ const (
 	CashShopOperationIncBuyCharacterCountSuccess  = "INC_BUY_CHARACTER_COUNT_SUCCESS"
 	CashShopOperationEnableEquipSlotExtSuccess    = "ENABLE_EQUIP_SLOT_EXT_SUCCESS"
 
+	// Gift/coupon/package item-blob arm operation keys (task-183 Wave 1.3).
+	CashShopOperationGiftDone        = "GIFT_SUCCESS"
+	CashShopOperationLoadGiftDone    = "LOAD_GIFT_SUCCESS"
+	CashShopOperationUseCouponDone   = "USE_COUPON_SUCCESS"
+	CashShopOperationGiftCouponDone  = "GIFT_COUPON_SUCCESS"
+	CashShopOperationBuyPackageDone  = "BUY_PACKAGE_SUCCESS"
+	CashShopOperationGiftPackageDone = "GIFT_PACKAGE_SUCCESS"
+	CashShopOperationBuyNormalDone   = "BUY_NORMAL_SUCCESS"
+	CashShopOperationFriendshipDone  = "FRIENDSHIP_SUCCESS"
+	CashShopOperationRebateDone      = "REBATE_SUCCESS"
+	CashShopOperationCoupleDone      = "COUPLE_SUCCESS"
+
 	CashShopOperationErrorUnknown                           = "UNKNOWN_ERROR"
 	CashShopOperationErrorRequestTimedOut                   = "REQUEST_TIMED_OUT"
 	CashShopOperationErrorNotEnoughCash                     = "NOT_ENOUGH_CASH"
@@ -108,11 +120,6 @@ const (
 	CashShopOperationErrorCannotBePurchasedWhenUnderSeven   = "CANNOT_BE_PURCHASED_WHEN_UNDER_SEVEN"
 	CashShopOperationErrorCannotBeReceivedWhenUnderSeven    = "CANNOT_BE_RECEIVED_WHEN_UNDER_SEVEN"
 )
-
-func CashShopCashGiftsBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
-	// TODO map codes for JMS — currently hardcoded to 0x4D
-	return NewCashShopGifts(0x4D).Encode
-}
 
 // CashShopLoadInventoryFailureBody builds the LOAD_INVENTORY_FAILURE arm
 // (CCashShop::OnCashItemResLoadLockerFailed). It FIXES the LOAD_INVENTORY_FAILURE
@@ -471,5 +478,85 @@ func CashShopIncBuyCharacterCountSuccessBody(buyCharacterCount uint16) func(logr
 func CashShopEnableEquipSlotExtSuccessBody(slotIndex uint16, days uint16) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", CashShopOperationEnableEquipSlotExtSuccess, func(mode byte) packet.Encoder {
 		return NewEnableEquipSlotExtSuccess(mode, slotIndex, days)
+	})
+}
+
+// --- Gift/coupon/package item-blob arm bodies (task-183 Wave 1.3) ---
+// See shop_operation_result_gift.go for the discrete structs and
+// arm-catalog.md for the per-arm wire-truth. This wave resolves the legacy
+// 0x4D gift TODO (CashShopCashGiftsBody / CashShopGifts stub) — GIFT_SUCCESS
+// and LOAD_GIFT_SUCCESS below are their real RE'd replacements.
+
+// CashShopGiftDoneBody builds the GIFT_SUCCESS arm (CCashShop::OnCashItemResGiftDone).
+// Pure scalar body — no item-blob (task-0.3e report).
+func CashShopGiftDoneBody(recipientName string, itemId int32, quantity uint16, nxCashSpent int32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CashShopOperationGiftDone, func(mode byte) packet.Encoder {
+		return NewGiftDone(mode, recipientName, itemId, quantity, nxCashSpent)
+	})
+}
+
+// CashShopLoadGiftDoneBody builds the LOAD_GIFT_SUCCESS arm (CCashShop::OnCashItemResLoadGiftDone).
+func CashShopLoadGiftDoneBody(gifts []GiftListEntry) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CashShopOperationLoadGiftDone, func(mode byte) packet.Encoder {
+		return NewLoadGiftDone(mode, gifts)
+	})
+}
+
+// CashShopUseCouponDoneBody builds the USE_COUPON_SUCCESS arm (CCashShop::OnCashItemResUseCouponDone).
+func CashShopUseCouponDoneBody(items []CashInventoryItem, maplePoint int32, refs []PackedCashItemRef, meso int32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CashShopOperationUseCouponDone, func(mode byte) packet.Encoder {
+		return NewUseCouponDone(mode, items, maplePoint, refs, meso)
+	})
+}
+
+// CashShopGiftCouponDoneBody builds the GIFT_COUPON_SUCCESS arm (CCashShop::OnCashItemResGiftCouponDone).
+func CashShopGiftCouponDoneBody(recipientName string, items []CashInventoryItem, maplePoint int32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CashShopOperationGiftCouponDone, func(mode byte) packet.Encoder {
+		return NewGiftCouponDone(mode, recipientName, items, maplePoint)
+	})
+}
+
+// CashShopBuyPackageDoneBody builds the BUY_PACKAGE_SUCCESS arm (CCashShop::OnCashItemResBuyPackageDone).
+func CashShopBuyPackageDoneBody(items []CashInventoryItem, trailingCount uint16) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CashShopOperationBuyPackageDone, func(mode byte) packet.Encoder {
+		return NewBuyPackageDone(mode, items, trailingCount)
+	})
+}
+
+// CashShopGiftPackageDoneBody builds the GIFT_PACKAGE_SUCCESS arm (CCashShop::OnCashItemResGiftPackageDone).
+// Pure scalar body — no item-blob (task-0.3e report).
+func CashShopGiftPackageDoneBody(recipientName string, packageId int32, unused1 uint16, unused2 uint16, nxCashSpent int32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CashShopOperationGiftPackageDone, func(mode byte) packet.Encoder {
+		return NewGiftPackageDone(mode, recipientName, packageId, unused1, unused2, nxCashSpent)
+	})
+}
+
+// CashShopBuyNormalDoneBody builds the BUY_NORMAL_SUCCESS arm (CCashShop::OnCashItemResBuyNormalDone).
+// List of PackedCashItemRef — no GW_CashItemInfo item-blob (task-0.3e/0.3f reports).
+func CashShopBuyNormalDoneBody(refs []PackedCashItemRef) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CashShopOperationBuyNormalDone, func(mode byte) packet.Encoder {
+		return NewBuyNormalDone(mode, refs)
+	})
+}
+
+// CashShopFriendshipDoneBody builds the FRIENDSHIP_SUCCESS arm (CCashShop::OnCashItemResFriendShipDone).
+func CashShopFriendshipDoneBody(item CashInventoryItem, recipientName string, itemId int32, quantity uint16) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CashShopOperationFriendshipDone, func(mode byte) packet.Encoder {
+		return NewFriendshipDone(mode, item, recipientName, itemId, quantity)
+	})
+}
+
+// CashShopRebateDoneBody builds the REBATE_SUCCESS arm (CCashShop::OnCashItemResRebateDone).
+// Pure scalar body — no item-blob (task-0.3e report).
+func CashShopRebateDoneBody(sn int64, amount int32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CashShopOperationRebateDone, func(mode byte) packet.Encoder {
+		return NewRebateDone(mode, sn, amount)
+	})
+}
+
+// CashShopCoupleDoneBody builds the COUPLE_SUCCESS arm (CCashShop::OnCashItemResCoupleDone).
+func CashShopCoupleDoneBody(item CashInventoryItem, recipientName string, itemId int32, quantity uint16) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CashShopOperationCoupleDone, func(mode byte) packet.Encoder {
+		return NewCoupleDone(mode, item, recipientName, itemId, quantity)
 	})
 }

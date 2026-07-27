@@ -27,6 +27,8 @@ func TestAmounts(t *testing.T) {
 		{name: "x negative returns zeros", maxHp: 1234, x: -5, y: 55, wantHpLost: 0, wantMpGain: 0},
 		{name: "pathological x=1 at uint16 max clamps, never wraps", maxHp: math.MaxUint16, x: 1, y: 100, wantHpLost: math.MaxInt16, wantMpGain: math.MaxInt16},
 		{name: "negative y floors mpGain at zero", maxHp: 1234, x: 10, y: -50, wantHpLost: 123, wantMpGain: 0},
+		{name: "mpGain from unclamped hpLost (x=1) not post-clamp delta", maxHp: math.MaxUint16, x: 1, y: 50, wantHpLost: math.MaxInt16, wantMpGain: math.MaxInt16},
+		{name: "mpGain-only clamp: hpLost in range, mpGain overflows", maxHp: math.MaxUint16, x: 3, y: math.MaxInt16, wantHpLost: 21845, wantMpGain: math.MaxInt16},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

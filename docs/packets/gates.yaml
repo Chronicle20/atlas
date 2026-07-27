@@ -164,3 +164,29 @@ gates:
     boundary: ">=95"
     lower_version_key: gms_v87
     upper_version_key: gms_v95
+
+  # ---- boundary GMS / JMS (region, not version) --------------------------
+  # task-183 Task 1.5: jms's resolved handler stops before the trailing
+  # nxCashSpent field that every audited GMS version (v83/v84/v87/v95)
+  # writes (arm-catalog.md "Per-version wire divergences" §2). Region-gated
+  # via giftHasNxCashSpent(t) = t.Region()=="GMS" in
+  # libs/atlas-packet/cash/clientbound/shop_operation_result_gift.go. Both
+  # arms are new Wave-1 structs with no packet-audit:verify markers yet, so
+  # neither straddling cell is `verified` in status.json pre-Wave-2 —
+  # expect: partial keeps the gap visible without hard-failing gate-check.
+  - packet: cash/clientbound/GiftDone
+    direction: clientbound
+    field: nxCashSpent (GMS-only, JMS omits; `region==GMS`)
+    boundary: "region==GMS"
+    lower_version_key: gms_v95
+    upper_version_key: jms_v185
+    expect: partial
+    reason: fixtures pinned in Wave 2 (task-183)
+  - packet: cash/clientbound/GiftPackageDone
+    direction: clientbound
+    field: nxCashSpent (GMS-only, JMS omits; `region==GMS`)
+    boundary: "region==GMS"
+    lower_version_key: gms_v95
+    upper_version_key: jms_v185
+    expect: partial
+    reason: fixtures pinned in Wave 2 (task-183)

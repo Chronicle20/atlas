@@ -9,6 +9,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // Gift/coupon/package item-blob arm family (task-183 Wave 1.3). Every arm in
@@ -82,15 +83,25 @@ func DecodePackedCashItemRef(r *request.Reader) PackedCashItemRef {
 	}
 }
 
+// giftHasNxCashSpent reports whether this arm's trailing nxCashSpent:Decode4
+// field is present on the wire. Present on every audited GMS version
+// (v83/v84/v87/v95); jms's resolved handler stops after quantity/unused2 and
+// never reads it (task-183 arm-catalog.md "Per-version wire divergences" §2,
+// task-0.4-jms-modes.md per-arm table — GIFT_SUCCESS/GIFT_PACKAGE_SUCCESS
+// rows). Region-gated, not version-gated, per that finding.
+func giftHasNxCashSpent(t tenant.Model) bool {
+	return t.Region() == "GMS"
+}
+
 // GiftDone - GIFT_SUCCESS arm (CCashShop::OnCashItemResGiftDone): mode +
 // recipientName:DecodeStr + itemId:Decode4 (int32, name-lookup key only —
 // the item is never inserted into m_aCashItemInfo) + quantity:Decode2
-// (uint16) + nxCashSpent:Decode4 (int32). TRUE SHAPE per task-0.3e report:
-// NO item-blob at all — pure scalar body. This resolves the legacy 0x4D
-// gift TODO (the old CashShopGifts stub modeled the wrong shape entirely).
-// jms's resolved handler lacks the trailing nxCashSpent field (task-183
-// arm-catalog.md "Per-version wire divergences" §2); Wave 1 leaves that
-// gate to Task 1.5 per wave1-codec-authority.md.
+// (uint16) + nxCashSpent:Decode4 (int32, GMS only — see giftHasNxCashSpent).
+// TRUE SHAPE per task-0.3e report: NO item-blob at all — pure scalar body.
+// This resolves the legacy 0x4D gift TODO (the old CashShopGifts stub
+// modeled the wrong shape entirely). jms's resolved handler lacks the
+// trailing nxCashSpent field (task-183 arm-catalog.md "Per-version wire
+// divergences" §2) — gated Task 1.5.
 // packet-audit:fname CCashShop::OnCashItemResult#GIFT_SUCCESS
 type GiftDone struct {
 	mode          byte
@@ -115,25 +126,31 @@ func (m GiftDone) String() string {
 	return fmt.Sprintf("cash gift success mode [%d] recipientName [%s] itemId [%d] quantity [%d] nxCashSpent [%d]", m.mode, m.recipientName, m.itemId, m.quantity, m.nxCashSpent)
 }
 
-func (m GiftDone) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m GiftDone) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
+	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
 		w.WriteAsciiString(m.recipientName)
 		w.WriteInt32(m.itemId)
 		w.WriteShort(m.quantity)
-		w.WriteInt32(m.nxCashSpent)
+		if giftHasNxCashSpent(t) {
+			w.WriteInt32(m.nxCashSpent)
+		}
 		return w.Bytes()
 	}
 }
 
-func (m *GiftDone) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *GiftDone) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.recipientName = r.ReadAsciiString()
 		m.itemId = r.ReadInt32()
 		m.quantity = r.ReadUint16()
-		m.nxCashSpent = r.ReadInt32()
+		if giftHasNxCashSpent(t) {
+			m.nxCashSpent = r.ReadInt32()
+		}
 	}
 }
 
@@ -349,10 +366,10 @@ func (m *BuyPackageDone) Decode(_ logrus.FieldLogger, _ context.Context) func(r 
 // GiftPackageDone - GIFT_PACKAGE_SUCCESS arm (CCashShop::OnCashItemResGiftPackageDone):
 // mode + recipientName:DecodeStr + packageId:Decode4 (int32, CItemInfo::GetSpecialName
 // key) + unused1:Decode2 (uint16, read+discarded client-side but present on
-// the wire) + unused2:Decode2 (uint16, same) + nxCashSpent:Decode4 (int32).
-// TRUE SHAPE per task-0.3e report: NO item-blob (contra the catalog's coarse
-// shape label). jms lacks the trailing nxCashSpent field (arm-catalog.md
-// divergence §2); Wave 1 leaves that gate to Task 1.5.
+// the wire) + unused2:Decode2 (uint16, same) + nxCashSpent:Decode4 (int32,
+// GMS only — see giftHasNxCashSpent). TRUE SHAPE per task-0.3e report: NO
+// item-blob (contra the catalog's coarse shape label). jms lacks the
+// trailing nxCashSpent field (arm-catalog.md divergence §2) — gated Task 1.5.
 // packet-audit:fname CCashShop::OnCashItemResult#GIFT_PACKAGE_SUCCESS
 type GiftPackageDone struct {
 	mode          byte
@@ -379,27 +396,33 @@ func (m GiftPackageDone) String() string {
 	return fmt.Sprintf("cash gift-package success mode [%d] recipientName [%s] packageId [%d] nxCashSpent [%d]", m.mode, m.recipientName, m.packageId, m.nxCashSpent)
 }
 
-func (m GiftPackageDone) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m GiftPackageDone) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
+	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
 		w.WriteAsciiString(m.recipientName)
 		w.WriteInt32(m.packageId)
 		w.WriteShort(m.unused1)
 		w.WriteShort(m.unused2)
-		w.WriteInt32(m.nxCashSpent)
+		if giftHasNxCashSpent(t) {
+			w.WriteInt32(m.nxCashSpent)
+		}
 		return w.Bytes()
 	}
 }
 
-func (m *GiftPackageDone) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *GiftPackageDone) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.recipientName = r.ReadAsciiString()
 		m.packageId = r.ReadInt32()
 		m.unused1 = r.ReadUint16()
 		m.unused2 = r.ReadUint16()
-		m.nxCashSpent = r.ReadInt32()
+		if giftHasNxCashSpent(t) {
+			m.nxCashSpent = r.ReadInt32()
+		}
 	}
 }
 

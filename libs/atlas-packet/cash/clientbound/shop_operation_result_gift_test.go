@@ -38,13 +38,19 @@ func TestGiftDoneByteFixture(t *testing.T) {
 			want = append(want, []byte(recipientName)...)
 			want = append(want, byte(itemId), byte(itemId>>8), byte(itemId>>16), byte(itemId>>24))
 			want = append(want, byte(quantity), byte(quantity>>8))
-			want = append(want, byte(nxCashSpent), byte(nxCashSpent>>8), byte(nxCashSpent>>16), byte(nxCashSpent>>24))
+			// nxCashSpent:Decode4 is GMS-only on the wire; jms's resolved
+			// handler stops after quantity (arm-catalog.md divergence §2).
+			wantNxCashSpent := int32(0)
+			if v.Region == "GMS" {
+				want = append(want, byte(nxCashSpent), byte(nxCashSpent>>8), byte(nxCashSpent>>16), byte(nxCashSpent>>24))
+				wantNxCashSpent = nxCashSpent
+			}
 			if !bytesEqual(got, want) {
 				t.Errorf("GIFT_SUCCESS bytes: got %v, want %v", got, want)
 			}
 			output := GiftDone{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
-			if output.Mode() != mode || output.RecipientName() != recipientName || output.ItemId() != itemId || output.Quantity() != quantity || output.NxCashSpent() != nxCashSpent {
+			if output.Mode() != mode || output.RecipientName() != recipientName || output.ItemId() != itemId || output.Quantity() != quantity || output.NxCashSpent() != wantNxCashSpent {
 				t.Errorf("round-trip mismatch: %+v", output)
 			}
 		})
@@ -324,13 +330,19 @@ func TestGiftPackageDoneByteFixture(t *testing.T) {
 			want = le32(want, packageId)
 			want = le16(want, unused1)
 			want = le16(want, unused2)
-			want = le32(want, nxCashSpent)
+			// nxCashSpent:Decode4 is GMS-only on the wire; jms's resolved
+			// handler stops after unused2 (arm-catalog.md divergence §2).
+			wantNxCashSpent := int32(0)
+			if v.Region == "GMS" {
+				want = le32(want, nxCashSpent)
+				wantNxCashSpent = nxCashSpent
+			}
 			if !bytesEqual(got, want) {
 				t.Errorf("GIFT_PACKAGE_SUCCESS bytes: got %v, want %v", got, want)
 			}
 			output := GiftPackageDone{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
-			if output.Mode() != mode || output.RecipientName() != recipientName || output.PackageId() != packageId || output.Unused1() != unused1 || output.Unused2() != unused2 || output.NxCashSpent() != nxCashSpent {
+			if output.Mode() != mode || output.RecipientName() != recipientName || output.PackageId() != packageId || output.Unused1() != unused1 || output.Unused2() != unused2 || output.NxCashSpent() != wantNxCashSpent {
 				t.Errorf("round-trip mismatch: %+v", output)
 			}
 		})

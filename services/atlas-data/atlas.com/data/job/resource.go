@@ -7,25 +7,28 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
-func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
-	return func(router *mux.Router, l logrus.FieldLogger) {
-		registerGet := rest.RegisterHandler(l)(si)
+func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteInitializer {
+	return func(si jsonapi.ServerInformation) server.RouteInitializer {
+		return func(router *mux.Router, l logrus.FieldLogger) {
+			registerGet := rest.RegisterHandler(l)(si)
 
-		r := router.PathPrefix("/data/jobs").Subrouter()
-		r.HandleFunc("/{jobId}/skills",
-			registerGet("get_job_skills", handleGetJobSkills())).Methods(http.MethodGet)
+			r := router.PathPrefix("/data/jobs").Subrouter()
+			r.HandleFunc("/{jobId}/skills",
+				registerGet("get_job_skills", handleGetJobSkills(db))).Methods(http.MethodGet)
+		}
 	}
 }
 
-func handleGetJobSkills() func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+func handleGetJobSkills(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseJobId(d.Logger(), func(jobId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				m, ok := NewProcessor(d.Logger(), d.Context()).GetSkillsForJob(jobId)
+				m, ok := NewProcessor(d.Logger(), d.Context(), db).GetSkillsForJob(jobId)
 				if !ok {
 					w.WriteHeader(http.StatusNotFound)
 					return

@@ -15828,6 +15828,114 @@
           "comment": "errorCode (NoticeFailReason reason byte)"
         }
       ]
+    },
+    "CCashShop::OnCashItemResult#GIFT_PACKAGE_FAILED": {
+      "address": "0x496f20",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x9d GIFT_PACKAGE_FAILED; op-byte consumed by dispatcher before OnCashItemResGiftPackageFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#BUY_NORMAL_FAILED": {
+      "address": "0x497b00",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x9f BUY_NORMAL_FAILED; op-byte consumed by dispatcher before OnCashItemResBuyNormalFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#FRIENDSHIP_FAILED": {
+      "address": "0x497f40",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0xa3 FRIENDSHIP_FAILED; op-byte consumed by dispatcher before OnCashItemResFriendShipFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#PURCHASE_RECORD_FAILED": {
+      "address": "0x494070",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0xb0 PURCHASE_RECORD_FAILED; op-byte consumed by dispatcher before OnCashItemResPurchaseRecordFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#TRANSFER_WORLD_FAILED": {
+      "address": "0x498370",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0xb6 TRANSFER_WORLD_FAILED; op-byte consumed by dispatcher before OnCashItemResTransferWorldFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#GACHAPON_OPEN_FAILED": {
+      "address": "0x4962b0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0xb8 GACHAPON_OPEN_FAILED; op-byte consumed by dispatcher before OnCashItemResCashGachaponOpenFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#GACHAPON_COPY_FAILED": {
+      "address": "0x4962f0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0xba GACHAPON_COPY_FAILED; op-byte consumed by dispatcher before OnCashItemResCashGachaponCopyFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#CHANGE_MAPLE_POINT_FAILED": {
+      "address": "0x495910",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0xbc CHANGE_MAPLE_POINT_FAILED; op-byte consumed by dispatcher before OnCashItemResChangeMaplePointFailed)"
+        }
+      ]
     }
   }
 }

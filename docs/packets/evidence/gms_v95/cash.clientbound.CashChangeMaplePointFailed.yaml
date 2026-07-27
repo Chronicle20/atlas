@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashChangeMaplePointFailed
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#CHANGE_MAPLE_POINT_FAILED
+    address: "0x495910"
+    decompile_sha256: b58adb140e40e125c29d1b075def6fad3db7a8ab8d03508153cbee90776d1b33
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_operation_result_failed_test.go#TestChangeMaplePointFailedByteFixture

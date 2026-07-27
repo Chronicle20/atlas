@@ -2453,6 +2453,32 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "RebateDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
 	case "CCashShop::OnCashItemResult#COUPLE_SUCCESS":
 		return []candidate{{name: "CoupleDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	// Scalar/notice/transfer/gachapon/maple-point arm family (task-183 Wave 1.4).
+	// FREE_CASH_ITEM_DONE/NAME_CHANGE_BUY_DONE/TRANSFER_WORLD_SUCCESS are labeled
+	// `scalar` in the catalog's coarse shape column but carry a 55-byte
+	// GW_CashItemInfo item-blob (task-0.3d report). GACHAPON_OPEN_SUCCESS/
+	// GACHAPON_COPY_SUCCESS carry a CONDITIONAL single item-blob gated on a
+	// leading flag byte (task-0.3e report).
+	case "CCashShop::OnCashItemResult#LIMIT_GOODS_COUNT_CHANGED":
+		return []candidate{{name: "LimitGoodsCountChanged", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#DESTROY_SUCCESS":
+		return []candidate{{name: "DestroyDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#EXPIRE_DONE":
+		return []candidate{{name: "ExpireDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#PURCHASE_RECORD":
+		return []candidate{{name: "PurchaseRecordDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#FREE_CASH_ITEM_DONE":
+		return []candidate{{name: "FreeCashItemDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#NAME_CHANGE_BUY_DONE":
+		return []candidate{{name: "NameChangeBuyDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#TRANSFER_WORLD_SUCCESS":
+		return []candidate{{name: "TransferWorldDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#GACHAPON_OPEN_SUCCESS":
+		return []candidate{{name: "GachaponOpenDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#GACHAPON_COPY_SUCCESS":
+		return []candidate{{name: "GachaponCopyDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#CHANGE_MAPLE_POINT_SUCCESS":
+		return []candidate{{name: "ChangeMaplePointDone", dir: csvpkg.DirClientbound, pkg: "cash"}}
 	// Serverbound CCashShop senders (op-byte owned by the ShopOperation dispatcher; bodies below).
 	case "CCashShop::TrySendQueryCashRequest":
 		return []candidate{{name: "CheckWallet", dir: csvpkg.DirServerbound, pkg: "cash"}}

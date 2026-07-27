@@ -65,6 +65,18 @@ const (
 	CashShopOperationRebateDone      = "REBATE_SUCCESS"
 	CashShopOperationCoupleDone      = "COUPLE_SUCCESS"
 
+	// Scalar/notice/transfer/gachapon/maple-point arm operation keys (task-183 Wave 1.4).
+	CashShopOperationLimitGoodsCountChanged = "LIMIT_GOODS_COUNT_CHANGED"
+	CashShopOperationDestroyDone            = "DESTROY_SUCCESS"
+	CashShopOperationExpireDone             = "EXPIRE_DONE"
+	CashShopOperationPurchaseRecordDone     = "PURCHASE_RECORD"
+	CashShopOperationFreeCashItemDone       = "FREE_CASH_ITEM_DONE"
+	CashShopOperationNameChangeBuyDone      = "NAME_CHANGE_BUY_DONE"
+	CashShopOperationTransferWorldDone      = "TRANSFER_WORLD_SUCCESS"
+	CashShopOperationGachaponOpenDone       = "GACHAPON_OPEN_SUCCESS"
+	CashShopOperationGachaponCopyDone       = "GACHAPON_COPY_SUCCESS"
+	CashShopOperationChangeMaplePointDone   = "CHANGE_MAPLE_POINT_SUCCESS"
+
 	CashShopOperationErrorUnknown                           = "UNKNOWN_ERROR"
 	CashShopOperationErrorRequestTimedOut                   = "REQUEST_TIMED_OUT"
 	CashShopOperationErrorNotEnoughCash                     = "NOT_ENOUGH_CASH"
@@ -558,5 +570,91 @@ func CashShopRebateDoneBody(sn int64, amount int32) func(logrus.FieldLogger, con
 func CashShopCoupleDoneBody(item CashInventoryItem, recipientName string, itemId int32, quantity uint16) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", CashShopOperationCoupleDone, func(mode byte) packet.Encoder {
 		return NewCoupleDone(mode, item, recipientName, itemId, quantity)
+	})
+}
+
+// --- Scalar/notice/transfer/gachapon/maple-point arm bodies (task-183 Wave 1.4) ---
+// See shop_operation_result_misc.go / _transfer.go / _gachapon.go for the
+// discrete structs and arm-catalog.md for the per-arm wire-truth.
+
+// CashShopLimitGoodsCountChangedBody builds the LIMIT_GOODS_COUNT_CHANGED arm
+// (CCashShop::OnCashItemResLimitGoodsCountChanged).
+func CashShopLimitGoodsCountChangedBody(itemId int32, sn int32, remainCount int32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CashShopOperationLimitGoodsCountChanged, func(mode byte) packet.Encoder {
+		return NewLimitGoodsCountChanged(mode, itemId, sn, remainCount)
+	})
+}
+
+// CashShopDestroyDoneBody builds the DESTROY_SUCCESS arm (CCashShop::OnCashItemResDestroyDone).
+func CashShopDestroyDoneBody(sn int64) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CashShopOperationDestroyDone, func(mode byte) packet.Encoder {
+		return NewDestroyDone(mode, sn)
+	})
+}
+
+// CashShopExpireDoneBody builds the EXPIRE_DONE arm (CCashShop::OnCashItemResExpireDone).
+func CashShopExpireDoneBody(sn int64) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CashShopOperationExpireDone, func(mode byte) packet.Encoder {
+		return NewExpireDone(mode, sn)
+	})
+}
+
+// CashShopPurchaseRecordDoneBody builds the PURCHASE_RECORD arm (CCashShop::OnCashItemResPurchaseRecord).
+func CashShopPurchaseRecordDoneBody(goodsSN int32, purchased byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CashShopOperationPurchaseRecordDone, func(mode byte) packet.Encoder {
+		return NewPurchaseRecordDone(mode, goodsSN, purchased)
+	})
+}
+
+// CashShopFreeCashItemDoneBody builds the FREE_CASH_ITEM_DONE arm
+// (CCashShop::OnCashItemResFreeCashItemDone). Item-blob body despite the
+// catalog's "scalar" shape label (task-0.3d report).
+func CashShopFreeCashItemDoneBody(item CashInventoryItem) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CashShopOperationFreeCashItemDone, func(mode byte) packet.Encoder {
+		return NewFreeCashItemDone(mode, item)
+	})
+}
+
+// CashShopNameChangeBuyDoneBody builds the NAME_CHANGE_BUY_DONE arm
+// (CCashShop::OnCashItemNameChangeResBuyDone). Item-blob body despite the
+// catalog's "scalar" shape label (task-0.3d report).
+func CashShopNameChangeBuyDoneBody(item CashInventoryItem) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CashShopOperationNameChangeBuyDone, func(mode byte) packet.Encoder {
+		return NewNameChangeBuyDone(mode, item)
+	})
+}
+
+// CashShopTransferWorldDoneBody builds the TRANSFER_WORLD_SUCCESS arm
+// (CCashShop::OnCashItemResTransferWorldDone). Item-blob body despite the
+// catalog's "scalar" shape label (task-0.3d report).
+func CashShopTransferWorldDoneBody(item CashInventoryItem) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CashShopOperationTransferWorldDone, func(mode byte) packet.Encoder {
+		return NewTransferWorldDone(mode, item)
+	})
+}
+
+// CashShopGachaponOpenDoneBody builds the GACHAPON_OPEN_SUCCESS arm
+// (CCashShop::OnCashItemResCashGachaponOpenDone). Conditional item-blob,
+// gated on isCashItem!=0 (task-0.3e report).
+func CashShopGachaponOpenDoneBody(sn int64, remain int32, isCashItem byte, newItem CashInventoryItem, resultCode int32, resultParam2 byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CashShopOperationGachaponOpenDone, func(mode byte) packet.Encoder {
+		return NewGachaponOpenDone(mode, sn, remain, isCashItem, newItem, resultCode, resultParam2)
+	})
+}
+
+// CashShopGachaponCopyDoneBody builds the GACHAPON_COPY_SUCCESS arm
+// (CCashShop::OnCashItemResCashGachaponCopyDone). Conditional item-blob,
+// gated on flag1!=0 AND flag2!=0 (task-0.3e report).
+func CashShopGachaponCopyDoneBody(flag1 byte, flag2 byte, unused1 int32, unused2 int32, lostItemId int32, lostNumber int32, item CashInventoryItem) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CashShopOperationGachaponCopyDone, func(mode byte) packet.Encoder {
+		return NewGachaponCopyDone(mode, flag1, flag2, unused1, unused2, lostItemId, lostNumber, item)
+	})
+}
+
+// CashShopChangeMaplePointDoneBody builds the CHANGE_MAPLE_POINT_SUCCESS arm
+// (CCashShop::OnCashItemResChangeMaplePointDone).
+func CashShopChangeMaplePointDoneBody(sn int64, count int32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CashShopOperationChangeMaplePointDone, func(mode byte) packet.Encoder {
+		return NewChangeMaplePointDone(mode, sn, count)
 	})
 }

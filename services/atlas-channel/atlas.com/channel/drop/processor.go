@@ -4,6 +4,8 @@ import (
 	drop2 "atlas-channel/kafka/message/drop"
 	"context"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"
@@ -18,6 +20,7 @@ type Processor interface {
 	ForEachInMap(f field.Model, o model.Operator[Model]) error
 	RequestReservation(f field.Model, dropId uint32, characterId uint32, partyId uint32, characterX int16, characterY int16, petSlot int8) error
 	SpawnMeso(f field.Model, mesos uint32, x int16, y int16, ownerId uint32, dropperId uint32, dropperX int16, dropperY int16) error
+	ConsumeAll(f field.Model, dropIds []uint32) error
 }
 
 type ProcessorImpl struct {
@@ -55,4 +58,15 @@ func (p *ProcessorImpl) RequestReservation(f field.Model, dropId uint32, charact
 
 func (p *ProcessorImpl) SpawnMeso(f field.Model, mesos uint32, x int16, y int16, ownerId uint32, dropperId uint32, dropperX int16, dropperY int16) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(drop2.EnvCommandTopic)(SpawnMesoCommandProvider(f, mesos, x, y, ownerId, dropperId, dropperX, dropperY))
+}
+
+// ConsumeAll emits one drop CONSUME command per exploded meso drop in a
+// single produce call, carrying the attacker's field in the envelope
+// (task-150 FR-8). atlas-drops removes each drop and emits CONSUMED; the
+// drop consumer then announces the explode animation to the field.
+func (p *ProcessorImpl) ConsumeAll(f field.Model, dropIds []uint32) error {
+	if len(dropIds) == 0 {
+		return nil
+	}
+	return producer.ProviderImpl(p.l)(p.ctx)(drop2.EnvCommandTopic)(ConsumeAllCommandProvider(uuid.New(), f, dropIds))
 }

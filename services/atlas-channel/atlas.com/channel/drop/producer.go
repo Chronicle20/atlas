@@ -3,12 +3,36 @@ package drop
 import (
 	drop2 "atlas-channel/kafka/message/drop"
 
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
+
+// ConsumeAllCommandProvider yields one CONSUME command per exploded drop,
+// keyed by dropId, in a single buffered provider so the batch goes out in one
+// produce call (task-150 design §4.3-A / FR-8). The shared transaction id
+// correlates the batch in atlas-drops logs.
+func ConsumeAllCommandProvider(transactionId uuid.UUID, f field.Model, dropIds []uint32) model.Provider[[]kafka.Message] {
+	raws := make([]producer.RawMessage, 0, len(dropIds))
+	for _, dropId := range dropIds {
+		raws = append(raws, producer.RawMessage{
+			Key: producer.CreateKey(int(dropId)),
+			Value: &drop2.Command[drop2.ConsumeCommandBody]{
+				TransactionId: transactionId,
+				WorldId:       f.WorldId(),
+				ChannelId:     f.ChannelId(),
+				MapId:         f.MapId(),
+				Instance:      f.Instance(),
+				Type:          drop2.CommandTypeConsume,
+				Body:          drop2.ConsumeCommandBody{DropId: dropId},
+			},
+		})
+	}
+	return producer.MessageProvider(model.FixedProvider(raws))
+}
 
 func RequestReservationCommandProvider(f field.Model, dropId uint32, characterId uint32, partyId uint32, characterX int16, characterY int16, petSlot int8) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(dropId))

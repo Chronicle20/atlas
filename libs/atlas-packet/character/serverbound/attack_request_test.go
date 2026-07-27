@@ -610,3 +610,59 @@ func TestAttackMagicRequestBytesV48(t *testing.T) {
 		t.Fatalf("v48 magic bytes:\n got=% X\nwant=% X", got, want)
 	}
 }
+
+// Meso Explosion (skill 4211006) — CLOSE_RANGE_ATTACK variant written by a
+// dedicated client sender, NOT TryDoingNormalAttack. Variant deltas (per-mob
+// count byte replaces the int16 delay; trailing {dropId int32, hitMask byte}
+// list; trailing int16 delay) verified byte-identical across every readable
+// IDB (task-150 design §2.1–§2.2, v2):
+//
+//	gms_v48  CUserLocal::DoActiveSkill_MesoExplosion  0x6ae4d7  (no per-mob CRC, <61)
+//	gms_v61  meso sender sub_7B8A39                   0x7b8a39
+//	gms_v72  meso sender sub_875828                   0x875828  (head skill-data CRC, v72+)
+//	gms_v79  meso sender 0x8c22fd (TryDoingMeleeAttack overload; short action, 2 CRCs)
+//	gms_v83  CUserLocal::DoActiveSkill_MesoExplosion  0x96b3fb
+//	gms_v84  meso sender (IDB label wrong)            0x9aa379
+//	gms_v87  CUserLocal::DoActiveSkill_MesoExplosion  0x9eee04
+//	gms_v95  CUserLocal::DoActiveSkill_MesoExplosion  0x942200
+//	jms_v185 sub_A3AAB1 @0xa3aab1 — encode tail SCY-virtualized: the jms
+//	         serverbound variant tail is implemented from the GMS invariants
+//	         plus jms clientbound symmetry, NOT statically verified (§2.3).
+//	gms_v92  no IDB — follows the GMS >= 87 family branch, unverified (§2.4).
+//	gms_12   no IDB — follows the very-legacy GMS < 48 branch, unverified (§2.4).
+//
+// The senders are registered as fname_alts on the CLOSE_RANGE_ATTACK
+// serverbound registry rows. No new packet-audit:verify markers here: the
+// melee cells stay pinned to the registry-primary fname (markers above), and
+// a second marker per cell would orphan under `matrix --check` (its ida=
+// address matches neither the evidence record nor the audit report).
+func TestAttackMeleeRequestMesoExplosion(t *testing.T) {
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+
+			ai := model.NewAttackInfo(model.AttackTypeMelee)
+			ai.SetDamage(2) // mob count nibble
+			ai.SetHits(0)   // nMaxAttackCount & 0xF wraps to 0 at attackCount 16 (§2.2)
+			ai.SetSkillId(4211006)
+			ai.SetOption(0)
+			ai.SetLeft(true)
+			ai.SetAttackAction(0x05)
+			ai.SetActionSpeed(4)
+			di := model.NewMesoExplosionDamageInfo()
+			di.SetMonsterId(9001).SetHitAction(0x07).SetDamages([]uint32{100, 200, 300})
+			ai.AddDamageInfo(*di)
+			di2 := model.NewMesoExplosionDamageInfo()
+			di2.SetMonsterId(9002).SetHitAction(0x06).SetDamages([]uint32{400})
+			ai.AddDamageInfo(*di2)
+			ai.SetExplodedMesoDrops([]model.ExplodedMesoDrop{
+				model.NewExplodedMesoDrop(501001, 0x01),
+				model.NewExplodedMesoDrop(501002, 0x03),
+			})
+			ai.SetMesoDelay(120)
+
+			m := AttackMeleeRequest{attackInfo: *ai}
+			pt.RoundTrip(t, ctx, m.Encode, m.Decode, nil)
+		})
+	}
+}

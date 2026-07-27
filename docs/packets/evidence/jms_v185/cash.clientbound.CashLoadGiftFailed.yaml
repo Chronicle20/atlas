@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashLoadGiftFailed
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#LOAD_GIFT_FAILED
+    address: "0x48bfea"
+    decompile_sha256: 16bfacad5c48ea36f0d1ba65637b21d46e44be475a62cc05b76ca7accbca79f5
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_operation_result_failed_test.go#TestLoadGiftFailedByteFixture

@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashUseCouponFailed
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#USE_COUPON_FAILED
+    address: "0x485f93"
+    decompile_sha256: 95344e94a315ae80ae09422ff56668f51b8cc0690d069a882b8d4b5fc045b98f
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_operation_result_failed_test.go#TestUseCouponFailedByteFixture

@@ -7,4 +7,5 @@ ida:
     address: "0x6c2d43"
     decompile_sha256: 8508a3cac95b0a75ffa1cbed8d8f013d14dcd7e472e8dbfa68a4393696d18fcf
 verifies:
-    - note/serverbound/operation_discard_test.go#TestOperationDiscardJMSSpecialEntry
+    - libs/atlas-packet/note/serverbound/operation_discard_test.go#TestOperationDiscardPlainByteOutput
+    - libs/atlas-packet/note/serverbound/operation_discard_test.go#TestOperationDiscardJMSSpecialEntry

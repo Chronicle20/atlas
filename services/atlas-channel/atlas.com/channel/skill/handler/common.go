@@ -107,7 +107,7 @@ func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Pro
 				if c, cErr := cp.GetById(cp.InventoryDecorator)(characterId); cErr == nil {
 					if invType, typeOk := inventoryconst.TypeFromItemId(itemconst.Id(itemId)); typeOk {
 						if a, found := c.Inventory().CompartmentByType(invType).FindFirstByItemId(itemId); found {
-							_ = consumable.NewProcessor(l, ctx).RequestItemConsume(f, charcon.Id(characterId), itemconst.Id(itemId), slot.Position(a.Slot()), 0)
+							_ = consumable.NewProcessor(l, ctx).RequestItemConsume(f, charcon.Id(characterId), itemconst.Id(itemId), slot.Position(a.Slot()), 1, 0)
 						} else {
 							l.Warnf("Character [%d] cast skill [%d] requiring item [%d] but no such item found in inventory; cast permitted (defense-in-depth gate only).", characterId, info.SkillId(), itemId)
 						}

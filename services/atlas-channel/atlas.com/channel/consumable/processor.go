@@ -15,7 +15,7 @@ import (
 )
 
 type Processor interface {
-	RequestItemConsume(f field.Model, characterId character.Id, itemId item.Id, source slot.Position, updateTime uint32) error
+	RequestItemConsume(f field.Model, characterId character.Id, itemId item.Id, source slot.Position, quantity int16, updateTime uint32) error
 	RequestItemReward(f field.Model, characterId character.Id, itemId item.Id, source slot.Position) error
 	RequestScrollUse(f field.Model, characterId character.Id, scrollSlot slot.Position, equipSlot slot.Position, whiteScroll bool, legendarySpirit bool, updateTime uint32) error
 	RequestVegaScrollUse(f field.Model, characterId character.Id, vegaItemId item.Id, vegaSlot slot.Position, scrollSlot slot.Position, equipSlot slot.Position) error
@@ -38,9 +38,14 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 
 var _ Processor = (*ProcessorImpl)(nil)
 
-func (p *ProcessorImpl) RequestItemConsume(f field.Model, characterId character.Id, itemId item.Id, source slot.Position, updateTime uint32) error {
-	p.l.Debugf("Character [%d] using item [%d] from slot [%d]. updateTime [%d]", characterId, itemId, source, updateTime)
-	return producer.ProviderImpl(p.l)(p.ctx)(consumable2.EnvCommandTopic)(RequestItemConsumeCommandProvider(f, characterId, source, itemId, 1))
+func (p *ProcessorImpl) RequestItemConsume(f field.Model, characterId character.Id, itemId item.Id, source slot.Position, quantity int16, updateTime uint32) error {
+	// Defense in depth for an absent/"0"-string itemConNo (FR-1): an absent
+	// amount means one item, never zero.
+	if quantity < 1 {
+		quantity = 1
+	}
+	p.l.Debugf("Character [%d] using item [%d] from slot [%d]. quantity [%d], updateTime [%d]", characterId, itemId, source, quantity, updateTime)
+	return producer.ProviderImpl(p.l)(p.ctx)(consumable2.EnvCommandTopic)(RequestItemConsumeCommandProvider(f, characterId, source, itemId, quantity))
 }
 
 func (p *ProcessorImpl) RequestItemReward(f field.Model, characterId character.Id, itemId item.Id, source slot.Position) error {

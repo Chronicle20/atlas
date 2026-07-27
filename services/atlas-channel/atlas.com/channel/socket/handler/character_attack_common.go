@@ -373,6 +373,28 @@ func mpEaterAbsorbAmount(maxMp uint32, x int16) uint32 {
 	return uint32(uint64(maxMp) * uint64(x) / 100)
 }
 
+// sacrificeHpCost computes the self-HP cost of Dragon Knight Sacrifice:
+// firstLine × x / 100 (truncating integer division, Cosmic parity),
+// clamped so the caster is left with at least 1 HP. Returns 0 when the
+// first line is 0 (miss), x is non-positive, or currentHp <= 1. The
+// MaxInt16 cap is a defensive narrowing guard: on supported versions max
+// HP <= 30000 so the survival clamp already bounds the result, but Hp()
+// is uint16 and the call site negates into int16 — the cap makes that
+// narrowing safe by construction instead of by data assumption.
+func sacrificeHpCost(firstLine uint32, x int16, currentHp uint16) uint16 {
+	if firstLine == 0 || x <= 0 || currentHp <= 1 {
+		return 0
+	}
+	cost := uint64(firstLine) * uint64(x) / 100
+	if cost >= uint64(currentHp) {
+		cost = uint64(currentHp) - 1
+	}
+	if cost > math.MaxInt16 {
+		cost = math.MaxInt16
+	}
+	return uint16(cost)
+}
+
 // drainHealAmount computes the drain-family HP gain for one damaged
 // monster: floor(totalDamage * x / 100), capped by the monster's max HP
 // and by half the attacker's effective (buff-inclusive) max HP, then

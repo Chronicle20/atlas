@@ -19,12 +19,28 @@
 #
 # Adding/removing an entry is a reviewed edit. Verify the body first.
 dispatchers:
-  # CCashShop::OnCashItemResult — GRADUATED (task-096): all Atlas-supported mode
-  # arms of CASHSHOP_OPERATION have decompile-verified per-mode body codecs in
-  # cash/clientbound (each writes the leading mode byte THEN the full arm body,
-  # not mode-byte-only), each with a packet-audit:verify byte-fixture + fresh
-  # pinned evidence across gms_v83/v84/v87/v95/jms_v185. Supported arms (synthetic
-  # #-suffix FNames in the per-version exports): CashShopInventory (LOAD_LOCKER),
+  - CCashShop::OnCashItemResult
+  # CCashShop::OnCashItemResult — UN-GRADUATED (task-183): re-added as a LIVE
+  # entry. task-183 added 48 new mode-arm codecs (gift/coupon/package item-blob,
+  # counter, failure, scalar/notice/transfer/gachapon/maple-point arms) on top
+  # of the 9 arms below the previous GRADUATED grant covered. None of the 48 new
+  # arms has a packet-audit:verify byte-fixture + pinned evidence yet — they are
+  # implemented but UNVERIFIED. Leaving the family graduated would let the
+  # op-row grade off only the 9 old arms' reports (worst-of over whatever
+  # candidates exist) and read ✅, silently hiding the 48 unverified arms from
+  # the matrix. Re-listing here caps CASHSHOP_OPERATION at 🧩 (StateFamily)
+  # again so the row honestly reflects "not fully verified" until Wave 2 gives
+  # every one of the 57 arms its own byte-fixture + evidence, at which point
+  # this entry should be removed (re-graduated) per the same task-096 bar.
+  #
+  # Prior GRADUATED history (task-096), retained for context — this record
+  # covered only the original 9 arms and is now superseded by the above: all
+  # Atlas-supported mode arms of CASHSHOP_OPERATION have decompile-verified
+  # per-mode body codecs in cash/clientbound (each writes the leading mode byte
+  # THEN the full arm body, not mode-byte-only), each with a packet-audit:verify
+  # byte-fixture + fresh pinned evidence across gms_v83/v84/v87/v95/jms_v185.
+  # Supported arms (synthetic #-suffix FNames in the per-version exports):
+  # CashShopInventory (LOAD_LOCKER),
   # LoadInventoryFailure (LOAD_INVENTORY_FAILURE / LOAD_LOCKER_FAILED),
   # WishListLoad (LOAD_WISH_DONE) + WishListUpdate (SET_WISH_DONE) — split into
   # discrete per-mode structs (task-096: no struct serves >1 mode; the failure

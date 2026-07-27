@@ -38,32 +38,32 @@ cited to a decompile line. Shape group is a reasoning aid only — every arm is 
 | CASH_ITEM_MOVED_TO_CASH_INVENTORY | OnCashItemResMoveStoLDone | item-blob | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x6A | 0x6D | 0x6F | 0x79 | 0x6D | existing |
 | MOVE_S_TO_L_FAILED | OnCashItemResMoveStoLFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x7A | TBD-RE | mode(disp); reason:Decode1@0x497939 |
 | DESTROY_SUCCESS | OnCashItemResDestroyDone | scalar | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x7B | TBD-RE | TBD-RE (0.3) |
-| DESTROY_FAILED | OnCashItemResDestroyFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x7C | TBD-RE | TBD-RE (0.3) |
+| DESTROY_FAILED | OnCashItemResDestroyFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x7C | TBD-RE | mode(disp); reason:Decode1@0x49795e |
 | EXPIRE_DONE | OnCashItemResExpireDone | scalar | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x7D | TBD-RE | TBD-RE (0.3) |
 | REBATE_SUCCESS | OnCashItemResRebateDone | item-blob | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x96 | TBD-RE | TBD-RE (0.3) |
-| REBATE_FAILED | OnCashItemResRebateFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x97 | TBD-RE | TBD-RE (0.3) |
+| REBATE_FAILED | OnCashItemResRebateFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x97 | TBD-RE | mode(disp); reason:Decode1@0x497ade |
 | COUPLE_SUCCESS | OnCashItemResCoupleDone | item-blob | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x98 | TBD-RE | TBD-RE (0.3) |
-| COUPLE_FAILED | OnCashItemResCoupleFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x99 | TBD-RE | TBD-RE (0.3) |
+| COUPLE_FAILED | OnCashItemResCoupleFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x99 | TBD-RE | mode(disp); reason:Decode1@0x497d32; if reason∈{29,30}: goodsSN:Decode4@0x497d4b (conditional — see report) |
 | BUY_PACKAGE_SUCCESS | OnCashItemResBuyPackageDone | item-blob | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x9A | TBD-RE | TBD-RE (0.3) |
-| BUY_PACKAGE_FAILED | OnCashItemResBuyPackageFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x9B | TBD-RE | TBD-RE (0.3) |
+| BUY_PACKAGE_FAILED | OnCashItemResBuyPackageFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x9B | TBD-RE | mode(disp); reason:Decode1@0x496d52; if reason∈{29,30}: goodsSN:Decode4@0x496d6b (conditional — see report) |
 | GIFT_PACKAGE_SUCCESS | OnCashItemResGiftPackageDone | item-blob | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x9C | TBD-RE | TBD-RE (0.3) |
-| GIFT_PACKAGE_FAILED | OnCashItemResGiftPackageFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x9D | TBD-RE | TBD-RE (0.3) |
+| GIFT_PACKAGE_FAILED | OnCashItemResGiftPackageFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x9D | TBD-RE | mode(disp); reason:Decode1@0x496f32; if reason∈{29,30}: goodsSN:Decode4@0x496f4b (conditional — see report) |
 | BUY_NORMAL_SUCCESS | OnCashItemResBuyNormalDone | item-blob | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x9E | TBD-RE | TBD-RE (0.3) |
-| BUY_NORMAL_FAILED | OnCashItemResBuyNormalFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x9F | TBD-RE | TBD-RE (0.3) |
+| BUY_NORMAL_FAILED | OnCashItemResBuyNormalFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x9F | TBD-RE | mode(disp); reason:Decode1@0x497b12; if reason∈{29,30}: goodsSN:Decode4@0x497b2b (conditional — see report) |
 | FRIENDSHIP_SUCCESS | OnCashItemResFriendShipDone | item-blob | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0xA2 | TBD-RE | TBD-RE (0.3) |
-| FRIENDSHIP_FAILED | OnCashItemResFriendShipFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0xA3 | TBD-RE | TBD-RE (0.3) |
+| FRIENDSHIP_FAILED | OnCashItemResFriendShipFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0xA3 | TBD-RE | mode(disp); reason:Decode1@0x497f52; if reason∈{29,30}: goodsSN:Decode4@0x497f6b (conditional — see report) |
 | FREE_CASH_ITEM_DONE | OnCashItemResFreeCashItemDone | scalar | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0xAA | TBD-RE | TBD-RE (0.3) |
 | PURCHASE_RECORD | OnCashItemResPurchaseRecord | scalar | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0xAF | TBD-RE | TBD-RE (0.3) |
-| PURCHASE_RECORD_FAILED | OnCashItemResPurchaseRecordFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0xB0 | TBD-RE | TBD-RE (0.3) |
+| PURCHASE_RECORD_FAILED | OnCashItemResPurchaseRecordFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0xB0 | TBD-RE | mode(disp); unusedByte:Decode1@0x494074 (value discarded, no further reads — see report) |
 | NAME_CHANGE_BUY_DONE | OnCashItemNameChangeResBuyDone | scalar | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0xB3 | TBD-RE | TBD-RE (0.3) |
 | TRANSFER_WORLD_SUCCESS | OnCashItemResTransferWorldDone | scalar | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0xB5 | TBD-RE | TBD-RE (0.3) |
-| TRANSFER_WORLD_FAILED | OnCashItemResTransferWorldFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0xB6 | TBD-RE | TBD-RE (0.3) |
+| TRANSFER_WORLD_FAILED | OnCashItemResTransferWorldFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0xB6 | TBD-RE | mode(disp); reason:Decode1@0x49837e |
 | GACHAPON_OPEN_SUCCESS | OnCashItemResCashGachaponOpenDone | item-blob | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0xB7 | TBD-RE | TBD-RE (0.3) |
-| GACHAPON_OPEN_FAILED | OnCashItemResCashGachaponOpenFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0xB8 | TBD-RE | TBD-RE (0.3) |
+| GACHAPON_OPEN_FAILED | OnCashItemResCashGachaponOpenFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0xB8 | TBD-RE | mode(disp); reason:Decode1@0x4962c4 |
 | GACHAPON_COPY_SUCCESS | OnCashItemResCashGachaponCopyDone | item-blob | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0xB9 | TBD-RE | TBD-RE (0.3) |
-| GACHAPON_COPY_FAILED | OnCashItemResCashGachaponCopyFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0xBA | TBD-RE | TBD-RE (0.3) |
+| GACHAPON_COPY_FAILED | OnCashItemResCashGachaponCopyFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0xBA | TBD-RE | mode(disp); reason:Decode1@0x4962fe |
 | CHANGE_MAPLE_POINT_SUCCESS | OnCashItemResChangeMaplePointDone | scalar | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0xBB | TBD-RE | TBD-RE (0.3) |
-| CHANGE_MAPLE_POINT_FAILED | OnCashItemResChangeMaplePointFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0xBC | TBD-RE | TBD-RE (0.3) |
+| CHANGE_MAPLE_POINT_FAILED | OnCashItemResChangeMaplePointFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0xBC | TBD-RE | mode(disp); NO Decode1/4 call in handler — zero packet reads beyond mode byte (see report) |
 
 ## Count note
 

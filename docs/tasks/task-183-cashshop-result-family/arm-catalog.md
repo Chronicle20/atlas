@@ -282,8 +282,9 @@ Beyond the six goodsSN-gated arms in §1, the same "reason-code enum differs
 per version, wire shape does not" pattern recurs in the `SendTransferFieldPacket`
 redirect gate used by many `*_FAILED` handlers: v83 gates on
 `reason∈{162,163,164}`, v84 on `{171,172,173}` (also seen in v84's
-`GACHAPON_OPEN_FAILED`), v61/v48 on `{127,128,129}` (with the `{127,128}`-only
-inconsistency in `BUY_NORMAL_FAILED` for both v48 and v61), v79 on
+`GACHAPON_OPEN_FAILED`), v48 on `{112,113,114}` (with the `{112,113}`-only
+inconsistency in `BUY_NORMAL_FAILED`), v61 on `{127,128,129}` (with the `{127,128}`-only
+inconsistency in `BUY_NORMAL_FAILED`), v79 on
 `{154,155,156}` (with `BUY_NORMAL_FAILED` again the outlier at `{154,155}`
 only). None of this changes the wire byte layout — it is exclusively a
 version-specific reason-code lookup table concern for the codec

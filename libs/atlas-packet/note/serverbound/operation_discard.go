@@ -122,33 +122,59 @@ func (m OperationDiscard) wireEntryCount() byte {
 	return m.count
 }
 
-func (m OperationDiscard) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+// Encode writes one entry: id, flag, and — for a wedding-invite (special)
+// entry — the marriage number, plus jms's second component. The version facts
+// (which flag is special, whether jms splits the number) resolve from the
+// tenant on ctx.
+func (e DiscardEntry) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	t := tenant.MustFromContext(ctx)
 	specialFlag := discardSpecialFlag(t)
 	splitMarriage := discardSplitsMarriageNumber(t)
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
-		w.WriteByte(m.count)
-		w.WriteByte(m.specialCount)
-		w.WriteByte(m.emptySlotCount)
-		for _, e := range m.entries {
-			w.WriteInt(e.id)
-			w.WriteByte(e.flag)
-			if e.flag == specialFlag {
-				w.WriteInt(e.marriageNumber)
-				if splitMarriage {
-					w.WriteInt(e.unknown1)
-				}
+		w.WriteInt(e.id)
+		w.WriteByte(e.flag)
+		if e.flag == specialFlag {
+			w.WriteInt(e.marriageNumber)
+			if splitMarriage {
+				w.WriteInt(e.unknown1)
 			}
 		}
 		return w.Bytes()
 	}
 }
 
-func (m *OperationDiscard) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+// Decode reads one entry from the discard body (see Encode).
+func (e *DiscardEntry) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	specialFlag := discardSpecialFlag(t)
 	splitMarriage := discardSplitsMarriageNumber(t)
+	return func(r *request.Reader, options map[string]interface{}) {
+		e.id = r.ReadUint32()
+		e.flag = r.ReadByte()
+		if e.flag == specialFlag {
+			e.marriageNumber = r.ReadUint32()
+			if splitMarriage {
+				e.unknown1 = r.ReadUint32()
+			}
+		}
+	}
+}
+
+func (m OperationDiscard) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.count)
+		w.WriteByte(m.specialCount)
+		w.WriteByte(m.emptySlotCount)
+		for _, e := range m.entries {
+			w.WriteByteArray(e.Encode(l, ctx)(options))
+		}
+		return w.Bytes()
+	}
+}
+
+func (m *OperationDiscard) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.count = r.ReadByte()
 		m.specialCount = r.ReadByte()
@@ -157,16 +183,8 @@ func (m *OperationDiscard) Decode(_ logrus.FieldLogger, ctx context.Context) fun
 		wireEntries := m.wireEntryCount()
 		m.entries = make([]DiscardEntry, 0, wireEntries)
 		for i := byte(0); i < wireEntries; i++ {
-			e := DiscardEntry{
-				id:   r.ReadUint32(),
-				flag: r.ReadByte(),
-			}
-			if e.flag == specialFlag {
-				e.marriageNumber = r.ReadUint32()
-				if splitMarriage {
-					e.unknown1 = r.ReadUint32()
-				}
-			}
+			var e DiscardEntry
+			e.Decode(l, ctx)(r, options)
 			m.entries = append(m.entries, e)
 		}
 	}

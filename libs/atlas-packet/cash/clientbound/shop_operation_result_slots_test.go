@@ -6,7 +6,23 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
-// Byte-fixture verify markers are added in Wave 2 once evidence is pinned.
+// packet-audit:verify packet=cash/clientbound/CashIncTrunkCountSuccess version=gms_v83 ida=0x47ab2e
+// packet-audit:verify packet=cash/clientbound/CashIncTrunkCountSuccess version=gms_v84 ida=0x47dccc
+// packet-audit:verify packet=cash/clientbound/CashIncTrunkCountSuccess version=gms_v87 ida=0x4862ee
+// packet-audit:verify packet=cash/clientbound/CashIncTrunkCountSuccess version=gms_v95 ida=0x494ed0
+// packet-audit:verify packet=cash/clientbound/CashIncTrunkCountSuccess version=jms_v185 ida=0x48d682
+// packet-audit:verify packet=cash/clientbound/CashIncCharacterSlotCountSuccess version=gms_v83 ida=0x47ac0a
+// packet-audit:verify packet=cash/clientbound/CashIncCharacterSlotCountSuccess version=gms_v84 ida=0x47dda8
+// packet-audit:verify packet=cash/clientbound/CashIncCharacterSlotCountSuccess version=gms_v87 ida=0x4863d3
+// packet-audit:verify packet=cash/clientbound/CashIncCharacterSlotCountSuccess version=gms_v95 ida=0x494f70
+// packet-audit:verify packet=cash/clientbound/CashIncCharacterSlotCountSuccess version=jms_v185 ida=0x48d75e
+// packet-audit:verify packet=cash/clientbound/CashIncBuyCharacterCountSuccess version=gms_v95 ida=0x495000
+// packet-audit:verify packet=cash/clientbound/CashIncBuyCharacterCountSuccess version=jms_v185 ida=0x48d82f
+// packet-audit:verify packet=cash/clientbound/CashEnableEquipSlotExtSuccess version=gms_v83 ida=0x47acdb
+// packet-audit:verify packet=cash/clientbound/CashEnableEquipSlotExtSuccess version=gms_v84 ida=0x47de79
+// packet-audit:verify packet=cash/clientbound/CashEnableEquipSlotExtSuccess version=gms_v87 ida=0x4864ad
+// packet-audit:verify packet=cash/clientbound/CashEnableEquipSlotExtSuccess version=gms_v95 ida=0x497490
+// packet-audit:verify packet=cash/clientbound/CashEnableEquipSlotExtSuccess version=jms_v185 ida=0x48d8b1
 
 // Per-version dispatcher mode bytes for the counter-arm family (task-183 Wave
 // 1.2), taken from docs/tasks/task-183-cashshop-result-family/arm-catalog.md

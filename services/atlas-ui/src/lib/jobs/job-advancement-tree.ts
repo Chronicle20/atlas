@@ -139,8 +139,9 @@ export function rootOf(id: number): number {
  * Branch root ids the tenant actually has, ascending.
  *
  * `available` is the set of job ids returned by GET /api/data/jobs — the
- * tenant's ingested job set. It replaces the retired BRANCH_FLOORS/NODE_FLOORS
- * version-floor tables: existence is data, not a hand-maintained table. Callers
+ * tenant's ingested job set. It replaces the retired hand-maintained
+ * version-floor tables that used to map a job id to the minimum majorVersion
+ * that shipped it: existence is data, not a hand-maintained table. Callers
  * must not pass an empty set to mean "unknown"; see JobsPage's isSuccess gate.
  */
 export function visibleRoots(available: ReadonlySet<number>): number[] {

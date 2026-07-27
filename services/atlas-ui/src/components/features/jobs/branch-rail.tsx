@@ -6,13 +6,37 @@ interface BranchRailProps {
   groups: VisibleRailGroup[];
   selectedEntryId: number;
   onSelect: (id: number) => void;
+  /** True while the tenant job set is still loading — renders a skeleton. */
+  isPending?: boolean;
 }
 
 export function BranchRail({
   groups,
   selectedEntryId,
   onSelect,
+  isPending = false,
 }: BranchRailProps) {
+  if (isPending) {
+    return (
+      <Card className="flex min-h-0 flex-col">
+        <CardHeader className="pb-1">
+          <CardTitle className="text-[15px]">Branches</CardTitle>
+        </CardHeader>
+        <CardContent
+          data-testid="branch-rail-skeleton"
+          className="min-h-0 flex-1 space-y-2 px-2 pb-3 pt-2"
+        >
+          {Array.from({ length: 8 }, (_, i) => (
+            <div
+              key={i}
+              className="h-7 w-full animate-pulse rounded-md bg-muted"
+            />
+          ))}
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="flex min-h-0 flex-col">
       <CardHeader className="pb-1">

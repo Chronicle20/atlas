@@ -9,8 +9,9 @@ export const jobsKeys = {
 
 /**
  * The tenant's job set, as ingested from its Skill.wz. This is the backend
- * replacement for the retired BRANCH_FLOORS / NODE_FLOORS version-floor tables:
- * a job is visible if and only if the tenant has a JOB document for it.
+ * replacement for the retired hand-maintained version-floor tables that used
+ * to gate job visibility off majorVersion: a job is visible if and only if
+ * the tenant has a JOB document for it.
  *
  * TenantProvider calls queryClient.clear() on every tenant switch, so callers
  * MUST treat the pending state as "unknown", not "empty" — see JobsPage.

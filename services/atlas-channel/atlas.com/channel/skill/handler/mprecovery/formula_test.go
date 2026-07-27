@@ -5,9 +5,9 @@ import (
 	"testing"
 )
 
-// TestAmounts pins the Cosmic SpecialMoveHandler formula against
-// WZ-verified v83 values for 5101005 (x=10 at every level; y=55 at L1,
-// 75 at L5, 100 at L10). Integer floor division at each step.
+// TestAmounts pins the MP Recovery amount formula against WZ-verified v83
+// values for 5101005 (x=10 at every level; y=55 at L1, 75 at L5, 100 at L10).
+// Integer floor division at each step.
 func TestAmounts(t *testing.T) {
 	tests := []struct {
 		name       string

@@ -2,8 +2,9 @@ package mprecovery
 
 import "math"
 
-// Amounts returns (hpLost, mpGain) per Cosmic SpecialMoveHandler.java:118-124:
-// hpLost = maxHp / x, mpGain = hpLost * y / 100, integer floor division.
+// Amounts returns (hpLost, mpGain) for MP Recovery (5101005), per the
+// WZ-verified v83 formula: hpLost = floor(maxHp / x), mpGain =
+// floor(hpLost * y / 100), integer floor division at each step.
 // mpGain is computed from the full intended loss, not any post-clamp delta.
 // x <= 0 returns (0, 0) — the caller treats that as "skip, warn" (bad tenant
 // data). Computation is int32 then narrowed with a MaxInt16 clamp so

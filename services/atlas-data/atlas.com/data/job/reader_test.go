@@ -1,0 +1,133 @@
+package job
+
+import (
+	"atlas-data/xml"
+	"context"
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/sirupsen/logrus/hooks/test"
+	"github.com/stretchr/testify/require"
+)
+
+const jobImageXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="112.img">
+  <imgdir name="info">
+    <canvas name="icon" width="26" height="30"/>
+  </imgdir>
+  <imgdir name="skill">
+    <imgdir name="1121000"/>
+    <imgdir name="1121001"/>
+    <imgdir name="1121002"/>
+  </imgdir>
+</imgdir>`
+
+const emptySkillNodeXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="800.img">
+  <imgdir name="skill"></imgdir>
+</imgdir>`
+
+const noSkillNodeXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="900.img">
+  <imgdir name="info"></imgdir>
+</imgdir>`
+
+const mobSkillImageXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="MobSkill.img">
+  <imgdir name="100">
+    <imgdir name="level"></imgdir>
+  </imgdir>
+</imgdir>`
+
+const nonNumericSkillChildXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="1.img">
+  <imgdir name="skill">
+    <imgdir name="1000"/>
+    <imgdir name="notaskill"/>
+    <imgdir name="1001"/>
+  </imgdir>
+</imgdir>`
+
+// zeroJobImageXML covers job id 0 (Beginner) — document_id 0 is a legitimate
+// key, and the reader must not confuse it with "no job id".
+const zeroJobImageXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="0.img">
+  <imgdir name="skill">
+    <imgdir name="1000"/>
+  </imgdir>
+</imgdir>`
+
+func readAll(t *testing.T, data string) []RestModel {
+	t.Helper()
+	l, _ := test.NewNullLogger()
+	ms, err := Read(l)(context.Background())(xml.FromByteArrayProvider([]byte(data)))()
+	require.NoError(t, err)
+	return ms
+}
+
+// writeTempImage materializes a fixture on disk for the RegisterJob tests,
+// which go through xml.FromPathProvider rather than FromByteArrayProvider.
+func writeTempImage(t *testing.T, name string, content string) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), name)
+	require.NoError(t, os.WriteFile(path, []byte(content), 0o600))
+	return path
+}
+
+func TestRead_NumericImageWithSkills_PreservesDocumentOrder(t *testing.T) {
+	ms := readAll(t, jobImageXML)
+	require.Len(t, ms, 1)
+	require.Equal(t, uint32(112), ms[0].Id)
+	require.Equal(t, []uint32{1121000, 1121001, 1121002}, ms[0].Skills)
+}
+
+func TestRead_EmptySkillNode_ProducesEmptyList(t *testing.T) {
+	ms := readAll(t, emptySkillNodeXML)
+	require.Len(t, ms, 1)
+	require.Equal(t, uint32(800), ms[0].Id)
+	require.NotNil(t, ms[0].Skills)
+	require.Empty(t, ms[0].Skills)
+}
+
+func TestRead_MissingSkillNode_ProducesEmptyList(t *testing.T) {
+	ms := readAll(t, noSkillNodeXML)
+	require.Len(t, ms, 1)
+	require.Equal(t, uint32(900), ms[0].Id)
+	require.NotNil(t, ms[0].Skills)
+	require.Empty(t, ms[0].Skills)
+}
+
+func TestRead_NonNumericImage_ProducesNothingAndNoError(t *testing.T) {
+	ms := readAll(t, mobSkillImageXML)
+	require.Empty(t, ms)
+}
+
+func TestRead_NonNumericSkillChild_IsSkipped(t *testing.T) {
+	ms := readAll(t, nonNumericSkillChildXML)
+	require.Len(t, ms, 1)
+	require.Equal(t, []uint32{1000, 1001}, ms[0].Skills)
+}
+
+func TestRead_JobIdZeroIsValid(t *testing.T) {
+	ms := readAll(t, zeroJobImageXML)
+	require.Len(t, ms, 1)
+	require.Equal(t, uint32(0), ms[0].Id)
+	require.Equal(t, []uint32{1000}, ms[0].Skills)
+}
+
+func TestParseJobId(t *testing.T) {
+	id, err := parseJobId("112.img")
+	require.NoError(t, err)
+	require.Equal(t, uint32(112), id)
+
+	_, err = parseJobId("MobSkill.img")
+	require.Error(t, err)
+
+	_, err = parseJobId("112")
+	require.Error(t, err, "a name without the .img suffix is not a job image")
+}
+
+func TestGetModelRegistry_IsSingleton(t *testing.T) {
+	require.Same(t, GetModelRegistry(), GetModelRegistry())
+}

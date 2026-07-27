@@ -14892,6 +14892,256 @@
           "comment": "mode (0xb0 CHANGE_MAPLE_POINT_FAILED; op-byte consumed by dispatcher before OnCashItemResChangeMaplePointFailed)"
         }
       ]
+    },
+    "CCashShop::OnCashItemResult#GIFT_SUCCESS": {
+      "address": "0x48600e",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x63 GIFT_SUCCESS; op-byte consumed by dispatcher before OnCashItemResGiftDone)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "recipientName"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (name-lookup key only; item never inserted into m_aCashItemInfo)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "quantity"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nxCashSpent (GMS-only; JMS build omits this trailing field \u2014 confirmed absent live)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#LOAD_GIFT_SUCCESS": {
+      "address": "0x484cc5",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x52 LOAD_GIFT_SUCCESS; op-byte consumed by dispatcher before OnCashItemResLoadGiftDone)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "count (uint16, count-prefix for the gift list)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "GW_GiftList entry (98B: liSN i64@0, nItemID i32@8, sBuyCharacterName char[13]@12, sText char[73]@25)",
+          "guard": "loop count"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#USE_COUPON_SUCCESS": {
+      "address": "0x485563",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x5e USE_COUPON_SUCCESS; op-byte consumed by dispatcher before OnCashItemResUseCouponDone)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "itemCount (byte, count-prefix for the item list)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "GW_CashItemInfo entry (55B CashInventoryItem blob)",
+          "guard": "loop itemCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "maplePoint"
+        },
+        {
+          "op": "Decode4",
+          "comment": "uliCount (count-prefix for the packed-ref list)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "packed _ULARGE_INTEGER-shaped record (8B: quantity u16@0, slotPos u16@2, itemId i32@4)",
+          "guard": "loop uliCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "meso"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#GIFT_COUPON_SUCCESS": {
+      "address": "0x485b2c",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x60 GIFT_COUPON_SUCCESS; op-byte consumed by dispatcher before OnCashItemResGiftCouponDone)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "recipientName"
+        },
+        {
+          "op": "Decode1",
+          "comment": "itemCount (byte, count-prefix for the item list)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "GW_CashItemInfo entry (55B CashInventoryItem blob)",
+          "guard": "loop itemCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "maplePoint"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#BUY_PACKAGE_SUCCESS": {
+      "address": "0x4851f4",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x8e BUY_PACKAGE_SUCCESS; op-byte consumed by dispatcher before OnCashItemResBuyPackageDone)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "itemCount (byte, count-prefix for the item list)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "GW_CashItemInfo entry (55B CashInventoryItem blob)",
+          "guard": "loop itemCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "trailingCount (uint16; branches notice-text format client-side)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#GIFT_PACKAGE_SUCCESS": {
+      "address": "0x4853fb",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x90 GIFT_PACKAGE_SUCCESS; op-byte consumed by dispatcher before OnCashItemResGiftPackageDone)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "recipientName"
+        },
+        {
+          "op": "Decode4",
+          "comment": "packageId (CItemInfo::GetSpecialName key)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "unused1 (read; discarded/used only for notice-format branch client-side)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "unused2 (read; discarded/used only for notice-format branch client-side)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nxCashSpent (GMS-only; JMS build omits this trailing field \u2014 confirmed absent live)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#BUY_NORMAL_SUCCESS": {
+      "address": "0x486de1",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x92 BUY_NORMAL_SUCCESS; op-byte consumed by dispatcher before OnCashItemResBuyNormalDone)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "count (int32, count-prefix for the packed-ref list)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "packed _ULARGE_INTEGER-shaped record (8B: quantity u16@0, slotPos u16@2, itemId i32@4) \u2014 same shape as USE_COUPON_SUCCESS's second list",
+          "guard": "loop count"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#FRIENDSHIP_SUCCESS": {
+      "address": "0x48711d",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x96 FRIENDSHIP_SUCCESS; op-byte consumed by dispatcher before OnCashItemResFriendShipDone)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "GW_CashItemInfo blob (55B, single \u2014 appended to m_aCashItemInfo)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "recipientName"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId"
+        },
+        {
+          "op": "Decode2",
+          "comment": "quantity"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#REBATE_SUCCESS": {
+      "address": "0x486cc2",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x8a REBATE_SUCCESS; op-byte consumed by dispatcher before OnCashItemResRebateDone)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "sn (8B _LARGE_INTEGER SN; matched against existing m_aCashItemInfo[i].liSN, find-and-remove pattern)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "amount"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#COUPLE_SUCCESS": {
+      "address": "0x486f6f",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x8c COUPLE_SUCCESS; op-byte consumed by dispatcher before OnCashItemResCoupleDone)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "GW_CashItemInfo blob (55B, single \u2014 appended to m_aCashItemInfo)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "recipientName"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (second/separate reference, used only for CItemInfo::GetItemName in notice text)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "quantity"
+        }
+      ]
     }
   }
 }

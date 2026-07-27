@@ -19,6 +19,11 @@ var giftDoneModes = map[string]byte{
 	"GMS/v83": 0x5E, "GMS/v84": 0x61, "GMS/v87": 0x63, "GMS/v95": 0x6B, "JMS/v185": 0x5F,
 }
 
+// packet-audit:verify packet=cash/clientbound/CashGiftDone version=gms_v83 ida=0x47a856
+// packet-audit:verify packet=cash/clientbound/CashGiftDone version=gms_v84 ida=0x47d9f4
+// packet-audit:verify packet=cash/clientbound/CashGiftDone version=gms_v87 ida=0x48600e
+// packet-audit:verify packet=cash/clientbound/CashGiftDone version=gms_v95 ida=0x497050
+// packet-audit:verify packet=cash/clientbound/CashGiftDone version=jms_v185 ida=0x48d3ce
 func TestGiftDoneByteFixture(t *testing.T) {
 	const recipientName = "Bob"
 	itemId := int32(5000000)
@@ -82,6 +87,11 @@ func giftListEntryBytes(g GiftListEntry) []byte {
 	return out
 }
 
+// packet-audit:verify packet=cash/clientbound/CashLoadGiftDone version=gms_v83 ida=0x47959e
+// packet-audit:verify packet=cash/clientbound/CashLoadGiftDone version=gms_v84 ida=0x47c73c
+// packet-audit:verify packet=cash/clientbound/CashLoadGiftDone version=gms_v87 ida=0x484cc5
+// packet-audit:verify packet=cash/clientbound/CashLoadGiftDone version=gms_v95 ida=0x496520
+// packet-audit:verify packet=cash/clientbound/CashLoadGiftDone version=jms_v185 ida=0x48bdc8
 func TestLoadGiftDoneByteFixture(t *testing.T) {
 	gifts := []GiftListEntry{
 		{SN: 123456789, ItemId: 5000000, BuyCharacterName: "Alice", Text: "Happy birthday!"},
@@ -121,6 +131,11 @@ var coupleDoneModes = map[string]byte{
 	"GMS/v83": 0x87, "GMS/v84": 0x8A, "GMS/v87": 0x8C, "GMS/v95": 0x98, "JMS/v185": 0x8A,
 }
 
+// packet-audit:verify packet=cash/clientbound/CashCoupleDone version=gms_v83 ida=0x47b78e
+// packet-audit:verify packet=cash/clientbound/CashCoupleDone version=gms_v84 ida=0x47e92c
+// packet-audit:verify packet=cash/clientbound/CashCoupleDone version=gms_v87 ida=0x486f6f
+// packet-audit:verify packet=cash/clientbound/CashCoupleDone version=gms_v95 ida=0x497b70
+// packet-audit:verify packet=cash/clientbound/CashCoupleDone version=jms_v185 ida=0x48e36b
 func TestCoupleDoneByteFixture(t *testing.T) {
 	item := CashInventoryItem{
 		CashId: 111, AccountId: 1, CharacterId: 2, TemplateId: 5390000,
@@ -188,6 +203,11 @@ var useCouponDoneModes = map[string]byte{
 	"GMS/v83": 0x59, "GMS/v84": 0x5C, "GMS/v87": 0x5E, "GMS/v95": 0x66, "JMS/v185": 0x5A,
 }
 
+// packet-audit:verify packet=cash/clientbound/CashUseCouponDone version=gms_v83 ida=0x479d8a
+// packet-audit:verify packet=cash/clientbound/CashUseCouponDone version=gms_v84 ida=0x47cf28
+// packet-audit:verify packet=cash/clientbound/CashUseCouponDone version=gms_v87 ida=0x485563
+// packet-audit:verify packet=cash/clientbound/CashUseCouponDone version=gms_v95 ida=0x498670
+// packet-audit:verify packet=cash/clientbound/CashUseCouponDone version=jms_v185 ida=0x48c966
 func TestUseCouponDoneByteFixture(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	items := []CashInventoryItem{
@@ -234,6 +254,11 @@ var giftCouponDoneModes = map[string]byte{
 	"GMS/v83": 0x5B, "GMS/v84": 0x5E, "GMS/v87": 0x60, "GMS/v95": 0x68, "JMS/v185": 0x5C,
 }
 
+// packet-audit:verify packet=cash/clientbound/CashGiftCouponDone version=gms_v83 ida=0x47a362
+// packet-audit:verify packet=cash/clientbound/CashGiftCouponDone version=gms_v84 ida=0x47d500
+// packet-audit:verify packet=cash/clientbound/CashGiftCouponDone version=gms_v87 ida=0x485b2c
+// packet-audit:verify packet=cash/clientbound/CashGiftCouponDone version=gms_v95 ida=0x498e10
+// packet-audit:verify packet=cash/clientbound/CashGiftCouponDone version=jms_v185 ida=0x48cf31
 func TestGiftCouponDoneByteFixture(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	const recipientName = "Eve"
@@ -273,6 +298,11 @@ var buyPackageDoneModes = map[string]byte{
 	"GMS/v83": 0x89, "GMS/v84": 0x8C, "GMS/v87": 0x8E, "GMS/v95": 0x9A, "JMS/v185": 0x8C,
 }
 
+// packet-audit:verify packet=cash/clientbound/CashBuyPackageDone version=gms_v83 ida=0x479a1b
+// packet-audit:verify packet=cash/clientbound/CashBuyPackageDone version=gms_v84 ida=0x47cbb9
+// packet-audit:verify packet=cash/clientbound/CashBuyPackageDone version=gms_v87 ida=0x4851f4
+// packet-audit:verify packet=cash/clientbound/CashBuyPackageDone version=gms_v95 ida=0x496b60
+// packet-audit:verify packet=cash/clientbound/CashBuyPackageDone version=jms_v185 ida=0x48c593
 func TestBuyPackageDoneByteFixture(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	items := []CashInventoryItem{
@@ -310,6 +340,11 @@ var giftPackageDoneModes = map[string]byte{
 	"GMS/v83": 0x8B, "GMS/v84": 0x8E, "GMS/v87": 0x90, "GMS/v95": 0x9C, "JMS/v185": 0x8E,
 }
 
+// packet-audit:verify packet=cash/clientbound/CashGiftPackageDone version=gms_v83 ida=0x479c22
+// packet-audit:verify packet=cash/clientbound/CashGiftPackageDone version=gms_v84 ida=0x47cdc0
+// packet-audit:verify packet=cash/clientbound/CashGiftPackageDone version=gms_v87 ida=0x4853fb
+// packet-audit:verify packet=cash/clientbound/CashGiftPackageDone version=gms_v95 ida=0x496dc0
+// packet-audit:verify packet=cash/clientbound/CashGiftPackageDone version=jms_v185 ida=0x48c79a
 func TestGiftPackageDoneByteFixture(t *testing.T) {
 	const recipientName = "Frank"
 	packageId := int32(9000000)
@@ -353,6 +388,11 @@ var buyNormalDoneModes = map[string]byte{
 	"GMS/v83": 0x8D, "GMS/v84": 0x90, "GMS/v87": 0x92, "GMS/v95": 0x9E, "JMS/v185": 0x90,
 }
 
+// packet-audit:verify packet=cash/clientbound/CashBuyNormalDone version=gms_v83 ida=0x47b603
+// packet-audit:verify packet=cash/clientbound/CashBuyNormalDone version=gms_v84 ida=0x47e7a1
+// packet-audit:verify packet=cash/clientbound/CashBuyNormalDone version=gms_v87 ida=0x486de1
+// packet-audit:verify packet=cash/clientbound/CashBuyNormalDone version=gms_v95 ida=0x495310
+// packet-audit:verify packet=cash/clientbound/CashBuyNormalDone version=jms_v185 ida=0x48e1dd
 func TestBuyNormalDoneByteFixture(t *testing.T) {
 	refs := []PackedCashItemRef{
 		{Quantity: 1, SlotPos: 5, ItemId: 5000006},
@@ -387,6 +427,11 @@ var friendshipDoneModes = map[string]byte{
 	"GMS/v83": 0x91, "GMS/v84": 0x94, "GMS/v87": 0x96, "GMS/v95": 0xA2, "JMS/v185": 0x94,
 }
 
+// packet-audit:verify packet=cash/clientbound/CashFriendshipDone version=gms_v83 ida=0x47b93c
+// packet-audit:verify packet=cash/clientbound/CashFriendshipDone version=gms_v84 ida=0x47eada
+// packet-audit:verify packet=cash/clientbound/CashFriendshipDone version=gms_v87 ida=0x48711d
+// packet-audit:verify packet=cash/clientbound/CashFriendshipDone version=gms_v95 ida=0x497d90
+// packet-audit:verify packet=cash/clientbound/CashFriendshipDone version=jms_v185 ida=0x48e51a
 func TestFriendshipDoneByteFixture(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	item := CashInventoryItem{CashId: 5, AccountId: 1, CharacterId: 2, TemplateId: 5000007, CommodityId: 1, Quantity: 1}
@@ -423,6 +468,11 @@ var rebateDoneModes = map[string]byte{
 	"GMS/v83": 0x85, "GMS/v84": 0x88, "GMS/v87": 0x8A, "GMS/v95": 0x96, "JMS/v185": 0x88,
 }
 
+// packet-audit:verify packet=cash/clientbound/CashRebateDone version=gms_v83 ida=0x47b4e4
+// packet-audit:verify packet=cash/clientbound/CashRebateDone version=gms_v84 ida=0x47e682
+// packet-audit:verify packet=cash/clientbound/CashRebateDone version=gms_v87 ida=0x486cc2
+// packet-audit:verify packet=cash/clientbound/CashRebateDone version=gms_v95 ida=0x497980
+// packet-audit:verify packet=cash/clientbound/CashRebateDone version=jms_v185 ida=0x48e0be
 func TestRebateDoneByteFixture(t *testing.T) {
 	sn := int64(123456789012345)
 	amount := int32(750)

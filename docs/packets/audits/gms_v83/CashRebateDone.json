@@ -1,0 +1,39 @@
+{
+  "WriterName": "CashRebateDone",
+  "IDAName": "CCashShop::OnCashItemResult#REBATE_SUCCESS",
+  "Address": "0x47b4e4",
+  "Variant": "GMS/v83",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/cash/clientbound/shop_operation_result_gift.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (0x85 REBATE_SUCCESS; op-byte consumed by dispatcher before OnCashItemResRebateDone)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 3,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "sn (8B _LARGE_INTEGER SN; matched against existing m_aCashItemInfo[i].liSN, find-and-remove pattern)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "amount",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

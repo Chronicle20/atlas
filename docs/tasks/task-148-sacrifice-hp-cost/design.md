@@ -9,7 +9,9 @@ PRD: `docs/tasks/task-148-sacrifice-hp-cost/prd.md`
 
 ## 1. Problem Recap
 
-Sacrifice's attack pipeline works end-to-end in atlas-channel, but the skill's defining self-HP cost is a TODO at `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go:405`. Cosmic reference behavior (verified from source, cited in the PRD): after a melee Sacrifice that hit, the caster loses `firstDamageLine × X / 100` HP, clamped so the caster keeps at least 1 HP.
+Sacrifice's attack pipeline works end-to-end in atlas-channel, but the skill's defining self-HP cost is a TODO at `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go:669`. Cosmic reference behavior (verified from source, cited in the PRD): after a melee Sacrifice that hit, the caster loses `firstDamageLine × X / 100` HP, clamped so the caster keeps at least 1 HP.
+
+> **Anchor note:** line numbers in this doc were re-verified against `main` after a rebase (the file was reworked heavily since the design was written). Re-locate by symbol if they drift again.
 
 All interview questions were resolved in the PRD; this design covers architecture, placement, alternatives, and the exact contracts.
 
@@ -17,14 +19,14 @@ All interview questions were resolved in the PRD; this design covers architectur
 
 | Fact | Location |
 |---|---|
-| `skill.DragonKnightSacrificeId` constant exists | `libs/atlas-constants/skill/constants.go` (Skill entry at :396, id map at :2448) |
-| `effect.Model.X() int16` | `services/atlas-channel/atlas.com/channel/data/skill/effect/model.go:144` |
-| `DamageInfo.Damages() []uint32` | `libs/atlas-packet/model/damage_info.go:80` |
-| `character.Model.Hp() uint16` | `services/atlas-channel/atlas.com/channel/character/model.go:131` |
-| `ChangeHP(f field.Model, characterId uint32, amount int16) error` — Kafka command, fire-and-forget | `services/atlas-channel/atlas.com/channel/character/processor.go:271` |
-| MP Eater precedent: pure helpers + orchestration fn, errors swallowed | `character_attack_common.go:182-264` |
+| `skill.DragonKnightSacrificeId = Id(1311005)` constant exists | `libs/atlas-constants/skill/constants.go:3002` |
+| `effect.Model.X() int16` | `services/atlas-channel/atlas.com/channel/data/skill/effect/model.go:154` |
+| `DamageInfo.Damages() []uint32` | `libs/atlas-packet/model/damage_info.go:90` |
+| `character.Model.Hp() uint16` | `services/atlas-channel/atlas.com/channel/character/model.go:132` |
+| `ChangeHP(f field.Model, characterId uint32, amount int16) error` — Kafka command, fire-and-forget | `services/atlas-channel/atlas.com/channel/character/processor.go:276` |
+| MP Eater precedent: pure helper + orchestration fn, errors swallowed | `mpEaterAbsorbAmount` (`character_attack_common.go:369`) + `mpEaterTryProc` (`:403`) |
 | Existing pure-helper test file convention | `socket/handler/character_attack_mp_eater_test.go` |
-| Generic `hpCon`/`mpCon` cast-cost block (must stay untouched) | `character_attack_common.go:303-310` |
+| Generic `se.HPConsume()`/`se.MPConsume()` cast-cost block, `handler.Lookup`-gated (must stay untouched) | `character_attack_common.go:539-546` |
 
 ## 3. Architecture
 
@@ -60,7 +62,7 @@ processAttack (skillId > 0 branch already fetched: c, sk, se)
 
 No new fetches: `c` (with `Hp()`), `se` (with `X()`), and `cp` already exist in scope (FR under §8 of the PRD). Non-Sacrifice attacks pay one integer comparison.
 
-The generic `hpCon`/`mpCon` block at :303-310 is untouched — Sacrifice has no per-skill dispatcher entry, so its flat cast cost continues to apply independently (FR-9).
+The generic `se.HPConsume()`/`se.MPConsume()` block at :539-546 (fires only when `handler.Lookup` finds no per-skill dispatcher) is untouched — Sacrifice has no per-skill dispatcher entry, so its flat cast cost continues to apply independently (FR-9).
 
 ## 4. Helper Contracts
 
@@ -76,7 +78,7 @@ func sacrificeHpCost(firstLine uint32, x int16, currentHp uint16) uint16
 
 Rules, in order:
 1. `firstLine == 0 || x <= 0 || currentHp <= 1` → 0.
-2. `cost := uint64(firstLine) * uint64(x) / 100` — widen to `uint64` before multiplying (same overflow discipline as `mpEaterAbsorbAmount` at :199); truncating division matches Cosmic's Java `int` math (FR-3).
+2. `cost := uint64(firstLine) * uint64(x) / 100` — widen to `uint64` before multiplying (same overflow discipline as `mpEaterAbsorbAmount` at :369-374); truncating division matches Cosmic's Java `int` math (FR-3).
 3. Survival clamp: `if cost >= uint64(currentHp) { cost = uint64(currentHp) - 1 }` (FR-4).
 4. Defensive narrowing guard: `if cost > math.MaxInt16 { cost = math.MaxInt16 }`. On supported versions max HP is ≤ 30000 so the FR-4 clamp already bounds `cost < 32767`, but `Hp()` is `uint16` (theoretical max 65535) and the call site negates into `int16`; this one-line cap makes the helper safe by construction instead of by data assumption. Documented in the helper comment.
 5. Return `uint16(cost)`; call site emits `-int16(cost)`.
@@ -100,7 +102,7 @@ Guards `len(ai.DamageInfo()) > 0 && len(ai.DamageInfo()[0].Damages()) > 0`. Kept
 
 ## 6. Observability
 
-- `Debugf` on applied cost: caster id, skill id, first line, `X`, clamped cost — mirroring the MP Eater proc log at :258-259 (PRD §8).
+- `Debugf` on applied cost: caster id, skill id, first line, `X`, clamped cost — mirroring the MP Eater proc log in `mpEaterTryProc` (`:403`) (PRD §8).
 - `Errorf` on emit failure only. Nothing logged for non-Sacrifice attacks or zero-cost outcomes.
 
 ## 7. Testing
@@ -124,11 +126,11 @@ New file `socket/handler/character_attack_sacrifice_test.go` (naming mirrors `ch
 - Multi-line first entry → returns line[0] only.
 - Multi-target attack → ignores second entry entirely (FR-2 pin). Builds `DamageInfo` via the existing builder methods (`SetMonsterId` etc.) on `libs/atlas-packet/model`.
 
-The orchestration block itself (gate + emit + swallow) follows the same untested-thin-glue precedent as `mpEaterTryProc`'s call site; manual validation on v83 and v95 tenants covers the wiring (PRD acceptance criteria).
+The orchestration block itself (gate + emit + swallow) follows the same untested-thin-glue precedent as `mpEaterTryProc`'s call site; manual validation across the supported version set covers the wiring (PRD §10 acceptance criteria).
 
 ## 8. Multi-Tenancy / Versioning
 
-Version-agnostic by construction: `X` resolves per-tenant from atlas-data through the effect model already fetched at :292. No `MajorVersion()` branches, no template/seed changes, no new config (PRD §8, memory rule DOM-25 not implicated — no client wire values are produced here; the stat update rides the existing atlas-character event flow).
+Version-agnostic by construction: `X` resolves per-tenant from atlas-data through the effect model already fetched at :528. No `MajorVersion()` branches, no template/seed changes, no new config (PRD §8, memory rule DOM-25 not implicated — no client wire values are produced here; the stat update rides the existing atlas-character event flow). The single data-driven path therefore covers **every version main exposes** (gms 12/48/61/72/79/83/84/87/92/95, jms 185) — mirroring the sibling attack post-effects (`drainTryHeal`, `pickPocketTryProc`, `comboOrbTryUpdate`), which are all likewise gate-free. **Caveat:** the cost silently no-ops (`sacrificeHpCost` returns 0) on any version whose tenant serves `X ≤ 0` for 1311005, so per-version support is a data-verification step (confirm atlas-data serves nonzero `X`), not a code change. Dragon Knight Sacrifice is pre-Big-Bang; its presence on **jms 185** and post-Big-Bang **v95** is unverified and must be checked (PRD §8/§10).
 
 ## 9. Scope of Change
 
@@ -139,5 +141,5 @@ Version-agnostic by construction: `X` resolves per-tenant from atlas-data throug
 ## 10. Risks & Accepted Tradeoffs
 
 - **Stale `c.Hp()` vs concurrent damage:** the clamp reads the character model fetched at attack start; a monster hit landing between fetch and emit could theoretically make the −HP command lethal at atlas-character. Accepted per interview decision #3 — Cosmic has the identical read-then-write shape, and atlas-character's own HP handling floors at death semantics it already owns.
-- **Fire-and-forget emit:** a dropped Kafka command means one free Sacrifice, consistent with how `hpCon`/`mpCon` cast costs already behave (`_ = cp.ChangeHP(...)` at :305). Not worth a stronger guarantee for a per-attack cosmetic-adjacent cost.
+- **Fire-and-forget emit:** a dropped Kafka command means one free Sacrifice, consistent with how the `se.HPConsume()`/`se.MPConsume()` cast costs already behave (`_ = cp.ChangeHP(...)` at :541). Not worth a stronger guarantee for a per-attack cosmetic-adjacent cost.
 - **First-entry assumption:** Sacrifice is single-target in all supported versions; if a client ever sends multiple entries, we deliberately still charge only entry[0] line[0] (FR-2, interview decision #2 — "never more").

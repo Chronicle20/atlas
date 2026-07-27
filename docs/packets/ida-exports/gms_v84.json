@@ -27853,6 +27853,104 @@
           "guard": "result == 190 && a3 / 10000 == 226 && result"
         }
       ]
+    },
+    "CCashShop::OnCashItemResult#ENABLE_EQUIP_SLOT_EXT_FAILED": {
+      "address": "0x47e040",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x6a ENABLE_EQUIP_SLOT_EXT_FAILED; op-byte consumed by dispatcher before OnCashItemResEnableEquipSlotExtFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#MOVE_L_TO_S_FAILED": {
+      "address": "0x47e32a",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x6c MOVE_L_TO_S_FAILED; op-byte consumed by dispatcher before OnCashItemResMoveLtoSFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#MOVE_S_TO_L_FAILED": {
+      "address": "0x47e59f",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x6e MOVE_S_TO_L_FAILED; op-byte consumed by dispatcher before OnCashItemResMoveStoLFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#DESTROY_FAILED": {
+      "address": "0x47e663",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x70 DESTROY_FAILED; op-byte consumed by dispatcher before OnCashItemResDestroyFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#REBATE_FAILED": {
+      "address": "0x47e782",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x89 REBATE_FAILED; op-byte consumed by dispatcher before OnCashItemResRebateFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#COUPLE_FAILED": {
+      "address": "0x47ea60",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x8b COUPLE_FAILED; op-byte consumed by dispatcher before OnCashItemResCoupleFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#BUY_PACKAGE_FAILED": {
+      "address": "0x47cd3e",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x8d BUY_PACKAGE_FAILED; op-byte consumed by dispatcher before OnCashItemResBuyPackageFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (NoticeFailReason reason byte)"
+        }
+      ]
     }
   }
 }

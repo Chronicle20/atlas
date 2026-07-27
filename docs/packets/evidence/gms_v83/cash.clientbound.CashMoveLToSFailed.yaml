@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashMoveLToSFailed
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#MOVE_L_TO_S_FAILED
+    address: "0x47b18c"
+    decompile_sha256: ea83d6103b65abccc345ed9951f2507104976f285afdf767e972ecf751f746af
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_operation_result_failed_test.go#TestMoveLToSFailedByteFixture

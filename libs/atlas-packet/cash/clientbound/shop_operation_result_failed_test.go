@@ -344,6 +344,8 @@ func TestIncCharacterSlotCountFailedByteFixture(t *testing.T) {
 	}
 }
 
+// packet-audit:verify packet=cash/clientbound/CashIncBuyCharacterCountFailed version=gms_v95 ida=0x497450
+// packet-audit:verify packet=cash/clientbound/CashIncBuyCharacterCountFailed version=jms_v185 ida=0x48d871
 func TestIncBuyCharacterCountFailedByteFixture(t *testing.T) {
 	const errorCode = 0x08
 	for _, v := range pt.Variants {
@@ -368,6 +370,11 @@ func TestIncBuyCharacterCountFailedByteFixture(t *testing.T) {
 	}
 }
 
+// packet-audit:verify packet=cash/clientbound/CashEnableEquipSlotExtFailed version=gms_v83 ida=0x47aea2
+// packet-audit:verify packet=cash/clientbound/CashEnableEquipSlotExtFailed version=gms_v84 ida=0x47e040
+// packet-audit:verify packet=cash/clientbound/CashEnableEquipSlotExtFailed version=gms_v87 ida=0x486674
+// packet-audit:verify packet=cash/clientbound/CashEnableEquipSlotExtFailed version=gms_v95 ida=0x4976f0
+// packet-audit:verify packet=cash/clientbound/CashEnableEquipSlotExtFailed version=jms_v185 ida=0x48da78
 func TestEnableEquipSlotExtFailedByteFixture(t *testing.T) {
 	const errorCode = 0x09
 	for _, v := range pt.Variants {
@@ -392,6 +399,11 @@ func TestEnableEquipSlotExtFailedByteFixture(t *testing.T) {
 	}
 }
 
+// packet-audit:verify packet=cash/clientbound/CashMoveLToSFailed version=gms_v83 ida=0x47b18c
+// packet-audit:verify packet=cash/clientbound/CashMoveLToSFailed version=gms_v84 ida=0x47e32a
+// packet-audit:verify packet=cash/clientbound/CashMoveLToSFailed version=gms_v87 ida=0x486962
+// packet-audit:verify packet=cash/clientbound/CashMoveLToSFailed version=gms_v95 ida=0x497730
+// packet-audit:verify packet=cash/clientbound/CashMoveLToSFailed version=jms_v185 ida=0x48dd65
 func TestMoveLToSFailedByteFixture(t *testing.T) {
 	const errorCode = 0x0A
 	for _, v := range pt.Variants {
@@ -416,6 +428,11 @@ func TestMoveLToSFailedByteFixture(t *testing.T) {
 	}
 }
 
+// packet-audit:verify packet=cash/clientbound/CashMoveSToLFailed version=gms_v83 ida=0x47b401
+// packet-audit:verify packet=cash/clientbound/CashMoveSToLFailed version=gms_v84 ida=0x47e59f
+// packet-audit:verify packet=cash/clientbound/CashMoveSToLFailed version=gms_v87 ida=0x486bdf
+// packet-audit:verify packet=cash/clientbound/CashMoveSToLFailed version=gms_v95 ida=0x497920
+// packet-audit:verify packet=cash/clientbound/CashMoveSToLFailed version=jms_v185 ida=0x48dfdb
 func TestMoveSToLFailedByteFixture(t *testing.T) {
 	const errorCode = 0x0B
 	for _, v := range pt.Variants {
@@ -440,6 +457,11 @@ func TestMoveSToLFailedByteFixture(t *testing.T) {
 	}
 }
 
+// packet-audit:verify packet=cash/clientbound/CashDestroyFailed version=gms_v83 ida=0x47b4c5
+// packet-audit:verify packet=cash/clientbound/CashDestroyFailed version=gms_v84 ida=0x47e663
+// packet-audit:verify packet=cash/clientbound/CashDestroyFailed version=gms_v87 ida=0x486ca3
+// packet-audit:verify packet=cash/clientbound/CashDestroyFailed version=gms_v95 ida=0x497950
+// packet-audit:verify packet=cash/clientbound/CashDestroyFailed version=jms_v185 ida=0x48e09f
 func TestDestroyFailedByteFixture(t *testing.T) {
 	const errorCode = 0x0C
 	for _, v := range pt.Variants {
@@ -464,6 +486,11 @@ func TestDestroyFailedByteFixture(t *testing.T) {
 	}
 }
 
+// packet-audit:verify packet=cash/clientbound/CashRebateFailed version=gms_v83 ida=0x47b5e4
+// packet-audit:verify packet=cash/clientbound/CashRebateFailed version=gms_v84 ida=0x47e782
+// packet-audit:verify packet=cash/clientbound/CashRebateFailed version=gms_v87 ida=0x486dc2
+// packet-audit:verify packet=cash/clientbound/CashRebateFailed version=gms_v95 ida=0x497ad0
+// packet-audit:verify packet=cash/clientbound/CashRebateFailed version=jms_v185 ida=0x48e1be
 func TestRebateFailedByteFixture(t *testing.T) {
 	const errorCode = 0x0D
 	for _, v := range pt.Variants {
@@ -488,6 +515,11 @@ func TestRebateFailedByteFixture(t *testing.T) {
 	}
 }
 
+// packet-audit:verify packet=cash/clientbound/CashCoupleFailed version=gms_v83 ida=0x47b8c2
+// packet-audit:verify packet=cash/clientbound/CashCoupleFailed version=gms_v84 ida=0x47ea60
+// packet-audit:verify packet=cash/clientbound/CashCoupleFailed version=gms_v87 ida=0x4870a3
+// packet-audit:verify packet=cash/clientbound/CashCoupleFailed version=gms_v95 ida=0x497d20
+// packet-audit:verify packet=cash/clientbound/CashCoupleFailed version=jms_v185 ida=0x48e4a0
 func TestCoupleFailedByteFixture(t *testing.T) {
 	const errorCode = 0x0E
 	for _, v := range pt.Variants {
@@ -512,6 +544,11 @@ func TestCoupleFailedByteFixture(t *testing.T) {
 	}
 }
 
+// packet-audit:verify packet=cash/clientbound/CashBuyPackageFailed version=gms_v83 ida=0x479ba0
+// packet-audit:verify packet=cash/clientbound/CashBuyPackageFailed version=gms_v84 ida=0x47cd3e
+// packet-audit:verify packet=cash/clientbound/CashBuyPackageFailed version=gms_v87 ida=0x485379
+// packet-audit:verify packet=cash/clientbound/CashBuyPackageFailed version=gms_v95 ida=0x496d40
+// packet-audit:verify packet=cash/clientbound/CashBuyPackageFailed version=jms_v185 ida=0x48c718
 func TestBuyPackageFailedByteFixture(t *testing.T) {
 	const errorCode = 0x0F
 	for _, v := range pt.Variants {

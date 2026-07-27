@@ -395,6 +395,19 @@ func sacrificeHpCost(firstLine uint32, x int16, currentHp uint16) uint16 {
 	return uint16(cost)
 }
 
+// sacrificeFirstDamageLine returns the first damage line of the first
+// damage entry, or 0 when the attack has no entries or the first entry
+// has no lines. Sacrifice's self-HP cost basis is only ever this line —
+// additional lines and targets are deliberately ignored (Cosmic
+// damageLines().getFirst() parity; PRD FR-2).
+func sacrificeFirstDamageLine(ai packetmodel.AttackInfo) uint32 {
+	di := ai.DamageInfo()
+	if len(di) == 0 || len(di[0].Damages()) == 0 {
+		return 0
+	}
+	return di[0].Damages()[0]
+}
+
 // drainHealAmount computes the drain-family HP gain for one damaged
 // monster: floor(totalDamage * x / 100), capped by the monster's max HP
 // and by half the attacker's effective (buff-inclusive) max HP, then

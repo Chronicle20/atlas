@@ -3,6 +3,8 @@ package handler
 import (
 	"math"
 	"testing"
+
+	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 )
 
 func TestSacrificeHpCost(t *testing.T) {
@@ -29,6 +31,52 @@ func TestSacrificeHpCost(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := sacrificeHpCost(tc.firstLine, tc.x, tc.currentHp); got != tc.want {
 				t.Fatalf("sacrificeHpCost(%d, %d, %d) = %d; want %d", tc.firstLine, tc.x, tc.currentHp, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestSacrificeFirstDamageLine(t *testing.T) {
+	entry := func(monsterId uint32, damages []uint32) packetmodel.DamageInfo {
+		return *packetmodel.NewDamageInfo(byte(len(damages))).
+			SetMonsterId(monsterId).
+			SetDamages(damages)
+	}
+
+	cases := []struct {
+		name string
+		ai   packetmodel.AttackInfo
+		want uint32
+	}{
+		{
+			"no damage entries",
+			*packetmodel.NewAttackInfo(packetmodel.AttackTypeMelee),
+			0,
+		},
+		{
+			"first entry has no lines",
+			*packetmodel.NewAttackInfo(packetmodel.AttackTypeMelee).
+				AddDamageInfo(entry(100100, nil)),
+			0,
+		},
+		{
+			"multi-line first entry returns line zero only",
+			*packetmodel.NewAttackInfo(packetmodel.AttackTypeMelee).
+				AddDamageInfo(entry(100100, []uint32{4000, 9999, 12345})),
+			4000,
+		},
+		{
+			"multi-target attack ignores second entry (FR-2 pin)",
+			*packetmodel.NewAttackInfo(packetmodel.AttackTypeMelee).
+				AddDamageInfo(entry(100100, []uint32{4000})).
+				AddDamageInfo(entry(100101, []uint32{99999})),
+			4000,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := sacrificeFirstDamageLine(tc.ai); got != tc.want {
+				t.Fatalf("sacrificeFirstDamageLine() = %d; want %d", got, tc.want)
 			}
 		})
 	}

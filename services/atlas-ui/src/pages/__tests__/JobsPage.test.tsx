@@ -244,10 +244,13 @@ describe("JobsPage", () => {
     // Visibility is now driven by the tenant's actual job set (useJobs), not
     // by majorVersion, so this fixture stands in for what v12 would ingest.
     useJobsMock.mockReturnValue(
-      jobsQuery("success", [
-        0, 100, 110, 111, 112, 120, 121, 122, 130, 131, 132, 200, 300, 400,
-        900, 910,
-      ]),
+      jobsQuery(
+        "success",
+        [
+          0, 100, 110, 111, 112, 120, 121, 122, 130, 131, 132, 200, 300, 400,
+          900, 910,
+        ],
+      ),
     );
     renderAt("/jobs");
     // "Warrior 10" is the rail entry; the flow chip reads "Warrior 1st"
@@ -384,7 +387,9 @@ describe("JobsPage — tenant job set", () => {
 
     renderAt("/jobs/112");
     expect(screen.getByTestId("jobs-load-error")).toBeInTheDocument();
-    expect(screen.queryByTestId("branch-rail-skeleton")).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("branch-rail-skeleton"),
+    ).not.toBeInTheDocument();
   });
 
   it("shows only the branches present in the tenant job set", () => {

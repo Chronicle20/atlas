@@ -7,9 +7,9 @@
 
 task-185 made the job→skill mapping tenant data instead of a compiled-in table.
 `JOB` documents are written only by a `Skill.wz` ingest, so **until a tenant is
-re-ingested or restored from a re-published baseline, both job endpoints 404**:
+re-ingested or restored from a re-published baseline**:
 
-- `GET /api/data/jobs` returns an empty list
+- `GET /api/data/jobs` returns 200 with an empty array and `meta.total: 0`
 - `GET /api/data/jobs/{jobId}/skills` returns 404 for every job
 - the atlas-ui Jobs page renders an empty branch rail
 
@@ -64,6 +64,22 @@ Run these in order, one version at a time. Do not batch — step 3 is the gate.
    ```
    POST /api/data/baseline/publish
    X-Atlas-Operator: 1
+   Content-Type: application/vnd.api+json
+   ```
+
+   Request body:
+
+   ```json
+   {
+     "data": {
+       "type": "baselinePublishes",
+       "attributes": {
+         "region": "GMS",
+         "majorVersion": 83,
+         "minorVersion": 1
+       }
+     }
+   }
    ```
 
 ## Expected job-set changes

@@ -166,3 +166,86 @@ func TestSkillPrepareForeignByteFixture(t *testing.T) {
 		})
 	}
 }
+
+// TestSkillPrepareForeignByteFixtureKeydownSkills pins the exact relay bytes for
+// the two task-161 keydown skills. Structure is skill-independent (charId u32,
+// skillId u32, level u8, action u16, actionSpeed u8), so this proves the observer
+// receives the correct verified skillId for each. Skill IDs decoded via int_convert
+// (design §2.1): 5101004=0x4DD5CC, 5201002=0x4F5C6A. Fixed fields mirror the
+// existing fixture: charId=1001, level=10, action=0x0142, actionSpeed=4.
+func TestSkillPrepareForeignByteFixtureKeydownSkills(t *testing.T) {
+	cases := []struct {
+		name     string
+		skillId  uint32
+		expected []byte
+	}{
+		{
+			name:    "Corkscrew Blow 5101004",
+			skillId: 5101004,
+			expected: []byte{
+				0xE9, 0x03, 0x00, 0x00, // charId=1001 LE
+				0xCC, 0xD5, 0x4D, 0x00, // skillId=5101004 (0x4DD5CC) LE
+				0x0A,       // level=10
+				0x42, 0x01, // action=0x0142 LE
+				0x04, // actionSpeed=4
+			},
+		},
+		{
+			name:    "Grenade 5201002",
+			skillId: 5201002,
+			expected: []byte{
+				0xE9, 0x03, 0x00, 0x00, // charId=1001 LE
+				0x6A, 0x5C, 0x4F, 0x00, // skillId=5201002 (0x4F5C6A) LE
+				0x0A,       // level=10
+				0x42, 0x01, // action=0x0142 LE
+				0x04, // actionSpeed=4
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := pt.CreateContext("GMS", 83, 1)
+			input := NewSkillPrepareForeign(1001, tc.skillId, 10, 0x0142, 4)
+			got := pt.Encode(t, ctx, input.Encode, nil)
+			if len(got) != len(tc.expected) {
+				t.Fatalf("byte length mismatch: got %d want %d\n  got:  %X\n  want: %X",
+					len(got), len(tc.expected), got, tc.expected)
+			}
+			for i := range tc.expected {
+				if got[i] != tc.expected[i] {
+					t.Errorf("byte[%d] = %02X, want %02X\n  got:  %X\n  want: %X",
+						i, got[i], tc.expected[i], got, tc.expected)
+					break
+				}
+			}
+		})
+	}
+}
+
+// TestSkillPrepareForeignByteFixtureKeydownV72 pins the legacy GMS v72 relay bytes for
+// Corkscrew Blow (5101004) — a version where the client's is_keydown_skill switch
+// (@0x4e5318) includes it (design §2.4). v72 encodes the action/direction field as a
+// SINGLE byte (bit7=bLeft, bits0-6=nAction), so this packet is 11 bytes, not 12. action
+// stays 0x42 so bit7=0 -> the byte is exactly 0x42. Mirrors TestSkillPrepareForeignV72ByteFixture.
+func TestSkillPrepareForeignByteFixtureKeydownV72(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+	input := NewSkillPrepareForeign(1001, 5101004, 10, 0x42, 4)
+	expected := []byte{
+		0xE9, 0x03, 0x00, 0x00, // charId=1001 LE
+		0xCC, 0xD5, 0x4D, 0x00, // skillId=5101004 (0x4DD5CC) LE
+		0x0A, // level=10
+		0x42, // action=0x42 (1 BYTE on v72)
+		0x04, // actionSpeed=4
+	}
+	got := pt.Encode(t, ctx, input.Encode, nil)
+	if len(got) != len(expected) {
+		t.Fatalf("byte length mismatch: got %d want %d\n  got:  %X\n  want: %X", len(got), len(expected), got, expected)
+	}
+	for i := range expected {
+		if got[i] != expected[i] {
+			t.Errorf("byte[%d] = %02X, want %02X\n  got:  %X\n  want: %X", i, got[i], expected[i], got, expected)
+			break
+		}
+	}
+}

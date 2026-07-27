@@ -373,6 +373,39 @@ func mpEaterAbsorbAmount(maxMp uint32, x int16) uint32 {
 	return uint32(uint64(maxMp) * uint64(x) / 100)
 }
 
+// mortalBlowEligible reports whether a monster's (pre-attack snapshot) HP
+// is at or below the Mortal Blow threshold: hp ≤ maxHp × x / 100, with
+// integer truncating division (Cosmic parity). Widens through uint64 so
+// maxHp near MaxUint32 cannot overflow. Defensive: false when x ≤ 0 or
+// maxHp == 0 (malformed/absent tenant data means the passive is inert).
+func mortalBlowEligible(hp uint32, maxHp uint32, x int16) bool {
+	if x <= 0 || maxHp == 0 {
+		return false
+	}
+	return uint64(hp) <= uint64(maxHp)*uint64(x)/100
+}
+
+// mortalBlowKillRoll reports whether the instant kill procs for a uniform
+// roll in [1,100]: roll ≤ y. Defensive: false when y ≤ 0.
+func mortalBlowKillRoll(roll int, y int16) bool {
+	if y <= 0 {
+		return false
+	}
+	return roll <= int(y)
+}
+
+// isMortalBlowAttack reports whether an attack is a client-side Mortal Blow
+// proc: a ranged attack tagged with the Ranger (3110001) or Sniper
+// (3210001) passive's skill id. The v83 client only tags an attack with
+// these ids on a successful point-blank normal-attack conversion, and the
+// upstream ownership guard in processAttack destroys the session for
+// unowned skill ids, so this gate is sufficient (no job-range check —
+// PRD FR-1).
+func isMortalBlowAttack(at packetmodel.AttackType, skillId uint32) bool {
+	return at == packetmodel.AttackTypeRanged &&
+		(skill3.Id(skillId) == skill3.RangerMortalBlowId || skill3.Id(skillId) == skill3.SniperMortalBlowId)
+}
+
 // sacrificeHpCost computes the self-HP cost of Dragon Knight Sacrifice:
 // firstLine × x / 100 (truncating integer division, Cosmic parity),
 // clamped so the caster is left with at least 1 HP. Returns 0 when the

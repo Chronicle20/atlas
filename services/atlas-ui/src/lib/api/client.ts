@@ -17,7 +17,12 @@
  */
 
 import type { Tenant } from "@/types/models/tenant";
-import type { ApiListResponse, ApiSingleResponse } from "@/types/api/responses";
+import type {
+  ApiListResponse,
+  ApiPagedResponse,
+  ApiSingleResponse,
+  JsonApiResource,
+} from "@/types/api/responses";
 import { tenantHeaders } from "@/lib/headers";
 import { createApiErrorFromResponse } from "@/types/api/errors";
 import { sanitizeErrorData } from "@/lib/api/errors";
@@ -351,6 +356,20 @@ export const api = {
 
   getList: <T>(url: string, options?: ApiRequestOptions): Promise<T[]> =>
     apiClient.get<ApiListResponse<T>>(url, options).then((r) => r.data),
+
+  /**
+   * Like `getList`, but returns the whole JSON:API envelope instead of just
+   * `data`. Use this when the endpoint is a compound document and you need
+   * `included` or the pagination `links`.
+   */
+  getListDocument: <T>(
+    url: string,
+    options?: ApiRequestOptions,
+  ): Promise<ApiPagedResponse<T> & { included?: JsonApiResource[] }> =>
+    apiClient.get<ApiPagedResponse<T> & { included?: JsonApiResource[] }>(
+      url,
+      options,
+    ),
 
   getOne: <T>(url: string, options?: ApiRequestOptions): Promise<T> =>
     apiClient.get<ApiSingleResponse<T>>(url, options).then((r) => r.data),

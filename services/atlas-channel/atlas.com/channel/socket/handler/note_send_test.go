@@ -43,7 +43,9 @@ func TestBuildNoteSendSaga(t *testing.T) {
 	if !ok {
 		t.Fatalf("step 2 payload type: %T", s.Steps[1].Payload)
 	}
-	if np.SenderId != 100 || np.ReceiverId != 200 || np.Message != "hello" || np.Flag != 1 {
+	// Flag must be 0 (plain note). Non-zero memo flags select the client's
+	// reward/gift render templates (the "gained fame" line) — see note_send.go.
+	if np.SenderId != 100 || np.ReceiverId != 200 || np.Message != "hello" || np.Flag != 0 {
 		t.Errorf("create-note payload mismatch: %+v", np)
 	}
 }

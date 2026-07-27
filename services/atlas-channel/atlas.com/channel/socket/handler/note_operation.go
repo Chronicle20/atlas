@@ -70,21 +70,28 @@ func NoteOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 			for _, e := range sp.Entries() {
 				l.Debugf("Character [%d] discarding note [%d]. flags [%d].", s.CharacterId(), e.Id(), e.Flag())
 
-				// Verify the note exists and the flag matches
+				// Validate the note exists and the flag matches, but never tear
+				// down the session on a mismatch: a decode drift or a stale
+				// client list must not crash the player to login (the actual
+				// delete below is character-scoped, so a bogus id cannot remove
+				// another character's note). Skip the offending entry and
+				// discard whatever remains valid.
 				n, err := np.GetById(e.Id())
 				if err != nil {
-					l.WithError(err).Errorf("Character [%d] unable to retrieve note [%d].", s.CharacterId(), e.Id())
-					_ = session.NewProcessor(l, ctx).Destroy(s)
-					return
+					l.WithError(err).Warnf("Character [%d] cannot discard note [%d] (not found); skipping.", s.CharacterId(), e.Id())
+					continue
 				}
 
 				if n.Flag() != e.Flag() {
-					l.Errorf("Character [%d] attempting to discard note [%d] with incorrect flag. Expected [%d], got [%d].", s.CharacterId(), e.Id(), n.Flag(), e.Flag())
-					_ = session.NewProcessor(l, ctx).Destroy(s)
-					return
+					l.Warnf("Character [%d] discard of note [%d] has mismatched flag (expected [%d], got [%d]); skipping.", s.CharacterId(), e.Id(), n.Flag(), e.Flag())
+					continue
 				}
 
 				noteIds = append(noteIds, e.Id())
+			}
+
+			if len(noteIds) == 0 {
+				return
 			}
 
 			err := np.DiscardNotes(s.Field().Channel(), s.CharacterId(), noteIds)

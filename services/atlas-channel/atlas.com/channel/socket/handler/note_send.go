@@ -44,7 +44,13 @@ func buildNoteSendSaga(transactionId uuid.UUID, now time.Time, senderId uint32, 
 					SenderId:   senderId,
 					ReceiverId: receiverId,
 					Message:    message,
-					Flag:       1,
+					// Flag 0 = plain note. The client's memo renderer
+					// (CMemoListDlg draw callback, v83 sub_64B1A5@0x64b1a5)
+					// treats flag 1/2 as reward notices (StringPool 3366/3367,
+					// the "gained fame" line formatted with the reader's own
+					// name) and flag 3 as a gift item-link. A player note must
+					// be 0 so it displays as sender + message only.
+					Flag: 0,
 				},
 				CreatedAt: now,
 				UpdatedAt: now,

@@ -963,7 +963,7 @@ type CreateNotePayload struct {
 	SenderId   uint32 `json:"senderId"`   // Character sending the note
 	ReceiverId uint32 `json:"receiverId"` // Character receiving the note
 	Message    string `json:"message"`    // Note message text
-	Flag       byte   `json:"flag"`       // Note flag (always 1 for player sends)
+	Flag       byte   `json:"flag"`       // Memo flag/type; 0 = plain note (player sends). Non-zero selects reward/gift render templates client-side.
 }
 
 // AssetSnapshot captures one inventory asset at decode time (item megaphone).

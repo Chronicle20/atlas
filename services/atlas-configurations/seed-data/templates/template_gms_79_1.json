@@ -747,7 +747,8 @@
             "SEND": 0,
             "DISCARD": 1,
             "REQUEST": 2
-          }
+          },
+          "discard": { "specialFlag": 3, "claimValueCount": 1 }
         }
       },
       {

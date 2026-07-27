@@ -62,7 +62,7 @@ func TestOperationDiscardV61Body(t *testing.T) {
 		emptySlotCount: 3,
 		entries: []DiscardEntry{
 			{id: 100, flag: 1},
-			{id: 200, flag: 2, extra1: 500},
+			{id: 200, flag: 2, claimValues: []uint32{500}},
 		},
 	}
 	want := []byte{
@@ -75,7 +75,16 @@ func TestOperationDiscardV61Body(t *testing.T) {
 		0x02,                   // entry[1].flag = 2 (Encode1 @0x5ad6be, special)
 		0xF4, 0x01, 0x00, 0x00, // entry[1].extra1 = 500 (Encode4 @0x5ad6c9)
 	}
-	if got := pt.Encode(t, ctx, input.Encode, nil); !bytes.Equal(got, want) {
+	// v61's special flag (2) and claim-value count (1) come from the tenant
+	// template's NoteOperationHandle.options.discard config (see
+	// resolveDiscardShape), not a code literal.
+	options := map[string]interface{}{
+		DiscardConfigKey: map[string]interface{}{
+			DiscardSpecialFlagKey:     float64(2),
+			DiscardClaimValueCountKey: float64(1),
+		},
+	}
+	if got := pt.Encode(t, ctx, input.Encode, options); !bytes.Equal(got, want) {
 		t.Errorf("v61 NoteOperationDiscard golden mismatch\n got: % x\nwant: % x", got, want)
 	}
 }

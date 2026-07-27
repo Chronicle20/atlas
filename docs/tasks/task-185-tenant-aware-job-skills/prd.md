@@ -15,6 +15,11 @@ carrying ~540 skill references, with no tenant or version input. Every tenant,
 from GMS v12 through JMS v185, receives the same answer, and that answer is a
 v83-shaped list.
 
+This is not a v95.1-only problem. Probing the live cluster (§9.2), skill
+`5101001` — "Haste (Super)", under job image 510 — resolves on GMS v48 and v61
+and is absent from v72 onward. Job skill sets have been drifting across the
+whole version range the project supports; v95.1 is the case that surfaced it.
+
 The fix does not require inventing a version matrix. Each tenant's own
 `Skill.wz` archive *is* the authoritative per-version job→skill mapping, and
 atlas-data already ingests it: `data/workers/skill.go` walks
@@ -114,11 +119,9 @@ Non-goals:
   GMS v12 ships an all-in-one `Data.wz`, which `data/workers/runtime.go` already
   serves to workers as a sub-view (`monolithFile`, `ErrCategoryAbsent`). Because
   the `JOB` writer runs inside the `SKILL` worker, it inherits this with no
-  monolith-specific code. **Verification required:** confirm GMS v12's `Data.wz`
-  actually contains a `Skill` category. `ErrCategoryAbsent` exists precisely
-  because v12 lacks some categories (Quest/Morph/TamingMob); whether `Skill` is
-  among the present ones is unverified as of this PRD and must be checked
-  against the archive during design.
+  monolith-specific code. **Verified** — see §9.1: v12's `Data.wz` root contains
+  a `Skill/` directory, and task-172's live v12 ingest ran the SKILL worker
+  successfully. No monolith-specific work is required.
 
 ### FR-3 — Read path
 
@@ -328,6 +331,11 @@ confirming `JOB` documents exist before the version is considered done.
 Executing the runbook is the operator's deploy-time responsibility and is not
 part of this task's implementation.
 
+GMS 12.1 needs an extra step: it is registered in `versions.json` but has no
+tenant provisioned and no ingested data in the current cluster (§9.1). It must
+be provisioned and ingested, not merely re-published, before its verification
+step can pass.
+
 A transitional fallback to the constants list was considered and rejected: it
 would keep the deleted table alive for another release and would silently mask a
 failed ingest as a successful one.
@@ -355,22 +363,56 @@ failed ingest as a successful one.
   if its `go.mod` is touched; `tools/lint.sh --check`; and for atlas-ui,
   `npm run build` (not `vitest` alone).
 
-## 9. Open Questions
+## 9. Resolved Questions and Open Questions
 
-1. **Does GMS v12's monolithic `Data.wz` contain a `Skill` category?** (FR-2.5)
-   If not, v12 tenants have no `JOB` documents and their jobs page renders
-   empty. Must be verified against the archive during design, and if absent,
-   this PRD needs a decision on v12 handling.
-2. **Do the legacy `Skill.wz` archives (v48, v61, v72, v79) use the same
-   per-job-image layout** that `skill/reader.go` assumes? The reader works for
-   them today for skill *content*, which is good evidence, but the job-image
-   enumeration should be confirmed per version.
-3. **Persisted-vs-response model split** (FR-4.4) — one type with a
-   `json:"-"` detail field populated on read (the `shops` pattern), or two
-   types. A design decision, not a requirement.
-4. **Does any non-UI consumer call `GET /data/jobs/{id}/skills`?** The repo
-   search found only atlas-ui. Worth one more pass across scripts and seed data
-   before deleting the constants list.
+### 9.1 Resolved — GMS v12's `Data.wz` contains a `Skill` category
+
+Verified against task-172's recorded findings. `design.md:43-45` enumerates the
+v12 `Data.wz` root as `Character/`, `Effect/`, `Etc/`, `Item/`, `Map/`, `Mob/`,
+`Npc/`, `Reactor/`, **`Skill/`**, `Sound/`, `String/`, `UI/`, plus root-level
+`smap.img`/`zmap.img`. The categories v12 genuinely lacks are Quest, Morph,
+TamingMob, and `Item/Cash` — `Skill` is not among them.
+
+This is not a static-listing inference. Task-172 ran a live v12 ingest
+(`e2e-results.md:105-120`) in which the SKILL worker resolved its monolithic
+sub-view and ingested real skills — `1001003` = "Iron Body" with full effects,
+plus 175 skill icons. Icon extraction in `data/workers/skill.go` walks
+`file.Root().Images()`, skips non-numeric image names via `imgID`, and reads
+each image's `skill` subproperty, so numeric per-job images carrying a `skill`
+subproperty demonstrably exist in v12. That is exactly the structure the `JOB`
+writer consumes. The run's only skipped category was `QUEST`.
+
+**Caveat for the rollout runbook (§7.5):** no GMS 12.1 tenant is currently
+provisioned — the live tenant list holds 10 tenants (GMS 48/61/72/79/83/84/87/
+92/95 + JMS 185) and task-172's v12 verification tenant is gone. Probing
+`/api/data/skills/1000` for GMS 12.1 returns 404, as do maps, monsters,
+consumables, equipment, and npcs, so the version has no ingested data in this
+cluster at all. v12 must be provisioned and ingested before it can be verified,
+and that is a data-state gap, not an archive-capability gap.
+
+### 9.2 Resolved — the per-job-image layout holds on every live version
+
+Probed `/api/data/skills/{id}` across all 10 live tenants for skills drawn from
+five different job images — `1000` (job 0), `1001003` (100), `2001002` (200),
+`4101004` (410), `1121000` (112). All five resolve `200` on all ten versions:
+GMS 48, 61, 72, 79, 83, 84, 87, 92, 95, and JMS 185. `skill/reader.go`'s
+assumption holds across every generation the project supports.
+
+The same probe produced direct live evidence for this task's premise. Skill
+`5101001` ("Haste (Super)", job image 510) returns `200` on GMS v48 and v61 and
+`404` on v72 and every later version. A skill present on a job in one version
+and absent in another is precisely what the hardcoded list cannot express, and
+it is not limited to the v95.1 case that motivated this task.
+
+### 9.3 Open — persisted-vs-response model split
+
+FR-4.4. One type with a `json:"-"` detail field populated on read (the `shops`
+pattern), or two distinct types. A design decision, not a requirement.
+
+### 9.4 Open — non-UI consumers of `GET /data/jobs/{id}/skills`
+
+The repo search found only atlas-ui. Worth one more pass across scripts and seed
+data before deleting the constants list.
 
 ## 10. Acceptance Criteria
 

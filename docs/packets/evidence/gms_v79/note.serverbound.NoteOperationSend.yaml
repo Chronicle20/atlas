@@ -1,10 +1,10 @@
 packet: note/serverbound/NoteOperationSend
 direction: serverbound
-version: gms_v83
+version: gms_v79
 category: TIER1-FIXTURE
 ida:
     function: CCashShop::OnCashItemResLoadGiftDone
-    address: "0x47959e"
-    decompile_sha256: 62196ca197b45fe2bd3720337bbe13dbbbf1008b7ae67a41ca663835b4387418
+    address: "0x47252c"
+    decompile_sha256: a062bccabf58a3a9e5e89eb682347561b7681f8cfc475443340e9a6504ee15c9
 verifies:
     - note/serverbound/operation_send_test.go#TestOperationSendByteOutputAllVersions

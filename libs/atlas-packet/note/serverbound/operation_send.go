@@ -19,7 +19,7 @@ import (
 // OnCashItemResLoadGiftDone — appends both. (Builds between v48 and v61 are not
 // in scope; v48 is the only verified outlier.) A code-resolved version fact.
 func sendHasGiftDetails(t tenant.Model) bool {
-	return !(t.Region() == "GMS" && t.MajorVersion() <= 48)
+	return t.Region() != "GMS" || t.MajorVersion() > 48
 }
 
 // OperationSend is the NOTE_ACTION mode-0 arm. Its only client-side writer is

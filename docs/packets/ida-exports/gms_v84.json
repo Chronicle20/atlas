@@ -20995,7 +20995,38 @@
     "CCashShop::OnCashItemResLoadGiftDone": {
       "address": "0x47c73c",
       "direction": "serverbound",
-      "calls": null
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (task-137 notesend-verify2, disasm-confirmed @0x47c879)",
+          "guard": "sub_4F61C5(...) == 1 (disasm @0x47c848)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "toName",
+          "guard": "sub_4F61C5(...) == 1 (disasm @0x47c848)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message",
+          "guard": "sub_4F61C5(...) == 1 (disasm @0x47c848)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "giftFlag",
+          "guard": "sub_4F61C5(...) == 1 (disasm @0x47c848)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "giftIndex",
+          "guard": "sub_4F61C5(...) == 1 (disasm @0x47c848)"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "giftSN (8 bytes)",
+          "guard": "sub_4F61C5(...) == 1 (disasm @0x47c848)"
+        }
+      ]
     },
     "CCashShop::OnEnableEquipSlotExt": {
       "address": "0x46efb6",

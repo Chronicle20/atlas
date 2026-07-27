@@ -3,7 +3,7 @@
   "IDAName": "CCashShop::OnCashItemResLoadGiftDone",
   "Address": "0x461758",
   "Variant": "GMS/v61",
-  "BranchDepth": 0,
+  "BranchDepth": 1,
   "AtlasFile": "libs/atlas-packet/note/serverbound/operation_send.go",
   "Rows": [
     {
@@ -11,20 +11,56 @@
       "AtlasOp": 4,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
+      "IDAComment": "mode byte (task-137 notesend-verify2, disasm-confirmed @0x4618a6)",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "width mismatch"
     },
     {
       "Index": 1,
       "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
+      "IDAOp": 4,
+      "IDAComment": "toName",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "message",
       "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "giftFlag",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 3,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "giftIndex",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "giftSN (8 bytes)",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
     }
   ],
-  "Verdict": 2,
-  "FlatInvalid": false
+  "Verdict": 3,
+  "FlatInvalid": true
 }

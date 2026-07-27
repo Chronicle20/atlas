@@ -6,12 +6,12 @@
 
 Tool: `2241ab36bd1f5647309804bcff9631fd21641d1d3f01634b157737d7e36fb8ef`
 
-- export gms_v48: `0f41bff36a13ec9ffbecffaaacd08c70225e5a306558410fbb03aa3abc787771`
-- export gms_v61: `7d75a30019ccda4137f0586e127946b4ae64eeffa08a4c71319ad7d8bee76007`
-- export gms_v72: `ae88cf97d8b60ac757f01423a7d66bc2d53e645835ece106466f817e78c6663a`
-- export gms_v79: `a140abb396e3f499408ff45076102c77c3d46a89ca2d2fbe7466e05c243d93cc`
+- export gms_v48: `10e71bb8c58945dba82c810b48531675793275c6e3dba25646ab9160ec06bffa`
+- export gms_v61: `d06bb2d9d4c6aa0c6e51e5aa6de36cf8500eca1774a061b9d8339ad15364a5a1`
+- export gms_v72: `1dea23201ddfa662d9d8d1354189eb9235385b2c07c0743c29a2219e51c1776b`
+- export gms_v79: `b5a42106e7ee34fe09807f740471a0f795a51299a31a93ed1bd63acc891c404c`
 - export gms_v83: `aff0ebcf18fb42301b5b81f076e1c8456e23a6933a0c6fb35b04dbd02812716e`
-- export gms_v84: `4e7a4992be9b7c5a1c6e2c29d596afc9a483e316bdf7f403cb3597dcd44625e7`
+- export gms_v84: `c831cf2e581da88f86d2ab6c66846d5edcb5829b3ab16ab2b458310673e00050`
 - export gms_v87: `b35393b15346115a52f189703fb598c000e33a2c605c28b764dd576e26c9adba`
 - export gms_v95: `6e93c93bb275e468f5c352fa7e4198bc52996d2e4a8b49957b01365b4a797f25`
 - export jms_v185: `c7f82fdf9d7fb879ea981fec580391ac0d3095bc39ac02f637ac9c09d0cfd68b`
@@ -950,7 +950,7 @@ Tool: `2241ab36bd1f5647309804bcff9631fd21641d1d3f01634b157737d7e36fb8ef`
 | monster/carnival/serverbound/MonsterCarnival (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | note/serverbound/NoteOperation (T1) |  |  | ❌ |  | ❌ |  | 🟡ᶠ |  | 🟡ᶠ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | note/serverbound/NoteOperationDiscard (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| note/serverbound/NoteOperationSend (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
+| note/serverbound/NoteOperationSend (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | npc/clientbound/NpcAskAvatarConversationDetail (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | npc/clientbound/NpcAskBoxTextConversationDetail (T1) |  |  | ⬜ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | npc/clientbound/NpcAskMemberShopAvatarConversationDetail (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
@@ -998,15 +998,15 @@ Tool: `2241ab36bd1f5647309804bcff9631fd21641d1d3f01634b157737d7e36fb8ef`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 178 | 0 | 2 | 157 | 626 | 0 | 52.8% |
-| v61 | 254 | 0 | 60 | 190 | 459 | 0 | 50.4% |
-| v72 | 264 | 0 | 73 | 209 | 417 | 0 | 48.4% |
-| v79 | 308 | 0 | 72 | 205 | 378 | 0 | 52.6% |
-| v83 | 427 | 0 | 0 | 313 | 223 | 0 | 57.7% |
-| v84 | 401 | 0 | 0 | 319 | 243 | 0 | 55.7% |
-| v87 | 435 | 0 | 0 | 342 | 186 | 0 | 56.0% |
-| v95 | 460 | 0 | 0 | 401 | 102 | 0 | 53.4% |
-| JMS185 | 414 | 0 | 0 | 356 | 193 | 0 | 53.8% |
+| v48 | 179 | 0 | 2 | 156 | 626 | 0 | 53.1% |
+| v61 | 255 | 0 | 60 | 189 | 459 | 0 | 50.6% |
+| v72 | 265 | 0 | 73 | 208 | 417 | 0 | 48.5% |
+| v79 | 309 | 0 | 72 | 204 | 378 | 0 | 52.8% |
+| v83 | 428 | 0 | 0 | 312 | 223 | 0 | 57.8% |
+| v84 | 402 | 0 | 0 | 318 | 243 | 0 | 55.8% |
+| v87 | 436 | 0 | 0 | 341 | 186 | 0 | 56.1% |
+| v95 | 461 | 0 | 0 | 400 | 102 | 0 | 53.5% |
+| JMS185 | 415 | 0 | 0 | 355 | 193 | 0 | 53.9% |
 
 ## Conflicts
 

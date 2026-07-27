@@ -56,10 +56,24 @@ func opKey(op string, dir opregistry.Direction) string {
 //
 // Listed by exact WriterName, not just by op: NOTE_ACTION's OWN primary
 // writer changes identity across the version set too (NoteOperationSend's
-// IDAName IS the modern primary fname, so it is ALSO consumed — correctly —
-// on gms_v83/84/87/95/jms_v185; it is not a sibling being wrongly swallowed
-// there, and un-suppressing it flipped 5 cells that were not part of this
-// fix's scope during verification). Only NoteOperationDiscard is listed.
+// IDAName IS the modern primary fname on gms_v83/84/87/95/jms_v185, so it is
+// ALSO consumed there — it is not a sibling being wrongly swallowed on those
+// five versions, it is the op row's own writer).
+//
+// task-137 notesend-verify2: NoteOperationSend itself is now ALSO listed
+// here, per-cell-verified across all nine versions (byte-golden fixture +
+// pinned TIER1 evidence + audit report for every version, including a v79
+// report generated for the first time and a v48 report corrected to cite the
+// real send-site function, CCashShop::OnCashItemResLoadLockerDone — see
+// operation_send_test.go TestOperationSendByteOutputAllVersions and
+// docs/packets/evidence/*/note.serverbound.NoteOperationSend.yaml). Listing it
+// here lets the sub-struct pass grade it from its OWN evidence on
+// gms_v83/84/87/95/jms_v185 too (where it is consumed by the op row) instead
+// of gap-filling it — mirroring exactly what NoteOperationDiscard already got
+// for the v48/61/72/79 leg. A prior pass explicitly deferred adding this entry
+// ("un-suppressing it flipped 5 cells that were not part of this fix's
+// scope") specifically because those five cells had not yet been verified;
+// now that they have (this pass), the deferral no longer applies.
 //
 // This is deliberately an explicit allowlist, NOT a structural rule (e.g.
 // "any op with more than one distinct writer across versions", or "any op
@@ -76,6 +90,7 @@ func opKey(op string, dir opregistry.Direction) string {
 var legacyConsumedSiblingWriters = map[string]map[string]bool{
 	opKey("NOTE_ACTION", opregistry.DirServerbound): {
 		"NoteOperationDiscard": true,
+		"NoteOperationSend":    true,
 	},
 }
 

@@ -1,8 +1,8 @@
 {
   "WriterName": "NoteOperationSend",
   "IDAName": "CCashShop::OnCashItemResLoadGiftDone",
-  "Address": "0x47122e",
-  "Variant": "GMS/v72",
+  "Address": "0x47252c",
+  "Variant": "GMS/v79",
   "BranchDepth": 1,
   "AtlasFile": "libs/atlas-packet/note/serverbound/operation_send.go",
   "Rows": [
@@ -10,7 +10,7 @@
       "Index": 0,
       "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 1,
+      "IDAOp": 0,
       "IDAComment": "",
       "Verdict": 2,
       "Note": "width mismatch"
@@ -19,26 +19,26 @@
       "Index": 1,
       "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 5,
+      "IDAOp": 4,
       "IDAComment": "",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 2,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "mode byte (task-137 notesend-verify2, disasm-confirmed @0x47136b)",
-      "Verdict": 0,
-      "Note": ""
+      "IDAOp": 4,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "width mismatch"
     },
     {
       "Index": 3,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 4,
-      "IDAComment": "toName",
+      "IDAOp": 0,
+      "IDAComment": "",
       "Verdict": 2,
       "Note": "width mismatch"
     },
@@ -46,8 +46,8 @@
       "Index": 4,
       "AtlasOp": 3,
       "AtlasKind": 0,
-      "IDAOp": 4,
-      "IDAComment": "message",
+      "IDAOp": 2,
+      "IDAComment": "",
       "Verdict": 2,
       "Note": "width mismatch"
     },
@@ -55,26 +55,8 @@
       "Index": 5,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "giftFlag",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
-    },
-    {
-      "Index": 6,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
-      "IDAOp": 2,
-      "IDAComment": "giftIndex",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
-    },
-    {
-      "Index": 7,
-      "AtlasOp": 0,
-      "AtlasKind": 0,
       "IDAOp": 5,
-      "IDAComment": "giftSN (8 bytes)",
+      "IDAComment": "",
       "Verdict": 2,
       "Note": "atlas: short — missing trailing field"
     }

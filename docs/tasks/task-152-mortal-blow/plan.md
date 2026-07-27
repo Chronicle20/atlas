@@ -10,6 +10,211 @@
 
 **Worktree:** all paths are relative to the `task-152-mortal-blow` worktree root (`.worktrees/task-152-mortal-blow/`). Work on branch `task-152-mortal-blow` only.
 
+---
+
+## ⚠ Main-Merge Reconciliation (2026-07-27) — READ FIRST, AUTHORITATIVE
+
+`main` was merged into this branch (merge commit on `task-152-mortal-blow`; merge-base was `33aafe644`, ~176 commits behind). Main heavily rewrote every file this plan touches (`character_attack_common.go` +433, `monsters/monster/processor.go` +331, `effect/{model,rest}.go` +115/+92, `character_attack_projectile.go` +51). **All line numbers in the tasks below are stale — re-grep every anchor.** Where this section conflicts with a task's verbatim code block, **this section wins**; the superseded blocks are kept only as design context.
+
+Two commit-footer notes: the plan's "Co-Authored-By: Claude Fable 5" line reflects who wrote the plan — use the *executing* model's footer for actual commits (session policy pins execution/review to the cheaper model). Verification list additions are at the end of this section.
+
+### Legacy-version scope (the reason for this merge)
+
+Main added packet support for legacy client versions **v48 / v61 / v72 / v79** (all pre-Big-Bang). **This requires NO change to the Mortal Blow server design, and no per-version code.** Rationale, verified in-tree:
+
+- The attack packet writes `skillId` **ungated across all versions** (`libs/atlas-packet/model/attack_info.go:153` — `w.WriteInt(m.skillId)` sits above every version gate). The legacy work only gated the CRC head-block (`legacyGmsNoSkillDataCrc`/`legacyGmsSingleCrc`), the action-byte width (`legacyGmsByteAction`), and ranged bullet coords (`legacyGmsNoRangedBulletCoords`) — never the skill id. So `ai.SkillId()` is populated for a legacy ranged attack exactly as for v83.
+- Mortal Blow gates purely on `isMortalBlowAttack(ai.AttackType(), ai.SkillId())` + tenant skill data (`se.X()`/`se.Y()`). It is therefore **version-agnostic**: functional wherever a client sends 3110001/3210001, inert everywhere else (post-BB v95/JMS clients never send them — PRD §4.6).
+- **Contrast with task-150 (meso explosion):** that task needed per-version *packet encoding* for legacy, so legacy bring-up genuinely widened its code scope. Mortal Blow has **no packet** — it is a server-side kill roll keyed on an incoming id — so legacy bring-up widens only the *tenant set the feature can fire on*, automatically, with zero new code.
+- **Unverified (client-data question, not a server blocker):** whether the v48/v61/v72/v79 clients actually tag a Mortal Blow proc with skill id 3110001/3210001 is not IDA-verified here (only v83/v84 were, PRD §4). The design is inert-safe either way. This carries the same status as PRD §4.6's v87/v92 note and PRD §10 — surface it if a legacy tenant misbehaves; do **not** add version gates or hard-coded fallbacks to compensate.
+
+**Net effect on the plan:** no new tasks for legacy versions. The one addition is a doc note (below) so the next reader knows legacy tenants are in-scope-by-design.
+
+### Per-task corrections
+
+**Task 1 (`Y()` accessor) — NOW OBSOLETE.** Main already added `func (m Model) Y() int16 { return m.y }` at `data/skill/effect/model.go:167` (its doc comment references MP Recovery, not Mortal Blow — that is fine; the accessor is generic). **Do not re-add it.** Reduce Task 1 to: (a) confirm `Y()` exists and returns `m.y`; (b) if `data/skill/effect/model_test.go` does not exist, optionally add the `TestExtractThreadsXAndY` regression test from the old Task 1 (it still compiles against the current `RestModel{X,Y int16}` at `rest.go:41-42`); (c) no code commit needed for the accessor itself.
+
+**Task 4 (`onDamageApplied` wiring + tests) — SIGNATURE CHANGED; ADD, don't replace.** The closure now lives at `character_attack_common.go:659` and its type (in `damageInfoEntryDeps`, ~line 100/114) is:
+
+```go
+onDamageApplied func(di packetmodel.DamageInfo, totalDamage uint32)
+```
+
+Main already populates it with **MP Eater + drain (task-147) + Pick Pocket**. Do **not** replace the closure (old Task 4 Step 4 does) — **add** a Mortal Blow branch inside the existing closure body, using `di.MonsterId()` for the monster id:
+
+```go
+// Mortal Blow proc: per-monster, ranged attacks tagged with the
+// Ranger/Sniper Mortal Blow skill id only. Ownership was enforced
+// upstream (unowned skill ids destroy the session). Failures swallowed (FR-5).
+if isMortalBlowAttack(ai.AttackType(), ai.SkillId()) {
+	mortalBlowTryProc(l, mortalBlowDeps{
+		getMonster: mp.GetById,
+		emitKill:   mp.Kill,
+		roll:       func() int { return rand.Intn(100) + 1 },
+	}, se, di.MonsterId(), s.Field(), s.CharacterId(), ai.SkillId())
+}
+```
+
+Delete the `// TODO Mortal Blow` marker — now at `character_attack_common.go:772` (in the trailing TODO block at the end of `processAttack`); leave every other TODO line.
+
+Task 4 **test-helper deltas** (the old Step-1 test code is stale in two spots): in `mbEntryDeps`, the struct field is `loadEffectiveStats` (not `loadVenomStats`); and `onDamageApplied`/the helper param is `func(di packetmodel.DamageInfo, totalDamage uint32)` (not `func(uint32)`) — inside the tests, read the monster id via `di.MonsterId()`. The `processDamageInfoEntry(...)` call arg list (12 args) and the other `deps` field signatures (`getReflect`, `getMonster`, `applyDamage`, `applyStatus`) are unchanged and still match `character_attack_common.go:100-115,122-134`.
+
+**Task 6 (`Damage` → `checkReflect` + `damageCore`) — `checkReflect` ALREADY EXISTS; the plan's verbatim `damageCore` would REGRESS main.** Main already extracted `checkReflect` (called at `processor.go:557`, defined ~1532) and, since the plan was written, added (a) a **GM-hidden controller-switch guard** (`if _, isHidden := p.hiddenSet()[characterId]; isHidden { … } else { … }`, currently line ~647) and (b) switched the info fetch to `information.NewProcessor(p.l, p.ctx).GetById(...)` (line 562). Applying the old Task 6 code verbatim silently reverts both. **Use this split instead** — `Damage` (currently lines 541-681) becomes:
+
+```go
+func (p *ProcessorImpl) Damage(id uint32, characterId uint32, damages []uint32, attackType byte) {
+	if len(damages) == 0 {
+		return
+	}
+
+	m, err := GetMonsterRegistry().GetMonster(p.t, id)
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to get monster [%d].", id)
+		return
+	}
+	if !m.Alive() {
+		p.l.Debugf("Character [%d] trying to apply damage to an already dead monster [%d].", characterId, id)
+		return
+	}
+
+	// Reflect runs once per attack, not once per line.
+	p.checkReflect(m, characterId, attackType)
+
+	p.damageCore(m, characterId, damages)
+}
+
+// damageCore applies damage lines to an already-fetched, alive monster and runs
+// the full post-damage flow (damaged event, picker, kill handling, controller
+// switch, aggro). Callers own the preceding guards: Damage does alive + reflect;
+// Kill (Mortal Blow) does alive + fail-closed boss and never rolls reflect.
+func (p *ProcessorImpl) damageCore(m Model, characterId uint32, damages []uint32) {
+	// Fetch monster info for boss flag and revives
+	var isBoss bool
+	var revives []uint32
+	if ma, infoErr := information.NewProcessor(p.l, p.ctx).GetById(m.MonsterId()); infoErr == nil {
+		isBoss = ma.Boss()
+		revives = ma.Revives()
+	}
+
+	oldHpPercentage := m.HpPercentage()
+
+	var last DamageSummary
+	hasLast := false
+	killed := false
+	firstHitObserved := false
+	nowMs := time.Now().UnixMilli()
+	for _, d := range damages {
+		s, err := GetMonsterRegistry().ApplyDamage(p.t, characterId, d, m.UniqueId(), nowMs)
+		if err != nil {
+			p.l.WithError(err).Errorf("Error applying damage to monster %d from character %d.", m.UniqueId(), characterId)
+			break
+		}
+		last = s
+		hasLast = true
+		if s.WasFirstHit {
+			firstHitObserved = true
+		}
+		if s.Killed {
+			killed = true
+			break // discard overkill
+		}
+	}
+
+	if !hasLast {
+		return
+	}
+
+	// Always emit damaged so the channel writes the final HP-bar packet.
+	if err := p.emit(EnvEventTopicMonsterStatus, damagedStatusEventProvider(last.Monster, last.CharacterId, last.CharacterId, isBoss, DamageSourceCharacterAttack, last.Monster.DamageSummary())); err != nil {
+		p.l.WithError(err).Errorf("Monster [%d] damaged, but unable to display that for the characters in the field.", last.Monster.UniqueId())
+	}
+
+	if !killed && (firstHitObserved || last.Monster.HpPercentage() != oldHpPercentage) {
+		if err := p.RepickAndEmit(last.Monster.UniqueId(), RepickReasonDamaged); err != nil {
+			p.l.WithError(err).Warnf("Damage picker: monster [%d] re-pick failed.", last.Monster.UniqueId())
+		}
+	}
+
+	if killed {
+		// Substitution vs old Damage: the three cleanup calls use m.UniqueId()
+		// (same value as the old `id` param — m was fetched by id).
+		GetCooldownRegistry().ClearCooldowns(p.ctx, p.t, m.UniqueId())
+		GetAttackCooldownRegistry().ClearCooldowns(p.ctx, p.t, m.UniqueId())
+		GetDropTimerRegistry().Unregister(p.ctx, p.t, m.UniqueId())
+
+		for _, se := range last.Monster.StatusEffects() {
+			_ = p.emit(EnvEventTopicMonsterStatus, statusEffectCancelledEventProvider(last.Monster, se))
+		}
+
+		if err := p.emit(EnvEventTopicMonsterStatus, killedStatusEventProvider(last.Monster, last.CharacterId, isBoss, last.Monster.DamageSummary())); err != nil {
+			p.l.WithError(err).Errorf("Monster [%d] killed, but unable to display that for the characters in the field.", last.Monster.UniqueId())
+		}
+		if _, err := GetMonsterRegistry().RemoveMonster(p.ctx, p.t, last.Monster.UniqueId()); err != nil {
+			p.l.WithError(err).Errorf("Monster [%d] killed, but not removed from registry.", last.Monster.UniqueId())
+		}
+
+		if len(revives) > 0 {
+			p.spawnRevives(last.Monster, revives)
+		}
+		return
+	}
+
+	// Controller-switch + aggro emission. PRESERVE main's GM-hidden guard.
+	controllerSwitched := false
+	if characterId != last.Monster.ControlCharacterId() && last.Monster.DamageLeader() == characterId {
+		if _, isHidden := p.hiddenSet()[characterId]; isHidden {
+			p.l.Debugf("Skipping DPS-leader controller switch to GM-hidden character [%d] for monster [%d].", characterId, last.Monster.UniqueId())
+		} else {
+			inField, ferr := p.attackerInField(last.Monster.Field(), characterId)
+			if ferr != nil || !inField {
+				p.l.Debugf("FR-10: skipping controller switch for char [%d] not in field of monster [%d].", characterId, last.Monster.UniqueId())
+			} else {
+				p.l.Debugf("Character [%d] has become damage leader for monster [%d].", characterId, last.Monster.UniqueId())
+				if last.Monster.ControlCharacterId() != 0 {
+					if err := p.StopControl(last.Monster); err != nil {
+						p.l.WithError(err).Errorf("Unable to stop [%d] from controlling monster [%d].", last.Monster.ControlCharacterId(), last.Monster.UniqueId())
+					}
+				}
+				if _, err := p.StartControl(last.Monster.UniqueId(), characterId); err != nil {
+					p.l.WithError(err).Errorf("Unable to start [%d] controlling monster [%d].", characterId, last.Monster.UniqueId())
+				} else {
+					controllerSwitched = true
+				}
+			}
+		}
+	}
+
+	if firstHitObserved && !controllerSwitched {
+		latest, err := GetMonsterRegistry().GetMonster(p.t, last.Monster.UniqueId())
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to re-load monster [%d] for AGGRO_CHANGED emit.", last.Monster.UniqueId())
+		} else {
+			_ = p.emit(EnvEventTopicMonsterStatus, aggroChangedStatusEventProvider(latest, latest.ControlCharacterId(), latest.ControllerHasAggro()))
+			p.l.Debugf("Monster [%d] aggro changed for controller [%d].", latest.UniqueId(), latest.ControlCharacterId())
+		}
+	}
+}
+```
+
+The `damageCore` body is the moved tail of the current `Damage` verbatim (info fetch through aggro emit), with the single `id`→`m.UniqueId()` substitution in the kill-path cleanup calls noted above. Task 6's acceptance gate is unchanged: the existing `processor_test.go` suite (DAMAGED/KILLED order, controller switch, GM-hidden skip, aggro) stays green.
+
+**Task 7 (`Kill`) — use the non-curried info lookup.** Every "`information.GetById(p.l)(p.ctx)(m.MonsterId())`" in the old Task 7 body must become **`information.NewProcessor(p.l, p.ctx).GetById(m.MonsterId())`** (matching what `damageCore` now uses at `processor.go:562`). The `testInformationLookup` seam (`drain_mp_test.go` uses it) and `newRecordingProcessorWithBodies` (`processor_test.go:236`) are present and unchanged. Insert `Kill` on the interface after `DrainMp` (interface line ~65) and the method after `DrainMp`'s impl (~line 1634). `Registry.ApplyDamage` clamps at `registry.go:424-436` (Decision 5's `MaxUint32` still valid).
+
+**Tasks 2, 3, 5, 8 — structurally intact, line numbers stale only.** Task 2 helpers still valid (insert anywhere among the attack-common helpers; note the shared `shouldProc(prop, roll)` helper already exists at ~line 216 — Mortal Blow's helpers are independent of it). Task 3/8 Kafka `DRAIN_MP` siblings are present (channel `producer.go:152`, `kafka.go:19`; monsters `consumer.go:162`, `kafka.go:24,99`) — mirror them for `KILL`. Task 5's stale `task-007` comment still lists Mortal Blow at `character_attack_projectile.go:119` — the fix is unchanged.
+
+### Verification-list additions (merged CLAUDE.md)
+
+Beyond the old Task 9 list, the merged CLAUDE.md adds guards that now gate "done." Run from the worktree root, in addition to `go test -race`/`go vet`/`go build` per module + `docker buildx bake atlas-channel atlas-monsters` + `tools/redis-key-guard.sh`:
+
+- `tools/goroutine-guard.sh` — no bare `go` statements (this task adds none; the `rand.Intn` roll and Kafka emits use existing infra).
+- `tools/lint.sh --check` — gofumpt/goimports + linters across changed modules. Run `tools/lint.sh` (fix mode) before committing.
+- `tools/service-registration-guard.sh` and `tools/template-opcode-order-guard.sh` are **not** triggered (no services.json/deploy/k8s/docker-bake or template changes in this task).
+
+### Legacy scope doc note (small addition to the deliverable)
+
+When touching the `mortalBlowTryProc` doc comment (Task 4) or `context.md`, add one sentence: Mortal Blow is version-agnostic and applies to any tenant whose client sends skill id 3110001/3210001, including the pre-BB legacy versions v48/v61/v72/v79 brought up on main; it is inert on v95/JMS (post-BB redesign) and on any version whose client never sends the id. No per-version code exists or is needed.
+
+---
+
 ## Global Constraints
 
 - Skill ids come from `libs/atlas-constants/skill` (DOM-21): `skill3.RangerMortalBlowId` (3110001), `skill3.SniperMortalBlowId` (3210001) — never numeric literals in service code.
@@ -24,6 +229,8 @@
 ---
 
 ### Task 1: `Y()` accessor on the channel skill-effect model (FR-7)
+
+> **⚠ SUPERSEDED by Main-Merge Reconciliation — `Y()` already exists (`model.go:167`). This task is now verify-only (optionally add the regression test). Do NOT re-add the accessor.**
 
 The REST model already deserializes `y` (`rest.go:42`) and `Extract` already threads it into `Model.y` (`rest.go:115`); only the accessor is missing.
 
@@ -409,6 +616,8 @@ git commit -m "feat(task-152): channel-side KILL monster command (type, provider
 ---
 
 ### Task 4: `mortalBlowTryProc` and the `onDamageApplied` wiring (FR-1..FR-5, Decisions 3/5)
+
+> **⚠ SUPERSEDED IN PART by Main-Merge Reconciliation — the `onDamageApplied` closure signature is now `func(di packetmodel.DamageInfo, totalDamage uint32)` (use `di.MonsterId()`), Mortal Blow is ADDED alongside the existing MP Eater/drain/Pick Pocket branches (not a closure replace), and the test helper uses `loadEffectiveStats`. `mortalBlowDeps`/`mortalBlowTryProc` themselves are unchanged. See the reconciliation for the corrected wiring + test deltas.**
 
 The proc orchestrator plus its hook into the existing per-monster post-damage callback. It takes a small deps struct (mirroring `damageInfoEntryDeps` in the same file) so tests can drive every branch — snapshot miss, threshold, roll, emit failure — without a real `monster.Processor` or Kafka; this is how the design's §5 failure-isolation tests are realizable, and it refines Decision 5's `mp *monster.Processor` parameter into the file's established seam pattern (production behavior identical).
 
@@ -848,6 +1057,8 @@ git commit -m "docs(task-152): Mortal Blow consumes an arrow — fix stale task-
 
 ### Task 6: Split `Damage` into `checkReflect` + `damageCore` (Decision 6 refactor)
 
+> **⚠ SUPERSEDED by Main-Merge Reconciliation — `checkReflect` ALREADY EXISTS on main; the verbatim `damageCore` below would REVERT main's GM-hidden controller-switch guard and its `information.NewProcessor(...).GetById` call. Use the corrected split in the reconciliation, NOT the block below.**
+
 Behavior-preserving refactor in atlas-monsters: everything from the info-fetch down moves into an unexported `damageCore(m, characterId, damages)`. `Damage` keeps its exact behavior (registry fetch → alive check → `checkReflect` → `damageCore`). This gives Task 7's `Kill` a delivery path that never rolls reflect. No new tests — the existing `processor_test.go` damage suite (DAMAGED/KILLED ordering, controller switch, aggro) must stay green, which is this task's acceptance gate.
 
 **Files:**
@@ -1036,6 +1247,8 @@ git commit -m "refactor(task-152): split Damage into checkReflect + damageCore (
 ---
 
 ### Task 7: `Kill` on the atlas-monsters processor (FR-4, Decision 6)
+
+> **⚠ SUPERSEDED IN PART by Main-Merge Reconciliation — replace every `information.GetById(p.l)(p.ctx)(...)` in the body below with `information.NewProcessor(p.l, p.ctx).GetById(...)`. Everything else (fail-closed boss guard, `math.MaxUint32` line, `testInformationLookup` seam) is unchanged.**
 
 The authoritative half: re-check alive, re-check boss FAIL-CLOSED via the existing `testInformationLookup` seam, then deliver a single `math.MaxUint32` line through `damageCore`. `Registry.ApplyDamage` clamps the recorded entry to the HP actually removed (verified `registry.go:427-483`), so EXP/drop credit stays honest — this resolves Decision 6's verify-then-pick in favor of `MaxUint32`.
 

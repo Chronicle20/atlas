@@ -2,6 +2,8 @@
 
 Companion to `plan.md`. Everything an implementer (or reviewer) needs that isn't a plan step.
 
+> **Post-merge (2026-07-27):** `main` (incl. legacy versions v48/v61/v72/v79) was merged in. See **plan.md → "Main-Merge Reconciliation"** for authoritative corrections — the short version: (1) `effect.Model.Y()` already exists (`model.go:167`), Task 1 is verify-only; (2) `onDamageApplied` is now `func(di, totalDamage)` and drain/Pick-Pocket are already siblings — Mortal Blow is *added*, not a closure replace; (3) `checkReflect` already exists in atlas-monsters and the plan's `damageCore` block must be regenerated to preserve main's GM-hidden guard + `information.NewProcessor(...).GetById` (now at `registry.go:424-436` for the ApplyDamage clamp, `processor.go:541-681` for `Damage`); (4) Mortal Blow is **version-agnostic** — the skill id is written ungated for all versions (`attack_info.go:153`), so the legacy bring-up needs zero design change (inert-safe where clients don't send the id; legacy client triggers unverified — a client-data question, not a server blocker).
+
 ## What this is
 
 Server half of pre-Big-Bang Mortal Blow (Ranger 3110001 / Sniper 3210001): a ranged attack arriving with one of those skill ids rolls, per damaged non-boss monster, an instant kill — monster HP ≤ `maxHP·x/100` (pre-attack snapshot), then roll 1–100 ≤ `y`. `x`/`y` come from the tenant skill effect at the character's owned level. The kill is delivered through atlas-monsters' standard damage path so EXP/drops credit normally. The client half (point-blank detection, `prop` success roll, damage%) is entirely client-owned and IDA-verified — see PRD §4.

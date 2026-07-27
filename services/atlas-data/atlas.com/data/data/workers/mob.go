@@ -1,17 +1,18 @@
 package workers
 
 import (
+	"atlas-data/monster"
 	"context"
 	"fmt"
 	"path/filepath"
 
-	"github.com/Chronicle20/atlas/libs/atlas-wz/icons"
-	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
+	"github.com/Chronicle20/atlas/libs/atlas-wz/icons"
+	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
+
 	minio "atlas-data/storage/minio"
-	"atlas-data/monster"
 )
 
 type Mob struct{}
@@ -49,7 +50,7 @@ func (Mob) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *minio
 	}
 
 	// Register every mob image.
-	if err := registerAllInDirectory(l, ctx, filepath.Join(root, "Mob.wz"), monster.RegisterMonster(db)); err != nil {
+	if err := registerAllInDirectory(l, ctx, filepath.Join(root, "Mob.wz"), monster.NewProcessor(l, ctx, db).RegisterMonster); err != nil {
 		return err
 	}
 

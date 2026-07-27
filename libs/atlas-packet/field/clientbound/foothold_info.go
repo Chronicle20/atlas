@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const FootholdInfoWriter = "FootholdInfo"
@@ -44,12 +45,12 @@ func NewFootholdEntry(name string, mode uint32, ids []uint32, moveInts []uint32,
 	}
 }
 
-func (e FootholdEntry) Name() string              { return e.name }
-func (e FootholdEntry) Mode() uint32              { return e.mode }
-func (e FootholdEntry) Ids() []uint32             { return e.ids }
-func (e FootholdEntry) MoveInts() []uint32        { return e.moveInts }
-func (e FootholdEntry) ReverseVertical() byte     { return e.reverseVertical }
-func (e FootholdEntry) ReverseHorizontal() byte   { return e.reverseHorizontal }
+func (e FootholdEntry) Name() string            { return e.name }
+func (e FootholdEntry) Mode() uint32            { return e.mode }
+func (e FootholdEntry) Ids() []uint32           { return e.ids }
+func (e FootholdEntry) MoveInts() []uint32      { return e.moveInts }
+func (e FootholdEntry) ReverseVertical() byte   { return e.reverseVertical }
+func (e FootholdEntry) ReverseHorizontal() byte { return e.reverseHorizontal }
 
 // FootholdInfo models the FOOTHOLD_INFO clientbound packet (CField::OnFootHoldInfo).
 //

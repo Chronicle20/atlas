@@ -7,12 +7,13 @@ import (
 	"atlas-world/test"
 	"testing"
 
-	channel2 "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
+
+	channel2 "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 )
 
 func setupTest(t *testing.T) (logrus.FieldLogger, *logtest.Hook, func()) {

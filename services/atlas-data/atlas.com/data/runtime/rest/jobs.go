@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	goredis "github.com/redis/go-redis/v9"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -16,6 +15,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	clientrest "k8s.io/client-go/rest"
 	"sigs.k8s.io/yaml"
+
+	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
 )
 
 // labelIngest marks Jobs that this service manages and that RecoverActiveJobs
@@ -66,7 +67,7 @@ func ingestJobKeySuffixFromLabels(j *batchv1.Job) string {
 // publish a heartbeat key per (scope, region, version) so the Watchdog can
 // notice stuck Jobs.
 type JobCreator struct {
-	K8s      kubernetes.Interface
+	K8s       kubernetes.Interface
 	Namespace string
 	Template  *batchv1.JobTemplateSpec
 	// Registry is the env-prefixed store for ingest job heartbeat keys.

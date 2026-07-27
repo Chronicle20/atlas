@@ -9,8 +9,8 @@ import (
 	"atlas-query-aggregator/guild"
 	"atlas-query-aggregator/inventory"
 	"atlas-query-aggregator/marriage"
-	"atlas-query-aggregator/party"
 	marriageMock "atlas-query-aggregator/marriage/mock"
+	"atlas-query-aggregator/party"
 	"atlas-query-aggregator/pet"
 	"atlas-query-aggregator/quest"
 	questMock "atlas-query-aggregator/quest/mock"
@@ -20,10 +20,11 @@ import (
 	"testing"
 	"time"
 
-	inventory_type "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	inventory_type "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // TestValidateConditions tests the condition validation logic directly

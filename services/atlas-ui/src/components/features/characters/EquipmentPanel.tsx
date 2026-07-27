@@ -69,7 +69,10 @@ export function EquipmentPanel({ equipped, tenant }: Props) {
           {SLOT_LAYOUT.map((entry) => {
             const asset = bySlot.get(entry.slotId);
             return (
-              <div key={entry.slotId} style={{ gridRow: entry.row, gridColumn: entry.col }}>
+              <div
+                key={entry.slotId}
+                style={{ gridRow: entry.row, gridColumn: entry.col }}
+              >
                 <EquipmentCell
                   slotId={entry.slotId}
                   slotName={entry.name}

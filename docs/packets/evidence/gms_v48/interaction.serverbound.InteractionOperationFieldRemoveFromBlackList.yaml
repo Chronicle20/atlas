@@ -1,0 +1,10 @@
+packet: interaction/serverbound/InteractionOperationFieldRemoveFromBlackList
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_4CBD88
+    address: "0x4cbd88"
+    decompile_sha256: 1f15864d0e5b78674c42d280452bc5fcfc67179843e736882a3df8732eade149
+verifies:
+    - libs/atlas-packet/interaction/serverbound/v48_test.go#TestOperationFieldRemoveFromBlackListV48Bytes

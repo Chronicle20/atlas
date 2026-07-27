@@ -1,0 +1,194 @@
+name: GHCR Cleanup
+
+# Scheduled retention sweep for the per-service ghcr container packages.
+#
+# Two classes of garbage accumulate on ghcr that nothing else reclaims:
+#
+#   1. main-<sha> generations. main-publish.yml pushes, per service per
+#      build, two arch child manifests (main-<sha>-amd64/-arm64, which also
+#      carry the moving latest-amd64/-arm64 tags) and two manifest-list
+#      indexes (latest, main-<sha>). The main-<sha>* tags are immutable, so
+#      every merge leaves a permanent generation behind. We keep the N most
+#      recent SHAs per service and delete older ones as a UNIT (index + both
+#      arch children) so no manifest list is left dangling.
+#
+#   2. Untagged manifests. When the latest tag moves to a new build, the
+#      previous latest index loses its only tag and becomes untagged. Arch
+#      children always keep an arch-specific tag, so no tagged index ever
+#      references an untagged child — deleting untagged is safe here.
+#
+#   3. Orphaned pr-<N>-* tags. pr-cleanup.yml deletes these on PR close, and
+#      Argo CD's PostDelete Job is a second path. This age-based sweep is the
+#      safety net for the cases both miss: a failed close-hook, an abandoned
+#      PR, or a workflow that never ran. PR images are single-arch with no
+#      manifest list, so age-based deletion needs no grouping.
+#
+# Anything not matching main-<sha>* / pr-<N>-* / untagged is left untouched
+# (safe default), and any version still carrying a latest* tag is never
+# deleted regardless of the rules above.
+#
+# ROLLBACK CAVEAT: retention keeps the N most recent main SHAs PER SERVICE.
+# If the main overlay is ever pinned to a main-<sha> older than N builds
+# (a deep rollback), that image could be swept. N defaults high (15) to give
+# comfortable headroom over the currently-deployed generation; bump keep-main
+# before a deep rollback if in doubt.
+
+on:
+  schedule:
+    # Nightly at 03:00 UTC — after the day's merges have settled.
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: 'List what would be deleted without deleting (default true for manual runs)'
+        required: false
+        type: boolean
+        default: true
+      keep-main:
+        description: 'Number of most-recent main-<sha> generations to keep per service'
+        required: false
+        type: string
+        default: '15'
+      pr-max-age-days:
+        description: 'Delete orphaned pr-<N>-* versions older than this many days'
+        required: false
+        type: string
+        default: '7'
+      untagged-grace-days:
+        description: 'Only delete untagged versions older than this many days'
+        required: false
+        type: string
+        default: '1'
+
+concurrency:
+  group: ghcr-cleanup
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    name: Prune stale ghcr container versions
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    env:
+      # Scheduled runs always delete for real; only manual runs honor the
+      # dry-run toggle (which defaults to true so an ad-hoc run is safe).
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run || false }}
+      KEEP_MAIN: ${{ inputs.keep-main || '15' }}
+      PR_MAX_AGE_DAYS: ${{ inputs.pr-max-age-days || '7' }}
+      UNTAGGED_GRACE_DAYS: ${{ inputs.untagged-grace-days || '1' }}
+    steps:
+      - name: Checkout (for services.json)
+        uses: actions/checkout@v4
+
+      - name: Compute service list
+        id: svc
+        run: |
+          # Same selection as pr-cleanup.yml: real docker images, excluding
+          # shared support-images (databases etc. — infrequently rebuilt).
+          jq -c '[.services[] | select(.docker_image) | select(.type != "support-image") | .name]' \
+            < .github/config/services.json > /tmp/svcs.json
+          echo "Services in scope: $(jq -r 'join(", ")' /tmp/svcs.json)"
+
+      - name: Write selection filter
+        run: |
+          cat > "${RUNNER_TEMP}/filter.jq" <<'JQ'
+          # Args: $keep (int), $prcut (epoch), $untcut (epoch).
+          # Input: the raw ghcr /versions array for one package.
+          # Output: TSV lines "<id>\t<reason>\t<tags>" for versions to delete.
+          def isLatestTag($t): ($t == "latest" or $t == "latest-amd64" or $t == "latest-arm64");
+          [ .[]
+            | { id: .id,
+                created: (.created_at | fromdateiso8601),
+                tags: (.metadata.container.tags // []) }
+            | . + { mainshas: [ .tags[] | (capture("^main-(?<s>[0-9a-fA-F]{7,40})(-(amd64|arm64))?$").s)? ],
+                    isLatest: ([ .tags[] | select(isLatestTag(.)) ] | length > 0),
+                    isPr:      ([ .tags[] | select(startswith("pr-")) ] | length > 0),
+                    isUntagged: (.tags | length == 0) }
+            | . + { sha: (.mainshas | first), isMain: (.mainshas | length > 0) }
+          ] as $v
+          | ( [ $v[] | select(.isMain) ]
+              | group_by(.sha)
+              | map({ sha: .[0].sha, created: (map(.created) | max) })
+              | sort_by(.created) | reverse
+              | .[0:$keep] | map(.sha)
+            ) as $keepShas
+          | $v[]
+          | select(.isLatest | not)
+          | if (.isMain and ((.sha) as $s | ($keepShas | index($s)) == null))
+              then "\(.id)\tmain-old\t\(.tags | join(","))"
+            elif (.isUntagged and (.created < $untcut))
+              then "\(.id)\tuntagged\t"
+            elif (.isPr and (.created < $prcut))
+              then "\(.id)\tpr-old\t\(.tags | join(","))"
+            else empty end
+          JQ
+
+      - name: Prune versions
+        env:
+          GH_TOKEN: ${{ secrets.GHCR_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          NOW=$(date -u +%s)
+          PR_CUT=$(( NOW - PR_MAX_AGE_DAYS * 86400 ))
+          UNT_CUT=$(( NOW - UNTAGGED_GRACE_DAYS * 86400 ))
+          OWNER=chronicle20
+
+          echo "dry-run=${DRY_RUN} keep-main=${KEEP_MAIN} pr-max-age-days=${PR_MAX_AGE_DAYS} untagged-grace-days=${UNTAGGED_GRACE_DAYS}"
+
+          total_main=0 total_untagged=0 total_pr=0 total_svc=0
+
+          for svc in $(jq -r '.[]' /tmp/svcs.json); do
+            total_svc=$(( total_svc + 1 ))
+            PKG="${svc}%2F${svc}"
+
+            # List separately from deletion so a 404 (package never published)
+            # cleanly skips the service under `set -euo pipefail`, matching
+            # pr-cleanup.yml's behavior.
+            if ! gh api "/users/${OWNER}/packages/container/${PKG}/versions" --paginate \
+                 > "${RUNNER_TEMP}/versions.json" 2>/dev/null; then
+              echo "  skip: package ${svc} not present on ghcr"
+              continue
+            fi
+
+            jq -r --argjson keep "${KEEP_MAIN}" \
+                  --argjson prcut "${PR_CUT}" \
+                  --argjson untcut "${UNT_CUT}" \
+                  -f "${RUNNER_TEMP}/filter.jq" \
+                  "${RUNNER_TEMP}/versions.json" > "${RUNNER_TEMP}/todelete.tsv" || true
+
+            [ -s "${RUNNER_TEMP}/todelete.tsv" ] || continue
+            echo "== ${svc}: $(wc -l < "${RUNNER_TEMP}/todelete.tsv") version(s) to prune"
+
+            while IFS=$'\t' read -r vid reason tags; do
+              [ -n "${vid}" ] || continue
+              case "${reason}" in
+                main-old)  total_main=$(( total_main + 1 )) ;;
+                untagged)  total_untagged=$(( total_untagged + 1 )) ;;
+                pr-old)    total_pr=$(( total_pr + 1 )) ;;
+              esac
+              if [ "${DRY_RUN}" = "true" ]; then
+                echo "  DRY-RUN would delete ${svc} v${vid} [${reason}] ${tags}"
+              else
+                echo "  deleting ${svc} v${vid} [${reason}] ${tags}"
+                gh api --method DELETE \
+                  "/users/${OWNER}/packages/container/${PKG}/versions/${vid}" \
+                  || echo "    skip: ${svc}/${vid} (delete failed)"
+              fi
+            done < "${RUNNER_TEMP}/todelete.tsv"
+          done
+
+          {
+            echo "### GHCR Cleanup Summary"
+            echo ""
+            echo "- **Mode**: $([ "${DRY_RUN}" = "true" ] && echo 'dry-run (nothing deleted)' || echo 'live')"
+            echo "- **Services scanned**: ${total_svc}"
+            echo "- **Retention**: keep ${KEEP_MAIN} main SHAs/service, PR tags > ${PR_MAX_AGE_DAYS}d, untagged > ${UNTAGGED_GRACE_DAYS}d"
+            echo ""
+            echo "| Class | Versions |"
+            echo "|-------|----------|"
+            echo "| main-old  | ${total_main} |"
+            echo "| untagged  | ${total_untagged} |"
+            echo "| pr-old    | ${total_pr} |"
+          } >> "${GITHUB_STEP_SUMMARY}"

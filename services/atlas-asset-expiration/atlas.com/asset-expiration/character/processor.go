@@ -6,48 +6,63 @@ import (
 	"atlas-asset-expiration/expiration"
 	"atlas-asset-expiration/inventory"
 	"atlas-asset-expiration/kafka/message/asset"
-	"atlas-asset-expiration/kafka/producer"
 	"atlas-asset-expiration/storage"
 	"context"
 	"strconv"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
+type Processor interface {
+	CheckAndExpire(pp producer.Provider) func(characterId, accountId uint32, worldId world.Id)
+}
+
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	return &ProcessorImpl{
+		l:   l,
+		ctx: ctx,
+	}
+}
+
+var _ Processor = (*ProcessorImpl)(nil)
+
 // CheckAndExpire checks all items for a character and emits expire commands for expired items
-func CheckAndExpire(l logrus.FieldLogger) func(pp producer.Provider) func(ctx context.Context) func(characterId, accountId uint32, worldId world.Id) {
-	return func(pp producer.Provider) func(ctx context.Context) func(characterId, accountId uint32, worldId world.Id) {
-		return func(ctx context.Context) func(characterId, accountId uint32, worldId world.Id) {
-			return func(characterId, accountId uint32, worldId world.Id) {
-				now := time.Now()
-				l.Infof("Checking expiration for character [%d], account [%d], world [%d].", characterId, accountId, worldId)
+func (p *ProcessorImpl) CheckAndExpire(pp producer.Provider) func(characterId, accountId uint32, worldId world.Id) {
+	return func(characterId, accountId uint32, worldId world.Id) {
+		now := time.Now()
+		p.l.Infof("Checking expiration for character [%d], account [%d], world [%d].", characterId, accountId, worldId)
 
-				// Check inventory items
-				checkInventory(l, pp, ctx, characterId, now)
+		// Check inventory items
+		checkInventory(p.l, pp, p.ctx, characterId, now)
 
-				// Check storage items
-				checkStorage(l, pp, ctx, accountId, worldId, now)
+		// Check storage items
+		checkStorage(p.l, pp, p.ctx, accountId, worldId, now)
 
-				// Check cashshop items
-				checkCashshop(l, pp, ctx, accountId, now)
-			}
-		}
+		// Check cashshop items
+		checkCashshop(p.l, pp, p.ctx, accountId, now)
 	}
 }
 
 func checkInventory(l logrus.FieldLogger, pp producer.Provider, ctx context.Context, characterId uint32, now time.Time) {
-	inv, err := inventory.GetInventory(l)(ctx)(characterId)
+	inv, err := inventory.NewProcessor(l, ctx).GetInventory(characterId)
 	if err != nil {
 		l.WithError(err).Warnf("Failed to get inventory for character [%d].", characterId)
 		return
 	}
 
 	for _, comp := range inv.Compartments {
-		assets, err := inventory.GetAssets(l)(ctx)(characterId, comp.Id)
+		assets, err := inventory.NewProcessor(l, ctx).GetAssets(characterId, comp.Id)
 		if err != nil {
 			l.WithError(err).Warnf("Failed to get assets for compartment [%s].", comp.Id)
 			continue
@@ -58,7 +73,7 @@ func checkInventory(l logrus.FieldLogger, pp producer.Provider, ctx context.Cont
 				l.Infof("Asset [%s] (template [%d]) is expired for character [%d].", a.Id, a.TemplateId, characterId)
 
 				// Get replacement info
-				replaceInfo := data.GetReplaceInfo(l)(ctx)(a.TemplateId)
+				replaceInfo := data.NewProcessor(l, ctx).GetReplaceInfo(a.TemplateId)
 
 				// Parse asset ID
 				assetId, _ := strconv.ParseUint(a.Id, 10, 32)
@@ -71,7 +86,7 @@ func checkInventory(l logrus.FieldLogger, pp producer.Provider, ctx context.Cont
 }
 
 func checkStorage(l logrus.FieldLogger, pp producer.Provider, ctx context.Context, accountId uint32, worldId world.Id, now time.Time) {
-	assets, err := storage.GetAssets(l)(ctx)(accountId, worldId)
+	assets, err := storage.NewProcessor(l, ctx).GetAssets(accountId, worldId)
 	if err != nil {
 		l.WithError(err).Warnf("Failed to get storage assets for account [%d], world [%d].", accountId, worldId)
 		return
@@ -82,7 +97,7 @@ func checkStorage(l logrus.FieldLogger, pp producer.Provider, ctx context.Contex
 			l.Infof("Storage asset [%s] (template [%d]) is expired for account [%d].", a.Id, a.TemplateId, accountId)
 
 			// Get replacement info
-			replaceInfo := data.GetReplaceInfo(l)(ctx)(a.TemplateId)
+			replaceInfo := data.NewProcessor(l, ctx).GetReplaceInfo(a.TemplateId)
 
 			// Emit expire command to storage topic
 			emitStorageExpireCommand(l, pp, accountId, worldId, a.GetAssetId(), a.TemplateId, a.Slot, replaceInfo.ReplaceItemId, replaceInfo.ReplaceMessage)
@@ -91,7 +106,7 @@ func checkStorage(l logrus.FieldLogger, pp producer.Provider, ctx context.Contex
 }
 
 func checkCashshop(l logrus.FieldLogger, pp producer.Provider, ctx context.Context, accountId uint32, now time.Time) {
-	items, err := cashshop.GetAllItems(l)(ctx)(accountId)
+	items, err := cashshop.NewProcessor(l, ctx).GetAllItems(accountId)
 	if err != nil {
 		l.WithError(err).Warnf("Failed to get cashshop items for account [%d].", accountId)
 		return
@@ -102,7 +117,7 @@ func checkCashshop(l logrus.FieldLogger, pp producer.Provider, ctx context.Conte
 			l.Infof("Cashshop item [%s] (template [%d]) is expired for account [%d].", item.Id, item.TemplateId, accountId)
 
 			// Get replacement info
-			replaceInfo := data.GetReplaceInfo(l)(ctx)(item.TemplateId)
+			replaceInfo := data.NewProcessor(l, ctx).GetReplaceInfo(item.TemplateId)
 
 			// Emit expire command to cashshop topic
 			emitCashShopExpireCommand(l, pp, accountId, item.GetItemId(), item.TemplateId, replaceInfo.ReplaceItemId, replaceInfo.ReplaceMessage)
@@ -126,7 +141,7 @@ func emitStorageExpireCommand(l logrus.FieldLogger, pp producer.Provider, accoun
 			ReplaceMessage: replaceMessage,
 		},
 	}
-	err := pp(asset.EnvCommandTopicStorage)(kafkaProducer.SingleMessageProvider(kafkaProducer.CreateKey(int(assetId)), cmd))
+	err := pp(asset.EnvCommandTopicStorage)(producer.SingleMessageProvider(producer.CreateKey(int(assetId)), cmd))
 	if err != nil {
 		l.WithError(err).Errorf("Failed to emit storage expire command for asset [%d] (template [%d]).", assetId, templateId)
 	} else {
@@ -149,7 +164,7 @@ func emitCashShopExpireCommand(l logrus.FieldLogger, pp producer.Provider, accou
 			ReplaceMessage: replaceMessage,
 		},
 	}
-	err := pp(asset.EnvCommandTopicCashShop)(kafkaProducer.SingleMessageProvider(kafkaProducer.CreateKey(int(assetId)), cmd))
+	err := pp(asset.EnvCommandTopicCashShop)(producer.SingleMessageProvider(producer.CreateKey(int(assetId)), cmd))
 	if err != nil {
 		l.WithError(err).Errorf("Failed to emit cashshop expire command for asset [%d] (template [%d]).", assetId, templateId)
 	} else {
@@ -171,7 +186,7 @@ func emitCompartmentExpireCommand(l logrus.FieldLogger, pp producer.Provider, ch
 			ReplaceMessage: replaceMessage,
 		},
 	}
-	err := pp(asset.EnvCommandTopicCompartment)(kafkaProducer.SingleMessageProvider(kafkaProducer.CreateKey(int(assetId)), cmd))
+	err := pp(asset.EnvCommandTopicCompartment)(producer.SingleMessageProvider(producer.CreateKey(int(assetId)), cmd))
 	if err != nil {
 		l.WithError(err).Errorf("Failed to emit compartment expire command for asset [%d] (template [%d]).", assetId, templateId)
 	} else {

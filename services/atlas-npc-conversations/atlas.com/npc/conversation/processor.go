@@ -11,11 +11,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Processor interface {
@@ -55,6 +56,23 @@ func SetNpcConversationProviderFactory(factory NewProcessorFactory) {
 	npcConversationProviderFactory = factory
 }
 
+// SagaProcessorFactory is the factory function type for creating a saga.Processor.
+type SagaProcessorFactory func(l logrus.FieldLogger, ctx context.Context) saga.Processor
+
+// sagaProcessorFactory defaults to saga.NewProcessor; tests may override via
+// SetSagaProcessorFactory to substitute a mock saga.Processor.
+var sagaProcessorFactory SagaProcessorFactory = saga.NewProcessor
+
+// SetSagaProcessorFactory overrides the saga processor factory (for tests).
+// Passing nil restores the default (saga.NewProcessor).
+func SetSagaProcessorFactory(factory SagaProcessorFactory) {
+	if factory == nil {
+		sagaProcessorFactory = saga.NewProcessor
+		return
+	}
+	sagaProcessorFactory = factory
+}
+
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
 	t := tenant.MustFromContext(ctx)
 	evaluator := NewEvaluator(l, ctx, t)
@@ -75,6 +93,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		npcConversationProvider: npcProvider,
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) Start(field field.Model, npcId uint32, characterId uint32, accountId uint32) error {
 	p.l.Debugf("Starting conversation with NPC [%d] with character [%d] in map [%d].", npcId, characterId, field.MapId())
@@ -480,6 +500,9 @@ func (p *ProcessorImpl) processState(ctx ConversationContext, state StateModel) 
 	case GachaponActionType:
 		// Process gachapon action state
 		return p.processGachaponActionState(ctx, state)
+	case RPSActionType:
+		// Process RPS action state
+		return p.processRPSActionState(ctx, state)
 	case ListSelectionType:
 		// Process list selection state
 		return p.processListSelectionState(ctx, state)
@@ -992,6 +1015,71 @@ func (p *ProcessorImpl) processGachaponActionState(ctx ConversationContext, stat
 	return state.Id(), nil
 }
 
+// processRPSActionState processes an RPS (Rock Paper Scissors) action state
+// Creates the entry saga: deduct the entry cost, then open the RPS game session
+func (p *ProcessorImpl) processRPSActionState(ctx ConversationContext, state StateModel) (string, error) {
+	rpsAction := state.RPSAction()
+	if rpsAction == nil {
+		return "", errors.New("rpsAction is nil")
+	}
+
+	p.l.WithFields(logrus.Fields{
+		"npc_id":          rpsAction.NpcId(),
+		"entry_cost_meso": rpsAction.EntryCostMeso(),
+		"character_id":    ctx.CharacterId(),
+	}).Debug("Processing RPS action state")
+
+	sagaId := uuid.New()
+
+	sagaBuilder := saga.NewBuilder().
+		SetTransactionId(sagaId).
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy(fmt.Sprintf("NPC_%d_rps", ctx.NpcId()))
+
+	// Step 1: Deduct the entry cost. A NOT_ENOUGH_MESO failure of this step
+	// routes the conversation to rpsAction.FailureState() via the saga-failed consumer.
+	mesoPayload := saga.AwardMesosPayload{
+		CharacterId: ctx.CharacterId(),
+		WorldId:     ctx.Field().WorldId(),
+		ChannelId:   ctx.Field().ChannelId(),
+		ActorId:     ctx.NpcId(),
+		ActorType:   "NPC",
+		Amount:      -int32(rpsAction.EntryCostMeso()),
+		ShowEffect:  true, // surface the participation fee to the player
+	}
+	sagaBuilder.AddStep("deduct_entry_cost", saga.Pending, saga.AwardMesos, mesoPayload)
+
+	// Step 2: Open the RPS game session
+	startPayload := saga.StartRPSGamePayload{
+		CharacterId: ctx.CharacterId(),
+		WorldId:     ctx.Field().WorldId(),
+		ChannelId:   ctx.Field().ChannelId(),
+		NpcId:       rpsAction.NpcId(),
+	}
+	sagaBuilder.AddStep("start_rps_game", saga.Pending, saga.StartRPSGame, startPayload)
+
+	s := sagaBuilder.Build()
+
+	err := sagaProcessorFactory(p.l, p.ctx).Create(s)
+	if err != nil {
+		p.l.WithError(err).Errorf("Failed to create RPS entry saga")
+		return rpsAction.FailureState(), nil
+	}
+
+	ctx = ctx.SetPendingSagaId(sagaId)
+	ctx.Context()["rpsAction_failureState"] = rpsAction.FailureState()
+
+	GetRegistry().UpdateContext(p.ctx, ctx.CharacterId(), ctx)
+
+	p.l.WithFields(logrus.Fields{
+		"transaction_id": sagaId.String(),
+		"character_id":   ctx.CharacterId(),
+		"npc_id":         rpsAction.NpcId(),
+	}).Debug("RPS entry saga created, conversation waiting for completion")
+
+	return state.Id(), nil
+}
+
 // processListSelectionState processes a list selection state
 func (p *ProcessorImpl) processListSelectionState(ctx ConversationContext, state StateModel) (string, error) {
 	listSelection := state.ListSelection()
@@ -1042,7 +1130,6 @@ func (p *ProcessorImpl) processAskNumberState(ctx ConversationContext, state Sta
 
 	// Send the ask number request to the client
 	err = npcSender.NewProcessor(p.l, p.ctx).SendNumber(ctx.Field().Channel(), ctx.CharacterId(), ctx.NpcId(), processedText, askNumber.DefaultValue(), askNumber.MinValue(), askNumber.MaxValue())
-
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to send number request for state [%s] to character [%d]", state.Id(), ctx.CharacterId())
 		return "", err
@@ -1101,7 +1188,6 @@ func (p *ProcessorImpl) processAskStyleState(ctx ConversationContext, state Stat
 
 	// Send the ask style request to the client
 	err = npcSender.NewProcessor(p.l, p.ctx).SendStyle(ctx.Field().Channel(), ctx.CharacterId(), ctx.NpcId(), processedText, styles)
-
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to send style request for state [%s] to character [%d]", state.Id(), ctx.CharacterId())
 		return "", err
@@ -1144,7 +1230,6 @@ func (p *ProcessorImpl) processAskSlideMenuState(ctx ConversationContext, state 
 
 	// Send the slide menu request to the client
 	err = npcSender.NewProcessor(p.l, p.ctx).SendSlideMenu(ctx.Field().Channel(), ctx.CharacterId(), ctx.NpcId(), mb.String(), askSlideMenu.MenuType())
-
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to send slide menu request for state [%s] to character [%d]", state.Id(), ctx.CharacterId())
 		return "", err

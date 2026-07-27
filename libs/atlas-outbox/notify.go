@@ -1,10 +1,13 @@
 package outbox
 
 import (
+	"context"
 	"time"
 
 	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
+
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 )
 
 type notifier struct {
@@ -25,7 +28,9 @@ func newNotifier(l logrus.FieldLogger, dsn string) (*notifier, error) {
 		return nil, err
 	}
 	n := &notifier{l: l, ln: ln, out: out}
-	go n.pump()
+	routine.Go(l, context.Background(), func(_ context.Context) {
+		n.pump()
+	})
 	return n, nil
 }
 

@@ -1,20 +1,21 @@
 package tenantpurge
 
 import (
+	"atlas-data/canonical"
 	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"atlas-data/canonical"
 	minio "atlas-data/storage/minio"
 
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func TestPurgeNilMcReturns503(t *testing.T) {

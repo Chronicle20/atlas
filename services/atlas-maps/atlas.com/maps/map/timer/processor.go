@@ -1,21 +1,23 @@
 package timer
 
 import (
+	"atlas-maps/kafka/message"
 	"context"
 	"time"
 
-	"atlas-maps/kafka/message"
 	characterKafka "atlas-maps/kafka/message/character"
 	mapKafka "atlas-maps/kafka/message/map"
-	"atlas-maps/kafka/producer"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Processor interface {
@@ -35,6 +37,8 @@ type ProcessorImpl struct {
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, p producer.Provider) Processor {
 	return NewProcessorWithRegistry(l, ctx, p, GetRegistry())
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func NewProcessorWithRegistry(l logrus.FieldLogger, ctx context.Context, p producer.Provider, r *Registry) Processor {
 	return &ProcessorImpl{

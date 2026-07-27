@@ -3,11 +3,12 @@ package buddylist
 import (
 	"atlas-channel/kafka/message/buddylist"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 )
 
 func RequestAddBuddyCommandProvider(characterId character.Id, worldId world.Id, targetId character.Id, group string) model.Provider[[]kafka.Message] {

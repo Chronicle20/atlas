@@ -37,14 +37,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // presetTestSkillMock is a minimal inline implementation of skill.Processor for testing.
@@ -87,6 +88,10 @@ func (s *presetTestSkillMock) RequestDeleteSkill(transactionId uuid.UUID, worldI
 		CharacterId:   characterId,
 		SkillId:       skillId,
 	})
+	return nil
+}
+
+func (s *presetTestSkillMock) TransferSPAndEmit(_ uuid.UUID, _ world.Id, _ uint32, _ job.Id, _ uint32, _ uint32, _ byte, _ byte) error {
 	return nil
 }
 

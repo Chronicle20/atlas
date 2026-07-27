@@ -1,0 +1,10 @@
+packet: npc/serverbound/NpcShopRecharge
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CShopDlg::SendRechargeRequest
+    address: "0x6470c4"
+    decompile_sha256: bd61b70962d07a0802d23151485efe3bae478a2c423503f29948c1179eb89142
+verifies:
+  - libs/atlas-packet/npc/serverbound/shop_recharge_test.go#TestShopRechargeByteV61

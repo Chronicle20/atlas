@@ -2,7 +2,10 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MonsterBookWidget } from "../MonsterBookWidget";
-import type { MonsterBookCard, MonsterBookCollection } from "@/types/monster-book";
+import type {
+  MonsterBookCard,
+  MonsterBookCollection,
+} from "@/types/monster-book";
 
 // Tenant context provides the four-header tenant; the widget pulls its
 // region/version off `activeTenant` to build asset URLs. Stub it with a
@@ -23,8 +26,7 @@ vi.mock("@/lib/hooks/api/useMonsterBook", () => ({
   useMonsterBookCollection: (...a: unknown[]) =>
     useMonsterBookCollectionMock(...a),
   useMonsterBookCards: (...a: unknown[]) => useMonsterBookCardsMock(...a),
-  useMonsterBookCardName: (...a: unknown[]) =>
-    useMonsterBookCardNameMock(...a),
+  useMonsterBookCardName: (...a: unknown[]) => useMonsterBookCardNameMock(...a),
 }));
 
 const toastErrorMock = vi.fn();
@@ -34,13 +36,15 @@ vi.mock("sonner", () => ({
   },
 }));
 
-function makeCollectionResult(overrides: Partial<{
-  data: MonsterBookCollection | undefined;
-  isLoading: boolean;
-  isError: boolean;
-  error: unknown;
-  refetch: () => void;
-}> = {}) {
+function makeCollectionResult(
+  overrides: Partial<{
+    data: MonsterBookCollection | undefined;
+    isLoading: boolean;
+    isError: boolean;
+    error: unknown;
+    refetch: () => void;
+  }> = {},
+) {
   return {
     data: undefined,
     isLoading: false,
@@ -51,12 +55,14 @@ function makeCollectionResult(overrides: Partial<{
   };
 }
 
-function makeCardsResult(overrides: Partial<{
-  data: { pages: MonsterBookCard[][] } | undefined;
-  isFetchingNextPage: boolean;
-  hasNextPage: boolean;
-  fetchNextPage: () => void;
-}> = {}) {
+function makeCardsResult(
+  overrides: Partial<{
+    data: { pages: MonsterBookCard[][] } | undefined;
+    isFetchingNextPage: boolean;
+    hasNextPage: boolean;
+    fetchNextPage: () => void;
+  }> = {},
+) {
   return {
     data: undefined,
     isFetchingNextPage: false,
@@ -111,7 +117,12 @@ describe("MonsterBookWidget", () => {
       expBonusPercent: 5,
     };
     const cards: MonsterBookCard[] = [
-      { cardId: 2380000, level: 5, isSpecial: false, firstAcquiredAt: "2024-01-01T00:00:00Z" },
+      {
+        cardId: 2380000,
+        level: 5,
+        isSpecial: false,
+        firstAcquiredAt: "2024-01-01T00:00:00Z",
+      },
     ];
     useMonsterBookCollectionMock.mockReturnValue(
       makeCollectionResult({ data: collection }),
@@ -162,7 +173,9 @@ describe("MonsterBookWidget", () => {
 
     renderWidget();
 
-    expect(screen.getByText(/failed to load monster book/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/failed to load monster book/i),
+    ).toBeInTheDocument();
     const retry = screen.getByRole("button", { name: /retry/i });
     fireEvent.click(retry);
     expect(refetch).toHaveBeenCalled();
@@ -194,7 +207,12 @@ describe("MonsterBookWidget", () => {
       expBonusPercent: 0,
     };
     const cards: MonsterBookCard[] = [
-      { cardId: 2380001, level: 1, isSpecial: false, firstAcquiredAt: "2024-01-01T00:00:00Z" },
+      {
+        cardId: 2380001,
+        level: 1,
+        isSpecial: false,
+        firstAcquiredAt: "2024-01-01T00:00:00Z",
+      },
     ];
     const fetchNextPage = vi.fn();
     useMonsterBookCollectionMock.mockReturnValue(

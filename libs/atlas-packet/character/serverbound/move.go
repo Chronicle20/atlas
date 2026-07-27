@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const CharacterMoveHandle = "CharacterMoveHandle"
@@ -25,15 +26,15 @@ type Move struct {
 	movement model.Movement
 }
 
-func (m Move) Dr0() uint32                    { return m.dr0 }
-func (m Move) Dr1() uint32                    { return m.dr1 }
-func (m Move) FieldKey() byte                 { return m.fieldKey }
-func (m Move) Dr2() uint32                    { return m.dr2 }
-func (m Move) Dr3() uint32                    { return m.dr3 }
-func (m Move) Crc() uint32                    { return m.crc }
-func (m Move) DwKey() uint32                  { return m.dwKey }
-func (m Move) Crc32() uint32                  { return m.crc32 }
-func (m Move) MovementData() model.Movement   { return m.movement }
+func (m Move) Dr0() uint32                  { return m.dr0 }
+func (m Move) Dr1() uint32                  { return m.dr1 }
+func (m Move) FieldKey() byte               { return m.fieldKey }
+func (m Move) Dr2() uint32                  { return m.dr2 }
+func (m Move) Dr3() uint32                  { return m.dr3 }
+func (m Move) Crc() uint32                  { return m.crc }
+func (m Move) DwKey() uint32                { return m.dwKey }
+func (m Move) Crc32() uint32                { return m.crc32 }
+func (m Move) MovementData() model.Movement { return m.movement }
 
 func (m Move) Operation() string {
 	return CharacterMoveHandle
@@ -70,7 +71,14 @@ func (m Move) Encode(l logrus.FieldLogger, ctx context.Context) func(options map
 			w.WriteInt(m.dr2)
 			w.WriteInt(m.dr3)
 		}
-		if t.Region() == "GMS" && t.MajorVersion() > 28 {
+		// The move CRC (get_field()+476) is CONFIRMED absent on the very-legacy
+		// GMS v61 sender: CUserLocal move-flush sub_801109 (@0x8012a7) builds
+		// COutPacket(38) = Encode1(fieldKey) + CMovePath::Flush with NO Encode4(crc)
+		// between them, whereas v72 CVecCtrlUser::EndUpdateActive @0x8cb63e writes
+		// Encode1(fieldKey)+Encode4(crc)+Flush. The prior >28 gate assumed crc from
+		// v29; the verified boundary is v72 (v61 has none, v72 does). Gate to >=72 so
+		// v61 emits fieldKey+movement only; v72+/jms layouts are unchanged.
+		if t.IsRegion("GMS") && t.MajorAtLeast(72) {
 			w.WriteInt(m.crc)
 		}
 		if t.IsRegion("GMS") && t.MajorAtLeast(84) {
@@ -98,7 +106,9 @@ func (m *Move) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request
 			m.dr2 = r.ReadUint32()
 			m.dr3 = r.ReadUint32()
 		}
-		if t.Region() == "GMS" && t.MajorVersion() > 28 {
+		// Mirror of Encode: the move CRC is absent on GMS v61 (sub_801109 @0x8012a7
+		// writes no Encode4(crc)); verified boundary is v72. Gate to >=72.
+		if t.IsRegion("GMS") && t.MajorAtLeast(72) {
 			m.crc = r.ReadUint32()
 		}
 		if t.IsRegion("GMS") && t.MajorAtLeast(84) {

@@ -8,13 +8,14 @@ import (
 	"encoding/json"
 	"testing"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func changeTemplateTestDatabase(t *testing.T, l logrus.FieldLogger) *gorm.DB {
@@ -43,12 +44,12 @@ func TestChangeTemplatePreservesIdentity(t *testing.T) {
 	ap := asset.NewProcessor(l, ctx, db)
 
 	const (
-		characterId   = uint32(1)
-		origTemplate  = uint32(5000028)
-		newTemplate   = uint32(5000029)
-		petId         = uint32(77)
-		cashId        = int64(123456789)
-		slot          = int16(-1)
+		characterId  = uint32(1)
+		origTemplate = uint32(5000028)
+		newTemplate  = uint32(5000029)
+		petId        = uint32(77)
+		cashId       = int64(123456789)
+		slot         = int16(-1)
 	)
 	compartmentId := uuid.New()
 

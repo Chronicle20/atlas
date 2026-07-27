@@ -3,8 +3,9 @@ package family
 import (
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 func TestBuilder_FluentInterface(t *testing.T) {
@@ -20,7 +21,6 @@ func TestBuilder_FluentInterface(t *testing.T) {
 		SetRep(1000).
 		SetDailyRep(100).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Fluent builder failed: %v", err)
 	}
@@ -221,7 +221,6 @@ func TestBuilder_ModificationWorkflow(t *testing.T) {
 		SetRep(1000).
 		SetDailyRep(100).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Failed to create original member: %v", err)
 	}
@@ -232,7 +231,6 @@ func TestBuilder_ModificationWorkflow(t *testing.T) {
 		AddRep(500).
 		AddDailyRep(50).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Failed to modify member: %v", err)
 	}
@@ -280,9 +278,9 @@ func TestBuilder_ValidationErrors(t *testing.T) {
 	worldId := world.Id(1)
 
 	tests := []struct {
-		name        string
+		name         string
 		setupBuilder func() *Builder
-		expectError bool
+		expectError  bool
 	}{
 		{
 			name: "Valid builder",
@@ -358,13 +356,13 @@ func TestBuilder_Immutability(t *testing.T) {
 	level := uint16(50)
 	worldId := world.Id(1)
 
-	// Create two independent builders 
+	// Create two independent builders
 	builder1 := NewBuilder(characterId, tenantId, level, worldId).
 		SetSeniorId(99999).
 		SetRep(1000).
 		AddJunior(11111).
 		SetDailyRep(100)
-	
+
 	builder2 := NewBuilder(characterId, tenantId, level, worldId).
 		SetSeniorId(99999).
 		SetRep(1000).

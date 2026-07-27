@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcAskTextConversationDetail
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_5B0E90
+    address: "0x5b0e90"
+    decompile_sha256: 1478c0224c1b3600408965cfd20c03121a37f39679c8f035ab93702630091c8b
+verifies:
+  - libs/atlas-packet/npc/clientbound/conversation_v48_details_test.go#TestNpcConversationAskTextV48

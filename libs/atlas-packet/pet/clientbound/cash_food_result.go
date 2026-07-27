@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const PetCashFoodResultWriter = "PetCashFoodResult"
@@ -25,8 +26,8 @@ func NewPetCashFoodResultError() CashFoodResult {
 	return CashFoodResult{failure: true}
 }
 
-func (m CashFoodResult) Failure() bool   { return m.failure }
-func (m CashFoodResult) Index() byte     { return m.index }
+func (m CashFoodResult) Failure() bool     { return m.failure }
+func (m CashFoodResult) Index() byte       { return m.index }
 func (m CashFoodResult) Operation() string { return PetCashFoodResultWriter }
 func (m CashFoodResult) String() string {
 	return fmt.Sprintf("failure [%t], index [%d]", m.failure, m.index)

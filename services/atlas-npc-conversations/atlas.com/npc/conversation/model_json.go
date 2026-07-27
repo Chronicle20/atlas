@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
 // storedConversation is a lightweight StateContainer used after deserialization from Redis.
@@ -15,8 +16,8 @@ type storedConversation struct {
 	states     []StateModel
 }
 
-func (s storedConversation) StartState() string            { return s.startState }
-func (s storedConversation) States() []StateModel          { return s.states }
+func (s storedConversation) StartState() string   { return s.startState }
+func (s storedConversation) States() []StateModel { return s.states }
 func (s storedConversation) FindState(stateId string) (StateModel, error) {
 	for _, state := range s.states {
 		if state.Id() == stateId {
@@ -201,29 +202,29 @@ func (g *GenericActionModel) UnmarshalJSON(data []byte) error {
 
 func (c CraftActionModel) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		ItemId                string  `json:"itemId"`
+		ItemId                string   `json:"itemId"`
 		Materials             []uint32 `json:"materials"`
 		Quantities            []uint32 `json:"quantities"`
-		MesoCost              uint32  `json:"mesoCost,omitempty"`
-		StimulatorId          uint32  `json:"stimulatorId,omitempty"`
-		StimulatorFailChance  float64 `json:"stimulatorFailChance,omitempty"`
-		SuccessState          string  `json:"successState"`
-		FailureState          string  `json:"failureState"`
-		MissingMaterialsState string  `json:"missingMaterialsState"`
+		MesoCost              uint32   `json:"mesoCost,omitempty"`
+		StimulatorId          uint32   `json:"stimulatorId,omitempty"`
+		StimulatorFailChance  float64  `json:"stimulatorFailChance,omitempty"`
+		SuccessState          string   `json:"successState"`
+		FailureState          string   `json:"failureState"`
+		MissingMaterialsState string   `json:"missingMaterialsState"`
 	}{c.itemId, c.materials, c.quantities, c.mesoCost, c.stimulatorId, c.stimulatorFailChance, c.successState, c.failureState, c.missingMaterialsState})
 }
 
 func (c *CraftActionModel) UnmarshalJSON(data []byte) error {
 	var aux struct {
-		ItemId                string  `json:"itemId"`
+		ItemId                string   `json:"itemId"`
 		Materials             []uint32 `json:"materials"`
 		Quantities            []uint32 `json:"quantities"`
-		MesoCost              uint32  `json:"mesoCost,omitempty"`
-		StimulatorId          uint32  `json:"stimulatorId,omitempty"`
-		StimulatorFailChance  float64 `json:"stimulatorFailChance,omitempty"`
-		SuccessState          string  `json:"successState"`
-		FailureState          string  `json:"failureState"`
-		MissingMaterialsState string  `json:"missingMaterialsState"`
+		MesoCost              uint32   `json:"mesoCost,omitempty"`
+		StimulatorId          uint32   `json:"stimulatorId,omitempty"`
+		StimulatorFailChance  float64  `json:"stimulatorFailChance,omitempty"`
+		SuccessState          string   `json:"successState"`
+		FailureState          string   `json:"failureState"`
+		MissingMaterialsState string   `json:"missingMaterialsState"`
 	}
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
@@ -296,6 +297,31 @@ func (g *GachaponActionModel) UnmarshalJSON(data []byte) error {
 	g.gachaponId = aux.GachaponId
 	g.ticketItemId = aux.TicketItemId
 	g.failureState = aux.FailureState
+	return nil
+}
+
+// --- RPSActionModel ---
+
+func (r RPSActionModel) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		NpcId         uint32 `json:"npcId"`
+		EntryCostMeso uint32 `json:"entryCostMeso"`
+		FailureState  string `json:"failureState"`
+	}{r.npcId, r.entryCostMeso, r.failureState})
+}
+
+func (r *RPSActionModel) UnmarshalJSON(data []byte) error {
+	var aux struct {
+		NpcId         uint32 `json:"npcId"`
+		EntryCostMeso uint32 `json:"entryCostMeso"`
+		FailureState  string `json:"failureState"`
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	r.npcId = aux.NpcId
+	r.entryCostMeso = aux.EntryCostMeso
+	r.failureState = aux.FailureState
 	return nil
 }
 
@@ -418,29 +444,31 @@ func (a *AskSlideMenuModel) UnmarshalJSON(data []byte) error {
 
 func (s StateModel) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Id              string               `json:"id"`
-		StateType       StateType            `json:"stateType"`
-		Dialogue        *DialogueModel       `json:"dialogue,omitempty"`
+		Id              string                `json:"id"`
+		StateType       StateType             `json:"stateType"`
+		Dialogue        *DialogueModel        `json:"dialogue,omitempty"`
 		GenericAction   *GenericActionModel   `json:"genericAction,omitempty"`
 		CraftAction     *CraftActionModel     `json:"craftAction,omitempty"`
 		TransportAction *TransportActionModel `json:"transportAction,omitempty"`
 		GachaponAction  *GachaponActionModel  `json:"gachaponAction,omitempty"`
+		RPSAction       *RPSActionModel       `json:"rpsAction,omitempty"`
 		ListSelection   *ListSelectionModel   `json:"listSelection,omitempty"`
 		AskNumber       *AskNumberModel       `json:"askNumber,omitempty"`
 		AskStyle        *AskStyleModel        `json:"askStyle,omitempty"`
 		AskSlideMenu    *AskSlideMenuModel    `json:"askSlideMenu,omitempty"`
-	}{s.id, s.stateType, s.dialogue, s.genericAction, s.craftAction, s.transportAction, s.gachaponAction, s.listSelection, s.askNumber, s.askStyle, s.askSlideMenu})
+	}{s.id, s.stateType, s.dialogue, s.genericAction, s.craftAction, s.transportAction, s.gachaponAction, s.rpsAction, s.listSelection, s.askNumber, s.askStyle, s.askSlideMenu})
 }
 
 func (s *StateModel) UnmarshalJSON(data []byte) error {
 	var aux struct {
-		Id              string               `json:"id"`
-		StateType       StateType            `json:"stateType"`
-		Dialogue        *DialogueModel       `json:"dialogue,omitempty"`
+		Id              string                `json:"id"`
+		StateType       StateType             `json:"stateType"`
+		Dialogue        *DialogueModel        `json:"dialogue,omitempty"`
 		GenericAction   *GenericActionModel   `json:"genericAction,omitempty"`
 		CraftAction     *CraftActionModel     `json:"craftAction,omitempty"`
 		TransportAction *TransportActionModel `json:"transportAction,omitempty"`
 		GachaponAction  *GachaponActionModel  `json:"gachaponAction,omitempty"`
+		RPSAction       *RPSActionModel       `json:"rpsAction,omitempty"`
 		ListSelection   *ListSelectionModel   `json:"listSelection,omitempty"`
 		AskNumber       *AskNumberModel       `json:"askNumber,omitempty"`
 		AskStyle        *AskStyleModel        `json:"askStyle,omitempty"`
@@ -456,6 +484,7 @@ func (s *StateModel) UnmarshalJSON(data []byte) error {
 	s.craftAction = aux.CraftAction
 	s.transportAction = aux.TransportAction
 	s.gachaponAction = aux.GachaponAction
+	s.rpsAction = aux.RPSAction
 	s.listSelection = aux.ListSelection
 	s.askNumber = aux.AskNumber
 	s.askStyle = aux.AskStyle

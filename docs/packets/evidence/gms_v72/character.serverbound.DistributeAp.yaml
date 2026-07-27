@@ -1,0 +1,10 @@
+packet: character/serverbound/DistributeAp
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendAbilityUpRequest#DistributeAp
+    address: "0x91bbad"
+    decompile_sha256: 3db2ea9d6d7e002ac1dad084bd7c027e24c60866a76cf50ddc6842484eda03de
+verifies:
+  - libs/atlas-packet/character/serverbound/v72_test.go#TestDistributeApByteOutputV72

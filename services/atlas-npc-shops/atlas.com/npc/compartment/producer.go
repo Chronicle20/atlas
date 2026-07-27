@@ -4,10 +4,11 @@ import (
 	"atlas-npc/kafka/message/compartment"
 	"time"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 )
 
 func RequestCreateAssetCommandProvider(characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32) model.Provider[[]kafka.Message] {

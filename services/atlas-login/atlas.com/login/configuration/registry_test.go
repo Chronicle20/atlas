@@ -1,10 +1,9 @@
 package configuration_test
 
 import (
+	"atlas-login/configuration"
 	"testing"
 	"time"
-
-	"atlas-login/configuration"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"

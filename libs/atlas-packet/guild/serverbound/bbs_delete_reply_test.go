@@ -6,12 +6,19 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// v48 CUIGuildBBS::OnCommentDelete @0x6090f4 (sub_6090F4): COutPacket(109=BBS_OPERATION)+Encode1(5=DELETE_REPLY)+Encode4(threadId)+Encode4(replyId). Body=Encode4(threadId)+Encode4(replyId), == v83.
+// packet-audit:verify packet=guild/serverbound/GuildBBSDeleteReply version=gms_v48 ida=0x6090f4
+// packet-audit:verify packet=guild/serverbound/GuildBBSDeleteReply version=gms_v79 ida=0x786bba
+// v72 CUIGuildBBS::OnCommentDelete @0x751b7c: COutPacket(153)+Encode1(5)+Encode4(threadId)+Encode4(replyId), == v79.
+// packet-audit:verify packet=guild/serverbound/GuildBBSDeleteReply version=gms_v72 ida=0x751b7c
 // packet-audit:verify packet=guild/serverbound/GuildBBSDeleteReply version=gms_v87 ida=0x87a5df
 // packet-audit:verify packet=guild/serverbound/GuildBBSDeleteReply version=gms_v95 ida=0x7c3b70
 // packet-audit:verify packet=guild/serverbound/GuildBBSDeleteReply version=gms_v83 ida=0x816aa8
 // v84 OnCommentDelete COutPacket(0x9F)+Encode1(5)+Encode4(threadId)+Encode4(replyId), IDA-verified.
 // packet-audit:verify packet=guild/serverbound/GuildBBSDeleteReply version=gms_v84 ida=0x841d3f
 // packet-audit:verify packet=guild/serverbound/GuildBBSDeleteReply version=jms_v185 ida=ABSENT
+// v61 COutPacket(134)+Encode1(5=DELETE_REPLY)+Encode4(threadId)+Encode4(replyId); body=Encode4+Encode4, == v72/v83 (CUIGuildBBS::OnCommentDelete @0x6bb4d6).
+// packet-audit:verify packet=guild/serverbound/GuildBBSDeleteReply version=gms_v61 ida=0x6bb4d6
 func TestBBSDeleteReplyRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

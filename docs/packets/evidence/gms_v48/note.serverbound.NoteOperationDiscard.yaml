@@ -1,0 +1,10 @@
+packet: note/serverbound/NoteOperationDiscard
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CMemoListDlg::SetRet
+    address: "0x534dc4"
+    decompile_sha256: 670ef528fc4c61075c0a5e9f455566e77f013a109b70a7e19fca4cbfdf27ec14
+verifies:
+    - libs/atlas-packet/note/serverbound/v48_test.go#TestOperationDiscardV48Body

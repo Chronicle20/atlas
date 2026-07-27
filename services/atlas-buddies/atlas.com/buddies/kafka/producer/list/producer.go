@@ -3,12 +3,13 @@ package list
 import (
 	list2 "atlas-buddies/kafka/message/list"
 
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
 )
 
 func CreateCommandProvider(characterId character.Id, capacity byte) model.Provider[[]kafka.Message] {

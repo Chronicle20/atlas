@@ -3,10 +3,11 @@ package quest
 import (
 	quest2 "atlas-channel/kafka/message/quest"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 )
 
 func StartConversationCommandProvider(f field.Model, questId uint32, npcId uint32, characterId uint32) model.Provider[[]kafka.Message] {

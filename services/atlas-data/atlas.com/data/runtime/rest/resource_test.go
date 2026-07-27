@@ -7,11 +7,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/sirupsen/logrus"
 	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 func TestProcessStatusListsActiveJobs(t *testing.T) {

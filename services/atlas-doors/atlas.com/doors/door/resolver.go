@@ -1,18 +1,19 @@
 package door
 
 import (
+	"atlas-doors/party"
 	"context"
 	"errors"
 
 	mapdata "atlas-doors/data/map"
 	skilldata "atlas-doors/data/skill"
-	"atlas-doors/party"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
-	"github.com/sirupsen/logrus"
 )
 
 // doorPortalType is the atlas-data portal type for town-door portals (Type==6).

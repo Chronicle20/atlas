@@ -30,9 +30,8 @@ Represents a game server tenant with identification, region, and version informa
 - `Delete`: Deletes a tenant
 - `DeleteAndEmit`: Deletes a tenant and emits a Kafka event
 - `GetById`: Retrieves a tenant by ID
-- `GetAll`: Retrieves all tenants
 - `ByIdProvider`: Returns a provider for a tenant by ID
-- `AllProvider`: Returns a provider for all tenants
+- `AllProvider`: Returns a paged provider for all tenants
 
 ---
 
@@ -47,7 +46,7 @@ Manages tenant-specific configuration resources including routes, vessels, and i
 **Model**
 - `id` (uuid.UUID): Unique identifier
 - `tenantID` (uuid.UUID): Associated tenant ID
-- `resourceName` (string): Type of resource (routes, vessels, instance-routes)
+- `resourceName` (string): Type of resource (routes, vessels, instance-routes, mts-configs)
 - `resourceData` (json.RawMessage): JSON data for the resource
 
 **SeedResult**
@@ -99,7 +98,20 @@ Manages tenant-specific configuration resources including routes, vessels, and i
 - `InstanceRouteByIdProvider`: Returns a provider for an instance route by ID
 - `AllInstanceRoutesProvider`: Returns a provider for all instance routes for a tenant
 
+**Processor (MTS Config Operations)**
+- `CreateMtsConfig`: Creates a new MTS config configuration
+- `CreateMtsConfigAndEmit`: Creates a new MTS config configuration and emits a Kafka event
+- `UpdateMtsConfig`: Updates an existing MTS config configuration
+- `UpdateMtsConfigAndEmit`: Updates an existing MTS config configuration and emits a Kafka event
+- `DeleteMtsConfig`: Deletes an MTS config configuration
+- `DeleteMtsConfigAndEmit`: Deletes an MTS config configuration and emits a Kafka event
+- `GetMtsConfigById`: Retrieves an MTS config by ID
+- `GetAllMtsConfigs`: Retrieves all MTS configs for a tenant
+- `MtsConfigByIdProvider`: Returns a provider for an MTS config by ID
+- `AllMtsConfigsProvider`: Returns a provider for all MTS configs for a tenant
+
 **Processor (Seed Operations)**
 - `SeedRoutes`: Deletes all existing routes for a tenant and loads them from seed files
 - `SeedInstanceRoutes`: Deletes all existing instance routes for a tenant and loads them from seed files
 - `SeedVessels`: Deletes all existing vessels for a tenant and loads them from seed files
+- `SeedMtsConfigs`: Deletes all existing MTS configs for a tenant and loads them from seed files

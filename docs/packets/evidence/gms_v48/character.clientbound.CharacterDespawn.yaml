@@ -1,0 +1,10 @@
+packet: character/clientbound/CharacterDespawn
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_6B2976
+    address: "0x6b2976"
+    decompile_sha256: 2f9adebad9bf35be4b532204ae9fc7beb4e8f7a9f1a942ce0a85a76e011c9422
+verifies:
+    - libs/atlas-packet/character/clientbound/despawn_test.go#TestCharacterDespawnV48ByteOutput

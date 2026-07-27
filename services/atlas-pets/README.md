@@ -12,6 +12,7 @@ The service consumes character status events, asset status events, and pet comma
 - OpenTelemetry (tracing via OTLP)
 - atlas-characters service (REST)
 - atlas-inventory service (REST)
+- atlas-maps service (REST) - character field/location lookup
 - Pet reference data service (REST)
 - Foothold / position reference data service (REST)
 - Skill reference data service (REST)
@@ -33,6 +34,7 @@ The service consumes character status events, asset status events, and pet comma
 | EVENT_TOPIC_ASSET_STATUS | Asset status events topic |
 | COMMAND_TOPIC_PET | Pet commands topic |
 | COMMAND_TOPIC_PET_MOVEMENT | Pet movement commands topic |
+| COMMAND_TOPIC_COMPARTMENT | Compartment commands topic (produced) |
 | EVENT_TOPIC_PET_STATUS | Pet status events topic |
 
 ## Documentation

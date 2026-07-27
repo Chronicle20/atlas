@@ -1,0 +1,557 @@
+{
+  "data": {
+    "type": "gachapon",
+    "id": "perion",
+    "attributes": {
+      "name": "Perion Gachapon",
+      "npcIds": [
+        9100102
+      ],
+      "commonWeight": 90,
+      "uncommonWeight": 8,
+      "rareWeight": 2,
+      "items": [
+        {
+          "itemId": 1002006,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1002021,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1002022,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1002026,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1002036,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1002048,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1002050,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1002060,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1002097,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1002182,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1002217,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1002247,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1002391,
+          "quantity": 1,
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 1002392,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1002395,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1002419,
+          "quantity": 1,
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 1002616,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1032000,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1040018,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1040075,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1040095,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1040103,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1041003,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1041049,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1041059,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1041060,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1041065,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1041074,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1041092,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1050006,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1050048,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1050049,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1051000,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1051027,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1051032,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1051033,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1052113,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1060009,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1060024,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1060062,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1060077,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1060084,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1061019,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1061032,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1061061,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1061087,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1061088,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1072294,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1082036,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1082117,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1082147,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1082148,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1082149,
+          "quantity": 1,
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 1082150,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1082189,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1082192,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1082195,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1092002,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1102000,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1102013,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1102041,
+          "quantity": 1,
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 1302004,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1302008,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1302017,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1302018,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1302021,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1302022,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1312006,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1312007,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1312008,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1322007,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1322010,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1322012,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1322014,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1322017,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1322020,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1322021,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1322025,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1322027,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1332003,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1332009,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1332015,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1332016,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1332020,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1332024,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1372007,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1382006,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1382012,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1402010,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1402037,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1422001,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1422005,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1432000,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1432004,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1432005,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1432030,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1442000,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1452006,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1462013,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1472020,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1482001,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1482006,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1492002,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 1492004,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 2000004,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 2000005,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 2044802,
+          "quantity": 1,
+          "tier": "common"
+        },
+        {
+          "itemId": 2044907,
+          "quantity": 1,
+          "tier": "common"
+        }
+      ]
+    }
+  }
+}

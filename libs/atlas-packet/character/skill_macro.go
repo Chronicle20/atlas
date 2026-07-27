@@ -4,13 +4,16 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
-const CharacterSkillMacroHandle = "CharacterSkillMacroHandle"
-const CharacterSkillMacroWriter = "CharacterSkillMacro"
+const (
+	CharacterSkillMacroHandle = "CharacterSkillMacroHandle"
+	CharacterSkillMacroWriter = "CharacterSkillMacro"
+)
 
 type SkillMacroEntry struct {
 	Name     string

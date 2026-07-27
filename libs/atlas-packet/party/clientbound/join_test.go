@@ -10,8 +10,10 @@ import (
 // TestJoinByteOutput verifies the byte output of Join across all tenant variants.
 // Wire layout: mode(1)+partyId(4)+targetName(2+len)+WritePartyData(?).
 // targetName="Player2" → 2+7=9 bytes. Total with PARTYDATA:
-//   v83/JMS: 1+4+9+298 = 312 bytes (JMS uses small PARTYDATA; IDA @0xb297e7 qmemcpy 0x12A)
-//   v95 (GMS only): 1+4+9+378 = 392 bytes
+//
+//	v83/JMS: 1+4+9+298 = 312 bytes (JMS uses small PARTYDATA; IDA @0xb297e7 qmemcpy 0x12A)
+//	v95 (GMS only): 1+4+9+378 = 392 bytes
+//
 // packet-audit:verify packet=party/clientbound/PartyJoin version=jms_v185 ida=0xb297e7
 // packet-audit:verify packet=party/clientbound/PartyJoin version=gms_v83 ida=0xa3e31c
 // packet-audit:verify packet=party/clientbound/PartyJoin version=gms_v87 ida=0xad697a
@@ -26,7 +28,7 @@ func TestJoinByteOutput(t *testing.T) {
 		variant   pt.TenantVariant
 		wantBytes int
 	}{
-		{pt.Variants[0], 312}, // GMS v28  — v83 PARTYDATA
+		{pt.Variants[0], 308}, // GMS v28  — GMS legacy PARTYDATA (294 bytes, no leaderId; task-113 close-I)
 		{pt.Variants[1], 312}, // GMS v83  — v83 PARTYDATA
 		{pt.Variants[2], 312}, // GMS v87  — v83 PARTYDATA
 		{pt.Variants[3], 392}, // GMS v95  — v95 PARTYDATA
@@ -64,8 +66,13 @@ func TestJoinRoundTrip(t *testing.T) {
 			if output.TargetName() != input.TargetName() {
 				t.Errorf("targetName: got %v, want %v", output.TargetName(), input.TargetName())
 			}
-			if output.LeaderId() != input.LeaderId() {
-				t.Errorf("leaderId: got %v, want %v", output.LeaderId(), input.LeaderId())
+			// GMS legacy (< v61) carries no leaderId; it round-trips as 0 (close-I).
+			wantLeader := input.LeaderId()
+			if v.Region == "GMS" && v.MajorVersion < 61 {
+				wantLeader = 0
+			}
+			if output.LeaderId() != wantLeader {
+				t.Errorf("leaderId: got %v, want %v", output.LeaderId(), wantLeader)
 			}
 			if len(output.Members()) != len(input.Members()) {
 				t.Errorf("members length: got %v, want %v", len(output.Members()), len(input.Members()))

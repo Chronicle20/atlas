@@ -12,10 +12,11 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	fieldsb "github.com/Chronicle20/atlas/libs/atlas-packet/field/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
@@ -36,6 +37,7 @@ func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Pro
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce [%d] has returned from cash shop.", s.CharacterId())
 			}
+			_ = session.NewProcessor(l, ctx).SetCashScene(s.SessionId(), session.CashSceneNone)
 
 			err = as.NewProcessor(l, ctx).UpdateState(s.SessionId(), s.AccountId(), 2, model.ChannelChange{IPAddress: c.IpAddress(), Port: uint16(c.Port())})
 			if err != nil {

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func TestRegisteredSize(t *testing.T) {

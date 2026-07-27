@@ -3,11 +3,12 @@ package collection
 import (
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/google/uuid"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 )
 
 func newDB(t *testing.T) *gorm.DB {

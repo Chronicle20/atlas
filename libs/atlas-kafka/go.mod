@@ -1,8 +1,9 @@
 module github.com/Chronicle20/atlas/libs/atlas-kafka
 
-go 1.25.0
+go 1.25.5
 
 require (
+	github.com/Chronicle20/atlas/libs/atlas-routine v0.0.0-00010101000000-000000000000
 	github.com/google/uuid v1.6.0
 	github.com/segmentio/kafka-go v0.4.51
 	github.com/sirupsen/logrus v1.9.4
@@ -50,7 +51,7 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.60.0 // indirect
 	golang.org/x/crypto v0.51.0 // indirect
 	golang.org/x/mod v0.33.0 // indirect
-	golang.org/x/sync v0.21.0 // indirect
+	golang.org/x/sync v0.22.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
@@ -76,3 +77,5 @@ replace github.com/Chronicle20/atlas/libs/atlas-model => ../atlas-model
 replace github.com/Chronicle20/atlas/libs/atlas-retry => ../atlas-retry
 
 replace github.com/Chronicle20/atlas/libs/atlas-tenant => ../atlas-tenant
+
+replace github.com/Chronicle20/atlas/libs/atlas-routine => ../atlas-routine

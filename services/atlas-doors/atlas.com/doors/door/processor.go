@@ -4,7 +4,10 @@ import (
 	"context"
 	"time"
 
-	doorproducer "atlas-doors/kafka/producer"
+	doorproducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -13,8 +16,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
 )
 
 // Processor is the door engine: spawn (with FR-1.4 recast replace), remove,
@@ -66,7 +67,7 @@ type ProcessorImpl struct {
 	alloc allocator
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *ProcessorImpl {
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{
 		l: l, ctx: ctx, t: tenant.MustFromContext(ctx),
 		emit: func(topic string, p model.Provider[[]kafka.Message]) error {
@@ -76,6 +77,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *ProcessorImpl {
 		alloc: GetIdAllocator(),
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetById(areaDoorId uint32) (Model, error) {
 	return GetRegistry().Get(p.ctx, p.t, areaDoorId)
@@ -198,7 +201,6 @@ func (p *ProcessorImpl) RemoveByOwnerIfLeftField(ownerCharacterId character.Id, 
 	}
 	return nil
 }
-
 
 func (p *ProcessorImpl) Reslot(areaDoorId uint32, newSlot byte, townPortalId uint32, townX point.X, townY point.Y) error {
 	m, err := GetRegistry().Get(p.ctx, p.t, areaDoorId)

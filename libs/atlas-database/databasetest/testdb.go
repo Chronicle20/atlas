@@ -4,14 +4,15 @@ import (
 	"context"
 	"testing"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // NewInMemoryTenantDB returns a fresh sqlite-in-memory *gorm.DB with the tenant
@@ -25,6 +26,16 @@ func NewInMemoryTenantDB(t *testing.T, migrations ...database.Migrator) *gorm.DB
 
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	require.NoError(t, err)
+
+	// gorm's sqlite driver hands out a fresh, empty in-memory database per
+	// pooled connection, so any goroutine/query that checks out a second
+	// connection sees "no such table" against an otherwise-migrated schema.
+	// Capping the pool to a single connection keeps every query on the one
+	// connection that actually has the migrated schema.
+	sqlDB, err := db.DB()
+	require.NoError(t, err)
+	sqlDB.SetMaxOpenConns(1)
+
 	database.RegisterTenantCallbacks(l, db)
 	for _, m := range migrations {
 		require.NoError(t, m(db))

@@ -1,0 +1,154 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "victoryAnnouncement",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "crystalSealExplanation",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "You made it, Aran! The Puppeteer now will not disturb the peace at Victoria Island any longer. Furthermore, now we could clearly investigate the doings of the Black Wing here, at Victoria."
+            },
+            "id": "victoryAnnouncement",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "victoryAnnouncement",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "rewardAnnouncement",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "They were after the #bcrystal seal of Victoria#k. These seals are what repels the Black Mage to further taking the continents into his grasp at once. Each continent has one, Victoria's now is safe and sound."
+            },
+            "id": "crystalSealExplanation",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "crystalSealExplanation",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "completeQuestAndReward",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "For your bravery inputted on these series of missions, I will now reward you properly. Behold, the #rCombo Drain#k Skill: that let's you heal back a portion of damage dealt to the monsters."
+            },
+            "id": "rewardAnnouncement",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "force": "true"
+                  },
+                  "type": "complete_quest"
+                },
+                {
+                  "params": {
+                    "amount": "12500"
+                  },
+                  "type": "award_exp"
+                },
+                {
+                  "params": {
+                    "level": "0",
+                    "masterLevel": "20",
+                    "skillId": "21100005"
+                  },
+                  "type": "update_skill"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "completeQuestAndReward",
+            "type": "genericAction"
+          }
+        ]
+      },
+      "questId": 21734,
+      "questName": "The Puppeteer Hunt",
+      "startStateMachine": {
+        "startState": "missionBriefing",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "startQuest",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Hello there, Aran. We received a report that the Puppeteer, one of the members of the Black Wing, is currently based #bsomewhere on the deep forest of Sleepywood#k. Your mission is to enter the place and defeat him there, once for all."
+            },
+            "id": "missionBriefing",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "force": "true"
+                  },
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "startQuest",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "21734",
+    "type": "quest-conversation"
+  }
+}

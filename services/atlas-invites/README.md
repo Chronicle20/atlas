@@ -16,6 +16,8 @@ This service manages invitations sent between characters for various social feat
 
 | Variable | Description |
 |----------|-------------|
+| REDIS_URL | Redis server address |
+| REDIS_PASSWORD | Redis authentication password |
 | TRACE_ENDPOINT | OTLP gRPC endpoint for tracing |
 | LOG_LEVEL | Logging level (Panic/Fatal/Error/Warn/Info/Debug/Trace) |
 | REST_PORT | Port for the REST server |

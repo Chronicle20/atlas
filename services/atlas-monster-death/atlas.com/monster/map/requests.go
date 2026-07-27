@@ -17,6 +17,11 @@ func getBaseRequest() string {
 	return requests.RootUrl("MAPS")
 }
 
-func requestCharactersInField(f field.Model) requests.Request[[]RestModel] {
-	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+mapInstanceCharactersResource, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String()))
+// charactersInFieldUrl returns the list URL for the characters currently in
+// one map instance. It is a bare URL (not a requests.Request) because the
+// list is now paginated server-side (task-117) and consumed via
+// requests.DrainProvider, which appends its own page[number]/page[size]
+// query params per request.
+func charactersInFieldUrl(f field.Model) string {
+	return fmt.Sprintf(getBaseRequest()+mapInstanceCharactersResource, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String())
 }

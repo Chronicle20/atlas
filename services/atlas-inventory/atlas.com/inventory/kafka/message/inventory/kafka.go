@@ -19,8 +19,7 @@ type StatusEvent[E any] struct {
 	Body          E         `json:"body"`
 }
 
-type CreatedStatusEventBody struct {
-}
+type CreatedStatusEventBody struct{}
 
 // CreationFailedStatusEventBody carries the free-form error message for
 // telemetry. The orchestrator does not inspect Reason; it only flips the
@@ -29,5 +28,4 @@ type CreationFailedStatusEventBody struct {
 	Reason string `json:"reason"`
 }
 
-type DeletedStatusEventBody struct {
-}
+type DeletedStatusEventBody struct{}

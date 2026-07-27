@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const AffectedAreaCreatedWriter = "AffectedAreaCreated"

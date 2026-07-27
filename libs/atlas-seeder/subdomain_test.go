@@ -6,9 +6,10 @@ import (
 	"testing"
 	"time"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type fakeAttrs struct {
@@ -40,21 +41,25 @@ func (f *fakeSubdomain) EntityIDPattern() *regexp.Regexp { return f.pattern }
 func (f *fakeSubdomain) DeleteAllForTenant(_ *gorm.DB) (int64, error) {
 	return f.deleted, nil
 }
+
 func (f *fakeSubdomain) Decode(b []byte) (fakeAttrs, error) {
 	var a fakeAttrs
 	err := json.Unmarshal(b, &a)
 	f.decoded = a
 	return a, err
 }
+
 func (f *fakeSubdomain) Build(_ tenant.Model, _ string, a fakeAttrs) ([]fakeRow, error) {
 	r := fakeRow{ID: 1, Name: a.Name}
 	f.builtRows = append(f.builtRows, r)
 	return []fakeRow{r}, nil
 }
+
 func (f *fakeSubdomain) BulkCreate(_ *gorm.DB, _ []fakeRow) error {
 	f.bulkCalled = true
 	return nil
 }
+
 func (f *fakeSubdomain) Count(_ *gorm.DB) (int64, *time.Time, error) {
 	return f.count, f.updatedAt, nil
 }

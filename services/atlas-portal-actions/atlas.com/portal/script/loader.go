@@ -7,10 +7,11 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/sirupsen/logrus"
+
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-script-core/condition"
 	"github.com/Chronicle20/atlas/libs/atlas-script-core/operation"
-	"github.com/sirupsen/logrus"
 )
 
 // jsonPortalScript represents the JSON structure of a portal script

@@ -1,0 +1,83 @@
+# Daily MinIO tenant-reconcile CronJob (task-174).
+#
+# Runs services/atlas-pr-bootstrap's reconcile-minio.sh orchestrator, which
+# enumerates the live-tenant UUID union across atlas-main + atlas-pr-*
+# namespaces (fail-closed: any unreachable env aborts the run) and POSTs the
+# keep-list to atlas-data's /api/data/minio/reconcile endpoint. This is a
+# main-only resource: it must run exactly once cluster-wide, not per-PR-env.
+# See deploy/k8s/overlays/pr/kustomization.yaml for the delete-patches that
+# exclude every resource below from the `pr` overlay (which pulls in
+# `../../base` wholesale). The `pr-cleanup` overlay does not include base at
+# all, so no exclusion is needed there.
+#
+# RECONCILE_DRY_RUN defaults to "true": the orchestrator logs what it would
+# delete without deleting anything until an operator flips this ConfigMap
+# value (or patches it per-env) after validating a few dry-run cycles.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: atlas-minio-reconcile
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: atlas-minio-reconcile
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: atlas-minio-reconcile
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: atlas-minio-reconcile
+subjects:
+  - kind: ServiceAccount
+    name: atlas-minio-reconcile
+    namespace: atlas-main   # overlay sets the real namespace
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: atlas-minio-reconcile-config
+data:
+  RECONCILE_DRY_RUN: "true"
+  RECONCILE_MIN_AGE_HOURS: "48"
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: atlas-minio-reconcile
+spec:
+  schedule: "0 3 * * *"          # daily 03:00
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      template:
+        spec:
+          serviceAccountName: atlas-minio-reconcile
+          restartPolicy: Never
+          # ghcr-pull is a dockerconfigjson Secret carrying a GHCR PAT (see
+          # deploy/k8s/overlays/pr/sync-bootstrap.yaml) because the
+          # atlas-pr-bootstrap package on GHCR is private. It is not yet
+          # replicated into atlas-main (cluster-infra Reflector rule only
+          # covers atlas-pr-.* namespaces) — see task-5-report.md concerns.
+          imagePullSecrets:
+            - name: ghcr-pull
+          containers:
+            - name: reconcile
+              image: ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap:latest
+              command: ["/atlas/reconcile-minio.sh"]
+              envFrom:
+                - configMapRef:
+                    name: atlas-minio-reconcile-config
+              env:
+                - name: ATLAS_DATA_BASE
+                  value: http://atlas-data.atlas-main.svc.cluster.local:8080

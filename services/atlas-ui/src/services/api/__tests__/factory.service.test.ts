@@ -136,7 +136,9 @@ describe("factoryService", () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 502,
-        json: async () => { throw new SyntaxError("not json"); },
+        json: async () => {
+          throw new SyntaxError("not json");
+        },
       });
 
       await expect(

@@ -35,7 +35,9 @@ export function DroppedByWidget({ drop }: DroppedByWidgetProps) {
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate">
-          {isLoading && !monsterName ? `Monster #${monsterId}` : monsterName || `Monster #${monsterId}`}
+          {isLoading && !monsterName
+            ? `Monster #${monsterId}`
+            : monsterName || `Monster #${monsterId}`}
         </p>
         <p className="text-xs font-mono text-muted-foreground">{monsterId}</p>
       </div>
@@ -47,7 +49,8 @@ export function DroppedByWidget({ drop }: DroppedByWidgetProps) {
     `Min Qty: ${drop.attributes.minimumQuantity}`,
     `Max Qty: ${drop.attributes.maximumQuantity}`,
   ];
-  if (drop.attributes.questId > 0) tooltipLines.push(`Quest ID: ${drop.attributes.questId}`);
+  if (drop.attributes.questId > 0)
+    tooltipLines.push(`Quest ID: ${drop.attributes.questId}`);
 
   return (
     <TooltipProvider>

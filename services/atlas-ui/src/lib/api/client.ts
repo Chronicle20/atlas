@@ -47,7 +47,10 @@ export interface CacheOptions {
   maxStaleTime?: number;
 }
 
-export interface ApiRequestOptions extends Omit<RequestInit, "method" | "body" | "cache"> {
+export interface ApiRequestOptions extends Omit<
+  RequestInit,
+  "method" | "body" | "cache"
+> {
   /** Override request timeout (default: 30s). */
   timeout?: number;
   /** Skip tenant header injection — used by unauthenticated endpoints if any. */
@@ -85,11 +88,16 @@ class ApiClient {
     return this.tenant;
   }
 
-  private createHeaders(contentType: string | null, options?: ApiRequestOptions): Headers {
+  private createHeaders(
+    contentType: string | null,
+    options?: ApiRequestOptions,
+  ): Headers {
     const headers = new Headers();
 
     if (this.tenant && !options?.skipTenantHeaders) {
-      tenantHeaders(this.tenant).forEach((value, key) => headers.set(key, value));
+      tenantHeaders(this.tenant).forEach((value, key) =>
+        headers.set(key, value),
+      );
     }
 
     if (contentType) {
@@ -97,13 +105,18 @@ class ApiClient {
     }
 
     if (options?.headers) {
-      new Headers(options.headers).forEach((value, key) => headers.set(key, value));
+      new Headers(options.headers).forEach((value, key) =>
+        headers.set(key, value),
+      );
     }
 
     return headers;
   }
 
-  private createTimeoutSignal(timeoutMs: number, external?: AbortSignal): AbortSignal {
+  private createTimeoutSignal(
+    timeoutMs: number,
+    external?: AbortSignal,
+  ): AbortSignal {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -119,7 +132,7 @@ class ApiClient {
         clearTimeout(timeoutId);
         if (external) external.removeEventListener("abort", abort);
       },
-      { once: true }
+      { once: true },
     );
 
     return controller.signal;
@@ -128,7 +141,7 @@ class ApiClient {
   private async fetchWithRetry(
     url: string,
     init: RequestInit,
-    options?: ApiRequestOptions
+    options?: ApiRequestOptions,
   ): Promise<Response> {
     const maxRetries = options?.maxRetries ?? DEFAULT_MAX_RETRIES;
     const timeoutMs = options?.timeout ?? DEFAULT_TIMEOUT_MS;
@@ -139,7 +152,11 @@ class ApiClient {
 
       try {
         const response = await fetch(url, { ...init, signal });
-        if (!response.ok && attempt < maxRetries && (response.status >= 500 || response.status === 429)) {
+        if (
+          !response.ok &&
+          attempt < maxRetries &&
+          (response.status >= 500 || response.status === 429)
+        ) {
           await this.sleep(this.retryDelay(attempt));
           continue;
         }
@@ -159,7 +176,7 @@ class ApiClient {
   }
 
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   private async processResponse<T>(response: Response): Promise<T> {
@@ -170,11 +187,15 @@ class ApiClient {
         const sanitized = sanitizeErrorData(body) as Record<string, unknown>;
         const error = sanitized.error as Record<string, unknown> | undefined;
         if (error && typeof error.detail === "string") message = error.detail;
-        else if (typeof sanitized.message === "string") message = sanitized.message;
+        else if (typeof sanitized.message === "string")
+          message = sanitized.message;
         else if (Array.isArray((sanitized as { errors?: unknown }).errors)) {
-          const first = (sanitized as { errors: Array<Record<string, unknown>> }).errors[0];
+          const first = (
+            sanitized as { errors: Array<Record<string, unknown>> }
+          ).errors[0];
           if (first && typeof first.detail === "string") message = first.detail;
-          else if (first && typeof first.title === "string") message = first.title;
+          else if (first && typeof first.title === "string")
+            message = first.title;
         }
       } catch {
         // Use status-based default.
@@ -193,7 +214,10 @@ class ApiClient {
     } catch {
       const contentType = response.headers.get("content-type") ?? "";
       if (!contentType.includes("application/json")) return undefined as T;
-      throw createApiErrorFromResponse(500, "Invalid JSON response from server");
+      throw createApiErrorFromResponse(
+        500,
+        "Invalid JSON response from server",
+      );
     }
   }
 
@@ -201,26 +225,37 @@ class ApiClient {
     const response = await this.fetchWithRetry(
       `${this.baseUrl}${url}`,
       { method: "GET", headers: this.createHeaders(null, options) },
-      options
+      options,
     );
     return this.processResponse<T>(response);
   }
 
-  async post<T>(url: string, data?: unknown, options?: ApiRequestOptions): Promise<T> {
+  async post<T>(
+    url: string,
+    data?: unknown,
+    options?: ApiRequestOptions,
+  ): Promise<T> {
     const hasBody = data !== undefined && data !== null;
     const response = await this.fetchWithRetry(
       `${this.baseUrl}${url}`,
       {
         method: "POST",
-        headers: this.createHeaders(hasBody ? "application/json" : null, options),
+        headers: this.createHeaders(
+          hasBody ? "application/json" : null,
+          options,
+        ),
         ...(hasBody ? { body: JSON.stringify(data) } : {}),
       },
-      { ...options, maxRetries: options?.maxRetries ?? 0 }
+      { ...options, maxRetries: options?.maxRetries ?? 0 },
     );
     return this.processResponse<T>(response);
   }
 
-  async put<T>(url: string, data?: unknown, options?: ApiRequestOptions): Promise<T> {
+  async put<T>(
+    url: string,
+    data?: unknown,
+    options?: ApiRequestOptions,
+  ): Promise<T> {
     const response = await this.fetchWithRetry(
       `${this.baseUrl}${url}`,
       {
@@ -228,12 +263,16 @@ class ApiClient {
         headers: this.createHeaders("application/json", options),
         body: data !== undefined ? JSON.stringify(data) : null,
       },
-      { ...options, maxRetries: options?.maxRetries ?? 0 }
+      { ...options, maxRetries: options?.maxRetries ?? 0 },
     );
     return this.processResponse<T>(response);
   }
 
-  async patch<T>(url: string, data?: unknown, options?: ApiRequestOptions): Promise<T> {
+  async patch<T>(
+    url: string,
+    data?: unknown,
+    options?: ApiRequestOptions,
+  ): Promise<T> {
     const response = await this.fetchWithRetry(
       `${this.baseUrl}${url}`,
       {
@@ -241,7 +280,7 @@ class ApiClient {
         headers: this.createHeaders("application/json", options),
         body: data !== undefined ? JSON.stringify(data) : null,
       },
-      { ...options, maxRetries: options?.maxRetries ?? 0 }
+      { ...options, maxRetries: options?.maxRetries ?? 0 },
     );
     return this.processResponse<T>(response);
   }
@@ -250,26 +289,33 @@ class ApiClient {
     const response = await this.fetchWithRetry(
       `${this.baseUrl}${url}`,
       { method: "DELETE", headers: this.createHeaders(null, options) },
-      { ...options, maxRetries: options?.maxRetries ?? 0 }
+      { ...options, maxRetries: options?.maxRetries ?? 0 },
     );
     return this.processResponse<T>(response);
   }
 
-  async upload<T>(url: string, file: File | FormData, options?: ApiRequestOptions): Promise<T> {
+  async upload<T>(
+    url: string,
+    file: File | FormData,
+    options?: ApiRequestOptions,
+  ): Promise<T> {
     // Browser sets the multipart boundary automatically when Content-Type is omitted.
     const headers = this.createHeaders(null, options);
     headers.delete("Content-Type");
 
-    const body = file instanceof FormData ? file : (() => {
-      const fd = new FormData();
-      fd.append("file", file);
-      return fd;
-    })();
+    const body =
+      file instanceof FormData
+        ? file
+        : (() => {
+            const fd = new FormData();
+            fd.append("file", file);
+            return fd;
+          })();
 
     const response = await this.fetchWithRetry(
       `${this.baseUrl}${url}`,
       { method: "POST", headers, body },
-      { ...options, maxRetries: options?.maxRetries ?? 0 }
+      { ...options, maxRetries: options?.maxRetries ?? 0 },
     );
     return this.processResponse<T>(response);
   }
@@ -281,9 +327,13 @@ class ApiClient {
     const response = await this.fetchWithRetry(
       `${this.baseUrl}${url}`,
       { method: "GET", headers },
-      options
+      options,
     );
-    if (!response.ok) throw createApiErrorFromResponse(response.status, `Download failed: ${response.status}`);
+    if (!response.ok)
+      throw createApiErrorFromResponse(
+        response.status,
+        `Download failed: ${response.status}`,
+      );
     return response.blob();
   }
 }
@@ -296,28 +346,41 @@ export const apiClient = new ApiClient();
  * `api.getOne` / `api.post` etc.
  */
 export const api = {
-  get: <T>(url: string, options?: ApiRequestOptions): Promise<T> => apiClient.get<T>(url, options),
+  get: <T>(url: string, options?: ApiRequestOptions): Promise<T> =>
+    apiClient.get<T>(url, options),
 
   getList: <T>(url: string, options?: ApiRequestOptions): Promise<T[]> =>
-    apiClient.get<ApiListResponse<T>>(url, options).then(r => r.data),
+    apiClient.get<ApiListResponse<T>>(url, options).then((r) => r.data),
 
   getOne: <T>(url: string, options?: ApiRequestOptions): Promise<T> =>
-    apiClient.get<ApiSingleResponse<T>>(url, options).then(r => r.data),
+    apiClient.get<ApiSingleResponse<T>>(url, options).then((r) => r.data),
 
-  post: <T>(url: string, data?: unknown, options?: ApiRequestOptions): Promise<T> =>
-    apiClient.post<T>(url, data, options),
+  post: <T>(
+    url: string,
+    data?: unknown,
+    options?: ApiRequestOptions,
+  ): Promise<T> => apiClient.post<T>(url, data, options),
 
-  put: <T>(url: string, data?: unknown, options?: ApiRequestOptions): Promise<T> =>
-    apiClient.put<T>(url, data, options),
+  put: <T>(
+    url: string,
+    data?: unknown,
+    options?: ApiRequestOptions,
+  ): Promise<T> => apiClient.put<T>(url, data, options),
 
-  patch: <T>(url: string, data?: unknown, options?: ApiRequestOptions): Promise<T> =>
-    apiClient.patch<T>(url, data, options),
+  patch: <T>(
+    url: string,
+    data?: unknown,
+    options?: ApiRequestOptions,
+  ): Promise<T> => apiClient.patch<T>(url, data, options),
 
   delete: <T = void>(url: string, options?: ApiRequestOptions): Promise<T> =>
     apiClient.delete<T>(url, options),
 
-  upload: <T>(url: string, file: File | FormData, options?: ApiRequestOptions): Promise<T> =>
-    apiClient.upload<T>(url, file, options),
+  upload: <T>(
+    url: string,
+    file: File | FormData,
+    options?: ApiRequestOptions,
+  ): Promise<T> => apiClient.upload<T>(url, file, options),
 
   download: (url: string, options?: ApiRequestOptions): Promise<Blob> =>
     apiClient.download(url, options),

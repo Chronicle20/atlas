@@ -1,0 +1,30 @@
+{
+  "WriterName": "FieldViciousHammerSuccess",
+  "IDAName": "CField::OnItemUpgrade#Success",
+  "Address": "0x52a430",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/field/clientbound/vicious_hammer.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (= 65; success) — v5 stored to this-\u003em_nReturnResult, then `if (v5==65)` in OnItemUpgradeResult",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "flag (v8; 0 = success -\u003e \"N upgrades left\" message; non-0 -\u003e \"Unknown error %d\" using this-\u003em_nResult)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

@@ -1,0 +1,155 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2040026,
+      "startState": "checkScroll",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "4001020",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "selectDestination"
+              },
+              {
+                "conditions": [],
+                "nextState": "noScroll"
+              }
+            ]
+          },
+          "id": "checkScroll",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "There's a rock that will enable you to teleport to #bSecond Eos Rock or Fourth Eos Rock#k, but it cannot be activated without the scroll."
+          },
+          "id": "noScroll",
+          "type": "dialogue"
+        },
+        {
+          "id": "selectDestination",
+          "listSelection": {
+            "choices": [
+              {
+                "context": {
+                  "destination": "221022900",
+                  "portalId": "3"
+                },
+                "nextState": "confirmSecondRock",
+                "text": "Second Eos Rock (71st Floor)"
+              },
+              {
+                "context": {
+                  "destination": "221020000",
+                  "portalId": "4"
+                },
+                "nextState": "confirmFourthRock",
+                "text": "Fourth Eos Rock (1st Floor)"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "You can use #bEos Rock Scroll#k to activate #bThird Eos Rock#k. Which of these rocks would you like to teleport to?"
+          },
+          "type": "listSelection"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "teleport",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You can use #bEos Rock Scroll#k to activate #bThird Eos Rock#k. Will you teleport to #bSecond Eos Rock#k at the 71st Floor?"
+          },
+          "id": "confirmSecondRock",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "teleport",
+                "text": "Yes"
+              },
+              {
+                "nextState": null,
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You can use #bEos Rock Scroll#k to activate #bThird Eos Rock#k. Will you teleport to #bFourth Eos Rock#k at the 1st Floor?"
+          },
+          "id": "confirmFourthRock",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "4001020",
+                  "quantity": "1"
+                },
+                "type": "destroy_item"
+              },
+              {
+                "params": {
+                  "mapId": "{context.destination}",
+                  "portalId": "{context.portalId}"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "teleport",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "2040026",
+    "type": "npc-conversation"
+  }
+}

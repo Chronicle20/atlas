@@ -6,13 +6,13 @@ import (
 
 func TestNewModel(t *testing.T) {
 	tests := []struct {
-		name        string
-		id          uint32
-		charName    string
-		level       byte
-		wantId      uint32
-		wantName    string
-		wantLevel   byte
+		name      string
+		id        uint32
+		charName  string
+		level     byte
+		wantId    uint32
+		wantName  string
+		wantLevel byte
 	}{
 		{
 			name:      "creates_model_with_valid_parameters",
@@ -55,15 +55,15 @@ func TestNewModel(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			model := NewModel(tt.id, tt.charName, tt.level)
-			
+
 			if model.Id() != tt.wantId {
 				t.Errorf("Id() = %v, want %v", model.Id(), tt.wantId)
 			}
-			
+
 			if model.Name() != tt.wantName {
 				t.Errorf("Name() = %v, want %v", model.Name(), tt.wantName)
 			}
-			
+
 			if model.Level() != tt.wantLevel {
 				t.Errorf("Level() = %v, want %v", model.Level(), tt.wantLevel)
 			}
@@ -73,7 +73,7 @@ func TestNewModel(t *testing.T) {
 
 func TestModel_Id(t *testing.T) {
 	model := Model{id: 12345}
-	
+
 	expected := uint32(12345)
 	if model.Id() != expected {
 		t.Errorf("Id() = %v, want %v", model.Id(), expected)
@@ -82,7 +82,7 @@ func TestModel_Id(t *testing.T) {
 
 func TestModel_Name(t *testing.T) {
 	model := Model{name: "TestName"}
-	
+
 	expected := "TestName"
 	if model.Name() != expected {
 		t.Errorf("Name() = %v, want %v", model.Name(), expected)
@@ -91,7 +91,7 @@ func TestModel_Name(t *testing.T) {
 
 func TestModel_Level(t *testing.T) {
 	model := Model{level: 75}
-	
+
 	expected := byte(75)
 	if model.Level() != expected {
 		t.Errorf("Level() = %v, want %v", model.Level(), expected)

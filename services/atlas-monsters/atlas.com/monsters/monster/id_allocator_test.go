@@ -6,10 +6,11 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/google/uuid"
+
 	objectid "github.com/Chronicle20/atlas/libs/atlas-object-id"
 	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func freshTenant(t *testing.T) tenant.Model {

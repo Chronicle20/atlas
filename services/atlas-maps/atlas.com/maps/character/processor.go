@@ -25,6 +25,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{l: l, ctx: ctx}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // Position fetches the character resource and projects (x, y) out of it.
 func (p *ProcessorImpl) Position(characterId uint32) (int16, int16, error) {
 	rm, err := requestById(characterId)(p.l, p.ctx)

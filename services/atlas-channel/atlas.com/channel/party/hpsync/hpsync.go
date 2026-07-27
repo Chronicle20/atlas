@@ -1,20 +1,20 @@
 package hpsync
 
 import (
-	"context"
-	"errors"
-
 	"atlas-channel/character"
 	"atlas-channel/party"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
+	"context"
+	"errors"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	partycb "github.com/Chronicle20/atlas/libs/atlas-packet/party/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/sirupsen/logrus"
 )
 
 // loadPartyCharacterFunc loads the party-decorated character whose HP gauges

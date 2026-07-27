@@ -6,10 +6,11 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	mountsb "github.com/Chronicle20/atlas/libs/atlas-packet/mount/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 // MountFoodHandleFunc handles the serverbound taming-mob (mount) food packet

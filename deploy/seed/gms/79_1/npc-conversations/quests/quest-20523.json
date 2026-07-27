@@ -1,0 +1,254 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "greetEnd",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "checkComplete",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "So, has your Mimiana grown enough to ride? Let me take a look and see if it's ready to become your loyal mount."
+            },
+            "id": "greetEnd",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": "<",
+                      "referenceId": "4032117",
+                      "type": "item",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "notReady"
+                },
+                {
+                  "conditions": [
+                    {
+                      "operator": "<",
+                      "referenceId": "1912005",
+                      "type": "inventorySpace",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "noSpace"
+                },
+                {
+                  "conditions": [
+                    {
+                      "operator": "<",
+                      "referenceId": "1902005",
+                      "type": "inventorySpace",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "noSpace"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "completeQuest"
+                }
+              ]
+            },
+            "id": "checkComplete",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Hmm, your Mimiana doesn't seem quite ready yet. Come back once you've finished raising it."
+            },
+            "id": "notReady",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Please, make some space on your EQUIP tab so I can hand you the saddle and your Mimiana!"
+            },
+            "id": "noSpace",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "completionMessage"
+                }
+              ]
+            },
+            "id": "completeQuest",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Congratulations! Your Mimiana has fully grown. Here's the saddle and your very own Riding Mimiana. From now on, you and Mimiana will ride together as true companions!"
+            },
+            "id": "completionMessage",
+            "type": "dialogue"
+          }
+        ]
+      },
+      "questId": 20523,
+      "questName": "Riding Mimiana",
+      "startStateMachine": {
+        "startState": "intro1",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "intro2",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Your Mimiana has grown so much! It's almost time for the two of you to ride together as one. But before that, there's a final step a Knight must take to truly become a rider."
+            },
+            "id": "intro1",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "intro1",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "offer",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "To ride a Mimiana, you'll need a proper saddle and the bond of trust you've built while raising it. Once everything is ready, you'll be able to mount your Mimiana and travel the world together."
+            },
+            "id": "intro2",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "startQuest",
+                  "text": "Accept"
+                },
+                {
+                  "nextState": null,
+                  "text": "Decline"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendAcceptDecline",
+              "text": "Are you ready to take the final step and become a true Mimiana rider?"
+            },
+            "id": "offer",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "confirmStart"
+                }
+              ]
+            },
+            "id": "startQuest",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Wonderful! Bring your fully grown Mimiana back to me, and I'll prepare its saddle so the two of you can finally ride together."
+            },
+            "id": "confirmStart",
+            "type": "dialogue"
+          }
+        ]
+      }
+    },
+    "id": "20523",
+    "type": "quest-conversation"
+  }
+}

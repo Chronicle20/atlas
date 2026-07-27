@@ -33,8 +33,7 @@ type AwardClosenessCommandBody struct {
 
 // EvolveCommandBody represents the body of an evolve command.
 // This command is used to evolve a pet. It carries no additional fields.
-type EvolveCommandBody struct {
-}
+type EvolveCommandBody struct{}
 
 // StatusEvent represents a pet status event from atlas-pets
 type StatusEvent[E any] struct {

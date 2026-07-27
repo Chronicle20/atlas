@@ -23,6 +23,7 @@ func (f *fakeWriter) Topic() string { return f.topicName }
 func (f *fakeWriter) WriteMessages(_ context.Context, _ ...kafka.Message) error {
 	return nil
 }
+
 func (f *fakeWriter) Close() error {
 	atomic.AddInt32(&f.closes, 1)
 	return f.closeErr

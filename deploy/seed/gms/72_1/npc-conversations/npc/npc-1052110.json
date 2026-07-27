@@ -1,0 +1,30 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1052110,
+      "startState": "greeting",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Just a trash can sitting there."
+          },
+          "id": "greeting",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "1052110",
+    "type": "npc-conversation"
+  }
+}

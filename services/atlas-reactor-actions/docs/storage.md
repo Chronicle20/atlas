@@ -16,6 +16,18 @@ Stores reactor script definitions.
 | updated_at | timestamp | NOT NULL, DEFAULT CURRENT_TIMESTAMP | Last update timestamp |
 | deleted_at | timestamp | NULL | Soft delete timestamp |
 
+### seed_state
+
+Tracks the seed catalog state per tenant and seed group (shared table type defined in the `atlas-seeder` library, migrated by this service).
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| tenant_id | uuid | PRIMARY KEY | Tenant identifier |
+| group_name | text | PRIMARY KEY | Seed group name (`reactor-actions`) |
+| catalog_revision | text | NOT NULL | Catalog revision seeded |
+| seeded_at | timestamp | NOT NULL | Timestamp of last seed completion |
+| result_summary | jsonb | NOT NULL | Serialized seed result summary |
+
 ## Relationships
 
 None.
@@ -29,6 +41,7 @@ None.
 
 ## Migration Rules
 
-- Table is auto-migrated using GORM AutoMigrate
-- Soft deletes are enabled via `deleted_at` column
-- Hard delete is used during seed operations to clear all tenant scripts
+- `reactor_scripts` is auto-migrated using GORM AutoMigrate
+- Soft deletes are enabled via `deleted_at` column on `reactor_scripts`
+- Hard delete is used during seed operations to clear all tenant scripts in `reactor_scripts`
+- `seed_state` is auto-migrated using GORM AutoMigrate; rows are upserted on conflict of (tenant_id, group_name)

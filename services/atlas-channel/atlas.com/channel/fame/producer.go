@@ -3,10 +3,11 @@ package fame
 import (
 	fame2 "atlas-channel/kafka/message/fame"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 )
 
 func RequestChangeFameCommandProvider(f field.Model, characterId uint32, targetId uint32, amount int8) model.Provider[[]kafka.Message] {

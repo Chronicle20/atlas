@@ -8,9 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/alicebob/miniredis/v2"
 	goredis "github.com/redis/go-redis/v9"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func setupTestRedis(t *testing.T) (*goredis.Client, *miniredis.Miniredis) {

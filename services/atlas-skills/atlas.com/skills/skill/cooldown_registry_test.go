@@ -5,11 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func setupCooldownRegistryTest(t *testing.T) {

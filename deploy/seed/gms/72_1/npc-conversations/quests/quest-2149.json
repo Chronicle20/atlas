@@ -1,0 +1,53 @@
+{
+  "data": {
+    "attributes": {
+      "questId": 2149,
+      "questName": "Quest 2149",
+      "startStateMachine": {
+        "startState": "intro",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "completeQuest",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "It is said that a old tree gets alive whenever something sinister disturbs this land... We need a hero that fends our village of that creature!"
+            },
+            "id": "intro",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "force": "true"
+                  },
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "completeQuest",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "2149",
+    "type": "quest-conversation"
+  }
+}

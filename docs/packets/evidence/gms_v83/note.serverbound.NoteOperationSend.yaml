@@ -6,3 +6,5 @@ ida:
     function: CCashShop::OnCashItemResLoadGiftDone
     address: "0x47959e"
     decompile_sha256: 62196ca197b45fe2bd3720337bbe13dbbbf1008b7ae67a41ca663835b4387418
+verifies:
+    - note/serverbound/operation_send_test.go#TestOperationSendByteOutputAllVersions

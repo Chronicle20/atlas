@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcShopOperationTradeLimit
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CShopDlg::OnPacket#TradeLimit
+    address: "0x6d6eb9"
+    decompile_sha256: 574fec02e7bd08d7fe192e0f9cabbbaa3f0d2e732cb46c7008044429ec9cf5c6
+verifies:
+  - libs/atlas-packet/npc/clientbound/shop_operation_v79_test.go#TestShopOperationArmsV79

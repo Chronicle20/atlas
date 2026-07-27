@@ -6,9 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 // stubServerInfo satisfies jsonapi.ServerInformation for testing.

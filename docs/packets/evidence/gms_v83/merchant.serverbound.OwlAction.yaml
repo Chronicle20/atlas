@@ -1,0 +1,11 @@
+packet: merchant/serverbound/OwlAction
+direction: serverbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CUIShopScanner::OnCreate
+    address: "0x8a0e9a"
+    decompile_sha256: 4a249c3c566d7bd33de0c32423ddd1015ee1888a8fa7f9b11266c4ffe5ca39c0
+verifies:
+  - libs/atlas-packet/merchant/serverbound/owl_action_test.go#TestOwlActionWireShape
+  - libs/atlas-packet/merchant/serverbound/owl_action_test.go#TestOwlActionRoundTrip

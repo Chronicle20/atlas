@@ -1,10 +1,11 @@
 package monster
 
 import (
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 type RestModel struct {
@@ -43,4 +44,11 @@ func (m *RestModel) SetID(idStr string) error {
 
 func (m RestModel) GetName() string {
 	return "monsters"
+}
+
+// Extract is an identity transform -- this package only needs the monster
+// count, not a decoded monster model, so requests.DrainProvider is
+// parameterized with RestModel on both sides.
+func Extract(m RestModel) (RestModel, error) {
+	return m, nil
 }

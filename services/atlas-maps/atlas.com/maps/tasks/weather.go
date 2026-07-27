@@ -2,15 +2,17 @@ package tasks
 
 import (
 	mapKafka "atlas-maps/kafka/message/map"
-	"atlas-maps/kafka/producer"
 	"atlas-maps/map/weather"
 	"context"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const WeatherTask = "weather_task"

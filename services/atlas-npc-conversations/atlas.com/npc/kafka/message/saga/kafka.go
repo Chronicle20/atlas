@@ -3,8 +3,8 @@ package saga
 import "github.com/google/uuid"
 
 const (
-	EnvCommandTopic      = "COMMAND_TOPIC_SAGA"
-	EnvStatusEventTopic  = "EVENT_TOPIC_SAGA_STATUS"
+	EnvCommandTopic          = "COMMAND_TOPIC_SAGA"
+	EnvStatusEventTopic      = "EVENT_TOPIC_SAGA_STATUS"
 	StatusEventTypeCompleted = "COMPLETED"
 	StatusEventTypeFailed    = "FAILED"
 )
@@ -15,8 +15,7 @@ type StatusEvent[T any] struct {
 	Body          T         `json:"body"`
 }
 
-type StatusEventCompletedBody struct {
-}
+type StatusEventCompletedBody struct{}
 
 type StatusEventFailedBody struct {
 	ErrorCode  string `json:"errorCode"`

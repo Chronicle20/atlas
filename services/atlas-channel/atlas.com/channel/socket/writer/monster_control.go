@@ -5,23 +5,26 @@ import (
 	"atlas-channel/monster"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	monsterpkt "github.com/Chronicle20/atlas/libs/atlas-packet/monster/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type ControlMonsterType int8
 
-var ControlMonsterTypeReset = ControlMonsterType(0)
-var ControlMonsterTypeActiveInit = ControlMonsterType(1)
-var ControlMonsterTypeActiveRequest = ControlMonsterType(2)
-var ControlMonsterTypeActivePerm0 = ControlMonsterType(3)
-var ControlMonsterTypeActivePerm1 = ControlMonsterType(4)
-var ControlMonsterTypePassive = ControlMonsterType(-1)
-var ControlMonsterTypePassive0 = ControlMonsterType(-2)
-var ControlMonsterTypePassive1 = ControlMonsterType(-3)
+var (
+	ControlMonsterTypeReset         = ControlMonsterType(0)
+	ControlMonsterTypeActiveInit    = ControlMonsterType(1)
+	ControlMonsterTypeActiveRequest = ControlMonsterType(2)
+	ControlMonsterTypeActivePerm0   = ControlMonsterType(3)
+	ControlMonsterTypeActivePerm1   = ControlMonsterType(4)
+	ControlMonsterTypePassive       = ControlMonsterType(-1)
+	ControlMonsterTypePassive0      = ControlMonsterType(-2)
+	ControlMonsterTypePassive1      = ControlMonsterType(-3)
+)
 
 func StartControlMonsterBody(m monster.Model, aggro bool) packet.Encode {
 	if aggro {

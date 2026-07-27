@@ -7,13 +7,13 @@ import (
 	"atlas-channel/socket/model"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
-
 
 func CharacterSpawnBody(c character.Model, bs []buff.Model, g guild.Model, enteringField bool) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
@@ -59,7 +59,7 @@ func CharacterSpawnBody(c character.Model, bs []buff.Model, g guild.Model, enter
 
 			return charpkt.NewCharacterSpawn(
 				c.Id(), c.Level(), c.Name(), ge, cts, uint16(c.JobId()), ava,
-				pets, enteringField, c.X(), c.Y(), c.Stance(),
+				pets, enteringField, c.X(), c.Y(), c.Stance(), c.Fh(),
 			).Encode(l, ctx)(options)
 		}
 	}

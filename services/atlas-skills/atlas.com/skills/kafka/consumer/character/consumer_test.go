@@ -9,12 +9,14 @@ import (
 	"testing"
 	"time"
 
-	skillconst "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 	logtest "github.com/sirupsen/logrus/hooks/test"
+
+	skillconst "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 func setupCooldownRegistry(t *testing.T) {
@@ -87,9 +89,9 @@ func TestHandleStatusEventDeleted(t *testing.T) {
 	}
 
 	// Verify data exists
-	skills, _ := skillProcessor.ByCharacterIdProvider(characterId)()
-	if len(skills) != 2 {
-		t.Fatalf("Expected 2 skills before delete, got %d", len(skills))
+	skills, _ := skillProcessor.ByCharacterIdProvider(characterId, model.Page{Number: 1, Size: 250})()
+	if len(skills.Items) != 2 {
+		t.Fatalf("Expected 2 skills before delete, got %d", len(skills.Items))
 	}
 	macroResult, _ := macroProcessor.ByCharacterIdProvider(characterId)()
 	if len(macroResult) != 1 {
@@ -111,9 +113,9 @@ func TestHandleStatusEventDeleted(t *testing.T) {
 	}
 
 	// Verify all data is deleted
-	skills, _ = skillProcessor.ByCharacterIdProvider(characterId)()
-	if len(skills) != 0 {
-		t.Errorf("Expected 0 skills after delete, got %d", len(skills))
+	skills, _ = skillProcessor.ByCharacterIdProvider(characterId, model.Page{Number: 1, Size: 250})()
+	if len(skills.Items) != 0 {
+		t.Errorf("Expected 0 skills after delete, got %d", len(skills.Items))
 	}
 	macroResult, _ = macroProcessor.ByCharacterIdProvider(characterId)()
 	if len(macroResult) != 0 {

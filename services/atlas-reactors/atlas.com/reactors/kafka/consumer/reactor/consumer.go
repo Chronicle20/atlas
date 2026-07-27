@@ -5,6 +5,8 @@ import (
 	"atlas-reactors/reactor"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
@@ -12,7 +14,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -53,7 +54,7 @@ func handleCreate(l logrus.FieldLogger, ctx context.Context, c reactor.Command[r
 		SetDelay(c.Body.Delay).
 		SetDirection(c.Body.Direction)
 
-	err := reactor.Create(l)(ctx)(b)
+	err := reactor.NewProcessor(l, ctx).Create(b)
 	if err != nil {
 		l.WithError(err).Errorf("Failed to create reactor for classification [%d].", c.Body.Classification)
 	}
@@ -64,7 +65,7 @@ func handleHit(l logrus.FieldLogger, ctx context.Context, c reactor.Command[reac
 		return
 	}
 
-	err := reactor.Hit(l)(ctx)(c.Body.ReactorId, c.Body.CharacterId, c.Body.SkillId)
+	err := reactor.NewProcessor(l, ctx).Hit(c.Body.ReactorId, c.Body.CharacterId, c.Body.SkillId)
 	if err != nil {
 		l.WithError(err).Errorf("Failed to process hit for reactor [%d].", c.Body.ReactorId)
 	}
@@ -76,5 +77,5 @@ func handleDestroyInField(l logrus.FieldLogger, ctx context.Context, c reactor.C
 	}
 
 	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
-	reactor.DestroyInField(l)(ctx)(f)
+	reactor.NewProcessor(l, ctx).DestroyInField(f)
 }

@@ -17,8 +17,10 @@ type Configuration struct {
 	PicBanDuration    string `yaml:"picBanDuration"`
 }
 
-var configurationRegistryOnce sync.Once
-var configurationRegistry *Registry
+var (
+	configurationRegistryOnce sync.Once
+	configurationRegistry     *Registry
+)
 
 func Get() (*Configuration, error) {
 	configurationRegistryOnce.Do(func() {

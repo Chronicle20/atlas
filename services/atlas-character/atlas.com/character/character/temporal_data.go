@@ -7,14 +7,16 @@ import (
 	"sync"
 	"time"
 
-	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	goredis "github.com/redis/go-redis/v9"
+
+	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type temporalData struct {
 	x      int16
 	y      int16
+	fh     int16
 	stance byte
 }
 
@@ -22,14 +24,16 @@ func (d temporalData) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		X      int16 `json:"x"`
 		Y      int16 `json:"y"`
+		Fh     int16 `json:"fh"`
 		Stance byte  `json:"stance"`
-	}{X: d.x, Y: d.y, Stance: d.stance})
+	}{X: d.x, Y: d.y, Fh: d.fh, Stance: d.stance})
 }
 
 func (d *temporalData) UnmarshalJSON(data []byte) error {
 	var raw struct {
 		X      int16 `json:"x"`
 		Y      int16 `json:"y"`
+		Fh     int16 `json:"fh"`
 		Stance byte  `json:"stance"`
 	}
 	if err := json.Unmarshal(data, &raw); err != nil {
@@ -37,6 +41,7 @@ func (d *temporalData) UnmarshalJSON(data []byte) error {
 	}
 	d.x = raw.X
 	d.y = raw.Y
+	d.fh = raw.Fh
 	d.stance = raw.Stance
 	return nil
 }
@@ -47,6 +52,10 @@ func (d *temporalData) X() int16 {
 
 func (d *temporalData) Y() int16 {
 	return d.y
+}
+
+func (d *temporalData) Fh() int16 {
+	return d.fh
 }
 
 func (d *temporalData) Stance() byte {
@@ -63,16 +72,16 @@ type temporalRegistry struct {
 
 func (r *temporalRegistry) UpdatePosition(ctx context.Context, t tenant.Model, characterId uint32, x int16, y int16) {
 	existing, _ := r.reg.Get(ctx, t, characterId)
-	_ = r.reg.Put(ctx, t, characterId, temporalData{x: x, y: y, stance: existing.stance})
+	_ = r.reg.Put(ctx, t, characterId, temporalData{x: x, y: y, fh: existing.fh, stance: existing.stance})
 }
 
-func (r *temporalRegistry) Update(ctx context.Context, t tenant.Model, characterId uint32, x int16, y int16, stance byte) {
-	_ = r.reg.Put(ctx, t, characterId, temporalData{x: x, y: y, stance: stance})
+func (r *temporalRegistry) Update(ctx context.Context, t tenant.Model, characterId uint32, x int16, y int16, fh int16, stance byte) {
+	_ = r.reg.Put(ctx, t, characterId, temporalData{x: x, y: y, fh: fh, stance: stance})
 }
 
 func (r *temporalRegistry) UpdateStance(ctx context.Context, t tenant.Model, characterId uint32, stance byte) {
 	existing, _ := r.reg.Get(ctx, t, characterId)
-	_ = r.reg.Put(ctx, t, characterId, temporalData{x: existing.x, y: existing.y, stance: stance})
+	_ = r.reg.Put(ctx, t, characterId, temporalData{x: existing.x, y: existing.y, fh: existing.fh, stance: stance})
 }
 
 func (r *temporalRegistry) GetById(ctx context.Context, t tenant.Model, characterId uint32) temporalData {
@@ -87,8 +96,10 @@ func (r *temporalRegistry) Shutdown() {
 	r.reg.Shutdown()
 }
 
-var once sync.Once
-var instance *temporalRegistry
+var (
+	once     sync.Once
+	instance *temporalRegistry
+)
 
 func InitTemporalRegistry(rc *goredis.Client) {
 	once.Do(func() {

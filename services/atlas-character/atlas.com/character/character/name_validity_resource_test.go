@@ -10,11 +10,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func buildNameValidityServer(db *gorm.DB) *httptest.Server {

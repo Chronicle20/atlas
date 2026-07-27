@@ -3,11 +3,12 @@ package message
 import (
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Processor interface {
@@ -30,6 +31,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		t:   tenant.MustFromContext(ctx),
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // SendMessage persists a chat message for a shop.
 func (p *ProcessorImpl) SendMessage(shopId uuid.UUID, characterId uint32, content string) error {

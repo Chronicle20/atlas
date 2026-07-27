@@ -1,0 +1,8 @@
+packet: character/clientbound/StatusMessageUpdateQuestRecord
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_71B543
+    address: "0x71b543"
+    decompile_sha256: a725ae97fbee8148f195c187bf17aa9eaa8847586a3b62ac1e9a0e83737eb918

@@ -5,11 +5,12 @@ import (
 	"atlas-channel/monster"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	monsterpkt "github.com/Chronicle20/atlas/libs/atlas-packet/monster/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func buildMonsterTemporaryStat(l logrus.FieldLogger, t tenant.Model, m monster.Model) *packetmodel.MonsterTemporaryStat {
@@ -39,13 +40,6 @@ func SpawnMonsterWithEffectBody(m monster.Model, newSpawn bool, effect byte) pac
 			// the v83 client's spawn-packet validation doesn't drop the mob
 			// through the floor. See data/map.SnapMobPosition.
 			x, y := dmap.SnapMobPosition(l, ctx, m.MapId(), m.X(), m.Y(), m.Fh())
-
-			// Debug: capture exactly what the wire spawn packet carries.
-			// Useful when investigating fall-through reports — lets us
-			// correlate the (x, y, fh) the client received against what the
-			// client subsequently does with the mob (drop, walk, etc.).
-			l.Debugf("Spawn monster wire: uniqueId=[%d] monsterId=[%d] x=[%d] y=[%d] fh=[%d] stance=[%d] newSpawn=[%t] controlled=[%t]",
-				m.UniqueId(), m.MonsterId(), x, y, m.Fh(), m.Stance(), newSpawn, m.Controlled())
 
 			mem := packetmodel.NewMonster(x, y, m.Stance(), m.Fh(), appearType, m.Team())
 			stat := buildMonsterTemporaryStat(l, t, m)

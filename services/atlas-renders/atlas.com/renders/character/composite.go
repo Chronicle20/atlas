@@ -1,6 +1,7 @@
 package character
 
 import (
+	"atlas-renders/storage"
 	"bytes"
 	"context"
 	"fmt"
@@ -10,12 +11,11 @@ import (
 	"sort"
 	"strings"
 
-	"atlas-renders/storage"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/Chronicle20/atlas/libs/atlas-wz/manifest"
-	"github.com/sirupsen/logrus"
 )
 
 // Native compositing canvas. Mirrors the donor's characterimage constants so
@@ -252,11 +252,11 @@ func ValidateStance(s string) error {
 // canvas anchor at which `sprite.Origin` should land; the actual blit then
 // happens at `(anchor - origin)`. Donor: characterimage/compositor.go:168-177.
 type placement struct {
-	templateID  uint32
-	partClass   string
-	sprite      manifest.Sprite
-	atlasImage  image.Image
-	anchor      anchorPoint
+	templateID uint32
+	partClass  string
+	sprite     manifest.Sprite
+	atlasImage image.Image
+	anchor     anchorPoint
 }
 
 // anchorPoint is the canvas-space coordinate at which a sprite's `origin`
@@ -682,4 +682,3 @@ func NearestNeighborUpscale(src image.Image, resize int) image.Image {
 	}
 	return out
 }
-

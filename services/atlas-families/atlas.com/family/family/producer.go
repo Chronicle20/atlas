@@ -1,14 +1,14 @@
 package family
 
 import (
+	"atlas-family/kafka/message/family"
 	"time"
 
-	"atlas-family/kafka/message/family"
+	"github.com/segmentio/kafka-go"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 )
 
 // LinkCreatedEventProvider creates a Kafka message provider for link created events

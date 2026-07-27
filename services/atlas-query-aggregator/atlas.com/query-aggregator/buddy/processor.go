@@ -3,9 +3,10 @@ package buddy
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/sirupsen/logrus"
 )
 
 // Processor defines the interface for buddy list processing
@@ -27,6 +28,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		ctx: ctx,
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // GetBuddyList returns the buddy list data for a character
 func (p *ProcessorImpl) GetBuddyList(characterId uint32) model.Provider[Model] {

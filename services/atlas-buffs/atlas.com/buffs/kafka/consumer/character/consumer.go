@@ -7,12 +7,13 @@ import (
 	character2 "atlas-buffs/kafka/message/character"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/sirupsen/logrus"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -37,6 +38,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 			return err
 		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCancelByTypes))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleUpdateStatValue))); err != nil {
 			return err
 		}
 		return nil
@@ -85,5 +89,15 @@ func handleCancelByTypes(l logrus.FieldLogger, ctx context.Context, c character2
 
 	if err := character.NewProcessor(l, ctx).CancelByStatTypes(c.WorldId, c.CharacterId, c.Body.Types); err != nil {
 		l.WithError(err).Errorf("Unable to cancel buffs by types %v for character [%d].", c.Body.Types, c.CharacterId)
+	}
+}
+
+func handleUpdateStatValue(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.UpdateStatValueCommandBody]) {
+	if c.Type != character2.CommandTypeUpdateStatValue {
+		return
+	}
+
+	if err := character.NewProcessor(l, ctx).UpdateStatValue(c.WorldId, c.CharacterId, c.Body.SourceId, c.Body.StatType, c.Body.Operation, c.Body.Amount, c.Body.Cap); err != nil {
+		l.WithError(err).Errorf("Unable to update stat value on buff [%d] for character [%d].", c.Body.SourceId, c.CharacterId)
 	}
 }

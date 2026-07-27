@@ -1,0 +1,221 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2110005,
+      "startState": "checkMap",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "mapId",
+                    "value": "260020000"
+                  }
+                ],
+                "nextState": "askToMagatia"
+              },
+              {
+                "conditions": [],
+                "nextState": "askToAriant"
+              }
+            ]
+          },
+          "id": "checkMap",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "context": {
+                  "destination": "261000000"
+                },
+                "nextState": "checkMesoToMagatia",
+                "text": "Yes"
+              },
+              {
+                "nextState": "decline",
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "Would you like to take the #bCamel Cab#k to #bMagatia#k, the town of Alchemy? The fare is #b1500 mesos#k."
+          },
+          "id": "askToMagatia",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "context": {
+                  "destination": "260000000"
+                },
+                "nextState": "checkMesoToAriant",
+                "text": "Yes"
+              },
+              {
+                "nextState": "decline",
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "Would you like to take the #bCamel Cab#k to #bAriant#k, the town of Burning Roads? The fare is #b1500 mesos#k."
+          },
+          "id": "askToAriant",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "<",
+                    "type": "meso",
+                    "value": "1500"
+                  }
+                ],
+                "nextState": "insufficientMeso"
+              },
+              {
+                "conditions": [],
+                "nextState": "warpToMagatia"
+              }
+            ]
+          },
+          "id": "checkMesoToMagatia",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "<",
+                    "type": "meso",
+                    "value": "1500"
+                  }
+                ],
+                "nextState": "insufficientMeso"
+              },
+              {
+                "conditions": [],
+                "nextState": "warpToAriant"
+              }
+            ]
+          },
+          "id": "checkMesoToAriant",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "amount": "-1500"
+                },
+                "type": "award_mesos"
+              },
+              {
+                "params": {
+                  "mapId": "261000000",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "warpToMagatia",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "amount": "-1500"
+                },
+                "type": "award_mesos"
+              },
+              {
+                "params": {
+                  "mapId": "260000000",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "warpToAriant",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "I am sorry, but I think you are short on mesos. I am afraid I can't let you ride this if you do not have enough money to do so. Please come back when you have enough money to use this."
+          },
+          "id": "insufficientMeso",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Hmmm... too busy to do it right now? If you feel like doing it, though, come back and find me."
+          },
+          "id": "decline",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "2110005",
+    "type": "npc-conversation"
+  }
+}

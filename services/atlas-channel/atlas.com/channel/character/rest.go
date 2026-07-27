@@ -3,9 +3,10 @@ package character
 import (
 	"strconv"
 
+	"github.com/jtumidanski/api2go/jsonapi"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 type RestModel struct {
@@ -38,6 +39,7 @@ type RestModel struct {
 	Gm                 int      `json:"gm"`
 	X                  int16    `json:"x"`
 	Y                  int16    `json:"y"`
+	Fh                 int16    `json:"fh"`
 	Stance             byte     `json:"stance"`
 }
 
@@ -114,6 +116,7 @@ func Extract(m RestModel) (Model, error) {
 		gm:                 m.Gm,
 		x:                  m.X,
 		y:                  m.Y,
+		fh:                 m.Fh,
 		stance:             m.Stance,
 	}, nil
 }

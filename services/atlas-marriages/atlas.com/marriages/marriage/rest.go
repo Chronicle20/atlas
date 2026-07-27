@@ -7,18 +7,18 @@ import (
 
 // RestMarriage represents the REST API model for marriage responses
 type RestMarriage struct {
-	ID               uint32           `json:"id"`
-	CharacterId1     uint32           `json:"characterId1"`
-	CharacterId2     uint32           `json:"characterId2"`
-	Status           string           `json:"status"`
-	ProposedAt       time.Time        `json:"proposedAt"`
-	EngagedAt        *time.Time       `json:"engagedAt,omitempty"`
-	MarriedAt        *time.Time       `json:"marriedAt,omitempty"`
-	DivorcedAt       *time.Time       `json:"divorcedAt,omitempty"`
-	CreatedAt        time.Time        `json:"createdAt"`
-	UpdatedAt        time.Time        `json:"updatedAt"`
-	Partner          *RestPartner     `json:"partner,omitempty"`
-	Ceremony         *RestCeremony    `json:"ceremony,omitempty"`
+	ID           uint32        `json:"id"`
+	CharacterId1 uint32        `json:"characterId1"`
+	CharacterId2 uint32        `json:"characterId2"`
+	Status       string        `json:"status"`
+	ProposedAt   time.Time     `json:"proposedAt"`
+	EngagedAt    *time.Time    `json:"engagedAt,omitempty"`
+	MarriedAt    *time.Time    `json:"marriedAt,omitempty"`
+	DivorcedAt   *time.Time    `json:"divorcedAt,omitempty"`
+	CreatedAt    time.Time     `json:"createdAt"`
+	UpdatedAt    time.Time     `json:"updatedAt"`
+	Partner      *RestPartner  `json:"partner,omitempty"`
+	Ceremony     *RestCeremony `json:"ceremony,omitempty"`
 }
 
 // RestPartner represents partner information in marriage response
@@ -29,14 +29,14 @@ type RestPartner struct {
 
 // RestCeremony represents ceremony information in marriage response
 type RestCeremony struct {
-	ID           uint32      `json:"id"`
-	Status       string      `json:"status"`
-	ScheduledAt  time.Time   `json:"scheduledAt"`
-	StartedAt    *time.Time  `json:"startedAt,omitempty"`
-	CompletedAt  *time.Time  `json:"completedAt,omitempty"`
-	CancelledAt  *time.Time  `json:"cancelledAt,omitempty"`
-	PostponedAt  *time.Time  `json:"postponedAt,omitempty"`
-	InviteeCount int         `json:"inviteeCount"`
+	ID           uint32     `json:"id"`
+	Status       string     `json:"status"`
+	ScheduledAt  time.Time  `json:"scheduledAt"`
+	StartedAt    *time.Time `json:"startedAt,omitempty"`
+	CompletedAt  *time.Time `json:"completedAt,omitempty"`
+	CancelledAt  *time.Time `json:"cancelledAt,omitempty"`
+	PostponedAt  *time.Time `json:"postponedAt,omitempty"`
+	InviteeCount int        `json:"inviteeCount"`
 }
 
 // RestProposal represents a proposal in REST API responses
@@ -184,7 +184,7 @@ func TransformProposal(p Proposal) (RestProposal, error) {
 // TransformProposals converts a slice of domain Proposal models to REST representation
 func TransformProposals(proposals []Proposal) ([]RestProposal, error) {
 	restProposals := make([]RestProposal, 0, len(proposals))
-	
+
 	for _, proposal := range proposals {
 		restProposal, err := TransformProposal(proposal)
 		if err != nil {
@@ -192,14 +192,14 @@ func TransformProposals(proposals []Proposal) ([]RestProposal, error) {
 		}
 		restProposals = append(restProposals, restProposal)
 	}
-	
+
 	return restProposals, nil
 }
 
 // TransformMarriages converts a slice of domain Marriage models to REST representation
 func TransformMarriages(marriages []Marriage) ([]RestMarriage, error) {
 	restMarriages := make([]RestMarriage, 0, len(marriages))
-	
+
 	for _, marriage := range marriages {
 		restMarriage, err := TransformMarriage(marriage)
 		if err != nil {
@@ -207,6 +207,6 @@ func TransformMarriages(marriages []Marriage) ([]RestMarriage, error) {
 		}
 		restMarriages = append(restMarriages, restMarriage)
 	}
-	
+
 	return restMarriages, nil
 }

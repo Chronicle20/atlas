@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldItcOperationBuy
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnBuy
+    address: "0x5af9fa"
+    decompile_sha256: f53d6d189b83d579f27bad8b290bee2c56599e14aa10499a3c2f52c9f5b5c3c2
+verifies:
+    - libs/atlas-packet/field/serverbound/itc_operation_test.go#TestItcOperationBuyByteOutput_v84

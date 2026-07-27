@@ -3,9 +3,10 @@ package skill
 import (
 	"atlas-channel/kafka/message/skill"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 )
 
 func SetCooldownCommandProvider(characterId uint32, id uint32, cooldown uint32) model.Provider[[]kafka.Message] {

@@ -1,0 +1,10 @@
+packet: npc/serverbound/NpcShopBuy
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CShopDlg::SendBuyRequest
+    address: "0x6d68a3"
+    decompile_sha256: d51f4e83976a6aa3c3e4c8c3d04f28f1a969203176cc2c6e8e73412cefdef0c1
+verifies:
+    - libs/atlas-packet/npc/serverbound/shop_buy_test.go#TestShopBuyByteV79

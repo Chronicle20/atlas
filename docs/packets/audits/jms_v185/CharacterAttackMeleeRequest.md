@@ -37,3 +37,20 @@
 | 24 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 25 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
 
+---
+
+## task-150 note — Meso Explosion variant (hand-added; keep on regeneration)
+
+CLOSE_RANGE_ATTACK carries a Meso Explosion (4211006) variant written by a
+dedicated sender, `sub_A3AAB1` @ `0xa3aab1` in the jms IDB. The sender's
+packet-encode tail is SCY code-flow-virtualized (`JUMPOUT(0xD29D2D)`), so the
+jms serverbound variant read order is **not statically verifiable** in the
+available dump. Atlas implements the jms variant from the deltas verified
+byte-identical across the eight GMS versions (gms_v48–v95) plus the jms
+**clientbound** meso branch (`CUserRemote::OnAttack` @ `0xa53999` region),
+which was IDA-verified to match. No verify marker or evidence record was added
+for the unreadable tail (task-150 design §2.3). gms_v92 (no IDB) follows the
+GMS >= 87 family branch and gms_12 the very-legacy GMS < 48 branch; both are
+template-only and unverified (design §2.4). Fixture:
+`libs/atlas-packet/character/serverbound/attack_request_test.go#TestAttackMeleeRequestMesoExplosion`.
+

@@ -3,14 +3,16 @@ package writer
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	loginpkt "github.com/Chronicle20/atlas/libs/atlas-packet/login/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
-	"github.com/sirupsen/logrus"
 )
 
-
-type ServerIPCode string
-type ServerIPMode string
+type (
+	ServerIPCode string
+	ServerIPMode string
+)
 
 const (
 	ServerIPCodeOk                        ServerIPCode = "OK"

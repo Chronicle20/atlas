@@ -1,6 +1,6 @@
 /**
  * React Query hooks for map management
- * 
+ *
  * Provides optimized data fetching, caching, and mutation capabilities for:
  * - Basic map operations (CRUD)
  * - Map search and filtering operations
@@ -8,21 +8,32 @@
  * - Proper error handling and loading states
  */
 
-import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
-import { mapsService, type MapData, type MapAttributes } from '@/services/api/maps.service';
-import { useTenant } from '@/context/tenant-context';
-import type { ServiceOptions, QueryOptions } from '@/lib/api/query-params';
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type UseMutationResult,
+  type UseQueryResult,
+} from "@tanstack/react-query";
+import {
+  mapsService,
+  type MapData,
+  type MapAttributes,
+} from "@/services/api/maps.service";
+import { useTenant } from "@/context/tenant-context";
+import type { ServiceOptions, QueryOptions } from "@/lib/api/query-params";
 
 // Query keys for consistent cache management
 export const mapKeys = {
-  all: ['maps'] as const,
-  lists: () => [...mapKeys.all, 'list'] as const,
+  all: ["maps"] as const,
+  lists: () => [...mapKeys.all, "list"] as const,
   list: (options?: QueryOptions) => [...mapKeys.lists(), options] as const,
-  details: () => [...mapKeys.all, 'detail'] as const,
+  details: () => [...mapKeys.all, "detail"] as const,
   detail: (id: string) => [...mapKeys.details(), id] as const,
-  search: () => [...mapKeys.all, 'search'] as const,
-  searchByName: (name: string) => [...mapKeys.search(), 'name', name] as const,
-  searchByStreet: (streetName: string) => [...mapKeys.search(), 'street', streetName] as const,
+  search: () => [...mapKeys.all, "search"] as const,
+  searchByName: (name: string) => [...mapKeys.search(), "name", name] as const,
+  searchByStreet: (streetName: string) =>
+    [...mapKeys.search(), "street", streetName] as const,
 };
 
 // ============================================================================
@@ -32,7 +43,9 @@ export const mapKeys = {
 /**
  * Hook to fetch all maps
  */
-export function useMaps(options?: QueryOptions): UseQueryResult<MapData[], Error> {
+export function useMaps(
+  options?: QueryOptions,
+): UseQueryResult<MapData[], Error> {
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: mapKeys.list(options),
@@ -46,7 +59,10 @@ export function useMaps(options?: QueryOptions): UseQueryResult<MapData[], Error
 /**
  * Hook to fetch a specific map by ID
  */
-export function useMap(id: string, options?: ServiceOptions): UseQueryResult<MapData, Error> {
+export function useMap(
+  id: string,
+  options?: ServiceOptions,
+): UseQueryResult<MapData, Error> {
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: mapKeys.detail(id),
@@ -60,11 +76,15 @@ export function useMap(id: string, options?: ServiceOptions): UseQueryResult<Map
 /**
  * Hook to search maps by name
  */
-export function useMapsByName(name: string, options?: ServiceOptions): UseQueryResult<MapData[], Error> {
+export function useMapsByName(
+  name: string,
+  options?: ServiceOptions,
+): UseQueryResult<MapData[], Error> {
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: mapKeys.searchByName(name),
-    queryFn: () => mapsService.searchMapsByName(name, { ...options, useCache: false }),
+    queryFn: () =>
+      mapsService.searchMapsByName(name, { ...options, useCache: false }),
     enabled: !!name && name.trim().length > 0 && !!activeTenant,
     staleTime: 10 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
@@ -74,11 +94,18 @@ export function useMapsByName(name: string, options?: ServiceOptions): UseQueryR
 /**
  * Hook to fetch maps by street name
  */
-export function useMapsByStreetName(streetName: string, options?: ServiceOptions): UseQueryResult<MapData[], Error> {
+export function useMapsByStreetName(
+  streetName: string,
+  options?: ServiceOptions,
+): UseQueryResult<MapData[], Error> {
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: mapKeys.searchByStreet(streetName),
-    queryFn: () => mapsService.getMapsByStreetName(streetName, { ...options, useCache: false }),
+    queryFn: () =>
+      mapsService.getMapsByStreetName(streetName, {
+        ...options,
+        useCache: false,
+      }),
     enabled: !!streetName && streetName.trim().length > 0 && !!activeTenant,
     staleTime: 10 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
@@ -92,23 +119,28 @@ export function useMapsByStreetName(streetName: string, options?: ServiceOptions
 /**
  * Hook to create a new map
  */
-export function useCreateMap(): UseMutationResult<MapData, Error, MapAttributes> {
+export function useCreateMap(): UseMutationResult<
+  MapData,
+  Error,
+  MapAttributes
+> {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (attributes: MapAttributes) => mapsService.createMap(attributes),
+    mutationFn: (attributes: MapAttributes) =>
+      mapsService.createMap(attributes),
     onSuccess: (newMap) => {
       // Invalidate and refetch map lists
       queryClient.invalidateQueries({ queryKey: mapKeys.lists() });
-      
+
       // Add the new map to the cache
       queryClient.setQueryData(mapKeys.detail(newMap.id), newMap);
-      
+
       // Invalidate search queries that might include this map
       queryClient.invalidateQueries({ queryKey: mapKeys.search() });
     },
     onError: (error) => {
-      console.error('Failed to create map:', error);
+      console.error("Failed to create map:", error);
     },
   });
 }
@@ -128,29 +160,36 @@ export function useUpdateMap(): UseMutationResult<
     onMutate: async ({ map, updates }) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: mapKeys.detail(map.id) });
-      
+
       // Snapshot the previous value
-      const previousMap = queryClient.getQueryData<MapData>(mapKeys.detail(map.id));
-      
+      const previousMap = queryClient.getQueryData<MapData>(
+        mapKeys.detail(map.id),
+      );
+
       // Optimistically update the cache
       const optimisticMap: MapData = {
         ...map,
         attributes: { ...map.attributes, ...updates },
       };
       queryClient.setQueryData(mapKeys.detail(map.id), optimisticMap);
-      
+
       return { previousMap };
     },
     onError: (error, variables, context) => {
       // Revert optimistic update on error
       if (context?.previousMap) {
-        queryClient.setQueryData(mapKeys.detail(variables.map.id), context.previousMap);
+        queryClient.setQueryData(
+          mapKeys.detail(variables.map.id),
+          context.previousMap,
+        );
       }
-      console.error('Failed to update map:', error);
+      console.error("Failed to update map:", error);
     },
     onSettled: (_data, _error, variables) => {
       // Invalidate and refetch relevant queries
-      queryClient.invalidateQueries({ queryKey: mapKeys.detail(variables.map.id) });
+      queryClient.invalidateQueries({
+        queryKey: mapKeys.detail(variables.map.id),
+      });
       queryClient.invalidateQueries({ queryKey: mapKeys.lists() });
       queryClient.invalidateQueries({ queryKey: mapKeys.search() });
     },
@@ -168,21 +207,24 @@ export function useDeleteMap(): UseMutationResult<void, Error, { id: string }> {
     onMutate: async ({ id }) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: mapKeys.detail(id) });
-      
+
       // Snapshot the previous value
       const previousMap = queryClient.getQueryData<MapData>(mapKeys.detail(id));
-      
+
       // Optimistically remove from cache
       queryClient.removeQueries({ queryKey: mapKeys.detail(id) });
-      
+
       return { previousMap };
     },
     onError: (error, variables, context) => {
       // Restore the map to cache on error
       if (context?.previousMap) {
-        queryClient.setQueryData(mapKeys.detail(variables.id), context.previousMap);
+        queryClient.setQueryData(
+          mapKeys.detail(variables.id),
+          context.previousMap,
+        );
       }
-      console.error('Failed to delete map:', error);
+      console.error("Failed to delete map:", error);
     },
     onSettled: () => {
       // Invalidate map lists and search results
@@ -201,14 +243,22 @@ export function useDeleteMap(): UseMutationResult<void, Error, { id: string }> {
  */
 export function useInvalidateMaps() {
   const queryClient = useQueryClient();
-  
+
   return {
-    invalidateAll: () => queryClient.invalidateQueries({ queryKey: mapKeys.all }),
-    invalidateLists: () => queryClient.invalidateQueries({ queryKey: mapKeys.lists() }),
-    invalidateSearch: () => queryClient.invalidateQueries({ queryKey: mapKeys.search() }),
-    invalidateMap: (id: string) => queryClient.invalidateQueries({ queryKey: mapKeys.detail(id) }),
-    invalidateSearchByName: (name: string) => queryClient.invalidateQueries({ queryKey: mapKeys.searchByName(name) }),
-    invalidateSearchByStreet: (streetName: string) => queryClient.invalidateQueries({ queryKey: mapKeys.searchByStreet(streetName) }),
+    invalidateAll: () =>
+      queryClient.invalidateQueries({ queryKey: mapKeys.all }),
+    invalidateLists: () =>
+      queryClient.invalidateQueries({ queryKey: mapKeys.lists() }),
+    invalidateSearch: () =>
+      queryClient.invalidateQueries({ queryKey: mapKeys.search() }),
+    invalidateMap: (id: string) =>
+      queryClient.invalidateQueries({ queryKey: mapKeys.detail(id) }),
+    invalidateSearchByName: (name: string) =>
+      queryClient.invalidateQueries({ queryKey: mapKeys.searchByName(name) }),
+    invalidateSearchByStreet: (streetName: string) =>
+      queryClient.invalidateQueries({
+        queryKey: mapKeys.searchByStreet(streetName),
+      }),
   };
 }
 

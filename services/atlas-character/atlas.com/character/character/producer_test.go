@@ -8,9 +8,10 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
 )
 
 // TestProducerFunctionsViaUpdate tests the new producer functions by verifying they are called
@@ -337,7 +338,7 @@ func TestGmChangedEventViaUpdate(t *testing.T) {
 
 	// Update the GM status and capture the message buffer
 	updateInput := character.RestModel{
-		Gm: 1,
+		Gm: gmPtr(1),
 	}
 
 	transactionId := uuid.New()
@@ -404,7 +405,7 @@ func TestMultipleFieldChangesProduceMultipleEvents(t *testing.T) {
 		Face:      20100,
 		Gender:    1,
 		SkinColor: 5,
-		Gm:        1,
+		Gm:        gmPtr(1),
 	}
 
 	transactionId := uuid.New()

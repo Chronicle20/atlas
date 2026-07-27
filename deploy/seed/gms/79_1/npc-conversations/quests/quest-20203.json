@@ -1,0 +1,287 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "askBecome",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "checkJob",
+                  "text": "Yes"
+                },
+                {
+                  "nextState": "declined",
+                  "text": "No"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendYesNo",
+              "text": "#t4032098#... I checked them all. I can tell you are now ready to make the leap as an official knight. Do you want to become one?"
+            },
+            "id": "askBecome",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Is there actually a reason why you should stay as a Knight-in-Training?"
+            },
+            "id": "declined",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": "=",
+                      "type": "jobId",
+                      "value": "1300"
+                    }
+                  ],
+                  "nextState": "checkExcessSp"
+                },
+                {
+                  "conditions": [
+                    {
+                      "operator": "=",
+                      "type": "jobId",
+                      "value": "1310"
+                    }
+                  ],
+                  "nextState": "congratulations"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "congratulations"
+                }
+              ]
+            },
+            "id": "checkJob",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">",
+                      "referenceId": "30",
+                      "type": "excessSp",
+                      "value": "0"
+                    }
+                  ],
+                  "nextState": "tooMuchSp"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "checkInventory"
+                }
+              ]
+            },
+            "id": "checkExcessSp",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "You have way too much #bSP#k with you. You'll need to spend more SP on 1st-level skills to become an official knight."
+            },
+            "id": "tooMuchSp",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": "<",
+                      "referenceId": "1142067",
+                      "type": "inventorySpace",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "noInventorySpace"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "grantRewards"
+                }
+              ]
+            },
+            "id": "checkInventory",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "If you wish to receive the medal befitting the title, you may want to make some room in your equipment inventory."
+            },
+            "id": "noInventorySpace",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "4032098",
+                    "quantity": "30"
+                  },
+                  "type": "destroy_item"
+                },
+                {
+                  "params": {
+                    "itemId": "1142067",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {
+                    "jobId": "1310"
+                  },
+                  "type": "change_job"
+                },
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "congratulations"
+                }
+              ]
+            },
+            "id": "grantRewards",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "spAndSkills",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "You are no longer a Knight-in-Training. You are now officially a Cygnus Knight."
+            },
+            "id": "congratulations",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "congratulations",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "finalMessage",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "I have given you some #bSP#k. I have also given you some skills of Wind Archer that are only available to official knights, so keep working!"
+            },
+            "id": "spAndSkills",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "spAndSkills",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendPrev",
+              "text": "As an official Cygnus Knight, you should always keep yourself level-headed."
+            },
+            "id": "finalMessage",
+            "type": "dialogue"
+          }
+        ]
+      },
+      "npcId": 1101005,
+      "questId": 20203,
+      "questName": "Knighthood Exam: Wind Archer",
+      "startStateMachine": {
+        "startState": "noDialogue",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "noDialogue",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "20203",
+    "type": "quest-conversation"
+  }
+}

@@ -4,14 +4,15 @@ import (
 	character2 "atlas-transports/kafka/message/character"
 	it "atlas-transports/kafka/message/instance_transport"
 
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
 )
 
 func changeMapProvider(worldId world.Id, channelId channel.Id, characterId uint32, targetMapId _map.Id, instance uuid.UUID, portalId uint32) model.Provider[[]kafka.Message] {

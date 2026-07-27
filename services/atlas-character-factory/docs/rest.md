@@ -74,4 +74,55 @@ JSON:API resource type: `characters`
 | 400         | Shoes not valid for job                      |
 | 400         | Weapon not valid for job                     |
 | 500         | Template validation configuration not found  |
+| 500         | No character creation template for the chosen job/subjob/gender |
 | 500         | Saga creation failure                        |
+
+### POST /api/factory/characters/from-preset
+
+Creates a new character from a tenant-configured preset using saga-based orchestration.
+
+#### Parameters
+
+None.
+
+#### Request Headers
+
+| Header        | Required | Description              |
+|---------------|----------|---------------------------|
+| TENANT_ID     | Yes      | Tenant identifier (UUID) |
+| REGION        | Yes      | Region identifier        |
+| MAJOR_VERSION | Yes      | Major version number     |
+| MINOR_VERSION | Yes      | Minor version number     |
+
+#### Request Model
+
+JSON:API resource type: `preset-create`
+
+| Field     | Type   | Required | Description                          |
+|-----------|--------|----------|---------------------------------------|
+| presetId  | string | Yes      | UUID of the tenant-configured preset |
+| accountId | uint32 | Yes      | Account ID                           |
+| worldId   | byte   | Yes      | World ID                             |
+| name      | string | Yes      | Character name                       |
+
+#### Response Model
+
+HTTP 202 Accepted.
+
+JSON:API resource type: `characters`
+
+| Field         | Type   | Description                     |
+|---------------|--------|----------------------------------|
+| transactionId | string | UUID for tracking saga progress |
+
+#### Error Conditions
+
+| Status Code | Condition                                                          |
+|-------------|----------------------------------------------------------------------|
+| 400         | presetId is not a valid UUID                                       |
+| 400         | Character name invalid (rejected by name-validity check, non-duplicate reason) |
+| 400         | Preset validation failed (equipment not equipable, equipment slot collision, or item/skill not found in atlas-data) |
+| 404         | Preset not found in tenant configuration                           |
+| 409         | Character name is a duplicate                                      |
+| 502         | atlas-data unreachable during skill batch lookup                   |
+| 500         | Other failure (e.g. tenant config lookup failure, saga creation failure) |

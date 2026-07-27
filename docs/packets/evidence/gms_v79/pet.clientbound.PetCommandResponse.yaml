@@ -1,0 +1,10 @@
+packet: pet/clientbound/PetCommandResponse
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CPet::OnActionCommand
+    address: "0x691029"
+    decompile_sha256: fa48c1ea198e7bbbb6e6ebc012ff3353e8c25044be8e6ca8c0e76ad80a7cb231
+verifies:
+  - libs/atlas-packet/pet/clientbound/command_test.go#TestPetCommandResponseBytesV79

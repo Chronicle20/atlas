@@ -1,0 +1,39 @@
+{
+  "WriterName": "CashItemUseSuperMegaphone",
+  "IDAName": "CWvsContext::SendConsumeCashItemUseRequest",
+  "Address": "0xaef2f5",
+  "Variant": "JMS/v185",
+  "BranchDepth": 1,
+  "AtlasFile": "libs/atlas-packet/cash/serverbound/item_use_super_megaphone.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "update_time = get_update_time(); Encode4 in the SHARED HEADER, written FIRST - confirms updateTimeFirst=TRUE for jms185 @0xaef36c-0xaef375",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "message - jumptable comment 'cases 12,13,15,47,48' @0xaef5b9 (type 47/Heart and type 48/Skull); shared tail EncodeStr @0xaef98a",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "whisper - Encode1 @0xaef9a7, gated on type==13(0x0D)||type==47(0x2F)||type==48(0x30) @0xaef98f-0xaef9a7 (type 47/48, TAKEN)",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    }
+  ],
+  "Verdict": 3,
+  "FlatInvalid": true
+}

@@ -4,9 +4,10 @@ import (
 	"atlas-drops-information/continent/drop"
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 type Processor interface {
@@ -26,6 +27,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		db:  db,
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetAll() model.Provider[[]Model] {
 	return func() ([]Model, error) {

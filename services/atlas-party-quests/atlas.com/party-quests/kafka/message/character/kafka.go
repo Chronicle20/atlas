@@ -1,16 +1,17 @@
 package character
 
 import (
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
-	EnvCommandTopic            = "COMMAND_TOPIC_CHARACTER"
-	CommandCharacterChangeMap  = "CHANGE_MAP"
-	CommandAwardExperience     = "AWARD_EXPERIENCE"
+	EnvCommandTopic           = "COMMAND_TOPIC_CHARACTER"
+	CommandCharacterChangeMap = "CHANGE_MAP"
+	CommandAwardExperience    = "AWARD_EXPERIENCE"
 
 	EnvEventTopicCharacterStatus = "EVENT_TOPIC_CHARACTER_STATUS"
 	StatusEventTypeLogout        = "LOGOUT"

@@ -6,16 +6,16 @@ import (
 )
 
 type RestModel struct {
-	Index           uint32                 `json:"index"`
-	Name            string                 `json:"name"`
-	MapIds          []uint32               `json:"mapIds"`
-	Type            string                 `json:"type"`
-	Duration        uint64                 `json:"duration"`
-	ClearConditions []condition.RestModel   `json:"clearConditions"`
-	ClearActions    []string               `json:"clearActions,omitempty"`
-	Rewards         []reward.RestModel      `json:"rewards"`
-	WarpType        string                 `json:"warpType"`
-	Properties      map[string]any         `json:"properties,omitempty"`
+	Index           uint32                `json:"index"`
+	Name            string                `json:"name"`
+	MapIds          []uint32              `json:"mapIds"`
+	Type            string                `json:"type"`
+	Duration        uint64                `json:"duration"`
+	ClearConditions []condition.RestModel `json:"clearConditions"`
+	ClearActions    []string              `json:"clearActions,omitempty"`
+	Rewards         []reward.RestModel    `json:"rewards"`
+	WarpType        string                `json:"warpType"`
+	Properties      map[string]any        `json:"properties,omitempty"`
 }
 
 func Transform(m Model) (RestModel, error) {

@@ -1,0 +1,10 @@
+packet: guild/serverbound/GuildBBSDeleteReply
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CUIGuildBBS::OnCommentDelete
+    address: "0x6bb4d6"
+    decompile_sha256: 0e689fa4b4fa66ab80eac0eeba87c12d48f5949c05f94db21abd497fcc572924
+verifies:
+    - libs/atlas-packet/guild/serverbound/bbs_delete_reply_test.go#TestBBSDeleteReplyRoundTrip

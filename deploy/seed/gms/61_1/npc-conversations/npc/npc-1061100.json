@@ -1,0 +1,259 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1061100,
+      "startState": "welcome",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "selectRoom",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "Welcome. We're the Sleepywood Hotel. Our hotel works hard to serve you the best at all times. If you are tired and worn out from hunting, how about a relaxing stay at our hotel?"
+          },
+          "id": "welcome",
+          "type": "dialogue"
+        },
+        {
+          "id": "selectRoom",
+          "listSelection": {
+            "choices": [
+              {
+                "context": {
+                  "cost": "499",
+                  "destination": "105040401",
+                  "roomType": "regular"
+                },
+                "nextState": "confirmRegular",
+                "text": "Regular sauna (499 mesos per use)"
+              },
+              {
+                "context": {
+                  "cost": "999",
+                  "destination": "105040402",
+                  "roomType": "vip"
+                },
+                "nextState": "confirmVip",
+                "text": "VIP sauna (999 mesos per use)"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "title": "We offer two kinds of rooms for our service. Please choose the one of your liking."
+          },
+          "type": "listSelection"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "checkMesoRegular",
+                "text": "Yes"
+              },
+              {
+                "nextState": "declineRoom",
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You have chosen the regular sauna. Your HP and MP will recover fast and you can even purchase some items there. Are you sure you want to go in?"
+          },
+          "id": "confirmRegular",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "checkMesoVip",
+                "text": "Yes"
+              },
+              {
+                "nextState": "declineRoom",
+                "text": "No"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendYesNo",
+            "text": "You've chosen the VIP sauna. Your HP and MP will recover even faster than that of the regular sauna and you can even find a special item in there. Are you sure you want to go in?"
+          },
+          "id": "confirmVip",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "We offer other kinds of services, too, so please think carefully and then make your decision."
+          },
+          "id": "declineRoom",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "<",
+                    "type": "meso",
+                    "value": "499"
+                  }
+                ],
+                "nextState": "insufficientMesoRegular"
+              },
+              {
+                "conditions": [],
+                "nextState": "warpRegular"
+              }
+            ]
+          },
+          "id": "checkMesoRegular",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "<",
+                    "type": "meso",
+                    "value": "999"
+                  }
+                ],
+                "nextState": "insufficientMesoVip"
+              },
+              {
+                "conditions": [],
+                "nextState": "warpVip"
+              }
+            ]
+          },
+          "id": "checkMesoVip",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "amount": "-499"
+                },
+                "type": "award_mesos"
+              },
+              {
+                "params": {
+                  "mapId": "105040401",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "warpRegular",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "amount": "-999"
+                },
+                "type": "award_mesos"
+              },
+              {
+                "params": {
+                  "mapId": "105040402",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "warpVip",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "I'm sorry. It looks like you don't have enough mesos. It will cost you at least 499mesos to stay at our hotel."
+          },
+          "id": "insufficientMesoRegular",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "I'm sorry. It looks like you don't have enough mesos. It will cost you at least 999mesos to stay at our hotel."
+          },
+          "id": "insufficientMesoVip",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "1061100",
+    "type": "npc-conversation"
+  }
+}

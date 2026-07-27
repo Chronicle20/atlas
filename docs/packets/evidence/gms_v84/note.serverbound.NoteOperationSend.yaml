@@ -5,4 +5,6 @@ category: TIER1-FIXTURE
 ida:
     function: CCashShop::OnCashItemResLoadGiftDone
     address: "0x47c73c"
-    decompile_sha256: aff82fe7bb4555e2e01368777456ded7a530d6508d505cd899c52801152472f8
+    decompile_sha256: f13074819a8f230687946b6e0d0efe9dd8e3849161cc2ae2c3b7c8be97967a17
+verifies:
+    - note/serverbound/operation_send_test.go#TestOperationSendByteOutputAllVersions

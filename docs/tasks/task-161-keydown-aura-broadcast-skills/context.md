@@ -77,8 +77,10 @@ Test files:
 
 ## Test harness facts
 
-- `pt.Variants` (in `libs/atlas-packet/test`) iterates the five tenant variants:
-  GMS v83, v84, v87, v95, JMS v185. Each has `.Name`, `.Region`, `.MajorVersion`, `.MinorVersion`.
+- `pt.Variants` (in `libs/atlas-packet/test`) iterates **11** tenant variants (post-merge
+  2026-07-27): GMS v28, v48, v61, v72, v79, v83, v84, v86, v87, v95, JMS v185. Each has
+  `.Name`, `.Region`, `.MajorVersion`, `.MinorVersion`. Version-swept tests hit all 11 — never
+  hand-list a subset in a loop.
 - `pt.CreateContext(region, major, minor)` builds a tenant context;
   `pt.Encode(t, ctx, encodeFn, options)` returns encoded bytes.
 - `atlas-channel` skill model built via `skill2.Extract(skill2.RestModel{Id, Level})`
@@ -93,11 +95,17 @@ Test files:
 
 ## Cross-version safety (design §2.4)
 
-Both survivors are keydown in v83/v87/v95/jms185 (v84 bracketed as byte-identical to
-v83 per task-083). The Go predicate is version-agnostic, so this introduces NO new
-wire divergence for any supported tenant. `TestAttackInfoKeydownField` runs across all
-`pt.Variants` to enforce this in CI. (Aside: v95 already drops the three Monster Magnet
-IDs Atlas still lists — a PRE-EXISTING divergence this task neither creates nor widens.)
+Both survivors are keydown in v61/v72/v79/v83/v87/v95/jms185 — verified in each client's
+real `is_keydown_skill` switch (design §2.4 lists the addresses; the legacy IDs decode from
+the decompiler's `&loc_*` refs, e.g. v61 `&loc_4DD5C9+3 = 0x4DD5CC = 5101004`). v84/v86 are
+bracketed as byte-identical to v83/v87 (task-083). The pre-pirate **v28/v48** clients have no
+Pirate class and never cast either skill (v48 has no `is_keydown_skill` — it inlines the
+keydown set `{2121001,2221001,2321001,3221001,3121004}` in its shoot sender `sub_6A228C`), so
+the version-agnostic predicate returning `true` there is **inert/unreachable**. Net: the Go
+predicate stays version-agnostic and introduces NO new wire divergence for any tenant.
+`TestAttackInfoKeydownField` runs across all 11 `pt.Variants` to enforce this in CI. (Aside:
+v95 already drops the three Monster Magnet IDs Atlas still lists — a PRE-EXISTING divergence
+this task neither creates nor widens.)
 
 ## Verification gate (CLAUDE.md + design §7)
 

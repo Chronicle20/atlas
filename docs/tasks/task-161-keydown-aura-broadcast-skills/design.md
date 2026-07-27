@@ -10,9 +10,10 @@ Depends on PRD: `docs/tasks/task-161-keydown-aura-broadcast-skills/prd.md`
 
 The PRD proposed adding four skills to the keydown predicate so observers see their
 cast/wind-up aura. **IDA verification against the client reduces this to two skills and
-resolves the central architecture question in the process.** The v83/v84/v87/v95/jms185
+resolves the central architecture question in the process.** The v61/v72/v79/v83/v84/v87/v95/jms185
 clients gate BOTH the cast-aura relay (`DoActiveSkill_Prepare` / `OnSkillPrepare`) AND the
-attack-packet `tKeyDown` field through a **single client function, `is_keydown_skill`**.
+attack-packet `tKeyDown` field through a **single client function, `is_keydown_skill`** (the
+very-legacy v28/v48 clients predate that function and the Pirate class entirely — see §2.4).
 Because the client makes no distinction between "display keydown" and "wire keydown," neither
 should Atlas: the correct change is to add the two verified skills to the one existing
 `IsKeyDownSkill` predicate and split nothing.
@@ -116,23 +117,49 @@ two sets *differed*; they do not.
 ### 2.4 Cross-version sweep (FR-1.3 / OQ-4 / §7)
 
 The Go predicate is version-agnostic, so adding an ID changes attack parsing for every tenant
-version. Both survivors were checked in each client:
+version **now present in `pt.Variants`**. Since this design was first written, `main` brought up
+four legacy GMS versions (v48, v61, v72, v79) and added them — plus the pre-existing v28 and v86
+— to `pt.Variants` (now 11 entries: v28, v48, v61, v72, v79, v83, v84, v86, v87, v95, jms185).
+The sweep below was re-run against the full set after merging `main` (2026-07-27). Both survivors
+were checked in each client:
 
-| Version | `is_keydown_skill` @ | Corkscrew `5101004` | Grenade `5201002` |
+| Version | keydown gate @ | Corkscrew `5101004` | Grenade `5201002` |
 |---|---|---|---|
-| GMS v83 | 0x4fb08f | ✅ (0x4DD5CC) | ✅ (0x4F5C6A) |
-| GMS v87 | 0x51c957 | ✅ (`sub_4DD5CC`) | ✅ (`nullsub_6`=0x4F5C6A) |
-| GMS v95 | 0x509ea0 | ✅ (`&loc_4DD5C8+4`=0x4DD5CC) | ✅ (`&loc_4F5C6A`) |
-| JMS v185 | 0x52b396 | ✅ (`&loc_4DD5CC`) | ✅ (`&loc_4F5C69+1`) |
-| GMS v84 | — | inferred ✅ (see below) | inferred ✅ |
+| GMS v28 | — (no IDB) | n/a — pre-pirate, skill absent | n/a — pre-pirate, skill absent |
+| GMS v48 | inline set in shoot sender `sub_6A228C` (**no `is_keydown_skill`**) | absent — **inert** | absent — **inert** |
+| GMS v61 | `is_keydown_skill` @0x4c52e2 | ✅ (`&loc_4DD5C9+3`=0x4DD5CC) | ✅ (`&loc_4F5C67+3`=0x4F5C6A) |
+| GMS v72 | `is_keydown_skill` @0x4e5318 | ✅ (`&loc_4DD5CC`) | ✅ (`&loc_4F5C6A`) |
+| GMS v79 | `is_keydown_skill` @0x4edf2f | ✅ (`5101004` explicit) | ✅ (`&loc_4F5C69+1`=0x4F5C6A) |
+| GMS v83 | `is_keydown_skill` @0x4fb08f | ✅ (0x4DD5CC) | ✅ (0x4F5C6A) |
+| GMS v84 | — (bracketed v83↔v87) | inferred ✅ (see below) | inferred ✅ |
+| GMS v86 | — (no IDB; bracketed v84↔v87) | inferred ✅ | inferred ✅ |
+| GMS v87 | `is_keydown_skill` @0x51c957 | ✅ (`sub_4DD5CC`) | ✅ (`nullsub_6`=0x4F5C6A) |
+| GMS v95 | `is_keydown_skill` @0x509ea0 | ✅ (`&loc_4DD5C8+4`=0x4DD5CC) | ✅ (`&loc_4F5C6A`) |
+| JMS v185 | `is_keydown_skill` @0x52b396 | ✅ (`&loc_4DD5CC`) | ✅ (`&loc_4F5C69+1`) |
+
+**Legacy verification (post-merge, IDA-decoded).** v61/v72/v79 each have a real
+`is_keydown_skill` binary-search switch that INCLUDES both survivors — decoded from the
+decompiler's spurious `&loc_*` address refs via the same `int_convert` step design §2.1 uses
+(`0x4DD5CC = 5101004`, `0x4F5C6A = 5201002`). So on those three versions the addition is
+faithful, exactly as it is on v83/v87/v95/jms185.
+
+**v48 is the one structural difference, and it is safe by absence.** v48 has NO
+`is_keydown_skill` function at all — its shoot sender `sub_6A228C` (`COutPacket(37)`) inlines the
+keydown set as a literal branch, writing the keyDown `Encode4` only for
+`{2121001, 2221001, 2321001, 3221001, 3121004}` (Big Bang ×3, Piercing Arrow, Hurricane). Neither
+survivor is in that set, because the Pirate class does not exist in v48 (no Brawler/Gunslinger/
+Pirate functions in the binary). A v48 client therefore never casts skill `5101004`/`5201002`, so
+Atlas's version-agnostic predicate returning `true` for them is **inert** for v48 — the codepath
+is unreachable. The same absence-bracket covers v28 (older than v48, likewise pre-pirate).
 
 v84's `is_keydown_skill` symbol is not demangled in that IDB (a known v84 naming gap, per
 project memory `bug_v87_template_missing_core_opcodes`/v84 groundwork notes) and a listing
 search for the constant timed out. It is treated as verified-by-bracketing: v84 is
 byte-structurally identical to v83 for this codepath (task-083 audit), and it sits between v83
-and v87 — both of which are structurally identical here and both include the two skills. No
-version in the supported GMS range (v83, v84, v87, v92, v95) or jms185 omits either skill, so
-adding them introduces **no new wire divergence** for any tenant.
+and v87 — both of which are structurally identical here and both include the two skills. v86 (no
+IDB) brackets identically between v84 and v87. **No version in `pt.Variants` omits either skill
+where the skill exists, and both pre-pirate versions (v28, v48) never cast either skill — so
+adding them introduces no new wire divergence for any tenant.**
 
 Aside (not in scope, recorded for the follow-up ledger): v95's `is_keydown_skill` **drops** the
 three Monster Magnet IDs (`1121001`/`1221001`/`1321001`) that Atlas's predicate still contains
@@ -324,7 +351,8 @@ guard) — using the Builder pattern for the skill models per project test conve
 
 | Risk | Likelihood | Mitigation |
 |---|---|---|
-| Adding to the shared predicate misaligns another version's attack packet | Low | §2.4 sweep confirms both IDs are keydown in v83/v87/v95/jms; v84 bracketed. Byte test §6.2 runs all variants. |
+| Adding to the shared predicate misaligns another version's attack packet | Low | §2.4 sweep confirms both IDs are keydown in v61/v72/v79/v83/v87/v95/jms (IDA-decoded); v84/v86 bracketed; v28/v48 inert (pre-pirate, skill never cast). Byte test §6.2 runs all 11 variants. |
+| Legacy v48 has no `is_keydown_skill` / different attack layout | Low | v48 inlines its keydown set `{2121001,2221001,2321001,3221001,3121004}` and lacks the Pirate class, so neither survivor is ever cast there — the predicate change is unreachable for v48 (§2.4). |
 | v84 not directly demangled | Low | Structural identity to v83 (task-083) + bracket by v83/v87; if ever contradicted, the §6.2 v84 variant fails in CI. |
 | Future editor re-adds Explosion/Chakra "for completeness" | Low | Negative-assertion tests §6.1 fail if either is re-added. |
 | Pre-existing v95 Monster Magnet divergence surfaces | Low / out of scope | Recorded in §2.4 ledger; not introduced or widened by this task. |

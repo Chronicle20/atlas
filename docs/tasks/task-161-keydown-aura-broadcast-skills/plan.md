@@ -4,7 +4,9 @@
 
 **Goal:** Add the two IDA-verified keydown skills — Brawler Corkscrew Blow (`5101004`) and Gunslinger Grenade (`5201002`) — to `skill.IsKeyDownSkill` so observers see their cast/wind-up aura and the shared attack codec reads/writes the client's `tKeyDown` field for them, exactly as the v83 client does.
 
-**Architecture:** The v83/v84/v87/v95/jms185 clients gate BOTH the cast-aura relay (`DoActiveSkill_Prepare`/`OnSkillPrepare`) AND the attack-packet `tKeyDown` field through one client function, `is_keydown_skill`. The design (§2.3) proves the display-keydown set and the wire-keydown set are one set. Therefore the change is a single 2-line edit to the one existing `IsKeyDownSkill` predicate — no split, no handler edit, no packet-model edit. Every downstream call site (`character_skill_prepare.go`, `character_buff_cancel.go`, `attack_info.go`) already routes through that predicate and picks up the two IDs automatically. The bulk of the work is byte-level regression coverage that pins the wire behavior and guards against future broadening (re-adding the PRD-dropped Explosion/Chakra).
+**Architecture:** The v61/v72/v79/v83/v84/v87/v95/jms185 clients gate BOTH the cast-aura relay (`DoActiveSkill_Prepare`/`OnSkillPrepare`) AND the attack-packet `tKeyDown` field through one client function, `is_keydown_skill`, whose set INCLUDES both survivors (design §2.3, §2.4). The design (§2.3) proves the display-keydown set and the wire-keydown set are one set. Therefore the change is a single 2-line edit to the one existing `IsKeyDownSkill` predicate — no split, no handler edit, no packet-model edit. Every downstream call site (`character_skill_prepare.go`, `character_buff_cancel.go`, `attack_info.go`) already routes through that predicate and picks up the two IDs automatically. The bulk of the work is byte-level regression coverage that pins the wire behavior and guards against future broadening (re-adding the PRD-dropped Explosion/Chakra).
+
+**Post-merge note (legacy versions).** After merging `main` (2026-07-27), `pt.Variants` holds **11** tenant versions — the design's original five (v83/v84/v87/v95/jms185) PLUS v28, v48, v61, v72, v79, v86. Every version-swept test in this plan (Task 2 especially) now iterates all 11 automatically. Design §2.4 was re-run against the full set: v61/v72/v79 each carry both survivors in their real `is_keydown_skill` switch (IDA-verified, addresses in §2.4), and the pre-pirate v28/v48 clients never cast either skill (v48 has no `is_keydown_skill` at all and no Pirate class), so the predicate change is **inert** there. No plan step or the core edit changes because of the merge — only the swept-version count grows.
 
 **Tech Stack:** Go, `libs/atlas-constants`, `libs/atlas-packet` (packet codecs + `pt` test harness with per-version `Variants`), `services/atlas-channel` (socket handlers).
 
@@ -21,6 +23,7 @@
 - **Verified LE wire bytes** (from `int_convert`, design §2.1): `5101004 = 0x4DD5CC` → `CC D5 4D 00`; `5201002 = 0x4F5C6A` → `6A 5C 4F 00`.
 - **Test conventions (CLAUDE.md):** use the project's Builder/Extract path for test model setup; do NOT create `*_testhelpers.go` files.
 - **Changed modules for final verification:** `libs/atlas-constants`, `libs/atlas-packet`, `services/atlas-channel`.
+- **`pt.Variants` is now 11 versions** (post-merge): v28, v48, v61, v72, v79, v83, v84, v86, v87, v95, jms185. Version-swept tests iterate the whole set; do NOT re-scope any loop to a hand-listed subset. The two survivors are keydown wherever they exist (v61+) and absent-hence-inert in v28/v48 (design §2.4) — so `IsKeyDownSkill` staying version-agnostic is correct for all 11.
 - **Worktree:** all work happens in the task worktree on branch `task-161-keydown-aura-broadcast-skills`. Verify the branch after each commit.
 
 ---
@@ -67,8 +70,8 @@ func TestIsKeyDownSkill(t *testing.T) {
 		ThunderBreakerStage2CorkscrewBlowId,
 		EvanStage4IceBreathId,
 		EvanStage7FireBreathId,
-		BrawlerCorkscrewBlowId, // 5101004 — added task-161 (IDA-verified v83/v87/v95/jms185)
-		GunslingerGrenadeId,    // 5201002 — added task-161 (IDA-verified v83/v87/v95/jms185)
+		BrawlerCorkscrewBlowId, // 5101004 — added task-161 (IDA-verified keydown v61/v72/v79/v83/v87/v95/jms185)
+		GunslingerGrenadeId,    // 5201002 — added task-161 (IDA-verified keydown v61/v72/v79/v83/v87/v95/jms185)
 	}
 	for _, id := range keydown {
 		if !IsKeyDownSkill(id) {
@@ -115,8 +118,8 @@ func IsKeyDownSkill(skillId Id) bool {
 		ThunderBreakerStage2CorkscrewBlowId,
 		EvanStage4IceBreathId,
 		EvanStage7FireBreathId,
-		BrawlerCorkscrewBlowId, // 5101004 — IDA-verified keydown v83/v87/v95/jms185 (task-161)
-		GunslingerGrenadeId)    // 5201002 — IDA-verified keydown v83/v87/v95/jms185 (task-161)
+		BrawlerCorkscrewBlowId, // 5101004 — IDA-verified keydown v61/v72/v79/v83/v87/v95/jms185 (task-161)
+		GunslingerGrenadeId)    // 5201002 — IDA-verified keydown v61/v72/v79/v83/v87/v95/jms185 (task-161)
 }
 ```
 
@@ -138,7 +141,7 @@ git branch --show-current   # must print task-161-keydown-aura-broadcast-skills
 
 ### Task 2: Attack-codec `tKeyDown` byte-layout regression test
 
-After Task 1, `attack_info.go` already reads/writes the `tKeyDown` u32 for the two skills (it was `else if NeedsCharging` before, and both skills are `charge:false`, so pre-Task-1 they carried NO keyDown field — this is the latent attack-parse fix, design §5). These tests are **regression guards**: they pin that a keydown skill's encoded attack is exactly 4 bytes longer than a non-keydown one, across all five tenant variants, so any future broadening/narrowing of `IsKeyDownSkill` (e.g. re-adding Explosion/Chakra, or dropping Corkscrew) surfaces as a byte-count failure. They pass on write because Task 1 already landed the change. Single module (`libs/atlas-packet`).
+After Task 1, `attack_info.go` already reads/writes the `tKeyDown` u32 for the two skills (it was `else if NeedsCharging` before, and both skills are `charge:false`, so pre-Task-1 they carried NO keyDown field — this is the latent attack-parse fix, design §5). These tests are **regression guards**: they pin that a keydown skill's encoded attack is exactly 4 bytes longer than a non-keydown one, across all 11 tenant variants (the post-merge `pt.Variants` set), so any future broadening/narrowing of `IsKeyDownSkill` (e.g. re-adding Explosion/Chakra, or dropping Corkscrew) surfaces as a byte-count failure. They pass on write because Task 1 already landed the change. Single module (`libs/atlas-packet`).
 
 **Files:**
 - Modify: `libs/atlas-packet/model/attack_info_test.go` (add one test function + one import)
@@ -170,10 +173,15 @@ Add to `libs/atlas-packet/model/attack_info_test.go`:
 // encoded attack is exactly 4 bytes longer than the same attack with a non-keydown
 // skillId — the field the v83 client writes at 0x955223 (design §2.3). This guards
 // skill.IsKeyDownSkill against accidental broadening (Explosion/Chakra) or narrowing
-// (dropping Corkscrew/Grenade), and runs across every tenant variant so the
-// cross-version safety of design §2.4 is enforced in CI. The baseline (skillId 0)
-// and the two DROPPED skills are charge:false and non-keydown, so they carry NO
-// keyDown field; Hurricane/Corkscrew/Grenade are keydown and add exactly 4 bytes.
+// (dropping Corkscrew/Grenade), and runs across every tenant variant (all 11 in
+// pt.Variants: v28/v48/v61/v72/v79/v83/v84/v86/v87/v95/jms185) so the cross-version
+// safety of design §2.4 is enforced in CI. The baseline (skillId 0) and the two
+// DROPPED skills are charge:false and non-keydown, so they carry NO keyDown field;
+// Hurricane/Corkscrew/Grenade are keydown and add exactly 4 bytes. NOTE: this asserts
+// Atlas's own version-agnostic self-consistency (skillId N adds 4 bytes iff
+// IsKeyDownSkill(N)), not per-version client faithfulness — for the pre-pirate v28/v48
+// contexts the survivors are never actually cast (design §2.4), so the +4 there is a
+// harmless unreachable path, and the assertion's value is guarding the reachable versions.
 func TestAttackInfoKeydownField(t *testing.T) {
 	encLen := func(t *testing.T, region string, major uint16, skillId uint32) int {
 		ctx := pt.CreateContext(region, major, 1)
@@ -215,7 +223,7 @@ func TestAttackInfoKeydownField(t *testing.T) {
 - [ ] **Step 3: Run the test to verify it passes (regression guard)**
 
 Run: `cd "$(git rev-parse --show-toplevel)/libs/atlas-packet" && go test ./model/ -run TestAttackInfoKeydownField -v`
-Expected: PASS for every variant (GMS v83/v84/v87/v95, JMS v185). This passes on write because Task 1 already added the two IDs; its value is catching future regressions.
+Expected: PASS for every variant — all 11 in `pt.Variants` (GMS v28/v48/v61/v72/v79/v83/v84/v86/v87/v95, JMS v185). This passes on write because Task 1 already added the two IDs; its value is catching future regressions. (The +4 delta holds on every variant because `IsKeyDownSkill` is version-agnostic; on the pre-pirate v28/v48 contexts that path is unreachable in production but still self-consistent — design §2.4.)
 
 Sanity check the guard actually bites (optional, do NOT commit this): temporarily remove `BrawlerCorkscrewBlowId` from `model.go`'s predicate, re-run — the test must FAIL with `skill 5101004: encoded len ... want base+4`. Restore the ID before continuing.
 
@@ -237,7 +245,9 @@ git branch --show-current   # must print task-161-keydown-aura-broadcast-skills
 
 ### Task 3: Foreign prepare/cancel relay byte fixtures for the two skills
 
-The `SkillPrepareForeign` (charId u32, skillId u32, level u8, action u16, actionSpeed u8) and `SkillCancelForeign` (charId u32, skillId u32) packets are skill-agnostic — they do not branch on skillId (design §4.2). These fixtures are coverage guards proving the relay carries the correct verified skillId bytes to the observer for each of the two skills (acceptance §byte-level). Single module (`libs/atlas-packet`).
+The `SkillPrepareForeign` (charId u32, skillId u32, level u8, action u16/u8, actionSpeed u8) and `SkillCancelForeign` (charId u32, skillId u32) packets are skill-agnostic — they do not branch on skillId (design §4.2). These fixtures are coverage guards proving the relay carries the correct verified skillId bytes to the observer for each of the two skills (acceptance §byte-level). Single module (`libs/atlas-packet`).
+
+> **Post-merge caveat (legacy action-field divergence).** `main` version-gated `SkillPrepareForeign`'s `action` field: GMS **< 79** (v61/v72) encodes it as a SINGLE byte (bit7=bLeft, bits0-6=nAction); v79+ as a 2-byte short (see `TestSkillPrepareForeignV61ByteFixture`/`...V72ByteFixture`). `SkillCancelForeign` is 8 bytes on every version (no divergence). The fixtures below use a **v83 context with `action=0x0142`** (2-byte, 12 bytes total), which still matches the current `TestSkillPrepareForeignByteFixture` v83 case — so they remain correct. Because the two survivors are IDA-verified keydown specifically on the new legacy versions v61/v72/v79 (design §2.4), **Step 1b (recommended)** adds one legacy fixture (v72, 1-byte action, 11 bytes) for Corkscrew so the byte-level coverage exercises a version where these skills are actually keydown-live — not only v83.
 
 **Files:**
 - Modify: `libs/atlas-packet/character/clientbound/skill_prepare_foreign_test.go` (add one test function)
@@ -309,6 +319,39 @@ func TestSkillPrepareForeignByteFixtureKeydownSkills(t *testing.T) {
 }
 ```
 
+- [ ] **Step 1b (recommended): Add a legacy v72 prepare fixture for Corkscrew**
+
+Proves the relay carries the correct skillId on a legacy version where Corkscrew is genuinely keydown-live (design §2.4), and pins the legacy 1-byte `action` layout. Append to `libs/atlas-packet/character/clientbound/skill_prepare_foreign_test.go`:
+
+```go
+// TestSkillPrepareForeignByteFixtureKeydownV72 pins the legacy GMS v72 relay bytes for
+// Corkscrew Blow (5101004) — a version where the client's is_keydown_skill switch
+// (@0x4e5318) includes it (design §2.4). v72 encodes the action/direction field as a
+// SINGLE byte (bit7=bLeft, bits0-6=nAction), so this packet is 11 bytes, not 12. action
+// stays 0x42 so bit7=0 -> the byte is exactly 0x42. Mirrors TestSkillPrepareForeignV72ByteFixture.
+func TestSkillPrepareForeignByteFixtureKeydownV72(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+	input := NewSkillPrepareForeign(1001, 5101004, 10, 0x42, 4)
+	expected := []byte{
+		0xE9, 0x03, 0x00, 0x00, // charId=1001 LE
+		0xCC, 0xD5, 0x4D, 0x00, // skillId=5101004 (0x4DD5CC) LE
+		0x0A, // level=10
+		0x42, // action=0x42 (1 BYTE on v72)
+		0x04, // actionSpeed=4
+	}
+	got := pt.Encode(t, ctx, input.Encode, nil)
+	if len(got) != len(expected) {
+		t.Fatalf("byte length mismatch: got %d want %d\n  got:  %X\n  want: %X", len(got), len(expected), got, expected)
+	}
+	for i := range expected {
+		if got[i] != expected[i] {
+			t.Errorf("byte[%d] = %02X, want %02X\n  got:  %X\n  want: %X", i, got[i], expected[i], got, expected)
+			break
+		}
+	}
+}
+```
+
 - [ ] **Step 2: Add the cancel-relay byte fixture**
 
 Append to `libs/atlas-packet/character/clientbound/skill_cancel_foreign_test.go`:
@@ -365,8 +408,8 @@ func TestSkillCancelForeignByteFixtureKeydownSkills(t *testing.T) {
 
 - [ ] **Step 3: Run the clientbound package tests to verify they pass**
 
-Run: `cd "$(git rev-parse --show-toplevel)/libs/atlas-packet" && go test ./character/clientbound/ -run 'TestSkill(Prepare|Cancel)ForeignByteFixtureKeydownSkills' -v`
-Expected: PASS for both `Corkscrew Blow 5101004` and `Grenade 5201002` subtests in each.
+Run: `cd "$(git rev-parse --show-toplevel)/libs/atlas-packet" && go test ./character/clientbound/ -run 'TestSkill(Prepare|Cancel)ForeignByteFixtureKeydown' -v`
+Expected: PASS for both `Corkscrew Blow 5101004` and `Grenade 5201002` subtests in each of the Skills fixtures, plus the legacy `TestSkillPrepareForeignByteFixtureKeydownV72` (11-byte, 1-byte action) from Step 1b.
 
 - [ ] **Step 4: Commit**
 
@@ -499,6 +542,18 @@ tools/redis-key-guard.sh
 ```
 
 Expected: clean (no banned-call findings, exit 0). Run without a global `GOWORK=off` prefix (project memory: guard scripts false-FAIL under that prefix).
+
+- [ ] **Step 5b: `tools/lint.sh --check` and `tools/goroutine-guard.sh` clean from the repo root**
+
+`main` added these as mandatory CI gates (CLAUDE.md Build & Verification items 6 & 8) after this plan was first written. Both apply to the changed Go files:
+
+```bash
+cd "$(git rev-parse --show-toplevel)"
+tools/goroutine-guard.sh          # no bare `go` added — passes trivially
+tools/lint.sh --check             # gofumpt + goimports on the new test files / predicate edit
+```
+
+Expected: both exit 0. If `lint.sh --check` reports formatting drift on a new file, run `tools/lint.sh` (no flags) to fix in place, then re-commit that file. The other new guards (`service-registration-guard.sh`, `template-opcode-order-guard.sh`) are N/A — this task touches no `services.json`, deploy/k8s, docker-bake, `go.work`, or seed templates.
 
 - [ ] **Step 6: Confirm the tree is clean and on-branch**
 

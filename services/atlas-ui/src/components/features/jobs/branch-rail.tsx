@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { VisibleRailGroup } from "@/components/features/jobs/rail-groups";
 
 interface BranchRailProps {
@@ -27,10 +28,7 @@ export function BranchRail({
           className="min-h-0 flex-1 space-y-2 px-2 pb-3 pt-2"
         >
           {Array.from({ length: 8 }, (_, i) => (
-            <div
-              key={i}
-              className="h-7 w-full animate-pulse rounded-md bg-muted"
-            />
+            <Skeleton key={i} className="h-7 w-full" />
           ))}
         </CardContent>
       </Card>

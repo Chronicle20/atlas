@@ -97,4 +97,39 @@ describe("job-advancement-tree", () => {
     expect(tierLabel(112)).toBe("4th");
     expect(tierLabel(99999)).toBe("");
   });
+
+  // Restored (task-10 fix round 1): Task 9's set-driven rewrite dropped this
+  // structural invariant along with the floor-based assertions that used to
+  // share its `it()` block. It is version-independent — no `available` set
+  // involved — so it ports unchanged from the pre-branch file.
+  it("has no orphan parent references", () => {
+    for (const e of Object.values(JOB_GRAPH)) {
+      if (e.parent !== null) {
+        expect(JOB_GRAPH[e.parent]).toBeDefined();
+      }
+    }
+  });
+
+  // Restored (task-10 fix round 1). `advancementChains` now takes `available`
+  // instead of a version, so this uses ALL (every id present) to prove the
+  // empty result comes from 112/800 being leaves in JOB_GRAPH — childrenOf(112)
+  // and childrenOf(800) are both [] — not from the ids being absent from the
+  // tenant's set.
+  it("returns [] for a leaf entry, even when the entry itself is available", () => {
+    expect(childrenOf(112)).toEqual([]); // Hero: 4th job, no further advancement
+    expect(childrenOf(800)).toEqual([]); // Maple Leaf Brigadier: standalone, childless
+    expect(advancementChains(112, ALL)).toEqual([]);
+    expect(advancementChains(800, ALL)).toEqual([]);
+  });
+
+  // Restored (task-10 fix round 1): the depth===0 branch in tierLabel
+  // (job-advancement-tree.ts) distinguishes a root WITH children ("Base")
+  // from a childless root (""). The pre-fix suite only exercised the
+  // with-children case (tierLabel(0)); this covers both sides of that branch.
+  it("labels a childless root distinctly from a root with children", () => {
+    expect(childrenOf(1000).length).toBeGreaterThan(0); // Noblesse has children
+    expect(tierLabel(1000)).toBe("Base");
+    expect(childrenOf(800)).toEqual([]); // Maple Leaf Brigadier has none
+    expect(tierLabel(800)).toBe("");
+  });
 });

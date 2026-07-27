@@ -8,7 +8,7 @@ import (
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
-// packet-audit:verify markers are added in Wave 2 once evidence is pinned.
+// Byte-fixture verify markers are added in Wave 2 once evidence is pinned.
 
 // Per-version dispatcher mode bytes for the scalar/notice arm family
 // (task-183 Wave 1.4), taken from

@@ -24,6 +24,22 @@ func NewAttackInfo(attackType AttackType) *AttackInfo {
 	return &AttackInfo{attackType: attackType}
 }
 
+// ExplodedMesoDrop is one entry of the meso-explosion trailing drop list: the
+// detonated meso drop's object id (CDrop field +32) plus the client's bitmask
+// of which attacked-mob indices that drop's explosion damaged. The hit mask is
+// retained for wire fidelity only; server logic consumes just the ids.
+type ExplodedMesoDrop struct {
+	dropId  uint32
+	hitMask byte
+}
+
+func NewExplodedMesoDrop(dropId uint32, hitMask byte) ExplodedMesoDrop {
+	return ExplodedMesoDrop{dropId: dropId, hitMask: hitMask}
+}
+
+func (e ExplodedMesoDrop) DropId() uint32 { return e.dropId }
+func (e ExplodedMesoDrop) HitMask() byte  { return e.hitMask }
+
 // legacyGmsByteAction reports whether the serverbound attack action/direction field
 // is a single byte (bit7=bLeft, bits0-6=nAction) instead of a 2-byte short. Legacy
 // pre-79 GMS only. IDA-verified: v72 TryDoingMeleeAttack @0x85f9c2 (Encode1) vs v79
@@ -106,6 +122,8 @@ type AttackInfo struct {
 	dragonY              uint16
 	bulletX              uint16
 	bulletY              uint16
+	explodedMesoDrops    []ExplodedMesoDrop
+	mesoDelay            uint16
 }
 
 // Encode is the symmetric mirror of Decode: it serializes the client->server
@@ -116,6 +134,11 @@ type AttackInfo struct {
 func (m *AttackInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
+		// Meso Explosion (4211006) is a CLOSE_RANGE_ATTACK variant written by a
+		// dedicated client sender. Its three deltas (per-mob count byte, trailing
+		// drop list, trailing delay) are byte-identical across every IDA-verified
+		// version (task-150 design §2.1), so one flag and no new version gates.
+		isMesoExplosion := skill.Id(m.skillId) == skill.ChiefBanditMesoExplosionId
 		w := response.NewWriter(l)
 		w.WriteByte(m.fieldKey)
 		if t.Region() == "GMS" && t.MajorVersion() >= 84 { // primary dr-block (v84+)
@@ -210,6 +233,14 @@ func (m *AttackInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 
 		w.WriteShort(m.characterX)
 		w.WriteShort(m.characterY)
+		if isMesoExplosion {
+			w.WriteByte(byte(len(m.explodedMesoDrops)))
+			for _, e := range m.explodedMesoDrops {
+				w.WriteInt(e.dropId)
+				w.WriteByte(e.hitMask)
+			}
+			w.WriteShort(m.mesoDelay)
+		}
 		if m.attackType == AttackTypeRanged && !legacyGmsNoRangedBulletCoords(t) {
 			w.WriteShort(m.bulletX)
 			w.WriteShort(m.bulletY)
@@ -262,6 +293,11 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, ctx context.Context) func(r *r
 		}
 
 		m.skillId = r.ReadUint32()
+		// Meso Explosion (4211006) is a CLOSE_RANGE_ATTACK variant written by a
+		// dedicated client sender. Its three deltas (per-mob count byte, trailing
+		// drop list, trailing delay) are byte-identical across every IDA-verified
+		// version (task-150 design §2.1), so one flag and no new version gates.
+		isMesoExplosion := skill.Id(m.skillId) == skill.ChiefBanditMesoExplosionId
 		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 			m.skillLevel = r.ReadByte() // nCombatOrders
 		}
@@ -361,13 +397,28 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, ctx context.Context) func(r *r
 		}
 
 		for range m.damage {
-			di := NewDamageInfo(m.hits)
+			var di *DamageInfo
+			if isMesoExplosion {
+				di = NewMesoExplosionDamageInfo()
+			} else {
+				di = NewDamageInfo(m.hits)
+			}
 			di.Decode(l, ctx)(r, options)
 			m.damageInfo = append(m.damageInfo, *di)
 		}
 
 		m.characterX = r.ReadUint16()
 		m.characterY = r.ReadUint16()
+		if isMesoExplosion {
+			dropCount := r.ReadByte()
+			for range dropCount {
+				m.explodedMesoDrops = append(m.explodedMesoDrops, ExplodedMesoDrop{
+					dropId:  r.ReadUint32(),
+					hitMask: r.ReadByte(),
+				})
+			}
+			m.mesoDelay = r.ReadUint16()
+		}
 		if m.attackType == AttackTypeRanged && !legacyGmsNoRangedBulletCoords(t) {
 			m.bulletX = r.ReadUint16()
 			m.bulletY = r.ReadUint16()
@@ -467,6 +518,25 @@ func (m *AttackInfo) BulletY() uint16 {
 	return m.bulletY
 }
 
+// ExplodedMesoDrops returns the drop object ids listed by a meso-explosion
+// attack. Empty for every other attack (FR-3).
+func (m *AttackInfo) ExplodedMesoDrops() []uint32 {
+	ids := make([]uint32, 0, len(m.explodedMesoDrops))
+	for _, e := range m.explodedMesoDrops {
+		ids = append(ids, e.dropId)
+	}
+	return ids
+}
+
+// ExplodedMesoDropEntries returns the full wire entries (id + hit mask).
+func (m *AttackInfo) ExplodedMesoDropEntries() []ExplodedMesoDrop {
+	return m.explodedMesoDrops
+}
+
+func (m *AttackInfo) MesoDelay() uint16 {
+	return m.mesoDelay
+}
+
 // Builder methods for constructing AttackInfo in the server-send path.
 
 func (m *AttackInfo) SetDamage(damage uint32) *AttackInfo {
@@ -524,5 +594,15 @@ func (m *AttackInfo) SetBulletItemId(bulletItemId uint32) *AttackInfo {
 
 func (m *AttackInfo) AddDamageInfo(di DamageInfo) *AttackInfo {
 	m.damageInfo = append(m.damageInfo, di)
+	return m
+}
+
+func (m *AttackInfo) SetExplodedMesoDrops(entries []ExplodedMesoDrop) *AttackInfo {
+	m.explodedMesoDrops = entries
+	return m
+}
+
+func (m *AttackInfo) SetMesoDelay(delay uint16) *AttackInfo {
+	m.mesoDelay = delay
 	return m
 }

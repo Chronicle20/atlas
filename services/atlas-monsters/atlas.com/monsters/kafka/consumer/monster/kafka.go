@@ -24,6 +24,7 @@ const (
 	CommandTypeDrainMp           = "DRAIN_MP"
 	CommandTypeAddPuppet         = "ADD_PUPPET"
 	CommandTypeRemovePuppet      = "REMOVE_PUPPET"
+	CommandTypeKill              = "KILL"
 
 	EnvCommandTopicMovement = "COMMAND_TOPIC_MONSTER_MOVEMENT"
 )
@@ -100,6 +101,15 @@ type drainMpCommandBody struct {
 	CharacterId uint32 `json:"characterId"`
 	SkillId     uint32 `json:"skillId"`
 	Amount      uint32 `json:"amount"`
+}
+
+// killCommandBody asks the processor to kill a monster outright as the
+// result of a player passive (Mortal Blow). The channel already rolled
+// the threshold and kill chance; the processor re-checks alive + boss
+// (fail-closed). SkillId is carried for traceability/logging only.
+type killCommandBody struct {
+	CharacterId uint32 `json:"characterId"`
+	SkillId     uint32 `json:"skillId"`
 }
 
 // addPuppetCommand registers a player's puppet in a field so the monster

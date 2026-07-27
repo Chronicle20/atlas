@@ -161,3 +161,9 @@ func (m Model) X() int16 {
 func (m Model) AttackCount() uint32 {
 	return m.attackCount
 }
+
+// Y returns the integer Y attribute (for MP Recovery it is the percent of
+// the HP loss returned as MP).
+func (m Model) Y() int16 {
+	return m.y
+}

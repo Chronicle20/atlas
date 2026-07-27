@@ -47,6 +47,12 @@ const (
 	CashShopOperationGachaponCopyFailed          = "GACHAPON_COPY_FAILED"
 	CashShopOperationChangeMaplePointFailed      = "CHANGE_MAPLE_POINT_FAILED"
 
+	// Counter-arm operation keys (task-183 Wave 1.2).
+	CashShopOperationIncTrunkCountSuccess         = "INC_TRUNK_COUNT_SUCCESS"
+	CashShopOperationIncCharacterSlotCountSuccess = "INC_CHARACTER_SLOT_COUNT_SUCCESS"
+	CashShopOperationIncBuyCharacterCountSuccess  = "INC_BUY_CHARACTER_COUNT_SUCCESS"
+	CashShopOperationEnableEquipSlotExtSuccess    = "ENABLE_EQUIP_SLOT_EXT_SUCCESS"
+
 	CashShopOperationErrorUnknown                           = "UNKNOWN_ERROR"
 	CashShopOperationErrorRequestTimedOut                   = "REQUEST_TIMED_OUT"
 	CashShopOperationErrorNotEnoughCash                     = "NOT_ENOUGH_CASH"
@@ -425,5 +431,45 @@ func CashShopGachaponCopyFailedBody(message string) func(logrus.FieldLogger, con
 func CashShopChangeMaplePointFailedBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", CashShopOperationChangeMaplePointFailed, func(mode byte) packet.Encoder {
 		return NewChangeMaplePointFailed(mode)
+	})
+}
+
+// --- Counter-arm bodies (task-183 Wave 1.2) ---
+// RE-proven shape: mode + uint16 absolute-counter update (NO inventory/slot-type
+// byte). Each body func FIXES its operation key (the discrete struct never
+// accepts a caller-supplied mode) and resolves the mode from the "operations"
+// table.
+
+// CashShopIncTrunkCountSuccessBody builds the INC_TRUNK_COUNT_SUCCESS arm
+// (CCashShop::OnCashItemResIncTrunkCountDone).
+func CashShopIncTrunkCountSuccessBody(trunkCount uint16) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CashShopOperationIncTrunkCountSuccess, func(mode byte) packet.Encoder {
+		return NewIncTrunkCountSuccess(mode, trunkCount)
+	})
+}
+
+// CashShopIncCharacterSlotCountSuccessBody builds the INC_CHARACTER_SLOT_COUNT_SUCCESS
+// arm (CCashShop::OnCashItemResIncCharacterSlotCountDone).
+func CashShopIncCharacterSlotCountSuccessBody(slotCount uint16) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CashShopOperationIncCharacterSlotCountSuccess, func(mode byte) packet.Encoder {
+		return NewIncCharacterSlotCountSuccess(mode, slotCount)
+	})
+}
+
+// CashShopIncBuyCharacterCountSuccessBody builds the INC_BUY_CHARACTER_COUNT_SUCCESS
+// arm (CCashShop::OnCashItemResIncBuyCharacterCountDone). Present only in v95/jms
+// among MODERN versions (n-a v83/v84/v87 per arm-catalog.md).
+func CashShopIncBuyCharacterCountSuccessBody(buyCharacterCount uint16) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CashShopOperationIncBuyCharacterCountSuccess, func(mode byte) packet.Encoder {
+		return NewIncBuyCharacterCountSuccess(mode, buyCharacterCount)
+	})
+}
+
+// CashShopEnableEquipSlotExtSuccessBody builds the ENABLE_EQUIP_SLOT_EXT_SUCCESS
+// arm (CCashShop::OnCashItemResEnableEquipSlotExtDone). Wire is mode + TWO
+// uint16 fields (slotIndex, days) — not a single count.
+func CashShopEnableEquipSlotExtSuccessBody(slotIndex uint16, days uint16) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CashShopOperationEnableEquipSlotExtSuccess, func(mode byte) packet.Encoder {
+		return NewEnableEquipSlotExtSuccess(mode, slotIndex, days)
 	})
 }

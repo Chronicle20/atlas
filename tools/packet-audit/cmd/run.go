@@ -2419,6 +2419,17 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "GachaponCopyFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
 	case "CCashShop::OnCashItemResult#CHANGE_MAPLE_POINT_FAILED":
 		return []candidate{{name: "ChangeMaplePointFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	// Counter-arm family (task-183 Wave 1.2): mode + uint16 absolute-counter
+	// update (NO inventory/slot-type byte). ENABLE_EQUIP_SLOT_EXT_SUCCESS is
+	// mode + TWO uint16 fields (slotIndex, days).
+	case "CCashShop::OnCashItemResult#INC_TRUNK_COUNT_SUCCESS":
+		return []candidate{{name: "IncTrunkCountSuccess", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#INC_CHARACTER_SLOT_COUNT_SUCCESS":
+		return []candidate{{name: "IncCharacterSlotCountSuccess", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#INC_BUY_CHARACTER_COUNT_SUCCESS":
+		return []candidate{{name: "IncBuyCharacterCountSuccess", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#ENABLE_EQUIP_SLOT_EXT_SUCCESS":
+		return []candidate{{name: "EnableEquipSlotExtSuccess", dir: csvpkg.DirClientbound, pkg: "cash"}}
 	// Serverbound CCashShop senders (op-byte owned by the ShopOperation dispatcher; bodies below).
 	case "CCashShop::TrySendQueryCashRequest":
 		return []candidate{{name: "CheckWallet", dir: csvpkg.DirServerbound, pkg: "cash"}}

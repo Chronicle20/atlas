@@ -556,6 +556,19 @@ func (p *ProcessorImpl) Damage(id uint32, characterId uint32, damages []uint32, 
 	// Reflect runs once per attack, not once per line.
 	p.checkReflect(m, characterId, attackType)
 
+	p.damageCore(m, characterId, damages)
+}
+
+// damageCore applies damage lines to an already-fetched, alive monster and
+// runs the full post-damage flow: damaged event, damage picker, kill
+// handling (cooldown/drop-timer clears, status-cancel emits, killed event,
+// registry removal, revives), controller switch, and aggro emission.
+// Callers own the guards that precede it: Damage does the alive check and
+// reflect; Kill (Mortal Blow) does the alive check and the fail-closed
+// boss guard, and deliberately never rolls reflect — the channel already
+// gated the triggering hit on reflect, and a kill "attack" has no attack
+// type.
+func (p *ProcessorImpl) damageCore(m Model, characterId uint32, damages []uint32) {
 	// Fetch monster info for boss flag and revives
 	var isBoss bool
 	var revives []uint32
@@ -609,9 +622,9 @@ func (p *ProcessorImpl) Damage(id uint32, characterId uint32, damages []uint32, 
 
 	if killed {
 		// Clear cooldowns and drop timer on death
-		GetCooldownRegistry().ClearCooldowns(p.ctx, p.t, id)
-		GetAttackCooldownRegistry().ClearCooldowns(p.ctx, p.t, id)
-		GetDropTimerRegistry().Unregister(p.ctx, p.t, id)
+		GetCooldownRegistry().ClearCooldowns(p.ctx, p.t, m.UniqueId())
+		GetAttackCooldownRegistry().ClearCooldowns(p.ctx, p.t, m.UniqueId())
+		GetDropTimerRegistry().Unregister(p.ctx, p.t, m.UniqueId())
 
 		// Emit cancellation events for any active status effects before death
 		for _, se := range last.Monster.StatusEffects() {

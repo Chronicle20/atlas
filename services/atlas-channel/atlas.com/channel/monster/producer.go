@@ -166,3 +166,25 @@ func DrainMpCommandProvider(f field.Model, monsterId uint32, characterId uint32,
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+// KillCommandProvider builds the KILL command for atlas-monsters to kill a
+// monster as the result of a Mortal Blow proc. Keyed by the monster's
+// unique id so it lands on the same partition as the triggering DAMAGE
+// command and processes after it — if the attack itself already killed the
+// monster, atlas-monsters finds it gone and drops the kill silently.
+func KillCommandProvider(f field.Model, monsterId uint32, characterId uint32, skillId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(monsterId))
+	value := &monster2.Command[monster2.KillCommandBody]{
+		WorldId:   f.WorldId(),
+		ChannelId: f.ChannelId(),
+		MapId:     f.MapId(),
+		Instance:  f.Instance(),
+		MonsterId: monsterId,
+		Type:      monster2.CommandTypeKill,
+		Body: monster2.KillCommandBody{
+			CharacterId: characterId,
+			SkillId:     skillId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

@@ -17,6 +17,7 @@ const (
 	CommandTypeUseSkill       = "USE_SKILL"
 	CommandTypeUseBasicAttack = "USE_BASIC_ATTACK"
 	CommandTypeDrainMp        = "DRAIN_MP"
+	CommandTypeKill           = "KILL"
 )
 
 type DamageFriendlyCommandBody struct {
@@ -81,6 +82,18 @@ type DrainMpCommandBody struct {
 	CharacterId uint32 `json:"characterId"`
 	SkillId     uint32 `json:"skillId"`
 	Amount      uint32 `json:"amount"`
+}
+
+// KillCommandBody asks atlas-monsters to kill a monster outright as the
+// result of a player passive (Mortal Blow). The channel owns the threshold
+// (hp ≤ maxHp·x/100) and kill-chance (roll ≤ y) decisions; atlas-monsters
+// re-checks alive + boss (fail-closed) and delivers the kill through the
+// standard damage path so EXP and drops credit the attacker like a normal
+// kill. SkillId is carried for traceability/logging only — atlas-monsters
+// does not resolve it.
+type KillCommandBody struct {
+	CharacterId uint32 `json:"characterId"`
+	SkillId     uint32 `json:"skillId"`
 }
 
 const (

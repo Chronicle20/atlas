@@ -29,6 +29,7 @@ type Processor interface {
 	DamageFriendly(f field.Model, attackedUniqueId uint32, observerUniqueId, attackerUniqueId uint32) error
 	CancelStatus(f field.Model, monsterId uint32, statusTypes []string, sourceCharacterId uint32, sourceSkillId uint32, sourceSkillClass string) error
 	DrainMp(f field.Model, monsterId uint32, characterId uint32, skillId uint32, amount uint32) error
+	Kill(f field.Model, monsterId uint32, characterId uint32, skillId uint32) error
 }
 
 type ProcessorImpl struct {
@@ -133,4 +134,15 @@ func (p *ProcessorImpl) CancelStatus(f field.Model, monsterId uint32, statusType
 func (p *ProcessorImpl) DrainMp(f field.Model, monsterId uint32, characterId uint32, skillId uint32, amount uint32) error {
 	p.l.Debugf("Draining MP from monster [%d] for character [%d] via skill [%d]. Amount [%d].", monsterId, characterId, skillId, amount)
 	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(DrainMpCommandProvider(f, monsterId, characterId, skillId, amount))
+}
+
+// Kill emits a KILL command instructing atlas-monsters to kill a monster
+// outright as the result of a player passive (Mortal Blow). The channel is
+// the authority for the threshold and kill-chance rolls; atlas-monsters
+// owns the guards only it can enforce (alive + boss, fail-closed) and
+// delivers the kill through the standard damage path so EXP and drops
+// credit the attacker identically to a normal kill.
+func (p *ProcessorImpl) Kill(f field.Model, monsterId uint32, characterId uint32, skillId uint32) error {
+	p.l.Debugf("Requesting Mortal Blow kill of monster [%d] for character [%d] via skill [%d].", monsterId, characterId, skillId)
+	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(KillCommandProvider(f, monsterId, characterId, skillId))
 }

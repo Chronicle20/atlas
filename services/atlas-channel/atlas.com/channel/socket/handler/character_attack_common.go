@@ -701,7 +701,26 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					if ai.AttackType() == packetmodel.AttackTypeMelee {
 						comboOrbTryUpdate(l, c, ai, comboOrbProductionDeps(l, ctx, s.Field(), s.CharacterId()))
 					}
-					// TODO decrease HP from DragonKnight Sacrifice
+
+					// Dragon Knight Sacrifice trades the caster's HP for the hit:
+					// firstDamageLine × X / 100, clamped to leave at least 1 HP
+					// (Cosmic parity — Sacrifice can never kill the caster). This
+					// damage-proportional cost is separate from the generic
+					// HPConsume/MPConsume cast cost above, which continues to apply.
+					// Fire-and-forget like the projectile emit: failures are
+					// logged and never abort the attack pipeline.
+					if skill3.Id(ai.SkillId()) == skill3.DragonKnightSacrificeId {
+						firstLine := sacrificeFirstDamageLine(ai)
+						cost := sacrificeHpCost(firstLine, se.X(), c.Hp())
+						if cost > 0 {
+							l.Debugf("Sacrifice self-HP cost: caster=[%d] skill=[%d] firstLine=[%d] x=[%d] cost=[%d].",
+								s.CharacterId(), ai.SkillId(), firstLine, se.X(), cost)
+							if herr := cp.ChangeHP(s.Field(), s.CharacterId(), -int16(cost)); herr != nil {
+								l.WithError(herr).Errorf("Sacrifice: CHANGE_HP emit failed for caster [%d] skill [%d].", s.CharacterId(), ai.SkillId())
+							}
+						}
+					}
+
 					// TODO apply attack effect (heal, mp consumption, dispel, cure all, combo reset, etc)
 					// TODO destroy Chief Bandit exploded mesos
 					// TODO apply Bandit Steal

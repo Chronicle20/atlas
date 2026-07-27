@@ -7,40 +7,202 @@
 # (clientbound). Modes shift NON-uniformly per version (sub-ops inserted), so a
 # value is read from that version's IDB, not offset-derived.
 #
-# IDA-verified: gms_v83 (port 13342), gms_v87 (13341), gms_v95 (13340),
-# jms_v185 (13339). gms_v84: uniform +3 vs v83 (matches the seeded gms_84 table;
-# the v84 DEVM build leaves the result-dispatcher unnamed, so this column is
-# template-derived pending a named v84 reference).
+# IDA-verified across all 9 tenant versions: gms_v83 (port 13342), gms_v87
+# (13341), gms_v95 (13340), jms_v185 (13339) — all four via direct dispatcher
+# decompile. gms_v84 is now ALSO directly RE'd (IDA session 79511a2a; real
+# dispatcher located at 0x47c291 after a naming trap — see
+# docs/tasks/task-183-cashshop-result-family/arm-catalog.md §4) — it is NO
+# LONGER template-derived/assumed-uniform-+3-vs-v83; v84 has 6 arms (the 4
+# GACHAPON_* + 2 CHANGE_MAPLE_POINT_* keys) that v83 lacks entirely, which a
+# pure +3 offset would have silently mis-derived as absent. The four legacy
+# versions gms_v48 (session 0bb5f11a), gms_v61 (965202bf), gms_v72
+# (90e36cb0), and gms_v79 (9a7d3642) were harvested in task-183 Wave 0 and are
+# now included below for full 9-version coverage (57 arms total; 48 newly
+# added beyond the original 9).
+#
+# Per-version presence varies — an arm absent from a given version's switch
+# (proven by full case/range enumeration in the harvest reports under
+# .superpowers/sdd/task-0.4-*-modes.md and task-0.5-*-modes.md) has NO key
+# for that version in its `modes` map below (absence = n-a; never an
+# explicit "n-a" value, matching this tool's convention). See
+# docs/tasks/task-183-cashshop-result-family/arm-catalog.md for the full
+# per-arm/per-version hex table and wire-shape divergence notes (reason-code
+# renumbering, legacy structural folds, etc.) that are NOT captured by the
+# mode-byte-only map below.
 
 writer: CashShopOperation
 fname: CCashShop::OnCashItemResult
 op: CASHSHOP_OPERATION
 direction: clientbound
 operations:
+  - key: LIMIT_GOODS_COUNT_CHANGED
+    handler: OnCashItemResLimitGoodsCountChanged
+    modes: { gms_v48: 41, gms_v61: 43, gms_v72: 51, gms_v79: 63, gms_v83: 71, gms_v84: 74, gms_v87: 76, gms_v95: 84, jms_v185: 74 }
   - key: LOAD_INVENTORY_SUCCESS
     handler: OnCashItemResLoadLockerDone
-    modes: { gms_v83: 75, gms_v84: 78, gms_v87: 80, gms_v95: 88, jms_v185: 78 }
+    modes: { gms_v48: 42, gms_v61: 47, gms_v72: 55, gms_v79: 67, gms_v83: 75, gms_v84: 78, gms_v87: 80, gms_v95: 88, jms_v185: 78 }
   - key: LOAD_INVENTORY_FAILURE
     handler: OnCashItemResLoadLockerFailed
-    modes: { gms_v83: 76, gms_v84: 79, gms_v87: 81, gms_v95: 89, jms_v185: 79 }
+    modes: { gms_v48: 43, gms_v61: 48, gms_v72: 56, gms_v79: 68, gms_v83: 76, gms_v84: 79, gms_v87: 81, gms_v95: 89, jms_v185: 79 }
+  - key: LOAD_GIFT_SUCCESS
+    handler: OnCashItemResLoadGiftDone
+    modes: { gms_v61: 49, gms_v72: 57, gms_v79: 69, gms_v83: 77, gms_v84: 80, gms_v87: 82, gms_v95: 90, jms_v185: 80 }
+  - key: LOAD_GIFT_FAILED
+    handler: OnCashItemResLoadGiftFailed
+    modes: { gms_v61: 50, gms_v72: 58, gms_v79: 70, gms_v83: 78, gms_v84: 81, gms_v87: 83, gms_v95: 91, jms_v185: 81 }
   - key: LOAD_WISHLIST
     handler: OnCashItemResLoadWishDone
-    modes: { gms_v83: 79, gms_v84: 82, gms_v87: 84, gms_v95: 92, jms_v185: 82 }
+    modes: { gms_v48: 44, gms_v61: 51, gms_v72: 59, gms_v79: 71, gms_v83: 79, gms_v84: 82, gms_v87: 84, gms_v95: 92, jms_v185: 82 }
+  - key: LOAD_WISH_FAILED
+    handler: OnCashItemResLoadWishFailed
+    modes: { gms_v48: 45, gms_v61: 52, gms_v72: 60, gms_v79: 72, gms_v83: 80, gms_v84: 83, gms_v87: 85, gms_v95: 93, jms_v185: 83 }
   - key: UPDATE_WISHLIST
     handler: OnCashItemResSetWishDone
-    modes: { gms_v83: 85, gms_v84: 88, gms_v87: 90, gms_v95: 98, jms_v185: 86 }
+    modes: { gms_v48: 50, gms_v61: 57, gms_v72: 65, gms_v79: 77, gms_v83: 85, gms_v84: 88, gms_v87: 90, gms_v95: 98, jms_v185: 86 }
+  - key: SET_WISH_FAILED
+    handler: OnCashItemResSetWishFailed
+    modes: { gms_v48: 51, gms_v61: 58, gms_v72: 66, gms_v79: 78, gms_v83: 86, gms_v84: 89, gms_v87: 91, gms_v95: 99, jms_v185: 87 }
   - key: PURCHASE_SUCCESS
     handler: OnCashItemResBuyDone
-    modes: { gms_v83: 87, gms_v84: 90, gms_v87: 92, gms_v95: 100, jms_v185: 88 }
+    modes: { gms_v48: 52, gms_v61: 59, gms_v72: 67, gms_v79: 79, gms_v83: 87, gms_v84: 90, gms_v87: 92, gms_v95: 100, jms_v185: 88 }
+  - key: BUY_FAILED
+    handler: OnCashItemResBuyFailed
+    modes: { gms_v48: 53, gms_v61: 60, gms_v72: 68, gms_v79: 80, gms_v83: 88, gms_v84: 91, gms_v87: 93, gms_v95: 101, jms_v185: 89 }
+  - key: USE_COUPON_SUCCESS
+    handler: OnCashItemResUseCouponDone
+    modes: { gms_v48: 54, gms_v61: 61, gms_v72: 69, gms_v79: 81, gms_v83: 89, gms_v84: 92, gms_v87: 94, gms_v95: 102, jms_v185: 90 }
+  - key: GIFT_COUPON_SUCCESS
+    handler: OnCashItemResGiftCouponDone
+    modes: { gms_v48: 56, gms_v61: 63, gms_v72: 71, gms_v79: 83, gms_v83: 91, gms_v84: 94, gms_v87: 96, gms_v95: 104, jms_v185: 92 }
+  - key: USE_COUPON_FAILED
+    handler: OnCashItemResUseCouponFailed
+    modes: { gms_v48: 57, gms_v61: 64, gms_v72: 72, gms_v79: 84, gms_v83: 92, gms_v84: 95, gms_v87: 97, gms_v95: 105, jms_v185: 93 }
+  - key: GIFT_SUCCESS
+    handler: OnCashItemResGiftDone
+    modes: { gms_v48: 59, gms_v61: 66, gms_v72: 74, gms_v79: 86, gms_v83: 94, gms_v84: 97, gms_v87: 99, gms_v95: 107, jms_v185: 95 }
+  - key: GIFT_FAILED
+    handler: OnCashItemResGiftFailed
+    modes: { gms_v48: 60, gms_v61: 67, gms_v72: 75, gms_v79: 87, gms_v83: 95, gms_v84: 98, gms_v87: 100, gms_v95: 108, jms_v185: 163 }
   - key: INVENTORY_CAPACITY_INCREASE_SUCCESS
     handler: OnCashItemResIncSlotCountDone
-    modes: { gms_v83: 96, gms_v84: 99, gms_v87: 101, gms_v95: 109, jms_v185: 97 }
+    modes: { gms_v48: 61, gms_v61: 68, gms_v72: 76, gms_v79: 88, gms_v83: 96, gms_v84: 99, gms_v87: 101, gms_v95: 109, jms_v185: 97 }
   - key: INVENTORY_CAPACITY_INCREASE_FAILED
     handler: OnCashItemResIncSlotCountFailed
-    modes: { gms_v83: 97, gms_v84: 100, gms_v87: 102, gms_v95: 110, jms_v185: 98 }
+    modes: { gms_v48: 62, gms_v61: 69, gms_v72: 77, gms_v79: 89, gms_v83: 97, gms_v84: 100, gms_v87: 102, gms_v95: 110, jms_v185: 98 }
+  - key: INC_TRUNK_COUNT_SUCCESS
+    handler: OnCashItemResIncTrunkCountDone
+    modes: { gms_v61: 70, gms_v72: 78, gms_v79: 90, gms_v83: 98, gms_v84: 101, gms_v87: 103, gms_v95: 111, jms_v185: 99 }
+  - key: INC_TRUNK_COUNT_FAILED
+    handler: OnCashItemResIncTrunkCountFailed
+    modes: { gms_v61: 71, gms_v72: 79, gms_v79: 91, gms_v83: 99, gms_v84: 102, gms_v87: 104, gms_v95: 112, jms_v185: 100 }
+  - key: INC_CHARACTER_SLOT_COUNT_SUCCESS
+    handler: OnCashItemResIncCharacterSlotCountDone
+    modes: { gms_v48: 63, gms_v61: 72, gms_v72: 80, gms_v79: 92, gms_v83: 100, gms_v84: 103, gms_v87: 105, gms_v95: 113, jms_v185: 101 }
+  - key: INC_CHARACTER_SLOT_COUNT_FAILED
+    handler: OnCashItemResIncCharacterSlotCountFailed
+    modes: { gms_v48: 64, gms_v61: 73, gms_v72: 81, gms_v79: 93, gms_v83: 101, gms_v84: 104, gms_v87: 106, gms_v95: 114, jms_v185: 102 }
+  - key: INC_BUY_CHARACTER_COUNT_SUCCESS
+    handler: OnCashItemResIncBuyCharacterCountDone
+    modes: { gms_v72: 82, gms_v95: 115, jms_v185: 103 }
+  - key: INC_BUY_CHARACTER_COUNT_FAILED
+    handler: OnCashItemResIncBuyCharacterCountFailed
+    modes: { gms_v72: 83, gms_v95: 116, jms_v185: 104 }
+  - key: ENABLE_EQUIP_SLOT_EXT_SUCCESS
+    handler: OnCashItemResEnableEquipSlotExtDone
+    modes: { gms_v79: 94, gms_v83: 102, gms_v84: 105, gms_v87: 107, gms_v95: 117, jms_v185: 105 }
+  - key: ENABLE_EQUIP_SLOT_EXT_FAILED
+    handler: OnCashItemResEnableEquipSlotExtFailed
+    modes: { gms_v79: 95, gms_v83: 103, gms_v84: 106, gms_v87: 108, gms_v95: 118, jms_v185: 106 }
   - key: CASH_ITEM_MOVED_TO_INVENTORY
     handler: OnCashItemResMoveLtoSDone
-    modes: { gms_v83: 104, gms_v84: 107, gms_v87: 109, gms_v95: 119, jms_v185: 107 }
+    modes: { gms_v48: 65, gms_v61: 74, gms_v79: 96, gms_v83: 104, gms_v84: 107, gms_v87: 109, gms_v95: 119, jms_v185: 107 }
+  - key: MOVE_L_TO_S_FAILED
+    handler: OnCashItemResMoveLtoSFailed
+    modes: { gms_v48: 66, gms_v61: 75, gms_v79: 97, gms_v83: 105, gms_v84: 108, gms_v87: 110, gms_v95: 120, jms_v185: 108 }
   - key: CASH_ITEM_MOVED_TO_CASH_INVENTORY
     handler: OnCashItemResMoveStoLDone
-    modes: { gms_v83: 106, gms_v84: 109, gms_v87: 111, gms_v95: 121, jms_v185: 109 }
+    modes: { gms_v48: 67, gms_v61: 76, gms_v72: 84, gms_v79: 98, gms_v83: 106, gms_v84: 109, gms_v87: 111, gms_v95: 121, jms_v185: 109 }
+  - key: MOVE_S_TO_L_FAILED
+    handler: OnCashItemResMoveStoLFailed
+    modes: { gms_v48: 68, gms_v61: 77, gms_v72: 85, gms_v79: 99, gms_v83: 107, gms_v84: 110, gms_v87: 112, gms_v95: 122, jms_v185: 110 }
+  - key: DESTROY_SUCCESS
+    handler: OnCashItemResDestroyDone
+    modes: { gms_v48: 69, gms_v61: 78, gms_v72: 86, gms_v79: 100, gms_v83: 108, gms_v84: 111, gms_v87: 113, gms_v95: 123, jms_v185: 111 }
+  - key: DESTROY_FAILED
+    handler: OnCashItemResDestroyFailed
+    modes: { gms_v48: 70, gms_v61: 79, gms_v72: 87, gms_v79: 101, gms_v83: 109, gms_v84: 112, gms_v87: 114, gms_v95: 124, jms_v185: 112 }
+  - key: EXPIRE_DONE
+    handler: OnCashItemResExpireDone
+    modes: { gms_v48: 71, gms_v61: 80, gms_v72: 88, gms_v79: 102, gms_v83: 110, gms_v84: 113, gms_v87: 115, gms_v95: 125, jms_v185: 113 }
+  - key: REBATE_SUCCESS
+    handler: OnCashItemResRebateDone
+    modes: { gms_v48: 92, gms_v61: 101, gms_v72: 111, gms_v79: 125, gms_v83: 133, gms_v84: 136, gms_v87: 138, gms_v95: 150, jms_v185: 136 }
+  - key: REBATE_FAILED
+    handler: OnCashItemResRebateFailed
+    modes: { gms_v48: 93, gms_v61: 102, gms_v72: 112, gms_v79: 126, gms_v83: 134, gms_v84: 137, gms_v87: 139, gms_v95: 151, jms_v185: 137 }
+  - key: COUPLE_SUCCESS
+    handler: OnCashItemResCoupleDone
+    modes: { gms_v48: 94, gms_v61: 103, gms_v72: 113, gms_v79: 127, gms_v83: 135, gms_v84: 138, gms_v87: 140, gms_v95: 152, jms_v185: 138 }
+  - key: COUPLE_FAILED
+    handler: OnCashItemResCoupleFailed
+    modes: { gms_v48: 95, gms_v61: 104, gms_v72: 114, gms_v79: 128, gms_v83: 136, gms_v84: 139, gms_v87: 141, gms_v95: 153, jms_v185: 139 }
+  - key: BUY_PACKAGE_SUCCESS
+    handler: OnCashItemResBuyPackageDone
+    modes: { gms_v48: 96, gms_v61: 105, gms_v72: 115, gms_v79: 129, gms_v83: 137, gms_v84: 140, gms_v87: 142, gms_v95: 154, jms_v185: 140 }
+  - key: BUY_PACKAGE_FAILED
+    handler: OnCashItemResBuyPackageFailed
+    modes: { gms_v48: 97, gms_v61: 106, gms_v72: 116, gms_v79: 130, gms_v83: 138, gms_v84: 141, gms_v87: 143, gms_v95: 155, jms_v185: 141 }
+  - key: GIFT_PACKAGE_SUCCESS
+    handler: OnCashItemResGiftPackageDone
+    modes: { gms_v48: 98, gms_v61: 107, gms_v72: 117, gms_v79: 131, gms_v83: 139, gms_v84: 142, gms_v87: 144, gms_v95: 156, jms_v185: 142 }
+  - key: GIFT_PACKAGE_FAILED
+    handler: OnCashItemResGiftPackageFailed
+    modes: { gms_v48: 99, gms_v61: 108, gms_v72: 118, gms_v79: 132, gms_v83: 140, gms_v84: 143, gms_v87: 145, gms_v95: 157, jms_v185: 143 }
+  - key: BUY_NORMAL_SUCCESS
+    handler: OnCashItemResBuyNormalDone
+    modes: { gms_v48: 100, gms_v61: 109, gms_v72: 119, gms_v79: 133, gms_v83: 141, gms_v84: 144, gms_v87: 146, gms_v95: 158, jms_v185: 144 }
+  - key: BUY_NORMAL_FAILED
+    handler: OnCashItemResBuyNormalFailed
+    modes: { gms_v48: 101, gms_v61: 110, gms_v72: 120, gms_v79: 134, gms_v83: 142, gms_v84: 145, gms_v87: 147, gms_v95: 159, jms_v185: 145 }
+  - key: FRIENDSHIP_SUCCESS
+    handler: OnCashItemResFriendShipDone
+    modes: { gms_v48: 104, gms_v61: 113, gms_v72: 123, gms_v79: 137, gms_v83: 145, gms_v84: 148, gms_v87: 150, gms_v95: 162, jms_v185: 148 }
+  - key: FRIENDSHIP_FAILED
+    handler: OnCashItemResFriendShipFailed
+    modes: { gms_v48: 105, gms_v61: 114, gms_v72: 124, gms_v79: 138, gms_v83: 146, gms_v84: 149, gms_v87: 151, gms_v95: 163, jms_v185: 149 }
+  - key: FREE_CASH_ITEM_DONE
+    handler: OnCashItemResFreeCashItemDone
+    modes: { gms_v87: 158, gms_v95: 170, jms_v185: 161 }
+  - key: PURCHASE_RECORD
+    handler: OnCashItemResPurchaseRecord
+    modes: { gms_v72: 132, gms_v79: 146, gms_v83: 154, gms_v84: 157, gms_v87: 163, gms_v95: 175, jms_v185: 157 }
+  - key: PURCHASE_RECORD_FAILED
+    handler: OnCashItemResPurchaseRecordFailed
+    modes: { gms_v72: 133, gms_v79: 147, gms_v83: 155, gms_v84: 158, gms_v87: 164, gms_v95: 176, jms_v185: 158 }
+  - key: NAME_CHANGE_BUY_DONE
+    handler: OnCashItemNameChangeResBuyDone
+    modes: { gms_v48: 108, gms_v61: 125, gms_v72: 136, gms_v79: 150, gms_v83: 158, gms_v84: 161, gms_v87: 167, gms_v95: 179, jms_v185: 165 }
+  - key: TRANSFER_WORLD_SUCCESS
+    handler: OnCashItemResTransferWorldDone
+    modes: { gms_v48: 110, gms_v61: 123, gms_v72: 138, gms_v79: 152, gms_v83: 160, gms_v84: 163, gms_v87: 169, gms_v95: 181, jms_v185: 174 }
+  - key: TRANSFER_WORLD_FAILED
+    handler: OnCashItemResTransferWorldFailed
+    modes: { gms_v48: 111, gms_v61: 126, gms_v72: 139, gms_v79: 153, gms_v83: 161, gms_v84: 164, gms_v87: 170, gms_v95: 182, jms_v185: 175 }
+  - key: GACHAPON_OPEN_SUCCESS
+    handler: OnCashItemResCashGachaponOpenDone
+    modes: { gms_v84: 165, gms_v87: 171, gms_v95: 183 }
+  - key: GACHAPON_OPEN_FAILED
+    handler: OnCashItemResCashGachaponOpenFailed
+    modes: { gms_v84: 166, gms_v87: 172, gms_v95: 184 }
+  - key: GACHAPON_COPY_SUCCESS
+    handler: OnCashItemResCashGachaponCopyDone
+    modes: { gms_v84: 167, gms_v87: 173, gms_v95: 185 }
+  - key: GACHAPON_COPY_FAILED
+    handler: OnCashItemResCashGachaponCopyFailed
+    modes: { gms_v84: 168, gms_v87: 174, gms_v95: 186 }
+  - key: CHANGE_MAPLE_POINT_SUCCESS
+    handler: OnCashItemResChangeMaplePointDone
+    modes: { gms_v84: 169, gms_v87: 175, gms_v95: 187 }
+  - key: CHANGE_MAPLE_POINT_FAILED
+    handler: OnCashItemResChangeMaplePointFailed
+    modes: { gms_v84: 170, gms_v87: 176, gms_v95: 188 }

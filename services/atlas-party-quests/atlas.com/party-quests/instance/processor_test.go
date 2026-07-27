@@ -3,12 +3,11 @@ package instance
 import (
 	"atlas-party-quests/condition"
 	"atlas-party-quests/definition"
+	"atlas-party-quests/kafka/message"
 	character2 "atlas-party-quests/kafka/message/character"
 	"context"
 	"testing"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
@@ -17,7 +16,8 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
-	"atlas-party-quests/kafka/message"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func TestCompareValues(t *testing.T) {

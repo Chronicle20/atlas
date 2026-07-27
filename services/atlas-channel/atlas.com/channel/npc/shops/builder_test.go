@@ -27,7 +27,6 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 		SetNpcId(9000001).
 		SetCommodities([]commodities.Model{commodity}).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -136,7 +135,6 @@ func TestBuilderFluentChaining(t *testing.T) {
 		SetNpcId(9000001).
 		SetCommodities([]commodities.Model{commodity}).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}

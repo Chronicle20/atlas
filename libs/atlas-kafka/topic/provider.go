@@ -3,8 +3,9 @@ package topic
 import (
 	"os"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 type Provider model.Provider[string]

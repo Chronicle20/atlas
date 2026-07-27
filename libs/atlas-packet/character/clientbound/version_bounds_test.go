@@ -24,7 +24,7 @@ func TestCharacterSpawnVersionBoundary(t *testing.T) {
 	avatar := testSpawnAvatar()
 	cts := model.NewCharacterTemporaryStat()
 	guild := GuildEmblem{Name: "TestGuild", LogoBackground: 1, LogoBackgroundColor: 2, Logo: 3, LogoColor: 4}
-	m := NewCharacterSpawn(12345, 50, "TestChar", guild, cts, 312, avatar, nil, false, 100, 200, 3)
+	m := NewCharacterSpawn(12345, 50, "TestChar", guild, cts, 312, avatar, nil, false, 100, 200, 3, 0)
 	encode := func(major uint16) []byte {
 		ctx := pt.CreateContext("GMS", major, 1)
 		return pt.Encode(t, ctx, m.Encode, nil)

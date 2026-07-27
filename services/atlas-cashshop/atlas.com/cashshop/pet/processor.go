@@ -3,8 +3,9 @@ package pet
 import (
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 )
 
 type Processor interface {
@@ -22,6 +23,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		ctx: ctx,
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) Create(ownerId uint32, templateId uint32, name string) (Model, error) {
 	i := Model{

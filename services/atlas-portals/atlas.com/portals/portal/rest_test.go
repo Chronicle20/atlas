@@ -20,7 +20,6 @@ func TestExtract_ValidModel(t *testing.T) {
 
 	rm := fixture.ToRestModel()
 	model, err := portal.Extract(rm)
-
 	if err != nil {
 		t.Fatalf("Extract() returned unexpected error: %v", err)
 	}
@@ -56,7 +55,6 @@ func TestExtract_AllFieldsMapped(t *testing.T) {
 
 	rm := fixture.ToRestModel()
 	model, err := portal.Extract(rm)
-
 	if err != nil {
 		t.Fatalf("Extract() returned unexpected error: %v", err)
 	}

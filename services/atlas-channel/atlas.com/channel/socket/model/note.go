@@ -4,9 +4,10 @@ import (
 	"context"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 // Note represents a note for a character

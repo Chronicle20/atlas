@@ -1,0 +1,21 @@
+{
+  "WriterName": "Disable",
+  "IDAName": "CUserLocal::OnSetStandAloneMode",
+  "Address": "0x8b7f14",
+  "Variant": "GMS/v79",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/ui/clientbound/disable.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

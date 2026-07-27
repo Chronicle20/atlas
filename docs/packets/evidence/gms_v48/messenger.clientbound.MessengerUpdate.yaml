@@ -1,0 +1,8 @@
+packet: messenger/clientbound/MessengerUpdate
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CUIMessenger::OnPacket#Update
+    address: "0x61d8b8"
+    decompile_sha256: c24164668fb8009f3131ecbe5cf7f853a43df6e2b92e1c99b58c192375e652ca

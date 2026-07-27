@@ -5,9 +5,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
 // createTestCharacter creates a character model for testing using the builder

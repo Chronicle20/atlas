@@ -1,15 +1,16 @@
 package wzinput
 
 import (
+	"atlas-data/rest"
 	"net/http"
 
-	"atlas-data/rest"
 	minio "atlas-data/storage/minio"
 
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 // InitResource installs PATCH and GET /data/wz routes backed by MinIO.

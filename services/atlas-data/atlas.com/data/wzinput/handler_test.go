@@ -7,8 +7,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 func TestUploadHandlerNilMinIOReturns503(t *testing.T) {

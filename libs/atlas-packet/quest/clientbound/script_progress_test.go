@@ -3,8 +3,9 @@ package clientbound
 import (
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	testlog "github.com/sirupsen/logrus/hooks/test"
+
+	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 // packet-audit:verify packet=quest/clientbound/ScriptProgress version=gms_v83 ida=0xa13f20

@@ -1,0 +1,18 @@
+# A cell listed here is `n-a` for an op while a same-family sibling is `verified`
+# on the same version. Each MUST carry POSITIVE absence evidence (a proof the op
+# does not exist — e.g. the opcode slot is a different op, a binary-wide search
+# for the op's construction/gate found nothing, the receive handler lacks the
+# feature branch). A failed name/region search is NOT evidence. This list only
+# shrinks (verify the cell, or keep the proven-absent entry). See
+# docs/packets/audits/VERIFYING_A_PACKET.md "Is this cell n-a?".
+entries:
+  - op: USE_TELEPORT_ROCK
+    version: gms_v48
+    evidence: >
+      v48 has no distinct regular-rock USE_TELEPORT_ROCK op. Binary-wide search
+      for the itemId/10000==232 gate found zero hits; all three item-use
+      dispatchers route category 232 to no teleport sender; the map-transfer
+      dialog ctor (sub_60BCB3) is opened only via the generic UI-panel opener
+      sub_70C29F (panel 0), not by a regular-rock item-use. Teleport-rock use on
+      v48 rides the cash-item op (USE_CASH_ITEM); list-management (TROCK_ADD_MAP
+      0x51) and result (MAP_TRANSFER_RESULT 0x23) are present. (task-124)

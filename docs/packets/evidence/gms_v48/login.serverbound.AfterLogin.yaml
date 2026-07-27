@@ -1,0 +1,10 @@
+packet: login/serverbound/AfterLogin
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_503956
+    address: "0x503956"
+    decompile_sha256: 052c3e345771baebecafb380c11045a7f52c8208fa2938795648af4d427b5cb9
+verifies:
+    - libs/atlas-packet/login/serverbound/v48_test.go#TestAfterLoginV48LegacyWire

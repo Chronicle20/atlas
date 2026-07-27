@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Chronicle20/atlas/tools/packet-audit/internal/evidence"
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/matrix"
 )
 
@@ -142,6 +143,45 @@ func TestMatrixDanglingEvidenceFailsCheck(t *testing.T) {
 	}
 	if !strings.Contains(errBuf.String(), "dangling") {
 		t.Errorf("stderr = %q", errBuf.String())
+	}
+}
+
+// TestMatrixPacketLinkedEvidenceExemptFromDangling verifies that an evidence
+// record for a packet declared via a registry op's `packet:` field is NOT
+// flagged as dangling by --check even though it has no audit report — that is
+// the no-report byte-fixture promotion path (commit 6c202cb7).
+func TestMatrixPacketLinkedEvidenceExemptFromDangling(t *testing.T) {
+	root, args := matrixTestRoot(t)
+
+	// Declare an op that carries a `packet:` field but has no audit report.
+	appendLine(t, filepath.Join(root, "registry", "gms_v83.yaml"),
+		"- op: FOO_PACKET\n  direction: clientbound\n  opcode: 0x0AA\n  fname: \"CLogin::OnFoo\"\n  packet: login/clientbound/FooPacket\n  provenance: csv-import\n")
+
+	// Fresh evidence for that packet (CLogin::OnFoo is present in the mini export).
+	exp := filepath.Join(root, "exports", "gms_v83.json")
+	hash, err := evidence.FunctionHash(exp, "CLogin::OnFoo")
+	if err != nil {
+		t.Fatal(err)
+	}
+	evDir := filepath.Join(root, "evidence", "gms_v83")
+	if err := os.MkdirAll(evDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	evRec := "packet: login/clientbound/FooPacket\ndirection: clientbound\nversion: gms_v83\ncategory: TIER1-FIXTURE\nida:\n  function: \"CLogin::OnFoo\"\n  address: \"0x1\"\n  decompile_sha256: \"" + hash + "\"\n"
+	if err := os.WriteFile(filepath.Join(evDir, "login.clientbound.FooPacket.yaml"), []byte(evRec), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	evArgs := append(append([]string{}, args...), "--evidence-dir", filepath.Join(root, "evidence"))
+	if code := runMatrix(evArgs, os.Stderr); code != 0 {
+		t.Fatalf("generate exit = %d", code)
+	}
+	var errBuf strings.Builder
+	if code := runMatrix(append(evArgs, "--check"), &errBuf); code != 0 {
+		t.Fatalf("--check exit = %d (packet-linked report-less evidence must be exempt); stderr=%q", code, errBuf.String())
+	}
+	if strings.Contains(errBuf.String(), "dangling") {
+		t.Errorf("packet-linked evidence must not be flagged dangling; stderr=%q", errBuf.String())
 	}
 }
 

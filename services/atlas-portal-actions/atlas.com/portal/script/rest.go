@@ -3,11 +3,12 @@ package script
 import (
 	"fmt"
 
+	"github.com/google/uuid"
+	"github.com/jtumidanski/api2go/jsonapi"
+
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-script-core/condition"
 	"github.com/Chronicle20/atlas/libs/atlas-script-core/operation"
-	"github.com/google/uuid"
-	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 const (

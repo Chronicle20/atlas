@@ -18,8 +18,6 @@ type StatusEvent[E any] struct {
 	Body        E        `json:"body"`
 }
 
-type LoginEventBody struct {
-}
+type LoginEventBody struct{}
 
-type LogoutEventBody struct {
-}
+type LogoutEventBody struct{}

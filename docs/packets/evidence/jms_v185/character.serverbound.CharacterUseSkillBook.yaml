@@ -1,0 +1,10 @@
+packet: character/serverbound/CharacterUseSkillBook
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendSkillLearnItemUseRequest
+    address: "0xaeee61"
+    decompile_sha256: 90f37b70b8ab0a4167fbf08e3f257b4174fd177ba9110e7bb9693b7fd0addb11
+verifies:
+    - libs/atlas-packet/character/serverbound/use_skill_book_test.go#TestUseSkillBookGoldenBytesJMS185

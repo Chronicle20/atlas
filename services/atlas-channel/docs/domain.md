@@ -94,7 +94,7 @@ None. Equipment is built by `character.Model.SetInventory()` from the equip comp
 Represents a player character with stats, equipment, inventory, skills, pets, and quests. Provides character data retrieval, stat modification commands, and inventory decoration.
 
 ### Core Models
-- `Model` - Contains id (uint32), accountId (uint32), worldId (world.Id), name (string), gender (byte), skinColor (byte), face (uint32), hair (uint32), level (byte), jobId (job.Id), strength (uint16), dexterity (uint16), intelligence (uint16), luck (uint16), hp (uint16), maxHp (uint16), mp (uint16), maxMp (uint16), hpMpUsed (int), ap (uint16), sp (string), experience (uint32), fame (uint32), gachaponExperience (uint32), mapId (uint32), spawnPoint (uint32), gm (int), x (int16), y (int16), stance (byte), meso (uint32), pets ([]pet.Model), equipment (equipment.Model), inventory (inventory.Model), skills ([]skill.Model), quests ([]quest.Model)
+- `Model` - Contains id (uint32), accountId (uint32), worldId (world.Id), name (string), gender (byte), skinColor (byte), face (uint32), hair (uint32), level (byte), jobId (job.Id), strength (uint16), dexterity (uint16), intelligence (uint16), luck (uint16), hp (uint16), maxHp (uint16), mp (uint16), maxMp (uint16), hpMpUsed (int), ap (uint16), sp (string), experience (uint32), fame (int16), gachaponExperience (uint32), spawnPoint (byte), gm (int), x (int16), y (int16), fh (int16), stance (byte), meso (uint32), pets ([]pet.Model), equipment (equipment.Model), inventory (inventory.Model), skills ([]skill.Model), quests ([]quest.Model), party (party.Model), monsterBook (monsterbook.Model)
 - `DistributePacket` - Contains Flag (uint32) and Value (uint32) for AP distribution
 
 ### Invariants
@@ -102,12 +102,13 @@ Represents a player character with stats, equipment, inventory, skills, pets, an
 - Character must belong to an account
 - SP stored as comma-separated string; SP table used for Evan job class (job IDs 2200-2218)
 - SetInventory splits equip compartment assets into equipped items (slot <= 0) and inventory items (slot > 0), separating regular and cash equipment by the -100 offset rule
+- `InParty()` distinguishes "in a party" from "solo or not yet decorated" (undecorated party field is the party.Model zero value)
 
 ### State Transitions
 None within channel. The character model is read-only; mutations are requested via Kafka commands.
 
 ### Processors
-- `Processor` - Retrieves character by ID or name via REST (CHARACTERS service). Supports decorators: InventoryDecorator, PetAssetEnrichmentDecorator, SkillModelDecorator, QuestModelDecorator. Provides GetEquipableInSlot (looks up equip compartment by slot) and GetItemInSlot (looks up any compartment by type and slot). Issues commands for AP distribution, SP distribution, meso drop, HP/MP changes.
+- `Processor` - Retrieves character by ID or name via REST (CHARACTERS service). Supports decorators: InventoryDecorator, PetAssetEnrichmentDecorator, SkillModelDecorator, QuestModelDecorator, PartyDecorator (attaches the character's party via PARTIES service), MonsterBookDecorator (attaches monster-book collection and owned cards via atlas-monster-book, fail-open on REST error). Provides GetEquipableInSlot (looks up equip compartment by slot) and GetItemInSlot (looks up any compartment by type and slot). Issues commands for AP distribution, SP distribution, meso drop, HP/MP changes.
 - `MockProcessor` - Test double with in-memory character lookup maps.
 
 ---
@@ -280,6 +281,7 @@ Represents player parties for cooperative gameplay.
 
 ### Processors
 - `Processor` - Retrieves party by member ID or by ID via REST (PARTIES service). Issues commands via Kafka for create, leave, expel, change leader, and request invite operations.
+- `hpsync.Sync(l, ctx, wp, f, characterId)` - Pushes bidirectional party-member HP gauges (the v83 PARTYDATA struct carries no HP): the character's current HP to every other in-map party member, and every other in-map party member's current HP back to the character. Used on map entry (spawn) and on party join. Each announce is best-effort (per-member session/character lookup failures are logged and skipped); no-ops when the character is not in a party.
 
 ---
 
@@ -315,6 +317,15 @@ A door is created, optionally re-slotted, and removed. Removal carries a reason:
 
 ### Late-join rendering
 - On field entry, the map-status consumer renders existing doors to the arriving session: `spawnDoorsForSession` renders the AREA-side door for doors whose area field is the entered map, and `spawnTownDoorsForSession` renders the TOWN-side door (resolved by owner, de-duplicated across party members) for doors whose town side is the entered map.
+
+### SuperGM Heal + Dispel skill handler
+- `skill/handler/healdispel` registers an `Apply` handler for `SuperGmHealDispelId` (9101000), gated to the SuperGM job (910); a caster without that job is rejected with a warning log and no effect. For every character in the caster's map, it restores HP and MP to full and cancels the 11 disease debuffs (stun, poison, seal, darkness, weaken, curse, seduce, confuse, undead, slow, stop-portion) via a `CANCEL_BY_TYPES` buff command. The skill's WZ recovery fields are zero on every version, so "restore" means heal to the recipient's effective max (falling back to the recipient's base max when the effective-stats lookup fails or returns zero) rather than the flat+ratio Cleric Heal formula. No experience is ever awarded — this is a GM utility, not a combat heal. Per-recipient failures (HP change, MP change, dispel) are logged and skipped; the loop always continues to the remaining recipients and the self-announce still fires.
+- The self skill-use animation is always broadcast. The foreign skill-use animation is broadcast only when the caster is not GM-hidden; if the hidden-state lookup itself errors, the handler fails safe and treats the caster as hidden, suppressing the foreign broadcast rather than risking a position leak.
+
+### SuperGM Hide skill handler
+- `skill/handler/hide` registers an `Apply` handler for `SuperGmHideId` (9101004), gated to the SuperGM job (910). It is a toggle read from the caster's current hide state: Hide ON applies a persistent `DARK_SIGHT` buff sourced from `SuperGmHideId` (duration set to the largest int32, since atlas-buffs rejects a non-positive duration; the canonical way to end it is casting the skill again) and despawns the caster from every other player in the map. Hide OFF cancels that buff and re-spawns the caster to every other player in the map.
+- The despawn/spawn broadcasts route through the map consumer's single character-spawn choke point (`kafka/consumer/map/consumer.go`): a GM-hidden character is refused a spawn to any other viewer there, so a player entering the map while the GM is hidden never sees them either. The reveal (Hide OFF) spawn deliberately bypasses that suppression check — the hide-buff CANCEL command it just produced is Kafka-mediated and eventually consistent, so a gated read could still observe the stale hidden buff and re-suppress the very spawn meant to un-hide the caster.
+- Only the self skill-use animation is broadcast, in both toggle directions — there is no foreign-animation seam at all, since broadcasting it would leak the caster's presence/position regardless of which direction the toggle is going.
 
 ---
 
@@ -537,6 +548,71 @@ Provides NPC conversation handling and shop operations.
 
 ---
 
+## Merchant
+
+### Responsibility
+Represents a player-run store — either a personal shop (CharacterShop) or a hired merchant (HiredMerchant) — as a read-only projection of an atlas-merchant shop. The channel service does not own shop lifetime; it projects shops from atlas-merchant REST/Kafka, renders the map object (personal-store mini-room box or hired-merchant employee NPC) and the in-shop interior to sessions, and emits shop lifecycle, visitor, listing, chat, blacklist, and meso commands driven by client interaction.
+
+### Core Models
+- `Model` - Contains id (uuid.UUID), characterId (uint32), shopType (byte), state (byte), title (string), worldId (world.Id), channelId (channel.Id), mapId (uint32), instanceId (uuid.UUID), x (int16), y (int16), permitItemId (uint32), mesoBalance (uint32), createdAt (time.Time), listingCount (int64), visitors ([]uint32), messages ([]MessageModel), listings ([]ListingModel). Getter-only; constructed via `Extract` from `RestModel` (no builder).
+- `MessageModel` - One persisted shop message (owner management-view replay): characterId (uint32), content (string), sentAt (time.Time).
+- `ListingModel` - Contains id (string), shopId (string), itemId (uint32), itemType (byte), quantity (uint16), bundleSize (uint16), bundlesRemaining (uint16), pricePerBundle (uint32), itemSnapshot (AssetData), displayOrder (uint16). Constructed via `ExtractListing`.
+- `AssetData` - Item snapshot for a listing (expiration, quantity, flag, rechargeable, equipment stats, cashId, petId).
+- `SearchListing` - Owl shop-search result row: shopId (uuid.UUID), title, worldId, channelId, mapId, ownerId, shopType, state, itemId, itemType, quantity, bundleSize, bundlesRemaining, pricePerBundle, itemSnapshot (SnapshotRestModel). Built via `NewSearchListing(SearchListingSeed)` (local) or `ExtractSearchListing` (REST).
+- `TopSearch` - Owl hot-list row: itemId (uint32), count (uint64). Built via `ExtractTopSearch`.
+
+### Invariants
+- `shopType` 1 is a CharacterShop (personal shop); `shopType` 2 is a HiredMerchant (`HiredMerchantShopType`). The map render path and interior room branch on this value.
+- Shop `state` mirrors the shared atlas-constants merchant enum, exposed as byte: `StateDraft`, `StateOpen`, `StateMaintenance`, `StateClosed`.
+- `visitors` is the insertion-ordered visiting characters and excludes the owner; the owner is position 0 in the interior room and each visitor occupies its 1-indexed slot.
+- In a personal shop the owner is rendered on the map as a mini-room box on their own avatar with a permit-derived sign skin; in a hired merchant the owner is rendered as a standalone employee NPC carrying `permitItemId`.
+- A character may operate at most one shop; the hired-merchant permit check rejects when `GetByCharacterId` returns an existing shop or `HasFrederickPending` is true.
+
+### State Transitions
+None owned by the channel service. The shop `state` is a projection of atlas-merchant; shop lifecycle (setup/opened/closed, maintenance entered/exited, visitor entered/exited/ejected, create-failed, updated, enter-failed) is driven by atlas-merchant status events.
+
+### Processors
+- `Processor` (interface) - Reads: `InFieldModelProvider`/`ForEachInField` (shops in a field), `GetVisitingShop`, `GetShop` (by shop id, with listings included), `GetByCharacterId`, `HasFrederickPending`, `GetBlacklist`, `GetVisits`, `SearchListings` (owl item search), `GetTopSearches` (owl hot list). Command emitters to COMMAND_TOPIC_MERCHANT: `PlaceShop`, `OpenShop`, `CloseShop`, `EnterShop`, `ExitShop`, `SendMessage`, `EnterMaintenance`, `ExitMaintenance`, `AddListing` (resolves the asset snapshot from the character's inventory slot before emitting), `RemoveListing`, `PurchaseBundle`, `WithdrawMeso`, `OrganizeListings`, `AddBlacklist`, `RemoveBlacklist`, `RecordItemSearch`.
+
+### Rendering helpers
+- `employee.go` - `ToEmployeeSpawn(shop, ownerName)` / `ToEmployeeUpdate(shop)` project a hired-merchant shop into the field employee-NPC spawn/update (employee id and balloon serial = owner character id, template = permit item id, visitor count from `len(Visitors())`).
+- `skin.go` - `StoreSkinSpec(permitItemId)` computes the personal-store balloon sign skin (`nSpec`) from the permit item id (base 5140000; returns 0 when out of range).
+- `select.go` - `SelectOpenShop(shops)` picks the one live shop for owl-warp resolution: the first `StateOpen` shop, else the first non-`StateClosed` shop, else none.
+
+### Character interaction handler
+- `socket/handler/character_interaction.go` decodes the character-interaction dispatcher and resolves each mode via the tenant `operations` table (`isCharacterInteraction`), never via hard-coded opcodes. Store-related modes drive the merchant processor: CREATE of a PersonalShop/MerchantShop mini-room emits `PlaceShop` (shopType 1 for CharacterShop, 2 for MerchantShop); VISIT selects the owner's live shop and emits `EnterShop`; OPEN emits `OpenShop`; CHAT emits `SendMessage`; EXIT emits `CloseShop`/`ExitMaintenance`/`ExitShop` depending on ownership and maintenance state; PERSONAL_STORE_PUT_ITEM / MERCHANT_PUT_ITEM emit `AddListing`; PERSONAL_STORE_BUY / MERCHANT_BUY emit `PurchaseBundle`; PERSONAL_STORE_REMOVE_ITEM / MERCHANT_REMOVE_ITEM emit `RemoveListing`; PERSONAL_STORE_ADD_TO_BLACKLIST and MERCHANT_ADD_TO_BLACK_LIST emit `AddBlacklist`; MERCHANT_REMOVE_FROM_BLACK_LIST emits `RemoveBlacklist`; MERCHANT_MERCHANT_OFF emits `ExitMaintenance`; MERCHANT_ORGANIZE emits `OrganizeListings`; MERCHANT_EXIT emits `CloseShop`/`ExitShop`; MERCHANT_WITHDRAW_MESO emits `WithdrawMeso`. MERCHANT_VIEW_VISIT_LIST and MERCHANT_VIEW_BLACK_LIST read `GetVisits`/`GetBlacklist` and answer with clientbound list packets (no command). CASH_TRADE_OPEN with nProc 4 and a MerchantShop room emits `EnterMaintenance`. Trade, cash-trade, memory-game, and field/personal-store blacklist view/set modes are decoded and logged only.
+
+### Hired-merchant permit handler
+- `socket/handler/hired_merchant_operation.go` handles the entrusted-shop (hired-merchant) serverbound dispatcher. The only mode it acts on is `ModeEntrustedShopCheck`, emitted when a player uses a hired-merchant permit item (compared against the constant, not the `operations` table). It reads `GetByCharacterId` (rejecting with an already-open notice for a live hired merchant, or an unable-to-open notice for a Draft shop) and `HasFrederickPending` (rejecting with a retrieve-from-Frederick notice); otherwise it replies with an open-shop result. It emits no command — the shop is created later via the CharacterInteraction CREATE → `PlaceShop` path.
+
+---
+
+## Shop Scanner (Owl of Minerva)
+
+### Responsibility
+Handles the owl-of-Minerva shop scanner: opening the owl window (hot list), searching merchant listings by item id, and warping to a chosen result's shop. Search and hot-list data come from the MERCHANT service; warp eligibility is decided locally and gated through a pending-entry registry.
+
+### Core Models
+- `Registry` - In-memory singleton (see storage.md) tracking per-character `SearchEntry{ItemId}` (last executed search) and `PendingEntry{ShopId, OwnerId, MapId}` (in-flight warp-then-enter), keyed by `Key{Tenant, CharacterId}`.
+- `WarpCheck` - Value struct carrying the inputs to the warp validation ladder (search presence, owner/character ids, character HP, current-map free-market flag, shop found/world/channel/map/state, and listing presence).
+
+### Invariants
+- Owl actions are only serviced in a free-market room (`_map.IsFreeMarketRoom`).
+- A search with `searchItemId == 0` (legacy no-target frame) is dropped.
+- The owl item-use item is consumed only when the search returns at least one listing.
+- `EvaluateWarp` returns the first failing rung's `ShopLinkResultCode`, or proceed. The ordered checks are: not a free-market map (FMOnly), no prior search (Closed), owner is self (Denied), character dead (Dead), shop not found (Closed), shop world mismatch (Closed), shop map mismatch vs echoed map (Closed), shop map not free-market (FMOnly), shop channel mismatch (Closed), shop under maintenance (Maintenance), shop not open (Closed), no listing present (Busy), else proceed.
+- A pending warp entry is set on a successful warp decision and cleared on visitor entry, on a full-shop arrival, or on session destroy (`ClearCharacter`).
+
+### Processors
+- `Processor` (`shopscanner.NewProcessor(l, ctx)`) - `Search(wp)(s, searchItemId, descending, owlItemId, source, updateTime)` records the search count (`RecordItemSearch`), queries `SearchListings`, resolves owner names, writes the mode-6 scanner result, conditionally consumes the owl item (via consumable `RequestItemConsume`), and stores the last search. `SendHotList(wp)(s)` queries `GetTopSearches` and writes the mode-7 hot list.
+
+### Socket handlers
+- `socket/handler/owl_action.go` - Owl-window open (OWL_ACTION). Resolves the OPEN mode via the tenant `operations` table, requires a free-market room, and calls `SendHotList`.
+- `socket/handler/owl_warp.go` - Result-click warp (OWL_WARP). Rebuilds the `WarpCheck` from the session, last search, character HP, the owner's selected open shop (`SelectOpenShop`), and a re-validated listing lookup; on reject sends the `ShopLinkResult`, on success sets the pending entry and warps via the portal processor.
+- `socket/handler/shop_scanner_item_use.go` - USE-inventory owl double-click (shop-scanner item use). Validates the item classification and inventory slot, then calls `Search`.
+
+---
+
 ## Transport Route
 
 ### Responsibility
@@ -581,10 +657,11 @@ Handles distributed transaction orchestration for multi-step operations. Re-expo
 
 ### Core Models
 - `Saga` - Re-exported from shared library with Type, Status, Actions, Steps
-- Payload types: AwardMesosPayload, AwardAssetPayload, DestroyAssetPayload, SetHPPayload, and others from the shared library
+- Payload types: AwardMesosPayload, AwardAssetPayload, DestroyAssetPayload, SetHPPayload, EmitMegaphonePayload, EnqueueWorldBroadcastPayload, AssetSnapshot, AvatarSnapshot, and others from the shared library
 - Local `TransferToCashShopPayload` - Contains CashId (uint64), overriding the shared library's int64 type
 - Status constants: Pending, Completed, Failed
-- Action constants: AwardMesos, DestroyAsset, DepositToStorage, WithdrawFromStorage, and others
+- Saga Type constants: InventoryTransaction, StorageOperation, CashShopOperation, CharacterRespawn, FieldEffectUse, PointReset, MegaphoneUse, and others
+- Action constants: AwardMesos, DestroyAsset, DepositToStorage, WithdrawFromStorage, EmitMegaphone, EnqueueWorldBroadcast, and others
 
 ### Processors
 - `Processor` - Create(s Saga) emits saga commands via Kafka
@@ -723,6 +800,47 @@ None. Model-only domain.
 
 ---
 
+## Megaphone / World Broadcast
+
+### Responsibility
+Renders megaphone and Maple TV / avatar megaphone cash-item broadcasts to sessions. The stateless megaphone tiers (MEGAPHONE/SUPER/ITEM/TRIPLE) render immediately from a Kafka broadcast event. The queued Maple TV and avatar megaphone families render from a separate world-broadcast status event (QUEUED/STARTED/ENDED) and are gated by a wait-time cap read from atlas-world's broadcast queue via REST. The channel service does not own broadcast queue state; it renders, gates on wait time, and emits the consume+broadcast saga.
+
+### Core Models
+- `worldbroadcast.RestModel` - JSON:API representation of one (worldId, family) broadcast queue read from atlas-world (id=family, activeRemainingSeconds, pendingCount, waitSeconds). Resource type: "broadcast-queues".
+- Family constants (`worldbroadcast` package): `FamilyTV`, `FamilyAvatar`
+
+### Invariants
+- Cash-item USE dispatch is classification-first: `item.ClassificationMegaphones` and `item.ClassificationAvatarMegaphone` are checked before the cash-slot-type sub-switch (avoids collision with cash-slot type 12 teleport rock and type 42 pet evolution).
+- The wait-cap guard runs before item consumption: Maple TV rejects when the atlas-world TV queue wait exceeds 3600 seconds; avatar megaphone rejects when the avatar queue wait exceeds 15 seconds. A REST error rejects conservatively (no consume, no broadcast) rather than defaulting to allow.
+- Avatar megaphone display duration is fixed at 10 seconds (client auto-clear constant).
+- Maple TV display duration is derived from the TV item's type byte: type 4 = 30s, type 5 = 60s, else 15s.
+- Maple TV message type is resolved to a semantic key (NORMAL/STAR/HEART), never a client wire byte; the wire byte is resolved at the packet layer from the tenant `messageTypes` writer table.
+- Maple TV item type byte >= 3 (Megassenger tiers) additionally emits a super megaphone broadcast with the concatenated TV lines and the TV "ear" flag mapped to the megaphone's whispersOn.
+- Item megaphone (tier ITEM) rejects the use (no consume, no broadcast) when the referenced inventory slot is empty or mismatched.
+- Triple megaphone requires between 1 and 3 lines; other line counts reject the use.
+- On GMS with majorVersion >= 95, the Skull Megaphone item routes to the Maple TV handler; on all other regions/versions it has no send path.
+
+### Processors
+- `worldbroadcast.Processor` - `GetWaitSeconds(worldId, family)` fetches the atlas-world broadcast queue for the given world and family and returns its waitSeconds.
+- `saga.Processor` - `Create(s Saga)` emits the consume+broadcast saga (`saga.MegaphoneUse` type; see Saga domain section) for every megaphone/TV/avatar-megaphone use.
+
+### Cash item use handler
+- `socket/handler/character_cash_item_use_megaphone.go` dispatches on `(itemId / 1000) % 10` after classification routing: 1 = basic megaphone (channel scope), 2 = super megaphone (world scope), 4 = Skull Megaphone (Maple TV family, GMS majorVersion>=95 only), 5 = Maple TV / Megassenger group, 6 = item megaphone (world scope, optional item snapshot), 7 = triple megaphone (1-3 lines, world scope). Basic/super/item/triple tiers each build a two-step saga (`consume_megaphone_item` DestroyAsset + `emit_megaphone_broadcast` EmitMegaphone). Maple TV and avatar megaphone each build a two-step saga (consume + EnqueueWorldBroadcast), with Maple TV Megassenger tiers appending a third EmitMegaphone step.
+- Avatar megaphone rejection (wait-cap exceeded, or REST error) announces `AvatarMegaphoneResultWriter` with the `AvatarMegaphoneWaitingLine` reason, except on JMS where the AVATAR_MEGAPHONE_RESULT op does not exist and no packet is sent.
+- Maple TV rejection announces `TvSendMessageResultWriter` with the `TvResultQueueTooLong` reason.
+
+### Megaphone broadcast consumer
+- `kafka/consumer/megaphone` consumes `EVENT_TOPIC_MEGAPHONE` (`kafka.LastOffset`, fire-and-forget). CHANNEL scope renders only to the sender's channel (gated by `sc.Is`); any other scope (WORLD) renders to every channel in the world (gated by `sc.IsWorld`). Builds the tier-specific WorldMessage mode body (MEGAPHONE/SUPER/ITEM/TRIPLE) and announces it via the WorldMessage writer to every session on the pod's channel.
+
+### World broadcast status consumer
+- `kafka/consumer/worldbroadcast` consumes `EVENT_TOPIC_WORLD_BROADCAST_STATUS` (`kafka.LastOffset`, fire-and-forget), gated by `sc.IsWorld`. QUEUED sends the TV send-message-result success ack to the sender, TV family only. STARTED builds and announces to every session on the pod's channel the SetMessage packet (TV family) or the SetAvatarMegaphone packet (AVATAR family). ENDED announces the ClearMessage packet or the ClearAvatarMegaphone packet to every session on the pod's channel.
+
+### Clientbound writers
+- `chat/clientbound`: `SetAvatarMegaphoneWriter`, `ClearAvatarMegaphoneWriter`, `AvatarMegaphoneResultWriter`
+- `tv/clientbound`: `TvSetMessageWriter`, `TvClearMessageWriter`, `TvSendMessageResultWriter`
+
+---
+
 ## Data/Skill
 
 ### Responsibility
@@ -834,3 +952,154 @@ Provides static cash item data from the DATA service.
 
 ### Processors
 - `Processor` - GetById(itemId) fetches cash item data via REST
+
+---
+
+## Monster Book
+
+### Responsibility
+Represents a character's monster-book (card collection) view: the collection summary (cover, book level, normal/special/total counts, exp bonus) plus the owned-card list. Read from and commanded to the atlas-monster-book service.
+
+### Core Models
+- `Model` - Contains collection (Collection), cards ([]Card). The zero value is an empty book.
+- `Collection` - Contains bookLevel (uint16), normalCount (uint16), specialCount (uint16), totalUniqueCards (uint16), coverCardId (item.Id), coverMonsterId (monster.Id), expBonusPercent (uint16)
+- `Card` - Contains cardId (item.Id), level (uint8), isSpecial (bool)
+
+### Processors
+- `Processor` - RequestSetCover(characterId, coverCardId) emits a SET_COVER command. ByCharacterIdProvider/GetByCharacterId retrieve the collection summary via REST. CardsByCharacterIdProvider/GetCardsByCharacterId retrieve the full owned-card list via REST (drains all pages).
+
+---
+
+## Mount
+
+### Responsibility
+Provides the channel-side view of a character's mount progression (level, exp, tiredness), fetched from atlas-mounts to populate the CharacterInfo window's tamed-mob block.
+
+### Core Models
+- `Model` - Contains characterId (uint32), level (int), exp (int), tiredness (int)
+
+### Processors
+- `Processor` - ByCharacterIdProvider/GetByCharacterId retrieve a character's mount progression via REST. A character with no mount record yields an error.
+
+---
+
+## Taming Mob Food
+
+### Responsibility
+Handles taming-mob (mount) food-item consumption requests, routed through the consumables service rather than mutating inventory directly.
+
+### Processors
+- `Processor` (package `food`) - RequestFeed(f, characterId, slot, itemId) emits a taming-mob food command to the consumables service via Kafka. Performs no item mutation itself.
+
+---
+
+## Summon
+
+### Responsibility
+Represents a character's active summon (puppet, Beholder, etc.) as a read-only projection of atlas-summons, used to replay existing summons to a character entering a map and to relay movement/attack/damage from the client.
+
+### Core Models
+- `Model` - Contains id (uint32), ownerCharacterId (uint32), skillId (uint32), skillLevel (byte), summonType (string), movementType (byte), x (int16), y (int16). IsPuppet() checks summonType == "PUPPET".
+- `RestModel` - JSON:API representation ("summons" resource type)
+
+### Processors
+- `Processor` - InMapModelProvider/ForEachInMap retrieve/iterate summons in a field via REST (drains all pages). Spawn emits a SPAWN command (carries AURA_OF_THE_BEHOLDER/HEX_OF_THE_BEHOLDER levels for Beholder summons). Move emits a MOVE command (rebroadcasts the raw movement blob byte-faithfully). Attack emits an ATTACK command with per-target damage. Damage emits a DAMAGE command against a puppet summon's HP.
+
+---
+
+## Effective Stats
+
+### Responsibility
+Provides a character's session-effective stats (post-buff/equipment totals) from the atlas-effective-stats service, used for snapshot computations that depend on live totals (for example, player VENOM damage-per-tick).
+
+### Core Models
+- `RestModel` - Contains strength, dexterity, luck, intelligence, maxHp, maxMp, weaponAttack, weaponDefense, magicAttack, magicDefense, accuracy, avoidability, speed, jump (all uint32)
+
+### Processors
+- `Processor` - GetByCharacterId(worldId, channelId, characterId) fetches effective stats via REST. World/channel are required because effective stats depend on session-side (channel-scoped) buffs.
+
+---
+
+## Point Reset
+
+### Responsibility
+Performs channel-side structural pre-validation and renders player-facing rejection messages for AP Reset (item 5050000) and SP Reset (items 5050001-5050004) cash items. The numeric job-policy tables (take/gain/min-pool) live in atlas-character; this package checks only the structural rules and floors/caps/gates visible on the channel character model.
+
+### Core Models
+- `ValidationError` - Contains Code (string, one of the ErrorCode* constants), Detail (string, the ability or skill the rejection applies to)
+
+### Invariants
+- Fixed server policy: primary-stat source floor 4 (must be >= 5 to move out), primary-stat cap 32767, HP/MP pool cap 30000
+- `AbilityFromWireFlag` maps the client stat-update bitmask (64/128/256/512/2048/8192) to STRENGTH/DEXTERITY/INTELLIGENCE/LUCK/HP/MP
+- `SpResetTier` derives the SP Reset job-advancement tier (1-4) from item ids 5050001-5050004
+- `ValidateApTransfer` rejects when the source primary stat is at/below the floor (or, for HP/MP, when no AP has been spent into the pool) or the target primary stat is at/above its cap (or, for HP/MP, the pool is at the cap)
+- `ValidateSpTransfer` rejects when the source/target skill's job doesn't match the character's job, either skill is point-reset-excluded, the target skill's advancement tier doesn't match the requested tier, the source skill has 0 points, or the target skill is at its level cap (game-data max level, or the character's own master level for a 4th-job target)
+
+### Processors
+None. Pure validation/message functions operating on the channel `character.Model`.
+
+---
+
+## Monster Information
+
+### Responsibility
+Provides static monster template attack-pattern data (per-attack MP cost and follow-up delay) from the DATA service, served through a tenant-scoped in-process read-through TTL cache.
+
+### Core Models
+- `Model` - Contains monsterId (uint32), attacks ([]AttackInfo)
+- `AttackInfo` - Contains Pos (uint8), ConMP (int32), AttackAfter (int32)
+
+### Invariants
+- Cache is enabled by default (`MONSTER_INFO_CACHE_ENABLED`); positive TTL defaults to 5 minutes (`MONSTER_INFO_CACHE_TTL`, clamped 1s-24h), negative (not-found) TTL defaults to 30 seconds (`MONSTER_INFO_CACHE_NEGATIVE_TTL`, clamped 0-5m)
+- Negative caching applies only to the not-found sentinel; transient errors (network, 5xx, parse) are never cached
+- Cache is tenant-scoped and evicted per-tenant via `EvictTenant` on listener drain
+
+### Processors
+- `Processor` - GetById(monsterId) returns the parsed template attack info, served from cache when enabled.
+
+---
+
+## Character Location
+
+### Responsibility
+Resolves a character's durable current field (world/channel/map/instance) from the atlas-maps location record.
+
+### Core Models
+- `RestModel` (package `maps/location`) - Contains WorldId (world.Id), ChannelId (channel.Id), MapId (_map.Id), Instance (uuid.UUID). Resource type: "character-locations".
+
+### Invariants
+- `GetField` returns `ErrNotFound` on HTTP 404 (no stored location row yet, typically a character's first login), distinct from infrastructure errors (5xx, network, decode)
+- `ResolveMapId` falls back to map 0 on either a missing location (logged at Warn) or an infrastructure error (logged at Error), mirroring the login service's character-list writer fallback policy
+
+### Processors
+None. Package-level functions `GetField(l, ctx, characterId)` and `ResolveMapId(l, ctx, characterId)` query the MAPS service directly.
+
+---
+
+## MTS
+
+### Responsibility
+Implements the in-game Mapleshop/ITC marketplace (MTS): fixed-price and auction listings, take-home holdings, transaction history, wish-list (cart favorites and cross-character want-ads), and per-tenant economic configuration. The channel never talks to the atlas-mts REST surface for writes — every mutation (create/buy/bid/cancel/take-home/wish) is a Kafka command; reads (browse, holdings, transactions, wishlist, cart, wanted) are synchronous REST calls against atlas-mts.
+
+### Core Models
+- `configuration.Model` - Per-tenant economic configuration: listingFee (uint32), commissionRate (float64), commissionBase (uint32), maxActiveListings (int), minLevel (int), auctionMinHours (int), auctionMaxHours (int), fixedSaleHours (int), priceFloor (uint32), pageSize (int), minBidIncrement (uint32). `DefaultConfig()` supplies the fallback economic knobs (fee 5000, commission 7%/500, min level 10, auction 24-168h, fixed-sale 168h, price floor 110, page size 16, min bid increment 1).
+- `listing.Model` - A marketplace listing: id, worldId, itcSn (uint32, the client's nITCSN serial), sellerId, sellerName, saleType, state, templateId, quantity, full equipment-stat snapshot (strength..slots, level, itemLevel, itemExp, ringId, viciousCount, flags), listValue, buyNowPrice, contractFee, currentBid, highBidderId, minIncrement, bidCount, category, subCategory, endsAt (*time.Time)
+- `holding.Model` - A take-home holding: id (string), worldId (world.Id), itcSn (uint32), ownerId (uint32), origin (string), templateId (uint32), quantity (uint32)
+- `transaction.Model` - A transaction-history row: id (string), itemId (uint32), quantity (uint32), totalPrice (uint32), kind (string), createdAt (time.Time)
+- `wish.Model` - A wish-list entry (cart favorite or want-ad): id, worldId (byte), serial (uint32, the client's nITCSN), characterId, itemId, listingSerial, price, count, expiresAt (*time.Time). `TypeCart`/`TypeWanted` distinguish the two kinds.
+- `cart.Items(l, ctx, worldId, characterId)` - Renders a character's Cart (SET_ZZIM favorites) by resolving each cart entry's favorited listing (by listingSerial) to the live listing and rendering that listing; a cart entry whose favorited listing no longer exists is skipped.
+- `wanted.WorldItems(l, ctx, worldId, viewerId, categorySub)` - Renders the cross-character Wanted tab: every want-ad in the world except the viewer's own, filtered by item sub-category, with the owner's display name resolved into the seller column.
+
+### Invariants
+- A tenant's MTS configuration falls back to `DefaultConfig()` on a fetch miss or error (any zero knob in a partial config is also substituted with its default), so the service never hard-fails on an unconfigured tenant; the config registry caches per-tenant results in-process
+- `GetBySerial`/`GetByCharacterSerial` treat serial 0 as never matching a real listing/wish (serials start at 1), so stale itcSn=0 rows resolve to no entry
+- atlas-mts allows at most one wish per (character, item); `GetByCharacterItem` returns the first match
+- `BrowseProvider`/`Browse` fetch exactly one page (bounded, player-facing browse); `BrowseAllProvider`/`BrowseAll` drain every page (semantic-all call sites: my-sales, want-ad offers, cart favorites, bidder/auction re-push)
+
+### Processors
+- `Processor` (package `mts`) - CreateListing, Buy, PlaceBid, CancelListing, TakeHome, RegisterWish, RemoveWish all emit the corresponding COMMAND_TOPIC_MTS command, keyed on the acting character (RegisterWish/RemoveWish keyed on character id without a transaction id).
+- `listing.Processor` - BrowseProvider/Browse (single page), BrowseAllProvider/BrowseAll (drains every page), GetBySerial (resolves the single active listing for an ITC serial) via REST.
+- `holding.Processor` - GetByCharacterProvider/GetByCharacter retrieve a character's take-home holdings via REST (drains all pages).
+- `transaction.Processor` - GetByCharacterProvider/GetByCharacter retrieve a character's transaction history via REST (drains all pages).
+- `wish.Processor` - GetByCharacterProvider/GetByCharacter, GetByCharacterAndType (cart or wanted), GetByCharacterItem, GetByCharacterSerial, GetWantedByWorld (every want-ad in a world) via REST (drains all pages).
+- `configuration.Registry` (singleton via `sync.Once`) - GetTenantConfig(l, ctx, tenantId) returns the cached per-tenant configuration, fetching and caching on first access, falling back to `DefaultConfig()` on error.

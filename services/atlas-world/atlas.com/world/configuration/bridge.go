@@ -1,11 +1,10 @@
 package configuration
 
 import (
+	"atlas-world/configuration/tenant"
 	"context"
 	"reflect"
 	"time"
-
-	"atlas-world/configuration/tenant"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"

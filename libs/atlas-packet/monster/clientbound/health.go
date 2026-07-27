@@ -4,17 +4,18 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const MonsterHealthWriter = "MonsterHealth"
 
 // packet-audit:fname CMob::OnHPIndicator
 type Health struct {
-	uniqueId   uint32
-	hpPercent  byte
+	uniqueId  uint32
+	hpPercent byte
 }
 
 func NewMonsterHealth(uniqueId uint32, hpPercent byte) Health {

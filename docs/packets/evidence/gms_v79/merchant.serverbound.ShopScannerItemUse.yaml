@@ -1,0 +1,11 @@
+packet: merchant/serverbound/ShopScannerItemUse
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendShopScannerItemUseRequest
+    address: "0x9703a3"
+    decompile_sha256: 2f1cea58a3a36104653b2c72f6185df6c8f47d955335e9154eed4a0409e2fd59
+verifies:
+  - libs/atlas-packet/merchant/serverbound/shop_scanner_item_use_test.go#TestShopScannerItemUseWireShape
+  - libs/atlas-packet/merchant/serverbound/shop_scanner_item_use_test.go#TestShopScannerItemUseRoundTrip

@@ -3,12 +3,13 @@ package monster
 import (
 	"context"
 
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {
@@ -24,6 +25,8 @@ type ProcessorImpl struct {
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{l: l, ctx: ctx}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) DestroyInField(worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID) error {
 	return requestDestroyInField(worldId, channelId, mapId, instance)(p.l, p.ctx)

@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcAskSpeedQuizConversationDetail
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: sub_91EDBC
+    address: "0x91edbc"
+    decompile_sha256: 8fd3bff48fa0027f27087f956ca3f85762c77d8223927e9d18698637b69f68ae
+verifies:
+  - libs/atlas-packet/npc/clientbound/conversation_v72_details_test.go#TestNpcConversationAskSpeedQuizV72

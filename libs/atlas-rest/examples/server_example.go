@@ -8,9 +8,10 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 func main() {
@@ -48,5 +49,4 @@ func main() {
 	<-sigChan
 	cancel()
 	wg.Wait()
-
 }

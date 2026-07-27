@@ -1,0 +1,10 @@
+packet: character/clientbound/CharacterSkillLearnItemResult
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnSkillLearnItemResult
+    address: "0xb05116"
+    decompile_sha256: 4edf4ebee3ffb0d26903cc5ff349600ddd5ba531f6e20bbcbda447c8797ee93a
+verifies:
+    - libs/atlas-packet/character/clientbound/skill_learn_item_result_test.go#TestSkillLearnItemResultGoldenBytesJMS185

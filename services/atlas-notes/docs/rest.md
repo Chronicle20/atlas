@@ -15,28 +15,55 @@ MINOR_VERSION: <number>
 
 ### GET /api/notes
 
-Returns all notes in the tenant.
+Returns a page of notes in the tenant.
 
-**Parameters:** None
+**Parameters:**
+- page[number] (query, optional): int, default 1
+- page[size] (query, optional): int, default 50, max 250
+
+The legacy `limit` query parameter is rejected.
 
 **Response Model:** Array of RestModel
 
+JSON:API `meta` block:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| total | int | Total count of matching notes across all pages |
+| page.number | int | Current page number |
+| page.size | int | Current page size |
+| page.last | int | Last page number |
+
 **Error Conditions:**
+- 400: Invalid page[number]/page[size] (non-integer, out of range, or legacy limit param used)
 - 500: Internal server error
 
 ---
 
 ### GET /api/characters/{characterId}/notes
 
-Returns all notes for a character.
+Returns a page of notes for a character.
 
 **Parameters:**
 - characterId (path, required): uint32
+- page[number] (query, optional): int, default 1
+- page[size] (query, optional): int, default 50, max 250
+
+The legacy `limit` query parameter is rejected.
 
 **Response Model:** Array of RestModel
 
+JSON:API `meta` block:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| total | int | Total count of matching notes across all pages |
+| page.number | int | Current page number |
+| page.size | int | Current page size |
+| page.last | int | Last page number |
+
 **Error Conditions:**
-- 400: Invalid characterId
+- 400: Invalid characterId, or invalid page[number]/page[size] (non-integer, out of range, or legacy limit param used)
 - 500: Internal server error
 
 ---

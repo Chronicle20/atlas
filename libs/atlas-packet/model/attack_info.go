@@ -3,11 +3,12 @@ package model
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type AttackType byte
@@ -21,6 +22,59 @@ const (
 
 func NewAttackInfo(attackType AttackType) *AttackInfo {
 	return &AttackInfo{attackType: attackType}
+}
+
+// ExplodedMesoDrop is one entry of the meso-explosion trailing drop list: the
+// detonated meso drop's object id (CDrop field +32) plus the client's bitmask
+// of which attacked-mob indices that drop's explosion damaged. The hit mask is
+// retained for wire fidelity only; server logic consumes just the ids.
+type ExplodedMesoDrop struct {
+	dropId  uint32
+	hitMask byte
+}
+
+func NewExplodedMesoDrop(dropId uint32, hitMask byte) ExplodedMesoDrop {
+	return ExplodedMesoDrop{dropId: dropId, hitMask: hitMask}
+}
+
+func (e ExplodedMesoDrop) DropId() uint32 { return e.dropId }
+func (e ExplodedMesoDrop) HitMask() byte  { return e.hitMask }
+
+// legacyGmsByteAction reports whether the serverbound attack action/direction field
+// is a single byte (bit7=bLeft, bits0-6=nAction) instead of a 2-byte short. Legacy
+// pre-79 GMS only. IDA-verified: v72 TryDoingMeleeAttack @0x85f9c2 (Encode1) vs v79
+// @0x8c2adc (Encode2). Mirrors the clientbound CUserRemote::OnAttack transition.
+func legacyGmsByteAction(t tenant.Model) bool {
+	return t.Region() == "GMS" && t.MajorVersion() < 79
+}
+
+// legacyGmsSingleCrc reports whether the serverbound attack head carries only a
+// single skill-data CRC (v72 @0x85f96c) rather than the two CRCs GMS v79+ writes
+// (v79 @0x8c2ab2 + @0x8c2abb). Legacy pre-79 GMS only.
+func legacyGmsSingleCrc(t tenant.Model) bool {
+	return t.Region() == "GMS" && t.MajorVersion() < 79
+}
+
+// legacyGmsNoSkillDataCrc reports whether the serverbound attack head carries NO
+// skill-data CRC at all (the field appears at GMS v72; the very-legacy pre-72
+// client omits it entirely). IDA-verified: v61 CLOSE_RANGE sender sub_7A45F1
+// @0x7a5bc3 Encode4(skillId) is followed directly by the mask1/option Encode1
+// @0x7a5d3d — there is no CRC Encode4 in between (only a conditional keydown
+// Encode4 for charge skills). v72 TryDoingMeleeAttack @0x85f96c writes one CRC.
+// So the head skill-data CRC is present GMS v72+ and absent below.
+func legacyGmsNoSkillDataCrc(t tenant.Model) bool {
+	return t.Region() == "GMS" && t.MajorVersion() < 72
+}
+
+// legacyGmsNoRangedBulletCoords reports whether the ranged-attack trailer OMITS the
+// bulletX/bulletY world-coordinate shorts. The very-legacy pre-61 GMS shoot sender
+// (v48 sub_6A228C @0x6a3965/0x6a3979: after the per-mob loop it Encode2s only
+// characterX/characterY then SendPacket @0x6a3988 — no bullet coords) does not carry
+// them; the head properBulletPosition/cashBulletPosition/nShootRange block is still
+// present. Gate to GMS < 61 so v48 omits the 4-byte trailer while v61+/JMS are
+// unchanged (their fixtures pin the existing trailer).
+func legacyGmsNoRangedBulletCoords(t tenant.Model) bool {
+	return t.Region() == "GMS" && t.MajorVersion() < 61
 }
 
 type AttackInfo struct {
@@ -58,7 +112,7 @@ type AttackInfo struct {
 	grenadeX             uint16
 	grenadeY             uint16
 	reserveSpark         uint32
-	javlin               bool
+	exJablin             bool
 	properBulletPosition uint16
 	cashBulletPosition   uint16
 	nShootRange          byte
@@ -68,6 +122,8 @@ type AttackInfo struct {
 	dragonY              uint16
 	bulletX              uint16
 	bulletY              uint16
+	explodedMesoDrops    []ExplodedMesoDrop
+	mesoDelay            uint16
 }
 
 // Encode is the symmetric mirror of Decode: it serializes the client->server
@@ -78,6 +134,11 @@ type AttackInfo struct {
 func (m *AttackInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
+		// Meso Explosion (4211006) is a CLOSE_RANGE_ATTACK variant written by a
+		// dedicated client sender. Its three deltas (per-mob count byte, trailing
+		// drop list, trailing delay) are byte-identical across every IDA-verified
+		// version (task-150 design §2.1), so one flag and no new version gates.
+		isMesoExplosion := skill.Id(m.skillId) == skill.ChiefBanditMesoExplosionId
 		w := response.NewWriter(l)
 		w.WriteByte(m.fieldKey)
 		if t.Region() == "GMS" && t.MajorVersion() >= 84 { // primary dr-block (v84+)
@@ -100,16 +161,24 @@ func (m *AttackInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 			if m.attackType == AttackTypeMagic {
 				// Secondary dr-block for magic attacks (v95+; absent in v84 magic).
-				w.WriteInt(0) //2dr0
-				w.WriteInt(0) //2dr1
-				w.WriteInt(0) //2dr2
-				w.WriteInt(0) //2dr3
-				w.WriteInt(0) //2rnd
-				w.WriteInt(0) //2crc
+				w.WriteInt(0) // 2dr0
+				w.WriteInt(0) // 2dr1
+				w.WriteInt(0) // 2dr2
+				w.WriteInt(0) // 2dr3
+				w.WriteInt(0) // 2rnd
+				w.WriteInt(0) // 2crc
 			}
 		}
-		w.WriteInt(m.skillDataCrc)
-		w.WriteInt(m.skillDataCrc2)
+		// The head skill-data CRC block. The very-legacy pre-72 GMS client (v61)
+		// writes NO CRC at all (sub_7A45F1 @0x7a5bc3→@0x7a5d3d: skillId then
+		// straight to mask1). v72 writes a SINGLE CRC (TryDoingMeleeAttack
+		// @0x85f96c); GMS v79+ adds a second (v79 @0x8c2ab2 + @0x8c2abb).
+		if !legacyGmsNoSkillDataCrc(t) {
+			w.WriteInt(m.skillDataCrc)
+		}
+		if !legacyGmsSingleCrc(t) {
+			w.WriteInt(m.skillDataCrc2)
+		}
 		if skill.IsKeyDownSkill(skill.Id(m.skillId)) {
 			w.WriteInt(m.keyDown)
 		} else if skill.NeedsCharging(skill.Id(m.skillId)) {
@@ -118,10 +187,18 @@ func (m *AttackInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 		w.WriteByte(m.mask1)
 		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 			if m.attackType == AttackTypeRanged {
-				w.WriteBool(m.javlin)
+				w.WriteBool(m.exJablin)
 			}
 		}
-		w.WriteShort(m.mask2)
+		// Attack-action / direction field. Legacy pre-79 GMS packs bLeft (bit7) +
+		// nAction (bits0-6) into a SINGLE byte (v72 @0x85f9c2: Encode1
+		// `(nAction&0x7F)|(bLeft<<7)`); GMS v79+ / JMS use a 2-byte short
+		// (v79 @0x8c2adc: Encode2 `(bLeft<<15)|nAction`).
+		if legacyGmsByteAction(t) {
+			w.WriteByte(byte(m.mask2 & 0xFF))
+		} else {
+			w.WriteShort(m.mask2)
+		}
 		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 			w.WriteInt(m.anotherCrc)
 		}
@@ -140,7 +217,7 @@ func (m *AttackInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 			w.WriteShort(m.properBulletPosition)
 			w.WriteShort(m.cashBulletPosition)
 			w.WriteByte(m.nShootRange)
-			if m.javlin && !skill.IsShootSkillNotConsumingBullet(skill.Id(m.skillId)) {
+			if m.spiritJavelin() && !skill.IsShootSkillNotConsumingBullet(skill.Id(m.skillId)) {
 				w.WriteInt(m.bulletItemId)
 			}
 		} else if m.attackType == AttackTypeMagic {
@@ -156,7 +233,15 @@ func (m *AttackInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 
 		w.WriteShort(m.characterX)
 		w.WriteShort(m.characterY)
-		if m.attackType == AttackTypeRanged {
+		if isMesoExplosion {
+			w.WriteByte(byte(len(m.explodedMesoDrops)))
+			for _, e := range m.explodedMesoDrops {
+				w.WriteInt(e.dropId)
+				w.WriteByte(e.hitMask)
+			}
+			w.WriteShort(m.mesoDelay)
+		}
+		if m.attackType == AttackTypeRanged && !legacyGmsNoRangedBulletCoords(t) {
 			w.WriteShort(m.bulletX)
 			w.WriteShort(m.bulletY)
 		}
@@ -167,7 +252,12 @@ func (m *AttackInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 		} else if skill.Id(m.skillId) == skill.ThunderBreakerStage3SparkId {
 			w.WriteInt(m.reserveSpark)
 		}
-		if m.attackType == AttackTypeMagic {
+		// Trailing Evan-dragon block for magic attacks. ABSENT on the legacy pre-79
+		// GMS client: v72 TryDoingMagicAttack @0x8625da writes characterX/Y then
+		// SendPacket immediately (no dragon Encode1 after @0x863bff). Evan launched at
+		// GMS v84, so the dragon field is naturally absent pre-79. Gate keeps v79+/JMS
+		// unchanged.
+		if m.attackType == AttackTypeMagic && !legacyGmsByteAction(t) {
 			w.WriteBool(m.dragon)
 			if m.dragon {
 				w.WriteShort(m.dragonX)
@@ -203,6 +293,11 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, ctx context.Context) func(r *r
 		}
 
 		m.skillId = r.ReadUint32()
+		// Meso Explosion (4211006) is a CLOSE_RANGE_ATTACK variant written by a
+		// dedicated client sender. Its three deltas (per-mob count byte, trailing
+		// drop list, trailing delay) are byte-identical across every IDA-verified
+		// version (task-150 design §2.1), so one flag and no new version gates.
+		isMesoExplosion := skill.Id(m.skillId) == skill.ChiefBanditMesoExplosionId
 		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 			m.skillLevel = r.ReadByte() // nCombatOrders
 		}
@@ -217,17 +312,21 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, ctx context.Context) func(r *r
 				// Secondary dr-block for magic attacks. v95+ only: the v84 magic
 				// sender (30 Encode tokens) is shorter than v84 melee and carries
 				// no second dr-block, so this must NOT read for v84..94.
-				_ = r.ReadUint32() //2dr0
-				_ = r.ReadUint32() //2dr1
-				_ = r.ReadUint32() //2dr2
-				_ = r.ReadUint32() //2dr3
-				_ = r.ReadUint32() //2rnd
-				_ = r.ReadUint32() //2crc
+				_ = r.ReadUint32() // 2dr0
+				_ = r.ReadUint32() // 2dr1
+				_ = r.ReadUint32() // 2dr2
+				_ = r.ReadUint32() // 2dr3
+				_ = r.ReadUint32() // 2rnd
+				_ = r.ReadUint32() // 2crc
 			}
 		}
 
-		m.skillDataCrc = r.ReadUint32()
-		m.skillDataCrc2 = r.ReadUint32()
+		if !legacyGmsNoSkillDataCrc(t) {
+			m.skillDataCrc = r.ReadUint32()
+		}
+		if !legacyGmsSingleCrc(t) {
+			m.skillDataCrc2 = r.ReadUint32()
+		}
 
 		if skill.IsKeyDownSkill(skill.Id(m.skillId)) {
 			m.keyDown = r.ReadUint32()
@@ -239,17 +338,29 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, ctx context.Context) func(r *r
 		m.shadowPartner = int((m.mask1 >> 3) & 0x01)       // Extract bit 3
 		m.unknown1 = int((m.mask1 >> 4) & 0x01)            // Extract bit 4
 		m.serialAttackSkillId = int((m.mask1 >> 5) & 0x01) // Extract bit 5 (boolean flag)
-		m.unknown2 = int((m.mask1 >> 7) & 0x7F)            // Extract bits 7-13 (7-bit value)
+		// bit 6 is the Spirit Javelin (Shadow Stars active) flag — see spiritJavelin().
+		m.unknown2 = int((m.mask1 >> 7) & 0x01) // Extract bit 7
 
+		// GMS v95+ writes an explicit "ExJablin applied" bool right after mask1
+		// (ranged only). It is a SEPARATE field from the mask1 bit-6 gate below —
+		// consume it for alignment but do NOT use it to gate the star id. Verified
+		// across every client version: the bulletItemId gate is mask1 bit 6.
 		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 			if m.attackType == AttackTypeRanged {
-				m.javlin = r.ReadBool()
+				m.exJablin = r.ReadBool()
 			}
 		}
 
-		m.mask2 = r.ReadUint16()
-		m.attackAction = int(m.mask2 & 0x7FFF) // Extract lower 15 bits
-		m.left = int((m.mask2>>15)&0x01) == 1  // Extract bit 15
+		if legacyGmsByteAction(t) {
+			b := r.ReadByte()
+			m.mask2 = uint16(b)
+			m.attackAction = int(b & 0x7F) // legacy: lower 7 bits
+			m.left = int((b>>7)&0x01) == 1 // legacy: bit 7
+		} else {
+			m.mask2 = r.ReadUint16()
+			m.attackAction = int(m.mask2 & 0x7FFF) // Extract lower 15 bits
+			m.left = int((m.mask2>>15)&0x01) == 1  // Extract bit 15
+		}
 		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 			m.anotherCrc = r.ReadUint32()
 		}
@@ -270,13 +381,13 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, ctx context.Context) func(r *r
 			m.cashBulletPosition = r.ReadUint16()
 			m.nShootRange = r.ReadByte()
 
-			// TODO(task-007): the `javlin` flag is tied to a specific skill mechanic
-			// whose gameplay semantics are not yet fully understood (the original name
-			// is a poor translation). Projectile consumption in atlas-channel's
-			// character_attack_projectile.go intentionally bails out when javlin=true
-			// to avoid mis-consuming. Revisit the gate at both sites when the mechanic
-			// is characterized.
-			if m.javlin && !skill.IsShootSkillNotConsumingBullet(skill.Id(m.skillId)) {
+			// Spirit Javelin / Shadow Stars star id. When the caster has Shadow Stars
+			// active the client draws imbued throwing stars from the buff and appends
+			// the chosen star id here, gated on mask1 bit 6 (verified in every GMS
+			// client v48–v95; v87's IDB names it nSpiritJavelin; jms v185 assumed to
+			// follow v87). Missing this read decodes the per-mob damage-info loop 4
+			// bytes misaligned, so monster damage silently drops.
+			if m.spiritJavelin() && !skill.IsShootSkillNotConsumingBullet(skill.Id(m.skillId)) {
 				m.bulletItemId = r.ReadUint32()
 			}
 		} else if m.attackType == AttackTypeMagic {
@@ -286,14 +397,29 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, ctx context.Context) func(r *r
 		}
 
 		for range m.damage {
-			di := NewDamageInfo(m.hits)
+			var di *DamageInfo
+			if isMesoExplosion {
+				di = NewMesoExplosionDamageInfo()
+			} else {
+				di = NewDamageInfo(m.hits)
+			}
 			di.Decode(l, ctx)(r, options)
 			m.damageInfo = append(m.damageInfo, *di)
 		}
 
 		m.characterX = r.ReadUint16()
 		m.characterY = r.ReadUint16()
-		if m.attackType == AttackTypeRanged {
+		if isMesoExplosion {
+			dropCount := r.ReadByte()
+			for range dropCount {
+				m.explodedMesoDrops = append(m.explodedMesoDrops, ExplodedMesoDrop{
+					dropId:  r.ReadUint32(),
+					hitMask: r.ReadByte(),
+				})
+			}
+			m.mesoDelay = r.ReadUint16()
+		}
+		if m.attackType == AttackTypeRanged && !legacyGmsNoRangedBulletCoords(t) {
 			m.bulletX = r.ReadUint16()
 			m.bulletY = r.ReadUint16()
 		}
@@ -304,7 +430,8 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, ctx context.Context) func(r *r
 		} else if skill.Id(m.skillId) == skill.ThunderBreakerStage3SparkId {
 			m.reserveSpark = r.ReadUint32()
 		}
-		if m.attackType == AttackTypeMagic {
+		// Evan-dragon block absent on legacy pre-79 GMS (see Encode note).
+		if m.attackType == AttackTypeMagic && !legacyGmsByteAction(t) {
 			m.dragon = r.ReadBool()
 			if m.dragon {
 				m.dragonX = r.ReadUint16()
@@ -354,8 +481,17 @@ func (m *AttackInfo) BulletItemId() uint32 {
 	return m.bulletItemId
 }
 
-func (m *AttackInfo) Javlin() bool {
-	return m.javlin
+// SpiritJavelin reports whether mask1 bit 6 — the client's Spirit Javelin
+// (Shadow Stars active) flag — is set. When set, the caster throws stars imbued
+// by the Shadow Stars buff, so the ranged attack carries an explicit star id and
+// per-attack projectile consumption is skipped (the stars were charged in bulk
+// at cast time).
+func (m *AttackInfo) SpiritJavelin() bool {
+	return m.spiritJavelin()
+}
+
+func (m *AttackInfo) spiritJavelin() bool {
+	return (m.mask1>>6)&0x01 == 1
 }
 
 func (m *AttackInfo) Keydown() uint32 {
@@ -380,6 +516,25 @@ func (m *AttackInfo) BulletX() uint16 {
 
 func (m *AttackInfo) BulletY() uint16 {
 	return m.bulletY
+}
+
+// ExplodedMesoDrops returns the drop object ids listed by a meso-explosion
+// attack. Empty for every other attack (FR-3).
+func (m *AttackInfo) ExplodedMesoDrops() []uint32 {
+	ids := make([]uint32, 0, len(m.explodedMesoDrops))
+	for _, e := range m.explodedMesoDrops {
+		ids = append(ids, e.dropId)
+	}
+	return ids
+}
+
+// ExplodedMesoDropEntries returns the full wire entries (id + hit mask).
+func (m *AttackInfo) ExplodedMesoDropEntries() []ExplodedMesoDrop {
+	return m.explodedMesoDrops
+}
+
+func (m *AttackInfo) MesoDelay() uint16 {
+	return m.mesoDelay
 }
 
 // Builder methods for constructing AttackInfo in the server-send path.
@@ -430,7 +585,24 @@ func (m *AttackInfo) SetBulletPosition(bulletX uint16, bulletY uint16) *AttackIn
 	return m
 }
 
+// SetBulletItemId sets the Spirit Javelin / Shadow Stars star id carried on the
+// wire when mask1 bit 6 is set. Only encoded for ranged attacks with the bit set.
+func (m *AttackInfo) SetBulletItemId(bulletItemId uint32) *AttackInfo {
+	m.bulletItemId = bulletItemId
+	return m
+}
+
 func (m *AttackInfo) AddDamageInfo(di DamageInfo) *AttackInfo {
 	m.damageInfo = append(m.damageInfo, di)
+	return m
+}
+
+func (m *AttackInfo) SetExplodedMesoDrops(entries []ExplodedMesoDrop) *AttackInfo {
+	m.explodedMesoDrops = entries
+	return m
+}
+
+func (m *AttackInfo) SetMesoDelay(delay uint16) *AttackInfo {
+	m.mesoDelay = delay
 	return m
 }

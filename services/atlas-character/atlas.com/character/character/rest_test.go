@@ -7,12 +7,13 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/jtumidanski/api2go/jsonapi"
 	goredis "github.com/redis/go-redis/v9"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func testTenantContext() context.Context {
@@ -115,7 +116,7 @@ func TestTransformExtractGmField(t *testing.T) {
 		t.Fatalf("Failed to transform model to rest model: %v", err)
 	}
 
-	if restModel.Gm != im.GM() {
+	if restModel.Gm == nil || *restModel.Gm != im.GM() {
 		t.Fatalf("Transform method failed to map gm field correctly. Expected: %v, Got: %v", im.GM(), restModel.Gm)
 	}
 

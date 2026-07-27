@@ -1,0 +1,48 @@
+{
+  "WriterName": "StatusMessageDropPickUpMeso",
+  "IDAName": "CWvsContext::OnMessage#DropPickUpMeso",
+  "Address": "",
+  "Variant": "GMS/v48",
+  "BranchDepth": 2,
+  "AtlasFile": "libs/atlas-packet/character/clientbound/status_message.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 6,
+      "IDAComment": "function not found in IDB",
+      "Verdict": 4,
+      "Note": "IDA read-order unresolved: function not found in IDB"
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    }
+  ],
+  "Verdict": 2,
+  "FlatInvalid": false
+}

@@ -1,0 +1,10 @@
+packet: character/clientbound/CharacterChairShow
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CUserPool::OnUserRemotePacket
+    address: "0x8c8d4a"
+    decompile_sha256: d8c6240c0af7ab71e5d0a41d8896f679d722c3a475e4ba2459639dc367c17f54
+verifies:
+  - libs/atlas-packet/character/clientbound/v79_test.go#TestCharacterChairShowByteOutputV79

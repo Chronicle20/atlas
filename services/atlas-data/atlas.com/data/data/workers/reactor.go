@@ -1,16 +1,17 @@
 package workers
 
 import (
+	"atlas-data/reactor"
 	"context"
 	"fmt"
 	"path/filepath"
 
-	"github.com/Chronicle20/atlas/libs/atlas-wz/icons"
-	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
-	"atlas-data/reactor"
+	"github.com/Chronicle20/atlas/libs/atlas-wz/icons"
+	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
+
 	minio "atlas-data/storage/minio"
 )
 
@@ -28,7 +29,7 @@ func (Reactor) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *m
 	if err != nil {
 		return fmt.Errorf("serialize Reactor.wz: %w", err)
 	}
-	if err := registerAllInDirectory(l, ctx, filepath.Join(root, "Reactor.wz"), reactor.RegisterReactor(db)); err != nil {
+	if err := registerAllInDirectory(l, ctx, filepath.Join(root, "Reactor.wz"), reactor.NewProcessor(l, ctx, db).RegisterReactor); err != nil {
 		return err
 	}
 	prefix := minioAssetPrefix(p)

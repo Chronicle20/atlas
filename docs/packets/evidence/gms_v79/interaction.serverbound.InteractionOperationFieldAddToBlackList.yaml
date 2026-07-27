@@ -1,0 +1,10 @@
+packet: interaction/serverbound/InteractionOperationFieldAddToBlackList
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CField::AddBlackList
+    address: "0x522c87"
+    decompile_sha256: 16fb29a89697751d708d87be0523775b318b5a36eb3aecdb9bf230024d3c2ef4
+verifies:
+  - libs/atlas-packet/interaction/serverbound/operation_field_add_to_black_list_test.go#TestOperationFieldAddToBlackListRoundTrip

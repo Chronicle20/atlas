@@ -41,7 +41,6 @@ func TestContinentDropBuilderFluentAPI(t *testing.T) {
 		SetQuestId(0).
 		SetChance(8000).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() returned unexpected error: %v", err)
 	}
@@ -119,7 +118,6 @@ func TestContinentDropBuilderNegativeContinentId(t *testing.T) {
 	model, err := NewContinentDropBuilder(tenantId, 0).
 		SetContinentId(-1).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() returned unexpected error: %v", err)
 	}

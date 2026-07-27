@@ -1,4 +1,8 @@
-import { type Control, type FieldPath, type FieldValues } from "react-hook-form"
+import {
+  type Control,
+  type FieldPath,
+  type FieldValues,
+} from "react-hook-form";
 import {
   FormControl,
   FormDescription,
@@ -6,41 +10,41 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
+} from "@/components/ui/form";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 export interface SelectOption {
-  value: string
-  label: string
-  disabled?: boolean
+  value: string;
+  label: string;
+  disabled?: boolean;
 }
 
 interface FormSelectProps<
   TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 > {
-  control: Control<TFieldValues>
-  name: TName
-  label: string
-  description?: string
-  placeholder?: string
-  options: SelectOption[]
-  className?: string
-  disabled?: boolean
-  emptyMessage?: string
+  control: Control<TFieldValues>;
+  name: TName;
+  label: string;
+  description?: string;
+  placeholder?: string;
+  options: SelectOption[];
+  className?: string;
+  disabled?: boolean;
+  emptyMessage?: string;
 }
 
 /**
  * A reusable form select component that wraps the shadcn/ui Select with FormField pattern.
  * Reduces boilerplate by handling the common FormItem -> FormLabel -> FormControl -> FormMessage structure.
- * 
+ *
  * @example Basic select:
  * <FormSelect
  *   control={form.control}
@@ -54,7 +58,7 @@ interface FormSelectProps<
  *   ]}
  *   description="Choose the current status"
  * />
- * 
+ *
  * @example With empty message:
  * <FormSelect
  *   control={form.control}
@@ -66,7 +70,7 @@ interface FormSelectProps<
  */
 export function FormSelect<
   TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 >({
   control,
   name,
@@ -76,7 +80,7 @@ export function FormSelect<
   options,
   className,
   disabled,
-  emptyMessage = "No options available"
+  emptyMessage = "No options available",
 }: FormSelectProps<TFieldValues, TName>) {
   return (
     <ShadcnFormField
@@ -118,7 +122,7 @@ export function FormSelect<
         </FormItem>
       )}
     />
-  )
+  );
 }
 
-FormSelect.displayName = "FormSelect"
+FormSelect.displayName = "FormSelect";

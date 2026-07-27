@@ -39,9 +39,9 @@ func (m Model) NoExpLossOnDeath() bool {
 // y = down). A flat foothold has First.Y == Second.Y; a wall has
 // First.X == Second.X.
 type Foothold struct {
-	Id     uint32
-	FirstX int16
-	FirstY int16
+	Id      uint32
+	FirstX  int16
+	FirstY  int16
 	SecondX int16
 	SecondY int16
 }

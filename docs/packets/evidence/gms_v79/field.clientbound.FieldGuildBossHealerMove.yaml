@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldGuildBossHealerMove
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CField_GuildBoss::OnHealerMove
+    address: "0x54195c"
+    decompile_sha256: 003e6749daba98a76f0fdf6cb27f9dc470371d81ad6e1446f87a41f215f6c1fb
+verifies:
+    - libs/atlas-packet/field/clientbound/guild_boss_healer_move_test.go#TestGuildBossHealerMoveByteOutputV79

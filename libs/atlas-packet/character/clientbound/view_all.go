@@ -4,12 +4,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const CharacterViewAllWriter = "CharacterViewAll"
@@ -25,7 +26,7 @@ func NewCharacterViewAllCount(code byte, worldCount uint32, unk uint32) Characte
 	return CharacterViewAllCount{code: code, worldCount: worldCount, unk: unk}
 }
 
-func (m CharacterViewAllCount) Code() byte        { return m.code }
+func (m CharacterViewAllCount) Code() byte         { return m.code }
 func (m CharacterViewAllCount) WorldCount() uint32 { return m.worldCount }
 func (m CharacterViewAllCount) Unk() uint32        { return m.unk }
 func (m CharacterViewAllCount) Operation() string  { return CharacterViewAllWriter }
@@ -62,10 +63,10 @@ func NewCharacterViewAllCharacters(code byte, worldId world.Id, characters []mod
 	return CharacterViewAllCharacters{code: code, worldId: worldId, characters: characters}
 }
 
-func (m CharacterViewAllCharacters) Code() byte                              { return m.code }
-func (m CharacterViewAllCharacters) WorldId() world.Id                       { return m.worldId }
-func (m CharacterViewAllCharacters) Characters() []model.CharacterListEntry  { return m.characters }
-func (m CharacterViewAllCharacters) Operation() string                       { return CharacterViewAllWriter }
+func (m CharacterViewAllCharacters) Code() byte                             { return m.code }
+func (m CharacterViewAllCharacters) WorldId() world.Id                      { return m.worldId }
+func (m CharacterViewAllCharacters) Characters() []model.CharacterListEntry { return m.characters }
+func (m CharacterViewAllCharacters) Operation() string                      { return CharacterViewAllWriter }
 func (m CharacterViewAllCharacters) String() string {
 	return fmt.Sprintf("code [%d], worldId [%d], characters [%d]", m.code, m.worldId, len(m.characters))
 }
@@ -116,8 +117,10 @@ func NewCharacterViewAllSearchFailed(code byte) CharacterViewAllSearchFailed {
 }
 
 func (m CharacterViewAllSearchFailed) Code() byte        { return m.code }
-func (m CharacterViewAllSearchFailed) Operation() string  { return CharacterViewAllWriter }
-func (m CharacterViewAllSearchFailed) String() string     { return fmt.Sprintf("searchFailed code [%d]", m.code) }
+func (m CharacterViewAllSearchFailed) Operation() string { return CharacterViewAllWriter }
+func (m CharacterViewAllSearchFailed) String() string {
+	return fmt.Sprintf("searchFailed code [%d]", m.code)
+}
 
 func (m CharacterViewAllSearchFailed) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
@@ -143,8 +146,8 @@ func NewCharacterViewAllError(code byte) CharacterViewAllError {
 }
 
 func (m CharacterViewAllError) Code() byte        { return m.code }
-func (m CharacterViewAllError) Operation() string  { return CharacterViewAllWriter }
-func (m CharacterViewAllError) String() string     { return fmt.Sprintf("error code [%d]", m.code) }
+func (m CharacterViewAllError) Operation() string { return CharacterViewAllWriter }
+func (m CharacterViewAllError) String() string    { return fmt.Sprintf("error code [%d]", m.code) }
 
 func (m CharacterViewAllError) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)

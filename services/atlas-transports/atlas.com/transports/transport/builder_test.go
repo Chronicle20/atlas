@@ -4,10 +4,11 @@ import (
 	"testing"
 	"time"
 
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 func TestBuilder_Build_Validation(t *testing.T) {

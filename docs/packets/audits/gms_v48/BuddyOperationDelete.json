@@ -1,0 +1,30 @@
+{
+  "WriterName": "BuddyOperationDelete",
+  "IDAName": "CField::SendDeleteFriendMsg",
+  "Address": "0x4c659b",
+  "Variant": "GMS/v48",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/buddy/serverbound/operation_delete.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "BUDDYLIST_MODIFY mode = 3 (delete) @0x4c6608",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "buddyCharacterId (target) @0x4c6613",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

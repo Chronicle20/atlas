@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldForcedMapEquip
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnFieldSpecificData
+    address: "0x4c6ca1"
+    decompile_sha256: 15090097611a8eacbe2bc65427a44d620320e3b03abc1cb50c0725640307c28b
+verifies:
+    - libs/atlas-packet/field/clientbound/forced_map_equip_test.go#TestForcedMapEquipByteOutputV48

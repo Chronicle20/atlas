@@ -38,6 +38,25 @@ func (e *MesoEntity) TableName() string {
 	return "frederick_mesos"
 }
 
+func MakeItem(e ItemEntity) (ItemModel, error) {
+	return NewItemBuilder().
+		SetId(e.Id).
+		SetCharacterId(e.CharacterId).
+		SetItemId(e.ItemId).
+		SetItemType(e.ItemType).
+		SetQuantity(e.Quantity).
+		SetItemSnapshot(e.ItemSnapshot).
+		Build()
+}
+
+func MakeMeso(e MesoEntity) (MesoModel, error) {
+	return NewMesoBuilder().
+		SetId(e.Id).
+		SetCharacterId(e.CharacterId).
+		SetAmount(e.Amount).
+		Build()
+}
+
 func Migration(db *gorm.DB) error {
 	err := db.AutoMigrate(&ItemEntity{})
 	if err != nil {

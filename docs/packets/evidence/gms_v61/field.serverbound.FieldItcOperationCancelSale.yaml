@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldItcOperationCancelSale
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnCancelSaleItem
+    address: "0x529e54"
+    decompile_sha256: 8814a887f4f6402b61a8a1df3eb6fc4ef41cbd6f510f59e36fdf4eade27af00b

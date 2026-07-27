@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldSetField
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CStage::OnSetField
+    address: "0x6c0c9b"
+    decompile_sha256: 198513d171b6fda9965d60ccc9a6b097f21b26eada7de54814ded56884c2d919
+verifies:
+    - libs/atlas-packet/field/clientbound/set_field_test.go#TestSetFieldByteOutputV72

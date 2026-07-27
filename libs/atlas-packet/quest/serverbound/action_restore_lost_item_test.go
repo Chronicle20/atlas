@@ -4,8 +4,9 @@ import (
 	"encoding/binary"
 	"testing"
 
-	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 func TestActionRestoreLostItemCountArray(t *testing.T) {

@@ -1,0 +1,21 @@
+{
+  "WriterName": "PinUpdate",
+  "IDAName": "CLogin::OnUpdatePinCodeResult",
+  "Address": "0x5b59f8",
+  "Variant": "GMS/v72",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/login/clientbound/pin_update.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

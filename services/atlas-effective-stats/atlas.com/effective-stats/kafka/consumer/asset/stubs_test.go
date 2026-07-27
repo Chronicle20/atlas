@@ -11,12 +11,13 @@ import (
 
 	character2 "atlas-effective-stats/character"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // stubCharacter mirrors the subset of atlas-character REST fields the

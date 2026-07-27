@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/party"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 // packet-audit:fname CWvsContext::OnPartyResult#Left
@@ -25,13 +26,13 @@ func NewLeft(mode byte, partyId uint32, targetId uint32, targetName string, forc
 	return Left{mode: mode, partyId: partyId, targetId: targetId, targetName: targetName, forced: forced, members: members, leaderId: leaderId}
 }
 
-func (m Left) Mode() byte             { return m.mode }
-func (m Left) PartyId() uint32        { return m.partyId }
-func (m Left) TargetId() uint32       { return m.targetId }
-func (m Left) TargetName() string     { return m.targetName }
-func (m Left) Forced() bool           { return m.forced }
+func (m Left) Mode() byte                   { return m.mode }
+func (m Left) PartyId() uint32              { return m.partyId }
+func (m Left) TargetId() uint32             { return m.targetId }
+func (m Left) TargetName() string           { return m.targetName }
+func (m Left) Forced() bool                 { return m.forced }
 func (m Left) Members() []party.PartyMember { return m.members }
-func (m Left) LeaderId() uint32       { return m.leaderId }
+func (m Left) LeaderId() uint32             { return m.leaderId }
 
 func (m Left) Operation() string {
 	return PartyOperationWriter

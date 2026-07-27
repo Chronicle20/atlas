@@ -1,0 +1,8 @@
+packet: login/serverbound/AllCharacterListRequest
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::SendViewAllCharPacket
+    address: "0x502293"
+    decompile_sha256: 6157bf212bba4e72b01d2ba21f407891b09817e4f1bbecf0955c7c0652019bec

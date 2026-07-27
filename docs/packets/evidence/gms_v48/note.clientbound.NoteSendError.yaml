@@ -1,0 +1,10 @@
+packet: note/clientbound/NoteSendError
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMemoResult#SendError
+    address: "0x71d8e2"
+    decompile_sha256: 4cf9883a33885600386a28c289fc55d9f2cef36891ebc5a801a10b289096dc05
+verifies:
+    - libs/atlas-packet/note/clientbound/v48_test.go#TestNoteOperationArmsV48

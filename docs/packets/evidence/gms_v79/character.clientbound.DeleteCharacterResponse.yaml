@@ -1,0 +1,10 @@
+packet: character/clientbound/DeleteCharacterResponse
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnDeleteCharacterResult
+    address: "0x5ce90a"
+    decompile_sha256: b14815490e781b7c7014133fc65c972b8696a638e2618f952042115f019988e3
+verifies:
+  - libs/atlas-packet/character/clientbound/v79_test.go#TestDeleteCharacterResponseByteOutputV79

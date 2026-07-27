@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 type OperationVisit struct {
@@ -19,11 +20,11 @@ type OperationVisit struct {
 }
 
 func (m OperationVisit) SerialNumber() uint32     { return m.serialNumber }
-func (m OperationVisit) ErrorCode() byte           { return m.errorCode }
-func (m OperationVisit) ErrorMessage() string      { return m.errorMessage }
-func (m OperationVisit) Something() bool           { return m.something }
-func (m OperationVisit) Unk1() int16               { return m.unk1 }
-func (m OperationVisit) CashSerialNumber() uint64  { return m.cashSerialNumber }
+func (m OperationVisit) ErrorCode() byte          { return m.errorCode }
+func (m OperationVisit) ErrorMessage() string     { return m.errorMessage }
+func (m OperationVisit) Something() bool          { return m.something }
+func (m OperationVisit) Unk1() int16              { return m.unk1 }
+func (m OperationVisit) CashSerialNumber() uint64 { return m.cashSerialNumber }
 
 func (m OperationVisit) Operation() string { return "OperationVisit" }
 

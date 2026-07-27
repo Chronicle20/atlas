@@ -3,19 +3,22 @@ package rest
 import (
 	"net/http"
 
+	"github.com/google/uuid"
+	"github.com/jtumidanski/api2go/jsonapi"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	"github.com/google/uuid"
-	"github.com/jtumidanski/api2go/jsonapi"
-	"github.com/sirupsen/logrus"
 )
 
-type HandlerDependency = server.HandlerDependency
-type HandlerContext = server.HandlerContext
-type GetHandler = server.GetHandler
-type InputHandler[M any] = server.InputHandler[M]
+type (
+	HandlerDependency   = server.HandlerDependency
+	HandlerContext      = server.HandlerContext
+	GetHandler          = server.GetHandler
+	InputHandler[M any] = server.InputHandler[M]
+)
 
 func ParseInput[M any](d *HandlerDependency, c *HandlerContext, next InputHandler[M]) http.HandlerFunc {
 	return server.ParseInput[M](d, c, next)

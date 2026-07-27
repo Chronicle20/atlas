@@ -9,11 +9,12 @@ import (
 	"sync"
 	"time"
 
+	goredis "github.com/redis/go-redis/v9"
+	"github.com/sirupsen/logrus"
+
 	redislib "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	goredis "github.com/redis/go-redis/v9"
-	"github.com/sirupsen/logrus"
 )
 
 // --- Configuration ---------------------------------------------------------
@@ -155,7 +156,7 @@ func uint32KeyFn(id uint32) string {
 var upstreamFn = upstreamFetch
 
 func upstreamFetch(l logrus.FieldLogger, ctx context.Context, monsterId uint32) (RestModel, error) {
-	return requests.GetRequest[RestModel](getBaseRequest() + fmt.Sprintf(monsterResource, monsterId))(l, ctx)
+	return requests.GetRequest[RestModel](getBaseRequest()+fmt.Sprintf(monsterResource, monsterId))(l, ctx)
 }
 
 // FlushTenant clears both the positive and negative cache namespaces for

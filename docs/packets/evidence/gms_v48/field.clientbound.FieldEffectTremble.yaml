@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldEffectTremble
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_4C7B59
+    address: "0x4c7b59"
+    decompile_sha256: 160a5a4b3348afb7954c93170069c3edc26b18d994f779887eed316673e24e08
+verifies:
+    - libs/atlas-packet/field/clientbound/effect_test.go#TestFieldEffectByteOutputV48

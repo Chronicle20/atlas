@@ -8,3 +8,5 @@ require (
 )
 
 replace github.com/Chronicle20/atlas/libs/atlas-constants => ../atlas-constants
+
+replace github.com/Chronicle20/atlas/libs/atlas-routine => ../atlas-routine

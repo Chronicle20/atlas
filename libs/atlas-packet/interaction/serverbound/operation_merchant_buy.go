@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // packet-audit:fname CPersonalShopDlg::BuyItem#Merchant
@@ -16,9 +18,9 @@ type OperationMerchantBuy struct {
 	itemCRC  uint32
 }
 
-func (m OperationMerchantBuy) Index() byte       { return m.index }
-func (m OperationMerchantBuy) Quantity() uint16   { return m.quantity }
-func (m OperationMerchantBuy) ItemCRC() uint32    { return m.itemCRC }
+func (m OperationMerchantBuy) Index() byte      { return m.index }
+func (m OperationMerchantBuy) Quantity() uint16 { return m.quantity }
+func (m OperationMerchantBuy) ItemCRC() uint32  { return m.itemCRC }
 
 func (m OperationMerchantBuy) Operation() string { return "OperationMerchantBuy" }
 
@@ -26,20 +28,26 @@ func (m OperationMerchantBuy) String() string {
 	return fmt.Sprintf("index [%d] quantity [%d] itemCRC [%d]", m.index, m.quantity, m.itemCRC)
 }
 
-func (m OperationMerchantBuy) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m OperationMerchantBuy) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
+	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.index)
 		w.WriteShort(m.quantity)
-		w.WriteInt(m.itemCRC)
+		if tradeCrcPresent(t) {
+			w.WriteInt(m.itemCRC)
+		}
 		return w.Bytes()
 	}
 }
 
-func (m *OperationMerchantBuy) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *OperationMerchantBuy) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.index = r.ReadByte()
 		m.quantity = r.ReadUint16()
-		m.itemCRC = r.ReadUint32()
+		if tradeCrcPresent(t) {
+			m.itemCRC = r.ReadUint32()
+		}
 	}
 }

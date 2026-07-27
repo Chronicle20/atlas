@@ -3,18 +3,25 @@ package character
 import (
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
-	EnvCommandTopic          = "COMMAND_TOPIC_CHARACTER_BUFF"
-	CommandTypeApply         = "APPLY"
-	CommandTypeCancel        = "CANCEL"
-	CommandTypeCancelAll     = "CANCEL_ALL"
-	CommandTypeCancelByTypes = "CANCEL_BY_TYPES"
+	EnvCommandTopic            = "COMMAND_TOPIC_CHARACTER_BUFF"
+	CommandTypeApply           = "APPLY"
+	CommandTypeCancel          = "CANCEL"
+	CommandTypeCancelAll       = "CANCEL_ALL"
+	CommandTypeCancelByTypes   = "CANCEL_BY_TYPES"
+	CommandTypeUpdateStatValue = "UPDATE_STAT_VALUE"
+
+	// Operations for UPDATE_STAT_VALUE. INCREMENT adds Amount clamped to Cap;
+	// SET replaces the stat amount outright (finisher consume = SET 1).
+	StatOperationIncrement = "INCREMENT"
+	StatOperationSet       = "SET"
 )
 
 type Command[E any] struct {
@@ -50,17 +57,28 @@ type CancelCommandBody struct {
 	SourceId int32 `json:"sourceId"`
 }
 
-type CancelAllCommandBody struct {
-}
+type CancelAllCommandBody struct{}
 
 type CancelByTypesCommandBody struct {
 	Types []string `json:"types"`
+}
+
+// UpdateStatValueCommandBody changes the amount of one stat on a character's
+// existing buff (identified by SourceId). The body is stat-generic; task-142
+// uses it for COMBO orb bookkeeping. Cap applies to INCREMENT only.
+type UpdateStatValueCommandBody struct {
+	SourceId  int32  `json:"sourceId"`
+	StatType  string `json:"statType"`
+	Operation string `json:"operation"`
+	Amount    int32  `json:"amount"`
+	Cap       int32  `json:"cap"`
 }
 
 const (
 	EnvEventStatusTopic        = "EVENT_TOPIC_CHARACTER_BUFF_STATUS"
 	EventStatusTypeBuffApplied = "APPLIED"
 	EventStatusTypeBuffExpired = "EXPIRED"
+	EventStatusTypeStatUpdated = "STAT_UPDATED"
 )
 
 type StatusEvent[E any] struct {
@@ -87,6 +105,38 @@ type ExpiredStatusEventBody struct {
 	Changes   []StatChange `json:"changes"`
 	CreatedAt time.Time    `json:"createdAt"`
 	ExpiresAt time.Time    `json:"expiresAt"`
+}
+
+// StatUpdatedStatusEventBody is emitted when a stat value on an existing buff
+// changed (not a new buff — consumers that react to APPLIED as "a buff came
+// into existence" must ignore this type). CreatedAt/ExpiresAt are the buff's
+// ORIGINAL timestamps so re-broadcast carries the remaining duration.
+type StatUpdatedStatusEventBody struct {
+	SourceId  int32        `json:"sourceId"`
+	Level     byte         `json:"level"`
+	Duration  int32        `json:"duration"`
+	Changes   []StatChange `json:"changes"`
+	CreatedAt time.Time    `json:"createdAt"`
+	ExpiresAt time.Time    `json:"expiresAt"`
+}
+
+const (
+	EventStatusTypeBerserk = "BERSERK"
+)
+
+// BerserkStatusEventBody is one broadcast tick of Dark Knight Berserk aura
+// state (task-154). Emitted every BroadcastPeriod per tracked Dark Knight
+// with the state captured at the last re-evaluation; Active=false ticks are
+// intentional — they clear the aura and keep late-joining observers
+// consistent. ChannelId rides in the body because this topic's envelope has
+// no channel; it lets atlas-channel guard with sc.Is(tenant, world, channel).
+type BerserkStatusEventBody struct {
+	TransactionId  uuid.UUID  `json:"transactionId"`
+	ChannelId      channel.Id `json:"channelId"`
+	SkillId        uint32     `json:"skillId"`
+	CharacterLevel byte       `json:"characterLevel"`
+	SkillLevel     byte       `json:"skillLevel"`
+	Active         bool       `json:"active"`
 }
 
 const (

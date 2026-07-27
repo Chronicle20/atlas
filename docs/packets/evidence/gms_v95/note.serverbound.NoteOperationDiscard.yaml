@@ -6,3 +6,5 @@ ida:
     function: CMemoListDlg::SetRet
     address: "0x624280"
     decompile_sha256: ebc1bd296b7631a8c02b405f02f670311a8107ee9d8cdaf5d73f53807b89b5b5
+verifies:
+    - libs/atlas-packet/note/serverbound/operation_discard_test.go#TestOperationDiscardPlainByteOutput

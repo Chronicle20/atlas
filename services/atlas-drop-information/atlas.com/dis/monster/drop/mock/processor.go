@@ -9,7 +9,7 @@ import (
 // ProcessorMock is a mock implementation of the drop.Processor interface
 type ProcessorMock struct {
 	GetAllFunc        func() model.Provider[[]drop.Model]
-	GetForMonsterFunc func(monsterId uint32) model.Provider[[]drop.Model]
+	GetForMonsterFunc func(monsterId uint32, page model.Page) model.Provider[model.Paged[drop.Model]]
 }
 
 // GetAll is a mock implementation of the drop.Processor.GetAll method
@@ -21,9 +21,9 @@ func (m *ProcessorMock) GetAll() model.Provider[[]drop.Model] {
 }
 
 // GetForMonster is a mock implementation of the drop.Processor.GetForMonster method
-func (m *ProcessorMock) GetForMonster(monsterId uint32) model.Provider[[]drop.Model] {
+func (m *ProcessorMock) GetForMonster(monsterId uint32, page model.Page) model.Provider[model.Paged[drop.Model]] {
 	if m.GetForMonsterFunc != nil {
-		return m.GetForMonsterFunc(monsterId)
+		return m.GetForMonsterFunc(monsterId, page)
 	}
-	return model.FixedProvider[[]drop.Model](nil)
+	return model.FixedProvider[model.Paged[drop.Model]](model.Paged[drop.Model]{Page: page})
 }

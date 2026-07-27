@@ -1,24 +1,27 @@
 package monsterbook
 
 import (
-	"context"
-
 	"atlas-monster-book/card"
 	"atlas-monster-book/collection"
-	consumer2 "atlas-monster-book/kafka/consumer"
 	"atlas-monster-book/kafka/message"
+	"context"
+
+	consumer2 "atlas-monster-book/kafka/consumer"
+
 	mbmsg "atlas-monster-book/kafka/message/monsterbook"
-	"atlas-monster-book/kafka/producer"
+
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	kmessage "github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -53,8 +56,8 @@ func handleCardPickedUp(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Cont
 		}
 		characterId := character.Id(cmd.CharacterId)
 		cardId := item.Id(cmd.Body.CardId)
-		err := db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-			return message.Emit(producer.ProviderImpl(l)(ctx))(func(mb *message.Buffer) error {
+		err := database.ExecuteTransaction(db.WithContext(ctx), func(tx *gorm.DB) error {
+			return message.Emit(outbox.EmitProvider(l, ctx, tx))(func(mb *message.Buffer) error {
 				cp := card.NewProcessor(l, ctx, tx)
 				colp := collection.NewProcessor(l, ctx, tx)
 				res, err := cp.Add(mb)(cmd.EventId, characterId, cardId)

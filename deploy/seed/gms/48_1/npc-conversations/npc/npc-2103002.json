@@ -1,0 +1,123 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2103002,
+      "startState": "checkQuestAndItem",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "3923",
+                    "type": "questStatus",
+                    "value": "2"
+                  },
+                  {
+                    "operator": "<",
+                    "referenceId": "4031578",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "checkInventorySpace"
+              },
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "checkQuestAndItem",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "4031578",
+                    "type": "inventorySpace",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "giveRing"
+              },
+              {
+                "conditions": [],
+                "nextState": "noSpace"
+              }
+            ]
+          },
+          "id": "checkInventorySpace",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "4031578",
+                  "quantity": "1"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "successMessage"
+              }
+            ]
+          },
+          "id": "giveRing",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "You have just swiped the ring. Clear the area asap!"
+          },
+          "id": "successMessage",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "You don't have a ETC slot available."
+          },
+          "id": "noSpace",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "2103002",
+    "type": "npc-conversation"
+  }
+}

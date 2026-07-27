@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcAskMemberShopAvatarConversationDetail
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_5B1494
+    address: "0x5b1494"
+    decompile_sha256: 2f92f681ba914c0f3af9ea534d295874f8b2bb37e0b167f2f617702cfb261479
+verifies:
+  - libs/atlas-packet/npc/clientbound/conversation_v48_details_test.go#TestNpcConversationAskMemberShopAvatarV48

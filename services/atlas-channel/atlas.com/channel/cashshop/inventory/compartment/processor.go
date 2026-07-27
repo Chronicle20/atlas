@@ -3,9 +3,10 @@ package compartment
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {
@@ -27,6 +28,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 	return p
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // ByAccountIdProvider returns a provider function that fetches all compartments for an account
 func (p *ProcessorImpl) ByAccountIdProvider(accountId uint32) model.Provider[[]Model] {

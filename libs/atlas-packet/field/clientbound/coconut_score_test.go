@@ -7,6 +7,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=field/clientbound/FieldCoconutScore version=gms_v79 ida=0x5332c8
 // packet-audit:verify packet=field/clientbound/FieldCoconutScore version=gms_v83 ida=0x549802
 // packet-audit:verify packet=field/clientbound/FieldCoconutScore version=gms_v84 ida=0x555f75
 // packet-audit:verify packet=field/clientbound/FieldCoconutScore version=gms_v87 ida=0x5734b7
@@ -19,6 +20,19 @@ func TestCoconutScoreGolden(t *testing.T) {
 	actual := test.Encode(t, ctx, input.Encode, nil)
 	if !bytes.Equal(actual, expected) {
 		t.Errorf("golden mismatch: got %v want %v", actual, expected)
+	}
+}
+
+// TestCoconutScoreByteOutputV79 pins the gms_v79 FIELD_COCONUT_SCORE
+// clientbound read. IDA: CField_Coconut::OnScore @0x5332c8
+// (GMS_v79_1_DEVM.exe). Body is byte-identical to the v83 golden.
+func TestCoconutScoreByteOutputV79(t *testing.T) {
+	input := NewCoconutScore(0x000A, 0x0014)
+	ctx := test.CreateContext("GMS", 79, 1)
+	expected := []byte{0x0A, 0x00, 0x14, 0x00}
+	actual := test.Encode(t, ctx, input.Encode, nil)
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("v79 golden mismatch: got %v want %v", actual, expected)
 	}
 }
 

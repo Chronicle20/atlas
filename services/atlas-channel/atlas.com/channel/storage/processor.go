@@ -3,12 +3,14 @@ package storage
 import (
 	"atlas-channel/asset"
 	"atlas-channel/kafka/message/storage"
-	"atlas-channel/kafka/producer"
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 // DefaultStorageCapacity is the default number of slots for new storage
@@ -42,6 +44,8 @@ type ProcessorImpl struct {
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{l: l, ctx: ctx}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // StorageData holds all the data needed to display storage UI
 type StorageData struct {

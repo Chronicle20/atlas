@@ -1,4 +1,3 @@
-
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { usePortalScript } from "@/lib/hooks/api/usePortalScripts";
@@ -16,8 +15,13 @@ export function PortalDetailPage() {
   const portalId = params.portalId as string;
   const { activeTenant } = useTenant();
 
-  const { data: portal, isLoading, error, refetch } = useQuery({
-    queryKey: ['maps', mapId, 'portals', portalId],
+  const {
+    data: portal,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ["maps", mapId, "portals", portalId],
     queryFn: () => mapEntitiesService.getPortal(mapId, portalId),
     enabled: !!mapId && !!portalId && !!activeTenant,
     staleTime: 5 * 60 * 1000,
@@ -32,7 +36,10 @@ export function PortalDetailPage() {
   if (error || !portal) {
     return (
       <div className="p-10">
-        <ErrorDisplay error={error ?? "Portal not found"} retry={() => refetch()} />
+        <ErrorDisplay
+          error={error ?? "Portal not found"}
+          retry={() => refetch()}
+        />
       </div>
     );
   }
@@ -43,12 +50,16 @@ export function PortalDetailPage() {
     <div className="flex flex-col flex-1 space-y-6 p-10 pb-16">
       <div className="flex items-center gap-3">
         <h2 className="text-2xl font-bold tracking-tight">{attrs.name}</h2>
-        <span className="text-muted-foreground font-mono">Portal #{portal.id}</span>
+        <span className="text-muted-foreground font-mono">
+          Portal #{portal.id}
+        </span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
-          <CardHeader><CardTitle className="text-sm font-medium">Portal Info</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">Portal Info</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Type</span>
@@ -56,11 +67,16 @@ export function PortalDetailPage() {
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Position</span>
-              <span className="font-mono">({attrs.x}, {attrs.y})</span>
+              <span className="font-mono">
+                ({attrs.x}, {attrs.y})
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Source Map</span>
-              <Link to={`/maps/${mapId}`} className="font-mono text-primary hover:underline">
+              <Link
+                to={`/maps/${mapId}`}
+                className="font-mono text-primary hover:underline"
+              >
                 {mapId}
               </Link>
             </div>
@@ -71,7 +87,10 @@ export function PortalDetailPage() {
             <div className="flex justify-between">
               <span className="text-muted-foreground">Target Map</span>
               {attrs.targetMapId ? (
-                <Link to={`/maps/${attrs.targetMapId}`} className="font-mono text-primary hover:underline">
+                <Link
+                  to={`/maps/${attrs.targetMapId}`}
+                  className="font-mono text-primary hover:underline"
+                >
                   {attrs.targetMapId}
                 </Link>
               ) : (
@@ -82,7 +101,9 @@ export function PortalDetailPage() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="text-sm font-medium">Script Status</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">Script Status</CardTitle>
+          </CardHeader>
           <CardContent>
             {scriptLoading ? (
               <p className="text-sm text-muted-foreground">Loading...</p>
@@ -90,16 +111,22 @@ export function PortalDetailPage() {
               <div className="space-y-2 text-sm">
                 <Badge variant="default">Script Available</Badge>
                 {attrs.scriptName && (
-                  <p className="text-muted-foreground font-mono">{attrs.scriptName}</p>
+                  <p className="text-muted-foreground font-mono">
+                    {attrs.scriptName}
+                  </p>
                 )}
                 {script.attributes.description && (
-                  <p className="text-muted-foreground">{script.attributes.description}</p>
+                  <p className="text-muted-foreground">
+                    {script.attributes.description}
+                  </p>
                 )}
               </div>
             ) : attrs.scriptName ? (
               <div className="space-y-2 text-sm">
                 <Badge variant="destructive">Missing Script</Badge>
-                <p className="text-muted-foreground font-mono">{attrs.scriptName}</p>
+                <p className="text-muted-foreground font-mono">
+                  {attrs.scriptName}
+                </p>
                 <p className="text-xs text-muted-foreground">
                   This portal references a script that has not been seeded.
                 </p>

@@ -1,0 +1,85 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "completeQuest",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "completeQuest",
+            "type": "genericAction"
+          }
+        ]
+      },
+      "questId": 2568,
+      "questName": "Quest 2568",
+      "startStateMachine": {
+        "startState": "askAccept",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "startQuest",
+                  "text": "Accept"
+                },
+                {
+                  "nextState": null,
+                  "text": "Decline"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendAcceptDecline",
+              "text": "You're back! Great. I got the Ignition Device all hooked up, so we can get back to civilization. Nothing left to do here, right? Let's roll!"
+            },
+            "id": "askAccept",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                },
+                {
+                  "params": {
+                    "mapId": "912060200",
+                    "portalId": "0"
+                  },
+                  "type": "warp_to_map"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "startQuest",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "2568",
+    "type": "quest-conversation"
+  }
+}

@@ -1,0 +1,237 @@
+{
+  "data": {
+    "attributes": {
+      "bonus": {
+        "duration": 60,
+        "entry": "auto",
+        "mapId": 926010010,
+        "properties": {
+          "bonusMonsters": {
+            "easy": {
+              "count": 30,
+              "monsterId": 9700019
+            },
+            "hard": {
+              "count": 50,
+              "monsterId": 9700019
+            },
+            "hell": {
+              "count": 50,
+              "monsterId": 9700029
+            },
+            "medium": {
+              "count": 40,
+              "monsterId": 9700019
+            }
+          }
+        }
+      },
+      "duration": 0,
+      "exit": 926010000,
+      "failRequirements": [],
+      "fieldLock": "channel",
+      "name": "Nett's Pyramid Party Quest",
+      "questId": "netts_pyramid_pq",
+      "registration": {
+        "duration": 0,
+        "mapId": 926010000,
+        "mode": "instant",
+        "type": "party"
+      },
+      "rewards": [],
+      "stages": [
+        {
+          "clearConditions": [],
+          "duration": 120,
+          "index": 0,
+          "mapIds": [
+            926010100,
+            926011100,
+            926012100,
+            926013100
+          ],
+          "name": "Monster Killing 1",
+          "properties": {
+            "actBarMechanic": true,
+            "difficultyMaps": {
+              "easy": 926010100,
+              "hard": 926012100,
+              "hell": 926013100,
+              "medium": 926011100
+            },
+            "npcId": 2103013
+          },
+          "rewards": [],
+          "type": "monster_killing",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [],
+          "duration": 180,
+          "index": 1,
+          "mapIds": [
+            926010200,
+            926011200,
+            926012200,
+            926013200
+          ],
+          "name": "Monster Killing 2",
+          "properties": {
+            "actBarMechanic": true,
+            "difficultyMaps": {
+              "easy": 926010200,
+              "hard": 926012200,
+              "hell": 926013200,
+              "medium": 926011200
+            },
+            "npcId": 2103013
+          },
+          "rewards": [],
+          "type": "monster_killing",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [],
+          "duration": 180,
+          "index": 2,
+          "mapIds": [
+            926010300,
+            926011300,
+            926012300,
+            926013300
+          ],
+          "name": "Monster Killing 3",
+          "properties": {
+            "actBarMechanic": true,
+            "difficultyMaps": {
+              "easy": 926010300,
+              "hard": 926012300,
+              "hell": 926013300,
+              "medium": 926011300
+            },
+            "npcId": 2103013
+          },
+          "rewards": [],
+          "type": "monster_killing",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [],
+          "duration": 180,
+          "index": 3,
+          "mapIds": [
+            926010400,
+            926011400,
+            926012400,
+            926013400
+          ],
+          "name": "Monster Killing 4",
+          "properties": {
+            "actBarMechanic": true,
+            "difficultyMaps": {
+              "easy": 926010400,
+              "hard": 926012400,
+              "hell": 926013400,
+              "medium": 926011400
+            },
+            "npcId": 2103013
+          },
+          "rewards": [],
+          "type": "monster_killing",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [],
+          "duration": 180,
+          "index": 4,
+          "mapIds": [
+            926010500,
+            926011500,
+            926012500,
+            926013500
+          ],
+          "name": "Monster Killing 5",
+          "properties": {
+            "actBarMechanic": true,
+            "difficultyMaps": {
+              "easy": 926010500,
+              "hard": 926012500,
+              "hell": 926013500,
+              "medium": 926011500
+            },
+            "npcId": 2103013
+          },
+          "rewards": [],
+          "type": "monster_killing",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [],
+          "duration": 0,
+          "index": 5,
+          "mapIds": [
+            926020001
+          ],
+          "name": "Rewards",
+          "properties": {
+            "gradeBased": true,
+            "npcId": 2103013
+          },
+          "rewards": [
+            {
+              "amount": 1,
+              "items": [
+                {
+                  "quantity": 1,
+                  "templateId": 4001322,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 4001323,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 4001324,
+                  "weight": 1
+                },
+                {
+                  "quantity": 1,
+                  "templateId": 4001325,
+                  "weight": 1
+                }
+              ],
+              "type": "random_item"
+            }
+          ],
+          "type": "item_collection",
+          "warpType": "none"
+        }
+      ],
+      "startEvents": [
+        {
+          "target": "party",
+          "type": "warp",
+          "value": "926010100"
+        }
+      ],
+      "startRequirements": [
+        {
+          "operator": "gte",
+          "referenceId": 0,
+          "type": "party_size",
+          "value": 1
+        },
+        {
+          "operator": "gte",
+          "referenceId": 0,
+          "type": "level_min",
+          "value": 40
+        }
+      ]
+    },
+    "id": "netts_pyramid_pq",
+    "type": "party-quest-definition"
+  }
+}

@@ -3,11 +3,13 @@ package buff
 import (
 	"atlas-messages/data/skill"
 	"atlas-messages/kafka/message/buff"
-	"atlas-messages/kafka/producer"
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
 type Processor interface {
@@ -25,6 +27,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		ctx: ctx,
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) Apply(f field.Model, characterId uint32, fromId uint32, skillId uint32, level byte, durationOverride int32) error {
 	sdp := skill.NewProcessor(p.l, p.ctx)

@@ -23,7 +23,6 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 		SetSkillId2(skill.Id(1001002)).
 		SetSkillId3(skill.Id(1001003)).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -52,7 +51,6 @@ func TestBuild_EmptyNameAllowed(t *testing.T) {
 		SetId(1).
 		SetSkillId1(skill.Id(2301004)).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -69,7 +67,6 @@ func TestBuild_Success(t *testing.T) {
 		SetId(0).
 		SetName("Test Macro").
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -131,7 +128,6 @@ func TestBuilderFluentChaining(t *testing.T) {
 		SetSkillId2(skill.Id(2001002)).
 		SetSkillId3(skill.Id(2001003)).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -152,7 +148,6 @@ func TestSetSkillIds(t *testing.T) {
 		SetSkillId2(skill.Id(200)).
 		SetSkillId3(skill.Id(300)).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}

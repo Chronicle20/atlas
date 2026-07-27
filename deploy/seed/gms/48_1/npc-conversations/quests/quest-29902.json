@@ -1,0 +1,129 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "congratulations",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "checkInventory",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Congratulations on earning your honorable #b<Veteran Adventurer>#k title. I wish you the best of luck in your future endeavors! Keep up the good work.\r\n\r\n#fUI/UIWindow.img/QuestIcon/4/0#\r\n #v1142109:# #t1142109# 1"
+            },
+            "id": "congratulations",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "1142109",
+                      "type": "inventorySpace",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "awardMedal"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "noSpace"
+                }
+              ]
+            },
+            "id": "checkInventory",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "1142109",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "awardMedal",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Please make room in your inventory"
+            },
+            "id": "noSpace",
+            "type": "dialogue"
+          }
+        ]
+      },
+      "questId": 29902,
+      "questName": "Veteran Adventurer",
+      "startStateMachine": {
+        "startState": "startQuest",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                },
+                {
+                  "params": {
+                    "text": "You have earned the <Veteran Adventurer> title. You can receive a Medal from NPC Dalair."
+                  },
+                  "type": "show_info_text"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "startQuest",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "29902",
+    "type": "quest-conversation"
+  }
+}

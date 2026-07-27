@@ -73,13 +73,17 @@ func TestCharacterStatisticsRoundTrip(t *testing.T) {
 			if output.PetIds()[0] != input.PetIds()[0] {
 				t.Errorf("petIds[0]: got %v, want %v", output.PetIds()[0], input.PetIds()[0])
 			}
-			if v.MajorVersion > 28 || v.Region == "JMS" {
+			if v.MajorVersion >= 61 || v.Region == "JMS" {
 				if output.PetIds()[1] != input.PetIds()[1] {
 					t.Errorf("petIds[1]: got %v, want %v", output.PetIds()[1], input.PetIds()[1])
 				}
 				if output.PetIds()[2] != input.PetIds()[2] {
 					t.Errorf("petIds[2]: got %v, want %v", output.PetIds()[2], input.PetIds()[2])
 				}
+			}
+			// gachaponExperience: absent at GMS v61 (codec: character_statistics.go:144,
+			// "absent at GMS v61 ... present by GMS v72"), present GMS >61 and JMS.
+			if v.MajorVersion > 61 || v.Region == "JMS" {
 				if output.GachaponExperience() != input.GachaponExperience() {
 					t.Errorf("gachaponExperience: got %v, want %v", output.GachaponExperience(), input.GachaponExperience())
 				}

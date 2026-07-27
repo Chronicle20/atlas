@@ -1,10 +1,9 @@
 package tenantpurge
 
 import (
+	"atlas-data/canonical"
 	"context"
 	"testing"
-
-	"atlas-data/canonical"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"

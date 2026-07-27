@@ -19,8 +19,7 @@ type SpawnCommandBody struct {
 	Lead bool `json:"lead"`
 }
 
-type DespawnCommandBody struct {
-}
+type DespawnCommandBody struct{}
 
 type AttemptCommandCommandBody struct {
 	CommandId byte `json:"commandId"`
@@ -52,11 +51,9 @@ type StatusEvent[E any] struct {
 	Body    E      `json:"body"`
 }
 
-type CreatedStatusEventBody struct {
-}
+type CreatedStatusEventBody struct{}
 
-type DeletedStatusEventBody struct {
-}
+type DeletedStatusEventBody struct{}
 
 type SpawnedStatusEventBody struct {
 	TemplateId uint32 `json:"templateId"`

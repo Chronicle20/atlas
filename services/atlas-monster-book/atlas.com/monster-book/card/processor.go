@@ -1,25 +1,28 @@
 package card
 
 import (
+	"atlas-monster-book/kafka/message"
+	"atlas-monster-book/kafka/message/monsterbook"
 	"context"
 	"errors"
 
-	"atlas-monster-book/kafka/message"
-	"atlas-monster-book/kafka/message/monsterbook"
-	"atlas-monster-book/kafka/producer"
-
-	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
-	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
-var entityModelMapper = model.Map(Make)
-var entitySliceMapper = model.SliceMap(Make)
+var (
+	entityModelMapper = model.Map(Make)
+	entitySliceMapper = model.SliceMap(Make)
+)
 
 type Processor interface {
 	GetByCharacterId(characterId character.Id) ([]Model, error)
@@ -41,6 +44,8 @@ type ProcessorImpl struct {
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
 	return &ProcessorImpl{l: l, ctx: ctx, db: db, t: tenant.MustFromContext(ctx)}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 	return &ProcessorImpl{l: p.l, ctx: p.ctx, db: tx, t: p.t}
@@ -97,10 +102,12 @@ func (p *ProcessorImpl) Add(mb *message.Buffer) func(eventId uuid.UUID, characte
 
 func (p *ProcessorImpl) AddAndEmit(eventId uuid.UUID, characterId character.Id, cardId item.Id) (UpsertResult, error) {
 	var out UpsertResult
-	err := message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		var err error
-		out, err = p.Add(buf)(eventId, characterId, cardId)
-		return err
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			var err error
+			out, err = p.WithTransaction(tx).Add(buf)(eventId, characterId, cardId)
+			return err
+		})
 	})
-	return out, err
+	return out, txErr
 }

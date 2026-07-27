@@ -1,10 +1,11 @@
 package drop
 
 import (
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
@@ -14,7 +15,7 @@ const (
 
 const (
 	EnvCommandTopicDrop = "COMMAND_TOPIC_DROP"
-	CommandTypeConsume   = "CONSUME"
+	CommandTypeConsume  = "CONSUME"
 )
 
 type StatusEvent[E any] struct {
@@ -29,12 +30,12 @@ type StatusEvent[E any] struct {
 }
 
 type StatusEventCreatedBody struct {
-	ItemId          uint32 `json:"itemId"`
-	Quantity        uint32 `json:"quantity"`
-	X               int16  `json:"x"`
-	Y               int16  `json:"y"`
-	OwnerId         uint32 `json:"ownerId"`
-	PlayerDrop      bool   `json:"playerDrop"`
+	ItemId     uint32 `json:"itemId"`
+	Quantity   uint32 `json:"quantity"`
+	X          int16  `json:"x"`
+	Y          int16  `json:"y"`
+	OwnerId    uint32 `json:"ownerId"`
+	PlayerDrop bool   `json:"playerDrop"`
 }
 
 type Command[E any] struct {

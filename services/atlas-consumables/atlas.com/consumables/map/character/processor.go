@@ -4,19 +4,28 @@ import (
 	"context"
 	"errors"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
-type Processor struct {
+type Processor interface {
+	GetMap(characterId uint32) (field.Model, error)
+	Enter(f field.Model, characterId uint32)
+	Exit(_ field.Model, characterId uint32)
+	TransitionMap(f field.Model, characterId uint32)
+	TransitionChannel(f field.Model, characterId uint32)
+}
+
+type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 	t   tenant.Model
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
-	p := &Processor{
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 		t:   tenant.MustFromContext(ctx),
@@ -24,7 +33,9 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 	return p
 }
 
-func (p *Processor) GetMap(characterId uint32) (field.Model, error) {
+var _ Processor = (*ProcessorImpl)(nil)
+
+func (p *ProcessorImpl) GetMap(characterId uint32) (field.Model, error) {
 	f, ok := GetRegistry().GetMap(p.ctx, characterId)
 	if !ok {
 		return field.Model{}, errors.New("not found")
@@ -32,18 +43,18 @@ func (p *Processor) GetMap(characterId uint32) (field.Model, error) {
 	return f, nil
 }
 
-func (p *Processor) Enter(f field.Model, characterId uint32) {
+func (p *ProcessorImpl) Enter(f field.Model, characterId uint32) {
 	GetRegistry().AddCharacter(p.ctx, characterId, f)
 }
 
-func (p *Processor) Exit(_ field.Model, characterId uint32) {
+func (p *ProcessorImpl) Exit(_ field.Model, characterId uint32) {
 	GetRegistry().RemoveCharacter(p.ctx, characterId)
 }
 
-func (p *Processor) TransitionMap(f field.Model, characterId uint32) {
+func (p *ProcessorImpl) TransitionMap(f field.Model, characterId uint32) {
 	p.Enter(f, characterId)
 }
 
-func (p *Processor) TransitionChannel(f field.Model, characterId uint32) {
+func (p *ProcessorImpl) TransitionChannel(f field.Model, characterId uint32) {
 	p.Enter(f, characterId)
 }

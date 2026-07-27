@@ -4,9 +4,12 @@ import (
 	"atlas-asset-expiration/character"
 	consumer2 "atlas-asset-expiration/kafka/consumer"
 	message "atlas-asset-expiration/kafka/message/session"
-	"atlas-asset-expiration/kafka/producer"
 	"atlas-asset-expiration/session"
 	"context"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -14,8 +17,7 @@ import (
 	kafkaMessage "github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -74,7 +76,7 @@ func handleSessionCreated(l logrus.FieldLogger, ctx context.Context, e message.S
 
 	// Immediate expiration check on login
 	pp := producer.ProviderImpl(l)(ctx)
-	character.CheckAndExpire(l)(pp)(ctx)(e.CharacterId, e.AccountId, e.WorldId)
+	character.NewProcessor(l, ctx).CheckAndExpire(pp)(e.CharacterId, e.AccountId, e.WorldId)
 }
 
 func handleSessionDestroyed(l logrus.FieldLogger, _ context.Context, e message.StatusEvent) {

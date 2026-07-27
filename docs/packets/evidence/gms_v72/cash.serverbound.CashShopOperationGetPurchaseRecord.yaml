@@ -1,0 +1,10 @@
+packet: cash/serverbound/CashShopOperationGetPurchaseRecord
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::RequestCashPurchaseRecord
+    address: "0x4659b4"
+    decompile_sha256: da1412eaca7697ac55ef17e343963284de572fd0fe4fb62d19529f33abac8671
+verifies:
+  - libs/atlas-packet/cash/serverbound/shop_operation_get_purchase_record_test.go#TestShopOperationGetPurchaseRecordV72Bytes

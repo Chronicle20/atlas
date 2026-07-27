@@ -14,7 +14,12 @@ interface MapHeaderProps {
   spawnCount: number | undefined;
 }
 
-export function MapHeader({ mapId, name, streetName, spawnCount }: MapHeaderProps) {
+export function MapHeader({
+  mapId,
+  name,
+  streetName,
+  spawnCount,
+}: MapHeaderProps) {
   return (
     <div className="flex flex-col gap-2">
       <TooltipProvider>

@@ -1,6 +1,12 @@
-import { useRef, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { useRef, useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -8,7 +14,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,11 +24,22 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Copy, FileArchive, FileText, Loader2, Send, Upload } from 'lucide-react';
-import { Toaster, toast } from 'sonner';
-import { SetupRow, formatCount, pluralize } from '@/components/features/setup/SetupRow';
-import { BaselineTargetPicker } from '@/components/features/baselines/BaselineTargetPicker';
+} from "@/components/ui/alert-dialog";
+import {
+  Copy,
+  FileArchive,
+  FileText,
+  Loader2,
+  Send,
+  Upload,
+} from "lucide-react";
+import { Toaster, toast } from "sonner";
+import { SetupRow } from "@/components/features/setup/SetupRow";
+import {
+  formatCount,
+  pluralize,
+} from "@/components/features/setup/setup-format";
+import { BaselineTargetPicker } from "@/components/features/baselines/BaselineTargetPicker";
 import {
   useBaselines,
   useCanonicalDataStatus,
@@ -30,9 +47,9 @@ import {
   usePublishCanonicalBaseline,
   useRunCanonicalProcessing,
   useUploadCanonicalWz,
-} from '@/lib/hooks/api/useCanonicalData';
-import { formatBytes } from '@/lib/format';
-import type { CanonicalSelection } from '@/lib/headers';
+} from "@/lib/hooks/api/useCanonicalData";
+import { formatBytes } from "@/lib/format";
+import type { CanonicalSelection } from "@/lib/headers";
 
 export function BaselinesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -62,8 +79,8 @@ export function BaselinesPage() {
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    if (!file.name.toLowerCase().endsWith('.zip')) {
-      toast.error('Please select a .zip file');
+    if (!file.name.toLowerCase().endsWith(".zip")) {
+      toast.error("Please select a .zip file");
       return;
     }
     const size = file.size;
@@ -73,14 +90,14 @@ export function BaselinesPage() {
       },
     });
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
   const handleRunProcessing = () => {
     runProcessing.mutate(undefined, {
       onSuccess: () => {
-        toast.success('Data processing started');
+        toast.success("Data processing started");
       },
       onError: (error) => {
         toast.error(`Data processing failed: ${error.message}`);
@@ -91,7 +108,7 @@ export function BaselinesPage() {
   const doPublish = () => {
     publish.mutate(undefined, {
       onSuccess: () => {
-        toast.success('Canonical baseline published');
+        toast.success("Canonical baseline published");
       },
       onError: (error) => {
         toast.error(`Baseline publish failed: ${error.message}`);
@@ -108,32 +125,41 @@ export function BaselinesPage() {
   };
 
   const handleCopySha = (sha: string) => {
-    void navigator.clipboard.writeText(sha).then(() => toast.success('SHA-256 copied'));
+    void navigator.clipboard
+      .writeText(sha)
+      .then(() => toast.success("SHA-256 copied"));
   };
 
   const wzBadge = !sel
-    ? '—'
+    ? "—"
     : !wzData
-      ? '—'
+      ? "—"
       : wzData.fileCount === 0
-        ? '0 .wz files'
-        : `${formatCount(wzData.fileCount)} ${pluralize(wzData.fileCount, '.wz file', '.wz files')}, ${formatBytes(wzData.totalBytes)}`;
+        ? "0 .wz files"
+        : `${formatCount(wzData.fileCount)} ${pluralize(wzData.fileCount, ".wz file", ".wz files")}, ${formatBytes(wzData.totalBytes)}`;
 
   const docBadge = !sel
-    ? '—'
+    ? "—"
     : !docData
-      ? '—'
-      : `${formatCount(docData.documentCount)} ${pluralize(docData.documentCount, 'document loaded', 'documents loaded')}`;
+      ? "—"
+      : `${formatCount(docData.documentCount)} ${pluralize(docData.documentCount, "document loaded", "documents loaded")}`;
 
-  const processDisabled = !sel || !wzData || wzData.fileCount === 0 || uploadWz.isPending || runProcessing.isPending;
-  const publishDisabled = !sel || !docData || docData.documentCount === 0 || publish.isPending;
+  const processDisabled =
+    !sel ||
+    !wzData ||
+    wzData.fileCount === 0 ||
+    uploadWz.isPending ||
+    runProcessing.isPending;
+  const publishDisabled =
+    !sel || !docData || docData.documentCount === 0 || publish.isPending;
 
   return (
     <div className="flex flex-col space-y-6 p-10 pb-16 overflow-y-auto">
       <div className="items-center justify-between space-y-2">
         <h2 className="text-2xl font-bold tracking-tight">Baselines</h2>
         <p className="text-muted-foreground">
-          Manage canonical game-data baselines shared by all tenants of a region and version.
+          Manage canonical game-data baselines shared by all tenants of a region
+          and version.
         </p>
       </div>
 
@@ -151,9 +177,10 @@ export function BaselinesPage() {
             </p>
           ) : baselines.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No canonical baselines published yet. A baseline is a published snapshot of processed
-              canonical game data for one region/version; publish one from the workflow below and
-              new tenants of that version will restore from it.
+              No canonical baselines published yet. A baseline is a published
+              snapshot of processed canonical game data for one region/version;
+              publish one from the workflow below and new tenants of that
+              version will restore from it.
             </p>
           ) : (
             <Table>
@@ -168,7 +195,9 @@ export function BaselinesPage() {
               </TableHeader>
               <TableBody>
                 {baselines.map((b) => (
-                  <TableRow key={`${b.region}/${b.majorVersion}.${b.minorVersion}`}>
+                  <TableRow
+                    key={`${b.region}/${b.majorVersion}.${b.minorVersion}`}
+                  >
                     <TableCell>{b.region}</TableCell>
                     <TableCell>{`${b.majorVersion}.${b.minorVersion}`}</TableCell>
                     <TableCell>
@@ -186,10 +215,12 @@ export function BaselinesPage() {
                           </Button>
                         </span>
                       ) : (
-                        '—'
+                        "—"
                       )}
                     </TableCell>
-                    <TableCell>{new Date(b.publishedAt).toLocaleString()}</TableCell>
+                    <TableCell>
+                      {new Date(b.publishedAt).toLocaleString()}
+                    </TableCell>
                     <TableCell>{formatBytes(b.sizeBytes)}</TableCell>
                   </TableRow>
                 ))}
@@ -203,8 +234,9 @@ export function BaselinesPage() {
         <CardHeader>
           <CardTitle className="text-lg">Canonical Workflow</CardTitle>
           <CardDescription>
-            Pick a region and version, then upload a WZ zip, process it, and publish the baseline.
-            No tenant is involved — this works before any tenant of the version exists.
+            Pick a region and version, then upload a WZ zip, process it, and
+            publish the baseline. No tenant is involved — this works before any
+            tenant of the version exists.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -256,7 +288,11 @@ export function BaselinesPage() {
                 variant="outline"
                 onClick={handleRunProcessing}
                 disabled={processDisabled}
-                title={sel && wzData && wzData.fileCount === 0 ? 'Upload WZ files first' : undefined}
+                title={
+                  sel && wzData && wzData.fileCount === 0
+                    ? "Upload WZ files first"
+                    : undefined
+                }
               >
                 {runProcessing.isPending ? (
                   <>
@@ -264,7 +300,7 @@ export function BaselinesPage() {
                     Processing…
                   </>
                 ) : (
-                  'Process Data'
+                  "Process Data"
                 )}
               </Button>
             }
@@ -277,18 +313,23 @@ export function BaselinesPage() {
               existingBaseline?.sha256
                 ? `current sha256:${existingBaseline.sha256.slice(0, 12)}…`
                 : existingBaseline
-                  ? 'published (sha unavailable)'
-                  : 'not yet published'
+                  ? "published (sha unavailable)"
+                  : "not yet published"
             }
             action={
-              <Button size="sm" variant="outline" onClick={handlePublish} disabled={publishDisabled}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handlePublish}
+                disabled={publishDisabled}
+              >
                 {publish.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Publishing…
                   </>
                 ) : (
-                  'Publish Baseline'
+                  "Publish Baseline"
                 )}
               </Button>
             }
@@ -301,8 +342,8 @@ export function BaselinesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Replace existing baseline?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will replace the shared canonical baseline for {sel?.region} v
-              {sel?.majorVersion}.{sel?.minorVersion}.
+              This will replace the shared canonical baseline for {sel?.region}{" "}
+              v{sel?.majorVersion}.{sel?.minorVersion}.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

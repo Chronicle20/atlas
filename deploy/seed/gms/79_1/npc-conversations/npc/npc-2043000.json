@@ -1,0 +1,51 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2043000,
+      "startState": "greeting",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "performWarp",
+                "text": "Next"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendNext",
+            "text": "You don't belong to this world... Return now."
+          },
+          "id": "greeting",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "220080000",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "performWarp",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "2043000",
+    "type": "npc-conversation"
+  }
+}

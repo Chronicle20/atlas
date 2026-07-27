@@ -1,0 +1,10 @@
+packet: field/clientbound/MtsChargeParamResult
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnChargeParamResult
+    address: "0x57f3d7"
+    decompile_sha256: f01ec1a11458079014e8d376fdd348ed3b432b6d87308021cf7a2c5a8ba35ad8
+verifies:
+    - libs/atlas-packet/field/clientbound/mts_charge_param_result_test.go#TestMtsChargeParamResultGolden

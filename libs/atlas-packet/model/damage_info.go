@@ -3,18 +3,28 @@ package model
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func NewDamageInfo(hits byte) *DamageInfo {
 	return &DamageInfo{hits: hits}
 }
 
+// NewMesoExplosionDamageInfo constructs a DamageInfo for the meso-explosion
+// attack variant (skill 4211006): the wire entry carries a 1-byte damage-line
+// count in place of the standard 2-byte delay, so hits is unused (task-150
+// design §2.1/§2.2).
+func NewMesoExplosionDamageInfo() *DamageInfo {
+	return &DamageInfo{mesoExplosion: true}
+}
+
 type DamageInfo struct {
 	hits                byte
+	mesoExplosion       bool
 	monsterId           uint32
 	hitAction           byte
 	forceAction         byte
@@ -41,11 +51,26 @@ func (m *DamageInfo) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *r
 		m.hitPositionY = r.ReadUint16()
 		m.previousPositionX = r.ReadUint16()
 		m.previousPositionY = r.ReadUint16()
-		m.delay = r.ReadUint16()
-		for range m.hits {
-			m.damages = append(m.damages, r.ReadUint32())
+		if m.mesoExplosion {
+			count := r.ReadByte()
+			for range count {
+				m.damages = append(m.damages, r.ReadUint32())
+			}
+		} else {
+			m.delay = r.ReadUint16()
+			for range m.hits {
+				m.damages = append(m.damages, r.ReadUint32())
+			}
 		}
-		if t.Region() == "GMS" && t.MajorVersion() >= 83 {
+		// Per-mob anti-hack CRC. Present on the GMS legacy pre-83 client too:
+		// v79 IDA-verified — TryDoingMeleeAttack (@0x8c2c57), TryDoingBodyAttack
+		// (@0x8b77d3) and TryDoingMagicAttack (@0x8af1c4) all Encode4 the mob CRC
+		// (sub_640131) as the final per-target field. The v72 melee sender
+		// (sub_85DDD2 @0x85fb50, Encode4 sub_61F8A5) writes it too, and the v61
+		// melee sender (sub_7A45F1 @0x7a5f14, Encode4 sub_5CF2AF) writes it as the
+		// final per-target field as well, so the field predates v72 — lowered from
+		// `>= 72` to `>= 61`. No in-range variant (v83..jms) changes.
+		if t.Region() == "GMS" && t.MajorVersion() >= 61 {
 			m.crc = r.ReadUint32()
 		}
 	}
@@ -66,11 +91,16 @@ func (m *DamageInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 		w.WriteShort(m.hitPositionY)
 		w.WriteShort(m.previousPositionX)
 		w.WriteShort(m.previousPositionY)
-		w.WriteShort(m.delay)
+		if m.mesoExplosion {
+			w.WriteByte(byte(len(m.damages)))
+		} else {
+			w.WriteShort(m.delay)
+		}
 		for _, d := range m.damages {
 			w.WriteInt(d)
 		}
-		if t.Region() == "GMS" && t.MajorVersion() >= 83 {
+		// Symmetric with Decode: per-mob CRC present GMS v61+ (see Decode note).
+		if t.Region() == "GMS" && t.MajorVersion() >= 61 {
 			w.WriteInt(m.crc)
 		}
 		return w.Bytes()

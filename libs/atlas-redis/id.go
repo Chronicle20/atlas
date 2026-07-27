@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	goredis "github.com/redis/go-redis/v9"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const defaultStartID = 1000000000

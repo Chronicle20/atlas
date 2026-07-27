@@ -3,13 +3,14 @@ package storage
 import (
 	"testing"
 
-	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
+
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 )
 
 // newStorageTenantDB seeds two storage rows in two tenants sharing the same

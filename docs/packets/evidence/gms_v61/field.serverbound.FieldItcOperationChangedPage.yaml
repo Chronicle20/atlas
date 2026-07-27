@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldItcOperationChangedPage
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnChangedPage
+    address: "0x529730"
+    decompile_sha256: b28445912d691bf9e58c20d718b05f2956db8efd51ef2722b14bc888e3204043

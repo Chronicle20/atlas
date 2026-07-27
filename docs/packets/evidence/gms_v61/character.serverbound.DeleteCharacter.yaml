@@ -1,0 +1,10 @@
+packet: character/serverbound/DeleteCharacter
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::SendDeleteCharPacket
+    address: "0x5652e3"
+    decompile_sha256: eb8ab0c18ca579602ab921628113d30f9eedf47cd9f1c9523ed63557338c152f
+verifies:
+    - libs/atlas-packet/character/serverbound/v61_test.go#TestDeleteCharacterByteOutputV61

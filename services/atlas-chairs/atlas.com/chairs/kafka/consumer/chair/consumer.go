@@ -6,13 +6,14 @@ import (
 	chair2 "atlas-chairs/kafka/message/chair"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/sirupsen/logrus"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -33,6 +34,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandCancelChair))); err != nil {
 			return err
 		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRecovery))); err != nil {
+			return err
+		}
 		return nil
 	}
 }
@@ -51,4 +55,12 @@ func handleCommandCancelChair(l logrus.FieldLogger, ctx context.Context, c chair
 	}
 	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).Build()
 	_ = chair.NewProcessor(l, ctx).Clear(f, c.Body.CharacterId)
+}
+
+func handleCommandRecovery(l logrus.FieldLogger, ctx context.Context, c chair2.Command[chair2.RecoveryCommandBody]) {
+	if c.Type != chair2.CommandRecovery {
+		return
+	}
+	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).Build()
+	_ = chair.NewProcessor(l, ctx).RecoverAndEmit(f, c.Body.CharacterId, c.Body.Hp, c.Body.Mp)
 }

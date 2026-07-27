@@ -63,8 +63,10 @@ func ResolveLive(ctx context.Context, c MCPClient, address string, dir Direction
 				return err
 			}
 			if IsDecompilationFailed(err) {
-				out.Functions[name] = exportFn{Address: addr, Direction: dirStr, Unresolved: true,
-					Calls: []rawCall{{Op: "Unresolved", Comment: "decompilation failed; hand-trace"}}}
+				out.Functions[name] = exportFn{
+					Address: addr, Direction: dirStr, Unresolved: true,
+					Calls: []rawCall{{Op: "Unresolved", Comment: "decompilation failed; hand-trace"}},
+				}
 				return nil
 			}
 			return err

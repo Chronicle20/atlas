@@ -3,12 +3,12 @@ package writer
 import (
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 
 	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 )
-
 
 func DeleteCharacterResponseBody(characterId uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {

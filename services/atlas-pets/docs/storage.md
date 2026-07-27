@@ -26,6 +26,7 @@
 |--------|------|-------------|-------------|
 | id | uint32 | PRIMARY KEY, AUTO_INCREMENT | Exclude identifier |
 | pet_id | uint32 | NOT NULL | Pet foreign key |
+| tenant_id | uuid | INDEX | Tenant identifier |
 | item_id | uint32 | NOT NULL | Excluded item identifier |
 
 ## Relationships
@@ -36,12 +37,12 @@
 
 ## Indexes
 
-GORM auto-migration manages indexes. The primary keys on `pets.id` and `excludes.id` are auto-incremented. The foreign key relationship from `excludes.pet_id` to `pets.id` is managed by GORM via the `foreignkey:PetId` struct tag.
+GORM auto-migration manages indexes. The primary keys on `pets.id` and `excludes.id` are auto-incremented. The foreign key relationship from `excludes.pet_id` to `pets.id` is managed by GORM via the `foreignkey:PetId` struct tag. `excludes.tenant_id` has a GORM `index` tag.
 
 ## Migration Rules
 
 - Tables are created via GORM AutoMigrate at service startup
 - Pet migration (`pet.Migration`) creates the `pets` table
-- Exclude migration (`exclude.Migration`) creates the `excludes` table
+- Exclude migration (`exclude.Migration`) creates the `excludes` table and backfills `tenant_id` on existing rows from the parent `pets` row when it is unset
 - Both migrations are registered in `main.go` via `database.SetMigrations(pet.Migration, exclude.Migration)`
 - Excludes are replaced atomically: existing excludes for a pet are deleted, then new ones are inserted, within a single transaction

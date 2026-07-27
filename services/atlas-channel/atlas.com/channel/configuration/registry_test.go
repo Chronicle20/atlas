@@ -1,10 +1,9 @@
 package configuration_test
 
 import (
+	"atlas-channel/configuration"
 	"testing"
 	"time"
-
-	"atlas-channel/configuration"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"

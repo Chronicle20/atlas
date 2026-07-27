@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldAdminLog
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CField::SendChatMsgSlash#AdminLog
+    address: "0x5198e6"
+    decompile_sha256: b39b634e6941bfcbc8cf563b58b4cda6b1646ea0f69363e90349ab3c338a0315
+verifies:
+    - libs/atlas-packet/field/serverbound/admin_log_test.go#TestAdminLogByteOutputV79

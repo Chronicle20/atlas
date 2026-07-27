@@ -1,19 +1,19 @@
 package rest
 
 import (
+	"atlas-data/rest"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
-	"atlas-data/rest"
-
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // InitResource installs POST/GET /data/process. When jc is nil (k8s unavailable)
@@ -59,7 +59,7 @@ func processCreate(jc *JobCreator) func(d *rest.HandlerDependency, c *rest.Handl
 				r.Header.Get("traceparent"),
 			)
 			if err != nil {
-				http.Error(w, fmt.Sprintf("create job: %v", err), http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
@@ -98,7 +98,7 @@ func processStatus(jc *JobCreator) func(d *rest.HandlerDependency, c *rest.Handl
 				LabelSelector: labelIngest + "=true",
 			})
 			if err != nil {
-				http.Error(w, fmt.Sprintf("list jobs: %v", err), http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 			out := make([]processStatusJob, 0, len(list.Items))

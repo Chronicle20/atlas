@@ -4,17 +4,18 @@ import (
 	"atlas-storage/asset"
 	"strconv"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/jtumidanski/api2go/jsonapi"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 type RestModel struct {
-	Id        string             `json:"-"`
-	WorldId   world.Id           `json:"world_id"`
-	AccountId uint32             `json:"account_id"`
-	Capacity  uint32             `json:"capacity"`
-	Mesos     uint32             `json:"mesos"`
-	Assets    []asset.RestModel  `json:"-"`
+	Id        string            `json:"-"`
+	WorldId   world.Id          `json:"world_id"`
+	AccountId uint32            `json:"account_id"`
+	Capacity  uint32            `json:"capacity"`
+	Mesos     uint32            `json:"mesos"`
+	Assets    []asset.RestModel `json:"-"`
 }
 
 func (r RestModel) GetName() string {

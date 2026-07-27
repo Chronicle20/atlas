@@ -3,10 +3,11 @@ package party
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {
@@ -19,9 +20,11 @@ type ProcessorImpl struct {
 	ctx context.Context
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *ProcessorImpl {
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{l: l, ctx: ctx}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetById(partyId uint32) (Model, error) {
 	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(partyId), Extract)()

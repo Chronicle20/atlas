@@ -1,4 +1,3 @@
-
 import { useParams } from "react-router-dom";
 import { useReactor } from "@/lib/hooks/api/useReactors";
 import { useReactorDrops } from "@/lib/hooks/api/useDrops";
@@ -36,7 +35,10 @@ export function ReactorDetailPage() {
   if (error || !reactor) {
     return (
       <div className="p-10">
-        <ErrorDisplay error={error ?? "Reactor not found"} retry={() => refetch()} />
+        <ErrorDisplay
+          error={error ?? "Reactor not found"}
+          retry={() => refetch()}
+        />
       </div>
     );
   }
@@ -44,14 +46,16 @@ export function ReactorDetailPage() {
   const attrs = reactor.attributes;
   const stateEntries = attrs.stateInfo ? Object.entries(attrs.stateInfo) : [];
 
-  const iconUrl = activeTenant ? getAssetIconUrl(
-    activeTenant.id,
-    activeTenant.attributes.region,
-    activeTenant.attributes.majorVersion,
-    activeTenant.attributes.minorVersion,
-    'reactor',
-    parseInt(reactor.id),
-  ) : undefined;
+  const iconUrl = activeTenant
+    ? getAssetIconUrl(
+        activeTenant.id,
+        activeTenant.attributes.region,
+        activeTenant.attributes.majorVersion,
+        activeTenant.attributes.minorVersion,
+        "reactor",
+        parseInt(reactor.id),
+      )
+    : undefined;
 
   return (
     <div className="flex flex-col flex-1 space-y-6 p-10 pb-16">
@@ -66,11 +70,17 @@ export function ReactorDetailPage() {
         />
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-2xl font-bold tracking-tight">{attrs.name || `Reactor ${reactor.id}`}</h2>
-            <span className="text-muted-foreground font-mono">#{reactor.id}</span>
+            <h2 className="text-2xl font-bold tracking-tight">
+              {attrs.name || `Reactor ${reactor.id}`}
+            </h2>
+            <span className="text-muted-foreground font-mono">
+              #{reactor.id}
+            </span>
           </div>
           <p className="text-sm text-muted-foreground">
-            <Link to="/reactors" className="hover:underline">Reactors</Link>
+            <Link to="/reactors" className="hover:underline">
+              Reactors
+            </Link>
             {" > "}
             <span>{attrs.name || `Reactor ${reactor.id}`}</span>
           </p>
@@ -79,25 +89,33 @@ export function ReactorDetailPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
-          <CardHeader><CardTitle className="text-sm font-medium">Bounds</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">Bounds</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-2 text-sm">
             {attrs.tl && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Top-Left</span>
-                <span className="font-mono">({attrs.tl.x}, {attrs.tl.y})</span>
+                <span className="font-mono">
+                  ({attrs.tl.x}, {attrs.tl.y})
+                </span>
               </div>
             )}
             {attrs.br && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Bottom-Right</span>
-                <span className="font-mono">({attrs.br.x}, {attrs.br.y})</span>
+                <span className="font-mono">
+                  ({attrs.br.x}, {attrs.br.y})
+                </span>
               </div>
             )}
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="text-sm font-medium">Script Status</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">Script Status</CardTitle>
+          </CardHeader>
           <CardContent>
             {scriptLoading ? (
               <p className="text-sm text-muted-foreground">Loading...</p>
@@ -105,7 +123,9 @@ export function ReactorDetailPage() {
               <div className="space-y-2 text-sm">
                 <Badge variant="default">Script Available</Badge>
                 {script.attributes.description && (
-                  <p className="text-muted-foreground">{script.attributes.description}</p>
+                  <p className="text-muted-foreground">
+                    {script.attributes.description}
+                  </p>
                 )}
               </div>
             ) : (
@@ -117,7 +137,9 @@ export function ReactorDetailPage() {
 
       {stateEntries.length > 0 && (
         <Card>
-          <CardHeader><CardTitle className="text-sm font-medium">States</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">States</CardTitle>
+          </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
@@ -136,10 +158,12 @@ export function ReactorDetailPage() {
                       <TableCell>{state.type}</TableCell>
                       <TableCell>{state.nextState}</TableCell>
                       <TableCell className="font-mono">
-                        {state.reactorItem ? `${state.reactorItem.itemId} x${state.reactorItem.quantity}` : "-"}
+                        {state.reactorItem
+                          ? `${state.reactorItem.itemId} x${state.reactorItem.quantity}`
+                          : "-"}
                       </TableCell>
                     </TableRow>
-                  ))
+                  )),
                 )}
               </TableBody>
             </Table>
@@ -168,15 +192,23 @@ export function ReactorDetailPage() {
               <TableBody>
                 {drops.map((drop) => (
                   <TableRow key={drop.id}>
-                    <TableCell className="font-mono">{drop.attributes.itemId}</TableCell>
-                    <TableCell>{drop.attributes.chance.toLocaleString()}</TableCell>
-                    <TableCell className="font-mono">{drop.attributes.questId || "-"}</TableCell>
+                    <TableCell className="font-mono">
+                      {drop.attributes.itemId}
+                    </TableCell>
+                    <TableCell>
+                      {drop.attributes.chance.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="font-mono">
+                      {drop.attributes.questId || "-"}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           ) : (
-            <p className="text-sm text-muted-foreground">No drops configured for this reactor.</p>
+            <p className="text-sm text-muted-foreground">
+              No drops configured for this reactor.
+            </p>
           )}
         </CardContent>
       </Card>

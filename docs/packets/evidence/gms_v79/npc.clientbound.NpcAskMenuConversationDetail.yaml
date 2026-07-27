@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcAskMenuConversationDetail
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CScriptMan::OnAskMenu#AskMenu
+    address: "0x6c8863"
+    decompile_sha256: 5e526ab35cfa06af7d87d6dfa93f43900e120ace59ee61642c0b7c5f494c5367
+verifies:
+  - libs/atlas-packet/npc/clientbound/conversation_v79_test.go#TestNpcConversationAskMenuByteOutputV79

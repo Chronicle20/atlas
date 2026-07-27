@@ -89,6 +89,10 @@ Stores thread reply records.
 | `message` | string | NOT NULL | Reply message content |
 | `created_at` | timestamp | NOT NULL | Creation timestamp |
 
+### outbox_entries
+
+Provided by the shared `atlas-outbox` library (`outboxlib.Migration`, `main.go:64`). The transactional outbox table backing the outbox drainer. Its schema is owned by the library, not this service.
+
 ---
 
 ## Relationships
@@ -110,5 +114,5 @@ GORM AutoMigrate creates indexes on primary keys.
 ## Migration Rules
 
 - Migrations run via GORM AutoMigrate on service startup
-- Tables: guild, title, member, character, thread, reply
+- Tables: guild, title, member, character, thread, reply, outbox_entries
 - Schema changes are additive only

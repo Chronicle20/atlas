@@ -20,7 +20,7 @@ An immutable domain model representing a family member with the following attrib
 | rep | uint32 | Total accumulated reputation |
 | dailyRep | uint32 | Daily reputation gained |
 | level | uint16 | Character level |
-| world | byte | Game world identifier |
+| world | world.Id | Game world identifier |
 | createdAt | time.Time | Creation timestamp |
 | updatedAt | time.Time | Last modification timestamp |
 

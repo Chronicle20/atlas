@@ -3,26 +3,36 @@ package slot
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/sirupsen/logrus"
 )
 
-type Processor struct {
-	l       logrus.FieldLogger
-	ctx     context.Context
-	GetById func(id uint32) ([]Model, error)
+type Processor interface {
+	ByIdModelProvider(id uint32) model.Provider[[]Model]
+	GetById(id uint32) ([]Model, error)
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
-	p := &Processor{
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 	}
-	p.GetById = model.CollapseProvider(p.ByIdModelProvider)
 	return p
 }
 
-func (p *Processor) ByIdModelProvider(id uint32) model.Provider[[]Model] {
+var _ Processor = (*ProcessorImpl)(nil)
+
+func (p *ProcessorImpl) ByIdModelProvider(id uint32) model.Provider[[]Model] {
 	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestEquipmentSlotDestination(id), Extract, model.Filters[Model]())
+}
+
+func (p *ProcessorImpl) GetById(id uint32) ([]Model, error) {
+	return model.CollapseProvider(p.ByIdModelProvider)(id)
 }

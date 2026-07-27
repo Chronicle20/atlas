@@ -1,0 +1,30 @@
+{
+  "WriterName": "DistributeSp",
+  "IDAName": "CWvsContext::SendSkillUpRequest",
+  "Address": "0x96debd",
+  "Variant": "GMS/v79",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/character/serverbound/distribute_sp.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "update_time (get_update_time()) @0x96def4",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nSkillID (skill to level up) @0x96deff",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

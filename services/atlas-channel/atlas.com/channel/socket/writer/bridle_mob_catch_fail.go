@@ -3,9 +3,10 @@ package writer
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
-	"github.com/sirupsen/logrus"
 )
 
 // BridleMobCatchFailBody encodes the clientbound BRIDLE_MOB_CATCH_FAIL packet,

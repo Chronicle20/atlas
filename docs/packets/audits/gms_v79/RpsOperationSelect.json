@@ -1,0 +1,21 @@
+{
+  "WriterName": "RpsOperationSelect",
+  "IDAName": "CRPSGameDlg::SendSelection",
+  "Address": "0x6c233d",
+  "Variant": "GMS/v79",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/rps/serverbound/operation_select.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "throw (0=Rock/1=Paper/2=Scissors, RAW passthrough; CRPSGameDlg::SendSelection @0x6c230a, COutPacket(133)+Encode1(1)+Encode1(throw) @0x6c233d; sub-op mode byte 1 written earlier by the same sender, excluded here per the storage OperationMeso/StoreAsset/RetrieveAsset convention; live IDA port 13340 2026-07-16)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

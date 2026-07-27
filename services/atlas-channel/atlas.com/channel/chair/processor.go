@@ -2,13 +2,15 @@ package chair
 
 import (
 	chair2 "atlas-channel/kafka/message/chair"
-	"atlas-channel/kafka/producer"
 	"context"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/sirupsen/logrus"
 )
 
 // Processor interface defines the operations for chair processing
@@ -17,6 +19,7 @@ type Processor interface {
 	ForEachInMap(f field.Model, o model.Operator[Model]) error
 	Use(f field.Model, chairType string, chairId uint32, characterId uint32) error
 	Cancel(f field.Model, characterId uint32) error
+	Recover(f field.Model, characterId uint32, hp int16, mp int16) error
 }
 
 // ProcessorImpl implements the Processor interface
@@ -33,8 +36,14 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return p
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
+// InMapModelProvider fetches every occupied chair currently in one map
+// instance (used to replay existing chair-sit state to a character entering
+// the map). The upstream atlas-chairs list is now paginated (task-117), so
+// this drains every page rather than fetching just the first.
 func (p *ProcessorImpl) InMapModelProvider(f field.Model) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestInMap(f), Extract, model.Filters[Model]())
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(inMapUrl(f), 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) ForEachInMap(f field.Model, o model.Operator[Model]) error {
@@ -48,4 +57,8 @@ func (p *ProcessorImpl) Use(f field.Model, chairType string, chairId uint32, cha
 
 func (p *ProcessorImpl) Cancel(f field.Model, characterId uint32) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(chair2.EnvCommandTopic)(CancelCommandProvider(f, characterId))
+}
+
+func (p *ProcessorImpl) Recover(f field.Model, characterId uint32, hp int16, mp int16) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(chair2.EnvCommandTopic)(RecoveryCommandProvider(f, characterId, hp, mp))
 }

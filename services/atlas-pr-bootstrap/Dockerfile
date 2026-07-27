@@ -61,8 +61,9 @@ COPY scripts/cleanup.sh /atlas/cleanup.sh
 COPY scripts/sweep-orphans.sh /atlas/sweep-orphans.sh
 COPY scripts/reclaim-main-bare-keys.sh /atlas/reclaim-main-bare-keys.sh
 COPY scripts/predelete-purge.sh /atlas/predelete-purge.sh
+COPY scripts/reconcile-minio.sh /atlas/reconcile-minio.sh
 COPY canonical/ /atlas/canonical/
 
-RUN chmod +x /atlas/bootstrap.sh /atlas/cleanup.sh /atlas/sweep-orphans.sh /atlas/reclaim-main-bare-keys.sh /atlas/predelete-purge.sh
+RUN chmod +x /atlas/bootstrap.sh /atlas/cleanup.sh /atlas/sweep-orphans.sh /atlas/reclaim-main-bare-keys.sh /atlas/predelete-purge.sh /atlas/reconcile-minio.sh
 
 ENTRYPOINT ["/atlas/bootstrap.sh"]

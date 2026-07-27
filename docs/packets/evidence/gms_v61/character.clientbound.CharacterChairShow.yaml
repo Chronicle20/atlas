@@ -1,0 +1,10 @@
+packet: character/clientbound/CharacterChairShow
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CUserRemote::OnSetActivePortableChair
+    address: "0x7bdbda"
+    decompile_sha256: a61782478f1831fbad718825358635076af39a6a952ba991442074bd6fdbfa4d
+verifies:
+    - libs/atlas-packet/character/clientbound/v61_test.go#TestCharacterChairShowByteOutputV61

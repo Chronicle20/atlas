@@ -3,16 +3,16 @@ package clientbound
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const WeddingCeremonyEndWriter = "WeddingCeremonyEnd"
 
 // packet-audit:fname CField_Wedding::OnWeddingCeremonyEnd
-type WeddingCeremonyEnd struct {
-}
+type WeddingCeremonyEnd struct{}
 
 func NewWeddingCeremonyEnd() WeddingCeremonyEnd {
 	return WeddingCeremonyEnd{}

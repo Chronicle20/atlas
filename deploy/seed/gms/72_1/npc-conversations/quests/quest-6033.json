@@ -1,0 +1,313 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "examineItem",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "checkRequirements",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Hm, so you claim to have brought the #b#t4260003##k? Ok, let's take a look into it."
+            },
+            "id": "examineItem",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": "=",
+                      "referenceId": "6033",
+                      "step": "0",
+                      "type": "questProgress",
+                      "value": "1"
+                    },
+                    {
+                      "operator": ">=",
+                      "referenceId": "4260003",
+                      "type": "item",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "passed"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "failed"
+                }
+              ]
+            },
+            "id": "checkRequirements",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "examineItem",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "determineJobCategory",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "You indeed have crafted a fine piece of Monster Crystal, I see. You passed! Now, I shall teach you the next steps of the Maker skill. Keep the monster crystal with you as well, it's your work."
+            },
+            "id": "passed",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Hey, what's wrong? I did tell you to make a monster crystal to pass my test, didn't I? Buying one or crafting before the start of the test is NOT part of the deal. Go craft me an #b#t4260003##k."
+            },
+            "id": "failed",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "type": "jobId",
+                      "value": "3000"
+                    },
+                    {
+                      "operator": "<",
+                      "type": "jobId",
+                      "value": "4000"
+                    }
+                  ],
+                  "nextState": "completeQuestResistance"
+                },
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "type": "jobId",
+                      "value": "2000"
+                    },
+                    {
+                      "operator": "<",
+                      "type": "jobId",
+                      "value": "3000"
+                    }
+                  ],
+                  "nextState": "completeQuestAranEvan"
+                },
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "type": "jobId",
+                      "value": "1000"
+                    },
+                    {
+                      "operator": "<",
+                      "type": "jobId",
+                      "value": "2000"
+                    }
+                  ],
+                  "nextState": "completeQuestCygnus"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "completeQuestExplorer"
+                }
+              ]
+            },
+            "id": "determineJobCategory",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                },
+                {
+                  "params": {
+                    "level": "2",
+                    "masterLevel": "3",
+                    "skillId": "1007"
+                  },
+                  "type": "update_skill"
+                },
+                {
+                  "params": {
+                    "amount": "230000"
+                  },
+                  "type": "award_exp"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "completeQuestExplorer",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                },
+                {
+                  "params": {
+                    "level": "2",
+                    "masterLevel": "3",
+                    "skillId": "10001007"
+                  },
+                  "type": "update_skill"
+                },
+                {
+                  "params": {
+                    "amount": "230000"
+                  },
+                  "type": "award_exp"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "completeQuestCygnus",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                },
+                {
+                  "params": {
+                    "level": "2",
+                    "masterLevel": "3",
+                    "skillId": "20001007"
+                  },
+                  "type": "update_skill"
+                },
+                {
+                  "params": {
+                    "amount": "230000"
+                  },
+                  "type": "award_exp"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "completeQuestAranEvan",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                },
+                {
+                  "params": {
+                    "level": "2",
+                    "masterLevel": "3",
+                    "skillId": "30001007"
+                  },
+                  "type": "update_skill"
+                },
+                {
+                  "params": {
+                    "amount": "230000"
+                  },
+                  "type": "award_exp"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "completeQuestResistance",
+            "type": "genericAction"
+          }
+        ]
+      },
+      "questId": 6033,
+      "questName": "Maker Skill - Moren's Second round of teaching",
+      "startStateMachine": {
+        "startState": "startQuest",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "startQuest",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "6033",
+    "type": "quest-conversation"
+  }
+}

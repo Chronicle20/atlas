@@ -1,0 +1,10 @@
+packet: interaction/serverbound/InteractionOperationTransaction
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: sub_68CBE3
+    address: "0x68cbe3"
+    decompile_sha256: f8034918ed6c6703aa3cce1cfa4669c806b2aff5879b8ae2210d4f01ca123cf0
+verifies:
+    - libs/atlas-packet/interaction/serverbound/v61_test.go#TestOperationTransactionV61Bytes

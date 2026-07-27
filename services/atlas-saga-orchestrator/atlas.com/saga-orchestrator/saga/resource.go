@@ -3,13 +3,16 @@ package saga
 import (
 	"atlas-saga-orchestrator/rest"
 	"net/http"
+	"sort"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 )
 
 // InitResource registers the routes with the router
@@ -24,23 +27,38 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 // getAllSagasHandler returns a handler for the GET /sagas endpoint
 func getAllSagasHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		page, err := paginate.ParseParams(r.URL.Query(), paginate.DefaultPageSize, paginate.MaxPageSize)
+		if err != nil {
+			server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+			return
+		}
+
 		// Get all sagas
 		sms, err := NewProcessor(d.Logger(), d.Context()).GetAll()
 		if err != nil {
 			d.Logger().WithError(err).Error("Failed to retrieve sagas")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
+			return
 		}
 
-		rms, err := model.SliceMap(Transform)(model.FixedProvider(sms))(model.ParallelMap())()
+		sorted := make([]Saga, len(sms))
+		copy(sorted, sms)
+		sort.Slice(sorted, func(i, j int) bool {
+			return sorted[i].TransactionId().String() < sorted[j].TransactionId().String()
+		})
+		paged := paginate.Slice(sorted, page)
+
+		rms, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Error("Failed to retrieve sagas")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
+			return
 		}
 
 		// Marshal response
 		query := r.URL.Query()
 		queryParams := jsonapi.ParseQueryFields(&query)
-		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rms)
+		server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rms, paginate.EnvelopeFor(paged), r)
 	}
 }
 
@@ -52,13 +70,15 @@ func getSagaByIdHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 			saga, err := NewProcessor(d.Logger(), d.Context()).GetById(transactionId)
 			if err != nil {
 				d.Logger().WithError(err).Error("Failed to retrieve sagas")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
 			}
 
 			rms, err := model.Map(Transform)(model.FixedProvider(saga))()
 			if err != nil {
 				d.Logger().WithError(err).Error("Failed to retrieve sagas")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
 			}
 
 			// Marshal response
@@ -89,7 +109,7 @@ func createSagaHandler(d *rest.HandlerDependency, c *rest.HandlerContext, im Res
 		err = NewProcessor(d.Logger(), d.Context()).Put(saga)
 		if err != nil {
 			d.Logger().WithError(err).Error("Failed to create saga")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
@@ -97,7 +117,7 @@ func createSagaHandler(d *rest.HandlerDependency, c *rest.HandlerContext, im Res
 		s, err := NewProcessor(d.Logger(), d.Context()).GetById(saga.TransactionId())
 		if err != nil {
 			d.Logger().WithError(err).Error("Failed to retrieve created saga")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 
@@ -105,7 +125,7 @@ func createSagaHandler(d *rest.HandlerDependency, c *rest.HandlerContext, im Res
 		rm, err := model.Map(Transform)(model.FixedProvider(s))()
 		if err != nil {
 			d.Logger().WithError(err).Error("Failed to transform saga")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 

@@ -14,7 +14,6 @@ func TestProcessor_ValidateStructured(t *testing.T) {
 
 		// Call ValidateStructured with no custom function
 		result, err := processor.ValidateStructured()(123, []validation.ConditionInput{})
-
 		// Check that there's no error
 		if err != nil {
 			t.Errorf("Expected no error, got %v", err)
@@ -54,7 +53,6 @@ func TestProcessor_ValidateStructured(t *testing.T) {
 		result, err := processor.ValidateStructured()(123, []validation.ConditionInput{
 			{Type: "jobId", Operator: "=", Value: 100},
 		})
-
 		// Check that there's no error
 		if err != nil {
 			t.Errorf("Expected no error, got %v", err)

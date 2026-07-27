@@ -52,8 +52,7 @@ export function useMonsterBookCollection(
   return useQuery({
     queryKey: monsterBookKeys.collection(tenant?.id, characterId),
     queryFn: () => monsterBookService.getCollection(characterId),
-    enabled:
-      !!tenant?.id && Number.isFinite(characterId) && characterId > 0,
+    enabled: !!tenant?.id && Number.isFinite(characterId) && characterId > 0,
     staleTime: COLLECTION_STALE_TIME,
     gcTime: COLLECTION_GC_TIME,
   });
@@ -68,7 +67,10 @@ export function useMonsterBookCards(
   tenant: Tenant | null | undefined,
   characterId: number,
   opts?: Omit<ListCardsOptions, "offset" | "limit">,
-): UseInfiniteQueryResult<{ pages: MonsterBookCard[][]; pageParams: number[] }, Error> {
+): UseInfiniteQueryResult<
+  { pages: MonsterBookCard[][]; pageParams: number[] },
+  Error
+> {
   return useInfiniteQuery({
     queryKey: monsterBookKeys.cards(tenant?.id, characterId, opts),
     queryFn: ({ pageParam }: { pageParam: number }) =>
@@ -82,8 +84,7 @@ export function useMonsterBookCards(
       if (!lastPage || lastPage.length < PAGE_SIZE) return undefined;
       return allPages.reduce((acc, page) => acc + page.length, 0);
     },
-    enabled:
-      !!tenant?.id && Number.isFinite(characterId) && characterId > 0,
+    enabled: !!tenant?.id && Number.isFinite(characterId) && characterId > 0,
     staleTime: COLLECTION_STALE_TIME,
     gcTime: COLLECTION_GC_TIME,
   });

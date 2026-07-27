@@ -3,9 +3,10 @@ package clientbound
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const SetQuestClearWriter = "SetQuestClear"
@@ -13,8 +14,7 @@ const SetQuestClearWriter = "SetQuestClear"
 // SetQuestClear is the clientbound CField::OnSetQuestClear packet.
 // It carries no payload.
 // packet-audit:fname CField::OnSetQuestClear
-type SetQuestClear struct {
-}
+type SetQuestClear struct{}
 
 func NewSetQuestClear() SetQuestClear {
 	return SetQuestClear{}

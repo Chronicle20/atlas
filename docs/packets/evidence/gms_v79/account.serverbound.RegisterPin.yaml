@@ -1,0 +1,10 @@
+packet: account/serverbound/RegisterPin
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnCheckPinCodeResult#RegisterPin
+    address: "0x5d0921"
+    decompile_sha256: 4ed333800eba3a65e51ada624f7c549e3f2c9b53626add80effc038116038332
+verifies:
+    - libs/atlas-packet/account/serverbound/register_pin_test.go#TestRegisterPinRoundTrip

@@ -6,10 +6,11 @@ import (
 	"atlas-login/socket/writer"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	charcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	charsb "github.com/Chronicle20/atlas/libs/atlas-packet/character/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 func CreateCharacterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {

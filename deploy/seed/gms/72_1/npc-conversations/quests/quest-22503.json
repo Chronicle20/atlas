@@ -1,0 +1,134 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1013000,
+      "questId": 22503,
+      "questName": "Feeding Baby Dragon",
+      "startStateMachine": {
+        "startState": "intro",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "playerResponse",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "No, no, no. This isn't what I need. I need something more nutritious, master!"
+            },
+            "id": "intro",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "intro",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "askAccept",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "speaker": "CHARACTER",
+              "text": "#bHm... So you're not a herbivore. You might be a carnivore. You're a Dragon, after all. How does some #t4032453# sound?"
+            },
+            "id": "playerResponse",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "startQuest",
+                  "text": "Accept"
+                },
+                {
+                  "nextState": "declined",
+                  "text": "Decline"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendAcceptDecline",
+              "text": "What's a...#t4032453#? Never heard of it, but if it's yummy, I accept! Just feed me something tasty. Anything but plants!"
+            },
+            "id": "askAccept",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "How can you starve me like this. I'm just a baby. This is wrong!"
+            },
+            "id": "declined",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "instructions"
+                }
+              ]
+            },
+            "id": "startQuest",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "speaker": "CHARACTER",
+              "text": "#b#b(Try giving #p1013000# some #t4032453#. You have to hunt a few #o1210100#s at the farm. Ten should be plenty...)"
+            },
+            "id": "instructions",
+            "type": "dialogue"
+          }
+        ]
+      }
+    },
+    "id": "22503",
+    "type": "quest-conversation"
+  }
+}

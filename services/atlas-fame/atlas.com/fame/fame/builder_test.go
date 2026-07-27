@@ -138,7 +138,6 @@ func TestBuilderSetters(t *testing.T) {
 		SetTargetId(22222).
 		SetAmount(-1).
 		Build()
-
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}

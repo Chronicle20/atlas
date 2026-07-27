@@ -124,3 +124,20 @@ dispatchers:
   # dispatchers v83 0x7c8a4c, v84 0x7eec1a (CTrunkDlg__OnPacket_recv_0x13C), v87
   # 0x81c336, v95 0x76a990, jms 0x84e5a1 (shift -1). ErrorMessage is version-absent
   # in jms (its dispatcher has no Decode1+DecodeStr arm) so it is not an arm there.
+  # CRPSGameDlg::OnPacket — GRADUATED (task-132): all Atlas-emitted mode arms of
+  # RPS_GAME have decompile-verified per-mode body codecs in rps/clientbound
+  # (operation.go: each writes the leading mode byte THEN the full arm body, not
+  # mode-byte-only), each with a packet-audit:verify byte-fixture + pinned evidence
+  # across gms_v83/v84/v87/v95/jms_v185. Atlas-emitted arms (synthetic #-suffix
+  # FNames in the per-version exports): Open (OPEN=8 -> CRPSGameDlg(ante): Decode4
+  # ante/participation-fee), Result (RESULT=11 -> Decode1 npcThrow + SIGNED int8
+  # Decode1 straightVictoryCount; the SIGN encodes win(>=0)/lose(<0), client-derived
+  # tie via userSelect==npcSelect), End (END/CLOSE=13 -> CWnd::Destroy, mode-byte
+  # only). Mode bytes are VERSION-UNIFORM (only the opcode shifts): v83 0x138,
+  # v84 0x13F, v87 0x149, v95 0x173, jms185 0x151. OnPacket dispatchers decompile-
+  # confirmed + reviewer-re-verified: v83 0x73fff1, v84 0x761d15, v87 0x78aba7,
+  # v95 0x6d9e00, jms185 0x7ae3dc. The mode-byte-only UI states (modes 6/7/9/10/12/14)
+  # are client-local UI ticks not emitted by atlas-rps, so they are not arms.
+  # (Serverbound RPS_ACTION is NOT listed here — it is not a client read-demux; its
+  # six senders OnBtStart/SendSelection/Update/OnBtContinue/OnBtExit/OnBtRetry are
+  # separate per-fname structs, see rps/serverbound + task-132 ida-rps-serverbound.md.)

@@ -11,16 +11,17 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
 	cashpkt "github.com/Chronicle20/atlas/libs/atlas-packet/cash/clientbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {

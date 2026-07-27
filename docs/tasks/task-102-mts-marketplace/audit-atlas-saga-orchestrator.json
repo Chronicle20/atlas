@@ -1,0 +1,122 @@
+{
+  "service": "atlas-saga-orchestrator",
+  "path": "services/atlas-saga-orchestrator/atlas.com/saga-orchestrator",
+  "scope": "task-102 modified packages",
+  "date": "2026-07-10",
+  "build": "pass",
+  "vet": "pass",
+  "testsPassed": -1,
+  "testsFailed": 0,
+  "testsNote": "all packages ok with -count=1; saga 0.439s. Go does not emit an aggregate pass count.",
+  "overallStatus": "needs-work",
+  "counts": { "critical": 0, "important": 2, "minor": 3 },
+  "packages": [
+    {
+      "name": "mts",
+      "type": "support",
+      "checks": [
+        { "id": "FILE-rest", "name": "RestModel belongs in rest.go", "status": "fail", "evidence": "HoldingRestModel (GetName/GetID/SetID) at mts/requests.go:60-74; no mts/rest.go exists" },
+        { "id": "FILE-processor", "name": "dispatch logic in processor.go", "status": "pass", "evidence": "mts/processor.go:87-173" },
+        { "id": "FILE-producer", "name": "kafka providers in producer.go", "status": "pass", "evidence": "mts/producer.go:15-141" },
+        { "id": "EXT-01", "name": "JSON:API relationship stubs", "status": "pass", "evidence": "mts/requests.go:72-74" },
+        { "id": "EXT-02", "name": "httptest integration test exercises unmarshal", "status": "pass", "evidence": "saga/mts_expansion_test.go:141-206" },
+        { "id": "EXT-03", "name": "404 not conflated with other errors", "status": "pass", "evidence": "mts/requests.go:79-84 returns error verbatim" },
+        { "id": "EXT-04", "name": "URL via RootUrl(DOMAIN)", "status": "pass", "evidence": "mts/requests.go:19 RootUrl(\"MTS\")" }
+      ]
+    },
+    {
+      "name": "cashshop",
+      "type": "support",
+      "checks": [
+        { "id": "FILE-rest", "name": "RestModels in rest.go", "status": "pass", "evidence": "cashshop/rest.go:12,47" },
+        { "id": "FILE-requests", "name": "client fn only in requests.go", "status": "pass", "evidence": "cashshop/requests.go:21" },
+        { "id": "TOPIC", "name": "wallet adjust to COMMAND_TOPIC_WALLET", "status": "pass", "evidence": "cashshop/processor.go:53" },
+        { "id": "EXT-01", "name": "relationship stubs", "status": "pass", "evidence": "cashshop/rest.go:101,105" }
+      ]
+    },
+    {
+      "name": "kafka/message/mts/custody",
+      "type": "wire-contract",
+      "checks": [
+        { "id": "TOPIC-NAME", "name": "topic constants uppercase, no dotted/versioned suffix", "status": "pass", "evidence": "custody/kafka.go:17,131" },
+        { "id": "TXID", "name": "Command+StatusEvent carry TransactionId", "status": "pass", "evidence": "custody/kafka.go:35,143" },
+        { "id": "ERR-ARM", "name": "error status arm defined", "status": "pass", "evidence": "custody/kafka.go:137,171" }
+      ]
+    },
+    {
+      "name": "kafka/message/cashshop",
+      "type": "wire-contract",
+      "checks": [
+        { "id": "ERR-ARM", "name": "wallet error event for fast-fail", "status": "pass", "evidence": "cashshop/kafka.go:16,45" }
+      ]
+    },
+    {
+      "name": "kafka/message/saga",
+      "type": "wire-contract",
+      "checks": [
+        { "id": "MTS-KIND", "name": "MtsFailureKind + MtsKind on Failed body", "status": "pass", "evidence": "saga/kafka.go:30-34,58" }
+      ]
+    },
+    {
+      "name": "kafka/consumer/mts/custody",
+      "type": "saga-completion-consumer",
+      "checks": [
+        { "id": "SAGA-consumer-exists", "name": "consumer file for target service", "status": "pass", "evidence": "consumer.go" },
+        { "id": "SAGA-init", "name": "InitConsumers subscribes status topic", "status": "pass", "evidence": "consumer.go:22-28" },
+        { "id": "SAGA-handlers", "name": "InitHandlers registers all arms", "status": "pass", "evidence": "consumer.go:30-48" },
+        { "id": "SAGA-success", "name": "success -> StepCompleted(true)", "status": "pass", "evidence": "consumer.go:64,81,99" },
+        { "id": "SAGA-failure", "name": "error -> StepCompleted(false)", "status": "pass", "evidence": "consumer.go:116" },
+        { "id": "SAGA-guard", "name": "AcceptEvent terminal-race guard", "status": "pass", "evidence": "consumer.go:55,72,89,107" },
+        { "id": "SAGA-main", "name": "registered in main.go", "status": "pass", "evidence": "main.go:95,116" },
+        { "id": "COVERAGE", "name": "package-local tests", "status": "warn", "evidence": "no test files in package (paths tested transitively in saga package)" }
+      ]
+    },
+    {
+      "name": "kafka/consumer/cashshop",
+      "type": "saga-completion-consumer",
+      "checks": [
+        { "id": "SAGA-failure", "name": "wallet error fast-fail path", "status": "pass", "evidence": "consumer.go:73-95" },
+        { "id": "DOM-24", "name": "producer stubbed via producertest", "status": "pass", "evidence": "testmain_test.go InstallNoop; no cleanup-revert" },
+        { "id": "SAGA-test", "name": "success+failure tested", "status": "pass", "evidence": "consumer_test.go:43,74,102" }
+      ]
+    },
+    {
+      "name": "saga",
+      "type": "orchestrator-core",
+      "checks": [
+        { "id": "SAGA-gethandler", "name": "atomic MTS actions routed", "status": "pass", "evidence": "handler.go:831-841" },
+        { "id": "SAGA-no-premature-complete", "name": "async handlers don't mark complete", "status": "pass", "evidence": "handler.go:2011,2032,2054,2072" },
+        { "id": "SAGA-acceptance", "name": "acceptance+outcome tables updated", "status": "pass", "evidence": "event_acceptance.go:163-169,293-301" },
+        { "id": "SAGA-unmarshal", "name": "UnmarshalJSON cases for MTS payloads", "status": "pass", "evidence": "model.go:1315-1356" },
+        { "id": "SAGA-reverse-walk", "name": "reverse-walk compensation (dupe-safety)", "status": "pass", "evidence": "compensator.go compensateMtsOperation + DispatchMtsOperationRollbacks" },
+        { "id": "SAGA-timeout-comp", "name": "timeout triggers MTS rollback", "status": "pass", "evidence": "timer.go:122-124" },
+        { "id": "SAGA-late-comp", "name": "late inverses registered", "status": "pass", "evidence": "compensator.go lateCompensableActions + dispatchLateInverse MTS cases" },
+        { "id": "SAGA-failure-notify", "name": "Failed event carries characterId + kind", "status": "pass", "evidence": "producer.go EmitMtsSagaFailed / extractMtsFailureTarget" },
+        { "id": "DOM-21", "name": "no shared-type duplication", "status": "pass", "evidence": "model.go aliases sharedsaga.*; payloads in libs/atlas-saga/payloads.go" },
+        { "id": "DOM-24", "name": "producer stubbed in tests", "status": "pass", "evidence": "saga/testmain_test.go InstallNoop" },
+        { "id": "SAGA-failtest", "name": "failure-path tests", "status": "pass", "evidence": "mts_dupe_safety_test.go, mts_failure_notify_test.go, compensator_test.go:482-547" },
+        { "id": "BUILDER", "name": "WithMtsProcessor copies all fields", "status": "fail", "evidence": "handler.go:468-489 sets 18/29 fields, nils 11 processors; dead code but latent bug; compensator.go:168 uses copy() correctly" }
+      ]
+    },
+    {
+      "name": "deploy",
+      "type": "deploy",
+      "checks": [
+        { "id": "DOM-22", "name": "Dockerfile lib blocks", "status": "pass", "evidence": "shared repo-root Dockerfile; go.mod unchanged, no new lib" },
+        { "id": "DOM-23-configmap", "name": "topics in env-configmap KEY:KEY", "status": "pass", "evidence": "env-configmap.yaml:53,77,131,152" },
+        { "id": "DOM-23-manifest", "name": "envFrom configmap, no literal override", "status": "pass", "evidence": "atlas-saga-orchestrator.yaml:21-23" },
+        { "id": "DEPLOY-drift", "name": "overlay env-suffix symmetry", "status": "warn", "evidence": "overlays/main/kustomization.yaml omits MTS custody topics present in pr overlay; functionally consistent" }
+      ]
+    }
+  ],
+  "blocking": [],
+  "important": [
+    "BUILDER: saga/handler.go:468 WithMtsProcessor drops 11 of 29 HandlerImpl fields (latent field-drop; dead code; compensator equivalent uses copy())",
+    "FILE-rest: mts/requests.go:25-74 holds JSON:API HoldingRestModel; belongs in a mts/rest.go (cashshop package does this correctly)"
+  ],
+  "minor": [
+    "kafka/consumer/mts/custody has no package-local tests for the four completion arms",
+    "mts package has no package-local tests (unmarshal covered via saga/mts_expansion_test.go)",
+    "deploy/k8s/overlays/main/kustomization.yaml omits MTS custody topic env-suffixing present in the pr overlay"
+  ]
+}

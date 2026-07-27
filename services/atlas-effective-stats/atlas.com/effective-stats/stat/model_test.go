@@ -1,6 +1,7 @@
 package stat
 
 import (
+	"encoding/json"
 	"testing"
 )
 
@@ -186,46 +187,74 @@ func TestAllTypes(t *testing.T) {
 	}
 }
 
-func TestMapBuffStatType(t *testing.T) {
-	tests := []struct {
-		input        string
-		expectedType Type
-		isMultiplier bool
-	}{
-		// Flat bonuses
-		{"WEAPON_ATTACK", TypeWeaponAttack, false},
-		{"PAD", TypeWeaponAttack, false},
-		{"MAGIC_ATTACK", TypeMagicAttack, false},
-		{"MAD", TypeMagicAttack, false},
-		{"WEAPON_DEFENSE", TypeWeaponDefense, false},
-		{"PDD", TypeWeaponDefense, false},
-		{"MAGIC_DEFENSE", TypeMagicDefense, false},
-		{"MDD", TypeMagicDefense, false},
-		{"ACCURACY", TypeAccuracy, false},
-		{"ACC", TypeAccuracy, false},
-		{"AVOIDABILITY", TypeAvoidability, false},
-		{"AVOID", TypeAvoidability, false},
-		{"EVA", TypeAvoidability, false},
-		{"SPEED", TypeSpeed, false},
-		{"JUMP", TypeJump, false},
-		// Multiplier bonuses
-		{"HYPER_BODY_HP", TypeMaxHp, true},
-		{"HYPER_BODY_MP", TypeMaxMp, true},
-		{"MAPLE_WARRIOR", TypeStrength, true},
-		// Unknown type
-		{"UNKNOWN", "", false},
+func TestNewBasePercentBonus(t *testing.T) {
+	b := NewBasePercentBonus("buff:2311003", TypeStrength, 10)
+
+	if b.Source() != "buff:2311003" {
+		t.Errorf("Source() = %v, want buff:2311003", b.Source())
+	}
+	if b.StatType() != TypeStrength {
+		t.Errorf("StatType() = %v, want %v", b.StatType(), TypeStrength)
+	}
+	if b.Amount() != 0 {
+		t.Errorf("Amount() = %v, want 0", b.Amount())
+	}
+	if b.Multiplier() != 0.0 {
+		t.Errorf("Multiplier() = %v, want 0.0", b.Multiplier())
+	}
+	if b.BasePercent() != 10 {
+		t.Errorf("BasePercent() = %v, want 10", b.BasePercent())
+	}
+}
+
+func TestBonusWithSource_PreservesDimensions(t *testing.T) {
+	bp := NewBasePercentBonus("", TypeLuck, 10).WithSource("buff:2311003")
+	if bp.Source() != "buff:2311003" {
+		t.Errorf("Source() = %v, want buff:2311003", bp.Source())
+	}
+	if bp.BasePercent() != 10 {
+		t.Errorf("BasePercent() = %v, want 10 (dimension dropped by WithSource)", bp.BasePercent())
+	}
+	if bp.StatType() != TypeLuck {
+		t.Errorf("StatType() = %v, want %v", bp.StatType(), TypeLuck)
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			statType, isMultiplier := MapBuffStatType(tt.input)
-			if statType != tt.expectedType {
-				t.Errorf("MapBuffStatType(%q) type = %v, want %v", tt.input, statType, tt.expectedType)
-			}
-			if isMultiplier != tt.isMultiplier {
-				t.Errorf("MapBuffStatType(%q) isMultiplier = %v, want %v", tt.input, isMultiplier, tt.isMultiplier)
-			}
-		})
+	full := NewFullBonus("old", TypeStrength, 7, 0.5).WithSource("new")
+	if full.Source() != "new" {
+		t.Errorf("Source() = %v, want new", full.Source())
+	}
+	if full.Amount() != 7 || full.Multiplier() != 0.5 || full.BasePercent() != 0 {
+		t.Errorf("WithSource altered dimensions: amount=%v multiplier=%v basePercent=%v, want 7/0.5/0",
+			full.Amount(), full.Multiplier(), full.BasePercent())
+	}
+}
+
+func TestBonusJSONRoundTrip_BasePercent(t *testing.T) {
+	b := NewBasePercentBonus("buff:2311003", TypeIntelligence, 15)
+	data, err := json.Marshal(b)
+	if err != nil {
+		t.Fatalf("Marshal() error = %v", err)
+	}
+	var out Bonus
+	if err := json.Unmarshal(data, &out); err != nil {
+		t.Fatalf("Unmarshal() error = %v", err)
+	}
+	if out != b {
+		t.Errorf("round-trip = %+v, want %+v", out, b)
+	}
+}
+
+func TestBonusUnmarshal_LegacyWithoutBasePercent(t *testing.T) {
+	legacy := []byte(`{"source":"equipment:1","statType":"strength","amount":20,"multiplier":0}`)
+	var b Bonus
+	if err := json.Unmarshal(legacy, &b); err != nil {
+		t.Fatalf("Unmarshal() error = %v", err)
+	}
+	if b.BasePercent() != 0 {
+		t.Errorf("BasePercent() = %v, want 0 for legacy JSON without the field", b.BasePercent())
+	}
+	if b.Source() != "equipment:1" || b.StatType() != TypeStrength || b.Amount() != 20 {
+		t.Errorf("legacy fields corrupted: %+v", b)
 	}
 }
 
@@ -277,5 +306,115 @@ func TestMapStatupType(t *testing.T) {
 				t.Errorf("MapStatupType(%q) = %v, want %v", tt.input, got, tt.expected)
 			}
 		})
+	}
+}
+
+func TestBonusesForBuffChange_Flat(t *testing.T) {
+	// Table ported row-for-row from the old buff-stat-type-mapping test's flat rows.
+	tests := []struct {
+		input        string
+		expectedType Type
+	}{
+		{"WEAPON_ATTACK", TypeWeaponAttack},
+		{"PAD", TypeWeaponAttack},
+		{"MAGIC_ATTACK", TypeMagicAttack},
+		{"MAD", TypeMagicAttack},
+		{"WEAPON_DEFENSE", TypeWeaponDefense},
+		{"PDD", TypeWeaponDefense},
+		{"MAGIC_DEFENSE", TypeMagicDefense},
+		{"MDD", TypeMagicDefense},
+		{"ACCURACY", TypeAccuracy},
+		{"ACC", TypeAccuracy},
+		{"AVOIDABILITY", TypeAvoidability},
+		{"AVOID", TypeAvoidability},
+		{"EVA", TypeAvoidability},
+		{"SPEED", TypeSpeed},
+		{"JUMP", TypeJump},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			bs := BonusesForBuffChange("buff:1", tt.input, 20)
+			if len(bs) != 1 {
+				t.Fatalf("len = %v, want 1", len(bs))
+			}
+			b := bs[0]
+			if b.StatType() != tt.expectedType {
+				t.Errorf("StatType() = %v, want %v", b.StatType(), tt.expectedType)
+			}
+			if b.Amount() != 20 {
+				t.Errorf("Amount() = %v, want 20", b.Amount())
+			}
+			if b.Multiplier() != 0.0 || b.BasePercent() != 0 {
+				t.Errorf("kind leaked: multiplier=%v basePercent=%v, want 0/0", b.Multiplier(), b.BasePercent())
+			}
+			if b.Source() != "buff:1" {
+				t.Errorf("Source() = %v, want buff:1", b.Source())
+			}
+		})
+	}
+}
+
+func TestBonusesForBuffChange_HyperBody(t *testing.T) {
+	tests := []struct {
+		input        string
+		expectedType Type
+	}{
+		{"HYPER_BODY_HP", TypeMaxHp},
+		{"HYPER_BODY_MP", TypeMaxMp},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			bs := BonusesForBuffChange("buff:1", tt.input, 60)
+			if len(bs) != 1 {
+				t.Fatalf("len = %v, want 1", len(bs))
+			}
+			b := bs[0]
+			if b.StatType() != tt.expectedType {
+				t.Errorf("StatType() = %v, want %v", b.StatType(), tt.expectedType)
+			}
+			if b.Multiplier() != 0.60 {
+				t.Errorf("Multiplier() = %v, want 0.60", b.Multiplier())
+			}
+			if b.Amount() != 0 || b.BasePercent() != 0 {
+				t.Errorf("kind leaked: amount=%v basePercent=%v, want 0/0", b.Amount(), b.BasePercent())
+			}
+		})
+	}
+}
+
+func TestBonusesForBuffChange_MapleWarrior(t *testing.T) {
+	bs := BonusesForBuffChange("buff:2311003", "MAPLE_WARRIOR", 10)
+	if len(bs) != 4 {
+		t.Fatalf("len = %v, want 4", len(bs))
+	}
+
+	got := make(map[Type]Bonus, 4)
+	for _, b := range bs {
+		got[b.StatType()] = b
+	}
+	for _, want := range []Type{TypeStrength, TypeDexterity, TypeIntelligence, TypeLuck} {
+		b, ok := got[want]
+		if !ok {
+			t.Errorf("missing base-percent bonus for %v", want)
+			continue
+		}
+		if b.BasePercent() != 10 {
+			t.Errorf("%v BasePercent() = %v, want 10", want, b.BasePercent())
+		}
+		if b.Amount() != 0 || b.Multiplier() != 0.0 {
+			t.Errorf("%v kind leaked: amount=%v multiplier=%v, want 0/0", want, b.Amount(), b.Multiplier())
+		}
+		if b.Source() != "buff:2311003" {
+			t.Errorf("%v Source() = %v, want buff:2311003", want, b.Source())
+		}
+	}
+}
+
+func TestBonusesForBuffChange_Unknown(t *testing.T) {
+	bs := BonusesForBuffChange("buff:1", "UNKNOWN", 20)
+	if len(bs) != 0 {
+		t.Errorf("len = %v, want 0", len(bs))
 	}
 }

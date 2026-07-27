@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 const SummonDamageHandle = "SummonDamageHandle"
@@ -30,7 +31,7 @@ const SummonDamageHandle = "SummonDamageHandle"
 //	  Encode4 damage
 //
 // The trailing dir byte and the 0xFE no-mob branch were both missing from the
-// prior Cosmic-derived decoder; the ASM (v83 Encode1@0x7a62f4 / 0x7a62a8) proves
+// prior decoder; the ASM (v83 Encode1@0x7a62f4 / 0x7a62a8) proves
 // both exist on v83. The dir byte is consumed but not surfaced (the server does
 // not need it).
 // packet-audit:fname CSummonedPool::OnHit

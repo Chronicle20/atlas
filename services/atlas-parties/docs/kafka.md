@@ -14,7 +14,7 @@ Party command topic for processing party operations.
 | CHANGE_LEADER | Transfer leadership to specified character |
 | REQUEST_INVITE | Request party invitation for target character |
 
-Consumer Group: `party_command`
+Consumer Group: `Party Service` (default; overridable via `KAFKA_CONSUMER_GROUP`)
 
 ### EVENT_TOPIC_CHARACTER_STATUS
 
@@ -29,8 +29,9 @@ Character status events for synchronizing character state.
 | DELETED | Character was deleted |
 | LEVEL_CHANGED | Character level changed |
 | JOB_CHANGED | Character job changed |
+| GM_CHANGED | Character GM status changed |
 
-Consumer Group: `character_status_event`
+Consumer Group: `Party Service` (default; overridable via `KAFKA_CONSUMER_GROUP`)
 
 ### EVENT_TOPIC_INVITE_STATUS
 
@@ -40,7 +41,7 @@ Invite status events for processing accepted invitations.
 |------------|-------------|
 | ACCEPTED | Invitation was accepted (triggers party join) |
 
-Consumer Group: `invite_status_event`
+Consumer Group: `Party Service` (default; overridable via `KAFKA_CONSUMER_GROUP`)
 
 ---
 

@@ -3,9 +3,10 @@ package rates
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/sirupsen/logrus"
 )
 
 func byCharacterIdProvider(l logrus.FieldLogger) func(ctx context.Context) func(ch channel.Model, characterId uint32) model.Provider[Model] {

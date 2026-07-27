@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/sirupsen/logrus"
+
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 // Processor provides operations for querying transport routes
@@ -25,6 +26,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		ctx: ctx,
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // GetRouteByStartMap retrieves a route by its start map ID
 // Returns error if no routes found or REST client fails

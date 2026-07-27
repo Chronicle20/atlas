@@ -5,10 +5,8 @@ import (
 	data2 "atlas-pets/data/pet"
 	"atlas-pets/data/position"
 	inv "atlas-pets/inventory"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-pets/kafka/message"
 	"atlas-pets/kafka/message/pet"
-	"atlas-pets/kafka/producer"
 	"atlas-pets/location"
 	"atlas-pets/skill"
 	"context"
@@ -18,13 +16,17 @@ import (
 	"sort"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 var petExpTable = []uint16{1, 1, 3, 6, 14, 31, 60, 108, 181, 287, 434, 632, 891, 1224, 1642, 2161, 2793, 3557, 4467, 5542, 6801, 8263, 9950, 11882, 14084, 16578, 19391, 22547, 26074, 30000}
@@ -36,11 +38,16 @@ const (
 )
 
 type Processor interface {
-	With(opts ...ProcessorOption) *ProcessorImpl
+	With(opts ...ProcessorOption) Processor
 	ByIdProvider(petId uint32) model.Provider[Model]
 	GetById(petId uint32) (Model, error)
 	ByOwnerProvider(ownerId uint32) model.Provider[[]Model]
 	GetByOwner(ownerId uint32) ([]Model, error)
+	// ByOwnerIdPagedProvider returns one page of a character's pets. Used
+	// only by the REST list handler (GET /characters/{characterId}/pets,
+	// task-117); internal callers needing every pet keep using
+	// ByOwnerProvider/GetByOwner above.
+	ByOwnerIdPagedProvider(ownerId uint32, page model.Page) model.Provider[model.Paged[Model]]
 	SpawnedByOwnerProvider(ownerId uint32) model.Provider[[]Model]
 	HungryByOwnerProvider(ownerId uint32) model.Provider[[]Model]
 	HungriestByOwnerProvider(ownerId uint32) model.Provider[Model]
@@ -76,24 +83,31 @@ type Processor interface {
 }
 
 type ProcessorImpl struct {
-	l         logrus.FieldLogger
-	ctx       context.Context
-	db        *gorm.DB
-	t         tenant.Model
-	tr        TemporalRegistry
-	cp        character.Processor
-	pp        position.Processor
-	dp        data2.Processor
-	sp        skill.Processor
-	ip        inv.Processor
-	kp        producer.Provider
+	l   logrus.FieldLogger
+	ctx context.Context
+	db  *gorm.DB
+	t   tenant.Model
+	tr  TemporalRegistry
+	cp  character.Processor
+	pp  position.Processor
+	dp  data2.Processor
+	sp  skill.Processor
+	ip  inv.Processor
+	// Despawner is an optional test-mock override for Despawn, left nil in
+	// production (see NewProcessor). It must NOT be bound at construction
+	// time: With(...) shallow-copies the struct without rebinding method
+	// values, so a field set once at NewProcessor time would keep
+	// dispatching to the ORIGINAL (non-tx) receiver even from a
+	// With(WithTransaction(tx)) clone, silently escaping the caller's
+	// transaction. Despawn() falls through to the receiver's own
+	// defaultDespawn when this is nil, which is tx-correct on a clone.
 	Despawner func(mb *message.Buffer) func(petId uint32) func(actorId uint32) func(reason string) error
 	// rollEvolution picks an index into the weighted candidate list. Injectable
 	// for deterministic tests; defaults to a weighted-random pick.
 	rollEvolution func(weights []uint32) int
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *ProcessorImpl {
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
 	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
@@ -105,12 +119,12 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Proce
 		dp:  data2.NewProcessor(l, ctx),
 		sp:  skill.NewProcessor(l, ctx),
 		ip:  inv.NewProcessor(l, ctx),
-		kp:  producer.ProviderImpl(l)(ctx),
 	}
-	p.Despawner = p.defaultDespawn
 	p.rollEvolution = weightedRoll
 	return p
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // weightedRoll picks an index proportional to the given relative weights.
 // Weights are NOT assumed to sum to 100 (WZ uses arbitrary bases, e.g. 1000).
@@ -177,7 +191,7 @@ func WithRollEvolution(f func(weights []uint32) int) ProcessorOption {
 	}
 }
 
-func (p *ProcessorImpl) With(opts ...ProcessorOption) *ProcessorImpl {
+func (p *ProcessorImpl) With(opts ...ProcessorOption) Processor {
 	clone := *p
 	cp := &clone
 	for _, opt := range opts {
@@ -200,6 +214,10 @@ func (p *ProcessorImpl) ByOwnerProvider(ownerId uint32) model.Provider[[]Model] 
 
 func (p *ProcessorImpl) GetByOwner(ownerId uint32) ([]Model, error) {
 	return model.CollapseProvider(p.ByOwnerProvider)(ownerId)
+}
+
+func (p *ProcessorImpl) ByOwnerIdPagedProvider(ownerId uint32, page model.Page) model.Provider[model.Paged[Model]] {
+	return model.MapPaged(Make)(getByOwnerIdPaged(ownerId, page)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) SpawnedByOwnerProvider(ownerId uint32) model.Provider[[]Model] {
@@ -234,7 +252,13 @@ func (p *ProcessorImpl) HungriestByOwnerProvider(ownerId uint32) model.Provider[
 }
 
 func (p *ProcessorImpl) CreateAndEmit(i Model) (Model, error) {
-	return message.EmitWithResult[Model, Model](p.kp)(p.Create)(i)
+	var result Model
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		var err error
+		result, err = message.EmitWithResult[Model, Model](outbox.EmitProvider(p.l, p.ctx, tx))(p.With(WithTransaction(tx)).Create)(i)
+		return err
+	})
+	return result, txErr
 }
 
 func (p *ProcessorImpl) Create(mb *message.Buffer) func(i Model) (Model, error) {
@@ -277,7 +301,11 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(i Model) (Model, error) 
 }
 
 func (p *ProcessorImpl) DeleteOnRemoveAndEmit(characterId uint32, itemId uint32, slot int16) error {
-	return message.Emit(p.kp)(model.Flip(model.Flip(model.Flip(p.DeleteOnRemove)(characterId))(itemId))(slot))
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.With(WithTransaction(tx)).DeleteOnRemove(mb)(characterId)(itemId)(slot)
+		})
+	})
 }
 
 func (p *ProcessorImpl) DeleteOnRemove(mb *message.Buffer) func(characterId uint32) func(itemId uint32) func(slot int16) error {
@@ -302,7 +330,11 @@ func (p *ProcessorImpl) DeleteOnRemove(mb *message.Buffer) func(characterId uint
 }
 
 func (p *ProcessorImpl) DeleteForCharacterAndEmit(characterId uint32) error {
-	return message.Emit(p.kp)(model.Flip(p.DeleteForCharacter)(characterId))
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.With(WithTransaction(tx)).DeleteForCharacter(mb)(characterId)
+		})
+	})
 }
 
 func (p *ProcessorImpl) DeleteForCharacter(mb *message.Buffer) func(characterId uint32) error {
@@ -372,11 +404,17 @@ func (p *ProcessorImpl) Move(petId uint32, f field.Model, ownerId uint32, x int1
 }
 
 func (p *ProcessorImpl) SpawnAndEmit(petId uint32, actorId uint32, lead bool) error {
-	return message.Emit(p.kp)(model.Flip(model.Flip(model.Flip(p.Spawn)(petId))(actorId))(lead))
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.With(WithTransaction(tx)).Spawn(mb)(petId)(actorId)(lead)
+		})
+	})
 }
 
-var ErrTooManySpawnedPets = errors.New("too many pets spawned")
-var ErrNeedMultiPetSkill = errors.New("need multi pet skill")
+var (
+	ErrTooManySpawnedPets = errors.New("too many pets spawned")
+	ErrNeedMultiPetSkill  = errors.New("need multi pet skill")
+)
 
 func (p *ProcessorImpl) Spawn(mb *message.Buffer) func(petId uint32) func(actorId uint32) func(lead bool) error {
 	return func(petId uint32) func(actorId uint32) func(lead bool) error {
@@ -523,7 +561,11 @@ func (p *ProcessorImpl) Spawn(mb *message.Buffer) func(petId uint32) func(actorI
 }
 
 func (p *ProcessorImpl) DespawnAndEmit(petId uint32, actorId uint32, reason string) error {
-	return message.Emit(p.kp)(model.Flip(model.Flip(model.Flip(p.Despawn)(petId))(actorId))(reason))
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.With(WithTransaction(tx)).Despawn(mb)(petId)(actorId)(reason)
+		})
+	})
 }
 
 func (p *ProcessorImpl) Despawn(mb *message.Buffer) func(petId uint32) func(actorId uint32) func(reason string) error {
@@ -600,7 +642,11 @@ func (p *ProcessorImpl) defaultDespawn(mb *message.Buffer) func(petId uint32) fu
 }
 
 func (p *ProcessorImpl) AttemptCommandAndEmit(petId uint32, actorId uint32, commandId byte) error {
-	return message.Emit(p.kp)(model.Flip(model.Flip(model.Flip(p.AttemptCommand)(petId))(actorId))(commandId))
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.With(WithTransaction(tx)).AttemptCommand(mb)(petId)(actorId)(commandId)
+		})
+	})
 }
 
 func (p *ProcessorImpl) AttemptCommand(mb *message.Buffer) func(petId uint32) func(actorId uint32) func(commandId byte) error {
@@ -657,7 +703,11 @@ func (p *ProcessorImpl) AttemptCommand(mb *message.Buffer) func(petId uint32) fu
 }
 
 func (p *ProcessorImpl) EvaluateHungerAndEmit(ownerId uint32) error {
-	return message.Emit(p.kp)(model.Flip(p.EvaluateHunger)(ownerId))
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.With(WithTransaction(tx)).EvaluateHunger(mb)(ownerId)
+		})
+	})
 }
 
 func (p *ProcessorImpl) EvaluateHunger(mb *message.Buffer) func(ownerId uint32) error {
@@ -731,8 +781,10 @@ func (p *ProcessorImpl) AwardClosenessAndEmit(petId uint32, amount uint16) error
 }
 
 func (p *ProcessorImpl) AwardClosenessWithTransactionAndEmit(transactionId uuid.UUID, petId uint32, amount uint16) error {
-	return message.Emit(p.kp)(func(mb *message.Buffer) error {
-		return p.AwardClosenessWithTransaction(mb)(transactionId, petId, amount)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.With(WithTransaction(tx)).AwardClosenessWithTransaction(mb)(transactionId, petId, amount)
+		})
 	})
 }
 
@@ -805,8 +857,10 @@ func (p *ProcessorImpl) AwardClosenessWithTransaction(mb *message.Buffer) func(t
 }
 
 func (p *ProcessorImpl) EvolveAndEmit(transactionId uuid.UUID, petId uint32) error {
-	return message.Emit(p.kp)(func(mb *message.Buffer) error {
-		return p.Evolve(mb)(transactionId, petId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.With(WithTransaction(tx)).Evolve(mb)(transactionId, petId)
+		})
 	})
 }
 
@@ -884,7 +938,11 @@ func (p *ProcessorImpl) Evolve(mb *message.Buffer) func(transactionId uuid.UUID,
 }
 
 func (p *ProcessorImpl) AwardFullnessAndEmit(petId uint32, amount byte) error {
-	return message.Emit(p.kp)(model.Flip(model.Flip(p.AwardFullness)(petId))(amount))
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.With(WithTransaction(tx)).AwardFullness(mb)(petId)(amount)
+		})
+	})
 }
 
 func (p *ProcessorImpl) AwardFullness(mb *message.Buffer) func(petId uint32) func(amount byte) error {
@@ -921,7 +979,11 @@ func (p *ProcessorImpl) AwardFullness(mb *message.Buffer) func(petId uint32) fun
 }
 
 func (p *ProcessorImpl) AwardLevelAndEmit(petId uint32, amount byte) error {
-	return message.Emit(p.kp)(model.Flip(model.Flip(p.AwardLevel)(petId))(amount))
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.With(WithTransaction(tx)).AwardLevel(mb)(petId)(amount)
+		})
+	})
 }
 
 func (p *ProcessorImpl) AwardLevel(mb *message.Buffer) func(petId uint32) func(amount byte) error {
@@ -958,7 +1020,11 @@ func (p *ProcessorImpl) AwardLevel(mb *message.Buffer) func(petId uint32) func(a
 }
 
 func (p *ProcessorImpl) SetExcludeAndEmit(petId uint32, items []uint32) error {
-	return message.Emit(p.kp)(model.Flip(model.Flip(p.SetExclude)(petId))(items))
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.With(WithTransaction(tx)).SetExclude(mb)(petId)(items)
+		})
+	})
 }
 
 func (p *ProcessorImpl) SetExclude(mb *message.Buffer) func(petId uint32) func(items []uint32) error {

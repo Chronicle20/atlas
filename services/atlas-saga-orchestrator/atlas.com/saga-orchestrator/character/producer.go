@@ -3,6 +3,9 @@ package character
 import (
 	character2 "atlas-saga-orchestrator/kafka/message/character"
 
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
@@ -10,8 +13,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
 )
 
 func ChangeMapProvider(transactionId uuid.UUID, characterId uint32, field field.Model, portalId uint32) model.Provider[[]kafka.Message] {
@@ -194,6 +195,24 @@ func ResetStatsProvider(transactionId uuid.UUID, ch channel.Model, characterId u
 		Type:          character2.CommandResetStats,
 		Body: character2.ResetStatsCommandBody{
 			ChannelId: ch.Id(),
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// TransferAPProvider emits the saga-correlated TRANSFER_AP command consumed by
+// atlas-character (AP Reset item 5050000, task-126).
+func TransferAPProvider(transactionId uuid.UUID, ch channel.Model, characterId uint32, from string, to string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character2.Command[character2.TransferAPCommandBody]{
+		TransactionId: transactionId,
+		WorldId:       ch.WorldId(),
+		CharacterId:   characterId,
+		Type:          character2.CommandTransferAP,
+		Body: character2.TransferAPCommandBody{
+			ChannelId: ch.Id(),
+			From:      from,
+			To:        to,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

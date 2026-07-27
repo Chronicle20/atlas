@@ -54,8 +54,8 @@ type desired struct {
 // skipped — they need both topics to land. Tombstoned service drains
 // every listener (returns Drain for every prev key, no adds).
 func ComputeOps(prevSvc *configuration.RestModel, prevTenants map[uuid.UUID]tenant.RestModel,
-	nextSvc *configuration.RestModel, nextTenants map[uuid.UUID]tenant.RestModel) []Op {
-
+	nextSvc *configuration.RestModel, nextTenants map[uuid.UUID]tenant.RestModel,
+) []Op {
 	prevDesired := flatten(prevSvc, prevTenants)
 	nextDesired := flatten(nextSvc, nextTenants)
 

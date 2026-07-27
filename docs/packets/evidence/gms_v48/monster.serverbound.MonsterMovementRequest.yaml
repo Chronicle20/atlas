@@ -1,0 +1,10 @@
+packet: monster/serverbound/MonsterMovementRequest
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_550383
+    address: "0x550383"
+    decompile_sha256: 637e4083996f84bc39abb29a39fd11082dd20136cc3121ded9f83320d7f78900
+verifies:
+    - libs/atlas-packet/monster/serverbound/v48_test.go#TestMonsterMovementBytesV48

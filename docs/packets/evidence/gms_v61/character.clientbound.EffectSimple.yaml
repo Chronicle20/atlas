@@ -1,0 +1,10 @@
+packet: character/clientbound/EffectSimple
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CUser::OnEffect
+    address: "0x79148d"
+    decompile_sha256: 72fb9131bbf48af0e6dbf4f172e194a40a8277b6501603e12aab101de16b91ee
+verifies:
+    - libs/atlas-packet/character/clientbound/v61_test.go#TestEffectSimpleByteOutputV61

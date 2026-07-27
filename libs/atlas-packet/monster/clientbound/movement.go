@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 const MonsterMovementWriter = "MoveMonster"
@@ -56,7 +57,9 @@ func (m Movement) Encode(l logrus.FieldLogger, ctx context.Context) func(options
 		if (t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.Region() == "JMS" { // v87+ fields; v84..86 == v83 (off-by-one fix). delta §3.2
 			w.WriteBool(m.bNotChangeAction)
 		}
-		w.WriteBool(m.bNextAttackPossible)
+		if (t.IsRegion("GMS") && t.MajorAtLeast(79)) || t.Region() == "JMS" { // bNextAttackPossible added at v79; legacy GMS (v72 CMob::OnMove @0x61b10d reads only 2 leading bytes) omits it
+			w.WriteBool(m.bNextAttackPossible)
+		}
 		w.WriteInt8(m.bLeft)
 		w.WriteInt16(m.skillId)
 		w.WriteInt16(m.skillLevel)
@@ -77,7 +80,9 @@ func (m *Movement) Decode(l logrus.FieldLogger, ctx context.Context) func(r *req
 		if (t.IsRegion("GMS") && t.MajorAtLeast(87)) || t.Region() == "JMS" { // v87+ fields; v84..86 == v83 (off-by-one fix). delta §3.2
 			m.bNotChangeAction = r.ReadBool()
 		}
-		m.bNextAttackPossible = r.ReadBool()
+		if (t.IsRegion("GMS") && t.MajorAtLeast(79)) || t.Region() == "JMS" { // mirror of Encode: bNextAttackPossible added at v79
+			m.bNextAttackPossible = r.ReadBool()
+		}
 		m.bLeft = r.ReadInt8()
 		m.skillId = r.ReadInt16()
 		m.skillLevel = r.ReadInt16()

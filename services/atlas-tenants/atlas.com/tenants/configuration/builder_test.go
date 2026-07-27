@@ -27,7 +27,6 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 		SetResourceName("routes").
 		SetResourceData(resourceData).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -74,7 +73,6 @@ func TestBuild_Success(t *testing.T) {
 		SetResourceName("routes").
 		SetResourceData(json.RawMessage(`{"data": []}`)).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -131,7 +129,6 @@ func TestBuilderFluentChaining(t *testing.T) {
 		SetResourceName("routes").
 		SetResourceData(resourceData).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}

@@ -8,13 +8,14 @@ import (
 	"context"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	inventoryConst "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 // Processor interface defines operations for character respawn
@@ -44,6 +45,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		sp:  saga.NewProcessor(l, ctx),
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // Respawn handles character death and respawn logic
 func (p *ProcessorImpl) Respawn(ch channel.Model, characterId uint32, currentMapId _map.Id) error {

@@ -6,6 +6,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=field/clientbound/FieldForcedMapEquip version=gms_v48 ida=0x4c6ca1
 // packet-audit:verify packet=field/clientbound/FieldForcedMapEquip version=gms_v83 ida=0x531b7b
 // packet-audit:verify packet=field/clientbound/FieldForcedMapEquip version=gms_v84 ida=0x53de01
 // packet-audit:verify packet=field/clientbound/FieldForcedMapEquip version=gms_v87 ida=0x55941a
@@ -17,6 +18,19 @@ func TestForcedMapEquipGolden(t *testing.T) {
 	actual := test.Encode(t, ctx, input.Encode, nil)
 	if len(actual) != 0 {
 		t.Errorf("golden mismatch: got %v want empty", actual)
+	}
+}
+
+// TestForcedMapEquipByteOutputV48 pins the gms_v48 FORCED_MAP_EQUIP (op 0x4F=79)
+// clientbound wire. IDA: CField::OnFieldSpecificData @0x4c6ca1 (GMS_v48_1_DEVM.exe)
+// vtable-forwards and decodes no fields at this level — empty wire, matching the
+// version-invariant golden.
+func TestForcedMapEquipByteOutputV48(t *testing.T) {
+	input := NewForcedMapEquip()
+	ctx := test.CreateContext("GMS", 48, 1)
+	actual := test.Encode(t, ctx, input.Encode, nil)
+	if len(actual) != 0 {
+		t.Errorf("v48 golden mismatch: got %v want empty", actual)
 	}
 }
 

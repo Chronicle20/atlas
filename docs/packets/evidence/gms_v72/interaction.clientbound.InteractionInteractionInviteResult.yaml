@@ -1,0 +1,10 @@
+packet: interaction/clientbound/InteractionInteractionInviteResult
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CMiniRoomBaseDlg::OnPacketBase
+    address: "0x60e235"
+    decompile_sha256: b27d2a35eae7085d18e03e03f5f7d8cf7b7e5d7e2b9ec3c8e5dacc3e6acebd5d
+verifies:
+  - libs/atlas-packet/interaction/clientbound/v72_test.go#TestInteractionArmsV72

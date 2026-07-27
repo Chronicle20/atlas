@@ -3,14 +3,16 @@ package mist
 import (
 	"atlas-maps/kafka/message"
 	mistKafka "atlas-maps/kafka/message/mist"
-	"atlas-maps/kafka/producer"
 	"context"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // Processor exposes the lifecycle operations for tenant-scoped mists. Create
@@ -38,6 +40,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, p producer.Provider
 	return NewProcessorWithRegistry(l, ctx, p, GetRegistry())
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // NewProcessorWithRegistry constructs a Processor backed by the supplied
 // registry instead of the singleton. Used by tick tasks and tests that need
 // to operate on a non-singleton registry while reusing the lifecycle
@@ -63,8 +67,8 @@ func (p *ProcessorImpl) Create(body mistKafka.CreateCommandBody) (Mist, error) {
 		SetOrigin(body.OriginX, body.OriginY).
 		SetBounds(body.LtX, body.LtY, body.RbX, body.RbY).
 		SetDisease(body.Disease, body.DiseaseValue, time.Duration(body.DiseaseDuration)*time.Millisecond).
-		SetDuration(time.Duration(body.Duration) * time.Millisecond).
-		SetTickInterval(time.Duration(body.TickIntervalMs) * time.Millisecond).
+		SetDuration(time.Duration(body.Duration)*time.Millisecond).
+		SetTickInterval(time.Duration(body.TickIntervalMs)*time.Millisecond).
 		SetSource(body.SourceSkillId, body.SourceSkillLevel).
 		Build()
 

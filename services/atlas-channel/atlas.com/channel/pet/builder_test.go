@@ -23,7 +23,6 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 		SetX(50).
 		SetY(100).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -81,7 +80,6 @@ func TestCloneModel(t *testing.T) {
 		SetLevel(15).
 		SetCloseness(1500).
 		Build()
-
 	if err != nil {
 		t.Fatalf("CloneModel().Build() unexpected error: %v", err)
 	}

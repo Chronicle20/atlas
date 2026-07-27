@@ -3,11 +3,12 @@ package character
 import (
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/alicebob/miniredis/v2"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
 func setupProcessorTest(t *testing.T) {

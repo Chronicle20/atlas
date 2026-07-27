@@ -1,0 +1,10 @@
+packet: pet/clientbound/PetChat
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CPet::OnAction
+    address: "0x690eec"
+    decompile_sha256: 1af97425ef4d28f5859793d3493dad364d731c3536fafeae12f917748508e0d4
+verifies:
+  - libs/atlas-packet/pet/clientbound/chat_test.go#TestPetChatBytesV79

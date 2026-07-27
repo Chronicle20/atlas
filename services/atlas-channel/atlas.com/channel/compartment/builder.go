@@ -4,13 +4,12 @@ import (
 	"atlas-channel/asset"
 	"errors"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 )
 
-var (
-	ErrMissingId = errors.New("compartment id is required")
-)
+var ErrMissingId = errors.New("compartment id is required")
 
 type modelBuilder struct {
 	id            uuid.UUID

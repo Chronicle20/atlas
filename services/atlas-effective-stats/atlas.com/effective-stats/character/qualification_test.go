@@ -1,16 +1,16 @@
 package character
 
 import (
+	"atlas-effective-stats/external/data/equipment"
+	"atlas-effective-stats/stat"
 	"context"
 	"testing"
 
-	"atlas-effective-stats/external/data/equipment"
-	"atlas-effective-stats/stat"
+	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func TestWearerClassMask_StandardClasses(t *testing.T) {

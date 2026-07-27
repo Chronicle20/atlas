@@ -1,0 +1,39 @@
+{
+  "WriterName": "InteractionOperationTradeConfirm",
+  "IDAName": "CTradingRoomDlg::Trade",
+  "Address": "0x6ff5bf",
+  "Variant": "GMS/v72",
+  "BranchDepth": 1,
+  "AtlasFile": "libs/atlas-packet/interaction/serverbound/operation_trade_confirm.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    }
+  ],
+  "Verdict": 3,
+  "FlatInvalid": true
+}

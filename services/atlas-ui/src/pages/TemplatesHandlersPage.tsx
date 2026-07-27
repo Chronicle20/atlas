@@ -2,9 +2,9 @@ import { TemplateDetailLayout } from "@/components/features/templates/TemplateDe
 import { HandlersForm } from "@/pages/templates-handlers-form";
 
 export function TemplatesHandlersPage() {
-    return (
-        <TemplateDetailLayout>
-            <HandlersForm />
-        </TemplateDetailLayout>
-    );
+  return (
+    <TemplateDetailLayout>
+      <HandlersForm />
+    </TemplateDetailLayout>
+  );
 }

@@ -3,15 +3,17 @@ package drop
 import (
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
 	EnvCommandTopic               = "COMMAND_TOPIC_DROP"
 	CommandTypeRequestReservation = "REQUEST_RESERVATION"
+	CommandTypeSpawn              = "SPAWN"
 )
 
 type Command[E any] struct {
@@ -32,12 +34,31 @@ type RequestReservationCommandBody struct {
 	PetSlot     int8   `json:"petSlot"`
 }
 
+// SpawnCommandBody mirrors atlas-drops' CommandSpawnBody field-for-field
+// (minus EquipmentData, which is only read for equip item ids and
+// zero-fills on decode when absent).
+type SpawnCommandBody struct {
+	ItemId       uint32 `json:"itemId"`
+	Quantity     uint32 `json:"quantity"`
+	Mesos        uint32 `json:"mesos"`
+	DropType     byte   `json:"dropType"`
+	X            int16  `json:"x"`
+	Y            int16  `json:"y"`
+	OwnerId      uint32 `json:"ownerId"`
+	OwnerPartyId uint32 `json:"ownerPartyId"`
+	DropperId    uint32 `json:"dropperId"`
+	DropperX     int16  `json:"dropperX"`
+	DropperY     int16  `json:"dropperY"`
+	PlayerDrop   bool   `json:"playerDrop"`
+	Mod          byte   `json:"mod"`
+}
+
 const (
 	EnvEventTopicDropStatus = "EVENT_TOPIC_DROP_STATUS"
 	StatusEventTypeCreated  = "CREATED"
 	StatusEventTypeExpired  = "EXPIRED"
-	StatusEventTypePickedUp  = "PICKED_UP"
-	StatusEventTypeConsumed  = "CONSUMED"
+	StatusEventTypePickedUp = "PICKED_UP"
+	StatusEventTypeConsumed = "CONSUMED"
 )
 
 type StatusEvent[E any] struct {
@@ -67,11 +88,9 @@ type CreatedStatusEventBody struct {
 	Mod             byte      `json:"mod"`
 }
 
-type ExpiredStatusEventBody struct {
-}
+type ExpiredStatusEventBody struct{}
 
-type ConsumedStatusEventBody struct {
-}
+type ConsumedStatusEventBody struct{}
 
 type PickedUpStatusEventBody struct {
 	CharacterId uint32 `json:"characterId"`

@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const PetMovementHandle = "PetMovementHandle"
@@ -18,8 +20,8 @@ type MovementRequest struct {
 	movement model.Movement
 }
 
-func (m MovementRequest) PetId() uint64              { return m.petId }
-func (m MovementRequest) PetIdAsUint32() uint32      { return uint32(m.petId) }
+func (m MovementRequest) PetId() uint64                { return m.petId }
+func (m MovementRequest) PetIdAsUint32() uint32        { return uint32(m.petId) }
 func (m MovementRequest) MovementData() model.Movement { return m.movement }
 
 func (m MovementRequest) Operation() string {
@@ -32,16 +34,22 @@ func (m MovementRequest) String() string {
 
 func (m MovementRequest) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
+	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
-		w.WriteLong(m.petId)
+		if hasLeadingPetId(t) {
+			w.WriteLong(m.petId) // absent on GMS v48 (single-pet)
+		}
 		w.WriteByteArray(m.movement.Encode(l, ctx)(options))
 		return w.Bytes()
 	}
 }
 
 func (m *MovementRequest) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		m.petId = r.ReadUint64()
+		if hasLeadingPetId(t) {
+			m.petId = r.ReadUint64() // absent on GMS v48 (single-pet)
+		}
 		m.movement.Decode(l, ctx)(r, options)
 	}
 }

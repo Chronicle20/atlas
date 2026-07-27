@@ -5,9 +5,9 @@ import (
 	"io"
 	"strings"
 
+	"golang.org/x/text/encoding/japanese"
 	"golang.org/x/text/transform"
 )
-import "golang.org/x/text/encoding/japanese"
 
 // Request -
 type Request []byte

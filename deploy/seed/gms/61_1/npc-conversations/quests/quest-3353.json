@@ -1,0 +1,80 @@
+{
+  "data": {
+    "attributes": {
+      "questId": 3353,
+      "questName": "Huroids Investigation",
+      "startStateMachine": {
+        "startState": "intro",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "askReturn",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "I see. De Lang wants to stop the Huroids from causing more destruction, but the societies would like to get him on jail at once. So that's why he hid himself there."
+            },
+            "id": "intro",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "startAndWarp",
+                  "text": "Accept"
+                },
+                {
+                  "nextState": null,
+                  "text": "Decline"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendAcceptDecline",
+              "text": "In that case, go there again and hear more details from De Lang, will you?"
+            },
+            "id": "askReturn",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "mapId": "926120200",
+                    "portalId": "1"
+                  },
+                  "type": "warp_to_map"
+                },
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "startAndWarp",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "3353",
+    "type": "quest-conversation"
+  }
+}

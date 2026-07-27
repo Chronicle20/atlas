@@ -1,0 +1,10 @@
+packet: reactor/serverbound/ReactorHitRequest
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CReactorPool::FindHitReactor
+    address: "0x5a5a32"
+    decompile_sha256: 82b6feacec65f588eb911ccc330c60c63a7742ed8b7c1a1bd8085c2b704590e4
+verifies:
+    - libs/atlas-packet/reactor/serverbound/hit_test.go#TestHitBytesV48

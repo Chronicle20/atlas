@@ -1,6 +1,7 @@
 package clientbound
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
@@ -27,6 +28,86 @@ func TestPartyMemberHPByteOutput(t *testing.T) {
 				t.Errorf("byte count: got %d, want %d", len(got), wantBytes)
 			}
 		})
+	}
+}
+
+// TestPartyMemberHPV79 pins the gms_v79 UPDATE_PARTYMEMBER_HP (op 187) wire.
+//
+// IDA-verified client decode (GMS_v79_1_DEVM.exe, port 13340) —
+// CUserRemote::OnReceiveHP @0x8d9b90:
+//
+//	Decode4 @0x8d9ba2 → hp    (v3, used as 100*hp/maxHp).
+//	Decode4 @0x8d9ba9 → maxHp (v4).
+//
+// characterId is consumed upstream by CUserPool::OnUserRemotePacket (the
+// remote-user dispatcher prefix that resolves `this`), so the full wire is
+// WriteInt(characterId) + WriteInt(hp) + WriteInt(maxHp) = 12 bytes.
+//
+// packet-audit:verify packet=party/clientbound/PartyMemberHP version=gms_v79 ida=0x8d9b90
+func TestPartyMemberHPV79(t *testing.T) {
+	ctx := test.CreateContext("GMS", 79, 1)
+	m := NewPartyMemberHP(1234, 5000, 10000)
+	want := []byte{
+		0xD2, 0x04, 0x00, 0x00, // characterId = 1234 (dispatcher prefix)
+		0x88, 0x13, 0x00, 0x00, // Decode4 hp = 5000
+		0x10, 0x27, 0x00, 0x00, // Decode4 maxHp = 10000
+	}
+	if got := m.Encode(nil, ctx)(nil); !bytes.Equal(got, want) {
+		t.Errorf("v79 PartyMemberHP golden mismatch\n got: % x\nwant: % x", got, want)
+	}
+}
+
+// TestPartyMemberHPV72 pins the gms_v72 UPDATE_PARTYMEMBER_HP wire.
+//
+// IDA-verified client decode (GMS_v72.1_U_DEVM.exe, port 13339) —
+// CUserRemote::OnReceiveHP @0x88cc97:
+//
+//	Decode4 @0x88cca9 → hp    (v3, used as 100*hp/maxHp).
+//	Decode4 @0x88ccb0 → maxHp (v4).
+//
+// Byte-identical to the verified v79 wire. characterId is consumed upstream by
+// CUserPool::OnUserRemotePacket (the remote-user dispatcher prefix that resolves
+// `this`), so the full wire is WriteInt(characterId) + WriteInt(hp) +
+// WriteInt(maxHp) = 12 bytes.
+//
+// packet-audit:verify packet=party/clientbound/PartyMemberHP version=gms_v72 ida=0x88cc97
+func TestPartyMemberHPV72(t *testing.T) {
+	ctx := test.CreateContext("GMS", 72, 1)
+	m := NewPartyMemberHP(1234, 5000, 10000)
+	want := []byte{
+		0xD2, 0x04, 0x00, 0x00, // characterId = 1234 (dispatcher prefix)
+		0x88, 0x13, 0x00, 0x00, // Decode4 hp = 5000 (@0x88cca9)
+		0x10, 0x27, 0x00, 0x00, // Decode4 maxHp = 10000 (@0x88ccb0)
+	}
+	if got := m.Encode(nil, ctx)(nil); !bytes.Equal(got, want) {
+		t.Errorf("v72 PartyMemberHP golden mismatch\n got: % x\nwant: % x", got, want)
+	}
+}
+
+// TestPartyMemberHPV61 pins the gms_v61 UPDATE_PARTYMEMBER_HP (op 156) wire.
+//
+// IDA-verified client decode (GMS_v61.1_U_DEVM.exe, port 13338) —
+// CUserRemote::OnReceiveHP @0x7cc0e6:
+//
+//	Decode4 @0x7cc0f8 → hp    (v3, used as 100*hp/maxHp).
+//	Decode4 @0x7cc0ff → maxHp (v4).
+//
+// Byte-identical to the verified v72/v79 wire. characterId is consumed upstream
+// by CUserPool::OnUserRemotePacket (the remote-user dispatcher prefix that
+// resolves `this`), so the full wire is WriteInt(characterId) + WriteInt(hp) +
+// WriteInt(maxHp) = 12 bytes.
+//
+// packet-audit:verify packet=party/clientbound/PartyMemberHP version=gms_v61 ida=0x7cc0e6
+func TestPartyMemberHPV61(t *testing.T) {
+	ctx := test.CreateContext("GMS", 61, 1)
+	m := NewPartyMemberHP(1234, 5000, 10000)
+	want := []byte{
+		0xD2, 0x04, 0x00, 0x00, // characterId = 1234 (dispatcher prefix)
+		0x88, 0x13, 0x00, 0x00, // Decode4 hp = 5000 (@0x7cc0f8)
+		0x10, 0x27, 0x00, 0x00, // Decode4 maxHp = 10000 (@0x7cc0ff)
+	}
+	if got := m.Encode(nil, ctx)(nil); !bytes.Equal(got, want) {
+		t.Errorf("v61 PartyMemberHP golden mismatch\n got: % x\nwant: % x", got, want)
 	}
 }
 

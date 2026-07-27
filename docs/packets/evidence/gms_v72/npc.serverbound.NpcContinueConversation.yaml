@@ -1,0 +1,10 @@
+packet: npc/serverbound/NpcContinueConversation
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CScriptMan::OnSay#Reply
+    address: "0x6a0d23"
+    decompile_sha256: b4bab86408b761d958aa905ff9afe9e2f04806b579033a0ad8354aa62e35b7ce
+verifies:
+  - libs/atlas-packet/npc/serverbound/conversation_v72_test.go#TestContinueConversationByteV72

@@ -5,28 +5,32 @@ import (
 	"atlas-messengers/invite"
 	"atlas-messengers/kafka/message"
 	"atlas-messengers/kafka/message/messenger"
-	"atlas-messengers/kafka/producer"
 	"context"
 	"errors"
 	"fmt"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const StartMessengerId = uint32(1000000000)
 
-var ErrNotFound = errors.New("not found")
-var ErrAtCapacity = errors.New("at capacity")
-var ErrAlreadyIn = errors.New("already in messenger")
-var ErrNotIn = errors.New("not in messenger")
-var ErrNotAsBeginner = errors.New("not as beginner")
-var ErrNotAsGm = errors.New("not as gm")
+var (
+	ErrNotFound      = errors.New("not found")
+	ErrAtCapacity    = errors.New("at capacity")
+	ErrAlreadyIn     = errors.New("already in messenger")
+	ErrNotIn         = errors.New("not in messenger")
+	ErrNotAsBeginner = errors.New("not as beginner")
+	ErrNotAsGm       = errors.New("not as gm")
+)
 
 func AllProvider(ctx context.Context) model.Provider[[]Model] {
 	return GetAllProvider(ctx)
@@ -399,7 +403,7 @@ func RequestInvite(l logrus.FieldLogger) func(ctx context.Context) func(transact
 				return ErrAtCapacity
 			}
 
-			err = invite.Create(l)(ctx)(transactionID, actorId, a.WorldId(), p.Id(), characterId)
+			err = invite.NewProcessor(l, ctx).Create(transactionID, actorId, a.WorldId(), p.Id(), characterId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce messenger [%d] invite.", p.Id())
 				err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(errorEventProvider(transactionID, actorId, a.MessengerId(), c.WorldId(), messenger.EventMessengerStatusErrorUnexpected, ""))
@@ -418,6 +422,21 @@ func RequestInvite(l logrus.FieldLogger) func(ctx context.Context) func(transact
 // ProcessorImpl - struct-based processor pattern for consistency with other services
 // ============================================================================
 
+// Processor declares the struct-based processor operations for messenger operations.
+// This pattern is consistent with other Atlas services and allows for easier testing.
+type Processor interface {
+	Create(transactionID uuid.UUID, characterId uint32) (Model, error)
+	CreateAndEmit(input CreateInput) (Model, error)
+	Join(transactionID uuid.UUID, messengerId uint32, characterId uint32) (Model, error)
+	JoinAndEmit(input JoinInput) (Model, error)
+	Leave(transactionID uuid.UUID, messengerId uint32, characterId uint32) (Model, error)
+	LeaveAndEmit(input LeaveInput) (Model, error)
+	RequestInvite(transactionID uuid.UUID, actorId uint32, characterId uint32) error
+	RequestInviteAndEmit(input RequestInviteInput) error
+	GetById(messengerId uint32) (Model, error)
+	GetSlice(filters ...model.Filter[Model]) ([]Model, error)
+}
+
 // ProcessorImpl provides struct-based processor methods for messenger operations.
 // This pattern is consistent with other Atlas services and allows for easier testing.
 type ProcessorImpl struct {
@@ -426,9 +445,11 @@ type ProcessorImpl struct {
 }
 
 // NewProcessor creates a new ProcessorImpl with the given logger and context.
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *ProcessorImpl {
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{l: l, ctx: ctx}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // Create creates a new messenger for the given character.
 // Note: This method includes inline Kafka emissions. Use CreateAndEmit for buffered emissions.
@@ -700,7 +721,7 @@ func RequestInviteAndEmit(l logrus.FieldLogger) func(ctx context.Context) func(i
 					return ErrAtCapacity
 				}
 
-				err = invite.Create(l)(ctx)(input.TransactionID, input.ActorId, a.WorldId(), p.Id(), input.CharacterId)
+				err = invite.NewProcessor(l, ctx).Create(input.TransactionID, input.ActorId, a.WorldId(), p.Id(), input.CharacterId)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce messenger [%d] invite.", p.Id())
 					_ = buf.Put(messenger.EnvEventStatusTopic, errorEventProvider(input.TransactionID, input.ActorId, a.MessengerId(), c.WorldId(), messenger.EventMessengerStatusErrorUnexpected, ""))

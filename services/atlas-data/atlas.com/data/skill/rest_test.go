@@ -10,13 +10,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Server struct {

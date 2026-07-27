@@ -13,9 +13,9 @@ import (
 // TestStatusEventSerialization tests serialization and deserialization of compartment status events
 func TestStatusEventSerialization(t *testing.T) {
 	tests := []struct {
-		name     string
-		event    interface{}
-		expected string
+		name        string
+		event       interface{}
+		expected    string
 		description string
 	}{
 		{
@@ -30,7 +30,7 @@ func TestStatusEventSerialization(t *testing.T) {
 					Capacity: 100,
 				},
 			},
-			expected: `{"transactionId":"550e8400-e29b-41d4-a716-446655440000","type":"CREATED","characterId":12345,"compartmentId":"00000000-0000-0000-0000-000000000000","body":{"type":1,"capacity":100}}`,
+			expected:    `{"transactionId":"550e8400-e29b-41d4-a716-446655440000","type":"CREATED","characterId":12345,"compartmentId":"00000000-0000-0000-0000-000000000000","body":{"type":1,"capacity":100}}`,
 			description: "Should serialize CreatedStatusEvent correctly",
 		},
 		{
@@ -45,7 +45,7 @@ func TestStatusEventSerialization(t *testing.T) {
 					Message:   "Template ID 999999 is not valid",
 				},
 			},
-			expected: `{"transactionId":"550e8400-e29b-41d4-a716-446655440000","type":"CREATION_FAILED","characterId":12345,"compartmentId":"00000000-0000-0000-0000-000000000000","body":{"errorCode":"INVALID_TEMPLATE_ID","message":"Template ID 999999 is not valid"}}`,
+			expected:    `{"transactionId":"550e8400-e29b-41d4-a716-446655440000","type":"CREATION_FAILED","characterId":12345,"compartmentId":"00000000-0000-0000-0000-000000000000","body":{"errorCode":"INVALID_TEMPLATE_ID","message":"Template ID 999999 is not valid"}}`,
 			description: "Should serialize CreationFailedStatusEvent correctly",
 		},
 		{
@@ -60,7 +60,7 @@ func TestStatusEventSerialization(t *testing.T) {
 					TransactionId: uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
 				},
 			},
-			expected: `{"transactionId":"550e8400-e29b-41d4-a716-446655440000","type":"ERROR","characterId":12345,"compartmentId":"00000000-0000-0000-0000-000000000000","body":{"errorCode":"EQUIPMENT_SLOT_OCCUPIED","transactionId":"550e8400-e29b-41d4-a716-446655440000"}}`,
+			expected:    `{"transactionId":"550e8400-e29b-41d4-a716-446655440000","type":"ERROR","characterId":12345,"compartmentId":"00000000-0000-0000-0000-000000000000","body":{"errorCode":"EQUIPMENT_SLOT_OCCUPIED","transactionId":"550e8400-e29b-41d4-a716-446655440000"}}`,
 			description: "Should serialize ErrorEventBody correctly",
 		},
 	}
@@ -164,9 +164,9 @@ func TestStatusEventTypeConstants(t *testing.T) {
 // TestCommandSerialization tests serialization and deserialization of compartment commands
 func TestCommandSerialization(t *testing.T) {
 	tests := []struct {
-		name     string
-		command  interface{}
-		expected string
+		name        string
+		command     interface{}
+		expected    string
 		description string
 	}{
 		{
@@ -181,7 +181,7 @@ func TestCommandSerialization(t *testing.T) {
 					Quantity:   1,
 				},
 			},
-			expected: `{"transactionId":"00000000-0000-0000-0000-000000000000","characterId":12345,"inventoryType":0,"type":"CREATE","body":{"templateId":1302000,"quantity":1}}`,
+			expected:    `{"transactionId":"00000000-0000-0000-0000-000000000000","characterId":12345,"inventoryType":0,"type":"CREATE","body":{"templateId":1302000,"quantity":1}}`,
 			description: "Should serialize CreateCommand correctly",
 		},
 		{
@@ -196,7 +196,7 @@ func TestCommandSerialization(t *testing.T) {
 					Quantity:   1,
 				},
 			},
-			expected: `{"transactionId":"00000000-0000-0000-0000-000000000000","characterId":12345,"inventoryType":0,"type":"DELETE","body":{"templateId":1302000,"quantity":1}}`,
+			expected:    `{"transactionId":"00000000-0000-0000-0000-000000000000","characterId":12345,"inventoryType":0,"type":"DELETE","body":{"templateId":1302000,"quantity":1}}`,
 			description: "Should serialize DeleteCommand correctly",
 		},
 		{
@@ -212,7 +212,7 @@ func TestCommandSerialization(t *testing.T) {
 					Destination:   -1,
 				},
 			},
-			expected: `{"transactionId":"00000000-0000-0000-0000-000000000000","characterId":12345,"inventoryType":0,"type":"EQUIP","body":{"inventoryType":1,"source":5,"destination":-1}}`,
+			expected:    `{"transactionId":"00000000-0000-0000-0000-000000000000","characterId":12345,"inventoryType":0,"type":"EQUIP","body":{"inventoryType":1,"source":5,"destination":-1}}`,
 			description: "Should serialize EquipCommand correctly",
 		},
 		{
@@ -228,7 +228,7 @@ func TestCommandSerialization(t *testing.T) {
 					Destination:   5,
 				},
 			},
-			expected: `{"transactionId":"00000000-0000-0000-0000-000000000000","characterId":12345,"inventoryType":0,"type":"UNEQUIP","body":{"inventoryType":1,"source":-1,"destination":5}}`,
+			expected:    `{"transactionId":"00000000-0000-0000-0000-000000000000","characterId":12345,"inventoryType":0,"type":"UNEQUIP","body":{"inventoryType":1,"source":-1,"destination":5}}`,
 			description: "Should serialize UnequipCommand correctly",
 		},
 		{
@@ -243,7 +243,7 @@ func TestCommandSerialization(t *testing.T) {
 					Quantity:   1,
 				},
 			},
-			expected: `{"transactionId":"00000000-0000-0000-0000-000000000000","characterId":12345,"inventoryType":0,"type":"CREATE_AND_EQUIP","body":{"templateId":1302000,"quantity":1}}`,
+			expected:    `{"transactionId":"00000000-0000-0000-0000-000000000000","characterId":12345,"inventoryType":0,"type":"CREATE_AND_EQUIP","body":{"templateId":1302000,"quantity":1}}`,
 			description: "Should serialize CreateAndEquipCommand correctly",
 		},
 	}
@@ -476,42 +476,42 @@ func TestCreateAndEquipEventFlow(t *testing.T) {
 			for i, event := range tt.events {
 				jsonData, err := json.Marshal(event)
 				assert.NoError(t, err, "Event %d should serialize without error", i)
-				
+
 				// Verify the JSON is well-formed
 				var temp interface{}
 				err = json.Unmarshal(jsonData, &temp)
 				assert.NoError(t, err, "Event %d should produce valid JSON", i)
-				
+
 				// Verify specific fields based on event type
 				switch e := event.(type) {
 				case Command[CreateAndEquipCommandBody]:
 					assert.Contains(t, string(jsonData), "CREATE_AND_EQUIP")
 					assert.Contains(t, string(jsonData), "templateId")
 					assert.Contains(t, string(jsonData), "quantity")
-					
+
 				case Command[EquipCommandBody]:
 					assert.Contains(t, string(jsonData), "EQUIP")
 					assert.Contains(t, string(jsonData), "inventoryType")
 					assert.Contains(t, string(jsonData), "source")
 					assert.Contains(t, string(jsonData), "destination")
-					
+
 				case StatusEvent[CreatedStatusEventBody]:
 					assert.Contains(t, string(jsonData), "CREATED")
 					assert.Contains(t, string(jsonData), "transactionId")
 					assert.Contains(t, string(jsonData), "assetId")
 					assert.Equal(t, transactionId, e.TransactionId)
-					
+
 				case asset.StatusEvent[asset.MovedStatusEventBody]:
 					assert.Contains(t, string(jsonData), "MOVED")
 					assert.Contains(t, string(jsonData), "transactionId")
 					assert.Contains(t, string(jsonData), "oldSlot")
 					assert.Equal(t, transactionId, e.TransactionId)
-					
+
 				case StatusEvent[CreationFailedStatusEventBody]:
 					assert.Contains(t, string(jsonData), "CREATION_FAILED")
 					assert.Contains(t, string(jsonData), "errorCode")
 					assert.Contains(t, string(jsonData), "message")
-					
+
 				case StatusEvent[ErrorEventBody]:
 					assert.Contains(t, string(jsonData), "ERROR")
 					assert.Contains(t, string(jsonData), "errorCode")

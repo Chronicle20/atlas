@@ -4,9 +4,10 @@ import (
 	"context"
 	"strconv"
 
-	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
+
+	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 )
 
 type CharacterRegistry struct {

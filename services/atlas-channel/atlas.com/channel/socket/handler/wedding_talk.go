@@ -5,9 +5,10 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	fieldsb "github.com/Chronicle20/atlas/libs/atlas-packet/field/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 func WeddingTalkHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, ro map[string]interface{}) {

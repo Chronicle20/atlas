@@ -32,6 +32,13 @@ type MCPHTTPClient struct {
 	// 0 means "use the default active instance" (no select_instance call).
 	InstancePort     int
 	instanceSelected bool
+
+	// Database, when non-empty, is the session id (from idb_list) of the IDB to
+	// target. It is injected as the "database" argument on every tools/call, so
+	// the harvest reads the intended IDB directly on the session-based server —
+	// the successor to the removed select_instance/port mechanism. Empty leaves
+	// the server to pick its default session (legacy single-IDB behaviour).
+	Database string
 }
 
 // NewMCPHTTPClient builds a client targeting the given MCP endpoint URL. A nil
@@ -50,6 +57,20 @@ func NewMCPHTTPClientWithInstance(url string, hc *http.Client, port int) *MCPHTT
 		hc = &http.Client{}
 	}
 	return &MCPHTTPClient{url: url, http: hc, InstancePort: port}
+}
+
+// NewMCPHTTPClientWithDatabase builds a client that targets a specific IDB by
+// session id (from idb_list), injecting it as the "database" argument on every
+// tools/call. This is the session-based successor to select_instance/port:
+// each tool (lookup_funcs, func_query, decompile, callees) is session-scoped on
+// the current server, so a harvest that omits "database" hits the server's
+// default IDB — the source of cross-version harvest mismatches. A non-empty
+// database makes the harvest deterministic regardless of which IDBs are open.
+func NewMCPHTTPClientWithDatabase(url string, hc *http.Client, database string) *MCPHTTPClient {
+	if hc == nil {
+		hc = &http.Client{}
+	}
+	return &MCPHTTPClient{url: url, http: hc, Database: database}
 }
 
 // rpcRequest is a JSON-RPC 2.0 request envelope. ID is omitted for
@@ -273,6 +294,16 @@ func (c *MCPHTTPClient) allocID() int {
 func (c *MCPHTTPClient) callStructured(ctx context.Context, tool string, args map[string]any) (json.RawMessage, error) {
 	if err := c.ensureInit(ctx); err != nil {
 		return nil, err
+	}
+	// Session-based targeting: every session-scoped tool (lookup_funcs,
+	// func_query, decompile, callees) accepts a "database" argument. Inject it
+	// here — the single chokepoint for the harvest's tool calls — so the read
+	// hits the intended IDB. select_instance goes through callStructuredLocked
+	// and is intentionally left untouched.
+	if c.Database != "" && args != nil {
+		if _, ok := args["database"]; !ok {
+			args["database"] = c.Database
+		}
 	}
 	return c.callStructuredLocked(ctx, tool, args)
 }

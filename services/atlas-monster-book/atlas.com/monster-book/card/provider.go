@@ -1,12 +1,13 @@
 package card
 
 import (
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 func byCharacterIdEntityProvider(tenantId uuid.UUID, characterId character.Id) database.EntityProvider[[]entity] {

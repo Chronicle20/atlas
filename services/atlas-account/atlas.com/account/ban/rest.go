@@ -6,12 +6,12 @@ import (
 )
 
 type CheckRestModel struct {
-	Id         uint32 `json:"-"`
-	Banned     bool   `json:"banned"`
-	BanType    byte   `json:"banType,omitempty"`
-	Reason     string `json:"reason,omitempty"`
-	ReasonCode byte   `json:"reasonCode,omitempty"`
-	Permanent  bool   `json:"permanent,omitempty"`
+	Id         uint32    `json:"-"`
+	Banned     bool      `json:"banned"`
+	BanType    byte      `json:"banType,omitempty"`
+	Reason     string    `json:"reason,omitempty"`
+	ReasonCode byte      `json:"reasonCode,omitempty"`
+	Permanent  bool      `json:"permanent,omitempty"`
 	ExpiresAt  time.Time `json:"expiresAt,omitempty"`
 }
 

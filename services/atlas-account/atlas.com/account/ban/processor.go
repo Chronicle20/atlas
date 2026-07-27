@@ -6,6 +6,24 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func CheckBan(l logrus.FieldLogger, ctx context.Context, ip string, hwid string, accountId uint32) (CheckRestModel, error) {
-	return requestCheckBan(ip, hwid, accountId)(l, ctx)
+type Processor interface {
+	CheckBan(ip string, hwid string, accountId uint32) (CheckRestModel, error)
+}
+
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	return &ProcessorImpl{
+		l:   l,
+		ctx: ctx,
+	}
+}
+
+var _ Processor = (*ProcessorImpl)(nil)
+
+func (p *ProcessorImpl) CheckBan(ip string, hwid string, accountId uint32) (CheckRestModel, error) {
+	return requestCheckBan(ip, hwid, accountId)(p.l, p.ctx)
 }

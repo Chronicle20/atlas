@@ -15,6 +15,22 @@ The service makes outbound REST calls to fetch data from other services:
 
 - `GET /characters/{id}/inventory` - Fetch full inventory for a character
 
+### Character Location Service (MAPS)
+
+- `GET /characters/{id}/location` - Fetch a character's current field (world, channel, map, instance)
+
+  Response:
+  ```json
+  {
+    "worldId": 0,
+    "channelId": 0,
+    "mapId": 0,
+    "instance": "uuid"
+  }
+  ```
+
+  Returns a not-found condition on HTTP 404 (no location row yet stored for the character).
+
 ### Pet Service (PETS)
 
 - `GET /pets/{id}` - Fetch pet by ID

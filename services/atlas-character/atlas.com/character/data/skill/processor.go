@@ -5,8 +5,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 )
 
 type Processor interface {
@@ -25,6 +26,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		ctx: ctx,
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetById(uniqueId uint32) (Model, error) {
 	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(uniqueId), Extract)()

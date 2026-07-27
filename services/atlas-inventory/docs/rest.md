@@ -60,6 +60,7 @@ None
         "createdAt": "<timestamp>",
         "quantity": <uint32>,
         "ownerId": <uint32>,
+        "owner": <string>,
         "flag": <uint16>,
         "rechargeable": <uint64>,
         "strength": <uint16>,
@@ -199,6 +200,7 @@ None
         "createdAt": "<timestamp>",
         "quantity": <uint32>,
         "ownerId": <uint32>,
+        "owner": <string>,
         "flag": <uint16>,
         "rechargeable": <uint64>,
         "strength": <uint16>,
@@ -270,9 +272,64 @@ Same as GET /characters/{characterId}/inventory/compartments/{compartmentId}
 
 ---
 
+### POST /characters/{characterId}/inventory/accommodation
+
+Read-only check of whether each listed item could currently be granted to the
+character (a `CREATE_ASSET` of it would succeed). Each item is evaluated
+independently against the live inventory snapshot — a free slot always works, and
+a full tab still fits a stackable that merges into an existing stack (equipment
+and rechargeables never merge). No mutation.
+
+#### Parameters
+
+| Name | Type | Location | Required |
+|------|------|----------|----------|
+| characterId | uint32 | path | yes |
+
+#### Request Model
+
+```json
+{
+  "data": {
+    "type": "inventoryAccommodations",
+    "id": "<characterId>",
+    "attributes": {
+      "items": [ { "itemId": 2000002, "quantity": 30 } ]
+    }
+  }
+}
+```
+
+#### Response Model
+
+```json
+{
+  "data": {
+    "type": "inventoryAccommodations",
+    "id": "<characterId>",
+    "attributes": {
+      "accommodated": false,
+      "results": [ { "itemId": 2000002, "quantity": 30, "accommodated": true } ]
+    }
+  }
+}
+```
+
+`accommodated` (top level) is true only when every requested item is
+independently accommodatable.
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 400 | Invalid characterId |
+| 500 | Internal error |
+
+---
+
 ### GET /characters/{characterId}/inventory/compartments/{compartmentId}/assets
 
-Retrieves all assets in a compartment.
+Retrieves all assets in a compartment. Paginated.
 
 #### Parameters
 
@@ -280,6 +337,8 @@ Retrieves all assets in a compartment.
 |------|------|----------|----------|
 | characterId | uint32 | path | yes |
 | compartmentId | uuid | path | yes |
+| page[number] | int | query | no (default 1) |
+| page[size] | int | query | no (default 250, max 250) |
 
 #### Request Model
 
@@ -300,6 +359,7 @@ None
         "createdAt": "<timestamp>",
         "quantity": <uint32>,
         "ownerId": <uint32>,
+        "owner": <string>,
         "flag": <uint16>,
         "rechargeable": <uint64>,
         "strength": <uint16>,
@@ -329,7 +389,18 @@ None
         "petId": <uint32>
       }
     }
-  ]
+  ],
+  "meta": {
+    "total": <int>,
+    "page": { "number": <int>, "size": <int>, "last": <int> }
+  },
+  "links": {
+    "self": "<url>",
+    "first": "<url>",
+    "prev": "<url>",
+    "next": "<url>",
+    "last": "<url>"
+  }
 }
 ```
 
@@ -337,6 +408,7 @@ None
 
 | Status | Condition |
 |--------|-----------|
+| 400 | Invalid page[number]/page[size] |
 | 500 | Internal error |
 
 ---

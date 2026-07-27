@@ -1,0 +1,39 @@
+{
+  "WriterName": "InteractionInteractionMiniGameCardSelectFirst",
+  "IDAName": "CMiniRoomBaseDlg::OnPacketBase#MemoryGameCardSelectFirst",
+  "Address": "0x62f060",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/interaction/clientbound/interaction_minigame.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (68 FLIP_CARD; dispatch byte)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "turn (1 = first flip; CMemoryGameDlg::OnTurnUpCard §G5)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "slot (index of the card turned up)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

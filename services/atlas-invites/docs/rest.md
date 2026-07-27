@@ -4,13 +4,17 @@
 
 ### GET /api/characters/{characterId}/invites
 
-Retrieves all pending invites for a character.
+Retrieves all pending invites for a character. Results are paginated and sorted by invite `id` ascending.
 
 #### Parameters
 
 | Name | Location | Type | Required | Description |
 |------|----------|------|----------|-------------|
 | characterId | path | uint32 | Yes | Character identifier |
+| page[number] | query | integer | No | Page number, minimum 1. Default 1. |
+| page[size] | query | integer | No | Page size, 1 to 250. Default 250. |
+
+The legacy `limit` query parameter is rejected.
 
 #### Request Headers
 
@@ -37,9 +41,12 @@ JSON:API response with resource type `invites`.
 | targetId | uint32 | Character who receives the invite |
 | age | time.Time | Creation timestamp |
 
+Paginated responses include a `meta` block (`total`, `page.number`, `page.size`, `page.last`) and a `links` block (`self`, `first`, `last`, plus `prev` when not on the first page and `next` when not on the last page).
+
 #### Error Conditions
 
 | Status Code | Condition |
 |-------------|-----------|
 | 400 | Invalid characterId path parameter |
+| 400 | `page[number]` or `page[size]` is non-integer, out of range, or the `limit` parameter is present |
 | 500 | Internal error retrieving invites |

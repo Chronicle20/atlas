@@ -54,7 +54,7 @@ func TestCTSForeignSingleStatRoundTrip(t *testing.T) {
 // older atlas encoder wrote (Short value | Int sourceId | Int duration),
 // which sent level=0 in bytes 4-5 and crashed the client's render path on
 // MobSkill(126, 0) lookup. This test asserts the corrected per-stat 10 bytes
-// match the Cosmic v83 reference.
+// match the v83 read order.
 func TestCTSEncodeSlowDiseasePerStatLayout(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 83, 1)
 	tn, _ := tenant.Create([16]byte{}, "GMS", 83, 1)
@@ -152,7 +152,7 @@ func TestCTSMonsterRidingBaseStatEncodesVehicleAndSkill(t *testing.T) {
 
 	// The Monster Riding base-stat block must contain nOption=1902000 then rOption=1004
 	// as consecutive little-endian int32s.
-	want := []byte{0xb0, 0x05, 0x1d, 0x00, /* 1902000 */ 0xec, 0x03, 0x00, 0x00 /* 1004 */}
+	want := []byte{0xb0, 0x05, 0x1d, 0x00 /* 1902000 */, 0xec, 0x03, 0x00, 0x00 /* 1004 */}
 	if !bytes.Contains(got, want) {
 		t.Fatalf("Monster Riding base stat missing nOption=1902000,rOption=1004; got % x", got)
 	}

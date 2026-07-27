@@ -134,7 +134,7 @@ func TestHit_CancelsPendingStateTimer(t *testing.T) {
 	// Create has armed a 100ms timer. Hit immediately — should cancel it.
 	// Tolerate Kafka producer error (no broker reachable in unit tests);
 	// the registry mutations under test happen before the producer call.
-	_ = Hit(l)(ctx)(created.Id(), 0, 0)
+	_ = NewProcessor(l, ctx).Hit(created.Id(), 0, 0)
 
 	// Wait well past the original timer's fire time.
 	time.Sleep(200 * time.Millisecond)
@@ -170,7 +170,7 @@ func TestDestroy_CancelsPendingStateTimer(t *testing.T) {
 	// Tolerate Kafka producer error (no broker reachable in unit tests);
 	// the registry mutations under test (Remove + cancelStateTimeout) happen
 	// before the producer call.
-	_ = Destroy(l)(ctx)(created)
+	_ = NewProcessor(l, ctx).Destroy()(created)
 
 	// No panic / no attempt to transition a deleted reactor.
 	time.Sleep(200 * time.Millisecond)

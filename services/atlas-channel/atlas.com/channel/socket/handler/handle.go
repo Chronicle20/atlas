@@ -6,12 +6,13 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
-	sh "github.com/Chronicle20/atlas/libs/atlas-socket/handler"
-	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
+
+	sh "github.com/Chronicle20/atlas/libs/atlas-socket/handler"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type MessageValidator = sh.MessageValidator[session.Model]

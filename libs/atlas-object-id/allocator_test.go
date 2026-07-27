@@ -6,12 +6,13 @@ import (
 	"strings"
 	"testing"
 
-	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
+
+	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func setup(t *testing.T) (Allocator, *goredis.Client, tenant.Model, tenant.Model, func()) {

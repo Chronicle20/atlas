@@ -5,16 +5,17 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-script-core/condition"
 	"github.com/Chronicle20/atlas/libs/atlas-script-core/operation"
-	"github.com/google/uuid"
 )
 
 func TestMake(t *testing.T) {
 	tests := []struct {
-		name    string
-		entity  Entity
-		want    struct {
+		name   string
+		entity Entity
+		want   struct {
 			reactorId   string
 			description string
 			hitRules    int

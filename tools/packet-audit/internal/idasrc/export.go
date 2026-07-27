@@ -92,6 +92,38 @@ func NewExportSource(path string) (*ExportSource, error) {
 	return &ExportSource{file: f}, nil
 }
 
+// SpliceExport implements the VERIFYING_A_PACKET.md §10 surgical-splice path as
+// a tool guarantee: it loads the existing export at existingPath, overlays the
+// SINGLE function `fname` harvested into `fresh`, and returns the deterministic
+// re-marshal (json.MarshalIndent "  " + trailing newline — identical to the
+// export core). Every untouched function round-trips byte-for-byte through the
+// same exportFile struct, so only the one spliced entry changes. It is an error
+// if `fname` is absent from the fresh harvest (nothing to splice) or the
+// existing file cannot be read/parsed.
+func SpliceExport(existingPath string, fresh exportFile, fname string) ([]byte, error) {
+	entry, ok := fresh.Functions[fname]
+	if !ok {
+		return nil, fmt.Errorf("splice: %q not present in the fresh harvest", fname)
+	}
+	b, err := os.ReadFile(existingPath)
+	if err != nil {
+		return nil, fmt.Errorf("splice: read existing export: %w", err)
+	}
+	var merged exportFile
+	if err := json.Unmarshal(b, &merged); err != nil {
+		return nil, fmt.Errorf("splice: parse existing export: %w", err)
+	}
+	if merged.Functions == nil {
+		merged.Functions = map[string]exportFn{}
+	}
+	merged.Functions[fname] = entry
+	out, err := json.MarshalIndent(merged, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("splice: marshal: %w", err)
+	}
+	return append(out, '\n'), nil
+}
+
 // Functions returns all FNames in the export.
 func (s *ExportSource) Functions() []string {
 	out := make([]string, 0, len(s.file.Functions))
@@ -165,8 +197,10 @@ func (s *ExportSource) ResolveShape(ctx context.Context, fname string) (Fields, 
 	if !ok {
 		return Fields{}, fmt.Errorf("idasrc: function %q not in export", fname)
 	}
-	return Fields{Function: f.Function, Address: f.Address, Direction: f.Direction,
-		Calls: ExtractShape(f, raw.Dispatch)}, nil
+	return Fields{
+		Function: f.Function, Address: f.Address, Direction: f.Direction,
+		Calls: ExtractShape(f, raw.Dispatch),
+	}, nil
 }
 
 // resolveWithVisited is the workhorse that handles recursive Delegate descent.
@@ -212,6 +246,13 @@ func (s *ExportSource) resolveWithVisited(ctx context.Context, fname string, vis
 			}
 			continue
 		}
+		if c.Op == "COutPacket" {
+			// COutPacket is the opcode-header constructor, not a field
+			// primitive. An opcode-only (bodiless) serverbound send records it
+			// with no Encode calls following; skip it so such packets resolve
+			// to an empty body rather than erroring on an unknown primitive.
+			continue
+		}
 		op, err := parsePrim(c.Op)
 		if err != nil {
 			return Fields{}, fmt.Errorf("call %d (%s): %w", i, fname, err)
@@ -243,19 +284,19 @@ func combineGuards(outer, inner string) string {
 // The prefixes mirror the bytes that the in-game dispatcher reads before
 // forwarding the remaining payload to the leaf handler:
 //
-//   per-mob         → CMobPool::OnMobPacket reads Decode4 mobId, then routes
-//                     to CMob::On*.
-//   per-pet         → CUserPool::OnUserRemotePacket reads Decode4 characterId,
-//                     then CUser::OnPetPacket reads Decode1 slot, then routes
-//                     to CPet::On*.
-//   per-pet-remote  → CUserPool::OnUserRemotePacket reads Decode4 characterId,
-//                     then routes to CUserRemote::OnPetActivated. The slot
-//                     byte is part of the leaf payload here, not the prefix.
-//   per-user-remote → CUserPool::OnUserRemotePacket reads Decode4 characterId,
-//                     then routes to a CUserRemote::On* leaf (e.g. OnReceiveHP,
-//                     UPDATE_PARTYMEMBER_HP). Same prefix byte as per-pet-remote
-//                     but the generic remote-user dispatch, not the pet path;
-//                     kept distinct for accurate per-packet documentation.
+//	per-mob         → CMobPool::OnMobPacket reads Decode4 mobId, then routes
+//	                  to CMob::On*.
+//	per-pet         → CUserPool::OnUserRemotePacket reads Decode4 characterId,
+//	                  then CUser::OnPetPacket reads Decode1 slot, then routes
+//	                  to CPet::On*.
+//	per-pet-remote  → CUserPool::OnUserRemotePacket reads Decode4 characterId,
+//	                  then routes to CUserRemote::OnPetActivated. The slot
+//	                  byte is part of the leaf payload here, not the prefix.
+//	per-user-remote → CUserPool::OnUserRemotePacket reads Decode4 characterId,
+//	                  then routes to a CUserRemote::On* leaf (e.g. OnReceiveHP,
+//	                  UPDATE_PARTYMEMBER_HP). Same prefix byte as per-pet-remote
+//	                  but the generic remote-user dispatch, not the pet path;
+//	                  kept distinct for accurate per-packet documentation.
 //
 // Keep this list narrow and well-tested — adding a new dispatcher requires a
 // matching test in export_test.go.

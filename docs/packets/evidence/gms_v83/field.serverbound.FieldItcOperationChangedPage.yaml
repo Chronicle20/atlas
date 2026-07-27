@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldItcOperationChangedPage
+direction: serverbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnChangedPage
+    address: "0x59f465"
+    decompile_sha256: 3c1745ecc9cb05e01de921f81577ada69b4793380ca1b380897440608d015b58
+verifies:
+    - libs/atlas-packet/field/serverbound/itc_operation_test.go#TestItcOperationChangedPageByteOutput_v83

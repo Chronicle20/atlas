@@ -4,8 +4,6 @@ import (
 	"context"
 	"testing"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
@@ -14,6 +12,10 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func setupTestDB(t *testing.T) *gorm.DB {
@@ -125,9 +127,9 @@ func TestProcessor_AllProvider(t *testing.T) {
 	_, err = p.Create(testDefinition("pq_2", "PQ 2"))
 	require.NoError(t, err)
 
-	all, err := p.AllProvider()()
+	paged, err := p.AllProvider(model.Page{Number: 1, Size: 50})()
 	require.NoError(t, err)
-	assert.Len(t, all, 2)
+	assert.Len(t, paged.Items, 2)
 }
 
 func TestProcessor_Delete(t *testing.T) {
@@ -159,9 +161,9 @@ func TestProcessor_DeleteAllForTenant(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, int64(2), count)
 
-	all, err := p.AllProvider()()
+	paged, err := p.AllProvider(model.Page{Number: 1, Size: 50})()
 	require.NoError(t, err)
-	assert.Len(t, all, 0)
+	assert.Len(t, paged.Items, 0)
 }
 
 func TestProcessor_TenantIsolation(t *testing.T) {
@@ -180,11 +182,11 @@ func TestProcessor_TenantIsolation(t *testing.T) {
 	_, err := p1.Create(testDefinition("iso_pq", "Isolation PQ"))
 	require.NoError(t, err)
 
-	all1, err := p1.AllProvider()()
+	paged1, err := p1.AllProvider(model.Page{Number: 1, Size: 50})()
 	require.NoError(t, err)
-	assert.Len(t, all1, 1)
+	assert.Len(t, paged1.Items, 1)
 
-	all2, err := p2.AllProvider()()
+	paged2, err := p2.AllProvider(model.Page{Number: 1, Size: 50})()
 	require.NoError(t, err)
-	assert.Len(t, all2, 0)
+	assert.Len(t, paged2.Items, 0)
 }

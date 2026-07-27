@@ -1,0 +1,10 @@
+packet: interaction/clientbound/InteractionInteractionMiniGameRetreatRequest
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CMiniRoomBaseDlg::OnPacketBase#MemoryGameRetreatRequest
+    address: "0x6e416b"
+    decompile_sha256: 12879914bb0ccb3cd3316d7be939b0207e0192a0908fdfdff91c8034723e69a2
+verifies:
+    - libs/atlas-packet/interaction/clientbound/interaction_minigame_test.go#TestInteractionMiniGameRetreatRequestRoundTrip

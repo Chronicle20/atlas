@@ -3,16 +3,16 @@ package clientbound
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const StopClockWriter = "StopClock"
 
 // packet-audit:fname CField::OnDestroyClock
-type StopClock struct {
-}
+type StopClock struct{}
 
 func NewStopClock() StopClock {
 	return StopClock{}

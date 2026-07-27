@@ -1,0 +1,48 @@
+{
+  "WriterName": "InteractionInteractionMiniGameMoveStone",
+  "IDAName": "CMiniRoomBaseDlg::OnPacketBase#MemoryGameMoveStone",
+  "Address": "0x6e3f5b",
+  "Variant": "GMS/v83",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/interaction/clientbound/interaction_minigame.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (64 MOVE_STONE; dispatch byte)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "x (int32; DecodeBuffer(8) first half; COmokDlg::OnPutStoneChecker §G5)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "y (int32; DecodeBuffer(8) second half)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "stoneType (placing player's color 1/2)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

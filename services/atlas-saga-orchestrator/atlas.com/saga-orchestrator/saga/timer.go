@@ -8,9 +8,10 @@ import (
 
 	sagaMsg "atlas-saga-orchestrator/kafka/message/saga"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // TimerRegistry tracks the per-saga timeout backstop timers introduced in
@@ -112,6 +113,15 @@ func handleSagaTimeout(l logrus.FieldLogger, ctx context.Context, txId uuid.UUID
 	// missing rows, so out-of-order arrival is safe.
 	if s.SagaType() == CharacterCreation {
 		NewCompensator(l, ctx).DispatchCharacterCreationRollbacks(s)
+	}
+
+	// Dispatch the MTS reverse-walk for a wedged MTS saga so a timed-out
+	// TransferToMts / WithdrawFromMts / MtsSettlePurchase still undoes its
+	// completed steps (re-credit/debit currency, re-grant item, restore holding)
+	// — the dupe-safety core (task-102 §4.1). Fire-and-forget; custody/wallet
+	// inverses are idempotent.
+	if s.SagaType() == MtsOperation {
+		NewCompensator(l, ctx).DispatchMtsOperationRollbacks(s)
 	}
 
 	// Finalize the lifecycle. If someone else already took Compensating → Failed

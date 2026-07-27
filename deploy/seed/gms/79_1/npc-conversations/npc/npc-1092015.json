@@ -1,0 +1,30 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1092015,
+      "startState": "greeting",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "I'm bored! Someone come play with me!"
+          },
+          "id": "greeting",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "1092015",
+    "type": "npc-conversation"
+  }
+}

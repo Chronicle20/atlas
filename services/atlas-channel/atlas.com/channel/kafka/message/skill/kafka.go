@@ -49,5 +49,4 @@ type StatusEventCooldownAppliedBody struct {
 	CooldownExpiresAt time.Time `json:"cooldownExpiresAt"`
 }
 
-type StatusEventCooldownExpiredBody struct {
-}
+type StatusEventCooldownExpiredBody struct{}

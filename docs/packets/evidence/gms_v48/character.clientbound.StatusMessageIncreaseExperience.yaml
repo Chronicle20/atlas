@@ -1,0 +1,8 @@
+packet: character/clientbound/StatusMessageIncreaseExperience
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_71B9C0
+    address: "0x71b9c0"
+    decompile_sha256: f19788e4efa504089eb9c8581e18943cd8c07ba5499fae77badd3add600ae5d9

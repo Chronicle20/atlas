@@ -1,8 +1,9 @@
 package mapimage
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-wz/wz/property"
 	"strconv"
+
+	"github.com/Chronicle20/atlas/libs/atlas-wz/wz/property"
 )
 
 // findSub returns the named SubProperty child, or nil.

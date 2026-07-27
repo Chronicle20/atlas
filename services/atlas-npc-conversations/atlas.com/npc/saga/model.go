@@ -65,6 +65,9 @@ type (
 	// Gachapon payload types
 	SelectGachaponRewardPayload = sharedsaga.SelectGachaponRewardPayload
 
+	// RPS game payload types
+	StartRPSGamePayload = sharedsaga.StartRPSGamePayload
+
 	// Party quest payload types
 	RegisterPartyQuestPayload         = sharedsaga.RegisterPartyQuestPayload
 	WarpPartyQuestMembersToMapPayload = sharedsaga.WarpPartyQuestMembersToMapPayload
@@ -153,6 +156,9 @@ const (
 
 	// Gachapon actions
 	SelectGachaponReward = sharedsaga.SelectGachaponReward
+
+	// RPS game actions
+	StartRPSGame = sharedsaga.StartRPSGame
 
 	// Saved location actions
 	SaveLocation        = sharedsaga.SaveLocation

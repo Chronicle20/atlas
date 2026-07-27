@@ -3,8 +3,9 @@ package redis
 import (
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	goredis "github.com/redis/go-redis/v9"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // KeyedSet is a family of env-global Redis SETs, one per key K (no tenant

@@ -1,0 +1,146 @@
+{
+  "service": "atlas-mini-games",
+  "path": "services/atlas-mini-games/atlas.com/mini-games",
+  "date": "2026-07-08",
+  "build": "pass",
+  "testsPassed": 5,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "record",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go exists", "status": "fail", "evidence": "record/builder.go:23-71 exists with validation, but is dead code — NewBuilder referenced nowhere in the module (B10)"},
+        {"id": "DOM-02", "name": "ToEntity() method", "status": "warn", "evidence": "absent from record/entity.go; write path builds Entity in administrator.go:24-29 — matches repo-wide convention (ToEntity absent in buddies/chalkboards too)"},
+        {"id": "DOM-03", "name": "Make(Entity) function", "status": "pass", "evidence": "record/entity.go:36-46"},
+        {"id": "DOM-04", "name": "Transform function", "status": "pass", "evidence": "record/rest.go:31-40"},
+        {"id": "DOM-05", "name": "TransformSlice function", "status": "warn", "evidence": "absent; handler uses guideline-blessed model.SliceMap(Transform) composition (record/resource.go:46); only 2 rest.go files repo-wide define TransformSlice"},
+        {"id": "DOM-06", "name": "Processor accepts FieldLogger", "status": "fail", "evidence": "no record/processor.go exists at all"},
+        {"id": "DOM-07", "name": "Handlers pass d.Logger()", "status": "pass", "evidence": "record/resource.go:35 rest.ParseCharacterId(d.Logger(), ...)"},
+        {"id": "DOM-08", "name": "POST/PATCH use RegisterInputHandler", "status": "pass", "evidence": "N/A — GET-only resource (record/resource.go:28)"},
+        {"id": "DOM-09", "name": "Transform errors handled", "status": "pass", "evidence": "record/resource.go:46-51"},
+        {"id": "DOM-10", "name": "Test DB has tenant callbacks", "status": "pass", "evidence": "record/administrator_test.go:29 database.RegisterTenantCallbacks(l, db)"},
+        {"id": "DOM-11", "name": "Providers use lazy evaluation", "status": "fail", "evidence": "record/provider.go:15-43 eager (Model, error) functions taking tenantId with manual Where(\"tenant_id = ?\") — anti-patterns.md violation; tenant scoping itself verified present on every query"},
+        {"id": "DOM-12", "name": "No os.Getenv in handlers", "status": "pass", "evidence": "grep record/resource.go: 0 hits"},
+        {"id": "DOM-13", "name": "No cross-domain logic in handlers", "status": "pass", "evidence": "record/resource.go handler touches only record functions"},
+        {"id": "DOM-14", "name": "Handlers don't call providers directly", "status": "fail", "evidence": "record/resource.go:39 calls provider GetByCharacter directly; no processor layer exists (buddies precedent has one: atlas-buddies list/resource.go:44)"},
+        {"id": "DOM-15", "name": "No direct entity creation in handlers", "status": "pass", "evidence": "grep record/resource.go for db.Create/Save/Delete: 0 hits"},
+        {"id": "DOM-16", "name": "administrator.go exists for writes", "status": "pass", "evidence": "record/administrator.go:44 ApplyResult via db.Transaction (ExecuteTransaction correctly avoided; atomicity regression test administrator_test.go:139-175)"},
+        {"id": "DOM-17", "name": "Domain error -> HTTP status mapping", "status": "pass", "evidence": "record/resource.go:40-43 500 on error; GetOrZero has no not-found semantics by design"},
+        {"id": "DOM-18", "name": "JSON:API interface on REST models", "status": "pass", "evidence": "record/rest.go:18-29 GetName/GetID/SetID"},
+        {"id": "DOM-19", "name": "Request models flat", "status": "pass", "evidence": "N/A — no request models"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "warn", "evidence": "record tests plain sequential (0 table patterns, 0 t.Run); atomicity coverage strong"},
+        {"id": "DOM-21", "name": "No duplication of atlas-constants types", "status": "pass", "evidence": "GameType OMOK/MATCH_CARDS has no atlas-constants equivalent (grep: 0 hits)"},
+        {"id": "DOM-22", "name": "Dockerfile lib wiring", "status": "pass", "evidence": "shared root Dockerfile model; docker buildx bake atlas-mini-games exit 0; go.work:57, docker-bake.hcl:69"},
+        {"id": "DOM-23", "name": "Kafka topic naming convention", "status": "pass", "evidence": "deploy/k8s/base/env-configmap.yaml:46,125 KEY:\"KEY\"; no literal topic env in atlas-mini-games.yaml"},
+        {"id": "DOM-24", "name": "Kafka producer stubbed in tests", "status": "pass", "evidence": "N/A for record (no emits); emitting packages stubbed (game/testmain_test.go:11)"}
+      ]
+    },
+    {
+      "name": "game",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go exists", "status": "warn", "evidence": "game/builder.go NewBuilder/Clone/fluent setters present; Build() (:202-204) performs no validation"},
+        {"id": "DOM-02", "name": "ToEntity() method", "status": "pass", "evidence": "N/A — in-memory registry domain, no entity.go by design (deploy/k8s/base/atlas-mini-games.yaml:7-9)"},
+        {"id": "DOM-03", "name": "Make(Entity) function", "status": "pass", "evidence": "N/A — no persistence"},
+        {"id": "DOM-04", "name": "Transform function", "status": "pass", "evidence": "game/rest.go:38-53"},
+        {"id": "DOM-05", "name": "TransformSlice function", "status": "warn", "evidence": "absent; handler uses model.SliceMap(Transform)(...)(model.ParallelMap()) (game/resource.go:48) — dominant repo convention"},
+        {"id": "DOM-06", "name": "Processor accepts FieldLogger", "status": "pass", "evidence": "game/processor.go:143 NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB)"},
+        {"id": "DOM-07", "name": "Handlers pass d.Logger()", "status": "pass", "evidence": "game/resource.go:38-41 parsers take d.Logger(); no logrus.StandardLogger anywhere"},
+        {"id": "DOM-08", "name": "POST/PATCH use RegisterInputHandler", "status": "pass", "evidence": "N/A — GET-only resource"},
+        {"id": "DOM-09", "name": "Transform errors handled", "status": "pass", "evidence": "game/resource.go:48-53"},
+        {"id": "DOM-10", "name": "Test DB has tenant callbacks", "status": "pass", "evidence": "game/processor_test.go:71"},
+        {"id": "DOM-11", "name": "Providers use lazy evaluation / ctx tenant filtering", "status": "fail", "evidence": "game/processor.go:283,354,959,969 pass bare p.db (never WithContext) into record.GetOrZero/ApplyResult — GORM tenant callback cannot apply; relies on record's manual WHERE"},
+        {"id": "DOM-12", "name": "No os.Getenv in handlers", "status": "pass", "evidence": "grep game/resource.go: 0 hits"},
+        {"id": "DOM-13", "name": "No cross-domain logic in handlers", "status": "pass", "evidence": "cross-domain orchestration (record, data/*) lives in game/processor.go"},
+        {"id": "DOM-14", "name": "Handlers don't call providers directly", "status": "fail", "evidence": "game/resource.go:46 handler calls GetRegistry().GetInField directly; Processor interface (game/processor.go:104-124) has no in-field read"},
+        {"id": "DOM-15", "name": "No direct entity creation in handlers", "status": "pass", "evidence": "grep: 0 hits"},
+        {"id": "DOM-16", "name": "administrator.go for writes", "status": "pass", "evidence": "N/A — registry domain; persistence writes delegated to record.ApplyResult"},
+        {"id": "DOM-17", "name": "Error -> HTTP status mapping", "status": "pass", "evidence": "game/resource.go:49-52 (500 only; read cannot 404)"},
+        {"id": "DOM-18", "name": "JSON:API interface on REST models", "status": "pass", "evidence": "game/rest.go:19-34"},
+        {"id": "DOM-19", "name": "Request models flat", "status": "pass", "evidence": "N/A"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "game/processor_test.go 6 table-driven suites; registry/model tests sequential (noted W6)"},
+        {"id": "DOM-21", "name": "No duplication of atlas-constants types", "status": "warn", "evidence": "world/channel/map/field types from atlas-constants used throughout; RoomTypeOmok/MatchCards (game/processor.go:51-54) duplicate libs/atlas-packet interaction/room.go:16-17 values (not atlas-constants, so not a strict violation); item ids 4080000/4080100 have no shared equivalent; inventory.TypeFromItemId used correctly"},
+        {"id": "DOM-22", "name": "Dockerfile lib wiring", "status": "pass", "evidence": "docker buildx bake atlas-mini-games exit 0"},
+        {"id": "DOM-23", "name": "Kafka topic naming", "status": "pass", "evidence": "COMMAND_TOPIC_MINI_GAME / EVENT_TOPIC_MINI_GAME_STATUS in env-configmap.yaml:46,125"},
+        {"id": "DOM-24", "name": "Kafka producer stubbed in tests", "status": "pass", "evidence": "game/testmain_test.go:11 + kafka/consumer/character/testmain_test.go:11 producertest.InstallNoop(); no ResetInstance cleanup"}
+      ]
+    },
+    {
+      "name": "data/map (external client)",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "EXT-01", "name": "relationship interfaces on target struct", "status": "fail", "evidence": "data/map/rest.go lacks SetToOneReferenceID/SetToManyReferenceIDs; upstream atlas-data map rest.go:72-79 always emits relationships; PROVEN via httptest probe: 'struct *mapdata.RestModel does not implement UnmarshalToManyRelations' -> room creation feature-dead (game/processor.go:242-244)"},
+        {"id": "EXT-02", "name": "httptest integration test", "status": "fail", "evidence": "no test files in data/map"},
+        {"id": "EXT-03", "name": "404 vs other errors", "status": "pass", "evidence": "all errors bubble up unmapped (data/map/processor.go:39-45); no false not-found mapping"},
+        {"id": "EXT-04", "name": "RootUrl used", "status": "pass", "evidence": "data/map/requests.go requests.RootUrl(\"DATA\")"}
+      ]
+    },
+    {
+      "name": "data/character (external client)",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "EXT-01", "name": "relationship interfaces", "status": "warn", "evidence": "stubs absent; upstream atlas-character rest.go has no GetReferences (grep: 0) so currently benign"},
+        {"id": "EXT-02", "name": "httptest integration test", "status": "fail", "evidence": "no test files"},
+        {"id": "EXT-03", "name": "404 vs other errors", "status": "pass", "evidence": "errors bubble (data/character/processor.go:40-52)"},
+        {"id": "EXT-04", "name": "RootUrl used", "status": "pass", "evidence": "requests.RootUrl(\"CHARACTERS\")"}
+      ]
+    },
+    {
+      "name": "data/inventory (external client)",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "EXT-01", "name": "relationship interfaces", "status": "pass", "evidence": "data/inventory/rest.go implements SetToManyReferenceIDs, SetToOneReferenceID, GetReferences, SetReferencedStructs (full include machinery)"},
+        {"id": "EXT-02", "name": "httptest integration test", "status": "fail", "evidence": "no test files"},
+        {"id": "EXT-03", "name": "404 vs other errors", "status": "pass", "evidence": "errors bubble (data/inventory/processor.go:36-40)"},
+        {"id": "EXT-04", "name": "RootUrl used", "status": "pass", "evidence": "requests.RootUrl(\"INVENTORY\")"}
+      ]
+    },
+    {
+      "name": "data/chalkboard (external client)",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "EXT-01", "name": "relationship interfaces", "status": "warn", "evidence": "stubs absent; upstream chalkboards rest.go has no GetReferences — currently benign"},
+        {"id": "EXT-02", "name": "httptest integration test", "status": "fail", "evidence": "no test files"},
+        {"id": "EXT-03", "name": "404 vs other errors", "status": "pass", "evidence": "fail-open on any error is documented accepted behavior (prior review)"},
+        {"id": "EXT-04", "name": "RootUrl used", "status": "pass", "evidence": "requests.RootUrl(\"CHALKBOARDS\")"}
+      ]
+    },
+    {
+      "name": "scaffolding",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "SCAFFOLD-01", "name": "services.json entry", "status": "pass", "evidence": ".github/config/services.json:273-277"},
+        {"id": "SCAFFOLD-02", "name": "k8s manifest", "status": "pass", "evidence": "deploy/k8s/base/atlas-mini-games.yaml (replicas:1 pinned, /api/readyz probe, envFrom atlas-env, db-credentials)"},
+        {"id": "SCAFFOLD-03", "name": "Dockerfile", "status": "pass", "evidence": "shared root Dockerfile (ARG SERVICE) + docker-bake.hcl:69; bake exit 0"},
+        {"id": "SCAFFOLD-04", "name": "ingress route", "status": "fail", "evidence": "no location in deploy/shared/routes.conf; /api/worlds/... falls to atlas-world (:517), /api/characters/... to atlas-character (:327); no MINI_GAMES_SERVICE_URL anywhere in deploy/"},
+        {"id": "SCAFFOLD-05", "name": "ingress sync drift-clean", "status": "warn", "evidence": "sync-k8s-ingress-routes.sh errors on current repo layout (deploy/k8s/ingress.yaml not found) — pre-existing tooling issue, cannot be evaluated"},
+        {"id": "SCAFFOLD-06", "name": "docker-compose entry", "status": "fail", "evidence": "no atlas-mini-games block in deploy/compose/docker-compose.core.yml"},
+        {"id": "SCAFFOLD-07", "name": "tenant opcode templates", "status": "pass", "evidence": "all six templates carry MiniRoom writer 0xA5 row + full MEMORY_GAME_* operations tables; Go constants (interaction_body.go:53-63) match template keys exactly incl. MEMORY_GAME_FIP_CARD both sides"},
+        {"id": "SCAFFOLD-08", "name": "Bruno collection", "status": "fail", "evidence": "services/atlas-mini-games/.bruno does not exist"},
+        {"id": "DOC-01", "name": "service README", "status": "fail", "evidence": "services/atlas-mini-games/atlas.com/mini-games/README.md does not exist (patterns-ingress-documentation.md)"}
+      ]
+    }
+  ],
+  "blocking": [
+    "EXT-01 (data/map): RestModel missing relationship stubs — proven decode failure against real atlas-data map responses; room creation feature-dead",
+    "EXT-02: zero httptest integration tests across all four data/* external clients",
+    "SCAFFOLD-04: no ingress route + no MINI_GAMES_SERVICE_URL — both REST endpoints misrouted (atlas-world / atlas-character); channel map-entry reconciliation 404s",
+    "SCAFFOLD-06: no docker-compose entry",
+    "SCAFFOLD-08: no Bruno collection",
+    "DOC-01: no service README",
+    "DOM-14 (record): handler calls provider directly; no record processor layer",
+    "DOM-14 (game): handler calls GetRegistry().GetInField directly, bypassing processor",
+    "DOM-11: manual tenantId plumbing + eager providers in record; game processor passes bare p.db without WithContext (tenant scoping itself verified intact)",
+    "DOM-01 (record): record/builder.go is dead code"
+  ],
+  "nonBlocking": [
+    "DOM-01 (game): Build() performs no validation",
+    "EXT-01 (chalkboard/character): relationship stubs absent, currently benign",
+    "DOM-02/DOM-05: ToEntity/TransformSlice absent — matches dominant repo convention (SliceMap composition)",
+    "DOM-21: roomType 1/2 duplicated across game/processor.go, libs/atlas-packet interaction.RoomType, and channel gameTypeCode",
+    "Command consumer swallows processor errors (_ =) without logging (kafka/consumer/minigame/consumer.go)",
+    "DOM-20: registry/model/omok/record tests not table-driven"
+  ]
+}

@@ -8,8 +8,14 @@ import (
 func GetByStorageId(db *gorm.DB) func(storageId uuid.UUID) ([]Model, error) {
 	return func(storageId uuid.UUID) ([]Model, error) {
 		var entities []Entity
+		// id ASC is an explicit tiebreak after inventory_type/template_id so
+		// the dynamic-slot assignment below (index i) is fully deterministic
+		// across repeated calls, not just "mostly stable" via SQL's
+		// otherwise-undefined tie order (task-117 pagination determinism
+		// requirement -- this list is paginated via paginate.Slice in
+		// resource.go, which requires a stable, reproducible ordering).
 		err := db.Where("storage_id = ?", storageId).
-			Order("inventory_type ASC, template_id ASC").
+			Order("inventory_type ASC, template_id ASC, id ASC").
 			Find(&entities).Error
 		if err != nil {
 			return nil, err

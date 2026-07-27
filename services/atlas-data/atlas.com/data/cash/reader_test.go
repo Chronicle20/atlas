@@ -5,8 +5,9 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 const testXML = `
@@ -775,5 +776,38 @@ func TestParseTimeWindow(t *testing.T) {
 		if tw.EndHour != tt.wantEnd {
 			t.Errorf("parseTimeWindow(%q).EndHour = %d, want %d", tt.input, tw.EndHour, tt.wantEnd)
 		}
+	}
+}
+
+const testSealingLockXML = `<?xml version="1.0" encoding="UTF-8"?>
+<imgdir name="0506.img">
+  <imgdir name="05061000">
+    <imgdir name="info">
+      <int name="cash" value="1"/>
+      <int name="slotMax" value="1"/>
+      <int name="protectTime" value="7"/>
+    </imgdir>
+  </imgdir>
+  <imgdir name="05061001">
+    <imgdir name="info">
+      <int name="cash" value="1"/>
+      <int name="slotMax" value="1"/>
+      <int name="protectTime" value="30"/>
+    </imgdir>
+  </imgdir>
+</imgdir>`
+
+func TestReaderProtectTime(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	rms := Read(l)(xml.FromByteArrayProvider([]byte(testSealingLockXML)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := rmm[strconv.Itoa(5061000)].ProtectTime; got != 7 {
+		t.Fatalf("ProtectTime(5061000) = %d, want 7", got)
+	}
+	if got := rmm[strconv.Itoa(5061001)].ProtectTime; got != 30 {
+		t.Fatalf("ProtectTime(5061001) = %d, want 30", got)
 	}
 }

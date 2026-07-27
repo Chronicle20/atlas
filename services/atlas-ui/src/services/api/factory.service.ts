@@ -70,7 +70,10 @@ export const factoryService = {
     if (!response.ok) {
       let message = `createFromPreset failed with status ${response.status}`;
       try {
-        const errBody = (await response.json()) as { error?: string; message?: string };
+        const errBody = (await response.json()) as {
+          error?: string;
+          message?: string;
+        };
         if (errBody.error) message = errBody.error;
         else if (errBody.message) message = errBody.message;
       } catch {

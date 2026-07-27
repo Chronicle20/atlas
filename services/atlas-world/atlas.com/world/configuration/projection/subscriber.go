@@ -7,11 +7,12 @@ import (
 
 	consumer2 "atlas-world/kafka/consumer"
 
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 )
 
 // Subscriber consumes the tenant config-status topic, snapshots end
@@ -88,7 +89,7 @@ func (s *Subscriber) handleTenant(l logrus.FieldLogger) handler.Handler {
 }
 
 func offsetsOrEmpty(ctx context.Context, brokers []string, topic string, l logrus.FieldLogger) (map[int]int64, error) {
-	off, err := consumer.ReadEndOffsets(ctx, brokers, topic)
+	off, err := consumer.ReadReplayableEndOffsets(ctx, brokers, topic)
 	if err != nil {
 		l.WithError(err).WithField("topic", topic).Warn("projection.read_end_offsets_failed")
 		return map[int]int64{}, nil

@@ -4,8 +4,9 @@ import (
 	"atlas-data/xml"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 const testXML = `

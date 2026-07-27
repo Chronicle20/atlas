@@ -8,6 +8,7 @@ import (
 )
 
 // MONSTER_CARNIVAL_PARTY_CP present in all 5 versions (CField_MonsterCarnival::OnTeamCP).
+// packet-audit:verify packet=monster/carnival/clientbound/MonsterCarnivalPartyCP version=gms_v79 ida=0x5484cb
 // packet-audit:verify packet=monster/carnival/clientbound/MonsterCarnivalPartyCP version=gms_v83 ida=0x56553e
 // packet-audit:verify packet=monster/carnival/clientbound/MonsterCarnivalPartyCP version=gms_v84 ida=0x572245
 // packet-audit:verify packet=monster/carnival/clientbound/MonsterCarnivalPartyCP version=gms_v87 ida=0x5902c4
@@ -33,5 +34,23 @@ func TestMonsterCarnivalPartyCP(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 			pt.RoundTrip(t, ctx, input.Encode, input.Decode, nil)
 		})
+	}
+}
+
+// TestMonsterCarnivalPartyCPByteOutputV79 pins the gms_v79
+// MONSTER_CARNIVAL_PARTY_CP clientbound read. IDA:
+// CField_MonsterCarnival::OnTeamCP @0x5484cb (GMS_v79_1_DEVM.exe) reads
+// Decode1 team, Decode2 cp, Decode2 total -> SetTeamCP(team, cp, total).
+// Body is byte-identical to the v83 golden.
+func TestMonsterCarnivalPartyCPByteOutputV79(t *testing.T) {
+	input := NewMonsterCarnivalPartyCP(1, 0x0102, 0x0304)
+	got := input.Encode(nil, pt.CreateContext("GMS", 79, 1))(nil)
+	want := []byte{
+		0x01,       // team byte = 1
+		0x02, 0x01, // cp uint16 LE = 0x0102
+		0x04, 0x03, // total uint16 LE = 0x0304
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("MonsterCarnivalPartyCP v79 layout mismatch\n got % x\nwant % x", got, want)
 	}
 }

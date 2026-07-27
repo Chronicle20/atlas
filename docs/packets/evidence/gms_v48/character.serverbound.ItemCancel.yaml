@@ -1,0 +1,10 @@
+packet: character/serverbound/ItemCancel
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_70DD49
+    address: "0x70dd49"
+    decompile_sha256: e7f3fe3e0917eab9929dc5774b61099cfd10ac8cea46a70d8e81f6b4abf4acc7
+verifies:
+    - libs/atlas-packet/character/serverbound/item_cancel_test.go#TestItemCancelV48ByteOutput

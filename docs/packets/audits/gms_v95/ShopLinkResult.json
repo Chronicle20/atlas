@@ -1,0 +1,21 @@
+{
+  "WriterName": "ShopLinkResult",
+  "IDAName": "CWvsContext::OnShopLinkResult",
+  "Address": "0x847d60",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/merchant/clientbound/shop_link_result.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "code (switch: 0 success/1 closed/2 full/3 busy/4 dead/7 no-trade/17 denied/18 maintenance/23 fm-only/default unable). IDB fn CUIShopScanResult::OnShopLinkResult",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

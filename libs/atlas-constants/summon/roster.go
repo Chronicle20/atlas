@@ -11,8 +11,8 @@ const (
 )
 
 // Movement is the on-the-wire summon movement type byte written into the
-// SummonSpawn packet (Cosmic server/maps/SummonMovementType: STATIONARY(0),
-// FOLLOW(1), CIRCLE_FOLLOW(3), classified by skill id). Do NOT conflate it with
+// SummonSpawn packet (STATIONARY(0), FOLLOW(1), CIRCLE_FOLLOW(3), classified
+// by skill id). Do NOT conflate it with
 // skill.SummonMovementType, which is a separate WZ-data classification with a
 // DIFFERENT numbering (None=-1, …, CircleFollow=2) used by atlas-data's reader —
 // the two are not interchangeable.
@@ -34,8 +34,8 @@ type Entry struct {
 
 // roster: the 21 v83 summon skills. Adding a summon = one row here, no engine change.
 // Keys reference the named skill-id constants in libs/atlas-constants/skill (no import
-// cycle: skill imports nothing). Type and movement come from Cosmic StatEffect.java /
-// Summon.isPuppet()/isStationary().
+// cycle: skill imports nothing). Type and movement are classified per skill id:
+// puppets are stationary, hawk/eagle-style birds circle-follow, and the rest follow.
 var roster = map[uint32]Entry{
 	uint32(skill.RangerPuppetId):                        {Type: TypePuppet, Movement: MovementStationary},                    // 3111002 Ranger Puppet
 	uint32(skill.SniperPuppetId):                        {Type: TypePuppet, Movement: MovementStationary},                    // 3211002 Sniper Puppet

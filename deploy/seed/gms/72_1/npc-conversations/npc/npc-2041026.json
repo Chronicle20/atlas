@@ -1,0 +1,93 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2041026,
+      "startState": "checkItem",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "4220046",
+                    "type": "item",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "takeItemAndConfirm"
+              },
+              {
+                "conditions": [],
+                "nextState": "noItemGreeting"
+              }
+            ]
+          },
+          "id": "checkItem",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "4220046",
+                  "quantity": "1"
+                },
+                "type": "destroy_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "hasItemDialogue"
+              }
+            ]
+          },
+          "id": "takeItemAndConfirm",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "You want to hand the #r#t4220046##k to me, right? Alright, I'll take it for you."
+          },
+          "id": "hasItemDialogue",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Hello there! I'm #b#p2041026##k, in charge of watching and reporting any paranormal activities in this area."
+          },
+          "id": "noItemGreeting",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "2041026",
+    "type": "npc-conversation"
+  }
+}

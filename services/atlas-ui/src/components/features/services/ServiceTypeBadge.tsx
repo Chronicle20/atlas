@@ -10,15 +10,18 @@ interface ServiceTypeBadgeProps {
 const typeConfig: Record<ServiceType, { label: string; className: string }> = {
   "login-service": {
     label: "Login",
-    className: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800",
+    className:
+      "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800",
   },
   "channel-service": {
     label: "Channel",
-    className: "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800",
+    className:
+      "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800",
   },
   "drops-service": {
     label: "Drops",
-    className: "bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800",
+    className:
+      "bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800",
   },
 };
 
@@ -41,10 +44,7 @@ export function ServiceTypeBadge({ type, className }: ServiceTypeBadgeProps) {
   }
 
   return (
-    <Badge
-      variant="outline"
-      className={cn(config.className, className)}
-    >
+    <Badge variant="outline" className={cn(config.className, className)}>
       {config.label}
     </Badge>
   );

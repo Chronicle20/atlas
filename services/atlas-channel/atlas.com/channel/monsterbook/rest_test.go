@@ -8,13 +8,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
+	"github.com/jtumidanski/api2go/jsonapi"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/jtumidanski/api2go/jsonapi"
-	"github.com/sirupsen/logrus"
 )
 
 // TestCollectionRestModel_Unmarshal asserts the JSON:API stubs are wired so

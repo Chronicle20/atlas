@@ -1,0 +1,166 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1043000,
+      "startState": "checkGender",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "gender",
+                    "value": "0"
+                  }
+                ],
+                "nextState": "selectMaleItem"
+              },
+              {
+                "conditions": [],
+                "nextState": "selectFemaleItem"
+              }
+            ]
+          },
+          "id": "checkGender",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "items": "1040052,1040130,1042013,1042022,1042034,1042084,1042098,1042117,1702002,1702015",
+                  "outputContextKey": "selectedItem",
+                  "weights": "10,10,10,10,10,10,10,10,5,5"
+                },
+                "type": "local:select_random_weighted"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "checkQuest"
+              }
+            ]
+          },
+          "id": "selectMaleItem",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "items": "1041143,1702002,1702015",
+                  "outputContextKey": "selectedItem",
+                  "weights": "15,5,5"
+                },
+                "type": "local:select_random_weighted"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "checkQuest"
+              }
+            ]
+          },
+          "id": "selectFemaleItem",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "2050",
+                    "type": "questStatus",
+                    "value": "2"
+                  }
+                ],
+                "nextState": "awardQuestItem"
+              },
+              {
+                "conditions": [],
+                "nextState": "awardPrizeItem"
+              }
+            ]
+          },
+          "id": "checkQuest",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "4031020",
+                  "quantity": "1"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "awardPrizeItem"
+              }
+            ]
+          },
+          "id": "awardQuestItem",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "{context.selectedItem}",
+                  "quantity": "1"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "warpToEllinia"
+              }
+            ]
+          },
+          "id": "awardPrizeItem",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "101000000",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "warpToEllinia",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "1043000",
+    "type": "npc-conversation"
+  }
+}

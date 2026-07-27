@@ -1,15 +1,21 @@
 package tasks
 
 import (
+	"atlas-maps/kafka/message"
+	"atlas-maps/mist"
 	"context"
 	"sync"
 	"time"
 
-	"atlas-maps/kafka/message"
 	mistKafka "atlas-maps/kafka/message/mist"
-	"atlas-maps/kafka/producer"
 	mapchar "atlas-maps/map/character"
-	"atlas-maps/mist"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -17,11 +23,8 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
-	"go.opentelemetry.io/otel"
 )
 
 const MistTickTask = "mist_tick_task"
@@ -142,10 +145,10 @@ func (r *MistTick) runOnce(ctx context.Context) {
 	for _, t := range tenants {
 		t := t
 		wg.Add(1)
-		go func() {
+		routine.Go(r.l, ctx, func(_ context.Context) {
 			defer wg.Done()
 			r.processTenant(ctx, t)
-		}()
+		})
 	}
 	wg.Wait()
 }
@@ -197,4 +200,3 @@ func (r *MistTick) processTenant(ctx context.Context, t tenant.Model) {
 func (r *MistTick) SleepTime() time.Duration {
 	return time.Millisecond * time.Duration(r.interval)
 }
-

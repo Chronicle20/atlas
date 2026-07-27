@@ -1,0 +1,25 @@
+{
+  "data": {
+    "attributes": {
+      "description": "In Flight to Minar Forest - Block exit portal (handled by instance transport system)",
+      "mapId": 200090510,
+      "portalId": "reundodraco",
+      "rules": [
+        {
+          "conditions": [],
+          "id": "block_portal",
+          "onMatch": {
+            "allow": true,
+            "operations": [
+              {
+                "type": "block_portal"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "id": "reundodraco",
+    "type": "portal-action"
+  }
+}

@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldItcOperationViewWish
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnViewWish
+    address: "0x57afbe"
+    decompile_sha256: fd20b3ccfcbb9c2b8fa0fff6b9c3e01b395d3a48ede63251e301938539e35517

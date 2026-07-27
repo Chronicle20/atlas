@@ -1,0 +1,8 @@
+packet: character/clientbound/AddCharacterEntry
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_501973
+    address: "0x501973"
+    decompile_sha256: 0a5bd789bc7f0eb5e69605b9a3d7ec5fc453358e52b516edaeef9d2ba88c8735

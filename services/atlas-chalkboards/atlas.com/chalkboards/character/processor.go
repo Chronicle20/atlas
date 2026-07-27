@@ -3,10 +3,11 @@ package character
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Processor interface {
@@ -31,6 +32,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		t:   tenant.MustFromContext(ctx),
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) InMapProvider(f field.Model) model.Provider[[]uint32] {
 	cids := getRegistry().GetInMap(p.ctx, MapKey{Tenant: p.t, Field: f})

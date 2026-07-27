@@ -9,6 +9,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -16,9 +20,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
 )
 
 // emitRewardNoticeForCurrentStep inspects the saga's current pending step (the
@@ -94,6 +95,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 			return err
 		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetMovedEvent))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetUpdatedEvent))); err != nil {
 			return err
 		}
 		return nil
@@ -319,6 +323,22 @@ func handleAssetMovedEvent(l logrus.FieldLogger, ctx context.Context, e asset2.S
 	}
 	p := saga.NewProcessor(l, ctx)
 	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindAssetMoved); !ok {
+		return
+	}
+	_ = p.StepCompleted(e.TransactionId, true)
+}
+
+// handleAssetUpdatedEvent completes SetAssetOwner / ApplyAssetLock steps when
+// the asset UPDATED event arrives. The AcceptEvent gate means unrelated
+// UPDATED traffic (e.g. MODIFY_EQUIPMENT) is ignored unless the saga's
+// current step accepts asset_updated.
+func handleAssetUpdatedEvent(l logrus.FieldLogger, ctx context.Context, e asset2.StatusEvent[asset2.UpdatedStatusEventBody]) {
+	if e.Type != asset2.StatusEventTypeUpdated {
+		return
+	}
+	p := saga.NewProcessor(l, ctx)
+	_, ok := p.AcceptEvent(e.TransactionId, saga.EventKindAssetUpdated)
+	if !ok {
 		return
 	}
 	_ = p.StepCompleted(e.TransactionId, true)

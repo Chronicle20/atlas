@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldItcOperationPlaceBid
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CITCBidAuctionDlg::OnButtonClicked
+    address: "0x5d3ec7"
+    decompile_sha256: b2037aeb19b1294d62f7d9b88f8176e89a30973437322b463fdf1fc0e89a68f4
+verifies:
+    - libs/atlas-packet/field/serverbound/itc_operation_test.go#TestItcOperationPlaceBidByteOutput_v84

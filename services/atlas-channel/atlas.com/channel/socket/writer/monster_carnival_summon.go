@@ -3,9 +3,10 @@ package writer
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	carnivalpkt "github.com/Chronicle20/atlas/libs/atlas-packet/monster/carnival/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
-	"github.com/sirupsen/logrus"
 )
 
 // MonsterCarnivalSummonBody encodes the clientbound MONSTER_CARNIVAL_SUMMON packet

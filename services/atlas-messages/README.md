@@ -12,6 +12,7 @@ Atlas Messages is a service that handles character messages and commands in the 
 - atlas-maps service (REST API)
 - atlas-rates service (REST API)
 - atlas-party-quests service (REST API)
+- atlas-pets service (REST API)
 
 ## Runtime Configuration
 
@@ -28,6 +29,7 @@ Atlas Messages is a service that handles character messages and commands in the 
 | `COMMAND_TOPIC_MONSTER` | Kafka topic for emitting monster commands |
 | `COMMAND_TOPIC_PARTY_QUEST` | Kafka topic for emitting party quest commands |
 | `COMMAND_TOPIC_MAP` | Kafka topic for emitting map commands |
+| `COMMAND_TOPIC_PET` | Kafka topic for emitting pet commands |
 
 ## Documentation
 

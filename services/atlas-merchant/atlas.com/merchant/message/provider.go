@@ -1,10 +1,11 @@
 package message
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 func getByShopId(shopId uuid.UUID) database.EntityProvider[[]Entity] {

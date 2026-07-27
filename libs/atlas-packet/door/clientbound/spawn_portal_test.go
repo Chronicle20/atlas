@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"testing"
 
+	testlog "github.com/sirupsen/logrus/hooks/test"
+
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
-	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 // TestSpawnPortal pins the full wire body of spawnPortal (SPAWN_PORTAL clientbound).

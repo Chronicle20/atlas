@@ -1,0 +1,34 @@
+{
+  "service": "atlas-database",
+  "path": "libs/atlas-database",
+  "date": "2026-07-12",
+  "build": "pass",
+  "testsPassed": 8,
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "domains": [
+    {
+      "name": "atlas-database (shared-lib / test-support)",
+      "type": "support",
+      "checks": [
+        { "id": "GATE", "name": "build + vet + race + count=1", "status": "pass", "evidence": "all clean; only 4 Go files changed in range" },
+        { "id": "CORR-TX", "name": "transaction detection correct", "status": "pass", "evidence": "transaction.go:20-25 mirrors gorm@v1.31.2/finisher_api.go:640 TxCommitter guard" },
+        { "id": "CORR-TX2", "name": "guard nil-safety", "status": "pass", "evidence": "transaction.go:21-23 returns false on nil Statement/ConnPool" },
+        { "id": "REGRESSION", "name": "tests fail under old buggy code", "status": "pass", "evidence": "transaction_test.go:24-40; failwrites_test.go:55-78" },
+        { "id": "COVERAGE", "name": "commit/nested/tenant-callback tested", "status": "pass", "evidence": "transaction_test.go:42-84" },
+        { "id": "DOM-10", "name": "test DB registers tenant callbacks", "status": "pass", "evidence": "databasetest/testdb.go:27" },
+        { "id": "DOM-21", "name": "no atlas-constants duplication", "status": "pass", "evidence": "failwrites.go:11 WriteVerb; local test entities only" },
+        { "id": "DOM-24", "name": "kafka producer stubbed in emitting tests", "status": "pass", "evidence": "N/A — no emit call sites in these packages" },
+        { "id": "TEST-HELPER", "name": "no *_testhelpers.go test-only ctor in prod pkg", "status": "pass", "evidence": "FailWritesOn in databasetest support pkg; only _test.go importers" },
+        { "id": "IMPORTS", "name": "import conventions", "status": "pass", "evidence": "failwrites.go:3-8; transaction_test.go:3-11" },
+        { "id": "DOM-20", "name": "table-driven tests", "status": "warn", "evidence": "N/A for shared-lib; discrete scenario tests appropriate" }
+      ]
+    }
+  ],
+  "blocking": [],
+  "nonBlocking": [
+    "Blast radius: 175 ExecuteTransaction call sites now genuinely transactional; downstream correctness covered by Task-3 audit.md, out of this diff's scope",
+    "DOM-20 table-driven N/A for shared-lib",
+    "FailWritesOn never de-registers callbacks; safe due to fresh-per-test DB"
+  ]
+}

@@ -282,6 +282,14 @@ func candidatesFromFName(fname string) []candidate {
 	// --- Character domain ---
 	case "CUserPool::OnUserEnterField":
 		return []candidate{{name: "CharacterSpawn", dir: csvpkg.DirClientbound}}
+	case "sub_6B277B":
+		// v48 SPAWN_PLAYER (op 100) — the CUserPool range-router (sub_6B2710
+		// case a1==100) dispatches to sub_6B277B (OnUserEnterField), which reads
+		// Decode4(charId) then CUserRemote::Init sub_6BBC17. v48 is an unnamed sub
+		// (no rotated symbol); the spawn report keys off this decoder, the v48
+		// analogue of the named CUserPool::OnUserEnterField (matches the sub_5013ED
+		// CharacterList / sub_6E5BD6 MOVE_PET precedent).
+		return []candidate{{name: "CharacterSpawn", dir: csvpkg.DirClientbound}}
 	case "CUserRemote::OnAttack":
 		// The atlas struct is Attack (shared for all 4 attack types); analyse
 		// under CharacterAttackMelee so the report file has a descriptive name.
@@ -513,6 +521,23 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "AuthSuccess", dir: csvpkg.DirClientbound}}
 	case "CLogin::OnSelectWorldResult":
 		return []candidate{{name: "CharacterList", dir: csvpkg.DirClientbound}}
+	case "sub_5B3646":
+		// v72 CHARLIST (op 11) — the standalone character-list decoder distinct
+		// from OnSelectWorldResult (op 22, RELOG). Registry gms_v72 CHARLIST fname
+		// is sub_5B3646; this mirrors v79's sub_5CE522 char-list decoder. The v72
+		// export omits OnSelectWorldResult so this is the sole CharacterList report.
+		return []candidate{{name: "CharacterList", dir: csvpkg.DirClientbound}}
+	case "sub_56688D":
+		// v61 CHARLIST (op 11) — the standalone character-list decoder, the v61
+		// analogue of v72's sub_5B3646. In v61 OnSelectWorldResult (op 22) is a
+		// distinct RELOG_RESPONSE handler, so the char-list report must key off
+		// this decoder, not the shared OnSelectWorldResult mapping.
+		return []candidate{{name: "CharacterList", dir: csvpkg.DirClientbound}}
+	case "sub_5013ED":
+		// v48 CHARLIST (op 11) — the standalone character-list decoder, the v48
+		// analogue of v61's sub_56688D / v72's sub_5B3646. v48 is an unnamed sub
+		// (no rotated symbol); the char-list report keys off this decoder.
+		return []candidate{{name: "CharacterList", dir: csvpkg.DirClientbound}}
 	case "CLogin::OnWorldInformation":
 		return []candidate{{name: "ServerListEntry", dir: csvpkg.DirClientbound}}
 	case "CLogin::OnSelectCharacterResult":
@@ -615,6 +640,20 @@ func candidatesFromFName(fname string) []candidate {
 	case "CWvsContext::OnEntrustedShopCheckResult#FreeFormNotice":
 		return []candidate{{name: "FreeFormNotice", dir: csvpkg.DirClientbound}}
 
+	// --- shop scanner / owl (task-127) ---
+	case "CUIShopScanner::OnCreate":
+		return []candidate{{name: "OwlAction", dir: csvpkg.DirServerbound}}
+	case "CUIShopScanResult::OnButtonClicked":
+		return []candidate{{name: "OwlWarp", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::SendShopScannerItemUseRequest":
+		return []candidate{{name: "ShopScannerItemUse", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::OnShopScannerResult#Result":
+		return []candidate{{name: "ShopScannerResult", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnShopScannerResult#HotList":
+		return []candidate{{name: "ShopScannerHotList", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnShopLinkResult":
+		return []candidate{{name: "ShopLinkResult", dir: csvpkg.DirClientbound}}
+
 	// --- quest bucket (task-069, sub-phase 2g) ---
 	case "CWvsContext::OnScriptProgressMessage":
 		return []candidate{{name: "ScriptProgress", dir: csvpkg.DirClientbound}}
@@ -691,6 +730,35 @@ func candidatesFromFName(fname string) []candidate {
 	case "CUserLocal::TryDoingBodyAttack":
 		// TOUCH_MONSTER_ATTACK (0x2F v83). AttackTypeEnergy variant.
 		return []candidate{{name: "AttackTouchRequest", pkg: "character", dir: csvpkg.DirServerbound}}
+	case "sub_6A0528":
+		// CLOSE_RANGE_ATTACK (serverbound) in gms_v48: the basic-melee sender is
+		// UNNAMED — sub_6A0528 @0x6a0528, COutPacket(36) + no head skill-data CRC
+		// (v48<72) + per-mob DamageInfo with NO trailing mob CRC (v48<61). The v48
+		// registry primary fname is sub_6A0528, so it keys to the same shared
+		// model.AttackInfo(AttackTypeMelee) wrapper as the named TryDoingNormalAttack.
+		return []candidate{{name: "AttackMeleeRequest", pkg: "character", dir: csvpkg.DirServerbound}}
+	case "sub_6A228C":
+		// RANGED_ATTACK (serverbound) in gms_v48: TryDoingShootAttack is UNNAMED —
+		// sub_6A228C @0x6a228c, COutPacket(37); trailer is characterX/Y only (NO
+		// bulletX/Y on v48). Keys to the same AttackRangedRequest wrapper.
+		return []candidate{{name: "AttackRangedRequest", pkg: "character", dir: csvpkg.DirServerbound}}
+	case "sub_6A3AC7":
+		// MAGIC_ATTACK (serverbound) in gms_v48: TryDoingMagicAttack is UNNAMED —
+		// sub_6A3AC7 @0x6a3ac7, COutPacket(38); no per-mob CRC (v48<61), no dragon
+		// (Evan is v84+). Keys to the same AttackMagicRequest wrapper.
+		return []candidate{{name: "AttackMagicRequest", pkg: "character", dir: csvpkg.DirServerbound}}
+	case "sub_6ADD4C":
+		// SKILL_EFFECT (serverbound) in gms_v48: DoActiveSkill_Prepare is UNNAMED —
+		// sub_6ADD4C @0x6add4c, COutPacket(72) @0x6ae20e + Encode4(skillId) +
+		// Encode1(level) + Encode1(action|bLeft, 1 byte <79) + Encode1(actionSpeed).
+		// Keys to the same character.SkillPrepare wrapper as DoActiveSkill_Prepare.
+		return []candidate{{name: "SkillPrepare", pkg: "character", dir: csvpkg.DirServerbound}}
+	case "sub_6E9923":
+		// MOVE_PLAYER (serverbound) in gms_v48: CVecCtrlUser::EndUpdateActive is
+		// UNNAMED — sub_6E9923 @0x6e9923, COutPacket(33) @0x6e9ac1 + Encode1(fieldKey)
+		// + CMovePath::Flush, NO crc (v48<72), NO dr-block (v48<84). Keys to the same
+		// character.Move codec as the named CVecCtrlUser::EndUpdateActive.
+		return []candidate{{name: "Move", dir: csvpkg.DirServerbound}}
 	case "CWvsContext::SendStatChangeRequest":
 		// Struct is HealOverTime; handler constant = "CharacterHealOverTimeHandle".
 		// Client sends opcode 0x64 (100) with Encode4(updateTime)+Encode4(val)+
@@ -721,6 +789,13 @@ func candidatesFromFName(fname string) []candidate {
 		// Struct is ChairPortable; handler constant = "CharacterChairPortableHandle".
 		// Client sends opcode 0x2E (46) with Encode4(nItemID).
 		return []candidate{{name: "ChairPortable", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::TryRecovery":
+		// Struct is StateChangeByPortableChair; handler constant =
+		// "CharacterStateChangeByPortableChairHandle".
+		// Empty body in all five versions: COutPacket(ctor, opcode) ->
+		// SendPacket with zero Encode calls (once per sit, >=20 s, portable
+		// chair without a spec node). task-141.
+		return []candidate{{name: "StateChangeByPortableChair", dir: csvpkg.DirServerbound}}
 	case "CUserLocal::HandleLButtonClk":
 		// Struct is ChalkboardClose; handler constant = "ChalkboardCloseHandle".
 		// Client sends opcode 0x37 (55) with no payload (empty body).
@@ -999,10 +1074,34 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "Attack", pkg: "summon", dir: csvpkg.DirServerbound, reportName: "SummonAttackHandle"}}
 	case "CSummoned::SetDamaged":
 		return []candidate{{name: "Damage", pkg: "summon", dir: csvpkg.DirServerbound, reportName: "SummonDamageHandle"}}
+	case "sub_5D9424":
+		// SUMMON_ATTACK (serverbound) in gms_v48: CSummoned::TryDoingAttackManual
+		// is UNNAMED in the v48 IDB — sub_5D9424 @0x5d9424, the summon manual-attack
+		// send-site (COutPacket(121) + Encode4 summonSkillId + Encode1 action|left +
+		// Encode1 count + per-target(mobId-only) + Encode2 summonX/Y; NO updateTime,
+		// NO skillCRC — pre-61). The v48 registry primary fname is sub_5D9424, so it
+		// keys to the same summon.Attack codec as the named CSummoned::TryDoingAttackManual twin.
+		return []candidate{{name: "Attack", pkg: "summon", dir: csvpkg.DirServerbound, reportName: "SummonAttackHandle"}}
+	case "sub_5DA381":
+		// DAMAGE_SUMMON (serverbound) in gms_v48: CSummoned::SetDamaged is UNNAMED in
+		// the v48 IDB — sub_5DA381 @0x5da381, the summon-damage send-site (COutPacket
+		// (122) + Encode4 summonId + mob/no-mob branch; == v61 body). The v48 registry
+		// primary fname is sub_5DA381, so it keys to the same summon.Damage codec as
+		// the named CSummoned::SetDamaged twin.
+		return []candidate{{name: "Damage", pkg: "summon", dir: csvpkg.DirServerbound, reportName: "SummonDamageHandle"}}
 
 	// --- Combat: monster (serverbound) ---
 	case "CMob::GenerateMovePath":
 		// CSV: MOVE_LIFE — atlas MovementRequest (handle = "MonsterMovementHandle").
+		return []candidate{{name: "MovementRequest", pkg: "monster", dir: csvpkg.DirServerbound}}
+	case "sub_550383":
+		// MOVE_LIFE (serverbound) in gms_v48: the CMob move/action send-site is
+		// UNNAMED in the IDB — sub_550383 @0x550383, structurally the
+		// CMob::GenerateMovePath twin (COutPacket(129) + Encode4(mobId) + Encode2
+		// (moveSN) + Encode1(flags) + Encode1(action) + Encode4(skillData) +
+		// Encode1(moveFlags) + CMovePath::Flush; NO hackedCode, pre-61). The v48
+		// registry primary fname is sub_550383, so it keys to the same monster
+		// MovementRequest codec as the named twin above.
 		return []candidate{{name: "MovementRequest", pkg: "monster", dir: csvpkg.DirServerbound}}
 	case "CMob::SendDropPickUpRequest":
 		// task-092 Cluster-D: MOB_DROP_PICKUP_REQUEST — atlas MobDropPickupRequest
@@ -1044,6 +1143,22 @@ func candidatesFromFName(fname string) []candidate {
 	case "CWvsContext::SendDropPickUpRequest":
 		// CSV: ITEM_PICKUP — atlas PickUp (handle = "DropPickUpHandle").
 		return []candidate{{name: "PickUp", pkg: "drop", dir: csvpkg.DirServerbound}}
+	case "sub_8316B8":
+		// ITEM_PICKUP (serverbound) in gms_v61: the send-site is UNNAMED in the
+		// IDB — sub_8316B8 @0x8316b8, structurally the CWvsContext::SendDropPickUpRequest
+		// twin (COutPacket(169) + Encode1(fieldKey) + Encode4(updateTime) +
+		// Encode2(x) + Encode2(y) + Encode4(dropId); no trailing crc, pre-83). The
+		// v61 registry primary fname is sub_8316B8, so it keys to the same drop.PickUp
+		// codec as the named twin above.
+		return []candidate{{name: "PickUp", pkg: "drop", dir: csvpkg.DirServerbound}}
+	case "sub_70D987":
+		// ITEM_PICKUP (serverbound) in gms_v48: the send-site is UNNAMED in the
+		// IDB — sub_70D987 @0x70d987, structurally the CWvsContext::SendDropPickUpRequest
+		// twin (COutPacket(142) + Encode1(fieldKey) + Encode4(exclReqTime) +
+		// Encode2(x) + Encode2(y) + Encode4(dropId); no trailing crc, pre-83). The
+		// v48 registry primary fname is sub_70D987, so it keys to the same drop.PickUp
+		// codec as the named twins above.
+		return []candidate{{name: "PickUp", pkg: "drop", dir: csvpkg.DirServerbound}}
 
 	// --- Combat: reactor (serverbound) ---
 	case "CReactorPool::FindHitReactor":
@@ -1069,11 +1184,33 @@ func candidatesFromFName(fname string) []candidate {
 	case "CWvsContext::SendPetFoodItemUseRequest":
 		// CSV: PET_FOOD — atlas Food.
 		return []candidate{{name: "Food", pkg: "pet", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::SendTamingMobFoodItemUseRequest":
+		// USE_MOUNT_FOOD — taming-mob (mount) food. Codec mount/serverbound/Food
+		// (handler MountFoodHandle). update_time u32 + slot i16 + itemId u32.
+		return []candidate{{name: "Food", pkg: "mount", dir: csvpkg.DirServerbound}}
 	case "CWvsContext::SendStatChangeItemUseRequestByPetQ":
 		// CSV: PET_AUTO_POT — atlas ItemUse.
 		return []candidate{{name: "ItemUse", pkg: "pet", dir: csvpkg.DirServerbound}}
 	case "CPet::SendDropPickUpRequest":
 		// CSV: PET_LOOT — atlas DropPickUp.
+		return []candidate{{name: "DropPickUp", pkg: "pet", dir: csvpkg.DirServerbound}}
+	case "sub_6E5BD6":
+		// MOVE_PET (serverbound) in gms_v48: CVecCtrlPet::EndUpdateActive is UNNAMED
+		// — sub_6E5BD6 @0x6e5bd6, COutPacket(113)+CMovePath::Flush (no leading petId,
+		// single-pet). The v48 registry primary fname is sub_6E5BD6, so it keys to
+		// the same pet.MovementRequest codec as the named CVecCtrlPet::EndUpdateActive.
+		return []candidate{{name: "MovementRequest", pkg: "pet", dir: csvpkg.DirServerbound}}
+	case "sub_58DF8A":
+		// PET_COMMAND (serverbound) in gms_v48: CPet::ParseCommand is UNNAMED —
+		// sub_58DF8A @0x58df8a, COutPacket(115)+Encode1(byName)+Encode1(command) (no
+		// leading petId). The v48 registry primary fname is sub_58DF8A, so it keys to
+		// the same pet.Command codec as the named CPet::ParseCommand.
+		return []candidate{{name: "Command", pkg: "pet", dir: csvpkg.DirServerbound}}
+	case "sub_58ED98":
+		// PET_LOOT (serverbound) in gms_v48: CPet::SendDropPickUpRequest is UNNAMED —
+		// sub_58ED98 @0x58ed98, COutPacket(116)+fieldKey/time/x/y/dropId+3 pet-flag
+		// bytes (no leading petId, no crc). The v48 registry primary fname is
+		// sub_58ED98, so it keys to the same pet.DropPickUp codec as the named twin.
 		return []candidate{{name: "DropPickUp", pkg: "pet", dir: csvpkg.DirServerbound}}
 
 	// --- Social: note ---
@@ -1331,6 +1468,45 @@ func candidatesFromFName(fname string) []candidate {
 		// Use WorldMessageSimple as the representative struct (covers the common Notice/PopUp/Megaphone modes).
 		return []candidate{{name: "WorldMessageSimple", pkg: "chat", dir: csvpkg.DirClientbound}}
 
+	// WorldMessage dispatcher family (task-123 Task 18): CWvsContext::OnBroadcastMsg
+	// dispatches on a leading mode byte (Decode1); modelled via #-suffixed synthetic
+	// IDA entries, one per enrolled megaphone arm (docs/packets/dispatchers/worldmessage.yaml,
+	// design D5 — only these four arms enroll; the other 15 modes stay outside the
+	// family lint surface for this task). Mode-value evidence (IDA decompile,
+	// task-18-report.md): the case-3/8/9/10 group sharing one code block is
+	// byte-identical across gms_v83 (0xa22785), gms_v84 (0xa6dc97), gms_v87
+	// (0xab9fd5), gms_v95 (0xa04160), and jms_v185 (0xb0985b) — MEGAPHONE=2,
+	// SUPER_MEGAPHONE=3, ITEM_MEGAPHONE=8, MULTI_MEGAPHONE=10 in all five.
+	case "CWvsContext::OnBroadcastMsg#Megaphone":
+		// mode 2: curse-filtered "name : msg" chat line, no extra fields.
+		return []candidate{{name: "WorldMessageMegaphone", pkg: "chat", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnBroadcastMsg#SuperMegaphone":
+		// mode 3: shared megaphone-family pre-decode (channel + whisper only).
+		return []candidate{{name: "WorldMessageSuperMegaphone", pkg: "chat", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnBroadcastMsg#ItemMegaphone":
+		// mode 8: pre-decode channel + whisper + conditional GW_ItemSlotBase.
+		return []candidate{{name: "WorldMessageItemMegaphone", pkg: "chat", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnBroadcastMsg#MultiMegaphone":
+		// mode 10: pre-decode line count + up to 2 extra strings + channel + whisper.
+		return []candidate{{name: "WorldMessageMultiMegaphone", pkg: "chat", dir: csvpkg.DirClientbound}}
+
+	// Avatar megaphone family (task-123 phase 19, gms_v83 IDA-verified). Each op
+	// is a dedicated (non-dispatched) fname.
+	case "CWvsContext::OnSetAvatarMegaphone":
+		return []candidate{{name: "SetAvatarMegaphone", pkg: "chat", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnClearAvatarMegaphone":
+		return []candidate{{name: "ClearAvatarMegaphone", pkg: "chat", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnAvatarMegaphoneRes":
+		return []candidate{{name: "AvatarMegaphoneResult", pkg: "chat", dir: csvpkg.DirClientbound}}
+
+	// Maple TV family (task-123 phase 19, gms_v83 IDA-verified).
+	case "CMapleTVMan::OnSetMessage":
+		return []candidate{{name: "TvSetMessage", pkg: "tv", dir: csvpkg.DirClientbound}}
+	case "CMapleTVMan::OnClearMessage":
+		return []candidate{{name: "TvClearMessage", pkg: "tv", dir: csvpkg.DirClientbound}}
+	case "CMapleTVMan::OnSendMessageResult":
+		return []candidate{{name: "TvSendMessageResult", pkg: "tv", dir: csvpkg.DirClientbound}}
+
 	// --- Social: chat (serverbound) ---
 	// CSV: GENERAL_CHAT (0x36 / 54) → CField::SendChatMsg.
 	// Wire: Encode4(update_time) + EncodeStr(sText) + Encode1(bOnlyBalloon).
@@ -1349,6 +1525,15 @@ func candidatesFromFName(fname string) []candidate {
 		// CSV: MULTI_CHAT — atlas Multi (serverbound chat/multi.go).
 		return []candidate{{name: "Multi", pkg: "chat", dir: csvpkg.DirServerbound}}
 
+	// MULTI_CHAT (serverbound) in gms_v48: the send-site is UNNAMED in the IDB —
+	// sub_65EB4F @0x65eb4f, structurally the CUIStatusBar::SendGroupMessage twin
+	// (type demux 0/1/2 then COutPacket(89) + Encode1(chatType) + Encode1(count) +
+	// loop Encode4(targetCharId[i]) + EncodeStr(msg); no updateTime prefix, pre-95).
+	// The v48 registry primary fname is sub_65EB4F, so it keys to the same chat.Multi
+	// codec as the named twin above.
+	case "sub_65EB4F":
+		return []candidate{{name: "Multi", pkg: "chat", dir: csvpkg.DirServerbound}}
+
 	// CSV: WHISPER (0xDE / 222) → CField::SendChatMsgWhisper (and SendLocationWhisper for find queries).
 	// Wire for chat path (LABEL_79): Encode1(mode=6) + Encode4(updateTime) + EncodeStr(targetName) + EncodeStr(msg).
 	// Atlas Whisper writes: WriteByte(mode) + WriteInt(updateTime, GMS>=95) + WriteAsciiString(targetName) +
@@ -1364,6 +1549,22 @@ func candidatesFromFName(fname string) []candidate {
 	// both. Per-version wire (IDA): mode byte + Encode4(get_update_time) [v87+/jms]
 	// + EncodeStr(target) + optional EncodeStr(msg for mode==Chat).
 	case "CField::SendLocationWhisper":
+		return []candidate{{name: "Whisper", pkg: "chat", dir: csvpkg.DirServerbound}}
+
+	// WHISPER (serverbound) in gms_v61: the send-site is UNNAMED in the IDB —
+	// sub_4E8635 @0x4e8635, structurally the CField::SendChatMsgWhisper twin
+	// (COutPacket(108) + Encode1(mode=(!msgEmpty+1)|4) + EncodeStr(target) +
+	// optional EncodeStr(msg)). The v61 registry primary fname is sub_4E8635, so
+	// it must key to the same chat.Whisper codec as the named twins above.
+	case "sub_4E8635":
+		return []candidate{{name: "Whisper", pkg: "chat", dir: csvpkg.DirServerbound}}
+
+	// WHISPER (serverbound) in gms_v48: the send-site is UNNAMED in the IDB —
+	// sub_4C4F3B @0x4c4f3b, structurally the CField::SendChatMsgWhisper twin
+	// (COutPacket(90) + Encode1(mode=(found?2:1)|4) + EncodeStr(target) + optional
+	// EncodeStr(msg); no updateTime prefix, pre-87). The v48 registry primary fname
+	// is sub_4C4F3B, so it keys to the same chat.Whisper codec as the named twins above.
+	case "sub_4C4F3B":
 		return []candidate{{name: "Whisper", pkg: "chat", dir: csvpkg.DirServerbound}}
 
 	// CSV: SPOUSE_CHAT (serverbound) → CUIStatusBar::SendCoupleMessage. The client
@@ -1802,6 +2003,45 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "ErrorOneOfAKind", dir: csvpkg.DirClientbound, pkg: "storage"}}
 	case "CTrunkDlg::OnPacket#ErrorMessage":
 		return []candidate{{name: "ErrorMessage", dir: csvpkg.DirClientbound, pkg: "storage"}}
+	// --- rps sub-domain (task-132) ---
+	// Clientbound CRPSGameDlg::OnPacket is a mode-dispatched writer; synthetic
+	// #-suffix FNames map each atlas-emitted arm to its discrete struct. The
+	// four atlas-emitted arms are OPEN/START_SELECT/RESULT/END — see
+	// docs/packets/dispatchers/rps_game.yaml for why modes 6/7/10/12/14 are
+	// intentionally NOT wired here.
+	case "CRPSGameDlg::OnPacket#OPEN":
+		return []candidate{{name: "Open", dir: csvpkg.DirClientbound, pkg: "rps"}}
+	case "CRPSGameDlg::OnPacket#START_SELECT":
+		return []candidate{{name: "StartSelect", dir: csvpkg.DirClientbound, pkg: "rps"}}
+	case "CRPSGameDlg::OnPacket#RESULT":
+		return []candidate{{name: "Result", dir: csvpkg.DirClientbound, pkg: "rps"}}
+	case "CRPSGameDlg::OnPacket#END":
+		return []candidate{{name: "End", dir: csvpkg.DirClientbound, pkg: "rps"}}
+	// Serverbound RPS_ACTION senders (task-132, Task 17). Six real, distinct
+	// CRPSGameDlg sender functions share ONE opcode with a leading sub-op byte
+	// (docs/tasks/task-132-rps-npc-game/ida-rps-serverbound.md §0/§6): five are
+	// bodyless (the sub-op byte alone IS the wire content) and map to the
+	// generic Operation{mode} struct; only SendSelection (sub-op 1) carries a
+	// body (the throw byte) and maps to OperationSelect. Registry primary fname
+	// for RPS_ACTION is CRPSGameDlg::OnBtStart (gms_v83/v87/v95/jms_v185) or
+	// CRPSGameDlg::Update (gms_v84, task-100 cluster-H renumber) — both map to
+	// the SAME Operation struct so whichever is that version's primary resolves
+	// correctly; the other three bodyless senders (OnBtContinue/OnBtExit/
+	// OnBtRetry) are documented here too (registry fname_alts) even though no
+	// version's export needs them to independently claim the Operation report
+	// slot.
+	case "CRPSGameDlg::OnBtStart":
+		return []candidate{{name: "Operation", dir: csvpkg.DirServerbound, pkg: "rps"}}
+	case "CRPSGameDlg::Update":
+		return []candidate{{name: "Operation", dir: csvpkg.DirServerbound, pkg: "rps"}}
+	case "CRPSGameDlg::OnBtContinue":
+		return []candidate{{name: "Operation", dir: csvpkg.DirServerbound, pkg: "rps"}}
+	case "CRPSGameDlg::OnBtExit":
+		return []candidate{{name: "Operation", dir: csvpkg.DirServerbound, pkg: "rps"}}
+	case "CRPSGameDlg::OnBtRetry":
+		return []candidate{{name: "Operation", dir: csvpkg.DirServerbound, pkg: "rps"}}
+	case "CRPSGameDlg::SendSelection":
+		return []candidate{{name: "OperationSelect", dir: csvpkg.DirServerbound, pkg: "rps"}}
 	// Serverbound CTrunkDlg senders.
 	case "CTrunkDlg::SendGetItemRequest":
 		return []candidate{{name: "OperationRetrieveAsset", dir: csvpkg.DirServerbound, pkg: "storage"}}
@@ -1831,6 +2071,18 @@ func candidatesFromFName(fname string) []candidate {
 	// Serverbound CWvsContext senders.
 	case "CWvsContext::SendChangeSlotPositionRequest":
 		return []candidate{{name: "Move", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	case "sub_70D8DE":
+		// ITEM_MOVE (serverbound) in gms_v48: CWvsContext::SendChangeSlotPositionRequest
+		// is UNNAMED — sub_70D8DE @0x70d8de, COutPacket(55)+Encode4(updateTime)+Encode1
+		// (inventoryType)+Encode2(src)+Encode2(dst)+Encode2(count). The v48 registry
+		// primary fname is sub_70D8DE, so it keys to the same inventory.Move codec.
+		return []candidate{{name: "Move", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	case "sub_719DD9":
+		// USE_ITEM (serverbound) in gms_v48: CWvsContext::SendStatChangeItemUseRequest
+		// is UNNAMED — sub_719DD9 @0x719dd9, COutPacket(65)+Encode4(updateTime)+Encode2
+		// (slot)+Encode4(itemId). The v48 registry primary fname is sub_719DD9, so it
+		// keys to the same inventory.ItemUse codec.
+		return []candidate{{name: "ItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
 	case "CWvsContext::SendGatherItemRequest":
 		return []candidate{{name: "CompartmentMergeRequest", dir: csvpkg.DirServerbound, pkg: "inventory"}}
 	case "CWvsContext::SendSortItemRequest":
@@ -1839,6 +2091,93 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "ItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
 	case "CWvsContext::SendUpgradeItemUseRequest":
 		return []candidate{{name: "ScrollUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	// Reward-box ("lottery") use (task-131). Struct LotteryItemUse in
+	// inventory/serverbound; body slot(int16) + itemId(int32). Opcode + codec
+	// exist from v72 up; v48/v61 lack the opcode (generic item-use path).
+	case "CWvsContext::SendLotteryItemUseRequest":
+		return []candidate{{name: "LotteryItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	// USE_SKILL_BOOK (task-125): CWvsContext::SendSkillLearnItemUseRequest,
+	// v83 @0xa0a1b2 IDA-verified (already named in the IDB, opcode 0x52 via
+	// COutPacket::COutPacket(&pkt, 0x52)). Body: Encode4 updateTime +
+	// Encode2 slot + Encode4 itemId; item-class gate a3/10000 in {228,229}
+	// (skill-book item prefix). Struct is UseSkillBook (character/serverbound).
+	case "CWvsContext::SendSkillLearnItemUseRequest":
+		return []candidate{{name: "UseSkillBook", pkg: "character", dir: csvpkg.DirServerbound}}
+	// SKILL_LEARN_ITEM_RESULT (task-125): CWvsContext::OnSkillLearnItemResult,
+	// v83 @0xa1e5af IDA-verified. CWvsContext::OnPacket (case 0x33) delegates
+	// directly. Body (v83, no leading byte — MajorVersion()<84): Decode4
+	// characterId + Decode1 isMasteryBook + Decode4 skillId (discarded) +
+	// Decode4 masterLevel (discarded) + Decode1 canUse + Decode1 success.
+	// Struct is SkillLearnItemResult (character/clientbound).
+	case "CWvsContext::OnSkillLearnItemResult":
+		return []candidate{{name: "SkillLearnItemResult", pkg: "character", dir: csvpkg.DirClientbound}}
+	// Vega's Spell (category 561) USE_CASH_ITEM sub-body (task-130 §2.1) shares
+	// the cash-item-use sender fname with task-126's AP/SP point-reset arm and
+	// task-124's teleport-rock arm. All candidates are keyed to the same fname,
+	// so return them together.
+	// Megaphone family (task-123 phase 19, gms_v83+gms_v95 IDA-verified):
+	// cash-slot type 12 (Megaphone) and type 13 (SuperMegaphone) are sent
+	// INLINE by this function (shared jumptable body @0x9eb811 for v95).
+	// Avatar Megaphone (cash-slot type 43, item classification 539xxxx) is
+	// ALSO sent inline — SendConsumeCashItemUseRequest's jumptable case 43
+	// @0x9ebd1d (CUIAvatarMegaphone::GetText -> 4x EncodeStr +
+	// IsCheckWhisper -> Encode1). Item Megaphone (cash-slot type 14) is
+	// deliberately NOT listed here: this dispatcher's case 14 @0x9ebca1 only
+	// constructs+shows the CItemSpeakerDlg; the ACTUAL send happens in the
+	// separate CItemSpeakerDlg::_SendConsumeCashItemUseRequest function
+	// below (own case arm — do not merge, the two fnames are genuinely
+	// different senders and must not share a candidate list or the
+	// report-generator's last-write-wins file collision mispairs the
+	// wrong (fname, struct) combination). Triple Megaphone (CSpeakerWorldDlgEx,
+	// GetResult@0x9eb5c8) and Maple TV (CUIMapleTV, six ctor sites @0x780fc0)
+	// are ALSO sent inline by this same dispatcher — task-123 phase 20/task-19
+	// IDA-verified (gms_v95): count/flag-byte(s) + line strings, no separate
+	// send function needed (unlike Item Megaphone above).
+	case "CWvsContext::SendConsumeCashItemUseRequest":
+		return []candidate{
+			{name: "ItemUsePointReset", dir: csvpkg.DirServerbound, pkg: "cash"},
+			{name: "ItemUseVegaScroll", dir: csvpkg.DirServerbound, pkg: "cash"},
+			{name: "ItemUseMegaphone", dir: csvpkg.DirServerbound, pkg: "cash"},
+			{name: "ItemUseSuperMegaphone", dir: csvpkg.DirServerbound, pkg: "cash"},
+			{name: "ItemUseAvatarMegaphone", dir: csvpkg.DirServerbound, pkg: "cash"},
+			{name: "ItemUseTripleMegaphone", dir: csvpkg.DirServerbound, pkg: "cash"},
+			{name: "ItemUseMapleTV", dir: csvpkg.DirServerbound, pkg: "cash"},
+			{name: "ItemUseTeleportRock", dir: csvpkg.DirServerbound, pkg: "cash"},
+		}
+	// Item Megaphone (cash-slot type 14): the REAL send function, separate
+	// from the main dispatcher above (task-123 phase 19, gms_v95
+	// IDA-verified @0x5c9e70). See the comment on the case above for why
+	// this is its own arm.
+	case "CItemSpeakerDlg::_SendConsumeCashItemUseRequest":
+		return []candidate{
+			{name: "ItemUseItemMegaphone", dir: csvpkg.DirServerbound, pkg: "cash"},
+		}
+	// Teleport-rock family (task-124). USE_TELEPORT_ROCK (serverbound) sends
+	// slot+itemId then delegates the target payload to the shared
+	// CWvsContext::RunMapTransferItem helper (byName flag + name/mapId), plus a
+	// trailing update_time (v83 @0xa0a3bb, RunMapTransferItem @0xa0a4aa — both
+	// IDA-verified live MapleStory_dump.exe port 13342, task-124 verify pass).
+	// TROCK_ADD_MAP (serverbound) was unnamed in the v83 IDB (sub_A261BC,
+	// mangled symbol ?SendMapTransferRequest@CWvsContext@@QAEXJKH@Z already
+	// present) — renamed live to match the registry fname so it resolves by
+	// name for export harvesting (task-124, §10 unnamed-sender convention).
+	// MAP_TRANSFER_RESULT (clientbound) OnMapTransferResult switches on mode:
+	// cases 2/3 are the list-refresh form (MapTransferList), cases 5-11 are the
+	// error/notice form (MapTransferError) — both keyed to the same fname.
+	// No `pkg` hint on these four: Use/AddMap/MapTransferList/MapTransferError
+	// are globally-unique struct names (no cross-package collision), so pkg is
+	// omitted to keep the packet id unqualified (teleportrock/serverbound/Use,
+	// not teleportrock/serverbound/TeleportrockUse) — matching the markers
+	// already committed in the teleportrock test files.
+	case "CWvsContext::SendMapTransferItemUseRequest":
+		return []candidate{{name: "Use", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::SendMapTransferRequest":
+		return []candidate{{name: "AddMap", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::OnMapTransferResult":
+		return []candidate{
+			{name: "MapTransferList", dir: csvpkg.DirClientbound},
+			{name: "MapTransferError", dir: csvpkg.DirClientbound},
+		}
 	// --- interaction sub-domain (task-067) ---
 	// NOTE: the interaction serverbound dispatcher struct is also named `Operation`
 	// (collides with storage's CTrunkDlg `Operation` under the flat report layout;
@@ -1879,6 +2218,11 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "OperationMemoryGameMoveStone", dir: csvpkg.DirServerbound, pkg: "interaction"}}
 	case "COmokDlg::OnRetreatRequest":
 		return []candidate{{name: "OperationMemoryGameRetreatAnswer", dir: csvpkg.DirServerbound, pkg: "interaction"}}
+	// Miniroom balloon double-click join (task-133, ida-notes §G4). Mode 4
+	// ENTER/VISIT — shared by the game-room and shop-visit sends (same wire
+	// shape, gated by hasPassword rather than by destination type).
+	case "CUserLocal::HandleLButtonDblClk":
+		return []candidate{{name: "OperationVisitGame", dir: csvpkg.DirServerbound, pkg: "interaction"}}
 	// Entrusted-merchant sub-ops (share CPersonalShopDlg senders w/ different op-bytes).
 	case "CEntrustedShopDlg::AddBlackList":
 		return []candidate{{name: "OperationMerchantAddToBlackList", dir: csvpkg.DirServerbound, pkg: "interaction"}}
@@ -1906,6 +2250,78 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "InteractionChat", dir: csvpkg.DirClientbound, pkg: "interaction"}}
 	case "CMiniRoomBaseDlg::OnPacketBase#Leave":
 		return []candidate{{name: "InteractionLeave", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	// Omok / Match Cards mini-game arms (task-133). Each mode of the shared
+	// PLAYER_INTERACTION enum routes to a discrete clientbound struct in
+	// interaction/clientbound/interaction_minigame.go; the synthetic #-suffix
+	// FNames disambiguate the per-mode wire shapes. Read orders + addresses are
+	// grounded in docs/tasks/task-133-miniroom-minigames/ida-notes.md §G1/§G2/§G5,
+	// verified byte-identical on gms_v83 and gms_v95 (StartMatchCards + Result are
+	// v83-only — no v95 handler-body address recorded; see ida-notes §G1/§G5).
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameReady":
+		return []candidate{{name: "InteractionMiniGameReady", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameUnready":
+		return []candidate{{name: "InteractionMiniGameUnready", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameRequestTie":
+		return []candidate{{name: "InteractionMiniGameRequestTie", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameAnswerTie":
+		return []candidate{{name: "InteractionMiniGameAnswerTie", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameRetreatRequest":
+		return []candidate{{name: "InteractionMiniGameRetreatRequest", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameRetreatAnswer":
+		return []candidate{{name: "InteractionMiniGameRetreatAnswer", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameSkip":
+		return []candidate{{name: "InteractionMiniGameSkip", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameStartOmok":
+		return []candidate{{name: "InteractionMiniGameStartOmok", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameStartMatchCards":
+		return []candidate{{name: "InteractionMiniGameStartMatchCards", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameMoveStone":
+		return []candidate{{name: "InteractionMiniGameMoveStone", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGamePutStoneError":
+		return []candidate{{name: "InteractionMiniGamePutStoneError", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameCardSelectFirst":
+		return []candidate{{name: "InteractionMiniGameCardSelectFirst", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameCardSelectSecond":
+		return []candidate{{name: "InteractionMiniGameCardSelectSecond", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CMiniRoomBaseDlg::OnPacketBase#MemoryGameResult":
+		return []candidate{{name: "InteractionMiniGameResult", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	// Game room-enter snapshot (task-7b). The EnterResult SUCCESS body for an
+	// Omok / Match Cards room differs from the shop-room body: yourSlot after
+	// capacity, and avatars + 20-byte records in TWO separate 0xFF-terminated
+	// lists (not the interleaved single list the old model used). Assembled by
+	// OnEnterResultStatic (roomType) -> OnEnterResultBase (capacity, yourSlot,
+	// avatar list; v83 0x65ec3d / v95 0x638e30) -> COmokDlg::OnEnterResult
+	// (record list, title, gameKind, tournament; v83 0x6e388e / v95 0x680e70) /
+	// CMemoryGameDlg::OnEnterResult (v83 0x64db.. / v95 0x628610). The vtable+92
+	// IsEntrusted() predicate is 0 for both game dialogs (sub_48315F), so the
+	// owner-slot-0 Decode4/RegisterEmployer int32 branch is dead for games —
+	// every occupant is a full avatar. See ida-notes.md §G5 "Room-enter blob —
+	// FULL RESOLUTION".
+	case "CMiniRoomBaseDlg::OnPacketBase#EnterResultSuccessMiniGame":
+		return []candidate{{name: "InteractionMiniGameRoom", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	// Game ENTER arm (task-133 / task-18b). The shared ENTER arm (mode 4) has a
+	// GAME shape distinct from the shop-room #Enter: where the shop enter stops
+	// after the visitor's name, the game dialogs read a trailing 20-byte
+	// win/tie/loss record. CMiniRoomBaseDlg::OnEnterBase (v83 0x65ed1c / v95
+	// 0x638f80: slot, DecodeAvatar, name, then v84+/JMS-only Decode2 jobCode)
+	// virtual-dispatches into COmokDlg::OnEnter (v83 sub_6E3BCC @0x6e3bcc / v95
+	// 0x6812e0) or CMemoryGameDlg::OnEnter (v95 0x628980), which read
+	// GW_MiniGameRecord::Decode (v95 0x4f2ad0 = DecodeBuffer(20) = 5×int32; v83
+	// sub_4E42FC). Sent to the room owner on ENTERED; the joining visitor gets
+	// the full InteractionMiniGameRoom snapshot instead. See ida-notes.md §G5.
+	case "CMiniRoomBaseDlg::OnPacketBase#EnterMiniGame":
+		return []candidate{{name: "InteractionMiniGameEnter", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	// UPDATE_CHAR_BOX mini-room balloon (task-133). Not a mode-prefix dispatcher:
+	// there is no mode byte. CUser::OnMiniRoomBalloon reads roomType then, when
+	// roomType != 0, the trailing balloon fields (ida-notes.md §G3, verified
+	// byte-identical on gms_v83 @0x938ba5 / gms_v95 @0x8e8d30). The roomType==0
+	// "remove" shape is a distinct wire shape modelled via a #-suffixed synthetic
+	// entry so the pipeline produces a second report; the base (#-less) entry maps
+	// the full-field balloon, keeping this a single-arm (non-dispatcher) fname.
+	case "CUser::OnMiniRoomBalloon":
+		return []candidate{{name: "MiniRoomBalloon", dir: csvpkg.DirClientbound, pkg: "interaction"}}
+	case "CUser::OnMiniRoomBalloon#Remove":
+		return []candidate{{name: "MiniRoomBalloonRemove", dir: csvpkg.DirClientbound, pkg: "interaction"}}
 	case "CEntrustedShopDlg::OnRefresh#UpdateMerchant":
 		// UPDATE_MERCHANT (mode 25) is the hired-merchant shop refresh. The
 		// dispatcher's default case virtual-dispatches into the concrete dialog;
@@ -1920,6 +2336,10 @@ func candidatesFromFName(fname string) []candidate {
 	// a SEPARATE dispatcher from OnCashItemResult.
 	case "CCashShop::OnQueryCashResult":
 		return []candidate{{name: "QueryResult", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	// Vega's Spell result dialog — single mode byte (task-130 §2.2). v83 opcode
+	// 0x166 via CUIVega::OnPacket; v95 0x1AD.
+	case "CUIVega::OnVegaResult":
+		return []candidate{{name: "VegaScroll", dir: csvpkg.DirClientbound, pkg: "cash"}}
 	// Clientbound CCashShop::OnCashItemResult is a mode-dispatched reader (op-bytes 0x54-0xBC);
 	// synthetic #-suffix FNames map each CashShopOperation result struct to its OnCashItemRes* sub-handler.
 	case "CCashShop::OnCashItemResult#CashShopInventory":
@@ -2007,6 +2427,131 @@ func candidatesFromFName(fname string) []candidate {
 	// when s_bChase]. Matches atlas field/serverbound/change.go Change.Encode.
 	case "CField::SendTransferFieldRequest":
 		return []candidate{{name: "Change", pkg: "field", dir: csvpkg.DirServerbound}}
+
+	// ENTER_MTS (CSV opcode 0x9C/156 in GMS v83). The client migrate-to-MTS/ITC
+	// request built by CWvsContext::SendMigrateToITCRequest@0xa12522. Per IDA the
+	// send site at 0xa1263b constructs COutPacket(opcode 0x9C) and immediately
+	// SendPacket()s it with ZERO Encode calls in between — a bodiless (opcode-only)
+	// request. All preceding code (guest-ID guard, lie-detector guard, map-flag
+	// guard) emits local chat/dialog and returns early; none writes to the packet.
+	// Matches atlas field/serverbound/enter_mts.go EnterMts.Encode (empty body).
+	case "CWvsContext::SendMigrateToITCRequest":
+		return []candidate{{name: "EnterMts", pkg: "field", dir: csvpkg.DirServerbound}}
+
+	// ITC_STATUS_CHARGE. The client open-NX-recharge hook built by
+	// CITC::OnStatusCharge (gms_v83 @0x59ebda op 0xFB, gms_v84 @0x5aef76 op
+	// 0x102, gms_v87 @0x5ce90b op 0x109, gms_v95 @0x572a50 op 0x132, jms_v185
+	// @0x6040a9 op 0x10A). Uniform shape across all five builds: an
+	// m_bITCRequestSent latch guards a COutPacket(opcode) + immediate SendPacket
+	// with ZERO Encode calls in between — a bodiless (opcode-only) request.
+	// Matches atlas field/serverbound/itc_status_charge.go ItcStatusCharge.Encode
+	// (empty body).
+	case "CITC::OnStatusCharge":
+		return []candidate{{name: "ItcStatusCharge", pkg: "field", dir: csvpkg.DirServerbound}}
+
+	// ITC_QUERY_CASH_REQUEST. The wallet-balance query built by
+	// CITC::TrySendQueryCashRequest (gms_v83 @0x59eece op 0xFC, gms_v84
+	// @0x5af26a op 0x103, gms_v87 @0x5cec92 op 0x10A, gms_v95 @0x572ad0 op
+	// 0x133, jms_v185 @0x6043bf op 0x10B). Uniform shape across all five builds:
+	// an m_bITCRequestSent latch guards a COutPacket(opcode) + immediate
+	// SendPacket with ZERO Encode calls in between — a bodiless (opcode-only)
+	// request that elicits the clientbound MTS_OPERATION2 wallet reply. Matches
+	// atlas field/serverbound/itc_query_cash_request.go ItcQueryCashRequest.Encode
+	// (empty body).
+	case "CITC::TrySendQueryCashRequest":
+		return []candidate{{name: "ItcQueryCashRequest", pkg: "field", dir: csvpkg.DirServerbound}}
+
+	// ITC_OPERATION (serverbound mode-dispatcher, gms_v83 opcode 0xFD/253). One
+	// opcode + a leading Encode1(mode) byte selecting the marketplace operation,
+	// then that op's body. CORE-TRADE arms verified (gms_v83, IDA port 13342):
+	//
+	//   CITC::OnRegisterSaleEntry @0x59ec36 (COutPacket(0xFD) @0x59ec63) handles
+	//   BOTH register-fixed-price (mode 2, arg0==0 @0x59ed92) and register-auction
+	//   (mode 0x12, arg0==1 @0x59ecc8) by its arg0 selector — two arms, two
+	//   discrete body codecs. The bare primary fname maps the fixed-price arm
+	//   (ItcOperationRegisterSale); the "#RegisterAuction" synthetic export entry
+	//   maps the auction arm (ItcOperationRegisterAuction).
+	//   CITC::OnSaleCurrentItem @0x59ee3f (COutPacket(253) @0x59ee5d) is mode 3.
+	//
+	// The item-slot blob is sub_4E33D8 @0x4e33d8 (GW_ItemSlotBase: Encode1 type +
+	// virtual RawEncode), modeled by the shared model.Asset codec. The leading
+	// ItcOperation dispatcher struct is a production handler helper and carries no
+	// fname marker. Matches atlas field/serverbound/itc_operation.go.
+	case "CITC::OnRegisterSaleEntry":
+		return []candidate{{name: "ItcOperationRegisterSale", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnRegisterSaleEntry#RegisterAuction":
+		return []candidate{{name: "ItcOperationRegisterAuction", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnSaleCurrentItem":
+		return []candidate{{name: "ItcOperationSaleCurrentItem", pkg: "field", dir: csvpkg.DirServerbound}}
+	// BUY / BUY-NOW / CANCEL-SALE / TAKE-HOME / PLACE-BID arms of the same
+	// ITC_OPERATION dispatcher, verified on gms_v95 (the symbol-rich PDB build,
+	// IDA port 13340) which exposes them as named CITC::On* functions; the v83
+	// client inlines them with no standalone fname. opcode 308/0x134.
+	//   CITC::OnBuy @0x573270 (COutPacket(308) @0x5732a5) mode 0x10.
+	//   CITC::OnBuyAuctionImm @0x573310 (COutPacket(308) @0x573345) mode 0x14.
+	//   CITC::OnCancelSaleItem @0x5737a0 (COutPacket(308) @0x57381a) mode 0x07.
+	//   CITC::OnMoveITCPurchaseItemLtoS @0x573880 (COutPacket(308) @0x5738b5) mode 0x08.
+	//   CITCBidAuctionDlg::OnButtonClicked @0x58eb50 (COutPacket(308) @0x58eda1,
+	//     nId==1 confirm-bid branch) mode 0x13 — the place-bid send is inlined
+	//     into the auction-bid dialog's button handler (no CITC::OnBid fname).
+	// Each body references the listing by its ITC serial (nITCSN); place-bid
+	// additionally carries m_nMyBidPrice + m_nMyBidRange. No item-slot blob.
+	case "CITC::OnBuy":
+		return []candidate{{name: "ItcOperationBuy", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnBuyAuctionImm":
+		return []candidate{{name: "ItcOperationBuyAuctionImm", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnCancelSaleItem":
+		return []candidate{{name: "ItcOperationCancelSale", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnMoveITCPurchaseItemLtoS":
+		return []candidate{{name: "ItcOperationMoveLtoS", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITCBidAuctionDlg::OnButtonClicked":
+		return []candidate{{name: "ItcOperationPlaceBid", pkg: "field", dir: csvpkg.DirServerbound}}
+	// WISH-LIST / ZZIM (favorite) arms of the same ITC_OPERATION dispatcher,
+	// verified on gms_v95 (the symbol-rich PDB build, IDA port 13340) which
+	// exposes them as named CITC::On* functions. opcode 308/0x134. Six are
+	// serial-only (mode + Encode4(nITCSN)); OnRegisterWishEntry carries a full
+	// wish-entry body.
+	//   CITC::OnSetZzim @0x5733b0 (COutPacket(308) @0x5733e5) mode 0x09.
+	//   CITC::OnBuyZzim @0x573450 (COutPacket(308) @0x5734b7) mode 0x11.
+	//   CITC::OnDeleteZzim @0x573520 (COutPacket(308) @0x573555) mode 0x0A.
+	//   CITC::OnViewWish @0x5735c0 (COutPacket(308) @0x5735f5) mode 0x0B.
+	//   CITC::OnBuyWish @0x573660 (COutPacket(308) @0x573695) mode 0x0C.
+	//   CITC::OnCancelWish @0x573700 (COutPacket(308) @0x573735) mode 0x0D.
+	//   CITC::OnRegisterWishEntry @0x573c10 (COutPacket(308) @0x573ca5) mode 0x04;
+	//     body: Encode4 itemId/price/count, Encode1 duration/feeOption, EncodeStr desc.
+	case "CITC::OnSetZzim":
+		return []candidate{{name: "ItcOperationSetZzim", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnBuyZzim":
+		return []candidate{{name: "ItcOperationBuyZzim", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnDeleteZzim":
+		return []candidate{{name: "ItcOperationDeleteZzim", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnViewWish":
+		return []candidate{{name: "ItcOperationViewWish", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnBuyWish":
+		return []candidate{{name: "ItcOperationBuyWish", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnCancelWish":
+		return []candidate{{name: "ItcOperationCancelWish", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnRegisterWishEntry":
+		return []candidate{{name: "ItcOperationRegisterWishEntry", pkg: "field", dir: csvpkg.DirServerbound}}
+	// BROWSE-NAVIGATION arms of the same ITC_OPERATION dispatcher, verified on
+	// gms_v95 (the symbol-rich PDB build, IDA port 13340). opcode 308/0x134. The
+	// three CITC::OnChanged* senders all emit mode 0x05 (the GetItcList browse
+	// request, 8-field shape) but with different per-fname constant fills; the tab
+	// search button emits the distinct mode 0x06 (6-field shape, no sort bytes).
+	// Each is modeled by its own discrete struct + fixture.
+	//   CITC::OnChangedCategory @0x5744a0 (COutPacket(308) @0x57451a) mode 0x05.
+	//   CITC::OnChangedCategorySub @0x5739a0 (COutPacket(308) @0x5739da) mode 0x05.
+	//   CITC::OnChangedPage @0x573af0 (COutPacket(308) @0x573b29) mode 0x05.
+	//   CITCWnd_Tab::OnButtonClicked @0x584b10 (COutPacket(308) @0x584bc7/@0x584cc9)
+	//     mode 0x06 (search-by-name; send inlined in the nId==1004 button branch).
+	case "CITC::OnChangedCategory":
+		return []candidate{{name: "ItcOperationChangedCategory", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnChangedCategorySub":
+		return []candidate{{name: "ItcOperationChangedCategorySub", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITC::OnChangedPage":
+		return []candidate{{name: "ItcOperationChangedPage", pkg: "field", dir: csvpkg.DirServerbound}}
+	case "CITCWnd_Tab::OnButtonClicked":
+		return []candidate{{name: "ItcOperationTabSearch", pkg: "field", dir: csvpkg.DirServerbound}}
 
 	// --- World: field (clientbound) ---
 	// Affected-area (mist) + kite (the flying-kite field object, called
@@ -2404,13 +2949,13 @@ func candidatesFromFName(fname string) []candidate {
 	case "CField_Wedding::OnWeddingProgress#Talk":
 		return []candidate{{name: "WeddingTalk", pkg: "field", dir: csvpkg.DirServerbound}}
 
-	// CField witch-tower / item-upgrade clientbound family (task-096). The
-	// OnScoreUpdate handler is shared by two ops that differ by version: it backs
+	// CField witch-tower clientbound family (task-096). The OnScoreUpdate
+	// handler is shared by two ops that differ by version: it backs
 	// WITCH_TOWER_SCORE_UPDATE on v83/v84/v87/jms and ARIANT_SCORE on v95 (where
 	// v95 routes WITCH_TOWER_SCORE_UPDATE to OnChaosZakumTimer instead). Both
 	// clientbound candidates are returned; the matrix resolves them per op-identity
-	// via the registry op->fname mapping. OnItemUpgrade is an empty-body vtable
-	// forwarder backing VICIOUS_HAMMER (absent from the jms registry).
+	// via the registry op->fname mapping. (See OnItemUpgrade / VICIOUS_HAMMER
+	// below for the unrelated item-upgrade dispatcher family, task-129.)
 	case "CField_Witchtower::OnScoreUpdate":
 		return []candidate{
 			{name: "WitchTowerScoreUpdate", pkg: "field", dir: csvpkg.DirClientbound},
@@ -2418,8 +2963,28 @@ func candidatesFromFName(fname string) []candidate {
 		}
 	case "CField::OnChaosZakumTimer":
 		return []candidate{{name: "WitchTowerScoreUpdate", pkg: "field", dir: csvpkg.DirClientbound}}
-	case "CField::OnItemUpgrade":
-		return []candidate{{name: "ViciousHammer", pkg: "field", dir: csvpkg.DirClientbound}}
+	// VICIOUS_HAMMER (task-129, OP-MODE-PREFIX). CField::OnItemUpgrade is a
+	// vtable forwarder into CUIItemUpgrade::OnPacket (v83 sub_82B2C3 via
+	// sub_82B2AD; v95 CUIItemUpgrade::ShowResult 0x7bec20), which reads
+	// Decode1(mode) and branches: 61 success, 62 failure, any other byte the
+	// non-terminal open/arm result. One discrete struct per arm (the
+	// FIELD_EFFECT model); the retired empty-body ViciousHammer stub was a
+	// false pass once the dialog body was decompiled. jms VERSION-ABSENT.
+	case "CField::OnItemUpgrade#Open":
+		// else-branch: Decode1(mode) + Decode4(token) + Decode4(hammerCount).
+		return []candidate{{name: "ViciousHammerOpen", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnItemUpgrade#Success":
+		// case 61: Decode1(mode) + Decode4(flag).
+		return []candidate{{name: "ViciousHammerSuccess", pkg: "field", dir: csvpkg.DirClientbound}}
+	case "CField::OnItemUpgrade#Failure":
+		// case 62: Decode1(mode) + Decode4(errorCode).
+		return []candidate{{name: "ViciousHammerFailure", pkg: "field", dir: csvpkg.DirClientbound}}
+
+	// ITEM_UPGRADE_UPDATE (task-129). The CUIItemUpgrade gauge-confirm sender:
+	// Encode4(m_nReturnResult) + Encode4(m_nResult) (v83 0x82ae28 /
+	// v95 0x7bef50).
+	case "CUIItemUpgrade::Update":
+		return []candidate{{name: "ItemUpgradeUpdate", pkg: "field", dir: csvpkg.DirServerbound}}
 
 	// CField clientbound cluster 2, remaining 9 ops (task-096). Version-invariant
 	// layouts derived from IDA (addresses pinned per version in the test markers).
@@ -2694,6 +3259,13 @@ func candidatesFromFName(fname string) []candidate {
 			{name: "SpawnPortal", dir: csvpkg.DirClientbound},
 			{name: "RemoveTownDoor", dir: csvpkg.DirClientbound},
 		}
+	case "CWvsContext::OnIncubatorResult":
+		// INCUBATOR_RESULT. v83/v84/v87/jms_v185: Decode4(itemId) Decode2(count)
+		// = 6B. v95 adds Decode4(gachaponItemId) Decode4(bonusItemId)
+		// Decode4(bonusCount) = 18B (task-19 IDA verification of the live v83,
+		// v84, v87, v95, jms_v185 IDBs; v87/jms_v185 do NOT read the extended
+		// tail the Atlas writer sends for GMS>=87/JMS — see result_test.go).
+		return []candidate{{name: "IncubatorResult", pkg: "incubator", dir: csvpkg.DirClientbound, reportName: "IncubatorResult"}}
 	}
 	return nil
 }

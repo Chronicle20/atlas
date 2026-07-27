@@ -4,19 +4,19 @@ import (
 	"atlas-data/rest"
 	"atlas-data/searchindex"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/gorilla/mux"
+	"github.com/jtumidanski/api2go/jsonapi"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/gorilla/mux"
-	"github.com/jtumidanski/api2go/jsonapi"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 func InitStringResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteInitializer {
@@ -71,11 +71,12 @@ func handleGetItemStringsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 			}
 
 			// Page params (PRD §4.1, validation order: search -> filter -> page -> limit-rejection).
-			pageNumber, pageSize, errCode := parsePagingParams(query)
-			if errCode != 0 {
-				w.WriteHeader(errCode)
+			page, err := paginate.ParseParams(query, searchindex.MaxLimit, searchindex.MaxLimit)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, err.Error())
 				return
 			}
+			pageNumber, pageSize := page.Number, page.Size
 
 			spec := searchindex.QuerySpec[StringSearchIndexEntity]{
 				EntityIdColumn: "item_id",
@@ -92,7 +93,7 @@ func handleGetItemStringsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 			tenantId, err := searchindex.ResolveTenantId(db, d.Context(), spec)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Item-string tenant resolve failed.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -115,7 +116,7 @@ func handleGetItemStringsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 			elapsedMs := time.Since(start).Milliseconds()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Item-string search failed.")
-				w.WriteHeader(http.StatusInternalServerError)
+				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
@@ -149,36 +150,6 @@ func handleGetItemStringsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 			server.MarshalPaginatedResponse[[]StringSearchResultRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rms, env, r)
 		}
 	}
-}
-
-// parsePagingParams parses JSON:API-style page[number]/page[size] query params and rejects
-// the legacy ?limit= param. Returns (pageNumber, pageSize, errCode). errCode is 0 on success
-// or an HTTP status code (e.g. 400) on validation failure.
-//
-// Defaults: page[number]=1, page[size]=searchindex.MaxLimit (50).
-// Bounds: page[number] >= 1; page[size] in [1, searchindex.MaxLimit]. Out-of-range or
-// non-integer values yield 400. Presence of legacy ?limit= yields 400 (no shim).
-func parsePagingParams(query url.Values) (int, int, int) {
-	pageSize := searchindex.MaxLimit
-	if raw := query.Get("page[size]"); raw != "" {
-		parsed, err := strconv.Atoi(raw)
-		if err != nil || parsed <= 0 || parsed > searchindex.MaxLimit {
-			return 0, 0, http.StatusBadRequest
-		}
-		pageSize = parsed
-	}
-	pageNumber := 1
-	if raw := query.Get("page[number]"); raw != "" {
-		parsed, err := strconv.Atoi(raw)
-		if err != nil || parsed <= 0 {
-			return 0, 0, http.StatusBadRequest
-		}
-		pageNumber = parsed
-	}
-	if _, hasLimit := query["limit"]; hasLimit {
-		return 0, 0, http.StatusBadRequest
-	}
-	return pageNumber, pageSize, 0
 }
 
 func buildPredicates(f filterSpec) ([]string, []interface{}) {

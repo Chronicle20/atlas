@@ -7,9 +7,10 @@ import (
 	"strconv"
 	"time"
 
-	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
+
+	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
 )
 
 // heartbeatInterval is how often the ingest pod refreshes its Redis

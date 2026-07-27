@@ -3,11 +3,12 @@ package field
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	atlas_packet "github.com/Chronicle20/atlas/libs/atlas-packet"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
-	"github.com/sirupsen/logrus"
 )
 
 // MtsOperation result-mode keys (CITC::OnNormalItemResult). Each resolves to the
@@ -321,6 +322,6 @@ func MtsOperationLoadWishSaleListDoneBody(items []clientbound.MtsItem) func(logr
 // functions above (clientbound.MtsItem). It re-exports the verified MtsItem
 // constructor so callers in the field package do not need to import clientbound
 // directly. The model.Asset blob is the embedded GW_ItemSlotBase item.
-func MtsOperationNewItem(item model.Asset, itcSn uint32, price uint32, contractFee uint32, contractFeeTx string, rollbackUsage string, dateExpired [8]byte, userId string, gameId string, comment string, bidCount uint32, bidRange uint32, bidPrice uint32, minPrice uint32, maxPrice uint32, unitPrice uint32, processStatus uint16) clientbound.MtsItem {
-	return clientbound.NewMtsItem(item, itcSn, price, contractFee, contractFeeTx, rollbackUsage, dateExpired, userId, gameId, comment, bidCount, bidRange, bidPrice, minPrice, maxPrice, unitPrice, processStatus)
+func MtsOperationNewItem(item model.Asset, itcSn uint32, price uint32, contractFee uint32, contractFeeTx string, rollbackUsage string, dateExpired [8]byte, userId string, gameId string, comment string, bidCount uint32, bidRange uint32, bidPrice uint32, minPrice uint32, maxPrice uint32, unitPrice uint32, processStatusKey string) clientbound.MtsItem {
+	return clientbound.NewMtsItem(item, itcSn, price, contractFee, contractFeeTx, rollbackUsage, dateExpired, userId, gameId, comment, bidCount, bidRange, bidPrice, minPrice, maxPrice, unitPrice, processStatusKey)
 }

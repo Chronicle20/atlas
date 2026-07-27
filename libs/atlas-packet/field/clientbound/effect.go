@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const FieldEffectWriter = "FieldEffect"
@@ -50,9 +51,9 @@ func (m *EffectSummon) Decode(_ logrus.FieldLogger, _ context.Context) func(r *r
 
 // packet-audit:fname CField::OnFieldEffect#Tremble
 type EffectTremble struct {
-	mode                  byte
-	bHeavyNShortTremble   bool
-	delay                 uint32
+	mode                byte
+	bHeavyNShortTremble bool
+	delay               uint32
 }
 
 func NewFieldEffectTremble(mode byte, bHeavyNShortTremble bool, delay uint32) EffectTremble {
@@ -166,10 +167,10 @@ func (m *EffectBossHp) Decode(_ logrus.FieldLogger, _ context.Context) func(r *r
 
 // packet-audit:fname CField::OnFieldEffect#RewardRullet
 type EffectRewardRullet struct {
-	mode            byte
-	nRewardJobIdx   uint32
-	nRewardPartIdx  uint32
-	nRewardLevIdx   uint32
+	mode           byte
+	nRewardJobIdx  uint32
+	nRewardPartIdx uint32
+	nRewardLevIdx  uint32
 }
 
 func NewFieldEffectRewardRullet(mode byte, nRewardJobIdx uint32, nRewardPartIdx uint32, nRewardLevIdx uint32) EffectRewardRullet {

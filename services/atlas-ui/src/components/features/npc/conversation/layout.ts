@@ -37,7 +37,7 @@ export async function layoutGraph(input: LayoutInput): Promise<LayoutResult> {
   const graph = {
     id: "root",
     layoutOptions: DEFAULT_OPTIONS,
-    children: input.nodeIds.map(id => ({
+    children: input.nodeIds.map((id) => ({
       id,
       width: input.nodeWidth,
       height: input.nodeHeight,

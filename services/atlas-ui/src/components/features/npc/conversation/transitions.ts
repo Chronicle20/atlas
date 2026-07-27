@@ -43,9 +43,7 @@ function normalizeTarget(target: string | null | undefined): string | null {
 
 export function getTransitions(state: ConversationState): Transition[] {
   const out: Transition[] = [];
-  const push = (
-    partial: Omit<Transition, "source"> & { source?: string },
-  ) => {
+  const push = (partial: Omit<Transition, "source"> & { source?: string }) => {
     out.push({
       ...partial,
       source: state.id,
@@ -61,9 +59,10 @@ export function getTransitions(state: ConversationState): Transition[] {
           label: c.text ? truncate(c.text) : `Choice ${i + 1}`,
           kind: "choice",
           ordinal: i,
-          ...(c.context && Object.keys(c.context).length > 0 && {
-            context: c.context,
-          }),
+          ...(c.context &&
+            Object.keys(c.context).length > 0 && {
+              context: c.context,
+            }),
         });
       });
       break;
@@ -76,9 +75,10 @@ export function getTransitions(state: ConversationState): Transition[] {
           label: c.text ? truncate(c.text) : `Item ${i + 1}`,
           kind: "choice",
           ordinal: i,
-          ...(c.context && Object.keys(c.context).length > 0 && {
-            context: c.context,
-          }),
+          ...(c.context &&
+            Object.keys(c.context).length > 0 && {
+              context: c.context,
+            }),
         });
       });
       break;
@@ -91,9 +91,10 @@ export function getTransitions(state: ConversationState): Transition[] {
           label: c.text ? truncate(c.text) : `Option ${i + 1}`,
           kind: "choice",
           ordinal: i,
-          ...(c.context && Object.keys(c.context).length > 0 && {
-            context: c.context,
-          }),
+          ...(c.context &&
+            Object.keys(c.context).length > 0 && {
+              context: c.context,
+            }),
         });
       });
       break;
@@ -238,16 +239,16 @@ export function getTransitions(state: ConversationState): Transition[] {
           const condSummary =
             condCount > 0
               ? (o.conditions ?? [])
-                  .map(c => c.type)
+                  .map((c) => c.type)
                   .slice(0, 2)
-                  .join(", ") +
-                (condCount > 2 ? `, +${condCount - 2}` : "")
+                  .join(", ") + (condCount > 2 ? `, +${condCount - 2}` : "")
               : undefined;
           const target = normalizeTarget(o.nextState);
           push({
             target,
             label: condCount
-              ? condSummary || `if ${condCount} cond${condCount === 1 ? "" : "s"}`
+              ? condSummary ||
+                `if ${condCount} cond${condCount === 1 ? "" : "s"}`
               : `outcome ${i + 1}`,
             kind: "outcome",
             ordinal: i,

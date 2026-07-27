@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 type OperationCashTradeOpen struct {
@@ -22,16 +23,16 @@ type OperationCashTradeOpen struct {
 	birthday          uint32
 }
 
-func (m OperationCashTradeOpen) NProc() byte                { return m.nProc }
-func (m OperationCashTradeOpen) RoomType() byte             { return m.roomType }
-func (m OperationCashTradeOpen) TargetCharacterId() uint32  { return m.targetCharacterId }
-func (m OperationCashTradeOpen) Spw() uint32                { return m.spw }
-func (m OperationCashTradeOpen) DwSN() uint32               { return m.dwSN }
-func (m OperationCashTradeOpen) ShopId() uint32             { return m.shopId }
-func (m OperationCashTradeOpen) Unk2() byte                 { return m.unk2 }
-func (m OperationCashTradeOpen) Position() uint16           { return m.position }
-func (m OperationCashTradeOpen) SerialNumber() uint64       { return m.serialNumber }
-func (m OperationCashTradeOpen) Birthday() uint32           { return m.birthday }
+func (m OperationCashTradeOpen) NProc() byte               { return m.nProc }
+func (m OperationCashTradeOpen) RoomType() byte            { return m.roomType }
+func (m OperationCashTradeOpen) TargetCharacterId() uint32 { return m.targetCharacterId }
+func (m OperationCashTradeOpen) Spw() uint32               { return m.spw }
+func (m OperationCashTradeOpen) DwSN() uint32              { return m.dwSN }
+func (m OperationCashTradeOpen) ShopId() uint32            { return m.shopId }
+func (m OperationCashTradeOpen) Unk2() byte                { return m.unk2 }
+func (m OperationCashTradeOpen) Position() uint16          { return m.position }
+func (m OperationCashTradeOpen) SerialNumber() uint64      { return m.serialNumber }
+func (m OperationCashTradeOpen) Birthday() uint32          { return m.birthday }
 
 func (m OperationCashTradeOpen) Operation() string { return "OperationCashTradeOpen" }
 

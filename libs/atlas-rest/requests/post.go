@@ -8,9 +8,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-retry"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
+
+	retry "github.com/Chronicle20/atlas/libs/atlas-retry"
 )
 
 func createOrUpdate[A any](l logrus.FieldLogger, ctx context.Context) func(method string) func(url string, input interface{}, configurators ...Configurator) (A, error) {

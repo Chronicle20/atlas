@@ -4,8 +4,9 @@ import (
 	"atlas-skills/kafka/message"
 	"atlas-skills/macro"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // ProcessorMock is a mock implementation of macro.Processor
@@ -17,6 +18,12 @@ type ProcessorMock struct {
 func (m *ProcessorMock) ByCharacterIdProvider(characterId uint32) model.Provider[[]macro.Model] {
 	args := m.Called(characterId)
 	return args.Get(0).(model.Provider[[]macro.Model])
+}
+
+// ByCharacterIdPagedProvider mocks the ByCharacterIdPagedProvider method
+func (m *ProcessorMock) ByCharacterIdPagedProvider(characterId uint32, page model.Page) model.Provider[model.Paged[macro.Model]] {
+	args := m.Called(characterId, page)
+	return args.Get(0).(model.Provider[model.Paged[macro.Model]])
 }
 
 // Update mocks the Update method

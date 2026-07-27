@@ -15,6 +15,10 @@ Fame transaction log table.
 | amount | int8 | NOT NULL | Fame amount (+1 or -1) |
 | created_at | timestamp | NOT NULL | Timestamp of fame transaction |
 
+### outbox_entries
+
+Provided by the shared `atlas-outbox` library (`outboxlib.Migration`, `main.go`). The transactional outbox table backing the outbox drainer. Its schema is owned by the library, not this service.
+
 ## Relationships
 
 None.
@@ -25,5 +29,5 @@ None.
 
 ## Migration Rules
 
-- Migrations are executed via GORM AutoMigrate on the Entity struct
-- Migration runs on service startup via database.Connect
+- Migrations are executed via GORM AutoMigrate
+- `fame.Migration` and `outboxlib.Migration` are registered at service startup via `database.Connect` (`main.go`)

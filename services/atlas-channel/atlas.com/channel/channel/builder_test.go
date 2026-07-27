@@ -5,9 +5,10 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/google/uuid"
+
 	channelId "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 func TestNewModelBuilder(t *testing.T) {
@@ -28,7 +29,6 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 		SetCurrentCapacity(100).
 		SetMaxCapacity(1000).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -91,7 +91,6 @@ func TestCloneModel(t *testing.T) {
 	cloned, err := channel.CloneModel(original).
 		SetPort(9090).
 		Build()
-
 	if err != nil {
 		t.Fatalf("CloneModel().Build() unexpected error: %v", err)
 	}

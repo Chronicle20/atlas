@@ -1,0 +1,10 @@
+packet: monster/serverbound/MonsterMobCrcKeyChangedReply
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CMobPool::OnMobCrcKeyChanged
+    address: "0x5d4d23"
+    decompile_sha256: fc3b0277db2bbd77e80ca101cac7926a0b77cf49ef174322d1f40079f8d30a95
+verifies:
+    - libs/atlas-packet/monster/serverbound/v61_test.go#TestMobCrcKeyChangedReplyBytesV61

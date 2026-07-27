@@ -4,15 +4,16 @@ import (
 	"atlas-maps/rest"
 	"net/http"
 
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
+	"github.com/jtumidanski/api2go/jsonapi"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	"github.com/google/uuid"
-	"github.com/gorilla/mux"
-	"github.com/jtumidanski/api2go/jsonapi"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -43,7 +44,7 @@ func handleGetWeatherInMap(d *rest.HandlerDependency, c *rest.HandlerContext) ht
 						res, err := Transform(entry)
 						if err != nil {
 							d.Logger().WithError(err).Errorf("Creating REST model.")
-							w.WriteHeader(http.StatusInternalServerError)
+							server.WriteErrorResponse(d.Logger())(w)(err)
 							return
 						}
 

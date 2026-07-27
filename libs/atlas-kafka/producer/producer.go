@@ -5,10 +5,11 @@ import (
 	"encoding/binary"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-retry"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	retry "github.com/Chronicle20/atlas/libs/atlas-retry"
 )
 
 //goland:noinspection GoUnusedExportedFunction

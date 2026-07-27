@@ -1,0 +1,137 @@
+{
+  "data": {
+    "attributes": {
+      "bonus": {
+        "duration": 60,
+        "entry": "auto",
+        "mapId": 910320010,
+        "properties": {
+          "collectItemId": 2022615,
+          "monsters": [
+            9700020
+          ]
+        }
+      },
+      "duration": 0,
+      "exit": 910320000,
+      "failRequirements": [],
+      "fieldLock": "channel",
+      "name": "Abandoned Subway Party Quest",
+      "questId": "abandoned_subway_pq",
+      "registration": {
+        "duration": 0,
+        "mapId": 910320000,
+        "mode": "instant",
+        "type": "party"
+      },
+      "rewards": [],
+      "stages": [
+        {
+          "clearConditions": [],
+          "duration": 180,
+          "index": 0,
+          "mapIds": [
+            910330100
+          ],
+          "name": "Monster Killing 1",
+          "properties": {
+            "actBarMechanic": true,
+            "npcId": 1052115
+          },
+          "rewards": [],
+          "type": "monster_killing",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [],
+          "duration": 180,
+          "index": 1,
+          "mapIds": [
+            910330200
+          ],
+          "name": "Monster Killing 2",
+          "properties": {
+            "actBarMechanic": true,
+            "npcId": 1052115
+          },
+          "rewards": [],
+          "type": "monster_killing",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [],
+          "duration": 180,
+          "index": 2,
+          "mapIds": [
+            910330300
+          ],
+          "name": "Monster Killing 3",
+          "properties": {
+            "actBarMechanic": true,
+            "npcId": 1052115
+          },
+          "rewards": [],
+          "type": "monster_killing",
+          "warpType": "all"
+        },
+        {
+          "clearConditions": [],
+          "duration": 0,
+          "index": 3,
+          "mapIds": [
+            910320001
+          ],
+          "name": "Rewards",
+          "properties": {
+            "gradeBased": true,
+            "npcId": 1052115
+          },
+          "rewards": [
+            {
+              "amount": 1,
+              "items": [
+                {
+                  "quantity": 1,
+                  "templateId": 4001321,
+                  "weight": 1
+                }
+              ],
+              "type": "item"
+            }
+          ],
+          "type": "item_collection",
+          "warpType": "none"
+        }
+      ],
+      "startEvents": [
+        {
+          "target": "party",
+          "type": "warp",
+          "value": "910330100"
+        }
+      ],
+      "startRequirements": [
+        {
+          "operator": "gte",
+          "referenceId": 0,
+          "type": "party_size",
+          "value": 1
+        },
+        {
+          "operator": "gte",
+          "referenceId": 0,
+          "type": "level_min",
+          "value": 21
+        },
+        {
+          "operator": "lte",
+          "referenceId": 0,
+          "type": "level_max",
+          "value": 30
+        }
+      ]
+    },
+    "id": "abandoned_subway_pq",
+    "type": "party-quest-definition"
+  }
+}

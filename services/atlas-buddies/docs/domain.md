@@ -18,6 +18,7 @@ Represents a character's buddy list containing buddies and a configurable capaci
 - A character has exactly one buddy list
 - Buddy count cannot exceed capacity
 - Capacity can only be increased, not decreased
+- A character cannot request to buddy a target character who is a game master (GM level > 0)
 
 ### Processors
 

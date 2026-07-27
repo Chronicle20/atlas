@@ -1,0 +1,15 @@
+# InteractionOperationPersonalStoreAddToBlackList (← `CPersonalShopDlg::OnClickBanButton`)
+
+- **IDA:** 0x66658a
+- **Atlas file:** `libs/atlas-packet/interaction/serverbound/operation_personal_store_add_to_black_list.go`
+- **Variant:** GMS/v72
+- **Branch depth:** 0
+- **Verdict:** ✅
+
+## Wire-level diff
+
+| # | Atlas writes | v? reads | Verdict | Note |
+|---|---|---|---|---|
+| 0 | byte | byte `slot` | ✅ |  |
+| 1 | string | string `name` | ✅ |  |
+

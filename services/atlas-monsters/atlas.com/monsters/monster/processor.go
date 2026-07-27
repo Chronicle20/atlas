@@ -1,8 +1,8 @@
 package monster
 
 import (
+	"atlas-monsters/character/hidden"
 	mistKafka "atlas-monsters/kafka/message/mist"
-	"atlas-monsters/kafka/producer"
 	_map "atlas-monsters/map"
 	"atlas-monsters/monster/information"
 	"atlas-monsters/monster/mobskill"
@@ -12,14 +12,19 @@ import (
 	"sort"
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	map2 "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
-	"go.opentelemetry.io/otel"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // Processor defines the interface for monster processing operations
@@ -40,7 +45,10 @@ type Processor interface {
 	Create(f field.Model, input RestModel) (Model, error)
 	StartControl(uniqueId uint32, controllerId uint32) (Model, error)
 	StopControl(m Model) error
+	RelinquishControlOnHide(characterId uint32) error
+	RestoreCandidacyOnReveal(characterId uint32) error
 	FindNextController(idp model.Provider[[]uint32]) model.Operator[Model]
+	ControlOnEnter(enteringCharacterId uint32, idp model.Provider[[]uint32]) model.Operator[Model]
 	Damage(id uint32, characterId uint32, damages []uint32, attackType byte)
 	DamageFriendly(uniqueId uint32, attackerUniqueId uint32, observerUniqueId uint32)
 	Move(id uint32, x int16, y int16, fh int16, stance byte) error
@@ -67,13 +75,25 @@ type emitter func(topic string, provider model.Provider[[]kafka.Message]) error
 // normally.
 var testInformationLookup func(monsterId uint32) (information.Model, error)
 
+// testMobSkillLookup is a test-only override for mobskill.GetByIdAndLevel.
+// When nil (production), UseSkill calls mobskill.GetByIdAndLevel normally.
+var testMobSkillLookup func(skillId uint16, level uint16) (mobskill.Model, error)
+
+// ErrNoControllerCandidate reports that an election found no eligible
+// controller — a legitimate outcome when the field is empty of visible
+// characters (e.g. only a GM-hidden character remains, FR-4.3). Callers
+// treat it as "leave uncontrolled", not an error.
+var ErrNoControllerCandidate = errors.New("no controller candidate")
+
 // ProcessorImpl implements the Processor interface
 type ProcessorImpl struct {
-	l         logrus.FieldLogger
-	ctx       context.Context
-	t         tenant.Model
-	emit      emitter
-	inFieldFn func(f field.Model) ([]uint32, error)
+	l          logrus.FieldLogger
+	ctx        context.Context
+	t          tenant.Model
+	emit       emitter
+	inFieldFn  func(f field.Model) ([]uint32, error)
+	hiddenFn   func() (map[uint32]struct{}, error)
+	locationFn func(characterId uint32) (field.Model, error)
 }
 
 // NewProcessor creates a new Processor
@@ -87,10 +107,21 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		},
 	}
 	p.inFieldFn = func(f field.Model) ([]uint32, error) {
-		return _map.CharacterIdsInFieldProvider(p.l)(p.ctx)(f)()
+		return _map.NewProcessor(p.l, p.ctx).CharacterIdsInFieldProvider(f)()
+	}
+	p.hiddenFn = func() (map[uint32]struct{}, error) {
+		if r := hidden.GetRegistry(); r != nil {
+			return r.MemberSet(p.ctx, p.t)
+		}
+		return map[uint32]struct{}{}, nil
+	}
+	p.locationFn = func(characterId uint32) (field.Model, error) {
+		return _map.NewProcessor(p.l, p.ctx).GetCharacterField(characterId)
 	}
 	return p
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // ByIdProvider returns a provider for a monster by ID
 func (p *ProcessorImpl) ByIdProvider(monsterId uint32) model.Provider[Model] {
@@ -180,7 +211,7 @@ func (p *ProcessorImpl) GetInFieldRect(f field.Model, x1, y1, x2, y2 int16, limi
 // Create creates a new monster in a field
 func (p *ProcessorImpl) Create(f field.Model, input RestModel) (Model, error) {
 	p.l.Debugf("Attempting to create monster [%d] in field [%s].", input.MonsterId, f.Id())
-	ma, err := information.GetById(p.l)(p.ctx)(input.MonsterId)
+	ma, err := information.NewProcessor(p.l, p.ctx).GetById(input.MonsterId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to retrieve information necessary to create monster [%d].", input.MonsterId)
 		return Model{}, err
@@ -213,7 +244,7 @@ func (p *ProcessorImpl) Create(f field.Model, input RestModel) (Model, error) {
 	//
 	// StartControl as a public API is preserved for genuine control
 	// transfers (controller leaves, DPS-leader switch, FindNextController).
-	cid, err := p.getControllerCandidate(f, m.X(), m.Y(), _map.CharacterIdsInFieldProvider(p.l)(p.ctx)(f))
+	cid, err := p.getControllerCandidate(f, m.X(), m.Y(), _map.NewProcessor(p.l, p.ctx).CharacterIdsInFieldProvider(f))
 	if err == nil {
 		p.l.Debugf("Created monster [%d] with id [%d] will be controlled by [%d].", m.MonsterId(), m.UniqueId(), cid)
 		m, err = GetMonsterRegistry().ControlMonster(p.t, m.UniqueId(), cid)
@@ -243,51 +274,88 @@ func (p *ProcessorImpl) Create(f field.Model, input RestModel) (Model, error) {
 	return m, nil
 }
 
+// hiddenSet reads the shared GM-hidden set. On failure (or when no seam is
+// configured, e.g. tests constructing ProcessorImpl directly without
+// NewProcessor) it returns an empty set: fail-open, election degrades to
+// pre-hide-awareness behavior rather than leaving monsters uncontrolled.
+func (p *ProcessorImpl) hiddenSet() map[uint32]struct{} {
+	if p.hiddenFn == nil {
+		return map[uint32]struct{}{}
+	}
+	hs, err := p.hiddenFn()
+	if err != nil {
+		p.l.WithError(err).Warnf("Unable to read hidden-character set; controller election proceeding unfiltered.")
+		return map[uint32]struct{}{}
+	}
+	return hs
+}
+
 // getControllerCandidate finds the best character to control monsters in a field.
 // monsterX/monsterY are the controlled monster's position; if a player's puppet
-// sits within vicinity of it (Cosmic Monster.java getNextControllerCandidate /
-// isPuppetInVicinity, distanceSq < 177777), that puppet's owner is preferred as
+// sits within vicinity of it (distanceSq < 177777), that puppet's owner is preferred as
 // the controller over the default least-controlled candidate. When no in-vicinity
 // puppet exists the selection falls back to the unchanged least-loaded pick.
+// GM-hidden characters (FR-4.1, FR-4.2) are excluded from both the puppet-owner
+// bias and the candidate pool; if that leaves no eligible candidate,
+// ErrNoControllerCandidate is returned (FR-4.3).
 func (p *ProcessorImpl) getControllerCandidate(f field.Model, monsterX int16, monsterY int16, idp model.Provider[[]uint32]) (uint32, error) {
 	p.l.Debugf("Identifying controller candidate for monsters in field [%s].", f.Id())
 
+	hiddenSet := p.hiddenSet()
+
 	// Puppet vicinity bias: prefer the owner of an in-vicinity puppet, but only
-	// when that owner is actually a candidate in the field's character pool.
+	// when that owner is actually a candidate in the field's character pool and
+	// is not GM-hidden (FR-4.2).
 	if pr := GetPuppetRegistry(); pr != nil {
 		if owner, ok := pr.VicinityOwner(p.ctx, p.t, f, monsterX, monsterY); ok {
-			if ids, ierr := idp(); ierr == nil {
-				for _, id := range ids {
-					if id == owner {
-						p.l.Debugf("Controller candidate biased to puppet owner [%d] in field [%s].", owner, f.Id())
-						return owner, nil
+			if _, isHidden := hiddenSet[owner]; !isHidden {
+				if ids, ierr := idp(); ierr == nil {
+					for _, id := range ids {
+						if id == owner {
+							p.l.Debugf("Controller candidate biased to puppet owner [%d] in field [%s].", owner, f.Id())
+							return owner, nil
+						}
 					}
 				}
 			}
 		}
 	}
 
-	controlCounts, err := model.CollectToMap(idp, characterIdKey, zeroValue)()
+	ids, err := idp()
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to initialize controller candidate map.")
 		return 0, err
 	}
+	controlCounts := make(map[uint32]int, len(ids))
+	for _, id := range ids {
+		if _, isHidden := hiddenSet[id]; isHidden {
+			continue
+		}
+		controlCounts[id] = 0
+	}
 	err = model.ForEachSlice(p.ControlledInFieldProvider(f), func(m Model) error {
-		controlCounts[m.ControlCharacterId()] += 1
+		// Only count loads for seeded (in-pool, non-hidden) candidates —
+		// incrementing an unseeded key would insert it and let a character
+		// outside the pool (or a hidden one mid-relinquish) win the election.
+		if _, ok := controlCounts[m.ControlCharacterId()]; ok {
+			controlCounts[m.ControlCharacterId()] += 1
+		}
 		return nil
 	})
 
-	var index = uint32(0)
+	index := uint32(0)
+	first := true
 	for key, val := range controlCounts {
-		if index == 0 {
+		if first {
 			index = key
+			first = false
 		} else if val < controlCounts[index] {
 			index = key
 		}
 	}
 
-	if index == 0 {
-		return 0, errors.New("should not get here")
+	if first {
+		return 0, ErrNoControllerCandidate
 	}
 	p.l.Debugf("Controller candidate has been determined. Character [%d].", index)
 	return index, nil
@@ -297,7 +365,52 @@ func (p *ProcessorImpl) getControllerCandidate(f field.Model, monsterX int16, mo
 func (p *ProcessorImpl) FindNextController(idp model.Provider[[]uint32]) model.Operator[Model] {
 	return func(m Model) error {
 		cid, err := p.getControllerCandidate(m.Field(), m.X(), m.Y(), idp)
+		if errors.Is(err, ErrNoControllerCandidate) {
+			p.l.Debugf("No eligible controller for monster [%d] in field [%s]; leaving uncontrolled.", m.UniqueId(), m.Field().Id())
+			return nil
+		}
 		if err != nil {
+			return err
+		}
+
+		_, err = p.StartControl(m.UniqueId(), cid)
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to start [%d] controlling [%d] in field [%s].", cid, m.UniqueId(), m.Field().Id())
+		}
+		return err
+	}
+}
+
+// ControlOnEnter assigns a controller to a not-yet-controlled monster when a
+// character enters the field.
+//
+// When the chosen controller is the *entering* character, the assignment is
+// applied IN-PLACE in the registry WITHOUT emitting a StartControl event —
+// mirroring Create's in-place assignment. That character's client is still
+// loading the field and has NOT been sent this mob's Spawn packet yet; the
+// channel's spawnMonsterForSession sends Spawn-then-Control to it, preserving
+// the client invariant that Control never precedes Spawn. An early Control
+// packet makes the v79/v83 client materialize the mob from the Control body
+// (CMobPool::SetLocalMob -> CreateMob -> CMob::Init): a 0/1 stance then routes
+// to CMob::OnResolveMoveAction and null-derefs (crash), and a control-first
+// birth on a slope lands the mob below the surface (fall-through). See
+// docs/tasks/task-179-mob-spawn-stance-byte and the channel spawnMonsterForSession.
+//
+// When the chosen controller is an already-present player (who already has the
+// mob spawned on their client), the normal StartControl path — with event
+// emission — is used, since Control-first is safe there.
+func (p *ProcessorImpl) ControlOnEnter(enteringCharacterId uint32, idp model.Provider[[]uint32]) model.Operator[Model] {
+	return func(m Model) error {
+		cid, err := p.getControllerCandidate(m.Field(), m.X(), m.Y(), idp)
+		if err != nil {
+			return err
+		}
+
+		if cid == enteringCharacterId {
+			p.l.Debugf("Assigning entering controller [%d] for monster [%d] in field [%s] in-place (no StartControl event; channel sends Spawn-then-Control).", cid, m.UniqueId(), m.Field().Id())
+			if _, err = GetMonsterRegistry().ControlMonster(p.t, m.UniqueId(), cid); err != nil {
+				p.l.WithError(err).Errorf("Unable to assign entering controller [%d] for monster [%d] in field [%s].", cid, m.UniqueId(), m.Field().Id())
+			}
 			return err
 		}
 
@@ -352,6 +465,74 @@ func (p *ProcessorImpl) StopControl(m Model) error {
 	return err
 }
 
+// RelinquishControlOnHide handles a SuperGmHide APPLIED event (FR-2): mark
+// the character hidden (ALWAYS first — FR-7.2), resolve their live field,
+// then release and reassign every monster they control there. Location
+// failure (offline / in transition) skips the release; candidacy exclusion
+// still holds via the set, and the next election trigger converges.
+func (p *ProcessorImpl) RelinquishControlOnHide(characterId uint32) error {
+	if r := hidden.GetRegistry(); r != nil {
+		if err := r.Add(p.ctx, p.t, characterId); err != nil {
+			p.l.WithError(err).Warnf("Unable to mark character [%d] hidden; election exclusion degraded until reconciliation.", characterId)
+		}
+	}
+
+	f, err := p.locationFn(characterId)
+	if err != nil {
+		if errors.Is(err, requests.ErrNotFound) {
+			p.l.WithError(err).Debugf("GM-hide: character [%d] offline/absent (not found); skipping monster relinquish (set mutation applied).", characterId)
+		} else {
+			p.l.WithError(err).Warnf("GM-hide: unable to locate character [%d] (non-404); skipping monster relinquish (set mutation applied).", characterId)
+		}
+		return nil
+	}
+
+	// Snapshot ONCE before StopControl mutates registry state — same
+	// provider-re-evaluation race as handleStatusEventCharacterExit.
+	mobs, err := p.ControlledByCharacterInFieldProvider(f, characterId)()
+	if err != nil {
+		p.l.WithError(err).Warnf("GM-hide: unable to fetch mobs controlled by [%d] in field [%s]; skipping relinquish.", characterId, f.Id())
+		return nil
+	}
+	if len(mobs) == 0 {
+		p.l.Debugf("GM-hide: character [%d] controls no monsters in field [%s].", characterId, f.Id())
+		return nil
+	}
+	snapshot := model.FixedProvider(mobs)
+	_ = model.ForEachSlice(snapshot, p.StopControl, model.ParallelExecute())
+	idp := func() ([]uint32, error) { return p.inFieldFn(f) }
+	_ = model.ForEachSlice(snapshot, p.FindNextController(idp), model.ParallelExecute())
+	p.l.Debugf("GM-hide: character [%d] relinquished [%d] monsters in field [%s].", characterId, len(mobs), f.Id())
+	return nil
+}
+
+// RestoreCandidacyOnReveal handles the SuperGmHide EXPIRED event (FR-3):
+// unmark hidden (ALWAYS first), then re-run election for uncontrolled
+// monsters in the character's live field so the revealed character is
+// eligible again. No forced transfer (FR-3.2).
+func (p *ProcessorImpl) RestoreCandidacyOnReveal(characterId uint32) error {
+	if r := hidden.GetRegistry(); r != nil {
+		if err := r.Remove(p.ctx, p.t, characterId); err != nil {
+			p.l.WithError(err).Warnf("Unable to unmark character [%d] hidden; reconciliation will repair.", characterId)
+		}
+	}
+
+	f, err := p.locationFn(characterId)
+	if err != nil {
+		if errors.Is(err, requests.ErrNotFound) {
+			p.l.WithError(err).Debugf("GM-reveal: character [%d] offline/absent (not found); skipping re-election (set mutation applied).", characterId)
+		} else {
+			p.l.WithError(err).Warnf("GM-reveal: unable to locate character [%d] (non-404); skipping re-election (set mutation applied).", characterId)
+		}
+		return nil
+	}
+
+	idp := func() ([]uint32, error) { return p.inFieldFn(f) }
+	_ = model.ForEachSlice(p.NotControlledInFieldProvider(f), p.FindNextController(idp), model.ParallelExecute())
+	p.l.Debugf("GM-reveal: re-ran election for uncontrolled monsters in field [%s] after character [%d] revealed.", f.Id(), characterId)
+	return nil
+}
+
 // Damage applies a sequence of damage lines from a single attack to a monster.
 // Lines are applied in order; if any line kills the monster, later lines are
 // dropped (overkill discarded). Always emits a `damaged` event reflecting the
@@ -378,7 +559,7 @@ func (p *ProcessorImpl) Damage(id uint32, characterId uint32, damages []uint32, 
 	// Fetch monster info for boss flag and revives
 	var isBoss bool
 	var revives []uint32
-	if ma, infoErr := information.GetById(p.l)(p.ctx)(m.MonsterId()); infoErr == nil {
+	if ma, infoErr := information.NewProcessor(p.l, p.ctx).GetById(m.MonsterId()); infoErr == nil {
 		isBoss = ma.Boss()
 		revives = ma.Revives()
 	}
@@ -463,21 +644,25 @@ func (p *ProcessorImpl) Damage(id uint32, characterId uint32, damages []uint32, 
 	// Controller-switch on DPS lead applies to bosses too. Only the decay sweep
 	// (MonsterAggroDecayTask) treats bosses specially.
 	if characterId != last.Monster.ControlCharacterId() && last.Monster.DamageLeader() == characterId {
-		inField, ferr := p.attackerInField(last.Monster.Field(), characterId)
-		if ferr != nil || !inField {
-			p.l.Debugf("FR-10: skipping controller switch for char [%d] not in field of monster [%d].", characterId, last.Monster.UniqueId())
+		if _, isHidden := p.hiddenSet()[characterId]; isHidden {
+			p.l.Debugf("Skipping DPS-leader controller switch to GM-hidden character [%d] for monster [%d].", characterId, last.Monster.UniqueId())
 		} else {
-			p.l.Debugf("Character [%d] has become damage leader for monster [%d].", characterId, last.Monster.UniqueId())
-			// FR-9: only emit STOP_CONTROL when there's actually a previous controller.
-			if last.Monster.ControlCharacterId() != 0 {
-				if err := p.StopControl(last.Monster); err != nil {
-					p.l.WithError(err).Errorf("Unable to stop [%d] from controlling monster [%d].", last.Monster.ControlCharacterId(), last.Monster.UniqueId())
-				}
-			}
-			if _, err := p.StartControl(last.Monster.UniqueId(), characterId); err != nil {
-				p.l.WithError(err).Errorf("Unable to start [%d] controlling monster [%d].", characterId, last.Monster.UniqueId())
+			inField, ferr := p.attackerInField(last.Monster.Field(), characterId)
+			if ferr != nil || !inField {
+				p.l.Debugf("FR-10: skipping controller switch for char [%d] not in field of monster [%d].", characterId, last.Monster.UniqueId())
 			} else {
-				controllerSwitched = true
+				p.l.Debugf("Character [%d] has become damage leader for monster [%d].", characterId, last.Monster.UniqueId())
+				// FR-9: only emit STOP_CONTROL when there's actually a previous controller.
+				if last.Monster.ControlCharacterId() != 0 {
+					if err := p.StopControl(last.Monster); err != nil {
+						p.l.WithError(err).Errorf("Unable to stop [%d] from controlling monster [%d].", last.Monster.ControlCharacterId(), last.Monster.UniqueId())
+					}
+				}
+				if _, err := p.StartControl(last.Monster.UniqueId(), characterId); err != nil {
+					p.l.WithError(err).Errorf("Unable to start [%d] controlling monster [%d].", characterId, last.Monster.UniqueId())
+				} else {
+					controllerSwitched = true
+				}
 			}
 		}
 	}
@@ -513,7 +698,7 @@ func (p *ProcessorImpl) DamageFriendly(uniqueId uint32, attackerUniqueId uint32,
 		return
 	}
 
-	ma, err := information.GetById(p.l)(p.ctx)(attacker.MonsterId())
+	ma, err := information.NewProcessor(p.l, p.ctx).GetById(attacker.MonsterId())
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to get information for attacking monster [%d].", attacker.MonsterId())
 		return
@@ -599,7 +784,12 @@ func (p *ProcessorImpl) UseSkill(uniqueId uint32, characterId uint32, skillId by
 	}
 
 	// Fetch skill definition from data service
-	sd, err := mobskill.GetByIdAndLevel(p.l)(p.ctx)(uint16(skillId), uint16(skillLevel))
+	var sd mobskill.Model
+	if testMobSkillLookup != nil {
+		sd, err = testMobSkillLookup(uint16(skillId), uint16(skillLevel))
+	} else {
+		sd, err = mobskill.NewProcessor(p.l, p.ctx).GetByIdAndLevel(uint16(skillId), uint16(skillLevel))
+	}
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to retrieve mob skill [%d] level [%d].", skillId, skillLevel)
 		return
@@ -625,10 +815,15 @@ func (p *ProcessorImpl) UseSkill(uniqueId uint32, characterId uint32, skillId by
 
 	// Deduct MP
 	if sd.MpCon() > 0 {
-		_, err = GetMonsterRegistry().DeductMp(p.t, uniqueId, sd.MpCon())
-		if err != nil {
-			p.l.WithError(err).Errorf("Unable to deduct MP from monster [%d].", uniqueId)
+		post, derr := GetMonsterRegistry().DeductMp(p.t, uniqueId, sd.MpCon())
+		if derr != nil {
+			p.l.WithError(derr).Errorf("Unable to deduct MP from monster [%d].", uniqueId)
 			return
+		}
+		// The MP-sufficiency gate above guarantees no clamp, so the
+		// requested MpCon is the exact amount deducted.
+		if eerr := p.emit(EnvEventTopicMonsterStatus, mpChangedStatusEventProvider(post, 0, uint32(skillId), MpChangeReasonSkillCast, sd.MpCon())); eerr != nil {
+			p.l.WithError(eerr).Errorf("Unable to emit MP_CHANGED for monster [%d] skill cast.", uniqueId)
 		}
 	}
 
@@ -649,7 +844,7 @@ func (p *ProcessorImpl) UseSkill(uniqueId uint32, characterId uint32, skillId by
 
 	// Determine animation delay from monster data
 	var animDelay time.Duration
-	ma, err := information.GetById(p.l)(p.ctx)(m.MonsterId())
+	ma, err := information.NewProcessor(p.l, p.ctx).GetById(m.MonsterId())
 	if err == nil {
 		if d, ok := ma.AnimationTimes()["skill1"]; ok && d > 0 {
 			animDelay = time.Duration(d) * time.Millisecond
@@ -697,10 +892,10 @@ func (p *ProcessorImpl) UseSkill(uniqueId uint32, characterId uint32, skillId by
 	}
 
 	if animDelay > 0 {
-		go func() {
+		routine.Go(p.l, p.ctx, func(_ context.Context) {
 			time.Sleep(animDelay)
 			p.applyAnimationDelayedEffect(uniqueId, executeEffect, postExecute)
-		}()
+		})
 	} else {
 		executeEffect()
 		postExecute()
@@ -735,7 +930,7 @@ func (p *ProcessorImpl) UseSkillGM(uniqueId uint32, skillId byte, skillLevel byt
 		return
 	}
 
-	sd, err := mobskill.GetByIdAndLevel(p.l)(p.ctx)(uint16(skillId), uint16(skillLevel))
+	sd, err := mobskill.NewProcessor(p.l, p.ctx).GetByIdAndLevel(uint16(skillId), uint16(skillLevel))
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to retrieve mob skill [%d] level [%d] for GM command.", skillId, skillLevel)
 		return
@@ -785,7 +980,7 @@ func (p *ProcessorImpl) UseBasicAttack(uniqueId uint32, attackPos uint8) {
 	if testInformationLookup != nil {
 		info, err = testInformationLookup(m.MonsterId())
 	} else {
-		info, err = information.GetById(p.l)(p.ctx)(m.MonsterId())
+		info, err = information.NewProcessor(p.l, p.ctx).GetById(m.MonsterId())
 	}
 	if err != nil {
 		p.l.WithError(err).Debugf("UseBasicAttack: cannot fetch template for monster [%d].", uniqueId)
@@ -820,9 +1015,15 @@ func (p *ProcessorImpl) UseBasicAttack(uniqueId uint32, attackPos uint8) {
 	}
 
 	if atk.ConMP > 0 {
-		if _, err := GetMonsterRegistry().DeductMp(p.t, uniqueId, uint32(atk.ConMP)); err != nil {
-			p.l.WithError(err).Errorf("UseBasicAttack: DeductMp failed for monster [%d].", uniqueId)
+		post, derr := GetMonsterRegistry().DeductMp(p.t, uniqueId, uint32(atk.ConMP))
+		if derr != nil {
+			p.l.WithError(derr).Errorf("UseBasicAttack: DeductMp failed for monster [%d].", uniqueId)
 			return
+		}
+		// The MP-sufficiency gate above guarantees no clamp, so ConMP is
+		// the exact amount deducted.
+		if eerr := p.emit(EnvEventTopicMonsterStatus, mpChangedStatusEventProvider(post, 0, 0, MpChangeReasonBasicAttack, uint32(atk.ConMP))); eerr != nil {
+			p.l.WithError(eerr).Errorf("UseBasicAttack: unable to emit MP_CHANGED for monster [%d].", uniqueId)
 		}
 	}
 
@@ -1036,7 +1237,7 @@ func (p *ProcessorImpl) executeDebuff(m Model, sd mobskill.Model, skillId byte, 
 
 // executeBanish warps target players to the monster's banish map
 func (p *ProcessorImpl) executeBanish(m Model, sd mobskill.Model) {
-	ma, err := information.GetById(p.l)(p.ctx)(m.MonsterId())
+	ma, err := information.NewProcessor(p.l, p.ctx).GetById(m.MonsterId())
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to get monster info for banish from monster [%d].", m.UniqueId())
 		return
@@ -1079,7 +1280,7 @@ func (p *ProcessorImpl) getDiseaseTargets(m Model, sd mobskill.Model) []uint32 {
 	}
 
 	// AoE: get all characters in the field
-	ids, err := _map.CharacterIdsInFieldProvider(p.l)(p.ctx)(m.Field())()
+	ids, err := _map.NewProcessor(p.l, p.ctx).CharacterIdsInFieldProvider(m.Field())()
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to get characters in field for monster [%d] disease targeting.", m.UniqueId())
 		return nil
@@ -1157,7 +1358,7 @@ func (p *ProcessorImpl) ApplyStatusEffect(uniqueId uint32, effect StatusEffect) 
 		if testInformationLookup != nil {
 			info, infoErr = testInformationLookup(m.MonsterId())
 		} else {
-			info, infoErr = information.GetById(p.l)(p.ctx)(m.MonsterId())
+			info, infoErr = information.NewProcessor(p.l, p.ctx).GetById(m.MonsterId())
 		}
 		if infoErr == nil {
 			// Elemental immunity check
@@ -1192,7 +1393,7 @@ func (p *ProcessorImpl) ApplyStatusEffect(uniqueId uint32, effect StatusEffect) 
 // isElementallyImmune checks if a monster's resistances block the given status effect.
 // DOOM (Priest, 2311005) intentionally bypasses elemental immunity: the
 // polymorph-to-snail effect overrides resistance — a fire-immune mob still
-// becomes a snail. Source parity with Cosmic (server/StatEffect.java:1531).
+// becomes a snail.
 func isElementallyImmune(info information.Model, effect StatusEffect) (bool, string) {
 	if _, ok := effect.Statuses()[monster2.StatusDoom]; ok {
 		return false, ""
@@ -1364,14 +1565,6 @@ func (p *ProcessorImpl) attackerInField(f field.Model, characterId uint32) (bool
 
 // Helper functions
 
-func zeroValue(_ uint32) int {
-	return 0
-}
-
-func characterIdKey(id uint32) uint32 {
-	return id
-}
-
 func IdTransformer(m Model) (uint32, error) {
 	return m.UniqueId(), nil
 }
@@ -1427,13 +1620,13 @@ func destroyInTenant(l logrus.FieldLogger) func(ctx context.Context) func(t tena
 // the DRAIN_MP command lands, the monster may already have been
 // one-shot killed by the same player attack (DAMAGE and DRAIN_MP are
 // emitted in the same processAttack call and partitioned by uniqueId,
-// so DAMAGE processes first). In that case Cosmic still plays the
-// visual and refunds the caster — the post-mortem deduction is purely
+// so DAMAGE processes first). In that case the visual still plays and
+// the caster is still refunded — the post-mortem deduction is purely
 // cosmetic.
 //
 // The body.Amount on the emitted event is requestedAmount (the
 // channel-computed MaxMp * X / 100), not the clamped actual delta:
-// Cosmic refunds the caster the full computed amount regardless of how
+// the caster is refunded the full computed amount regardless of how
 // much MP the monster had left to give.
 //
 // The boss check uses testInformationLookup when non-nil so that unit
@@ -1457,7 +1650,7 @@ func (p *ProcessorImpl) DrainMp(f field.Model, uniqueId uint32, characterId uint
 		if testInformationLookup != nil {
 			infoModel, infoErr = testInformationLookup(m.MonsterId())
 		} else {
-			infoModel, infoErr = information.GetById(p.l)(p.ctx)(m.MonsterId())
+			infoModel, infoErr = information.NewProcessor(p.l, p.ctx).GetById(m.MonsterId())
 		}
 		if infoErr == nil && infoModel.Boss() {
 			return nil

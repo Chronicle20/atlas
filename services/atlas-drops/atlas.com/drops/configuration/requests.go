@@ -3,8 +3,9 @@ package configuration
 import (
 	"fmt"
 
-	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 )
 
 const (

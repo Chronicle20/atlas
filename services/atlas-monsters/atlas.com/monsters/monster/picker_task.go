@@ -5,9 +5,10 @@ import (
 	"context"
 	"time"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // MonsterSkillPickerSweepInterval is the cadence at which
@@ -42,7 +43,7 @@ func NewMonsterSkillPickerSweepTask(l logrus.FieldLogger, ctx context.Context, i
 	}
 	tk.hasSkillsFn = func(t tenant.Model, monsterId uint32) bool {
 		tctx := tenant.WithContext(tk.ctx, t)
-		ma, err := information.GetById(tk.l)(tctx)(monsterId)
+		ma, err := information.NewProcessor(tk.l, tctx).GetById(monsterId)
 		if err != nil {
 			return false
 		}

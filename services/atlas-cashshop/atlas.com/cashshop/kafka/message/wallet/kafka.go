@@ -8,6 +8,11 @@ const (
 	StatusEventTypeCreated = "CREATED"
 	StatusEventTypeUpdated = "UPDATED"
 	StatusEventTypeDeleted = "DELETED"
+	// StatusEventTypeError reports a failed transactional wallet adjust (missing
+	// wallet, insufficient balance) so a saga waiting on the ADJUST_CURRENCY command
+	// fails fast instead of waiting out its timeout. Only emitted when the command
+	// carried a (non-nil) transaction id.
+	StatusEventTypeError = "ERROR"
 
 	CommandTypeAdjustCurrency = "ADJUST_CURRENCY"
 )
@@ -33,6 +38,14 @@ type StatusEventUpdatedBody struct {
 
 type StatusEventDeletedBody struct {
 	// Empty body as no additional information is needed for deletion
+}
+
+// StatusEventErrorBody reports a failed transactional wallet adjust. TransactionId
+// echoes the ADJUST_CURRENCY command so the orchestrator can fail the matching
+// saga step; Reason is a human-readable diagnostic (not client-facing).
+type StatusEventErrorBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	Reason        string    `json:"reason"`
 }
 
 // Command represents a command to modify wallet state

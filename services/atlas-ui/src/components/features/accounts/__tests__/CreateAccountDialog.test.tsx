@@ -11,9 +11,10 @@ vi.mock("sonner", () => ({
 
 const navigateMock = vi.fn();
 vi.mock("react-router-dom", async () => {
-  const actual = await vi.importActual<typeof import("react-router-dom")>(
-    "react-router-dom"
-  );
+  const actual =
+    await vi.importActual<typeof import("react-router-dom")>(
+      "react-router-dom",
+    );
   return { ...actual, useNavigate: () => navigateMock };
 });
 
@@ -27,12 +28,7 @@ function makeMachine(overrides: Partial<ReturnType<typeof defaults>> = {}) {
 function defaults() {
   return {
     status: "idle" as
-      | "idle"
-      | "submitting"
-      | "polling"
-      | "success"
-      | "timeout"
-      | "error",
+      "idle" | "submitting" | "polling" | "success" | "timeout" | "error",
     accountId: null as number | null,
     errorMessage: null as string | null,
     errorKind: null as "duplicate-name" | "generic" | null,
@@ -54,7 +50,9 @@ const tenant = {
   attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 },
 } as never;
 
-function renderDialog(props: Partial<React.ComponentProps<typeof CreateAccountDialog>> = {}) {
+function renderDialog(
+  props: Partial<React.ComponentProps<typeof CreateAccountDialog>> = {},
+) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <MemoryRouter>
@@ -66,7 +64,7 @@ function renderDialog(props: Partial<React.ComponentProps<typeof CreateAccountDi
           {...props}
         />
       </QueryClientProvider>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 }
 
@@ -89,7 +87,7 @@ describe("CreateAccountDialog", () => {
     await userEvent.click(screen.getByRole("button", { name: /create/i }));
     expect(machineRef.current.submit).not.toHaveBeenCalled();
     expect(
-      await screen.findByText(/Name must be at least 4 characters/i)
+      await screen.findByText(/Name must be at least 4 characters/i),
     ).toBeInTheDocument();
   });
 
@@ -100,7 +98,7 @@ describe("CreateAccountDialog", () => {
     await userEvent.click(screen.getByRole("button", { name: /create/i }));
     expect(machineRef.current.submit).not.toHaveBeenCalled();
     expect(
-      await screen.findByText(/Password must be at least 6 characters/i)
+      await screen.findByText(/Password must be at least 6 characters/i),
     ).toBeInTheDocument();
   });
 
@@ -131,7 +129,9 @@ describe("CreateAccountDialog", () => {
       errorMessage: "already exists",
     });
     renderDialog();
-    expect(screen.getByText(/already exists|name already taken/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/already exists|name already taken/i),
+    ).toBeInTheDocument();
   });
 
   it("on generic error: fires error toast", () => {
@@ -148,7 +148,7 @@ describe("CreateAccountDialog", () => {
     machineRef.current = makeMachine({ status: "timeout" });
     renderDialog();
     expect(
-      screen.getByText(/timed out waiting for account to appear/i)
+      screen.getByText(/timed out waiting for account to appear/i),
     ).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: /retry/i }));
     expect(machineRef.current.retry).toHaveBeenCalled();

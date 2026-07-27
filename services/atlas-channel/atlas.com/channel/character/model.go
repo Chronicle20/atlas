@@ -49,6 +49,7 @@ type Model struct {
 	gm                 int
 	x                  int16
 	y                  int16
+	fh                 int16
 	stance             byte
 	meso               uint32
 	pets               []pet.Model
@@ -144,6 +145,10 @@ func (m Model) MaxMp() uint16 {
 	return m.maxMp
 }
 
+func (m Model) HpMpUsed() int {
+	return m.hpMpUsed
+}
+
 func (m Model) Ap() uint16 {
 	return m.ap
 }
@@ -179,7 +184,7 @@ func (m Model) HasSPTable() bool {
 
 func (m Model) Sp() []uint16 {
 	s := strings.Split(m.sp, ",")
-	var sps = make([]uint16, 0)
+	sps := make([]uint16, 0)
 	for _, x := range s {
 		sp, err := strconv.ParseUint(x, 10, 16)
 		if err == nil {
@@ -246,6 +251,10 @@ func (m Model) Y() int16 {
 
 func (m Model) Stance() byte {
 	return m.stance
+}
+
+func (m Model) Fh() int16 {
+	return m.fh
 }
 
 func (m Model) WorldId() world.Id {

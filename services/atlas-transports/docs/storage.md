@@ -38,7 +38,7 @@ Stores active transport instances with multiple Redis structures.
 |-------------|------|-------------|
 | transport:instances | SET | Set of all active instance IDs |
 | transport:instance:{instanceId} | STRING | Instance metadata (JSON) |
-| transport:instance:{instanceId}:chars | HASH | Character entries keyed by character ID |
+| transport:instance:chars:{instanceId} | HASH | Character entries keyed by character ID |
 | transport:route:{tenantId}:{routeId} | SET | Set of instance IDs for a route |
 
 **Metadata Value:** `TransportInstance` (JSON serialized, excludes characters)

@@ -9,24 +9,38 @@ import (
 	"atlas-consumables/compartment"
 	consumable3 "atlas-consumables/data/consumable"
 	equipable2 "atlas-consumables/data/equipable"
+	itemstring "atlas-consumables/data/itemstring"
 	_map3 "atlas-consumables/data/map"
 	"atlas-consumables/equipable"
 	"atlas-consumables/inventory"
-	"atlas-consumables/location"
+	assetMsg "atlas-consumables/kafka/message/asset"
 	compartment2 "atlas-consumables/kafka/message/compartment"
 	"atlas-consumables/kafka/message/consumable"
 	foodmsg "atlas-consumables/kafka/message/food"
+	sagamsg "atlas-consumables/kafka/message/saga"
+	assetOnce "atlas-consumables/kafka/once/asset"
 	once "atlas-consumables/kafka/once/compartment"
-	"atlas-consumables/kafka/producer"
-	"atlas-consumables/map"
+	sagaonce "atlas-consumables/kafka/once/saga"
+	"atlas-consumables/location"
+	_map "atlas-consumables/map"
 	character2 "atlas-consumables/map/character"
 	"atlas-consumables/monster"
 	"atlas-consumables/monster/drop/position"
 	"atlas-consumables/pet"
+	saga2 "atlas-consumables/saga"
+	skill2 "atlas-consumables/skill"
 	"context"
+	"encoding/json"
 	"errors"
 	"math"
 	"math/rand"
+	"time"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/degrade"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	ts "github.com/Chronicle20/atlas/libs/atlas-constants/character"
@@ -40,25 +54,40 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 var ErrPetCannotConsume = errors.New("pet cannot consume")
 
 type ItemConsumer func(l logrus.FieldLogger) func(ctx context.Context) error
 
-type Processor struct {
-	l   logrus.FieldLogger
-	ctx context.Context
-	cp  *character.Processor
-	ip  *inventory.Processor
-	cpp *compartment.Processor
-	cdp *consumable3.Processor
+type Processor interface {
+	RequestItemConsume(c channel.Model, characterId uint32, slot int16, itemId item2.Id, quantity int16) error
+	RequestFeed(worldId world.Id, characterId uint32, slot int16, itemId item2.Id) error
+	ConsumeError(characterId uint32, transactionId uuid.UUID, inventoryType inventory2.Type, slot int16, err error) error
+	RequestScroll(characterId uint32, scrollSlot int16, equipSlot int16, whiteScroll bool, legendarySpirit bool) error
+	RequestVegaScroll(characterId uint32, vegaSlot int16, vegaItemId item2.Id, scrollSlot int16, equipSlot int16) error
+	VegaScrollError(characterId uint32, transactionId uuid.UUID, reservations []VegaReservation, err error) error
+	ValidateScrollUse(scrollItem asset.Model, equipItem asset.Model) bool
+	PassScroll(characterId uint32, legendarySpirit bool, whiteScroll bool) error
+	ApplyConsumableEffect(transactionId uuid.UUID, _ channel.Model, characterId uint32, itemId item2.Id) error
+	CancelConsumableEffect(_ uuid.UUID, characterId uint32, itemId item2.Id, f field.Model) error
+	FailScroll(characterId uint32, cursed bool, legendarySpirit bool, whiteScroll bool) error
+	RequestItemReward(characterId uint32, itemId item2.Id, source int16) error
+	RequestViciousHammer(characterId uint32, hammerSlot int16, equipSlot int16) error
+	RequestSkillBookUse(f field.Model, characterId uint32, slot int16, itemId item2.Id) error
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
-	p := &Processor{
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+	cp  character.Processor
+	ip  inventory.Processor
+	cpp compartment.Processor
+	cdp consumable3.Processor
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 		cp:  character.NewProcessor(l, ctx),
@@ -69,14 +98,19 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 	return p
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 // usesStandardConsumer reports whether an item routes through ConsumeStandard
-// (which invokes ApplyItemEffects for HP/MP recovery, status buffs, and status
-// cure). Anything not matched here falls through to ConsumeBare and silently
-// skips effect application. Cure pots (classification 205) belong here because
-// their disease cure flags are read inside ApplyItemEffects.
+// (which invokes ApplyItemEffects for HP/MP recovery, status buffs, status
+// cure, and morph). Anything not matched here falls through to ConsumeBare and
+// silently skips effect application. Cure pots (classification 205) belong
+// here because their disease cure flags are read inside ApplyItemEffects;
+// transformation potions (classification 221) because their morph/morphRandom
+// specs are applied there.
 func usesStandardConsumer(itemId item2.Id) bool {
 	switch item2.GetClassification(itemId) {
-	case item2.Classification(200), item2.Classification(201), item2.Classification(202), item2.Classification(205):
+	case item2.Classification(200), item2.Classification(201), item2.Classification(202), item2.Classification(205),
+		item2.ClassificationConsumableTransformation:
 		return true
 	}
 	return false
@@ -106,6 +140,86 @@ func collectCureTypes(ci consumable3.Model) []string {
 	return out
 }
 
+// effectPlan is the pure result of interpreting a consumable's specs against a
+// character: everything ApplyItemEffects will do, decided before any side effect.
+type effectPlan struct {
+	cureTypes []string     // ordered; from collectCureTypes
+	hpChanges []int16      // ordered ChangeHP calls (hp, then hpR-derived)
+	mpChanges []int16      // ordered ChangeMP calls (mp, then mpR-derived)
+	statups   []stat.Model // includes the resolved morph statup, if any
+	duration  int32        // WZ `time` spec in ms; atlas-buffs expiry = now + duration*time.Millisecond
+}
+
+// computeEffectPlan interprets a consumable's specs against a character with
+// no side effects. ApplyItemEffects executes the plan; keeping the decision
+// pure is what makes the morph/hp paths pinnable by plain unit tests.
+func computeEffectPlan(l logrus.FieldLogger, c character.Model, ci consumable3.Model) effectPlan {
+	plan := effectPlan{
+		cureTypes: collectCureTypes(ci),
+		hpChanges: make([]int16, 0, 2),
+		mpChanges: make([]int16, 0, 2),
+		statups:   make([]stat.Model, 0),
+	}
+
+	if val, ok := ci.GetSpec(consumable3.SpecTypeHP); ok && val > 0 {
+		plan.hpChanges = append(plan.hpChanges, int16(val))
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeHPRecovery); ok && val > 0 {
+		pct := float64(val) / float64(100)
+		plan.hpChanges = append(plan.hpChanges, int16(math.Floor(float64(c.MaxHp())*pct)))
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeMP); ok && val > 0 {
+		plan.mpChanges = append(plan.mpChanges, int16(val))
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeMPRecovery); ok && val > 0 {
+		pct := float64(val) / float64(100)
+		plan.mpChanges = append(plan.mpChanges, int16(math.Floor(float64(c.MaxMp())*pct)))
+	}
+
+	if val, ok := ci.GetSpec(consumable3.SpecTypeAccuracy); ok && val > 0 {
+		plan.statups = append(plan.statups, stat.Model{Type: ts.TemporaryStatTypeAccuracy, Amount: val})
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeEvasion); ok && val > 0 {
+		plan.statups = append(plan.statups, stat.Model{Type: ts.TemporaryStatTypeAvoidability, Amount: val})
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeJump); ok && val > 0 {
+		plan.statups = append(plan.statups, stat.Model{Type: ts.TemporaryStatTypeJump, Amount: val})
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeMagicAttack); ok && val > 0 {
+		plan.statups = append(plan.statups, stat.Model{Type: ts.TemporaryStatTypeMagicAttack, Amount: val})
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeMagicDefense); ok && val > 0 {
+		plan.statups = append(plan.statups, stat.Model{Type: ts.TemporaryStatTypeMagicDefense, Amount: val})
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeWeaponAttack); ok && val > 0 {
+		plan.statups = append(plan.statups, stat.Model{Type: ts.TemporaryStatTypeWeaponAttack, Amount: val})
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeWeaponDefense); ok && val > 0 {
+		plan.statups = append(plan.statups, stat.Model{Type: ts.TemporaryStatTypeWeaponDefense, Amount: val})
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeSpeed); ok && val > 0 {
+		plan.statups = append(plan.statups, stat.Model{Type: ts.TemporaryStatTypeSpeed, Amount: val})
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeMorph); ok && val > 0 {
+		plan.statups = append(plan.statups, stat.Model{Type: ts.TemporaryStatTypeMorph, Amount: val})
+	} else if len(ci.Morphs()) > 0 {
+		if morphId, err := rollMorph(ci.Morphs()); err == nil {
+			plan.statups = append(plan.statups, stat.Model{Type: ts.TemporaryStatTypeMorph, Amount: int32(morphId)})
+		} else {
+			l.WithError(err).Warnf("Skipping morph for item [%d]: unusable morphRandom table.", ci.Id())
+		}
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeTime); ok && val > 0 {
+		// The consumable `time` spec is already in milliseconds, which is the
+		// unit atlas-buffs expects (expiry = now + duration*time.Millisecond,
+		// since task-054). Passing it as-is; a prior `/1000` made every timed
+		// consumable buff expire ~1000x too early.
+		plan.duration = val
+	}
+
+	return plan
+}
+
 // ApplyItemEffects applies the effects of a consumable item to a character.
 // This is the shared logic used by both regular item consumption and NPC-initiated item use.
 // It handles stat buffs (accuracy, evasion, attack, defense, speed, jump) and HP/MP recovery.
@@ -113,75 +227,33 @@ func ApplyItemEffects(l logrus.FieldLogger, ctx context.Context, c character.Mod
 	bp := buff.NewProcessor(l, ctx)
 	cp := character.NewProcessor(l, ctx)
 
+	plan := computeEffectPlan(l, c, ci)
+
 	// 1. Cure first. Cure runs before HP/MP recovery so a queued poison tick
 	// (also routed through atlas-buffs's per-character partition) lands behind
 	// the cancel and cannot eat part of the heal between drink-time and
 	// cancel-commit-time. See task-051 D3.
-	if cureTypes := collectCureTypes(ci); len(cureTypes) > 0 {
-		if err := bp.CancelByTypes(f, characterId, cureTypes); err != nil {
+	if len(plan.cureTypes) > 0 {
+		if err := bp.CancelByTypes(f, characterId, plan.cureTypes); err != nil {
 			l.WithError(err).Errorf("Unable to dispatch cure-by-types for character [%d] item [%d].", characterId, itemId)
 		}
 	}
 
 	// 2. HP/MP recovery.
-	if val, ok := ci.GetSpec(consumable3.SpecTypeHP); ok && val > 0 {
-		_ = cp.ChangeHP(f, characterId, int16(val))
+	for _, amount := range plan.hpChanges {
+		_ = cp.ChangeHP(f, characterId, amount)
 	}
-	if val, ok := ci.GetSpec(consumable3.SpecTypeHPRecovery); ok && val > 0 {
-		pct := float64(val) / float64(100)
-		res := int16(math.Floor(float64(c.MaxHp()) * pct))
-		_ = cp.ChangeHP(f, characterId, res)
-	}
-	if val, ok := ci.GetSpec(consumable3.SpecTypeMP); ok && val > 0 {
-		_ = cp.ChangeMP(f, characterId, int16(val))
-	}
-	if val, ok := ci.GetSpec(consumable3.SpecTypeMPRecovery); ok && val > 0 {
-		pct := float64(val) / float64(100)
-		res := int16(math.Floor(float64(c.MaxMp()) * pct))
-		_ = cp.ChangeMP(f, characterId, res)
+	for _, amount := range plan.mpChanges {
+		_ = cp.ChangeMP(f, characterId, amount)
 	}
 
 	// 3. Status-up buffs.
-	statups := make([]stat.Model, 0)
-	duration := int32(0)
-
-	if val, ok := ci.GetSpec(consumable3.SpecTypeAccuracy); ok && val > 0 {
-		statups = append(statups, stat.Model{Type: ts.TemporaryStatTypeAccuracy, Amount: val})
-	}
-	if val, ok := ci.GetSpec(consumable3.SpecTypeEvasion); ok && val > 0 {
-		statups = append(statups, stat.Model{Type: ts.TemporaryStatTypeAvoidability, Amount: val})
-	}
-	if val, ok := ci.GetSpec(consumable3.SpecTypeJump); ok && val > 0 {
-		statups = append(statups, stat.Model{Type: ts.TemporaryStatTypeJump, Amount: val})
-	}
-	if val, ok := ci.GetSpec(consumable3.SpecTypeMagicAttack); ok && val > 0 {
-		statups = append(statups, stat.Model{Type: ts.TemporaryStatTypeMagicAttack, Amount: val})
-	}
-	if val, ok := ci.GetSpec(consumable3.SpecTypeMagicDefense); ok && val > 0 {
-		statups = append(statups, stat.Model{Type: ts.TemporaryStatTypeMagicDefense, Amount: val})
-	}
-	if val, ok := ci.GetSpec(consumable3.SpecTypeWeaponAttack); ok && val > 0 {
-		statups = append(statups, stat.Model{Type: ts.TemporaryStatTypeWeaponAttack, Amount: val})
-	}
-	if val, ok := ci.GetSpec(consumable3.SpecTypeWeaponDefense); ok && val > 0 {
-		statups = append(statups, stat.Model{Type: ts.TemporaryStatTypeWeaponDefense, Amount: val})
-	}
-	if val, ok := ci.GetSpec(consumable3.SpecTypeSpeed); ok && val > 0 {
-		statups = append(statups, stat.Model{Type: ts.TemporaryStatTypeSpeed, Amount: val})
-	}
-	if val, ok := ci.GetSpec(consumable3.SpecTypeMorph); ok && val > 0 {
-		statups = append(statups, stat.Model{Type: ts.TemporaryStatTypeMorph, Amount: val})
-	}
-	if val, ok := ci.GetSpec(consumable3.SpecTypeTime); ok && val > 0 {
-		duration = val / 1000
-	}
-
-	if len(statups) > 0 {
-		_ = bp.Apply(f, characterId, -int32(itemId), byte(0), duration, statups)(characterId)
+	if len(plan.statups) > 0 {
+		_ = bp.Apply(f, characterId, -int32(itemId), byte(0), plan.duration, plan.statups)(characterId)
 	}
 }
 
-func (p *Processor) RequestItemConsume(c channel.Model, characterId uint32, slot int16, itemId item2.Id, quantity int16) error {
+func (p *ProcessorImpl) RequestItemConsume(c channel.Model, characterId uint32, slot int16, itemId item2.Id, quantity int16) error {
 	transactionId := uuid.New()
 	p.l.Debugf("Creating OneTime topic consumer to await transaction [%s] completion or cancellation.", transactionId.String())
 	t, _ := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
@@ -203,6 +275,17 @@ func (p *Processor) RequestItemConsume(c channel.Model, characterId uint32, slot
 		itemConsumer = ConsumeCashPetFood(transactionId, characterId, slot, itemId)
 	} else if item2.GetClassification(itemId) == item2.ClassificationConsumableSummoningSack {
 		itemConsumer = ConsumeSummoningSack(transactionId, c, characterId, slot, itemId)
+	} else if ci, derr := p.cdp.GetById(uint32(itemId)); derr == nil && validateRewardTable(ci.Rewards()) == nil {
+		// Reward-box (random reward) item arriving through the generic
+		// item-use request. This is the path taken on client versions that
+		// lack the dedicated lottery opcode (v48/v61) — there the client uses
+		// reward boxes via the ordinary consume request, and the server must
+		// recognize the reward table and roll a reward instead of bare-
+		// consuming the box. On dedicated-opcode versions (v72+) the client
+		// routes reward boxes to REQUEST_ITEM_REWARD, so this branch never
+		// sees them there. RequestItemReward opens its own reservation
+		// transaction, so the one created above is simply abandoned unused.
+		return p.RequestItemReward(characterId, itemId, slot)
 	} else {
 		// Fallback: items requested via REQUEST_ITEM_CONSUME that do not
 		// fit any classification-specific branch (e.g., Magic Rock for
@@ -230,7 +313,7 @@ func (p *Processor) RequestItemConsume(c channel.Model, characterId uint32, slot
 // successful consume emits the TamingMobFed event (Task 33) carrying the pinned
 // server tiredness heal. The heal -> exp -> level math lives in atlas-mounts;
 // consumables only validates, consumes, and emits the heal value.
-func (p *Processor) RequestFeed(worldId world.Id, characterId uint32, slot int16, itemId item2.Id) error {
+func (p *ProcessorImpl) RequestFeed(worldId world.Id, characterId uint32, slot int16, itemId item2.Id) error {
 	if item2.GetClassification(itemId) != item2.ClassificationRevitalizer {
 		p.l.Warnf("Character [%d] requested taming-mob feed with non-revitalizer item [%d] (classification [%d]). Rejecting.", characterId, itemId, item2.GetClassification(itemId))
 		return errors.New("item is not a revitalizer")
@@ -277,7 +360,7 @@ func ConsumeFeed(transactionId uuid.UUID, worldId world.Id, characterId uint32, 
 	}
 }
 
-func (p *Processor) ConsumeError(characterId uint32, transactionId uuid.UUID, inventoryType inventory2.Type, slot int16, err error) error {
+func (p *ProcessorImpl) ConsumeError(characterId uint32, transactionId uuid.UUID, inventoryType inventory2.Type, slot int16, err error) error {
 	p.l.Debugf("Character [%d] unable to consume item due to error: [%v]", characterId, err)
 	cErr := p.cpp.CancelItemReservation(characterId, inventoryType, transactionId, slot)
 	if cErr != nil {
@@ -322,11 +405,12 @@ func ConsumeStandard(transactionId uuid.UUID, characterId uint32, slot int16, it
 			p := NewProcessor(l, ctx)
 			cp := character.NewProcessor(l, ctx)
 			mp := character2.NewProcessor(l, ctx)
+			cdp := consumable3.NewProcessor(l, ctx)
 
 			pg, _ := model.NewGroup(ctx)
 			fc := model.Submit(pg, func() (character.Model, error) { return cp.GetById()(characterId) })
 			fm := model.Submit(pg, func() (field.Model, error) { return mp.GetMap(characterId) })
-			fi := model.Submit(pg, func() (consumable3.Model, error) { return p.cdp.GetById(uint32(itemId)) })
+			fi := model.Submit(pg, func() (consumable3.Model, error) { return cdp.GetById(uint32(itemId)) })
 			if err := pg.Wait(); err != nil {
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
@@ -349,10 +433,11 @@ func ConsumeTownScroll(transactionId uuid.UUID, characterId uint32, slot int16, 
 			p := NewProcessor(l, ctx)
 			cpp := compartment.NewProcessor(l, ctx)
 			mp := character2.NewProcessor(l, ctx)
+			cdp := consumable3.NewProcessor(l, ctx)
 
 			pg, _ := model.NewGroup(ctx)
 			fm := model.Submit(pg, func() (field.Model, error) { return mp.GetMap(characterId) })
-			fi := model.Submit(pg, func() (consumable3.Model, error) { return p.cdp.GetById(uint32(itemId)) })
+			fi := model.Submit(pg, func() (consumable3.Model, error) { return cdp.GetById(uint32(itemId)) })
 			if err := pg.Wait(); err != nil {
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
@@ -392,6 +477,7 @@ func ConsumePetFood(transactionId uuid.UUID, characterId uint32, slot int16, ite
 			p := NewProcessor(l, ctx)
 			pp := pet.NewProcessor(l, ctx)
 			cpp := compartment.NewProcessor(l, ctx)
+			cdp := consumable3.NewProcessor(l, ctx)
 
 			// Sequential reads: PRD §4.3 names ConsumeStandard / ConsumeTownScroll /
 			// ConsumeSummoningSack as the parallelisation targets. ConsumePetFood's two
@@ -402,7 +488,7 @@ func ConsumePetFood(transactionId uuid.UUID, characterId uint32, slot int16, ite
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
 
-			ci, err := p.cdp.GetById(uint32(itemId))
+			ci, err := cdp.GetById(uint32(itemId))
 			if err != nil {
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
@@ -512,7 +598,7 @@ func ConsumeSummoningSack(transactionId uuid.UUID, ch channel.Model, characterId
 	}
 }
 
-func (p *Processor) RequestScroll(characterId uint32, scrollSlot int16, equipSlot int16, whiteScroll bool, legendarySpirit bool) error {
+func (p *ProcessorImpl) RequestScroll(characterId uint32, scrollSlot int16, equipSlot int16, whiteScroll bool, legendarySpirit bool) error {
 	cp := character.NewProcessor(p.l, p.ctx)
 	cpp := compartment.NewProcessor(p.l, p.ctx)
 
@@ -578,7 +664,7 @@ func (p *Processor) RequestScroll(characterId uint32, scrollSlot int16, equipSlo
 	return nil
 }
 
-func (p *Processor) ValidateScrollUse(scrollItem asset.Model, equipItem asset.Model) bool {
+func (p *ProcessorImpl) ValidateScrollUse(scrollItem asset.Model, equipItem asset.Model) bool {
 	ep := equipable2.NewProcessor(p.l, p.ctx)
 	if item2.IsScrollCleanSlate(item2.Id(scrollItem.TemplateId())) {
 		// If the scroll is a clean slate scroll, make sure we're not attempting to add mores lots than originally available.
@@ -603,13 +689,106 @@ func IsNotSlotConsumingScroll(id item2.Id) bool {
 	return item2.IsScrollSpikes(id) || item2.IsScrollColdProtection(id)
 }
 
+type scrollOutcome struct {
+	success bool
+	cursed  bool
+}
+
+// buildScrollChanges assembles the equip change-set for a scroll application
+// outcome. Extracted verbatim from ConsumeScroll (task-130) so the vega path
+// shares it; behavior is locked by the TestBuildScrollChanges_* table.
+func buildScrollChanges(ci consumable3.Model, equip asset.Model, scrollId item2.Id, isSuccess bool, whiteScroll bool) ([]equipable.Change, error) {
+	changes := make([]equipable.Change, 0)
+	if isSuccess {
+		if item2.IsScrollSpikes(scrollId) {
+			changes = append(changes, equipable.SetSpike())
+		} else if item2.IsScrollColdProtection(scrollId) {
+			changes = append(changes, equipable.SetCold())
+		} else if item2.IsScrollCleanSlate(scrollId) {
+			changes = append(changes, equipable.AddSlots(1))
+		} else if item2.IsChaosScroll(scrollId) {
+			ccs, err := applyChaos(equip)
+			if err != nil {
+				return nil, err
+			}
+			changes = append(changes, ccs...)
+			changes = append(changes,
+				equipable.AddSlots(-1),
+				equipable.AddLevel(1))
+		} else {
+			changes = append(changes,
+				equipable.AddStrength(int16(ci.StrengthIncrease())),
+				equipable.AddDexterity(int16(ci.DexterityIncrease())),
+				equipable.AddIntelligence(int16(ci.IntelligenceIncrease())),
+				equipable.AddLuck(int16(ci.LuckIncrease())),
+				equipable.AddHp(int16(ci.MaxHPIncrease())),
+				equipable.AddMp(int16(ci.MaxMPIncrease())),
+				equipable.AddWeaponAttack(int16(ci.WeaponAttackIncrease())),
+				equipable.AddMagicAttack(int16(ci.MagicAttackIncrease())),
+				equipable.AddWeaponDefense(int16(ci.WeaponDefenseIncrease())),
+				equipable.AddMagicDefense(int16(ci.MagicDefenseIncrease())),
+				equipable.AddAccuracy(int16(ci.AccuracyIncrease())),
+				equipable.AddAvoidability(int16(ci.AvoidabilityIncrease())),
+				equipable.AddHands(int16(ci.HandsIncrease())),
+				equipable.AddSpeed(int16(ci.SpeedIncrease())),
+				equipable.AddJump(int16(ci.JumpIncrease())),
+				equipable.AddSlots(-1),
+				equipable.AddLevel(1))
+		}
+	} else {
+		if !item2.IsScrollSpikes(scrollId) && !item2.IsScrollColdProtection(scrollId) && !item2.IsScrollCleanSlate(scrollId) && !whiteScroll {
+			changes = append(changes, equipable.AddSlots(-1))
+		}
+	}
+	return changes, nil
+}
+
+// applyScrollCore is the shared middle of ConsumeScroll and ConsumeVegaScroll:
+// the success roll at successProb, change-set assembly, the curse roll, and
+// ChangeStat. Reservation commits, curse destruction, and result emission stay
+// with the caller (they differ between the normal and vega paths). successProb
+// is the roll threshold — the scroll's natural rate on the normal path, the
+// vega-boosted rate on the vega path. The pre-existing `roll <= prob`
+// comparator is deliberately inherited (PRD non-goal: no scroll-math changes).
+func applyScrollCore(l logrus.FieldLogger, ctx context.Context, transactionId uuid.UUID, characterId uint32, ci consumable3.Model, scrollItem *asset.Model, equip *asset.Model, successProb uint32, whiteScroll bool) (scrollOutcome, error) {
+	ep := equipable.NewProcessor(l, ctx)
+
+	successRoll := rand.Int31n(100)
+	isSuccess := successRoll <= int32(successProb)
+
+	passFail := "failed"
+	if isSuccess {
+		passFail = "passed"
+	}
+	l.Debugf("Character [%d] has [%s] scroll [%d]. Rolled [%d]. Needed [%d].", characterId, passFail, scrollItem.TemplateId(), successRoll, successProb)
+
+	changes, err := buildScrollChanges(ci, *equip, item2.Id(scrollItem.TemplateId()), isSuccess, whiteScroll)
+	if err != nil {
+		return scrollOutcome{}, err
+	}
+
+	isCursed := false
+	if !isSuccess && rand.Int31n(100) <= int32(ci.CursedRate()) {
+		l.Debugf("Character [%d] item has been cursed.", characterId)
+		isCursed = true
+	}
+
+	if len(changes) > 0 {
+		l.Debugf("Applying [%d] changes to character [%d] item [%d].", len(changes), characterId, equip.TemplateId())
+		if err := ep.ChangeStat(characterId, transactionId, *equip, changes...); err != nil {
+			return scrollOutcome{}, err
+		}
+	}
+	return scrollOutcome{success: isSuccess, cursed: isCursed}, nil
+}
+
 func ConsumeScroll(transactionId uuid.UUID, characterId uint32, scrollItem *asset.Model, equipSlot int16, whiteScrollItem *asset.Model, legendarySpirit bool) ItemConsumer {
 	return func(l logrus.FieldLogger) func(ctx context.Context) error {
 		return func(ctx context.Context) error {
 			p := NewProcessor(l, ctx)
 			cp := character.NewProcessor(l, ctx)
-			ep := equipable.NewProcessor(l, ctx)
 			cpp := compartment.NewProcessor(l, ctx)
+			cdp := consumable3.NewProcessor(l, ctx)
 
 			whiteScroll := whiteScrollItem != nil
 
@@ -633,80 +812,14 @@ func ConsumeScroll(transactionId uuid.UUID, characterId uint32, scrollItem *asse
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), errors.New("failed slot validation"))
 			}
 
-			ci, err := p.cdp.GetById(scrollItem.TemplateId())
+			ci, err := cdp.GetById(scrollItem.TemplateId())
 			if err != nil {
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), err)
 			}
 
-			// TODO consume vega scroll
-			successProb := ci.SuccessRate()
-
-			successRoll := rand.Int31n(100)
-			isSuccess := successRoll <= int32(successProb)
-
-			isCursed := false
-			passFail := ""
-			if isSuccess {
-				passFail = "passed"
-			} else {
-				passFail = "failed"
-			}
-			l.Debugf("Character [%d] has [%s] scroll [%d]. Rolled [%d]. Needed [%d].", characterId, passFail, scrollItem.TemplateId(), successRoll, successProb)
-			changes := make([]equipable.Change, 0)
-			if isSuccess {
-				if item2.IsScrollSpikes(item2.Id(scrollItem.TemplateId())) {
-					changes = append(changes, equipable.SetSpike())
-				} else if item2.IsScrollColdProtection(item2.Id(scrollItem.TemplateId())) {
-					changes = append(changes, equipable.SetCold())
-				} else if item2.IsScrollCleanSlate(item2.Id(scrollItem.TemplateId())) {
-					changes = append(changes, equipable.AddSlots(1))
-				} else if item2.IsChaosScroll(item2.Id(scrollItem.TemplateId())) {
-					ccs, err := applyChaos(*sm.Equipable)
-					if err != nil {
-						return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), err)
-					}
-					changes = append(changes, ccs...)
-					changes = append(changes,
-						equipable.AddSlots(-1),
-						equipable.AddLevel(1))
-				} else {
-					changes = append(changes,
-						equipable.AddStrength(int16(ci.StrengthIncrease())),
-						equipable.AddDexterity(int16(ci.DexterityIncrease())),
-						equipable.AddIntelligence(int16(ci.IntelligenceIncrease())),
-						equipable.AddLuck(int16(ci.LuckIncrease())),
-						equipable.AddHp(int16(ci.MaxHPIncrease())),
-						equipable.AddMp(int16(ci.MaxMPIncrease())),
-						equipable.AddWeaponAttack(int16(ci.WeaponAttackIncrease())),
-						equipable.AddMagicAttack(int16(ci.MagicAttackIncrease())),
-						equipable.AddWeaponDefense(int16(ci.WeaponDefenseIncrease())),
-						equipable.AddMagicDefense(int16(ci.MagicDefenseIncrease())),
-						equipable.AddAccuracy(int16(ci.AccuracyIncrease())),
-						equipable.AddAvoidability(int16(ci.AvoidabilityIncrease())),
-						equipable.AddHands(int16(ci.HandsIncrease())),
-						equipable.AddSpeed(int16(ci.SpeedIncrease())),
-						equipable.AddJump(int16(ci.JumpIncrease())),
-						equipable.AddSlots(-1),
-						equipable.AddLevel(1))
-				}
-			} else {
-				if !item2.IsScrollSpikes(item2.Id(scrollItem.TemplateId())) && !item2.IsScrollColdProtection(item2.Id(scrollItem.TemplateId())) && !item2.IsScrollCleanSlate(item2.Id(scrollItem.TemplateId())) && !whiteScroll {
-					changes = append(changes, equipable.AddSlots(-1))
-
-				}
-				if rand.Int31n(100) <= int32(ci.CursedRate()) {
-					l.Debugf("Character [%d] item has been cursed.", characterId)
-					isCursed = true
-				}
-			}
-
-			if len(changes) > 0 {
-				l.Debugf("Applying [%d] changes to character [%d] item [%d].", len(changes), characterId, sm.Equipable.TemplateId())
-
-				err = ep.ChangeStat(characterId, transactionId, *sm.Equipable, changes...)
-				if err != nil {
-					return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), err)
-				}
+			outcome, err := applyScrollCore(l, ctx, transactionId, characterId, ci, scrollItem, sm.Equipable, ci.SuccessRate(), whiteScroll)
+			if err != nil {
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), err)
 			}
 
 			err = cpp.ConsumeItem(characterId, inventory2.TypeValueUse, transactionId, scrollItem.Slot())
@@ -720,17 +833,17 @@ func ConsumeScroll(transactionId uuid.UUID, characterId uint32, scrollItem *asse
 				}
 			}
 
-			if isCursed {
+			if outcome.cursed {
 				err = cpp.DestroyItem(characterId, inventory2.TypeValueEquip, equipSlot)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to destroy item in slot [%d] for character [%d] during scrolling.", equipSlot, characterId)
 				}
 			}
 
-			if isSuccess {
+			if outcome.success {
 				_ = p.PassScroll(characterId, legendarySpirit, whiteScroll)
 			} else {
-				_ = p.FailScroll(characterId, isCursed, legendarySpirit, whiteScroll)
+				_ = p.FailScroll(characterId, outcome.cursed, legendarySpirit, whiteScroll)
 			}
 			return nil
 		}
@@ -803,13 +916,13 @@ func rollStatAdjustment() int16 {
 	}
 }
 
-func (p *Processor) PassScroll(characterId uint32, legendarySpirit bool, whiteScroll bool) error {
+func (p *ProcessorImpl) PassScroll(characterId uint32, legendarySpirit bool, whiteScroll bool) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(ScrollEventProvider(ts.Id(characterId))(true, false, legendarySpirit, whiteScroll))
 }
 
 // ApplyConsumableEffect applies item effects to a character without consuming from inventory
 // This is used for NPC-initiated buffs (e.g., NPC blessings via cm.useItem())
-func (p *Processor) ApplyConsumableEffect(transactionId uuid.UUID, _ channel.Model, characterId uint32, itemId item2.Id) error {
+func (p *ProcessorImpl) ApplyConsumableEffect(transactionId uuid.UUID, _ channel.Model, characterId uint32, itemId item2.Id) error {
 	cp := character.NewProcessor(p.l, p.ctx)
 
 	c, err := cp.GetById()(characterId)
@@ -844,7 +957,7 @@ func (p *Processor) ApplyConsumableEffect(transactionId uuid.UUID, _ channel.Mod
 
 // CancelConsumableEffect cancels the buff effects of a consumable item on a character.
 // This sends a cancel command to the buff service using sourceId = -int32(itemId).
-func (p *Processor) CancelConsumableEffect(_ uuid.UUID, characterId uint32, itemId item2.Id, f field.Model) error {
+func (p *ProcessorImpl) CancelConsumableEffect(_ uuid.UUID, characterId uint32, itemId item2.Id, f field.Model) error {
 	bp := buff.NewProcessor(p.l, p.ctx)
 	sourceId := -int32(itemId)
 	err := bp.Cancel(f, characterId, sourceId)
@@ -856,6 +969,495 @@ func (p *Processor) CancelConsumableEffect(_ uuid.UUID, characterId uint32, item
 	return nil
 }
 
-func (p *Processor) FailScroll(characterId uint32, cursed bool, legendarySpirit bool, whiteScroll bool) error {
+func (p *ProcessorImpl) FailScroll(characterId uint32, cursed bool, legendarySpirit bool, whiteScroll bool) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(ScrollEventProvider(ts.Id(characterId))(false, cursed, legendarySpirit, whiteScroll))
+}
+
+// RequestItemReward begins the reward-box flow: validate the reward table, reserve
+// the box, and on RESERVED run ConsumeReward. Mirrors RequestScroll's structure
+// (processor.go:515). One transactionId spans reserve → create → commit. Reached
+// two ways: the dedicated lottery opcode (v72+), and the generic item-use path
+// for reward boxes on versions without that opcode (v48/v61) — see
+// RequestItemConsume. No field is threaded because the reward flow is
+// character-scoped; the channel localizes presentation from the live session.
+func (p *ProcessorImpl) RequestItemReward(characterId uint32, itemId item2.Id, source int16) error {
+	transactionId := uuid.New()
+
+	ci, err := p.cdp.GetById(uint32(itemId))
+	if err != nil {
+		// Nothing reserved yet; just unstick the client.
+		return p.rewardError(characterId, err)
+	}
+	if err = validateRewardTable(ci.Rewards()); err != nil {
+		p.l.Warnf("Character [%d] requested reward-use of item [%d] with no usable reward table: %v", characterId, itemId, err)
+		return p.rewardError(characterId, err)
+	}
+
+	// Pre-roll accommodation check (strict): the box grants one random reward, so
+	// every possible reward must be grantable up front. atlas-inventory owns the
+	// verdict (merge-aware — a full tab does not block a stackable that fits an
+	// existing stack). If any reward could not be placed, fail the use before
+	// reserving or rolling — the box is preserved and the player is told their
+	// inventory is full. The post-roll CREATION_FAILED path stays as a TOCTOU
+	// safety net.
+	accItems := make([]inventory.AccommodationRequest, 0, len(ci.Rewards()))
+	for _, r := range ci.Rewards() {
+		accItems = append(accItems, inventory.AccommodationRequest{ItemId: r.ItemId(), Quantity: grantQuantity(r.Count())})
+	}
+	ok, err := p.ip.CanAccommodate(characterId, accItems)
+	if err != nil {
+		// Nothing reserved yet; just unstick the client.
+		return p.rewardError(characterId, err)
+	}
+	if !ok {
+		p.l.Debugf("Character [%d] reward-use of item [%d] blocked: inventory cannot accommodate a possible reward.", characterId, itemId)
+		return p.rewardInventoryFull(characterId)
+	}
+
+	p.l.Debugf("Creating OneTime consumer for reward transaction [%s].", transactionId.String())
+	t, _ := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
+	validator := once.ReservationValidator(transactionId, uint32(itemId))
+	handler := compartment.Consume(ConsumeReward(transactionId, characterId, source, itemId, ci.Rewards()))
+	if _, err = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(validator, handler))); err != nil {
+		return p.rewardError(characterId, err)
+	}
+
+	err = p.cpp.RequestReserve(transactionId, characterId, inventory2.TypeValueUse, []compartment.Reserves{{Slot: source, ItemId: uint32(itemId), Quantity: 1}})
+	if err != nil {
+		return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, source, err)
+	}
+	return nil
+}
+
+// rewardInventoryFull rejects a reward-use whose pre-roll accommodation check
+// failed: nothing was reserved, so this only tells the player their inventory is
+// full (INVENTORY_FULL status message + enable-actions) via the consumable
+// error event. Unlike the post-roll path there is no CREATION_FAILED for the
+// channel's generic handler to render, so the reward flow owns the feedback here.
+func (p *ProcessorImpl) rewardInventoryFull(characterId uint32) error {
+	if cErr := producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(ErrorEventProvider(ts.Id(characterId), consumable.ErrorTypeInventoryFull)); cErr != nil {
+		p.l.WithError(cErr).Errorf("Unable to emit reward inventory-full error for character [%d]; client may be stuck.", characterId)
+	}
+	return errors.New("inventory full")
+}
+
+// rewardError unsticks the client without a reservation to cancel (pre-reserve
+// failure path). Emits the generic consumable ERROR event.
+func (p *ProcessorImpl) rewardError(characterId uint32, err error) error {
+	p.l.Debugf("Character [%d] reward request failed pre-reserve: [%v]", characterId, err)
+	if cErr := producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(ErrorEventProvider(ts.Id(characterId), "")); cErr != nil {
+		p.l.WithError(cErr).Errorf("Unable to emit reward pre-reserve error for character [%d]; client may be stuck.", characterId)
+	}
+	return err
+}
+
+// rewardHandles carries the two once-handler registrations for a single reward
+// transaction. The create outcome is split across two topics — success (asset
+// CREATED) arrives on EVENT_TOPIC_ASSET_STATUS and failure (CREATION_FAILED) on
+// EVENT_TOPIC_COMPARTMENT_STATUS — so the flow registers one once-handler on
+// each. Exactly one fires per transaction (a create either succeeds or fails,
+// never both), and it deregisters its sibling so the losing handler does not
+// linger for the life of the process.
+type rewardHandles struct {
+	assetTopic string
+	assetId    string
+	compTopic  string
+	compId     string
+}
+
+// ConsumeReward fires on RESERVED. It rolls one reward, requests its creation,
+// and registers two once-handlers: the asset CREATED confirmation commits the
+// box (grantRewardOnCreated), and the compartment CREATION_FAILED event cancels
+// the reservation and preserves the box (grantRewardOnFailed). atlas-inventory
+// emits the success event on the asset status topic — NOT the compartment
+// status topic, which only reports CREATED for compartment creation — so the
+// success handler must listen there.
+func ConsumeReward(transactionId uuid.UUID, characterId uint32, slot int16, boxItemId item2.Id, rewards []consumable3.RewardModel) ItemConsumer {
+	return func(l logrus.FieldLogger) func(ctx context.Context) error {
+		return func(ctx context.Context) error {
+			p := NewProcessor(l, ctx).(*ProcessorImpl)
+
+			won, err := rollReward(rewards)
+			if err != nil {
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+			}
+			l.Debugf("Character [%d] rolled reward item [%d] x[%d] (prob [%d]) from box [%d] (transaction [%s]).", characterId, won.ItemId(), won.Count(), won.Prob(), boxItemId, transactionId.String())
+
+			// Register both once-handlers BEFORE emitting CREATE_ASSET so neither
+			// terminal event can race ahead of its handler.
+			assetTopic, _ := topic.EnvProvider(l)(assetMsg.EnvEventTopicStatus)()
+			compTopic, _ := topic.EnvProvider(l)(compartment2.EnvEventTopicStatus)()
+			handles := &rewardHandles{assetTopic: assetTopic, compTopic: compTopic}
+
+			assetId, err := consumer.GetManager().RegisterHandler(assetTopic, message.AdaptHandler(message.OneTimeConfig(assetOnce.GrantConfirmedValidator(transactionId, won.ItemId()), grantRewardOnConfirmed(transactionId, characterId, slot, boxItemId, won, handles))))
+			if err != nil {
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+			}
+			handles.assetId = assetId
+
+			compId, err := consumer.GetManager().RegisterHandler(compTopic, message.AdaptHandler(message.OneTimeConfig(once.CreationFailedValidator(transactionId), grantRewardOnFailed(transactionId, characterId, slot, handles))))
+			if err != nil {
+				_ = consumer.GetManager().RemoveHandler(assetTopic, assetId)
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+			}
+			handles.compId = compId
+
+			expiration := rewardExpiration(won.Period(), time.Now())
+			if err = p.cpp.RequestCreateItem(transactionId, characterId, won.ItemId(), grantQuantity(won.Count()), expiration); err != nil {
+				_ = consumer.GetManager().RemoveHandler(assetTopic, assetId)
+				_ = consumer.GetManager().RemoveHandler(compTopic, compId)
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+			}
+			return nil
+		}
+	}
+}
+
+// grantRewardOnConfirmed is the success once-handler, keyed to the asset
+// confirmation (CREATED for a fresh stack or QUANTITY_CHANGED for a merge into
+// an existing one). It commits the box consume, emits presentation events, and
+// deregisters the sibling failure handler (which will never fire).
+func grantRewardOnConfirmed(transactionId uuid.UUID, characterId uint32, slot int16, boxItemId item2.Id, won consumable3.RewardModel, handles *rewardHandles) message.Handler[assetMsg.StatusEvent[assetMsg.CreatedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e assetMsg.StatusEvent[assetMsg.CreatedStatusEventBody]) {
+		p := NewProcessor(l, ctx).(*ProcessorImpl)
+
+		if cErr := p.cpp.ConsumeItem(characterId, inventory2.TypeValueUse, transactionId, slot); cErr != nil {
+			l.WithError(cErr).Errorf("Reward granted but box consume failed for character [%d] (transaction [%s]); box release needs ops intervention.", characterId, transactionId.String())
+		}
+		l.Debugf("Character [%d] reward granted: box [%d] consumed, item [%d] created (transaction [%s]).", characterId, boxItemId, won.ItemId(), transactionId.String())
+
+		p.emitRewardPresentation(characterId, boxItemId, won)
+
+		if handles != nil {
+			_ = consumer.GetManager().RemoveHandler(handles.compTopic, handles.compId)
+		}
+	}
+}
+
+// grantRewardOnFailed is the failure once-handler, keyed to the compartment
+// CREATION_FAILED event. It cancels the box reservation (box preserved) and
+// deregisters the sibling success handler. It deliberately does NOT emit a
+// consumable ERROR for client feedback: atlas-channel's generic
+// handleCompartmentCreationFailedEvent already renders this same CREATION_FAILED
+// as the inventory-full status message and re-enables actions, so emitting here
+// too would show the message twice. The strict pre-roll check
+// (RequestItemReward) makes this post-roll failure a TOCTOU rarity anyway.
+func grantRewardOnFailed(transactionId uuid.UUID, characterId uint32, slot int16, handles *rewardHandles) message.Handler[compartment2.StatusEvent[compartment2.CreateResultEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e compartment2.StatusEvent[compartment2.CreateResultEventBody]) {
+		p := NewProcessor(l, ctx).(*ProcessorImpl)
+
+		if cErr := p.cpp.CancelItemReservation(characterId, inventory2.TypeValueUse, transactionId, slot); cErr != nil {
+			l.WithError(cErr).Errorf("Unable to cancel box reservation after reward creation failure for character [%d].", characterId)
+		}
+
+		if handles != nil {
+			_ = consumer.GetManager().RemoveHandler(handles.assetTopic, handles.assetId)
+		}
+	}
+}
+
+// emitRewardPresentation emits REWARD_EFFECT (if the entry has an Effect path) and
+// REWARD_WON (if the entry has a worldMsg, after /name and /item substitution).
+// Presentation-only: every failure warn-logs and is swallowed (never blocks grant).
+func (p *ProcessorImpl) emitRewardPresentation(characterId uint32, boxItemId item2.Id, won consumable3.RewardModel) {
+	if won.Effect() != "" {
+		if err := producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(RewardEffectEventProvider(ts.Id(characterId), uint32(boxItemId), won.Effect())); err != nil {
+			p.l.WithError(err).Warnf("Unable to emit reward effect for character [%d].", characterId)
+		}
+	}
+	if won.WorldMsg() != "" {
+		name := ""
+		if c, err := p.cp.GetById()(characterId); err == nil {
+			name = c.Name()
+		} else {
+			p.l.WithError(err).Warnf("Unable to resolve name for reward announce (character [%d]); skipping /name.", characterId)
+			degrade.Observe(p.l, "consumable.reward.name", characterId, err)
+		}
+		itemName, err := itemstring.NewProcessor(p.l, p.ctx).GetName(won.ItemId())
+		if err != nil {
+			p.l.WithError(err).Warnf("Unable to resolve item name [%d] for reward announce; skipping announce.", won.ItemId())
+			degrade.Observe(p.l, "consumable.reward.item-string", won.ItemId(), err)
+			return
+		}
+		msg := substituteWorldMsg(won.WorldMsg(), name, itemName)
+		if err := producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(RewardWonEventProvider(ts.Id(characterId), uint32(boxItemId), won.ItemId(), msg)); err != nil {
+			p.l.WithError(err).Warnf("Unable to emit reward-won announce for character [%d].", characterId)
+		}
+	}
+}
+
+// Vicious Hammer (item classification 557, task-129). ViciousHammerReason is
+// the SEMANTIC failure notice this service selects; the client-interpreted wire
+// byte is resolved per tenant in atlas-channel (DOM-25 — never a Go literal
+// here). "" = eligible / no error. Client notice mapping (IDA v83 sub_82B2C3 /
+// v95 CUIItemUpgrade::ShowResult 0x7bec20):
+type ViciousHammerReason string
+
+const (
+	ViciousHammerReasonUnknown       ViciousHammerReason = "UNKNOWN"        // client default arm: "Unknown error %d"
+	ViciousHammerReasonNotUpgradable ViciousHammerReason = "NOT_UPGRADABLE" // "The item is not upgradable"
+	ViciousHammerReasonCapReached    ViciousHammerReason = "CAP_REACHED"    // "2 upgrade increases have been used already"
+	ViciousHammerReasonHorntail      ViciousHammerReason = "HORNTAIL"       // "You can't use Vicious Hammer on Horntail Necklace"
+)
+
+// maxHammersApplied is IDA-verified two ways: the error-2 notice and the
+// client's "N upgrades are left" rendering of 2 - hammerCount.
+const maxHammersApplied uint32 = 2
+
+// horntailNecklaceItemId is WZ-verified (String.wz/Eqp.img.xml, GMS 83.1).
+// The necklace has tuc=3, so the client's dedicated error 3 must be an
+// explicit id exclusion.
+const horntailNecklaceItemId uint32 = 1122000
+
+// resolveViciousHammerTarget locates the target equip: negative slot = an
+// equipped item, positive = a slot in the equip inventory (design §7).
+func resolveViciousHammerTarget(c character.Model, equipSlot int16) (*asset.Model, bool) {
+	if equipSlot < 0 {
+		s, err := slot.GetSlotByPosition(slot.Position(equipSlot))
+		if err != nil {
+			return nil, false
+		}
+		sm, ok := c.Equipment().Get(s.Type)
+		if !ok || sm.Equipable == nil {
+			return nil, false
+		}
+		return sm.Equipable, true
+	}
+	return c.Inventory().Equipable().FindBySlot(equipSlot)
+}
+
+// viciousHammerReason returns "" when the target is hammer-eligible, else the
+// semantic failure notice. dataSlots/dataCash come from the equip's WZ-derived
+// data (atlas-data equipment reader: tuc / cash).
+func viciousHammerReason(target asset.Model, dataSlots uint16, dataCash bool) ViciousHammerReason {
+	if target.TemplateId() == horntailNecklaceItemId {
+		return ViciousHammerReasonHorntail
+	}
+	if dataSlots == 0 || dataCash {
+		return ViciousHammerReasonNotUpgradable
+	}
+	if target.HammersApplied() >= maxHammersApplied {
+		return ViciousHammerReasonCapReached
+	}
+	return ""
+}
+
+// validateViciousHammerUse fetches the target's WZ-derived equip data and
+// applies viciousHammerReason. Returns "" when the target is eligible.
+func (p *ProcessorImpl) validateViciousHammerUse(target asset.Model) ViciousHammerReason {
+	ed, err := equipable2.NewProcessor(p.l, p.ctx).GetById(target.TemplateId())
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to fetch equip data [%d] for hammer validation.", target.TemplateId())
+		return ViciousHammerReasonNotUpgradable // fail closed: an unverifiable equip is rejected, not approved
+	}
+	return viciousHammerReason(target, ed.Slots(), ed.Cash())
+}
+
+// ViciousHammerError cancels the (possible) hammer reservation and emits the
+// terminal failure event. Mirrors ConsumeError but on the VICIOUS_HAMMER
+// event type — the hammer dialog needs the mode-62 notice, not the generic
+// enable-actions ERROR event.
+func (p *ProcessorImpl) ViciousHammerError(characterId uint32, transactionId uuid.UUID, hammerSlot int16, reason ViciousHammerReason, err error) error {
+	p.l.WithError(err).Debugf("Character [%d] vicious hammer rejected with reason [%s].", characterId, reason)
+	cErr := p.cpp.CancelItemReservation(characterId, inventory2.TypeValueCash, transactionId, hammerSlot)
+	if cErr != nil {
+		p.l.WithError(cErr).Errorf("Unable to cancel hammer reservation in slot [%d] for character [%d] transaction [%s].", hammerSlot, characterId, transactionId)
+	}
+	cErr = producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(ViciousHammerEventProvider(ts.Id(characterId), false, reason))
+	if cErr != nil {
+		p.l.WithError(cErr).Errorf("Unable to issue vicious hammer failure event for character [%d]; dialog likely stuck.", characterId)
+	}
+	return err
+}
+
+// RequestViciousHammer validates a hammer use and reserves the hammer; the
+// reservation callback (ConsumeViciousHammer) performs the atomic
+// consume + mutate. Packet A performed only a cheap pre-check in the channel —
+// this is the authoritative validation (design §4.1).
+func (p *ProcessorImpl) RequestViciousHammer(characterId uint32, hammerSlot int16, equipSlot int16) error {
+	cp := character.NewProcessor(p.l, p.ctx)
+	transactionId := uuid.New()
+
+	c, err := cp.GetById(cp.InventoryDecorator)(characterId)
+	if err != nil {
+		return p.ViciousHammerError(characterId, transactionId, hammerSlot, ViciousHammerReasonUnknown, err)
+	}
+
+	hammer, ok := c.Inventory().Cash().FindBySlot(hammerSlot)
+	if !ok || item2.GetClassification(item2.Id(hammer.TemplateId())) != item2.ClassificationViciousHammer {
+		return p.ViciousHammerError(characterId, transactionId, hammerSlot, ViciousHammerReasonUnknown, errors.New("hammer not found at claimed slot"))
+	}
+
+	target, ok := resolveViciousHammerTarget(c, equipSlot)
+	if !ok {
+		return p.ViciousHammerError(characterId, transactionId, hammerSlot, ViciousHammerReasonNotUpgradable, errors.New("target equip not found"))
+	}
+	if reason := p.validateViciousHammerUse(*target); reason != "" {
+		return p.ViciousHammerError(characterId, transactionId, hammerSlot, reason, errors.New("hammer validation failed"))
+	}
+
+	p.l.Debugf("Creating OneTime topic consumer to await hammer transaction [%s] completion.", transactionId.String())
+	t, _ := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
+	validator := once.ReservationValidator(transactionId, hammer.TemplateId())
+	handler := compartment.Consume(ConsumeViciousHammer(transactionId, characterId, hammer, equipSlot))
+	_, err = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(validator, handler)))
+
+	err = p.cpp.RequestReserve(transactionId, characterId, inventory2.TypeValueCash, []compartment.Reserves{{
+		Slot:     hammerSlot,
+		ItemId:   hammer.TemplateId(),
+		Quantity: 1,
+	}})
+	if err != nil {
+		return p.ViciousHammerError(characterId, transactionId, hammerSlot, ViciousHammerReasonUnknown, err)
+	}
+	return nil
+}
+
+// ConsumeViciousHammer runs when the hammer reservation is confirmed. It
+// re-validates against fresh state (a replayed confirm re-checks the cap at
+// execution time — design §4.1), applies slots+1 / hammersApplied+1 in one
+// MODIFY_EQUIPMENT command, consumes the hammer, and emits the terminal event.
+func ConsumeViciousHammer(transactionId uuid.UUID, characterId uint32, hammerItem *asset.Model, equipSlot int16) ItemConsumer {
+	return func(l logrus.FieldLogger) func(ctx context.Context) error {
+		return func(ctx context.Context) error {
+			p := NewProcessor(l, ctx).(*ProcessorImpl)
+			cp := character.NewProcessor(l, ctx)
+			ep := equipable.NewProcessor(l, ctx)
+			cpp := compartment.NewProcessor(l, ctx)
+
+			c, err := cp.GetById(cp.InventoryDecorator)(characterId)
+			if err != nil {
+				return p.ViciousHammerError(characterId, transactionId, hammerItem.Slot(), ViciousHammerReasonUnknown, err)
+			}
+			target, ok := resolveViciousHammerTarget(c, equipSlot)
+			if !ok {
+				return p.ViciousHammerError(characterId, transactionId, hammerItem.Slot(), ViciousHammerReasonNotUpgradable, errors.New("target equip not found"))
+			}
+			if reason := p.validateViciousHammerUse(*target); reason != "" {
+				return p.ViciousHammerError(characterId, transactionId, hammerItem.Slot(), reason, errors.New("hammer validation failed at execution time"))
+			}
+
+			err = ep.ChangeStat(characterId, transactionId, *target, equipable.AddSlots(1), equipable.AddHammersApplied(1))
+			if err != nil {
+				return p.ViciousHammerError(characterId, transactionId, hammerItem.Slot(), ViciousHammerReasonUnknown, err)
+			}
+
+			err = cpp.ConsumeItem(characterId, inventory2.TypeValueCash, transactionId, hammerItem.Slot())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to consume hammer [%d] for character [%d]; equip already mutated.", hammerItem.TemplateId(), characterId)
+			}
+
+			err = producer.ProviderImpl(l)(ctx)(consumable.EnvEventTopic)(ViciousHammerEventProvider(ts.Id(characterId), true, ""))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to issue vicious hammer success event for character [%d]; dialog likely stuck.", characterId)
+			}
+			return nil
+		}
+	}
+}
+
+// rejectSkillBookUse warn-logs an FR-2 validation rejection and emits the
+// canUse=false result event so the client's exclusive-request lock clears
+// (the client only unlocks on receipt of SKILL_LEARN_ITEM_RESULT).
+func (p *ProcessorImpl) rejectSkillBookUse(characterId uint32, itemId item2.Id, isMasteryBook bool, skillId uint32, reason string) error {
+	p.l.Warnf("Character [%d] skill book [%d] use rejected: %s.", characterId, itemId, reason)
+	return producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(SkillBookResultEventProvider(ts.Id(characterId))(isMasteryBook, skillId, 0, false, false))
+}
+
+// RequestSkillBookUse handles a Skill Book (228) / Mastery Book (229) consume
+// request (task-125). All eligibility gates run server-side (FR-2); every
+// request produces exactly one SKILL_BOOK_RESULT event. Book destruction and
+// the master-level grant ride one skill_book_use saga (destroy-first, so a
+// duplicate request's destroy fails on the emptied slot rather than
+// double-granting); the book is consumed on failed rolls too.
+func (p *ProcessorImpl) RequestSkillBookUse(f field.Model, characterId uint32, slot int16, itemId item2.Id) error {
+	classification := item2.GetClassification(itemId)
+	isMasteryBook := classification == item2.ClassificationConsumableMasteryBook
+	if classification != item2.ClassificationConsumableSkillBook && !isMasteryBook {
+		return p.rejectSkillBookUse(characterId, itemId, isMasteryBook, 0, "item is not a skill or mastery book")
+	}
+
+	cp := character.NewProcessor(p.l, p.ctx)
+	c, err := cp.GetById(cp.InventoryDecorator)(characterId)
+	if err != nil {
+		return p.rejectSkillBookUse(characterId, itemId, isMasteryBook, 0, "unable to fetch character")
+	}
+	if c.Hp() == 0 {
+		return p.rejectSkillBookUse(characterId, itemId, isMasteryBook, 0, "character is dead")
+	}
+
+	ci, err := p.cdp.GetById(uint32(itemId))
+	if err != nil {
+		return p.rejectSkillBookUse(characterId, itemId, isMasteryBook, 0, "unable to fetch consumable data")
+	}
+	if len(ci.Skills()) == 0 {
+		return p.rejectSkillBookUse(characterId, itemId, isMasteryBook, 0, "book declares no skills")
+	}
+
+	a, ok := c.Inventory().Consumable().FindBySlot(slot)
+	if !ok || a.TemplateId() != uint32(itemId) || a.Quantity() < 1 {
+		return p.rejectSkillBookUse(characterId, itemId, isMasteryBook, 0, "slot does not hold the requested book")
+	}
+
+	targetSkillId, ok := SelectSkillBookTargetSkill(ci.Skills(), c.JobId())
+	if !ok {
+		return p.rejectSkillBookUse(characterId, itemId, isMasteryBook, 0, "no skill in book matches job")
+	}
+
+	skills, err := skill2.NewProcessor(p.l, p.ctx).GetByCharacterId(characterId)
+	if err != nil {
+		return p.rejectSkillBookUse(characterId, itemId, isMasteryBook, targetSkillId, "unable to fetch skills")
+	}
+	var hasRecord bool
+	var currentLevel, currentMasterLevel byte
+	var currentExpiration time.Time
+	for _, sm := range skills {
+		if sm.Id() == targetSkillId {
+			hasRecord = true
+			currentLevel = sm.Level()
+			currentMasterLevel = sm.MasterLevel()
+			currentExpiration = sm.Expiration()
+			break
+		}
+	}
+	if err := ValidateSkillBookSkillState(isMasteryBook, hasRecord, currentLevel, currentMasterLevel, ci.ReqSkillLevel(), ci.MasterLevel()); err != nil {
+		return p.rejectSkillBookUse(characterId, itemId, isMasteryBook, targetSkillId, err.Error())
+	}
+
+	roll := rand.Int31n(100)
+	rollPassed := SkillBookRollPasses(roll, ci.SuccessRate())
+	p.l.Infof("Character [%d] skill book [%d] targeting skill [%d]: rolled [%d] against [%d], passed [%t].", characterId, itemId, targetSkillId, roll, ci.SuccessRate(), rollPassed)
+
+	transactionId := uuid.New()
+	s := BuildSkillBookSaga(transactionId, characterId, slot, itemId, rollPassed, hasRecord, currentLevel, currentExpiration, targetSkillId, byte(ci.MasterLevel()))
+
+	bookMasterLevel := ci.MasterLevel()
+	p.l.Debugf("Creating OneTime saga-status consumer to await skill book transaction [%s].", transactionId.String())
+	t, _ := topic.EnvProvider(p.l)(sagamsg.EnvStatusEventTopic)()
+	validator := sagaonce.TransactionValidator(transactionId)
+	handler := func(l logrus.FieldLogger, hctx context.Context, e sagamsg.StatusEvent[json.RawMessage]) {
+		completed := e.Type == sagamsg.StatusEventTypeCompleted
+		if completed {
+			l.Infof("Character [%d] skill book [%d] saga [%s] completed. Roll success [%t].", characterId, itemId, e.TransactionId, rollPassed)
+		} else {
+			var body sagamsg.StatusEventFailedBody
+			_ = json.Unmarshal(e.Body, &body)
+			l.Warnf("Character [%d] skill book [%d] saga [%s] failed at step [%s]: %s.", characterId, itemId, e.TransactionId, body.FailedStep, body.Reason)
+		}
+		if err := producer.ProviderImpl(l)(hctx)(consumable.EnvEventTopic)(SkillBookResultEventProvider(ts.Id(characterId))(isMasteryBook, targetSkillId, bookMasterLevel, completed, completed && rollPassed)); err != nil {
+			l.WithError(err).Errorf("Character [%d] skill book result emission failed; client stays locked until relog.", characterId)
+		}
+	}
+	handlerId, err := consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(validator, handler)))
+	if err != nil {
+		return p.rejectSkillBookUse(characterId, itemId, isMasteryBook, targetSkillId, "unable to register saga result handler")
+	}
+
+	if err := saga2.NewProcessor(p.l, p.ctx).Create(s); err != nil {
+		if rErr := consumer.GetManager().RemoveHandler(t, handlerId); rErr != nil {
+			p.l.WithError(rErr).Errorf("Character [%d] unable to deregister orphaned saga result handler [%s] after saga submit failure.", characterId, handlerId)
+		}
+		return p.rejectSkillBookUse(characterId, itemId, isMasteryBook, targetSkillId, "unable to submit saga")
+	}
+	return nil
 }

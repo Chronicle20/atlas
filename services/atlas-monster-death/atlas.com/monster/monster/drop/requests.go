@@ -14,6 +14,9 @@ func getBaseRequest() string {
 	return requests.RootUrl("DROPS_INFORMATION")
 }
 
-func requestForMonster(monsterId uint32) requests.Request[[]RestModel] {
-	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+MonsterDropsResource, monsterId))
+// monsterDropsUrl is a bare URL (not a requests.Request) because the list is
+// paginated server-side (task-117) and consumed via requests.DrainProvider,
+// which appends its own page[number]/page[size] query params per request.
+func monsterDropsUrl(monsterId uint32) string {
+	return fmt.Sprintf(getBaseRequest()+MonsterDropsResource, monsterId)
 }

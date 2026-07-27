@@ -4,9 +4,9 @@ import "testing"
 
 func TestCalculateVersionHash(t *testing.T) {
 	tests := []struct {
-		version          int
-		wantEncrypted    uint16
-		wantHashNonZero  bool
+		version         int
+		wantEncrypted   uint16
+		wantHashNonZero bool
 	}{
 		{version: 83, wantHashNonZero: true},
 		{version: 95, wantHashNonZero: true},

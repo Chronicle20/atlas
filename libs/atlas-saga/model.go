@@ -19,11 +19,19 @@ const (
 	CashShopOperation    Type = "cash_shop_operation"
 	CharacterRespawn     Type = "character_respawn"
 	GachaponTransaction  Type = "gachapon_transaction"
+	MtsOperation         Type = "mts_operation"
 	FieldEffectUse       Type = "field_effect_use"
+	TeleportRockUse      Type = "teleport_rock_use"
 	QuestStart           Type = "quest_start"
 	QuestComplete        Type = "quest_complete"
 	QuestRestoreItem     Type = "quest_restore_item"
 	PetEvolution         Type = "pet_evolution"
+	SkillBookUse         Type = "skill_book_use"
+	ItemTagUse           Type = "item_tag_use"
+	SealingLockUse       Type = "sealing_lock_use"
+	IncubatorUse         Type = "incubator_use"
+	PointReset           Type = "point_reset"
+	MegaphoneUse         Type = "megaphone_use"
 )
 
 // Status represents the status of a saga step
@@ -73,6 +81,8 @@ const (
 	IncreaseBuddyCapacity  Action = "increase_buddy_capacity"
 	GainCloseness          Action = "gain_closeness"
 	EvolvePet              Action = "evolve_pet"
+	TransferAP             Action = "transfer_ap"
+	TransferSP             Action = "transfer_sp"
 
 	// Skill actions
 	CreateSkill Action = "create_skill"
@@ -125,6 +135,15 @@ const (
 	AcceptToCashShop     Action = "accept_to_cash_shop"
 	ReleaseFromCashShop  Action = "release_from_cash_shop"
 
+	// MTS marketplace
+	TransferToMts           Action = "transfer_to_mts"
+	WithdrawFromMts         Action = "withdraw_from_mts"
+	AcceptToMtsListing      Action = "accept_to_mts_listing"
+	ReleaseFromMtsHolding   Action = "release_from_mts_holding"
+	MtsSettlePurchase       Action = "mts_settle_purchase"
+	MtsMoveListingToHolding Action = "mts_move_listing_to_holding"
+	MtsBidEscrow            Action = "mts_bid_escrow"
+
 	// Guild actions
 	RequestGuildName             Action = "request_guild_name"
 	RequestGuildEmblem           Action = "request_guild_emblem"
@@ -144,6 +163,9 @@ const (
 	SelectGachaponReward Action = "select_gachapon_reward"
 	EmitGachaponWin      Action = "emit_gachapon_win"
 
+	// RPS actions
+	StartRPSGame Action = "start_rps_game"
+
 	// Party quest actions
 	RegisterPartyQuest         Action = "register_party_quest"
 	WarpPartyQuestMembersToMap Action = "warp_party_quest_members_to_map"
@@ -158,6 +180,15 @@ const (
 
 	// Field effect actions
 	FieldEffectWeather Action = "field_effect_weather"
+
+	// Item tag / sealing lock / incubator actions
+	SetAssetOwner   Action = "set_asset_owner"
+	ApplyAssetLock  Action = "apply_asset_lock"
+	IncubatorResult Action = "incubator_result"
+
+	// Megaphone / world broadcast actions
+	EmitMegaphone         Action = "emit_megaphone"
+	EnqueueWorldBroadcast Action = "enqueue_world_broadcast"
 )
 
 // Saga represents the entire saga transaction.

@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldMultiChat
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnGroupMessage
+    address: "0x4c6dd6"
+    decompile_sha256: 4a2ac14576af260e51f8d130a9320f373e21c73846634a0e61c8319c2185be95
+verifies:
+    - libs/atlas-packet/field/clientbound/multi_test.go#TestMultiChatByteOutputV48

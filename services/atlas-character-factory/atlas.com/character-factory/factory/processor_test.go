@@ -10,9 +10,10 @@ import (
 	"testing"
 	"time"
 
-	tenantModel "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+
+	tenantModel "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func TestBuildCharacterCreationSaga(t *testing.T) {
@@ -922,7 +923,6 @@ func TestSagaProducerCreation(t *testing.T) {
 			messageProvider := saga.CreateCommandProvider(tt.saga)
 
 			messages, err := messageProvider()
-
 			if err != nil {
 				t.Errorf("Unexpected error creating Kafka message: %v", err)
 				return

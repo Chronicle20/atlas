@@ -6,9 +6,10 @@ import (
 	"atlas-saga-orchestrator/compartment"
 	"atlas-saga-orchestrator/guild"
 	"atlas-saga-orchestrator/invite"
+	asset2 "atlas-saga-orchestrator/kafka/message/asset"
 	character2 "atlas-saga-orchestrator/kafka/message/character"
 	sagaMsg "atlas-saga-orchestrator/kafka/message/saga"
-	"atlas-saga-orchestrator/kafka/producer"
+	"atlas-saga-orchestrator/mts"
 	"atlas-saga-orchestrator/skill"
 	"atlas-saga-orchestrator/validation"
 	"context"
@@ -17,11 +18,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 type Compensator interface {
@@ -32,6 +36,7 @@ type Compensator interface {
 	WithGuildProcessor(guild.Processor) Compensator
 	WithInviteProcessor(invite.Processor) Compensator
 	WithCashshopProcessor(cashshop.Processor) Compensator
+	WithMtsProcessor(mts.Processor) Compensator
 
 	CompensateFailedStep(s Saga) error
 	compensateEquipAsset(s Saga, failedStep Step[any]) error
@@ -45,6 +50,19 @@ type Compensator interface {
 	compensateSelectGachaponReward(s Saga, failedStep Step[any]) error
 	compensateCharacterCreation(s Saga, failedStep Step[any]) error
 	compensatePetEvolution(s Saga, failedStep Step[any]) error
+	compensateCashItemUse(s Saga, failedStep Step[any]) error
+	compensatePointReset(s Saga, failedStep Step[any]) error
+	compensateMtsOperation(s Saga, failedStep Step[any]) error
+	compensateSkillBookUse(s Saga, failedStep Step[any]) error
+
+	// DispatchMtsOperationRollbacks reverse-walks the completed steps of an MTS
+	// saga (TransferToMts / WithdrawFromMts / MtsSettlePurchase) and dispatches the
+	// inverse for each: AwardCurrency → negated re-credit/debit, ReleaseFromCharacter
+	// → AcceptToCharacter (re-grant), ReleaseFromMtsHolding → RestoreMtsHolding,
+	// AcceptToMtsListing → DestroyItem-not-needed (handled by atomic tx; see code).
+	// No lifecycle transitions, no Failed emission, no cache eviction — callers
+	// handle those. This is the dupe-safety core (design §4.1).
+	DispatchMtsOperationRollbacks(s Saga)
 
 	// DispatchCharacterCreationRollbacks is the dispatch half of the reverse-walk
 	// compensator. It fires the inverse commands (DestroyItem / DeleteSkill /
@@ -60,6 +78,24 @@ type Compensator interface {
 	// transitions, no Failed emission, no cache eviction — callers handle those.
 	DispatchPetEvolutionRollbacks(s Saga)
 
+	// DispatchCashItemUseRollbacks reverse-walks the completed steps of a
+	// cash-item-use saga (ItemTagUse/SealingLockUse/IncubatorUse), re-creating
+	// every consumed item (DestroyAsset/DestroyAssetFromSlot → CreateItem) and
+	// destroying every awarded result (AwardAsset → DestroyItem). No lifecycle
+	// transitions, no Failed emission, no cache eviction — callers handle those.
+	DispatchCashItemUseRollbacks(s Saga)
+
+	// DispatchPointResetRollbacks reverse-walks the completed steps of a
+	// point_reset saga, re-awarding the destroyed AP/SP Reset item
+	// (DestroyAsset → CreateItem). No lifecycle transitions, no Failed emission,
+	// no cache eviction — callers handle those.
+	DispatchPointResetRollbacks(s Saga)
+
+	// DispatchSkillBookUseRollbacks reverse-walks the completed steps of a
+	// skill_book_use saga and re-awards the destroyed book (task-125). Pure
+	// dispatch half — no lifecycle transitions, no event emission.
+	DispatchSkillBookUseRollbacks(s Saga)
+
 	// CompensateLateStep dispatches the single-step inverse for a step whose
 	// success event arrived after the saga went terminal (PRD §4.3, design
 	// §3.4/§3.5). Pure dispatch — no lifecycle transitions, no Failed
@@ -74,136 +110,88 @@ type Compensator interface {
 }
 
 type CompensatorImpl struct {
-	l       logrus.FieldLogger
-	ctx     context.Context
-	t       tenant.Model
-	charP   character.Processor
-	compP   compartment.Processor
-	skillP  skill.Processor
-	validP  validation.Processor
-	guildP  guild.Processor
-	inviteP invite.Processor
-	csP     cashshop.Processor
+	l         logrus.FieldLogger
+	ctx       context.Context
+	t         tenant.Model
+	charP     character.Processor
+	compP     compartment.Processor
+	skillP    skill.Processor
+	validP    validation.Processor
+	guildP    guild.Processor
+	inviteP   invite.Processor
+	cashshopP cashshop.Processor
+	mtsP      mts.Processor
 }
 
 func NewCompensator(l logrus.FieldLogger, ctx context.Context) Compensator {
 	return &CompensatorImpl{
-		l:       l,
-		ctx:     ctx,
-		t:       tenant.MustFromContext(ctx),
-		charP:   character.NewProcessor(l, ctx),
-		compP:   compartment.NewProcessor(l, ctx),
-		skillP:  skill.NewProcessor(l, ctx),
-		validP:  validation.NewProcessor(l, ctx),
-		guildP:  guild.NewProcessor(l, ctx),
-		inviteP: invite.NewProcessor(l, ctx),
-		csP:     cashshop.NewProcessor(l, ctx),
+		l:         l,
+		ctx:       ctx,
+		t:         tenant.MustFromContext(ctx),
+		charP:     character.NewProcessor(l, ctx),
+		compP:     compartment.NewProcessor(l, ctx),
+		skillP:    skill.NewProcessor(l, ctx),
+		validP:    validation.NewProcessor(l, ctx),
+		guildP:    guild.NewProcessor(l, ctx),
+		inviteP:   invite.NewProcessor(l, ctx),
+		cashshopP: cashshop.NewProcessor(l, ctx),
+		mtsP:      mts.NewProcessor(l, ctx),
 	}
+}
+
+// copy returns a shallow clone of the compensator so the With* setters can
+// override a single processor without re-listing every field at each call site.
+func (c *CompensatorImpl) copy() *CompensatorImpl {
+	cp := *c
+	return &cp
 }
 
 func (c *CompensatorImpl) WithCharacterProcessor(charP character.Processor) Compensator {
-	return &CompensatorImpl{
-		l:       c.l,
-		ctx:     c.ctx,
-		t:       c.t,
-		charP:   charP,
-		compP:   c.compP,
-		skillP:  c.skillP,
-		validP:  c.validP,
-		guildP:  c.guildP,
-		inviteP: c.inviteP,
-		csP:     c.csP,
-	}
+	n := c.copy()
+	n.charP = charP
+	return n
 }
 
 func (c *CompensatorImpl) WithCompartmentProcessor(compP compartment.Processor) Compensator {
-	return &CompensatorImpl{
-		l:       c.l,
-		ctx:     c.ctx,
-		t:       c.t,
-		charP:   c.charP,
-		compP:   compP,
-		skillP:  c.skillP,
-		validP:  c.validP,
-		guildP:  c.guildP,
-		inviteP: c.inviteP,
-		csP:     c.csP,
-	}
+	n := c.copy()
+	n.compP = compP
+	return n
 }
 
 func (c *CompensatorImpl) WithSkillProcessor(skillP skill.Processor) Compensator {
-	return &CompensatorImpl{
-		l:       c.l,
-		ctx:     c.ctx,
-		t:       c.t,
-		charP:   c.charP,
-		compP:   c.compP,
-		skillP:  skillP,
-		validP:  c.validP,
-		guildP:  c.guildP,
-		inviteP: c.inviteP,
-		csP:     c.csP,
-	}
+	n := c.copy()
+	n.skillP = skillP
+	return n
 }
 
 func (c *CompensatorImpl) WithValidationProcessor(validP validation.Processor) Compensator {
-	return &CompensatorImpl{
-		l:       c.l,
-		ctx:     c.ctx,
-		t:       c.t,
-		charP:   c.charP,
-		compP:   c.compP,
-		skillP:  c.skillP,
-		validP:  validP,
-		guildP:  c.guildP,
-		inviteP: c.inviteP,
-		csP:     c.csP,
-	}
+	n := c.copy()
+	n.validP = validP
+	return n
 }
 
 func (c *CompensatorImpl) WithGuildProcessor(guildP guild.Processor) Compensator {
-	return &CompensatorImpl{
-		l:       c.l,
-		ctx:     c.ctx,
-		t:       c.t,
-		charP:   c.charP,
-		compP:   c.compP,
-		skillP:  c.skillP,
-		validP:  c.validP,
-		guildP:  guildP,
-		inviteP: c.inviteP,
-		csP:     c.csP,
-	}
+	n := c.copy()
+	n.guildP = guildP
+	return n
 }
 
 func (c *CompensatorImpl) WithInviteProcessor(inviteP invite.Processor) Compensator {
-	return &CompensatorImpl{
-		l:       c.l,
-		ctx:     c.ctx,
-		t:       c.t,
-		charP:   c.charP,
-		compP:   c.compP,
-		skillP:  c.skillP,
-		validP:  c.validP,
-		guildP:  c.guildP,
-		inviteP: inviteP,
-		csP:     c.csP,
-	}
+	n := c.copy()
+	n.inviteP = inviteP
+	return n
 }
 
-func (c *CompensatorImpl) WithCashshopProcessor(csP cashshop.Processor) Compensator {
-	return &CompensatorImpl{
-		l:       c.l,
-		ctx:     c.ctx,
-		t:       c.t,
-		charP:   c.charP,
-		compP:   c.compP,
-		skillP:  c.skillP,
-		validP:  c.validP,
-		guildP:  c.guildP,
-		inviteP: c.inviteP,
-		csP:     csP,
-	}
+func (c *CompensatorImpl) WithCashshopProcessor(cashshopP cashshop.Processor) Compensator {
+	n := c.copy()
+	n.cashshopP = cashshopP
+	return n
+}
+
+func (c *CompensatorImpl) WithMtsProcessor(mtsP mts.Processor) Compensator {
+	n := c.copy()
+	n.mtsP = mtsP
+	return n
 }
 
 // CompensateFailedStep handles compensation for failed steps
@@ -234,6 +222,39 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 	// rather than only compensating the failed step.
 	if s.SagaType() == PetEvolution {
 		return c.compensatePetEvolution(s, failedStep)
+	}
+
+	// Cash-item-use reverse-walk (Task 10). A failed item_tag_use /
+	// sealing_lock_use / incubator_use must refund the already-completed
+	// consume steps (the tagged/sealed/incubated item) and undo any awarded
+	// result rather than only compensating the failed step.
+	if s.SagaType() == ItemTagUse || s.SagaType() == SealingLockUse || s.SagaType() == IncubatorUse {
+		return c.compensateCashItemUse(s, failedStep)
+	}
+
+	// Point-reset reverse-walk (task-126, shape B). A destroy-first saga:
+	// invert the already-completed destroy_asset via re-award, then emit the
+	// saga-failed event carrying the service's machine-readable error code
+	// (threaded via the failed step's result map) so atlas-channel can render
+	// specific pink text (Task 14).
+	if s.SagaType() == PointReset {
+		return c.compensatePointReset(s, failedStep)
+	}
+
+	// MTS reverse-walk (task-102 §4.1 — the dupe-safety core). A failed
+	// TransferToMts / WithdrawFromMts / MtsSettlePurchase must undo every
+	// already-completed step so exactly one custody copy of the item exists at
+	// every instant and currency nets to zero, rather than only compensating the
+	// failed step.
+	if s.SagaType() == MtsOperation {
+		return c.compensateMtsOperation(s, failedStep)
+	}
+
+	// Skill-book reverse-walk (task-125). A failed create_skill/update_skill
+	// must re-award the already-destroyed book rather than only compensating
+	// the failed step; a failed destroy step has nothing to reverse.
+	if s.SagaType() == SkillBookUse {
+		return c.compensateSkillBookUse(s, failedStep)
 	}
 
 	c.l.WithFields(logrus.Fields{
@@ -326,7 +347,7 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 			return err
 		}
 
-		if err := GetCache().Put(c.ctx,updatedSaga); err != nil {
+		if err := GetCache().Put(c.ctx, updatedSaga); err != nil {
 			return err
 		}
 		return nil
@@ -388,7 +409,7 @@ func (c *CompensatorImpl) compensateEquipAsset(s Saga, failedStep Step[any]) err
 			return err
 		}
 
-		if err := GetCache().Put(c.ctx,updatedSaga); err != nil {
+		if err := GetCache().Put(c.ctx, updatedSaga); err != nil {
 			return err
 		}
 	}
@@ -451,7 +472,7 @@ func (c *CompensatorImpl) compensateUnequipAsset(s Saga, failedStep Step[any]) e
 			return err
 		}
 
-		if err := GetCache().Put(c.ctx,updatedSaga); err != nil {
+		if err := GetCache().Put(c.ctx, updatedSaga); err != nil {
 			return err
 		}
 	}
@@ -509,7 +530,7 @@ func (c *CompensatorImpl) compensateCreateCharacter(s Saga, failedStep Step[any]
 			return err
 		}
 
-		if err := GetCache().Put(c.ctx,updatedSaga); err != nil {
+		if err := GetCache().Put(c.ctx, updatedSaga); err != nil {
 			return err
 		}
 	}
@@ -633,7 +654,7 @@ func (c *CompensatorImpl) compensateCreateAndEquipAsset(s Saga, failedStep Step[
 			return err
 		}
 
-		if err := GetCache().Put(c.ctx,updatedSaga); err != nil {
+		if err := GetCache().Put(c.ctx, updatedSaga); err != nil {
 			return err
 		}
 	}
@@ -691,7 +712,7 @@ func (c *CompensatorImpl) compensateChangeHair(s Saga, failedStep Step[any]) err
 			return err
 		}
 
-		if err := GetCache().Put(c.ctx,updatedSaga); err != nil {
+		if err := GetCache().Put(c.ctx, updatedSaga); err != nil {
 			return err
 		}
 	}
@@ -749,7 +770,7 @@ func (c *CompensatorImpl) compensateChangeFace(s Saga, failedStep Step[any]) err
 			return err
 		}
 
-		if err := GetCache().Put(c.ctx,updatedSaga); err != nil {
+		if err := GetCache().Put(c.ctx, updatedSaga); err != nil {
 			return err
 		}
 	}
@@ -807,7 +828,7 @@ func (c *CompensatorImpl) compensateChangeSkin(s Saga, failedStep Step[any]) err
 			return err
 		}
 
-		if err := GetCache().Put(c.ctx,updatedSaga); err != nil {
+		if err := GetCache().Put(c.ctx, updatedSaga); err != nil {
 			return err
 		}
 	}
@@ -1179,6 +1200,494 @@ func (c *CompensatorImpl) DispatchPetEvolutionRollbacks(s Saga) {
 	}
 }
 
+// compensateSkillBookUse is the skill_book_use reverse-walk compensator
+// (task-125). On a failed create_skill/update_skill it re-awards the book
+// destroyed by the completed destroy_asset_from_slot step (using the
+// payload's TemplateId), emits exactly one StatusEventTypeFailed, cancels
+// the Phase-4 timer, and evicts the saga. A failed destroy step (first
+// step) has no completed steps to reverse — the walk is a no-op and the
+// saga just terminates with the failed event.
+//
+// Double-emission is prevented by TryTransition(Compensating → Failed): if
+// the timer already emitted Failed, the transition is refused and this
+// function returns without re-emitting. Mirrors compensatePetEvolution.
+func (c *CompensatorImpl) compensateSkillBookUse(s Saga, failedStep Step[any]) error {
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"failed_step":    failedStep.StepId(),
+		"failed_action":  failedStep.Action(),
+		"tenant_id":      c.t.Id().String(),
+	}).Info("SkillBookUse saga failing — dispatching reverse-walk compensation.")
+
+	c.DispatchSkillBookUseRollbacks(s)
+
+	if !GetCache().TryTransition(c.ctx, s.TransactionId(), SagaLifecycleCompensating, SagaLifecycleFailed) {
+		c.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Info("saga already in terminal Failed state; reverse-walk emission skipped.")
+		SagaTimers().Cancel(s.TransactionId())
+		GetCache().Remove(c.ctx, s.TransactionId())
+		return nil
+	}
+
+	SagaTimers().Cancel(s.TransactionId())
+	GetCache().Remove(c.ctx, s.TransactionId())
+
+	reason := fmt.Sprintf("Skill book use failed at step [%s] action [%s]", failedStep.StepId(), failedStep.Action())
+	if err := EmitSagaFailed(c.l, c.ctx, s, sagaMsg.ErrorCodeUnknown, reason, failedStep.StepId()); err != nil {
+		c.l.WithError(err).WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Error("Failed to emit saga failed event after skill-book compensation.")
+		return err
+	}
+
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"tenant_id":      c.t.Id().String(),
+	}).Info("Skill-book reverse-walk compensation complete; saga terminated.")
+	return nil
+}
+
+// DispatchSkillBookUseRollbacks reverse-walks the saga's completed steps and
+// re-awards each completed destroy_asset_from_slot via CreateItem using the
+// payload's TemplateId. Pure dispatch half — callers own lifecycle/emission.
+// Slot position is not preserved (the freed slot guarantees space). A destroy
+// payload without TemplateId (legacy producer) cannot be re-awarded and is
+// skipped with an error log. An error re-awarding one step does not abort the
+// chain.
+func (c *CompensatorImpl) DispatchSkillBookUseRollbacks(s Saga) {
+	steps := s.Steps()
+	for i := len(steps) - 1; i >= 0; i-- {
+		step := steps[i]
+		if step.Status() != Completed {
+			continue
+		}
+		if step.Action() != DestroyAssetFromSlot {
+			continue
+		}
+		payload, ok := step.Payload().(DestroyAssetFromSlotPayload)
+		if !ok {
+			continue
+		}
+		if payload.TemplateId == 0 {
+			c.l.WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId().String(),
+				"step_id":        step.StepId(),
+				"tenant_id":      c.t.Id().String(),
+			}).Error("Reverse-walk: destroy step carries no TemplateId; cannot re-award the book.")
+			continue
+		}
+		qty := payload.Quantity
+		if qty == 0 {
+			qty = 1
+		}
+		if err := c.compP.RequestCreateItem(s.TransactionId(), payload.CharacterId, payload.TemplateId, qty, time.Time{}); err != nil {
+			c.l.WithError(err).WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId().String(),
+				"step_id":        step.StepId(),
+				"template_id":    payload.TemplateId,
+			}).Error("Reverse-walk: DestroyAssetFromSlot -> CreateItem dispatch failed; continuing chain.")
+		}
+	}
+}
+
+// compensateCashItemUse is the reverse-walk compensator for cash-item-use
+// sagas (ItemTagUse/SealingLockUse/IncubatorUse — Task 10). On a failed step
+// (e.g. the terminal incubator_result emit) it walks the saga's completed
+// steps in reverse, re-creating consumed items and destroying awarded
+// results, emits exactly one StatusEventTypeFailed, cancels the Phase-4
+// timer, and evicts the saga. The FAILED event is what triggers the channel's
+// INCUBATOR_RESULT(0) announcement.
+//
+// Double-emission is prevented by TryTransition(Compensating → Failed): if the
+// timer already emitted Failed, the transition is refused and this function
+// returns without re-emitting. Mirrors compensatePetEvolution.
+func (c *CompensatorImpl) compensateCashItemUse(s Saga, failedStep Step[any]) error {
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"saga_type":      s.SagaType(),
+		"failed_step":    failedStep.StepId(),
+		"failed_action":  failedStep.Action(),
+		"tenant_id":      c.t.Id().String(),
+	}).Info("Cash-item-use saga failing — dispatching reverse-walk compensation.")
+
+	c.DispatchCashItemUseRollbacks(s)
+
+	if !GetCache().TryTransition(c.ctx, s.TransactionId(), SagaLifecycleCompensating, SagaLifecycleFailed) {
+		c.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Info("saga already in terminal Failed state; reverse-walk emission skipped.")
+		SagaTimers().Cancel(s.TransactionId())
+		GetCache().Remove(c.ctx, s.TransactionId())
+		return nil
+	}
+
+	SagaTimers().Cancel(s.TransactionId())
+	GetCache().Remove(c.ctx, s.TransactionId())
+
+	reason := fmt.Sprintf("Cash item use (%s) failed at step [%s] action [%s]", s.SagaType(), failedStep.StepId(), failedStep.Action())
+	if err := EmitSagaFailed(c.l, c.ctx, s, sagaMsg.ErrorCodeUnknown, reason, failedStep.StepId()); err != nil {
+		c.l.WithError(err).WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Error("Failed to emit saga failed event after cash-item-use compensation.")
+		return err
+	}
+
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"tenant_id":      c.t.Id().String(),
+	}).Info("Cash-item-use reverse-walk compensation complete; saga terminated.")
+	return nil
+}
+
+// DispatchCashItemUseRollbacks reverse-walks the saga's completed steps and
+// dispatches the inverse compensation command for each. This is the pure
+// "dispatch" half — no lifecycle transitions, no event emission, no cache
+// eviction. Callers are responsible for those.
+//
+// Inverses:
+//   - DestroyAsset (item consumed by templateId) → CreateItem (refund it).
+//   - DestroyAssetFromSlot (item consumed from a specific slot, e.g. the tag/
+//     seal item or the incubator's sacrificed target) → CreateItem, using the
+//     TemplateId carried on the payload. A payload with no TemplateId is
+//     skipped (nothing to re-create) rather than issuing a zero-templateId
+//     create.
+//   - AwardAsset (a granted result, e.g. the incubator's produced item)  →
+//     DestroyItem (mirrors DispatchCharacterCreationRollbacks's AwardAsset
+//     inverse).
+//
+// An error refunding one step does not abort the chain.
+func (c *CompensatorImpl) DispatchCashItemUseRollbacks(s Saga) {
+	steps := s.Steps()
+	for i := len(steps) - 1; i >= 0; i-- {
+		step := steps[i]
+		if step.Status() != Completed {
+			continue
+		}
+		switch step.Action() {
+		case DestroyAsset:
+			if payload, ok := step.Payload().(DestroyAssetPayload); ok {
+				qty := payload.Quantity
+				if qty == 0 {
+					qty = 1
+				}
+				if err := c.compP.RequestCreateItem(s.TransactionId(), payload.CharacterId, payload.TemplateId, qty, time.Time{}); err != nil {
+					c.l.WithError(err).WithFields(logrus.Fields{
+						"transaction_id": s.TransactionId().String(),
+						"step_id":        step.StepId(),
+						"template_id":    payload.TemplateId,
+					}).Error("Reverse-walk: DestroyAsset -> CreateItem dispatch failed; continuing chain.")
+				}
+			}
+		case DestroyAssetFromSlot:
+			if payload, ok := step.Payload().(DestroyAssetFromSlotPayload); ok {
+				if payload.TemplateId == 0 {
+					c.l.WithFields(logrus.Fields{
+						"transaction_id": s.TransactionId().String(),
+						"step_id":        step.StepId(),
+					}).Error("Reverse-walk: DestroyAssetFromSlot payload has no templateId; cannot re-create.")
+					continue
+				}
+				qty := payload.Quantity
+				if qty == 0 {
+					qty = 1
+				}
+				if err := c.compP.RequestCreateItem(s.TransactionId(), payload.CharacterId, payload.TemplateId, qty, time.Time{}); err != nil {
+					c.l.WithError(err).WithFields(logrus.Fields{
+						"transaction_id": s.TransactionId().String(),
+						"step_id":        step.StepId(),
+						"template_id":    payload.TemplateId,
+					}).Error("Reverse-walk: DestroyAssetFromSlot -> CreateItem dispatch failed; continuing chain.")
+				}
+			}
+		case AwardAsset:
+			if payload, ok := step.Payload().(AwardItemActionPayload); ok {
+				if err := c.compP.RequestDestroyItem(s.TransactionId(), payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity, false); err != nil {
+					c.l.WithError(err).WithFields(logrus.Fields{
+						"transaction_id": s.TransactionId().String(),
+						"step_id":        step.StepId(),
+						"template_id":    payload.Item.TemplateId,
+					}).Error("Reverse-walk: AwardAsset -> DestroyItem dispatch failed; continuing chain.")
+				}
+			}
+		}
+	}
+}
+
+// compensatePointReset is the point-reset reverse-walk compensator (task-126,
+// design §3 shape B). On a failed transfer_ap / transfer_sp it re-awards the
+// already-consumed AP/SP Reset item (destroy-first saga) and emits exactly one
+// StatusEventTypeFailed carrying the service's machine-readable error code and
+// detail, threaded off the failed step's result map (Task 14 contract:
+// reason = errorDetail). Mirrors compensatePetEvolution for the lifecycle
+// idioms — TryTransition(Compensating → Failed) guards against a double-emit
+// where the Phase-4 timer already emitted Failed.
+func (c *CompensatorImpl) compensatePointReset(s Saga, failedStep Step[any]) error {
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"failed_step":    failedStep.StepId(),
+		"failed_action":  failedStep.Action(),
+		"tenant_id":      c.t.Id().String(),
+	}).Info("PointReset saga failing — dispatching reverse-walk compensation.")
+
+	c.DispatchPointResetRollbacks(s)
+
+	if !GetCache().TryTransition(c.ctx, s.TransactionId(), SagaLifecycleCompensating, SagaLifecycleFailed) {
+		c.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Info("saga already in terminal Failed state; reverse-walk emission skipped.")
+		SagaTimers().Cancel(s.TransactionId())
+		GetCache().Remove(c.ctx, s.TransactionId())
+		return nil
+	}
+
+	SagaTimers().Cancel(s.TransactionId())
+	GetCache().Remove(c.ctx, s.TransactionId())
+
+	errorCode, reason := pointResetFailureFields(failedStep)
+	if err := EmitSagaFailed(c.l, c.ctx, s, errorCode, reason, failedStep.StepId()); err != nil {
+		c.l.WithError(err).WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Error("Failed to emit saga failed event after point-reset compensation.")
+		return err
+	}
+
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"tenant_id":      c.t.Id().String(),
+	}).Info("Point-reset reverse-walk compensation complete; saga terminated.")
+	return nil
+}
+
+// pointResetFailureFields extracts the machine-readable error code and the
+// human/detail reason to place on the saga-failed event from a failed
+// point_reset step. Per the Task 14 error-threading contract, the failed
+// step's result map carries `errorCode` + `errorDetail`; reason is the
+// errorDetail (the channel branch reads Body.Reason as the detail carrier,
+// e.g. the offending stat name). Falls back to ErrorCodeUnknown + a generic
+// reason when the result map lacks the keys.
+func pointResetFailureFields(failedStep Step[any]) (string, string) {
+	errorCode := sagaMsg.ErrorCodeUnknown
+	reason := fmt.Sprintf("Point reset failed at step [%s] action [%s]", failedStep.StepId(), failedStep.Action())
+	if res := failedStep.Result(); res != nil {
+		if v, ok := res["errorCode"].(string); ok && v != "" {
+			errorCode = v
+		}
+		if v, ok := res["errorDetail"].(string); ok && v != "" {
+			reason = v
+		}
+	}
+	return errorCode, reason
+}
+
+// DispatchPointResetRollbacks reverse-walks the saga's completed steps and
+// re-awards each destroyed AP/SP Reset item (DestroyAsset → CreateItem). This
+// is the pure "dispatch" half — no lifecycle transitions, no event emission,
+// no cache eviction. Only Completed destroy steps are inverted; the failed
+// transfer step produced no committed mutation and has no inverse. An error
+// re-awarding one step does not abort the chain.
+func (c *CompensatorImpl) DispatchPointResetRollbacks(s Saga) {
+	steps := s.Steps()
+	for i := len(steps) - 1; i >= 0; i-- {
+		step := steps[i]
+		if step.Status() != Completed {
+			continue
+		}
+		if step.Action() != DestroyAsset {
+			continue
+		}
+		if payload, ok := step.Payload().(DestroyAssetPayload); ok {
+			qty := payload.Quantity
+			if qty == 0 {
+				qty = 1
+			}
+			if err := c.compP.RequestCreateItem(s.TransactionId(), payload.CharacterId, payload.TemplateId, qty, time.Time{}); err != nil {
+				c.l.WithError(err).WithFields(logrus.Fields{
+					"transaction_id": s.TransactionId().String(),
+					"step_id":        step.StepId(),
+					"template_id":    payload.TemplateId,
+				}).Error("Reverse-walk: DestroyAsset → CreateItem dispatch failed; continuing chain.")
+			}
+		}
+	}
+}
+
+// compensateMtsOperation is the MTS reverse-walk compensator (task-102 §4.1 —
+// the dupe-safety core). On a failed TransferToMts / WithdrawFromMts /
+// MtsSettlePurchase it walks the saga's completed steps in reverse, dispatches
+// the inverse for each, emits exactly one StatusEventTypeFailed, cancels the
+// Phase-4 timer, and evicts the saga.
+//
+// Double-emission is prevented by TryTransition(Compensating → Failed): if the
+// timer already emitted Failed, the transition is refused and this function
+// returns without re-emitting. Mirrors compensatePetEvolution.
+func (c *CompensatorImpl) compensateMtsOperation(s Saga, failedStep Step[any]) error {
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"failed_step":    failedStep.StepId(),
+		"failed_action":  failedStep.Action(),
+		"tenant_id":      c.t.Id().String(),
+	}).Info("MTS saga failing — dispatching reverse-walk compensation.")
+
+	c.DispatchMtsOperationRollbacks(s)
+
+	if !GetCache().TryTransition(c.ctx, s.TransactionId(), SagaLifecycleCompensating, SagaLifecycleFailed) {
+		c.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Info("saga already in terminal Failed state; reverse-walk emission skipped.")
+		SagaTimers().Cancel(s.TransactionId())
+		GetCache().Remove(c.ctx, s.TransactionId())
+		return nil
+	}
+
+	SagaTimers().Cancel(s.TransactionId())
+	GetCache().Remove(c.ctx, s.TransactionId())
+
+	reason := fmt.Sprintf("MTS operation failed at step [%s] action [%s]", failedStep.StepId(), failedStep.Action())
+	if err := EmitSagaFailed(c.l, c.ctx, s, sagaMsg.ErrorCodeUnknown, reason, failedStep.StepId()); err != nil {
+		c.l.WithError(err).WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Error("Failed to emit saga failed event after MTS compensation.")
+		return err
+	}
+
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"tenant_id":      c.t.Id().String(),
+	}).Info("MTS reverse-walk compensation complete; saga terminated.")
+	return nil
+}
+
+// DispatchMtsOperationRollbacks reverse-walks the saga's completed steps and
+// dispatches the inverse compensation command for each. This is the pure
+// "dispatch" half — no lifecycle transitions, no event emission, no cache
+// eviction. Callers are responsible for those. An error dispatching one inverse
+// does not abort the chain.
+//
+// Inverses (design §4.1):
+//   - AwardCurrency (settlement debit/credit) → AwardCurrency with -Amount: the
+//     buyer debit (negative amount) re-credits, the seller credit (positive
+//     amount) debits. Net currency change is zero. REUSES the cash-shop wallet
+//     dispatch — no duplicate command.
+//   - ReleaseFromCharacter (TransferToMts: item left inventory) → re-grant the
+//     item to the character via RequestAcceptAsset, reconstructing the equip
+//     snapshot from the saga's AcceptToMtsListing step so stats survive.
+//   - ReleaseFromMtsHolding (WithdrawFromMts: holding soft-deleted) →
+//     RestoreMtsHolding (un-soft-delete the same holding row).
+//
+// Steps that committed no compensable mutation have no inverse:
+//   - AcceptToMtsListing failing leaves no listing row (its own atomic tx rolled
+//     back), so there is nothing to un-accept; the ReleaseFromCharacter inverse
+//     above re-grants the item.
+//   - MtsMoveListingToHolding failing leaves the listing `active` with no buyer
+//     holding (its own atomic tx rolled back), so there is nothing to un-move;
+//     only the two AwardCurrency steps need reversal. It is the LAST settlement
+//     step, so it is never a Completed-then-compensated step.
+func (c *CompensatorImpl) DispatchMtsOperationRollbacks(s Saga) {
+	// Locate the AcceptToMtsListing snapshot (if any) so a ReleaseFromCharacter
+	// inverse can re-grant with the original equip stats.
+	var listingSnapshot *AcceptToMtsListingPayload
+	for _, step := range s.Steps() {
+		if step.Action() != AcceptToMtsListing {
+			continue
+		}
+		if p, ok := step.Payload().(AcceptToMtsListingPayload); ok {
+			pc := p
+			listingSnapshot = &pc
+			break
+		}
+	}
+
+	steps := s.Steps()
+	for i := len(steps) - 1; i >= 0; i-- {
+		step := steps[i]
+		if step.Status() != Completed {
+			continue
+		}
+		switch step.Action() {
+		case AwardCurrency:
+			if payload, ok := step.Payload().(AwardCurrencyPayload); ok {
+				if err := c.cashshopP.AwardCurrencyAndEmit(s.TransactionId(), payload.AccountId, payload.CurrencyType, -payload.Amount); err != nil {
+					c.l.WithError(err).WithFields(logrus.Fields{
+						"transaction_id": s.TransactionId().String(),
+						"step_id":        step.StepId(),
+						"account_id":     payload.AccountId,
+						"amount":         payload.Amount,
+					}).Error("Reverse-walk: AwardCurrency reversal dispatch failed; continuing chain.")
+				}
+			}
+		case ReleaseFromCharacter:
+			if payload, ok := step.Payload().(ReleaseFromCharacterPayload); ok {
+				if listingSnapshot == nil {
+					c.l.WithFields(logrus.Fields{
+						"transaction_id": s.TransactionId().String(),
+						"step_id":        step.StepId(),
+						"character_id":   payload.CharacterId,
+					}).Error("Reverse-walk: ReleaseFromCharacter has no AcceptToMtsListing snapshot to re-grant; skipping.")
+					continue
+				}
+				assetData := assetDataFromMtsListingSnapshot(*listingSnapshot)
+				if err := c.compP.RequestAcceptAsset(s.TransactionId(), payload.CharacterId, payload.InventoryType, listingSnapshot.TemplateId, assetData); err != nil {
+					c.l.WithError(err).WithFields(logrus.Fields{
+						"transaction_id": s.TransactionId().String(),
+						"step_id":        step.StepId(),
+						"character_id":   payload.CharacterId,
+						"template_id":    listingSnapshot.TemplateId,
+					}).Error("Reverse-walk: ReleaseFromCharacter → AcceptToCharacter re-grant dispatch failed; continuing chain.")
+				}
+			}
+		case ReleaseFromMtsHolding:
+			if payload, ok := step.Payload().(ReleaseFromMtsHoldingPayload); ok {
+				if err := c.mtsP.RestoreMtsHoldingAndEmit(s.TransactionId(), payload.HoldingId); err != nil {
+					c.l.WithError(err).WithFields(logrus.Fields{
+						"transaction_id": s.TransactionId().String(),
+						"step_id":        step.StepId(),
+						"holding_id":     payload.HoldingId.String(),
+					}).Error("Reverse-walk: ReleaseFromMtsHolding → RestoreMtsHolding dispatch failed; continuing chain.")
+				}
+			}
+		}
+	}
+}
+
+// assetDataFromMtsListingSnapshot reconstructs an inventory AssetData from the
+// item snapshot carried on an AcceptToMtsListing step, so a TransferToMts
+// compensation re-grants the released item with its original equip stats intact.
+func assetDataFromMtsListingSnapshot(p AcceptToMtsListingPayload) asset2.AssetData {
+	return asset2.AssetData{
+		Quantity:      p.Quantity,
+		Strength:      p.Strength,
+		Dexterity:     p.Dexterity,
+		Intelligence:  p.Intelligence,
+		Luck:          p.Luck,
+		Hp:            p.HP,
+		Mp:            p.MP,
+		WeaponAttack:  p.WeaponAttack,
+		MagicAttack:   p.MagicAttack,
+		WeaponDefense: p.WeaponDefense,
+		MagicDefense:  p.MagicDefense,
+		Accuracy:      p.Accuracy,
+		Avoidability:  p.Avoidability,
+		Hands:         p.Hands,
+		Speed:         p.Speed,
+		Jump:          p.Jump,
+		Slots:         p.Slots,
+		LevelType:     p.ItemLevel,
+		Level:         p.Level,
+		Experience:    p.ItemExp,
+		Flag:          p.Flags,
+		Owner:         p.Owner,
+	}
+}
+
 // extractCharacterCreationWorldId reads the WorldId out of the CharacterCreate
 // step's payload. Returns 0 if the step is not present.
 func extractCharacterCreationWorldId(s Saga) world.Id {
@@ -1196,22 +1705,44 @@ func extractCharacterCreationWorldId(s Saga) world.Id {
 // lateCompensableActions is the v1 compensable set (design §3.4): the full
 // value-transfer class that broke the task-102 invariant. Everything else is
 // absorb-only and logged as late_effect_unrecoverable when hit.
-// DestroyAssetFromSlot is deliberately absent: its payload carries no
-// TemplateId, so the destroyed item cannot be recreated from the step alone.
+// DestroyAssetFromSlot is included: since task-128 its payload carries a
+// TemplateId, so a late-successful destroy can be recreated via CreateItem
+// (see the payload-level guard in CompensateLateStep and the
+// DestroyAssetFromSlot case in dispatchLateInverse). A payload with
+// TemplateId==0 (legacy producer) still has no recoverable quantity and is
+// routed into the same absorb-only path as DestroyAsset+RemoveAll.
+//
+// MTS custody actions (task-102) all have late inverses:
+//   - ReleaseFromMtsHolding (take-home): RestoreMtsHolding un-soft-deletes the
+//     holding so a late release doesn't orphan the item.
+//   - AcceptToMtsListing (list): RemoveMtsListing hard-deletes the spurious
+//     still-active listing a late accept created after the list saga's
+//     compensation already re-granted the item to the seller (the guard is
+//     state=active, so a listing acted on in the interim is left alone).
+//   - MtsMoveListingToHolding (buy): RestoreListingFromHolding soft-deletes the
+//     deterministic buyer holding and returns the listing sold->active, so a buy
+//     that lands late after the buyer's prepaid was refunded delivers no free
+//     item. (The currency legs are AwardCurrency, already covered.)
+//
+// task-136 removed the timeout trigger, so a late MTS custody success is now rare.
 var lateCompensableActions = map[Action]struct{}{
-	AwardAsset:            {},
-	CreateAndEquipAsset:   {},
-	CreateSkill:           {},
-	CreateCharacter:       {},
-	AwaitCharacterCreated: {},
-	DestroyAsset:          {},
-	AwardMesos:            {},
-	AwardCurrency:         {},
-	AwardExperience:       {},
-	DeductExperience:      {},
-	AwardFame:             {},
-	EquipAsset:            {},
-	UnequipAsset:          {},
+	AwardAsset:              {},
+	CreateAndEquipAsset:     {},
+	CreateSkill:             {},
+	CreateCharacter:         {},
+	AwaitCharacterCreated:   {},
+	DestroyAsset:            {},
+	DestroyAssetFromSlot:    {},
+	AwardMesos:              {},
+	AwardCurrency:           {},
+	AwardExperience:         {},
+	DeductExperience:        {},
+	AwardFame:               {},
+	EquipAsset:              {},
+	UnequipAsset:            {},
+	ReleaseFromMtsHolding:   {},
+	AcceptToMtsListing:      {},
+	MtsMoveListingToHolding: {},
 }
 
 func (c *CompensatorImpl) CompensateLateStep(s Saga, step Step[any]) (bool, error) {
@@ -1239,6 +1770,17 @@ func (c *CompensatorImpl) CompensateLateStep(s Saga, step Step[any]) (bool, erro
 		if payload, ok := step.Payload().(DestroyAssetPayload); ok && payload.RemoveAll {
 			fields["reason"] = "late_effect_unrecoverable"
 			c.l.WithFields(fields).Warn("Late-successful DestroyAsset used RemoveAll; destroyed quantity is not recoverable from the step payload, its effect is orphaned.")
+			return false, nil
+		}
+	}
+
+	// DestroyAssetFromSlot with TemplateId==0 is a legacy-producer payload:
+	// there is nothing to recreate, so absorb-only (same shape as the
+	// DestroyAsset+RemoveAll guard above) rather than awarding item 0.
+	if step.Action() == DestroyAssetFromSlot {
+		if payload, ok := step.Payload().(DestroyAssetFromSlotPayload); ok && payload.TemplateId == 0 {
+			fields["reason"] = "late_effect_unrecoverable"
+			c.l.WithFields(fields).Warn("Late-successful DestroyAssetFromSlot carries no TemplateId; destroyed item is not recoverable from the step payload, its effect is orphaned.")
 			return false, nil
 		}
 	}
@@ -1342,6 +1884,19 @@ func (c *CompensatorImpl) dispatchLateInverse(s Saga, step Step[any]) error {
 			return fmt.Errorf("invalid payload for late DestroyAsset compensation")
 		}
 		return c.compP.RequestCreateItem(s.TransactionId(), payload.CharacterId, payload.TemplateId, payload.Quantity, time.Time{})
+	case DestroyAssetFromSlot:
+		// TemplateId==0 is excluded upstream in CompensateLateStep (legacy
+		// producer, no recoverable quantity), so only payloads carrying a
+		// TemplateId reach here — recreate the destroyed book/item.
+		payload, ok := step.Payload().(DestroyAssetFromSlotPayload)
+		if !ok {
+			return fmt.Errorf("invalid payload for late DestroyAssetFromSlot compensation")
+		}
+		qty := payload.Quantity
+		if qty == 0 {
+			qty = 1
+		}
+		return c.compP.RequestCreateItem(s.TransactionId(), payload.CharacterId, payload.TemplateId, qty, time.Time{})
 	case AwardMesos:
 		payload, ok := step.Payload().(AwardMesosPayload)
 		if !ok {
@@ -1354,7 +1909,7 @@ func (c *CompensatorImpl) dispatchLateInverse(s Saga, step Step[any]) error {
 		if !ok {
 			return fmt.Errorf("invalid payload for late AwardCurrency compensation")
 		}
-		return c.csP.AwardCurrencyAndEmit(s.TransactionId(), payload.AccountId, payload.CurrencyType, -payload.Amount)
+		return c.cashshopP.AwardCurrencyAndEmit(s.TransactionId(), payload.AccountId, payload.CurrencyType, -payload.Amount)
 	case AwardExperience:
 		payload, ok := step.Payload().(AwardExperiencePayload)
 		if !ok {
@@ -1393,6 +1948,35 @@ func (c *CompensatorImpl) dispatchLateInverse(s Saga, step Step[any]) error {
 			return fmt.Errorf("invalid payload for late UnequipAsset compensation")
 		}
 		return c.compP.RequestEquipAsset(s.TransactionId(), payload.CharacterId, byte(payload.InventoryType), payload.Destination, payload.Source)
+	case ReleaseFromMtsHolding:
+		// A take-home that soft-deleted the holding but landed late after the
+		// saga terminated: un-soft-delete the holding so the item stays in MTS
+		// (recoverable) rather than orphaned. Same inverse the reverse-walk uses.
+		payload, ok := step.Payload().(ReleaseFromMtsHoldingPayload)
+		if !ok {
+			return fmt.Errorf("invalid payload for late ReleaseFromMtsHolding compensation")
+		}
+		return c.mtsP.RestoreMtsHoldingAndEmit(s.TransactionId(), payload.HoldingId)
+	case AcceptToMtsListing:
+		// A late list-accept created the listing after the saga's compensation
+		// already re-granted the item to the seller (release_from_character always
+		// precedes accept, so its inverse ran): remove the now-duplicate listing.
+		// The atlas-mts guard deletes only a still-active listing.
+		payload, ok := step.Payload().(AcceptToMtsListingPayload)
+		if !ok {
+			return fmt.Errorf("invalid payload for late AcceptToMtsListing compensation")
+		}
+		return c.mtsP.RemoveMtsListingAndEmit(s.TransactionId(), payload.ListingId)
+	case MtsMoveListingToHolding:
+		// A late settlement-move delivered the item to the buyer's holding and
+		// marked the listing sold after the buyer's prepaid was already refunded:
+		// soft-delete the buyer holding and return the listing to active so the
+		// buyer keeps nothing and the item is re-listed.
+		payload, ok := step.Payload().(MtsMoveListingToHoldingPayload)
+		if !ok {
+			return fmt.Errorf("invalid payload for late MtsMoveListingToHolding compensation")
+		}
+		return c.mtsP.RestoreListingFromHoldingAndEmit(s.TransactionId(), payload.ListingId, payload.BuyerId)
 	}
 	return fmt.Errorf("no late inverse registered for action %s", step.Action())
 }

@@ -1,0 +1,42 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 9000019,
+      "startState": "offer",
+      "states": [
+        {
+          "id": "offer",
+          "type": "dialogue",
+          "dialogue": {
+            "dialogueType": "sendYesNo",
+            "text": "Care for a game of Rock Paper Scissors? It costs #b1000 meso#k to play. Win and climb the prize ladder!",
+            "choices": [
+              { "nextState": "playRPS", "text": "Yes" },
+              { "nextState": null, "text": "No" },
+              { "nextState": null, "text": "Exit" }
+            ]
+          }
+        },
+        {
+          "id": "playRPS",
+          "type": "rpsAction",
+          "rpsAction": { "npcId": 9000019, "entryCostMeso": 1000, "failureState": "noMeso" }
+        },
+        {
+          "id": "noMeso",
+          "type": "dialogue",
+          "dialogue": {
+            "dialogueType": "sendOk",
+            "text": "You don't have enough meso to play.",
+            "choices": [
+              { "nextState": null, "text": "Ok" },
+              { "nextState": null, "text": "Exit" }
+            ]
+          }
+        }
+      ]
+    },
+    "id": "9000019",
+    "type": "npc-conversation"
+  }
+}

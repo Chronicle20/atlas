@@ -1,0 +1,21 @@
+{
+  "WriterName": "CharacterKeyMapAutoHp",
+  "IDAName": "CFuncKeyMappedMan::OnPetConsumeItemInit",
+  "Address": "0x51ab0b",
+  "Variant": "GMS/v61",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/character/clientbound/keymap_auto_hp.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

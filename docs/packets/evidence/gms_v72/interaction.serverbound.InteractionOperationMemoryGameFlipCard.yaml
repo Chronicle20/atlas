@@ -1,0 +1,10 @@
+packet: interaction/serverbound/InteractionOperationMemoryGameFlipCard
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CMemoryGameDlg::SendTurnUpCard
+    address: "0x5ff6ba"
+    decompile_sha256: df8662f1ef4a7cdee5ef39d8844fd318a101102d8bf584a992e7c547d5745fe2
+verifies:
+  - libs/atlas-packet/interaction/serverbound/operation_memory_game_flip_card_test.go#TestOperationMemoryGameFlipCardV72Bytes

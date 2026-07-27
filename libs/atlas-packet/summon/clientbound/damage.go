@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const SummonDamageWriter = "SummonDamage"
@@ -23,7 +24,7 @@ const SummonDamageWriter = "SummonDamage"
 //	  int  monsterIdFrom  // attacking monster template id
 //	  byte bLeft          // fixed 0
 //
-// The 12/0 constants mirror Cosmic; the only structural gate is the v95+ oid.
+// The 12/0 constants are fixed wire values; the only structural gate is the v95+ oid.
 // The clientbound damage reader stops at bLeft on ALL versions — v83
 // CSummonedPool::OnSkill@0x7a6ebe, v87 @0x7f969f, and v95 OnHit@0x74bc80 all
 // read nothing after bLeft (the dir<0 byte belongs to the SERVERBOUND
@@ -75,7 +76,7 @@ func (m *SummonDamage) Decode(l logrus.FieldLogger, ctx context.Context) func(r 
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.cid = r.ReadUint32()
 		m.oid = r.ReadUint32() // present on all versions (see Encode)
-		r.Skip(1) // attackIdx (12)
+		r.Skip(1)              // attackIdx (12)
 		m.damage = r.ReadUint32()
 		m.monsterIdFrom = r.ReadUint32()
 		r.Skip(1) // bLeft (final field — no trailing dir byte on any version)

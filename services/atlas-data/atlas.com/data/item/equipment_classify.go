@@ -3,9 +3,10 @@ package item
 import (
 	"context"
 
+	"gorm.io/gorm"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"gorm.io/gorm"
 )
 
 // UpdateEquipmentClassification fills job_mask for an existing equipment row

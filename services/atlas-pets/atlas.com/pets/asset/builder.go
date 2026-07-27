@@ -52,16 +52,16 @@ func Clone(m Model) *ModelBuilder {
 }
 
 type ModelBuilder struct {
-	id            uint32
-	compartmentId uuid.UUID
-	slot          int16
-	templateId    uint32
-	expiration    time.Time
-	createdAt     time.Time
-	quantity      uint32
-	ownerId       uint32
-	flag          uint16
-	rechargeable  uint64
+	id             uint32
+	compartmentId  uuid.UUID
+	slot           int16
+	templateId     uint32
+	expiration     time.Time
+	createdAt      time.Time
+	quantity       uint32
+	ownerId        uint32
+	flag           uint16
+	rechargeable   uint64
 	strength       uint16
 	dexterity      uint16
 	intelligence   uint16
@@ -101,10 +101,10 @@ func NewBuilder(compartmentId uuid.UUID, templateId uint32) *ModelBuilder {
 	}
 }
 
-func (b *ModelBuilder) SetId(id uint32) *ModelBuilder               { b.id = id; return b }
-func (b *ModelBuilder) SetSlot(slot int16) *ModelBuilder            { b.slot = slot; return b }
-func (b *ModelBuilder) SetExpiration(e time.Time) *ModelBuilder     { b.expiration = e; return b }
-func (b *ModelBuilder) SetPetId(v uint32) *ModelBuilder             { b.petId = v; return b }
+func (b *ModelBuilder) SetId(id uint32) *ModelBuilder           { b.id = id; return b }
+func (b *ModelBuilder) SetSlot(slot int16) *ModelBuilder        { b.slot = slot; return b }
+func (b *ModelBuilder) SetExpiration(e time.Time) *ModelBuilder { b.expiration = e; return b }
+func (b *ModelBuilder) SetPetId(v uint32) *ModelBuilder         { b.petId = v; return b }
 
 func (b *ModelBuilder) Build() Model {
 	return Model{

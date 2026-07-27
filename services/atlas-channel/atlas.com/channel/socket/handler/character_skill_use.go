@@ -2,8 +2,10 @@ package handler
 
 import (
 	"atlas-channel/character"
+	"atlas-channel/character/buff"
 	skill2 "atlas-channel/character/skill"
 	skill3 "atlas-channel/data/skill"
+	buff2 "atlas-channel/kafka/message/buff"
 	_map "atlas-channel/map"
 	"atlas-channel/session"
 	"atlas-channel/skill/handler"
@@ -11,12 +13,14 @@ import (
 	summoncmd "atlas-channel/summon"
 	"context"
 
+	"github.com/sirupsen/logrus"
+
+	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/summon"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	statpkt "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
-	"github.com/sirupsen/logrus"
 )
 
 // CUserLocal::DoActiveSkill_TownPortal
@@ -80,6 +84,37 @@ func CharacterUseSkillHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 
 		l.Debugf("Character [%d] using skill [%d] at level [%d].", s.CharacterId(), sui.SkillId(), sui.SkillLevel())
 
+		// Enrage (Hero) requires and consumes the caster's combo orbs. Gate the
+		// cast here — before the buff applies — on the caster being at their orb
+		// cap ("max combo orbs"), reading the live count from atlas-buffs. A cast
+		// below the cap is rejected (no buff applied); an eligible cast has its
+		// orbs consumed after the buff applies below. Fails OPEN on a buff-read
+		// error so a transient atlas-buffs hiccup never blocks a legitimate cast.
+		consumeEnrageOrbs := false
+		var enrageComboSource int32
+		if skill.Id(sui.SkillId()) == skill.HeroEnrageId {
+			line, hasCombo := comboSkillIds(c.Skills())
+			if !hasCombo {
+				l.Debugf("Character [%d] cast Enrage without a Combo Attack skill; rejecting.", s.CharacterId())
+				if aerr := enableActions(l)(ctx)(wp)(s); aerr != nil {
+					l.WithError(aerr).Errorf("Unable to write [%s] for character [%d].", statpkt.StatChangedWriter, s.CharacterId())
+				}
+				return
+			}
+			buffs, berr := buff.NewProcessor(l, ctx).GetByCharacterId(s.CharacterId())
+			if berr != nil {
+				l.WithError(berr).Warnf("Enrage: unable to read combo orbs for character [%d]; skipping orb-cap gate.", s.CharacterId())
+			} else if !comboAtOrbCap(line, buffs, skill3.NewProcessor(l, ctx).GetEffect) {
+				l.Debugf("Character [%d] cast Enrage below max combo orbs; rejecting.", s.CharacterId())
+				if aerr := enableActions(l)(ctx)(wp)(s); aerr != nil {
+					l.WithError(aerr).Errorf("Unable to write [%s] for character [%d].", statpkt.StatChangedWriter, s.CharacterId())
+				}
+				return
+			}
+			consumeEnrageOrbs = true
+			enrageComboSource = int32(line.comboId)
+		}
+
 		// Summon skills additionally request atlas-summons to create the
 		// owner-bound summon. This runs alongside (not instead of) the normal
 		// skill-effect application below so the buff/cooldown still apply.
@@ -103,6 +138,15 @@ func CharacterUseSkillHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 		if err != nil {
 			l.WithError(err).Errorf("Character [%d] failed to use skill [%d].", s.CharacterId(), sui.SkillId())
 			return
+		}
+
+		// Enrage passed its orb-cap gate above and its buff has now applied —
+		// consume the combo orbs (reset the COMBO stat to 1) via the delta
+		// command atlas-buffs owns.
+		if consumeEnrageOrbs {
+			if cerr := buff.NewProcessor(l, ctx).UpdateStatValue(s.Field(), s.CharacterId(), enrageComboSource, string(charconst.TemporaryStatTypeCombo), buff2.StatOperationSet, 1, 0); cerr != nil {
+				l.WithError(cerr).Errorf("Enrage: failed to consume combo orbs for character [%d].", s.CharacterId())
+			}
 		}
 
 		session.NewProcessor(l, ctx).IfPresentByCharacterId(s.Field().Channel())(s.CharacterId(), AnnounceSkillUse(l)(ctx)(wp)(sui.SkillId(), c.Level(), sui.SkillLevel()))

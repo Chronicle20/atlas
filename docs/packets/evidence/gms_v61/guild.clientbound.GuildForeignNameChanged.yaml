@@ -1,0 +1,10 @@
+packet: guild/clientbound/GuildForeignNameChanged
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CUserRemote::OnGuildNameChanged
+    address: "0x7cc166"
+    decompile_sha256: d0c609e03a53dfff982c94b354155a651ad4fced0203ff078ff702cc99b21dc9
+verifies:
+    - libs/atlas-packet/guild/clientbound/v61_test.go#TestGuildForeignChangedV61

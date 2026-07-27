@@ -1,0 +1,10 @@
+packet: guild/clientbound/GuildBBSThreadList
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CUIGuildBBS::OnGuildBBSPacket
+    address: "0x8399af"
+    decompile_sha256: badb1522974448d89440aee40423270bb87ec379b35e75549123da029d263685
+verifies:
+    - libs/atlas-packet/guild/clientbound/v61_test.go#TestGuildDataArmsV61

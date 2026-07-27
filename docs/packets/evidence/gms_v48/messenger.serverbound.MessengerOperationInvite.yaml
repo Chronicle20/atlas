@@ -1,0 +1,8 @@
+packet: messenger/serverbound/MessengerOperationInvite
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CUIMessenger::SendInviteMsg
+    address: "0x61d8b8"
+    decompile_sha256: 7afe0a43310514fce33fe4ccab9d99f3a1d339796f6ae1f57c629e0e5397b4a9

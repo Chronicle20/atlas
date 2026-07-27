@@ -1,10 +1,12 @@
 import { useTenant } from "@/context/tenant-context";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { itemsService, type ItemSearchFilters, type ItemSearchPage } from "@/services/api/items.service";
 import {
-  getCompartmentBadgeVariant,
-} from "@/types/models/item";
+  itemsService,
+  type ItemSearchFilters,
+  type ItemSearchPage,
+} from "@/services/api/items.service";
+import { getCompartmentBadgeVariant } from "@/types/models/item";
 import {
   COMPARTMENT_OPTIONS,
   COMPARTMENT_LABELS,
@@ -18,7 +20,13 @@ import {
 } from "@/lib/items/taxonomy";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -27,7 +35,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Table,
   TableBody,
@@ -72,11 +85,19 @@ function ItemsPageContent() {
   const [searchInput, setSearchInput] = useState(urlQ);
   const debounced = useDebounce(searchInput.trim(), DEBOUNCE_MS);
 
-  const compartment: FilterCompartment | "" = urlComp && (COMPARTMENT_OPTIONS as string[]).includes(urlComp) ? urlComp : "";
+  const compartment: FilterCompartment | "" =
+    urlComp && (COMPARTMENT_OPTIONS as string[]).includes(urlComp)
+      ? urlComp
+      : "";
   const subcategory = urlSub;
   const { selected: classSelected, allClasses } = parseClassFilter(urlClassRaw);
 
-  const writeUrlReplace = (next: { q?: string; comp?: FilterCompartment | ""; sub?: string; classFilter?: string }) => {
+  const writeUrlReplace = (next: {
+    q?: string;
+    comp?: FilterCompartment | "";
+    sub?: string;
+    classFilter?: string;
+  }) => {
     const out = new URLSearchParams();
     if (next.q && next.q.length > 0) out.set("q", next.q);
     if (next.comp) out.set("comp", next.comp);
@@ -101,34 +122,67 @@ function ItemsPageContent() {
   useEffect(() => {
     if (debounced.length >= MIN_QUERY_LENGTH) {
       if (debounced !== urlQ) {
-        writeUrlReplace({ q: debounced, comp: compartment, sub: subcategory, classFilter: serializeClassFilter(classSelected, allClasses) });
+        writeUrlReplace({
+          q: debounced,
+          comp: compartment,
+          sub: subcategory,
+          classFilter: serializeClassFilter(classSelected, allClasses),
+        });
       }
     } else if (urlQ !== "" && debounced.length === 0) {
-      writeUrlReplace({ q: "", comp: compartment, sub: subcategory, classFilter: serializeClassFilter(classSelected, allClasses) });
+      writeUrlReplace({
+        q: "",
+        comp: compartment,
+        sub: subcategory,
+        classFilter: serializeClassFilter(classSelected, allClasses),
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debounced]);
 
   const onCompartmentChange = (raw: string) => {
     const next = raw === ANY_VALUE ? "" : (raw as FilterCompartment);
-    writeUrlReplace({ q: urlQ, comp: next, sub: "", classFilter: next === "equipment" ? serializeClassFilter(classSelected, allClasses) : "" });
+    writeUrlReplace({
+      q: urlQ,
+      comp: next,
+      sub: "",
+      classFilter:
+        next === "equipment"
+          ? serializeClassFilter(classSelected, allClasses)
+          : "",
+    });
   };
 
   const onSubcategoryChange = (raw: string) => {
     const next = raw === ANY_VALUE ? "" : raw;
-    writeUrlReplace({ q: urlQ, comp: compartment, sub: next, classFilter: serializeClassFilter(classSelected, allClasses) });
+    writeUrlReplace({
+      q: urlQ,
+      comp: compartment,
+      sub: next,
+      classFilter: serializeClassFilter(classSelected, allClasses),
+    });
   };
 
   const onToggleClass = (klass: ClassOption) => {
     const next = new Set(classSelected);
     if (next.has(klass)) next.delete(klass);
     else next.add(klass);
-    writeUrlReplace({ q: urlQ, comp: compartment, sub: subcategory, classFilter: serializeClassFilter(next, false) });
+    writeUrlReplace({
+      q: urlQ,
+      comp: compartment,
+      sub: subcategory,
+      classFilter: serializeClassFilter(next, false),
+    });
   };
 
   const onToggleAllClasses = () => {
     const next = !allClasses;
-    writeUrlReplace({ q: urlQ, comp: compartment, sub: subcategory, classFilter: next ? "any" : "" });
+    writeUrlReplace({
+      q: urlQ,
+      comp: compartment,
+      sub: subcategory,
+      classFilter: next ? "any" : "",
+    });
   };
 
   const filters: ItemSearchFilters = useMemo(() => {
@@ -141,15 +195,19 @@ function ItemsPageContent() {
     return out;
   }, [urlQ, compartment, subcategory, allClasses, classSelected, pageNumber]);
 
-  const queryEnabled = !!activeTenant && (
-    urlQ.length === 0 ||
-    urlQ.length >= MIN_QUERY_LENGTH ||
-    !!compartment || !!subcategory || allClasses || classSelected.size > 0
-  );
+  const queryEnabled =
+    !!activeTenant &&
+    (urlQ.length === 0 ||
+      urlQ.length >= MIN_QUERY_LENGTH ||
+      !!compartment ||
+      !!subcategory ||
+      allClasses ||
+      classSelected.size > 0);
 
   const itemsQuery = useQuery<ItemSearchPage, Error>({
     queryKey: [
-      "items", "search",
+      "items",
+      "search",
       activeTenant?.id ?? "no-tenant",
       urlQ,
       compartment,
@@ -170,21 +228,38 @@ function ItemsPageContent() {
     },
   });
 
-  const pageData = itemsQuery.data ?? { items: [], total: 0, pageNumber, pageSize: PAGE_SIZE, lastPage: 1 };
+  const pageData = itemsQuery.data ?? {
+    items: [],
+    total: 0,
+    pageNumber,
+    pageSize: PAGE_SIZE,
+    lastPage: 1,
+  };
   const items = pageData.items;
   const fetching = itemsQuery.isFetching;
   const showResults = queryEnabled;
 
-  const firstRow = pageData.total === 0 ? 0 : (pageData.pageNumber - 1) * pageData.pageSize + 1;
-  const lastRow = Math.min(pageData.pageNumber * pageData.pageSize, pageData.total);
-  const statusCopy = pageData.total === 0 ? "No results." : `Showing ${firstRow}–${lastRow} of ${pageData.total} results.`;
+  const firstRow =
+    pageData.total === 0
+      ? 0
+      : (pageData.pageNumber - 1) * pageData.pageSize + 1;
+  const lastRow = Math.min(
+    pageData.pageNumber * pageData.pageSize,
+    pageData.total,
+  );
+  const statusCopy =
+    pageData.total === 0
+      ? "No results."
+      : `Showing ${firstRow}–${lastRow} of ${pageData.total} results.`;
 
   const handleClear = () => {
     setSearchInput("");
     writeUrlReplace({ q: "", comp: "", sub: "", classFilter: "" });
   };
 
-  const subcategoryOptions = compartment ? COMPARTMENT_TAXONOMY[compartment] : [];
+  const subcategoryOptions = compartment
+    ? COMPARTMENT_TAXONOMY[compartment]
+    : [];
 
   return (
     <div className="flex flex-col flex-1 min-h-0 space-y-6 p-10 pb-16">
@@ -197,7 +272,8 @@ function ItemsPageContent() {
         <CardHeader>
           <CardTitle>Search Items</CardTitle>
           <CardDescription>
-            Search by ID or name, or filter by compartment, subcategory, and equipment class. {statusCopy}
+            Search by ID or name, or filter by compartment, subcategory, and
+            equipment class. {statusCopy}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -221,14 +297,19 @@ function ItemsPageContent() {
           <div className="flex flex-wrap gap-3 items-center">
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Compartment</span>
-              <Select value={compartment || ANY_VALUE} onValueChange={onCompartmentChange}>
+              <Select
+                value={compartment || ANY_VALUE}
+                onValueChange={onCompartmentChange}
+              >
                 <SelectTrigger className="w-[180px]" aria-label="Compartment">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={ANY_VALUE}>Any</SelectItem>
                   {COMPARTMENT_OPTIONS.map((c) => (
-                    <SelectItem key={c} value={c}>{COMPARTMENT_LABELS[c]}</SelectItem>
+                    <SelectItem key={c} value={c}>
+                      {COMPARTMENT_LABELS[c]}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -236,15 +317,22 @@ function ItemsPageContent() {
 
             {compartment && (
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Subcategory</span>
-                <Select value={subcategory || ANY_VALUE} onValueChange={onSubcategoryChange}>
+                <span className="text-sm text-muted-foreground">
+                  Subcategory
+                </span>
+                <Select
+                  value={subcategory || ANY_VALUE}
+                  onValueChange={onSubcategoryChange}
+                >
                   <SelectTrigger className="w-[200px]" aria-label="Subcategory">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value={ANY_VALUE}>Any</SelectItem>
                     {subcategoryOptions.map((sub) => (
-                      <SelectItem key={sub} value={sub}>{subcategoryLabel(sub)}</SelectItem>
+                      <SelectItem key={sub} value={sub}>
+                        {subcategoryLabel(sub)}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -258,7 +346,11 @@ function ItemsPageContent() {
                     key={klass}
                     type="button"
                     size="sm"
-                    variant={classSelected.has(klass) && !allClasses ? "default" : "outline"}
+                    variant={
+                      classSelected.has(klass) && !allClasses
+                        ? "default"
+                        : "outline"
+                    }
                     disabled={allClasses}
                     onClick={() => onToggleClass(klass)}
                     aria-pressed={classSelected.has(klass) && !allClasses}
@@ -296,7 +388,9 @@ function ItemsPageContent() {
           <CardContent className="flex-1 min-h-0 flex flex-col">
             {items.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                {fetching ? "Loading…" : "No items found matching your search criteria."}
+                {fetching
+                  ? "Loading…"
+                  : "No items found matching your search criteria."}
               </div>
             ) : (
               <div className="rounded-md border flex-1 min-h-0 overflow-auto">
@@ -311,14 +405,16 @@ function ItemsPageContent() {
                   </TableHeader>
                   <TableBody>
                     {items.map((item) => {
-                      const iconUrl = activeTenant ? getAssetIconUrl(
-                        activeTenant.id,
-                        activeTenant.attributes.region,
-                        activeTenant.attributes.majorVersion,
-                        activeTenant.attributes.minorVersion,
-                        'item',
-                        parseInt(item.id),
-                      ) : '';
+                      const iconUrl = activeTenant
+                        ? getAssetIconUrl(
+                            activeTenant.id,
+                            activeTenant.attributes.region,
+                            activeTenant.attributes.majorVersion,
+                            activeTenant.attributes.minorVersion,
+                            "item",
+                            parseInt(item.id),
+                          )
+                        : "";
                       return (
                         <TableRow key={item.id}>
                           <TableCell>
@@ -339,7 +435,9 @@ function ItemsPageContent() {
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Link to={`/items/${item.id}`}>
-                                    <Badge variant="secondary">{item.name}</Badge>
+                                    <Badge variant="secondary">
+                                      {item.name}
+                                    </Badge>
                                   </Link>
                                 </TooltipTrigger>
                                 <TooltipContent copyable>
@@ -349,13 +447,20 @@ function ItemsPageContent() {
                             </TooltipProvider>
                           </TableCell>
                           <TableCell>
-                            <Badge variant="secondary" className={getCompartmentBadgeVariant(item.compartment)}>
+                            <Badge
+                              variant="secondary"
+                              className={getCompartmentBadgeVariant(
+                                item.compartment,
+                              )}
+                            >
                               {COMPARTMENT_LABELS[item.compartment]}
                             </Badge>
                           </TableCell>
                           <TableCell>
                             <Badge variant="secondary">
-                              {item.subcategory ? subcategoryLabel(item.subcategory) : "—"}
+                              {item.subcategory
+                                ? subcategoryLabel(item.subcategory)
+                                : "—"}
                             </Badge>
                           </TableCell>
                         </TableRow>

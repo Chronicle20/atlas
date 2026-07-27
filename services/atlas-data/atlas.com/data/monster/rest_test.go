@@ -10,10 +10,11 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Server struct {

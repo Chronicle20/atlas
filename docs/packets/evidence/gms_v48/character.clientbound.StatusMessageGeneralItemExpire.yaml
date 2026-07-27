@@ -1,0 +1,8 @@
+packet: character/clientbound/StatusMessageGeneralItemExpire
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_71B887
+    address: "0x71b887"
+    decompile_sha256: 7d5cb8bdbb60f4c997f033baf0dff7544efdca8c6d3a63c68428bb1d353261aa

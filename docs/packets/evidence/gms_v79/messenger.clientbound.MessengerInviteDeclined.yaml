@@ -1,0 +1,10 @@
+packet: messenger/clientbound/MessengerInviteDeclined
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CUIMessenger::OnPacket
+    address: "0x7bc0a5"
+    decompile_sha256: 1c7640520eca38cba685474132ff72482785c812662d2a4a32d5018471ee21b2
+verifies:
+  - libs/atlas-packet/messenger/clientbound/v79_test.go#TestMessengerScalarArmsV79

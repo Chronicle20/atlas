@@ -1,0 +1,10 @@
+packet: tv/clientbound/TvTvSetMessage
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CMapleTVMan::OnSetMessage
+    address: "0x6371c1"
+    decompile_sha256: 46db7044583ff7afb8e9c14ee62da280b32a5519ed57118655567e8c004c2858
+verifies:
+    - libs/atlas-packet/tv/clientbound/set_message_test.go#TestTvSetMessageRoundTripNoReceiver

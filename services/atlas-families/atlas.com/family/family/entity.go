@@ -3,9 +3,10 @@ package family
 import (
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 // Entity represents the GORM-compatible database representation of a family member

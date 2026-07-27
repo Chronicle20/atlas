@@ -1,0 +1,10 @@
+packet: interaction/serverbound/InteractionOperationPersonalStoreAddToBlackList
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: sub_60E20A
+    address: "0x60e20a"
+    decompile_sha256: 310bc6f2d88718a07d3ea0ae8827e428a532c1dca1623d2ee475af841d90df7b
+verifies:
+    - libs/atlas-packet/interaction/serverbound/v61_test.go#TestOperationPersonalStoreAddToBlackListV61Bytes

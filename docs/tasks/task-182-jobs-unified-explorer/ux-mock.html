@@ -1,0 +1,777 @@
+<title>Jobs Page — UX Exploration</title>
+<style>
+  /* ============ Nord theme tokens, replicated from atlas-ui src/index.css ============ */
+  .app {
+    --background: 218 27% 94%;
+    --foreground: 220 16% 22%;
+    --card: 218 27% 94%;
+    --card-foreground: 220 16% 22%;
+    --popover: 218 27% 94%;
+    --popover-foreground: 220 16% 22%;
+    --primary: 220.9 39.3% 11%;
+    --primary-foreground: 210 20% 98%;
+    --secondary: 220 14.3% 95.9%;
+    --secondary-foreground: 220.9 39.3% 11%;
+    --muted: 220 14.3% 95.9%;
+    --muted-foreground: 220 8.9% 46.1%;
+    --accent: 220 14.3% 95.9%;
+    --accent-foreground: 220.9 39.3% 11%;
+    --border: 219 28% 88%;
+    --input: 220 13% 91%;
+    --ring: 220 16% 22%;
+    --radius: 0.5rem;
+    --sidebar-background: 218 27% 92%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 220 16% 28%;
+    --sidebar-primary-foreground: 218 27% 92%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 220 16% 28%;
+    --sidebar-border: 220 13% 91%;
+    /* Branch accents from the Nord aurora/frost palette (darkened for light bg) */
+    --c-warrior: 354 42% 48%;
+    --c-magician: 213 32% 44%;
+    --c-bowman: 92 28% 38%;
+    --c-thief: 311 20% 45%;
+    --c-pirate: 14 51% 46%;
+    --c-cygnus: 40 71% 38%;
+    --c-aran: 193 43% 38%;
+    --c-evan: 179 25% 38%;
+    --c-special: 210 34% 44%;
+    --acc-fg: 210 20% 98%;
+  }
+  .app.dark {
+    --background: 220 16% 22%;
+    --foreground: 210 20% 98%;
+    --card: 220 16% 22%;
+    --card-foreground: 210 20% 98%;
+    --popover: 220 16% 22%;
+    --popover-foreground: 210 20% 98%;
+    --primary: 210 20% 98%;
+    --primary-foreground: 220.9 39.3% 11%;
+    --secondary: 215 27.9% 16.9%;
+    --secondary-foreground: 210 20% 98%;
+    --muted: 215 27.9% 16.9%;
+    --muted-foreground: 217.9 10.6% 64.9%;
+    --accent: 215 27.9% 16.9%;
+    --accent-foreground: 210 20% 98%;
+    --border: 215 27.9% 16.9%;
+    --input: 215 27.9% 16.9%;
+    --ring: 216 12.2% 83.9%;
+    --sidebar-background: 220 16% 28%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    /* Nord originals read well on the dark ground */
+    --c-warrior: 354 42% 56%;
+    --c-magician: 213 32% 63%;
+    --c-bowman: 92 28% 65%;
+    --c-thief: 311 20% 63%;
+    --c-pirate: 14 51% 63%;
+    --c-cygnus: 40 71% 73%;
+    --c-aran: 193 43% 67%;
+    --c-evan: 179 25% 65%;
+    --c-special: 210 34% 63%;
+    --acc-fg: 220 16% 22%;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { overflow: hidden; }
+  .app {
+    display: flex; height: 100vh; overflow: hidden;
+    background: hsl(var(--background)); color: hsl(var(--foreground));
+    font: 14px/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  button { font: inherit; color: inherit; background: none; border: none; padding: 0; cursor: pointer; text-align: left; }
+  input { font: inherit; color: inherit; }
+  svg { flex: none; }
+  :is(button, input, [tabindex]):focus-visible {
+    outline: 2px solid hsl(var(--ring) / .5); outline-offset: 1px; border-radius: 4px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; animation: none !important; }
+  }
+
+  /* ============ sidebar (shadcn Sidebar replica) ============ */
+  .sidebar {
+    width: 16rem; flex: none; display: flex; flex-direction: column;
+    background: hsl(var(--sidebar-background)); color: hsl(var(--sidebar-foreground));
+    border-right: 1px solid hsl(var(--sidebar-border));
+    transition: margin-left .2s ease;
+  }
+  .app.sb-collapsed .sidebar { margin-left: -16rem; }
+  .sb-header { padding: 8px; }
+  .logo-box { height: 210px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; }
+  .logo-mark {
+    width: 96px; height: 96px; border-radius: 24px;
+    background: hsl(var(--sidebar-primary)); color: hsl(var(--sidebar-primary-foreground));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 44px; font-weight: 700; letter-spacing: -0.03em;
+  }
+  .logo-word { font-size: 18px; font-weight: 650; letter-spacing: .12em; text-transform: uppercase; }
+
+  .tenant-switch { position: relative; }
+  .tenant-btn {
+    display: flex; align-items: center; gap: 8px; width: 100%;
+    padding: 8px; border-radius: calc(var(--radius) - 2px);
+    border: 1px solid hsl(var(--sidebar-border)); background: hsl(var(--background));
+  }
+  .tenant-btn:hover { background: hsl(var(--accent)); }
+  .tenant-ico {
+    width: 32px; height: 32px; border-radius: 8px; flex: none;
+    background: hsl(var(--sidebar-primary)); color: hsl(var(--sidebar-primary-foreground));
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tenant-btn .t-name { font-weight: 600; font-size: 13.5px; line-height: 1.2; }
+  .tenant-btn .t-sub { font-size: 11.5px; color: hsl(var(--muted-foreground)); }
+  .tenant-btn .updown { margin-left: auto; color: hsl(var(--muted-foreground)); }
+  .tenant-menu {
+    position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 30;
+    background: hsl(var(--popover)); color: hsl(var(--popover-foreground));
+    border: 1px solid hsl(var(--border)); border-radius: calc(var(--radius) - 2px);
+    box-shadow: 0 4px 12px rgb(0 0 0 / .12); padding: 4px;
+  }
+  .tenant-menu[hidden] { display: none; }
+  .tenant-menu button {
+    display: flex; align-items: center; gap: 8px; width: 100%;
+    padding: 6px 8px; border-radius: 6px; font-size: 13px;
+  }
+  .tenant-menu button:hover { background: hsl(var(--accent)); }
+  .tenant-menu button .chk { margin-left: auto; visibility: hidden; }
+  .tenant-menu button[aria-checked="true"] .chk { visibility: visible; }
+
+  .sb-content { flex: 1; overflow-y: auto; padding: 8px; }
+  .sb-sep { height: 1px; background: hsl(var(--sidebar-border)); margin: 8px 8px; }
+  .sb-group-btn {
+    display: flex; align-items: center; gap: 8px; width: 100%;
+    padding: 8px; border-radius: calc(var(--radius) - 2px); font-size: 14px;
+  }
+  .sb-group-btn:hover { background: hsl(var(--sidebar-accent)); color: hsl(var(--sidebar-accent-foreground)); }
+  .sb-group-btn .grid { display: grid; flex: 1; line-height: 1.25; }
+  .sb-group-btn .cap { font-size: 12px; color: hsl(var(--muted-foreground)); }
+  .sb-group-btn .chev { margin-left: auto; color: hsl(var(--muted-foreground)); transition: transform .15s; }
+  .sb-group[data-open="true"] .sb-group-btn .chev { transform: rotate(90deg); }
+  .sb-sub { display: none; margin: 2px 0 4px 14px; padding: 0 0 0 10px; border-left: 1px solid hsl(var(--sidebar-border)); }
+  .sb-group[data-open="true"] .sb-sub { display: block; }
+  .sb-sub a {
+    display: block; padding: 6px 8px; border-radius: calc(var(--radius) - 2px);
+    font-size: 13.5px; color: inherit; text-decoration: none; cursor: pointer;
+  }
+  .sb-sub a:hover { background: hsl(var(--sidebar-accent)); color: hsl(var(--sidebar-accent-foreground)); }
+  .sb-sub a.active { background: hsl(var(--sidebar-accent)); color: hsl(var(--sidebar-accent-foreground)); font-weight: 500; }
+
+  /* ============ main / header (AppShell replica) ============ */
+  .main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; padding-top: 8px; }
+  .topbar { height: 48px; flex: none; display: flex; align-items: center; gap: 8px; padding: 0 8px; }
+  .icon-btn {
+    width: 28px; height: 28px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    color: hsl(var(--foreground));
+  }
+  .icon-btn:hover { background: hsl(var(--accent)); }
+  .topbar .vsep { width: 1px; height: 16px; background: hsl(var(--border)); margin-right: 8px; }
+  .crumbs { font-size: 14px; color: hsl(var(--foreground)); }
+  .topbar .right { margin-left: auto; }
+  .content-outer { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0 8px 8px; }
+  .content {
+    flex: 1; min-height: 0; display: flex; flex-direction: column;
+    border-radius: 12px; background: hsl(var(--sidebar-background)); overflow: hidden;
+  }
+
+  /* ============ Jobs page ============ */
+  .page { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 16px; padding: 28px 40px 24px; }
+  .page-head { display: flex; align-items: baseline; gap: 8px; flex: none; }
+  .page-head h2 { font-size: 24px; font-weight: 700; letter-spacing: -0.025em; margin: 0; display: flex; align-items: center; gap: 8px; }
+  .page-head .note { font-size: 12px; color: hsl(var(--muted-foreground)); margin-left: 10px; }
+
+  .card {
+    background: hsl(var(--card)); color: hsl(var(--card-foreground));
+    border: 1px solid hsl(var(--border)); border-radius: 12px;
+    box-shadow: 0 1px 2px rgb(0 0 0 / .05);
+    display: flex; flex-direction: column; min-height: 0;
+  }
+  .card-title {
+    font-size: 15px; font-weight: 600; letter-spacing: -0.01em;
+    padding: 14px 16px 10px; flex: none;
+  }
+
+  .explorer {
+    flex: 1; min-height: 0;
+    display: grid; grid-template-columns: 200px minmax(340px, 1fr) minmax(480px, 42%); gap: 14px;
+  }
+  @media (max-width: 1150px) { .explorer { grid-template-columns: 200px minmax(0, 1fr); } .detail-card { display: none; } }
+
+  /* --- branches rail --- */
+  .rail-scroll { overflow-y: auto; padding: 0 8px 10px; }
+  .rail-group h3 {
+    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em;
+    color: hsl(var(--muted-foreground)); margin: 10px 8px 4px;
+  }
+  .rail-item {
+    display: flex; align-items: center; gap: 9px; width: 100%;
+    padding: 6px 8px; border-radius: calc(var(--radius) - 2px); font-size: 13.5px;
+  }
+  .rail-item:hover { background: hsl(var(--accent)); }
+  .rail-item[aria-pressed="true"] { background: hsl(var(--acc) / .14); font-weight: 550; }
+  .rail-item .dot { width: 9px; height: 9px; border-radius: 3px; background: hsl(var(--acc)); flex: none; }
+  .rail-item .n { margin-left: auto; font-size: 11.5px; color: hsl(var(--muted-foreground)); font-variant-numeric: tabular-nums; }
+
+  /* --- middle: advancement + skills --- */
+  .mid-card { display: flex; flex-direction: column; min-height: 0; }
+  .flow-wrap { flex: none; padding: 0 16px 14px; border-bottom: 1px solid hsl(var(--border)); }
+  .flow-scroll { overflow-x: auto; padding-bottom: 2px; }
+  /* Tier-aligned grid: implicit auto columns size to the widest chip per tier,
+     sibling cells stretch to match, so 2nd/3rd/4th jobs line up vertically. */
+  .flowgrid { display: grid; width: max-content; margin: 0 auto; column-gap: 4px; row-gap: 6px; }
+  .fcell { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+  .fcell.anchor { align-self: center; }
+  .fcell:not(.anchor) .chip { flex: 1; justify-content: center; }
+  .sep { color: hsl(var(--muted-foreground) / .55); flex: none; margin: 0 1px; }
+
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    border: 1px solid hsl(var(--border)); border-radius: calc(var(--radius) - 2px);
+    background: hsl(var(--card)); padding: 4px 10px;
+    font-size: 13px; font-weight: 500; white-space: nowrap;
+    transition: border-color .1s, background .1s;
+  }
+  .chip:hover { border-color: hsl(var(--acc)); }
+  .chip.sel { background: hsl(var(--acc)); border-color: hsl(var(--acc)); color: hsl(var(--acc-fg)); font-weight: 550; }
+  .chip .tier {
+    font-size: 10px; font-weight: 600; letter-spacing: .04em;
+    color: hsl(var(--muted-foreground)); background: hsl(var(--secondary));
+    border-radius: 4px; padding: 1px 4px;
+  }
+  .chip.sel .tier { background: hsl(var(--acc-fg) / .22); color: hsl(var(--acc-fg)); }
+
+  .skl { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .skl-head { flex: none; display: flex; align-items: center; gap: 12px; padding: 12px 16px 8px; }
+  .skl-head h4 { font-size: 13px; font-weight: 600; margin: 0; color: hsl(var(--muted-foreground)); }
+  .search {
+    margin-left: auto; display: flex; align-items: center; gap: 7px;
+    border: 1px solid hsl(var(--input)); border-radius: calc(var(--radius) - 2px);
+    background: transparent; padding: 4px 10px; box-shadow: 0 1px 2px rgb(0 0 0 / .05);
+  }
+  .search svg { color: hsl(var(--muted-foreground)); }
+  .search input { border: none; outline: none; background: none; width: 150px; font-size: 13px; }
+  .search input::placeholder { color: hsl(var(--muted-foreground)); }
+  .skl-list { flex: 1; overflow-y: auto; padding: 4px 8px 12px; }
+  .srow {
+    display: flex; align-items: center; gap: 11px; width: 100%;
+    padding: 7px 9px; border-radius: calc(var(--radius) - 2px);
+  }
+  .srow:hover { background: hsl(var(--accent)); }
+  .srow[aria-pressed="true"] { background: hsl(var(--acc) / .13); }
+  .tile {
+    width: 32px; height: 32px; border-radius: 8px; flex: none;
+    display: flex; align-items: center; justify-content: center;
+    background: hsl(var(--acc) / .14); color: hsl(var(--acc));
+  }
+  .srow .nm { font-weight: 550; font-size: 13.5px; }
+  .srow .id { font-family: ui-monospace, "Cascadia Mono", Menlo, monospace; font-size: 11px; color: hsl(var(--muted-foreground)); }
+  .srow .right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .badge {
+    font-size: 11px; font-weight: 600;
+    background: hsl(var(--secondary)); color: hsl(var(--secondary-foreground));
+    border-radius: calc(var(--radius) - 4px); padding: 2px 8px; white-space: nowrap;
+  }
+  .badge.outline { background: transparent; border: 1px solid hsl(var(--border)); color: hsl(var(--muted-foreground)); }
+  .mlv { font-size: 12px; color: hsl(var(--muted-foreground)); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .skl-empty { padding: 34px 20px; text-align: center; color: hsl(var(--muted-foreground)); font-size: 13.5px; }
+
+  /* --- detail card --- */
+  .detail-card { overflow: hidden; }
+  .detail-scroll { flex: 1; overflow-y: auto; }
+  .detail { padding: 4px 16px 18px; }
+  .d-head { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 10px; }
+  .d-head .tile { width: 42px; height: 42px; border-radius: 10px; }
+  .d-head h5 { font-size: 16px; font-weight: 650; margin: 0; letter-spacing: -0.01em; }
+  .d-id { font-family: ui-monospace, "Cascadia Mono", Menlo, monospace; font-size: 11.5px; color: hsl(var(--muted-foreground)); }
+  .d-chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 10px; }
+  .desc { font-size: 13.5px; margin: 0 0 14px; max-width: 60ch; }
+  .lvl-box {
+    border: 1px solid hsl(var(--border)); border-radius: calc(var(--radius));
+    padding: 12px 13px; background: hsl(var(--sidebar-background));
+  }
+  .lvl-box .l-top { display: flex; align-items: baseline; gap: 7px; margin-bottom: 6px; }
+  .lvl-box .l-top b { font-size: 13px; font-weight: 650; }
+  .lvl-box .l-top span { font-size: 12px; color: hsl(var(--muted-foreground)); font-variant-numeric: tabular-nums; }
+  .lvl-box input[type="range"] { width: 100%; accent-color: hsl(var(--acc)); margin: 2px 0 10px; }
+  .statgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; }
+  .statgrid .st { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; }
+  .statgrid .st .k { color: hsl(var(--muted-foreground)); }
+  .statgrid .st .v { font-weight: 550; font-variant-numeric: tabular-nums; }
+  .alltbl { margin-top: 12px; }
+  .alltbl summary {
+    cursor: pointer; font-size: 12.5px; font-weight: 550; color: hsl(var(--muted-foreground));
+    list-style: none; display: flex; align-items: center; gap: 6px;
+  }
+  .alltbl summary::before { content: "▸"; transition: transform .12s; font-size: 11px; }
+  .alltbl[open] summary::before { transform: rotate(90deg); }
+  .tbl-scroll { overflow-x: auto; margin-top: 8px; border: 1px solid hsl(var(--border)); border-radius: calc(var(--radius) - 2px); }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th, td { padding: 5px 11px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  thead th {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .05em; font-weight: 600;
+    color: hsl(var(--muted-foreground)); background: hsl(var(--secondary));
+    border-bottom: 1px solid hsl(var(--border)); position: sticky; top: 0;
+  }
+  tbody tr:nth-child(even) { background: hsl(var(--secondary) / .55); }
+  tbody tr.hl { background: hsl(var(--acc) / .14); }
+  .detail-empty { padding: 56px 24px; text-align: center; color: hsl(var(--muted-foreground)); font-size: 13.5px; }
+  .detail-empty svg { color: hsl(var(--border)); margin-bottom: 10px; }
+</style>
+
+<div class="app" id="app">
+  <!-- ============ sidebar ============ -->
+  <aside class="sidebar">
+    <div class="sb-header">
+      <div class="logo-box">
+        <div class="logo-mark">A</div>
+        <div class="logo-word">Atlas</div>
+      </div>
+      <div class="tenant-switch">
+        <button class="tenant-btn" id="tenantBtn" aria-haspopup="listbox">
+          <span class="tenant-ico">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4M8 6h.01M16 6h.01M12 6h.01M8 10h.01M16 10h.01M12 10h.01M8 14h.01M16 14h.01M12 14h.01"/></svg>
+          </span>
+          <span><span class="t-name" id="tenantName">GMS v87</span><br><span class="t-sub" id="tenantSub">Region GMS · 87.1</span></span>
+          <span class="updown">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5M7 9l5-5 5 5"/></svg>
+          </span>
+        </button>
+        <div class="tenant-menu" id="tenantMenu" hidden role="listbox"></div>
+      </div>
+    </div>
+    <nav class="sb-content" id="sbNav"></nav>
+  </aside>
+
+  <!-- ============ main ============ -->
+  <div class="main">
+    <div class="topbar">
+      <button class="icon-btn" id="sbToggle" aria-label="Toggle sidebar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>
+      </button>
+      <span class="vsep"></span>
+      <span class="crumbs">Jobs</span>
+      <span class="right">
+        <button class="icon-btn" id="themeToggle" aria-label="Toggle theme">
+          <svg id="sunIco" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32 1.41-1.41"/></svg>
+          <svg id="moonIco" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        </button>
+      </span>
+    </div>
+    <div class="content-outer">
+      <div class="content">
+        <div class="page">
+          <div class="page-head">
+            <h2>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M16 6V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+              Jobs
+            </h2>
+            <span class="note">Mock — skill numbers illustrative; Warrior line + Magician populated</span>
+          </div>
+          <div class="explorer">
+            <div class="card">
+              <div class="card-title">Branches</div>
+              <div class="rail-scroll" id="rail"></div>
+            </div>
+            <div class="card mid-card">
+              <div class="card-title">Advancement</div>
+              <div class="flow-wrap"><div class="flow-scroll"><div id="flow"></div></div></div>
+              <div class="skl">
+                <div class="skl-head">
+                  <h4 id="sklTitle">Skills</h4>
+                  <div class="search">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                    <input id="search" type="search" placeholder="Filter skills…" aria-label="Filter skills">
+                  </div>
+                </div>
+                <div class="skl-list" id="sklList"></div>
+              </div>
+            </div>
+            <div class="card detail-card">
+              <div class="card-title">Skill Detail</div>
+              <div class="detail-scroll" id="detail"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============ data (graph from job-advancement-tree.ts; GM line reparented per in-game presentation) ============ */
+const JOB_GRAPH = {
+  0:{name:"Beginner",parent:null},
+  100:{name:"Warrior",parent:0},110:{name:"Fighter",parent:100},111:{name:"Crusader",parent:110},112:{name:"Hero",parent:111},
+  120:{name:"Page",parent:100},121:{name:"White Knight",parent:120},122:{name:"Paladin",parent:121},
+  130:{name:"Spearman",parent:100},131:{name:"Dragon Knight",parent:130},132:{name:"Dark Knight",parent:131},
+  200:{name:"Magician",parent:0},210:{name:"Wizard (F/P)",parent:200},211:{name:"Mage (F/P)",parent:210},212:{name:"Arch Mage (F/P)",parent:211},
+  220:{name:"Wizard (I/L)",parent:200},221:{name:"Mage (I/L)",parent:220},222:{name:"Arch Mage (I/L)",parent:221},
+  230:{name:"Cleric",parent:200},231:{name:"Priest",parent:230},232:{name:"Bishop",parent:231},
+  300:{name:"Bowman",parent:0},310:{name:"Hunter",parent:300},311:{name:"Ranger",parent:310},312:{name:"Bowmaster",parent:311},
+  320:{name:"Crossbowman",parent:300},321:{name:"Sniper",parent:320},322:{name:"Marksman",parent:321},
+  400:{name:"Rogue",parent:0},410:{name:"Assassin",parent:400},411:{name:"Hermit",parent:410},412:{name:"Night Lord",parent:411},
+  420:{name:"Bandit",parent:400},421:{name:"Chief Bandit",parent:420},422:{name:"Shadower",parent:421},
+  500:{name:"Pirate",parent:0},510:{name:"Brawler",parent:500},511:{name:"Marauder",parent:510},512:{name:"Buccaneer",parent:511},
+  520:{name:"Gunslinger",parent:500},521:{name:"Outlaw",parent:520},522:{name:"Corsair",parent:521},
+  800:{name:"Maple Leaf Brigadier",parent:null},
+  /* In-game, GM and Super GM present as an advancement line from Beginner */
+  900:{name:"GM",parent:0},910:{name:"Super GM",parent:900},
+  1000:{name:"Noblesse",parent:null},
+  1100:{name:"Dawn Warrior 1",parent:1000},1110:{name:"Dawn Warrior 2",parent:1100},1111:{name:"Dawn Warrior 3",parent:1110},1112:{name:"Dawn Warrior 4",parent:1111},
+  1200:{name:"Blaze Wizard 1",parent:1000},1210:{name:"Blaze Wizard 2",parent:1200},1211:{name:"Blaze Wizard 3",parent:1210},1212:{name:"Blaze Wizard 4",parent:1211},
+  1300:{name:"Wind Archer 1",parent:1000},1310:{name:"Wind Archer 2",parent:1300},1311:{name:"Wind Archer 3",parent:1310},1312:{name:"Wind Archer 4",parent:1311},
+  1400:{name:"Night Walker 1",parent:1000},1410:{name:"Night Walker 2",parent:1400},1411:{name:"Night Walker 3",parent:1410},1412:{name:"Night Walker 4",parent:1411},
+  1500:{name:"Thunder Breaker 1",parent:1000},1510:{name:"Thunder Breaker 2",parent:1500},1511:{name:"Thunder Breaker 3",parent:1510},1512:{name:"Thunder Breaker 4",parent:1511},
+  2000:{name:"Legend",parent:null},2100:{name:"Aran 1",parent:2000},2110:{name:"Aran 2",parent:2100},2111:{name:"Aran 3",parent:2110},2112:{name:"Aran 4",parent:2111},
+  2001:{name:"Evan",parent:null},2200:{name:"Evan 1",parent:2001},2210:{name:"Evan 2",parent:2200},2211:{name:"Evan 3",parent:2210},2212:{name:"Evan 4",parent:2211},
+  2213:{name:"Evan 5",parent:2212},2214:{name:"Evan 6",parent:2213},2215:{name:"Evan 7",parent:2214},2216:{name:"Evan 8",parent:2215},
+  2217:{name:"Evan 9",parent:2216},2218:{name:"Evan 10",parent:2217},
+};
+const BRANCH_FLOORS = {0:1, 800:83, 1000:83, 2000:80, 2001:84};
+const NODE_FLOORS = {500:62};
+
+function childrenOf(id){
+  return Object.keys(JOB_GRAPH).map(Number).filter(k => JOB_GRAPH[k].parent === id).sort((a,b)=>a-b);
+}
+function floorOf(id){
+  let cur = id, floor = 0;
+  while (cur != null && JOB_GRAPH[cur]) {
+    if (NODE_FLOORS[cur] !== undefined && NODE_FLOORS[cur] > floor) floor = NODE_FLOORS[cur];
+    const p = JOB_GRAPH[cur].parent;
+    if (p == null) { const rf = BRANCH_FLOORS[cur] ?? 0; if (rf > floor) floor = rf; break; }
+    cur = p;
+  }
+  return floor;
+}
+function pathOf(id){
+  const p = []; let cur = id;
+  while (cur != null && JOB_GRAPH[cur]) { p.unshift(cur); cur = JOB_GRAPH[cur].parent; }
+  return p;
+}
+function chainsFrom(id){
+  const kids = childrenOf(id);
+  if (!kids.length) return [[]];
+  const out = [];
+  for (const k of kids) for (const rest of chainsFrom(k)) out.push([k, ...rest]);
+  return out;
+}
+function ord(n){ return n + (n===1?"st":n===2?"nd":n===3?"rd":"th"); }
+function nodeCount(id){ return 1 + childrenOf(id).reduce((n,k)=>n+nodeCount(k),0); }
+
+/* Rail entries: the node whose advancement flow is shown. */
+const RAIL_GROUPS = [
+  {label:"Explorers", entries:[
+    {id:100, acc:"--c-warrior"},
+    {id:200, acc:"--c-magician"},
+    {id:300, acc:"--c-bowman"},
+    {id:400, acc:"--c-thief"},
+    {id:500, acc:"--c-pirate"},
+  ]},
+  {label:"Cygnus Knights", entries:[{id:1000, acc:"--c-cygnus"}]},
+  {label:"Legends", entries:[
+    {id:2000, acc:"--c-aran"},
+    {id:2001, acc:"--c-evan"},
+  ]},
+  {label:"Special", entries:[
+    {id:800, acc:"--c-special"},
+    {id:900, acc:"--c-special"},
+  ]},
+];
+function branchEntryOf(jobId){
+  const path = pathOf(jobId);
+  for (const g of RAIL_GROUPS) for (const e of g.entries) if (path.includes(e.id)) return e;
+  return RAIL_GROUPS[0].entries[0];
+}
+
+/* ============ sample skills (names/IDs from atlas-constants/skill/constants.go; numbers illustrative) ============ */
+const lin = (base, step) => l => base + step * l;
+const SKILLS = {
+  0: [
+    {id:1000,name:"Three Snails",type:"active",master:3,desc:"Hurls snail shells to attack a monster from a distance.",stats:[["HP Cost",lin(2,1)],["Fixed Damage",lin(5,15)]]},
+    {id:1001,name:"Recovery",type:"buff",master:3,desc:"Recovers HP continuously for a short duration.",stats:[["HP Recovery",lin(8,8)],["Duration (s)",()=>30]]},
+    {id:1002,name:"Nimble Feet",type:"buff",master:3,desc:"Temporarily increases movement speed.",stats:[["Speed",lin(2,4)],["Duration (s)",lin(0,4)]]},
+    {id:1004,name:"Monster Riding",type:"passive",master:1,desc:"Enables riding a tamed mount.",stats:[]},
+    {id:1005,name:"Echo of Hero",type:"buff",master:1,desc:"Increases weapon and magic attack of all nearby party members.",stats:[["Weapon Atk %",()=>4],["Duration (min)",()=>40]]},
+  ],
+  100: [
+    {id:1000000,name:"Improved HP Recovery",type:"passive",master:16,desc:"Recovers additional HP every 10 seconds while standing or sitting.",stats:[["HP Recovery",lin(3,3)]]},
+    {id:1000001,name:"Improved Max HP Increase",type:"passive",master:10,desc:"Increases the amount of Max HP gained on level-up and on AP invested into HP.",stats:[["HP per Level",lin(0,2)]]},
+    {id:1000002,name:"Endure",type:"passive",master:8,desc:"Recovers HP while hanging on a rope or ladder.",stats:[["Recovery Interval (s)",l=>Math.max(4, 12 - l)]]},
+    {id:1001003,name:"Iron Body",type:"buff",master:20,desc:"Temporarily increases weapon defense.",stats:[["MP Cost",lin(6,1)],["Weapon Def",lin(2,2)],["Duration (s)",lin(10,10)]]},
+    {id:1001004,name:"Power Strike",type:"active",master:20,desc:"Strikes a single enemy with a concentrated, powerful blow.",stats:[["MP Cost",l=>4+Math.floor(l/4)],["Damage %",lin(105,8)]]},
+    {id:1001005,name:"Slash Blast",type:"active",master:20,desc:"Slashes every enemy around you in one swing.",stats:[["MP Cost",l=>7+Math.floor(l/3)],["Damage %",lin(55,3)],["Mob Count",()=>6]]},
+  ],
+  110: [
+    {id:1100000,name:"Sword Mastery",type:"passive",master:20,desc:"Increases sword mastery and accuracy.",stats:[["Mastery %",l=>10+Math.floor(l/2)*5],["Accuracy",lin(0,1)]]},
+    {id:1100001,name:"Axe Mastery",type:"passive",master:20,desc:"Increases axe mastery and accuracy.",stats:[["Mastery %",l=>10+Math.floor(l/2)*5],["Accuracy",lin(0,1)]]},
+    {id:1100002,name:"Final Attack: Sword",type:"passive",master:30,desc:"Grants a chance to trigger an additional attack after a sword attack.",stats:[["Chance %",lin(2,2)],["Damage %",lin(100,5)]]},
+    {id:1101004,name:"Sword Booster",type:"buff",master:20,desc:"Increases sword attack speed for a duration.",stats:[["HP Cost",l=>Math.max(10, 60-2*l)],["MP Cost",l=>Math.max(10, 60-2*l)],["Duration (s)",lin(0,10)]]},
+    {id:1101006,name:"Rage",type:"buff",master:20,desc:"Increases weapon attack of all nearby party members, at the cost of some weapon defense.",stats:[["MP Cost",lin(8,1)],["Weapon Atk",lin(1,0.5)],["Weapon Def",l=>-Math.ceil(l/2)],["Duration (s)",lin(10,10)]]},
+    {id:1101007,name:"Power Guard",type:"buff",master:30,desc:"Returns a portion of received touch damage back to the enemy.",stats:[["MP Cost",lin(10,1)],["Reflect %",l=>10+Math.floor(l/2)],["Duration (s)",lin(20,10)]]},
+  ],
+  111: [
+    {id:1110000,name:"Improving MP Recovery",type:"passive",master:20,desc:"Recovers additional MP every 10 seconds.",stats:[["MP Recovery",lin(2,2)]]},
+    {id:1110001,name:"Shield Mastery",type:"passive",master:20,desc:"Increases weapon and magic defense granted by an equipped shield.",stats:[["Shield Def %",lin(100,5)]]},
+    {id:1111002,name:"Combo Attack",type:"buff",master:30,desc:"Charges combo orbs on successful attacks; orbs empower combo skills.",stats:[["MP Cost",lin(10,1)],["Max Orbs",l=>l<15?4:5],["Damage per Orb %",lin(3,0.5)]]},
+    {id:1111005,name:"Coma: Sword",type:"active",master:30,desc:"Consumes combo orbs to stun and damage multiple enemies.",stats:[["MP Cost",lin(14,1)],["Damage %",lin(250,10)],["Stun (s)",l=>1+Math.floor(l/10)]]},
+    {id:1111007,name:"Armor Crash",type:"active",master:20,desc:"Chance to cancel the weapon-defense buff of enemies.",stats:[["MP Cost",lin(12,1)],["Chance %",lin(30,2)]]},
+    {id:1111008,name:"Shout",type:"active",master:30,desc:"A battle cry that damages and stuns surrounding enemies.",stats:[["MP Cost",lin(10,1)],["Damage %",lin(80,4)],["Mob Count",()=>8]]},
+  ],
+  112: [
+    {id:1121000,name:"Maple Warrior",type:"buff",master:30,desc:"Increases the base stats of all party members.",stats:[["MP Cost",lin(20,2)],["All Stats %",l=>Math.ceil(l/2)],["Duration (s)",lin(30,30)]]},
+    {id:1121001,name:"Monster Magnet",type:"active",master:30,desc:"Pulls distant enemies toward you.",stats:[["MP Cost",lin(15,1)],["Mob Count",l=>1+Math.floor(l/10)]]},
+    {id:1121002,name:"Power Stance",type:"passive",master:30,desc:"Grants a chance to resist knock-back from enemy attacks.",stats:[["Chance %",lin(30,2)]]},
+    {id:1120003,name:"Advanced Combo Attack",type:"passive",master:30,desc:"Upgrades Combo Attack: more orbs, higher damage, and a chance to charge two orbs at once.",stats:[["Max Orbs",l=>5+Math.ceil(l/6)],["Double-Charge %",lin(30,2)]]},
+    {id:1120004,name:"Achilles",type:"passive",master:30,desc:"Reduces all damage taken.",stats:[["Damage Taken %",l=>100-Math.floor(l/2)]]},
+    {id:1121006,name:"Rush",type:"active",master:30,desc:"Charges forward, shoving a crowd of enemies ahead of you.",stats:[["MP Cost",lin(20,1)],["Damage %",lin(100,5)],["Mob Count",()=>10]]},
+    {id:1121008,name:"Brandish",type:"active",master:30,desc:"Two fast slashes that hit multiple enemies in front of you.",stats:[["MP Cost",lin(18,1)],["Damage %",lin(150,6)],["Attack Count",()=>2],["Mob Count",()=>3]]},
+    {id:1121010,name:"Enrage",type:"buff",master:30,desc:"Consumes combo orbs to greatly increase single-target damage.",stats:[["MP Cost",lin(25,1)],["Weapon Atk",lin(5,1)],["Duration (s)",lin(30,10)]]},
+    {id:1121011,name:"Hero's Will",type:"active",master:5,desc:"Cures yourself of the Seduce status.",stats:[["MP Cost",l=>Math.max(20, 35-3*l)],["Cooldown (min)",l=>11-l]]},
+  ],
+  200: [
+    {id:2000000,name:"Improved MP Recovery",type:"passive",master:16,desc:"Recovers additional MP every 10 seconds.",stats:[["MP Recovery",lin(2,2)]]},
+    {id:2000001,name:"Improved Max MP Increase",type:"passive",master:10,desc:"Increases the amount of Max MP gained on level-up and on AP invested into MP.",stats:[["MP per Level",lin(0,2)]]},
+    {id:2001002,name:"Magic Guard",type:"buff",master:20,desc:"Redirects a portion of damage taken from HP to MP.",stats:[["MP Cost",lin(6,1)],["Redirect %",lin(20,3)],["Duration (s)",lin(60,30)]]},
+    {id:2001003,name:"Magic Armor",type:"buff",master:20,desc:"Temporarily increases weapon defense with a magical shell.",stats:[["MP Cost",lin(8,1)],["Weapon Def",lin(2,2)],["Duration (s)",lin(30,15)]]},
+    {id:2001004,name:"Energy Bolt",type:"active",master:20,desc:"Fires a condensed bolt of magical energy at a single enemy.",stats:[["MP Cost",lin(6,1)],["Magic Damage",lin(10,4)]]},
+    {id:2001005,name:"Magic Claw",type:"active",master:20,desc:"Slashes an enemy twice with magical claws.",stats:[["MP Cost",lin(8,1)],["Magic Damage",lin(10,3)],["Attack Count",()=>2]]},
+  ],
+};
+
+/* ============ sidebar chrome (structure from app-sidebar-items.ts) ============ */
+const SIDEBAR_ITEMS = [
+  {title:"Operations", icon:"cog", open:true, children:["Accounts","Characters","Guilds","NPCs","Quests","Monsters","Items","Jobs","Merchants","Marketplace","Maps","Reactors","Reward Pools"]},
+  {title:"Security", icon:"shield", children:["Bans","Login History"]},
+  {title:"Setup", icon:"wrench", children:["Setup"]},
+  {title:"Deployment", icon:"monitor", separated:true, caption:"Applies to all tenants", children:["Templates","Tenants","Services","Baselines"]},
+];
+const NAV_ICONS = {
+  cog: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M4.9 4.9l2.1 2.1m10 10 2.1 2.1M2 12h3m14 0h3M4.9 19.1l2.1-2.1m10-10 2.1-2.1"/></svg>',
+  shield: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>',
+  wrench: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
+  monitor: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>',
+};
+function renderSidebar(){
+  document.getElementById("sbNav").innerHTML = SIDEBAR_ITEMS.map(g => `
+    ${g.separated ? '<div class="sb-sep"></div>' : ""}
+    <div class="sb-group" data-open="${!!g.open}">
+      <button class="sb-group-btn">
+        ${NAV_ICONS[g.icon]}
+        <span class="grid"><span>${g.title}</span>${g.caption ? `<span class="cap">${g.caption}</span>` : ""}</span>
+        <span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>
+      </button>
+      <div class="sb-sub">
+        ${g.children.map(c => `<a class="${c === "Jobs" ? "active" : ""}">${c}</a>`).join("")}
+      </div>
+    </div>`).join("");
+  document.querySelectorAll(".sb-group-btn").forEach(b => b.addEventListener("click", () => {
+    const g = b.closest(".sb-group");
+    g.dataset.open = g.dataset.open === "true" ? "false" : "true";
+  }));
+}
+
+/* ============ tenant switcher (drives version gating like the real page) ============ */
+const TENANTS = [
+  {name:"GMS v12", sub:"Region GMS · 12.1", ver:12},
+  {name:"GMS v62", sub:"Region GMS · 62.1", ver:62},
+  {name:"GMS v83", sub:"Region GMS · 83.1", ver:83},
+  {name:"GMS v87", sub:"Region GMS · 87.1", ver:87},
+];
+let tenant = TENANTS[3];
+const tenantBtn = document.getElementById("tenantBtn");
+const tenantMenu = document.getElementById("tenantMenu");
+function renderTenantMenu(){
+  tenantMenu.innerHTML = TENANTS.map((t,i) => `
+    <button role="option" data-i="${i}" aria-checked="${t === tenant}">
+      <span>${t.name}</span>
+      <span class="chk"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+    </button>`).join("");
+  tenantMenu.querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
+    tenant = TENANTS[Number(b.dataset.i)];
+    document.getElementById("tenantName").textContent = tenant.name;
+    document.getElementById("tenantSub").textContent = tenant.sub;
+    tenantMenu.hidden = true;
+    if (floorOf(S.entry.id) > tenant.ver) { S.entry = RAIL_GROUPS[0].entries[0]; S.job = S.entry.id; S.skill = null; }
+    if (floorOf(S.job) > tenant.ver) { S.job = S.entry.id; S.skill = null; }
+    renderTenantMenu(); render();
+  }));
+}
+tenantBtn.addEventListener("click", () => { tenantMenu.hidden = !tenantMenu.hidden; });
+document.addEventListener("click", ev => {
+  if (!ev.target.closest(".tenant-switch")) tenantMenu.hidden = true;
+});
+
+/* ============ explorer state + rendering ============ */
+const S = { entry: RAIL_GROUPS[0].entries[0], job: 100, skill: null, filter: "", levelState: {level: 1} };
+const ICONS = {
+  active: '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M9 1 3 9.5h3.6L6 15l6.5-8.5H8.6z"/></svg>',
+  passive: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="8" cy="8" r="5.4"/><circle cx="8" cy="8" r="1.6" fill="currentColor" stroke="none"/></svg>',
+  buff: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V4M4 7.5 8 3.5l4 4"/></svg>',
+};
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt = v => Number.isInteger(v) ? String(v) : v.toFixed(1);
+function tierTag(jobId){
+  const depth = pathOf(jobId).length - 1;
+  if (depth === 0) return childrenOf(jobId).length ? "Base" : "";
+  return ord(depth);
+}
+function accVar(e){ return `var(${e.acc})`; }
+
+function visibleGroups(){
+  return RAIL_GROUPS.map(g => ({label: g.label, entries: g.entries.filter(e => floorOf(e.id) <= tenant.ver)}))
+                    .filter(g => g.entries.length);
+}
+function renderRail(){
+  document.getElementById("rail").innerHTML = visibleGroups().map(g => `
+    <div class="rail-group"><h3>${esc(g.label)}</h3>
+      ${g.entries.map(e => `
+        <button class="rail-item" style="--acc:${accVar(e)}" data-entry="${e.id}" aria-pressed="${S.entry.id===e.id}">
+          <span class="dot"></span>${esc(JOB_GRAPH[e.id].name)}
+          <span class="n">${nodeCount(e.id)}</span>
+        </button>`).join("")}
+    </div>`).join("");
+  document.querySelectorAll("#rail .rail-item").forEach(b => b.addEventListener("click", () => {
+    const id = Number(b.dataset.entry);
+    S.entry = branchEntryOf(id); S.job = id; S.skill = null; S.filter = "";
+    document.getElementById("search").value = "";
+    render();
+  }));
+}
+function chipHtml(jobId, selected){
+  const t = tierTag(jobId);
+  return `<button class="chip${selected ? ' sel' : ''}" data-job="${jobId}">
+    ${esc(JOB_GRAPH[jobId].name)}${t ? `<span class="tier">${t}</span>` : ""}</button>`;
+}
+function renderFlow(){
+  const e = S.entry;
+  const flowEl = document.getElementById("flow");
+  const sep = `<span class="sep">›</span>`;
+  const pre = pathOf(e.id).slice(0, -1);
+  const chains = chainsFrom(e.id).filter(c => c.every(id => floorOf(id) <= tenant.ver));
+  const rows = Math.max(chains.length, 1);
+  let cells = "";
+  /* ancestors + branch root span all rows, vertically centered */
+  pre.forEach((id, i) => {
+    cells += `<div class="fcell anchor" style="grid-column:${i + 1};grid-row:1 / span ${rows}">${i ? sep : ""}${chipHtml(id, S.job === id)}</div>`;
+  });
+  const rootCol = pre.length + 1;
+  cells += `<div class="fcell anchor" style="grid-column:${rootCol};grid-row:1 / span ${rows}">${pre.length ? sep : ""}${chipHtml(e.id, S.job === e.id)}</div>`;
+  /* one row per advancement path; tier k lands in column rootCol+1+k so tiers align */
+  chains.forEach((chain, r) => {
+    chain.forEach((id, k) => {
+      cells += `<div class="fcell" style="grid-column:${rootCol + 1 + k};grid-row:${r + 1}">${sep}${chipHtml(id, S.job === id)}</div>`;
+    });
+  });
+  flowEl.innerHTML = `<div class="flowgrid" style="--acc:${accVar(e)}">${cells}</div>`;
+  flowEl.querySelectorAll("[data-job]").forEach(b => b.addEventListener("click", () => {
+    S.job = Number(b.dataset.job); S.skill = null; render();
+  }));
+}
+function renderSkillList(){
+  const list = document.getElementById("sklList");
+  document.getElementById("sklTitle").textContent = `${JOB_GRAPH[S.job].name} — Skills`;
+  const skills = SKILLS[S.job] ?? null;
+  if (!skills) {
+    list.innerHTML = `<div class="skl-empty">No sample data for this job in the mock.<br>
+      <span style="font-size:12px">The live page loads skills from atlas-data for every job.</span></div>`;
+    return;
+  }
+  const q = S.filter.toLowerCase();
+  const filtered = skills.filter(s => !q || s.name.toLowerCase().includes(q) || String(s.id).includes(q));
+  if (!filtered.length) { list.innerHTML = `<div class="skl-empty">No skills match “${esc(S.filter)}”.</div>`; return; }
+  list.innerHTML = filtered.map(s => `
+    <button class="srow" style="--acc:${accVar(S.entry)}" data-skill="${s.id}" aria-pressed="${S.skill?.id===s.id}">
+      <span class="tile">${ICONS[s.type]}</span>
+      <span><span class="nm">${esc(s.name)}</span><br><span class="id">${s.id}</span></span>
+      <span class="right"><span class="badge">${s.type}</span><span class="mlv">Master ${s.master}</span></span>
+    </button>`).join("");
+  list.querySelectorAll(".srow").forEach(b => b.addEventListener("click", () => {
+    S.skill = skills.find(s => s.id === Number(b.dataset.skill));
+    render();
+  }));
+}
+function renderDetail(){
+  const el = document.getElementById("detail");
+  const skill = S.skill;
+  if (!skill) {
+    el.innerHTML = `<div class="detail-empty">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 3l2.1 4.9L19 9l-4 3.4 1.2 5.1L12 14.8 7.8 17.5 9 12.4 5 9l4.9-1.1z"/></svg>
+      <div>Select a skill to inspect it</div></div>`;
+    return;
+  }
+  const lv = Math.min(S.levelState.level ?? 1, skill.master);
+  S.levelState.level = lv;
+  const rows = skill.stats.map(([label, f]) =>
+    `<div class="st"><span class="k">${esc(label)}</span><span class="v">${fmt(f(lv))}</span></div>`).join("");
+  let tableHtml = "";
+  if (skill.stats.length) {
+    const head = `<tr><th>Level</th>${skill.stats.map(([l]) => `<th>${esc(l)}</th>`).join("")}</tr>`;
+    let body = "";
+    for (let i = 1; i <= skill.master; i++) {
+      body += `<tr class="${i===lv?'hl':''}"><td>${i}</td>${skill.stats.map(([,f]) => `<td>${fmt(f(i))}</td>`).join("")}</tr>`;
+    }
+    tableHtml = `<details class="alltbl" open><summary>All ${skill.master} levels</summary>
+      <div class="tbl-scroll"><table><thead>${head}</thead><tbody>${body}</tbody></table></div></details>`;
+  }
+  el.innerHTML = `<div class="detail" style="--acc:${accVar(S.entry)}">
+    <div class="d-head">
+      <span class="tile">${ICONS[skill.type]}</span>
+      <div><h5>${esc(skill.name)}</h5><span class="d-id">ID ${skill.id}</span></div>
+    </div>
+    <div class="d-chips">
+      <span class="badge">${skill.type}</span>
+      <span class="badge">Master Lv ${skill.master}</span>
+      <span class="badge outline" title="Values in this mock are illustrative">sample values</span>
+    </div>
+    <p class="desc">${esc(skill.desc)}</p>
+    ${skill.stats.length ? `<div class="lvl-box">
+      <div class="l-top"><b>Level ${lv}</b><span>/ ${skill.master}</span></div>
+      <input type="range" min="1" max="${skill.master}" value="${lv}" aria-label="Skill level">
+      <div class="statgrid">${rows}</div>
+    </div>` : `<p class="desc" style="color:hsl(var(--muted-foreground))">No per-level data.</p>`}
+    ${tableHtml}`;
+  const slider = el.querySelector('input[type="range"]');
+  if (slider) slider.addEventListener("input", () => {
+    S.levelState.level = Number(slider.value);
+    renderDetail();
+    el.querySelector('input[type="range"]').focus();
+  });
+}
+function render(){ renderRail(); renderFlow(); renderSkillList(); renderDetail(); }
+document.getElementById("search").addEventListener("input", ev => { S.filter = ev.target.value; renderSkillList(); });
+
+/* ============ chrome behaviors ============ */
+const appEl = document.getElementById("app");
+document.getElementById("sbToggle").addEventListener("click", () => appEl.classList.toggle("sb-collapsed"));
+
+function setDark(dark){
+  appEl.classList.toggle("dark", dark);
+  document.getElementById("sunIco").style.display = dark ? "none" : "";
+  document.getElementById("moonIco").style.display = dark ? "" : "none";
+  document.body.style.background = dark ? "hsl(220 16% 22%)" : "hsl(218 27% 94%)";
+}
+document.getElementById("themeToggle").addEventListener("click", () => setDark(!appEl.classList.contains("dark")));
+/* follow the artifact viewer's theme (data-theme on <html>) and OS preference */
+function viewerDark(){
+  const t = document.documentElement.dataset.theme;
+  if (t) return t === "dark";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
+new MutationObserver(() => setDark(viewerDark()))
+  .observe(document.documentElement, {attributes: true, attributeFilter: ["data-theme"]});
+setDark(viewerDark());
+
+/* ============ init ============ */
+renderSidebar();
+renderTenantMenu();
+S.skill = SKILLS[100].find(s => s.id === 1001004); /* Power Strike pre-selected */
+render();
+</script>

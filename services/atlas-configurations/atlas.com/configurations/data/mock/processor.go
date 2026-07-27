@@ -5,8 +5,8 @@ import (
 	"context"
 )
 
-// FakeClient is an in-memory implementation of data.Client for use in unit tests.
-type FakeClient struct {
+// ProcessorMock is an in-memory implementation of data.Processor for use in unit tests.
+type ProcessorMock struct {
 	// Skills is a map of skill ID → SkillInfo returned by GetSkillsByIds.
 	Skills map[uint32]data.SkillInfo
 	// Items is a map of item ID → ItemInfo returned by GetItemById.
@@ -18,10 +18,12 @@ type FakeClient struct {
 	ItemErrFor map[uint32]error
 }
 
+var _ data.Processor = (*ProcessorMock)(nil)
+
 // GetSkillsByIds returns SkillInfo entries for each requested ID that exists in
 // f.Skills. IDs not present in the map are silently skipped (mirrors real behaviour
 // where atlas-data omits unknown IDs from the batch response).
-func (f *FakeClient) GetSkillsByIds(_ context.Context, ids []uint32) ([]data.SkillInfo, error) {
+func (f *ProcessorMock) GetSkillsByIds(_ context.Context, ids []uint32) ([]data.SkillInfo, error) {
 	if f.SkillsErr != nil {
 		return nil, f.SkillsErr
 	}
@@ -37,7 +39,7 @@ func (f *FakeClient) GetSkillsByIds(_ context.Context, ids []uint32) ([]data.Ski
 // GetItemById looks up the item in f.Items. If f.ItemErrFor contains a non-nil
 // error for the given ID, that error is returned. If the ID is absent from both
 // maps, data.ErrNotFound is returned.
-func (f *FakeClient) GetItemById(_ context.Context, id uint32) (data.ItemInfo, error) {
+func (f *ProcessorMock) GetItemById(_ context.Context, id uint32) (data.ItemInfo, error) {
 	if err, ok := f.ItemErrFor[id]; ok && err != nil {
 		return data.ItemInfo{}, err
 	}

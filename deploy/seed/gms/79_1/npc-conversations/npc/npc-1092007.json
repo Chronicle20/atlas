@@ -1,0 +1,142 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1092007,
+      "startState": "checkQuest",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "2175",
+                    "type": "questStatus",
+                    "value": "2"
+                  }
+                ],
+                "nextState": "checkInventorySpace"
+              },
+              {
+                "conditions": [],
+                "nextState": "notOnQuest"
+              }
+            ]
+          },
+          "id": "checkQuest",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": ">=",
+                    "referenceId": "2030019",
+                    "type": "inventorySpace",
+                    "value": "1"
+                  }
+                ],
+                "nextState": "offerItem"
+              },
+              {
+                "conditions": [],
+                "nextState": "inventoryFull"
+              }
+            ]
+          },
+          "id": "checkInventorySpace",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": "giveItemAndWarp",
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Please take this #b#t2030019##k, it will make your life a lot easier.  #i2030019#"
+          },
+          "id": "offerItem",
+          "type": "dialogue"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "2030019",
+                  "quantity": "1"
+                },
+                "type": "award_item"
+              },
+              {
+                "params": {
+                  "mapId": "100000006",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "giveItemAndWarp",
+          "type": "genericAction"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "No free inventory spot available. Please make room in your USE inventory first."
+          },
+          "id": "inventoryFull",
+          "type": "dialogue"
+        },
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "The Black Magician and his followers. Kyrin and the Crew of Nautilus. \n They'll be chasing one another until one of them doesn't exist, that's for sure."
+          },
+          "id": "notOnQuest",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "1092007",
+    "type": "npc-conversation"
+  }
+}

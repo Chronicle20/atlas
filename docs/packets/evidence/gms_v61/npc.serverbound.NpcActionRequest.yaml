@@ -1,0 +1,10 @@
+packet: npc/serverbound/NpcActionRequest
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CNpc::GenerateMovePath
+    address: "0x5ea07a"
+    decompile_sha256: d24a0bf9056e9252e886da840706cece41eabc2758770838aae456a66e391752
+verifies:
+  - libs/atlas-packet/npc/serverbound/conversation_v61_test.go#TestNPCActionRequestByteV61

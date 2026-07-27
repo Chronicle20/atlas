@@ -1,0 +1,27 @@
+# coverage-manifest
+ops:
+  - CASHSHOP_OPERATION            # the single aggregate op-row (D3)
+versions:
+  - gms_v48
+  - gms_v61
+  - gms_v72
+  - gms_v79
+  - gms_v83
+  - gms_v84
+  - gms_v87
+  - gms_v95
+  - jms_v185
+fields:
+  - "cash/clientbound/*: version-divergent arm fields gated via MajorAtLeast (per arm-catalog.md)"
+out_of_scope:
+  - CASHSHOP_CASH_ITEM_GACHAPON_RESULT       # separate opcode (D1)
+  - CASHSHOP_GIFT_INFO_RESULT
+  - CASHSHOP_CHECK_NAME_CHANGE
+  - CASHSHOP_CHECK_TRANSFER_WORLD_POSSIBLE_RESULT
+  - CHARGE_PARAM_RESULT
+  - CASHSHOP_PURCHASE_EXP_CHANGED
+  - ONE_A_DAY
+  - CASHSHOP_NOTICE_FREE_CASH_ITEM
+  - CASHSHOP_REGISTER_NEW_CHARACTER_RESULT
+  - CASHSHOP_GACHAPON_STAMP_RESULT
+  - model/asset                              # shared GW_ItemSlotBase blob (incidental)

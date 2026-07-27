@@ -6,6 +6,7 @@ import (
 
 	testlog "github.com/sirupsen/logrus/hooks/test"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 )
@@ -205,5 +206,56 @@ func TestAttackInfoNonMesoHasNoDropList(t *testing.T) {
 	pt.RoundTrip(t, ctx, ai.Encode, out.Decode, nil)
 	if len(out.ExplodedMesoDrops()) != 0 {
 		t.Errorf("non-meso attack decoded %d exploded drops, want 0", len(out.ExplodedMesoDrops()))
+	}
+}
+
+// TestAttackInfoKeydownField pins which skills cause the attack codec to emit the
+// extra tKeyDown u32 (attack_info.go:113 encode / :232 decode). A keydown skill's
+// encoded attack is exactly 4 bytes longer than the same attack with a non-keydown
+// skillId — the field the v83 client writes at 0x955223 (design §2.3). This guards
+// skill.IsKeyDownSkill against accidental broadening (Explosion/Chakra) or narrowing
+// (dropping Corkscrew/Grenade), and runs across every tenant variant (all 11 in
+// pt.Variants: v28/v48/v61/v72/v79/v83/v84/v86/v87/v95/jms185) so the cross-version
+// safety of design §2.4 is enforced in CI. The baseline (skillId 0) and the two
+// DROPPED skills are charge:false and non-keydown, so they carry NO keyDown field;
+// Hurricane/Corkscrew/Grenade are keydown and add exactly 4 bytes. NOTE: this asserts
+// Atlas's own version-agnostic self-consistency (skillId N adds 4 bytes iff
+// IsKeyDownSkill(N)), not per-version client faithfulness — for the pre-pirate v28/v48
+// contexts the survivors are never actually cast (design §2.4), so the +4 there is a
+// harmless unreachable path, and the assertion's value is guarding the reachable versions.
+func TestAttackInfoKeydownField(t *testing.T) {
+	encLen := func(t *testing.T, region string, major uint16, skillId uint32) int {
+		ctx := pt.CreateContext(region, major, 1)
+		ai := sampleAttackInfo(AttackTypeMelee)
+		ai.SetSkillId(skillId)
+		ai.SetKeydown(0xAABBCCDD)
+		return len(pt.Encode(t, ctx, ai.Encode, nil))
+	}
+
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			base := encLen(t, v.Region, v.MajorVersion, 0) // skillId 0: not keydown, not charging
+
+			// Non-keydown skills must NOT add a keyDown field (== base length).
+			for _, id := range []uint32{
+				uint32(skill.FirePoisonMagicianExplosionId), // 2111002 — DROPPED, not keydown
+				uint32(skill.ChiefBanditChakraId),           // 4211001 — DROPPED, not keydown
+			} {
+				if got := encLen(t, v.Region, v.MajorVersion, id); got != base {
+					t.Errorf("skill %d: encoded len %d, want %d (non-keydown must carry no tKeyDown field)", id, got, base)
+				}
+			}
+
+			// Keydown skills add exactly 4 bytes (the tKeyDown u32).
+			for _, id := range []uint32{
+				uint32(skill.BowmasterHurricaneId),   // 3121004 — pre-existing keydown (guards field didn't move)
+				uint32(skill.BrawlerCorkscrewBlowId), // 5101004 — NEW keydown (task-161)
+				uint32(skill.GunslingerGrenadeId),    // 5201002 — NEW keydown (task-161)
+			} {
+				if got := encLen(t, v.Region, v.MajorVersion, id); got != base+4 {
+					t.Errorf("skill %d: encoded len %d, want %d (keydown must add a tKeyDown u32 = base+4)", id, got, base+4)
+				}
+			}
+		})
 	}
 }

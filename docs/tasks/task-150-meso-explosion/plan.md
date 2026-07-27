@@ -12,13 +12,15 @@
 
 ## Global Constraints
 
-- Skill id 4211006 is `skill.ChiefBanditMesoExplosionId` (`libs/atlas-constants/skill/constants.go:3174`). Always compare via `skill.Id(...) == skill.ChiefBanditMesoExplosionId` or `skill.Is(...)` — never a bare numeric literal.
-- The three variant deltas (per-mob count byte replaces the 2-byte delay; trailing drop list; trailing int16 delay) are **byte-identical across gms_v83/v84/v87/v95** (design §2.1). Add **no new `Region()`/`MajorVersion()` gates** — all surrounding fields keep their existing gates.
+- Skill id 4211006 is `skill.ChiefBanditMesoExplosionId` (`libs/atlas-constants/skill/constants.go:3179`). Always compare via `skill.Id(...) == skill.ChiefBanditMesoExplosionId` or `skill.Is(...)` — never a bare numeric literal.
+- The three variant deltas (per-mob count byte replaces the 2-byte delay; trailing drop list; trailing int16 delay) are **byte-identical across all eight IDA-verified GMS versions — gms_v48/v61/v72/v79/v83/v84/v87/v95** (design §2.1, v2). Add **no new `Region()`/`MajorVersion()` gates** — all surrounding fields keep their existing gates, which already model every base-layout difference across that range (design §2.1a).
+- **Per-mob CRC stays on the existing shared `MajorVersion() >= 61` gate** (`damage_info.go:57,83`). The meso `DamageInfo` mode branches ONLY the delay→count+damages part; the CRC read/write is untouched and shared. Do NOT re-gate it to `>= 83` — that snippet in an earlier draft was written against the pre-legacy codec and would drop the per-mob CRC for v61/v72/v79. v48 (< 61) correctly skips the CRC for free because the gate is shared (design §2.1a).
 - The decoder MUST NOT size meso damage arrays from the `hits` nibble: the client encodes `nMaxAttackCount & 0xF` there, which wraps at 16 (design §2.2). Only the per-mob count byte sizes the array.
 - FR-6: rejection of a meso-explosion attack must produce **zero side effects** — no HP/MP cost, no damage, no broadcast, no CONSUME. Validation therefore runs before the cost block in `processAttack`.
 - `services/atlas-drops` must not be modified (FR-9/design §5.3).
 - Wire fidelity: the per-drop `hitMask` byte and trailing `mesoDelay` are decoded, retained, and re-encoded even though server logic only uses drop ids.
-- jms_v185's serverbound variant tail is **implemented, not verified** (sender `0xa3aab1` is SCY-virtualized — design §2.3); gms_v92 has no IDB. Both are documented as unverified. Never fabricate a `packet-audit:verify` marker or evidence hash for them.
+- `pt.Variants` now spans **v28, v48, v61, v72, v79, v83, v84, v86, v87, v95, jms_v185**; every `for _, v := range pt.Variants` round-trip test runs against all of them. v28/v86 are test-harness boundary variants (round-trip symmetry only, no IDA claim).
+- jms_v185's serverbound variant tail is **implemented, not verified** (sender `0xa3aab1` is SCY-virtualized — design §2.3); gms_v92 and gms_12 have no IDB and are not matrix columns (unverified-follows-family — design §2.4). Never fabricate a `packet-audit:verify` marker or evidence hash for any of these three.
 - **No new `packet-audit:verify` markers anywhere in this task** (see Task 3 rationale): the melee cells stay pinned to the registry-primary fname; a second marker per cell would orphan under `matrix --check`.
 - Tests use the project's Builder pattern (e.g. `drop.NewModelBuilder()`); do not create `*_testhelpers.go` files.
 - No literal home/absolute paths in committed files.
@@ -28,7 +30,7 @@
 
 ### Task 1: `DamageInfo` meso-explosion mode (libs/atlas-packet)
 
-The meso variant replaces the standard 2-byte `delay` in each damage entry with a 1-byte damage-line count followed by that many 4-byte damages (IDA: v83 `0x96b3fb` — `Encode1(&v132, v71[20])` count byte, then damage loop from offset 24, then `Encode4(CMob::GetCrc(...))`). The mob CRC read/write is unchanged.
+The meso variant replaces the standard 2-byte `delay` in each damage entry with a 1-byte damage-line count followed by that many 4-byte damages (IDA: v83 `0x96b3fb` — `Encode1(&v132, v71[20])` count byte, then damage loop from offset 24, then `Encode4(CMob::GetCrc(...))`). Verified identical across the legacy senders: v48 `0x6ae4d7` (count `v61[20]`, **no** trailing mob CRC — v48 < 61), v61 `0x7b8a39` (count @`0x7b92f7`, CRC `sub_5CF2AF` @`0x7b932b`), v72 `0x875828` (count @`0x876128`, CRC `sub_61F8A5` @`0x876155`), v79 `0x8c22fd` (count @`0x8c2c2a`, CRC `sub_640131` @`0x8c2c57`). The mob CRC read/write is unchanged and stays on its shared `>= 61` gate.
 
 **Files:**
 - Modify: `libs/atlas-packet/model/damage_info.go`
@@ -102,7 +104,9 @@ func NewMesoExplosionDamageInfo() *DamageInfo {
 
 Add `mesoExplosion bool` to the `DamageInfo` struct (after `hits byte`).
 
-In `Decode`, replace the delay + damages block:
+In `Decode`, branch **only** the delay+damages block. **Leave the existing per-mob
+CRC read exactly where it is** — it is already gated `MajorVersion() >= 61` on
+main (`damage_info.go:57`), shared between both modes. Do NOT retype it as `>= 83`:
 
 ```go
 		m.previousPositionY = r.ReadUint16()
@@ -117,12 +121,14 @@ In `Decode`, replace the delay + damages block:
 				m.damages = append(m.damages, r.ReadUint32())
 			}
 		}
-		if t.Region() == "GMS" && t.MajorVersion() >= 83 {
+		// UNCHANGED shared block — already present on main at this gate. v48 (< 61)
+		// skips the per-mob CRC in both modes, matching its sender (design §2.1a).
+		if t.Region() == "GMS" && t.MajorVersion() >= 61 {
 			m.crc = r.ReadUint32()
 		}
 ```
 
-In `Encode`, mirror it:
+In `Encode`, mirror it — again leaving the shared `>= 61` CRC block untouched:
 
 ```go
 		w.WriteShort(m.previousPositionY)
@@ -134,7 +140,8 @@ In `Encode`, mirror it:
 		for _, d := range m.damages {
 			w.WriteInt(d)
 		}
-		if t.Region() == "GMS" && t.MajorVersion() >= 83 {
+		// UNCHANGED shared block (damage_info.go:83).
+		if t.Region() == "GMS" && t.MajorVersion() >= 61 {
 			w.WriteInt(m.crc)
 		}
 ```
@@ -155,7 +162,7 @@ git commit -m "feat(task-150): meso-explosion DamageInfo mode in atlas-packet"
 
 ### Task 2: `AttackInfo` meso variant — detection, drop list, trailing delay (libs/atlas-packet)
 
-Variant detection keys off the skill id, which is decoded before the damage entries, so the variant is self-detectable mid-decode. The trailing section (drop count byte → per-drop `{uint32 dropId, byte hitMask}` → int16 delay) sits directly after `characterX`/`characterY` (IDA: v83 `0x96b3fb` — `Encode1(dropListSize)`, loop `Encode4(*(drop + 32)); Encode1(v108[m])`, then `Encode2(a2)`; identical in v84 `0x9aa379`, v87 `0x9eee04`, v95 `0x942200`).
+Variant detection keys off the skill id, which is decoded before the damage entries, so the variant is self-detectable mid-decode. The trailing section (drop count byte → per-drop `{uint32 dropId, byte hitMask}` → int16 delay) sits directly after `characterX`/`characterY` (IDA: v83 `0x96b3fb` — `Encode1(dropListSize)`, loop `Encode4(*(drop + 32)); Encode1(v108[m])`, then `Encode2(a2)`; identical in v84 `0x9aa379`, v87 `0x9eee04`, v95 `0x942200`, and in the four legacy senders — v48 drop list @`0x6aedb1`/`0x6aedcd`/`0x6aeddf` + tail `Encode2` @`0x6aeded`, v61 @`0x7b9378`/`0x7b9394`/`0x7b93a6` + `0x7b93b4`, v72 @`0x8761a9`/`0x8761c5`/`0x8761d7` + `0x8761e5`, v79 @`0x8c2ca7`/`0x8c2cc3`/`0x8c2cd5` + `0x8c2ce3`).
 
 **Files:**
 - Modify: `libs/atlas-packet/model/attack_info.go`
@@ -414,8 +421,12 @@ Append to `libs/atlas-packet/character/serverbound/attack_request_test.go`:
 // dedicated client sender, NOT TryDoingNormalAttack. Variant deltas (per-mob
 // count byte replaces the int16 delay; trailing {dropId int32, hitMask byte}
 // list; trailing int16 delay) verified byte-identical across every readable
-// IDB (task-150 design §2.1–§2.2):
+// IDB (task-150 design §2.1–§2.2, v2):
 //
+//	gms_v48  CUserLocal::DoActiveSkill_MesoExplosion  0x6ae4d7  (no per-mob CRC, <61)
+//	gms_v61  meso sender sub_7B8A39                   0x7b8a39
+//	gms_v72  meso sender sub_875828                   0x875828  (head skill-data CRC, v72+)
+//	gms_v79  meso sender 0x8c22fd (TryDoingMeleeAttack overload; short action, 2 CRCs)
 //	gms_v83  CUserLocal::DoActiveSkill_MesoExplosion  0x96b3fb
 //	gms_v84  meso sender (IDB label wrong)            0x9aa379
 //	gms_v87  CUserLocal::DoActiveSkill_MesoExplosion  0x9eee04
@@ -423,7 +434,8 @@ Append to `libs/atlas-packet/character/serverbound/attack_request_test.go`:
 //	jms_v185 sub_A3AAB1 @0xa3aab1 — encode tail SCY-virtualized: the jms
 //	         serverbound variant tail is implemented from the GMS invariants
 //	         plus jms clientbound symmetry, NOT statically verified (§2.3).
-//	gms_v92  no IDB — follows the GMS >= 87 family branch, unverified (FR-2).
+//	gms_v92  no IDB — follows the GMS >= 87 family branch, unverified (§2.4).
+//	gms_12   no IDB — follows the very-legacy GMS < 48 branch, unverified (§2.4).
 //
 // The senders are registered as fname_alts on the CLOSE_RANGE_ATTACK
 // serverbound registry rows. No new packet-audit:verify markers here: the
@@ -713,17 +725,21 @@ Expected: FAIL (compile error: `undefined: ConsumeAllCommandProvider`)
 
 In `services/atlas-channel/atlas.com/channel/kafka/message/drop/kafka.go`:
 
-Add to the command const block:
+Add `CommandTypeConsume` to the existing command const block — **keep every
+existing entry**. Main now has `CommandTypeSpawn` too (added by task-149's Pick
+Pocket meso spawn); do not drop it:
 
 ```go
 const (
 	EnvCommandTopic               = "COMMAND_TOPIC_DROP"
 	CommandTypeRequestReservation = "REQUEST_RESERVATION"
+	CommandTypeSpawn              = "SPAWN"
 	CommandTypeConsume            = "CONSUME"
 )
 ```
 
-Add `TransactionId` to the envelope (first field, matching atlas-drops):
+Add `TransactionId` to the envelope (first field, matching atlas-drops — the
+channel `Command[E]` on main still omits it; atlas-drops already unmarshals it):
 
 ```go
 type Command[E any] struct {
@@ -812,6 +828,10 @@ git commit -m "feat(task-150): drop CONSUME batch producer in atlas-channel"
 
 Validation runs inside the `ai.SkillId() > 0` block, after the skill effect is loaded and **before** the HP/MP cost block (design §4.2-A — FR-6 requires zero side effects on rejection, and the cost deduction is a side effect). The consume emission runs post-broadcast, replacing the TODO (FR-12). Damage lines flow through `processDamageInfoEntry` untouched — variable-length `di.Damages()` needs no pipeline change (FR-10) — and the melee broadcast already handles `isMesoExplosion` (`socket/writer/character_attack_melee.go:19`; FR-11).
 
+**Current-main anchors (verified 2026-07-26; the handler grew after task-149's Pick
+Pocket + task-148's Sacrifice landed — re-`grep`, do not trust old line numbers):**
+`if ai.SkillId() > 0 {` at ~L516; the effect load `se, err = skill2.NewProcessor(l, ctx).GetEffect(ai.SkillId(), sk.Level())` at ~L528; the cost-gate comment `// Skip the generic cost block …` at ~L533; the `if hasProjectilePlan {` block at ~L653; the `// TODO destroy Chief Bandit exploded mesos` line at ~L671 (now sitting next to an unrelated `// TODO decrease HP from DragonKnight Sacrifice` from task-148 — leave that one alone). The constants alias in this file is `skill3` (constants) and `skill2` (processor) — match the file's existing imports.
+
 **Files:**
 - Modify: `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go`
 
@@ -854,7 +874,7 @@ Inside the `ai.SkillId() > 0` block, immediately after the `se, err = ...` error
 
 - [ ] **Step 2: Replace the TODO with the consume emission**
 
-Delete the line `// TODO destroy Chief Bandit exploded mesos` (line 407) and insert after the projectile-emission block (after the `if hasProjectilePlan { ... }` closing brace):
+Delete the line `// TODO destroy Chief Bandit exploded mesos` (~L671 on current main; was L407 pre-Pick-Pocket) and insert after the projectile-emission block (after the `if hasProjectilePlan { ... }` closing brace):
 
 ```go
 					// Destroy the validated exploded meso drops (Chief Bandit Meso
@@ -880,7 +900,7 @@ Expected: build clean; all handler tests PASS (cost-gate, MP Eater, projectile, 
 - [ ] **Step 4: Verify the TODO is gone**
 
 Run: `grep -n "destroy Chief Bandit" services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go`
-Expected: no output (exit 1) — FR-12 satisfied. (`// TODO apply Pick Pocket` remains; it is explicitly out of scope.)
+Expected: no output (exit 1) — FR-12 satisfied. (Note: Pick Pocket (4211003) is already fully implemented on main — task-149, `pickPocketResolveState` et al. — so there is no longer a Pick Pocket TODO to preserve; the only neighboring TODO is `// TODO decrease HP from DragonKnight Sacrifice`, task-148, which is out of scope and must remain.)
 
 - [ ] **Step 5: Commit**
 
@@ -893,17 +913,44 @@ git commit -m "feat(task-150): wire meso-explosion validation + drop destruction
 
 ### Task 7: Packet-audit artifacts (design §5.4)
 
-No evidence records or markers change (Task 3 rationale), so the matrix content should be unchanged — this task documents the unverifiable cells and proves the machine checks stay green.
+No evidence records or markers change (Task 3 rationale), so the matrix content should be unchanged — this task documents the meso variant at each cell and proves the machine checks stay green. The eight GMS cells (v48–v95) are IDA-verified but carry no NEW verify marker (fname_alt-absent-from-export orphan rule, Task 3); the four legacy audit MDs record their verified sender + deltas, and the jms MD records why its tail is unverifiable.
 
 **Files:**
+- Modify: `docs/packets/audits/gms_v48/CharacterAttackMeleeRequest.md`
+- Modify: `docs/packets/audits/gms_v61/CharacterAttackMeleeRequest.md`
+- Modify: `docs/packets/audits/gms_v72/CharacterAttackMeleeRequest.md`
+- Modify: `docs/packets/audits/gms_v79/CharacterAttackMeleeRequest.md`
 - Modify: `docs/packets/audits/jms_v185/CharacterAttackMeleeRequest.md`
 - Possibly regenerated: `docs/packets/audits/STATUS.md`, `docs/packets/audits/status.json` (commit only if the tool changes them)
 
 **Interfaces:**
 - Consumes: `go run ./tools/packet-audit matrix` / `matrix --check` (documented in `docs/packets/audits/VERIFYING_A_PACKET.md` §8).
-- Produces: the audit note recording why the jms meso variant carries no verify pin.
+- Produces: the audit notes recording each version's meso sender/deltas and why no new verify pin was added.
 
-- [ ] **Step 1: Append the variant note to the jms audit MD**
+- [ ] **Step 1: Append the verified-variant note to each of the four legacy audit MDs**
+
+To each of `docs/packets/audits/gms_v{48,61,72,79}/CharacterAttackMeleeRequest.md`, append a note recording the version's meso sender address and the three verified deltas. Use the per-version facts from design §2.1's evidence excerpts (v48 `0x6ae4d7` — no per-mob CRC; v61 `0x7b8a39`; v72 `0x875828` — head skill-data CRC; v79 `0x8c22fd` — short action + two head CRCs). Template (fill in the version-specific address/notes):
+
+```markdown
+
+---
+
+## task-150 note — Meso Explosion variant (hand-added; keep on regeneration)
+
+CLOSE_RANGE_ATTACK carries a Meso Explosion (4211006) variant written by a
+dedicated sender (this version: `<addr>`), dispatched from `DoActiveSkill`
+case 4211006. IDA-verified deltas vs. the standard melee attack (design §2.1):
+per-mob `Encode1(damageLineCount)` replaces the int16 delay; trailing
+`{dropId int32, hitMask byte}` list after characterX/Y; trailing int16 delay.
+All base-layout fields (per-mob CRC, action width, head CRCs) follow this
+version's existing standard-melee gates (design §2.1a) — the variant adds no
+new gate. No new packet-audit:verify marker is pinned: the meso sender is an
+fname_alt absent from the IDA export, so a second marker would orphan under
+`matrix --check` (Task 3 rationale). Fixture:
+`libs/atlas-packet/character/serverbound/attack_request_test.go#TestAttackMeleeRequestMesoExplosion`.
+```
+
+- [ ] **Step 2: Append the unverifiable-tail note to the jms audit MD**
 
 Append to the end of `docs/packets/audits/jms_v185/CharacterAttackMeleeRequest.md`:
 
@@ -918,15 +965,16 @@ dedicated sender, `sub_A3AAB1` @ `0xa3aab1` in the jms IDB. The sender's
 packet-encode tail is SCY code-flow-virtualized (`JUMPOUT(0xD29D2D)`), so the
 jms serverbound variant read order is **not statically verifiable** in the
 available dump. Atlas implements the jms variant from the deltas verified
-byte-identical across gms_v83/v84/v87/v95 plus the jms **clientbound** meso
-branch (`CUserRemote::OnAttack` @ `0xa53999` region), which was IDA-verified
-to match. No verify marker or evidence record was added for the unreadable
-tail (task-150 design §2.3). gms_v92 (no IDB) follows the GMS >= 87 family
-branch and is likewise unverified (PRD FR-2). Fixture:
+byte-identical across the eight GMS versions (gms_v48–v95) plus the jms
+**clientbound** meso branch (`CUserRemote::OnAttack` @ `0xa53999` region),
+which was IDA-verified to match. No verify marker or evidence record was added
+for the unreadable tail (task-150 design §2.3). gms_v92 (no IDB) follows the
+GMS >= 87 family branch and gms_12 the very-legacy GMS < 48 branch; both are
+template-only and unverified (design §2.4). Fixture:
 `libs/atlas-packet/character/serverbound/attack_request_test.go#TestAttackMeleeRequestMesoExplosion`.
 ```
 
-- [ ] **Step 2: Regenerate the matrix and run the machine check**
+- [ ] **Step 3: Regenerate the matrix and run the machine check**
 
 Run (from the worktree root):
 
@@ -937,14 +985,19 @@ go run ./tools/packet-audit matrix --check
 
 Expected: `matrix` leaves STATUS.md/status.json unchanged (or trivially regenerated); `matrix --check` introduces **no new problems** — zero orphan/dangling/stale/drift lines mentioning `CharacterAttackMeleeRequest` or `character/serverbound`, and the pre-existing conflict count does not increase (per VERIFYING_A_PACKET.md §8, pre-existing 🟥 conflicts may keep the exit code at 1 — the bar is no new lines).
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
-git add docs/packets/audits/jms_v185/CharacterAttackMeleeRequest.md docs/packets/audits/STATUS.md docs/packets/audits/status.json
-git commit -m "docs(task-150): jms meso-variant unverifiable-tail audit note"
+git add docs/packets/audits/gms_v48/CharacterAttackMeleeRequest.md \
+        docs/packets/audits/gms_v61/CharacterAttackMeleeRequest.md \
+        docs/packets/audits/gms_v72/CharacterAttackMeleeRequest.md \
+        docs/packets/audits/gms_v79/CharacterAttackMeleeRequest.md \
+        docs/packets/audits/jms_v185/CharacterAttackMeleeRequest.md \
+        docs/packets/audits/STATUS.md docs/packets/audits/status.json
+git commit -m "docs(task-150): meso-variant audit notes (4 legacy verified + jms/v92/v12 unverified)"
 ```
 
-(If `matrix` changed nothing, commit only the MD.)
+(If `matrix` changed nothing, drop STATUS.md/status.json and commit only the MDs.)
 
 ---
 

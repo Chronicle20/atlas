@@ -1,15 +1,32 @@
 # Meso Explosion — Exploded-Meso Destruction + Damage — Design
 
-Version: v1
+Version: v2
 Status: Approved-pending-review
 Created: 2026-07-10
+Updated: 2026-07-26 (v2 — legacy version scope)
 PRD: `docs/tasks/task-150-meso-explosion/prd.md`
 
 ---
 
+## 0. v2 changelog — legacy matrix columns added to scope
+
+This design was written (v1) before the legacy version bring-up landed on `main`.
+The packet coverage matrix now tracks **9** client versions
+(`PROCESS.md`): `gms_v48, v61, v72, v79, v83, v84, v87, v95, jms_v185`. v1
+verified only `gms_v83/v84/v87/v95` + jms clientbound symmetry. Per owner
+decision (2026-07-26) the four new legacy matrix columns `gms_v48/v61/v72/v79`
+are **in scope with full IDA verification**; their meso senders were derived in
+this v2 pass (§2). `gms_12`/`gms_92` (template-only, no matrix column, no IDB)
+stay **unverified — follows the family branch** (§2.4), the same posture v1 gave
+`gms_92`. The result (§2.1): the three meso deltas are byte-identical across ALL
+nine IDA-verified versions, and every version difference is a base-layout field
+already gated in main's codec — so the "thread a flag, no new version gates"
+architecture holds unchanged; only the plan's stale `>=83` per-mob-CRC snippet
+needed correcting to the current shared `>=61` gate.
+
 ## 1. Summary
 
-Meso Explosion (skill 4211006) is sent by the client as a **variant of the CLOSE_RANGE_ATTACK packet**, written by a dedicated sender (`CUserLocal::DoActiveSkill_MesoExplosion`), not by the normal melee sender. The variant differs from the standard melee attack in exactly three places, and those three deltas are **byte-identical across every version verified in IDA** (gms_v83, gms_v84, gms_v87, gms_v95):
+Meso Explosion (skill 4211006) is sent by the client as a **variant of the CLOSE_RANGE_ATTACK packet**, written by a dedicated sender (`CUserLocal::DoActiveSkill_MesoExplosion`), not by the normal melee sender. The variant differs from the standard melee attack in exactly three places, and those three deltas are **byte-identical across every IDA-verified matrix version** (gms_v48, gms_v61, gms_v72, gms_v79, gms_v83, gms_v84, gms_v87, gms_v95 — see §2):
 
 1. **Per-mob damage-line count**: in each damage entry, the 2-byte `delay` field is *replaced* by a 1-byte damage-line count, followed by that many 4-byte damage values (then the mob CRC as usual).
 2. **Trailing exploded-drop list**: after `characterX`/`characterY`, a 1-byte drop count, then per drop a 4-byte drop object id + a 1-byte hit-mask (bitmask of which attacked-mob indices that drop's explosion damaged).
@@ -21,22 +38,41 @@ Server-side: atlas-channel validates the listed drops against the field's drops 
 
 ## 2. IDA findings (FR-2)
 
-Serverbound sender per version. All addresses confirmed in the live IDBs on 2026-07-10.
+Serverbound sender per version. gms_v83/v84/v87/v95/jms addresses confirmed in the
+live IDBs on 2026-07-10 (v1); the four legacy senders confirmed 2026-07-26 (v2).
 
-| Version | Function | Address | Packet-encode readable? |
-|---|---|---|---|
-| gms_v83 | `CUserLocal::DoActiveSkill_MesoExplosion` | `0x96b3fb` | ✅ full |
-| gms_v84 | meso sender (IDB mislabeled `CUserLocal::TryDoingMeleeAttack`) | `0x9aa379` | ✅ full |
-| gms_v87 | `CUserLocal::DoActiveSkill_MesoExplosion` | `0x9eee04` | ✅ full |
-| gms_v95 | `CUserLocal::DoActiveSkill_MesoExplosion` | `0x942200` | ✅ full (typed IDB) |
-| jms_v185 | meso sender `sub_A3AAB1` | `0xa3aab1` | ⚠️ encode tail SCY-virtualized (see §2.3) |
-| gms_v92 | — no IDB — | — | ❌ per PRD: follows family branch, documented unverified |
+| Version | Function | Address | Opcode | Packet-encode readable? |
+|---|---|---|---|---|
+| gms_v48 | `CUserLocal::DoActiveSkill_MesoExplosion` (named) | `0x6ae4d7` | 36 | ✅ full |
+| gms_v61 | meso sender `sub_7B8A39` | `0x7b8a39` | 41 | ✅ full |
+| gms_v72 | meso sender `sub_875828` | `0x875828` | 43 | ✅ full |
+| gms_v79 | meso sender `0x8c22fd` (IDB label `TryDoingMeleeAttack` overload) | `0x8c22fd` | 42 | ✅ full |
+| gms_v83 | `CUserLocal::DoActiveSkill_MesoExplosion` | `0x96b3fb` | | ✅ full |
+| gms_v84 | meso sender (IDB mislabeled `CUserLocal::TryDoingMeleeAttack`) | `0x9aa379` | | ✅ full |
+| gms_v87 | `CUserLocal::DoActiveSkill_MesoExplosion` | `0x9eee04` | | ✅ full |
+| gms_v95 | `CUserLocal::DoActiveSkill_MesoExplosion` | `0x942200` | | ✅ full (typed IDB) |
+| jms_v185 | meso sender `sub_A3AAB1` | `0xa3aab1` | | ⚠️ encode tail SCY-virtualized (see §2.3) |
+| gms_v92 / gms_12 | — no IDB — | — | | ❌ follows family branch, documented unverified (§2.4) |
 
 Dispatch confirmation: the v84 `CUserLocal::DoActiveSkill` dispatcher jumps to the sender on `skillId == 4211006` (`0x9a7398`), and the jms dispatcher (`CUserLocal::DoActiveSkill` @ `0xa35c3f`) calls `sub_A3AAB1` on switch case `4211002 + 4`. The v84 IDB's name on `0x9aa379` is wrong (it is not the standard melee sender, which is separately pinned at `0x989692`); structure and dispatch prove it is the meso sender.
 
+**Legacy dispatch confirmation (v2):** each legacy meso sender is the sole callee
+of the `case 4211006` (`0x40413E`) arm of that version's `DoActiveSkill`
+dispatcher — v48 `sub_6ABFA4` (a literal `case 4211006:` calling the named
+`DoActiveSkill_MesoExplosion`), v61 `sub_7B5977`, v72 `sub_871D35`, v79
+`sub_8BE4FE` (the latter three compile the switch as a `sub 0x40413D`/`dec`/`jz`
+chain — no immediate `cmp 4211006`, which is why an immediate scan misses it).
+Each sender's encode tail was read verbatim and matches the three deltas below;
+`xrefs_to` confirms a single caller for each. v79 reuses a `TryDoingMeleeAttack`
+overload rather than a distinct function, but it is the sole `case 4211006`
+target and encodes the full meso variant (drop list + trailing delay).
+
 ### 2.1 Verified write order
 
-Using gms_v83 (`0x96b3fb`) as the base; version gates noted inline. Standard-melee fields keep their existing, fixture-verified semantics.
+Using gms_v83 (`0x96b3fb`) as the base; version gates noted inline, now spanning
+the full legacy range (v48↔jms). Standard-melee fields keep their existing,
+fixture-verified semantics — **every gate below is a pre-existing gate in main's
+`attack_info.go`/`damage_info.go`; the meso variant adds none** (§2.1a).
 
 ```
 byte   fieldKey
@@ -46,11 +82,12 @@ byte   (mobCount << 4) | (nMaxAttackCount & 0xF)      // see §2.2 — low nibbl
 int32  skillId (4211006)
 [GMS >= 95]  byte skillLevel (nCombatOrders)
 [GMS >= 84]  int32 randomDr, int32 crc32
-int32  skillDataCrc
-int32  skillDataCrc2
+[GMS >= 72]  int32 skillDataCrc                       // legacyGmsNoSkillDataCrc: absent < 72 (v48/v61)
+[GMS >= 79 / JMS]  int32 skillDataCrc2                // legacyGmsSingleCrc: single CRC on v72, two on v79+
        // no keydown int: 4211006 is not a keydown/charge skill
 byte   mask1 (client writes 8*bShadowPartner; observed 0 in v83)
-int16  mask2 = (left << 15) | attackAction
+mask2 = (left << shift) | attackAction                // legacyGmsByteAction: BYTE (left<<7) on GMS < 79
+                                                       //   (v48/61/72); int16 (left<<15) on GMS >= 79 / JMS
 [GMS >= 95]  int32 anotherCrc
 byte   attackActionType
 byte   attackSpeed
@@ -65,7 +102,7 @@ per mob (mobCount entries):
     int16  hitX, int16 hitY, int16 prevX, int16 prevY
     byte   damageLineCount                             // ← REPLACES the standard int16 delay
     int32  damage × damageLineCount                    // ← variable, NOT the hits nibble
-    int32  mobCrc
+    [GMS >= 61]  int32 mobCrc                          // per-mob CRC: absent on v48 (< 61), present v61+
 int16  characterX
 int16  characterY
 byte   dropCount
@@ -77,10 +114,35 @@ int16  delay                                           // action-delay tail (v83
 
 Evidence excerpts (decompiled write sites):
 
+- v48 `0x6ae4d7` (named `DoActiveSkill_MesoExplosion`, opcode 36): BYTE action `Encode1((v103<<7)|(v112&0x7F))`; per-mob `Encode1(v61[20])` (count) then `Encode4(*v72)` damage loop and **no `Encode4(mobCrc)`** (v48 < 61); tail `Encode1(dropCount)`, loop `Encode4(*(drop+32)); Encode1(v95[4*j])`, then `Encode2(v120)`.
+- v61 `0x7b8a39` (opcode 41): BYTE action @`0x7b91a2`; count byte `Encode1(v60[20])` @`0x7b92f7` + damage loop @`0x7b9311`, then per-mob CRC `Encode4(sub_5CF2AF(...))` @`0x7b932b`; drop list @`0x7b9378`/`0x7b9394`/`0x7b93a6`, tail `Encode2(v117)` @`0x7b93b4`.
+- v72 `0x875828` (opcode 43): head single skill-data CRC `Encode4` @`0x875fb9` (v72+), BYTE action @`0x875fd9`; count byte @`0x876128` + damage loop @`0x87613a`, per-mob CRC `Encode4(sub_61F8A5(...))` @`0x876155`; drop list @`0x8761a9`/`0x8761c5`/`0x8761d7`, tail `Encode2(v134)` @`0x8761e5`.
+- v79 `0x8c22fd` (opcode 42): TWO head CRCs `Encode4` @`0x8c2ab2` + @`0x8c2abb` (v79+ pair), SHORT action `Encode2((v116<<15)|(v65&0x7FFF))` @`0x8c2adc`; count byte @`0x8c2c2a` + damage loop @`0x8c2c3e`, per-mob CRC `Encode4(sub_640131(...))` @`0x8c2c57`; drop list @`0x8c2ca7`/`0x8c2cc3`/`0x8c2cd5`, tail `Encode2(v137)` @`0x8c2ce3`.
 - v83 `0x96b3fb`: mob entry `Encode1(&v132, v71[20])` (count byte) then damage loop from offset 24 then `Encode4(CMob::GetCrc(...))`; tail `Encode1(dropListSize)`, loop `Encode4(*(drop + 32)); Encode1(v108[m])`, then `Encode2(a2)`.
 - v84 `0x9aa379`: identical variant deltas at lines 515 (`Encode1(v128[20])`), 529/535–536 (drop list), 538 (`Encode2(v151)`), with the v84 dr-block at 425–429 and randomDr/crc32 at 442/444.
 - v87 `0x9eee04`: identical (lines 510, 528, 534–535, 537), opcode arg 46.
 - v95 `0x942200` (typed): `Encode1(&oPacket, nMaxAttackCount & 0xF | (16 * nMobCount))`, `Encode1(cd->nCombatOrders)`, `Encode4(v209)` (anotherCrc), `Encode4(0)` after `tAttackTime`, count byte at 763, drop list at 791/798–799 (`(*v77)->dwId` + `v231[i]`), tail `Encode2(v208)`.
+
+### 2.1a Base-layout gates compose with the meso deltas — no new gates
+
+The four legacy senders confirm the meso variant introduces the **same three
+deltas at the same positions** as v83–v95, and that every version-to-version
+difference is a *base-layout* field already gated in main's codec:
+
+| Base-layout field | Boundary | Existing gate | v48 | v61 | v72 | v79+ |
+|---|---|---|---|---|---|---|
+| per-mob CRC | present ≥ v61 | `damage_info.go` `MajorVersion() >= 61` | — | ✓ | ✓ | ✓ |
+| action width | byte < v79 | `legacyGmsByteAction` | byte | byte | byte | short |
+| head skill-data CRC | present ≥ v72 | `legacyGmsNoSkillDataCrc` | — | — | 1 | — |
+| 2nd head CRC | present ≥ v79 | `legacyGmsSingleCrc` | — | — | — | 2 |
+
+Because the meso flag only ever touches the three delta positions (count byte,
+trailing drop list, trailing delay) and leaves the head + per-mob CRC reads on
+their existing gated paths, threading the flag through the shared codec yields
+the correct bytes for all nine versions with **no new `Region()`/`MajorVersion()`
+gate**. In particular v48's absent per-mob CRC falls out for free: the meso
+`DamageInfo` mode keeps the CRC read on the shared `>= 61` gate, so v48 (< 61)
+skips it exactly as its sender does.
 
 ### 2.2 The mask low nibble is unusable for the meso variant
 
@@ -97,6 +159,19 @@ Compensating evidence, all IDA-verified in the jms IDB:
 - The variant deltas are identical across all four readable versions (v83/v84/v87/v95), spanning both sides of every other layout shift.
 
 **Decision (mirrors the PRD's gms_v92 treatment):** implement jms using the invariant variant deltas on top of jms's already-verified standard melee base layout (`0xa122be`), and document the jms serverbound meso cell as *unverified — sender virtualized* in the audit artifacts. No verification marker is added for a read order we could not read; no evidence hash is fabricated. If a non-SCY jms build ever becomes available, the cell can be promoted then.
+
+### 2.4 gms_92 / gms_12 caveat (template-only, no IDB)
+
+`gms_12` and `gms_92` ship a seed template but are **not** coverage-matrix
+columns and have no IDB/IDA export (`PROCESS.md` version set = 9 columns). Per
+owner decision (2026-07-26) both are handled **unverified — follows the family
+branch**: they decode the meso variant through the same version-gated codec path
+their standard attacks already use (`gms_92` → the `GMS >= 87` base layout;
+`gms_12` → the very-legacy `GMS < 48` base layout — byte action, no head CRC, no
+per-mob CRC), inheriting whichever gates that major version selects. No
+`packet-audit:verify` marker or evidence hash is fabricated for either. If an IDB
+for either is ever added and it becomes a matrix column, its cell can be verified
+then via `VERIFYING_A_PACKET.md`.
 
 ## 3. Skill data & drop predicate (FR-5 open questions, resolved)
 
@@ -129,7 +204,11 @@ Compensating evidence, all IDA-verified in the jms IDB:
 - Add `mesoExplosion bool` to `DamageInfo`, set via new constructor `NewMesoExplosionDamageInfo()` (Builder-style, matching existing constructors).
 - `Decode`: when `mesoExplosion`, read `count := r.ReadByte()` **instead of** the `delay` uint16, then `count` damages. `hits` is ignored in this mode.
 - `Encode`: symmetric — write `byte(len(damages))` instead of `delay`.
-- The mob CRC read/write is unchanged (present in the meso variant, §2.1).
+- The per-mob CRC read/write stays on its **existing shared `MajorVersion() >= 61`
+  gate** (`damage_info.go:57,83`) — do NOT move it inside the meso branch and do
+  NOT re-gate it to `>= 83` (v1's plan snippet was written against the old `>= 83`
+  gate and would drop the CRC for v61/v72/v79). Because it stays shared, v48
+  (< 61) skips it for free, matching its sender (§2.1a).
 
 `model/attack_info.go`:
 - Variant detection: `isMesoExplosion := skill.Id(m.skillId) == skill.ChiefBanditMesoExplosionId`, evaluated right after `skillId` is decoded (and in Encode from the set skillId).
@@ -142,9 +221,9 @@ Compensating evidence, all IDA-verified in the jms IDB:
 - No new version gates: the variant deltas are version-invariant; surrounding fields keep their existing `Region()/MajorVersion()` gates.
 
 Tests (`model/attack_info_test.go`, `character/serverbound/attack_request_test.go`):
-- Meso-explosion round-trip across all `pt.Variants`: skillId 4211006, ≥2 mobs with *different* damage-line counts (e.g. 3 and 1), ≥2 drop entries with non-zero hit masks, non-zero trailing delay.
+- Meso-explosion round-trip across all `pt.Variants`: skillId 4211006, ≥2 mobs with *different* damage-line counts (e.g. 3 and 1), ≥2 drop entries with non-zero hit masks, non-zero trailing delay. Note `pt.Variants` now spans **v28, v48, v61, v72, v79, v83, v84, v86, v87, v95, jms_v185** — the meso round-trip runs against all of them, so it exercises the byte-action, no-CRC, single-CRC and two-CRC base-layout gates in the same test (v28/v86 are test-harness boundary variants, not shipped versions — round-trip symmetry only, no IDA claim, like gms_12/gms_92).
 - All existing attack fixtures unchanged and passing (FR-4).
-- Verification markers: the melee cells for the five versions are already pinned in `attack_request_test.go:41-45`; the new meso tests document the variant against the sender addresses in §2 (v83 `0x96b3fb`, v84 `0x9aa379`, v87 `0x9eee04`, v95 `0x942200`). jms gets **no new verify pin** for the variant tail (§2.3) — the audit note records why.
+- Verification markers: the melee cells for the verified versions are already pinned in `attack_request_test.go` (registry-primary fname `CUserLocal::TryDoingNormalAttack`); the new meso tests document the variant against the §2 sender addresses for all eight IDA-verified GMS cells (v48 `0x6ae4d7`, v61 `0x7b8a39`, v72 `0x875828`, v79 `0x8c22fd`, v83 `0x96b3fb`, v84 `0x9aa379`, v87 `0x9eee04`, v95 `0x942200`). No **new** `packet-audit:verify` marker is added on any cell (the meso senders are `fname_alts` absent from the IDA exports; a second marker would orphan under `matrix --check` — see plan Task 3). jms gets no verify pin for the variant tail (§2.3); gms_12/gms_92 stay unverified-follows-family (§2.4).
 
 Clientbound (`character/clientbound/attack.go`): already encodes the variable count when `isMesoExplosion` (line 127-129) and the decode mirror exists; FR-11 is satisfied by adding a meso-explosion round-trip case to `attack_test.go` with per-mob counts differing from `hits`. The jms clientbound read order for the variant was IDA-confirmed this task (§2.3).
 
@@ -185,8 +264,9 @@ Broadcast (FR-11): no writer change — `CharacterAttackMeleeBody` already sets 
 
 ### 5.4 Packet audit artifacts
 
-- Re-run the serverbound melee decompose/evidence flow for the affected versions so the evidence records reflect the variant-bearing read order; regenerate `docs/packets/audits/STATUS.md` via the standard tooling.
-- The jms_v185 melee cell keeps its existing standard-layout pin; the audit MD gains an explicit note: *meso-explosion variant tail unverifiable — sender `0xa3aab1` SCY-virtualized; implemented from v83–v95 invariants + jms clientbound symmetry* (§2.3). gms_v92 follows the `GMS >= 87` family branch and is documented unverified per FR-2.
+- The eight GMS meso senders (v48/v61/v72/v79/v83/v84/v87/v95) are all IDA-verified (§2, §2.1). No **new** `packet-audit:verify` marker or evidence record is added, however: the CLOSE_RANGE_ATTACK serverbound cells stay pinned to the registry-primary fname, and the meso senders — already registered as `fname_alts` on each version's registry row — are absent from the IDA exports, so a second marker per cell would orphan under `matrix --check` (identical rationale to v1's plan Task 3). The verification lives as the fixture + the §2 evidence excerpts; the audit MDs carry a documentation note. Regenerate `docs/packets/audits/STATUS.md`/`status.json` via the standard tooling only if the tool changes them.
+- The jms_v185 melee cell keeps its existing standard-layout pin; the audit MD gains an explicit note: *meso-explosion variant tail unverifiable — sender `0xa3aab1` SCY-virtualized; implemented from v48–v95 invariants + jms clientbound symmetry* (§2.3). gms_v92 (`GMS >= 87` family branch) and gms_12 (very-legacy family branch) are documented unverified-follows-family per §2.4 / FR-2 — but they are template-only, not matrix columns, so they have no audit MD to annotate.
+- The four legacy audit MDs (`docs/packets/audits/gms_v{48,61,72,79}/CharacterAttackMeleeRequest.md`) each get a task-150 note recording the meso sender address and the three verified deltas (mirrors the jms note format), so the legacy meso read order is documented at the cell even though no new verify marker is pinned.
 
 ## 6. Error handling & security invariants
 
@@ -204,6 +284,7 @@ Broadcast (FR-11): no writer change — `CharacterAttackMeleeBody` already sets 
 
 ## 8. Risks & open items
 
-- **jms_v185 serverbound variant is implemented, not proven** (§2.3). Risk bounded by: identical deltas across four verified versions, verified jms dispatch + drop collection + clientbound symmetry. A wrong guess surfaces as a decode misframe warn on jms meso use, not a crash of other tenants.
-- **gms_v92**: unverified by definition (no IDB); follows the `GMS >= 87` branch it already uses for standard attacks.
+- **The eight GMS cells (v48–v95) are IDA-verified** (§2.1). The deltas are identical across the full range — spanning the byte↔short action shift (v79), the per-mob-CRC boundary (v61), and both head-CRC boundaries (v72, v79) — so the flag-threading has no remaining GMS ambiguity.
+- **jms_v185 serverbound variant is implemented, not proven** (§2.3). Risk bounded by: identical deltas across the eight verified GMS versions, verified jms dispatch + drop collection + clientbound symmetry. A wrong guess surfaces as a decode misframe warn on jms meso use, not a crash of other tenants.
+- **gms_v92 / gms_12**: unverified by definition (no IDB, not matrix columns); each follows the family branch it already uses for standard attacks (`GMS >= 87` and `GMS < 48` respectively). Same containment as jms — a misframe warns on that tenant only.
 - The per-drop hit-mask byte and trailing delay are decoded and retained but unused by server logic; they exist for wire fidelity. If a future task wants Cosmic-style staggered destruction, `mesoDelay`/hit masks are already available.

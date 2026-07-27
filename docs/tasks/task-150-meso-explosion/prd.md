@@ -23,7 +23,7 @@ Primary goals:
 - Byte-fixture the decode per supported version with `packet-audit` verification markers.
 
 Non-goals:
-- Pick Pocket (4211003) implementation — separate TODO (`character_attack_common.go:408`). Meso Explosion works against any meso drop regardless of origin, so it does not depend on Pick Pocket.
+- Pick Pocket (4211003) implementation. (Update 2026-07-26: Pick Pocket is now fully implemented on main — task-149 — so it is no longer a pending TODO. Meso Explosion works against any meso drop regardless of origin, so it neither depends on nor touches the Pick Pocket path.)
 - Server-side damage recomputation from destroyed meso amounts or skill data (owner decision: client-trusted).
 - Staggered/delayed drop removal to mirror Cosmic's ~100 ms-per-drop cadence (owner decision: destroy immediately; the client animation covers presentation).
 - Crediting any portion of exploded mesos to the attacker — exploded mesos are purely destroyed.
@@ -42,7 +42,7 @@ Non-goals:
 - FR-1: `AttackInfo.Decode` MUST detect the meso-explosion variant (skill id 4211006, `skill.ChiefBanditMesoExplosionId` in `libs/atlas-constants/skill`) and parse the variant layout:
   - FR-1a: Per-monster damage-line count read per monster entry (variable), instead of the shared `hits` nibble from `numAttackedAndDamageMask`.
   - FR-1b: Trailing exploded-meso list: a count followed by per-entry meso drop object ids.
-- FR-2: The exact byte order for each supported version (gms_v83, gms_v84, gms_v87, gms_v95, jms_v185) MUST be derived from the corresponding client via IDA during design, following `docs/packets/audits/VERIFYING_A_PACKET.md`. Cosmic is a behavioral reference only; no read order may be assumed from Cosmic or from memory. gms_v92 has no IDB: it follows whatever version-family branch the verified neighbors dictate and is documented as unverified.
+- FR-2: The exact byte order for each supported matrix version (the 9 columns: gms_v48, gms_v61, gms_v72, gms_v79, gms_v83, gms_v84, gms_v87, gms_v95, jms_v185) MUST be derived from the corresponding client via IDA during design, following `docs/packets/audits/VERIFYING_A_PACKET.md`. Cosmic is a behavioral reference only; no read order may be assumed from Cosmic or from memory. (Update 2026-07-26: the 4 legacy columns gms_v48/v61/v72/v79 were added to scope after the v1 spec — see design §0/§2, v2 — and are IDA-verified; jms_v185's tail is SCY-virtualized/unverified. gms_v92 and gms_v12 have no IDB and are template-only (not matrix columns): both follow whatever version-family branch the verified neighbors dictate and are documented as unverified.)
 - FR-3: Decoded meso drop ids MUST be exposed on `AttackInfo` via an accessor (e.g. `ExplodedMesoDrops() []uint32`), empty for non-meso-explosion attacks.
 - FR-4: Decode of all existing attack variants (melee/ranged/magic/energy, all versions) MUST remain byte-identical — covered by existing fixtures continuing to pass.
 
@@ -101,7 +101,7 @@ No new entities, fields, or migrations. Drop state remains in the atlas-drops in
 
 ## 10. Acceptance Criteria
 
-- [ ] `AttackInfo` decodes a meso-explosion attack correctly for gms_v83, gms_v84, gms_v87, gms_v95, and jms_v185, proven by byte fixtures derived from IDA-verified read orders; all pre-existing attack fixtures still pass.
+- [ ] `AttackInfo` decodes a meso-explosion attack correctly for all 9 matrix columns (gms_v48, gms_v61, gms_v72, gms_v79, gms_v83, gms_v84, gms_v87, gms_v95, jms_v185), proven by byte fixtures; the 8 GMS read orders are IDA-verified (design §2, v2) and jms follows the verified GMS invariants + jms clientbound symmetry (unverified tail). All pre-existing attack fixtures still pass.
 - [ ] In-game (or integration-level) flow: a meso-explosion attack destroys exactly the listed, validated meso drops with the explode animation visible to all sessions in the field, and the monsters take the client-reported damage.
 - [ ] An attack listing a non-existent drop, a non-meso drop, a drop from another field/instance, a duplicate id, or more drops than the skill level allows is skipped entirely, with a warning log and no side effects.
 - [ ] Exploded mesos yield no meso gain to any character.

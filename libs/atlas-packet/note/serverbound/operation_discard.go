@@ -8,67 +8,45 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
-// Discard-shape config keys, read from the NoteOperationHandle handler options
-// (options["discard"]). CMemoListDlg::SetRet writes a per-entry "special"
-// (gift/reward memo) shape whose flag sentinel and trailing token count vary by
-// client version; rather than hard-code those version literals in the codec,
-// each tenant template supplies them so the same code decodes every version.
-const (
-	// DiscardConfigKey groups the discard-shape values under the handler's
-	// options map.
-	DiscardConfigKey = "discard"
-	// DiscardSpecialFlagKey is the memo flag CMemoListDlg::SetRet treats as a
-	// gift/reward ("special") entry — the only entry kind that claims a free
-	// ETC slot and carries trailing reward token(s). IDA-verified 2 on GMS
-	// v48/v61, 3 on v72+ and jms.
-	DiscardSpecialFlagKey = "specialFlag"
-	// DiscardClaimValueCountKey is how many trailing uint32 reward tokens a
-	// special entry carries — 1 on every GMS SetRet, 2 on jms_v185.
-	DiscardClaimValueCountKey = "claimValueCount"
-)
-
-// discardShape holds the version-specific bits of the discard body, resolved
-// from tenant config so the codec carries no per-version literals.
-type discardShape struct {
-	specialFlag     byte
-	claimValueCount int
+// discardSpecialFlag reports the memo flag CMemoListDlg::SetRet treats as a
+// wedding-invitation ("special") entry — the only entry kind that claims a free
+// ETC slot and carries a trailing marriage number. IDA-verified across every
+// version's SetRet: the earliest GMS builds (v48 0x534dc4, v61 0x5ad50c) use 2,
+// v72 onward (and jms) use 3. The 2->3 shift is an enum renumber, not a
+// behavior change — both binaries ship the same wedding feature (CField_Wedding,
+// OnMarriageResult, GW_MarriageRecord). This is a client-version fact resolved
+// in code (a version feature flag), not tenant configuration.
+func discardSpecialFlag(t tenant.Model) byte {
+	if t.Region() == "GMS" && t.MajorVersion() <= 61 {
+		return 2
+	}
+	return 3
 }
 
-// resolveDiscardShape reads the discard-shape config from the handler options
-// (options["discard"]). A missing/blank config falls back to the majority GMS
-// shape (special flag 3, one claim token) so decode stays well-defined for
-// plain-note batches, where no entry is special and the values are never read.
-func resolveDiscardShape(options map[string]interface{}) discardShape {
-	shape := discardShape{specialFlag: 3, claimValueCount: 1}
-	discard, ok := options[DiscardConfigKey].(map[string]interface{})
-	if !ok {
-		return shape
-	}
-	if v, ok := discard[DiscardSpecialFlagKey].(float64); ok {
-		shape.specialFlag = byte(v)
-	}
-	if v, ok := discard[DiscardClaimValueCountKey].(float64); ok {
-		shape.claimValueCount = int(v)
-	}
-	return shape
+// discardSplitsMarriageNumber reports whether the client sends the wedding
+// invite's marriage number as TWO trailing int32 components rather than one.
+// Only jms_v185 does (CMemoListDlg::SetRet@0x6c2d43 splits the invite message on
+// "_" then "."); every GMS build sends a single value.
+func discardSplitsMarriageNumber(t tenant.Model) bool {
+	return t.Region() == "JMS"
 }
 
-// DiscardEntry is one memo the client asks to discard. A "special" entry — a
-// gift/reward memo (flag == the version's special flag) that the client granted
-// a free ETC slot — additionally echoes the reward token(s) it parsed out of
-// the memo's message so the server can grant them: v95's CMemoListDlg::SetRet
-// stores that value in a local named strMarriageNo (a wedding-invite number),
-// and per design §1.5 it is a reward on v48, itemId on v61, mesos on v72, etc.
-// Gift/reward memos are out of scope for the note feature (design §2.3) — Atlas
-// never creates one, so ClaimValues is empty for every discard it actually
-// handles; the field exists so the codec models the full wire and a future gift
-// task has the shape and evidence ready.
+// DiscardEntry is one memo the client asks to discard. A "special" entry is a
+// WEDDING INVITATION (flag == discardSpecialFlag): SetRet's no-slot notice is
+// the "...TO RECEIVE WEDDING INVITES" string and v95's PDB names the parsed
+// value strMarriageNo. When such an invite is discarded and the client has a
+// free ETC slot, it parses the marriage number out of the invite's message and
+// appends it. Wedding invites are out of scope for the note feature (design
+// §2.3) — Atlas never creates one, so MarriageNumber is 0 for every discard it
+// actually handles; the fields exist so the codec models the full client wire.
 type DiscardEntry struct {
-	id          uint32
-	flag        byte
-	claimValues []uint32
+	id             uint32
+	flag           byte
+	marriageNumber uint32
+	unknown1       uint32
 }
 
 func (e DiscardEntry) Id() uint32 {
@@ -79,10 +57,19 @@ func (e DiscardEntry) Flag() byte {
 	return e.flag
 }
 
-// ClaimValues returns the reward token(s) a special (gift/reward) memo entry
-// carries — nil for a normal entry. See DiscardEntry.
-func (e DiscardEntry) ClaimValues() []uint32 {
-	return e.claimValues
+// MarriageNumber is the wedding-invite / marriage number a special entry carries
+// (v95 SetRet's strMarriageNo). Zero on a normal (non-wedding) entry.
+func (e DiscardEntry) MarriageNumber() uint32 {
+	return e.marriageNumber
+}
+
+// Unknown1 is jms_v185's second marriage-number component — the client splits
+// the invite message into two dot-separated int32s and sends both. Its precise
+// role is not determinable from the (non-PDB) jms client, so it is left
+// unnamed per convention. Zero on every GMS version (single value) and on
+// normal entries.
+func (e DiscardEntry) Unknown1() uint32 {
+	return e.unknown1
 }
 
 // packet-audit:fname CMemoListDlg::SetRet
@@ -98,11 +85,10 @@ func (m OperationDiscard) Count() byte {
 }
 
 // SpecialCount is the third header byte CMemoListDlg::SetRet writes on EVERY
-// version (IDA-verified v48-v95 + jms): the number of memos in the client's
-// local list whose flag equals the version's special flag, counted before the
-// free-slot budget is applied. (An earlier revision wrongly modeled this as a
-// jms-only field, which mis-aligned the GMS discard body by one byte and
-// crashed the client on decode.)
+// version (IDA-verified v48-v95 + jms): the number of wedding-invite memos in
+// the client's local list, counted before the free-slot budget is applied. (An
+// earlier revision wrongly modeled this as a jms-only field, which mis-aligned
+// the GMS discard body by one byte and crashed the client on decode.)
 func (m OperationDiscard) SpecialCount() byte {
 	return m.specialCount
 }
@@ -124,9 +110,9 @@ func (m OperationDiscard) String() string {
 }
 
 // wireEntryCount is the number of memo entries actually present on the wire.
-// CMemoListDlg::SetRet OMITS a special entry entirely once the free-slot budget
-// (emptySlotCount) is exhausted — the loop sets a "not enough slot" flag and
-// writes no bytes for it. So the wire carries totalCount minus the special
+// CMemoListDlg::SetRet OMITS a wedding-invite entry entirely once the free-slot
+// budget (emptySlotCount) is exhausted — the loop sets a "not enough slot" flag
+// and writes no bytes for it. So the wire carries totalCount minus the special
 // entries that overflowed the budget. IDA-verified identical on every GMS
 // version and jms.
 func (m OperationDiscard) wireEntryCount() byte {
@@ -136,23 +122,22 @@ func (m OperationDiscard) wireEntryCount() byte {
 	return m.count
 }
 
-func (m OperationDiscard) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m OperationDiscard) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	t := tenant.MustFromContext(ctx)
+	specialFlag := discardSpecialFlag(t)
+	splitMarriage := discardSplitsMarriageNumber(t)
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
-		shape := resolveDiscardShape(options)
 		w.WriteByte(m.count)
 		w.WriteByte(m.specialCount)
 		w.WriteByte(m.emptySlotCount)
 		for _, e := range m.entries {
 			w.WriteInt(e.id)
 			w.WriteByte(e.flag)
-			if e.flag == shape.specialFlag {
-				for i := 0; i < shape.claimValueCount; i++ {
-					var v uint32
-					if i < len(e.claimValues) {
-						v = e.claimValues[i]
-					}
-					w.WriteInt(v)
+			if e.flag == specialFlag {
+				w.WriteInt(e.marriageNumber)
+				if splitMarriage {
+					w.WriteInt(e.unknown1)
 				}
 			}
 		}
@@ -160,9 +145,11 @@ func (m OperationDiscard) Encode(l logrus.FieldLogger, _ context.Context) func(o
 	}
 }
 
-func (m *OperationDiscard) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *OperationDiscard) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
+	specialFlag := discardSpecialFlag(t)
+	splitMarriage := discardSplitsMarriageNumber(t)
 	return func(r *request.Reader, options map[string]interface{}) {
-		shape := resolveDiscardShape(options)
 		m.count = r.ReadByte()
 		m.specialCount = r.ReadByte()
 		m.emptySlotCount = r.ReadByte()
@@ -174,10 +161,10 @@ func (m *OperationDiscard) Decode(_ logrus.FieldLogger, _ context.Context) func(
 				id:   r.ReadUint32(),
 				flag: r.ReadByte(),
 			}
-			if e.flag == shape.specialFlag && shape.claimValueCount > 0 {
-				e.claimValues = make([]uint32, shape.claimValueCount)
-				for j := 0; j < shape.claimValueCount; j++ {
-					e.claimValues[j] = r.ReadUint32()
+			if e.flag == specialFlag {
+				e.marriageNumber = r.ReadUint32()
+				if splitMarriage {
+					e.unknown1 = r.ReadUint32()
 				}
 			}
 			m.entries = append(m.entries, e)

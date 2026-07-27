@@ -124,7 +124,7 @@ func TestOperationDiscardGMS72PlusSpecialByteOutput(t *testing.T) {
 		emptySlotCount: 3,
 		entries: []DiscardEntry{
 			{id: 100, flag: 1},
-			{id: 200, flag: 3, claimValues: []uint32{500}},
+			{id: 200, flag: 3, marriageNumber: 500},
 		},
 	}
 	want := []byte{
@@ -135,18 +135,11 @@ func TestOperationDiscardGMS72PlusSpecialByteOutput(t *testing.T) {
 		0x01,                   // entry[0].flag = 1 (normal)
 		0xC8, 0x00, 0x00, 0x00, // entry[1].id = 200
 		0x03,                   // entry[1].flag = 3 (special)
-		0xF4, 0x01, 0x00, 0x00, // entry[1].extra1 = 500
+		0xF4, 0x01, 0x00, 0x00, // entry[1].marriageNumber = 500
 	}
-	// gms_v83's special flag (3) and claim-value count (1) come from the
-	// tenant template's NoteOperationHandle.options.discard config (see
-	// resolveDiscardShape), not a code literal.
-	options := map[string]interface{}{
-		DiscardConfigKey: map[string]interface{}{
-			DiscardSpecialFlagKey:     float64(3),
-			DiscardClaimValueCountKey: float64(1),
-		},
-	}
-	if got := pt.Encode(t, ctx, input.Encode, options); !bytes.Equal(got, want) {
+	// gms_v83's special flag (3) is resolved from the tenant version in code
+	// (discardSpecialFlag: GMS>61 -> 3), not tenant config.
+	if got := pt.Encode(t, ctx, input.Encode, nil); !bytes.Equal(got, want) {
 		t.Errorf("gms_v83 NoteOperationDiscard special-entry golden mismatch\n got: % x\nwant: % x", got, want)
 	}
 }
@@ -222,15 +215,9 @@ func TestOperationDiscardRoundTrip(t *testing.T) {
 func TestOperationDiscardJMSSpecialEntry(t *testing.T) {
 	ctx := pt.CreateContext("JMS", 185, 1)
 
-	// jms_v185's special flag (3) and claim-value count (2) come from the
-	// tenant template's NoteOperationHandle.options.discard config (see
-	// resolveDiscardShape), not a code literal.
-	options := map[string]interface{}{
-		DiscardConfigKey: map[string]interface{}{
-			DiscardSpecialFlagKey:     float64(noteDiscardSpecialFlagJMS),
-			DiscardClaimValueCountKey: float64(2),
-		},
-	}
+	// jms_v185's special flag (3) and the marriage-number split are resolved
+	// from the tenant version in code (discardSpecialFlag / splitsMarriage
+	// Number), not tenant config.
 
 	t.Run("no skip - special entry has room", func(t *testing.T) {
 		// 3 local entries: 2 normal + 1 special(flag=3), 1 free slot -> nothing skipped.
@@ -241,11 +228,11 @@ func TestOperationDiscardJMSSpecialEntry(t *testing.T) {
 			entries: []DiscardEntry{
 				{id: 100, flag: 0},
 				{id: 200, flag: 0},
-				{id: 300, flag: noteDiscardSpecialFlagJMS, claimValues: []uint32{999, 555}},
+				{id: 300, flag: noteDiscardSpecialFlagJMS, marriageNumber: 999, unknown1: 555},
 			},
 		}
 		output := OperationDiscard{}
-		pt.RoundTrip(t, ctx, input.Encode, output.Decode, options)
+		pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 
 		if output.Count() != 3 {
 			t.Errorf("count: got %v, want 3", output.Count())
@@ -263,12 +250,12 @@ func TestOperationDiscardJMSSpecialEntry(t *testing.T) {
 		if last.Id() != 300 || last.Flag() != noteDiscardSpecialFlagJMS {
 			t.Errorf("special entry id/flag: got id=%v flag=%v, want id=300 flag=%v", last.Id(), last.Flag(), noteDiscardSpecialFlagJMS)
 		}
-		if len(last.ClaimValues()) != 2 || last.ClaimValues()[0] != 999 || last.ClaimValues()[1] != 555 {
-			t.Errorf("special entry claim values: got %v, want (999,555)", last.ClaimValues())
+		if last.MarriageNumber() != 999 || last.Unknown1() != 555 {
+			t.Errorf("special entry marriage number/unknown1: got (%v,%v), want (999,555)", last.MarriageNumber(), last.Unknown1())
 		}
 		for i := 0; i < 2; i++ {
-			if output.Entries()[i].Flag() != 0 || len(output.Entries()[i].ClaimValues()) != 0 {
-				t.Errorf("normal entry[%d] carries unexpected claim values: %+v", i, output.Entries()[i])
+			if output.Entries()[i].Flag() != 0 || output.Entries()[i].MarriageNumber() != 0 || output.Entries()[i].Unknown1() != 0 {
+				t.Errorf("normal entry[%d] carries unexpected marriage data: %+v", i, output.Entries()[i])
 			}
 		}
 	})
@@ -286,7 +273,7 @@ func TestOperationDiscardJMSSpecialEntry(t *testing.T) {
 			},
 		}
 		output := OperationDiscard{}
-		pt.RoundTrip(t, ctx, input.Encode, output.Decode, options)
+		pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 
 		if output.Count() != 3 {
 			t.Errorf("count: got %v, want 3", output.Count())
@@ -311,18 +298,18 @@ func TestOperationDiscardJMSSpecialEntry(t *testing.T) {
 			specialCount:   2,
 			emptySlotCount: 1,
 			entries: []DiscardEntry{
-				{id: 500, flag: noteDiscardSpecialFlagJMS, claimValues: []uint32{7, 8}},
+				{id: 500, flag: noteDiscardSpecialFlagJMS, marriageNumber: 7, unknown1: 8},
 			},
 		}
 		output := OperationDiscard{}
-		pt.RoundTrip(t, ctx, input.Encode, output.Decode, options)
+		pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 
 		if len(output.Entries()) != 1 {
 			t.Fatalf("entries length: got %v, want 1", len(output.Entries()))
 		}
 		e := output.Entries()[0]
-		if e.Id() != 500 || e.Flag() != noteDiscardSpecialFlagJMS || len(e.ClaimValues()) != 2 || e.ClaimValues()[0] != 7 || e.ClaimValues()[1] != 8 {
-			t.Errorf("surviving special entry: got %+v, want id=500 flag=%v claimValues=[7 8]", e, noteDiscardSpecialFlagJMS)
+		if e.Id() != 500 || e.Flag() != noteDiscardSpecialFlagJMS || e.MarriageNumber() != 7 || e.Unknown1() != 8 {
+			t.Errorf("surviving special entry: got %+v, want id=500 flag=%v marriageNumber=7 unknown1=8", e, noteDiscardSpecialFlagJMS)
 		}
 	})
 }

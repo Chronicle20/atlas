@@ -1,10 +1,10 @@
 {
   "toolSha": "bb7ef5945ed2f38de09e0f193a867582e04c4cb1771d7deafddb02802e9b8591",
   "exportHashes": {
-    "gms_v48": "0f41bff36a13ec9ffbecffaaacd08c70225e5a306558410fbb03aa3abc787771",
-    "gms_v61": "7d75a30019ccda4137f0586e127946b4ae64eeffa08a4c71319ad7d8bee76007",
-    "gms_v72": "ae88cf97d8b60ac757f01423a7d66bc2d53e645835ece106466f817e78c6663a",
-    "gms_v79": "a140abb396e3f499408ff45076102c77c3d46a89ca2d2fbe7466e05c243d93cc",
+    "gms_v48": "7227e5b3b9732a9e058253b42a72d2128debc93b034053ed481cac9c3713d37e",
+    "gms_v61": "9156aa30ab53ded5bb6eef0bb4909646683fe3da36f70efab818298ca3c7c625",
+    "gms_v72": "a1fbd5c1778160565297be66f71b8d1ce8c046cf00bc2bf0783e55778ac5c955",
+    "gms_v79": "ef394e082e4778599e99e305de8d045e7b8907cf2e43cd46f049599c2a18960c",
     "gms_v83": "41c605b512b99361f56c425c0a240685308e3cd82c599ab235f98901470325f2",
     "gms_v84": "cd78da45b5434b5c6da9628f9032f06c102e1b8783abcaa8960441ca15fa057e",
     "gms_v87": "4fbc70fa0d0b84adf603839d62b89c6d572f40eadcdd1dc2d7ea0f3ef0cb41d7",
@@ -34463,7 +34463,7 @@
     {
       "kind": "op",
       "op": "CASHSHOP_OPERATION",
-      "packet": "cash/clientbound/CashCashItemMovedToCashInventory",
+      "packet": "cash/clientbound/CashBuyFailed",
       "direction": "clientbound",
       "tier1": true,
       "fnames": [
@@ -34567,7 +34567,7 @@
     {
       "kind": "op",
       "op": "CASHSHOP_CASH_ITEM_RESULT",
-      "packet": "cash/clientbound/CashCashItemMovedToCashInventory",
+      "packet": "cash/clientbound/CashBuyFailed",
       "direction": "clientbound",
       "tier1": true,
       "fnames": [

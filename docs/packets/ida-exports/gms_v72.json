@@ -3,6 +3,146 @@
   "md5": "",
   "generated_at": "2026-07-01T15:41:36Z",
   "functions": {
+    "CCashShop::OnCashItemResult#LOAD_GIFT_FAILED": {
+      "address": "0x471450",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x3A LOAD_GIFT_FAILED; op-byte consumed by dispatcher before OnCashItemResLoadGiftFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#LOAD_WISH_FAILED": {
+      "address": "0x4714b2",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x3C LOAD_WISH_FAILED; op-byte consumed by dispatcher before OnCashItemResLoadWishFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#SET_WISH_FAILED": {
+      "address": "0x471537",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x42 SET_WISH_FAILED; op-byte consumed by dispatcher before OnCashItemResSetWishFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#BUY_FAILED": {
+      "address": "0x471615",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x44 BUY_FAILED; op-byte consumed by dispatcher before OnCashItemResBuyFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#USE_COUPON_FAILED": {
+      "address": "0x4724a4",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x48 USE_COUPON_FAILED; op-byte consumed by dispatcher before OnCashItemResUseCouponFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#GIFT_FAILED": {
+      "address": "0x47262c",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x4B GIFT_FAILED; op-byte consumed by dispatcher before OnCashItemResGiftFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#INC_TRUNK_COUNT_FAILED": {
+      "address": "0x472856",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x4F INC_TRUNK_COUNT_FAILED; op-byte consumed by dispatcher before OnCashItemResIncTrunkCountFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#INC_CHARACTER_SLOT_COUNT_FAILED": {
+      "address": "0x472927",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x51 INC_CHARACTER_SLOT_COUNT_FAILED; op-byte consumed by dispatcher before OnCashItemResIncCharacterSlotCountFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#INC_BUY_CHARACTER_COUNT_FAILED": {
+      "address": "0x472bbb",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x53 INC_BUY_CHARACTER_COUNT_FAILED; op-byte consumed by dispatcher before OnCashItemResIncBuyCharacterCountFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#MOVE_S_TO_L_FAILED": {
+      "address": "0x472e30",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x55 MOVE_S_TO_L_FAILED; op-byte consumed by dispatcher before OnCashItemResMoveStoLFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (reason byte)"
+        }
+      ]
+    },
     "CUser::OnMiniRoomBalloon#Remove": {
       "address": "0x847df1",
       "direction": "clientbound",

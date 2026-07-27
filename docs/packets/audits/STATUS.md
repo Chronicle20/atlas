@@ -6,10 +6,10 @@
 
 Tool: `bb7ef5945ed2f38de09e0f193a867582e04c4cb1771d7deafddb02802e9b8591`
 
-- export gms_v48: `0f41bff36a13ec9ffbecffaaacd08c70225e5a306558410fbb03aa3abc787771`
-- export gms_v61: `7d75a30019ccda4137f0586e127946b4ae64eeffa08a4c71319ad7d8bee76007`
-- export gms_v72: `ae88cf97d8b60ac757f01423a7d66bc2d53e645835ece106466f817e78c6663a`
-- export gms_v79: `a140abb396e3f499408ff45076102c77c3d46a89ca2d2fbe7466e05c243d93cc`
+- export gms_v48: `7227e5b3b9732a9e058253b42a72d2128debc93b034053ed481cac9c3713d37e`
+- export gms_v61: `9156aa30ab53ded5bb6eef0bb4909646683fe3da36f70efab818298ca3c7c625`
+- export gms_v72: `a1fbd5c1778160565297be66f71b8d1ce8c046cf00bc2bf0783e55778ac5c955`
+- export gms_v79: `ef394e082e4778599e99e305de8d045e7b8907cf2e43cd46f049599c2a18960c`
 - export gms_v83: `41c605b512b99361f56c425c0a240685308e3cd82c599ab235f98901470325f2`
 - export gms_v84: `cd78da45b5434b5c6da9628f9032f06c102e1b8783abcaa8960441ca15fa057e`
 - export gms_v87: `4fbc70fa0d0b84adf603839d62b89c6d572f40eadcdd1dc2d7ea0f3ef0cb41d7`
@@ -400,9 +400,9 @@ Tool: `bb7ef5945ed2f38de09e0f193a867582e04c4cb1771d7deafddb02802e9b8591`
 | CASHSHOP_NOTICE_FREE_CASH_ITEM | CCashShop::OnNoticeFreeCashItem |  |  | ⬜ | 0x0FD | ❌ | 0x121 | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | CASHSHOP_ONE_A_DAY | CCashShop::OnOneADay |  |  | ⬜ | 0x0FE | ❌ | 0x122 | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | IDA_0X0FE | CCashShop::OnNoticeFreeCashItem |  | 0x0FE | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
-| CASHSHOP_OPERATION | CCashShop::OnCashItemResult | cash/clientbound/CashCashItemMovedToCashInventory (T1) |  | ⬜ | 0x0FF | 🧩 | 0x123 | 🧩 | 0x12F | 🧩 | 0x145 | 🧩 | 0x14C | 🧩 | 0x156 | 🧩 | 0x180 | 🧩 | 0x164 | 🧩 |
+| CASHSHOP_OPERATION | CCashShop::OnCashItemResult | cash/clientbound/CashBuyFailed (T1) |  | ⬜ | 0x0FF | 🧩 | 0x123 | 🧩 | 0x12F | 🧩 | 0x145 | 🧩 | 0x14C | 🧩 | 0x156 | 🧩 | 0x180 | 🧩 | 0x164 | 🧩 |
 | IDA_0X0FF | CCashShop::OnOneADay |  | 0x0FF | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
-| CASHSHOP_CASH_ITEM_RESULT | CCashShop::OnCashItemResult | cash/clientbound/CashCashItemMovedToCashInventory (T1) | 0x100 | 🧩 |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
+| CASHSHOP_CASH_ITEM_RESULT | CCashShop::OnCashItemResult | cash/clientbound/CashBuyFailed (T1) | 0x100 | 🧩 |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | CASHSHOP_CASH_ITEM_GACHAPON_RESULT | CCashShop::OnCashItemGachaponResult |  | 0x101 | ❌ | 0x100 | ❌ | 0x124 | ❌ |  | ⬜ | 0x14D | ❌ | 0x154 | ❌ | 0x15E | ❌ | 0x188 | ❌ | 0x16D | ❌ |
 | CASHSHOP_CHECK_NAME_CHANGE | CCashShop::OnCheckDuplicatedIDResult; CCashShop::OnCheckNameChangePossibleResult; sub_455A7F; sub_463900; sub_473519 |  | 0x102 | ❌ | 0x101 | ❌ | 0x125 | ❌ | 0x131 | ❌ | 0x148 | ❌ | 0x14F | ❌ | 0x159 | ❌ | 0x183 | ❌ |  | ⬜ |
 | CASHSHOP_GACHAPON_STAMP_RESULT | CCashShop::OnCashShopGachaponStampResult |  | 0x103 | ❌ | 0x102 | ❌ | 0x126 | ❌ | 0x135 | ❌ | 0x14C | ❌ | 0x153 | ❌ | 0x15D | ❌ | 0x187 | ❌ | 0x16B | ❌ |

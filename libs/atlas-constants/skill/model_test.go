@@ -35,7 +35,7 @@ func TestIsKeyDownSkill(t *testing.T) {
 	notKeydown := []Id{
 		FirePoisonMagicianExplosionId, // 2111002 — DROPPED (FR-1.4), not keydown in client
 		ChiefBanditChakraId,           // 4211001 — DROPPED (FR-1.4), not keydown in client
-		Id(1100003),                   // Hero Combo Attack — plain non-keydown control
+		FighterFinalAttackAxeId,       // 1100003 — plain non-keydown control
 	}
 	for _, id := range notKeydown {
 		if IsKeyDownSkill(id) {

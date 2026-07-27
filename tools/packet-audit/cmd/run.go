@@ -2369,6 +2369,56 @@ func candidatesFromFName(fname string) []candidate {
 	case "CCashShop::OnCashItemResult#CashItemMovedToInventory":
 		// case 0x77 MOVE_L_TO_S_DONE (OnCashItemResMoveLtoSDone): mode + Decode2(slot) + GW_ItemSlotBase (model.Asset).
 		return []candidate{{name: "CashItemMovedToInventory", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	// Failure-arm family (task-183 Wave 1.1): discrete mode+reason structs, one per arm.
+	// CHANGE_MAPLE_POINT_FAILED is bodyless (mode byte only, RE-confirmed zero further reads).
+	case "CCashShop::OnCashItemResult#LOAD_GIFT_FAILED":
+		return []candidate{{name: "LoadGiftFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#LOAD_WISH_FAILED":
+		return []candidate{{name: "LoadWishFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#SET_WISH_FAILED":
+		return []candidate{{name: "SetWishFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#BUY_FAILED":
+		return []candidate{{name: "BuyFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#USE_COUPON_FAILED":
+		return []candidate{{name: "UseCouponFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#GIFT_FAILED":
+		return []candidate{{name: "GiftFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#INC_TRUNK_COUNT_FAILED":
+		return []candidate{{name: "IncTrunkCountFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#INC_CHARACTER_SLOT_COUNT_FAILED":
+		return []candidate{{name: "IncCharacterSlotCountFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#INC_BUY_CHARACTER_COUNT_FAILED":
+		return []candidate{{name: "IncBuyCharacterCountFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#ENABLE_EQUIP_SLOT_EXT_FAILED":
+		return []candidate{{name: "EnableEquipSlotExtFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#MOVE_L_TO_S_FAILED":
+		return []candidate{{name: "MoveLToSFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#MOVE_S_TO_L_FAILED":
+		return []candidate{{name: "MoveSToLFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#DESTROY_FAILED":
+		return []candidate{{name: "DestroyFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#REBATE_FAILED":
+		return []candidate{{name: "RebateFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#COUPLE_FAILED":
+		return []candidate{{name: "CoupleFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#BUY_PACKAGE_FAILED":
+		return []candidate{{name: "BuyPackageFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#GIFT_PACKAGE_FAILED":
+		return []candidate{{name: "GiftPackageFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#BUY_NORMAL_FAILED":
+		return []candidate{{name: "BuyNormalFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#FRIENDSHIP_FAILED":
+		return []candidate{{name: "FriendshipFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#PURCHASE_RECORD_FAILED":
+		return []candidate{{name: "PurchaseRecordFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#TRANSFER_WORLD_FAILED":
+		return []candidate{{name: "TransferWorldFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#GACHAPON_OPEN_FAILED":
+		return []candidate{{name: "GachaponOpenFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#GACHAPON_COPY_FAILED":
+		return []candidate{{name: "GachaponCopyFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	case "CCashShop::OnCashItemResult#CHANGE_MAPLE_POINT_FAILED":
+		return []candidate{{name: "ChangeMaplePointFailed", dir: csvpkg.DirClientbound, pkg: "cash"}}
 	// Serverbound CCashShop senders (op-byte owned by the ShopOperation dispatcher; bodies below).
 	case "CCashShop::TrySendQueryCashRequest":
 		return []candidate{{name: "CheckWallet", dir: csvpkg.DirServerbound, pkg: "cash"}}

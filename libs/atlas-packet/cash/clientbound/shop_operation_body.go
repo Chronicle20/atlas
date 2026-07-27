@@ -21,6 +21,32 @@ const (
 	CashShopOperationCashItemMovedToInventory         = "CASH_ITEM_MOVED_TO_INVENTORY"
 	CashShopOperationCashItemMovedToCashInventory     = "CASH_ITEM_MOVED_TO_CASH_INVENTORY"
 
+	// Failure-arm operation keys (task-183 Wave 1.1).
+	CashShopOperationLoadGiftFailed              = "LOAD_GIFT_FAILED"
+	CashShopOperationLoadWishFailed              = "LOAD_WISH_FAILED"
+	CashShopOperationSetWishFailed               = "SET_WISH_FAILED"
+	CashShopOperationBuyFailed                   = "BUY_FAILED"
+	CashShopOperationUseCouponFailed             = "USE_COUPON_FAILED"
+	CashShopOperationGiftFailed                  = "GIFT_FAILED"
+	CashShopOperationIncTrunkCountFailed         = "INC_TRUNK_COUNT_FAILED"
+	CashShopOperationIncCharacterSlotCountFailed = "INC_CHARACTER_SLOT_COUNT_FAILED"
+	CashShopOperationIncBuyCharacterCountFailed  = "INC_BUY_CHARACTER_COUNT_FAILED"
+	CashShopOperationEnableEquipSlotExtFailed    = "ENABLE_EQUIP_SLOT_EXT_FAILED"
+	CashShopOperationMoveLToSFailed              = "MOVE_L_TO_S_FAILED"
+	CashShopOperationMoveSToLFailed              = "MOVE_S_TO_L_FAILED"
+	CashShopOperationDestroyFailed               = "DESTROY_FAILED"
+	CashShopOperationRebateFailed                = "REBATE_FAILED"
+	CashShopOperationCoupleFailed                = "COUPLE_FAILED"
+	CashShopOperationBuyPackageFailed            = "BUY_PACKAGE_FAILED"
+	CashShopOperationGiftPackageFailed           = "GIFT_PACKAGE_FAILED"
+	CashShopOperationBuyNormalFailed             = "BUY_NORMAL_FAILED"
+	CashShopOperationFriendshipFailed            = "FRIENDSHIP_FAILED"
+	CashShopOperationPurchaseRecordFailed        = "PURCHASE_RECORD_FAILED"
+	CashShopOperationTransferWorldFailed         = "TRANSFER_WORLD_FAILED"
+	CashShopOperationGachaponOpenFailed          = "GACHAPON_OPEN_FAILED"
+	CashShopOperationGachaponCopyFailed          = "GACHAPON_COPY_FAILED"
+	CashShopOperationChangeMaplePointFailed      = "CHANGE_MAPLE_POINT_FAILED"
+
 	CashShopOperationErrorUnknown                           = "UNKNOWN_ERROR"
 	CashShopOperationErrorRequestTimedOut                   = "REQUEST_TIMED_OUT"
 	CashShopOperationErrorNotEnoughCash                     = "NOT_ENOUGH_CASH"
@@ -149,5 +175,255 @@ func CashShopCashItemMovedToInventoryBody(slot uint16, asset packetmodel.Asset) 
 func CashShopCashItemMovedToCashInventoryBody(item CashInventoryItem) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", CashShopOperationCashItemMovedToCashInventory, func(mode byte) packet.Encoder {
 		return NewCashItemMovedToCashInventory(mode, item)
+	})
+}
+
+// --- Failure-arm bodies (task-183 Wave 1.1) ---
+// Each mode+reason failure arm resolves its mode from the "operations" table
+// (FIXED operation key, never caller-supplied) and its reason byte from the
+// "errors" table via `message` (allowed per AP-4/INV-3).
+
+func CashShopLoadGiftFailedBody(message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			mode := atlas_packet.ResolveCode(l, options, "operations", CashShopOperationLoadGiftFailed)
+			errorCode := atlas_packet.ResolveCode(l, options, "errors", message)
+			return NewLoadGiftFailed(mode, errorCode).Encode(l, ctx)(options)
+		}
+	}
+}
+
+func CashShopLoadWishFailedBody(message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			mode := atlas_packet.ResolveCode(l, options, "operations", CashShopOperationLoadWishFailed)
+			errorCode := atlas_packet.ResolveCode(l, options, "errors", message)
+			return NewLoadWishFailed(mode, errorCode).Encode(l, ctx)(options)
+		}
+	}
+}
+
+func CashShopSetWishFailedBody(message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			mode := atlas_packet.ResolveCode(l, options, "operations", CashShopOperationSetWishFailed)
+			errorCode := atlas_packet.ResolveCode(l, options, "errors", message)
+			return NewSetWishFailed(mode, errorCode).Encode(l, ctx)(options)
+		}
+	}
+}
+
+// CashShopBuyFailedBody builds the BUY_FAILED arm (CCashShop::OnCashItemResBuyFailed).
+// FIXES the BUY_FAILED operation key; resolves the reason byte from the writer's
+// "errors" table. `message` flows into the "errors" key (allowed), never "operations".
+func CashShopBuyFailedBody(message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			mode := atlas_packet.ResolveCode(l, options, "operations", CashShopOperationBuyFailed)
+			errorCode := atlas_packet.ResolveCode(l, options, "errors", message)
+			return NewBuyFailed(mode, errorCode).Encode(l, ctx)(options)
+		}
+	}
+}
+
+func CashShopUseCouponFailedBody(message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			mode := atlas_packet.ResolveCode(l, options, "operations", CashShopOperationUseCouponFailed)
+			errorCode := atlas_packet.ResolveCode(l, options, "errors", message)
+			return NewUseCouponFailed(mode, errorCode).Encode(l, ctx)(options)
+		}
+	}
+}
+
+func CashShopGiftFailedBody(message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			mode := atlas_packet.ResolveCode(l, options, "operations", CashShopOperationGiftFailed)
+			errorCode := atlas_packet.ResolveCode(l, options, "errors", message)
+			return NewGiftFailed(mode, errorCode).Encode(l, ctx)(options)
+		}
+	}
+}
+
+func CashShopIncTrunkCountFailedBody(message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			mode := atlas_packet.ResolveCode(l, options, "operations", CashShopOperationIncTrunkCountFailed)
+			errorCode := atlas_packet.ResolveCode(l, options, "errors", message)
+			return NewIncTrunkCountFailed(mode, errorCode).Encode(l, ctx)(options)
+		}
+	}
+}
+
+func CashShopIncCharacterSlotCountFailedBody(message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			mode := atlas_packet.ResolveCode(l, options, "operations", CashShopOperationIncCharacterSlotCountFailed)
+			errorCode := atlas_packet.ResolveCode(l, options, "errors", message)
+			return NewIncCharacterSlotCountFailed(mode, errorCode).Encode(l, ctx)(options)
+		}
+	}
+}
+
+func CashShopIncBuyCharacterCountFailedBody(message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			mode := atlas_packet.ResolveCode(l, options, "operations", CashShopOperationIncBuyCharacterCountFailed)
+			errorCode := atlas_packet.ResolveCode(l, options, "errors", message)
+			return NewIncBuyCharacterCountFailed(mode, errorCode).Encode(l, ctx)(options)
+		}
+	}
+}
+
+func CashShopEnableEquipSlotExtFailedBody(message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			mode := atlas_packet.ResolveCode(l, options, "operations", CashShopOperationEnableEquipSlotExtFailed)
+			errorCode := atlas_packet.ResolveCode(l, options, "errors", message)
+			return NewEnableEquipSlotExtFailed(mode, errorCode).Encode(l, ctx)(options)
+		}
+	}
+}
+
+func CashShopMoveLToSFailedBody(message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			mode := atlas_packet.ResolveCode(l, options, "operations", CashShopOperationMoveLToSFailed)
+			errorCode := atlas_packet.ResolveCode(l, options, "errors", message)
+			return NewMoveLToSFailed(mode, errorCode).Encode(l, ctx)(options)
+		}
+	}
+}
+
+func CashShopMoveSToLFailedBody(message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			mode := atlas_packet.ResolveCode(l, options, "operations", CashShopOperationMoveSToLFailed)
+			errorCode := atlas_packet.ResolveCode(l, options, "errors", message)
+			return NewMoveSToLFailed(mode, errorCode).Encode(l, ctx)(options)
+		}
+	}
+}
+
+func CashShopDestroyFailedBody(message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			mode := atlas_packet.ResolveCode(l, options, "operations", CashShopOperationDestroyFailed)
+			errorCode := atlas_packet.ResolveCode(l, options, "errors", message)
+			return NewDestroyFailed(mode, errorCode).Encode(l, ctx)(options)
+		}
+	}
+}
+
+func CashShopRebateFailedBody(message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			mode := atlas_packet.ResolveCode(l, options, "operations", CashShopOperationRebateFailed)
+			errorCode := atlas_packet.ResolveCode(l, options, "errors", message)
+			return NewRebateFailed(mode, errorCode).Encode(l, ctx)(options)
+		}
+	}
+}
+
+func CashShopCoupleFailedBody(message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			mode := atlas_packet.ResolveCode(l, options, "operations", CashShopOperationCoupleFailed)
+			errorCode := atlas_packet.ResolveCode(l, options, "errors", message)
+			return NewCoupleFailed(mode, errorCode).Encode(l, ctx)(options)
+		}
+	}
+}
+
+func CashShopBuyPackageFailedBody(message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			mode := atlas_packet.ResolveCode(l, options, "operations", CashShopOperationBuyPackageFailed)
+			errorCode := atlas_packet.ResolveCode(l, options, "errors", message)
+			return NewBuyPackageFailed(mode, errorCode).Encode(l, ctx)(options)
+		}
+	}
+}
+
+func CashShopGiftPackageFailedBody(message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			mode := atlas_packet.ResolveCode(l, options, "operations", CashShopOperationGiftPackageFailed)
+			errorCode := atlas_packet.ResolveCode(l, options, "errors", message)
+			return NewGiftPackageFailed(mode, errorCode).Encode(l, ctx)(options)
+		}
+	}
+}
+
+func CashShopBuyNormalFailedBody(message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			mode := atlas_packet.ResolveCode(l, options, "operations", CashShopOperationBuyNormalFailed)
+			errorCode := atlas_packet.ResolveCode(l, options, "errors", message)
+			return NewBuyNormalFailed(mode, errorCode).Encode(l, ctx)(options)
+		}
+	}
+}
+
+func CashShopFriendshipFailedBody(message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			mode := atlas_packet.ResolveCode(l, options, "operations", CashShopOperationFriendshipFailed)
+			errorCode := atlas_packet.ResolveCode(l, options, "errors", message)
+			return NewFriendshipFailed(mode, errorCode).Encode(l, ctx)(options)
+		}
+	}
+}
+
+// CashShopPurchaseRecordFailedBody builds the PURCHASE_RECORD_FAILED arm. The
+// wire carries a reason byte that the client reads and discards (task-183
+// design decision #3) — modeled as a normal mode+reason failure.
+func CashShopPurchaseRecordFailedBody(message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			mode := atlas_packet.ResolveCode(l, options, "operations", CashShopOperationPurchaseRecordFailed)
+			errorCode := atlas_packet.ResolveCode(l, options, "errors", message)
+			return NewPurchaseRecordFailed(mode, errorCode).Encode(l, ctx)(options)
+		}
+	}
+}
+
+func CashShopTransferWorldFailedBody(message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			mode := atlas_packet.ResolveCode(l, options, "operations", CashShopOperationTransferWorldFailed)
+			errorCode := atlas_packet.ResolveCode(l, options, "errors", message)
+			return NewTransferWorldFailed(mode, errorCode).Encode(l, ctx)(options)
+		}
+	}
+}
+
+func CashShopGachaponOpenFailedBody(message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			mode := atlas_packet.ResolveCode(l, options, "operations", CashShopOperationGachaponOpenFailed)
+			errorCode := atlas_packet.ResolveCode(l, options, "errors", message)
+			return NewGachaponOpenFailed(mode, errorCode).Encode(l, ctx)(options)
+		}
+	}
+}
+
+func CashShopGachaponCopyFailedBody(message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			mode := atlas_packet.ResolveCode(l, options, "operations", CashShopOperationGachaponCopyFailed)
+			errorCode := atlas_packet.ResolveCode(l, options, "errors", message)
+			return NewGachaponCopyFailed(mode, errorCode).Encode(l, ctx)(options)
+		}
+	}
+}
+
+// CashShopChangeMaplePointFailedBody builds the bodyless CHANGE_MAPLE_POINT_FAILED
+// arm (mode byte only — RE-confirmed zero further reads). No "errors" resolution;
+// no message/reason parameter (AP-4/INV-3: no caller-supplied op/code/mode param).
+func CashShopChangeMaplePointFailedBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CashShopOperationChangeMaplePointFailed, func(mode byte) packet.Encoder {
+		return NewChangeMaplePointFailed(mode)
 	})
 }

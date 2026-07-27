@@ -100,6 +100,21 @@ Redis-backed tracking for pet position and stance, managed by a singleton Tempor
 - Closeness is awarded regardless of command success, based on the skill's increase value
 - A command response event is emitted indicating success or failure
 
+#### Evolution
+
+- A pet evolves when its template's `IsEvolvable()` is true and the pet's level is at least the template's `ReqPetLevel()`
+- The resulting template is selected via weighted-random selection among the template's evolution outcomes, weighted by each outcome's probability
+- On evolution, the pet's templateId changes to the selected outcome and its expiration resets to now + 2160 hours (90 days)
+- The corresponding cash inventory asset's template is updated to match, keyed by petId
+- If the pet was spawned, it is despawned and respawned (to the same lead/non-lead slot) to refresh its appearance
+
+#### Egg Hatching
+
+- Spawning a pet whose template's `IsEgg()` is true does not spawn the pet; the egg hatches in place into its single evolution outcome instead
+- Hatching resets level to 1, closeness to 0, and fullness to 100, and preserves the original expiration
+- The corresponding cash inventory asset's template is updated to match, keyed by petId
+- Hatching is refused (no-op, no spawn) if the character already owns the resulting baby template in their cash inventory
+
 ### Processors
 
 #### Pet Processor
@@ -108,6 +123,7 @@ Redis-backed tracking for pet position and stance, managed by a singleton Tempor
 |--------|-------------|
 | GetById | Retrieves a pet by identifier |
 | GetByOwner | Retrieves all pets for an owner |
+| ByOwnerIdPagedProvider | Returns one page of a character's pets, used by the REST list endpoint |
 | SpawnedByOwnerProvider | Returns spawned pets (slot >= 0) for an owner |
 | HungryByOwnerProvider | Returns spawned pets with fullness < 100 |
 | HungriestByOwnerProvider | Returns the spawned pet with the lowest fullness |
@@ -125,6 +141,7 @@ Redis-backed tracking for pet position and stance, managed by a singleton Tempor
 | AwardClosenessWithTransaction | Awards closeness with an associated transaction identifier |
 | AwardFullness | Awards fullness to a pet, capped at 100 |
 | AwardLevel | Awards levels to a pet, capped at 30 |
+| Evolve | Evolves a pet to a new template selected via weighted-random roll among its evolution outcomes; despawns/respawns a spawned pet to refresh its appearance |
 | SetExclude | Replaces the set of excluded items for pet auto-loot |
 
 #### Temporal Registry
@@ -281,6 +298,7 @@ Accessor methods: `Equipable()`, `Consumable()`, `Setup()`, `ETC()`, `Cash()`, `
 | Method | Description |
 |--------|-------------|
 | GetByCharacterId | Fetches inventory via REST from the atlas-inventory service |
+| ChangeTemplate | Requests an inventory item template change for a pet, keyed by petId (used during pet evolution and egg hatching) |
 
 ## character
 
@@ -318,3 +336,130 @@ Redis-backed singleton tracking logged-in characters. Keyed by character ID, val
 | Exit | Removes a character from the logged-in registry |
 | TransitionMap | Updates field information on map change |
 | TransitionChannel | Updates field information on channel change |
+
+## data/pet
+
+### Responsibility
+
+Read-only projection of pet template reference data (hunger rate, command skills, evolution rules) fetched from the pet reference data service.
+
+### Core Models
+
+#### Pet Reference Model
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uint32 | Template identifier |
+| hunger | uint32 | Fullness lost per hunger-task evaluation |
+| cash | bool | Whether the template is a cash-shop item |
+| life | uint32 | Life value |
+| skills | []SkillModel | Command/trick skills available to the template |
+| reqPetLevel | uint32 | Minimum pet level required to evolve |
+| reqItemId | uint32 | Item required to trigger evolution |
+| evolutions | []EvolutionModel | Possible evolution outcomes |
+
+Helper methods:
+
+- `IsEgg()` - true when there is exactly one evolution outcome and both `reqItemId` and `reqPetLevel` are zero
+- `IsEvolvable()` - true when there is at least one evolution outcome and `reqItemId` is non-zero
+
+#### Skill Model
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | string | Composite command identifier ("{templateId}-{commandId}") |
+| increase | uint16 | Closeness increase on command execution, regardless of success |
+| probability | uint16 | Percent chance (0-100) of command success |
+
+#### Evolution Model
+
+| Field | Type | Description |
+|-------|------|-------------|
+| templateId | uint32 | Resulting template identifier |
+| probability | uint32 | Relative weight for weighted-random selection among evolutions |
+
+### Invariants
+
+- `IsEgg()` is true only when the template has exactly one evolution outcome and both `reqItemId` and `reqPetLevel` are zero
+- `IsEvolvable()` is true only when the template has at least one evolution outcome and `reqItemId` is non-zero
+- This is a read-only projection; no persistence in this service
+
+### Processors
+
+#### Pet Reference Data Processor
+
+| Method | Description |
+|--------|-------------|
+| GetById | Fetches pet template reference data via REST from the pet reference data service |
+
+## data/position
+
+### Responsibility
+
+Read-only projection of foothold reference data, used to resolve the foothold beneath a given map coordinate for pet movement and spawn positioning.
+
+### Core Models
+
+#### Foothold Model
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uint32 | Foothold identifier |
+
+#### Point Model (package `point`)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| X | int16 | X coordinate |
+| Y | int16 | Y coordinate |
+
+Used as the request/response coordinate pair when resolving a foothold.
+
+### Invariants
+
+- This is a read-only projection; no persistence in this service
+
+### Processors
+
+#### Foothold Processor
+
+| Method | Description |
+|--------|-------------|
+| GetBelow | Fetches the foothold below a given map coordinate via REST from the foothold reference data service |
+
+## skill
+
+### Responsibility
+
+Read-only projection of character skill data, used to check whether a character has the multi-pet summon skill.
+
+### Core Models
+
+#### Skill Model
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uint32 | Skill identifier |
+| level | byte | Skill level |
+| masterLevel | byte | Skill master level |
+| expiration | time.Time | Skill expiration timestamp |
+| cooldownExpiresAt | time.Time | Skill cooldown expiration timestamp |
+
+Helper methods:
+
+- `IsFourthJob()` - true if the job resolved from the skill id is a fourth job
+- `OnCooldown()` - true if the current time is before `cooldownExpiresAt`
+
+### Invariants
+
+- This is a read-only projection; no persistence in this service
+
+### Processors
+
+#### Skill Processor
+
+| Method | Description |
+|--------|-------------|
+| ByCharacterIdProvider | Fetches every skill for a character via REST from the skill reference data service, draining all pages |
+| GetByCharacterId | Fetches every skill for a character |
+| HasSkill | Returns true if the character has any of the given skill ids |

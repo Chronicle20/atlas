@@ -1,0 +1,10 @@
+packet: chat/clientbound/ChatWorldMessageSimple
+direction: clientbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnBroadcastMsg
+    address: "0x844d49"
+    decompile_sha256: 9320b2b9617a4f34af0876d2bae67fc4fcbf603f7a668017a253718b739c214b
+verifies:
+    - libs/atlas-packet/chat/clientbound/v61_test.go#TestWorldMessageSimpleV61Body

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 func TestTransform(t *testing.T) {
@@ -144,5 +145,37 @@ func TestCreateRestModelGetName(t *testing.T) {
 	crm := CreateRestModel{}
 	if crm.GetName() != "accounts" {
 		t.Errorf("GetName mismatch. Expected 'accounts', got '%v'", crm.GetName())
+	}
+}
+
+// createAccountBody is the JSON:API envelope the UI POSTs to create an
+// account: no resource id (the id is assigned server-side), name + password
+// in attributes.
+var createAccountBody = []byte(`{"data":{"type":"accounts","attributes":{"name":"newuser","password":"secret","gender":0}}}`)
+
+// TestCreateRestModelUnmarshalNoID pins the account-create fix: the create
+// route deserializes into CreateRestModel, whose SetID ignores the (empty)
+// create id and whose Password field is json-tagged, so the password is
+// captured. Regression for the 400 the UI got on account creation.
+func TestCreateRestModelUnmarshalNoID(t *testing.T) {
+	var crm CreateRestModel
+	if err := jsonapi.Unmarshal(createAccountBody, &crm); err != nil {
+		t.Fatalf("unmarshal create body into CreateRestModel: %v", err)
+	}
+	if crm.Name != "newuser" {
+		t.Errorf("Name = %q, want newuser", crm.Name)
+	}
+	if crm.Password != "secret" {
+		t.Errorf("Password = %q, want secret (RestModel drops it via json:\"-\")", crm.Password)
+	}
+}
+
+// TestRestModelUnmarshalRejectsEmptyID documents why the create route cannot
+// use RestModel: its SetID does strconv.ParseUint on the create id, which is
+// empty, so deserialization fails with a 400 before the handler ever runs.
+func TestRestModelUnmarshalRejectsEmptyID(t *testing.T) {
+	var rm RestModel
+	if err := jsonapi.Unmarshal(createAccountBody, &rm); err == nil {
+		t.Fatalf("expected RestModel unmarshal to fail on empty create id, got nil")
 	}
 }

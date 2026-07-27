@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcAskSpeedQuizConversationDetail
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CScriptMan::OnAskSpeedQuiz#AskSpeedQuiz
+    address: "0x970d07"
+    decompile_sha256: 3a4fa42448fe4e3027dd957a9988c3e2c140f6d9bec84a724682f891f07b11bc
+verifies:
+  - libs/atlas-packet/npc/clientbound/conversation_v79_details_test.go#TestNpcConversationAskSpeedQuizV79

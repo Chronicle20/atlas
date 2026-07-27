@@ -1,0 +1,10 @@
+packet: monster/clientbound/MonsterMonsterSpecialEffectBySkill
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CMob::OnSpecialEffectBySkill
+    address: "0x63c887"
+    decompile_sha256: 70943ad590723cf57169b19763081b6aee6d098344dc1b3364fd50a6f1c5857f
+verifies:
+  - libs/atlas-packet/monster/clientbound/monster_special_effect_by_skill_test.go#TestMonsterSpecialEffectBySkillBytesV79

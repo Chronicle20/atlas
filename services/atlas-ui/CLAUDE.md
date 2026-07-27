@@ -26,7 +26,7 @@ services/atlas-ui/
 ├── tsconfig.node.json              # vite.config.ts only
 ├── eslint.config.js                # Flat config (js + typescript-eslint + react-hooks + react-refresh)
 ├── Dockerfile                      # Two-stage: node:24-alpine builder → nginx:alpine runtime
-├── nginx.conf                      # SPA fallback — included at /etc/nginx/conf.d/default.conf
+├── nginx.conf                      # SPA fallback + asset/index cache headers — /etc/nginx/conf.d/default.conf
 ├── package.json                    # "type": "module", scripts: dev/build/preview/lint/test
 ├── public/                         # Static assets (logo.png, favicon.ico, sw-character-cache.js)
 └── src/
@@ -169,6 +169,15 @@ The compose runtime publishes host port 3000 mapped to the container's nginx por
 
 1. `node:24-alpine` installs deps with `npm ci`, copies source, runs `npm run build` → `/build/dist`.
 2. `nginx:alpine` copies `dist/` into `/usr/share/nginx/html` and `nginx.conf` into `/etc/nginx/conf.d/default.conf`. Container listens on port 80. SPA fallback sends unknown paths to `index.html`.
+
+### Stale chunks across a redeploy
+
+Route pages are `React.lazy`, so each ships as its own content-hashed chunk. A redeploy replaces `/assets/` wholesale, and a tab that loaded the previous build still asks for chunk hashes the new image doesn't have. Two pieces cooperate to recover:
+
+- **`nginx.conf`** — `/assets/` is `immutable, max-age=1y` (hashed filenames never change) and returns a real **404** for a missing chunk instead of falling through the SPA rewrite to `index.html` (which produced a `text/html` MIME error). `index.html` itself is `no-cache`, so a reload always revalidates and picks up the current hashes. The `/assets/` `add_header` deliberately omits `always` so the year-long header is never applied to that 404.
+- **`src/lib/utils/lazy-with-reload.ts`** — `lazyWithReload` wraps every route import in App.tsx. On a chunk load failure it reloads the page once, rate-limited to one reload per 10s via `sessionStorage` so a genuinely broken build degrades to the error boundary rather than reload-looping. Non-chunk errors are rethrown untouched.
+
+Use `lazyWithReload`, not bare `React.lazy`, for any new route page.
 
 Deploy surface (four files):
 

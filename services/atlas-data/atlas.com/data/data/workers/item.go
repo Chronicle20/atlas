@@ -1,22 +1,23 @@
 package workers
 
 import (
-	"context"
-	"fmt"
-	"path/filepath"
-	"strconv"
-
-	"github.com/Chronicle20/atlas/libs/atlas-wz/icons"
-	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
-	"github.com/Chronicle20/atlas/libs/atlas-wz/wz/property"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
-
 	"atlas-data/cash"
 	"atlas-data/consumable"
 	"atlas-data/etc"
 	"atlas-data/pet"
 	"atlas-data/setup"
+	"context"
+	"fmt"
+	"path/filepath"
+	"strconv"
+
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-wz/icons"
+	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
+	"github.com/Chronicle20/atlas/libs/atlas-wz/wz/property"
+
 	minio "atlas-data/storage/minio"
 )
 
@@ -39,11 +40,11 @@ func (Item) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc *mini
 		subdir string
 		rf     RegisterFunc
 	}{
-		{"Consume", consumable.RegisterConsumable(db)},
-		{"Cash", cash.RegisterCash(db)},
-		{"Etc", etc.RegisterEtc(db)},
-		{"Install", setup.RegisterSetup(db)},
-		{"Pet", pet.RegisterPet(db)},
+		{"Consume", consumable.NewProcessor(l, ctx, db).RegisterConsumable},
+		{"Cash", cash.NewProcessor(l, ctx, db).RegisterCash},
+		{"Etc", etc.NewProcessor(l, ctx, db).RegisterEtc},
+		{"Install", setup.NewProcessor(l, ctx, db).RegisterSetup},
+		{"Pet", pet.NewProcessor(l, ctx, db).RegisterPet},
 	}
 	for _, c := range categories {
 		dir := filepath.Join(base, c.subdir)

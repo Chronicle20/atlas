@@ -1,16 +1,17 @@
 package _map
 
 import (
-	"atlas-messages/data/map"
+	_map "atlas-messages/data/map"
 	"context"
 	"strconv"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map2 "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {
@@ -34,6 +35,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return p
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) Exists(mapId _map2.Id) bool {
 	_, err := p.dp.GetById(mapId)
 	if err != nil {
@@ -52,6 +55,11 @@ func (p *ProcessorImpl) CharacterIdsInMapStringProvider(ch channel.Model, mapStr
 	return p.CharacterIdsInFieldProvider(f)
 }
 
+// CharacterIdsInFieldProvider fetches every character currently in one map
+// instance, for message-broadcast targeting. The upstream atlas-maps list is
+// now paginated (task-117), so this drains every page rather than fetching
+// just the first -- a truncated list here means some players in the map
+// silently miss the broadcast message.
 func (p *ProcessorImpl) CharacterIdsInFieldProvider(f field.Model) model.Provider[[]uint32] {
-	return requests.SliceProvider[RestModel, uint32](p.l, p.ctx)(requestCharactersInMap(f), Extract, model.Filters[uint32]())
+	return requests.DrainProvider[RestModel, uint32](p.l, p.ctx)(charactersInMapUrl(f), 250, Extract, model.Filters[uint32]())
 }

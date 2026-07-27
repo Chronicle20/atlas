@@ -25,10 +25,7 @@ export function DropTableRow({ drop }: DropTableRowProps) {
         {nameLoading ? (
           <span className="text-muted-foreground">...</span>
         ) : itemName ? (
-          <Link
-            to={`/items/${itemId}`}
-            className="font-medium hover:underline"
-          >
+          <Link to={`/items/${itemId}`} className="font-medium hover:underline">
             {itemName}
           </Link>
         ) : (
@@ -38,7 +35,9 @@ export function DropTableRow({ drop }: DropTableRowProps) {
       <TableCell>{drop.attributes.chance.toLocaleString()}</TableCell>
       <TableCell>{drop.attributes.minimumQuantity}</TableCell>
       <TableCell>{drop.attributes.maximumQuantity}</TableCell>
-      <TableCell className="font-mono">{drop.attributes.questId || "-"}</TableCell>
+      <TableCell className="font-mono">
+        {drop.attributes.questId || "-"}
+      </TableCell>
     </TableRow>
   );
 }

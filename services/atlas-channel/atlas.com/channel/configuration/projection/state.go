@@ -1,11 +1,10 @@
 package projection
 
 import (
-	"encoding/json"
-	"sync"
-
 	"atlas-channel/configuration"
 	"atlas-channel/configuration/tenant"
+	"encoding/json"
+	"sync"
 
 	"github.com/google/uuid"
 )
@@ -16,7 +15,7 @@ import (
 // single goroutine.
 type State struct {
 	mu      sync.RWMutex
-	service *configuration.RestModel        // nil until first ApplyService
+	service *configuration.RestModel // nil until first ApplyService
 	tenants map[uuid.UUID]tenant.RestModel
 }
 

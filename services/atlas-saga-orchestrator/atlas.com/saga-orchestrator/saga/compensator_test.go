@@ -8,16 +8,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // TestPetEvolutionCompensationRefundsResources verifies that when a PetEvolution
@@ -43,11 +44,11 @@ func TestPetEvolutionCompensationRefundsResources(t *testing.T) {
 	tctx := tenant.WithContext(ctx, te)
 
 	const (
-		testCharId   = uint32(77001)
-		rockId       = uint32(5380000)
-		mesosCost    = int32(50000)
-		testWorldId  = world.Id(0)
-		testChannel  = channel.Id(1)
+		testCharId  = uint32(77001)
+		rockId      = uint32(5380000)
+		mesosCost   = int32(50000)
+		testWorldId = world.Id(0)
+		testChannel = channel.Id(1)
 	)
 
 	// Spy compartment processor capturing Rock re-creation.
@@ -206,6 +207,158 @@ func TestPetEvolutionCompensationDefaultsDestroyQuantity(t *testing.T) {
 		assert.Equal(t, rockId, createItemCalls[0].TemplateId, "refunded item must be the Rock of Evolution")
 		assert.Equal(t, uint32(1), createItemCalls[0].Quantity, "zero payload quantity must default to 1")
 	}
+}
+
+// TestCashItemUseCompensationRefundsConsumedItems verifies that when a
+// cash-item-use saga (ItemTagUse/SealingLockUse/IncubatorUse) fails, the
+// reverse-walk re-creates every consumed item (DestroyAsset/
+// DestroyAssetFromSlot → RequestCreateItem) and destroys every awarded result
+// (AwardAsset → RequestDestroyItem), mirroring
+// TestPetEvolutionCompensationRefundsResources / DispatchPetEvolutionRollbacks
+// (Task 10).
+//
+// DispatchCashItemUseRollbacks is exercised directly (mirroring
+// TestPetEvolutionCompensationRefundsResources) to avoid the EmitSagaFailed
+// Kafka path.
+func TestCashItemUseCompensationRefundsConsumedItems(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+
+	ctx := context.Background()
+	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	tctx := tenant.WithContext(ctx, te)
+
+	const (
+		testCharId   = uint32(88001)
+		sealItemId   = uint32(5390000)
+		resultItemId = uint32(5390001)
+	)
+
+	type createCall struct {
+		CharacterId uint32
+		TemplateId  uint32
+		Quantity    uint32
+	}
+	var createItemCalls []createCall
+	type destroyCall struct {
+		CharacterId uint32
+		TemplateId  uint32
+		Quantity    uint32
+		RemoveAll   bool
+	}
+	var destroyItemCalls []destroyCall
+	compP := &compmock.ProcessorMock{
+		RequestCreateItemFunc: func(_ uuid.UUID, characterId uint32, templateId uint32, quantity uint32, _ time.Time) error {
+			createItemCalls = append(createItemCalls, createCall{
+				CharacterId: characterId,
+				TemplateId:  templateId,
+				Quantity:    quantity,
+			})
+			return nil
+		},
+		RequestDestroyItemFunc: func(_ uuid.UUID, characterId uint32, templateId uint32, quantity uint32, removeAll bool) error {
+			destroyItemCalls = append(destroyItemCalls, destroyCall{
+				CharacterId: characterId,
+				TemplateId:  templateId,
+				Quantity:    quantity,
+				RemoveAll:   removeAll,
+			})
+			return nil
+		},
+	}
+
+	transactionId := uuid.New()
+	s, err := NewBuilder().
+		SetTransactionId(transactionId).
+		SetSagaType(IncubatorUse).
+		SetInitiatedBy("cash-item-use-compensation-test").
+		AddStep("destroy_seal_item", Completed, DestroyAssetFromSlot, DestroyAssetFromSlotPayload{
+			CharacterId:   testCharId,
+			InventoryType: 4,
+			Slot:          3,
+			Quantity:      1,
+			TemplateId:    sealItemId,
+		}).
+		AddStep("award_result_item", Completed, AwardAsset, AwardItemActionPayload{
+			CharacterId: testCharId,
+			Item: ItemPayload{
+				TemplateId: resultItemId,
+				Quantity:   1,
+			},
+		}).
+		AddStep("incubator_result", Failed, IncubatorResult, IncubatorResultPayload{
+			CharacterId: testCharId,
+			ItemId:      resultItemId,
+			Count:       1,
+		}).
+		Build()
+	assert.NoError(t, err, "saga build should not fail")
+
+	compensator := NewCompensator(logger, tctx).
+		WithCompartmentProcessor(compP)
+
+	compensator.DispatchCashItemUseRollbacks(s)
+
+	assert.Equal(t, 1, len(createItemCalls), "the consumed seal item should be re-created exactly once")
+	if len(createItemCalls) == 1 {
+		assert.Equal(t, testCharId, createItemCalls[0].CharacterId)
+		assert.Equal(t, sealItemId, createItemCalls[0].TemplateId, "re-created item must be the consumed seal, not the result")
+		assert.Equal(t, uint32(1), createItemCalls[0].Quantity)
+	}
+
+	assert.Equal(t, 1, len(destroyItemCalls), "the awarded result item should be destroyed exactly once")
+	if len(destroyItemCalls) == 1 {
+		assert.Equal(t, testCharId, destroyItemCalls[0].CharacterId)
+		assert.Equal(t, resultItemId, destroyItemCalls[0].TemplateId)
+		assert.Equal(t, uint32(1), destroyItemCalls[0].Quantity)
+	}
+}
+
+// TestCashItemUseCompensationSkipsSlotDestroyWithoutTemplateId verifies that a
+// DestroyAssetFromSlot step whose payload has no TemplateId (an older/degraded
+// record) is skipped rather than issuing a zero-templateId RequestCreateItem.
+func TestCashItemUseCompensationSkipsSlotDestroyWithoutTemplateId(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+
+	ctx := context.Background()
+	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	tctx := tenant.WithContext(ctx, te)
+
+	const testCharId = uint32(88002)
+
+	var createItemCalls int
+	compP := &compmock.ProcessorMock{
+		RequestCreateItemFunc: func(_ uuid.UUID, _ uint32, _ uint32, _ uint32, _ time.Time) error {
+			createItemCalls++
+			return nil
+		},
+	}
+
+	transactionId := uuid.New()
+	s, err := NewBuilder().
+		SetTransactionId(transactionId).
+		SetSagaType(ItemTagUse).
+		SetInitiatedBy("cash-item-use-compensation-test").
+		AddStep("destroy_tag_item", Completed, DestroyAssetFromSlot, DestroyAssetFromSlotPayload{
+			CharacterId:   testCharId,
+			InventoryType: 4,
+			Slot:          3,
+			Quantity:      1,
+			// TemplateId intentionally omitted (zero value)
+		}).
+		AddStep("incubator_result", Failed, IncubatorResult, IncubatorResultPayload{
+			CharacterId: testCharId,
+		}).
+		Build()
+	assert.NoError(t, err, "saga build should not fail")
+
+	compensator := NewCompensator(logger, tctx).
+		WithCompartmentProcessor(compP)
+
+	compensator.DispatchCashItemUseRollbacks(s)
+
+	assert.Equal(t, 0, createItemCalls, "a slot-destroy without a templateId must not be re-created")
 }
 
 // TestCompensateCreateCharacter tests the compensateCreateCharacter function
@@ -471,5 +624,492 @@ func TestCompensateLateStep_DestroyAssetRemoveAll_Unrecoverable(t *testing.T) {
 	fresh, ok := GetCache().GetById(ctx, s.TransactionId())
 	require.True(t, ok)
 	freshStep, _ := fresh.GetCurrentStep()
+	assert.False(t, freshStep.LateCompensated())
+}
+
+// TestCompensateLateStep_ReleaseFromMtsHolding_RestoresHolding pins the MTS
+// take-home late inverse (task-102): a ReleaseFromMtsHolding that soft-deleted
+// the holding but landed late after the saga terminated is rolled back by
+// RestoreMtsHolding on the same holding id, so the item stays in MTS custody
+// (recoverable) instead of being orphaned.
+func TestCompensateLateStep_ReleaseFromMtsHolding_RestoresHolding(t *testing.T) {
+	ResetCache()
+	logger, _ := test.NewNullLogger()
+	ctx := lateStepTestCtx(t)
+
+	holdingId := uuid.New()
+	s, err := NewBuilder().
+		SetSagaType(MtsOperation).
+		SetInitiatedBy("test").
+		AddStep("release_from_mts_holding", Pending, ReleaseFromMtsHolding, ReleaseFromMtsHoldingPayload{HoldingId: holdingId}).
+		Build()
+	require.NoError(t, err)
+	require.NoError(t, GetCache().Put(ctx, s))
+
+	mtsMockP := &mtsTestMtsMock{}
+	c := NewCompensator(logger, ctx).WithMtsProcessor(mtsMockP)
+
+	step, _ := s.GetCurrentStep()
+	compensated, err := c.CompensateLateStep(s, step)
+	require.NoError(t, err)
+	assert.True(t, compensated)
+	assert.Equal(t, 1, mtsMockP.restoreCalls, "late ReleaseFromMtsHolding must dispatch exactly one RestoreMtsHolding")
+	assert.Equal(t, holdingId, mtsMockP.restoreHoldingId, "restore must target the same holding")
+
+	// Duplicate delivery: marker claimed — no second restore.
+	fresh, ok := GetCache().GetById(ctx, s.TransactionId())
+	require.True(t, ok)
+	freshStep, _ := fresh.GetCurrentStep()
+	assert.True(t, freshStep.LateCompensated())
+	compensated, err = c.CompensateLateStep(fresh, freshStep)
+	require.NoError(t, err)
+	assert.False(t, compensated)
+	assert.Equal(t, 1, mtsMockP.restoreCalls)
+}
+
+// TestCompensateLateStep_AcceptToMtsListing_RemovesListing pins the late inverse
+// of a spurious list-accept: the duplicate listing is removed by RemoveMtsListing.
+func TestCompensateLateStep_AcceptToMtsListing_RemovesListing(t *testing.T) {
+	ResetCache()
+	logger, _ := test.NewNullLogger()
+	ctx := lateStepTestCtx(t)
+
+	listingId := uuid.New()
+	s, err := NewBuilder().
+		SetSagaType(MtsOperation).
+		SetInitiatedBy("test").
+		AddStep("accept_to_mts_listing", Pending, AcceptToMtsListing, AcceptToMtsListingPayload{ListingId: listingId}).
+		Build()
+	require.NoError(t, err)
+	require.NoError(t, GetCache().Put(ctx, s))
+
+	mtsMockP := &mtsTestMtsMock{}
+	c := NewCompensator(logger, ctx).WithMtsProcessor(mtsMockP)
+
+	step, _ := s.GetCurrentStep()
+	compensated, err := c.CompensateLateStep(s, step)
+	require.NoError(t, err)
+	assert.True(t, compensated)
+	assert.Equal(t, 1, mtsMockP.removeListingCalls)
+	assert.Equal(t, listingId, mtsMockP.removeListingId)
+}
+
+// TestCompensateLateStep_MtsMove_RestoresListing pins the late inverse of a buy
+// settlement-move: RestoreListingFromHolding is dispatched with (listingId,
+// buyerId) so the buyer holding is removed and the listing returns to active.
+func TestCompensateLateStep_MtsMove_RestoresListing(t *testing.T) {
+	ResetCache()
+	logger, _ := test.NewNullLogger()
+	ctx := lateStepTestCtx(t)
+
+	listingId := uuid.New()
+	s, err := NewBuilder().
+		SetSagaType(MtsOperation).
+		SetInitiatedBy("test").
+		AddStep("mts_move_listing_to_holding", Pending, MtsMoveListingToHolding, MtsMoveListingToHoldingPayload{ListingId: listingId, BuyerId: 4242}).
+		Build()
+	require.NoError(t, err)
+	require.NoError(t, GetCache().Put(ctx, s))
+
+	mtsMockP := &mtsTestMtsMock{}
+	c := NewCompensator(logger, ctx).WithMtsProcessor(mtsMockP)
+
+	step, _ := s.GetCurrentStep()
+	compensated, err := c.CompensateLateStep(s, step)
+	require.NoError(t, err)
+	assert.True(t, compensated)
+	assert.Equal(t, 1, mtsMockP.restoreListingCalls)
+	assert.Equal(t, listingId, mtsMockP.restoreListingId)
+	assert.Equal(t, uint32(4242), mtsMockP.restoreListingBuyerId)
+}
+
+// TestNoteSendCompensationRefundsItem: create_note failed after the destroy
+// completed → the reverse-walk must re-award the destroyed Note item via
+// RequestCreateItem, exactly once, with the destroy step's template id.
+func TestNoteSendCompensationRefundsItem(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+
+	ctx := context.Background()
+	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	tctx := tenant.WithContext(ctx, te)
+
+	const (
+		senderId = uint32(100)
+		noteItem = uint32(5090000)
+	)
+
+	type createCall struct {
+		CharacterId uint32
+		TemplateId  uint32
+		Quantity    uint32
+	}
+	var createItemCalls []createCall
+	compP := &compmock.ProcessorMock{
+		RequestCreateItemFunc: func(_ uuid.UUID, characterId uint32, templateId uint32, quantity uint32, _ time.Time) error {
+			createItemCalls = append(createItemCalls, createCall{
+				CharacterId: characterId,
+				TemplateId:  templateId,
+				Quantity:    quantity,
+			})
+			return nil
+		},
+	}
+
+	transactionId := uuid.New()
+	s, err := NewBuilder().
+		SetTransactionId(transactionId).
+		SetSagaType(NoteSend).
+		SetInitiatedBy("note-send-compensation-test").
+		AddStep("consume_note_item", Completed, DestroyAsset, DestroyAssetPayload{
+			CharacterId: senderId,
+			TemplateId:  noteItem,
+			Quantity:    1,
+			RemoveAll:   false,
+		}).
+		AddStep("create_note", Failed, CreateNote, CreateNotePayload{
+			SenderId:   senderId,
+			ReceiverId: 200,
+			Message:    "hi",
+			Flag:       1,
+		}).
+		Build()
+	assert.NoError(t, err, "saga build should not fail")
+
+	compensator := NewCompensator(logger, tctx).
+		WithCompartmentProcessor(compP)
+
+	compensator.DispatchNoteSendRollbacks(s)
+
+	assert.Equal(t, 1, len(createItemCalls), "Note item should be refunded exactly once")
+	if len(createItemCalls) == 1 {
+		assert.Equal(t, senderId, createItemCalls[0].CharacterId, "refund must target the sender")
+		assert.Equal(t, noteItem, createItemCalls[0].TemplateId, "refunded item must be the consumed Note item")
+		assert.Equal(t, uint32(1), createItemCalls[0].Quantity, "refunded quantity must be 1")
+	}
+}
+
+// TestNoteSendCompensationDestroyFailedNoRefund: the DestroyAsset step itself
+// failed (nothing completed) → there is nothing to re-award; the reverse-walk
+// must NOT dispatch RequestCreateItem.
+func TestNoteSendCompensationDestroyFailedNoRefund(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+
+	ctx := context.Background()
+	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	tctx := tenant.WithContext(ctx, te)
+
+	var createItemCalls int
+	compP := &compmock.ProcessorMock{
+		RequestCreateItemFunc: func(_ uuid.UUID, _ uint32, _ uint32, _ uint32, _ time.Time) error {
+			createItemCalls++
+			return nil
+		},
+	}
+
+	transactionId := uuid.New()
+	s, err := NewBuilder().
+		SetTransactionId(transactionId).
+		SetSagaType(NoteSend).
+		SetInitiatedBy("note-send-compensation-test").
+		AddStep("consume_note_item", Failed, DestroyAsset, DestroyAssetPayload{
+			CharacterId: 100,
+			TemplateId:  5090000,
+			Quantity:    1,
+			RemoveAll:   false,
+		}).
+		AddStep("create_note", Pending, CreateNote, CreateNotePayload{
+			SenderId:   100,
+			ReceiverId: 200,
+			Message:    "hi",
+			Flag:       1,
+		}).
+		Build()
+	assert.NoError(t, err, "saga build should not fail")
+
+	compensator := NewCompensator(logger, tctx).
+		WithCompartmentProcessor(compP)
+
+	compensator.DispatchNoteSendRollbacks(s)
+
+	assert.Equal(t, 0, createItemCalls, "no completed destroy → no refund dispatch")
+}
+
+// TestSkillBookUseCompensationRefundsBook verifies that when a skill_book_use
+// saga fails on the skill step AFTER the book was destroyed, the reverse walk
+// re-awards the book using the destroy step's TemplateId (task-125).
+func TestSkillBookUseCompensationRefundsBook(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+
+	ctx := context.Background()
+	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	tctx := tenant.WithContext(ctx, te)
+
+	const (
+		testCharId = uint32(88001)
+		bookId     = uint32(2290000)
+	)
+
+	type createCall struct {
+		CharacterId uint32
+		TemplateId  uint32
+		Quantity    uint32
+	}
+	var createItemCalls []createCall
+	compP := &compmock.ProcessorMock{
+		RequestCreateItemFunc: func(_ uuid.UUID, characterId uint32, templateId uint32, quantity uint32, _ time.Time) error {
+			createItemCalls = append(createItemCalls, createCall{characterId, templateId, quantity})
+			return nil
+		},
+	}
+
+	transactionId := uuid.New()
+	s, err := NewBuilder().
+		SetTransactionId(transactionId).
+		SetSagaType(SkillBookUse).
+		SetInitiatedBy("skill-book-compensation-test").
+		AddStep("destroy_asset_from_slot", Completed, DestroyAssetFromSlot, DestroyAssetFromSlotPayload{
+			CharacterId:   testCharId,
+			InventoryType: 2,
+			Slot:          5,
+			Quantity:      1,
+			TemplateId:    bookId,
+		}).
+		AddStep("update_skill", Failed, UpdateSkill, UpdateSkillPayload{
+			CharacterId: testCharId,
+			SkillId:     1121001,
+			Level:       9,
+			MasterLevel: 20,
+		}).
+		Build()
+	assert.NoError(t, err, "saga build should not fail")
+
+	compensator := NewCompensator(logger, tctx).WithCompartmentProcessor(compP)
+	compensator.DispatchSkillBookUseRollbacks(s)
+
+	assert.Equal(t, 1, len(createItemCalls), "book should be re-awarded exactly once")
+	if len(createItemCalls) == 1 {
+		assert.Equal(t, testCharId, createItemCalls[0].CharacterId)
+		assert.Equal(t, bookId, createItemCalls[0].TemplateId)
+		assert.Equal(t, uint32(1), createItemCalls[0].Quantity)
+	}
+}
+
+// TestSkillBookUseCompensationDestroyFailedNoRefund verifies that when the
+// destroy step itself fails (nothing completed), the reverse walk re-awards
+// nothing — the book never left the slot.
+func TestSkillBookUseCompensationDestroyFailedNoRefund(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+
+	ctx := context.Background()
+	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	tctx := tenant.WithContext(ctx, te)
+
+	var createItemCalls int
+	compP := &compmock.ProcessorMock{
+		RequestCreateItemFunc: func(_ uuid.UUID, _ uint32, _ uint32, _ uint32, _ time.Time) error {
+			createItemCalls++
+			return nil
+		},
+	}
+
+	s, err := NewBuilder().
+		SetTransactionId(uuid.New()).
+		SetSagaType(SkillBookUse).
+		SetInitiatedBy("skill-book-compensation-test").
+		AddStep("destroy_asset_from_slot", Failed, DestroyAssetFromSlot, DestroyAssetFromSlotPayload{
+			CharacterId:   88002,
+			InventoryType: 2,
+			Slot:          5,
+			Quantity:      1,
+			TemplateId:    2290000,
+		}).
+		AddStep("update_skill", Pending, UpdateSkill, UpdateSkillPayload{
+			CharacterId: 88002,
+			SkillId:     1121001,
+		}).
+		Build()
+	assert.NoError(t, err)
+
+	compensator := NewCompensator(logger, tctx).WithCompartmentProcessor(compP)
+	compensator.DispatchSkillBookUseRollbacks(s)
+
+	assert.Equal(t, 0, createItemCalls, "no refund when the destroy step never completed")
+}
+
+// TestSkillBookUseCompensationMissingTemplateIdSkips verifies a completed
+// destroy step with TemplateId 0 (legacy producer) is skipped rather than
+// re-awarding item 0.
+func TestSkillBookUseCompensationMissingTemplateIdSkips(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+
+	ctx := context.Background()
+	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	tctx := tenant.WithContext(ctx, te)
+
+	var createItemCalls int
+	compP := &compmock.ProcessorMock{
+		RequestCreateItemFunc: func(_ uuid.UUID, _ uint32, _ uint32, _ uint32, _ time.Time) error {
+			createItemCalls++
+			return nil
+		},
+	}
+
+	s, err := NewBuilder().
+		SetTransactionId(uuid.New()).
+		SetSagaType(SkillBookUse).
+		SetInitiatedBy("skill-book-compensation-test").
+		AddStep("destroy_asset_from_slot", Completed, DestroyAssetFromSlot, DestroyAssetFromSlotPayload{
+			CharacterId:   88003,
+			InventoryType: 2,
+			Slot:          5,
+			Quantity:      1,
+		}).
+		AddStep("update_skill", Failed, UpdateSkill, UpdateSkillPayload{
+			CharacterId: 88003,
+			SkillId:     1121001,
+		}).
+		Build()
+	assert.NoError(t, err)
+
+	compensator := NewCompensator(logger, tctx).WithCompartmentProcessor(compP)
+	compensator.DispatchSkillBookUseRollbacks(s)
+
+	assert.Equal(t, 0, createItemCalls, "TemplateId 0 must not re-award item 0")
+}
+
+// TestCompensateLateStep_SkillBookUse_DestroyAssetFromSlot_ReAwardsBook pins
+// the task-125 review fix: a skill_book_use saga's destroy_asset_from_slot
+// step (always step 0) that becomes late-successful is re-awarded via
+// CreateItem using the payload's TemplateId, exactly once, and the late-step
+// entry point reports compensated=true.
+func TestCompensateLateStep_SkillBookUse_DestroyAssetFromSlot_ReAwardsBook(t *testing.T) {
+	ResetCache()
+	logger, _ := test.NewNullLogger()
+	ctx := lateStepTestCtx(t)
+
+	const (
+		testCharId = uint32(88010)
+		bookId     = uint32(2290000)
+	)
+
+	type createCall struct {
+		CharacterId uint32
+		TemplateId  uint32
+		Quantity    uint32
+	}
+	var createItemCalls []createCall
+	compP := &compmock.ProcessorMock{
+		RequestCreateItemFunc: func(_ uuid.UUID, characterId uint32, templateId uint32, quantity uint32, _ time.Time) error {
+			createItemCalls = append(createItemCalls, createCall{characterId, templateId, quantity})
+			return nil
+		},
+	}
+
+	s, err := NewBuilder().
+		SetSagaType(SkillBookUse).
+		SetInitiatedBy("test").
+		AddStep("destroy_asset_from_slot", Pending, DestroyAssetFromSlot, DestroyAssetFromSlotPayload{
+			CharacterId:   testCharId,
+			InventoryType: 2,
+			Slot:          5,
+			Quantity:      1,
+			TemplateId:    bookId,
+		}).
+		AddStep("update_skill", Pending, UpdateSkill, UpdateSkillPayload{
+			CharacterId: testCharId,
+			SkillId:     1121001,
+		}).
+		Build()
+	require.NoError(t, err)
+	require.NoError(t, GetCache().Put(ctx, s))
+
+	c := NewCompensator(logger, ctx).WithCompartmentProcessor(compP)
+
+	step, ok := s.GetCurrentStep()
+	require.True(t, ok)
+	require.Equal(t, DestroyAssetFromSlot, step.Action())
+
+	compensated, err := c.CompensateLateStep(s, step)
+	require.NoError(t, err)
+	assert.True(t, compensated)
+
+	require.Equal(t, 1, len(createItemCalls), "book should be re-awarded exactly once")
+	assert.Equal(t, testCharId, createItemCalls[0].CharacterId)
+	assert.Equal(t, bookId, createItemCalls[0].TemplateId)
+	assert.Equal(t, uint32(1), createItemCalls[0].Quantity)
+
+	// Duplicate delivery: marker claimed — no second re-award.
+	fresh, ok := GetCache().GetById(ctx, s.TransactionId())
+	require.True(t, ok)
+	freshStep, _ := fresh.StepAt(0)
+	assert.True(t, freshStep.LateCompensated())
+	compensated, err = c.CompensateLateStep(fresh, freshStep)
+	require.NoError(t, err)
+	assert.False(t, compensated)
+	assert.Equal(t, 1, len(createItemCalls))
+}
+
+// TestCompensateLateStep_SkillBookUse_DestroyAssetFromSlot_NoTemplateIdAbsorbs
+// pins the legacy-producer guard: a late-successful destroy_asset_from_slot
+// step with TemplateId==0 has no recoverable quantity, so it must absorb-only
+// (no RequestCreateItem call, compensated=false) rather than award item 0.
+func TestCompensateLateStep_SkillBookUse_DestroyAssetFromSlot_NoTemplateIdAbsorbs(t *testing.T) {
+	ResetCache()
+	logger, hook := test.NewNullLogger()
+	ctx := lateStepTestCtx(t)
+
+	const testCharId = uint32(88011)
+
+	var createItemCalls int
+	compP := &compmock.ProcessorMock{
+		RequestCreateItemFunc: func(_ uuid.UUID, _ uint32, _ uint32, _ uint32, _ time.Time) error {
+			createItemCalls++
+			return nil
+		},
+	}
+
+	s, err := NewBuilder().
+		SetSagaType(SkillBookUse).
+		SetInitiatedBy("test").
+		AddStep("destroy_asset_from_slot", Pending, DestroyAssetFromSlot, DestroyAssetFromSlotPayload{
+			CharacterId:   testCharId,
+			InventoryType: 2,
+			Slot:          5,
+			Quantity:      1,
+		}).
+		AddStep("update_skill", Pending, UpdateSkill, UpdateSkillPayload{
+			CharacterId: testCharId,
+			SkillId:     1121001,
+		}).
+		Build()
+	require.NoError(t, err)
+	require.NoError(t, GetCache().Put(ctx, s))
+
+	c := NewCompensator(logger, ctx).WithCompartmentProcessor(compP)
+
+	step, ok := s.GetCurrentStep()
+	require.True(t, ok)
+	require.Equal(t, DestroyAssetFromSlot, step.Action())
+
+	compensated, err := c.CompensateLateStep(s, step)
+	require.NoError(t, err)
+	assert.False(t, compensated)
+	assert.Equal(t, 0, createItemCalls, "TemplateId 0 must not re-award item 0")
+
+	var warned bool
+	for _, e := range hook.AllEntries() {
+		if e.Level == logrus.WarnLevel && e.Data["reason"] == "late_effect_unrecoverable" {
+			warned = true
+		}
+	}
+	assert.True(t, warned, "expected late_effect_unrecoverable WARN")
+
+	// Marker must NOT be claimed for an unrecoverable destroy.
+	fresh, ok := GetCache().GetById(ctx, s.TransactionId())
+	require.True(t, ok)
+	freshStep, _ := fresh.StepAt(0)
 	assert.False(t, freshStep.LateCompensated())
 }

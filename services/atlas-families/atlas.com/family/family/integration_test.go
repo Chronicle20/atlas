@@ -3,8 +3,9 @@ package family
 import (
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 func TestFamilyIntegration_EntityTransformation(t *testing.T) {
@@ -20,7 +21,6 @@ func TestFamilyIntegration_EntityTransformation(t *testing.T) {
 		SetRep(1000).
 		SetDailyRep(100).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Failed to build family member: %v", err)
 	}

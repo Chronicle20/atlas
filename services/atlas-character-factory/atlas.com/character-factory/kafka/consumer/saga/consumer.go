@@ -4,18 +4,20 @@ import (
 	consumer2 "atlas-character-factory/kafka/consumer"
 	"atlas-character-factory/kafka/message/saga"
 	seedMessage "atlas-character-factory/kafka/message/seed"
-	"atlas-character-factory/kafka/producer"
 	"atlas-character-factory/kafka/producer/seed"
 	"context"
 
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
 	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/sirupsen/logrus"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {

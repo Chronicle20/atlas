@@ -5,11 +5,15 @@ import (
 	"atlas-summons/data/skill/effect"
 	"atlas-summons/effectivestats"
 	"atlas-summons/inventory"
-	"atlas-summons/kafka/producer"
 	monstermsg "atlas-summons/monster"
 	"context"
 	"math/rand"
 	"time"
+
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -19,8 +23,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {
@@ -93,9 +95,12 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
 func (p *ProcessorImpl) GetById(id uint32) (Model, error) {
 	return GetRegistry().Get(p.ctx, p.t, id)
 }
+
 func (p *ProcessorImpl) GetInField(f field.Model) ([]Model, error) {
 	return GetRegistry().GetInField(p.ctx, p.t, f)
 }
@@ -137,7 +142,7 @@ func (p *ProcessorImpl) Spawn(f field.Model, ownerCharacterId uint32, skillId ui
 	if entry.Type == summonconst.TypePuppet {
 		hp = int32(eff.X())
 	} else if entry.Type == summonconst.TypeBuffAura {
-		hp = int32(eff.X()) + 1 // Cosmic Beholder hp = x + 1
+		hp = int32(eff.X()) + 1 // Beholder hp = effect x + 1
 	}
 
 	b := NewBuilder().
@@ -274,8 +279,8 @@ func (p *ProcessorImpl) Attack(id uint32, senderCharacterId uint32, direction by
 		return err
 	}
 
-	// Owner combat stats drive the per-hit ceiling (FR-4.3), a faithful port of
-	// Cosmic's weapon-type-aware calcMaxDamage. If stats are unavailable, set
+	// Owner combat stats drive the weapon-type-aware per-hit ceiling (FR-4.3;
+	// see FaithfulMaxPerHit). If stats are unavailable, set
 	// max=0 so clampDamage treats it as "no ceiling" — never zero legit damage.
 	var max int64
 	stats, serr := p.stats.GetByCharacter(m.Field().WorldId(), m.Field().ChannelId(), m.OwnerCharacterId())
@@ -285,7 +290,7 @@ func (p *ProcessorImpl) Attack(id uint32, senderCharacterId uint32, direction by
 	} else {
 		magic := eff.WeaponAttack() == 0
 		// The physical branch needs the equipped weapon type. A failed lookup
-		// degrades to WeaponTypeNone (Cosmic's SWORD1H no-weapon fallback) rather
+		// degrades to WeaponTypeNone (the one-handed-sword no-weapon fallback) rather
 		// than disabling the clamp; magic ignores weapon type entirely.
 		weaponType := item.WeaponTypeNone
 		if !magic {
@@ -366,7 +371,7 @@ func rollProc(prop float64) bool {
 	}
 	if prop <= 0.0 {
 		// Treat a missing/zero prop as always-apply: a roster status flag with no
-		// configured chance should still land (Cosmic applies these unconditionally).
+		// configured chance should still land unconditionally.
 		return true
 	}
 	return rand.Float64() < prop
@@ -443,7 +448,7 @@ func (p *ProcessorImpl) DespawnAllForOwner(ownerCharacterId uint32) error {
 	return nil
 }
 
-// conflictsMobility implements Cosmic StatEffect.java:1024-1029: a new stationary
+// conflictsMobility implements the summon replacement rule: a new stationary
 // summon cancels the existing stationary one; a new non-stationary cancels the
 // existing non-stationary one.
 func conflictsMobility(newMove summonconst.Movement, existing MovementType) bool {

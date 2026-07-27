@@ -3,11 +3,12 @@ package list
 import (
 	"testing"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 )
 
 func setupProcessorTestDB(t *testing.T) *gorm.DB {

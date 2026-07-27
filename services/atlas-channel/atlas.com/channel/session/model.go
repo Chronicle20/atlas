@@ -6,13 +6,20 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/crypto"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+)
+
+const (
+	CashSceneNone     byte = 0
+	CashSceneCashShop byte = 1
+	CashSceneMts      byte = 2
 )
 
 type Model struct {
@@ -22,6 +29,7 @@ type Model struct {
 	field        field.Model
 	gm           bool
 	storageNpcId uint32
+	cashScene    byte
 	con          net.Conn
 	send         crypto.AESOFB
 	sendLock     *sync.Mutex
@@ -69,6 +77,7 @@ func CloneSession(s Model) Model {
 		field:        s.field,
 		characterId:  s.characterId,
 		storageNpcId: s.storageNpcId,
+		cashScene:    s.cashScene,
 		con:          s.con,
 		send:         s.send,
 		sendLock:     s.sendLock,
@@ -211,4 +220,14 @@ func (s *Model) StorageNpcId() uint32 {
 
 func (s *Model) clearStorageNpcId() Model {
 	return s.setStorageNpcId(0)
+}
+
+func (s *Model) CashScene() byte {
+	return s.cashScene
+}
+
+func (s *Model) setCashScene(scene byte) Model {
+	ns := CloneSession(*s)
+	ns.cashScene = scene
+	return ns
 }

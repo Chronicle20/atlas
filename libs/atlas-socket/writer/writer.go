@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 type BodyFunc func(l logrus.FieldLogger, ctx context.Context) func(encoder packet.Encode) []byte

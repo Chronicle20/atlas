@@ -92,8 +92,9 @@ Manages a typed inventory slot container with capacity limits. Handles asset ope
 - `Processor.Accept` - Accepts an asset into the compartment, merging into existing stack when possible; emits ERROR event on failure
 - `Processor.Release` - Releases an asset from the compartment (full or partial by quantity); emits ERROR event on failure
 - `Processor.AttemptEquipmentPickUp` - Picks up equipment from a drop, building asset from EquipmentData; cancels drop reservation on failure
-- `Processor.AttemptItemPickUp` - Picks up a stackable item from a drop, merging into existing stacks when possible; cancels drop reservation on failure
+- `Processor.AttemptItemPickUp` - Picks up a stackable item from a drop, merging into existing stacks when possible; cancels drop reservation on failure. Items flagged consumeOnPickup never enter the inventory; instead an item-consumed-on-pickup command is emitted and the drop reservation is completed
 - `Processor.ModifyEquipment` - Updates equipment stats for an existing asset
+- `Processor.ChangeTemplate` - Resolves the Cash-compartment pet asset matching a given petId and swaps only its templateId in place, preserving slot, cashId, expiration, and petId
 
 ---
 
@@ -107,7 +108,7 @@ Represents a unified inventory item in a compartment slot. All item types (equip
 
 - `Model` - Contains:
   - Identity: id (uint32), compartmentId (UUID), slot (int16), templateId (uint32), expiration, createdAt
-  - Stackable fields: quantity, ownerId, flag, rechargeable
+  - Stackable fields: quantity, ownerId, owner, flag, rechargeable
   - Equipment fields: strength, dexterity, intelligence, luck, hp, mp, weaponAttack, magicAttack, weaponDefense, magicDefense, accuracy, avoidability, hands, speed, jump, slots, levelType, level, experience, hammersApplied, equippedSince
   - Cash fields: cashId, commodityId, purchaseBy
   - Pet reference: petId
@@ -150,6 +151,7 @@ Represents a unified inventory item in a compartment slot. All item types (equip
 - `Processor.Release` - Soft-deletes an asset; emits RELEASED event
 - `Processor.DeleteAndEmit` - Looks up asset by ID and deletes with event emission
 - `Processor.GetSlotMax` - Retrieves maximum slot capacity for a templateId from the appropriate data service (consumable, setup, or etc); returns 1 for equipment and other types
+- `Processor.ChangeTemplate` - Swaps only the templateId of a pet asset in place, preserving its slot, compartment, cashId, petId, expiration, and quantity; only supported for pet assets
 
 ---
 

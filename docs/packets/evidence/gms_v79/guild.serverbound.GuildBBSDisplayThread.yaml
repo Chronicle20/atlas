@@ -1,0 +1,10 @@
+packet: guild/serverbound/GuildBBSDisplayThread
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CUIGuildBBS::SendViewEntryRequest
+    address: "0x786cdc"
+    decompile_sha256: 632529b5de71d1f04c2692effb6361d94b9b3365079fc60e57130e062c609aa0
+verifies:
+  - libs/atlas-packet/guild/serverbound/bbs_display_thread_test.go#TestBBSDisplayThreadRoundTrip

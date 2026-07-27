@@ -4,8 +4,9 @@ import (
 	"context"
 	"sync"
 
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // Cache is an interface for a saga cache
@@ -52,8 +53,10 @@ type InMemoryCache struct {
 }
 
 // Singleton cache instance
-var cacheInstance Cache
-var once sync.Once
+var (
+	cacheInstance Cache
+	once          sync.Once
+)
 
 // GetCache returns the singleton instance of the cache
 func GetCache() Cache {

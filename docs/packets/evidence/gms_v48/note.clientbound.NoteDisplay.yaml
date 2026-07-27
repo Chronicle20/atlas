@@ -1,0 +1,10 @@
+packet: note/clientbound/NoteDisplay
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMemoResult#Display
+    address: "0x71d8e2"
+    decompile_sha256: ba1a7fe1488cb92ab7d69ccf42d7081f67fe4a055c9954e049f7dd91679183df
+verifies:
+    - libs/atlas-packet/note/clientbound/v48_test.go#TestNoteDisplayV48Body

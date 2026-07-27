@@ -11,6 +11,10 @@ Returns all skills for a character.
 | Name | Location | Type | Required | Description |
 |------|----------|------|----------|-------------|
 | characterId | path | uint32 | yes | Character identifier |
+| page[number] | query | integer | no | Page number, minimum 1. Default 1. |
+| page[size] | query | integer | no | Page size, 1 to 250. Default 250. |
+
+The legacy `limit` query parameter is rejected.
 
 #### Request Headers
 
@@ -34,6 +38,7 @@ Resource type: `skills`
 
 | Status | Condition |
 |--------|-----------|
+| 400 | `page[number]` or `page[size]` is non-integer, out of range, or the `limit` parameter is present |
 | 500 | Internal error retrieving skills |
 
 ---
@@ -166,6 +171,10 @@ Returns all macros for a character.
 | Name | Location | Type | Required | Description |
 |------|----------|------|----------|-------------|
 | characterId | path | uint32 | yes | Character identifier |
+| page[number] | query | integer | no | Page number, minimum 1. Default 1. |
+| page[size] | query | integer | no | Page size, 1 to 250. Default 250. |
+
+The legacy `limit` query parameter is rejected.
 
 #### Request Headers
 
@@ -190,4 +199,5 @@ Resource type: `macros`
 
 | Status | Condition |
 |--------|-----------|
+| 400 | `page[number]` or `page[size]` is non-integer, out of range, or the `limit` parameter is present |
 | 500 | Internal error retrieving macros |

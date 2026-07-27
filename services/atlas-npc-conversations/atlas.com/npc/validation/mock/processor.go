@@ -10,6 +10,8 @@ type ProcessorMock struct {
 	ValidateCharacterStateFunc func(characterId uint32, conditions []validation.ConditionInput) (validation.ValidationResult, error)
 }
 
+var _ validation.Processor = (*ProcessorMock)(nil)
+
 // ValidateCharacterState is a mock implementation of the validation.Processor.ValidateCharacterState method
 func (m *ProcessorMock) ValidateCharacterState(characterId uint32, conditions []validation.ConditionInput) (validation.ValidationResult, error) {
 	if m.ValidateCharacterStateFunc != nil {

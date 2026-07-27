@@ -6,6 +6,8 @@ import (
 	"strconv"
 
 	"github.com/jtumidanski/api2go/jsonapi"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // Envelope captures everything needed to build a JSON:API paginated document
@@ -93,4 +95,9 @@ func rewritePage(req *http.Request, pageNumber, pageSize int) string {
 		return req.URL.Path
 	}
 	return req.URL.Path + "?" + encoded
+}
+
+// EnvelopeFor builds the response envelope for one fetched page.
+func EnvelopeFor[T any](p model.Paged[T]) Envelope {
+	return Envelope{Total: p.Total, PageNumber: p.Page.Number, PageSize: p.Page.Size}
 }

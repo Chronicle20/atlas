@@ -9,10 +9,11 @@ import (
 	"strings"
 	"testing"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/idasrc"
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/matrix"
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/opregistry"
-	"gopkg.in/yaml.v3"
 )
 
 // verifyFakeMCP is a fake MCPClient for verify-serverbound tests.

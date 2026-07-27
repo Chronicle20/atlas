@@ -2,10 +2,10 @@ package marriage
 
 // Model represents marriage gift data for a character
 type Model struct {
-	characterId            uint32
-	hasUnclaimedGifts      bool
-	unclaimedGiftCount     int
-	lastGiftClaimedTime    int64
+	characterId         uint32
+	hasUnclaimedGifts   bool
+	unclaimedGiftCount  int
+	lastGiftClaimedTime int64
 }
 
 // NewModel creates a new marriage model

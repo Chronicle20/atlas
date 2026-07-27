@@ -1,0 +1,30 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 2132000,
+      "startState": "start",
+      "states": [
+        {
+          "dialogue": {
+            "choices": [
+              {
+                "nextState": null,
+                "text": "Ok"
+              },
+              {
+                "nextState": null,
+                "text": "Exit"
+              }
+            ],
+            "dialogueType": "sendOk",
+            "text": "Hmmm! For you to make your way here, far away from the Camp, you must be one strong individual. Let's explore new areas and find a place to establish our own town!!"
+          },
+          "id": "start",
+          "type": "dialogue"
+        }
+      ]
+    },
+    "id": "2132000",
+    "type": "npc-conversation"
+  }
+}

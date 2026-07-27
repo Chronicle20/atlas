@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldMtsResultSaleCurrentItemToWishDone
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnNormalItemResult#SaleCurrentItemToWishDone
+    address: "0x57f848"
+    decompile_sha256: 335de12d5098f1db77458e64c3ef2cf6a2eece0e5be31dc5d6a7ba4e0c38e490
+verifies:
+  - libs/atlas-packet/field/clientbound/mts_operation_test.go#TestMtsResultSaleCurrentItemToWishDone

@@ -1,4 +1,5 @@
 import { api } from "@/lib/api/client";
+import { fetchPaged } from "@/services/api/pagination";
 import {
   getItemType,
   type ItemSearchResult,
@@ -11,7 +12,6 @@ import {
   type ItemDetailData,
 } from "@/types/models/item";
 import type { Compartment } from "@/lib/items/taxonomy";
-import type { ApiPagedResponse } from "@/types/api/responses";
 
 const BASE_PATH = "/api/data/item-strings";
 
@@ -54,11 +54,14 @@ function compartmentFromWire(raw: string | undefined): Compartment {
   }
 }
 
-export function buildItemSearchQuery(filters: ItemSearchFilters): string {
+/** Search/filter params only, without pagination — used with `fetchPaged`. */
+function buildItemFilterQuery(filters: ItemSearchFilters): string {
   const params = new URLSearchParams();
   if (filters.q && filters.q.length > 0) params.set("search", filters.q);
-  if (filters.compartment) params.set("filter[compartment]", filters.compartment);
-  if (filters.subcategory) params.set("filter[subcategory]", filters.subcategory);
+  if (filters.compartment)
+    params.set("filter[compartment]", filters.compartment);
+  if (filters.subcategory)
+    params.set("filter[subcategory]", filters.subcategory);
   if (filters.classes && filters.classes.length > 0) {
     if (filters.classes.length === 1 && filters.classes[0] === "any") {
       params.set("filter[class]", "any");
@@ -66,17 +69,30 @@ export function buildItemSearchQuery(filters: ItemSearchFilters): string {
       params.set("filter[class]", [...filters.classes].sort().join(","));
     }
   }
+  const qs = params.toString();
+  return qs ? `?${qs}` : "";
+}
+
+/** Full search + pagination query string. Kept for callers/tests that need the whole URL. */
+export function buildItemSearchQuery(filters: ItemSearchFilters): string {
+  const filterQs = buildItemFilterQuery(filters);
+  const params = new URLSearchParams(filterQs.replace(/^\?/, ""));
   params.set("page[number]", String(filters.pageNumber));
   params.set("page[size]", String(filters.pageSize));
   return `?${params.toString()}`;
 }
 
 export const itemsService = {
+  /**
+   * Fetch a single page of matching item strings (task-117) — routed through
+   * the shared `fetchPaged` utility instead of hand-rolling page params.
+   */
   async searchItems(filters: ItemSearchFilters): Promise<ItemSearchPage> {
-    const resp = await api.get<ApiPagedResponse<ItemStringSearchData>>(
-      `${BASE_PATH}${buildItemSearchQuery(filters)}`,
+    const result = await fetchPaged<ItemStringSearchData>(
+      `${BASE_PATH}${buildItemFilterQuery(filters)}`,
+      { number: filters.pageNumber, size: filters.pageSize },
     );
-    const items = resp.data.map((item) => ({
+    const items = result.data.map((item) => ({
       id: item.id,
       name: item.attributes.name,
       compartment: compartmentFromWire(item.attributes.compartment),
@@ -85,15 +101,17 @@ export const itemsService = {
     }));
     return {
       items,
-      total: resp.meta?.total ?? items.length,
-      pageNumber: resp.meta?.page?.number ?? filters.pageNumber,
-      pageSize: resp.meta?.page?.size ?? filters.pageSize,
-      lastPage: resp.meta?.page?.last ?? 1,
+      total: result.meta?.total ?? items.length,
+      pageNumber: result.meta?.page.number ?? filters.pageNumber,
+      pageSize: result.meta?.page.size ?? filters.pageSize,
+      lastPage: result.meta?.page.last ?? 1,
     };
   },
 
   async getItemName(itemId: string): Promise<string> {
-    const item = await api.getOne<ItemStringSearchData>(`${BASE_PATH}/${itemId}`);
+    const item = await api.getOne<ItemStringSearchData>(
+      `${BASE_PATH}/${itemId}`,
+    );
     return item.attributes.name;
   },
 
@@ -124,13 +142,20 @@ export const itemsService = {
   async getItemDetail(itemId: string): Promise<ItemDetailData> {
     const type = getItemType(itemId);
     switch (type) {
-      case "Equipment": return itemsService.getEquipment(itemId);
-      case "Consumable": return itemsService.getConsumable(itemId);
-      case "Setup": return itemsService.getSetup(itemId);
-      case "Etc": return itemsService.getEtc(itemId);
-      case "Cash": return itemsService.getCashItem(itemId);
-      case "Pet": return itemsService.getPet(itemId);
-      default: throw new Error(`Unknown item type for ID ${itemId}`);
+      case "Equipment":
+        return itemsService.getEquipment(itemId);
+      case "Consumable":
+        return itemsService.getConsumable(itemId);
+      case "Setup":
+        return itemsService.getSetup(itemId);
+      case "Etc":
+        return itemsService.getEtc(itemId);
+      case "Cash":
+        return itemsService.getCashItem(itemId);
+      case "Pet":
+        return itemsService.getPet(itemId);
+      default:
+        throw new Error(`Unknown item type for ID ${itemId}`);
     }
   },
 };

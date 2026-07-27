@@ -1,10 +1,11 @@
 package chalkboard
 
 import (
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
@@ -27,8 +28,7 @@ type SetCommandBody struct {
 	Message string `json:"message"`
 }
 
-type ClearCommandBody struct {
-}
+type ClearCommandBody struct{}
 
 const (
 	EnvEventTopicStatus       = "EVENT_TOPIC_CHALKBOARD_STATUS"
@@ -50,5 +50,4 @@ type SetStatusEventBody struct {
 	Message string `json:"message"`
 }
 
-type ClearStatusEventBody struct {
-}
+type ClearStatusEventBody struct{}

@@ -1,0 +1,71 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "greetAran",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "forceComplete",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Aran, you're finally back!!! How you've been doing? Where did you go for so long? We have so much to catch up..."
+            },
+            "id": "greetAran",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "force": "true"
+                  },
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "forceComplete",
+            "type": "genericAction"
+          }
+        ]
+      },
+      "questId": 21750,
+      "questName": "The Hero's Return",
+      "startStateMachine": {
+        "startState": "noDialogue",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "noDialogue",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "21750",
+    "type": "quest-conversation"
+  }
+}

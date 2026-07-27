@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	Resource      = "parties"
-	ByMemberId    = Resource + "?filter[members.id]=%d"
+	Resource   = "parties"
+	ByMemberId = Resource + "?filter[members.id]=%d"
 )
 
 func getBaseRequest() string {

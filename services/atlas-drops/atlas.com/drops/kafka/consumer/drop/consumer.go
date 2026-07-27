@@ -1,10 +1,13 @@
 package drop
 
 import (
+	"atlas-drops/data/foothold"
 	"atlas-drops/drop"
 	consumer2 "atlas-drops/kafka/consumer"
 	messageDropKafka "atlas-drops/kafka/message/drop"
 	"context"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -12,8 +15,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -90,11 +92,21 @@ func handleSpawnFromCharacter(l logrus.FieldLogger, ctx context.Context, c messa
 	}
 	t := tenant.MustFromContext(ctx)
 	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
+	// Snap the drop's resting position to the foothold directly below its
+	// origin so it falls to the floor instead of hanging mid-air (e.g. when
+	// dropped while on a rope/ladder). The dropper coordinates stay the
+	// character's position, so the client animates the fall from origin to
+	// floor. If nothing is below (map edge / bottomless pit), keep the
+	// original y.
+	restX, restY := c.Body.X, c.Body.Y
+	if ly, ok := foothold.NewProcessor(l, ctx).LandingBelow(c.MapId, c.Body.X, c.Body.Y); ok {
+		restY = ly
+	}
 	mb := drop.NewModelBuilder(t, f).
 		SetItem(c.Body.ItemId, c.Body.Quantity).
 		SetMeso(c.Body.Mesos).
 		SetType(c.Body.DropType).
-		SetPosition(c.Body.X, c.Body.Y).
+		SetPosition(restX, restY).
 		SetOwner(c.Body.OwnerId, c.Body.OwnerPartyId).
 		SetDropper(c.Body.DropperId, c.Body.DropperX, c.Body.DropperY).
 		SetPlayerDrop(c.Body.PlayerDrop).

@@ -4,8 +4,9 @@ import (
 	"atlas-tenants/configuration"
 	"atlas-tenants/kafka/message"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // Compile-time interface compliance check
@@ -37,10 +38,34 @@ type ProcessorMock struct {
 	InstanceRouteByIdProviderFunc  func(tenantID uuid.UUID, routeID string) model.Provider[map[string]interface{}]
 	AllInstanceRoutesProviderFunc  func(tenantID uuid.UUID) model.Provider[[]map[string]interface{}]
 
+	// MTS config operations
+	CreateMtsConfigFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(config map[string]interface{}) (configuration.Model, error)
+	CreateMtsConfigAndEmitFunc func(tenantID uuid.UUID, config map[string]interface{}) (configuration.Model, error)
+	UpdateMtsConfigFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(configID string) func(config map[string]interface{}) (configuration.Model, error)
+	UpdateMtsConfigAndEmitFunc func(tenantID uuid.UUID, configID string, config map[string]interface{}) (configuration.Model, error)
+	DeleteMtsConfigFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(configID string) error
+	DeleteMtsConfigAndEmitFunc func(tenantID uuid.UUID, configID string) error
+	GetMtsConfigByIdFunc       func(tenantID uuid.UUID, configID string) (map[string]interface{}, error)
+	GetAllMtsConfigsFunc       func(tenantID uuid.UUID) ([]map[string]interface{}, error)
+	MtsConfigByIdProviderFunc  func(tenantID uuid.UUID, configID string) model.Provider[map[string]interface{}]
+	AllMtsConfigsProviderFunc  func(tenantID uuid.UUID) model.Provider[[]map[string]interface{}]
+
+	// Rankings operations
+	CreateRankingsFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(rankings map[string]interface{}) (configuration.Model, error)
+	CreateRankingsAndEmitFunc func(tenantID uuid.UUID, rankings map[string]interface{}) (configuration.Model, error)
+	UpdateRankingsFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(rankings map[string]interface{}) (configuration.Model, error)
+	UpdateRankingsAndEmitFunc func(tenantID uuid.UUID, rankings map[string]interface{}) (configuration.Model, error)
+	DeleteRankingsFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) error
+	DeleteRankingsAndEmitFunc func(tenantID uuid.UUID) error
+	GetRankingsFunc           func(tenantID uuid.UUID) (map[string]interface{}, error)
+	RankingsProviderFunc      func(tenantID uuid.UUID) model.Provider[map[string]interface{}]
+
 	// Seed operations
 	SeedRoutesFunc         func(tenantID uuid.UUID) (configuration.SeedResult, error)
 	SeedInstanceRoutesFunc func(tenantID uuid.UUID) (configuration.SeedResult, error)
 	SeedVesselsFunc        func(tenantID uuid.UUID) (configuration.SeedResult, error)
+	SeedRpsRewardsFunc     func(tenantID uuid.UUID) (configuration.SeedResult, error)
+	SeedMtsConfigsFunc     func(tenantID uuid.UUID) (configuration.SeedResult, error)
 
 	// Vessel operations
 	CreateVesselFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(vessel map[string]interface{}) (configuration.Model, error)
@@ -53,6 +78,18 @@ type ProcessorMock struct {
 	GetAllVesselsFunc       func(tenantID uuid.UUID) ([]map[string]interface{}, error)
 	VesselByIdProviderFunc  func(tenantID uuid.UUID, vesselID string) model.Provider[map[string]interface{}]
 	AllVesselsProviderFunc  func(tenantID uuid.UUID) model.Provider[[]map[string]interface{}]
+
+	// RPS reward operations
+	CreateRpsRewardFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(rpsReward map[string]interface{}) (configuration.Model, error)
+	CreateRpsRewardAndEmitFunc func(tenantID uuid.UUID, rpsReward map[string]interface{}) (configuration.Model, error)
+	UpdateRpsRewardFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(rpsRewardID string) func(rpsReward map[string]interface{}) (configuration.Model, error)
+	UpdateRpsRewardAndEmitFunc func(tenantID uuid.UUID, rpsRewardID string, rpsReward map[string]interface{}) (configuration.Model, error)
+	DeleteRpsRewardFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(rpsRewardID string) error
+	DeleteRpsRewardAndEmitFunc func(tenantID uuid.UUID, rpsRewardID string) error
+	GetRpsRewardByIdFunc       func(tenantID uuid.UUID, rpsRewardID string) (map[string]interface{}, error)
+	GetAllRpsRewardsFunc       func(tenantID uuid.UUID) ([]map[string]interface{}, error)
+	RpsRewardByIdProviderFunc  func(tenantID uuid.UUID, rpsRewardID string) model.Provider[map[string]interface{}]
+	AllRpsRewardsProviderFunc  func(tenantID uuid.UUID) model.Provider[[]map[string]interface{}]
 }
 
 // CreateRoute is a mock implementation
@@ -349,6 +386,104 @@ func (m *ProcessorMock) AllInstanceRoutesProvider(tenantID uuid.UUID) model.Prov
 	}
 }
 
+// CreateMtsConfig is a mock implementation
+func (m *ProcessorMock) CreateMtsConfig(mb *message.Buffer) func(tenantID uuid.UUID) func(config map[string]interface{}) (configuration.Model, error) {
+	if m.CreateMtsConfigFunc != nil {
+		return m.CreateMtsConfigFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(config map[string]interface{}) (configuration.Model, error) {
+		return func(config map[string]interface{}) (configuration.Model, error) {
+			return configuration.Model{}, nil
+		}
+	}
+}
+
+// CreateMtsConfigAndEmit is a mock implementation
+func (m *ProcessorMock) CreateMtsConfigAndEmit(tenantID uuid.UUID, config map[string]interface{}) (configuration.Model, error) {
+	if m.CreateMtsConfigAndEmitFunc != nil {
+		return m.CreateMtsConfigAndEmitFunc(tenantID, config)
+	}
+	return configuration.Model{}, nil
+}
+
+// UpdateMtsConfig is a mock implementation
+func (m *ProcessorMock) UpdateMtsConfig(mb *message.Buffer) func(tenantID uuid.UUID) func(configID string) func(config map[string]interface{}) (configuration.Model, error) {
+	if m.UpdateMtsConfigFunc != nil {
+		return m.UpdateMtsConfigFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(configID string) func(config map[string]interface{}) (configuration.Model, error) {
+		return func(configID string) func(config map[string]interface{}) (configuration.Model, error) {
+			return func(config map[string]interface{}) (configuration.Model, error) {
+				return configuration.Model{}, nil
+			}
+		}
+	}
+}
+
+// UpdateMtsConfigAndEmit is a mock implementation
+func (m *ProcessorMock) UpdateMtsConfigAndEmit(tenantID uuid.UUID, configID string, config map[string]interface{}) (configuration.Model, error) {
+	if m.UpdateMtsConfigAndEmitFunc != nil {
+		return m.UpdateMtsConfigAndEmitFunc(tenantID, configID, config)
+	}
+	return configuration.Model{}, nil
+}
+
+// DeleteMtsConfig is a mock implementation
+func (m *ProcessorMock) DeleteMtsConfig(mb *message.Buffer) func(tenantID uuid.UUID) func(configID string) error {
+	if m.DeleteMtsConfigFunc != nil {
+		return m.DeleteMtsConfigFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(configID string) error {
+		return func(configID string) error {
+			return nil
+		}
+	}
+}
+
+// DeleteMtsConfigAndEmit is a mock implementation
+func (m *ProcessorMock) DeleteMtsConfigAndEmit(tenantID uuid.UUID, configID string) error {
+	if m.DeleteMtsConfigAndEmitFunc != nil {
+		return m.DeleteMtsConfigAndEmitFunc(tenantID, configID)
+	}
+	return nil
+}
+
+// GetMtsConfigById is a mock implementation
+func (m *ProcessorMock) GetMtsConfigById(tenantID uuid.UUID, configID string) (map[string]interface{}, error) {
+	if m.GetMtsConfigByIdFunc != nil {
+		return m.GetMtsConfigByIdFunc(tenantID, configID)
+	}
+	return map[string]interface{}{}, nil
+}
+
+// GetAllMtsConfigs is a mock implementation
+func (m *ProcessorMock) GetAllMtsConfigs(tenantID uuid.UUID) ([]map[string]interface{}, error) {
+	if m.GetAllMtsConfigsFunc != nil {
+		return m.GetAllMtsConfigsFunc(tenantID)
+	}
+	return []map[string]interface{}{}, nil
+}
+
+// MtsConfigByIdProvider is a mock implementation
+func (m *ProcessorMock) MtsConfigByIdProvider(tenantID uuid.UUID, configID string) model.Provider[map[string]interface{}] {
+	if m.MtsConfigByIdProviderFunc != nil {
+		return m.MtsConfigByIdProviderFunc(tenantID, configID)
+	}
+	return func() (map[string]interface{}, error) {
+		return map[string]interface{}{}, nil
+	}
+}
+
+// AllMtsConfigsProvider is a mock implementation
+func (m *ProcessorMock) AllMtsConfigsProvider(tenantID uuid.UUID) model.Provider[[]map[string]interface{}] {
+	if m.AllMtsConfigsProviderFunc != nil {
+		return m.AllMtsConfigsProviderFunc(tenantID)
+	}
+	return func() ([]map[string]interface{}, error) {
+		return []map[string]interface{}{}, nil
+	}
+}
+
 // SeedRoutes is a mock implementation
 func (m *ProcessorMock) SeedRoutes(tenantID uuid.UUID) (configuration.SeedResult, error) {
 	if m.SeedRoutesFunc != nil {
@@ -371,4 +506,194 @@ func (m *ProcessorMock) SeedVessels(tenantID uuid.UUID) (configuration.SeedResul
 		return m.SeedVesselsFunc(tenantID)
 	}
 	return configuration.SeedResult{}, nil
+}
+
+// SeedRpsRewards is a mock implementation
+func (m *ProcessorMock) SeedRpsRewards(tenantID uuid.UUID) (configuration.SeedResult, error) {
+	if m.SeedRpsRewardsFunc != nil {
+		return m.SeedRpsRewardsFunc(tenantID)
+	}
+	return configuration.SeedResult{}, nil
+}
+
+// CreateRpsReward is a mock implementation
+func (m *ProcessorMock) CreateRpsReward(mb *message.Buffer) func(tenantID uuid.UUID) func(rpsReward map[string]interface{}) (configuration.Model, error) {
+	if m.CreateRpsRewardFunc != nil {
+		return m.CreateRpsRewardFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(rpsReward map[string]interface{}) (configuration.Model, error) {
+		return func(rpsReward map[string]interface{}) (configuration.Model, error) {
+			return configuration.Model{}, nil
+		}
+	}
+}
+
+// CreateRpsRewardAndEmit is a mock implementation
+func (m *ProcessorMock) CreateRpsRewardAndEmit(tenantID uuid.UUID, rpsReward map[string]interface{}) (configuration.Model, error) {
+	if m.CreateRpsRewardAndEmitFunc != nil {
+		return m.CreateRpsRewardAndEmitFunc(tenantID, rpsReward)
+	}
+	return configuration.Model{}, nil
+}
+
+// UpdateRpsReward is a mock implementation
+func (m *ProcessorMock) UpdateRpsReward(mb *message.Buffer) func(tenantID uuid.UUID) func(rpsRewardID string) func(rpsReward map[string]interface{}) (configuration.Model, error) {
+	if m.UpdateRpsRewardFunc != nil {
+		return m.UpdateRpsRewardFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(rpsRewardID string) func(rpsReward map[string]interface{}) (configuration.Model, error) {
+		return func(rpsRewardID string) func(rpsReward map[string]interface{}) (configuration.Model, error) {
+			return func(rpsReward map[string]interface{}) (configuration.Model, error) {
+				return configuration.Model{}, nil
+			}
+		}
+	}
+}
+
+// UpdateRpsRewardAndEmit is a mock implementation
+func (m *ProcessorMock) UpdateRpsRewardAndEmit(tenantID uuid.UUID, rpsRewardID string, rpsReward map[string]interface{}) (configuration.Model, error) {
+	if m.UpdateRpsRewardAndEmitFunc != nil {
+		return m.UpdateRpsRewardAndEmitFunc(tenantID, rpsRewardID, rpsReward)
+	}
+	return configuration.Model{}, nil
+}
+
+// DeleteRpsReward is a mock implementation
+func (m *ProcessorMock) DeleteRpsReward(mb *message.Buffer) func(tenantID uuid.UUID) func(rpsRewardID string) error {
+	if m.DeleteRpsRewardFunc != nil {
+		return m.DeleteRpsRewardFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(rpsRewardID string) error {
+		return func(rpsRewardID string) error {
+			return nil
+		}
+	}
+}
+
+// DeleteRpsRewardAndEmit is a mock implementation
+func (m *ProcessorMock) DeleteRpsRewardAndEmit(tenantID uuid.UUID, rpsRewardID string) error {
+	if m.DeleteRpsRewardAndEmitFunc != nil {
+		return m.DeleteRpsRewardAndEmitFunc(tenantID, rpsRewardID)
+	}
+	return nil
+}
+
+// GetRpsRewardById is a mock implementation
+func (m *ProcessorMock) GetRpsRewardById(tenantID uuid.UUID, rpsRewardID string) (map[string]interface{}, error) {
+	if m.GetRpsRewardByIdFunc != nil {
+		return m.GetRpsRewardByIdFunc(tenantID, rpsRewardID)
+	}
+	return map[string]interface{}{}, nil
+}
+
+// GetAllRpsRewards is a mock implementation
+func (m *ProcessorMock) GetAllRpsRewards(tenantID uuid.UUID) ([]map[string]interface{}, error) {
+	if m.GetAllRpsRewardsFunc != nil {
+		return m.GetAllRpsRewardsFunc(tenantID)
+	}
+	return []map[string]interface{}{}, nil
+}
+
+// RpsRewardByIdProvider is a mock implementation
+func (m *ProcessorMock) RpsRewardByIdProvider(tenantID uuid.UUID, rpsRewardID string) model.Provider[map[string]interface{}] {
+	if m.RpsRewardByIdProviderFunc != nil {
+		return m.RpsRewardByIdProviderFunc(tenantID, rpsRewardID)
+	}
+	return func() (map[string]interface{}, error) {
+		return map[string]interface{}{}, nil
+	}
+}
+
+// AllRpsRewardsProvider is a mock implementation
+func (m *ProcessorMock) AllRpsRewardsProvider(tenantID uuid.UUID) model.Provider[[]map[string]interface{}] {
+	if m.AllRpsRewardsProviderFunc != nil {
+		return m.AllRpsRewardsProviderFunc(tenantID)
+	}
+	return func() ([]map[string]interface{}, error) {
+		return []map[string]interface{}{}, nil
+	}
+}
+
+// SeedMtsConfigs is a mock implementation
+func (m *ProcessorMock) SeedMtsConfigs(tenantID uuid.UUID) (configuration.SeedResult, error) {
+	if m.SeedMtsConfigsFunc != nil {
+		return m.SeedMtsConfigsFunc(tenantID)
+	}
+	return configuration.SeedResult{}, nil
+}
+
+// CreateRankings is a mock implementation
+func (m *ProcessorMock) CreateRankings(mb *message.Buffer) func(tenantID uuid.UUID) func(rankings map[string]interface{}) (configuration.Model, error) {
+	if m.CreateRankingsFunc != nil {
+		return m.CreateRankingsFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(rankings map[string]interface{}) (configuration.Model, error) {
+		return func(rankings map[string]interface{}) (configuration.Model, error) {
+			return configuration.Model{}, nil
+		}
+	}
+}
+
+// CreateRankingsAndEmit is a mock implementation
+func (m *ProcessorMock) CreateRankingsAndEmit(tenantID uuid.UUID, rankings map[string]interface{}) (configuration.Model, error) {
+	if m.CreateRankingsAndEmitFunc != nil {
+		return m.CreateRankingsAndEmitFunc(tenantID, rankings)
+	}
+	return configuration.Model{}, nil
+}
+
+// UpdateRankings is a mock implementation
+func (m *ProcessorMock) UpdateRankings(mb *message.Buffer) func(tenantID uuid.UUID) func(rankings map[string]interface{}) (configuration.Model, error) {
+	if m.UpdateRankingsFunc != nil {
+		return m.UpdateRankingsFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(rankings map[string]interface{}) (configuration.Model, error) {
+		return func(rankings map[string]interface{}) (configuration.Model, error) {
+			return configuration.Model{}, nil
+		}
+	}
+}
+
+// UpdateRankingsAndEmit is a mock implementation
+func (m *ProcessorMock) UpdateRankingsAndEmit(tenantID uuid.UUID, rankings map[string]interface{}) (configuration.Model, error) {
+	if m.UpdateRankingsAndEmitFunc != nil {
+		return m.UpdateRankingsAndEmitFunc(tenantID, rankings)
+	}
+	return configuration.Model{}, nil
+}
+
+// DeleteRankings is a mock implementation
+func (m *ProcessorMock) DeleteRankings(mb *message.Buffer) func(tenantID uuid.UUID) error {
+	if m.DeleteRankingsFunc != nil {
+		return m.DeleteRankingsFunc(mb)
+	}
+	return func(tenantID uuid.UUID) error {
+		return nil
+	}
+}
+
+// DeleteRankingsAndEmit is a mock implementation
+func (m *ProcessorMock) DeleteRankingsAndEmit(tenantID uuid.UUID) error {
+	if m.DeleteRankingsAndEmitFunc != nil {
+		return m.DeleteRankingsAndEmitFunc(tenantID)
+	}
+	return nil
+}
+
+// GetRankings is a mock implementation
+func (m *ProcessorMock) GetRankings(tenantID uuid.UUID) (map[string]interface{}, error) {
+	if m.GetRankingsFunc != nil {
+		return m.GetRankingsFunc(tenantID)
+	}
+	return map[string]interface{}{}, nil
+}
+
+// RankingsProvider is a mock implementation
+func (m *ProcessorMock) RankingsProvider(tenantID uuid.UUID) model.Provider[map[string]interface{}] {
+	if m.RankingsProviderFunc != nil {
+		return m.RankingsProviderFunc(tenantID)
+	}
+	return func() (map[string]interface{}, error) {
+		return map[string]interface{}{}, nil
+	}
 }

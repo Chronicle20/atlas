@@ -1,0 +1,10 @@
+packet: storage/clientbound/StorageRetrieveAssets
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CTrunkDlg::OnPacket
+    address: "0x704175"
+    decompile_sha256: 7c5eee1d2fdfb22648a45fc87729561aec15d3323b9214156301f0fb241a1b15
+verifies:
+  - libs/atlas-packet/storage/clientbound/v72_test.go#TestStorageDataArmsV72

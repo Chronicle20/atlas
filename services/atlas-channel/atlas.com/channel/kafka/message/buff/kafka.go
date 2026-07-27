@@ -3,16 +3,24 @@ package buff
 import (
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
-	EnvCommandTopic   = "COMMAND_TOPIC_CHARACTER_BUFF"
-	CommandTypeApply  = "APPLY"
-	CommandTypeCancel = "CANCEL"
+	EnvCommandTopic            = "COMMAND_TOPIC_CHARACTER_BUFF"
+	CommandTypeApply           = "APPLY"
+	CommandTypeCancel          = "CANCEL"
+	CommandTypeCancelByTypes   = "CANCEL_BY_TYPES"
+	CommandTypeUpdateStatValue = "UPDATE_STAT_VALUE"
+
+	// Operations for UPDATE_STAT_VALUE. INCREMENT adds Amount clamped to Cap;
+	// SET replaces the stat amount outright (finisher consume = SET 1).
+	StatOperationIncrement = "INCREMENT"
+	StatOperationSet       = "SET"
 )
 
 type Command[E any] struct {
@@ -42,17 +50,33 @@ type CancelCommandBody struct {
 	SourceId int32 `json:"sourceId"`
 }
 
+type CancelByTypesCommandBody struct {
+	Types []string `json:"types"`
+}
+
+// UpdateStatValueCommandBody changes the amount of one stat on a character's
+// existing buff (identified by SourceId). Owned by atlas-buffs; this is the
+// channel-side mirror. Cap applies to INCREMENT only.
+type UpdateStatValueCommandBody struct {
+	SourceId  int32  `json:"sourceId"`
+	StatType  string `json:"statType"`
+	Operation string `json:"operation"`
+	Amount    int32  `json:"amount"`
+	Cap       int32  `json:"cap"`
+}
+
 const (
 	EnvEventStatusTopic        = "EVENT_TOPIC_CHARACTER_BUFF_STATUS"
 	EventStatusTypeBuffApplied = "APPLIED"
 	EventStatusTypeBuffExpired = "EXPIRED"
+	EventStatusTypeStatUpdated = "STAT_UPDATED"
 )
 
 type StatusEvent[E any] struct {
 	WorldId     world.Id `json:"worldId"`
-	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	CharacterId uint32   `json:"characterId"`
+	Type        string   `json:"type"`
+	Body        E        `json:"body"`
 }
 
 type AppliedStatusEventBody struct {
@@ -72,4 +96,34 @@ type ExpiredStatusEventBody struct {
 	Changes   []StatChange `json:"changes"`
 	CreatedAt time.Time    `json:"createdAt"`
 	ExpiresAt time.Time    `json:"expiresAt"`
+}
+
+// StatUpdatedStatusEventBody signals a stat value change on an EXISTING buff.
+// CreatedAt/ExpiresAt are the buff's original timestamps — the give writers
+// encode duration as expiresAt − now, so re-broadcast carries the remaining
+// duration and never extends the buff.
+type StatUpdatedStatusEventBody struct {
+	SourceId  int32        `json:"sourceId"`
+	Level     byte         `json:"level"`
+	Duration  int32        `json:"duration"`
+	Changes   []StatChange `json:"changes"`
+	CreatedAt time.Time    `json:"createdAt"`
+	ExpiresAt time.Time    `json:"expiresAt"`
+}
+
+const (
+	EventStatusTypeBerserk = "BERSERK"
+)
+
+// BerserkStatusEventBody mirrors atlas-buffs' berserk broadcast tick
+// (task-154). One event per 3s tick per tracked Dark Knight; Active=false
+// ticks clear the aura and keep late-joining observers consistent. ChannelId
+// enables the precise sc.Is(tenant, world, channel) guard.
+type BerserkStatusEventBody struct {
+	TransactionId  uuid.UUID  `json:"transactionId"`
+	ChannelId      channel.Id `json:"channelId"`
+	SkillId        uint32     `json:"skillId"`
+	CharacterLevel byte       `json:"characterLevel"`
+	SkillLevel     byte       `json:"skillLevel"`
+	Active         bool       `json:"active"`
 }

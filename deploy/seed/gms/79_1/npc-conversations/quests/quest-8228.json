@@ -1,0 +1,231 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "checkItem",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "4032032",
+                      "type": "item",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "completeQuest"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "noItem"
+                }
+              ]
+            },
+            "id": "checkItem",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "4032032",
+                    "quantity": "1"
+                  },
+                  "type": "destroy_item"
+                },
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "confirmComplete"
+                }
+              ]
+            },
+            "id": "completeQuest",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Hello, native of this world. So you have a message that needs translation? My people back in Versal is known for mastering many foreign languages, this one may very well be some we know. Please stand by..."
+            },
+            "id": "confirmComplete",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "I'm afraid you don't have the letter you claimed to have with you."
+            },
+            "id": "noItem",
+            "type": "dialogue"
+          }
+        ]
+      },
+      "npcId": 9000022,
+      "questId": 8228,
+      "questName": "Lost in Translation",
+      "startStateMachine": {
+        "startState": "askAccept",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "checkInventorySpace",
+                  "text": "Accept"
+                },
+                {
+                  "nextState": "declined",
+                  "text": "Decline"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendAcceptDecline",
+              "text": "Hm, that's no good. I can't seem to make these Hyper Glyphs work, dang it. ... Ah, yea, the outsider! He may know the language this paper is written on. Let Elpam try to read this, maybe he knows something."
+            },
+            "id": "askAccept",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Come on, the city really needs you cooperating on this one!"
+            },
+            "id": "declined",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "4032032",
+                      "type": "inventorySpace",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "giveItem"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "noSpace"
+                }
+              ]
+            },
+            "id": "checkInventorySpace",
+            "type": "genericAction"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "4032032",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                },
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "confirmStart"
+                }
+              ]
+            },
+            "id": "giveItem",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Very well, I'm counting on you on this one."
+            },
+            "id": "confirmStart",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Hey. There's no slot on your ETC."
+            },
+            "id": "noSpace",
+            "type": "dialogue"
+          }
+        ]
+      }
+    },
+    "id": "8228",
+    "type": "quest-conversation"
+  }
+}

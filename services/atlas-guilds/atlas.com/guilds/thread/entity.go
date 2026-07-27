@@ -4,9 +4,10 @@ import (
 	"atlas-guilds/thread/reply"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 func Migration(db *gorm.DB) error {

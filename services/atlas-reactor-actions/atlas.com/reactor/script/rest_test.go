@@ -3,9 +3,10 @@ package script
 import (
 	"testing"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-script-core/condition"
 	"github.com/Chronicle20/atlas/libs/atlas-script-core/operation"
-	"github.com/google/uuid"
 )
 
 func TestRestModel_GetName(t *testing.T) {

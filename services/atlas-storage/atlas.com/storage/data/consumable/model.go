@@ -7,7 +7,7 @@ type Model struct {
 	rechargeable bool
 }
 
-func (m Model) Id() uint32          { return m.id }
-func (m Model) SlotMax() uint32     { return m.slotMax }
-func (m Model) Rechargeable() bool  { return m.rechargeable }
-func (m Model) CanMerge() bool      { return !m.rechargeable }
+func (m Model) Id() uint32         { return m.id }
+func (m Model) SlotMax() uint32    { return m.slotMax }
+func (m Model) Rechargeable() bool { return m.rechargeable }
+func (m Model) CanMerge() bool     { return !m.rechargeable }

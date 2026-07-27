@@ -1,5 +1,10 @@
-import * as React from "react"
-import { type Control, type FieldPath, type FieldValues, type ControllerRenderProps } from "react-hook-form"
+import * as React from "react";
+import {
+  type Control,
+  type FieldPath,
+  type FieldValues,
+  type ControllerRenderProps,
+} from "react-hook-form";
 import {
   FormControl,
   FormDescription,
@@ -7,62 +12,64 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 interface BaseFormFieldProps<
   TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 > {
-  control: Control<TFieldValues>
-  name: TName
-  label: string
-  description?: string
-  className?: string
-  disabled?: boolean
+  control: Control<TFieldValues>;
+  name: TName;
+  label: string;
+  description?: string;
+  className?: string;
+  disabled?: boolean;
 }
 
 interface TextFormFieldProps<
   TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 > extends BaseFormFieldProps<TFieldValues, TName> {
-  type?: "text" | "email" | "password" | "url"
-  placeholder?: string
-  inputProps?: React.ComponentPropsWithoutRef<typeof Input>
+  type?: "text" | "email" | "password" | "url";
+  placeholder?: string;
+  inputProps?: React.ComponentPropsWithoutRef<typeof Input>;
 }
 
 interface NumberFormFieldProps<
   TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 > extends BaseFormFieldProps<TFieldValues, TName> {
-  type: "number"
-  placeholder?: string
-  min?: number
-  max?: number
-  step?: number
-  inputProps?: React.ComponentPropsWithoutRef<typeof Input>
+  type: "number";
+  placeholder?: string;
+  min?: number;
+  max?: number;
+  step?: number;
+  inputProps?: React.ComponentPropsWithoutRef<typeof Input>;
 }
 
 interface CustomFormFieldProps<
   TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 > extends BaseFormFieldProps<TFieldValues, TName> {
-  render: (field: ControllerRenderProps<TFieldValues, TName>) => React.ReactNode
+  render: (
+    field: ControllerRenderProps<TFieldValues, TName>,
+  ) => React.ReactNode;
 }
 
 type FormFieldProps<
   TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
-> = 
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+> =
   | TextFormFieldProps<TFieldValues, TName>
-  | NumberFormFieldProps<TFieldValues, TName> 
-  | CustomFormFieldProps<TFieldValues, TName>
+  | NumberFormFieldProps<TFieldValues, TName>
+  | CustomFormFieldProps<TFieldValues, TName>;
 
 /**
  * A reusable form field component that wraps the shadcn/ui FormField pattern.
  * Reduces boilerplate by handling the common FormItem -> FormLabel -> FormControl -> FormMessage structure.
- * 
+ *
  * @example Text field:
  * <FormField
  *   control={form.control}
@@ -71,7 +78,7 @@ type FormFieldProps<
  *   placeholder="Enter username"
  *   description="Choose a unique username"
  * />
- * 
+ *
  * @example Number field:
  * <FormField
  *   control={form.control}
@@ -81,7 +88,7 @@ type FormFieldProps<
  *   min={0}
  *   max={120}
  * />
- * 
+ *
  * @example Custom field:
  * <FormField
  *   control={form.control}
@@ -94,9 +101,9 @@ type FormFieldProps<
  */
 export function FormField<
   TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 >(props: FormFieldProps<TFieldValues, TName>) {
-  const { control, name, label, description, className, disabled } = props
+  const { control, name, label, description, className, disabled } = props;
 
   return (
     <ShadcnFormField
@@ -119,8 +126,9 @@ export function FormField<
                 {...field}
                 {...props.inputProps}
                 onChange={(e) => {
-                  const value = e.target.value === "" ? undefined : Number(e.target.value)
-                  field.onChange(value)
+                  const value =
+                    e.target.value === "" ? undefined : Number(e.target.value);
+                  field.onChange(value);
                 }}
                 value={field.value ?? ""}
               />
@@ -140,7 +148,7 @@ export function FormField<
         </FormItem>
       )}
     />
-  )
+  );
 }
 
-FormField.displayName = "FormField"
+FormField.displayName = "FormField";

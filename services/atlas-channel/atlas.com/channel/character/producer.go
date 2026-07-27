@@ -3,13 +3,14 @@ package character
 import (
 	"atlas-channel/kafka/message/character"
 
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
 )
 
 func RequestDistributeApCommandProvider(f field.Model, characterId uint32, distributions []character.DistributePair) model.Provider[[]kafka.Message] {
@@ -61,6 +62,20 @@ func ChangeHPCommandProvider(f field.Model, characterId uint32, amount int16) mo
 		WorldId:     f.WorldId(),
 		Type:        character.CommandChangeHP,
 		Body: character.ChangeHPCommandBody{
+			ChannelId: f.ChannelId(),
+			Amount:    amount,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func SetHPCommandProvider(f field.Model, characterId uint32, amount uint16) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character.Command[character.SetHPCommandBody]{
+		CharacterId: characterId,
+		WorldId:     f.WorldId(),
+		Type:        character.CommandSetHP,
+		Body: character.SetHPCommandBody{
 			ChannelId: f.ChannelId(),
 			Amount:    amount,
 		},

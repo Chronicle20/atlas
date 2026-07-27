@@ -1,0 +1,10 @@
+packet: chat/serverbound/ChatMulti
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CUIStatusBar::SendGroupMessage
+    address: "0x83cebd"
+    decompile_sha256: f5a972489ac8301fb3f0060dea29277ed6da8a2bc68e962659fc1fa2d73402b3
+verifies:
+    - libs/atlas-packet/chat/serverbound/multi_test.go#TestMultiByteOutputV79

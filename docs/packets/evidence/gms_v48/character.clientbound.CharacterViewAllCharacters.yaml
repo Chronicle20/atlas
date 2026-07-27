@@ -1,0 +1,8 @@
+packet: character/clientbound/CharacterViewAllCharacters
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_50232D
+    address: "0x50232d"
+    decompile_sha256: 686b3c4745020e5e7b9f3bbc9914b765ac57811b4d65c182fd9c9abb18f3e372

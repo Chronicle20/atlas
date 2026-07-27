@@ -21,7 +21,11 @@ export interface GraphAnalysis {
 export interface SoftWarnings {
   deadEnds: string[];
   highFanOut: string[];
-  duplicateChoiceLabels: Array<{ source: string; label: string; count: number }>;
+  duplicateChoiceLabels: Array<{
+    source: string;
+    label: string;
+    count: number;
+  }>;
 }
 
 const HIGH_FAN_OUT = 20;

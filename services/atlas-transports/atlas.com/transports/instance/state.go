@@ -3,6 +3,6 @@ package instance
 type InstanceState int
 
 const (
-	Boarding  InstanceState = iota
+	Boarding InstanceState = iota
 	InTransit
 )

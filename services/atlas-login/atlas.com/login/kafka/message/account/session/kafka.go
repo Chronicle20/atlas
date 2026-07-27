@@ -36,8 +36,7 @@ type ProgressStateCommandBody struct {
 	Params interface{} `json:"params"`
 }
 
-type LogoutCommandBody struct {
-}
+type LogoutCommandBody struct{}
 
 const (
 	EnvEventStatusTopic = "EVENT_TOPIC_ACCOUNT_SESSION_STATUS"
@@ -62,8 +61,7 @@ type StatusEvent[E any] struct {
 	Body      E         `json:"body"`
 }
 
-type CreatedStatusEventBody struct {
-}
+type CreatedStatusEventBody struct{}
 
 type StateChangedEventBody[E any] struct {
 	State  uint8 `json:"state"`

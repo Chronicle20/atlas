@@ -1,0 +1,109 @@
+{
+  "service": "atlas-channel + libs/atlas-packet (task-150 scoped diff)",
+  "path": "libs/atlas-packet; services/atlas-channel/atlas.com/channel",
+  "date": "2026-07-27",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "domains": [
+    {
+      "name": "libs/atlas-packet/model (attack_info.go, damage_info.go)",
+      "type": "support",
+      "checks": [
+        {
+          "id": "DOM-21",
+          "name": "Reuse shared skill id constant, no bare 4211006 in production code",
+          "status": "pass",
+          "evidence": "libs/atlas-packet/model/attack_info.go:8,141,300 import + use skill.ChiefBanditMesoExplosionId defined at libs/atlas-constants/skill/constants.go:3179"
+        },
+        {
+          "id": "Purity",
+          "name": "Encode/Decode remain symmetric, variant gated by constant not literal",
+          "status": "pass",
+          "evidence": "libs/atlas-packet/model/attack_info.go:141 (Encode) and :300 (Decode) both compute isMesoExplosion from skill.ChiefBanditMesoExplosionId"
+        }
+      ]
+    },
+    {
+      "name": "services/atlas-channel/.../drop",
+      "type": "support",
+      "checks": [
+        {
+          "id": "FILE-01",
+          "name": "Processor interface + impl in processor.go",
+          "status": "pass",
+          "evidence": "services/atlas-channel/atlas.com/channel/drop/processor.go:19 (interface ConsumeAll), :42-47 (ProcessorImpl.ConsumeAll)"
+        },
+        {
+          "id": "FILE-02/03",
+          "name": "Producer function in producer.go",
+          "status": "pass",
+          "evidence": "services/atlas-channel/atlas.com/channel/drop/producer.go:19-33 ConsumeAllCommandProvider"
+        },
+        {
+          "id": "DOM-24",
+          "name": "Emit-path tests stub the producer",
+          "status": "pass",
+          "evidence": "services/atlas-channel/atlas.com/channel/drop/producer_test.go:TestConsumeAllCommandProvider exercises only the pure model.Provider (no producer.ProviderImpl network call); go test ./drop/... completed in 0.029s"
+        },
+        {
+          "id": "DOM-21b",
+          "name": "Command envelope mirrors atlas-drops without cross-service import",
+          "status": "pass",
+          "evidence": "services/atlas-channel/atlas.com/channel/kafka/message/drop/kafka.go:16-24 vs services/atlas-drops/atlas.com/drops/kafka/message/drop/kafka.go:68-75,181-183 — field-identical, independently defined structs"
+        }
+      ]
+    },
+    {
+      "name": "services/atlas-channel/.../socket/handler",
+      "type": "support",
+      "checks": [
+        {
+          "id": "FILE-06",
+          "name": "No package-named catch-all file",
+          "status": "pass",
+          "evidence": "services/atlas-channel/atlas.com/channel/socket/handler/character_attack_meso_explosion.go — single pure function validateMesoExplosion, no Processor/RestModel/requests collapse"
+        },
+        {
+          "id": "Purity",
+          "name": "validateMesoExplosion has no I/O",
+          "status": "pass",
+          "evidence": "services/atlas-channel/atlas.com/channel/socket/handler/character_attack_meso_explosion.go:19-35 — pure map/slice logic only"
+        },
+        {
+          "id": "DOM-20",
+          "name": "Table-driven tests",
+          "status": "pass",
+          "evidence": "services/atlas-channel/atlas.com/channel/socket/handler/character_attack_meso_explosion_test.go:11-37 TestValidateMesoExplosion"
+        },
+        {
+          "id": "ErrorWiring",
+          "name": "Rejection returns nil before side effects; infra error propagates; CONSUME failure logs-and-continues",
+          "status": "pass",
+          "evidence": "services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go:540-543 (propagate dErr), :548-551 (return nil on validation failure, precedes cost block :561, damage loop :636, broadcast :645, destroy :687), :687-693 (ConsumeAll failure logged via l.WithError(cErr).Errorf, execution continues to return nil at :724)"
+        },
+        {
+          "id": "DOM-26",
+          "name": "No bare goroutines",
+          "status": "pass",
+          "evidence": "grep -rnE '^\\s*go (func|[A-Za-z_])' over changed files: zero matches; tools/goroutine-guard.sh exit 0"
+        }
+      ]
+    },
+    {
+      "name": "services/atlas-channel/.../data/skill/effect",
+      "type": "support",
+      "checks": [
+        {
+          "id": "Model",
+          "name": "Accessor added for pre-existing private field, no mutable state introduced",
+          "status": "pass",
+          "evidence": "services/atlas-channel/atlas.com/channel/data/skill/effect/model.go:54 (existing private field attackCount), :161-163 (new AttackCount() getter)"
+        }
+      ]
+    }
+  ],
+  "blocking": [],
+  "nonBlocking": []
+}

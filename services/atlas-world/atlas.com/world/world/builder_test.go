@@ -7,8 +7,9 @@ import (
 	"testing"
 	"time"
 
-	channelConstant "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/google/uuid"
+
+	channelConstant "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 )
 
 func TestNewModelBuilder(t *testing.T) {
@@ -31,7 +32,6 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 		SetCapacityStatus(world.StatusNormal).
 		SetChannels(channels).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -87,7 +87,6 @@ func TestBuild_Success(t *testing.T) {
 		SetId(0).
 		SetName("Bera").
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -105,7 +104,6 @@ func TestBuild_IdZero(t *testing.T) {
 		SetId(0).
 		SetName("Scania").
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() with id=0 should succeed, got error: %v", err)
 	}
@@ -200,7 +198,6 @@ func TestBuilderFluentChaining(t *testing.T) {
 		SetRecommendedMessage("Join us!").
 		SetCapacityStatus(world.StatusHighlyPopulated).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -232,7 +229,6 @@ func TestAllStateValues(t *testing.T) {
 			SetName("TestWorld").
 			SetState(state).
 			Build()
-
 		if err != nil {
 			t.Errorf("Build() with state=%d unexpected error: %v", state, err)
 		}
@@ -255,7 +251,6 @@ func TestAllStatusValues(t *testing.T) {
 			SetName("TestWorld").
 			SetCapacityStatus(status).
 			Build()
-
 		if err != nil {
 			t.Errorf("Build() with status=%d unexpected error: %v", status, err)
 		}
@@ -271,7 +266,6 @@ func TestBuild_EmptyChannels(t *testing.T) {
 		SetName("Scania").
 		SetChannels([]channel.Model{}).
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() with empty channels should succeed, got error: %v", err)
 	}
@@ -285,7 +279,6 @@ func TestBuild_NilChannels(t *testing.T) {
 		SetId(1).
 		SetName("Scania").
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() without setting channels should succeed, got error: %v", err)
 	}
@@ -301,7 +294,6 @@ func TestRecommended(t *testing.T) {
 		SetName("Scania").
 		SetRecommendedMessage("Join this world!").
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
@@ -314,7 +306,6 @@ func TestRecommended(t *testing.T) {
 		SetId(1).
 		SetName("Scania").
 		Build()
-
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}

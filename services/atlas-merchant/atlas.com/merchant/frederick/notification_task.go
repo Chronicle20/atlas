@@ -2,18 +2,18 @@ package frederick
 
 import (
 	merchant "atlas-merchant/kafka/message/merchant"
-	producer2 "atlas-merchant/kafka/producer"
 	"context"
 	"time"
+
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 const DefaultNotificationInterval = 1 * time.Hour
@@ -64,7 +64,7 @@ func (t *NotificationTask) Run() {
 		}
 		tctx := tenant.WithContext(t.ctx, ten)
 
-		kp := producer2.ProviderImpl(t.l)(tctx)
+		kp := producer.ProviderImpl(t.l)(tctx)
 		_ = kp(merchant.EnvStatusEventTopic)(notificationProvider(n.CharacterId, n.NextDay))
 
 		next, hasNext := nextTier(n.NextDay)

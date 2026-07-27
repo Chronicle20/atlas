@@ -1,9 +1,10 @@
 package compartment
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 )
 
 func create(db *gorm.DB, tenantId uuid.UUID, characterId uint32, inventoryType inventory.Type, capacity uint32) (Model, error) {

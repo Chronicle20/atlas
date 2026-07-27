@@ -3,8 +3,9 @@ package map_
 import (
 	"strconv"
 
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/jtumidanski/api2go/jsonapi"
+
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 type RestModel struct {
@@ -44,7 +45,7 @@ type FootholdTreeRestModel struct {
 }
 
 type FootholdRestModel struct {
-	Id     uint32        `json:"id"`
+	Id     uint32          `json:"id"`
 	First  *PointRestModel `json:"first"`
 	Second *PointRestModel `json:"second"`
 }

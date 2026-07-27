@@ -33,7 +33,11 @@ function makeTenant(id: string, region = "GMS"): Tenant {
   } as unknown as Tenant;
 }
 
-function Harness({ onReady }: { onReady: (ctx: ReturnType<typeof useTenant>) => void }) {
+function Harness({
+  onReady,
+}: {
+  onReady: (ctx: ReturnType<typeof useTenant>) => void;
+}) {
   const ctx = useTenant();
   onReady(ctx);
   return null;
@@ -58,9 +62,13 @@ describe("TenantProvider tenant-switch invariants", () => {
     render(
       <QueryClientProvider client={queryClient}>
         <TenantProvider>
-          <Harness onReady={(c) => { ctxRef = c; }} />
+          <Harness
+            onReady={(c) => {
+              ctxRef = c;
+            }}
+          />
         </TenantProvider>
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
     await waitFor(() => {
@@ -112,9 +120,13 @@ describe("TenantProvider tenant-switch invariants", () => {
     render(
       <QueryClientProvider client={queryClient}>
         <TenantProvider>
-          <Harness onReady={(c) => { ctxRef = c; }} />
+          <Harness
+            onReady={(c) => {
+              ctxRef = c;
+            }}
+          />
         </TenantProvider>
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
     // Wait for initial load to pick tenantA as active.
@@ -151,9 +163,13 @@ describe("TenantProvider tenant-switch invariants", () => {
     render(
       <QueryClientProvider client={queryClient}>
         <TenantProvider>
-          <Harness onReady={(c) => { ctxRef = c; }} />
+          <Harness
+            onReady={(c) => {
+              ctxRef = c;
+            }}
+          />
         </TenantProvider>
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
     await waitFor(() => {

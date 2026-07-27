@@ -17,8 +17,11 @@ func getBaseRequest() string {
 	return requests.RootUrl("WORLDS")
 }
 
-func requestWorlds() requests.Request[[]RestModel] {
-	return requests.GetRequest[[]RestModel](getBaseRequest() + WorldsIncludeChannels)
+// worldsUrl is a bare URL (not a requests.Request) because the list is now
+// paginated server-side (task-117) and consumed via requests.DrainProvider,
+// which appends its own page[number]/page[size] query params per request.
+func worldsUrl() string {
+	return getBaseRequest() + WorldsIncludeChannels
 }
 
 func requestWorld(worldId world.Id) requests.Request[RestModel] {

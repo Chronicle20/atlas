@@ -5,9 +5,10 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/sirupsen/logrus/hooks/test"
 	"golang.org/x/net/context"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
 // createTestCharacter creates a character model for testing
@@ -164,7 +165,7 @@ func TestAwardItemCommandProducer_GmCheck(t *testing.T) {
 			f := field.NewBuilder(1, 1, 100000000).Build()
 
 			producer := AwardItemCommandProducer(logger)
-			_, found := producer(ctx)(f,char, tc.message)
+			_, found := producer(ctx)(f, char, tc.message)
 
 			// Note: The actual command may not find the executor if the item doesn't exist
 			// in the asset processor. We're testing the initial pattern matching and GM check.
@@ -211,7 +212,7 @@ func TestAwardItemCommandProducer_NoMatchReturnsNil(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			producer := AwardItemCommandProducer(logger)
-			executor, found := producer(ctx)(f,gmChar, tc.message)
+			executor, found := producer(ctx)(f, gmChar, tc.message)
 
 			if found {
 				t.Errorf("Expected found=false for message '%s', got found=true", tc.message)

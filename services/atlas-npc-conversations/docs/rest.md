@@ -6,10 +6,12 @@
 
 Retrieves all NPC conversation definitions for the current tenant.
 
-- Parameters: None
+- Parameters:
+  - `page[number]`, `page[size]` (query, optional) — Pagination
 - Request model: None
 - Response model: `[]npc.RestModel` (JSON:API, resource type `"conversations"`)
 - Error conditions:
+  - 400: Invalid `page[number]`/`page[size]`
   - 500: Internal error retrieving conversations
 
 ### GET /npcs/conversations/{conversationId}
@@ -30,9 +32,11 @@ Retrieves all NPC conversation definitions for a specific NPC.
 
 - Parameters:
   - `npcId` (path, uint32) — NPC template ID
+  - `page[number]`, `page[size]` (query, optional) — Pagination
 - Request model: None
 - Response model: `[]npc.RestModel` (JSON:API, resource type `"conversations"`)
 - Error conditions:
+  - 400: Invalid `page[number]`/`page[size]`
   - 500: Internal error
 
 ### POST /npcs/conversations
@@ -86,26 +90,39 @@ Validates an NPC conversation definition without persisting it.
 
 ### POST /npcs/conversations/seed
 
-Clears all NPC conversations for the current tenant and loads from JSON files on the filesystem.
+Deletes all NPC conversations for the current tenant and reloads them from the `npc-conversations/npc` path of the seed catalog rooted at `SEED_CATALOG_ROOT`. Runs asynchronously in the background; the request returns immediately.
 
 - Parameters: None
 - Request model: None
-- Response model: `SeedResult` (JSON)
-  - `deletedCount` (int)
-  - `createdCount` (int)
-  - `failedCount` (int)
-  - `errors` ([]string)
+- Response model: None (202 Accepted, empty body)
+- Error conditions: None (failures are recorded asynchronously and surfaced via `GET /npcs/conversations/seed/status`)
+
+### GET /npcs/conversations/seed/status
+
+Retrieves the seed status for the `npc-conversations:npc` catalog group for the current tenant.
+
+- Parameters: None
+- Request model: None
+- Response model: `Status` (JSON)
+  - `groupName` (string)
+  - `subdomains` (map of subdomain name to `{count, updatedAt}`)
+  - `updatedAt` (timestamp, nullable)
+  - `catalogRevision` (string)
+  - `tenantSeededRevision` (string, nullable)
+  - `tenantSeededAt` (timestamp, nullable)
 - Error conditions:
-  - 500: Internal error
+  - 500: Internal error reading status
 
 ### GET /quests/conversations
 
 Retrieves all quest conversation definitions for the current tenant.
 
-- Parameters: None
+- Parameters:
+  - `page[number]`, `page[size]` (query, optional) — Pagination
 - Request model: None
 - Response model: `[]quest.RestModel` (JSON:API, resource type `"quest-conversations"`)
 - Error conditions:
+  - 400: Invalid `page[number]`/`page[size]`
   - 500: Internal error
 
 ### GET /quests/conversations/{conversationId}
@@ -173,17 +190,28 @@ Deletes a quest conversation definition (soft delete).
 
 ### POST /quests/conversations/seed
 
-Clears all quest conversations for the current tenant and loads from JSON files on the filesystem.
+Deletes all quest conversations for the current tenant and reloads them from the `npc-conversations/quests` path of the seed catalog rooted at `SEED_CATALOG_ROOT`. Runs asynchronously in the background; the request returns immediately.
 
 - Parameters: None
 - Request model: None
-- Response model: `SeedResult` (JSON)
-  - `deletedCount` (int)
-  - `createdCount` (int)
-  - `failedCount` (int)
-  - `errors` ([]string)
+- Response model: None (202 Accepted, empty body)
+- Error conditions: None (failures are recorded asynchronously and surfaced via `GET /quests/conversations/seed/status`)
+
+### GET /quests/conversations/seed/status
+
+Retrieves the seed status for the `npc-conversations:quests` catalog group for the current tenant.
+
+- Parameters: None
+- Request model: None
+- Response model: `Status` (JSON)
+  - `groupName` (string)
+  - `subdomains` (map of subdomain name to `{count, updatedAt}`)
+  - `updatedAt` (timestamp, nullable)
+  - `catalogRevision` (string)
+  - `tenantSeededRevision` (string, nullable)
+  - `tenantSeededAt` (timestamp, nullable)
 - Error conditions:
-  - 500: Internal error
+  - 500: Internal error reading status
 
 ### GET /items/{itemId}/recipes
 
@@ -191,10 +219,11 @@ List recipes whose output is `itemId`. See `recipes.md`.
 
 - Parameters:
   - `itemId` (path, uint32) — Output item template ID
+  - `page[number]`, `page[size]` (query, optional) — Pagination
 - Request model: None
 - Response model: `[]recipe.RestModel` (JSON:API, resource type `"recipes"`)
 - Error conditions:
-  - 400: `itemId` not parseable as a positive integer
+  - 400: `itemId` not parseable as a positive integer, or invalid `page[number]`/`page[size]`
   - 500: Internal error
 
 ### GET /npcs/{npcId}/recipes
@@ -203,10 +232,11 @@ List recipes owned by `npcId`. See `recipes.md`.
 
 - Parameters:
   - `npcId` (path, uint32) — NPC template ID
+  - `page[number]`, `page[size]` (query, optional) — Pagination
 - Request model: None
 - Response model: `[]recipe.RestModel` (JSON:API, resource type `"recipes"`)
 - Error conditions:
-  - 400: `npcId` not parseable as a positive integer
+  - 400: `npcId` not parseable as a positive integer, or invalid `page[number]`/`page[size]`
   - 500: Internal error
 
 ### POST /npcs/conversations/reindex-recipes

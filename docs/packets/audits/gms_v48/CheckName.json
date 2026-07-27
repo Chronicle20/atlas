@@ -1,0 +1,21 @@
+{
+  "WriterName": "CheckName",
+  "IDAName": "CLogin::SendCheckDuplicateIDPacket",
+  "Address": "",
+  "Variant": "GMS/v48",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/character/serverbound/check_name.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 6,
+      "IDAComment": "function not found in IDB",
+      "Verdict": 4,
+      "Note": "IDA read-order unresolved: function not found in IDB"
+    }
+  ],
+  "Verdict": 4,
+  "FlatInvalid": false
+}

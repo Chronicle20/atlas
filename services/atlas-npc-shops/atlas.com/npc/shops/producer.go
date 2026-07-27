@@ -3,9 +3,10 @@ package shops
 import (
 	"atlas-npc/kafka/message/shops"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 )
 
 func enteredEventProvider(characterId uint32, npcId uint32) model.Provider[[]kafka.Message] {

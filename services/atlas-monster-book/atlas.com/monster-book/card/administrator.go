@@ -3,10 +3,11 @@ package card
 import (
 	"errors"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 )
 
 type UpsertResult struct {

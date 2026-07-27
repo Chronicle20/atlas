@@ -1,0 +1,10 @@
+packet: npc/clientbound/NpcNpcConversation
+direction: clientbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CScriptMan::OnScriptMessage
+    address: "0x6a0ba9"
+    decompile_sha256: a9101e33bdd5a25d830caded0dc0227aef9317933c60a2ce3e784c74e3b3cc55
+verifies:
+  - libs/atlas-packet/npc/clientbound/conversation_v72_details_test.go#TestNpcConversationFrameV72

@@ -56,7 +56,9 @@ function tokenizeLine(line: string): DescSegment[] {
   return segments;
 }
 
-export function formatSkillDescription(raw: string | undefined): FormattedDescription {
+export function formatSkillDescription(
+  raw: string | undefined,
+): FormattedDescription {
   if (raw == null || raw.trim() === "") {
     return { lines: [] };
   }
@@ -70,9 +72,13 @@ export function formatSkillDescription(raw: string | undefined): FormattedDescri
   }
 
   if (body.trim() === "") {
-    return masterLevelHeader !== undefined ? { lines: [], masterLevelHeader } : { lines: [] };
+    return masterLevelHeader !== undefined
+      ? { lines: [], masterLevelHeader }
+      : { lines: [] };
   }
 
   const lines = body.split(/\r\n|\r|\n/).map(tokenizeLine);
-  return masterLevelHeader !== undefined ? { lines, masterLevelHeader } : { lines };
+  return masterLevelHeader !== undefined
+    ? { lines, masterLevelHeader }
+    : { lines };
 }

@@ -1,0 +1,10 @@
+packet: character/clientbound/CharacterKeyMap
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CFuncKeyMappedMan::OnInit
+    address: "0x569e69"
+    decompile_sha256: df7b511581572f030111b7c857312638728c38317725a8bd994433da725be22a
+verifies:
+  - libs/atlas-packet/character/clientbound/v79_test.go#TestCharacterKeyMapByteOutputV79

@@ -1,0 +1,8 @@
+packet: field/serverbound/FieldGuildBoss
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CField_GuildBoss::BasicActionAttack
+    address: "0x4d574b"
+    decompile_sha256: fd3364e4a6238f306bebeb7423ffa7cd5246b2c20c07f69e3655fc78ea643d46

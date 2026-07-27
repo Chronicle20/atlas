@@ -3,9 +3,10 @@ package card
 import (
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
-	"github.com/google/uuid"
 )
 
 const (

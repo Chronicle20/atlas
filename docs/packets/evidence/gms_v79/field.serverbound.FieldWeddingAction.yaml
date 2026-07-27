@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldWeddingAction
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CField_Wedding::OnWeddingProgress#Action
+    address: "0x55dfbb"
+    decompile_sha256: 91a20fcf2c56c95418f9f0fff9b39d2044f6763945367eade194e4ac5d4415d8
+verifies:
+    - libs/atlas-packet/field/serverbound/wedding_action_test.go#TestWeddingActionByteOutputV79

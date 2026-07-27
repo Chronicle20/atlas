@@ -3,7 +3,7 @@ package account
 import (
 	"sync"
 
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Key struct {
@@ -30,8 +30,10 @@ func (r *Registry) Init(as map[Key]bool) {
 	r.mutex.Unlock()
 }
 
-var registry *Registry
-var once sync.Once
+var (
+	registry *Registry
+	once     sync.Once
+)
 
 func GetRegistry() *Registry {
 	once.Do(func() {

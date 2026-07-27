@@ -1,0 +1,10 @@
+packet: interaction/serverbound/InteractionOperationTradeConfirm
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: sub_5E836C
+    address: "0x5e836c"
+    decompile_sha256: 852c584a1c7873822048c154f1441b72f388885e67c25922b5de42766dbfb118
+verifies:
+    - libs/atlas-packet/interaction/serverbound/v48_test.go#TestOperationTradeConfirmV48Bytes

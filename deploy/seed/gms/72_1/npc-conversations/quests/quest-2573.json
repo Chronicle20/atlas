@@ -1,0 +1,118 @@
+{
+  "data": {
+    "attributes": {
+      "questId": 2573,
+      "questName": "Explorer Tutorial Ship",
+      "startStateMachine": {
+        "startState": "greeting",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "askLookAround",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Greetings! Isn't this just the perfect weather for a journey? I'm Skipper, the captain of this fine ship. You must be a new Explorer, eh? Nice to meet you."
+            },
+            "id": "greeting",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "acceptAndWarp",
+                  "text": "Accept"
+                },
+                {
+                  "nextState": "declineMsg",
+                  "text": "Decline"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendAcceptDecline",
+              "text": "We're not quite ready to leave, so feel free to look around the ship while we're waiting."
+            },
+            "id": "askLookAround",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Hey, take it easy! Sometimes you just gotta wait."
+            },
+            "id": "declineMsg",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "mapId": "3000000",
+                    "portalId": "0"
+                  },
+                  "type": "warp_to_map"
+                },
+                {
+                  "params": {
+                    "force": "true"
+                  },
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "setOff"
+                }
+              ]
+            },
+            "id": "acceptAndWarp",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Looks like we're all set! I think this is going to be a great voyage. Let's get underway."
+            },
+            "id": "setOff",
+            "type": "dialogue"
+          }
+        ]
+      }
+    },
+    "id": "2573",
+    "type": "quest-conversation"
+  }
+}

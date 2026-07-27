@@ -1,0 +1,66 @@
+{
+  "service": "atlas-channel",
+  "path": "services/atlas-channel/atlas.com/channel",
+  "date": "2026-07-27",
+  "build": "pass",
+  "testsPassed": null,
+  "testsFailed": 0,
+  "notes": "go test ./... -count=1 reported ok for every package with tests (including skill/handler/mprecovery and data/skill/effect); no FAIL lines in the module-wide run. Exact passed-test count not tallied (module-wide `go test -v` not run); zero failures confirmed.",
+  "overallStatus": "pass",
+  "scope": [
+    "services/atlas-channel/atlas.com/channel/data/skill/effect/model.go",
+    "services/atlas-channel/atlas.com/channel/data/skill/effect/model_test.go",
+    "services/atlas-channel/atlas.com/channel/skill/handler/mprecovery/formula.go",
+    "services/atlas-channel/atlas.com/channel/skill/handler/mprecovery/formula_test.go",
+    "services/atlas-channel/atlas.com/channel/skill/handler/mprecovery/mprecovery.go",
+    "services/atlas-channel/atlas.com/channel/skill/handler/mprecovery/mprecovery_test.go",
+    "services/atlas-channel/atlas.com/channel/skill/handler/registrations/registrations.go"
+  ],
+  "domains": [
+    {
+      "name": "skill/handler/mprecovery",
+      "type": "support (per-skill handler, no model.go/resource.go)",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor in processor.go", "status": "pass", "evidence": "N/A - no Processor type declared; mprecovery.go:24,33,38 only calls existing character.Processor"},
+        {"id": "FILE-02", "name": "RestModel/Transform in rest.go", "status": "pass", "evidence": "N/A - no RestModel declared in package"},
+        {"id": "FILE-03", "name": "Cross-service requests in requests.go", "status": "pass", "evidence": "N/A - no requests.GetRequest/PostRequest calls in package"},
+        {"id": "FILE-04", "name": "Entity in entity.go", "status": "pass", "evidence": "N/A - no entity/GORM code in package"},
+        {"id": "FILE-05", "name": "Builder/Model/administrator/provider/state placement", "status": "pass", "evidence": "N/A - none of these symbols exist in package"},
+        {"id": "FILE-06", "name": "No package-named catch-all bundling >=2 responsibilities", "status": "pass", "evidence": "mprecovery.go:1-99 holds only init() registration (18-20), three package-var seams (23-39), and the Apply handler (49-99); zero FILE-01..05 responsibilities present"},
+        {"id": "DOM-06-analog", "name": "Handler takes logrus.FieldLogger not *logrus.Logger", "status": "pass", "evidence": "mprecovery.go:49"},
+        {"id": "DOM-12", "name": "No os.Getenv in handler", "status": "pass", "evidence": "grep os.Getenv mprecovery/*.go -> zero matches"},
+        {"id": "DOM-13", "name": "No cross-domain orchestration bypass", "status": "pass", "evidence": "mprecovery.go:24,33,38 - only character.Processor collaborator"},
+        {"id": "DOM-14", "name": "Handler doesn't call providers directly", "status": "pass", "evidence": "no provider.go-style calls; only character.Processor interface methods"},
+        {"id": "DOM-15", "name": "No direct entity/DB writes in handler", "status": "pass", "evidence": "grep db.Create/db.Save/db.Delete mprecovery/*.go -> zero matches"},
+        {"id": "DOM-17-analog", "name": "Errors surfaced, not swallowed", "status": "pass", "evidence": "mprecovery.go:71-74,83-86,87-91; tests at mprecovery_test.go:126-165"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "warn", "evidence": "mprecovery_test.go:97-194 - discrete Test funcs, not tests:=[]struct{} + t.Run; formula_test.go:11-42 IS table-driven"},
+        {"id": "DOM-24", "name": "Kafka producer stubbed in tests that emit", "status": "pass", "evidence": "mprecovery_test.go:72-90 replaces loadCaster/changeHP/changeMP seams entirely before Apply runs; t.Cleanup (mprecovery_test.go:73-75) restores package-local seam vars, not a producer.ResetInstance singleton reset; grep AndEmit/message.Emit/producer.Produce on *_test.go -> zero matches"},
+        {"id": "DOM-25", "name": "Client wire values config-resolved", "status": "pass", "evidence": "N/A - x/y are skill-balance formula inputs from effect.Model (WZ/REST-sourced), not client dispatcher/notice-fail-reason bytes; see effect/rest.go:107-108,162-163"},
+        {"id": "DOM-26", "name": "Goroutines via routine.Go", "status": "pass", "evidence": "grep -nE '^\\s*go (func|[A-Za-z_])' over all 7 changed files -> zero matches"},
+        {"id": "DOM-21", "name": "No duplication of atlas-constants types", "status": "pass", "evidence": "mprecovery.go:19 uses skill2.BrawlerMPRecoveryId (libs/atlas-constants/skill/constants.go:3199); test uses field.Model/world.Id/channel.Id/_map.Id from atlas-constants (mprecovery_test.go:13-17)"}
+      ]
+    },
+    {
+      "name": "data/skill/effect",
+      "type": "domain (has model.go; diff-scoped review only)",
+      "checks": [
+        {"id": "getter-convention", "name": "Getter returns private field, immutable-model convention preserved", "status": "pass", "evidence": "model.go:159-161 - Y() int16 returns m.y; field populated at rest.go:163 (pre-existing)"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "warn", "evidence": "model_test.go:39-44 (TestModelY) is a discrete function, matching pre-existing file style (model_test.go:7-19) but not table-driven"}
+      ]
+    }
+  ],
+  "notApplicable": [
+    {"checklist": "SUB-01..04", "reason": "No package in diff has resource.go"},
+    {"checklist": "EXT-01..04", "reason": "mprecovery makes no direct requests.GetRequest/PostRequest calls; delegates to existing character.Processor"},
+    {"checklist": "SEC-01..04", "reason": "atlas-channel skill-handler subsystem is not an auth/token service"}
+  ],
+  "blocking": [],
+  "nonBlocking": [
+    "DOM-20: skill/handler/mprecovery/mprecovery_test.go:97-194 not table-driven (Minor)",
+    "DOM-20: data/skill/effect/model_test.go:39-44 not table-driven (Minor, matches pre-existing file style)"
+  ],
+  "verdict": "Ready",
+  "criticalCount": 0,
+  "importantCount": 0,
+  "minorCount": 2
+}

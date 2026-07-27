@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestMpEaterShouldProc(t *testing.T) {
+func TestShouldProc(t *testing.T) {
 	cases := []struct {
 		name string
 		prop float64
@@ -22,8 +22,8 @@ func TestMpEaterShouldProc(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := mpEaterShouldProc(tc.prop, tc.roll); got != tc.want {
-				t.Fatalf("mpEaterShouldProc(%v, %v) = %v; want %v", tc.prop, tc.roll, got, tc.want)
+			if got := shouldProc(tc.prop, tc.roll); got != tc.want {
+				t.Fatalf("shouldProc(%v, %v) = %v; want %v", tc.prop, tc.roll, got, tc.want)
 			}
 		})
 	}

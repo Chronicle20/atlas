@@ -1,18 +1,20 @@
 package ingest
 
 import (
+	"atlas-data/data"
+	"atlas-data/data/workers"
 	"context"
 	"fmt"
 	"os"
 	"strconv"
 
-	"atlas-data/data"
-	"atlas-data/data/workers"
 	minio "atlas-data/storage/minio"
+
+	"github.com/sirupsen/logrus"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
-	"github.com/sirupsen/logrus"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 )
 
 // Run is invoked when MODE=ingest (k8s Job pod). It reads SCOPE/REGION/version
@@ -39,7 +41,7 @@ func Run(ctx context.Context, l logrus.FieldLogger) error {
 	if suffix := ingestJobSuffixFromEnv(); suffix != "" {
 		rdb := redis.Connect(l)
 		reg := newIngestJobRegistry(rdb)
-		go runHeartbeat(ctx, l, reg, suffix)
+		routine.Go(l, ctx, func(_ context.Context) { runHeartbeat(ctx, l, reg, suffix) })
 	} else {
 		l.Info("ingest heartbeat skipped: SCOPE/REGION/MAJOR_VERSION/MINOR_VERSION env not set (compose / test path)")
 	}

@@ -2,11 +2,13 @@ package saga
 
 import (
 	"atlas-map-actions/kafka/message/saga"
-	"atlas-map-actions/kafka/producer"
 	"context"
 
-	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
 	"github.com/sirupsen/logrus"
+
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 )
 
 type Processor interface {
@@ -24,6 +26,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		ctx: ctx,
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) Create(s sharedsaga.Saga) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(saga.EnvCommandTopic)(CreateCommandProvider(s))

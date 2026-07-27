@@ -1,0 +1,455 @@
+package clientbound
+
+import (
+	"testing"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
+	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
+)
+
+func testMegaphoneAvatar() model.Avatar {
+	equip := map[slot.Position]uint32{5: 1040002, 6: 1060002, 7: 1072001}
+	masked := map[slot.Position]uint32{}
+	pets := map[int8]uint32{}
+	return model.NewAvatar(0, 1, 20000, false, 30000, equip, masked, pets)
+}
+
+// IDA evidence (gms_v83 MapleStory_dump.exe, port 13342):
+//
+//	CWvsContext::OnSetAvatarMegaphone@0xa2a486:
+//	  Decode4(itemId) -> DecodeStr(name) -> DecodeStr(line1) -> DecodeStr(line2)
+//	  -> DecodeStr(line3) -> DecodeStr(line4) -> Decode4(channelId) ->
+//	  Decode1(whispersOn) -> AvatarLook::Decode(senderLook).
+//	Read order matches SetAvatarMegaphone.Encode exactly: itemId, name, 4
+//	lines, channelId, whispersOn, look.
+//
+// packet-audit:verify packet=chat/clientbound/ChatSetAvatarMegaphone version=gms_v83 ida=0xa2a486
+func TestSetAvatarMegaphoneRoundTrip(t *testing.T) {
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			look := testMegaphoneAvatar()
+			lines := [4]string{"line one", "line two", "line three", "line four"}
+			input := NewSetAvatarMegaphone(5390000, "TestPlayer", lines, 3, true, look)
+			output := SetAvatarMegaphone{}
+			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+			if output.ItemId() != input.ItemId() {
+				t.Errorf("itemId: got %v, want %v", output.ItemId(), input.ItemId())
+			}
+			if output.Name() != input.Name() {
+				t.Errorf("name: got %v, want %v", output.Name(), input.Name())
+			}
+			if v.Region == "JMS" {
+				// jms_v185 divergence (IDA-verified, task-123 phase 20,
+				// CWvsContext::OnSetAvatarMegaphone@0xb117bb): only lines[0]
+				// is on the wire — lines[1..3] are never written/read.
+				outLines := output.Lines()
+				inLines := input.Lines()
+				if outLines[0] != inLines[0] {
+					t.Errorf("lines[0]: got %v, want %v", outLines[0], inLines[0])
+				}
+				if outLines[1] != "" || outLines[2] != "" || outLines[3] != "" {
+					t.Errorf("lines[1:]: got %v, want empty (jms wire carries only lines[0])", outLines[1:])
+				}
+			} else if output.Lines() != input.Lines() {
+				t.Errorf("lines: got %v, want %v", output.Lines(), input.Lines())
+			}
+			if output.ChannelId() != input.ChannelId() {
+				t.Errorf("channelId: got %v, want %v", output.ChannelId(), input.ChannelId())
+			}
+			if output.WhispersOn() != input.WhispersOn() {
+				t.Errorf("whispersOn: got %v, want %v", output.WhispersOn(), input.WhispersOn())
+			}
+			// Avatar face/hair not written for GMS v28 — check equipment which is always present.
+			if len(output.Look().Equipment()) != len(look.Equipment()) {
+				t.Errorf("look equipment count: got %v, want %v", len(output.Look().Equipment()), len(look.Equipment()))
+			}
+		})
+	}
+}
+
+// IDA evidence (gms_v95 GMS_v95.0_U_DEVM.exe, port 13341, PDB-backed) —
+// CWvsContext::OnSetAvatarMegaphone@0xa017e0:
+//
+//	v5=Decode4(itemId) -> DecodeStr(sName) -> DecodeStr(s1) -> DecodeStr(s2)
+//	-> DecodeStr(s3) -> DecodeStr(s4) -> v6=Decode4(channelId) ->
+//	bWhisper=Decode1(whispersOn) -> AvatarLook::Decode(v34, senderLook).
+//	Read order matches SetAvatarMegaphone.Encode exactly (itemId, name, 4
+//	lines, channelId, whispersOn, look) — byte-identical to gms_v83
+//	(confirms the existing "IDA v83≡v95" comment).
+//
+// packet-audit:verify packet=chat/clientbound/ChatSetAvatarMegaphone version=gms_v95 ida=0xa017e0
+func TestSetAvatarMegaphoneRoundTripV95(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	look := testMegaphoneAvatar()
+	lines := [4]string{"line one", "line two", "line three", "line four"}
+	input := NewSetAvatarMegaphone(5390000, "TestPlayer", lines, 3, true, look)
+	output := SetAvatarMegaphone{}
+	pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+	if output.ItemId() != input.ItemId() {
+		t.Errorf("itemId: got %v, want %v", output.ItemId(), input.ItemId())
+	}
+	if output.Lines() != input.Lines() {
+		t.Errorf("lines: got %v, want %v", output.Lines(), input.Lines())
+	}
+	if output.ChannelId() != input.ChannelId() {
+		t.Errorf("channelId: got %v, want %v", output.ChannelId(), input.ChannelId())
+	}
+	if output.WhispersOn() != input.WhispersOn() {
+		t.Errorf("whispersOn: got %v, want %v", output.WhispersOn(), input.WhispersOn())
+	}
+}
+
+// IDA evidence (gms_v84 GMS_v84.1_U_DEVM.exe, port 13345) —
+// CWvsContext::OnSetAvatarMegaphone@0xa75c49 (unnamed sub_A75C49 on this
+// stripped IDB, structurally confirmed via the SetAvatarMegaphone
+// allocation/CanvasAvatar helper call at the tail):
+//
+//	Decode4(itemId) -> DecodeStr(name) -> DecodeStr(line1) -> DecodeStr(line2)
+//	-> DecodeStr(line3) -> DecodeStr(line4) -> Decode4(channelId) ->
+//	Decode1(whispersOn) -> AvatarLook::Decode(look).
+//	Read order matches SetAvatarMegaphone.Encode exactly — byte-identical to
+//	gms_v83/v95.
+//
+// packet-audit:verify packet=chat/clientbound/ChatSetAvatarMegaphone version=gms_v84 ida=0xa75c49
+func TestSetAvatarMegaphoneRoundTripV84(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 84, 1)
+	look := testMegaphoneAvatar()
+	lines := [4]string{"line one", "line two", "line three", "line four"}
+	input := NewSetAvatarMegaphone(5390000, "TestPlayer", lines, 3, true, look)
+	output := SetAvatarMegaphone{}
+	pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+	if output.Lines() != input.Lines() {
+		t.Errorf("lines: got %v, want %v", output.Lines(), input.Lines())
+	}
+	if output.ChannelId() != input.ChannelId() {
+		t.Errorf("channelId: got %v, want %v", output.ChannelId(), input.ChannelId())
+	}
+	if output.WhispersOn() != input.WhispersOn() {
+		t.Errorf("whispersOn: got %v, want %v", output.WhispersOn(), input.WhispersOn())
+	}
+}
+
+// IDA evidence (gms_v87 GMSv87_4GB.exe, port 13343) —
+// CWvsContext::OnSetAvatarMegaphone@0xac212b:
+//
+//	Decode4(itemId) -> DecodeStr(name) -> DecodeStr(line1) -> DecodeStr(line2)
+//	-> DecodeStr(line3) -> DecodeStr(line4) -> Decode4(channelId) ->
+//	Decode1(whispersOn) -> AvatarLook::Decode(look).
+//	Byte-identical to gms_v83/v84/v95.
+//
+// packet-audit:verify packet=chat/clientbound/ChatSetAvatarMegaphone version=gms_v87 ida=0xac212b
+func TestSetAvatarMegaphoneRoundTripV87(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 87, 1)
+	look := testMegaphoneAvatar()
+	lines := [4]string{"line one", "line two", "line three", "line four"}
+	input := NewSetAvatarMegaphone(5390000, "TestPlayer", lines, 3, true, look)
+	output := SetAvatarMegaphone{}
+	pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+	if output.Lines() != input.Lines() {
+		t.Errorf("lines: got %v, want %v", output.Lines(), input.Lines())
+	}
+	if output.ChannelId() != input.ChannelId() {
+		t.Errorf("channelId: got %v, want %v", output.ChannelId(), input.ChannelId())
+	}
+	if output.WhispersOn() != input.WhispersOn() {
+		t.Errorf("whispersOn: got %v, want %v", output.WhispersOn(), input.WhispersOn())
+	}
+}
+
+// IDA evidence (jms_v185 MapleStory_dump_SCY.exe, port 13344) — RAW DISASM,
+// not just decompile (CWvsContext::OnSetAvatarMegaphone@0xb117bb; the
+// decompiler pseudocode mistyped one field, so this was confirmed
+// instruction-by-instruction):
+//
+//	call Decode4          -> itemId
+//	call DecodeStr(&result)  -> name (sender name)
+//	call DecodeStr(&var_14)  -> ONE message line (NOT four — this is the
+//	                            ONLY other DecodeStr call in the function)
+//	call Decode4          -> channelId (var_10)
+//	call Decode1          -> whispersOn (iPacket+3)
+//	call AvatarLook::Decode -> look
+//
+// DIVERGES from GMS: jms_v185's avatar megaphone UI carries only ONE message
+// line, not four. lines[1..3] are genuinely absent from the wire (not simply
+// blank) — SetAvatarMegaphone.Encode/Decode gained a JMS region gate (task-123
+// phase 20) that writes/reads only lines[0] for this region.
+//
+// packet-audit:verify packet=chat/clientbound/ChatSetAvatarMegaphone version=jms_v185 ida=0xb117bb
+func TestSetAvatarMegaphoneByteOutputJmsOneLine(t *testing.T) {
+	ctx := pt.CreateContext("JMS", 185, 1)
+	look := testMegaphoneAvatar()
+	lines := [4]string{"only line", "unused", "unused", "unused"}
+	input := NewSetAvatarMegaphone(5390000, "TestPlayer", lines, 3, true, look)
+	output := SetAvatarMegaphone{}
+	pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+	if output.ItemId() != input.ItemId() {
+		t.Errorf("itemId: got %v, want %v", output.ItemId(), input.ItemId())
+	}
+	if output.Name() != input.Name() {
+		t.Errorf("name: got %v, want %v", output.Name(), input.Name())
+	}
+	outLines := output.Lines()
+	if outLines[0] != "only line" {
+		t.Errorf("lines[0]: got %q, want %q", outLines[0], "only line")
+	}
+	if outLines[1] != "" || outLines[2] != "" || outLines[3] != "" {
+		t.Errorf("lines[1:]: got %v, want empty (jms wire carries only lines[0])", outLines[1:])
+	}
+	if output.ChannelId() != input.ChannelId() {
+		t.Errorf("channelId: got %v, want %v", output.ChannelId(), input.ChannelId())
+	}
+	if output.WhispersOn() != input.WhispersOn() {
+		t.Errorf("whispersOn: got %v, want %v", output.WhispersOn(), input.WhispersOn())
+	}
+}
+
+func TestClearAvatarMegaphoneRoundTrip(t *testing.T) {
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			input := NewClearAvatarMegaphone()
+			output := ClearAvatarMegaphone{}
+			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+		})
+	}
+}
+
+// IDA evidence (gms_v83 MapleStory_dump.exe, port 13342):
+//
+//	CWvsContext::OnClearAvatarMegaphone@0xa2a65b never reads from its
+//	CInPacket argument — the whole body is:
+//	  if (this->m_tAM_LastUpdate) CAvatarMegaphone::ByeAvatarMegaphone();
+//	  this->m_tAM_LastUpdate = 0;
+//	No Decode* call of any kind. The wire body is therefore EMPTY (opcode
+//	only). The prior Cosmic-derived single guard byte does not match.
+//
+// packet-audit:verify packet=chat/clientbound/ChatClearAvatarMegaphone version=gms_v83 ida=0xa2a65b
+func TestClearAvatarMegaphoneByteOutput(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 83, 1)
+	input := NewClearAvatarMegaphone()
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if len(actual) != 0 {
+		t.Fatalf("payload length: got %d, want 0 (empty body — client reads nothing)", len(actual))
+	}
+}
+
+// IDA evidence (gms_v95 GMS_v95.0_U_DEVM.exe, port 13341, PDB-backed) —
+// CWvsContext::OnClearAvatarMegaphone@0x9f0c90:
+//
+//	void __thiscall CWvsContext::OnClearAvatarMegaphone(this, iPacket) {
+//	  if (this->m_bAvatarMegaphone) CAvatarMegaphone::ByeAvatarMegaphone(...);
+//	  this->m_bAvatarMegaphone = 0;
+//	}
+//	The iPacket argument is never touched — zero Decode* calls of any kind
+//	(same finding as gms_v83's OnClearAvatarMegaphone@0xa2a65b, which used a
+//	different member name m_tAM_LastUpdate but the identical zero-read
+//	shape). Wire body is EMPTY.
+//
+// packet-audit:verify packet=chat/clientbound/ChatClearAvatarMegaphone version=gms_v95 ida=0x9f0c90
+func TestClearAvatarMegaphoneByteOutputV95(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	input := NewClearAvatarMegaphone()
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if len(actual) != 0 {
+		t.Fatalf("payload length: got %d, want 0 (empty body — client reads nothing)", len(actual))
+	}
+}
+
+// IDA evidence (gms_v84 GMS_v84.1_U_DEVM.exe, port 13345) —
+// CWvsContext::OnClearAvatarMegaphone@0xa75e1e (unnamed sub_A75E1E on this
+// stripped IDB): body is `if (this[2]) sub_45D8EE(this[3482]); this[2]=0;` —
+// its CInPacket argument is never referenced. Wire body is EMPTY, same as
+// gms_v83/v95.
+//
+// packet-audit:verify packet=chat/clientbound/ChatClearAvatarMegaphone version=gms_v84 ida=0xa75e1e
+func TestClearAvatarMegaphoneByteOutputV84(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 84, 1)
+	input := NewClearAvatarMegaphone()
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if len(actual) != 0 {
+		t.Fatalf("payload length: got %d, want 0 (empty body — client reads nothing)", len(actual))
+	}
+}
+
+// IDA evidence (gms_v87 GMSv87_4GB.exe, port 13343) —
+// CWvsContext::OnClearAvatarMegaphone@0xac22f7: body is
+// `if (this[2]) CAvatarMegaphone::ByeAvatarMegaphone(this[3537]); this[2]=0;`
+// — no Decode* call. Wire body is EMPTY, same as gms_v83/v84/v95.
+//
+// packet-audit:verify packet=chat/clientbound/ChatClearAvatarMegaphone version=gms_v87 ida=0xac22f7
+func TestClearAvatarMegaphoneByteOutputV87(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 87, 1)
+	input := NewClearAvatarMegaphone()
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if len(actual) != 0 {
+		t.Fatalf("payload length: got %d, want 0 (empty body — client reads nothing)", len(actual))
+	}
+}
+
+// IDA evidence (jms_v185 MapleStory_dump_SCY.exe, port 13344) —
+// CWvsContext::OnClearAvatarMegaphone@0xb118fd:
+//
+//	void __thiscall CWvsContext::OnClearAvatarMegaphone(this, iPacket) {
+//	  if (this->m_tAM_LastUpdate) CAvatarMegaphone::ByeAvatarMegaphone(...);
+//	  this->m_tAM_LastUpdate = 0;
+//	}
+//	The iPacket argument is never touched. Wire body is EMPTY, same as GMS.
+//
+// packet-audit:verify packet=chat/clientbound/ChatClearAvatarMegaphone version=jms_v185 ida=0xb118fd
+func TestClearAvatarMegaphoneByteOutputJms(t *testing.T) {
+	ctx := pt.CreateContext("JMS", 185, 1)
+	input := NewClearAvatarMegaphone()
+	actual := pt.Encode(t, ctx, input.Encode, nil)
+	if len(actual) != 0 {
+		t.Fatalf("payload length: got %d, want 0 (empty body — client reads nothing)", len(actual))
+	}
+}
+
+// IDA evidence (gms_v83 MapleStory_dump.exe, port 13342):
+//
+//	CWvsContext::OnAvatarMegaphoneRes@0xa2a3bc:
+//	  v3 = Decode1(code) - 83.
+//	  if (v3 == 0)   -> code==83: Notice(SP_3972 "waiting line ... 15 seconds")
+//	                    NO further DecodeStr call.
+//	  else if (v3==1)-> code==84: Notice(SP_3745 "over level 10")
+//	                    NO further DecodeStr call.
+//	  else           -> DecodeStr(message) IS called, message shown verbatim.
+//	Confirms: code byte first; trailing message string present ONLY when
+//	code is neither 83 (WAITING_LINE) nor 84 (LEVEL_GATE) — exactly the
+//	hasMessage gating AvatarMegaphoneResult already implements, and confirms
+//	the seed values WAITING_LINE=83 / LEVEL_GATE=84.
+//
+// packet-audit:verify packet=chat/clientbound/ChatAvatarMegaphoneResult version=gms_v83 ida=0xa2a3bc
+func TestAvatarMegaphoneResultRoundTripNoMessage(t *testing.T) {
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			input := NewAvatarMegaphoneResult(83, "")
+			output := AvatarMegaphoneResult{}
+			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+			if output.Code() != input.Code() {
+				t.Errorf("code: got %v, want %v", output.Code(), input.Code())
+			}
+			if output.HasMessage() {
+				t.Errorf("hasMessage: got true, want false")
+			}
+			if output.Message() != "" {
+				t.Errorf("message: got %q, want empty", output.Message())
+			}
+		})
+	}
+}
+
+// IDA evidence (gms_v95 GMS_v95.0_U_DEVM.exe, port 13341, PDB-backed) —
+// CWvsContext::OnAvatarMegaphoneRes@0xa016c0:
+//
+//	v4 = Decode1(code) - 96.
+//	if (!v4)   -> code==96: Notice(SP 4013) — NO further DecodeStr.
+//	if (v4==1) -> code==97: Notice(SP 3785) — NO further DecodeStr.
+//	else       -> DecodeStr(message) IS called, message shown verbatim.
+//	The base offset SHIFTED from 83 (gms_v83) to 96 (gms_v95) — a real,
+//	IDA-confirmed divergence, NOT the same literal codes as v83. The
+//	branch STRUCTURE is byte-identical to gms_v83's OnAvatarMegaphoneRes
+//	(first branch = no-message reason #1, second branch = no-message
+//	reason #2, else = DecodeStr), so the first/second branch → WAITING_LINE
+//	/LEVEL_GATE order-correspondence established for v83 carries over:
+//	code 96 = WAITING_LINE, code 97 = LEVEL_GATE. template_gms_95_1.json's
+//	AvatarMegaphoneResult.errorCodes (previously WAITING_LINE=83/LEVEL_GATE=84,
+//	copied uncritically from the v83 seed) is corrected in this commit to
+//	WAITING_LINE=96/LEVEL_GATE=97. This is a genuine client-crash-class bug:
+//	a v95 tenant sending code 84 (old table) hits neither 96 nor 97, so the
+//	client falls into the "else" branch and tries to DecodeStr a trailing
+//	string the codec never wrote.
+//	The hasMessage gating (AvatarMegaphoneResult) itself needs NO struct
+//	change — it never branches on the resolved byte, only on caller intent.
+//
+// packet-audit:verify packet=chat/clientbound/ChatAvatarMegaphoneResult version=gms_v95 ida=0xa016c0
+func TestAvatarMegaphoneResultRoundTripNoMessageV95(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	input := NewAvatarMegaphoneResult(96, "")
+	output := AvatarMegaphoneResult{}
+	pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+	if output.Code() != input.Code() {
+		t.Errorf("code: got %v, want %v", output.Code(), input.Code())
+	}
+	if output.HasMessage() {
+		t.Errorf("hasMessage: got true, want false")
+	}
+}
+
+// IDA evidence (gms_v84 GMS_v84.1_U_DEVM.exe, port 13345) —
+// CWvsContext::OnAvatarMegaphoneRes@0xa75b7f (unnamed sub_A75B7F on this
+// stripped IDB):
+//
+//	v3 = Decode1(code) - 86.
+//	if (v3 == 0)   -> code==86: Notice(StringPool 3975) — NO further DecodeStr.
+//	else if (v3==1)-> code==87: Notice(StringPool 3748) — NO further DecodeStr.
+//	else           -> DecodeStr(message) IS called.
+//	The base offset SHIFTED from 83 (gms_v83) to 86 (gms_v84) — a genuine,
+//	IDA-confirmed per-version divergence (same branch STRUCTURE as gms_v83,
+//	so the first branch=WAITING_LINE / second branch=LEVEL_GATE
+//	correspondence carries over). template_gms_84_1.json's errorCodes
+//	(previously WAITING_LINE=83/LEVEL_GATE=84, copied uncritically from the
+//	v83 seed) is corrected in this commit to WAITING_LINE=86/LEVEL_GATE=87.
+//
+// packet-audit:verify packet=chat/clientbound/ChatAvatarMegaphoneResult version=gms_v84 ida=0xa75b7f
+func TestAvatarMegaphoneResultRoundTripNoMessageV84(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 84, 1)
+	input := NewAvatarMegaphoneResult(86, "")
+	output := AvatarMegaphoneResult{}
+	pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+	if output.Code() != input.Code() {
+		t.Errorf("code: got %v, want %v", output.Code(), input.Code())
+	}
+	if output.HasMessage() {
+		t.Errorf("hasMessage: got true, want false")
+	}
+}
+
+// IDA evidence (gms_v87 GMSv87_4GB.exe, port 13343) —
+// CWvsContext::OnAvatarMegaphoneRes@0xac2061:
+//
+//	v3 = Decode1(code) - 88.
+//	if (v3 == 0)   -> code==88: Notice(StringPool 3980) — NO further DecodeStr.
+//	else if (v3==1)-> code==89: Notice(StringPool 3754) — NO further DecodeStr.
+//	else           -> DecodeStr(message) IS called.
+//	Base offset SHIFTED again to 88 (from 86 on gms_v84) — same branch
+//	structure. template_gms_87_1.json's errorCodes (previously WAITING_LINE=
+//	83/LEVEL_GATE=84) is corrected in this commit to WAITING_LINE=88/
+//	LEVEL_GATE=89.
+//
+// packet-audit:verify packet=chat/clientbound/ChatAvatarMegaphoneResult version=gms_v87 ida=0xac2061
+func TestAvatarMegaphoneResultRoundTripNoMessageV87(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 87, 1)
+	input := NewAvatarMegaphoneResult(88, "")
+	output := AvatarMegaphoneResult{}
+	pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+	if output.Code() != input.Code() {
+		t.Errorf("code: got %v, want %v", output.Code(), input.Code())
+	}
+	if output.HasMessage() {
+		t.Errorf("hasMessage: got true, want false")
+	}
+}
+
+func TestAvatarMegaphoneResultRoundTripWithMessage(t *testing.T) {
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			input := NewAvatarMegaphoneResult(1, "some notice text")
+			output := AvatarMegaphoneResult{}
+			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+			if output.Code() != input.Code() {
+				t.Errorf("code: got %v, want %v", output.Code(), input.Code())
+			}
+			if !output.HasMessage() {
+				t.Errorf("hasMessage: got false, want true")
+			}
+			if output.Message() != input.Message() {
+				t.Errorf("message: got %q, want %q", output.Message(), input.Message())
+			}
+		})
+	}
+}

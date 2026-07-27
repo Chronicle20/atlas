@@ -1,0 +1,69 @@
+{
+  "data": {
+    "attributes": {
+      "endStateMachine": {
+        "startState": "greeting",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "completeQuest",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "Hey there, do you want a ride to #r#m261000000##k? Oh a request from #b#p2101013##k?"
+            },
+            "id": "greeting",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "complete_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "completeQuest",
+            "type": "genericAction"
+          }
+        ]
+      },
+      "questId": 2257,
+      "questName": "Quest 2257",
+      "startStateMachine": {
+        "startState": "noStartDialogue",
+        "states": [
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "noStartDialogue",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "2257",
+    "type": "quest-conversation"
+  }
+}

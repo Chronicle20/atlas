@@ -1,0 +1,10 @@
+packet: character/clientbound/CharacterDamage
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CUserRemote::OnHit
+    address: "0x8d9489"
+    decompile_sha256: 8751d4b625afc0fc6a56ebee513fbd7e34ac43b73cafc1ee08a3100e52705294
+verifies:
+  - libs/atlas-packet/character/clientbound/v79_test.go#TestCharacterDamageByteOutputV79

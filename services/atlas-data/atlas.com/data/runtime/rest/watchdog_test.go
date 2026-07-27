@@ -6,13 +6,14 @@ import (
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
-	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
+
+	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
 )
 
 func newTestRedis(t *testing.T) (*goredis.Client, *redis.Registry[string, string]) {

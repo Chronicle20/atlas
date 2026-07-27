@@ -1,8 +1,9 @@
 package character
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 const (
@@ -14,8 +15,8 @@ const (
 	EnvCommandTopic          = "COMMAND_TOPIC_CHARACTER"
 	CommandRequestChangeMeso = "REQUEST_CHANGE_MESO"
 
-	StatusEventTypeMesoChanged       = "MESO_CHANGED"
-	StatusEventTypeError             = "ERROR"
+	StatusEventTypeMesoChanged        = "MESO_CHANGED"
+	StatusEventTypeError              = "ERROR"
 	StatusEventErrorTypeNotEnoughMeso = "NOT_ENOUGH_MESO"
 )
 
@@ -25,8 +26,7 @@ type StatusEvent[E any] struct {
 	Body        E      `json:"body"`
 }
 
-type StatusEventLogoutBody struct {
-}
+type StatusEventLogoutBody struct{}
 
 type Command[E any] struct {
 	TransactionId uuid.UUID `json:"transactionId"`

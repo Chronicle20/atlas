@@ -1,0 +1,10 @@
+packet: character/serverbound/ChairFixed
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CUserLocal::HandleXKeyDown
+    address: "0x90a12b"
+    decompile_sha256: 5acef5b6ef14e6b527af9e364489f9945cdbb3db58cc81eb860e52430c560845
+verifies:
+  - libs/atlas-packet/character/serverbound/v72_test.go#TestChairFixedByteOutputV72

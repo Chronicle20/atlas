@@ -1,9 +1,10 @@
 package guild
 
 import (
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
@@ -70,8 +71,7 @@ type StatusEventRequestAgreementBody struct {
 	ProposedName string `json:"proposedName"`
 }
 
-type StatusEventCreatedBody struct {
-}
+type StatusEventCreatedBody struct{}
 
 type StatusEventDisbandedBody struct {
 	Members []uint32 `json:"members"`

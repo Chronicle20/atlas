@@ -1,16 +1,17 @@
 package main
 
 import (
+	assetconsumer "atlas-consumables/kafka/consumer/asset"
 	"atlas-consumables/kafka/consumer/character"
 	"atlas-consumables/kafka/consumer/compartment"
 	"atlas-consumables/kafka/consumer/consumable"
 	"atlas-consumables/kafka/consumer/food"
 	pickupconsumer "atlas-consumables/kafka/consumer/pickup"
-	"atlas-consumables/logger"
+	sagaconsumer "atlas-consumables/kafka/consumer/saga"
 	mapCharacter "atlas-consumables/map/character"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
+
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
@@ -24,25 +25,20 @@ const serviceName = "atlas-consumables"
 var consumerGroupId = consumergroup.Resolve("Consumables Service")
 
 func main() {
-	l := logger.CreateLogger(serviceName)
-	l.Infoln("Starting main service.")
+	rt := service.Bootstrap(serviceName)
+	l := rt.Logger()
 
 	rc := atlas.Connect(l)
 	mapCharacter.InitRegistry(rc)
 
-	tdm := service.GetTeardownManager()
-
-	tc, err := tracing.InitTracer(serviceName)
-	if err != nil {
-		l.WithError(err).Fatal("Unable to initialize tracer.")
-	}
-
-	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	compartment.InitConsumers(l)(cmf)(consumerGroupId)
+	assetconsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	consumable.InitConsumers(l)(cmf)(consumerGroupId)
 	food.InitConsumers(l)(cmf)(consumerGroupId)
 	pickupconsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	sagaconsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := character.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
@@ -56,18 +52,16 @@ func main() {
 		l.WithError(err).Fatal("Unable to register pickup handlers.")
 	}
 
-	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
-
-	tdm.TeardownFunc(tracing.Teardown(l)(tc))
+	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 	server.New(l).
-		WithContext(tdm.Context()).
-		WithWaitGroup(tdm.WaitGroup()).
+		WithContext(rt.Context()).
+		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath("/api/").
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
+		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
-	tdm.Wait()
-	l.Infoln("Service shutdown.")
+	rt.Wait()
 }

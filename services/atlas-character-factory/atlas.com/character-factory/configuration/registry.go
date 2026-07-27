@@ -9,15 +9,19 @@ import (
 	"github.com/google/uuid"
 )
 
-var configMu sync.RWMutex
-var tenantConfig map[uuid.UUID]tenant.RestModel
+var (
+	configMu     sync.RWMutex
+	tenantConfig map[uuid.UUID]tenant.RestModel
+)
 
 // readyCh is closed once PublishSnapshot has populated tenantConfig for
 // the first time. Kafka handlers (the seed saga) may fire before the
 // projection catches up; GetTenantConfig blocks on readyCh instead of the
 // legacy log.Fatalf path, bounded by readyTimeout.
-var readyCh = make(chan struct{})
-var readyOnce sync.Once
+var (
+	readyCh   = make(chan struct{})
+	readyOnce sync.Once
+)
 
 // readyTimeout caps how long GetTenantConfig waits for the projection's
 // first PublishSnapshot. Long enough to outlast the catch-up window in a

@@ -115,7 +115,6 @@ func TestExtract(t *testing.T) {
 	}
 
 	model, err := Extract(rm)
-
 	if err != nil {
 		t.Fatalf("Extract returned error: %v", err)
 	}
@@ -136,7 +135,6 @@ func TestExtract_ZeroValues(t *testing.T) {
 	rm := RestModel{}
 
 	model, err := Extract(rm)
-
 	if err != nil {
 		t.Fatalf("Extract returned error: %v", err)
 	}

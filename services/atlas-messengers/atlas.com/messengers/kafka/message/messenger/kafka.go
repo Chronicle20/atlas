@@ -1,8 +1,9 @@
 package messenger
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 const (
@@ -43,8 +44,7 @@ type CommandEvent[E any] struct {
 	Body          E         `json:"body"`
 }
 
-type CreateCommandBody struct {
-}
+type CreateCommandBody struct{}
 
 type JoinCommandBody struct {
 	MessengerId uint32 `json:"messengerId"`
@@ -67,8 +67,7 @@ type StatusEvent[E any] struct {
 	Body          E         `json:"body"`
 }
 
-type CreatedEventBody struct {
-}
+type CreatedEventBody struct{}
 
 type JoinedEventBody struct {
 	Slot byte `json:"slot"`

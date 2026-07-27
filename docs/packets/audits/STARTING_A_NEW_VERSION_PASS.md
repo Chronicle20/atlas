@@ -10,6 +10,10 @@ Baseline versions (existing columns):
 
 | Version key | Region / major.minor | Template | IDA export |
 |---|---|---|---|
+| `gms_v48`  | GMS 48.1  | `services/atlas-configurations/seed-data/templates/template_gms_48_1.json`  | `docs/packets/ida-exports/gms_v48.json`  |
+| `gms_v61`  | GMS 61.1  | `services/atlas-configurations/seed-data/templates/template_gms_61_1.json`  | `docs/packets/ida-exports/gms_v61.json`  |
+| `gms_v72`  | GMS 72.1  | `services/atlas-configurations/seed-data/templates/template_gms_72_1.json`  | `docs/packets/ida-exports/gms_v72.json`  |
+| `gms_v79`  | GMS 79.1  | `services/atlas-configurations/seed-data/templates/template_gms_79_1.json`  | `docs/packets/ida-exports/gms_v79.json`  |
 | `gms_v83`  | GMS 83.1  | `services/atlas-configurations/seed-data/templates/template_gms_83_1.json`  | `docs/packets/ida-exports/gms_v83.json`  |
 | `gms_v84`  | GMS 84.1  | `services/atlas-configurations/seed-data/templates/template_gms_84_1.json`  | `docs/packets/ida-exports/gms_v84.json`  |
 | `gms_v87`  | GMS 87.1  | `services/atlas-configurations/seed-data/templates/template_gms_87_1.json`  | `docs/packets/ida-exports/gms_v87.json`  |
@@ -345,6 +349,59 @@ Flags:
 
 Review the worklist for low-confidence picks before committing the mutated baseline.
 
+### 1.5 Serverbound opcode verification — `verify-serverbound`
+
+The serverbound half of the registry gets its own bulk verification pass:
+for every serverbound registry entry, decompile the client **send function**
+(the address comes from the committed audit reports under
+`docs/packets/audits/<version>/`, keyed by the entry's `fname`) and check that
+the registry opcode appears among the literals passed to
+`COutPacket::COutPacket`. Run it once the registry (§1.1) and the static audit
+pass (§1.4) exist — the audit reports are where it finds the send-site
+addresses — with the version's IDB open:
+
+```bash
+go run ./tools/packet-audit verify-serverbound \
+  --version  <version-key> \
+  --ida-port <port>
+```
+
+Flags:
+
+```
+  -audits-dir string
+        parent directory containing per-version audit report dirs (default "docs/packets/audits")
+  -ida-port int
+        IDA-MCP instance port to select (0 = default active instance)
+  -ida-url string
+        IDA-MCP HTTP endpoint (default "http://192.168.20.3:13337/mcp")
+  -out string
+        worklist markdown output path (default: docs/packets/registry/verify_serverbound_<version>.md)
+  -registry-dir string
+        directory containing <version>.yaml registry files (default "docs/packets/registry")
+  -version string
+        target version key, e.g. gms_v83 (required)
+```
+
+Output is a committed worklist
+(`docs/packets/registry/verify_serverbound_<version>.md` — see the
+`gms_v87` / `gms_v95` / `jms_v185` ones for completed examples) with three
+buckets. The command exits 0 regardless of bucket counts — it is a worklist
+generator, not a CI gate; the worklist is what you burn down:
+
+- **Confirmed** — registry opcode found in the send function's `COutPacket`
+  constructor call set. No action.
+- **Mismatch — REVIEW** — the registry opcode is NOT in the decompiled send
+  function's opcode set (the found set is listed). Either the `fname` is wrong
+  (opcode-cluster off-by-one — the registry-fname mislabel trap in
+  `IMPLEMENTING_A_PACKET.md` Step 1) or the opcode assignment is wrong.
+  Arbitrate against the IDB and fix the registry row in the same change
+  (`provenance: manual`, IDA citation in `note`).
+- **Unresolved** — could not verify, with the reason per row: no `fname` in the
+  registry (derive the send-site and populate it, `provenance: ida-discovered`),
+  no audit-report address for the fname (complete the §1.4 audit pass first),
+  decompile error, or a send site with no opcode literal (dynamic opcodes).
+
 ---
 
 ## 2. Regenerate the matrix
@@ -377,7 +434,7 @@ Flags:
   -tiers string
         tier-1 membership YAML (default "docs/packets/evidence/tiers.yaml")
   -versions string
-        comma-separated version keys (default "gms_v83,gms_v84,gms_v87,gms_v95,jms_v185")
+        comma-separated version keys (default "gms_v48,gms_v61,gms_v72,gms_v79,gms_v83,gms_v84,gms_v87,gms_v95,jms_v185")
 ```
 
 The new version column appears automatically, pre-filled from applicability: ⬜
@@ -394,10 +451,12 @@ grep -c '' /tmp/matrix_check.txt   # total findings
 grep -ciE 'orphan|dangling|stale|drift|unresolv|malformed' /tmp/matrix_check.txt
 ```
 
-The second grep must be 0 before committing. Pre-existing 🟥 conflicts (from the
-registry-seed backlog) cause a non-zero exit that is grandfathered via
-`continue-on-error` in CI; new conflicts you introduced must be resolved before
-landing.
+The second grep must be 0 before committing. `matrix --check` is a hard,
+blocking CI gate (`.github/workflows/packet-matrix.yml`) with no
+`continue-on-error`: the registry-seed conflict backlog was burned to zero
+(task-085), so any 🟥 conflict, fatal finding, or stale committed
+STATUS.md/status.json fails CI. Resolve every conflict the pass introduces (or
+own it via §5.1) and commit a fresh STATUS.md/status.json before landing.
 
 Commit registry + template + export + audit output + STATUS.md/status.json in a
 single PR. The PR description should call out any conflict cells the pass
@@ -412,12 +471,23 @@ The pass's job is turning ❌ cells into ✅ or 🟡. Apply
 first (tier-1 packets in `docs/packets/evidence/tiers.yaml` require a byte-fixture
 test; tier-0 cells can reach 🟡 from a tool ✅ alone).
 
+Cell states: `✅` verified · `🧩` family (mode-prefix dispatcher; sub-arms
+unverified — capped for ops whose registry fname is listed in
+`docs/packets/evidence/families.yaml`, currently empty so no op caps) ·
+`🟡` partial · `❌` incomplete · `⬜` n-a · `🟥` conflict.
+
 **Fan-out with the packet-verifier agent**: for campaign-scale verification
 (verifying a whole version's scope), dispatch the `packet-verifier` agent per
 cell family. Each agent invocation follows the `VERIFYING_A_PACKET.md` steps
-1–8; the results are committed as test + evidence + STATUS.md in that agent's
+§0–10; the results are committed as test + evidence + STATUS.md in that agent's
 sub-task. Coordinate via a per-version worklist (the `discover-ops` worklist
 markdown is a convenient starting point).
+
+**Serverbound worklist.** For the serverbound half of the scope, generate the
+`verify-serverbound` send-site worklist first (§1.5) — it is the serverbound
+analogue of the `discover-ops` clientbound worklist. Hand its **Confirmed** rows
+to `packet-verifier` for the `VERIFYING_A_PACKET.md` §9 three-artifact pass;
+resolve **Mismatch** / **Unresolved** rows per §1.5 before verifying.
 
 After each batch of verifications, regenerate:
 
@@ -514,8 +584,9 @@ Three degradation paths, each with its own remediation:
 **3. Tool verdict flip** (tier-0 cells after an analyzer or exporter change):
 - Delta triage: diff before/after `grep -rE '\| (❌|🔍) \|' docs/packets/audits/*/SUMMARY.md`.
 - Hand-confirm against the IDB which side is right (the IDA trace always wins
-  over the analyzer verdict — use `triage` / `decompose` from §1.4 above to
-  re-run the live decompile and compare against the committed baseline).
+  over the analyzer verdict — re-derive the live read orders via the
+  maintenance playbook, [`../RE_AUDITING_A_COLUMN.md`](../RE_AUDITING_A_COLUMN.md)
+  (§6), and compare against the committed baseline).
 - Outcome is either an Atlas wire fix or a tool/export correction — never a
   silent re-accept of the old verdict.
 
@@ -525,3 +596,15 @@ patch **and** a channel restart. Template-only or code-only fixes silently do
 nothing for tenants that were already provisioned. After the patch + restart,
 confirm the previously-"unhandled op" log lines are gone before declaring the
 conflict resolved.
+
+---
+
+## 6. Maintenance: re-audit an existing column
+
+Re-checking a column that is **already brought up** (export drift / re-harvest,
+a family-audit bug, a degraded matrix cell) is its own playbook:
+[`../RE_AUDITING_A_COLUMN.md`](../RE_AUDITING_A_COLUMN.md). It reuses the §1.4
+diagnostic toolkit (`validate` / `decompose` / `triage` / `diff-shape` /
+`infer`) plus `verify-serverbound` (§1.5), framed around the maintenance
+triggers instead of bring-up, and hands remediation back to §5 here. The
+procedure lives there — link to it, do not restate it.

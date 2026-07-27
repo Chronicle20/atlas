@@ -4,10 +4,11 @@ import (
 	"atlas-inventory/kafka/message/asset"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
@@ -30,6 +31,8 @@ const (
 	CommandExpire            = "EXPIRE"
 	CommandModifyEquipment   = "MODIFY_EQUIPMENT"
 	CommandChangeTemplate    = "CHANGE_TEMPLATE"
+	CommandSetOwner          = "SET_OWNER"
+	CommandApplyLock         = "APPLY_LOCK"
 )
 
 type Command[E any] struct {
@@ -112,11 +115,9 @@ type RechargeCommandBody struct {
 	Quantity uint32 `json:"quantity"`
 }
 
-type MergeCommandBody struct {
-}
+type MergeCommandBody struct{}
 
-type SortCommandBody struct {
-}
+type SortCommandBody struct{}
 
 type AcceptCommandBody struct {
 	TransactionId uuid.UUID `json:"transactionId"`
@@ -157,9 +158,9 @@ type ModifyEquipmentCommandBody struct {
 	Hands          uint16    `json:"hands"`
 	Speed          uint16    `json:"speed"`
 	Jump           uint16    `json:"jump"`
-	Slots     uint16 `json:"slots"`
-	Flag      uint16 `json:"flag"`
-	LevelType byte   `json:"levelType"`
+	Slots          uint16    `json:"slots"`
+	Flag           uint16    `json:"flag"`
+	LevelType      byte      `json:"levelType"`
 	Level          byte      `json:"level"`
 	Experience     uint32    `json:"experience"`
 	HammersApplied uint32    `json:"hammersApplied"`
@@ -172,6 +173,16 @@ type ModifyEquipmentCommandBody struct {
 type ChangeTemplateCommandBody struct {
 	PetId         uint32 `json:"petId"`
 	NewTemplateId uint32 `json:"newTemplateId"`
+}
+
+type SetOwnerCommandBody struct {
+	Slot  int16  `json:"slot"`
+	Owner string `json:"owner"`
+}
+
+type ApplyLockCommandBody struct {
+	Slot       int16     `json:"slot"`
+	Expiration time.Time `json:"expiration"` // zero time = permanent lock
 }
 
 const (
@@ -209,8 +220,7 @@ type CreatedStatusEventBody struct {
 	Capacity uint32 `json:"capacity"`
 }
 
-type DeletedStatusEventBody struct {
-}
+type DeletedStatusEventBody struct{}
 
 type CapacityChangedEventBody struct {
 	Type     byte   `json:"type"`

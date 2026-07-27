@@ -167,3 +167,42 @@ func TestJitteredDelay(t *testing.T) {
 		}
 	}
 }
+
+func TestWithDelayHintRespected(t *testing.T) {
+	cfg := DefaultConfig().WithMaxRetries(2).WithInitialDelay(1 * time.Millisecond).WithMaxDelay(1 * time.Second)
+	sentinel := errors.New("sentinel")
+	start := time.Now()
+	err := Try(context.Background(), cfg, func(attempt int) (bool, error) {
+		if attempt == 1 {
+			return true, WithDelayHint(sentinel, 300*time.Millisecond)
+		}
+		return false, nil
+	})
+	if err != nil {
+		t.Fatalf("expected success on second attempt, got: %v", err)
+	}
+	if elapsed := time.Since(start); elapsed < 300*time.Millisecond {
+		t.Fatalf("hint not respected, elapsed %v < 300ms", elapsed)
+	}
+}
+
+func TestWithDelayHintCappedAtMaxDelay(t *testing.T) {
+	cfg := DefaultConfig().WithMaxRetries(2).WithInitialDelay(1 * time.Millisecond).WithMaxDelay(200 * time.Millisecond)
+	start := time.Now()
+	_ = Try(context.Background(), cfg, func(attempt int) (bool, error) {
+		if attempt == 1 {
+			return true, WithDelayHint(errors.New("x"), 10*time.Second)
+		}
+		return false, nil
+	})
+	if elapsed := time.Since(start); elapsed > 1*time.Second {
+		t.Fatalf("hint not capped at MaxDelay, elapsed %v", elapsed)
+	}
+}
+
+func TestWithDelayHintPreservesErrorsIs(t *testing.T) {
+	sentinel := errors.New("sentinel")
+	if !errors.Is(WithDelayHint(sentinel, time.Second), sentinel) {
+		t.Fatal("WithDelayHint broke the errors.Is chain")
+	}
+}

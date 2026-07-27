@@ -9,15 +9,14 @@ import (
 	"atlas-messages/command/consumable"
 	"atlas-messages/command/disease"
 	"atlas-messages/command/help"
-	"atlas-messages/command/map"
+	_map "atlas-messages/command/map"
 	"atlas-messages/command/monster"
 	party_quest "atlas-messages/command/party_quest"
 	commandpet "atlas-messages/command/pet"
 	message2 "atlas-messages/kafka/consumer/message"
-	"atlas-messages/logger"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
+
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
@@ -30,15 +29,8 @@ const serviceName = "atlas-messages"
 var consumerGroupId = consumergroup.Resolve("Messages Service")
 
 func main() {
-	l := logger.CreateLogger(serviceName)
-	l.Infoln("Starting main service.")
-
-	tdm := service.GetTeardownManager()
-
-	tc, err := tracing.InitTracer(serviceName)
-	if err != nil {
-		l.WithError(err).Fatal("Unable to initialize tracer.")
-	}
+	rt := service.Bootstrap(serviceName)
+	l := rt.Logger()
 
 	command.Registry().Add(help.HelpCommandProducer)
 	command.Registry().Add(_map.WarpCommandProducer)
@@ -64,24 +56,22 @@ func main() {
 	command.Registry().Add(party_quest.PQStageCommandProducer)
 	command.Registry().Add(_map.WeatherCommandProducer)
 
-	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	message2.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := message2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 
-	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
-
-	tdm.TeardownFunc(tracing.Teardown(l)(tc))
+	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 	server.New(l).
-		WithContext(tdm.Context()).
-		WithWaitGroup(tdm.WaitGroup()).
+		WithContext(rt.Context()).
+		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath("/api/").
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
+		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
-	tdm.Wait()
-	l.Infoln("Service shutdown.")
+	rt.Wait()
 }

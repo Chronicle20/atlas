@@ -11,6 +11,7 @@ import (
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantRemoveFromBlackList version=gms_v83 ida=0x519695
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantRemoveFromBlackList version=jms_v185 ida=0x54bbf9
 // packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantRemoveFromBlackList version=gms_v84 ida=0x522746
+// packet-audit:verify packet=interaction/serverbound/InteractionOperationMerchantRemoveFromBlackList version=gms_v79 ida=0x505911
 func TestOperationMerchantRemoveFromBlackListRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

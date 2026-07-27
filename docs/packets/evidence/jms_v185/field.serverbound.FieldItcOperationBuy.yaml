@@ -1,0 +1,10 @@
+packet: field/serverbound/FieldItcOperationBuy
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CITC::OnBuy
+    address: "0x604bbe"
+    decompile_sha256: 59cc6f615a5333dc09ba4375451a2a21669ac0f447def5dff989ca875c3c0a2d
+verifies:
+    - libs/atlas-packet/field/serverbound/itc_operation_test.go#TestItcOperationBuyByteOutput_jms

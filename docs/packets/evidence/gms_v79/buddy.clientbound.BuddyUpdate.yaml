@@ -1,0 +1,10 @@
+packet: buddy/clientbound/BuddyUpdate
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnFriendResult
+    address: "0x98854f"
+    decompile_sha256: f0e375363e62f5d08235026a7007771796644b4baf8fc77006446ec46633b032
+verifies:
+  - libs/atlas-packet/buddy/clientbound/v79_test.go#TestBuddyDataArmsV79

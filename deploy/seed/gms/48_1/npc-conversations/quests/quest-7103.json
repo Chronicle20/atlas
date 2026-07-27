@@ -1,0 +1,209 @@
+{
+  "data": {
+    "attributes": {
+      "questId": 7103,
+      "questName": "Papulatus",
+      "startStateMachine": {
+        "startState": "askReady",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "explainPassages",
+                  "text": "Yes"
+                },
+                {
+                  "nextState": "declineMessage",
+                  "text": "No"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendYesNo",
+              "text": "Only thing we have to do now ...is to make #o8500002# disappear forever... are you ready?"
+            },
+            "id": "askReady",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Oh really. Do you need more time? I'm fully confident that you'll help me out before the Time Sphere is formed."
+            },
+            "id": "declineMessage",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "explainRoom",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "text": "I'll explain to you what you need to do from here on out. \r\nTo enter the power-generating room, you'll need to pass either #bForgotten Passage#k or the #bWarped Passage#k. Once you defeat whichever monster that is guarding the passage, you can obtain #b#t4031172:##k, which is needed to enter the power-generating room."
+            },
+            "id": "explainPassages",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "explainPassages",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "checkItemAndInv",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "text": "Then enter the room through the door in the middle. It's going to be MUCH quieter than you imagined. The Time Sphere should be hidden in a state undetectable in our eyes... but if you seal up the crack in dimension, the #o8500002#, panicking because its exit route is sealed up, will make its appearance there."
+            },
+            "id": "explainRoom",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [],
+              "outcomes": [
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "4031179",
+                      "type": "item",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "giveInstructions"
+                },
+                {
+                  "conditions": [
+                    {
+                      "operator": ">=",
+                      "referenceId": "4031179",
+                      "type": "inventorySpace",
+                      "value": "1"
+                    }
+                  ],
+                  "nextState": "awardItem"
+                },
+                {
+                  "conditions": [],
+                  "nextState": "noInventorySpace"
+                }
+              ]
+            },
+            "id": "checkItemAndInv",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Ok"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendOk",
+              "text": "Please have an #rETC slot available#k to start this quest."
+            },
+            "id": "noInventorySpace",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "itemId": "4031179",
+                    "quantity": "1"
+                  },
+                  "type": "award_item"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "giveInstructions"
+                }
+              ]
+            },
+            "id": "awardItem",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "startQuest",
+                  "text": "Accept"
+                },
+                {
+                  "nextState": "declineMessage",
+                  "text": "Decline"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendAcceptDecline",
+              "text": "Drop the #b#t4031179:##k that I returned to you to seal up whatever crack you see that #o8500002# may have used to enter this dimension in the first place. Then it'll come out of the Time Sphere and show everyone its true appearance. Please, please kill it and then come back. \r\n\r\nCollect #r1 #t4031172:##k\r\nEliminate #r#o8500001##k"
+            },
+            "id": "giveInstructions",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "startQuest",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "7103",
+    "type": "quest-conversation"
+  }
+}

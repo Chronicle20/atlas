@@ -7,7 +7,7 @@ import (
 )
 
 // calculateBoundingBox derives the (x1, y1, x2, y2) target rectangle for a
-// monster-buff skill cast. Mirrors Cosmic StatEffect.calculateBoundingBox.
+// monster-buff skill cast from the effect's WZ lt/rb offsets.
 //
 // When the caster faces left, the rectangle is (casterPos + lt) → (casterPos + rb).
 // When the caster faces right, the rectangle mirrors about the caster's X:

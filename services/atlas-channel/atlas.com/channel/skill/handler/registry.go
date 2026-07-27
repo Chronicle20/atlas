@@ -1,15 +1,15 @@
 package handler
 
 import (
-	"context"
-
 	"atlas-channel/data/skill/effect"
 	"atlas-channel/socket/writer"
+	"context"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
-	"github.com/sirupsen/logrus"
 )
 
 // Handler is the per-skill cast handler invoked from UseSkill after the

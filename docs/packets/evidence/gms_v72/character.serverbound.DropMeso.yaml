@@ -1,0 +1,10 @@
+packet: character/serverbound/DropMeso
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendDropMoneyRequest
+    address: "0x91bf9f"
+    decompile_sha256: 433753846ec1e61f805691a1fa2243c1c0436282862dafeca88263cb6d664c2b
+verifies:
+  - libs/atlas-packet/character/serverbound/drop_meso_test.go#TestDropMesoByteFixtureV72

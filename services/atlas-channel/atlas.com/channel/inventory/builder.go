@@ -8,9 +8,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
-var (
-	ErrInvalidCharacterId = errors.New("character id must be greater than 0")
-)
+var ErrInvalidCharacterId = errors.New("character id must be greater than 0")
 
 type modelBuilder struct {
 	characterId  uint32

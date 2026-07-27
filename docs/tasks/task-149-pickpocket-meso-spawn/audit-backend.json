@@ -1,0 +1,99 @@
+{
+  "service": "atlas-channel",
+  "path": "services/atlas-channel/atlas.com/channel",
+  "reviewRange": "3c499bad4..92f4e5d3c",
+  "date": "2026-07-26",
+  "build": "pass",
+  "testsPassed": null,
+  "testsFailed": 0,
+  "testsNote": "go test ./... -count=1: every package reports ok or [no test files]; zero FAIL lines",
+  "overallStatus": "pass",
+  "domains": [
+    {
+      "name": "drop",
+      "type": "domain-shaped-support",
+      "checks": [
+        {
+          "id": "FILE-01",
+          "name": "Processor interface + method in processor.go",
+          "status": "pass",
+          "evidence": "drop/processor.go:19,56-58"
+        },
+        {
+          "id": "FILE-03",
+          "name": "Producer function in producer.go",
+          "status": "pass",
+          "evidence": "drop/producer.go:32-63 SpawnMesoCommandProvider"
+        },
+        {
+          "id": "FILE-06",
+          "name": "No package-named catch-all file",
+          "status": "pass",
+          "evidence": "processor.go / producer.go each hold a single responsibility"
+        },
+        {
+          "id": "mock-sync",
+          "name": "Mock updated with new interface method",
+          "status": "pass",
+          "evidence": "drop/mock/processor.go:14,39-44 SpawnMesoFunc"
+        },
+        {
+          "id": "DOM-21",
+          "name": "No duplication of atlas-constants types",
+          "status": "pass",
+          "evidence": "skill3.* ids resolve to libs/atlas-constants/skill/constants.go:3143-3187; TemporaryStatTypePickPocket resolves to libs/atlas-constants/character/temporary_stat.go:33"
+        },
+        {
+          "id": "DOM-24",
+          "name": "Kafka producer stubbed in tests that emit",
+          "status": "pass",
+          "evidence": "drop/producer_test.go calls SpawnMesoCommandProvider()() directly (in-memory, no real writer); pick-pocket tests inject a spawnMeso closure, never call Processor.SpawnMeso"
+        },
+        {
+          "id": "cross-service-contract",
+          "name": "SpawnCommandBody matches atlas-drops CommandSpawnBody",
+          "status": "pass",
+          "evidence": "kafka/message/drop/kafka.go:37-53 vs services/atlas-drops/atlas.com/drops/kafka/message/drop/kafka.go:123-138; Mod-unused and DropType=2/PlayerDrop=true universal-pickup claims verified against services/atlas-drops/atlas.com/drops/kafka/consumer/drop/consumer.go:52-81 and drop/model.go:98-113"
+        }
+      ]
+    },
+    {
+      "name": "socket/handler",
+      "type": "support",
+      "checks": [
+        {
+          "id": "anti-pattern-bare-go",
+          "name": "No bare go statements added",
+          "status": "pass",
+          "evidence": "git diff contains no added bare go func/ident lines; tools/goroutine-guard.sh exit 0"
+        },
+        {
+          "id": "considered-DOM-25",
+          "name": "DropType literal is not a config-resolvable dispatcher/notice code",
+          "status": "pass",
+          "evidence": "docs/packets/audits/gms_v83/DropSpawn.md:18 (and v87/v95/jms) show dropType byte-verified stable; no seed template has a dropType config table; fleet-wide precedent (services/atlas-monsters/atlas.com/monsters/monster/drop/producer.go:17) treats it as ordinary domain data"
+        },
+        {
+          "id": "considered-DOM-28",
+          "name": "pickPocketResolveState/pickPocketTryProc error-swallowing is not a Decorator-shape enrichment",
+          "status": "pass",
+          "evidence": "degrade.Observe/model.ErrDecorator used only in atlas-login character.InventoryDecorator, atlas-skills, atlas-consumables; Pick Pocket gate functions mirror pre-existing mpEaterTryProc (character_attack_common.go:395-402) which also logs-and-swallows with no degrade.Observe"
+        }
+      ]
+    },
+    {
+      "name": "kafka/message/drop",
+      "type": "support",
+      "checks": [
+        {
+          "id": "contract-definition-placement",
+          "name": "New Command type + body struct added alongside existing contract",
+          "status": "pass",
+          "evidence": "kafka/message/drop/kafka.go:16,37-53"
+        }
+      ]
+    }
+  ],
+  "blocking": [],
+  "nonBlocking": []
+}

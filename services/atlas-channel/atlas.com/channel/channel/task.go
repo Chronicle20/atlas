@@ -5,10 +5,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const HeartbeatTask = "heartbeat"
@@ -33,7 +34,7 @@ func (t *Timeout) Run() {
 	defer span.End()
 
 	t.l.Debugf("Executing %s task.", HeartbeatTask)
-	_ = model.ForEachSlice(model.FixedProvider(server.GetAll()), func(m server.Model) error {
+	_ = model.ForEachSlice(model.FixedProvider(server.NewProcessor(t.l, t.ctx).GetAll()), func(m server.Model) error {
 		tctx := tenant.WithContext(sctx, m.Tenant())
 		return NewProcessor(t.l, tctx).Register(m.Channel(), m.IpAddress(), m.Port())
 	})

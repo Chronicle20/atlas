@@ -24,7 +24,7 @@ func TestImageNameStripsDotImg(t *testing.T) {
 		stored string
 		want   string
 	}{
-		{"0100100", "0100100"},  // donor convention — never .img
+		{"0100100", "0100100"}, // donor convention — never .img
 		{"100000000", "100000000"},
 		// in-memory construction MUST accept the stripped form. If callers
 		// passing names WITH .img were relying on it staying, that's a bug

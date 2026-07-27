@@ -2,6 +2,4 @@ package drop
 
 import "errors"
 
-var (
-	ErrNotFound = errors.New("reactor drop not found")
-)
+var ErrNotFound = errors.New("reactor drop not found")

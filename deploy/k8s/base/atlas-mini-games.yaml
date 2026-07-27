@@ -1,0 +1,57 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-mini-games
+spec:
+  # In-memory room registry (design D1) — more than one replica splits
+  # state across pods. Do not scale this Deployment horizontally.
+  replicas: 1
+  selector:
+    matchLabels:
+      app: atlas-mini-games
+  template:
+    metadata:
+      labels:
+        app: atlas-mini-games
+    spec:
+      containers:
+      - name: mini-games
+        image: ghcr.io/chronicle20/atlas-mini-games/atlas-mini-games:latest
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: atlas-env
+        env:
+        - name: LOG_LEVEL
+          value: "debug"
+        - name: DB_NAME
+          value: "atlas-mini-games"
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: DB_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: DB_PASSWORD
+        readinessProbe:
+          httpGet:
+            path: /api/readyz
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-mini-games
+spec:
+  selector:
+    app: atlas-mini-games
+  ports:
+  - protocol: TCP
+    port: 8080

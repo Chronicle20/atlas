@@ -1,0 +1,251 @@
+{
+  "data": {
+    "attributes": {
+      "questId": 21017,
+      "questName": "Aran Basic Training 4",
+      "startStateMachine": {
+        "startState": "intro",
+        "states": [
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "explainTask",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "endChat": false,
+              "speaker": "NPC",
+              "text": "It seems like you're warmed up now. This is when rigorous training can really help you build a strong foundation. Let's proceed with the Basic Training, shall we?"
+            },
+            "id": "intro",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "intro",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "playerQuestion",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "endChat": false,
+              "speaker": "NPC",
+              "text": "Go defeat some #r#o0100133#s#k in #b#m140020200##k this time. I think about  #r20#k should do it. Go on ahead and... Hm? Do you have something you'd like to say?"
+            },
+            "id": "explainTask",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "explainTask",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "npcResponse",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "speaker": "CHARACTER",
+              "text": "Isn't the number getting bigger and bigger?"
+            },
+            "id": "playerQuestion",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "playerQuestion",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "playerReply",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "endChat": false,
+              "speaker": "NPC",
+              "text": "Of course it is. What, are you not happy with 20? Would you like to defeat 100 of them instead? Oh, how about 999 of them? Someone in Sleepywood would be able to do it easily. After all, we are training..."
+            },
+            "id": "npcResponse",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "npcResponse",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "askAccept",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "speaker": "CHARACTER",
+              "text": "Oh no, no, no. Twenty is plenty."
+            },
+            "id": "playerReply",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "startQuest",
+                  "text": "Accept"
+                },
+                {
+                  "nextState": "declineMessage",
+                  "text": "Decline"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendAcceptDecline",
+              "text": "You don't have to be so modest. I understand your desire to quickly become the hero you once were. This sort of attitude is what makes you a hero."
+            },
+            "id": "askAccept",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": null,
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "speaker": "CHARACTER",
+              "text": "#b(You declined out of fear, but it's not like you can run away like this. Take a big breath, calm down, and try again.)#k"
+            },
+            "id": "declineMessage",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {},
+                  "type": "start_quest"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": "acceptMessage"
+                }
+              ]
+            },
+            "id": "startQuest",
+            "type": "genericAction"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "finalInstructions",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNext",
+              "speaker": "CHARACTER",
+              "text": "#b(You accepted, thinking you might end up having to 999 of them if you let her keep talking.)#k"
+            },
+            "id": "acceptMessage",
+            "type": "dialogue"
+          },
+          {
+            "dialogue": {
+              "choices": [
+                {
+                  "nextState": "acceptMessage",
+                  "text": "Previous"
+                },
+                {
+                  "nextState": "showTutorial",
+                  "text": "Next"
+                },
+                {
+                  "nextState": null,
+                  "text": "Exit"
+                }
+              ],
+              "dialogueType": "sendNextPrev",
+              "endChat": false,
+              "speaker": "NPC",
+              "text": "Please go ahead and slay 20 #o0100133#s."
+            },
+            "id": "finalInstructions",
+            "type": "dialogue"
+          },
+          {
+            "genericAction": {
+              "operations": [
+                {
+                  "params": {
+                    "path": "Effect/OnUserEff.img/guideEffect/aranTutorial/tutorialArrow3"
+                  },
+                  "type": "show_info"
+                }
+              ],
+              "outcomes": [
+                {
+                  "conditions": [],
+                  "nextState": null
+                }
+              ]
+            },
+            "id": "showTutorial",
+            "type": "genericAction"
+          }
+        ]
+      }
+    },
+    "id": "21017",
+    "type": "quest-conversation"
+  }
+}

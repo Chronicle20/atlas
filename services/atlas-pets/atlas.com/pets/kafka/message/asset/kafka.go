@@ -24,5 +24,4 @@ type CreatedStatusEventBody struct {
 	Quantity uint32 `json:"quantity"`
 }
 
-type DeletedStatusEventBody struct {
-}
+type DeletedStatusEventBody struct{}

@@ -17,6 +17,7 @@ type Model struct {
 	speed         uint16
 	jump          uint16
 	slots         uint16
+	cash          bool
 }
 
 func (m Model) Strength() uint16 {
@@ -81,4 +82,8 @@ func (m Model) Jump() uint16 {
 
 func (m Model) Slots() uint16 {
 	return m.slots
+}
+
+func (m Model) Cash() bool {
+	return m.cash
 }

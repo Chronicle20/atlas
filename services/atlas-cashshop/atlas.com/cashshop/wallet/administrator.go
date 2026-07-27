@@ -1,8 +1,9 @@
 package wallet
 
 import (
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"gorm.io/gorm"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func createEntity(db *gorm.DB, t tenant.Model, accountId uint32, credit uint32, points uint32, prepaid uint32) (Model, error) {

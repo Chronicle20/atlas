@@ -1,9 +1,10 @@
 package storage
 
 import (
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 const (
@@ -47,8 +48,7 @@ type Command[E any] struct {
 }
 
 // ArrangeCommandBody contains data for the ARRANGE command
-type ArrangeCommandBody struct {
-}
+type ArrangeCommandBody struct{}
 
 // UpdateMesosCommandBody contains data for the UPDATE_MESOS command
 type UpdateMesosCommandBody struct {
@@ -95,8 +95,7 @@ type MesosUpdatedEventBody struct {
 }
 
 // ArrangedEventBody contains the data for an arranged event
-type ArrangedEventBody struct {
-}
+type ArrangedEventBody struct{}
 
 // ErrorEventBody contains the data for an error event
 type ErrorEventBody struct {

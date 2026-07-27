@@ -15,11 +15,11 @@ func TestDemangleQualified(t *testing.T) {
 		// A bare top-level name with no scopes demangles to just the name.
 		{"?GlobalFn@@YAXXZ", "GlobalFn", true},
 		// Not simply demangleable:
-		{"sub_A40028", "", false},                       // not a mangled name (no leading '?')
-		{"?$ZXString@D@@QAE@XZ", "", false},             // template ('?$')
-		{"??4ZXString@@QAEAAV0@ABV0@@Z", "", false},     // operator ('??')
-		{"", "", false},                                 // empty
-		{"CWvsContext::CFriend::Reset", "", false},      // already demangled
+		{"sub_A40028", "", false},                   // not a mangled name (no leading '?')
+		{"?$ZXString@D@@QAE@XZ", "", false},         // template ('?$')
+		{"??4ZXString@@QAEAAV0@ABV0@@Z", "", false}, // operator ('??')
+		{"", "", false},                             // empty
+		{"CWvsContext::CFriend::Reset", "", false},  // already demangled
 	}
 	for _, c := range cases {
 		got, ok := demangleQualified(c.in)

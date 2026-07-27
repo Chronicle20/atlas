@@ -1,28 +1,28 @@
-import { useEffect, useMemo } from 'react';
-import { InventoryCard, InventoryCardSkeleton } from './InventoryCard';
-import { AssetTooltipContent } from './AssetTooltipContent';
+import { useEffect, useMemo } from "react";
+import { InventoryCard, InventoryCardSkeleton } from "./InventoryCard";
+import { AssetTooltipContent } from "./AssetTooltipContent";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
-import { useItemDataCache } from '@/lib/hooks/useItemData';
-import type { Asset, Compartment } from '@/services/api/inventory.service';
+} from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
+import { useItemDataCache } from "@/lib/hooks/useItemData";
+import type { Asset, Compartment } from "@/services/api/inventory.service";
 
 /**
  * Props for the InventoryGrid component.
- * 
+ *
  * @interface InventoryGridProps
  * @example
  * ```typescript
  * const gridProps: InventoryGridProps = {
  *   compartment: {
  *     id: "comp-1",
- *     attributes: { 
+ *     attributes: {
  *       compartmentType: 1, // EQUIPABLES
- *       capacity: 24 
+ *       capacity: 24
  *     }
  *   },
  *   assets: inventoryAssets,
@@ -60,20 +60,20 @@ interface InventoryGridProps {
 
 /**
  * Represents a single slot in the inventory grid.
- * 
+ *
  * @interface GridSlot
  */
 interface GridSlot {
   /** The index/position of this slot (1-based, matching inventory slot numbering). */
   slotIndex: number;
-  
+
   /** The asset in this slot, or null if the slot is empty. */
   asset: Asset | null;
 }
 
 /**
  * A responsive grid component for displaying inventory items with empty slots and interactive features.
- * 
+ *
  * ## Features
  * - **Responsive Layout**: Automatically adjusts grid columns based on compartment capacity and type
  * - **Empty Slot Visualization**: Shows empty slots for better inventory management UX
@@ -81,9 +81,9 @@ interface GridSlot {
  * - **Image Preloading**: Automatically preloads images for the first 12 items
  * - **Drag-and-Drop Ready**: Prepared for future drag-and-drop functionality
  * - **Compartment-Specific Layouts**: Optimized grid layouts for different inventory types
- * 
+ *
  * ## Usage Examples
- * 
+ *
  * ### Basic Usage
  * ```tsx
  * <InventoryGrid
@@ -94,7 +94,7 @@ interface GridSlot {
  *   assets={equipmentAssets}
  * />
  * ```
- * 
+ *
  * ### With Delete Functionality
  * ```tsx
  * <InventoryGrid
@@ -106,7 +106,7 @@ interface GridSlot {
  *   majorVersion={83}
  * />
  * ```
- * 
+ *
  * ### With Future Drag-and-Drop Support
  * ```tsx
  * <InventoryGrid
@@ -116,19 +116,19 @@ interface GridSlot {
  *   isDragEnabled={true}
  * />
  * ```
- * 
+ *
  * ## Grid Layout Logic
  * - **EQUIPABLES (Type 1)**: 4-6 columns, focused layout for equipment
  * - **CONSUMABLES/SETUP (Types 2-3)**: 6-8 columns, medium density
  * - **ETC/CASH (Types 4-5)**: 8-12 columns, high density for bulk items
  * - **Adaptive**: Automatically scales based on compartment capacity
- * 
+ *
  * ## Performance Features
  * - Uses cache warming to batch-fetch item metadata
  * - Preloads first 12 item images for faster perceived loading
  * - Deferred rendering for large inventories
  * - Optimized grid calculations based on compartment type
- * 
+ *
  * @param props - The component props
  * @returns A responsive grid displaying inventory items and empty slots
  */
@@ -140,59 +140,69 @@ export function InventoryGrid({
   isLoading = false,
   className,
   onSlotClick,
-  isDragEnabled = false
+  isDragEnabled = false,
 }: InventoryGridProps) {
   // Create a grid of all possible slots
   const createGridSlots = (): GridSlot[] => {
     const slots: GridSlot[] = [];
     const { capacity } = compartment.attributes;
-    
+
     // Create a map of slot index to asset for quick lookup
     const assetBySlot = new Map<number, Asset>();
-    assets.forEach(asset => {
+    assets.forEach((asset) => {
       assetBySlot.set(asset.attributes.slot, asset);
     });
-    
+
     // Fill all slots (1 to capacity) - inventory slots are 1-indexed
     for (let i = 1; i <= capacity; i++) {
       slots.push({
         slotIndex: i,
-        asset: assetBySlot.get(i) || null
+        asset: assetBySlot.get(i) || null,
       });
     }
-    
+
     return slots;
   };
 
   const gridSlots = createGridSlots();
-  
+
   // Extract unique item IDs for preloading
   const itemIds = useMemo(() => {
-    return Array.from(new Set(assets.map(asset => asset.attributes.templateId)));
+    return Array.from(
+      new Set(assets.map((asset) => asset.attributes.templateId)),
+    );
   }, [assets]);
-  
+
   // Use cache warming for image preloading
   const { warmCache } = useItemDataCache();
-  
+
   // Preload item data for all visible items when component mounts or assets change
   useEffect(() => {
     if (itemIds.length > 0 && !isLoading) {
       warmCache(itemIds)
         .then((results) => {
           if (!results) return;
-          const successful = results.filter(result => result.status === 'fulfilled').length;
-          const failed = results.filter(result => result.status === 'rejected').length;
+          const successful = results.filter(
+            (result) => result.status === "fulfilled",
+          ).length;
+          const failed = results.filter(
+            (result) => result.status === "rejected",
+          ).length;
 
           if (successful > 0) {
-            console.log(`[InventoryGrid] Preloaded metadata for ${successful} items`);
+            console.log(
+              `[InventoryGrid] Preloaded metadata for ${successful} items`,
+            );
           }
 
           if (failed > 0) {
-            console.warn(`[InventoryGrid] Failed to preload metadata for ${failed} items`);
+            console.warn(
+              `[InventoryGrid] Failed to preload metadata for ${failed} items`,
+            );
           }
         })
         .catch((error) => {
-          console.warn('[InventoryGrid] Cache warming failed:', error);
+          console.warn("[InventoryGrid] Cache warming failed:", error);
         });
     }
   }, [itemIds, warmCache, isLoading]);
@@ -200,7 +210,7 @@ export function InventoryGrid({
   // Fixed responsive grid: 4 cols on mobile, 8 on small screens, 12 on large.
   // Replaces the previous capacity-based getGridColumns adaptive logic so every
   // compartment renders with the same column counts regardless of capacity.
-  const gridColumns = 'grid-cols-4 sm:grid-cols-8 lg:grid-cols-12';
+  const gridColumns = "grid-cols-4 sm:grid-cols-8 lg:grid-cols-12";
 
   const handleSlotClick = (slotIndex: number) => {
     if (onSlotClick && !isLoading) {
@@ -211,7 +221,9 @@ export function InventoryGrid({
   if (isLoading) {
     return (
       <div className={cn("grid gap-3", gridColumns, className)}>
-        {Array.from({ length: Math.min(compartment.attributes.capacity, 16) }).map((_, index) => (
+        {Array.from({
+          length: Math.min(compartment.attributes.capacity, 16),
+        }).map((_, index) => (
           <InventoryCardSkeleton key={index} />
         ))}
       </div>
@@ -225,7 +237,7 @@ export function InventoryGrid({
           const cellClassName = cn(
             "flex items-center justify-center",
             isDragEnabled && "cursor-pointer",
-            !asset && onSlotClick && "hover:bg-muted/30 rounded-lg"
+            !asset && onSlotClick && "hover:bg-muted/30 rounded-lg",
           );
 
           if (!asset) {
@@ -254,7 +266,9 @@ export function InventoryGrid({
                 >
                   <InventoryCard
                     asset={asset}
-                    {...(onDeleteAsset && { onDelete: () => onDeleteAsset(asset.id) })}
+                    {...(onDeleteAsset && {
+                      onDelete: () => onDeleteAsset(asset.id),
+                    })}
                     isDeleting={deletingAssetId === asset.id}
                     shouldPreload={slotIndex < 12}
                   />
@@ -273,10 +287,10 @@ export function InventoryGrid({
 
 /**
  * Component representing an empty inventory slot.
- * 
+ *
  * Provides visual consistency and shows slot numbers to help users understand
  * inventory layout and available space.
- * 
+ *
  * @param slotIndex - The slot number to display
  * @returns An empty slot component with dashed border styling
  */
@@ -286,20 +300,18 @@ function EmptySlot({ slotIndex }: { slotIndex: number }) {
       <div className="text-xs font-medium text-muted-foreground/60 mb-2">
         {slotIndex}
       </div>
-      <div className="text-xs text-muted-foreground/50">
-        Empty
-      </div>
+      <div className="text-xs text-muted-foreground/50">Empty</div>
     </div>
   );
 }
 
 /**
  * Export the GridSlot type for external usage in other components or utilities.
- * 
+ *
  * @example
  * ```typescript
  * import { GridSlot } from './InventoryGrid';
- * 
+ *
  * // Use in custom inventory processing
  * function processGridSlots(slots: GridSlot[]) {
  *   return slots.filter(slot => slot.asset !== null);

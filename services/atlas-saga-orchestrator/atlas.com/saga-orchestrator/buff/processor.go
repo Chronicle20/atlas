@@ -3,11 +3,13 @@ package buff
 import (
 	"atlas-saga-orchestrator/kafka/message"
 	buffMsg "atlas-saga-orchestrator/kafka/message/buff"
-	"atlas-saga-orchestrator/kafka/producer"
 	"context"
 
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+
 	"github.com/sirupsen/logrus"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
 // Processor is the interface for buff operations
@@ -33,6 +35,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		p:   producer.ProviderImpl(l)(ctx),
 	}
 }
+
+var _ Processor = (*ProcessorImpl)(nil)
 
 // CancelAllAndEmit sends a Kafka command to atlas-buffs to cancel all buffs for a character
 func (p *ProcessorImpl) CancelAllAndEmit(field field.Model, characterId uint32) error {

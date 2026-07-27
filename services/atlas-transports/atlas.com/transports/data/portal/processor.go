@@ -3,10 +3,11 @@ package portal
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {
@@ -28,8 +29,13 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return p
 }
 
+var _ Processor = (*ProcessorImpl)(nil)
+
+// InMapProvider fetches every portal in a map. atlas-data's GET
+// /data/maps/{id}/portals is now paginated (task-117), so this drains
+// every page rather than fetching one.
 func (p *ProcessorImpl) InMapProvider(mapId _map.Id) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestAll(mapId), Extract, model.Filters[Model]())
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(allUrl(mapId), 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) RandomSpawnPointProvider(mapId _map.Id) model.Provider[Model] {

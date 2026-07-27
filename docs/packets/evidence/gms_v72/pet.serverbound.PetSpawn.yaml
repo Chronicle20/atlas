@@ -1,0 +1,10 @@
+packet: pet/serverbound/PetSpawn
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendActivatePetRequest
+    address: "0x91c241"
+    decompile_sha256: efc611b6313a9cfff575c2c74cb523065a042b26891d4f22ba1be1591056ec4d
+verifies:
+  - libs/atlas-packet/pet/serverbound/spawn_test.go#TestSpawnBytesV72

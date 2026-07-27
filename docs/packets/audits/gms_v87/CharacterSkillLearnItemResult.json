@@ -1,0 +1,75 @@
+{
+  "WriterName": "CharacterSkillLearnItemResult",
+  "IDAName": "CWvsContext::OnSkillLearnItemResult",
+  "Address": "0xab58e8",
+  "Variant": "GMS/v87",
+  "BranchDepth": 1,
+  "AtlasFile": "libs/atlas-packet/character/clientbound/skill_learn_item_result.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "bOnExclRequest (v87 leading byte, consumed-and-discarded by the codec; clears the requester's exclusive-request lock when true -- this[2093]=0, this[2094]=get_update_time()) @0xab5904",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "characterId (CUserPool::GetUser lookup) @0xab5923",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "isMasteryBook @0xab596b",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "skillId (decoded, discarded) @0xab596e",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "masterLevel (decoded, discarded) @0xab5975",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "canUse @0xab5986",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 6,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "success @0xab5989",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

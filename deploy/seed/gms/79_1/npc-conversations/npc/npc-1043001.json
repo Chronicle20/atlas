@@ -1,0 +1,166 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 1043001,
+      "startState": "checkGender",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "type": "gender",
+                    "value": "0"
+                  }
+                ],
+                "nextState": "selectMalePrize"
+              },
+              {
+                "conditions": [],
+                "nextState": "selectFemalePrize"
+              }
+            ]
+          },
+          "id": "checkGender",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "items": "1060041,1060048,1060116,1062009,1062017,1062024,1062056,1062061,1702045,1702114",
+                  "outputContextKey": "selectedPrize",
+                  "weights": "10,10,10,10,10,10,10,10,5,5"
+                },
+                "type": "local:select_random_weighted"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "checkQuest"
+              }
+            ]
+          },
+          "id": "selectMalePrize",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "items": "1061113,1061130,1061139,1062009,1062017,1062024,1062056,1062061,1702045,1702114",
+                  "outputContextKey": "selectedPrize",
+                  "weights": "10,10,10,10,10,10,10,10,5,5"
+                },
+                "type": "local:select_random_weighted"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "checkQuest"
+              }
+            ]
+          },
+          "id": "selectFemalePrize",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "operator": "=",
+                    "referenceId": "2051",
+                    "type": "questStatus",
+                    "value": "2"
+                  }
+                ],
+                "nextState": "awardQuestItem"
+              },
+              {
+                "conditions": [],
+                "nextState": "awardPrize"
+              }
+            ]
+          },
+          "id": "checkQuest",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "4031032",
+                  "quantity": "1"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "awardPrize"
+              }
+            ]
+          },
+          "id": "awardQuestItem",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "itemId": "{context.selectedPrize}",
+                  "quantity": "1"
+                },
+                "type": "award_item"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": "warpOut"
+              }
+            ]
+          },
+          "id": "awardPrize",
+          "type": "genericAction"
+        },
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {
+                  "mapId": "101000000",
+                  "portalId": "0"
+                },
+                "type": "warp_to_map"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "warpOut",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "1043001",
+    "type": "npc-conversation"
+  }
+}

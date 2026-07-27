@@ -4,9 +4,10 @@ import (
 	"context"
 	"sync"
 
-	objectid "github.com/Chronicle20/atlas/libs/atlas-object-id"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	goredis "github.com/redis/go-redis/v9"
+
+	objectid "github.com/Chronicle20/atlas/libs/atlas-object-id"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // IdAllocator wraps the shared field-scoped object-id allocator so monsters,
@@ -16,8 +17,10 @@ type IdAllocator struct {
 	inner objectid.Allocator
 }
 
-var idAllocator *IdAllocator
-var idAllocatorOnce sync.Once
+var (
+	idAllocator     *IdAllocator
+	idAllocatorOnce sync.Once
+)
 
 func InitIdAllocator(rc *goredis.Client) {
 	idAllocatorOnce.Do(func() {

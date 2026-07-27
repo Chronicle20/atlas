@@ -1,0 +1,10 @@
+packet: inventory/clientbound/InventoryAdd
+direction: clientbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnInventoryOperation#Add
+    address: "0x96953e"
+    decompile_sha256: b0df35fd6c665e6ca93ea0b0573f40269c57a46ab67cbf7151ef57de93aee608
+verifies:
+  - libs/atlas-packet/inventory/clientbound/change_test.go#TestAddEquipmentRoundTrip

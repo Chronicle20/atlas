@@ -73,10 +73,12 @@ func TestRegistrySeed(t *testing.T) {
 		t.Fatalf("ReadFile gms_v83.yaml: %v", err)
 	}
 	out2 := t.TempDir()
-	code2 := runRegistry([]string{"seed",
+	code2 := runRegistry([]string{
+		"seed",
 		"--clientbound", filepath.Join("..", "internal", "seedcsv", "testdata", "clientbound_excerpt.csv"),
 		"--serverbound", filepath.Join("..", "internal", "seedcsv", "testdata", "serverbound_excerpt.csv"),
-		"--out", out2}, &bytes.Buffer{})
+		"--out", out2,
+	}, &bytes.Buffer{})
 	if code2 != 0 {
 		t.Fatalf("second seed exit = %d", code2)
 	}

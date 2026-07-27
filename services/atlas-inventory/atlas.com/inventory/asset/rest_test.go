@@ -6,12 +6,13 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 type Server struct {
@@ -47,6 +48,7 @@ func TestMarshalUnmarshalSunny(t *testing.T) {
 		SetSlots(7).
 		SetStrength(10).
 		SetDexterity(5).
+		SetOwner("Tumi").
 		Build()
 	ierm, err := model.Map(asset.Transform)(model.FixedProvider(ieam))()
 	if err != nil {
@@ -90,5 +92,8 @@ func TestMarshalUnmarshalSunny(t *testing.T) {
 	}
 	if ieam.Slots() != oeam.Slots() {
 		t.Errorf("Slots mismatch: %d != %d", ieam.Slots(), oeam.Slots())
+	}
+	if ieam.Owner() != oeam.Owner() {
+		t.Errorf("Owner mismatch: %q != %q", ieam.Owner(), oeam.Owner())
 	}
 }

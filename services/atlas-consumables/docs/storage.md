@@ -17,6 +17,7 @@ The registry is populated from character status events (LOGIN, LOGOUT, MAP_CHANG
 All other state is fetched on demand from external services via REST:
 
 - Character data (atlas-characters)
+- Character location data (atlas-maps)
 - Inventory data (atlas-inventory)
 - Pet data (atlas-pets)
 - Reference data: consumable, equipable, cash item, map, portal, drop position (atlas-data)

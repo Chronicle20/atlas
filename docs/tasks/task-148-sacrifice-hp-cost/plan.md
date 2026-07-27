@@ -36,7 +36,7 @@
 - Consumes: nothing from other tasks. `math` is already imported in `character_attack_common.go:18`.
 - Produces: `func sacrificeHpCost(firstLine uint32, x int16, currentHp uint16) uint16` — Task 3's orchestration block calls this exact signature.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_sacrifice_test.go`:
 
@@ -89,7 +89,7 @@ Case-by-case rationale (all pinned by the design §4.1 and §7):
 - `hp=65535`: clamp gives `65534`, still overflows `int16`, cap to `32767` — proves `-int16(cost)` at the call site cannot overflow (design §4.1 rule 4).
 - `math.MaxUint32 × 100` overflows `uint32` but not `uint64`; widened math yields `4294967295`, clamped to `29999` (design §4.1 rule 2).
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run (from `services/atlas-channel/atlas.com/channel`):
 ```bash
@@ -97,7 +97,7 @@ go test ./socket/handler/ -run TestSacrificeHpCost -v
 ```
 Expected: FAIL to build with `undefined: sacrificeHpCost`.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 In `character_attack_common.go`, insert immediately after `mpEaterAbsorbAmount` (which ends at line 374), before `mpEaterTryProc` (`:403`):
 
@@ -125,7 +125,7 @@ func sacrificeHpCost(firstLine uint32, x int16, currentHp uint16) uint16 {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run (from `services/atlas-channel/atlas.com/channel`):
 ```bash
@@ -133,7 +133,7 @@ go test ./socket/handler/ -run TestSacrificeHpCost -v
 ```
 Expected: PASS (all 11 subtests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go services/atlas-channel/atlas.com/channel/socket/handler/character_attack_sacrifice_test.go
@@ -152,7 +152,7 @@ git commit -m "feat(atlas-channel): add sacrificeHpCost helper for Dragon Knight
 - Consumes: `packetmodel.AttackInfo` / `packetmodel.DamageInfo` from `libs/atlas-packet/model` — already imported as `packetmodel` at `character_attack_common.go:30`. Builders used in tests: `packetmodel.NewAttackInfo(attackType)` (`attack_info.go:23`), `(*AttackInfo).AddDamageInfo(di DamageInfo)` (`attack_info.go:525`), `packetmodel.NewDamageInfo(hits byte)` (`damage_info.go:13`), `(*DamageInfo).SetMonsterId` / `(*DamageInfo).SetDamages` (`damage_info.go:104,114`).
 - Produces: `func sacrificeFirstDamageLine(ai packetmodel.AttackInfo) uint32` — Task 3's orchestration block calls this exact signature (note: value parameter, matching `processAttack`'s `ai`).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `character_attack_sacrifice_test.go` (and add the import):
 
@@ -215,7 +215,7 @@ func TestSacrificeFirstDamageLine(t *testing.T) {
 
 The last case is the FR-2 pin: a future edit that sums lines or targets breaks a named test, not just Cosmic parity.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run (from `services/atlas-channel/atlas.com/channel`):
 ```bash
@@ -223,7 +223,7 @@ go test ./socket/handler/ -run TestSacrificeFirstDamageLine -v
 ```
 Expected: FAIL to build with `undefined: sacrificeFirstDamageLine`.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 In `character_attack_common.go`, insert directly below `sacrificeHpCost`:
 
@@ -242,7 +242,7 @@ func sacrificeFirstDamageLine(ai packetmodel.AttackInfo) uint32 {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run (from `services/atlas-channel/atlas.com/channel`):
 ```bash
@@ -250,7 +250,7 @@ go test ./socket/handler/ -run TestSacrificeFirstDamageLine -v
 ```
 Expected: PASS (all 4 subtests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go services/atlas-channel/atlas.com/channel/socket/handler/character_attack_sacrifice_test.go
@@ -268,7 +268,7 @@ git commit -m "feat(atlas-channel): add sacrificeFirstDamageLine helper pinning 
 - Consumes: `sacrificeHpCost(firstLine uint32, x int16, currentHp uint16) uint16` (Task 1), `sacrificeFirstDamageLine(ai packetmodel.AttackInfo) uint32` (Task 2), and identifiers already in scope inside `processAttack`: `cp` (`character.Processor`, line 507), `c` (`character.Model`, line 508; `Hp() uint16` at `character/model.go:132`), `se` (`effect.Model`, line 528; `X() int16` at `data/skill/effect/model.go:154`), `s` (`session.Model`), `ai` (`packetmodel.AttackInfo`), `skill3.DragonKnightSacrificeId` (`libs/atlas-constants/skill/constants.go:3002`), `cp.ChangeHP(f field.Model, characterId uint32, amount int16) error` (`character/processor.go:276`).
 - Produces: nothing consumed by later tasks; the runtime behavior itself.
 
-- [ ] **Step 1: Insert the gated block and remove the TODO**
+- [x] **Step 1: Insert the gated block and remove the TODO**
 
 In `processAttack`, the tail of the function currently reads (~lines 650-671 — the combo-orb block already landed, so the Sacrifice TODO now sits directly after it):
 
@@ -340,7 +340,7 @@ Notes for the implementer:
 - Use a fresh `herr` (not the enclosing `err`) so the swallowed emit error can never leak into a later `err` check.
 - `-int16(cost)` is safe: `sacrificeHpCost` caps at `math.MaxInt16` (Task 1).
 
-- [ ] **Step 2: Build and vet**
+- [x] **Step 2: Build and vet**
 
 Run (from `services/atlas-channel/atlas.com/channel`):
 ```bash
@@ -348,7 +348,7 @@ go build ./... && go vet ./...
 ```
 Expected: both clean, no output.
 
-- [ ] **Step 3: Run the full handler package tests**
+- [x] **Step 3: Run the full handler package tests**
 
 Run (from `services/atlas-channel/atlas.com/channel`):
 ```bash
@@ -358,7 +358,7 @@ Expected: PASS — the two new Sacrifice tests plus the existing MP Eater tests,
 
 (The orchestration block itself is thin glue over the two tested helpers — same untested-call-site precedent as `mpEaterTryProc`; the wiring is covered by manual validation, Task 4.)
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go
@@ -379,7 +379,7 @@ caster keeps at least 1 HP (Cosmic parity)."
 - Consumes: the complete change set from Tasks 1-3.
 - Produces: the evidence trail required before code review / PR (CLAUDE.md Build & Verification).
 
-- [ ] **Step 1: Full module test/vet/build**
+- [x] **Step 1: Full module test/vet/build**
 
 Run (from `services/atlas-channel/atlas.com/channel`):
 ```bash
@@ -387,7 +387,7 @@ go test -race ./... && go vet ./... && go build ./...
 ```
 Expected: all three clean. This is the only changed module.
 
-- [ ] **Step 2: Repo-root guards**
+- [x] **Step 2: Repo-root guards**
 
 Run from the worktree root (`.worktrees/task-148-sacrifice-hp-cost` — no `GOWORK=off` prefix). The CLAUDE.md verification bar grew since this plan was first written; a Go change now must pass these three:
 ```bash
@@ -397,7 +397,7 @@ tools/lint.sh --check
 ```
 Expected: all clean / PASS. (`tools/lint.sh` with no flags is the fix-in-place mode — run it before committing if `--check` flags formatting.)
 
-- [ ] **Step 3: Confirm no `go.mod` was touched**
+- [x] **Step 3: Confirm no `go.mod` was touched**
 
 Run from the worktree root:
 ```bash
@@ -405,7 +405,7 @@ git diff main --name-only -- '**/go.mod' 'go.work*'
 ```
 Expected: no output. (If anything shows up, something went off-plan — `docker buildx bake atlas-channel` would then be mandatory per CLAUDE.md.)
 
-- [ ] **Step 4: Confirm the TODO is gone and no new TODOs were added**
+- [x] **Step 4: Confirm the TODO is gone and no new TODOs were added**
 
 Run from the worktree root:
 ```bash
@@ -413,7 +413,7 @@ grep -n "decrease HP from DragonKnight Sacrifice" services/atlas-channel/atlas.c
 ```
 Expected: no grep match (exit 1 on the first command) and `0` from the count.
 
-- [ ] **Step 5: Acceptance-criteria walkthrough**
+- [x] **Step 5: Acceptance-criteria walkthrough**
 
 Re-read PRD §10 and check each box that is code-verifiable (formula, clamp, miss = free, cast-cost untouched, non-Sacrifice unchanged, unit-test coverage list, TODO removed, verification suite). The manual criteria — the per-version data check and in-game validation — remain for the human after deploy; they are not blockers for code review but must be called out in the PR description.
 

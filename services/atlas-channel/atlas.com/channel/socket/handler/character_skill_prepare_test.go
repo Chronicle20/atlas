@@ -101,6 +101,36 @@ func TestShouldBroadcastKeydown(t *testing.T) {
 			skillId: uint32(comboAttackId),
 			want:    false,
 		},
+		{
+			name: "owned Corkscrew Blow (keydown) level>0 → broadcast",
+			skills: []skill2.Model{
+				buildSkillModel(t, skill.BrawlerCorkscrewBlowId, 1),
+			},
+			skillId: uint32(skill.BrawlerCorkscrewBlowId),
+			want:    true,
+		},
+		{
+			name: "owned Grenade (keydown) level>0 → broadcast",
+			skills: []skill2.Model{
+				buildSkillModel(t, skill.GunslingerGrenadeId, 2),
+			},
+			skillId: uint32(skill.GunslingerGrenadeId),
+			want:    true,
+		},
+		{
+			name: "Corkscrew Blow at level 0 → no broadcast",
+			skills: []skill2.Model{
+				buildSkillModel(t, skill.BrawlerCorkscrewBlowId, 0),
+			},
+			skillId: uint32(skill.BrawlerCorkscrewBlowId),
+			want:    false,
+		},
+		{
+			name:    "Grenade not in character book → no broadcast",
+			skills:  []skill2.Model{},
+			skillId: uint32(skill.GunslingerGrenadeId),
+			want:    false,
+		},
 	}
 
 	for _, tc := range cases {

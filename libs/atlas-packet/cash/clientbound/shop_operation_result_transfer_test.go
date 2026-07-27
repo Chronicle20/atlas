@@ -19,6 +19,11 @@ var nameChangeBuyDoneModes = map[string]byte{
 	"GMS/v83": 0x9E, "GMS/v84": 0xA1, "GMS/v87": 0xA7, "GMS/v95": 0xB3, "JMS/v185": 0xA5,
 }
 
+// packet-audit:verify packet=cash/clientbound/CashNameChangeBuyDone version=gms_v83 ida=0x47bccb
+// packet-audit:verify packet=cash/clientbound/CashNameChangeBuyDone version=gms_v84 ida=0x47ee69
+// packet-audit:verify packet=cash/clientbound/CashNameChangeBuyDone version=gms_v87 ida=0x4874ac
+// packet-audit:verify packet=cash/clientbound/CashNameChangeBuyDone version=gms_v95 ida=0x495600
+// packet-audit:verify packet=cash/clientbound/CashNameChangeBuyDone version=jms_v185 ida=0x48c1af
 func TestNameChangeBuyDoneByteFixture(t *testing.T) {
 	item := CashInventoryItem{
 		CashId: 333, AccountId: 1, CharacterId: 2, TemplateId: 5152001,
@@ -55,6 +60,11 @@ var transferWorldDoneModes = map[string]byte{
 	"GMS/v83": 0xA0, "GMS/v84": 0xA3, "GMS/v87": 0xA9, "GMS/v95": 0xB5, "JMS/v185": 0xAE,
 }
 
+// packet-audit:verify packet=cash/clientbound/CashTransferWorldDone version=gms_v83 ida=0x47bfa2
+// packet-audit:verify packet=cash/clientbound/CashTransferWorldDone version=gms_v84 ida=0x47f140
+// packet-audit:verify packet=cash/clientbound/CashTransferWorldDone version=gms_v87 ida=0x487783
+// packet-audit:verify packet=cash/clientbound/CashTransferWorldDone version=gms_v95 ida=0x495710
+// packet-audit:verify packet=cash/clientbound/CashTransferWorldDone version=jms_v185 ida=0x48e991
 func TestTransferWorldDoneByteFixture(t *testing.T) {
 	item := CashInventoryItem{
 		CashId: 444, AccountId: 1, CharacterId: 2, TemplateId: 5150000,
@@ -93,6 +103,9 @@ var changeMaplePointDoneModes = map[string]byte{
 	"GMS/v84": 0xA9, "GMS/v87": 0xAF, "GMS/v95": 0xBB,
 }
 
+// packet-audit:verify packet=cash/clientbound/CashChangeMaplePointDone version=gms_v84 ida=0x47fca9
+// packet-audit:verify packet=cash/clientbound/CashChangeMaplePointDone version=gms_v87 ida=0x48830a
+// packet-audit:verify packet=cash/clientbound/CashChangeMaplePointDone version=gms_v95 ida=0x498520
 func TestChangeMaplePointDoneByteFixture(t *testing.T) {
 	sn := int64(555666777888999)
 	count := int32(50)

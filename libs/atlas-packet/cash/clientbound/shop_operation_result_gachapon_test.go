@@ -23,6 +23,9 @@ var gachaponOpenDoneModes = map[string]byte{
 // conditional-blob shape (mode + scalars + CONDITIONAL 55-byte item-blob +
 // trailing scalars) in this file. Exercises both the isCashItem==0 (blob
 // omitted) and isCashItem!=0 (blob present) branches.
+// packet-audit:verify packet=cash/clientbound/CashGachaponOpenDone version=gms_v84 ida=0x47f9da
+// packet-audit:verify packet=cash/clientbound/CashGachaponOpenDone version=gms_v87 ida=0x488038
+// packet-audit:verify packet=cash/clientbound/CashGachaponOpenDone version=gms_v95 ida=0x494ac0
 func TestGachaponOpenDoneByteFixture(t *testing.T) {
 	sn := int64(11223344556677)
 	remain := int32(2)
@@ -100,6 +103,9 @@ var gachaponCopyDoneModes = map[string]byte{
 // TestGachaponCopyDoneByteFixture exercises the compound-AND gate: the
 // item-blob is present iff flag1!=0 AND flag2!=0 — distinct from
 // GachaponOpenDone's single-flag gate.
+// packet-audit:verify packet=cash/clientbound/CashGachaponCopyDone version=gms_v84 ida=0x47fae2
+// packet-audit:verify packet=cash/clientbound/CashGachaponCopyDone version=gms_v87 ida=0x488140
+// packet-audit:verify packet=cash/clientbound/CashGachaponCopyDone version=gms_v95 ida=0x494b90
 func TestGachaponCopyDoneByteFixture(t *testing.T) {
 	unused1 := int32(0)
 	unused2 := int32(0)

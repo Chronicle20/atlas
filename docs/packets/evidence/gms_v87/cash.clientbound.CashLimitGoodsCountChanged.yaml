@@ -1,0 +1,10 @@
+packet: cash/clientbound/CashLimitGoodsCountChanged
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCashItemResult#LIMIT_GOODS_COUNT_CHANGED
+    address: "0x48471f"
+    decompile_sha256: 5ad88723a9d03b740e22de65a16f05ebbc7fee84715419bf515efcdad38ecc89
+verifies:
+    - libs/atlas-packet/cash/clientbound/shop_operation_result_misc_test.go#TestLimitGoodsCountChangedByteFixture

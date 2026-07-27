@@ -1,0 +1,30 @@
+{
+  "WriterName": "CashExpireDone",
+  "IDAName": "CCashShop::OnCashItemResult#EXPIRE_DONE",
+  "Address": "0x486981",
+  "Variant": "GMS/v87",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/cash/clientbound/shop_operation_result_misc.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (0x73 EXPIRE_DONE; op-byte consumed by dispatcher before CCashShop::OnCashItemResExpireDone)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 3,
+      "AtlasKind": 0,
+      "IDAOp": 5,
+      "IDAComment": "sn: 8 bytes LARGE_INTEGER (int64), matched against m_aCashItemInfo[i].liSN before removal (same shape as DESTROY_SUCCESS)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

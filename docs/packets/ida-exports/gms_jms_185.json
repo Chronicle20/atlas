@@ -14357,6 +14357,116 @@
           "comment": "quantity"
         }
       ]
+    },
+    "CCashShop::OnCashItemResult#LIMIT_GOODS_COUNT_CHANGED": {
+      "address": "0x48b4d0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x4a LIMIT_GOODS_COUNT_CHANGED; op-byte consumed by dispatcher before CCashShop::OnCashItemResLimitGoodsCountChanged)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (int32)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "sn (int32)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "remainCount (int32, updates client-local CS_LIMITGOODS array remaining-count)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#DESTROY_SUCCESS": {
+      "address": "0x48dffa",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x6f DESTROY_SUCCESS; op-byte consumed by dispatcher before CCashShop::OnCashItemResDestroyDone)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "sn: 8 bytes LARGE_INTEGER (int64), matched against m_aCashItemInfo[i].liSN to find-and-remove the locker entry"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#EXPIRE_DONE": {
+      "address": "0x48dd84",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x71 EXPIRE_DONE; op-byte consumed by dispatcher before CCashShop::OnCashItemResExpireDone)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "sn: 8 bytes LARGE_INTEGER (int64), matched against m_aCashItemInfo[i].liSN before removal (same shape as DESTROY_SUCCESS)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#PURCHASE_RECORD": {
+      "address": "0x48e72f",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x9d PURCHASE_RECORD; op-byte consumed by dispatcher before CCashShop::OnCashItemResPurchaseRecord)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "goodsSN (int32, used as a ZMap<long,...> key when nonzero)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "purchased (byte, compared != 0, recorded in m_mPurchaseRecord/m_nPurchaseRecord)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#FREE_CASH_ITEM_DONE": {
+      "address": "0x48c2a9",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0xa1 FREE_CASH_ITEM_DONE; op-byte consumed by dispatcher before CCashShop::OnCashItemResFreeCashItemDone)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "item: 55 bytes GW_CashItemInfo blob (CashInventoryItem.EncodeBytes); item-blob shape, not a small scalar"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#NAME_CHANGE_BUY_DONE": {
+      "address": "0x48c1af",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0xa5 NAME_CHANGE_BUY_DONE; op-byte consumed by dispatcher before CCashShop::OnCashItemNameChangeResBuyDone)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "item: 55 bytes GW_CashItemInfo blob (CashInventoryItem.EncodeBytes), decoded into a freshly-inserted m_aCashItemInfo slot"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#TRANSFER_WORLD_SUCCESS": {
+      "address": "0x48e991",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0xae TRANSFER_WORLD_SUCCESS; op-byte consumed by dispatcher before CCashShop::OnCashItemResTransferWorldDone)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "item: 55 bytes GW_CashItemInfo blob (CashInventoryItem.EncodeBytes); byte-identical body shape to NAME_CHANGE_BUY_DONE"
+        }
+      ]
     }
   }
 }

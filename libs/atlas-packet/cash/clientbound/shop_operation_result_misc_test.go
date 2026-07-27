@@ -19,6 +19,11 @@ var limitGoodsCountChangedModes = map[string]byte{
 	"GMS/v83": 0x47, "GMS/v84": 0x4A, "GMS/v87": 0x4C, "GMS/v95": 0x54, "JMS/v185": 0x4A,
 }
 
+// packet-audit:verify packet=cash/clientbound/CashLimitGoodsCountChanged version=gms_v83 ida=0x47908a
+// packet-audit:verify packet=cash/clientbound/CashLimitGoodsCountChanged version=gms_v84 ida=0x47c1bc
+// packet-audit:verify packet=cash/clientbound/CashLimitGoodsCountChanged version=gms_v87 ida=0x48471f
+// packet-audit:verify packet=cash/clientbound/CashLimitGoodsCountChanged version=gms_v95 ida=0x493f30
+// packet-audit:verify packet=cash/clientbound/CashLimitGoodsCountChanged version=jms_v185 ida=0x48b4d0
 func TestLimitGoodsCountChangedByteFixture(t *testing.T) {
 	itemId := int32(5390000)
 	sn := int32(42)
@@ -54,6 +59,11 @@ var destroyDoneModes = map[string]byte{
 
 // TestDestroyDoneByteFixture is the red->green anchor for the true-scalar
 // shape (mode + 8-byte SN) in this file.
+// packet-audit:verify packet=cash/clientbound/CashDestroyDone version=gms_v83 ida=0x47b420
+// packet-audit:verify packet=cash/clientbound/CashDestroyDone version=gms_v84 ida=0x47e5be
+// packet-audit:verify packet=cash/clientbound/CashDestroyDone version=gms_v87 ida=0x486bfe
+// packet-audit:verify packet=cash/clientbound/CashDestroyDone version=gms_v95 ida=0x495250
+// packet-audit:verify packet=cash/clientbound/CashDestroyDone version=jms_v185 ida=0x48dffa
 func TestDestroyDoneByteFixture(t *testing.T) {
 	sn := int64(123456789012345)
 	for _, v := range pt.Variants {
@@ -86,6 +96,11 @@ var expireDoneModes = map[string]byte{
 	"GMS/v83": 0x6E, "GMS/v84": 0x71, "GMS/v87": 0x73, "GMS/v95": 0x7D, "JMS/v185": 0x71,
 }
 
+// packet-audit:verify packet=cash/clientbound/CashExpireDone version=gms_v83 ida=0x47b1ab
+// packet-audit:verify packet=cash/clientbound/CashExpireDone version=gms_v84 ida=0x47e349
+// packet-audit:verify packet=cash/clientbound/CashExpireDone version=gms_v87 ida=0x486981
+// packet-audit:verify packet=cash/clientbound/CashExpireDone version=gms_v95 ida=0x497760
+// packet-audit:verify packet=cash/clientbound/CashExpireDone version=jms_v185 ida=0x48dd84
 func TestExpireDoneByteFixture(t *testing.T) {
 	sn := int64(987654321098765)
 	for _, v := range pt.Variants {
@@ -118,6 +133,11 @@ var purchaseRecordDoneModes = map[string]byte{
 	"GMS/v83": 0x9A, "GMS/v84": 0x9D, "GMS/v87": 0xA3, "GMS/v95": 0xAF, "JMS/v185": 0x9D,
 }
 
+// packet-audit:verify packet=cash/clientbound/CashPurchaseRecordDone version=gms_v83 ida=0x47c091
+// packet-audit:verify packet=cash/clientbound/CashPurchaseRecordDone version=gms_v84 ida=0x47f22f
+// packet-audit:verify packet=cash/clientbound/CashPurchaseRecordDone version=gms_v87 ida=0x487872
+// packet-audit:verify packet=cash/clientbound/CashPurchaseRecordDone version=gms_v95 ida=0x495b50
+// packet-audit:verify packet=cash/clientbound/CashPurchaseRecordDone version=jms_v185 ida=0x48e72f
 func TestPurchaseRecordDoneByteFixture(t *testing.T) {
 	goodsSN := int32(778899)
 	purchased := byte(1)
@@ -155,6 +175,9 @@ var freeCashItemDoneModes = map[string]byte{
 // TestFreeCashItemDoneByteFixture is the red->green anchor for the
 // item-blob shape (mode + 55-byte GW_CashItemInfo blob) in this file — the
 // catalog's coarse "scalar" shape label is wrong for this arm.
+// packet-audit:verify packet=cash/clientbound/CashFreeCashItemDone version=gms_v87 ida=0x4850ac
+// packet-audit:verify packet=cash/clientbound/CashFreeCashItemDone version=gms_v95 ida=0x494880
+// packet-audit:verify packet=cash/clientbound/CashFreeCashItemDone version=jms_v185 ida=0x48c2a9
 func TestFreeCashItemDoneByteFixture(t *testing.T) {
 	item := CashInventoryItem{
 		CashId: 222, AccountId: 1, CharacterId: 2, TemplateId: 5220000,

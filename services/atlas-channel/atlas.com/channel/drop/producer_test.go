@@ -3,13 +3,17 @@ package drop_test
 import (
 	"atlas-channel/drop"
 	drop2 "atlas-channel/kafka/message/drop"
+	"bytes"
 	"encoding/json"
 	"testing"
+
+	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 )
 
 func TestSpawnMesoCommandProvider(t *testing.T) {
@@ -56,5 +60,42 @@ func TestSpawnMesoCommandProvider(t *testing.T) {
 	}
 	if b.Mod != 0 {
 		t.Fatalf("Mod = %d; want 0", b.Mod)
+	}
+}
+
+// One CONSUME command per exploded drop, keyed by dropId, all in a single
+// buffered provider (task-150 design §4.3-A / FR-8).
+func TestConsumeAllCommandProvider(t *testing.T) {
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(100000000)).Build()
+	txId := uuid.New()
+	dropIds := []uint32{11, 22, 33}
+
+	msgs, err := drop.ConsumeAllCommandProvider(txId, f, dropIds)()
+	if err != nil {
+		t.Fatalf("provider error: %v", err)
+	}
+	if len(msgs) != len(dropIds) {
+		t.Fatalf("got %d messages, want %d", len(msgs), len(dropIds))
+	}
+	for i, want := range dropIds {
+		if !bytes.Equal(msgs[i].Key, producer.CreateKey(int(want))) {
+			t.Errorf("message %d key mismatch", i)
+		}
+		var cmd drop2.Command[drop2.ConsumeCommandBody]
+		if err := json.Unmarshal(msgs[i].Value, &cmd); err != nil {
+			t.Fatalf("message %d unmarshal: %v", i, err)
+		}
+		if cmd.Type != drop2.CommandTypeConsume {
+			t.Errorf("message %d type = %q, want %q", i, cmd.Type, drop2.CommandTypeConsume)
+		}
+		if cmd.Body.DropId != want {
+			t.Errorf("message %d dropId = %d, want %d", i, cmd.Body.DropId, want)
+		}
+		if cmd.TransactionId != txId {
+			t.Errorf("message %d transactionId = %s, want %s", i, cmd.TransactionId, txId)
+		}
+		if cmd.WorldId != f.WorldId() || cmd.ChannelId != f.ChannelId() || cmd.MapId != f.MapId() || cmd.Instance != f.Instance() {
+			t.Errorf("message %d field envelope mismatch: %+v", i, cmd)
+		}
 	}
 }

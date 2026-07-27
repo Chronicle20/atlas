@@ -512,6 +512,7 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 
 					var sk skill.Model
 					var se effect.Model
+					var explodedMesoDropIds []uint32
 
 					if ai.SkillId() > 0 {
 						// Process skill
@@ -528,6 +529,27 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 						se, err = skill2.NewProcessor(l, ctx).GetEffect(ai.SkillId(), sk.Level())
 						if err != nil {
 							return err
+						}
+
+						// Meso Explosion (task-150): validate the exploded-drop list
+						// against the field's drops BEFORE any side effect (FR-6 —
+						// rejection must skip cost, damage, broadcast, and destruction).
+						// One field-scoped fetch; the map keys structurally enforce the
+						// same-field/instance check.
+						if skill3.Is(skill3.Id(ai.SkillId()), skill3.ChiefBanditMesoExplosionId) {
+							ds, dErr := drop.NewProcessor(l, ctx).InMapModelProvider(s.Field())()
+							if dErr != nil {
+								return dErr
+							}
+							fieldDrops := make(map[uint32]drop.Model, len(ds))
+							for _, d := range ds {
+								fieldDrops[d.Id()] = d
+							}
+							if badId, ok := validateMesoExplosion(ai.ExplodedMesoDrops(), fieldDrops, se.AttackCount()); !ok {
+								l.Warnf("Character [%d] meso-explosion attack with skill [%d] rejected: drop [%d] failed validation.", s.CharacterId(), ai.SkillId(), badId)
+								return nil
+							}
+							explodedMesoDropIds = ai.ExplodedMesoDrops()
 						}
 
 						// Skip the generic cost block when a per-skill
@@ -656,6 +678,20 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 						}
 					}
 
+					// Destroy the validated exploded meso drops (Chief Bandit Meso
+					// Explosion, task-150). CONSUME removes each drop in atlas-drops
+					// without crediting anyone; the drop consumer then announces
+					// DropDestroy with the explode animation to the whole field.
+					// Same at-least-once posture as the projectile emission above:
+					// damage is already applied, so failures log and continue.
+					if len(explodedMesoDropIds) > 0 {
+						if cErr := drop.NewProcessor(l, ctx).ConsumeAll(s.Field(), explodedMesoDropIds); cErr != nil {
+							l.WithError(cErr).Errorf("Unable to emit CONSUME for [%d] exploded meso drops for character [%d].", len(explodedMesoDropIds), s.CharacterId())
+						} else {
+							l.Debugf("Destroyed [%d] exploded meso drops for character [%d].", len(explodedMesoDropIds), s.CharacterId())
+						}
+					}
+
 					// TODO apply cooldown
 					// TODO cancel dark sight / wind walk
 					// Combo orb gain/consume: melee only (close-range attacks,
@@ -668,7 +704,6 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					}
 					// TODO decrease HP from DragonKnight Sacrifice
 					// TODO apply attack effect (heal, mp consumption, dispel, cure all, combo reset, etc)
-					// TODO destroy Chief Bandit exploded mesos
 					// TODO apply Bandit Steal
 					// TODO Fire Demon ice weaken
 					// TODO Ice Demon fire weaken

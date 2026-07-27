@@ -11,32 +11,32 @@ cited to a decompile line. Shape group is a reasoning aid only — every arm is 
 | LOAD_INVENTORY_SUCCESS | OnCashItemResLoadLockerDone | item-blob | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x4B | 0x4E | 0x50 | 0x58 | 0x4E | existing |
 | LOAD_INVENTORY_FAILURE | OnCashItemResLoadLockerFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x4C | 0x4F | 0x51 | 0x59 | 0x4F | existing |
 | LOAD_GIFT_SUCCESS | OnCashItemResLoadGiftDone | item-blob | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x5A | TBD-RE | TBD-RE (0.3) |
-| LOAD_GIFT_FAILED | OnCashItemResLoadGiftFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x5B | TBD-RE | TBD-RE (0.3) |
+| LOAD_GIFT_FAILED | OnCashItemResLoadGiftFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x5B | TBD-RE | mode(disp); reason:Decode1@0x496967 |
 | LOAD_WISHLIST | OnCashItemResLoadWishDone | scalar | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x4F | 0x52 | 0x54 | 0x5C | 0x52 | existing |
-| LOAD_WISH_FAILED | OnCashItemResLoadWishFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x5D | TBD-RE | TBD-RE (0.3) |
+| LOAD_WISH_FAILED | OnCashItemResLoadWishFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x5D | TBD-RE | mode(disp); reason:Decode1@0x496997 |
 | UPDATE_WISHLIST | OnCashItemResSetWishDone | scalar | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x55 | 0x58 | 0x5A | 0x62 | 0x56 | existing |
-| SET_WISH_FAILED | OnCashItemResSetWishFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x63 | TBD-RE | TBD-RE (0.3) |
+| SET_WISH_FAILED | OnCashItemResSetWishFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x63 | TBD-RE | mode(disp); reason:Decode1@0x4969ce |
 | PURCHASE_SUCCESS | OnCashItemResBuyDone | item-blob | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x57 | 0x5A | 0x5C | 0x64 | 0x58 | existing |
-| BUY_FAILED | OnCashItemResBuyFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x65 | TBD-RE | TBD-RE (0.3) |
+| BUY_FAILED | OnCashItemResBuyFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x65 | TBD-RE | mode(disp); reason:Decode1@0x496a24; if reason∈{29,30}: goodsSN:Decode4@0x496a3d; if reason==68: extra:Decode1@0x496a97 (conditional — see report) |
 | USE_COUPON_SUCCESS | OnCashItemResUseCouponDone | item-blob | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x66 | TBD-RE | TBD-RE (0.3) |
 | GIFT_COUPON_SUCCESS | OnCashItemResGiftCouponDone | item-blob | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x68 | TBD-RE | TBD-RE (0.3) |
-| USE_COUPON_FAILED | OnCashItemResUseCouponFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x69 | TBD-RE | TBD-RE (0.3) |
+| USE_COUPON_FAILED | OnCashItemResUseCouponFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x69 | TBD-RE | mode(disp); reason:Decode1@0x496f9f |
 | GIFT_SUCCESS | OnCashItemResGiftDone | item-blob (resolves 0x4D TODO) | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x6B | TBD-RE | TBD-RE (0.3) |
-| GIFT_FAILED | OnCashItemResGiftFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x6C | TBD-RE | TBD-RE (0.3) |
+| GIFT_FAILED | OnCashItemResGiftFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x6C | TBD-RE | mode(disp); reason:Decode1@0x497224 |
 | INVENTORY_CAPACITY_INCREASE_SUCCESS | OnCashItemResIncSlotCountDone | counter | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x60 | 0x63 | 0x65 | 0x6D | 0x61 | existing |
 | INVENTORY_CAPACITY_INCREASE_FAILED | OnCashItemResIncSlotCountFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x61 | 0x64 | 0x66 | 0x6E | 0x62 | existing |
 | INC_TRUNK_COUNT_SUCCESS | OnCashItemResIncTrunkCountDone | counter | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x6F | TBD-RE | TBD-RE (0.3) |
-| INC_TRUNK_COUNT_FAILED | OnCashItemResIncTrunkCountFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x70 | TBD-RE | TBD-RE (0.3) |
+| INC_TRUNK_COUNT_FAILED | OnCashItemResIncTrunkCountFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x70 | TBD-RE | mode(disp); reason:Decode1@0x4973e4 |
 | INC_CHARACTER_SLOT_COUNT_SUCCESS | OnCashItemResIncCharacterSlotCountDone | counter | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x71 | TBD-RE | TBD-RE (0.3) |
-| INC_CHARACTER_SLOT_COUNT_FAILED | OnCashItemResIncCharacterSlotCountFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x72 | TBD-RE | TBD-RE (0.3) |
+| INC_CHARACTER_SLOT_COUNT_FAILED | OnCashItemResIncCharacterSlotCountFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x72 | TBD-RE | mode(disp); reason:Decode1@0x497424 |
 | INC_BUY_CHARACTER_COUNT_SUCCESS | OnCashItemResIncBuyCharacterCountDone | counter | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x73 | TBD-RE | TBD-RE (0.3) |
-| INC_BUY_CHARACTER_COUNT_FAILED | OnCashItemResIncBuyCharacterCountFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x74 | TBD-RE | TBD-RE (0.3) |
+| INC_BUY_CHARACTER_COUNT_FAILED | OnCashItemResIncBuyCharacterCountFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x74 | TBD-RE | mode(disp); reason:Decode1@0x497464 |
 | ENABLE_EQUIP_SLOT_EXT_SUCCESS | OnCashItemResEnableEquipSlotExtDone | counter | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x75 | TBD-RE | TBD-RE (0.3) |
-| ENABLE_EQUIP_SLOT_EXT_FAILED | OnCashItemResEnableEquipSlotExtFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x76 | TBD-RE | TBD-RE (0.3) |
+| ENABLE_EQUIP_SLOT_EXT_FAILED | OnCashItemResEnableEquipSlotExtFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x76 | TBD-RE | mode(disp); reason:Decode1@0x497704 |
 | CASH_ITEM_MOVED_TO_INVENTORY | OnCashItemResMoveLtoSDone | item-blob | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x68 | 0x6B | 0x6D | 0x77 | 0x6B | existing |
-| MOVE_L_TO_S_FAILED | OnCashItemResMoveLtoSFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x78 | TBD-RE | TBD-RE (0.3) |
+| MOVE_L_TO_S_FAILED | OnCashItemResMoveLtoSFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x78 | TBD-RE | mode(disp); reason:Decode1@0x49773e |
 | CASH_ITEM_MOVED_TO_CASH_INVENTORY | OnCashItemResMoveStoLDone | item-blob | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x6A | 0x6D | 0x6F | 0x79 | 0x6D | existing |
-| MOVE_S_TO_L_FAILED | OnCashItemResMoveStoLFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x7A | TBD-RE | TBD-RE (0.3) |
+| MOVE_S_TO_L_FAILED | OnCashItemResMoveStoLFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x7A | TBD-RE | mode(disp); reason:Decode1@0x497939 |
 | DESTROY_SUCCESS | OnCashItemResDestroyDone | scalar | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x7B | TBD-RE | TBD-RE (0.3) |
 | DESTROY_FAILED | OnCashItemResDestroyFailed | failure | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x7C | TBD-RE | TBD-RE (0.3) |
 | EXPIRE_DONE | OnCashItemResExpireDone | scalar | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | TBD-RE | 0x7D | TBD-RE | TBD-RE (0.3) |

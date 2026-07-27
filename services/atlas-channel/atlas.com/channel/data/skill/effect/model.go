@@ -154,3 +154,9 @@ func (m Model) Prop() float64 {
 func (m Model) X() int16 {
 	return m.x
 }
+
+// Y returns the integer Y attribute (for MP Recovery it is the percent of
+// the HP loss returned as MP).
+func (m Model) Y() int16 {
+	return m.y
+}

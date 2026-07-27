@@ -12,6 +12,26 @@
 
 - Only **atlas-channel** is touched (`services/atlas-channel/atlas.com/channel/`); atlas-data and libs need no change.
 - `x`/`y` MUST be read from the effect model (`e.X()`, `e.Y()`), never hardcoded (v83 ground truth for tests only: x=10 all levels; y=55 L1, 75 L5, 100 L10).
+- **Version scope (all supported versions, not just v83).** main now serves
+  `gms_v48/61/72/79/83/84/87/92/95` + `jms_v185` (+ `gms_v12`). Because the effect
+  is entirely server-authoritative and data-driven — `x`/`y` come from each
+  tenant version's skill data with zero version-conditional code (PRD §"v83–v95
+  … each get their own y progression") — this ONE handler supports every version
+  whose data carries skill 5101005, with no per-version wiring. The skill-use
+  packet decode is NOT gated on 5101005 (verified: absent from
+  `libs/atlas-packet/model/skill_usage_info.go`), so the cast dispatches on every
+  version via the generic path. Implications:
+  - No code is version-specific. Do NOT add per-version branches.
+  - 5101005 is a 2nd-job Brawler (pirate) skill; any supported version whose
+    data does not carry it (e.g. legacy clients predating the Pirate class)
+    simply never dispatches the handler — a safe no-op, not an error. Do NOT
+    assume which versions carry it; VERIFY per-version against atlas-data during
+    acceptance rather than from memory.
+  - Unit tests stay pinned to v83 (the formula is version-invariant — same
+    integer math regardless of x/y source). But ACCEPTANCE must not be v83-only:
+    confirm atlas-data serves 5101005's `x`/`y` and the HP→MP effect applies on
+    at least one newer version whose values differ (e.g. v92/v95), proving the
+    data-driven path end-to-end across versions.
 - **No low-HP guard** (owner decision, PRD FR-3): the handler emits the full `-hpLost` regardless of current HP; atlas-character's existing ChangeHP semantics own the 0-floor/death path. No HP floor logic in the handler.
 - `mpGain` is computed from the full intended `hpLost`, not any post-clamp delta (Cosmic parity, PRD FR-2).
 - Never a partial effect where MP is gained without the HP cost having been requested (PRD FR-5).
@@ -560,13 +580,20 @@ Edit `services/atlas-channel/atlas.com/channel/skill/handler/registrations/regis
 package registrations
 
 import (
-	_ "atlas-channel/skill/handler/heal"       // Cleric Heal — task 045
-	_ "atlas-channel/skill/handler/mprecovery" // Brawler MP Recovery — task-151
-	_ "atlas-channel/skill/handler/mysticdoor" // Priest Mystic Door — task-093
+	_ "atlas-channel/skill/handler/heal"         // Cleric Heal — task 045
+	_ "atlas-channel/skill/handler/healdispel"   // SuperGM Heal + Dispel — task-156
+	_ "atlas-channel/skill/handler/hide"         // SuperGM Hide — task-156
+	_ "atlas-channel/skill/handler/mprecovery"   // Brawler MP Recovery — task-151
+	_ "atlas-channel/skill/handler/mysticdoor"   // Priest Mystic Door — task-093
+	_ "atlas-channel/skill/handler/resurrection" // Bishop/GM/SuperGM Resurrection — task-111
 )
 ```
 
-(Alphabetical order; run `gofmt -w` on the file so import comment alignment matches gofmt output.)
+(Alphabetical order — `mprecovery` sorts between `hide` and `mysticdoor`. The
+list above reflects the handlers already present on main after the merge
+— heal, healdispel, hide, mysticdoor, resurrection — so ADD the `mprecovery`
+line to the current file rather than replacing its contents. Run `gofmt -w` on
+the file so import comment alignment matches gofmt output.)
 
 - [ ] **Step 2: Run the full atlas-channel verification gates**
 

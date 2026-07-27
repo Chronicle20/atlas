@@ -8,19 +8,31 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
-// OperationSend is the NOTE_ACTION mode-0 arm. Its ONLY client-side writer is
-// the cash-shop gift-forward flow (CCashShop::OnCashItemResLoadGiftDone on v83
-// @0x47959e; an equivalent exists on v61/v72/v79/v84/v87/v95/jms; v48 has no
-// mode-0 writer at all). After the recipient name and message it appends the
-// gift payload: a hardcoded flag byte, the 0-based index of the gift in the
-// just-loaded gift list, and the 8-byte cash-item serial number of that gift.
+// sendHasGiftDetails reports whether the gift-forward writer appends the
+// giftIndex (uint32) and giftSN (8 bytes) after the giftFlag. IDA-verified by
+// behavior across every version: the earliest client, v48, sends giftFlag only
+// (its gift-forward lives in OnCashItemResLoadLockerDone and predates these
+// fields); every later build — v61/v72/v79/v83/v84/v87/v95 and jms, in
+// OnCashItemResLoadGiftDone — appends both. (Builds between v48 and v61 are not
+// in scope; v48 is the only verified outlier.) A code-resolved version fact.
+func sendHasGiftDetails(t tenant.Model) bool {
+	return !(t.Region() == "GMS" && t.MajorVersion() <= 48)
+}
+
+// OperationSend is the NOTE_ACTION mode-0 arm. Its only client-side writer is
+// the cash-shop gift-forward flow — CCashShop::OnCashItemResLoadGiftDone on
+// v61/v72/v79/v83/v84/v87/v95/jms, and, on the early v48 client, the combined
+// CCashShop::OnCashItemResLoadLockerDone (which loads the locker AND forwards
+// gifts). After the recipient name and message it appends the gift payload: a
+// hardcoded flag byte, then — on every build except v48 — the 0-based gift-list
+// index (uint32) and the 8-byte cash-item serial number (see sendHasGiftDetails).
 // The player note path is USE_CASH_ITEM, and gift memos are out of scope (design
 // §2.3) — the channel handler gates this arm on Note-item ownership using only
 // toName+message and never acts on the gift fields; they are decoded here so the
-// codec models the complete wire (IDA-verified byte-identical across every
-// version that has the writer).
+// codec models the complete wire.
 //
 // packet-audit:fname CCashShop::OnCashItemResLoadGiftDone
 type OperationSend struct {
@@ -66,24 +78,30 @@ func (m OperationSend) String() string {
 	return fmt.Sprintf("toName [%s] message [%s] giftFlag [%d] giftIndex [%d] giftSN [%d]", m.toName, m.message, m.giftFlag, m.giftIndex, m.giftSN)
 }
 
-func (m OperationSend) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m OperationSend) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	giftDetails := sendHasGiftDetails(tenant.MustFromContext(ctx))
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteAsciiString(m.toName)
 		w.WriteAsciiString(m.message)
 		w.WriteByte(m.giftFlag)
-		w.WriteInt(m.giftIndex)
-		w.WriteLong(m.giftSN)
+		if giftDetails {
+			w.WriteInt(m.giftIndex)
+			w.WriteLong(m.giftSN)
+		}
 		return w.Bytes()
 	}
 }
 
-func (m *OperationSend) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *OperationSend) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	giftDetails := sendHasGiftDetails(tenant.MustFromContext(ctx))
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.toName = r.ReadAsciiString()
 		m.message = r.ReadAsciiString()
 		m.giftFlag = r.ReadByte()
-		m.giftIndex = r.ReadUint32()
-		m.giftSN = r.ReadUint64()
+		if giftDetails {
+			m.giftIndex = r.ReadUint32()
+			m.giftSN = r.ReadUint64()
+		}
 	}
 }

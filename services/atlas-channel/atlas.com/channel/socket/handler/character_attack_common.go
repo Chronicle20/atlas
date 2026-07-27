@@ -373,6 +373,41 @@ func mpEaterAbsorbAmount(maxMp uint32, x int16) uint32 {
 	return uint32(uint64(maxMp) * uint64(x) / 100)
 }
 
+// sacrificeHpCost computes the self-HP cost of Dragon Knight Sacrifice:
+// firstLine × x / 100 (truncating integer division, Cosmic parity),
+// clamped so the caster is left with at least 1 HP. Returns 0 when the
+// first line is 0 (miss), x is non-positive, or currentHp <= 1. The
+// MaxInt16 cap is a defensive narrowing guard: on supported versions max
+// HP <= 30000 so the survival clamp already bounds the result, but Hp()
+// is uint16 and the call site negates into int16 — the cap makes that
+// narrowing safe by construction instead of by data assumption.
+func sacrificeHpCost(firstLine uint32, x int16, currentHp uint16) uint16 {
+	if firstLine == 0 || x <= 0 || currentHp <= 1 {
+		return 0
+	}
+	cost := uint64(firstLine) * uint64(x) / 100
+	if cost >= uint64(currentHp) {
+		cost = uint64(currentHp) - 1
+	}
+	if cost > math.MaxInt16 {
+		cost = math.MaxInt16
+	}
+	return uint16(cost)
+}
+
+// sacrificeFirstDamageLine returns the first damage line of the first
+// damage entry, or 0 when the attack has no entries or the first entry
+// has no lines. Sacrifice's self-HP cost basis is only ever this line —
+// additional lines and targets are deliberately ignored (Cosmic
+// damageLines().getFirst() parity; PRD FR-2).
+func sacrificeFirstDamageLine(ai packetmodel.AttackInfo) uint32 {
+	di := ai.DamageInfo()
+	if len(di) == 0 || len(di[0].Damages()) == 0 {
+		return 0
+	}
+	return di[0].Damages()[0]
+}
+
 // drainHealAmount computes the drain-family HP gain for one damaged
 // monster: floor(totalDamage * x / 100), capped by the monster's max HP
 // and by half the attacker's effective (buff-inclusive) max HP, then
@@ -702,7 +737,26 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					if ai.AttackType() == packetmodel.AttackTypeMelee {
 						comboOrbTryUpdate(l, c, ai, comboOrbProductionDeps(l, ctx, s.Field(), s.CharacterId()))
 					}
-					// TODO decrease HP from DragonKnight Sacrifice
+
+					// Dragon Knight Sacrifice trades the caster's HP for the hit:
+					// firstDamageLine × X / 100, clamped to leave at least 1 HP
+					// (Cosmic parity — Sacrifice can never kill the caster). This
+					// damage-proportional cost is separate from the generic
+					// HPConsume/MPConsume cast cost above, which continues to apply.
+					// Fire-and-forget like the projectile emit: failures are
+					// logged and never abort the attack pipeline.
+					if skill3.Id(ai.SkillId()) == skill3.DragonKnightSacrificeId {
+						firstLine := sacrificeFirstDamageLine(ai)
+						cost := sacrificeHpCost(firstLine, se.X(), c.Hp())
+						if cost > 0 {
+							l.Debugf("Sacrifice self-HP cost: caster=[%d] skill=[%d] firstLine=[%d] x=[%d] cost=[%d].",
+								s.CharacterId(), ai.SkillId(), firstLine, se.X(), cost)
+							if herr := cp.ChangeHP(s.Field(), s.CharacterId(), -int16(cost)); herr != nil {
+								l.WithError(herr).Errorf("Sacrifice: CHANGE_HP emit failed for caster [%d] skill [%d].", s.CharacterId(), ai.SkillId())
+							}
+						}
+					}
+
 					// TODO apply attack effect (heal, mp consumption, dispel, cure all, combo reset, etc)
 					// TODO apply Bandit Steal
 					// TODO Fire Demon ice weaken

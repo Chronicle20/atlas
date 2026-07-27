@@ -36,8 +36,8 @@ func TestShouldBroadcastKeydown(t *testing.T) {
 	const hurricaneId = skill.BowmasterHurricaneId
 	// CorsairRapidFire is another keydown skill.
 	const rapidFireId = skill.CorsairRapidFireId
-	// HeroComboAttack (1100003) is NOT a keydown skill.
-	const comboAttackId = skill.Id(1100003)
+	// FighterFinalAttackAxe (1100003) is NOT a keydown skill.
+	const fighterFinalAttackId = skill.FighterFinalAttackAxeId
 
 	cases := []struct {
 		name    string
@@ -64,9 +64,9 @@ func TestShouldBroadcastKeydown(t *testing.T) {
 		{
 			name: "non-keydown skill at level>0 → no broadcast",
 			skills: []skill2.Model{
-				buildSkillModel(t, comboAttackId, 5),
+				buildSkillModel(t, fighterFinalAttackId, 5),
 			},
-			skillId: uint32(comboAttackId),
+			skillId: uint32(fighterFinalAttackId),
 			want:    false,
 		},
 		{
@@ -86,7 +86,7 @@ func TestShouldBroadcastKeydown(t *testing.T) {
 		{
 			name: "multiple skills in book, only keydown one matches → broadcast",
 			skills: []skill2.Model{
-				buildSkillModel(t, comboAttackId, 5),
+				buildSkillModel(t, fighterFinalAttackId, 5),
 				buildSkillModel(t, hurricaneId, 2),
 			},
 			skillId: uint32(hurricaneId),
@@ -96,9 +96,9 @@ func TestShouldBroadcastKeydown(t *testing.T) {
 			name: "multiple skills in book, queried skill is non-keydown → no broadcast",
 			skills: []skill2.Model{
 				buildSkillModel(t, hurricaneId, 2),
-				buildSkillModel(t, comboAttackId, 5),
+				buildSkillModel(t, fighterFinalAttackId, 5),
 			},
-			skillId: uint32(comboAttackId),
+			skillId: uint32(fighterFinalAttackId),
 			want:    false,
 		},
 		{

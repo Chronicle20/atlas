@@ -8,20 +8,11 @@ import (
 
 type Job struct {
 	id        Id
-	skills    []skill.Skill
 	fourthJob bool
 }
 
 func (j Job) Id() Id {
 	return j.id
-}
-
-func (j Job) Skills() []skill.Skill {
-	return j.skills
-}
-
-func (j Job) Buffs() []skill.Skill {
-	return j.skills
 }
 
 func (j Job) IsFourthJob() bool {

@@ -8,6 +8,7 @@ import (
 	"atlas-monsters/monster/mobskill"
 	"context"
 	"errors"
+	"math"
 	"math/rand"
 	"sort"
 	"time"
@@ -63,6 +64,7 @@ type Processor interface {
 	CancelAllStatusEffects(uniqueId uint32) error
 	RepickAndEmit(uniqueId uint32, reason RepickReason) error
 	DrainMp(f field.Model, uniqueId uint32, characterId uint32, skillId uint32, requestedAmount uint32) error
+	Kill(uniqueId uint32, characterId uint32, skillId uint32)
 }
 
 // emitter publishes a kafka message provider to a topic. ProcessorImpl uses
@@ -1694,6 +1696,59 @@ func (p *ProcessorImpl) DrainMp(f field.Model, uniqueId uint32, characterId uint
 	}
 
 	return p.emit(EnvEventTopicMonsterStatus, mpChangedStatusEventProvider(post, characterId, skillId, MpChangeReasonMpEater, requestedAmount))
+}
+
+// Kill delivers a Mortal Blow instant kill through the shared damage core.
+// The channel is the authority for the proc decision (threshold and kill
+// roll against the tenant's skill data); this method owns the guards only
+// it can enforce: the monster must still be present and alive, and the
+// boss flag is re-checked authoritatively. The boss lookup is FAIL-CLOSED
+// — if it errors, the kill is dropped. This deliberately diverges from
+// DrainMp's fail-open lookup: losing a legitimate proc during an
+// atlas-data hiccup is acceptable; killing a boss is not (FR-4).
+//
+// The kill line is math.MaxUint32 (Cosmic parity: Integer.MAX_VALUE).
+// Registry.ApplyDamage clamps the recorded damage entry to the HP actually
+// removed, so the damage summary that drives EXP and drop credit stays
+// honest. No reflect is rolled — the channel already gated the triggering
+// hit on reflect, and a kill "attack" has no attack type.
+//
+// Missing or dead monsters are silent drops: DAMAGE (the triggering
+// attack) and KILL are keyed by the monster's unique id, so they share a
+// partition and the attack's own kill may have removed the monster before
+// this command lands. SkillId is traceability only.
+//
+// The boss check uses testInformationLookup when non-nil so unit tests can
+// stub the lookup without an HTTP round-trip to atlas-data.
+func (p *ProcessorImpl) Kill(uniqueId uint32, characterId uint32, skillId uint32) {
+	m, err := GetMonsterRegistry().GetMonster(p.t, uniqueId)
+	if err != nil {
+		p.l.Debugf("KILL: monster [%d] not found; the triggering attack likely already killed it. Skill [%d].", uniqueId, skillId)
+		return
+	}
+	if !m.Alive() {
+		p.l.Debugf("KILL: monster [%d] already dead. Skill [%d].", uniqueId, skillId)
+		return
+	}
+
+	var info information.Model
+	var infoErr error
+	if testInformationLookup != nil {
+		info, infoErr = testInformationLookup(m.MonsterId())
+	} else {
+		info, infoErr = information.NewProcessor(p.l, p.ctx).GetById(m.MonsterId())
+	}
+	if infoErr != nil {
+		p.l.WithError(infoErr).Errorf("KILL: boss lookup failed for monster [%d]; dropping kill (fail-closed).", uniqueId)
+		return
+	}
+	if info.Boss() {
+		p.l.Debugf("KILL: monster [%d] is a boss; dropping kill from character [%d] skill [%d].", uniqueId, characterId, skillId)
+		return
+	}
+
+	p.l.Debugf("Mortal Blow kill: monster [%d] by character [%d] via skill [%d].", uniqueId, characterId, skillId)
+	p.damageCore(m, characterId, []uint32{math.MaxUint32})
 }
 
 func DestroyAll(l logrus.FieldLogger, ctx context.Context) error {

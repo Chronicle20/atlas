@@ -1,36 +1,15 @@
 package job
 
 import (
+	"atlas-data/skill"
 	"atlas-data/xml"
 	"context"
-	"fmt"
-	"path/filepath"
 	"strconv"
-	"strings"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
-
-// parseJobId derives the job id from a Skill.wz image name. The name reaches
-// this helper as the root <imgdir name="…"> attribute (e.g. "112.img"), which
-// is the mapping FR-2.2 requires: the job id is read off the image, never
-// derived by dividing skill ids. Duplicated rather than exported from `skill`
-// so that `job` and `skill` stay dependency-free in this direction (D1 — the
-// list resource makes `job` import `skill`, so `skill` must not import `job`).
-func parseJobId(name string) (uint32, error) {
-	baseName := filepath.Base(name)
-	if !strings.HasSuffix(baseName, ".img") {
-		return 0, fmt.Errorf("file does not match expected format: %s", name)
-	}
-	idStr := strings.TrimSuffix(baseName, ".img")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		return 0, err
-	}
-	return uint32(id), nil
-}
 
 // Read produces the JOB document for one Skill.wz image: exactly one model for
 // a per-job (numeric) image, none for a non-numeric one such as MobSkill.img
@@ -58,7 +37,7 @@ func Read(l logrus.FieldLogger) func(ctx context.Context) func(np model.Provider
 				return model.ErrorProvider[[]RestModel](err)
 			}
 
-			jobId, err := parseJobId(exml.Name)
+			jobId, err := skill.ParseJobId(exml.Name)
 			if err != nil {
 				// Not a per-job image (MobSkill.img, BFSkill.img, ...). FR-2.3.
 				return model.FixedProvider([]RestModel{})

@@ -116,18 +116,6 @@ func TestRead_JobIdZeroIsValid(t *testing.T) {
 	require.Equal(t, []uint32{1000}, ms[0].Skills)
 }
 
-func TestParseJobId(t *testing.T) {
-	id, err := parseJobId("112.img")
-	require.NoError(t, err)
-	require.Equal(t, uint32(112), id)
-
-	_, err = parseJobId("MobSkill.img")
-	require.Error(t, err)
-
-	_, err = parseJobId("112")
-	require.Error(t, err, "a name without the .img suffix is not a job image")
-}
-
 func TestGetModelRegistry_IsSingleton(t *testing.T) {
 	require.Same(t, GetModelRegistry(), GetModelRegistry())
 }

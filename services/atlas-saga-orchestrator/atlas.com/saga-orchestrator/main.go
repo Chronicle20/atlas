@@ -24,6 +24,7 @@ import (
 
 	inventoryConsumer "atlas-saga-orchestrator/kafka/consumer/inventory"
 	mtsCustody "atlas-saga-orchestrator/kafka/consumer/mts/custody"
+	noteConsumer "atlas-saga-orchestrator/kafka/consumer/note"
 
 	saga2 "atlas-saga-orchestrator/kafka/consumer/saga"
 
@@ -106,6 +107,7 @@ func main() {
 	consumable.InitConsumers(l)(cmf)(consumerGroupId)
 	guild.InitConsumers(l)(cmf)(consumerGroupId)
 	inventoryConsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	noteConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	pet.InitConsumers(l)(cmf)(consumerGroupId)
 	quest.InitConsumers(l)(cmf)(consumerGroupId)
 	saga2.InitConsumers(l)(cmf)(consumerGroupId)
@@ -140,6 +142,9 @@ func main() {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 	if err := inventoryConsumer.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := noteConsumer.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 	if err := pet.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {

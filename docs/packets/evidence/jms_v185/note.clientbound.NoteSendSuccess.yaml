@@ -1,0 +1,10 @@
+packet: note/clientbound/NoteSendSuccess
+direction: clientbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMemoResult#SendSuccess
+    address: "0xb0c6d0"
+    decompile_sha256: 3ad1f39331bfc2e3aac2141b427d16846ce21cab74e9facc8f88a4a4879ee088
+verifies:
+  - libs/atlas-packet/note/clientbound/operation_test.go#TestNoteOperationArmsJMS185

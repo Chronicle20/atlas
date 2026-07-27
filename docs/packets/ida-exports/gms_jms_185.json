@@ -2944,15 +2944,142 @@
         }
       ]
     },
+    "CWvsContext::OnMemoResult#Display": {
+      "address": "0xb0c6d0",
+      "region": "JMS",
+      "direction": "clientbound",
+      "note": "mode=3 (Display), raw v3==0 branch @0xb0c7aa. sub_55C3E4(this+3511) clears the existing memo list (not a wire read); Decode1(count) @0xb0c7b2 then loop count×: sub_55C3A6 (list append, not a wire read) + sub_510E70(entry, iPacket) @0xb0c7cf which decodes one GW_Memo: Decode4(id)@0x510e82 + DecodeStr(sender)@0x510e8a + DecodeStr(message)@0x510ead + DecodeBuffer(timestamp,8)@0x510ed2 + Decode1(flag)@0x510ede. Wire identical to GMS v79/v72/v83/v84/v87/v95.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (3 = Display)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "note count (loop)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "note.id",
+          "guard": "loop count"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "note.senderName",
+          "guard": "loop count"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "note.message",
+          "guard": "loop count"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "note.timestamp FILETIME (8 bytes)",
+          "guard": "loop count"
+        },
+        {
+          "op": "Decode1",
+          "comment": "note.flag",
+          "guard": "loop count"
+        }
+      ]
+    },
+    "CWvsContext::OnMemoResult#SendSuccess": {
+      "address": "0xb0c6d0",
+      "region": "JMS",
+      "direction": "clientbound",
+      "note": "mode=4 (SendSuccess), raw v5==0 branch @0xb0c755 (StringPool 2866 notice). No further Decode1 call after the mode byte. Wire identical to GMS v79/v72/v83/v84/v87/v95 (mode-only).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (4 = SendSuccess)"
+        }
+      ]
+    },
+    "CWvsContext::OnMemoResult#SendError": {
+      "address": "0xb0c6d0",
+      "region": "JMS",
+      "direction": "clientbound",
+      "note": "mode=5 (SendError), raw v6==0 branch @0xb0c736. Decode1(errorCode) @0xb0c736 then 0/1/2 selects StringPool 2865/2866/2867; errorCode>=3 falls through the if/else chain to `return` @0xb0c73e (silent no-op, dialog only, but the byte is still consumed off the wire). Wire identical to GMS v79/v72/v83/v84/v87/v95 (mode + 1 errorCode byte).",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (5 = SendError)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode"
+        }
+      ]
+    },
+    "CWvsContext::OnMemoResult#Refresh": {
+      "address": "0xb0c6d0",
+      "region": "JMS",
+      "direction": "clientbound",
+      "note": "mode=7 (Refresh), raw v6==2 branch @0xb0c700 tail-calls CWvsContext::OnMemoNotify_Receive(this) @0xb0c708 with no CInPacket argument — no further wire reads beyond the mode byte. Mode number matches GMS v72/v79/v83/v84/v87/v95's REFRESH=7. Wire shape (mode-only) identical across all versions.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (7 = Refresh)"
+        }
+      ]
+    },
     "CMemoListDlg::SetRet": {
       "address": "0x6c2d43",
       "region": "JMS",
-      "direction": "clientbound",
-      "notes": "JMS v185 CMemoListDlg::SetRet present at 0x6c2d43. Handles memo list display from CWvsContext::OnMemoResult Display sub-op. Wire structure: reads memo list from iPacket.",
+      "direction": "serverbound",
+      "notes": "JMS v185 CMemoListDlg::SetRet (serverbound NOTE_ACTION mode=1 DISCARD confirm) @0x6c2d43, re-decompiled task-137 verify-packet pass (session 3c4bb8b1, MapleStory_dump_SCY.exe.i64). PRIOR export entry for this key was mislabeled direction=clientbound describing an unrelated OnMemoResult#Display helper trace and is replaced here. Confirmed: CUtilDlg::YesNo confirm guard, then COutPacket::COutPacket(v25, 0x86) @0x6c2dc8 (opcode 0x86 matches registry jms_v185 NOTE_ACTION opcode 134/0x86). Wire: Encode1(mode=1)@0x6c2dd5 + Encode1(totalCount=array-length)@0x6c2def + Encode1(specialCount=count of flag==3 entries, pre-budget)@0x6c2e1d + Encode1(emptySlots=sub_51F1E3(4) free ETC/type-4 slot count)@0x6c2e28, then per-entry over the dialog's memo array (this+204, 28-byte stride): normal (flag!=3) writes Encode4(SN)+Encode1(flag) @0x6c2e63/0x6c2e7b; special (flag==3) writes Encode4(SN)+Encode1(flag)+Encode4(extra1)+Encode4(extra2) @0x6c2f81/0x6c2f99/0x6c2fa4/0x6c2faf ONLY while the emptySlots budget has not been exhausted (0x6c2e88 `if (*n<=0) v32=1;` -- no Encode calls on that branch, so an exhausted-budget special entry is skipped entirely, no bytes emitted for it). This is the outlier vs gms_v83/v84/v87/v95's simpler count+emptySlotCount+entry(id,flag) SetRet shape (no specialCount header byte, no extra fields) -- flat-diff-invalid like every other verified SetRet variant (data-dependent branching a flat positional diff cannot model).",
       "calls": [
         {
-          "op": "DecodeSub",
-          "comment": "memo list entry (called per entry from OnMemoResult Display loop)"
+          "op": "Decode1",
+          "comment": "mode=1 (DISCARD confirm) @0x6c2dd5",
+          "guard": "arg0==1||arg0==2 && CUtilDlg::YesNo(v20,v21,v22,v23,v24)==6"
+        },
+        {
+          "op": "Decode1",
+          "comment": "totalCount = length of this+204 memo array @0x6c2def",
+          "guard": "arg0==1||arg0==2 && CUtilDlg::YesNo(v20,v21,v22,v23,v24)==6"
+        },
+        {
+          "op": "Decode1",
+          "comment": "specialCount = count of entries with flag==3 in the array, pre-budget @0x6c2e1d",
+          "guard": "arg0==1||arg0==2 && CUtilDlg::YesNo(v20,v21,v22,v23,v24)==6"
+        },
+        {
+          "op": "Decode1",
+          "comment": "emptySlots = sub_51F1E3(4) free ETC(type-4) inventory slot count @0x6c2e28",
+          "guard": "arg0==1||arg0==2 && CUtilDlg::YesNo(v20,v21,v22,v23,v24)==6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "entry SN @0x6c2e63 (normal path)",
+          "guard": "arg0==1||arg0==2 && CUtilDlg::YesNo(v20,v21,v22,v23,v24)==6 && loop entries && flag!=3"
+        },
+        {
+          "op": "Decode1",
+          "comment": "entry flag @0x6c2e7b (normal path)",
+          "guard": "arg0==1||arg0==2 && CUtilDlg::YesNo(v20,v21,v22,v23,v24)==6 && loop entries && flag!=3"
+        },
+        {
+          "op": "Decode4",
+          "comment": "entry SN @0x6c2f81 (special path, only when emptySlots budget remains)",
+          "guard": "arg0==1||arg0==2 && CUtilDlg::YesNo(v20,v21,v22,v23,v24)==6 && loop entries && flag==3 && n>0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "entry flag @0x6c2f99 (special path)",
+          "guard": "arg0==1||arg0==2 && CUtilDlg::YesNo(v20,v21,v22,v23,v24)==6 && loop entries && flag==3 && n>0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "extra1 (v28, atoi() from a '.'-split formatted string via sub_485256) @0x6c2fa4",
+          "guard": "arg0==1||arg0==2 && CUtilDlg::YesNo(v20,v21,v22,v23,v24)==6 && loop entries && flag==3 && n>0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "extra2 (a2.p, atoi(String) via sub_485239) @0x6c2faf",
+          "guard": "arg0==1||arg0==2 && CUtilDlg::YesNo(v20,v21,v22,v23,v24)==6 && loop entries && flag==3 && n>0"
         }
       ]
     },

@@ -1,14 +1,14 @@
 # NoteSendSuccess (← `CWvsContext::OnMemoResult#SendSuccess`)
 
-- **IDA:** 
+- **IDA:** 0xa70785
 - **Atlas file:** `libs/atlas-packet/note/clientbound/operation.go`
 - **Variant:** GMS/v84
 - **Branch depth:** 0
-- **Verdict:** 🚫
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `function not found in IDB` | 🚫 | IDA read-order unresolved: function not found in IDB |
+| 0 | byte | byte `mode byte (4 = SendSuccess)` | ✅ |  |
 

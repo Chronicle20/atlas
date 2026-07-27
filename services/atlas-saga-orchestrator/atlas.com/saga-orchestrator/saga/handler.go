@@ -23,6 +23,7 @@ import (
 	"atlas-saga-orchestrator/map_command"
 	"atlas-saga-orchestrator/monster"
 	"atlas-saga-orchestrator/mts"
+	"atlas-saga-orchestrator/note"
 	party_quest "atlas-saga-orchestrator/party_quest"
 	"atlas-saga-orchestrator/pet"
 	portalBlocking "atlas-saga-orchestrator/portal"
@@ -78,6 +79,7 @@ type Handler interface {
 	WithGachaponProcessor(gachapon.Processor) Handler
 	WithPartyQuestProcessor(party_quest.Processor) Handler
 	WithReactorProcessor(reactor.Processor) Handler
+	WithNoteProcessor(note.Processor) Handler
 
 	GetHandler(action Action) (ActionHandler, bool)
 
@@ -167,6 +169,7 @@ type Handler interface {
 	handleIncubatorResult(s Saga, st Step[any]) error
 	handleEmitMegaphone(s Saga, st Step[any]) error
 	handleEnqueueWorldBroadcast(s Saga, st Step[any]) error
+	handleCreateNote(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
@@ -200,6 +203,7 @@ type HandlerImpl struct {
 	reactorP        reactor.Processor
 	mapCommandP     map_command.Processor
 	rpsP            rps.Processor
+	noteP           note.Processor
 }
 
 func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
@@ -233,6 +237,7 @@ func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 		reactorP:        reactor.NewProcessor(l, ctx),
 		mapCommandP:     map_command.NewProcessor(l, ctx),
 		rpsP:            rps.NewProcessor(l, ctx),
+		noteP:           note.NewProcessor(l, ctx),
 	}
 }
 
@@ -732,6 +737,15 @@ func (h *HandlerImpl) WithReactorProcessor(reactorP reactor.Processor) Handler {
 	}
 }
 
+func (h *HandlerImpl) WithNoteProcessor(noteP note.Processor) Handler {
+	return &HandlerImpl{
+		l:     h.l,
+		ctx:   h.ctx,
+		t:     h.t,
+		noteP: noteP,
+	}
+}
+
 // ActionHandler is a function type for handling different saga action types
 type ActionHandler func(s Saga, st Step[any]) error
 
@@ -921,6 +935,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleEmitMegaphone, true
 	case EnqueueWorldBroadcast:
 		return h.handleEnqueueWorldBroadcast, true
+	case CreateNote:
+		return h.handleCreateNote, true
 	}
 	return nil, false
 }
@@ -3123,6 +3139,30 @@ func (h *HandlerImpl) handleFieldEffectWeather(s Saga, st Step[any]) error {
 	}
 
 	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+	return nil
+}
+
+// handleCreateNote handles the CreateNote action for note_send sagas. It
+// emits the note CREATE command carrying the saga transaction id and does
+// NOT mark the step complete — completion arrives via atlas-notes'
+// CREATED/CREATE_FAILED status event (kafka/consumer/note/consumer.go).
+func (h *HandlerImpl) handleCreateNote(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(CreateNotePayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"sender_id":      payload.SenderId,
+		"receiver_id":    payload.ReceiverId,
+	}).Debug("Requesting note creation.")
+
+	err := h.noteP.CreateNote(s.TransactionId(), payload.ReceiverId, payload.SenderId, payload.Message, payload.Flag)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to request note creation.")
+		return err
+	}
 	return nil
 }
 

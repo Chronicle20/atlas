@@ -377,6 +377,42 @@
         }
       ]
     },
+    "CCashShop::OnCashItemResLoadGiftDone": {
+      "address": "0x47252c",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "CDialog::DoModal() == 1 (disasm-confirmed @0x47260c, ida=0x47252c)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "CDialog::DoModal() == 1 (disasm-confirmed @0x47260c, ida=0x47252c)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "CDialog::DoModal() == 1 (disasm-confirmed @0x47260c, ida=0x47252c)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "CDialog::DoModal() == 1 (disasm-confirmed @0x47260c, ida=0x47252c)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CDialog::DoModal() == 1 (disasm-confirmed @0x47260c, ida=0x47252c)"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "",
+          "guard": "CDialog::DoModal() == 1 (disasm-confirmed @0x47260c, ida=0x47252c)"
+        }
+      ]
+    },
     "CCashShop::OnCashItemResLoadLockerFailed": {
       "address": "0x47250a",
       "direction": "",

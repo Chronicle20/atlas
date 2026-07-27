@@ -43,6 +43,7 @@ const (
 	IncubatorUse         = sharedsaga.IncubatorUse
 	PointReset           = sharedsaga.PointReset
 	MtsOperation         = sharedsaga.MtsOperation
+	NoteSend             = sharedsaga.NoteSend
 	SkillBookUse         = sharedsaga.SkillBookUse
 )
 
@@ -188,6 +189,9 @@ const (
 	// Field effect actions
 	FieldEffectWeather = sharedsaga.FieldEffectWeather
 
+	// Note actions
+	CreateNote = sharedsaga.CreateNote
+
 	// Megaphone / world broadcast actions
 	EmitMegaphone         = sharedsaga.EmitMegaphone
 	EnqueueWorldBroadcast = sharedsaga.EnqueueWorldBroadcast
@@ -297,6 +301,7 @@ type (
 	SetAssetOwnerPayload                = sharedsaga.SetAssetOwnerPayload
 	ApplyAssetLockPayload               = sharedsaga.ApplyAssetLockPayload
 	IncubatorResultPayload              = sharedsaga.IncubatorResultPayload
+	CreateNotePayload                   = sharedsaga.CreateNotePayload
 	// Megaphone / world broadcast payload types
 	EmitMegaphonePayload         = sharedsaga.EmitMegaphonePayload
 	EnqueueWorldBroadcastPayload = sharedsaga.EnqueueWorldBroadcastPayload
@@ -1483,6 +1488,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case FieldEffectWeather:
 		var payload FieldEffectWeatherPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case CreateNote:
+		var payload CreateNotePayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

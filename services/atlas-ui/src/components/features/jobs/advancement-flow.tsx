@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 
 interface AdvancementFlowProps {
   entryId: number;
-  major: number;
+  available: ReadonlySet<number>;
   selectedJobId: number;
   /** Branch accent token name, e.g. "--c-warrior". */
   accent: string;
@@ -65,7 +65,7 @@ function FlowChip({
  */
 export function AdvancementFlow({
   entryId,
-  major,
+  available,
   selectedJobId,
   accent,
   onSelect,
@@ -75,8 +75,8 @@ export function AdvancementFlow({
     [entryId],
   );
   const chains = useMemo(
-    () => advancementChains(entryId, major),
-    [entryId, major],
+    () => advancementChains(entryId, available),
+    [entryId, available],
   );
   const rows = Math.max(chains.length, 1);
   const anchorCols = anchors.length;

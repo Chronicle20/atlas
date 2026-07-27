@@ -1,6 +1,5 @@
 import {
   JOB_GRAPH,
-  floorOf,
   jobTreePath,
   subtreeCount,
 } from "@/lib/jobs/job-advancement-tree";
@@ -74,16 +73,18 @@ export interface VisibleRailGroup {
   entries: VisibleRailEntry[];
 }
 
-/** Version-gated rail groups with display name + visible-subtree count; empty groups dropped. */
-export function visibleRailGroups(major: number): VisibleRailGroup[] {
+/** Rail groups for the tenant's job set, with display name + subtree count; empty groups dropped. */
+export function visibleRailGroups(
+  available: ReadonlySet<number>,
+): VisibleRailGroup[] {
   return RAIL_GROUPS.map((g) => ({
     label: g.label,
     entries: g.entries
-      .filter((e) => floorOf(e.id) <= major)
+      .filter((e) => available.has(e.id))
       .map((e) => ({
         ...e,
         name: JOB_GRAPH[e.id]?.name ?? `Job ${e.id}`,
-        count: subtreeCount(e.id, major),
+        count: subtreeCount(e.id, available),
       })),
   })).filter((g) => g.entries.length > 0);
 }

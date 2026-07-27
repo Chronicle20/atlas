@@ -40,7 +40,7 @@ The meso variant replaces the standard 2-byte `delay` in each damage entry with 
 - Consumes: existing `DamageInfo` struct, `pt` harness (`libs/atlas-packet/test`).
 - Produces: `NewMesoExplosionDamageInfo() *DamageInfo` — constructor setting a private `mesoExplosion bool`; Decode/Encode branch on it. Task 2's `AttackInfo` decode loop and fixtures call this.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `libs/atlas-packet/model/damage_info_test.go`:
 
@@ -83,12 +83,12 @@ func TestMesoExplosionDamageInfoRoundTrip(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd libs/atlas-packet && go test ./model/ -run TestMesoExplosionDamageInfoRoundTrip -v`
 Expected: FAIL (compile error: `undefined: NewMesoExplosionDamageInfo`)
 
-- [ ] **Step 3: Implement the meso mode in `damage_info.go`**
+- [x] **Step 3: Implement the meso mode in `damage_info.go`**
 
 Add the field and constructor (after `NewDamageInfo`):
 
@@ -146,12 +146,12 @@ In `Encode`, mirror it — again leaving the shared `>= 61` CRC block untouched:
 		}
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `cd libs/atlas-packet && go test ./model/ -run 'TestMesoExplosionDamageInfoRoundTrip|TestAttackInfo' -v`
 Expected: PASS (new test AND all existing `TestAttackInfoRoundTrip`/`TestAttackInfoVersionBoundary` cases — standard mode unchanged, FR-4)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add libs/atlas-packet/model/damage_info.go libs/atlas-packet/model/damage_info_test.go
@@ -176,7 +176,7 @@ Variant detection keys off the skill id, which is decoded before the damage entr
   - `(m *AttackInfo) ExplodedMesoDropEntries() []ExplodedMesoDrop`, `(m *AttackInfo) MesoDelay() uint16` — wire-fidelity accessors.
   - `(m *AttackInfo) SetExplodedMesoDrops([]ExplodedMesoDrop) *AttackInfo`, `(m *AttackInfo) SetMesoDelay(uint16) *AttackInfo` — fixture builders.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `libs/atlas-packet/model/attack_info_test.go` (add `"bytes"` to the imports):
 
@@ -261,12 +261,12 @@ func TestAttackInfoNonMesoHasNoDropList(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd libs/atlas-packet && go test ./model/ -run TestAttackInfoMesoExplosion -v`
 Expected: FAIL (compile error: `undefined: ExplodedMesoDrop`)
 
-- [ ] **Step 3: Implement the variant in `attack_info.go`**
+- [x] **Step 3: Implement the variant in `attack_info.go`**
 
 Add the entry type (above `NewAttackInfo`):
 
@@ -385,12 +385,12 @@ func (m *AttackInfo) SetMesoDelay(delay uint16) *AttackInfo {
 }
 ```
 
-- [ ] **Step 4: Run the full model package tests**
+- [x] **Step 4: Run the full model package tests**
 
 Run: `cd libs/atlas-packet && go test ./model/ -v`
 Expected: PASS — the two new tests AND every pre-existing test (`TestAttackInfoRoundTrip`, `TestAttackInfoVersionBoundary`, movement, asset, etc.). Any failure in an existing attack test means a standard-layout regression (FR-4) — fix before proceeding.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add libs/atlas-packet/model/attack_info.go libs/atlas-packet/model/attack_info_test.go
@@ -412,7 +412,7 @@ The audit-linkage wrapper `AttackMeleeRequest` (CLOSE_RANGE_ATTACK) delegates to
 - Consumes: `model.NewMesoExplosionDamageInfo`, `model.NewExplodedMesoDrop`, `SetExplodedMesoDrops`, `SetMesoDelay` (Tasks 1–2); existing `AttackMeleeRequest` wrapper.
 - Produces: `TestAttackMeleeRequestMesoExplosion` — the wrapper-level fixture the audit trail cites.
 
-- [ ] **Step 1: Write the test (fails until Tasks 1–2 are merged; passes immediately if run after)**
+- [x] **Step 1: Write the test (fails until Tasks 1–2 are merged; passes immediately if run after)**
 
 Append to `libs/atlas-packet/character/serverbound/attack_request_test.go`:
 
@@ -474,17 +474,17 @@ func TestAttackMeleeRequestMesoExplosion(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it passes**
+- [x] **Step 2: Run test to verify it passes**
 
 Run: `cd libs/atlas-packet && go test ./character/serverbound/ -run TestAttackMeleeRequest -v`
 Expected: PASS (both the existing `TestAttackMeleeRequest` and the new meso test)
 
-- [ ] **Step 3: Confirm the clientbound meso round-trip still passes (FR-11)**
+- [x] **Step 3: Confirm the clientbound meso round-trip still passes (FR-11)**
 
 Run: `cd libs/atlas-packet && go test ./character/clientbound/ -run TestAttackMeleeWithMesoExplosionRoundTrip -v`
 Expected: PASS (pre-existing test; per-mob counts 3 and 1 with hits=1 — already exercises the variable-count encode)
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add libs/atlas-packet/character/serverbound/attack_request_test.go
@@ -508,7 +508,7 @@ git commit -m "test(task-150): serverbound meso-explosion wrapper fixture + IDA 
   - `(m Model) AttackCount() uint32` on `effect.Model`.
   - `validateMesoExplosion(dropIds []uint32, fieldDrops map[uint32]drop.Model, maxCount uint32) (uint32, bool)` — returns `(offendingDropId, false)` on rejection (`0` when the failure is the over-max count, which has no single offending drop), `(0, true)` when the attack is valid. An empty `dropIds` validates trivially.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_meso_explosion_test.go`:
 
@@ -566,12 +566,12 @@ func TestValidateMesoExplosion(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go test ./socket/handler/ -run TestValidateMesoExplosion -v`
 Expected: FAIL (compile error: `undefined: validateMesoExplosion`)
 
-- [ ] **Step 3: Implement accessor + helper**
+- [x] **Step 3: Implement accessor + helper**
 
 Append to `services/atlas-channel/atlas.com/channel/data/skill/effect/model.go`:
 
@@ -626,12 +626,12 @@ func validateMesoExplosion(dropIds []uint32, fieldDrops map[uint32]drop.Model, m
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go test ./socket/handler/ -run TestValidateMesoExplosion -v`
 Expected: PASS (all six cases)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/data/skill/effect/model.go services/atlas-channel/atlas.com/channel/socket/handler/character_attack_meso_explosion.go services/atlas-channel/atlas.com/channel/socket/handler/character_attack_meso_explosion_test.go
@@ -657,7 +657,7 @@ One buffered emission carrying N messages (design §4.3-A): one `CONSUME` per dr
   - `ConsumeAllCommandProvider(transactionId uuid.UUID, f field.Model, dropIds []uint32) model.Provider[[]kafka.Message]`.
   - `(p *Processor) ConsumeAll(f field.Model, dropIds []uint32) error` — no-op on empty slice; one `uuid.New()` transaction id spans the batch.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `services/atlas-channel/atlas.com/channel/drop/producer_test.go`:
 
@@ -716,12 +716,12 @@ func TestConsumeAllCommandProvider(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go test ./drop/ -run TestConsumeAllCommandProvider -v`
 Expected: FAIL (compile error: `undefined: ConsumeAllCommandProvider`)
 
-- [ ] **Step 3: Implement message types, provider, processor method**
+- [x] **Step 3: Implement message types, provider, processor method**
 
 In `services/atlas-channel/atlas.com/channel/kafka/message/drop/kafka.go`:
 
@@ -810,12 +810,12 @@ func (p *Processor) ConsumeAll(f field.Model, dropIds []uint32) error {
 
 (Add `"github.com/google/uuid"` to `processor.go`'s imports.)
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go test ./drop/... ./kafka/... -count=1`
 Expected: PASS (new provider test + all existing drop/kafka tests — envelope change must not break the reservation path)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/kafka/message/drop/kafka.go services/atlas-channel/atlas.com/channel/drop/producer.go services/atlas-channel/atlas.com/channel/drop/processor.go services/atlas-channel/atlas.com/channel/drop/producer_test.go
@@ -839,7 +839,7 @@ Pocket + task-148's Sacrifice landed — re-`grep`, do not trust old line number
 - Consumes: `validateMesoExplosion` + `se.AttackCount()` (Task 4), `ai.ExplodedMesoDrops()` (Task 2), `drop.NewProcessor(l, ctx).InMapModelProvider(f)` / `.ConsumeAll(f, ids)` (Task 5), `skill3.Is` (`libs/atlas-constants/skill`).
 - Produces: the complete meso-explosion attack flow; the `// TODO destroy Chief Bandit exploded mesos` line is gone.
 
-- [ ] **Step 1: Add the validation gate**
+- [x] **Step 1: Add the validation gate**
 
 In `processAttack` (`character_attack_common.go`), add `"atlas-channel/drop"` to the imports. Declare the stash variable right before the `if ai.SkillId() > 0 {` line:
 
@@ -872,7 +872,7 @@ Inside the `ai.SkillId() > 0` block, immediately after the `se, err = ...` error
 						}
 ```
 
-- [ ] **Step 2: Replace the TODO with the consume emission**
+- [x] **Step 2: Replace the TODO with the consume emission**
 
 Delete the line `// TODO destroy Chief Bandit exploded mesos` (~L671 on current main; was L407 pre-Pick-Pocket) and insert after the projectile-emission block (after the `if hasProjectilePlan { ... }` closing brace):
 
@@ -892,17 +892,17 @@ Delete the line `// TODO destroy Chief Bandit exploded mesos` (~L671 on current 
 					}
 ```
 
-- [ ] **Step 3: Verify the build and the whole handler package**
+- [x] **Step 3: Verify the build and the whole handler package**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go build ./... && go test ./socket/... -count=1`
 Expected: build clean; all handler tests PASS (cost-gate, MP Eater, projectile, meso validation).
 
-- [ ] **Step 4: Verify the TODO is gone**
+- [x] **Step 4: Verify the TODO is gone**
 
 Run: `grep -n "destroy Chief Bandit" services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go`
 Expected: no output (exit 1) — FR-12 satisfied. (Note: Pick Pocket (4211003) is already fully implemented on main — task-149, `pickPocketResolveState` et al. — so there is no longer a Pick Pocket TODO to preserve; the only neighboring TODO is `// TODO decrease HP from DragonKnight Sacrifice`, task-148, which is out of scope and must remain.)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go
@@ -927,7 +927,7 @@ No evidence records or markers change (Task 3 rationale), so the matrix content 
 - Consumes: `go run ./tools/packet-audit matrix` / `matrix --check` (documented in `docs/packets/audits/VERIFYING_A_PACKET.md` §8).
 - Produces: the audit notes recording each version's meso sender/deltas and why no new verify pin was added.
 
-- [ ] **Step 1: Append the verified-variant note to each of the four legacy audit MDs**
+- [x] **Step 1: Append the verified-variant note to each of the four legacy audit MDs**
 
 To each of `docs/packets/audits/gms_v{48,61,72,79}/CharacterAttackMeleeRequest.md`, append a note recording the version's meso sender address and the three verified deltas. Use the per-version facts from design §2.1's evidence excerpts (v48 `0x6ae4d7` — no per-mob CRC; v61 `0x7b8a39`; v72 `0x875828` — head skill-data CRC; v79 `0x8c22fd` — short action + two head CRCs). Template (fill in the version-specific address/notes):
 
@@ -950,7 +950,7 @@ fname_alt absent from the IDA export, so a second marker would orphan under
 `libs/atlas-packet/character/serverbound/attack_request_test.go#TestAttackMeleeRequestMesoExplosion`.
 ```
 
-- [ ] **Step 2: Append the unverifiable-tail note to the jms audit MD**
+- [x] **Step 2: Append the unverifiable-tail note to the jms audit MD**
 
 Append to the end of `docs/packets/audits/jms_v185/CharacterAttackMeleeRequest.md`:
 
@@ -974,7 +974,7 @@ template-only and unverified (design §2.4). Fixture:
 `libs/atlas-packet/character/serverbound/attack_request_test.go#TestAttackMeleeRequestMesoExplosion`.
 ```
 
-- [ ] **Step 3: Regenerate the matrix and run the machine check**
+- [x] **Step 3: Regenerate the matrix and run the machine check**
 
 Run (from the worktree root):
 
@@ -985,7 +985,7 @@ go run ./tools/packet-audit matrix --check
 
 Expected: `matrix` leaves STATUS.md/status.json unchanged (or trivially regenerated); `matrix --check` introduces **no new problems** — zero orphan/dangling/stale/drift lines mentioning `CharacterAttackMeleeRequest` or `character/serverbound`, and the pre-existing conflict count does not increase (per VERIFYING_A_PACKET.md §8, pre-existing 🟥 conflicts may keep the exit code at 1 — the bar is no new lines).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add docs/packets/audits/gms_v48/CharacterAttackMeleeRequest.md \
@@ -1005,7 +1005,7 @@ git commit -m "docs(task-150): meso-variant audit notes (4 legacy verified + jms
 
 **Files:** none (verification only; fix-and-recommit anything that fails).
 
-- [ ] **Step 1: Test/vet/build both changed modules**
+- [x] **Step 1: Test/vet/build both changed modules**
 
 ```bash
 cd libs/atlas-packet && go test -race ./... && go vet ./... && go build ./...
@@ -1014,7 +1014,7 @@ cd ../../services/atlas-channel/atlas.com/channel && go test -race ./... && go v
 
 Expected: all clean.
 
-- [ ] **Step 2: Redis key guard**
+- [x] **Step 2: Redis key guard**
 
 Run from the worktree root (no `GOWORK=off` prefix — see CLAUDE.md):
 
@@ -1024,7 +1024,7 @@ tools/redis-key-guard.sh
 
 Expected: clean exit 0.
 
-- [ ] **Step 3: Docker bake**
+- [x] **Step 3: Docker bake**
 
 Run from the worktree root:
 
@@ -1034,12 +1034,12 @@ docker buildx bake atlas-channel
 
 Expected: builds green. (atlas-drops is untouched by design — bake it only if a Task forced a change there, which this plan forbids.)
 
-- [ ] **Step 4: Confirm atlas-drops is untouched**
+- [x] **Step 4: Confirm atlas-drops is untouched**
 
 Run: `git diff main --stat -- services/atlas-drops`
 Expected: no output (FR-9/design §5.3).
 
-- [ ] **Step 5: Request code review before PR**
+- [x] **Step 5: Request code review before PR**
 
 Invoke `superpowers:requesting-code-review` (dispatches `plan-adherence-reviewer` + `backend-guidelines-reviewer`); findings land in `docs/tasks/task-150-meso-explosion/audit.md`. Address findings, then proceed to `superpowers:finishing-a-development-branch`.
 

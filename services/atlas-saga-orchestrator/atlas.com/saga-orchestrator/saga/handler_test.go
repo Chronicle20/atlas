@@ -5,6 +5,7 @@ import (
 	"atlas-saga-orchestrator/compartment"
 	mock2 "atlas-saga-orchestrator/compartment/mock"
 	character2 "atlas-saga-orchestrator/kafka/message/character"
+	notemock "atlas-saga-orchestrator/note/mock"
 	"atlas-saga-orchestrator/validation"
 	mock3 "atlas-saga-orchestrator/validation/mock"
 	"encoding/json"
@@ -1463,4 +1464,64 @@ func TestHandleEnqueueWorldBroadcast_InvalidPayload(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid payload")
+}
+
+func TestHandleCreateNote(t *testing.T) {
+	tests := []struct {
+		name        string
+		payload     CreateNotePayload
+		mockError   error
+		expectError bool
+	}{
+		{
+			name:        "Success case",
+			payload:     CreateNotePayload{SenderId: 100, ReceiverId: 200, Message: "hello", Flag: 1},
+			mockError:   nil,
+			expectError: false,
+		},
+		{
+			name:        "Error case",
+			payload:     CreateNotePayload{SenderId: 100, ReceiverId: 200, Message: "hello", Flag: 1},
+			mockError:   errors.New("kafka down"),
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			noteP := &notemock.ProcessorMock{}
+
+			logger, _ := test.NewNullLogger()
+			logger.SetLevel(logrus.DebugLevel)
+
+			_, ctx := setupContext()
+
+			transactionId := uuid.New()
+			noteP.CreateNoteFunc = func(txn uuid.UUID, receiverId uint32, senderId uint32, message string, flag byte) error {
+				assert.Equal(t, transactionId, txn)
+				assert.Equal(t, tt.payload.ReceiverId, receiverId)
+				assert.Equal(t, tt.payload.SenderId, senderId)
+				assert.Equal(t, tt.payload.Message, message)
+				assert.Equal(t, tt.payload.Flag, flag)
+				return tt.mockError
+			}
+
+			s, err := NewBuilder().
+				SetTransactionId(transactionId).
+				SetSagaType(NoteSend).
+				SetInitiatedBy("test").
+				Build()
+			assert.NoError(t, err)
+
+			step := NewStep[any]("create_note", Pending, CreateNote, tt.payload)
+
+			err = NewHandler(logger, ctx).WithNoteProcessor(noteP).handleCreateNote(s, step)
+
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }

@@ -113,3 +113,51 @@ func TestSkillCancelForeignByteFixture(t *testing.T) {
 		})
 	}
 }
+
+// TestSkillCancelForeignByteFixtureKeydownSkills pins the exact key-up cancel relay
+// bytes (charId u32, skillId u32) for the two task-161 keydown skills, so the
+// observer's aura stops for the correct skill. Skill IDs per design §2.1:
+// 5101004=0x4DD5CC, 5201002=0x4F5C6A. charId=1001 mirrors the existing fixture.
+func TestSkillCancelForeignByteFixtureKeydownSkills(t *testing.T) {
+	cases := []struct {
+		name     string
+		skillId  uint32
+		expected []byte
+	}{
+		{
+			name:    "Corkscrew Blow 5101004",
+			skillId: 5101004,
+			expected: []byte{
+				0xE9, 0x03, 0x00, 0x00, // charId=1001 LE
+				0xCC, 0xD5, 0x4D, 0x00, // skillId=5101004 (0x4DD5CC) LE
+			},
+		},
+		{
+			name:    "Grenade 5201002",
+			skillId: 5201002,
+			expected: []byte{
+				0xE9, 0x03, 0x00, 0x00, // charId=1001 LE
+				0x6A, 0x5C, 0x4F, 0x00, // skillId=5201002 (0x4F5C6A) LE
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := pt.CreateContext("GMS", 83, 1)
+			input := NewSkillCancelForeign(1001, tc.skillId)
+			got := pt.Encode(t, ctx, input.Encode, nil)
+			if len(got) != len(tc.expected) {
+				t.Fatalf("byte length mismatch: got %d want %d\n  got:  %X\n  want: %X",
+					len(got), len(tc.expected), got, tc.expected)
+			}
+			for i := range tc.expected {
+				if got[i] != tc.expected[i] {
+					t.Errorf("byte[%d] = %02X, want %02X\n  got:  %X\n  want: %X",
+						i, got[i], tc.expected[i], got, tc.expected)
+					break
+				}
+			}
+		})
+	}
+}

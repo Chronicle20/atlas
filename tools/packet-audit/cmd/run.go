@@ -1251,6 +1251,16 @@ func candidatesFromFName(fname string) []candidate {
 		// Note: CCashShop gift-accept path uses the same NOTE_ACTION opcode with op=0;
 		// the wire layout (EncodeStr toName + EncodeStr message) matches atlas OperationSend.
 		return []candidate{{name: "OperationSend", pkg: "note", dir: csvpkg.DirServerbound}}
+	case "CCashShop::OnCashItemResLoadLockerDone":
+		// gms_v48-only twin of OnCashItemResLoadGiftDone (task-137 notesend-verify2):
+		// the earliest client's combined locker-load+gift-forward handler emits the
+		// SAME NOTE_ACTION sub-op 0 SEND body (toName+message+giftFlag, no
+		// giftIndex/giftSN — v48 predates those trailing fields, see
+		// note/serverbound/operation_send.go sendHasGiftDetails). Registered as its
+		// own candidate so a v48-specific audit report/evidence citation can resolve
+		// against the real send-site function name rather than the modern-version
+		// fname (which does not exist in the v48 IDB).
+		return []candidate{{name: "OperationSend", pkg: "note", dir: csvpkg.DirServerbound}}
 
 	// --- Social: buddy ---
 	// CSV: BUDDYLIST (clientbound, opcode 0x24/36 in GMS v95) → CWvsContext::OnFriendResult

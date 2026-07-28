@@ -26,6 +26,7 @@ const (
 	QuestComplete        Type = "quest_complete"
 	QuestRestoreItem     Type = "quest_restore_item"
 	PetEvolution         Type = "pet_evolution"
+	NoteSend             Type = "note_send"
 	SkillBookUse         Type = "skill_book_use"
 	ItemTagUse           Type = "item_tag_use"
 	SealingLockUse       Type = "sealing_lock_use"
@@ -180,6 +181,9 @@ const (
 
 	// Field effect actions
 	FieldEffectWeather Action = "field_effect_weather"
+
+	// Note actions
+	CreateNote Action = "create_note"
 
 	// Item tag / sealing lock / incubator actions
 	SetAssetOwner   Action = "set_asset_owner"

@@ -97,6 +97,10 @@ const (
 	EventKindInviteCreated  EventKind = "invite.created"
 	EventKindInviteAccepted EventKind = "invite.accepted"
 	EventKindInviteRejected EventKind = "invite.rejected"
+
+	// Note.
+	EventKindNoteCreated      EventKind = "note.created"
+	EventKindNoteCreateFailed EventKind = "note.create_failed"
 )
 
 // acceptanceTable maps each saga.Action to the set of EventKinds that can
@@ -141,6 +145,9 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	// Skills.
 	sharedsaga.CreateSkill: {EventKindSkillCreated},
 	sharedsaga.UpdateSkill: {EventKindSkillUpdated},
+
+	// Note.
+	sharedsaga.CreateNote: {EventKindNoteCreated, EventKindNoteCreateFailed},
 
 	// Quest.
 	sharedsaga.CompleteQuest:    {EventKindQuestCompleted},
@@ -360,6 +367,10 @@ var outcomeTable = map[EventKind]EventOutcome{
 	EventKindInviteCreated:  OutcomeSuccess,
 	EventKindInviteAccepted: OutcomeSuccess,
 	EventKindInviteRejected: OutcomeFailure,
+
+	// Note.
+	EventKindNoteCreated:      OutcomeSuccess,
+	EventKindNoteCreateFailed: OutcomeFailure,
 }
 
 // EventOutcomeOf returns the outcome classification for kind.

@@ -506,7 +506,38 @@
     "CCashShop::OnCashItemResLoadGiftDone": {
       "address": "0x461758",
       "direction": "serverbound",
-      "calls": null
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (task-137 notesend-verify2, disasm-confirmed @0x4618a6)",
+          "guard": "sub_4BB5FE(...) == 1 (disasm @0x461864)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "toName",
+          "guard": "sub_4BB5FE(...) == 1 (disasm @0x461864)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message",
+          "guard": "sub_4BB5FE(...) == 1 (disasm @0x461864)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "giftFlag",
+          "guard": "sub_4BB5FE(...) == 1 (disasm @0x461864)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "giftIndex",
+          "guard": "sub_4BB5FE(...) == 1 (disasm @0x461864)"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "giftSN (8 bytes)",
+          "guard": "sub_4BB5FE(...) == 1 (disasm @0x461864)"
+        }
+      ]
     },
     "CCashShop::OnCashItemResLoadLockerDone": {
       "address": "0x4616b0",

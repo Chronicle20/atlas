@@ -71,3 +71,33 @@ func TestUseBasicAttackCommandProvider(t *testing.T) {
 		t.Errorf("AttackPos = %d, want 1", cmd.Body.AttackPos)
 	}
 }
+
+// TestKillCommandProvider verifies the KILL command envelope: keyed by the
+// monster unique id (same partition as the triggering DAMAGE), type KILL,
+// and a body carrying the caster and the Mortal Blow skill id.
+func TestKillCommandProvider(t *testing.T) {
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(100000000)).SetInstance(uuid.Nil).Build()
+	prov := KillCommandProvider(f, 12345, 67)
+
+	msgs, err := prov()
+	if err != nil {
+		t.Fatalf("provider error: %v", err)
+	}
+	if len(msgs) != 1 {
+		t.Fatalf("got %d messages, want 1", len(msgs))
+	}
+
+	var cmd monster2.Command[monster2.KillCommandBody]
+	if err := json.Unmarshal(msgs[0].Value, &cmd); err != nil {
+		t.Fatalf("unmarshal command: %v", err)
+	}
+	if cmd.Type != monster2.CommandTypeKill {
+		t.Fatalf("Type = %s, want %s", cmd.Type, monster2.CommandTypeKill)
+	}
+	if cmd.MonsterId != 12345 {
+		t.Fatalf("MonsterId = %d, want 12345", cmd.MonsterId)
+	}
+	if cmd.Body.CharacterId != 67 {
+		t.Fatalf("Body.CharacterId = %d, want 67", cmd.Body.CharacterId)
+	}
+}

@@ -20,6 +20,6 @@ func PetItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Pr
 		p := pet2.ItemUse{}
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
-		_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.Field(), character.Id(s.CharacterId()), item.Id(p.ItemId()), slot.Position(p.Source()), p.UpdateTime())
+		_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.Field(), character.Id(s.CharacterId()), item.Id(p.ItemId()), slot.Position(p.Source()), 1, p.UpdateTime())
 	}
 }

@@ -20,7 +20,7 @@ func CharacterItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, _ wri
 		p := inventory2.NewItemUse(inventory2.CharacterItemUseHandle)
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
-		_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.Field(), character.Id(s.CharacterId()), item.Id(p.ItemId()), slot.Position(p.Source()), p.UpdateTime())
+		_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.Field(), character.Id(s.CharacterId()), item.Id(p.ItemId()), slot.Position(p.Source()), 1, p.UpdateTime())
 	}
 }
 
@@ -29,7 +29,7 @@ func CharacterItemUseTownScrollHandleFunc(l logrus.FieldLogger, ctx context.Cont
 		p := inventory2.NewItemUse(inventory2.CharacterItemUseTownScrollHandle)
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
-		_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.Field(), character.Id(s.CharacterId()), item.Id(p.ItemId()), slot.Position(p.Source()), p.UpdateTime())
+		_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.Field(), character.Id(s.CharacterId()), item.Id(p.ItemId()), slot.Position(p.Source()), 1, p.UpdateTime())
 	}
 }
 
@@ -47,7 +47,7 @@ func CharacterItemUseSummonBagHandleFunc(l logrus.FieldLogger, ctx context.Conte
 		p := inventory2.NewItemUse(inventory2.CharacterItemUseSummonBagHandle)
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
-		_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.Field(), character.Id(s.CharacterId()), item.Id(p.ItemId()), slot.Position(p.Source()), p.UpdateTime())
+		_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.Field(), character.Id(s.CharacterId()), item.Id(p.ItemId()), slot.Position(p.Source()), 1, p.UpdateTime())
 	}
 }
 

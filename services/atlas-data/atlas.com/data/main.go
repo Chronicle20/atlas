@@ -181,7 +181,7 @@ func main() {
 		AddRouteInitializer(equipment.InitResource(db)(GetServer())).
 		AddRouteInitializer(reactor.InitResource(db)(GetServer())).
 		AddRouteInitializer(skill.InitResource(db)(GetServer())).
-		AddRouteInitializer(job.InitResource(GetServer())).
+		AddRouteInitializer(job.InitResource(db)(GetServer())).
 		AddRouteInitializer(pet.InitResource(db)(GetServer())).
 		AddRouteInitializer(consumable.InitResource(db)(GetServer())).
 		AddRouteInitializer(cash.InitResource(db)(GetServer())).

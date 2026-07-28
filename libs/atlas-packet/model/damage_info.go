@@ -14,8 +14,17 @@ func NewDamageInfo(hits byte) *DamageInfo {
 	return &DamageInfo{hits: hits}
 }
 
+// NewMesoExplosionDamageInfo constructs a DamageInfo for the meso-explosion
+// attack variant (skill 4211006): the wire entry carries a 1-byte damage-line
+// count in place of the standard 2-byte delay, so hits is unused (task-150
+// design §2.1/§2.2).
+func NewMesoExplosionDamageInfo() *DamageInfo {
+	return &DamageInfo{mesoExplosion: true}
+}
+
 type DamageInfo struct {
 	hits                byte
+	mesoExplosion       bool
 	monsterId           uint32
 	hitAction           byte
 	forceAction         byte
@@ -42,9 +51,16 @@ func (m *DamageInfo) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *r
 		m.hitPositionY = r.ReadUint16()
 		m.previousPositionX = r.ReadUint16()
 		m.previousPositionY = r.ReadUint16()
-		m.delay = r.ReadUint16()
-		for range m.hits {
-			m.damages = append(m.damages, r.ReadUint32())
+		if m.mesoExplosion {
+			count := r.ReadByte()
+			for range count {
+				m.damages = append(m.damages, r.ReadUint32())
+			}
+		} else {
+			m.delay = r.ReadUint16()
+			for range m.hits {
+				m.damages = append(m.damages, r.ReadUint32())
+			}
 		}
 		// Per-mob anti-hack CRC. Present on the GMS legacy pre-83 client too:
 		// v79 IDA-verified — TryDoingMeleeAttack (@0x8c2c57), TryDoingBodyAttack
@@ -75,7 +91,11 @@ func (m *DamageInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 		w.WriteShort(m.hitPositionY)
 		w.WriteShort(m.previousPositionX)
 		w.WriteShort(m.previousPositionY)
-		w.WriteShort(m.delay)
+		if m.mesoExplosion {
+			w.WriteByte(byte(len(m.damages)))
+		} else {
+			w.WriteShort(m.delay)
+		}
 		for _, d := range m.damages {
 			w.WriteInt(d)
 		}

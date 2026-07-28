@@ -154,3 +154,16 @@ func (m Model) Prop() float64 {
 func (m Model) X() int16 {
 	return m.x
 }
+
+// AttackCount returns the skill's attackCount attribute. For Meso Explosion
+// (4211006) it is the maximum number of drops one attack may detonate
+// (10–20 by level; task-150 design §3).
+func (m Model) AttackCount() uint32 {
+	return m.attackCount
+}
+
+// Y returns the integer Y attribute (for MP Recovery it is the percent of
+// the HP loss returned as MP).
+func (m Model) Y() int16 {
+	return m.y
+}

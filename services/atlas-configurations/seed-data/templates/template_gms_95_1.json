@@ -541,7 +541,14 @@
         "opCode": "0x9A",
         "validator": "LoggedInValidator",
         "handler": "NoteOperationHandle",
-        "services": ["channel"]
+        "services": ["channel"],
+        "options": {
+          "operations": {
+            "SEND": 0,
+            "DISCARD": 1,
+            "REQUEST": 2
+          }
+        }
       },
       {
         "opCode": "0x9C",
@@ -1132,6 +1139,12 @@
             "SEND_SUCCESS": 4,
             "SEND_ERROR": 5,
             "REFRESH": 7
+          },
+          "errors": {
+            "RECEIVER_ONLINE": 0,
+            "RECEIVER_UNKNOWN": 1,
+            "RECEIVER_INBOX_FULL": 2,
+            "NO_NOTE_ITEM": 3
           }
         }
       },

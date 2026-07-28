@@ -6,15 +6,15 @@
 
 Tool: `bb7ef5945ed2f38de09e0f193a867582e04c4cb1771d7deafddb02802e9b8591`
 
-- export gms_v48: `d80e5dfc523e995bab29c668e50483b219ecb8e0d75ab7bc1ea478bf5c8ff3ba`
-- export gms_v61: `87cbd99fdea09845d1ddd8baae7549b513557e032eb25610a37b35de8874b4f1`
-- export gms_v72: `de5b177ee5bb20e853f0c1e9613772827431295c3b900727b759f1a8ce0c1efb`
-- export gms_v79: `21436f5f6ec573d48d78622fbb9ba93228921e0d93c26806835fb73cb1d42834`
+- export gms_v48: `297e85206e0590f69b760df0bd276d4162ebbd562a8ab3fc9788778f14becf10`
+- export gms_v61: `88399107c52bad29136777addb2fd7a6f60e4cddb343dd854de14a7a2f421fa2`
+- export gms_v72: `a33a8a94a368e48718724ea24f689743203064a2c787526dfbe0ae49aeefd439`
+- export gms_v79: `1e9d2d49e506f03fa1d2270c468fcd90ba782dc05a06e8601ebdad5e16d825e6`
 - export gms_v83: `41c605b512b99361f56c425c0a240685308e3cd82c599ab235f98901470325f2`
-- export gms_v84: `cd78da45b5434b5c6da9628f9032f06c102e1b8783abcaa8960441ca15fa057e`
+- export gms_v84: `f8e90c78a64c7abcae8de12267f275d6c3233ce1adbbf1fb1419d4e9ccdca23d`
 - export gms_v87: `4fbc70fa0d0b84adf603839d62b89c6d572f40eadcdd1dc2d7ea0f3ef0cb41d7`
 - export gms_v95: `aeb6f0a7f4c9dea6e42a283273fad29fda3fdafc0301188cb898b0dd1def732d`
-- export jms_v185: `62db849767b341f219d781681ea375980eace303353ef74a650cf86f2a9e136d`
+- export jms_v185: `79c236f1a7cb68b2c7720c3bdd1559d412a3eeba0df0e6dff58de0f255d412a7`
 
 ## Clientbound
 
@@ -67,7 +67,7 @@ Tool: `bb7ef5945ed2f38de09e0f193a867582e04c4cb1771d7deafddb02802e9b8591`
 | FAME_RESPONSE | CWvsContext::OnGivePopularityResult | fame/clientbound/ErrorResponse | 0x020 | ❌ | 0x023 | ❌ | 0x023 | ❌ | 0x023 | ❌ | 0x026 | ✅ | 0x026 | ✅ | 0x026 | ✅ | 0x025 | ✅ | 0x024 | ✅ |
 | FORCED_STAT_RESET | CWvsContext::OnForcedStatReset |  |  | ⬜ | 0x020 | ❌ | 0x020 | ❌ | 0x020 | ❌ | 0x023 | ❌ | 0x023 | ❌ | 0x023 | ❌ | 0x022 | ❌ | 0x021 | ❌ |
 | SHOW_STATUS_INFO | CWvsContext::OnMessage | character/clientbound/StatusMessageCashItemExpire (T1) | 0x021 | ✅ | 0x024 | ✅ | 0x024 | ✅ | 0x024 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x026 | ✅ | 0x025 | ✅ |
-| MEMO_RESULT | CWvsContext::OnMemoResult | note/clientbound/NoteDisplay (T1) | 0x022 | ✅ | 0x026 | ✅ | 0x026 | ✅ | 0x026 | ✅ | 0x029 | ✅ | 0x029 | ❌ | 0x029 | ✅ | 0x028 | ✅ | 0x026 | ❌ |
+| MEMO_RESULT | CWvsContext::OnMemoResult | note/clientbound/NoteDisplay (T1) | 0x022 | ✅ | 0x026 | ✅ | 0x026 | ✅ | 0x026 | ✅ | 0x029 | ✅ | 0x029 | ✅ | 0x029 | ✅ | 0x028 | ✅ | 0x026 | ✅ |
 | MAP_TRANSFER_RESULT | CWvsContext::OnMapTransferResult | teleportrock/clientbound/MapTransferError (T1) | 0x023 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x027 | ✅ | 0x02A | ✅ | 0x02A | ✅ | 0x02A | ✅ | 0x029 | ✅ | 0x027 | ✅ |
 | WEDDING_PHOTO | CWvsContext::OnAntiMacroResult |  | 0x024 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x028 | ❌ | 0x02B | ❌ | 0x02B | ❌ | 0x02B | ❌ | 0x02A | ❌ | 0x028 | ❌ |
 | CLAIM_RESULT | CWvsContext::OnClaimResult |  | 0x025 | ❌ | 0x02A | ❌ | 0x02A | ❌ | 0x02A | ❌ | 0x02D | ❌ | 0x02D | ❌ | 0x02D | ❌ | 0x02C | ❌ | 0x02A | ❌ |
@@ -949,8 +949,8 @@ Tool: `bb7ef5945ed2f38de09e0f193a867582e04c4cb1771d7deafddb02802e9b8591`
 | messenger/serverbound/MessengerOperationInvite (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |
 | monster/carnival/serverbound/MonsterCarnival (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | note/serverbound/NoteOperation (T1) |  |  | ❌ |  | ❌ |  | 🟡ᶠ |  | 🟡ᶠ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
-| note/serverbound/NoteOperationDiscard (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
-| note/serverbound/NoteOperationSend (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
+| note/serverbound/NoteOperationDiscard (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| note/serverbound/NoteOperationSend (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | npc/clientbound/NpcAskAvatarConversationDetail (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | npc/clientbound/NpcAskBoxTextConversationDetail (T1) |  |  | ⬜ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | npc/clientbound/NpcAskMemberShopAvatarConversationDetail (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
@@ -998,15 +998,15 @@ Tool: `bb7ef5945ed2f38de09e0f193a867582e04c4cb1771d7deafddb02802e9b8591`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 177 | 0 | 2 | 158 | 626 | 0 | 52.5% |
-| v61 | 253 | 0 | 60 | 191 | 459 | 0 | 50.2% |
-| v72 | 263 | 0 | 73 | 210 | 417 | 0 | 48.2% |
-| v79 | 307 | 0 | 72 | 206 | 378 | 0 | 52.5% |
-| v83 | 427 | 0 | 0 | 313 | 223 | 0 | 57.7% |
-| v84 | 400 | 0 | 0 | 320 | 243 | 0 | 55.6% |
-| v87 | 435 | 0 | 0 | 342 | 186 | 0 | 56.0% |
-| v95 | 460 | 0 | 0 | 401 | 102 | 0 | 53.4% |
-| JMS185 | 412 | 0 | 0 | 358 | 193 | 0 | 53.5% |
+| v48 | 179 | 0 | 2 | 156 | 626 | 0 | 53.1% |
+| v61 | 255 | 0 | 60 | 189 | 459 | 0 | 50.6% |
+| v72 | 265 | 0 | 73 | 208 | 417 | 0 | 48.5% |
+| v79 | 309 | 0 | 72 | 204 | 378 | 0 | 52.8% |
+| v83 | 428 | 0 | 0 | 312 | 223 | 0 | 57.8% |
+| v84 | 402 | 0 | 0 | 318 | 243 | 0 | 55.8% |
+| v87 | 436 | 0 | 0 | 341 | 186 | 0 | 56.1% |
+| v95 | 461 | 0 | 0 | 400 | 102 | 0 | 53.5% |
+| JMS185 | 415 | 0 | 0 | 355 | 193 | 0 | 53.9% |
 
 ## Conflicts
 

@@ -15609,46 +15609,79 @@
       ]
     },
     "CWvsContext::OnMemoResult#Display": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
+      "address": "0xa70785",
+      "direction": "clientbound",
+      "note": "mode=3 (DISPLAY). sub_530434(this+3511) clears the existing list (not a wire read), then Decode1 reads count and loops sub_5303F6 (list append, not a wire read) + sub_4EBF0C@0x4ebf0c per item. Wire identical to v83/v87/v95.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "mode byte (3 = Display)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "note count (loop)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "note.id",
+          "guard": "loop count"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "note.senderName",
+          "guard": "loop count"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "note.message",
+          "guard": "loop count"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "note.timestamp FILETIME (8 bytes)",
+          "guard": "loop count"
+        },
+        {
+          "op": "Decode1",
+          "comment": "note.flag",
+          "guard": "loop count"
         }
       ]
     },
     "CWvsContext::OnMemoResult#Refresh": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
+      "address": "0xa70785",
+      "direction": "clientbound",
+      "note": "mode=7 (REFRESH). `result - 2 == 0` @0xa707b4 (mode-7) tail-calls CWvsContext::OnMemoNotify_Receive(this) @0xa708ea/0xa707bd with no CInPacket arg — no further wire reads. Mode number diverges from v83 (mode=8 there); wire shape (mode byte only) is identical.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "mode byte (7 = Refresh)"
         }
       ]
     },
     "CWvsContext::OnMemoResult#SendError": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
+      "address": "0xa70785",
+      "direction": "clientbound",
+      "note": "mode=5 (SEND_ERROR). `v7 == 0` @0xa707b1 (mode-5) branch reads Decode1 errorCode @0xa707eb then selects a StringPool notice id (2652/2653/2654) by errorCode 0/1/2. Wire identical to v83/v95.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "mode byte (5 = SendError)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode"
         }
       ]
     },
     "CWvsContext::OnMemoResult#SendSuccess": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
+      "address": "0xa70785",
+      "direction": "clientbound",
+      "note": "mode=4 (SEND_SUCCESS). `v6 == 0` @0xa707aa (mode-4) branch sets a fixed StringPool notice id (2714) with no further Decode1 call — the errorCode byte is not read for this arm. Wire identical to v83/v95 (mode byte only).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "mode byte (4 = SendSuccess)"
         }
       ]
     },
@@ -21120,7 +21153,38 @@
     "CCashShop::OnCashItemResLoadGiftDone": {
       "address": "0x47c73c",
       "direction": "serverbound",
-      "calls": null
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (task-137 notesend-verify2, disasm-confirmed @0x47c879)",
+          "guard": "sub_4F61C5(...) == 1 (disasm @0x47c848)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "toName",
+          "guard": "sub_4F61C5(...) == 1 (disasm @0x47c848)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message",
+          "guard": "sub_4F61C5(...) == 1 (disasm @0x47c848)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "giftFlag",
+          "guard": "sub_4F61C5(...) == 1 (disasm @0x47c848)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "giftIndex",
+          "guard": "sub_4F61C5(...) == 1 (disasm @0x47c848)"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "giftSN (8 bytes)",
+          "guard": "sub_4F61C5(...) == 1 (disasm @0x47c848)"
+        }
+      ]
     },
     "CCashShop::OnEnableEquipSlotExt": {
       "address": "0x46efb6",

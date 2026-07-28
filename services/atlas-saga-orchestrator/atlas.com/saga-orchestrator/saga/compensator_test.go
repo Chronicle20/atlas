@@ -723,6 +723,119 @@ func TestCompensateLateStep_MtsMove_RestoresListing(t *testing.T) {
 	assert.Equal(t, uint32(4242), mtsMockP.restoreListingBuyerId)
 }
 
+// TestNoteSendCompensationRefundsItem: create_note failed after the destroy
+// completed → the reverse-walk must re-award the destroyed Note item via
+// RequestCreateItem, exactly once, with the destroy step's template id.
+func TestNoteSendCompensationRefundsItem(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+
+	ctx := context.Background()
+	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	tctx := tenant.WithContext(ctx, te)
+
+	const (
+		senderId = uint32(100)
+		noteItem = uint32(5090000)
+	)
+
+	type createCall struct {
+		CharacterId uint32
+		TemplateId  uint32
+		Quantity    uint32
+	}
+	var createItemCalls []createCall
+	compP := &compmock.ProcessorMock{
+		RequestCreateItemFunc: func(_ uuid.UUID, characterId uint32, templateId uint32, quantity uint32, _ time.Time) error {
+			createItemCalls = append(createItemCalls, createCall{
+				CharacterId: characterId,
+				TemplateId:  templateId,
+				Quantity:    quantity,
+			})
+			return nil
+		},
+	}
+
+	transactionId := uuid.New()
+	s, err := NewBuilder().
+		SetTransactionId(transactionId).
+		SetSagaType(NoteSend).
+		SetInitiatedBy("note-send-compensation-test").
+		AddStep("consume_note_item", Completed, DestroyAsset, DestroyAssetPayload{
+			CharacterId: senderId,
+			TemplateId:  noteItem,
+			Quantity:    1,
+			RemoveAll:   false,
+		}).
+		AddStep("create_note", Failed, CreateNote, CreateNotePayload{
+			SenderId:   senderId,
+			ReceiverId: 200,
+			Message:    "hi",
+			Flag:       1,
+		}).
+		Build()
+	assert.NoError(t, err, "saga build should not fail")
+
+	compensator := NewCompensator(logger, tctx).
+		WithCompartmentProcessor(compP)
+
+	compensator.DispatchNoteSendRollbacks(s)
+
+	assert.Equal(t, 1, len(createItemCalls), "Note item should be refunded exactly once")
+	if len(createItemCalls) == 1 {
+		assert.Equal(t, senderId, createItemCalls[0].CharacterId, "refund must target the sender")
+		assert.Equal(t, noteItem, createItemCalls[0].TemplateId, "refunded item must be the consumed Note item")
+		assert.Equal(t, uint32(1), createItemCalls[0].Quantity, "refunded quantity must be 1")
+	}
+}
+
+// TestNoteSendCompensationDestroyFailedNoRefund: the DestroyAsset step itself
+// failed (nothing completed) → there is nothing to re-award; the reverse-walk
+// must NOT dispatch RequestCreateItem.
+func TestNoteSendCompensationDestroyFailedNoRefund(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+
+	ctx := context.Background()
+	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	tctx := tenant.WithContext(ctx, te)
+
+	var createItemCalls int
+	compP := &compmock.ProcessorMock{
+		RequestCreateItemFunc: func(_ uuid.UUID, _ uint32, _ uint32, _ uint32, _ time.Time) error {
+			createItemCalls++
+			return nil
+		},
+	}
+
+	transactionId := uuid.New()
+	s, err := NewBuilder().
+		SetTransactionId(transactionId).
+		SetSagaType(NoteSend).
+		SetInitiatedBy("note-send-compensation-test").
+		AddStep("consume_note_item", Failed, DestroyAsset, DestroyAssetPayload{
+			CharacterId: 100,
+			TemplateId:  5090000,
+			Quantity:    1,
+			RemoveAll:   false,
+		}).
+		AddStep("create_note", Pending, CreateNote, CreateNotePayload{
+			SenderId:   100,
+			ReceiverId: 200,
+			Message:    "hi",
+			Flag:       1,
+		}).
+		Build()
+	assert.NoError(t, err, "saga build should not fail")
+
+	compensator := NewCompensator(logger, tctx).
+		WithCompartmentProcessor(compP)
+
+	compensator.DispatchNoteSendRollbacks(s)
+
+	assert.Equal(t, 0, createItemCalls, "no completed destroy → no refund dispatch")
+}
+
 // TestSkillBookUseCompensationRefundsBook verifies that when a skill_book_use
 // saga fails on the skill step AFTER the book was destroyed, the reverse walk
 // re-awards the book using the destroy step's TemplateId (task-125).

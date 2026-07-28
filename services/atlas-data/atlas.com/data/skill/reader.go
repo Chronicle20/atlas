@@ -23,7 +23,12 @@ import (
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
-func parseJobId(filePath string) (uint32, error) {
+// ParseJobId derives a job id from a Skill.wz image name. The name reaches
+// this helper as the root <imgdir name="…"> attribute (e.g. "112.img");
+// non-numeric per-mob images like "MobSkill.img" or "BFSkill.img" return an
+// error. Exported so the `job` package can share this logic rather than
+// duplicate it.
+func ParseJobId(filePath string) (uint32, error) {
 	baseName := filepath.Base(filePath)
 	if !strings.HasSuffix(baseName, ".img") {
 		return 0, fmt.Errorf("file does not match expected format: %s", filePath)
@@ -45,7 +50,7 @@ func Read(l logrus.FieldLogger) func(ctx context.Context) func(np model.Provider
 				return model.ErrorProvider[[]RestModel](err)
 			}
 
-			jobId, err := parseJobId(exml.Name)
+			jobId, err := ParseJobId(exml.Name)
 			if err != nil {
 				return model.ErrorProvider[[]RestModel](err)
 			}

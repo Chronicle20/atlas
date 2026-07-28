@@ -36,3 +36,19 @@
 | 22 | int16 | int16 `` | ✅ |  |
 | 23 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
 
+---
+
+## task-150 note — Meso Explosion variant (hand-added; keep on regeneration)
+
+CLOSE_RANGE_ATTACK carries a Meso Explosion (4211006) variant written by a
+dedicated sender (this version: `0x7b8a39`), dispatched from `DoActiveSkill`
+case 4211006. IDA-verified deltas vs. the standard melee attack (design §2.1):
+per-mob `Encode1(damageLineCount)` replaces the int16 delay; trailing
+`{dropId int32, hitMask byte}` list after characterX/Y; trailing int16 delay.
+All base-layout fields (per-mob CRC, action width, head CRCs) follow this
+version's existing standard-melee gates (design §2.1a) — the variant adds no
+new gate. No new packet-audit:verify marker is pinned: the meso sender is an
+fname_alt absent from the IDA export, so a second marker would orphan under
+`matrix --check` (Task 3 rationale). Fixture:
+`libs/atlas-packet/character/serverbound/attack_request_test.go#TestAttackMeleeRequestMesoExplosion`.
+

@@ -33,6 +33,19 @@ var loadCasterFunc = func(cp character.Processor, characterId uint32) (character
 	return cp.GetById()(characterId)
 }
 
+// loadCasterWithInventoryFunc is the inventory-decorated caster-load seam the
+// generic itemCon consume path uses (it needs an arbitrary compartment, not
+// just the USE compartment loadCasterInventoryFunc returns). Tests replace it.
+var loadCasterWithInventoryFunc = func(cp character.Processor, characterId uint32) (character.Model, error) {
+	return cp.GetById(cp.InventoryDecorator)(characterId)
+}
+
+// requestItemConsumeFunc is the consumable-request seam tests can replace.
+// Production delegates to consumable.Processor.RequestItemConsume.
+var requestItemConsumeFunc = func(p consumable.Processor, f field.Model, characterId charcon.Id, itemId itemconst.Id, source slot.Position, quantity int16, updateTime uint32) error {
+	return p.RequestItemConsume(f, characterId, itemId, source, quantity, updateTime)
+}
+
 // rectQueryFunc is the mob-selection seam tests can replace. Production
 // calls atlas-monsters via monster.Processor.GetInMapRect; tests inject a
 // stub returning a fixed slice.
@@ -104,12 +117,17 @@ func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Pro
 			}
 			if itemId := e.ItemConsume(); itemId > 0 {
 				cp := character.NewProcessor(l, ctx)
-				if c, cErr := cp.GetById(cp.InventoryDecorator)(characterId); cErr == nil {
+				if c, cErr := loadCasterWithInventoryFunc(cp, characterId); cErr == nil {
 					if invType, typeOk := inventoryconst.TypeFromItemId(itemconst.Id(itemId)); typeOk {
-						if a, found := c.Inventory().CompartmentByType(invType).FindFirstByItemId(itemId); found {
-							_ = consumable.NewProcessor(l, ctx).RequestItemConsume(f, charcon.Id(characterId), itemconst.Id(itemId), slot.Position(a.Slot()), 0)
+						amount := int16(e.ItemConsumeAmount())
+						if amount < 1 {
+							// Absent itemConNo (reader default 0) means one item (FR-1).
+							amount = 1
+						}
+						if a, found := c.Inventory().CompartmentByType(invType).FindFirstByItemIdWithQuantity(itemId, amount); found {
+							_ = requestItemConsumeFunc(consumable.NewProcessor(l, ctx), f, charcon.Id(characterId), itemconst.Id(itemId), slot.Position(a.Slot()), amount, 0)
 						} else {
-							l.Warnf("Character [%d] cast skill [%d] requiring item [%d] but no such item found in inventory; cast permitted (defense-in-depth gate only).", characterId, info.SkillId(), itemId)
+							l.Warnf("Character [%d] cast skill [%d] requiring [%d]x item [%d] but no single slot holds enough; cast permitted (defense-in-depth gate only).", characterId, info.SkillId(), amount, itemId)
 						}
 					}
 				} else {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"atlas-channel/account"
+	"atlas-channel/battleship"
 	channel3 "atlas-channel/channel"
 	"atlas-channel/configuration/projection"
 	account2 "atlas-channel/kafka/consumer/account"
@@ -288,6 +289,7 @@ func main() {
 			inbox.EvictTenant(tid)
 		}
 		writer.EvictTenantWriterOptions(tid)
+		battleship.GetRideMirror().EvictTenant(tid)
 		tenant.Unregister(tid)
 	})
 

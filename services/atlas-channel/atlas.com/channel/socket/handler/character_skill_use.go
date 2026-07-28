@@ -12,6 +12,7 @@ import (
 	"atlas-channel/socket/writer"
 	summoncmd "atlas-channel/summon"
 	"context"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -70,6 +71,19 @@ func CharacterUseSkillHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 		if sm.Id() == 0 || sm.Level() == 0 || sm.Level() != sui.SkillLevel() {
 			l.Debugf("Character [%d] attempting to use skill [%d] at level [%d], but they do not have it.", s.CharacterId(), sui.SkillId(), sui.SkillLevel())
 			_ = session.NewProcessor(l, ctx).Destroy(s)
+			return
+		}
+
+		// Battleship post-break cooldown is enforced server-side: the client
+		// greys the icon, but a packet-editing client must not remount a
+		// broken ship (FR-2.4). Zero extra round-trips — CooldownExpiresAt is
+		// decorated onto the already-loaded skill model.
+		if battleshipCastBlocked(sui.SkillId(), sm.CooldownExpiresAt(), time.Now()) {
+			l.Debugf("Character [%d] attempting to cast battleship while on post-break cooldown (expires [%s]).", s.CharacterId(), sm.CooldownExpiresAt())
+			err = enableActions(l)(ctx)(wp)(s)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to write [%s] for character [%d].", statpkt.StatChangedWriter, s.CharacterId())
+			}
 			return
 		}
 
@@ -178,4 +192,11 @@ func enableActions(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 			return session.Announce(l)(ctx)(wp)(statpkt.StatChangedWriter)(statpkt.NewStatChanged(make([]statpkt.Update, 0), true).Encode)
 		}
 	}
+}
+
+// battleshipCastBlocked reports whether a 5221006 cast must be rejected
+// because the post-break cooldown is still running (FR-2.4). Scoped to
+// battleship: a generic cast-time cooldown gate is out of scope here.
+func battleshipCastBlocked(skillId uint32, cooldownExpiresAt time.Time, now time.Time) bool {
+	return skill.Id(skillId) == skill.CorsairBattleshipId && now.Before(cooldownExpiresAt)
 }

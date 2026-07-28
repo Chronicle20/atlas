@@ -81,6 +81,18 @@ var cancelStatusFunc = func(p monster.Processor, f field.Model, monsterId uint32
 	return p.CancelStatus(f, monsterId, statusTypes, sourceCharacterId, sourceSkillId, sourceSkillClass)
 }
 
+// applyCooldownFunc is the cast-time cooldown emit seam tests can replace.
+var applyCooldownFunc = func(l logrus.FieldLogger, ctx context.Context, f field.Model, skillId skill2.Id, cooldown uint32, characterId uint32) error {
+	return skill.NewProcessor(l, ctx).ApplyCooldown(f, skillId, cooldown)(characterId)
+}
+
+// shouldApplyCastCooldown gates the generic cast-time cooldown. Battleship
+// (5221006) is exempt: its cooldown applies only when the ship breaks, never
+// on cast (FR-2.3/FR-4.3) — the WZ cooltime would otherwise fire here.
+func shouldApplyCastCooldown(cooldown uint32, skillId skill2.Id) bool {
+	return cooldown > 0 && !skill2.IsBattleshipMountSkill(skillId)
+}
+
 func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer, f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) error {
 	return func(ctx context.Context) func(wp writer.Producer, f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) error {
 		return func(wp writer.Producer, f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) error {
@@ -134,14 +146,15 @@ func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Pro
 					l.WithError(cErr).Warnf("Character [%d] cast skill [%d] requiring item [%d] but failed to load inventory; cast permitted.", characterId, info.SkillId(), itemId)
 				}
 			}
-			if e.Cooldown() > 0 {
-				_ = skill.NewProcessor(l, ctx).ApplyCooldown(f, skill2.Id(info.SkillId()), e.Cooldown())(characterId)
-			}
-			// Mount toggle (tamed + skill-only). Runs BEFORE the generic buff
-			// apply and short-circuits it: mounts apply MONSTER_RIDING with a
-			// MaxInt32 duration and a vehicle-id amount, or cancel on re-cast.
 			skillId := skill2.Id(info.SkillId())
-			if skill2.IsTamedMountSkill(skillId) || isSkillOnlyMount(skillId, info.SkillLevel()) {
+			if shouldApplyCastCooldown(e.Cooldown(), skillId) {
+				_ = applyCooldownFunc(l, ctx, f, skillId, e.Cooldown(), characterId)
+			}
+			// Mount toggle (tamed + skill-only + battleship). Runs BEFORE the
+			// generic buff apply and short-circuits it: mounts apply
+			// MONSTER_RIDING with a MaxInt32 duration and a vehicle-id amount,
+			// or cancel on re-cast.
+			if skill2.IsTamedMountSkill(skillId) || isSkillOnlyMount(skillId, info.SkillLevel()) || skill2.IsBattleshipMountSkill(skillId) {
 				if err := HandleMount(l, f, characterId, info, e, newMountDeps(l, ctx)); err != nil {
 					l.WithError(err).Errorf("Mount toggle failed for character [%d] skill [%d].", characterId, info.SkillId())
 				}

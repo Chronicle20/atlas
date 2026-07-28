@@ -188,6 +188,15 @@ verification list omits:
 Also note every template handler entry needs a `validator`; an entry without one is
 silently dropped at listener build.
 
+### R-13. v92's two missing serverbound opcodes are derived (2026-07-28)
+
+`SPECIAL_MOVE` (`CharacterUseSkillHandle`) = **`0x66`**, `TAKE_DAMAGE`
+(`CharacterDamageHandle`) = **`0x35`**. v92 has no registry column and its opcode table
+cannot be interpolated, so both were read out of the binary — full method, evidence
+addresses and three cross-checks in Task 11 Step 3, which is now **complete**. IDB symbols
+were named (`DoActiveSkill_Heal_CUserLocal` @ `0x91B630`,
+`DoActiveSkill_Prepare_CUserLocal` @ `0x91DF00`) and evidence comments set.
+
 ### R-12. v92 now has an IDB — the design's "unverified" caveat is resolved
 
 Design §1.1 recorded v92's gauge as unverifiable for want of an IDB. One exists now
@@ -2513,44 +2522,83 @@ CSV rows' v83/v87/v95/jms185 values match those versions' already-verified templ
 entries exactly. **A v92 IDB now exists** (R-12); if you want IDA confirmation rather than
 CSV provenance, take it — but the CSV cross-validation is what this task relies on.
 
-- [ ] **Step 3: Derive v92's `SPECIAL_MOVE` and `TAKE_DAMAGE` serverbound opcodes**
+- [x] **Step 3: Derive v92's `SPECIAL_MOVE` and `TAKE_DAMAGE` serverbound opcodes — DONE 2026-07-28**
 
-This step produces the two numbers Step 4 needs for v92. It cannot be skipped or guessed.
+v92 has no registry column, so these two were derived directly from
+`GMS_v92_1_DEVM.exe`. **Results:**
 
-**Why derivation is required:** v92 has no registry column, and its serverbound table
-cannot be interpolated from its neighbours. Measured v92-minus-v95 deltas across the
-already-wired handlers are `+1` in the `0x40`–`0x59` band (CashItemUse, InventoryMove,
-SkillBookUse, MountFood, OwlAction, OwlWarp), `0` at `0x5B` (TeleportRockUse), and `-1`
-to `-7` higher up (CharacterInfoRequest, MonsterMovement, NPCAction). The `+1`→`0` step
-is explained by v95 inserting `USE_SHOP_SCANNER_ITEM` at `0x5A`, which v92 lacks — the
-offsets are op-insertion artifacts, not a shift. Interpolation would be a guess.
+| op | handler | v92 opcode |
+|---|---|---|
+| `SPECIAL_MOVE` | `CharacterUseSkillHandle` | **`0x66`** (102) |
+| `TAKE_DAMAGE` | `CharacterDamageHandle` | **`0x35`** (53) |
 
-**Method** (validated end-to-end on v95 this session): the client *sends* these ops, so
-the opcode is the immediate passed to the `COutPacket` constructor in the sending
-function. Find the sender, read the `push <imm>` that precedes the ctor call.
+**Why derivation was required:** v92's serverbound table cannot be interpolated from its
+neighbours. Measured v92-minus-v95 deltas across the already-wired handlers are `+2` at
+`0x2A` (ChannelChange), `+1` through the `0x36`–`0x59` band (ChatGeneral, CashItemUse,
+InventoryMove, SkillBookUse, MountFood, OwlAction, OwlWarp), `0` at `0x5B`
+(TeleportRockUse), and `-1` to `-7` above that (CharacterInfoRequest, MonsterMovement,
+NPCAction). The steps are op-insertion artifacts — e.g. v95 added
+`USE_SHOP_SCANNER_ITEM` at `0x5A`, which v92 lacks — not a uniform shift. Both target
+opcodes sit right where the delta changes.
 
-Worked example, v95 `TAKE_DAMAGE`:
-- `?SetDamaged@CUserLocal@@UAEXJJJKPAVCMob@@JJJHH@Z` @ `0x9343C0`
-- `COutPacket::COutPacket` call site @ `0x936250`, preceded at `0x93624A` by
-  `6A 34  push 34h ; nType`
-- `0x34` = 52 = exactly what `docs/packets/registry/gms_v95.yaml` records for
-  `TAKE_DAMAGE`. Method confirmed.
+**Method** (validated end-to-end on v95 before being applied to v92): the client *sends*
+these ops, so the opcode is the immediate passed to the `COutPacket` constructor in the
+sending function. Find the sender, read the `push <imm>` preceding the ctor call.
 
-For v92, the two senders are `CUserLocal::SetDamaged` (TAKE_DAMAGE) and
-`CUserLocal::DoActiveSkill_Heal` (SPECIAL_MOVE). **Neither is named in the v92 IDB** —
-it carries roughly 950 symbols propagated from v95, mostly clientbound `On*` handlers.
-Locate them structurally: `SetDamaged` is a very large function (v95: `0x218F` bytes) in
-the `CUserLocal` band whose send block encodes
-`Encode4, Encode1, Encode1, Encode4, Encode2, Encode1, Encode1, Encode4, Encode4, …`.
+Validation on v95, where the registry gives the answer independently:
 
-**Trap:** do not trust a propagated v92 symbol name to mean what it says without checking
-the opcode. `sub_91BCD0` in v92 is named `SendSkillEffectRequest` and pushes `0x48` — that
-is **not** `SKILL_EFFECT` (`DoActiveSkill_Prepare`); v95's own `SendSkillEffectRequest`
-pushes `71` (`0x47`), a different op entirely. The name is fine; the inference "this is
-the skill-prepare op" is not.
+| v95 function | ctor site | preceding push | registry |
+|---|---|---|---|
+| `CUserLocal::SetDamaged` @ `0x9343C0` | `0x936250` | `0x93624A: 6A 34  push 34h` | `TAKE_DAMAGE` = 52 ✓ |
+| `CUserLocal::DoActiveSkill_Heal` @ `0x93A830` | `0x93A99D` | `0x93A997: 6A 67  push 67h` | `SPECIAL_MOVE` = 103 ✓ |
+| `CUserLocal::DoActiveSkill_Prepare` @ `0x941710` | `0x94215E` | `0x942158: 6A 69  push 69h` | `SKILL_EFFECT` = 105 ✓ |
 
-Name both functions in the IDB once identified (`rename`), and record the two opcodes plus
-their evidence addresses in this task's notes before moving on.
+**v92 evidence:**
+
+- `TAKE_DAMAGE` — `SetDamaged_CUserLocal` @ `0x913BB0` (size `0x1ED0`). `COutPacket` ctor
+  at `0x915795`, preceded at `0x91578F` by `6A 35  push 35h`. → **`0x35`**.
+  The function was located by constant-fingerprinting rather than by symbol: the skill id
+  `0x404139` appears three times inside v95's `SetDamaged` at `0x93539D`/`0x9353C4`/
+  `0x935C69`, and v92 has an identically-spaced cluster (`0x27` between the first two) at
+  `0x914A63`/`0x914A8A`/`0x9152B1`.
+- `SPECIAL_MOVE` — `DoActiveSkill_Heal_CUserLocal` @ `0x91B630` (renamed in the IDB during
+  this derivation). `COutPacket` ctor at `0x91B7C2`, preceded by `push 66h`. → **`0x66`**.
+  Structural identity with v95's `DoActiveSkill_Heal` is unambiguous: same
+  `ExclRequestSent` guard chain, the same `nSkillID / 1000 % 10` test with the `== 9`
+  rejection, the same `GetOneTimeAction(...) > -1` bail, the same `IsOnLadder`/`IsOnRope`
+  pair, the same `Encode4(update_time)` + `Encode4(skillID)` + `Encode1(SLV)` opening, and
+  the same trailing `ShowSkillEffect(..., 6, 0, 0x7FFFFFFF)`.
+
+**Three independent cross-checks on `0x66`:**
+
+1. A second v92 skill-use sender, `sub_91B8C0`, also constructs `COutPacket(0x66)` — two
+   distinct `CUserLocal` paths emitting the same op is what `SPECIAL_MOVE` looks like.
+2. `SKILL_EFFECT` sits exactly two opcodes above `SPECIAL_MOVE` in **every** other version.
+   v92's `DoActiveSkill_Prepare_CUserLocal` @ `0x91DF00` (also renamed) pushes `0x68` at
+   `0x91E940` = `0x66` + 2 ✓. Its ctor offset within the function is `+0xA46`, against
+   `+0xA4E` in v95 — the same code shape.
+3. Ordering sanity for `0x35`: v95 runs `TAKE_DAMAGE 0x34`, one unused slot, `GENERAL_CHAT
+   0x36`. v92 runs `TAKE_DAMAGE 0x35`, one slot, and its template already routes
+   `CharacterChatGeneralHandle` at `0x37` — the same one-op gap, shifted by one.
+
+**Symbols named in the IDB** (per the project's RE discipline): `0x91B630` →
+`DoActiveSkill_Heal_CUserLocal`, `0x91DF00` → `DoActiveSkill_Prepare_CUserLocal`.
+`0x913BB0` was already named `SetDamaged_CUserLocal`. Evidence comments were set at
+`0x91578F`, `0x91B630` and `0x91E940`.
+
+**Trap for anyone re-treading this:** do not trust a v92 symbol name propagated from v95
+without checking the opcode. `sub_91BCD0` is named `SendSkillEffectRequest` and pushes
+`0x48` — that is **not** `SKILL_EFFECT`; v95's own `SendSkillEffectRequest` pushes `0x47`,
+a different op entirely. The name is accurate; the inference "this is the skill-prepare
+op" is not.
+
+**Payload note (not opcode-affecting, but check before declaring v92 done):** v92's
+`SPECIAL_MOVE` body is `Encode4(time), Encode4(skillId), Encode1(SLV), Encode2(?),
+Encode2(?)` where v95's is `Encode4(time), Encode4(skillId), Encode1(SLV),
+Encode1(FindParty), Encode2(0)` — a 5-byte trailer against v95's 4-byte one. Wiring the
+opcode gets the packet routed; confirm `SkillUsageInfo` decoding actually matches this
+shape on v92 before reporting the cast path working there. Flag it if it does not — do not
+paper over it.
 
 - [ ] **Step 4: Wire the missing `CharacterUseSkillHandle` / `CharacterDamageHandle` pairs**
 
@@ -2566,7 +2614,7 @@ Insert into `socket.handlers` at each file's **sorted position**:
 | gms_87 | `0x5E` (94) | `0x32` (50) | `docs/packets/registry/gms_v87.yaml` |
 | gms_95 | `0x67` (103) | `0x34` (52) | `docs/packets/registry/gms_v95.yaml` |
 | jms_185 | `0x56` (86) | `0x27` (39) | `docs/packets/registry/jms_v185.yaml` |
-| gms_92 | *from Step 3* | *from Step 3* | v92 IDB (no registry column) |
+| gms_92 | `0x66` (102) | `0x35` (53) | v92 IDB — derived in Step 3 |
 
 Entry shape (matching the five already-wired versions exactly):
 
@@ -2753,10 +2801,11 @@ data returns 404 and the binary contains no reference to the skill or to the
    - v87: `CharacterUseSkillHandle 0x5E`, `CharacterDamageHandle 0x32`
    - v95: `CharacterUseSkillHandle 0x67`, `CharacterDamageHandle 0x34`
    - JMS v185: `CharacterUseSkillHandle 0x56`, `CharacterDamageHandle 0x27`
-   - v92: use the two opcodes derived in Task 11 Step 3
+   - v92: `CharacterUseSkillHandle 0x66`, `CharacterDamageHandle 0x35`
    (v87/v95/jms185 values come from docs/packets/registry/<version>.yaml and
    were cross-validated against the already-verified entries in the same
-   files; v92 has no registry column and was derived from its IDB.)
+   files; v92 has no registry column; its two values were derived from its IDB and
+   triple-cross-checked — see plan.md Task 11 Step 3.)
 4. GMS v92 ONLY: the live config may also be missing the five buff/cooldown
    writers entirely (its seed template was). If absent, add:
    `CharacterBuffGive 0x21` (with the vehicles options),

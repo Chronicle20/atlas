@@ -51,6 +51,16 @@ type Processor interface {
 	// SetCooldownAndEmit applies a cooldown to a skill and emits a status event
 	SetCooldownAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, skillId uint32, cooldown uint32) (Model, error)
 
+	// ResetCooldowns clears every active cooldown for the character except
+	// the listed skill ids, buffering one COOLDOWN_EXPIRED status event per
+	// cleared skill. Returns the cleared skill ids. Registry-only — never
+	// touches the DB. An empty enumeration (or all-excepted) is a
+	// successful no-op.
+	ResetCooldowns(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, exceptSkillIds []uint32) ([]uint32, error)
+
+	// ResetCooldownsAndEmit wraps ResetCooldowns with the producer emit flow.
+	ResetCooldownsAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, exceptSkillIds []uint32) ([]uint32, error)
+
 	// ClearAll clears all cooldowns for a character
 	ClearAll(characterId uint32) error
 
@@ -250,6 +260,56 @@ func (p *ProcessorImpl) SetCooldownAndEmit(transactionId uuid.UUID, worldId worl
 		return err
 	})
 	return s, err
+}
+
+// ResetCooldowns clears every active cooldown for the character except the
+// listed skill ids. Per-skill Clear failures are logged and skipped —
+// partial success beats none, and command re-delivery is a harmless no-op.
+// Unlike SetCooldown this never touches the DB: it is registry + events only.
+func (p *ProcessorImpl) ResetCooldowns(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, exceptSkillIds []uint32) ([]uint32, error) {
+	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, exceptSkillIds []uint32) ([]uint32, error) {
+		cooldowns, err := GetRegistry().GetAllForCharacter(p.ctx, characterId)
+		if err != nil {
+			return nil, err
+		}
+		except := make(map[uint32]struct{}, len(exceptSkillIds))
+		for _, id := range exceptSkillIds {
+			except[id] = struct{}{}
+		}
+		cleared := make([]uint32, 0, len(cooldowns))
+		for skillId := range cooldowns {
+			if _, skip := except[skillId]; skip {
+				continue
+			}
+			if cErr := GetRegistry().Clear(p.ctx, characterId, skillId); cErr != nil {
+				p.l.WithError(cErr).Errorf("Unable to clear cooldown for character [%d] skill [%d]; continuing.", characterId, skillId)
+				continue
+			}
+			_ = mb.Put(skill2.EnvStatusEventTopic, statusEventCooldownExpiredProvider(transactionId, worldId, characterId, skillId))
+			cleared = append(cleared, skillId)
+		}
+		return cleared, nil
+	}
+}
+
+// ResetCooldownsAndEmit clears cooldowns and emits the buffered status events.
+func (p *ProcessorImpl) ResetCooldownsAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, exceptSkillIds []uint32) ([]uint32, error) {
+	var cleared []uint32
+	err := message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+		var rErr error
+		cleared, rErr = p.ResetCooldowns(buf)(transactionId, worldId, characterId, exceptSkillIds)
+		return rErr
+	})
+	if err != nil {
+		return cleared, err
+	}
+	p.l.WithFields(logrus.Fields{
+		"transaction_id":   transactionId.String(),
+		"character_id":     characterId,
+		"cleared_count":    len(cleared),
+		"except_skill_ids": exceptSkillIds,
+	}).Info("Reset skill cooldowns.")
+	return cleared, nil
 }
 
 // ExpireCooldowns expires all cooldowns that have passed their expiration time

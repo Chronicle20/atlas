@@ -10,12 +10,13 @@ import (
 )
 
 const (
-	EnvCommandTopic          = "COMMAND_TOPIC_SKILL"
-	CommandTypeRequestCreate = "REQUEST_CREATE"
-	CommandTypeRequestUpdate = "REQUEST_UPDATE"
-	CommandTypeRequestDelete = "REQUEST_DELETE"
-	CommandTypeSetCooldown   = "SET_COOLDOWN"
-	CommandTypeTransferSp    = "TRANSFER_SP"
+	EnvCommandTopic           = "COMMAND_TOPIC_SKILL"
+	CommandTypeRequestCreate  = "REQUEST_CREATE"
+	CommandTypeRequestUpdate  = "REQUEST_UPDATE"
+	CommandTypeRequestDelete  = "REQUEST_DELETE"
+	CommandTypeSetCooldown    = "SET_COOLDOWN"
+	CommandTypeTransferSp     = "TRANSFER_SP"
+	CommandTypeResetCooldowns = "RESET_COOLDOWNS"
 )
 
 type Command[E any] struct {
@@ -43,6 +44,15 @@ type RequestUpdateBody struct {
 type SetCooldownBody struct {
 	SkillId  uint32 `json:"skillId"`
 	Cooldown uint32 `json:"cooldown"`
+}
+
+// ResetCooldownsBody clears every active cooldown for the character except
+// the listed skill ids. SourceSkillId identifies the triggering skill
+// (5121010 for Time Leap) and is observability-only; generic senders may
+// pass 0.
+type ResetCooldownsBody struct {
+	ExceptSkillIds []uint32 `json:"exceptSkillIds"`
+	SourceSkillId  uint32   `json:"sourceSkillId"`
 }
 
 // RequestDeleteBody is the saga-correlated REQUEST_DELETE command body.

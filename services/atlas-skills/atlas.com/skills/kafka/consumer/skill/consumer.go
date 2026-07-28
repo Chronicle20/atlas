@@ -38,6 +38,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandSetCooldown(db)))); err != nil {
 				return err
 			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandResetCooldowns(db)))); err != nil {
+				return err
+			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestDelete(db)))); err != nil {
 				return err
 			}
@@ -82,6 +85,24 @@ func handleCommandSetCooldown(db *gorm.DB) message.Handler[skill2.Command[skill2
 		}
 
 		_, _ = skill.NewProcessor(l, ctx, db).SetCooldownAndEmit(c.TransactionId, c.WorldId, c.CharacterId, c.Body.SkillId, c.Body.Cooldown)
+	}
+}
+
+// handleCommandResetCooldowns clears every active cooldown for the
+// character except the command's exclusion list. SourceSkillId is
+// observability-only (5121010 for Time Leap; generic senders may pass 0).
+func handleCommandResetCooldowns(db *gorm.DB) message.Handler[skill2.Command[skill2.ResetCooldownsBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c skill2.Command[skill2.ResetCooldownsBody]) {
+		if c.Type != skill2.CommandTypeResetCooldowns {
+			return
+		}
+		if _, err := skill.NewProcessor(l, ctx, db).ResetCooldownsAndEmit(c.TransactionId, c.WorldId, c.CharacterId, c.Body.ExceptSkillIds); err != nil {
+			l.WithError(err).WithFields(logrus.Fields{
+				"transaction_id":  c.TransactionId.String(),
+				"character_id":    c.CharacterId,
+				"source_skill_id": c.Body.SourceSkillId,
+			}).Error("Unable to reset cooldowns.")
+		}
 	}
 }
 

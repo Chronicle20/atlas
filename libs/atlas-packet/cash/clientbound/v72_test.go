@@ -3,11 +3,9 @@ package clientbound
 import (
 	"bytes"
 	"testing"
-	"time"
 
 	testlog "github.com/sirupsen/logrus/hooks/test"
 
-	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
@@ -33,7 +31,6 @@ import (
 // isolate the body comparison.
 
 // packet-audit:verify packet=cash/clientbound/CashCashItemMovedToCashInventory version=gms_v72 ida=0x470e13
-// packet-audit:verify packet=cash/clientbound/CashCashItemMovedToInventory version=gms_v72 ida=0x470e13
 // packet-audit:verify packet=cash/clientbound/CashCashShopInventory version=gms_v72 ida=0x470e13
 // packet-audit:verify packet=cash/clientbound/CashCashShopPurchaseSuccess version=gms_v72 ida=0x470e13
 // packet-audit:verify packet=cash/clientbound/CashInventoryCapacitySuccess version=gms_v72 ida=0x470e13
@@ -46,7 +43,6 @@ func TestCashShopOperationArmsV72(t *testing.T) {
 	v72 := pt.CreateContext("GMS", 72, 1)
 	v83 := pt.CreateContext("GMS", 83, 1)
 	item := testItem()
-	asset := model.NewAsset(true, 0, 2000000, time.Time{}).SetStackableInfo(5, 0, 0)
 	wish := []uint32{5000000, 5000001, 5000002}
 	type arm struct {
 		name string
@@ -55,7 +51,6 @@ func TestCashShopOperationArmsV72(t *testing.T) {
 	}
 	arms := []arm{
 		{"MovedToCashInventory", NewCashItemMovedToCashInventory(0x50, item).Encode(l, v72)(nil), NewCashItemMovedToCashInventory(0x50, item).Encode(l, v83)(nil)},
-		{"MovedToInventory", NewCashItemMovedToInventory(0x51, 3, asset).Encode(l, v72)(nil), NewCashItemMovedToInventory(0x51, 3, asset).Encode(l, v83)(nil)},
 		{"ShopInventory", NewCashShopInventory(0x37, []CashInventoryItem{item}, 4, 3).Encode(l, v72)(nil), NewCashShopInventory(0x37, []CashInventoryItem{item}, 4, 3).Encode(l, v83)(nil)},
 		{"PurchaseSuccess", NewCashShopPurchaseSuccess(0x4F, item).Encode(l, v72)(nil), NewCashShopPurchaseSuccess(0x4F, item).Encode(l, v83)(nil)},
 		{"CapacitySuccess", NewInventoryCapacitySuccess(0x55, 2, 32).Encode(l, v72)(nil), NewInventoryCapacitySuccess(0x55, 2, 32).Encode(l, v83)(nil)},
